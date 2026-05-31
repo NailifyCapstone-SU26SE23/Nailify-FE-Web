@@ -1,1 +1,49 @@
 @import "tailwindcss";
+
+:root {
+  font-family: "Segoe UI", ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, sans-serif;
+  color: #2a2724;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.9), transparent 28%),
+    linear-gradient(180deg, #d7d0cb 0%, #ece5df 100%);
+  --color-ink: #2a2724;
+  --color-muted: #7f7872;
+  --color-panel: rgba(255, 255, 255, 0.82);
+  --color-panel-strong: rgba(255, 255, 255, 0.94);
+  --color-border: rgba(88, 78, 70, 0.1);
+  --color-shadow: rgba(97, 76, 60, 0.15);
+  --color-accent-start: #f25eb5;
+  --color-accent-mid: #ffa26f;
+  --color-accent-end: #ffdb5a;
+  --gradient-accent: linear-gradient(
+    90deg,
+    var(--color-accent-start) 0%,
+    var(--color-accent-mid) 56%,
+    var(--color-accent-end) 100%
+  );
+}
+
+html {
+  min-height: 100%;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.9), transparent 28%),
+    linear-gradient(180deg, #d7d0cb 0%, #ece5df 100%);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  color: var(--color-ink);
+  background: transparent;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+input {
+  font: inherit;
+}
