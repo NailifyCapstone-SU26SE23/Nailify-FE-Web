@@ -19,6 +19,8 @@ const demoAccounts = [
   "admin@nailify.com / Admin@123",
 ];
 
+const DECORATIVE_DOTS = Array.from({ length: 12 }, (_, index) => `dot-${index + 1}`);
+
 export function LoginPage() {
   const navigate = useNavigate();
   const { login, isAuthenticated, status, error, role } = useAuth();
@@ -59,8 +61,8 @@ export function LoginPage() {
           <div className="absolute left-8 top-32 h-56 w-56 rounded-full bg-white/10" />
           <div className="absolute -bottom-16 right-[-2.5rem] h-72 w-72 rounded-full bg-white/10" />
           <div className="absolute right-12 top-16 grid grid-cols-3 gap-2 opacity-85">
-            {Array.from({ length: 12 }).map((_, index) => (
-              <span key={index} className="h-1.5 w-1.5 rounded-full bg-white" />
+            {DECORATIVE_DOTS.map((dotId) => (
+              <span key={dotId} className="h-1.5 w-1.5 rounded-full bg-white" />
             ))}
           </div>
           <div className="absolute left-[31%] top-12 text-5xl font-light opacity-75">

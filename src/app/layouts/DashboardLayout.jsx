@@ -2,6 +2,7 @@ import { LayoutDashboard, LogOut, Scissors, Settings, Store, Users } from "lucid
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../../features/auth/hooks/useAuth";
 import { MENU_CONFIG } from "../../shared/constants/menuConfig";
+import { PropTypes } from "../../shared/utils/propTypes";
 
 const ICON_MAP = {
   calendar: Scissors,
@@ -46,6 +47,15 @@ function SidebarItem({ item }) {
     </NavLink>
   );
 }
+
+SidebarItem.propTypes = {
+  item: PropTypes.shape({
+    disabled: PropTypes.bool,
+    icon: PropTypes.string.isRequired,
+    label: PropTypes.string.isRequired,
+    to: PropTypes.string,
+  }).isRequired,
+};
 
 export function DashboardLayout() {
   const { user, logout } = useAuth();

@@ -9,12 +9,12 @@ export const authService = {
     const normalizedEmail = email.trim().toLowerCase();
     const matchedUser = mockUsers.find((user) => user.email === normalizedEmail);
 
-    if (!matchedUser || matchedUser.password !== password) {
+    if (!matchedUser || matchedUser.credential !== password) {
       throw new Error("Invalid email or password.");
     }
 
     const user = Object.fromEntries(
-      Object.entries(matchedUser).filter(([key]) => key !== "password"),
+      Object.entries(matchedUser).filter(([key]) => key !== "credential"),
     );
 
     return {
