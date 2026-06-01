@@ -1,6 +1,7 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../../features/auth/hooks/useAuth";
 import { getDashboardRouteByRole } from "../../features/auth/utils/getDashboardRouteByRole";
+import { PropTypes } from "../utils/propTypes";
 
 export function GuestGuard({ children }) {
   const { isAuthenticated, user } = useAuth();
@@ -11,3 +12,7 @@ export function GuestGuard({ children }) {
 
   return children;
 }
+
+GuestGuard.propTypes = {
+  children: PropTypes.node.isRequired,
+};

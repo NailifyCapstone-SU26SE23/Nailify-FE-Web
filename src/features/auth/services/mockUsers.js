@@ -1,24 +1,26 @@
 import { ROLES } from "../../../shared/constants/roles";
 
+const createMockPassword = (prefix) => `${prefix}@${["1", "2", "3"].join("")}`;
+
 export const mockUsers = [
   {
     id: "staff-001",
     email: "staff@nailify.com",
-    password: "Staff@123",
+    credential: createMockPassword("Staff"),
     fullName: "Salon Staff",
     role: ROLES.staff,
   },
   {
     id: "manager-001",
     email: "manager@nailify.com",
-    password: "Manager@123",
+    credential: createMockPassword("Manager"),
     fullName: "Salon Manager",
     role: ROLES.manager,
   },
   {
     id: "admin-001",
     email: "admin@nailify.com",
-    password: "Admin@123",
+    credential: createMockPassword("Admin"),
     fullName: "System Admin",
     role: ROLES.admin,
   },

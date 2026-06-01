@@ -1,6 +1,7 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../../features/auth/hooks/useAuth";
 import { getDashboardRouteByRole } from "../../features/auth/utils/getDashboardRouteByRole";
+import { PropTypes } from "../utils/propTypes";
 
 export function RoleGuard({ allowedRoles, children }) {
   const { user } = useAuth();
@@ -11,3 +12,8 @@ export function RoleGuard({ allowedRoles, children }) {
 
   return children;
 }
+
+RoleGuard.propTypes = {
+  allowedRoles: PropTypes.arrayOf(PropTypes.string).isRequired,
+  children: PropTypes.node.isRequired,
+};

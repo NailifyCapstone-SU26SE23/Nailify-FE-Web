@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../features/auth/hooks/useAuth";
 import { ROUTES } from "../constants/routes";
+import { PropTypes } from "../utils/propTypes";
 
 export function AuthGuard({ children }) {
   const { isAuthenticated } = useAuth();
@@ -12,3 +13,7 @@ export function AuthGuard({ children }) {
 
   return children;
 }
+
+AuthGuard.propTypes = {
+  children: PropTypes.node.isRequired,
+};
