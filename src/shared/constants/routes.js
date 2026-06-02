@@ -7,4 +7,8 @@ export const ROUTES = {
   staffDashboard: "/staff/dashboard",
   managerDashboard: "/manager/dashboard",
   adminDashboard: "/admin/dashboard",
+  adminUsers: "/admin/users",
+  adminUsersCreate: "/admin/users/create",
 };
+
+export const getAdminUserDetailRoute = (userId) => `/admin/users/${userId}`;
