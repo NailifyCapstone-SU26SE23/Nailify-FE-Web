@@ -7,6 +7,7 @@ const createValidator = () => {
 export const PropTypes = {
   arrayOf: () => createValidator(),
   bool: createValidator(),
+  func: createValidator(),
   node: createValidator(),
   oneOfType: () => createValidator(),
   shape: () => createValidator(),

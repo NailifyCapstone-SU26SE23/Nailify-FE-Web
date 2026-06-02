@@ -3,6 +3,7 @@ import {
   USER_ROLE_OPTIONS,
   USER_STATUS_FILTERS,
 } from "../services/mockUsers";
+import { PropTypes } from "../../../shared/utils/propTypes";
 
 const FORM_STATUS_OPTIONS = USER_STATUS_FILTERS.filter((item) => item !== "All");
 const INPUT_CLASSNAME =
@@ -139,3 +140,19 @@ export function UserManagementFormFields({
     </>
   );
 }
+
+UserManagementFormFields.propTypes = {
+  formValues: PropTypes.shape({
+    branch: PropTypes.string.isRequired,
+    email: PropTypes.string.isRequired,
+    joinedAt: PropTypes.string.isRequired,
+    lastActive: PropTypes.string.isRequired,
+    name: PropTypes.string.isRequired,
+    notes: PropTypes.string.isRequired,
+    phone: PropTypes.string.isRequired,
+    role: PropTypes.string.isRequired,
+    status: PropTypes.string.isRequired,
+  }).isRequired,
+  onFieldChange: PropTypes.func.isRequired,
+  disabled: PropTypes.bool,
+};
