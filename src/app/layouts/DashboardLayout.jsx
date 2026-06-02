@@ -1,4 +1,14 @@
-import { LayoutDashboard, LogOut, Scissors, Settings, Store, Users } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  LayoutDashboard,
+  LogOut,
+  Scissors,
+  Settings,
+  Store,
+  Users,
+} from "lucide-react";
+import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../../features/auth/hooks/useAuth";
 import { MENU_CONFIG } from "../../shared/constants/menuConfig";
@@ -12,19 +22,31 @@ const ICON_MAP = {
   users: Users,
 };
 
-function SidebarItem({ item }) {
+function SidebarItem({ item, isCollapsed }) {
   const Icon = ICON_MAP[item.icon] ?? LayoutDashboard;
 
   if (item.disabled) {
     return (
-      <div className="flex items-center justify-between rounded-2xl border border-transparent px-4 py-3 text-sm text-[var(--color-muted)] opacity-75">
-        <div className="flex items-center gap-3">
-          <Icon size={18} />
-          <span>{item.label}</span>
+      <div
+        className={`rounded-2xl border border-transparent py-3 text-sm text-[var(--color-muted)] opacity-75 ${
+          isCollapsed ? "px-3" : "px-4"
+        }`}
+      >
+        <div
+          className={`flex items-center ${
+            isCollapsed ? "justify-center" : "justify-between"
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <Icon size={18} />
+            {isCollapsed ? null : <span>{item.label}</span>}
+          </div>
+          {isCollapsed ? null : (
+            <span className="rounded-full bg-[#fff0f6] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#d85a9b]">
+              Soon
+            </span>
+          )}
         </div>
-        <span className="rounded-full bg-[#fff0f6] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#d85a9b]">
-          Soon
-        </span>
       </div>
     );
   }
@@ -34,21 +56,27 @@ function SidebarItem({ item }) {
       to={item.to}
       className={({ isActive }) =>
         [
-          "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition",
+          `rounded-2xl py-3 text-sm font-medium transition ${
+            isCollapsed
+              ? "flex justify-center px-3"
+              : "flex items-center gap-3 px-4"
+          }`,
           isActive
             ? "bg-[linear-gradient(90deg,#ef5db4_0%,#f59b6c_58%,#ffd95a_100%)] text-white shadow-[0_16px_28px_rgba(239,93,180,0.26)]"
             : "text-[var(--color-ink)] hover:bg-[#fff5ef]",
         ].join(" ")
       }
       end
+      title={isCollapsed ? item.label : undefined}
     >
       <Icon size={18} />
-      <span>{item.label}</span>
+      {isCollapsed ? null : <span>{item.label}</span>}
     </NavLink>
   );
 }
 
 SidebarItem.propTypes = {
+  isCollapsed: PropTypes.bool,
   item: PropTypes.shape({
     disabled: PropTypes.bool,
     icon: PropTypes.string.isRequired,
@@ -60,10 +88,11 @@ SidebarItem.propTypes = {
 export function DashboardLayout() {
   const { user, logout } = useAuth();
   const menus = MENU_CONFIG[user?.role] ?? [];
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   return (
-    <main className="h-screen overflow-hidden p-3 text-[var(--color-ink)] md:p-4">
-      <div className="flex h-full w-full flex-col rounded-[28px] border border-[var(--color-border)] bg-[var(--color-panel)] p-3 shadow-[0_28px_80px_var(--color-shadow)] backdrop-blur-xl md:rounded-[34px] md:p-4">
+    <main className="min-h-screen p-3 text-[var(--color-ink)] md:p-4 lg:h-screen lg:overflow-hidden">
+      <div className="flex min-h-[calc(100vh-1.5rem)] w-full flex-col rounded-[28px] border border-[var(--color-border)] bg-[var(--color-panel)] p-3 shadow-[0_28px_80px_var(--color-shadow)] backdrop-blur-xl md:rounded-[34px] md:p-4 lg:h-full lg:min-h-0">
         <header className="shrink-0 rounded-[24px] bg-[var(--color-panel-strong)] px-4 py-4 shadow-[0_18px_40px_rgba(94,76,62,0.08)] md:rounded-[28px] md:px-5">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
@@ -74,8 +103,8 @@ export function DashboardLayout() {
                 {user?.role} workspace
               </h1>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+              <div className="text-left sm:text-right">
                 <p className="font-medium">{user?.fullName}</p>
                 <p className="text-sm text-[var(--color-muted)]">{user?.email}</p>
               </div>
@@ -91,26 +120,67 @@ export function DashboardLayout() {
           </div>
         </header>
 
-        <div className="mt-4 grid min-h-0 flex-1 gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
-          <aside className="min-h-0 overflow-auto rounded-[24px] bg-[var(--color-panel-strong)] p-5 shadow-[0_18px_40px_rgba(94,76,62,0.08)] md:rounded-[28px]">
-            <div className="mb-5">
-              <p className="text-xs uppercase tracking-[0.2em] text-[#d85a9b]">
-                Navigation
-              </p>
-              <p className="mt-2 text-sm text-[var(--color-muted)]">
-                Shared dashboard layout. Role differences are handled by menu configuration.
-              </p>
-            </div>
+        <div
+          className={`mt-4 grid min-h-0 flex-1 gap-4 ${
+            isSidebarCollapsed
+              ? "lg:grid-cols-[96px_minmax(0,1fr)]"
+              : "lg:grid-cols-[280px_minmax(0,1fr)]"
+          }`}
+        >
+          <aside className="rounded-[24px] bg-[var(--color-panel-strong)] p-3 shadow-[0_18px_40px_rgba(94,76,62,0.08)] md:rounded-[28px] md:p-4 lg:min-h-0">
+            <div className="flex h-full flex-col">
+              <div className={isSidebarCollapsed ? "mb-4" : "mb-5 px-2 pt-1"}>
+                {isSidebarCollapsed ? (
+                  <p className="text-center text-xs uppercase tracking-[0.2em] text-[#d85a9b]">
+                    Nav
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-xs uppercase tracking-[0.2em] text-[#d85a9b]">
+                      Navigation
+                    </p>
+                    <p className="mt-2 text-sm text-[var(--color-muted)]">
+                      Shared dashboard layout. Role differences are handled by menu configuration.
+                    </p>
+                  </>
+                )}
+              </div>
 
-            <nav className="space-y-2">
-              {menus.map((item) => (
-                <SidebarItem key={item.key} item={item} />
-              ))}
-            </nav>
+              <nav className="flex-1 space-y-2 lg:overflow-auto">
+                {menus.map((item) => (
+                  <SidebarItem
+                    key={item.key}
+                    item={item}
+                    isCollapsed={isSidebarCollapsed}
+                  />
+                ))}
+              </nav>
+
+              <div className="hidden pt-3 lg:block">
+                <button
+                  type="button"
+                  onClick={() => setIsSidebarCollapsed((current) => !current)}
+                  className={`inline-flex h-11 items-center rounded-2xl border border-[#f1dfd2] bg-white text-sm font-medium text-[var(--color-ink)] shadow-[0_10px_24px_rgba(94,76,62,0.08)] transition hover:bg-[#fff5ef] ${
+                    isSidebarCollapsed
+                      ? "w-full justify-center"
+                      : "w-full justify-between px-4"
+                  }`}
+                >
+                  {isSidebarCollapsed ? (
+                    <ChevronRight size={18} />
+                  ) : (
+                    <>
+                      <span></span>
+                      <ChevronLeft size={18} />
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
           </aside>
 
           <div className="flex min-h-0 flex-col gap-4">
-            <section className="min-h-0 flex-1 overflow-auto rounded-[24px] bg-[var(--color-panel-strong)] p-4 shadow-[0_18px_40px_rgba(94,76,62,0.08)] md:rounded-[28px] md:p-5">
+            <section className="flex-1 rounded-[24px] bg-[var(--color-panel-strong)] p-4 shadow-[0_18px_40px_rgba(94,76,62,0.08)] md:rounded-[28px] md:p-5 lg:min-h-0 lg:overflow-auto">
               <div className="flex min-h-full flex-col">
                 <Outlet />
               </div>

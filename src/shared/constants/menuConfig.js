@@ -18,7 +18,7 @@ export const MENU_CONFIG = {
   [ROLES.admin]: [
     { key: "admin-dashboard", label: "Dashboard", to: ROUTES.adminDashboard, icon: "dashboard" },
     { key: "admin-salons", label: "Salons", icon: "store", disabled: true },
-    { key: "admin-staff", label: "Staff", icon: "users", disabled: true },
+    { key: "admin-users", label: "User Management", to: ROUTES.adminUsers, icon: "users" },
     { key: "admin-designs", label: "Nail Designs", icon: "calendar", disabled: true },
     { key: "admin-services", label: "Services", icon: "calendar", disabled: true },
     { key: "admin-reports", label: "Reports", icon: "store", disabled: true },
