@@ -1,16 +1,16 @@
 import { CalendarClock, PencilLine, Save, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
-import { BookingManagementFormFields } from "../components/BookingManagementFormFields";
-import { BookingManagementHeroCard } from "../components/BookingManagementHeroCard";
-import { BookingManagementSnapshotCard } from "../components/BookingManagementSnapshotCard";
+import { BookingFormFields } from "../components/BookingFormFields";
+import { BookingHeroCard } from "../components/BookingHeroCard";
+import { BookingSnapshotCard } from "../components/BookingSnapshotCard";
 import {
   BOOKING_ROLE_CONFIG,
   getMockBookingById,
 } from "../services/mockBookings";
-import { getBookingRoleFromPath } from "../../bookings/utils/bookingMapper";
+import { getBookingRoleFromPath } from "../utils/bookingMapper";
 
-export function BookingManagementDetailPage() {
+export function BookingDetailPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { bookingId } = useParams();
@@ -61,7 +61,7 @@ export function BookingManagementDetailPage() {
 
   return (
     <section className="flex min-h-full flex-col gap-4">
-      <BookingManagementHeroCard
+      <BookingHeroCard
         backLabel="Back to booking list"
         backTo={roleConfig.listRoute}
         badge={roleConfig.detailBadge}
@@ -81,7 +81,7 @@ export function BookingManagementDetailPage() {
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
         <article className="rounded-[24px] bg-white p-4 shadow-[0_16px_34px_rgba(94,76,62,0.06)] sm:p-5 md:p-6">
           <div className="grid gap-5 md:grid-cols-2">
-            <BookingManagementFormFields
+            <BookingFormFields
               formValues={formValues}
               onFieldChange={handleChange}
               disabled={!isEditing}
@@ -99,7 +99,6 @@ export function BookingManagementDetailPage() {
                   <Save size={16} />
                   <span>Save changes</span>
                 </button>
-
                 <button
                   type="button"
                   onClick={handleCancelEdit}
@@ -130,7 +129,7 @@ export function BookingManagementDetailPage() {
           </div>
         </article>
 
-        <BookingManagementSnapshotCard
+        <BookingSnapshotCard
           formValues={formValues}
           notice="This is mock CRUD only. Save and delete actions update the UI flow, but they do not persist data outside this screen."
         />

@@ -40,7 +40,7 @@ function getFieldClassName(disabled, isTextarea = false) {
   ].join(" ");
 }
 
-export function BookingManagementFormFields({
+export function BookingFormFields({
   formValues,
   onFieldChange,
   disabled = false,
@@ -55,7 +55,6 @@ export function BookingManagementFormFields({
           className={getFieldClassName(disabled)}
         />
       </FieldShell>
-
       <FieldShell label="Customer name" hint="Guest profile">
         <input
           value={formValues.customerName}
@@ -64,7 +63,6 @@ export function BookingManagementFormFields({
           className={getFieldClassName(disabled)}
         />
       </FieldShell>
-
       <FieldShell label="Phone number" hint="Contact">
         <input
           value={formValues.customerPhone}
@@ -73,7 +71,6 @@ export function BookingManagementFormFields({
           className={getFieldClassName(disabled)}
         />
       </FieldShell>
-
       <FieldShell label="Branch" hint="Service location">
         <select
           value={formValues.branch}
@@ -88,7 +85,6 @@ export function BookingManagementFormFields({
           ))}
         </select>
       </FieldShell>
-
       <FieldShell label="Service" hint="Booked treatment">
         <select
           value={formValues.service}
@@ -103,7 +99,6 @@ export function BookingManagementFormFields({
           ))}
         </select>
       </FieldShell>
-
       <FieldShell label="Assigned staff" hint="Technician">
         <select
           value={formValues.staffName}
@@ -118,7 +113,6 @@ export function BookingManagementFormFields({
           ))}
         </select>
       </FieldShell>
-
       <FieldShell label="Booking date" hint="YYYY-MM-DD">
         <input
           value={formValues.bookingDate}
@@ -127,7 +121,6 @@ export function BookingManagementFormFields({
           className={getFieldClassName(disabled)}
         />
       </FieldShell>
-
       <FieldShell label="Booking time" hint="Start time">
         <input
           value={formValues.bookingTime}
@@ -136,7 +129,6 @@ export function BookingManagementFormFields({
           className={getFieldClassName(disabled)}
         />
       </FieldShell>
-
       <FieldShell label="Duration" hint="Service length">
         <input
           value={formValues.duration}
@@ -145,7 +137,6 @@ export function BookingManagementFormFields({
           className={getFieldClassName(disabled)}
         />
       </FieldShell>
-
       <FieldShell label="Booking status" hint="Operational state">
         <select
           value={formValues.status}
@@ -162,7 +153,6 @@ export function BookingManagementFormFields({
           )}
         </select>
       </FieldShell>
-
       <FieldShell label="Channel" hint="Lead source">
         <select
           value={formValues.channel}
@@ -177,7 +167,6 @@ export function BookingManagementFormFields({
           ))}
         </select>
       </FieldShell>
-
       <FieldShell label="Payment status" hint="Collection state">
         <select
           value={formValues.paymentStatus}
@@ -192,7 +181,6 @@ export function BookingManagementFormFields({
           ))}
         </select>
       </FieldShell>
-
       <FieldShell label="Total amount" hint="Mock charge">
         <input
           value={formValues.total}
@@ -201,7 +189,6 @@ export function BookingManagementFormFields({
           className={getFieldClassName(disabled)}
         />
       </FieldShell>
-
       <FieldShell label="Created at" hint="Audit trail">
         <input
           value={formValues.createdAt}
@@ -210,7 +197,6 @@ export function BookingManagementFormFields({
           className={getFieldClassName(disabled)}
         />
       </FieldShell>
-
       <div className="md:col-span-2">
         <FieldShell label="Service notes" hint="Customer request and ops note">
           <textarea
@@ -225,7 +211,7 @@ export function BookingManagementFormFields({
   );
 }
 
-BookingManagementFormFields.propTypes = {
+BookingFormFields.propTypes = {
   formValues: PropTypes.shape({
     bookingDate: PropTypes.string.isRequired,
     bookingTime: PropTypes.string.isRequired,

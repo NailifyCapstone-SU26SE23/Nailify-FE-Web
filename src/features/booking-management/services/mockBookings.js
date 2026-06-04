@@ -116,39 +116,29 @@ export const BOOKING_SUMMARY_BY_ROLE = {
   ],
 };
 
-const createMockBooking = (
-  id,
-  customerName,
-  customerPhone,
-  branch,
-  service,
-  staffName,
-  bookingDate,
-  bookingTime,
-  duration,
-  status,
-  channel,
-  paymentStatus,
-  total,
-  createdAt,
-  notes,
-) => ({
-  id,
-  customerName,
-  customerPhone,
-  branch,
-  service,
-  staffName,
-  bookingDate,
-  bookingTime,
-  duration,
-  status,
-  channel,
-  paymentStatus,
-  total,
-  createdAt,
-  notes,
-});
+const BOOKING_FIELDS = [
+  "id",
+  "customerName",
+  "customerPhone",
+  "branch",
+  "service",
+  "staffName",
+  "bookingDate",
+  "bookingTime",
+  "duration",
+  "status",
+  "channel",
+  "paymentStatus",
+  "total",
+  "createdAt",
+  "notes",
+];
+
+const createMockBooking = (definition) =>
+  BOOKING_FIELDS.reduce((booking, field, index) => {
+    booking[field] = definition[index];
+    return booking;
+  }, {});
 
 const BOOKING_ROW_DEFINITIONS = [
   [
@@ -255,9 +245,7 @@ const BOOKING_ROW_DEFINITIONS = [
   ],
 ];
 
-export const BOOKING_ROWS = BOOKING_ROW_DEFINITIONS.map((definition) =>
-  createMockBooking(...definition),
-);
+export const BOOKING_ROWS = BOOKING_ROW_DEFINITIONS.map(createMockBooking);
 
 export const BOOKING_ROLE_CONFIG = {
   [ROLES.admin]: {
