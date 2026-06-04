@@ -2,6 +2,7 @@ import {
   ROUTES,
   getAdminBookingDetailRoute,
   getManagerBookingDetailRoute,
+  getReceptionistBookingDetailRoute,
   getStaffBookingDetailRoute,
 } from "../../../shared/constants/routes";
 import { ROLES } from "../../../shared/constants/roles";
@@ -318,6 +319,26 @@ export const BOOKING_ROLE_CONFIG = {
       "Open a booking, capture service notes, and update mock appointment status without leaving your workspace.",
     createDescription:
       "Create a mock booking entry for your queue and prepare service details ahead of backend integration.",
+  },
+  [ROLES.receptionist]: {
+    badge: "Reception Desk",
+    title: "Reception Bookings",
+    listHeading: "Front-desk booking queue",
+    description:
+      "Track walk-ins, upcoming appointments, and front-desk coordination from a receptionist-focused booking workspace.",
+    panelTitle: "Reception workflow",
+    panelDescription:
+      "Receptionists can review appointment details, confirm customer arrival, and keep the desk queue moving.",
+    permissionLabel: "Receptionist access",
+    listRoute: ROUTES.receptionistBookings,
+    createRoute: ROUTES.receptionistBookingsCreate,
+    getDetailRoute: getReceptionistBookingDetailRoute,
+    createLabel: "Create front-desk booking",
+    detailBadge: "Reception Booking",
+    detailDescription:
+      "Review booking details, update arrival information, and run mock actions for front-desk operations.",
+    createDescription:
+      "Create a mock front-desk booking entry before backend availability and check-in flows are connected.",
   },
 };
 

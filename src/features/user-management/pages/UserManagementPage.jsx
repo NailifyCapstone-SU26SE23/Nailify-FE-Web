@@ -1,4 +1,8 @@
-import { ArrowRight, Search, ShieldCheck, UserPlus } from "lucide-react";
+import {
+  ArrowRight, Search,
+  // ShieldCheck,
+  UserPlus
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -48,7 +52,7 @@ export function UserManagementPage() {
 
   return (
     <section className="flex min-h-full flex-col gap-4">
-      <div className="overflow-hidden rounded-[24px] bg-white shadow-[0_18px_40px_rgba(94,76,62,0.08)]">
+      {/* <div className="overflow-hidden rounded-[24px] bg-white shadow-[0_18px_40px_rgba(94,76,62,0.08)]">
         <div className="h-3 bg-[image:var(--gradient-accent)]" />
         <div className="grid gap-6 p-5 sm:p-6 md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] md:items-start md:p-8">
           <div className="max-w-full md:max-w-[26rem]">
@@ -82,7 +86,7 @@ export function UserManagementPage() {
             </p>
           </div>
         </div>
-      </div>
+      </div> */}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {USER_SUMMARY.map((item) => (

@@ -1,194 +1,261 @@
 import {
-  ChevronLeft,
-  ChevronRight,
+  BarChart3,
+  Bell,
+  CalendarDays,
   LayoutDashboard,
   LogOut,
-  Scissors,
+  MapPin,
+  MessageSquareWarning,
   Settings,
+  Star,
   Store,
   Users,
 } from "lucide-react";
-import { useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../../features/auth/hooks/useAuth";
 import { MENU_CONFIG } from "../../shared/constants/menuConfig";
 import { PropTypes } from "../../shared/utils/propTypes";
 
 const ICON_MAP = {
-  calendar: Scissors,
+  analytics: BarChart3,
+  calendar: CalendarDays,
   dashboard: LayoutDashboard,
+  reviews: Star,
   settings: Settings,
   store: Store,
+  support: MessageSquareWarning,
   users: Users,
 };
 
-function SidebarItem({ item, isCollapsed }) {
+function getRoleLabel(role) {
+  switch (role) {
+    case "admin":
+      return "Super Admin";
+    case "manager":
+      return "Salon Manager";
+    case "receptionist":
+      return "Receptionist";
+    case "staff":
+      return "Staff Artist";
+    default:
+      return "Workspace";
+  }
+}
+
+function getPortalLabel(role) {
+  switch (role) {
+    case "admin":
+      return "Admin Portal";
+    case "manager":
+      return "Manager Portal";
+    case "receptionist":
+      return "Reception Desk";
+    case "staff":
+      return "Staff Workspace";
+    default:
+      return "Nailify Portal";
+  }
+}
+
+function getUserInitials(name) {
+  return (name ?? "NF")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
+function groupMenusBySection(menus) {
+  return menus.reduce((groups, item) => {
+    const section = item.section ?? "Main";
+
+    if (!groups[section]) {
+      groups[section] = [];
+    }
+
+    groups[section].push(item);
+    return groups;
+  }, {});
+}
+
+function getHeaderContent(pathname, menus) {
+  const currentMenu =
+    menus.find((item) => item.to === pathname) ??
+    menus.find(
+      (item) => item.to && item.to !== "/" && pathname.startsWith(`${item.to}/`),
+    );
+
+  if (!currentMenu) {
+    return {
+      title: "Dashboard",
+      description: "Monitor internal operations across the Nailify workspace.",
+    };
+  }
+
+  switch (currentMenu.key) {
+    case "admin-bookings":
+    case "manager-bookings":
+    case "staff-bookings":
+    case "receptionist-bookings":
+      return {
+        title: "Booking Management",
+        description: "Monitor bookings across all Nailify salon locations.",
+      };
+    case "admin-users":
+      return {
+        title: "User Management",
+        description: "Manage customers, staff artists, and salon managers.",
+      };
+    default:
+      return {
+        title: currentMenu.label,
+        description: `Manage ${currentMenu.label.toLowerCase()} across the Nailify workspace.`,
+      };
+  }
+}
+
+function SidebarItem({ item }) {
   const Icon = ICON_MAP[item.icon] ?? LayoutDashboard;
 
+  const content = ({ isActive = false } = {}) => (
+    <div
+      className={[
+        "flex min-h-9 items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition",
+        isActive
+          ? "bg-[rgba(255,255,255,0.18)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+          : "text-white/80 hover:bg-[rgba(255,255,255,0.1)] hover:text-white",
+      ].join(" ")}
+    >
+      <Icon size={15} className="shrink-0" />
+      <span className="min-w-0 flex-1 truncate font-medium">{item.label}</span>
+      {item.badge ? (
+        <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[rgba(255,255,255,0.2)] px-1.5 text-[10px] font-extrabold text-white">
+          {item.badge}
+        </span>
+      ) : null}
+    </div>
+  );
+
   if (item.disabled) {
-    return (
-      <div
-        className={`rounded-2xl border border-transparent py-3 text-sm text-[var(--color-muted)] opacity-75 ${
-          isCollapsed ? "px-3" : "px-4"
-        }`}
-      >
-        <div
-          className={`flex items-center ${
-            isCollapsed ? "justify-center" : "justify-between"
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            <Icon size={18} />
-            {isCollapsed ? null : <span>{item.label}</span>}
-          </div>
-          {isCollapsed ? null : (
-            <span className="rounded-full bg-[#fff0f6] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#d85a9b]">
-              Soon
-            </span>
-          )}
-        </div>
-      </div>
-    );
+    return <div>{content()}</div>;
   }
 
   return (
-    <NavLink
-      to={item.to}
-      className={({ isActive }) =>
-        [
-          `rounded-2xl py-3 text-sm font-medium transition ${
-            isCollapsed
-              ? "flex justify-center px-3"
-              : "flex items-center gap-3 px-4"
-          }`,
-          isActive
-            ? "bg-[linear-gradient(90deg,#ef5db4_0%,#f59b6c_58%,#ffd95a_100%)] text-white shadow-[0_16px_28px_rgba(239,93,180,0.26)]"
-            : "text-[var(--color-ink)] hover:bg-[#fff5ef]",
-        ].join(" ")
-      }
-      end
-      title={isCollapsed ? item.label : undefined}
-    >
-      <Icon size={18} />
-      {isCollapsed ? null : <span>{item.label}</span>}
+    <NavLink to={item.to} end>
+      {({ isActive }) => content({ isActive })}
     </NavLink>
   );
 }
 
 SidebarItem.propTypes = {
-  isCollapsed: PropTypes.bool,
   item: PropTypes.shape({
+    badge: PropTypes.string,
     disabled: PropTypes.bool,
     icon: PropTypes.string.isRequired,
     label: PropTypes.string.isRequired,
+    section: PropTypes.string,
     to: PropTypes.string,
   }).isRequired,
 };
 
 export function DashboardLayout() {
   const { user, logout } = useAuth();
+  const location = useLocation();
   const menus = MENU_CONFIG[user?.role] ?? [];
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const menuGroups = groupMenusBySection(menus);
+  const profileName = user?.fullName ?? "Nailify User";
+  const profileRole = getRoleLabel(user?.role);
+  const headerContent = getHeaderContent(location.pathname, menus);
 
   return (
-    <main className="min-h-screen p-3 text-[var(--color-ink)] md:p-4 lg:h-screen lg:overflow-hidden">
-      <div className="flex min-h-[calc(100vh-1.5rem)] w-full flex-col rounded-[28px] border border-[var(--color-border)] bg-[var(--color-panel)] p-3 shadow-[0_28px_80px_var(--color-shadow)] backdrop-blur-xl md:rounded-[34px] md:p-4 lg:h-full lg:min-h-0">
-        <header className="shrink-0 rounded-[24px] bg-[var(--color-panel-strong)] px-4 py-4 shadow-[0_18px_40px_rgba(94,76,62,0.08)] md:rounded-[28px] md:px-5">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.24em] text-[#d45b9f]">
-                Nailify Internal
-              </p>
-              <h1 className="text-xl font-semibold capitalize">
-                {user?.role} workspace
-              </h1>
+    <main className="h-screen overflow-hidden bg-[#fff7fb] p-3 text-[var(--color-ink)] md:p-4">
+      <div className="grid h-full gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
+        <aside className="h-full overflow-hidden rounded-[10px] bg-[linear-gradient(180deg,#ca2e79_0%,#ea4f93_100%)] shadow-[6px_0_30px_rgba(201,45,120,0.22)]">
+          <div className="flex h-full flex-col">
+            <div className="border-b border-white/15 px-5 py-5">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 text-white">
+                  <MapPin size={18} />
+                </div>
+                <div>
+                  <p className="text-[1.05rem] font-extrabold tracking-[0.02em] text-white">
+                    Nailify
+                  </p>
+                  <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-white/65">
+                    {getPortalLabel(user?.role)}
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-              <div className="text-left sm:text-right">
-                <p className="font-medium">{user?.fullName}</p>
-                <p className="text-sm text-[var(--color-muted)]">{user?.email}</p>
+
+            <div className="flex-1 overflow-y-auto px-3 py-5">
+              {Object.entries(menuGroups).map(([section, items]) => (
+                <div key={section} className="mb-5 last:mb-0">
+                  <p className="px-3 text-[10px] font-bold uppercase tracking-[0.28em] text-white/45">
+                    {section}
+                  </p>
+                  <div className="mt-2 space-y-0.5">
+                    {items.map((item) => (
+                      <SidebarItem key={item.key} item={item} />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="border-t border-white/15 p-3">
+              <div className="rounded-2xl bg-white/14 px-3 py-3 backdrop-blur-sm">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/35 bg-[linear-gradient(180deg,#8e154d_0%,#d22c78_100%)] text-sm font-bold text-white">
+                    {getUserInitials(profileName)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13px] font-semibold text-white">
+                      {profileName}
+                    </p>
+                    <p className="truncate text-[11px] text-white/65">{profileRole}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={logout}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/12 text-white transition hover:bg-white/20"
+                    title="Sign out"
+                  >
+                    <LogOut size={14} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <div className="flex min-h-0 flex-col gap-4">
+          <header className="rounded-[10px] bg-white px-5 py-4 shadow-[0_18px_40px_rgba(94,76,62,0.08)]">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h1 className="text-[1.85rem] font-extrabold leading-none text-[#3d2a3a]">
+                  {headerContent.title}
+                </h1>
+                <p className="mt-2 text-sm text-[#c28ca6]">
+                  {headerContent.description}
+                </p>
               </div>
               <button
                 type="button"
-                onClick={logout}
-                className="inline-flex items-center gap-2 rounded-xl bg-[image:var(--gradient-accent)] px-4 py-2 text-sm font-medium text-white shadow-[0_12px_24px_rgba(242,94,181,0.22)] transition hover:scale-[1.01]"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#f8c8db] bg-[#fff8fb] text-[#eb5a99] shadow-[0_12px_24px_rgba(235,90,153,0.12)] transition hover:bg-[#fff0f7]"
+                title="Notifications"
               >
-                <LogOut size={16} />
-                <span>Sign out</span>
+                <Bell size={18} />
               </button>
             </div>
-          </div>
-        </header>
+          </header>
 
-        <div
-          className={`mt-4 grid min-h-0 flex-1 gap-4 ${
-            isSidebarCollapsed
-              ? "lg:grid-cols-[96px_minmax(0,1fr)]"
-              : "lg:grid-cols-[280px_minmax(0,1fr)]"
-          }`}
-        >
-          <aside className="rounded-[24px] bg-[var(--color-panel-strong)] p-3 shadow-[0_18px_40px_rgba(94,76,62,0.08)] md:rounded-[28px] md:p-4 lg:min-h-0">
-            <div className="flex h-full flex-col">
-              <div className={isSidebarCollapsed ? "mb-4" : "mb-5 px-2 pt-1"}>
-                {isSidebarCollapsed ? (
-                  <p className="text-center text-xs uppercase tracking-[0.2em] text-[#d85a9b]">
-                    Nav
-                  </p>
-                ) : (
-                  <>
-                    <p className="text-xs uppercase tracking-[0.2em] text-[#d85a9b]">
-                      Navigation
-                    </p>
-                    <p className="mt-2 text-sm text-[var(--color-muted)]">
-                      Shared dashboard layout. Role differences are handled by menu configuration.
-                    </p>
-                  </>
-                )}
-              </div>
-
-              <nav className="flex-1 space-y-2 lg:overflow-auto">
-                {menus.map((item) => (
-                  <SidebarItem
-                    key={item.key}
-                    item={item}
-                    isCollapsed={isSidebarCollapsed}
-                  />
-                ))}
-              </nav>
-
-              <div className="hidden pt-3 lg:block">
-                <button
-                  type="button"
-                  onClick={() => setIsSidebarCollapsed((current) => !current)}
-                  className={`inline-flex h-11 items-center rounded-2xl border border-[#f1dfd2] bg-white text-sm font-medium text-[var(--color-ink)] shadow-[0_10px_24px_rgba(94,76,62,0.08)] transition hover:bg-[#fff5ef] ${
-                    isSidebarCollapsed
-                      ? "w-full justify-center"
-                      : "w-full justify-between px-4"
-                  }`}
-                >
-                  {isSidebarCollapsed ? (
-                    <ChevronRight size={18} />
-                  ) : (
-                    <>
-                      <span></span>
-                      <ChevronLeft size={18} />
-                    </>
-                  )}
-                </button>
-              </div>
+          <section className="flex-1 rounded-[10px] bg-white p-4 shadow-[0_18px_40px_rgba(94,76,62,0.08)] md:p-5 lg:min-h-0 lg:overflow-auto">
+            <div className="flex min-h-full flex-col">
+              <Outlet />
             </div>
-          </aside>
-
-          <div className="flex min-h-0 flex-col gap-4">
-            <section className="flex-1 rounded-[24px] bg-[var(--color-panel-strong)] p-4 shadow-[0_18px_40px_rgba(94,76,62,0.08)] md:rounded-[28px] md:p-5 lg:min-h-0 lg:overflow-auto">
-              <div className="flex min-h-full flex-col">
-                <Outlet />
-              </div>
-            </section>
-            <footer className="shrink-0 rounded-[20px] bg-[rgba(255,252,248,0.9)] px-5 py-4 text-sm text-[var(--color-muted)] shadow-[0_12px_28px_rgba(94,76,62,0.06)] md:rounded-[24px]">
-              Nailify internal dashboard layout shared across Staff, Manager, and Admin.
-            </footer>
-          </div>
+          </section>
         </div>
       </div>
     </main>

@@ -1,9 +1,9 @@
 import { Navigate } from "react-router-dom";
 import { DashboardLayout } from "../layouts/DashboardLayout";
 import { ManagerDashboardPage } from "../../features/dashboard/pages/ManagerDashboardPage";
-import { BookingManagementPage } from "../../features/booking-management/pages/BookingManagementPage";
+import { BookingListPage } from "../../features/bookings/pages/BookingListPage";
 import { BookingManagementCreatePage } from "../../features/booking-management/pages/BookingManagementCreatePage";
-import { BookingManagementDetailPage } from "../../features/booking-management/pages/BookingManagementDetailPage";
+import { ManagerBookingDetailPage } from "../../features/bookings/pages/ManagerBookingDetailPage";
 import { AuthGuard } from "../../shared/guards/AuthGuard";
 import { RoleGuard } from "../../shared/guards/RoleGuard";
 import { ROLES } from "../../shared/constants/roles";
@@ -30,15 +30,15 @@ export const managerRoutes = [
       },
       {
         path: ROUTES.managerBookings,
-        element: <BookingManagementPage />,
+        element: <BookingListPage />,
       },
       {
         path: ROUTES.managerBookingsCreate,
         element: <BookingManagementCreatePage />,
       },
       {
-        path: "/manager/bookings/:bookingId",
-        element: <BookingManagementDetailPage />,
+        path: ROUTES.managerBookingDetail,
+        element: <ManagerBookingDetailPage />,
       },
     ],
   },

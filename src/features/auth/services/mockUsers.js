@@ -11,6 +11,13 @@ export const mockUsers = [
     role: ROLES.staff,
   },
   {
+    id: "receptionist-001",
+    email: "receptionist@nailify.com",
+    credential: createMockPassword("Receptionist"),
+    fullName: "Front Desk Receptionist",
+    role: ROLES.receptionist,
+  },
+  {
     id: "manager-001",
     email: "manager@nailify.com",
     credential: createMockPassword("Manager"),
