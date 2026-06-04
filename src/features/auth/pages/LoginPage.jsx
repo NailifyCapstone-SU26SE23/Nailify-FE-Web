@@ -15,6 +15,7 @@ const loginSchema = z.object({
 
 const demoAccounts = [
   "staff@nailify.com / Staff@123",
+  "receptionist@nailify.com / Receptionist@123",
   "manager@nailify.com / Manager@123",
   "admin@nailify.com / Admin@123",
 ];

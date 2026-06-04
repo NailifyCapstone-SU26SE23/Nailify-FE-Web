@@ -66,6 +66,18 @@ const USER_ROW_DEFINITIONS = [
     "Primary manager for premium booking flow and staffing approvals.",
   ],
   [
+    "USR-1007",
+    "Thao Bui",
+    "thao.bui@nailify.com",
+    "Receptionist",
+    "District 1 Salon",
+    "Active",
+    "9 min ago",
+    "(+84) 903 881 114",
+    "2025-04-22",
+    "Manages front desk check-ins, walk-in coordination, and customer reminders.",
+  ],
+  [
     "USR-1003",
     "Linh Pham",
     "linh.pham@nailify.com",
@@ -134,7 +146,7 @@ export const USER_STATUS_STYLES = {
   Suspended: "bg-[#fff0f5] text-[#d14c84]",
 };
 
-export const USER_ROLE_OPTIONS = ["Admin", "Manager", "Staff"];
+export const USER_ROLE_OPTIONS = ["Admin", "Manager", "Receptionist", "Staff"];
 
 export const USER_BRANCH_OPTIONS = [
   "Head Office",
@@ -148,7 +160,7 @@ export const createEmptyUser = () => ({
   id: "USR-NEW",
   name: "",
   email: "",
-  role: "Staff",
+  role: "Receptionist",
   branch: USER_BRANCH_OPTIONS[0],
   status: "Pending",
   lastActive: "Not activated",

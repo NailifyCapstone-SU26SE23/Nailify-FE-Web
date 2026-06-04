@@ -1,7 +1,7 @@
 import {
   ArrowRight,
   CalendarClock,
-  ClipboardList,
+  // ClipboardList,
   Search,
   UserPlus,
 } from "lucide-react";
@@ -15,23 +15,12 @@ import {
   BOOKING_STATUS_STYLES,
   BOOKING_SUMMARY_BY_ROLE,
 } from "../services/mockBookings";
-
-function getRoleFromPath(pathname) {
-  if (pathname.startsWith("/admin")) {
-    return ROLES.admin;
-  }
-
-  if (pathname.startsWith("/manager")) {
-    return ROLES.manager;
-  }
-
-  return ROLES.staff;
-}
+import { getBookingRoleFromPath } from "../../bookings/utils/bookingMapper";
 
 export function BookingManagementPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const role = getRoleFromPath(location.pathname);
+  const role = getBookingRoleFromPath(location.pathname);
   const roleConfig = BOOKING_ROLE_CONFIG[role];
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -66,7 +55,7 @@ export function BookingManagementPage() {
           .toLowerCase()
           .includes(normalizedQuery);
 
-      if (role === ROLES.staff) {
+      if (role === ROLES.staff || role === ROLES.receptionist) {
         return (
           matchesStatus &&
           matchesQuery &&
@@ -90,7 +79,7 @@ export function BookingManagementPage() {
 
   return (
     <section className="flex min-h-full flex-col gap-4">
-      <div className="overflow-hidden rounded-[24px] bg-white shadow-[0_18px_40px_rgba(94,76,62,0.08)]">
+      {/* <div className="overflow-hidden rounded-[24px] bg-white shadow-[0_18px_40px_rgba(94,76,62,0.08)]">
         <div className="h-3 bg-[image:var(--gradient-accent)]" />
         <div className="grid gap-6 p-5 sm:p-6 md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] md:items-start md:p-8">
           <div className="max-w-full md:max-w-[28rem]">
@@ -120,7 +109,7 @@ export function BookingManagementPage() {
             <p className="mt-4 leading-6">{roleConfig.panelDescription}</p>
           </div>
         </div>
-      </div>
+      </div> */}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {summaryItems.map((item) => (

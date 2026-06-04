@@ -8,9 +8,9 @@ import { ROUTES } from "../../shared/constants/routes";
 import { UserManagementPage } from "../../features/user-management/pages/UserManagementPage";
 import { UserManagementCreatePage } from "../../features/user-management/pages/UserManagementCreatePage";
 import { UserManagementDetailPage } from "../../features/user-management/pages/UserManagementDetailPage";
-import { BookingManagementPage } from "../../features/booking-management/pages/BookingManagementPage";
+import { BookingListPage } from "../../features/bookings/pages/BookingListPage";
 import { BookingManagementCreatePage } from "../../features/booking-management/pages/BookingManagementCreatePage";
-import { BookingManagementDetailPage } from "../../features/booking-management/pages/BookingManagementDetailPage";
+import { AdminBookingDetailPage } from "../../features/bookings/pages/AdminBookingDetailPage";
 
 export const adminRoutes = [
   {
@@ -33,15 +33,15 @@ export const adminRoutes = [
       },
       {
         path: ROUTES.adminBookings,
-        element: <BookingManagementPage />,
+        element: <BookingListPage />,
       },
       {
         path: ROUTES.adminBookingsCreate,
         element: <BookingManagementCreatePage />,
       },
       {
-        path: "/admin/bookings/:bookingId",
-        element: <BookingManagementDetailPage />,
+        path: ROUTES.adminBookingDetail,
+        element: <AdminBookingDetailPage />,
       },
       {
         path: ROUTES.adminUsers,
@@ -52,7 +52,7 @@ export const adminRoutes = [
         element: <UserManagementCreatePage />,
       },
       {
-        path: "/admin/users/:userId",
+        path: ROUTES.adminUserDetail,
         element: <UserManagementDetailPage />,
       },
       {

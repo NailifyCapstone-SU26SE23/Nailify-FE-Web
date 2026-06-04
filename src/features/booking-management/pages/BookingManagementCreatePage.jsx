@@ -1,7 +1,6 @@
 import { CalendarPlus, Save } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ROLES } from "../../../shared/constants/roles";
 import { BookingManagementFormFields } from "../components/BookingManagementFormFields";
 import { BookingManagementHeroCard } from "../components/BookingManagementHeroCard";
 import { BookingManagementSnapshotCard } from "../components/BookingManagementSnapshotCard";
@@ -9,23 +8,15 @@ import {
   BOOKING_ROLE_CONFIG,
   createEmptyBooking,
 } from "../services/mockBookings";
-
-function getRoleFromPath(pathname) {
-  if (pathname.startsWith("/admin")) {
-    return ROLES.admin;
-  }
-
-  if (pathname.startsWith("/manager")) {
-    return ROLES.manager;
-  }
-
-  return ROLES.staff;
-}
+import { getBookingRoleFromPath } from "../../bookings/utils/bookingMapper";
 
 export function BookingManagementCreatePage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const role = useMemo(() => getRoleFromPath(location.pathname), [location.pathname]);
+  const role = useMemo(
+    () => getBookingRoleFromPath(location.pathname),
+    [location.pathname],
+  );
   const roleConfig = BOOKING_ROLE_CONFIG[role];
   const [formValues, setFormValues] = useState(createEmptyBooking);
 
