@@ -8,6 +8,7 @@ export const ROUTES = {
   staffRoot: "/staff",
   receptionistRoot: "/receptionist",
   staffDashboard: "/staff/dashboard",
+  receptionistDashboard: "/receptionist/dashboard",
   staffBookings: "/staff/bookings",
   staffBookingsCreate: "/staff/bookings/create",
   staffBookingDetail: "/staff/bookings/:bookingId",

@@ -3,18 +3,18 @@ import { DashboardLayout } from "../layouts/DashboardLayout";
 import { StaffDashboardPage } from "../../features/dashboard/pages/StaffDashboardPage";
 import { BookingListPage } from "../../features/booking-management/pages/BookingListPage";
 import { BookingCreatePage } from "../../features/booking-management/pages/BookingCreatePage";
-import { StaffBookingDetailPage } from "../../features/booking-management/pages/StaffBookingDetailPage";
+import { ReceptionistBookingDetailPage } from "../../features/booking-management/pages/ReceptionistBookingDetailPage";
 import { AuthGuard } from "../../shared/guards/AuthGuard";
 import { RoleGuard } from "../../shared/guards/RoleGuard";
 import { ROLES } from "../../shared/constants/roles";
 import { ROUTES } from "../../shared/constants/routes";
 
-export const staffRoutes = [
+export const receptionistRoutes = [
   {
-    path: ROUTES.staffRoot,
+    path: ROUTES.receptionistRoot,
     element: (
       <AuthGuard>
-        <RoleGuard allowedRoles={[ROLES.staff]}>
+        <RoleGuard allowedRoles={[ROLES.receptionist]}>
           <DashboardLayout />
         </RoleGuard>
       </AuthGuard>
@@ -22,23 +22,23 @@ export const staffRoutes = [
     children: [
       {
         index: true,
-        element: <Navigate to={ROUTES.staffDashboard} replace />,
+        element: <Navigate to={ROUTES.receptionistDashboard} replace />,
       },
       {
-        path: ROUTES.staffDashboard,
+        path: ROUTES.receptionistDashboard,
         element: <StaffDashboardPage />,
       },
       {
-        path: ROUTES.staffBookings,
+        path: ROUTES.receptionistBookings,
         element: <BookingListPage />,
       },
       {
-        path: ROUTES.staffBookingsCreate,
+        path: ROUTES.receptionistBookingsCreate,
         element: <BookingCreatePage />,
       },
       {
-        path: ROUTES.staffBookingDetail,
-        element: <StaffBookingDetailPage />,
+        path: ROUTES.receptionistBookingDetail,
+        element: <ReceptionistBookingDetailPage />,
       },
     ],
   },

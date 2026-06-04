@@ -44,7 +44,7 @@ export const MENU_CONFIG = {
     {
       key: "receptionist-dashboard",
       label: "Dashboard",
-      to: ROUTES.staffDashboard,
+      to: ROUTES.receptionistDashboard,
       icon: "dashboard",
       section: "Main",
     },
