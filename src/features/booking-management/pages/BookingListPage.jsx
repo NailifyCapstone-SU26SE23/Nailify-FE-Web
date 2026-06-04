@@ -1,10 +1,4 @@
-import {
-  ArrowRight,
-  CalendarClock,
-  // ClipboardList,
-  Search,
-  UserPlus,
-} from "lucide-react";
+import { ArrowRight, CalendarClock, Search, UserPlus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ROLES } from "../../../shared/constants/roles";
@@ -15,9 +9,9 @@ import {
   BOOKING_STATUS_STYLES,
   BOOKING_SUMMARY_BY_ROLE,
 } from "../services/mockBookings";
-import { getBookingRoleFromPath } from "../../bookings/utils/bookingMapper";
+import { getBookingRoleFromPath } from "../utils/bookingMapper";
 
-export function BookingManagementPage() {
+export function BookingListPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const role = getBookingRoleFromPath(location.pathname);
@@ -79,38 +73,6 @@ export function BookingManagementPage() {
 
   return (
     <section className="flex min-h-full flex-col gap-4">
-      {/* <div className="overflow-hidden rounded-[24px] bg-white shadow-[0_18px_40px_rgba(94,76,62,0.08)]">
-        <div className="h-3 bg-[image:var(--gradient-accent)]" />
-        <div className="grid gap-6 p-5 sm:p-6 md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] md:items-start md:p-8">
-          <div className="max-w-full md:max-w-[28rem]">
-            <p className="text-sm uppercase tracking-[0.24em] text-[#d45b9f]">
-              {roleConfig.badge}
-            </p>
-            <h2 className="mt-3 text-2xl font-semibold text-[var(--color-ink)] sm:text-3xl">
-              {roleConfig.title}
-            </h2>
-            <p className="mt-3 text-base leading-8 text-[var(--color-muted)]">
-              {roleConfig.description}
-            </p>
-          </div>
-
-          <div className="rounded-[24px] bg-[linear-gradient(180deg,#fff5f9_0%,#fff8e8_100%)] p-4 text-sm text-[var(--color-muted)] shadow-[0_14px_30px_rgba(94,76,62,0.06)] sm:p-5">
-            <div className="flex items-center gap-3 text-[var(--color-ink)]">
-              <div className="rounded-2xl bg-white p-3 shadow-[0_12px_24px_rgba(94,76,62,0.08)]">
-                <ClipboardList size={18} className="text-[#d45b9f]" />
-              </div>
-              <div>
-                <p className="font-semibold">{roleConfig.panelTitle}</p>
-                <p className="text-xs uppercase tracking-[0.14em] text-[#d45b9f]">
-                  {roleConfig.permissionLabel}
-                </p>
-              </div>
-            </div>
-            <p className="mt-4 leading-6">{roleConfig.panelDescription}</p>
-          </div>
-        </div>
-      </div> */}
-
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {summaryItems.map((item) => (
           <article
@@ -138,7 +100,6 @@ export function BookingManagementPage() {
               {roleConfig.listHeading}
             </h3>
           </div>
-
           <Link
             to={roleConfig.createRoute}
             className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-4 py-3 text-sm font-semibold text-white shadow-[0_14px_26px_rgba(239,93,180,0.24)] transition hover:scale-[1.01] sm:w-auto"
@@ -232,14 +193,14 @@ export function BookingManagementPage() {
 
               <div className="mt-3 flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="truncate text-sm text-[var(--color-muted)]">
-                    {booking.branch}
-                  </p>
                   <span
                     className={`mt-2 inline-flex rounded-full px-3 py-1 text-xs font-semibold ${BOOKING_STATUS_STYLES[booking.status]}`}
                   >
                     {booking.status}
                   </span>
+                  <p className="mt-2 truncate text-sm text-[var(--color-muted)]">
+                    {booking.branch}
+                  </p>
                 </div>
                 <Link
                   to={roleConfig.getDetailRoute(booking.id)}

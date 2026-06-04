@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { PropTypes } from "../../../shared/utils/propTypes";
 
-export function BookingManagementHeroCard({
+export function BookingHeroCard({
   backLabel,
   backTo,
   badge,
@@ -33,7 +33,6 @@ export function BookingManagementHeroCard({
             {description}
           </p>
         </div>
-
         <div className="rounded-[24px] bg-[linear-gradient(180deg,#fff5f9_0%,#fff8e8_100%)] p-4 text-sm text-[var(--color-muted)] shadow-[0_14px_30px_rgba(94,76,62,0.06)] sm:p-5 md:max-w-[22rem]">
           <div className="flex items-center gap-3 text-[var(--color-ink)]">
             <div className="rounded-2xl bg-white p-3 shadow-[0_12px_24px_rgba(94,76,62,0.08)]">
@@ -53,7 +52,7 @@ export function BookingManagementHeroCard({
   );
 }
 
-BookingManagementHeroCard.propTypes = {
+BookingHeroCard.propTypes = {
   backLabel: PropTypes.string.isRequired,
   backTo: PropTypes.string.isRequired,
   badge: PropTypes.string.isRequired,

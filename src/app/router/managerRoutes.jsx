@@ -1,9 +1,9 @@
 import { Navigate } from "react-router-dom";
 import { DashboardLayout } from "../layouts/DashboardLayout";
 import { ManagerDashboardPage } from "../../features/dashboard/pages/ManagerDashboardPage";
-import { BookingListPage } from "../../features/bookings/pages/BookingListPage";
-import { BookingManagementCreatePage } from "../../features/booking-management/pages/BookingManagementCreatePage";
-import { ManagerBookingDetailPage } from "../../features/bookings/pages/ManagerBookingDetailPage";
+import { BookingListPage } from "../../features/booking-management/pages/BookingListPage";
+import { BookingCreatePage } from "../../features/booking-management/pages/BookingCreatePage";
+import { ManagerBookingDetailPage } from "../../features/booking-management/pages/ManagerBookingDetailPage";
 import { AuthGuard } from "../../shared/guards/AuthGuard";
 import { RoleGuard } from "../../shared/guards/RoleGuard";
 import { ROLES } from "../../shared/constants/roles";
@@ -34,7 +34,7 @@ export const managerRoutes = [
       },
       {
         path: ROUTES.managerBookingsCreate,
-        element: <BookingManagementCreatePage />,
+        element: <BookingCreatePage />,
       },
       {
         path: ROUTES.managerBookingDetail,

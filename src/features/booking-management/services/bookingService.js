@@ -2,11 +2,8 @@ import {
   BOOKING_ROLE_CONFIG,
   BOOKING_ROWS,
   BOOKING_SUMMARY_BY_ROLE,
-  BOOKING_STATUS_FILTERS,
-  BOOKING_STATUS_STYLES,
-  createEmptyBooking,
   getMockBookingById,
-} from "../../booking-management/services/mockBookings";
+} from "./mockBookings";
 import { ROLES } from "../../../shared/constants/roles";
 import {
   ROUTES,
@@ -73,9 +70,8 @@ export function getBookings() {
 export function getBookingById(bookingId) {
   return getMockBookingById(bookingId);
 }
-
 export {
   BOOKING_STATUS_FILTERS,
   BOOKING_STATUS_STYLES,
   createEmptyBooking,
-};
+} from "./mockBookings";

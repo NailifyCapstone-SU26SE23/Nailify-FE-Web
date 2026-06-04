@@ -8,9 +8,9 @@ import { ROUTES } from "../../shared/constants/routes";
 import { UserManagementPage } from "../../features/user-management/pages/UserManagementPage";
 import { UserManagementCreatePage } from "../../features/user-management/pages/UserManagementCreatePage";
 import { UserManagementDetailPage } from "../../features/user-management/pages/UserManagementDetailPage";
-import { BookingListPage } from "../../features/bookings/pages/BookingListPage";
-import { BookingManagementCreatePage } from "../../features/booking-management/pages/BookingManagementCreatePage";
-import { AdminBookingDetailPage } from "../../features/bookings/pages/AdminBookingDetailPage";
+import { BookingListPage } from "../../features/booking-management/pages/BookingListPage";
+import { BookingCreatePage } from "../../features/booking-management/pages/BookingCreatePage";
+import { AdminBookingDetailPage } from "../../features/booking-management/pages/AdminBookingDetailPage";
 
 export const adminRoutes = [
   {
@@ -37,7 +37,7 @@ export const adminRoutes = [
       },
       {
         path: ROUTES.adminBookingsCreate,
-        element: <BookingManagementCreatePage />,
+        element: <BookingCreatePage />,
       },
       {
         path: ROUTES.adminBookingDetail,
