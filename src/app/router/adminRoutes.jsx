@@ -11,6 +11,9 @@ import { UserManagementDetailPage } from "../../features/user-management/pages/U
 import { BookingListPage } from "../../features/booking-management/pages/BookingListPage";
 import { BookingCreatePage } from "../../features/booking-management/pages/BookingCreatePage";
 import { AdminBookingDetailPage } from "../../features/booking-management/pages/AdminBookingDetailPage";
+import { NailDesignManagementPage } from "../../features/nails-design-management/pages/NailDesignManagementPage";
+import { NailDesignManagementCreatePage } from "../../features/nails-design-management/pages/NailDesignManagementCreatePage";
+import { NailDesignManagementDetailPage } from "../../features/nails-design-management/pages/NailDesignManagementDetailPage";
 
 export const adminRoutes = [
   {
@@ -46,6 +49,18 @@ export const adminRoutes = [
       {
         path: ROUTES.adminUsers,
         element: <UserManagementPage />,
+      },
+      {
+        path: ROUTES.adminNailDesigns,
+        element: <NailDesignManagementPage />,
+      },
+      {
+        path: ROUTES.adminNailDesignsCreate,
+        element: <NailDesignManagementCreatePage />,
+      },
+      {
+        path: ROUTES.adminNailDesignDetail,
+        element: <NailDesignManagementDetailPage />,
       },
       {
         path: ROUTES.adminUsersCreate,

@@ -1,5 +1,43 @@
 import { ROUTES } from "./routes";
 import { ROLES } from "./roles";
+import { BOOKING_ROWS } from "../../features/booking-management/services/mockBookings";
+import { NAIL_DESIGN_ROWS } from "../../features/nails-design-management/services/mockNailDesigns";
+import { USER_ROWS } from "../../features/user-management/services/mockUsers";
+
+const STAFF_BOOKING_NAMES = ["Ariana Vo", "Bao Tran", "Linh Pham"];
+const MANAGER_BOOKING_BRANCHES = ["District 1 Salon", "District 3 Salon"];
+
+function getBookingCountByRole(role) {
+  if (role === ROLES.staff || role === ROLES.receptionist) {
+    return BOOKING_ROWS.filter((booking) =>
+      STAFF_BOOKING_NAMES.includes(booking.staffName),
+    ).length;
+  }
+
+  if (role === ROLES.manager) {
+    return BOOKING_ROWS.filter((booking) =>
+      MANAGER_BOOKING_BRANCHES.includes(booking.branch),
+    ).length;
+  }
+
+  return BOOKING_ROWS.length;
+}
+
+function getMenuBadge(itemKey, role) {
+  switch (itemKey) {
+    case "staff-bookings":
+    case "receptionist-bookings":
+    case "manager-bookings":
+    case "admin-bookings":
+      return String(getBookingCountByRole(role));
+    case "admin-users":
+      return String(USER_ROWS.length);
+    case "admin-nail-designs":
+      return String(NAIL_DESIGN_ROWS.length);
+    default:
+      return null;
+  }
+}
 
 export const MENU_CONFIG = {
   [ROLES.staff]: [
@@ -176,6 +214,13 @@ export const MENU_CONFIG = {
       section: "Main",
     },
     {
+      key: "admin-nail-designs",
+      label: "Nail Designs",
+      to: ROUTES.adminNailDesigns,
+      icon: "palette",
+      section: "Main",
+    },
+    {
       key: "admin-analytics",
       label: "Analytics",
       icon: "analytics",
@@ -206,3 +251,21 @@ export const MENU_CONFIG = {
     },
   ],
 };
+
+export function getMenuConfig(role) {
+  const menus = MENU_CONFIG[role] ?? [];
+
+  return menus.map((item) => {
+    const badge = getMenuBadge(item.key, role);
+
+    if (badge === null) {
+      const { badge: _badge, ...menuItem } = item;
+      return menuItem;
+    }
+
+    return {
+      ...item,
+      badge,
+    };
+  });
+}
