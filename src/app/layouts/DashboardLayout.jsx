@@ -6,6 +6,7 @@ import {
   LogOut,
   MapPin,
   MessageSquareWarning,
+  Palette,
   Settings,
   Star,
   Store,
@@ -13,13 +14,14 @@ import {
 } from "lucide-react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../../features/auth/hooks/useAuth";
-import { MENU_CONFIG } from "../../shared/constants/menuConfig";
+import { getMenuConfig } from "../../shared/constants/menuConfig";
 import { PropTypes } from "../../shared/utils/propTypes";
 
 const ICON_MAP = {
   analytics: BarChart3,
   calendar: CalendarDays,
   dashboard: LayoutDashboard,
+  palette: Palette,
   reviews: Star,
   settings: Settings,
   store: Store,
@@ -162,7 +164,7 @@ SidebarItem.propTypes = {
 export function DashboardLayout() {
   const { user, logout } = useAuth();
   const location = useLocation();
-  const menus = MENU_CONFIG[user?.role] ?? [];
+  const menus = getMenuConfig(user?.role);
   const menuGroups = groupMenusBySection(menus);
   const profileName = user?.fullName ?? "Nailify User";
   const profileRole = getRoleLabel(user?.role);
