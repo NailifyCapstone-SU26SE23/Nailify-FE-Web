@@ -11,6 +11,7 @@ import {
   UserRound,
   Users,
 } from "lucide-react";
+import { PropTypes } from "../../../shared/utils/propTypes";
 
 const metricCards = [
   {
@@ -69,9 +70,38 @@ const metricCards = [
   },
 ];
 
-const revenueTrend = [24, 31, 45, 52, 64, 78, 84, 86];
-const bookingBars = [56, 71, 64, 79, 83, 60, 74];
-const peakBars = [18, 24, 38, 61, 76, 84, 88, 79, 58, 44, 27];
+const revenueTrend = [
+  ["Jan", 24],
+  ["Feb", 31],
+  ["Mar", 45],
+  ["Apr", 52],
+  ["May", 64],
+  ["Jun", 78],
+  ["Jul", 84],
+  ["Aug", 86],
+];
+const bookingBars = [
+  ["Mo", 56],
+  ["Tu", 71],
+  ["We", 64],
+  ["Th", 79],
+  ["Fr", 83],
+  ["Sa", 60],
+  ["Su", 74],
+];
+const peakBars = [
+  ["9a", 18],
+  ["10", 24],
+  ["11", 38],
+  ["12", 61],
+  ["1pm", 76],
+  ["2", 84],
+  ["3", 88],
+  ["4", 79],
+  ["5", 58],
+  ["6", 44],
+  ["7", 27],
+];
 
 const healthItems = [
   ["API Server", 98, "#4cbf6a"],
@@ -193,6 +223,11 @@ function Card({ className = "", children }) {
   );
 }
 
+Card.propTypes = {
+  className: PropTypes.string,
+  children: PropTypes.node,
+};
+
 function SectionHeading({ title, subtitle, badge }) {
   return (
     <div className="flex items-start justify-between gap-3">
@@ -209,6 +244,12 @@ function SectionHeading({ title, subtitle, badge }) {
   );
 }
 
+SectionHeading.propTypes = {
+  title: PropTypes.string.isRequired,
+  subtitle: PropTypes.string,
+  badge: PropTypes.string,
+};
+
 function ProgressRow({ label, value, color = "bg-[#ea4f93]" }) {
   return (
     <div className="space-y-1.5">
@@ -223,13 +264,25 @@ function ProgressRow({ label, value, color = "bg-[#ea4f93]" }) {
   );
 }
 
+ProgressRow.propTypes = {
+  label: PropTypes.string.isRequired,
+  value: PropTypes.number.isRequired,
+  color: PropTypes.string,
+};
+
+function getStatusTone(status) {
+  switch (status) {
+    case "Busy":
+      return "bg-[#fff0dd] text-[#db8520]";
+    case "Closed":
+      return "bg-[#ffe6ec] text-[#e1447f]";
+    default:
+      return "bg-[#e9faef] text-[#30a05f]";
+  }
+}
+
 function StatusBadge({ status }) {
-  const tone =
-    status === "Busy"
-      ? "bg-[#fff0dd] text-[#db8520]"
-      : status === "Closed"
-        ? "bg-[#ffe6ec] text-[#e1447f]"
-        : "bg-[#e9faef] text-[#30a05f]";
+  const tone = getStatusTone(status);
 
   return (
     <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${tone}`}>
@@ -237,6 +290,10 @@ function StatusBadge({ status }) {
     </span>
   );
 }
+
+StatusBadge.propTypes = {
+  status: PropTypes.string.isRequired,
+};
 
 export function AdminDashboardPage() {
   return (
@@ -280,8 +337,8 @@ export function AdminDashboardPage() {
                 badge="2025"
               />
               <div className="mt-6 flex h-44 items-end gap-3 rounded-[20px] bg-[linear-gradient(180deg,#fff8fb_0%,#fffdfd_100%)] px-3 py-4">
-                {revenueTrend.map((value, index) => (
-                  <div key={index} className="flex flex-1 flex-col items-center justify-end gap-2">
+                {revenueTrend.map(([month, value], index) => (
+                  <div key={month} className="flex flex-1 flex-col items-center justify-end gap-2">
                     <div className="relative w-full flex-1">
                       <div className="absolute bottom-0 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-[#ea4f93]" style={{ bottom: `${value}%` }} />
                       {index < revenueTrend.length - 1 ? (
@@ -290,14 +347,12 @@ export function AdminDashboardPage() {
                           style={{
                             bottom: `calc(${value}% + 0.25rem)`,
                             width: "100%",
-                            transform: `rotate(${(revenueTrend[index + 1] - value) * -0.55}deg)`,
+                            transform: `rotate(${(revenueTrend[index + 1][1] - value) * -0.55}deg)`,
                           }}
                         />
                       ) : null}
                     </div>
-                    <span className="text-[10px] font-medium text-[#c9a2b5]">
-                      {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug"][index]}
-                    </span>
+                    <span className="text-[10px] font-medium text-[#c9a2b5]">{month}</span>
                   </div>
                 ))}
               </div>
@@ -310,8 +365,8 @@ export function AdminDashboardPage() {
                 badge="This Week"
               />
               <div className="mt-6 flex h-44 items-end gap-3 rounded-[20px] bg-[linear-gradient(180deg,#fff8fb_0%,#fffdfd_100%)] px-4 py-4">
-                {bookingBars.map((value, index) => (
-                  <div key={index} className="flex flex-1 items-end gap-1">
+                {bookingBars.map(([day, value]) => (
+                  <div key={day} className="flex flex-1 items-end gap-1">
                     <div
                       className="w-1/2 rounded-t-full bg-[#ea4f93]"
                       style={{ height: `${value}%` }}
@@ -324,7 +379,7 @@ export function AdminDashboardPage() {
                 ))}
               </div>
               <div className="mt-3 grid grid-cols-7 text-center text-[10px] font-medium text-[#c9a2b5]">
-                {["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map((day) => (
+                {bookingBars.map(([day]) => (
                   <span key={day}>{day}</span>
                 ))}
               </div>
@@ -375,15 +430,13 @@ export function AdminDashboardPage() {
                 badge="Weekdays"
               />
               <div className="mt-6 flex h-44 items-end gap-2 rounded-[20px] bg-[linear-gradient(180deg,#fff8fb_0%,#fffdfd_100%)] px-4 py-4">
-                {peakBars.map((value, index) => (
-                  <div key={index} className="flex flex-1 flex-col items-center justify-end gap-2">
+                {peakBars.map(([time, value], index) => (
+                  <div key={time} className="flex flex-1 flex-col items-center justify-end gap-2">
                     <div
                       className={`w-full rounded-t-full ${index === 6 ? "bg-[#cf3f89]" : "bg-[#f48ab7]"}`}
                       style={{ height: `${value}%` }}
                     />
-                    <span className="text-[10px] font-medium text-[#c9a2b5]">
-                      {["9a", "10", "11", "12", "1pm", "2", "3", "4", "5", "6", "7"][index]}
-                    </span>
+                    <span className="text-[10px] font-medium text-[#c9a2b5]">{time}</span>
                   </div>
                 ))}
               </div>
@@ -489,8 +542,8 @@ export function AdminDashboardPage() {
                     <h4 className="mt-4 font-extrabold text-[#3e2341]">{name}</h4>
                     <p className="mt-1 text-xs text-[#be89a4]">{branch}</p>
                     <div className="mt-2 flex items-center justify-center gap-1 text-[#ff5b98]">
-                      {Array.from({ length: 5 }).map((_, starIndex) => (
-                        <Star key={starIndex} size={12} fill="currentColor" />
+                      {[1, 2, 3, 4, 5].map((starNumber) => (
+                        <Star key={starNumber} size={12} fill="currentColor" />
                       ))}
                       <span className="ml-1 text-[11px] font-bold text-[#d18ca8]">
                         4.{9 - index}

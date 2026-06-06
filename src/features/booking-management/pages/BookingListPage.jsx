@@ -13,6 +13,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ROLES } from "../../../shared/constants/roles";
+import { PropTypes } from "../../../shared/utils/propTypes";
 import {
   BOOKING_ROLE_CONFIG,
   BOOKING_ROWS,
@@ -207,6 +208,16 @@ function MetricCard({ item }) {
   );
 }
 
+MetricCard.propTypes = {
+  item: PropTypes.shape({
+    icon: PropTypes.func.isRequired,
+    iconClassName: PropTypes.string.isRequired,
+    label: PropTypes.string.isRequired,
+    note: PropTypes.string.isRequired,
+    value: PropTypes.string.isRequired,
+  }).isRequired,
+};
+
 function SmallTag({ children, className = "" }) {
   return (
     <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${className}`}>
@@ -214,6 +225,11 @@ function SmallTag({ children, className = "" }) {
     </span>
   );
 }
+
+SmallTag.propTypes = {
+  children: PropTypes.node,
+  className: PropTypes.string,
+};
 
 function formatDateLabel(dateValue) {
   const parts = dateValue.split("-");

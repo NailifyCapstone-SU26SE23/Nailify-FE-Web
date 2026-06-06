@@ -15,6 +15,7 @@ import {
   ROUTES,
   getAdminUserDetailRoute,
 } from "../../../shared/constants/routes";
+import { PropTypes } from "../../../shared/utils/propTypes";
 import {
   USER_ROWS,
   USER_STATUS_STYLES,
@@ -164,6 +165,16 @@ function MetricCard({ item }) {
   );
 }
 
+MetricCard.propTypes = {
+  item: PropTypes.shape({
+    icon: PropTypes.func.isRequired,
+    iconClassName: PropTypes.string.isRequired,
+    label: PropTypes.string.isRequired,
+    note: PropTypes.string.isRequired,
+    value: PropTypes.string.isRequired,
+  }).isRequired,
+};
+
 function SmallTag({ children, className = "" }) {
   return (
     <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${className}`}>
@@ -171,6 +182,11 @@ function SmallTag({ children, className = "" }) {
     </span>
   );
 }
+
+SmallTag.propTypes = {
+  children: PropTypes.node,
+  className: PropTypes.string,
+};
 
 export function UserManagementPage() {
   const location = useLocation();

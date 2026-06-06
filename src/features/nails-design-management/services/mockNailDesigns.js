@@ -16,37 +16,28 @@ export const NAIL_DESIGN_SUMMARY = [
   },
 ];
 
-const createMockNailDesign = (
-  id,
-  name,
-  category,
-  collection,
-  status,
-  price,
-  duration,
-  artist,
-  popularity,
-  updatedAt,
-  palette,
-  tags,
-  description,
-  notes,
-) => ({
-  id,
-  name,
-  category,
-  collection,
-  status,
-  price,
-  duration,
-  artist,
-  popularity,
-  updatedAt,
-  palette,
-  tags,
-  description,
-  notes,
-});
+const NAIL_DESIGN_FIELDS = [
+  "id",
+  "name",
+  "category",
+  "collection",
+  "status",
+  "price",
+  "duration",
+  "artist",
+  "popularity",
+  "updatedAt",
+  "palette",
+  "tags",
+  "description",
+  "notes",
+];
+
+const createMockNailDesign = (definition) =>
+  NAIL_DESIGN_FIELDS.reduce((design, field, index) => {
+    design[field] = definition[index];
+    return design;
+  }, {});
 
 const NAIL_DESIGN_ROW_DEFINITIONS = [
   [
@@ -180,7 +171,7 @@ const NAIL_DESIGN_ROW_DEFINITIONS = [
 ];
 
 export const NAIL_DESIGN_ROWS = NAIL_DESIGN_ROW_DEFINITIONS.map((definition) =>
-  createMockNailDesign(...definition),
+  createMockNailDesign(definition),
 );
 
 export const NAIL_DESIGN_STATUS_FILTERS = [

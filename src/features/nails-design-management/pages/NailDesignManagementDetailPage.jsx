@@ -3,7 +3,6 @@ import {
   CircleDollarSign,
   Copy,
   Eye,
-  FileImage,
   PencilLine,
   Settings2,
   Sparkles,
@@ -13,8 +12,9 @@ import {
   WandSparkles,
 } from "lucide-react";
 import { useState } from "react";
-import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { Navigate, useParams } from "react-router-dom";
 import { ROUTES } from "../../../shared/constants/routes";
+import { PropTypes } from "../../../shared/utils/propTypes";
 import { getMockNailDesignDetailById } from "../services/mockNailDesigns";
 
 const DESIGN_PREVIEW_IMAGE =
@@ -37,6 +37,13 @@ function SectionCard({ title, subtitle, icon, children }) {
   );
 }
 
+SectionCard.propTypes = {
+  children: PropTypes.node,
+  icon: PropTypes.node.isRequired,
+  subtitle: PropTypes.string,
+  title: PropTypes.string.isRequired,
+};
+
 function Pill({ children, tone = "default" }) {
   const toneMap = {
     default: "border-[#f4c6da] bg-white text-[#8c7085]",
@@ -54,11 +61,16 @@ function Pill({ children, tone = "default" }) {
   );
 }
 
+Pill.propTypes = {
+  children: PropTypes.node,
+  tone: PropTypes.string,
+};
+
 function SkillStars({ count }) {
   return (
     <div className="flex gap-1 text-[#ea4f93]">
-      {Array.from({ length: 5 }).map((_, index) => (
-        <span key={index} className={index < count ? "opacity-100" : "opacity-20"}>
+      {[1, 2, 3, 4, 5].map((starNumber) => (
+        <span key={starNumber} className={starNumber <= count ? "opacity-100" : "opacity-20"}>
           ★
         </span>
       ))}
@@ -66,8 +78,37 @@ function SkillStars({ count }) {
   );
 }
 
+SkillStars.propTypes = {
+  count: PropTypes.number.isRequired,
+};
+
+function getHeroTagTone(index) {
+  if (index < 2) {
+    return "pink";
+  }
+
+  return index % 3 === 0 ? "purple" : "default";
+}
+
+function getProfileValueTone(index) {
+  if (index % 4 === 0) {
+    return "pink";
+  }
+  if (index % 4 === 1) {
+    return "purple";
+  }
+  if (index % 4 === 2) {
+    return "green";
+  }
+
+  return "yellow";
+}
+
+function getComparisonValueTone(label) {
+  return label === "Premium vs Market" ? "text-[#2fa25f]" : "text-[#432744]";
+}
+
 export function NailDesignManagementDetailPage() {
-  const navigate = useNavigate();
   const { designId } = useParams();
   const initialDesign = getMockNailDesignDetailById(designId);
   const [flashMessage, setFlashMessage] = useState("");
@@ -99,14 +140,6 @@ export function NailDesignManagementDetailPage() {
   const handleSave = () => {
     setFlashMessage("Mock update completed. Changes are local to this detail screen.");
     setIsEditing(false);
-  };
-
-  const handleDelete = () => {
-    navigate(ROUTES.adminNailDesigns, {
-      state: {
-        flashMessage: `Mock delete completed for ${formValues.heroTitle || formValues.id}.`,
-      },
-    });
   };
 
   const summaryRows = [
@@ -237,8 +270,8 @@ export function NailDesignManagementDetailPage() {
                   {["Chrome", "Luxury", "Elegant", "Pearl", "Wedding", "Soft Girl", "Luxury"].map(
                     (tag, index) => (
                       <Pill
-                        key={`${tag}-${index}`}
-                        tone={index < 2 ? "pink" : index % 3 === 0 ? "purple" : "default"}
+                        key={`${tag}-${getHeroTagTone(index)}`}
+                        tone={getHeroTagTone(index)}
                       >
                         {tag}
                       </Pill>
@@ -277,7 +310,7 @@ export function NailDesignManagementDetailPage() {
                     {values.map((value, index) => (
                       <Pill
                         key={value}
-                        tone={index % 4 === 0 ? "pink" : index % 4 === 1 ? "purple" : index % 4 === 2 ? "green" : "yellow"}
+                        tone={getProfileValueTone(index)}
                       >
                         {value}
                       </Pill>
@@ -311,7 +344,7 @@ export function NailDesignManagementDetailPage() {
             icon={<Copy size={18} />}
           >
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {formValues.variants.map((variant, index) => (
+              {formValues.variants.map((variant) => (
                 <div key={variant.name} className="rounded-[20px] border border-[#f7d7e5] bg-white p-3 shadow-[0_10px_20px_rgba(236,72,153,0.05)]">
                   <div className="overflow-hidden rounded-[16px] bg-[#f6edf2]">
                     <img
@@ -410,10 +443,10 @@ export function NailDesignManagementDetailPage() {
                 <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
                   <p className="font-bold text-[#432744]">Price Comparison</p>
                   <div className="mt-4 space-y-3 text-sm">
-                    {formValues.pricing.comparison.map(([label, value], index) => (
+                    {formValues.pricing.comparison.map(([label, value]) => (
                       <div key={label} className="flex items-center justify-between gap-3">
                         <span className="text-[#8c7085]">{label}</span>
-                        <span className={`font-semibold ${index === 2 ? "text-[#2fa25f]" : "text-[#432744]"}`}>
+                        <span className={`font-semibold ${getComparisonValueTone(label)}`}>
                           {value}
                         </span>
                       </div>

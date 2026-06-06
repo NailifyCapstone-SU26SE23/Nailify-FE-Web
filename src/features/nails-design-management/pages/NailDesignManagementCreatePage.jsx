@@ -16,6 +16,7 @@ import {
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../../shared/constants/routes";
+import { PropTypes } from "../../../shared/utils/propTypes";
 import {
   NAIL_DESIGN_CATEGORY_OPTIONS,
   NAIL_DESIGN_COLLECTION_OPTIONS,
@@ -245,6 +246,14 @@ function PillButton({
   );
 }
 
+PillButton.propTypes = {
+  active: PropTypes.bool,
+  children: PropTypes.node,
+  className: PropTypes.string,
+  disabled: PropTypes.bool,
+  onClick: PropTypes.func,
+};
+
 function SectionCard({ step, title, subtitle, icon, children }) {
   return (
     <article className="overflow-hidden rounded-[24px] border border-[#f8d3e2] bg-white shadow-[0_14px_34px_rgba(236,72,153,0.06)]">
@@ -267,6 +276,14 @@ function SectionCard({ step, title, subtitle, icon, children }) {
   );
 }
 
+SectionCard.propTypes = {
+  children: PropTypes.node,
+  icon: PropTypes.node.isRequired,
+  step: PropTypes.string.isRequired,
+  subtitle: PropTypes.string.isRequired,
+  title: PropTypes.string.isRequired,
+};
+
 function UploadPanel({ title, subtitle, badge }) {
   return (
     <div className="rounded-[20px] border border-dashed border-[#f6bfd7] bg-[#fff3f8] px-4 py-8 text-center">
@@ -280,17 +297,27 @@ function UploadPanel({ title, subtitle, badge }) {
   );
 }
 
+UploadPanel.propTypes = {
+  badge: PropTypes.string.isRequired,
+  subtitle: PropTypes.string.isRequired,
+  title: PropTypes.string.isRequired,
+};
+
 function SkillStars({ count }) {
   return (
     <div className="flex gap-1 text-[#ea4f93]">
-      {Array.from({ length: 5 }).map((_, index) => (
-        <span key={index} className={index < count ? "opacity-100" : "opacity-25"}>
+      {[1, 2, 3, 4, 5].map((starNumber) => (
+        <span key={starNumber} className={starNumber <= count ? "opacity-100" : "opacity-25"}>
           ★
         </span>
       ))}
     </div>
   );
 }
+
+SkillStars.propTypes = {
+  count: PropTypes.number.isRequired,
+};
 
 function LiveNailReference({ colorTheme, title }) {
   return (
@@ -372,6 +399,15 @@ function LiveNailReference({ colorTheme, title }) {
     </div>
   );
 }
+
+LiveNailReference.propTypes = {
+  colorTheme: PropTypes.shape({
+    accent: PropTypes.string.isRequired,
+    glitter: PropTypes.string.isRequired,
+    nail: PropTypes.string.isRequired,
+  }).isRequired,
+  title: PropTypes.string.isRequired,
+};
 
 export function NailDesignManagementCreatePage() {
   const navigate = useNavigate();
@@ -709,7 +745,7 @@ export function NailDesignManagementCreatePage() {
             <div className="space-y-5">
               {variants.map((variant, index) => (
                 <div
-                  key={`${variant.code}-${index}`}
+                  key={variant.code}
                   className={`rounded-[22px] border p-4 transition ${
                     activeVariantIndex === index
                       ? "border-[#ef6bb4] bg-[#fff0f6] shadow-[0_12px_24px_rgba(236,72,153,0.12)]"
@@ -1094,7 +1130,7 @@ export function NailDesignManagementCreatePage() {
                 ["Pricing configured", "Done"],
                 ["Workflow mapped (9 steps)", "Done"],
                 ["Staff skills configured", "Done"],
-                ["Media assets uploaded", activeVariant.accessory ? "Pending" : "Pending"],
+                ["Media assets uploaded", "Pending"],
               ].map(([label, status]) => (
                 <div
                   key={label}
@@ -1261,7 +1297,7 @@ export function NailDesignManagementCreatePage() {
                 <button
                   key={label}
                   type="button"
-                  onClick={action ?? undefined}
+                  onClick={action || undefined}
                   className="w-full rounded-full border border-[#f4c6da] bg-white px-4 py-2.5 text-left text-xs font-bold text-[#7e6075]"
                 >
                   {label}
