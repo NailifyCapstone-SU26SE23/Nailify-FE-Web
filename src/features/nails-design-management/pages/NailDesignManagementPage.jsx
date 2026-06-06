@@ -1,22 +1,191 @@
-import { ArrowRight, BrushCleaning, Search, Sparkles, UserPlus } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Sparkles,
+  Star,
+  Tag,
+  Upload,
+  WandSparkles,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ROUTES,
   getAdminNailDesignDetailRoute,
 } from "../../../shared/constants/routes";
-import {
-  NAIL_DESIGN_ROWS,
-  NAIL_DESIGN_STATUS_FILTERS,
-  NAIL_DESIGN_STATUS_STYLES,
-  NAIL_DESIGN_SUMMARY,
-} from "../services/mockNailDesigns";
+import { NAIL_DESIGN_ROWS } from "../services/mockNailDesigns";
+
+const SUMMARY_CARDS = [
+  {
+    label: "Total Designs",
+    value: "1,284",
+    note: "+46 this month",
+    icon: Tag,
+    iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
+  },
+  {
+    label: "Active Designs",
+    value: "987",
+    note: "+12 this week",
+    icon: WandSparkles,
+    iconClassName: "bg-[#f3ebff] text-[#8b5cf6]",
+  },
+  {
+    label: "Try-On Ready",
+    value: "642",
+    note: "+23 uploaded",
+    icon: Sparkles,
+    iconClassName: "bg-[#e7fbf4] text-[#23b68b]",
+  },
+  {
+    label: "Most Popular Style",
+    value: "French Ombre",
+    note: "4,821 saves",
+    icon: Star,
+    iconClassName: "bg-[#fff4df] text-[#f5a623]",
+  },
+];
+
+const DESIGN_CARD_PRESETS = [
+  {
+    title: "Nude Minimalist",
+    tags: ["Minimalist", "Everyday", "Clean"],
+    tones: ["Nude"],
+    price: "$28",
+    status: "No Try-On",
+    accent: "bg-[#fff0f5] text-[#eb5a99]",
+  },
+  {
+    title: "French Ombré Bliss",
+    tags: ["Ombré", "Bridal", "Elegant"],
+    tones: ["Pastel"],
+    price: "$48",
+    status: "Try-On Ready",
+    accent: "bg-[#e7fbf4] text-[#23b68b]",
+  },
+  {
+    title: "Chrome Glitter Storm",
+    tags: ["Glitter", "Party", "Bold"],
+    tones: ["Chrome"],
+    price: "$65",
+    status: "Try-On Ready",
+    accent: "bg-[#e7fbf4] text-[#23b68b]",
+  },
+];
+
+const TRENDING_DESIGNS = [
+  ["French Ombré Bliss", "4,821 saves · 2.3k views"],
+  ["Rose Petal Garden", "3,854 saves · 1.9k views"],
+  ["Pastel Rainbow Swirl", "2,987 saves · 7.4k views"],
+  ["Chrome Glitter Storm", "2,438 saves · 6.1k views"],
+];
+
+const MISSING_TRY_ON = [
+  "Nude Minimalist",
+  "Velvet Noir",
+  "Sakura Dream",
+  "Midnight Marble",
+  "Coral Sunset",
+];
+
+const POPULAR_TAGS = [
+  ["Bridal", "bg-[#ffe7ef] text-[#ea4f93]"],
+  ["Elegant", "bg-[#eef2ff] text-[#566ce8]"],
+  ["Spring", "bg-[#eaf9ee] text-[#2fa25f]"],
+  ["Summer", "bg-[#fff4df] text-[#d9871c]"],
+  ["Bold", "bg-[#ffe7ef] text-[#ea4f93]"],
+  ["Minimalist", "bg-[#e7fbf4] text-[#23b68b]"],
+  ["Pastel", "bg-[#f5ecff] text-[#8b5cf6]"],
+  ["Everyday", "bg-[#eaf9ee] text-[#2fa25f]"],
+  ["Glam", "bg-[#ffe7ef] text-[#ea4f93]"],
+  ["Autumn", "bg-[#fff4df] text-[#d9871c]"],
+  ["Chrome", "bg-[#f5ecff] text-[#8b5cf6]"],
+  ["Romantic", "bg-[#ffe7ef] text-[#ea4f93]"],
+  ["3D Art", "bg-[#e7fbf4] text-[#23b68b]"],
+  ["Party", "bg-[#fff4df] text-[#d9871c]"],
+];
+
+const SEASONAL_SUGGESTIONS = [
+  ["Cherry Blossom", "Spring Collection", "Trending", "bg-[#e7fbf4] text-[#23b68b]"],
+  ["Tropical Brights", "Summer Collection", "Upcoming", "bg-[#fff4df] text-[#d9871c]"],
+  ["Harvest Warmth", "Autumn Collection", "Plan Now", "bg-[#ffe7ef] text-[#ea4f93]"],
+];
+
+const DESIGN_PREVIEW_IMAGE =
+  "https://i0.wp.com/greenweddingshoes.com/wp-content/uploads/2025/12/red-cat-eye-christmas-holiday-nails-with-bow.webp?fit=1024%2C9999";
+
+function getPreviewMeta(index) {
+  return DESIGN_CARD_PRESETS[index % DESIGN_CARD_PRESETS.length];
+}
+
+function normalizeDesign(design, index) {
+  const preview = getPreviewMeta(index);
+  const tags = design.tags.split(",").map((item) => item.trim()).filter(Boolean);
+
+  return {
+    ...design,
+    uiTitle: preview.title,
+    uiTags: preview.tags,
+    uiTones: preview.tones,
+    uiPrice: preview.price,
+    uiStatus: preview.status,
+    uiStatusTone: preview.accent,
+    uiTagsAll: tags,
+    initials: design.name
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase(),
+  };
+}
+
+function MetricCard({ item }) {
+  const Icon = item.icon;
+
+  return (
+    <article className="rounded-[18px] border border-[#f8d7e5] bg-white p-4 shadow-[0_10px_24px_rgba(236,72,153,0.06)]">
+      <div className={`inline-flex h-9 w-9 items-center justify-center rounded-xl ${item.iconClassName}`}>
+        <Icon size={16} />
+      </div>
+      <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-[#cd98b1]">
+        {item.label}
+      </p>
+      <p className="mt-1 text-[1.9rem] font-extrabold leading-none text-[#3f2741]">
+        {item.value}
+      </p>
+      <p className="mt-2 text-xs font-medium text-[#21b07b]">{item.note}</p>
+    </article>
+  );
+}
+
+function SmallTag({ children, className = "" }) {
+  return (
+    <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${className}`}>
+      {children}
+    </span>
+  );
+}
+
+function DesignPreview({ design }) {
+  return (
+    <div className="h-52 overflow-hidden rounded-t-[16px] bg-[#f6edf2]">
+      <img
+        src={DESIGN_PREVIEW_IMAGE}
+        alt={design.uiTitle}
+        className="h-full w-full object-cover"
+        loading="lazy"
+        referrerPolicy="no-referrer"
+      />
+    </div>
+  );
+}
 
 export function NailDesignManagementPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
 
   useEffect(() => {
@@ -27,296 +196,255 @@ export function NailDesignManagementPage() {
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
 
+  const designs = useMemo(
+    () => NAIL_DESIGN_ROWS.map((design, index) => normalizeDesign(design, index)),
+    [],
+  );
+
   const filteredDesigns = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    return NAIL_DESIGN_ROWS.filter((design) => {
-      const matchesStatus =
-        statusFilter === "All" || design.status === statusFilter;
-      const matchesQuery =
-        normalizedQuery.length === 0 ||
-        [
-          design.id,
-          design.name,
-          design.category,
-          design.collection,
-          design.artist,
-          design.tags,
-        ]
-          .join(" ")
-          .toLowerCase()
-          .includes(normalizedQuery);
+    if (!normalizedQuery) {
+      return designs;
+    }
 
-      return matchesStatus && matchesQuery;
-    });
-  }, [query, statusFilter]);
+    return designs.filter((design) =>
+      [
+        design.id,
+        design.name,
+        design.uiTitle,
+        design.category,
+        design.collection,
+        design.artist,
+        design.tags,
+        design.uiTagsAll.join(" "),
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalizedQuery),
+    );
+  }, [designs, query]);
 
   return (
-    <section className="flex min-h-full flex-col gap-4">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {NAIL_DESIGN_SUMMARY.map((item) => (
-          <article
-            key={item.label}
-            className="rounded-[22px] bg-white p-5 shadow-[0_14px_30px_rgba(94,76,62,0.06)]"
+    <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)]">
+      <div className="flex flex-col gap-3 rounded-[18px] bg-white/70 p-1 sm:flex-row sm:items-center sm:justify-end">
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
           >
-            <p className="text-sm uppercase tracking-[0.16em] text-[#d45b9f]">
-              {item.label}
-            </p>
-            <p className="mt-3 text-3xl font-semibold">{item.value}</p>
-            <p className="mt-2 text-sm text-[var(--color-muted)]">
-              {item.description}
-            </p>
-          </article>
+            <Tag size={13} className="mr-1.5 inline" />
+            Manage Tags
+          </button>
+          <button
+            type="button"
+            className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
+          >
+            <Plus size={13} className="mr-1.5 inline" />
+            Add Category
+          </button>
+          <button
+            type="button"
+            className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
+          >
+            <Upload size={13} className="mr-1.5 inline" />
+            Upload Try-On Asset
+          </button>
+          <Link
+            to={ROUTES.adminNailDesignsCreate}
+            className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
+          >
+            <Plus size={13} className="mr-1.5 inline" />
+            Add Design
+          </Link>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {SUMMARY_CARDS.map((item) => (
+          <MetricCard key={item.label} item={item} />
         ))}
       </div>
 
-      <article className="rounded-[24px] bg-white p-4 shadow-[0_16px_34px_rgba(94,76,62,0.06)] sm:p-5 md:p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-sm uppercase tracking-[0.18em] text-[#d45b9f]">
-              Design Library
-            </p>
-            <h3 className="mt-2 text-xl font-semibold text-[var(--color-ink)] sm:text-2xl">
-              Nail design catalog
-            </h3>
-          </div>
-
-          <Link
-            to={ROUTES.adminNailDesignsCreate}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-4 py-3 text-sm font-semibold text-white shadow-[0_14px_26px_rgba(239,93,180,0.24)] transition hover:scale-[1.01] sm:w-auto"
-          >
-            <UserPlus size={16} />
-            <span>Create design</span>
-          </Link>
-        </div>
-
-        {flashMessage ? (
-          <div className="mt-6 rounded-[22px] bg-[#edfdf4] px-5 py-4 text-sm font-medium text-[#16975f]">
-            {flashMessage}
-          </div>
-        ) : null}
-
-        <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
-          <div className="rounded-[22px] bg-[linear-gradient(135deg,#fff5f9_0%,#fff9ef_100%)] p-5">
-            <div className="flex items-start gap-3">
-              <div className="rounded-2xl bg-white p-3 text-[#d45b9f] shadow-[0_12px_24px_rgba(94,76,62,0.08)]">
-                <Sparkles size={18} />
-              </div>
-              <div>
-                <p className="font-semibold text-[var(--color-ink)]">
-                  Admin-only merchandising workspace
-                </p>
-                <p className="mt-2 text-sm leading-6 text-[var(--color-muted)]">
-                  Review design readiness, pricing, palette direction, and catalog
-                  visibility before these mock concepts reach booking or marketing flows.
-                </p>
-              </div>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.72fr)_290px]">
+        <div>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-extrabold text-[#432744]">Design Gallery</h3>
+              <p className="mt-1 text-[11px] text-[#c694ad]">
+                Showing {filteredDesigns.length} of 1,284 designs
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93]"
+              >
+                Filter
+              </button>
+              <button
+                type="button"
+                className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93]"
+              >
+                Sort
+              </button>
             </div>
           </div>
 
-          <div className="rounded-[22px] border border-[#f4e4d7] bg-[#fffdfa] p-5">
-            <p className="text-xs uppercase tracking-[0.14em] text-[#b38769]">
-              Catalog pulse
-            </p>
-            <div className="mt-3 flex items-center gap-3">
-              <div className="rounded-2xl bg-[#fff0f5] p-3 text-[#d14c84]">
-                <BrushCleaning size={18} />
-              </div>
-              <div>
-                <p className="font-semibold text-[var(--color-ink)]">
-                  {filteredDesigns.length} designs in view
-                </p>
-                <p className="text-sm text-[var(--color-muted)]">
-                  Based on your current search and status filter.
-                </p>
-              </div>
+          {flashMessage ? (
+            <div className="mb-4 rounded-[16px] bg-[#edfdf4] px-4 py-3 text-sm font-medium text-[#16975f]">
+              {flashMessage}
             </div>
-          </div>
-        </div>
+          ) : null}
 
-        <div className="mt-6 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-          <label className="relative block w-full xl:max-w-md">
+          <label className="relative mb-4 block max-w-md">
             <Search
-              size={16}
-              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#c28c69]"
+              size={15}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#df7baa]"
             />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search by name, category, collection, artist, tags, or ID"
-              className="w-full rounded-full border border-[#f1d7c0] bg-[#fffdfb] py-3 pl-11 pr-4 text-sm text-[var(--color-ink)] outline-none transition focus:border-[#ef6bb4]"
+              placeholder="Search designs, categories, tags..."
+              className="h-10 w-full rounded-full border border-[#f5d7e4] bg-[#fff9fc] pl-10 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
             />
           </label>
 
-          <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 xl:mx-0 xl:flex-wrap xl:overflow-visible xl:px-0 xl:pb-0">
-            {NAIL_DESIGN_STATUS_FILTERS.map((option) => {
-              const isActive = option === statusFilter;
-
-              return (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setStatusFilter(option)}
-                  className={
-                    isActive
-                      ? "shrink-0 rounded-full bg-[var(--color-ink)] px-4 py-2 text-sm font-medium text-white"
-                      : "shrink-0 rounded-full bg-[#fff6f0] px-4 py-2 text-sm font-medium text-[var(--color-muted)] transition hover:bg-[#ffe9d7]"
-                  }
-                >
-                  {option}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="mt-6 space-y-3 md:hidden">
-          {filteredDesigns.map((design) => (
-            <article
-              key={design.id}
-              className="rounded-[22px] border border-[#f4e4d7] bg-[#fffdfa] p-4"
-            >
-              <div className="flex items-start gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#ffe3f0_0%,#fff2cf_100%)] font-semibold text-[#c84b91]">
-                  {design.name
-                    .split(" ")
-                    .slice(0, 2)
-                    .map((part) => part[0])
-                    .join("")}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-[var(--color-ink)]">{design.name}</p>
-                  <p className="mt-1 text-sm text-[var(--color-muted)]">
-                    {design.collection}
-                  </p>
-                  <p className="mt-2 text-xs uppercase tracking-[0.14em] text-[#d45b9f]">
-                    {design.id}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.12em] text-[#b38769]">
-                    Category
-                  </p>
-                  <p className="mt-1 text-[var(--color-ink)]">{design.category}</p>
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-[0.12em] text-[#b38769]">
-                    Artist
-                  </p>
-                  <p className="mt-1 text-[var(--color-muted)]">{design.artist}</p>
-                </div>
-              </div>
-
-              <div className="mt-3 flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm text-[var(--color-muted)]">
-                    {design.price}
-                  </p>
-                  <span
-                    className={`mt-2 inline-flex rounded-full px-3 py-1 text-xs font-semibold ${NAIL_DESIGN_STATUS_STYLES[design.status]}`}
-                  >
-                    {design.status}
-                  </span>
-                </div>
-                <Link
-                  to={getAdminNailDesignDetailRoute(design.id)}
-                  className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[#fff5ef] px-3 py-2 text-sm font-medium text-[var(--color-ink)] transition hover:bg-[#ffe9d7]"
-                >
-                  <span>Manage</span>
-                  <ArrowRight size={14} />
+          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            {filteredDesigns.map((design) => (
+              <article
+                key={design.id}
+                className="overflow-hidden rounded-[18px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(236,72,153,0.12)]"
+              >
+                <Link to={getAdminNailDesignDetailRoute(design.id)} className="block">
+                  <DesignPreview design={design} />
                 </Link>
-              </div>
-            </article>
-          ))}
-        </div>
-
-        <div className="mt-6 hidden overflow-hidden rounded-[22px] border border-[#f4e4d7] md:block">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-[#f4e4d7]">
-              <thead className="bg-[#fff8f2]">
-                <tr className="text-left text-xs uppercase tracking-[0.16em] text-[#b38769]">
-                  <th className="px-5 py-4 font-semibold">Design</th>
-                  <th className="px-5 py-4 font-semibold">Category</th>
-                  <th className="px-5 py-4 font-semibold">Price</th>
-                  <th className="px-5 py-4 font-semibold">Artist</th>
-                  <th className="px-5 py-4 font-semibold">Status</th>
-                  <th className="px-5 py-4 font-semibold">Updated</th>
-                  <th className="px-5 py-4 font-semibold">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#f7ebdf] bg-white">
-                {filteredDesigns.map((design) => (
-                  <tr key={design.id} className="align-top">
-                    <td className="px-5 py-4">
-                      <div className="flex items-start gap-3">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#ffe3f0_0%,#fff2cf_100%)] font-semibold text-[#c84b91]">
-                          {design.name
-                            .split(" ")
-                            .slice(0, 2)
-                            .map((part) => part[0])
-                            .join("")}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-[var(--color-ink)]">
-                            {design.name}
-                          </p>
-                          <p className="mt-1 text-sm text-[var(--color-muted)]">
-                            {design.collection}
-                          </p>
-                          <p className="mt-2 text-xs uppercase tracking-[0.14em] text-[#d45b9f]">
-                            {design.id}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4 text-sm text-[var(--color-ink)]">
-                      <p>{design.category}</p>
-                      <p className="mt-1 text-[var(--color-muted)]">
-                        {design.popularity}
-                      </p>
-                    </td>
-                    <td className="px-5 py-4 text-sm text-[var(--color-muted)]">
-                      <p>{design.price}</p>
-                      <p className="mt-1">{design.duration}</p>
-                    </td>
-                    <td className="px-5 py-4 text-sm text-[var(--color-muted)]">
-                      {design.artist}
-                    </td>
-                    <td className="px-5 py-4">
-                      <span
-                        className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${NAIL_DESIGN_STATUS_STYLES[design.status]}`}
-                      >
-                        {design.status}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 text-sm text-[var(--color-muted)]">
-                      {design.updatedAt}
-                    </td>
-                    <td className="px-5 py-4">
+                <div className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
                       <Link
                         to={getAdminNailDesignDetailRoute(design.id)}
-                        className="inline-flex items-center gap-2 rounded-full bg-[#fff5ef] px-3 py-2 text-sm font-medium text-[var(--color-ink)] transition hover:bg-[#ffe9d7]"
+                        className="font-extrabold text-[#432744] transition hover:text-[#ea4f93]"
                       >
-                        <span>Manage</span>
-                        <ArrowRight size={14} />
+                        {design.uiTitle}
                       </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      <p className="mt-1 text-[11px] text-[#c694ad]">{design.id}</p>
+                    </div>
+                    <p className="text-sm font-extrabold text-[#432744]">{design.uiPrice}</p>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {design.uiTags.map((tag, index) => (
+                      <SmallTag
+                        key={`${design.id}-${tag}`}
+                        className={
+                          [
+                            "bg-[#ffe7ef] text-[#ea4f93]",
+                            "bg-[#f5ecff] text-[#8b5cf6]",
+                            "bg-[#fff4df] text-[#d9871c]",
+                          ][index % 3]
+                        }
+                      >
+                        {tag}
+                      </SmallTag>
+                    ))}
+                    {design.uiTones.map((tag) => (
+                      <SmallTag key={`${design.id}-${tag}`} className="bg-[#fff7fb] text-[#c694ad]">
+                        {tag}
+                      </SmallTag>
+                    ))}
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between gap-3">
+                    <SmallTag className={design.uiStatusTone}>{design.uiStatus}</SmallTag>
+                    <div className="flex gap-2">
+                      <Link
+                        to={getAdminNailDesignDetailRoute(design.id)}
+                        className="rounded-full border border-[#f4c6da] bg-white px-3 py-1.5 text-[10px] font-bold text-[#8c7085]"
+                      >
+                        View
+                      </Link>
+                      <Link
+                        to={getAdminNailDesignDetailRoute(design.id)}
+                        className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93]"
+                      >
+                        Edit
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            ))}
           </div>
+
+          {filteredDesigns.length === 0 ? (
+            <div className="mt-4 rounded-[16px] border border-[#f8dce8] bg-[#fffafb] px-5 py-8 text-center text-sm text-[#8a7082]">
+              No nail designs matched the current search.
+            </div>
+          ) : null}
         </div>
 
-        {filteredDesigns.length === 0 ? (
-          <div className="mt-6 rounded-[22px] border border-[#f4e4d7] bg-[#fffdfa] px-5 py-8 text-center text-sm text-[var(--color-muted)]">
-            No nail designs matched the current search and status filter.
-          </div>
-        ) : null}
-      </article>
+        <aside className="space-y-4">
+          <section className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
+            <h3 className="text-sm font-extrabold text-[#432744]">Trending Designs</h3>
+            <div className="mt-4 space-y-4">
+              {TRENDING_DESIGNS.map(([name, meta], index) => (
+                <div key={name} className="flex gap-3">
+                  <span className="w-4 text-xs font-extrabold text-[#ea4f93]">{index + 1}</span>
+                  <div>
+                    <p className="text-sm font-bold text-[#432744]">{name}</p>
+                    <p className="mt-1 text-[11px] text-[#c694ad]">{meta}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
+            <h3 className="text-sm font-extrabold text-[#432744]">Missing Try-On Assets</h3>
+            <div className="mt-4 space-y-3">
+              {MISSING_TRY_ON.map((name) => (
+                <div key={name} className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-medium text-[#6b5668]">{name}</span>
+                  <SmallTag className="bg-[#ffe7ef] text-[#ea4f93]">Upload Needed</SmallTag>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              className="mt-4 w-full rounded-full bg-[image:var(--gradient-accent)] px-4 py-2.5 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
+            >
+              Bulk Upload Assets
+            </button>
+          </section>
+
+          <section className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
+            <h3 className="text-sm font-extrabold text-[#432744]">Popular Tags</h3>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {POPULAR_TAGS.map(([tag, tone]) => (
+                <SmallTag key={tag} className={tone}>
+                  {tag}
+                </SmallTag>
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
+            <h3 className="text-sm font-extrabold text-[#432744]">Seasonal Suggestions</h3>
+            <div className="mt-4 space-y-4">
+              {SEASONAL_SUGGESTIONS.map(([name, collection, badge, tone]) => (
+                <div key={name} className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-bold text-[#432744]">{name}</p>
+                    <p className="mt-1 text-[11px] text-[#c694ad]">{collection}</p>
+                  </div>
+                  <SmallTag className={tone}>{badge}</SmallTag>
+                </div>
+              ))}
+            </div>
+          </section>
+        </aside>
+      </div>
     </section>
   );
 }

@@ -1,11 +1,13 @@
 import {
   BarChart3,
   Bell,
+  Calendar,
   CalendarDays,
   LayoutDashboard,
   LogOut,
   MapPin,
   MessageSquareWarning,
+  Search,
   Palette,
   Settings,
   Star,
@@ -243,13 +245,32 @@ export function DashboardLayout() {
                   {headerContent.description}
                 </p>
               </div>
-              <button
-                type="button"
-                className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#f8c8db] bg-[#fff8fb] text-[#eb5a99] shadow-[0_12px_24px_rgba(235,90,153,0.12)] transition hover:bg-[#fff0f7]"
-                title="Notifications"
-              >
-                <Bell size={18} />
-              </button>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <label className="relative block min-w-[220px] flex-1 sm:w-[260px]">
+                  <Search
+                    size={16}
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#df7baa]"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Search salons, staff..."
+                    className="h-11 w-full rounded-2xl border border-[#f8d5e4] bg-[#fff8fb] pl-11 pr-4 text-sm text-[#5f4a5d] outline-none transition placeholder:text-[#d9a4bf] focus:border-[#ef6bb4]"
+                  />
+                </label>
+                <div className="flex items-center gap-3">
+                  <div className="inline-flex h-11 items-center gap-2 rounded-2xl border border-[#f8d5e4] bg-[#fff8fb] px-4 text-sm font-semibold text-[#eb5a99] shadow-[0_12px_24px_rgba(235,90,153,0.08)]">
+                    <Calendar size={16} />
+                    July 14, 2025
+                  </div>
+                  <button
+                    type="button"
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#f8c8db] bg-[#fff8fb] text-[#eb5a99] shadow-[0_12px_24px_rgba(235,90,153,0.12)] transition hover:bg-[#fff0f7]"
+                    title="Notifications"
+                  >
+                    <Bell size={18} />
+                  </button>
+                </div>
+              </div>
             </div>
           </header>
 
