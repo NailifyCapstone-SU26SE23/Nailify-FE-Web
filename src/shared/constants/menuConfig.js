@@ -4,19 +4,19 @@ import { BOOKING_ROWS } from "../../features/booking-management/services/mockBoo
 import { NAIL_DESIGN_ROWS } from "../../features/nails-design-management/services/mockNailDesigns";
 import { USER_ROWS } from "../../features/user-management/services/mockUsers";
 
-const STAFF_BOOKING_NAMES = ["Ariana Vo", "Bao Tran", "Linh Pham"];
-const MANAGER_BOOKING_BRANCHES = ["District 1 Salon", "District 3 Salon"];
+const STAFF_BOOKING_NAMES = new Set(["Ariana Vo", "Bao Tran", "Linh Pham"]);
+const MANAGER_BOOKING_BRANCHES = new Set(["District 1 Salon", "District 3 Salon"]);
 
 function getBookingCountByRole(role) {
   if (role === ROLES.staff || role === ROLES.receptionist) {
     return BOOKING_ROWS.filter((booking) =>
-      STAFF_BOOKING_NAMES.includes(booking.staffName),
+      STAFF_BOOKING_NAMES.has(booking.staffName),
     ).length;
   }
 
   if (role === ROLES.manager) {
     return BOOKING_ROWS.filter((booking) =>
-      MANAGER_BOOKING_BRANCHES.includes(booking.branch),
+      MANAGER_BOOKING_BRANCHES.has(booking.branch),
     ).length;
   }
 
@@ -259,7 +259,8 @@ export function getMenuConfig(role) {
     const badge = getMenuBadge(item.key, role);
 
     if (badge === null) {
-      const { badge: _badge, ...menuItem } = item;
+      const menuItem = { ...item };
+      delete menuItem.badge;
       return menuItem;
     }
 

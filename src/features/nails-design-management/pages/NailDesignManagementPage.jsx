@@ -13,6 +13,7 @@ import {
   ROUTES,
   getAdminNailDesignDetailRoute,
 } from "../../../shared/constants/routes";
+import { PropTypes } from "../../../shared/utils/propTypes";
 import { NAIL_DESIGN_ROWS } from "../services/mockNailDesigns";
 
 const SUMMARY_CARDS = [
@@ -160,6 +161,16 @@ function MetricCard({ item }) {
   );
 }
 
+MetricCard.propTypes = {
+  item: PropTypes.shape({
+    icon: PropTypes.func.isRequired,
+    iconClassName: PropTypes.string.isRequired,
+    label: PropTypes.string.isRequired,
+    note: PropTypes.string.isRequired,
+    value: PropTypes.string.isRequired,
+  }).isRequired,
+};
+
 function SmallTag({ children, className = "" }) {
   return (
     <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${className}`}>
@@ -167,6 +178,11 @@ function SmallTag({ children, className = "" }) {
     </span>
   );
 }
+
+SmallTag.propTypes = {
+  children: PropTypes.node,
+  className: PropTypes.string,
+};
 
 function DesignPreview({ design }) {
   return (
@@ -181,6 +197,12 @@ function DesignPreview({ design }) {
     </div>
   );
 }
+
+DesignPreview.propTypes = {
+  design: PropTypes.shape({
+    uiTitle: PropTypes.string.isRequired,
+  }).isRequired,
+};
 
 export function NailDesignManagementPage() {
   const location = useLocation();
