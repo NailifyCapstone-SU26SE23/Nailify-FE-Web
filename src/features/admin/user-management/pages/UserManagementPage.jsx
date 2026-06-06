@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ROUTES,
   getAdminUserDetailRoute,
-} from "../../../shared/constants/routes";
+} from "../../../../shared/constants/routes";
 import {
   USER_ROWS,
   USER_STATUS_FILTERS,

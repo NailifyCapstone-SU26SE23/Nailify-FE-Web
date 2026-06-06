@@ -1,5 +1,5 @@
 import { ShieldAlert } from "lucide-react";
-import { PropTypes } from "../../../shared/utils/propTypes";
+import { PropTypes } from "../../../../shared/utils/propTypes";
 import { USER_STATUS_STYLES } from "../services/mockUsers";
 
 export function UserManagementSnapshotCard({ formValues, notice }) {

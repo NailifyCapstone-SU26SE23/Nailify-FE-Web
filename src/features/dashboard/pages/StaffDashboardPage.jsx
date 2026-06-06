@@ -12,7 +12,7 @@ export function StaffDashboardPage() {
           </h2>
           <p className="mt-3 max-w-2xl text-[var(--color-muted)]">
             This is the landing page for the Staff role. You can extend this
-            dashboard with today's bookings, work schedules, and personal KPIs
+            dashboard with today&apos;s bookings, work schedules, and personal KPIs
             inside the `dashboard` feature.
           </p>
         </div>

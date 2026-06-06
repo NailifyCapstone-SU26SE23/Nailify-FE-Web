@@ -1,7 +1,7 @@
 import { Save, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ROUTES } from "../../../shared/constants/routes";
+import { ROUTES } from "../../../../shared/constants/routes";
 import { UserManagementFormFields } from "../components/UserManagementFormFields";
 import { UserManagementHeroCard } from "../components/UserManagementHeroCard";
 import { UserManagementSnapshotCard } from "../components/UserManagementSnapshotCard";

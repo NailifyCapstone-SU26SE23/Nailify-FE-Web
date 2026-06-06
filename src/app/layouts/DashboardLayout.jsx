@@ -10,8 +10,11 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
+import { AdminSidebar } from "../../features/admin/components/AdminSidebar";
+import { SalonManagerSidebar } from "../../features/manager/components/SalonManagerSidebar";
 import { useAuth } from "../../features/auth/hooks/useAuth";
 import { MENU_CONFIG } from "../../shared/constants/menuConfig";
+import { ROLES } from "../../shared/constants/roles";
 import { PropTypes } from "../../shared/utils/propTypes";
 
 const ICON_MAP = {
@@ -85,40 +88,127 @@ SidebarItem.propTypes = {
   }).isRequired,
 };
 
-export function DashboardLayout() {
-  const { user, logout } = useAuth();
-  const menus = MENU_CONFIG[user?.role] ?? [];
+function DashboardHeader({ user, logout }) {
+  return (
+    <header className="shrink-0 rounded-[24px] bg-[var(--color-panel-strong)] px-4 py-4 shadow-[0_18px_40px_rgba(94,76,62,0.08)] md:rounded-[28px] md:px-5">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-[0.24em] text-[#d45b9f]">
+            Nailify Internal
+          </p>
+          <h1 className="text-xl font-semibold capitalize">
+            {user?.role} workspace
+          </h1>
+        </div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+          <div className="text-left sm:text-right">
+            <p className="font-medium">{user?.fullName}</p>
+            <p className="text-sm text-[var(--color-muted)]">{user?.email}</p>
+          </div>
+          <button
+            type="button"
+            onClick={logout}
+            className="inline-flex items-center gap-2 rounded-xl bg-[image:var(--gradient-accent)] px-4 py-2 text-sm font-medium text-white shadow-[0_12px_24px_rgba(242,94,181,0.22)] transition hover:scale-[1.01]"
+          >
+            <LogOut size={16} />
+            <span>Sign out</span>
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+DashboardHeader.propTypes = {
+  logout: PropTypes.func.isRequired,
+  user: PropTypes.shape({
+    email: PropTypes.string,
+    fullName: PropTypes.string,
+    role: PropTypes.string,
+  }),
+};
+
+function AdminDashboardLayout({ user, logout }) {
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  return (
+    <div className="min-h-screen bg-[#f9eef2] text-[var(--color-ink)]">
+      <AdminSidebar
+        collapsed={isSidebarCollapsed}
+        onCollapse={setIsSidebarCollapsed}
+        user={user}
+      />
+
+      <div
+        className={`min-h-screen transition-[margin] duration-200 ${
+          isSidebarCollapsed ? "ml-[80px]" : "ml-[200px]"
+        }`}
+      >
+        <div className="flex min-h-screen flex-col gap-4 p-4 md:p-5">
+          <DashboardHeader user={user} logout={logout} />
+
+          <section className="flex-1 rounded-[24px] bg-[var(--color-panel-strong)] p-4 shadow-[0_18px_40px_rgba(94,76,62,0.08)] md:rounded-[28px] md:p-5">
+            <div className="flex min-h-full flex-col">
+              <Outlet />
+            </div>
+          </section>
+
+          <footer className="shrink-0 rounded-[20px] bg-[rgba(255,252,248,0.9)] px-5 py-4 text-sm text-[var(--color-muted)] shadow-[0_12px_28px_rgba(94,76,62,0.06)] md:rounded-[24px]">
+            Nailify admin console powered by the shared dashboard layout.
+          </footer>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+AdminDashboardLayout.propTypes = {
+  logout: PropTypes.func.isRequired,
+  user: PropTypes.shape({
+    email: PropTypes.string,
+    fullName: PropTypes.string,
+    role: PropTypes.string,
+  }),
+};
+
+function ManagerDashboardLayout({ user }) {
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  return (
+    <div className="min-h-screen bg-[#f9eef2] text-[var(--color-ink)]">
+      <SalonManagerSidebar
+        collapsed={isSidebarCollapsed}
+        onCollapse={setIsSidebarCollapsed}
+        user={user}
+      />
+
+      <div
+        className={`min-h-screen transition-[margin] duration-200 ${
+          isSidebarCollapsed ? "ml-[80px]" : "ml-[200px]"
+        }`}
+      >
+        <div className="p-4 md:p-5">
+          <Outlet />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ManagerDashboardLayout.propTypes = {
+  user: PropTypes.shape({
+    fullName: PropTypes.string,
+    role: PropTypes.string,
+  }),
+};
+
+function RoleDashboardLayout({ user, logout, menus }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   return (
     <main className="min-h-screen p-3 text-[var(--color-ink)] md:p-4 lg:h-screen lg:overflow-hidden">
       <div className="flex min-h-[calc(100vh-1.5rem)] w-full flex-col rounded-[28px] border border-[var(--color-border)] bg-[var(--color-panel)] p-3 shadow-[0_28px_80px_var(--color-shadow)] backdrop-blur-xl md:rounded-[34px] md:p-4 lg:h-full lg:min-h-0">
-        <header className="shrink-0 rounded-[24px] bg-[var(--color-panel-strong)] px-4 py-4 shadow-[0_18px_40px_rgba(94,76,62,0.08)] md:rounded-[28px] md:px-5">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.24em] text-[#d45b9f]">
-                Nailify Internal
-              </p>
-              <h1 className="text-xl font-semibold capitalize">
-                {user?.role} workspace
-              </h1>
-            </div>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-              <div className="text-left sm:text-right">
-                <p className="font-medium">{user?.fullName}</p>
-                <p className="text-sm text-[var(--color-muted)]">{user?.email}</p>
-              </div>
-              <button
-                type="button"
-                onClick={logout}
-                className="inline-flex items-center gap-2 rounded-xl bg-[image:var(--gradient-accent)] px-4 py-2 text-sm font-medium text-white shadow-[0_12px_24px_rgba(242,94,181,0.22)] transition hover:scale-[1.01]"
-              >
-                <LogOut size={16} />
-                <span>Sign out</span>
-              </button>
-            </div>
-          </div>
-        </header>
+        <DashboardHeader user={user} logout={logout} />
 
         <div
           className={`mt-4 grid min-h-0 flex-1 gap-4 ${
@@ -186,11 +276,46 @@ export function DashboardLayout() {
               </div>
             </section>
             <footer className="shrink-0 rounded-[20px] bg-[rgba(255,252,248,0.9)] px-5 py-4 text-sm text-[var(--color-muted)] shadow-[0_12px_28px_rgba(94,76,62,0.06)] md:rounded-[24px]">
-              Nailify internal dashboard layout shared across Staff, Manager, and Admin.
+              Nailify internal dashboard layout shared across Staff and Manager.
             </footer>
           </div>
         </div>
       </div>
     </main>
+  );
+}
+
+RoleDashboardLayout.propTypes = {
+  logout: PropTypes.func.isRequired,
+  menus: PropTypes.arrayOf(
+    PropTypes.shape({
+      disabled: PropTypes.bool,
+      icon: PropTypes.string.isRequired,
+      key: PropTypes.string.isRequired,
+      label: PropTypes.string.isRequired,
+      to: PropTypes.string,
+    }),
+  ).isRequired,
+  user: PropTypes.shape({
+    email: PropTypes.string,
+    fullName: PropTypes.string,
+    role: PropTypes.string,
+  }),
+};
+
+export function DashboardLayout() {
+  const { user, logout } = useAuth();
+  const menus = MENU_CONFIG[user?.role] ?? [];
+
+  if (user?.role === ROLES.admin) {
+    return <AdminDashboardLayout user={user} logout={logout} />;
+  }
+
+  if (user?.role === ROLES.manager) {
+    return <ManagerDashboardLayout user={user} />;
+  }
+
+  return (
+    <RoleDashboardLayout user={user} logout={logout} menus={menus} />
   );
 }

@@ -1,7 +1,7 @@
 import { PencilLine, Save, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
-import { ROUTES } from "../../../shared/constants/routes";
+import { ROUTES } from "../../../../shared/constants/routes";
 import { UserManagementFormFields } from "../components/UserManagementFormFields";
 import { UserManagementHeroCard } from "../components/UserManagementHeroCard";
 import { UserManagementSnapshotCard } from "../components/UserManagementSnapshotCard";
