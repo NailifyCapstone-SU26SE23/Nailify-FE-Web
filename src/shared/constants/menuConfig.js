@@ -1,8 +1,10 @@
 import { ROUTES } from "./routes";
 import { ROLES } from "./roles";
-import { BOOKING_ROWS } from "../../features/booking-management/services/mockBookings";
-import { NAIL_DESIGN_ROWS } from "../../features/nails-design-management/services/mockNailDesigns";
-import { USER_ROWS } from "../../features/user-management/services/mockUsers";
+import { BOOKING_ROWS } from "../../features/core/booking-management/services/mockBookings";
+import { NAIL_DESIGN_ROWS } from "../../features/admin/nails-design-management/services/mockNailDesigns";
+import { SALON_BRANCHES } from "../../features/admin/salon-management/services/mockSalon";
+import { STAFF_TOP_PERFORMERS } from "../../features/admin/staff-management/services/mockStaff";
+import { USER_ROWS } from "../../features/admin/user-management/services/mockUsers";
 
 const STAFF_BOOKING_NAMES = new Set(["Ariana Vo", "Bao Tran", "Linh Pham"]);
 const MANAGER_BOOKING_BRANCHES = new Set(["District 1 Salon", "District 3 Salon"]);
@@ -32,6 +34,10 @@ function getMenuBadge(itemKey, role) {
       return String(getBookingCountByRole(role));
     case "admin-users":
       return String(USER_ROWS.length);
+    case "admin-salons":
+      return String(SALON_BRANCHES.length);
+    case "admin-staff":
+      return String(STAFF_TOP_PERFORMERS.length);
     case "admin-nail-designs":
       return String(NAIL_DESIGN_ROWS.length);
     default:
@@ -40,6 +46,8 @@ function getMenuBadge(itemKey, role) {
 }
 
 export const MENU_CONFIG = {
+
+  //staff
   [ROLES.staff]: [
     {
       key: "staff-dashboard",
@@ -78,6 +86,8 @@ export const MENU_CONFIG = {
       disabled: true,
     },
   ],
+
+  //receptionist
   [ROLES.receptionist]: [
     {
       key: "receptionist-dashboard",
@@ -124,6 +134,7 @@ export const MENU_CONFIG = {
       disabled: true,
     },
   ],
+  //manager
   [ROLES.manager]: [
     {
       key: "manager-dashboard",
@@ -183,6 +194,8 @@ export const MENU_CONFIG = {
       disabled: true,
     },
   ],
+
+  //admin
   [ROLES.admin]: [
     {
       key: "admin-dashboard",
@@ -202,13 +215,20 @@ export const MENU_CONFIG = {
     {
       key: "admin-salons",
       label: "Salons",
+      to: ROUTES.adminSalons,
       icon: "store",
       section: "Main",
-      disabled: true,
+    },
+    {
+      key: "admin-staff",
+      label: "Staff",
+      to: ROUTES.adminStaff,
+      icon: "users",
+      section: "Main",
     },
     {
       key: "admin-users",
-      label: "User Management",
+      label: "Users",
       to: ROUTES.adminUsers,
       icon: "users",
       section: "Main",

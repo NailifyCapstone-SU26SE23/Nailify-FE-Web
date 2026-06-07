@@ -1,11 +1,11 @@
 import { Navigate } from "react-router-dom";
-import { DashboardLayout } from "../layouts/DashboardLayout";
-import { StaffDashboardPage } from "../../features/dashboard/pages/StaffDashboardPage";
-import { BookingListPage } from "../../features/booking-management/pages/BookingListPage";
-import { BookingCreatePage } from "../../features/booking-management/pages/BookingCreatePage";
-import { StaffBookingDetailPage } from "../../features/booking-management/pages/StaffBookingDetailPage";
-import { AuthGuard } from "../../shared/guards/AuthGuard";
-import { RoleGuard } from "../../shared/guards/RoleGuard";
+import { StaffLayout } from "../layouts/StaffLayout";
+import { StaffDashboardPage } from "../../features/core/dashboard/pages/StaffDashboardPage";
+import { BookingListPage } from "../../features/core/booking-management/pages/BookingListPage";
+import { BookingCreatePage } from "../../features/core/booking-management/pages/BookingCreatePage";
+import { BookingDetailPage } from "../../features/core/booking-management/pages/BookingDetailPage";
+import { AuthGuard } from "../../shared/components/guards/AuthGuard";
+import { RoleGuard } from "../../shared/components/guards/RoleGuard";
 import { ROLES } from "../../shared/constants/roles";
 import { ROUTES } from "../../shared/constants/routes";
 
@@ -15,7 +15,7 @@ export const staffRoutes = [
     element: (
       <AuthGuard>
         <RoleGuard allowedRoles={[ROLES.staff]}>
-          <DashboardLayout />
+          <StaffLayout />
         </RoleGuard>
       </AuthGuard>
     ),
@@ -38,7 +38,7 @@ export const staffRoutes = [
       },
       {
         path: ROUTES.staffBookingDetail,
-        element: <StaffBookingDetailPage />,
+        element: <BookingDetailPage />,
       },
     ],
   },
