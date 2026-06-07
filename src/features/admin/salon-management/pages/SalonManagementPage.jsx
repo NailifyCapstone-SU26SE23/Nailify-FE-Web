@@ -228,6 +228,23 @@ CloseIconButton.propTypes = {
   onClick: PropTypes.func.isRequired,
 };
 
+function SmallActionButton({ children, className = "", type = "button" }) {
+  return (
+    <button
+      type={type}
+      className={`inline-flex items-center justify-center rounded-full border border-rose-200 bg-white px-3 py-2 text-[9px] font-bold uppercase tracking-[0.08em] text-rose-500 transition hover:bg-rose-50 ${className}`.trim()}
+    >
+      {children}
+    </button>
+  );
+}
+
+SmallActionButton.propTypes = {
+  children: PropTypes.node.isRequired,
+  className: PropTypes.string,
+  type: PropTypes.string,
+};
+
 export function SalonManagementPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -299,54 +316,6 @@ export function SalonManagementPage() {
 
   return (
     <section className="mx-auto max-w-[1300px] text-slate-700">
-      <header className="mb-5 flex flex-col gap-4 rounded-[28px] bg-white/70 px-5 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-[28px] font-black tracking-tight text-[#cf3d74]">
-            Salon Management
-          </h1>
-          <p className="text-[12px] font-medium text-slate-400">
-            Manage salon branches and locations
-          </p>
-        </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="flex items-center gap-2 rounded-full border border-rose-100 bg-[#fff6f9] px-4 py-2 shadow-inner shadow-rose-50">
-            <Search size={14} className="text-rose-300" />
-            <input
-              type="text"
-              placeholder="Search salons..."
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              className="w-full bg-transparent text-[12px] text-slate-500 outline-none placeholder:text-rose-200 sm:w-48"
-            />
-            {searchTerm || statusFilter !== "All" ? (
-              <button
-                type="button"
-                onClick={clearFilters}
-                className="rounded-full bg-rose-100 p-1 text-rose-500 hover:bg-rose-200"
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            ) : null}
-          </div>
-          <button
-            type="button"
-            className="rounded-full border border-rose-200 bg-white px-4 py-2 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
-          >
-            Set Hours
-          </button>
-          <Link
-            to={ROUTES.adminSalonsCreate}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
-          >
-            <Plus size={14} />
-            Add Salon
-          </Link>
-        </div>
-      </header>
-
       {flashMessage ? (
         <div className="mb-4 rounded-[20px] bg-[#edfdf4] px-4 py-3 text-sm font-medium text-[#16975f] sm:mb-5 sm:px-5 sm:py-4">
           {flashMessage}
@@ -363,54 +332,93 @@ export function SalonManagementPage() {
         <div className="space-y-5">
           <section className="rounded-[28px] bg-white/65 p-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
             <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <h2 className="text-[16px] font-black text-slate-800">Branch Overview</h2>
+              <div>
+                <h2 className="text-[16px] font-black text-slate-800">Branch Overview</h2>
+                <p className="text-[11px] font-medium text-slate-400">
+                  Snapshot cards for the branches matching your current filters
+                </p>
+              </div>
               <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em]">
                 {SALON_STATUS_FILTERS.map((tab) => (
                   <button
                     key={tab}
                     type="button"
                     onClick={() => setStatusFilter(tab)}
-                    className={`rounded-full px-3 py-1.5 ${
-                      statusFilter === tab
-                        ? "bg-rose-500 text-white"
-                        : "bg-[#fff2f6] text-slate-400 hover:bg-rose-100"
-                    }`}
+                    className={`rounded-full px-3 py-1.5 ${statusFilter === tab
+                      ? "bg-rose-500 text-white"
+                      : "bg-[#fff2f6] text-slate-400 hover:bg-rose-100"
+                      }`}
                   >
                     {tab}
                   </button>
                 ))}
               </div>
             </div>
-            <div className="grid gap-4 lg:grid-cols-3">
-              {SALON_BRANCHES.map((branch) => (
-                <BranchCard key={branch.id} branch={branch} />
-              ))}
-            </div>
+            {filteredSalons.length > 0 ? (
+              <div className="grid gap-4 lg:grid-cols-3">
+                {filteredSalons.slice(0, 3).map((branch) => (
+                  <BranchCard key={branch.id} branch={branch} />
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-rose-200 bg-white px-6 py-10 text-center">
+                <p className="text-[14px] font-bold text-slate-700">No branches matched your filters</p>
+                <p className="mt-1 text-[11px] font-medium text-slate-400">
+                  Try a different keyword or switch the status tab.
+                </p>
+              </div>
+            )}
           </section>
 
           <section className="rounded-[28px] bg-white/65 p-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
-            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <h2 className="text-[16px] font-black text-slate-800">All Branches</h2>
+                <h2 className="text-[16px] font-black text-slate-xl">Branch Controls</h2>
                 <p className="text-[11px] font-medium text-slate-400">
                   Showing {filteredSalons.length} of {salons.length} salons
                   {searchTerm ? ` • Search: "${searchTerm}"` : ""}
                   {statusFilter !== "All" ? ` • Status: ${statusFilter}` : ""}
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  className="rounded-full border border-rose-200 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-rose-400"
-                >
-                  Set Holiday Closure
-                </button>
-                <button
-                  type="button"
-                  className="rounded-full border border-rose-200 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-rose-400"
-                >
-                  Assign Manager
-                </button>
+              <div className="flex flex-col gap-3 xl:ml-auto xl:min-w-[620px] xl:items-end">
+                <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+                  <div className="flex items-center gap-2 rounded-full border border-rose-100 bg-white px-4 py-2 shadow-inner shadow-rose-50 sm:w-full sm:max-w-[300px]">
+                    <Search size={14} className="text-rose-300" />
+                    <input
+                      type="text"
+                      placeholder="Search salons..."
+                      value={searchTerm}
+                      onChange={(event) => setSearchTerm(event.target.value)}
+                      className="w-full bg-transparent text-[12px] text-slate-500 outline-none placeholder:text-rose-200"
+                    />
+                    {searchTerm || statusFilter !== "All" ? (
+                      <button
+                        type="button"
+                        onClick={clearFilters}
+                        className="rounded-full bg-rose-100 p-1 text-rose-500 hover:bg-rose-200"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <line x1="18" y1="6" x2="6" y2="18" />
+                          <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      </button>
+                    ) : null}
+                  </div>
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    <Link
+                      to={ROUTES.adminSalonsCreate}
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2 text-[15px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
+                    >
+                      <Plus size={20} />
+                      Add Salon
+                    </Link>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <SmallActionButton >Assign Manager</SmallActionButton>
+                  <SmallActionButton >Holiday Closure</SmallActionButton>
+                  <SmallActionButton >Set Hours</SmallActionButton>
+                </div>
               </div>
             </div>
             <div className="overflow-hidden rounded-2xl border border-rose-100">
