@@ -1,11 +1,11 @@
 import { Navigate } from "react-router-dom";
 import { DashboardLayout } from "../layouts/DashboardLayout";
-import { StaffDashboardPage } from "../../features/dashboard/pages/StaffDashboardPage";
-import { BookingListPage } from "../../features/booking-management/pages/BookingListPage";
-import { BookingCreatePage } from "../../features/booking-management/pages/BookingCreatePage";
-import { ReceptionistBookingDetailPage } from "../../features/booking-management/pages/ReceptionistBookingDetailPage";
-import { AuthGuard } from "../../shared/guards/AuthGuard";
-import { RoleGuard } from "../../shared/guards/RoleGuard";
+import { StaffDashboardPage } from "../../features/core/dashboard/pages/StaffDashboardPage";
+import { BookingListPage } from "../../features/core/booking-management/pages/BookingListPage";
+import { BookingCreatePage } from "../../features/core/booking-management/pages/BookingCreatePage";
+import { BookingDetailPage } from "../../features/core/booking-management/pages/BookingDetailPage";
+import { AuthGuard } from "../../shared/components/guards/AuthGuard";
+import { RoleGuard } from "../../shared/components/guards/RoleGuard";
 import { ROLES } from "../../shared/constants/roles";
 import { ROUTES } from "../../shared/constants/routes";
 
@@ -38,7 +38,7 @@ export const receptionistRoutes = [
       },
       {
         path: ROUTES.receptionistBookingDetail,
-        element: <ReceptionistBookingDetailPage />,
+        element: <BookingDetailPage />,
       },
     ],
   },

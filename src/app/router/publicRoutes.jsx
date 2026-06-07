@@ -1,7 +1,7 @@
 import { Navigate } from "react-router-dom";
 import { PublicLayout } from "../layouts/PublicLayout";
-import { LoginPage } from "../../features/auth/pages/LoginPage";
-import { GuestGuard } from "../../shared/guards/GuestGuard";
+import { LoginPage } from "../../features/core/auth/pages/LoginPage";
+import { GuestGuard } from "../../shared/components/guards/GuestGuard";
 import { ROUTES } from "../../shared/constants/routes";
 
 export const publicRoutes = [
