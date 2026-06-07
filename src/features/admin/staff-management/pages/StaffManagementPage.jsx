@@ -268,6 +268,23 @@ QuickActionButton.propTypes = {
   to: PropTypes.string,
 };
 
+function SmallActionButton({ children, className = "", type = "button" }) {
+  return (
+    <button
+      type={type}
+      className={`inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-rose-500 transition hover:bg-rose-50 ${className}`.trim()}
+    >
+      {children}
+    </button>
+  );
+}
+
+SmallActionButton.propTypes = {
+  children: PropTypes.node.isRequired,
+  className: PropTypes.string,
+  type: PropTypes.string,
+};
+
 function PerformerAvatar({ person }) {
   if (person.image) {
     return (
@@ -351,43 +368,6 @@ export function StaffManagementPage() {
         </div>
       ) : null}
 
-      <header className="mb-5 flex flex-col gap-4 rounded-[28px] bg-white/70 px-5 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-[28px] font-black tracking-tight text-slate-800">
-            Staff Management
-          </h1>
-          <p className="text-[12px] font-medium text-slate-400">
-            Manage staff artists, managers, schedules, and performance
-          </p>
-        </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="flex items-center gap-2 rounded-full border border-rose-100 bg-[#fff6f9] px-4 py-2 shadow-inner shadow-rose-50">
-            <Search size={14} className="text-rose-300" />
-            <input
-              type="text"
-              placeholder="Search staff..."
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              className="w-full bg-transparent text-[12px] text-slate-500 outline-none placeholder:text-rose-200 sm:w-48"
-            />
-          </div>
-          <button
-            type="button"
-            className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
-          >
-            <Download size={13} />
-            Export
-          </button>
-          <Link
-            to={ROUTES.adminStaffCreate}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
-          >
-            <Plus size={14} />
-            Add Staff
-          </Link>
-        </div>
-      </header>
-
       <section className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         {STAFF_SUMMARY.map((item) => (
           <StatCard key={item.label} item={item} />
@@ -396,22 +376,35 @@ export function StaffManagementPage() {
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_290px]">
         <div className="space-y-4">
-          <div className="flex flex-wrap items-center gap-2">
-            {STAFF_FILTER_OPTIONS.map((option) => (
-              <button
-                key={option.key}
-                type="button"
-                onClick={() => setActiveFilter(option.key)}
-                className={`rounded-full px-4 py-2 text-[11px] font-semibold transition ${
-                  activeFilter === option.key
+          <section className="rounded-[24px] bg-white/65 p-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <h2 className="text-[16px] font-black text-slate-800">Roster Filters</h2>
+                <p className="text-[11px] font-medium text-slate-400">
+                  Narrow the active team view before reviewing profiles and side panels
+                </p>
+              </div>
+              <span className="text-[11px] font-semibold text-slate-400">
+                {filteredStaff.length} profiles matched
+              </span>
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              {STAFF_FILTER_OPTIONS.map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  onClick={() => setActiveFilter(option.key)}
+                  className={`rounded-full px-4 py-2 text-[11px] font-semibold transition ${activeFilter === option.key
                     ? "bg-rose-500 text-white shadow-[0_6px_14px_rgba(226,93,143,0.28)]"
                     : "bg-white text-slate-500 hover:bg-rose-50"
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
+                    }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </section>
 
           <section className="rounded-[24px] bg-white/65 p-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
             <div className="mb-4 flex items-center justify-between gap-3">
@@ -421,12 +414,42 @@ export function StaffManagementPage() {
                   Top performers, managers, and active team members
                 </p>
               </div>
-              <button
-                type="button"
-                className="shrink-0 text-[11px] font-bold text-rose-400 transition hover:text-rose-500"
-              >
-                View All Profiles
-              </button>
+              <div className="flex flex-col gap-3 items-end">
+                <div className="flex flex-col gap-3 xl:min-w-[620px] xl:flex-row xl:items-center xl:justify-end">
+                  <div className="flex items-center gap-2 rounded-full border border-rose-100 bg-white px-4 py-2 shadow-inner shadow-rose-50 xl:min-w-[260px]">
+                    <Search size={14} className="text-rose-300" />
+                    <input
+                      type="text"
+                      placeholder="Search staff..."
+                      value={searchTerm}
+                      onChange={(event) => setSearchTerm(event.target.value)}
+                      className="w-full bg-transparent text-[12px] text-slate-500 outline-none placeholder:text-rose-200"
+                    />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Link
+                      to={ROUTES.adminStaffCreate}
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2 text-[15px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
+                    >
+                      <Plus size={20} />
+                      Add Staff
+                    </Link>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="shrink-0 text-[11px] font-bold text-rose-400 transition hover:text-rose-500"
+                  >
+                    View All Profiles
+                  </button>
+
+                  <SmallActionButton>
+                    <Download size={13} />
+                    Export
+                  </SmallActionButton>
+                </div>
+              </div>
             </div>
 
             {filteredStaff.length > 0 ? (

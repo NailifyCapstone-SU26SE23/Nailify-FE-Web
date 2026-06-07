@@ -90,12 +90,12 @@ function getHeaderContent(pathname, menus) {
       };
     case "admin-salons":
       return {
-        title: "Salons",
+        title: "Salon Management",
         description: "Manage salons, branches, capacity, and operational status.",
       };
     case "admin-staff":
       return {
-        title: "Staff",
+        title: "Staff Management",
         description: "Manage staff profiles, assignments, performance, and availability.",
       };
     case "admin-users":
