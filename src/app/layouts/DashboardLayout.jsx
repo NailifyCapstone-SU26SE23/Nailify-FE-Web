@@ -103,6 +103,11 @@ function getHeaderContent(pathname, menus) {
         title: "Users",
         description: "Manage customers, staff artists, and salon managers.",
       };
+    case "admin-service-pricing":
+      return {
+        title: "Service & Pricing Management",
+        description: "Manage services, add-ons, prices, and estimated durations.",
+      };
     default:
       return {
         title: currentMenu.label,
