@@ -20,6 +20,7 @@ import { BookingDetailPage } from "../../features/core/booking-management/pages/
 import { NailDesignManagementPage } from "../../features/admin/nails-design-management/pages/NailDesignManagementPage";
 import { NailDesignManagementCreatePage } from "../../features/admin/nails-design-management/pages/NailDesignManagementCreatePage";
 import { NailDesignManagementDetailPage } from "../../features/admin/nails-design-management/pages/NailDesignManagementDetailPage";
+import { ServicePricingManagementPage } from "../../features/admin/service-pricing-management/pages/ServicePricingManagementPage";
 
 export const adminRoutes = [
   {
@@ -79,6 +80,10 @@ export const adminRoutes = [
       {
         path: ROUTES.adminUsers,
         element: <UserManagementPage />,
+      },
+      {
+        path: ROUTES.adminServicePricing,
+        element: <ServicePricingManagementPage />,
       },
       {
         path: ROUTES.adminNailDesigns,

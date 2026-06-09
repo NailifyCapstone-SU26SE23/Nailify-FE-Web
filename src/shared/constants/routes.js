@@ -38,6 +38,7 @@ export const ROUTES = {
   adminUsers: "/admin/users",
   adminUsersCreate: "/admin/users/create",
   adminUserDetail: "/admin/users/:userId",
+  adminServicePricing: "/admin/service-pricing",
   adminNailDesigns: "/admin/nail-designs",
   adminNailDesignsCreate: "/admin/nail-designs/create",
   adminNailDesignDetail: "/admin/nail-designs/:designId",
@@ -54,5 +55,6 @@ export const getAdminBookingDetailRoute = (bookingId) =>
 export const getAdminSalonUpdateRoute = (salonId) => `/admin/salons/${salonId}`;
 export const getAdminStaffUpdateRoute = (staffId) => `/admin/staff/${staffId}`;
 export const getAdminUserDetailRoute = (userId) => `/admin/users/${userId}`;
+export const getAdminServicePricingRoute = () => "/admin/service-pricing";
 export const getAdminNailDesignDetailRoute = (designId) =>
   `/admin/nail-designs/${designId}`;
