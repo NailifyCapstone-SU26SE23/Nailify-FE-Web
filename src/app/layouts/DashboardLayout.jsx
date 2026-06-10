@@ -65,12 +65,29 @@ function groupMenusBySection(menus) {
   }, {});
 }
 
+function isBookingDetailPath(pathname, bookingsPath) {
+  const prefix = `${bookingsPath}/`;
+  if (!pathname.startsWith(prefix)) {
+    return false;
+  }
+
+  const segment = pathname.slice(prefix.length);
+  return segment.length > 0 && segment !== "create";
+}
+
 function getHeaderContent(pathname, menus) {
   const currentMenu =
     menus.find((item) => item.to === pathname) ??
     menus.find(
       (item) => item.to && item.to !== "/" && pathname.startsWith(`${item.to}/`),
     );
+
+  if (isBookingDetailPath(pathname, "/manager/bookings")) {
+    return {
+      title: "Booking Detail",
+      description: "Review customer request, pricing layers, and assign staff artist.",
+    };
+  }
 
   if (!currentMenu) {
     return {
@@ -80,8 +97,22 @@ function getHeaderContent(pathname, menus) {
   }
 
   switch (currentMenu.key) {
-    case "admin-bookings":
+    case "manager-dashboard":
+      return {
+        title: "Dashboard",
+        description: "Salon operations overview for your branch today.",
+      };
     case "manager-bookings":
+      return {
+        title: "Booking Management",
+        description: "Manage appointments, confirmations, and scheduling conflicts.",
+      };
+    case "manager-staff":
+      return {
+        title: "Staff Artist Management",
+        description: "Manage staff schedules, skills, ratings, and performance.",
+      };
+    case "admin-bookings":
     case "staff-bookings":
     case "receptionist-bookings":
       return {
@@ -147,7 +178,7 @@ export function DashboardLayout() {
             onLogout={logout}
           />
 
-          <section className="flex-1 bg-white p-4 shadow-[0_18px_40px_rgba(94,76,62,0.08)] md:p-5 lg:min-h-0 lg:overflow-auto">
+          <section className="flex-1 bg-[#fff7fb] p-4 md:p-5 lg:min-h-0 lg:overflow-auto">
             <div className="flex min-h-full flex-col">
               <Outlet />
             </div>

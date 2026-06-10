@@ -22,6 +22,9 @@ export const ROUTES = {
   managerBookings: "/manager/bookings",
   managerBookingsCreate: "/manager/bookings/create",
   managerBookingDetail: "/manager/bookings/:bookingId",
+  managerStaffArtists: "/manager/staff-artists",
+  managerStaffArtistsCreate: "/manager/staff-artists/create",
+  managerStaffArtistsUpdate: "/manager/staff-artists/:staffId",
 
   // Admin routes
   adminRoot: "/admin",
@@ -56,3 +59,5 @@ export const getAdminStaffUpdateRoute = (staffId) => `/admin/staff/${staffId}`;
 export const getAdminUserDetailRoute = (userId) => `/admin/users/${userId}`;
 export const getAdminNailDesignDetailRoute = (designId) =>
   `/admin/nail-designs/${designId}`;
+export const getManagerStaffUpdateRoute = (staffId) =>
+  `/manager/staff-artists/${staffId}`;

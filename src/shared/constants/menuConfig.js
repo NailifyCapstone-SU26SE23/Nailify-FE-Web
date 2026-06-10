@@ -161,9 +161,9 @@ export const MENU_CONFIG = {
     {
       key: "manager-staff",
       label: "Staff Artists",
+      to: ROUTES.managerStaffArtists,
       icon: "users",
       section: "Main",
-      disabled: true,
     },
     {
       key: "manager-customers",
