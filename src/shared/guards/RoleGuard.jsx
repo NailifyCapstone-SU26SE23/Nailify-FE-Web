@@ -1,6 +1,6 @@
 import { Navigate } from "react-router-dom";
-import { useAuth } from "../../features/auth/hooks/useAuth";
-import { getDashboardRouteByRole } from "../../features/auth/utils/getDashboardRouteByRole";
+import { useAuth } from "../../features/core/auth/hooks/useAuth";
+import { getDashboardRouteByRole } from "../../features/core/auth/utils/getDashboardRouteByRole";
 import { PropTypes } from "../utils/propTypes";
 
 export function RoleGuard({ allowedRoles, children }) {

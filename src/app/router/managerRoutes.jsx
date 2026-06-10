@@ -1,8 +1,11 @@
 import { Navigate } from "react-router-dom";
-import { DashboardLayout } from "../layouts/DashboardLayout";
-import { ManagerDashboardPage } from "../../features/dashboard/pages/ManagerDashboardPage";
-import { AuthGuard } from "../../shared/guards/AuthGuard";
-import { RoleGuard } from "../../shared/guards/RoleGuard";
+import { ManagerLayout } from "../layouts/ManagerLayout";
+import { ManagerDashboardPage } from "../../features/core/dashboard/pages/ManagerDashboardPage";
+import { BookingListPage } from "../../features/core/booking-management/pages/BookingListPage";
+import { BookingCreatePage } from "../../features/core/booking-management/pages/BookingCreatePage";
+import { BookingDetailPage } from "../../features/core/booking-management/pages/BookingDetailPage";
+import { AuthGuard } from "../../shared/components/guards/AuthGuard";
+import { RoleGuard } from "../../shared/components/guards/RoleGuard";
 import { ROLES } from "../../shared/constants/roles";
 import { ROUTES } from "../../shared/constants/routes";
 
@@ -12,7 +15,7 @@ export const managerRoutes = [
     element: (
       <AuthGuard>
         <RoleGuard allowedRoles={[ROLES.manager]}>
-          <DashboardLayout />
+          <ManagerLayout />
         </RoleGuard>
       </AuthGuard>
     ),
@@ -24,6 +27,18 @@ export const managerRoutes = [
       {
         path: ROUTES.managerDashboard,
         element: <ManagerDashboardPage />,
+      },
+      {
+        path: ROUTES.managerBookings,
+        element: <BookingListPage />,
+      },
+      {
+        path: ROUTES.managerBookingsCreate,
+        element: <BookingCreatePage />,
+      },
+      {
+        path: ROUTES.managerBookingDetail,
+        element: <BookingDetailPage />,
       },
     ],
   },

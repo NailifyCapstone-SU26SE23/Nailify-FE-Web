@@ -9,6 +9,7 @@ export const PropTypes = {
   bool: createValidator(),
   func: createValidator(),
   node: createValidator(),
+  number: createValidator(),
   oneOfType: () => createValidator(),
   shape: () => createValidator(),
   string: createValidator(),
