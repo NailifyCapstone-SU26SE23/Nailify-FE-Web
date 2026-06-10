@@ -1,13 +1,25 @@
 import { Navigate } from "react-router-dom";
-import { DashboardLayout } from "../layouts/DashboardLayout";
-import { AdminDashboardPage } from "../../features/dashboard/pages/AdminDashboardPage";
-import { AuthGuard } from "../../shared/guards/AuthGuard";
-import { RoleGuard } from "../../shared/guards/RoleGuard";
+import { AdminLayout } from "../layouts/AdminLayout";
+import { AdminDashboardPage } from "../../features/core/dashboard/pages/AdminDashboardPage";
+import { AuthGuard } from "../../shared/components/guards/AuthGuard";
+import { RoleGuard } from "../../shared/components/guards/RoleGuard";
 import { ROLES } from "../../shared/constants/roles";
 import { ROUTES } from "../../shared/constants/routes";
-import { UserManagementPage } from "../../features/user-management/pages/UserManagementPage";
-import { UserManagementCreatePage } from "../../features/user-management/pages/UserManagementCreatePage";
-import { UserManagementDetailPage } from "../../features/user-management/pages/UserManagementDetailPage";
+import { UserManagementPage } from "../../features/admin/user-management/pages/UserManagementPage";
+import { UserManagementCreatePage } from "../../features/admin/user-management/pages/UserManagementCreatePage";
+import { UserManagementDetailPage } from "../../features/admin/user-management/pages/UserManagementDetailPage";
+import { SalonManagementPage } from "../../features/admin/salon-management/pages/SalonManagementPage";
+import { SalonCreatePage } from "../../features/admin/salon-management/pages/SalonCreatePage";
+import { SalonUpdatePage } from "../../features/admin/salon-management/pages/SalonUpdatePage";
+import { StaffManagementPage } from "../../features/admin/staff-management/pages/StaffManagementPage";
+import { StaffCreatePage } from "../../features/admin/staff-management/pages/StaffCreatePage";
+import { StaffUpdatePage } from "../../features/admin/staff-management/pages/StaffUpdatePage";
+import { BookingListPage } from "../../features/core/booking-management/pages/BookingListPage";
+import { BookingCreatePage } from "../../features/core/booking-management/pages/BookingCreatePage";
+import { BookingDetailPage } from "../../features/core/booking-management/pages/BookingDetailPage";
+import { NailDesignManagementPage } from "../../features/admin/nails-design-management/pages/NailDesignManagementPage";
+import { NailDesignManagementCreatePage } from "../../features/admin/nails-design-management/pages/NailDesignManagementCreatePage";
+import { NailDesignManagementDetailPage } from "../../features/admin/nails-design-management/pages/NailDesignManagementDetailPage";
 
 export const adminRoutes = [
   {
@@ -15,7 +27,7 @@ export const adminRoutes = [
     element: (
       <AuthGuard>
         <RoleGuard allowedRoles={[ROLES.admin]}>
-          <DashboardLayout />
+          <AdminLayout />
         </RoleGuard>
       </AuthGuard>
     ),
@@ -29,15 +41,63 @@ export const adminRoutes = [
         element: <AdminDashboardPage />,
       },
       {
+        path: ROUTES.adminBookings,
+        element: <BookingListPage />,
+      },
+      {
+        path: ROUTES.adminBookingsCreate,
+        element: <BookingCreatePage />,
+      },
+      {
+        path: ROUTES.adminBookingDetail,
+        element: <BookingDetailPage />,
+      },
+      {
+        path: ROUTES.adminSalons,
+        element: <SalonManagementPage />,
+      },
+      {
+        path: ROUTES.adminSalonsCreate,
+        element: <SalonCreatePage />,
+      },
+      {
+        path: ROUTES.adminSalonUpdate,
+        element: <SalonUpdatePage />,
+      },
+      {
+        path: ROUTES.adminStaff,
+        element: <StaffManagementPage />,
+      },
+      {
+        path: ROUTES.adminStaffCreate,
+        element: <StaffCreatePage />,
+      },
+      {
+        path: ROUTES.adminStaffUpdate,
+        element: <StaffUpdatePage />,
+      },
+      {
         path: ROUTES.adminUsers,
         element: <UserManagementPage />,
+      },
+      {
+        path: ROUTES.adminNailDesigns,
+        element: <NailDesignManagementPage />,
+      },
+      {
+        path: ROUTES.adminNailDesignsCreate,
+        element: <NailDesignManagementCreatePage />,
+      },
+      {
+        path: ROUTES.adminNailDesignDetail,
+        element: <NailDesignManagementDetailPage />,
       },
       {
         path: ROUTES.adminUsersCreate,
         element: <UserManagementCreatePage />,
       },
       {
-        path: "/admin/users/:userId",
+        path: ROUTES.adminUserDetail,
         element: <UserManagementDetailPage />,
       },
       {
