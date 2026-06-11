@@ -4,12 +4,21 @@ import {
   CircleDollarSign,
   ClipboardList,
   Clock3,
+  Eye,
+  FileText,
   MessageSquareText,
+  PencilLine,
+  Play,
   Sparkles,
+  SquareCheckBig,
   Star,
   TimerReset,
+  Trash2,
   Trophy,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
+import { getStaffBookingDetailRoute } from "../../../../shared/constants/routes";
 
 const DASHBOARD_METRICS = [
   {
@@ -51,7 +60,7 @@ const DASHBOARD_METRICS = [
 
 const SCHEDULE_ROWS = [
   {
-    id: "booking-01",
+    id: "BKG-2401",
     time: "9:00 - 10:30 AM",
     customer: "Sophie Tran",
     customerMeta: "#1596 · 0101",
@@ -59,11 +68,9 @@ const SCHEDULE_ROWS = [
     design: "https://images.unsplash.com/photo-1604902396830-aca29e19b067?auto=format&fit=crop&w=120&q=80",
     status: "Completed",
     statusTone: "bg-[#e9fbef] text-[#2ca865]",
-    actionLabel: "View Notes",
-    actionTone: "bg-[#eaf8ec] text-[#2ca865]",
   },
   {
-    id: "booking-02",
+    id: "BKG-2402",
     time: "10:30 AM - 12:00 PM",
     customer: "Mia Johnson",
     customerMeta: "#1555 · 0182",
@@ -71,44 +78,36 @@ const SCHEDULE_ROWS = [
     design: "https://images.unsplash.com/photo-1519014816548-bf5fe059798b?auto=format&fit=crop&w=120&q=80",
     status: "Completed",
     statusTone: "bg-[#e9fbef] text-[#2ca865]",
-    actionLabel: "View Notes",
-    actionTone: "bg-[#eaf8ec] text-[#2ca865]",
   },
   {
-    id: "booking-03",
+    id: "BKG-2407",
     time: "12:00 - 2:30 PM",
-    customer: "Chloe Park",
+    customer: "Bao Chau Le",
     customerMeta: "#1586 · 0247",
-    service: "Nail Art Design",
+    service: "Chrome Pearl Set",
     design: "https://images.unsplash.com/photo-1522337660859-02fbefca4702?auto=format&fit=crop&w=120&q=80",
     status: "In Progress",
     statusTone: "bg-[#eaf2ff] text-[#5e8df7]",
-    actionLabel: "Complete",
-    actionTone: "bg-[image:var(--gradient-accent)] text-white",
   },
   {
-    id: "booking-04",
+    id: "BKG-2408",
     time: "2:30 - 4:00 PM",
-    customer: "Emma Davis",
+    customer: "Minh Anh",
     customerMeta: "#1657 · 0319",
-    service: "Gel Polish + Tips",
+    service: "Chrome Nail Art",
     design: "https://images.unsplash.com/photo-1632345031435-8727f6897d53?auto=format&fit=crop&w=120&q=80",
     status: "Waiting",
     statusTone: "bg-[#fff4df] text-[#df8e1d]",
-    actionLabel: "Start",
-    actionTone: "bg-[image:var(--gradient-accent)] text-white",
   },
   {
-    id: "booking-05",
+    id: "BKG-2409",
     time: "4:00 - 5:00 PM",
-    customer: "Ava Wilson",
+    customer: "Thao Nhi Vo",
     customerMeta: "#1566 · 0433",
     service: "French Manicure",
     design: "https://images.unsplash.com/photo-1610992015732-2449b76344bc?auto=format&fit=crop&w=120&q=80",
     status: "Upcoming",
     statusTone: "bg-[#fff1f5] text-[#f06292]",
-    actionLabel: "View",
-    actionTone: "bg-[#fff1f5] text-[#f06292]",
   },
 ];
 
@@ -171,6 +170,41 @@ function Panel({ title, icon: Icon, children, action }) {
 }
 
 export function StaffDashboardPage() {
+  const navigate = useNavigate();
+  const getActionItems = (booking) => {
+    const detailRoute = getStaffBookingDetailRoute(booking.id);
+
+    return [
+      { key: "view", label: "View Booking", icon: Eye, onSelect: () => navigate(detailRoute) },
+      { key: "edit", label: "Edit Booking", icon: PencilLine, onSelect: () => navigate(detailRoute) },
+      {
+        key: "start",
+        label: "Start Service",
+        icon: Play,
+        onSelect: () => navigate(detailRoute, { state: { staffAction: "start" } }),
+      },
+      {
+        key: "complete",
+        label: "Complete Service",
+        icon: SquareCheckBig,
+        onSelect: () => navigate(detailRoute, { state: { staffAction: "complete" } }),
+      },
+      {
+        key: "notes",
+        label: "View Notes",
+        icon: FileText,
+        onSelect: () => navigate(detailRoute, { state: { staffAction: "notes" } }),
+      },
+      {
+        key: "delete",
+        label: "Delete Booking",
+        icon: Trash2,
+        className: "text-[#d14c84]",
+        onSelect: () => navigate(detailRoute, { state: { staffAction: "delete" } }),
+      },
+    ];
+  };
+
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff5fa_100%)]">
       <div className="flex flex-col gap-4 rounded-[24px] border border-[#f6dbe8] bg-[#fff7fb] p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
@@ -244,12 +278,7 @@ export function StaffDashboardPage() {
                             <StatusChip label={booking.status} className={booking.statusTone} />
                           </td>
                           <td className="px-4 py-4">
-                            <button
-                              type="button"
-                              className={`rounded-full px-3 py-1.5 text-[10px] font-bold ${booking.actionTone}`}
-                            >
-                              {booking.actionLabel}
-                            </button>
+                            <ActionDropdown items={getActionItems(booking)} />
                           </td>
                         </tr>
                       ))}
@@ -463,11 +492,7 @@ export function StaffDashboardPage() {
                 <p className="text-[11px] text-[#c28ca6]">This month&apos;s review reactions</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {REVIEW_REACTIONS.map((item) => (
-                    <StatusChip
-                      key={item.label}
-                      label={item.value}
-                      className={item.tone}
-                    />
+                    <StatusChip key={item.label} label={item.value} className={item.tone} />
                   ))}
                 </div>
               </div>
