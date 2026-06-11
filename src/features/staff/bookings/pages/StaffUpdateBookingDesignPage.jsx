@@ -261,33 +261,6 @@ export function StaffUpdateBookingDesignPage() {
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f9_100%)]">
       <div className="rounded-[24px] border border-[#f6dbe8] bg-[#fff7fb] p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
-        <header className="rounded-[22px] border border-[#f3d5e2] bg-white px-5 py-4">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-              <div className="flex flex-wrap items-center gap-2 text-[11px] text-[#b48aa0]">
-                <span>Bookings</span>
-                <span>/</span>
-                <span>#{data.bookingCode}</span>
-                <span>/</span>
-                <span className="font-semibold text-[#ea4f93]">Update Booking Design</span>
-              </div>
-              <h1 className="mt-2 text-[1.35rem] font-extrabold text-[#3f2b3f]">Update Booking Design</h1>
-              <p className="mt-1 text-sm text-[#a88a9d]">
-                Review and confirm updated nail design before service
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="rounded-[12px] border border-[#f2bfd4] bg-[#fff4f8] px-4 py-3">
-                <p className="text-[10px] text-[#ab88a0]">Booking ID</p>
-                <p className="mt-1 text-xs font-extrabold text-[#ea4f93]">#{data.bookingCode}</p>
-              </div>
-              <span className="inline-flex items-center gap-2 rounded-full border border-[#f1ddac] bg-[#fff4da] px-4 py-2 text-xs font-bold text-[#bd8517]">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#e9ae31]" />
-                {data.statusLabel}
-              </span>
-            </div>
-          </div>
-        </header>
 
         <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
           <div className="space-y-4">
