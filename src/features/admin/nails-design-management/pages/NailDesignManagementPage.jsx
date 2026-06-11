@@ -11,6 +11,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ROUTES,
+  getAdminNailDesignCategoriesRoute,
   getAdminNailDesignDetailRoute,
 } from "../../../../shared/constants/routes";
 import { PropTypes } from "../../../../shared/utils/propTypes";
@@ -258,13 +259,13 @@ export function NailDesignManagementPage() {
             <Tag size={13} className="mr-1.5 inline" />
             Manage Tags
           </button>
-          <button
-            type="button"
+          <Link
+            to={getAdminNailDesignCategoriesRoute()}
             className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
           >
             <Plus size={13} className="mr-1.5 inline" />
             Add Category
-          </button>
+          </Link>
           <button
             type="button"
             className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"

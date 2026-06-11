@@ -103,45 +103,6 @@ const peakBars = [
   ["7", 27],
 ];
 
-const healthItems = [
-  ["API Server", 98, "#4cbf6a"],
-  ["Database", 95, "#4cbf6a"],
-  ["Image CDN", 78, "#ffad33"],
-  ["Booking Engine", 99, "#4cbf6a"],
-  ["Payment Gateway", 100, "#4cbf6a"],
-  ["AR Try-On", 61, "#ef4444"],
-];
-
-const complaints = [
-  {
-    name: "Aisha Rahman",
-    salon: "Nailify Orchard",
-    note: "Nail art peeled off after 2 days at Orchard branch",
-    severity: "High",
-    tone: "bg-[#ffe6ec] text-[#e1447f]",
-  },
-  {
-    name: "Grace Teo",
-    salon: "Nailify Marina",
-    note: "Booking cancelled without prior notification",
-    severity: "Medium",
-    tone: "bg-[#fff0dd] text-[#d9871c]",
-  },
-  {
-    name: "Nurul Huda",
-    salon: "Nailify Bugis",
-    note: "Long wait time despite confirmed appointment",
-    severity: "Medium",
-    tone: "bg-[#fff0dd] text-[#d9871c]",
-  },
-  {
-    name: "Wendy Chua",
-    salon: "Nailify Jurong",
-    note: "Requested refund for unused gift voucher",
-    severity: "Low",
-    tone: "bg-[#e8faef] text-[#35a164]",
-  },
-];
 
 const registrations = [
   ["Jasmine Loh", "Just now"],
@@ -664,58 +625,6 @@ export function AdminDashboardPage() {
             </div>
 
             <div className="mt-6 space-y-6">
-              <div>
-                <div className="mb-4 flex items-center justify-between gap-2">
-                  <h3 className="text-sm font-extrabold text-[#3f2240]">System Health</h3>
-                  <span className="rounded-full bg-[#fff6fa] px-2 py-1 text-[10px] font-bold text-[#ea4f93]">
-                    Live
-                  </span>
-                </div>
-                <div className="space-y-4">
-                  {healthItems.map(([label, value, color]) => (
-                    <div key={label}>
-                      <div className="mb-1.5 flex items-center justify-between gap-3 text-xs">
-                        <span className="font-medium text-[#7f6478]">{label}</span>
-                        <span className="font-bold" style={{ color }}>
-                          {value}%
-                        </span>
-                      </div>
-                      <div className="h-2 rounded-full bg-[#f6dde8]">
-                        <div
-                          className="h-full rounded-full"
-                          style={{ width: `${value}%`, backgroundColor: color }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <div className="mb-4 flex items-center justify-between gap-2">
-                  <h3 className="text-sm font-extrabold text-[#3f2240]">Pending Complaints</h3>
-                  <span className="rounded-full bg-[#ffe7ef] px-2 py-1 text-[10px] font-bold text-[#e1447f]">
-                    7 Open
-                  </span>
-                </div>
-                <div className="space-y-3">
-                  {complaints.map((item) => (
-                    <div key={item.name} className="rounded-[18px] border border-[#f8d9e7] bg-[#fffafb] p-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="font-bold text-[#402542]">{item.name}</p>
-                          <p className="mt-1 text-[11px] text-[#c190aa]">{item.salon}</p>
-                        </div>
-                        <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${item.tone}`}>
-                          {item.severity}
-                        </span>
-                      </div>
-                      <p className="mt-3 text-xs leading-5 text-[#7a6176]">{item.note}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
               <div>
                 <div className="mb-4 flex items-center justify-between gap-2">
                   <h3 className="text-sm font-extrabold text-[#3f2240]">New Registrations</h3>

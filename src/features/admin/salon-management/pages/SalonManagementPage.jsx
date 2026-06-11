@@ -4,6 +4,8 @@ import {
   BellRing,
   BriefcaseBusiness,
   Check,
+  ChevronLeft,
+  ChevronRight,
   Clock3,
   Eye,
   MapPin,
@@ -20,13 +22,16 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ROUTES, getAdminSalonUpdateRoute } from "../../../../shared/constants/routes";
+import {
+  ROUTES,
+  getAdminSalonDetailRoute,
+  getAdminSalonUpdateRoute,
+} from "../../../../shared/constants/routes";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import {
   LOW_OCCUPANCY_SALON,
   SALON_ALERTS,
   SALON_BRANCHES,
-  SALON_MODAL_STYLES,
   SALON_STATUS_FILTERS,
   SALON_SUMMARY,
   TOP_PERFORMING_SALON,
@@ -143,9 +148,13 @@ RightMetricCard.propTypes = {
   }).isRequired,
 };
 
-function BranchCard({ branch }) {
+function BranchCard({ branch, onClick }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-rose-100 bg-white shadow-[0_18px_32px_rgba(226,93,143,0.08)]">
+    <button
+      type="button"
+      onClick={onClick}
+      className="overflow-hidden rounded-2xl border border-rose-100 bg-white text-left shadow-[0_18px_32px_rgba(226,93,143,0.08)] transition hover:-translate-y-1 hover:border-rose-200 hover:shadow-[0_24px_40px_rgba(226,93,143,0.14)]"
+    >
       <img src={branch.image} alt={branch.name} className="h-36 w-full object-cover" />
       <div className="space-y-3 p-4">
         <div className="flex items-center justify-between gap-3">
@@ -189,7 +198,7 @@ function BranchCard({ branch }) {
           </p>
         </div>
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -207,6 +216,7 @@ BranchCard.propTypes = {
     status: PropTypes.string.isRequired,
     statusTone: PropTypes.string.isRequired,
   }).isRequired,
+  onClick: PropTypes.func.isRequired,
 };
 
 function CloseIconButton({ onClick }) {
@@ -248,11 +258,11 @@ SmallActionButton.propTypes = {
 export function SalonManagementPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [showViewModal, setShowViewModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedSalon, setSelectedSalon] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [branchOverviewStart, setBranchOverviewStart] = useState(0);
   const [salons, setSalons] = useState(getSalonsWithUpdates);
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
 
@@ -284,9 +294,20 @@ export function SalonManagementPage() {
     });
   }, [salons, searchTerm, statusFilter]);
 
+  const visibleBranchSalons = useMemo(
+    () => filteredSalons.slice(branchOverviewStart, branchOverviewStart + 3),
+    [branchOverviewStart, filteredSalons],
+  );
+
+  const canGoToPreviousBranchSet = branchOverviewStart > 0;
+  const canGoToNextBranchSet = branchOverviewStart + 3 < filteredSalons.length;
+
+  useEffect(() => {
+    setBranchOverviewStart(0);
+  }, [searchTerm, statusFilter]);
+
   const handleViewSalon = (salon) => {
-    setSelectedSalon(salon);
-    setShowViewModal(true);
+    navigate(getAdminSalonDetailRoute(salon.id));
   };
 
   const handleUpdateSalon = (salon) => {
@@ -312,6 +333,7 @@ export function SalonManagementPage() {
   const clearFilters = () => {
     setSearchTerm("");
     setStatusFilter("All");
+    setBranchOverviewStart(0);
   };
 
   return (
@@ -338,26 +360,61 @@ export function SalonManagementPage() {
                   Snapshot cards for the branches matching your current filters
                 </p>
               </div>
-              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em]">
-                {SALON_STATUS_FILTERS.map((tab) => (
-                  <button
-                    key={tab}
-                    type="button"
-                    onClick={() => setStatusFilter(tab)}
-                    className={`rounded-full px-3 py-1.5 ${statusFilter === tab
-                      ? "bg-rose-500 text-white"
-                      : "bg-[#fff2f6] text-slate-400 hover:bg-rose-100"
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em]">
+                  {SALON_STATUS_FILTERS.map((tab) => (
+                    <button
+                      key={tab}
+                      type="button"
+                      onClick={() => setStatusFilter(tab)}
+                      className={`rounded-full px-3 py-1.5 ${
+                        statusFilter === tab
+                          ? "bg-rose-500 text-white"
+                          : "bg-[#fff2f6] text-slate-400 hover:bg-rose-100"
                       }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+                {filteredSalons.length > 3 ? (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setBranchOverviewStart((current) => Math.max(current - 3, 0))
+                      }
+                      disabled={!canGoToPreviousBranchSet}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-rose-200 bg-white text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      aria-label="Previous salons"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setBranchOverviewStart((current) =>
+                          Math.min(current + 3, Math.max(filteredSalons.length - 3, 0)),
+                        )
+                      }
+                      disabled={!canGoToNextBranchSet}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-rose-200 bg-white text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      aria-label="Next salons"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                ) : null}
               </div>
             </div>
             {filteredSalons.length > 0 ? (
               <div className="grid gap-4 lg:grid-cols-3">
-                {filteredSalons.slice(0, 3).map((branch) => (
-                  <BranchCard key={branch.id} branch={branch} />
+                {visibleBranchSalons.map((branch) => (
+                  <BranchCard
+                    key={branch.id}
+                    branch={branch}
+                    onClick={() => handleViewSalon(branch)}
+                  />
                 ))}
               </div>
             ) : (
@@ -532,96 +589,16 @@ export function SalonManagementPage() {
       </div>
 
       <Modal
-        open={showViewModal}
-        onCancel={() => setShowViewModal(false)}
-        footer={null}
-        closable={false}
-        width={440}
-        styles={SALON_MODAL_STYLES}
-      >
-        {selectedSalon ? (
-          <div>
-            <div className="bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-6 py-5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-xl bg-white/20 p-2">
-                    <Eye size={16} className="text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-[15px] font-black text-white">Salon Details</h3>
-                    <p className="text-[11px] text-white/70">View salon information</p>
-                  </div>
-                </div>
-                <CloseIconButton onClick={() => setShowViewModal(false)} />
-              </div>
-            </div>
-
-            <div className="space-y-4 px-6 py-5">
-              <div className="flex items-center gap-4">
-                <img
-                  src={selectedSalon.image}
-                  alt={selectedSalon.name}
-                  className="h-20 w-20 rounded-xl object-cover shadow-sm"
-                />
-                <div>
-                  <h3 className="text-[17px] font-bold text-slate-800">{selectedSalon.name}</h3>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-300">
-                    #{selectedSalon.salonId}
-                  </p>
-                  <span
-                    className={`mt-2 inline-block rounded-full px-2.5 py-1 text-[10px] font-bold ${selectedSalon.statusColor}`}
-                  >
-                    {selectedSalon.status}
-                  </span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { icon: MapPin, label: "Address", value: selectedSalon.address },
-                  { icon: UserRound, label: "Manager", value: selectedSalon.manager },
-                  { icon: Phone, label: "Phone", value: selectedSalon.phone },
-                  { icon: Clock3, label: "Operating Hours", value: selectedSalon.hours },
-                  { icon: Wrench, label: "Staff Amount", value: selectedSalon.staff },
-                  {
-                    icon: Star,
-                    label: "Rating",
-                    value: `${selectedSalon.rating} (${selectedSalon.reviews} reviews)`,
-                  },
-                ].map(({ icon: Icon, label, value }) => (
-                  <div key={label} className="rounded-xl border border-rose-50 bg-[#fff8fb] p-3">
-                    <div className="mb-1 flex items-center gap-1.5">
-                      <Icon size={11} className="text-rose-400" />
-                      <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">
-                        {label}
-                      </span>
-                    </div>
-                    <p className="text-[12px] font-semibold text-slate-700">{value}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex justify-end border-t border-rose-50 px-6 py-4">
-              <button
-                type="button"
-                onClick={() => setShowViewModal(false)}
-                className="rounded-full border border-rose-200 bg-white px-5 py-2 text-[11px] font-bold text-rose-400 transition hover:bg-rose-50"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        ) : null}
-      </Modal>
-
-      <Modal
         open={showDeleteModal}
         onCancel={() => setShowDeleteModal(false)}
         footer={null}
         closable={false}
         width={440}
-        styles={SALON_MODAL_STYLES}
+        styles={{
+          content: { padding: 0, overflow: "hidden", borderRadius: 24 },
+          body: { padding: 0 },
+          mask: { backdropFilter: "blur(6px)" },
+        }}
       >
         {selectedSalon ? (
           <div>
