@@ -3,6 +3,7 @@ import { ROLES } from "./roles";
 import { BOOKING_ROWS } from "../../features/core/booking-management/services/mockBookings";
 import { NAIL_DESIGN_ROWS } from "../../features/admin/nails-design-management/services/mockNailDesigns";
 import { SALON_BRANCHES } from "../../features/admin/salon-management/services/mockSalon";
+import { SERVICE_ROWS } from "../../features/admin/service-pricing-management/services/mockServicePricing";
 import { STAFF_TOP_PERFORMERS } from "../../features/admin/staff-management/services/mockStaff";
 import { USER_ROWS } from "../../features/admin/user-management/services/mockUsers";
 
@@ -34,6 +35,8 @@ function getMenuBadge(itemKey, role) {
       return String(getBookingCountByRole(role));
     case "admin-users":
       return String(USER_ROWS.length);
+    case "admin-service-pricing":
+      return String(SERVICE_ROWS.length);
     case "admin-salons":
       return String(SALON_BRANCHES.length);
     case "admin-staff":
@@ -231,6 +234,13 @@ export const MENU_CONFIG = {
       label: "Users",
       to: ROUTES.adminUsers,
       icon: "users",
+      section: "Main",
+    },
+    {
+      key: "admin-service-pricing",
+      label: "Services & Pricing",
+      to: ROUTES.adminServicePricing,
+      icon: "palette",
       section: "Main",
     },
     {

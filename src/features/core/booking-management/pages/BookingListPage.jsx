@@ -1,18 +1,24 @@
 import {
   AlertTriangle,
   CalendarDays,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Clock3,
+  Eye,
   DollarSign,
+  FileText,
+  PencilLine,
+  Play,
   Search,
+  SquareCheckBig,
+  Trash2,
   UserPlus,
   XCircle,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ROLES } from "../../../../shared/constants/roles";
+import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import {
   BOOKING_ROLE_CONFIG,
@@ -455,6 +461,53 @@ export function BookingListPage() {
   ]);
 
   const summaryItems = SUMMARY_BY_ROLE[role] ?? SUMMARY_BY_ROLE[ROLES.admin];
+  const getActionItems = (booking) => {
+    const detailRoute = roleConfig.getDetailRoute(booking.id);
+
+    if (role === ROLES.staff) {
+      return [
+        { key: "view", label: "View Booking", icon: Eye, onSelect: () => navigate(detailRoute) },
+        { key: "edit", label: "Edit Booking", icon: PencilLine, onSelect: () => navigate(detailRoute) },
+        {
+          key: "start",
+          label: "Start Service",
+          icon: Play,
+          onSelect: () => navigate(detailRoute, { state: { staffAction: "start" } }),
+        },
+        {
+          key: "complete",
+          label: "Complete Service",
+          icon: SquareCheckBig,
+          onSelect: () => navigate(detailRoute, { state: { staffAction: "complete" } }),
+        },
+        {
+          key: "notes",
+          label: "View Notes",
+          icon: FileText,
+          onSelect: () => navigate(detailRoute, { state: { staffAction: "notes" } }),
+        },
+        {
+          key: "delete",
+          label: "Delete Booking",
+          icon: Trash2,
+          className: "text-[#d14c84]",
+          onSelect: () => navigate(detailRoute, { state: { staffAction: "delete" } }),
+        },
+      ];
+    }
+
+    return [
+      { key: "view", label: "View Detail", icon: Eye, onSelect: () => navigate(detailRoute) },
+      { key: "edit", label: "Edit Booking", icon: PencilLine, onSelect: () => navigate(detailRoute) },
+      {
+        key: "delete",
+        label: "Delete Booking",
+        icon: Trash2,
+        className: "text-[#d14c84]",
+        onSelect: () => navigate(detailRoute, { state: { requestDelete: true } }),
+      },
+    ];
+  };
   const bookingVolume = [
     { time: "9A", value: 4 },
     { time: "10A", value: 8 },
@@ -702,13 +755,7 @@ export function BookingListPage() {
                           </SmallTag>
                         </td>
                         <td className="px-4 py-3.5">
-                          <Link
-                            to={roleConfig.getDetailRoute(booking.id)}
-                            className="inline-flex items-center gap-1 rounded-full border border-[#f7cade] bg-[#fff6fa] px-3 py-1.5 text-xs font-bold text-[#ea4f93]"
-                          >
-                            Actions
-                            <ChevronDown size={12} />
-                          </Link>
+                          <ActionDropdown items={getActionItems(booking)} />
                         </td>
                       </tr>
                     ))}
@@ -749,13 +796,7 @@ export function BookingListPage() {
                         </p>
                         <p className="mt-1 text-[11px] text-[#c694ad]">{booking.bookingTime}</p>
                       </div>
-                      <Link
-                        to={roleConfig.getDetailRoute(booking.id)}
-                        className="inline-flex items-center gap-1 rounded-full border border-[#f7cade] bg-[#fff6fa] px-3 py-1.5 text-xs font-bold text-[#ea4f93]"
-                      >
-                        Actions
-                        <ChevronDown size={12} />
-                      </Link>
+                      <ActionDropdown items={getActionItems(booking)} />
                     </div>
                   </article>
                 ))}

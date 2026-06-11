@@ -1,14 +1,18 @@
 import { CalendarClock, PencilLine, Save, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { BookingFormFields } from "../components/BookingFormFields";
 import { BookingHeroCard } from "../components/BookingHeroCard";
 import { BookingSnapshotCard } from "../components/BookingSnapshotCard";
+import { StaffBookingConsultationDetail } from "../../../staff/bookings/components/StaffBookingConsultationDetail";
 import {
   BOOKING_ROLE_CONFIG,
   getMockBookingById,
+  getStaffBookingExperienceById,
 } from "../services/mockBookings";
 import { getBookingRoleFromPath } from "../utils/bookingMapper";
+import { ROLES } from "../../../../shared/constants/roles";
+import { getStaffBookingDesignStudioRoute } from "../../../../shared/constants/routes";
 
 export function BookingDetailPage() {
   const location = useLocation();
@@ -23,6 +27,27 @@ export function BookingDetailPage() {
   const [formValues, setFormValues] = useState(initialBooking);
   const [flashMessage, setFlashMessage] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const staffActionMessage = useMemo(() => {
+    const action = location.state?.staffAction;
+
+    if (role !== ROLES.staff || !action) {
+      return "";
+    }
+
+    return {
+      complete: "Mock complete action opened. Review the checklist before marking this service done.",
+      delete: "Mock delete requested from the action menu. Use Back to Queue if you want to leave this booking.",
+      notes: "Staff notes panel is ready for review. This remains a UI-only mock flow.",
+      start: "Mock start action opened. Confirm the design and proceed to service when ready.",
+    }[action] ?? "";
+  }, [location.state, role]);
+
+  useEffect(() => {
+    if (!staffActionMessage) {
+      return;
+    }
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, navigate, staffActionMessage]);
 
   if (!initialBooking) {
     return <Navigate to={roleConfig.listRoute} replace />;
@@ -59,6 +84,117 @@ export function BookingDetailPage() {
     });
   };
 
+  const handleOpenDesignStudio = () => {
+    navigate(getStaffBookingDesignStudioRoute(bookingId));
+  };
+
+  if (role === ROLES.staff) {
+    const staffExperience = getStaffBookingExperienceById(bookingId) ?? {
+      bookingCode: initialBooking.id.replace("BKG", "BK"),
+      statusLabel: initialBooking.status,
+      artistInitials: "L",
+      steps: [
+        { key: "detail", label: "Booking Detail", state: "complete" },
+        { key: "consult", label: "Consultation", state: "current" },
+        { key: "confirm", label: "Confirm Design", state: "upcoming" },
+        { key: "start", label: "Start Service", state: "upcoming" },
+      ],
+      customer: {
+        name: initialBooking.customerName,
+        phone: initialBooking.customerPhone,
+        avatar:
+          "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=140&q=80",
+        memberTier: "Returning Guest",
+        facts: [
+          { label: "Last Booking", value: initialBooking.createdAt.split(" ")[0] },
+          { label: "Total Visits", value: "6 sessions" },
+          { label: "Preferred Shape", value: "Oval / Almond" },
+          { label: "Preferred Length", value: "Short to Medium" },
+        ],
+        allergyNote: "No allergy note on file. Confirm product sensitivity before service.",
+        preferences: "Minimal design, clean finish, neutral or pastel palette",
+      },
+      bookingInfo: [
+        { label: "Service", value: initialBooking.service, note: initialBooking.notes || "No add-on recorded" },
+        { label: "Appointment", value: initialBooking.bookingTime, note: initialBooking.bookingDate },
+        { label: "Duration", value: initialBooking.duration, note: "Schedule confirmed" },
+        { label: "Assigned Chair", value: "Chair 02", note: "Standard Section" },
+        { label: "Payment", value: initialBooking.paymentStatus, note: initialBooking.total },
+        { label: "Staff Artist", value: initialBooking.staffName, note: "Assigned artist" },
+      ],
+      design: {
+        name: "Consultation Pending",
+        image:
+          "https://images.unsplash.com/photo-1604902396830-aca29e19b067?auto=format&fit=crop&w=600&q=80",
+        details: [
+          { label: "Shape", value: "To be confirmed" },
+          { label: "Length", value: "To be confirmed" },
+          { label: "Color", value: "To be confirmed" },
+          { label: "Finish", value: "To be confirmed" },
+          { label: "Decoration", value: "To be confirmed" },
+          { label: "Base", value: "Gel or classic" },
+        ],
+        tags: [
+          { label: "Consultation", className: "border-[#f4cada] bg-[#fff6fa] text-[#ea4f93]" },
+        ],
+      },
+      sessionStatus: [
+        { label: "Status", value: initialBooking.status },
+        { label: "Staff Artist", value: initialBooking.staffName },
+        { label: "Chair", value: "Chair 02" },
+        { label: "Time Slot", value: `${initialBooking.bookingTime} - Scheduled` },
+      ],
+      customerHistory: {
+        favoriteStyles: [
+          { label: "Minimal", className: "border-[#cbe0ff] bg-[#f1f7ff] text-[#4b80e0]" },
+          { label: "Pastel", className: "border-[#d9f2c8] bg-[#f3fce9] text-[#61a437]" },
+        ],
+        previousShapes: "No history synced yet",
+        lastUpload: {
+          title: "Reference pending",
+          date: initialBooking.createdAt.split(" ")[0],
+          image:
+            "https://images.unsplash.com/photo-1632345031435-8727f6897d53?auto=format&fit=crop&w=240&q=80",
+        },
+      },
+      suggestedDesigns: [
+        {
+          name: "Soft Nude",
+          meta: "Quick service - Neutral finish",
+          image:
+            "https://images.unsplash.com/photo-1610992015732-2449b76344bc?auto=format&fit=crop&w=240&q=80",
+        },
+      ],
+      staffNotes: [
+        { label: "Customer Requests", value: initialBooking.notes || "No customer notes yet." },
+        { label: "Design Adjustments", value: "Capture preferred shape and finish during consultation." },
+        { label: "Notes Before Service", value: "Verify timing, confirm final design, then start session." },
+      ],
+      checklist: [
+        { label: "Customer confirmed nail design", checked: false },
+        { label: "Total price confirmed with customer", checked: false },
+        { label: "Estimated duration confirmed", checked: false },
+        { label: "Service notes captured", checked: false },
+      ],
+    };
+
+    return (
+      <>
+        {flashMessage || staffActionMessage ? (
+          <div className="rounded-[22px] bg-[#edfdf4] px-5 py-4 text-sm font-medium text-[#16975f] shadow-[0_14px_30px_rgba(94,76,62,0.06)]">
+            {staffActionMessage || flashMessage}
+          </div>
+        ) : null}
+        <StaffBookingConsultationDetail
+          data={staffExperience}
+          onDelete={handleDelete}
+          onOpenDesignStudio={handleOpenDesignStudio}
+          onSave={handleSave}
+        />
+      </>
+    );
+  }
+
   return (
     <section className="flex min-h-full flex-col gap-4">
       <BookingHeroCard
@@ -72,9 +208,9 @@ export function BookingDetailPage() {
         panelDescription="All actions here are UI-only and do not persist outside this feature."
       />
 
-      {flashMessage ? (
+      {flashMessage || staffActionMessage ? (
         <div className="rounded-[22px] bg-[#edfdf4] px-5 py-4 text-sm font-medium text-[#16975f] shadow-[0_14px_30px_rgba(94,76,62,0.06)]">
-          {flashMessage}
+          {staffActionMessage || flashMessage}
         </div>
       ) : null}
 
