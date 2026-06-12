@@ -10,6 +10,7 @@ import {
   X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import {
   ADD_ON_TYPE_TONES,
@@ -440,36 +441,38 @@ AddOnFormModal.propTypes = {
   serviceOptions: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
 };
 
-function ConfirmModal({ title, body, onCancel, onConfirm }) {
+function ConfirmModal({ title, body, label, recordType, onCancel, onConfirm }) {
   return (
-    <ModalShell title={title} subtitle="This mock action updates the current UI state only." onClose={onCancel}>
-      <div className="space-y-5">
-        <p className="text-sm leading-6 text-[#755d70]">{body}</p>
-        <div className="flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="rounded-full border border-[#f4d5e3] px-4 py-2 text-sm font-bold text-[#8a7082]"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            className="rounded-full bg-[#e95a86] px-5 py-2 text-sm font-bold text-white"
-          >
-            Delete
-          </button>
-        </div>
-      </div>
-    </ModalShell>
+    <ActionConfirmModal
+      open
+      intent="danger"
+      title={title}
+      subtitle="This will update the current mock pricing state."
+      description={body}
+      confirmText="Delete"
+      cancelText="Keep Record"
+      confirmIcon={Trash2}
+      onConfirm={onConfirm}
+      onCancel={onCancel}
+      item={{
+        title: label,
+        meta: `Pricing record • ${recordType}`,
+        note: "This entry will be removed from the current admin UI state.",
+      }}
+      warnings={[
+        "This delete is mock-only and affects the current UI state.",
+        "Any screens depending on this record should be reviewed after deletion.",
+      ]}
+    />
   );
 }
 
 ConfirmModal.propTypes = {
   body: PropTypes.string.isRequired,
+  label: PropTypes.string.isRequired,
   onCancel: PropTypes.func.isRequired,
   onConfirm: PropTypes.func.isRequired,
+  recordType: PropTypes.string.isRequired,
   title: PropTypes.string.isRequired,
 };
 
@@ -945,6 +948,8 @@ export function ServicePricingManagementPage() {
         <ConfirmModal
           title={deleteState.type === "service" ? "Delete Service" : "Delete Add-on"}
           body={`Are you sure you want to delete ${deleteState.label}? This mock record will be removed from the current admin UI state.`}
+          label={deleteState.label}
+          recordType={deleteState.type === "service" ? "Service" : "Add-on"}
           onCancel={() => setDeleteState(null)}
           onConfirm={() => {
             if (deleteState.type === "service") {

@@ -1,6 +1,7 @@
-import { PencilLine, Save, Trash2 } from "lucide-react";
+import { PencilLine, Save, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ROUTES } from "../../../../shared/constants/routes";
 import { UserManagementFormFields } from "../components/UserManagementFormFields";
 import { UserManagementHeroCard } from "../components/UserManagementHeroCard";
@@ -14,6 +15,9 @@ export function UserManagementDetailPage() {
   const [formValues, setFormValues] = useState(initialUser);
   const [flashMessage, setFlashMessage] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   if (!initialUser) {
     return <Navigate to={ROUTES.adminUsers} replace />;
@@ -27,6 +31,7 @@ export function UserManagementDetailPage() {
   };
 
   const handleSave = () => {
+    setShowSaveConfirm(false);
     setIsEditing(false);
     setFlashMessage("Mock update completed. Changes are local to this detail screen.");
   };
@@ -37,12 +42,14 @@ export function UserManagementDetailPage() {
   };
 
   const handleCancelEdit = () => {
+    setShowCancelConfirm(false);
     setFormValues(initialUser);
     setFlashMessage("");
     setIsEditing(false);
   };
 
   const handleDelete = () => {
+    setShowDeleteConfirm(false);
     navigate(ROUTES.adminUsers, {
       state: {
         flashMessage: `Mock delete completed for ${formValues.name || formValues.id}.`,
@@ -84,7 +91,7 @@ export function UserManagementDetailPage() {
               <>
                 <button
                   type="button"
-                  onClick={handleSave}
+                  onClick={() => setShowSaveConfirm(true)}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_26px_rgba(239,93,180,0.24)] transition hover:scale-[1.01] sm:w-auto"
                 >
                   <Save size={16} />
@@ -93,7 +100,7 @@ export function UserManagementDetailPage() {
 
                 <button
                   type="button"
-                  onClick={handleCancelEdit}
+                  onClick={() => setShowCancelConfirm(true)}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#fff5ef] px-5 py-3 text-sm font-semibold text-[var(--color-ink)] transition hover:bg-[#ffe9d7] sm:w-auto"
                 >
                   <span>Cancel</span>
@@ -112,7 +119,7 @@ export function UserManagementDetailPage() {
 
             <button
               type="button"
-              onClick={handleDelete}
+              onClick={() => setShowDeleteConfirm(true)}
               className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#fff0f5] px-5 py-3 text-sm font-semibold text-[#d14c84] transition hover:bg-[#ffe1ec] sm:w-auto"
             >
               <Trash2 size={16} />
@@ -126,6 +133,62 @@ export function UserManagementDetailPage() {
           notice="This is mock CRUD only. Save and delete actions update the UI flow, but they do not persist data outside this screen."
         />
       </div>
+
+      <ActionConfirmModal
+        open={showSaveConfirm}
+        intent="success"
+        title="Save User Changes"
+        subtitle="This will update the user in the current mock detail flow."
+        description="Confirm to apply the latest edits to this user profile."
+        confirmText="Save Changes"
+        cancelText="Review Again"
+        confirmIcon={Save}
+        onConfirm={handleSave}
+        onCancel={() => setShowSaveConfirm(false)}
+        highlights={[formValues.name || "User profile", formValues.role || "Role pending", formValues.branch || "Branch pending"]}
+        details={[
+          { label: "Email", value: formValues.email || "No email entered" },
+          { label: "Status", value: formValues.status || "Not set" },
+        ]}
+        warnings={["This mock update changes the UI flow only and does not persist outside this screen."]}
+      />
+
+      <ActionConfirmModal
+        open={showCancelConfirm}
+        intent="warning"
+        title="Discard User Edits"
+        subtitle="You are about to leave edit mode without saving."
+        description="Unsaved changes on this user profile will be discarded."
+        confirmText="Discard Changes"
+        cancelText="Keep Editing"
+        confirmIcon={X}
+        onConfirm={handleCancelEdit}
+        onCancel={() => setShowCancelConfirm(false)}
+        details={[
+          { label: "Editing Mode", value: "User profile detail" },
+          { label: "Result", value: "Revert to last loaded values" },
+        ]}
+        warnings={["Any unsaved changes to this user will be lost immediately."]}
+      />
+
+      <ActionConfirmModal
+        open={showDeleteConfirm}
+        intent="danger"
+        title="Delete User"
+        subtitle="This will remove the user from the current mock admin flow."
+        description={`You are about to delete ${formValues.name || "this user"}. This action cannot be undone.`}
+        confirmText="Delete User"
+        cancelText="Keep User"
+        confirmIcon={Trash2}
+        onConfirm={handleDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+        item={{
+          title: formValues.name || "User account",
+          meta: `${formValues.role || "Role pending"} • ${formValues.branch || "Branch pending"}`,
+          note: formValues.email || "No email entered",
+        }}
+        warnings={["This mock delete updates the navigation flow only and does not persist outside this feature."]}
+      />
     </section>
   );
 }

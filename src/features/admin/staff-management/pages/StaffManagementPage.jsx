@@ -1,4 +1,3 @@
-import { Modal } from "antd";
 import {
   ArrowRightLeft,
   BarChart3,
@@ -16,12 +15,12 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ROUTES, getAdminStaffUpdateRoute } from "../../../../shared/constants/routes";
 import {
   STAFF_FILTER_OPTIONS,
   STAFF_LEAVE_LIST,
   STAFF_LOW_RATING_ALERTS,
-  STAFF_MODAL_STYLES,
   STAFF_QUICK_ACTIONS,
   STAFF_SUMMARY,
   STAFF_TOP_PERFORMERS,
@@ -46,25 +45,6 @@ const QUICK_ACTION_ICON_MAP = {
   calendarClock: CalendarClock,
   clock: Clock3,
   plus: Plus,
-};
-
-function CloseIconButton({ onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="rounded-full bg-white/20 p-1.5 text-white hover:bg-white/30"
-    >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-        <line x1="18" y1="6" x2="6" y2="18" />
-        <line x1="6" y1="6" x2="18" y2="18" />
-      </svg>
-    </button>
-  );
-}
-
-CloseIconButton.propTypes = {
-  onClick: PropTypes.func.isRequired,
 };
 
 function StatCard({ item }) {
@@ -604,56 +584,37 @@ export function StaffManagementPage() {
         </aside>
       </div>
 
-      <Modal
+      <ActionConfirmModal
         open={showTransferModal}
+        intent="info"
+        title="Transfer Staff"
+        subtitle="Move this team member to another salon branch."
+        description={`Transfer ${selectedStaff?.name ?? "this staff member"} from ${selectedStaff?.salon ?? "the current branch"} to a different salon.`}
+        confirmText="Continue Transfer"
+        cancelText="Keep Current Branch"
+        confirmIcon={ArrowRightLeft}
+        width={460}
+        onConfirm={() => setShowTransferModal(false)}
         onCancel={() => setShowTransferModal(false)}
-        footer={null}
-        closable={false}
-        width={420}
-        styles={STAFF_MODAL_STYLES}
-      >
-        {selectedStaff ? (
-          <div>
-            <div className="bg-gradient-to-r from-[#b57edc] to-[#9b6fd4] px-6 py-5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-xl bg-white/20 p-2">
-                    <ArrowRightLeft size={16} className="text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-[15px] font-black text-white">Transfer Staff</h3>
-                    <p className="text-[11px] text-white/70">Move to another salon branch</p>
-                  </div>
-                </div>
-                <CloseIconButton onClick={() => setShowTransferModal(false)} />
-              </div>
-            </div>
-
-            <div className="px-6 py-5">
-              <p className="text-[13px] text-slate-600">
-                Transfer <span className="font-bold text-slate-800">{selectedStaff.name}</span> from{" "}
-                <span className="font-bold text-rose-500">{selectedStaff.salon}</span>.
-              </p>
-              <div className="mt-5 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowTransferModal(false)}
-                  className="rounded-full border border-rose-200 bg-white px-4 py-2 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowTransferModal(false)}
-                  className="rounded-full bg-gradient-to-r from-[#b57edc] to-[#9b6fd4] px-4 py-2 text-[11px] font-bold text-white shadow-[0_10px_20px_rgba(155,111,212,0.22)] transition hover:opacity-95"
-                >
-                  Continue Transfer
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </Modal>
+        item={
+          selectedStaff
+            ? {
+                image: selectedStaff.image,
+                title: selectedStaff.name,
+                meta: `${selectedStaff.role} • ${selectedStaff.id}`,
+                note: `Current salon: ${selectedStaff.salon}`,
+              }
+            : null
+        }
+        details={[
+          { label: "Current Branch", value: selectedStaff?.salon ?? "Not assigned" },
+          { label: "Next Step", value: "Open transfer flow" },
+        ]}
+        warnings={[
+          "This current action only confirms the transfer flow entry.",
+          "No branch reassignment is persisted until a transfer destination is completed.",
+        ]}
+      />
     </section>
   );
 }
