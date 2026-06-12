@@ -1,4 +1,3 @@
-import { Modal } from "antd";
 import {
   AlertTriangle,
   BellRing,
@@ -18,10 +17,10 @@ import {
   Trash2,
   TrendingUp,
   UserRound,
-  Wrench,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import {
   ROUTES,
   getAdminSalonDetailRoute,
@@ -31,7 +30,6 @@ import { PropTypes } from "../../../../shared/utils/propTypes";
 import {
   LOW_OCCUPANCY_SALON,
   SALON_ALERTS,
-  SALON_BRANCHES,
   SALON_STATUS_FILTERS,
   SALON_SUMMARY,
   TOP_PERFORMING_SALON,
@@ -216,25 +214,6 @@ BranchCard.propTypes = {
     status: PropTypes.string.isRequired,
     statusTone: PropTypes.string.isRequired,
   }).isRequired,
-  onClick: PropTypes.func.isRequired,
-};
-
-function CloseIconButton({ onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="rounded-full bg-white/20 p-1.5 text-white hover:bg-white/30"
-    >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-        <line x1="18" y1="6" x2="6" y2="18" />
-        <line x1="6" y1="6" x2="18" y2="18" />
-      </svg>
-    </button>
-  );
-}
-
-CloseIconButton.propTypes = {
   onClick: PropTypes.func.isRequired,
 };
 
@@ -588,94 +567,34 @@ export function SalonManagementPage() {
         </aside>
       </div>
 
-      <Modal
+      <ActionConfirmModal
         open={showDeleteModal}
+        intent="danger"
+        title="Delete Salon"
+        subtitle="This will remove the branch from salon management."
+        description={`You are about to delete ${selectedSalon?.name ?? "this salon"}. This action cannot be undone.`}
+        confirmText="Delete Salon"
+        cancelText="Keep Salon"
+        confirmIcon={Trash2}
+        width={460}
+        onConfirm={handleConfirmDelete}
         onCancel={() => setShowDeleteModal(false)}
-        footer={null}
-        closable={false}
-        width={440}
-        styles={{
-          content: { padding: 0, overflow: "hidden", borderRadius: 24 },
-          body: { padding: 0 },
-          mask: { backdropFilter: "blur(6px)" },
-        }}
-      >
-        {selectedSalon ? (
-          <div>
-            <div className="bg-gradient-to-r from-rose-500 to-rose-600 px-6 py-5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-xl bg-white/20 p-2">
-                    <Trash2 size={16} className="text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-[15px] font-black text-white">Delete Salon</h3>
-                    <p className="text-[11px] text-white/70">This action cannot be undone</p>
-                  </div>
-                </div>
-                <CloseIconButton onClick={() => setShowDeleteModal(false)} />
-              </div>
-            </div>
-
-            <div className="space-y-4 px-6 py-5">
-              <div className="rounded-2xl border border-rose-100 bg-[#fff8fb] p-4">
-                <div className="flex items-center gap-3">
-                  <img
-                    src={selectedSalon.image}
-                    alt={selectedSalon.name}
-                    className="h-14 w-14 rounded-xl object-cover shadow-sm"
-                  />
-                  <div>
-                    <p className="text-[13px] font-bold text-slate-800">{selectedSalon.name}</p>
-                    <p className="text-[11px] text-slate-400">
-                      #{selectedSalon.salonId} • {selectedSalon.address}
-                    </p>
-                    <p className="text-[11px] text-slate-400">Manager: {selectedSalon.manager}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                <div className="mb-2 flex items-center gap-2">
-                  <AlertTriangle size={14} className="text-amber-500" />
-                  <p className="text-[12px] font-bold text-amber-600">Warning</p>
-                </div>
-                <ul className="space-y-1.5">
-                  {[
-                    "All salon data will be permanently deleted",
-                    "Staff assignments will be removed",
-                    "Appointment history will be lost",
-                    "This action affects reporting and analytics",
-                  ].map((item) => (
-                    <li key={item} className="flex items-start gap-2 text-[11px] text-amber-700">
-                      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-amber-400" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 border-t border-rose-50 px-6 py-4">
-              <button
-                type="button"
-                onClick={() => setShowDeleteModal(false)}
-                className="rounded-full border border-rose-200 bg-white px-5 py-2 text-[11px] font-bold text-rose-400 transition hover:bg-rose-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmDelete}
-                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-rose-500 to-rose-600 px-5 py-2 text-[11px] font-bold text-white shadow-[0_8px_20px_rgba(239,68,68,0.35)] transition hover:opacity-90"
-              >
-                <Trash2 size={12} />
-                Delete Salon
-              </button>
-            </div>
-          </div>
-        ) : null}
-      </Modal>
+        item={
+          selectedSalon
+            ? {
+                image: selectedSalon.image,
+                title: selectedSalon.name,
+                meta: `#${selectedSalon.salonId} • ${selectedSalon.address}`,
+                note: `Manager: ${selectedSalon.manager}`,
+              }
+            : null
+        }
+        warnings={[
+          "All salon data in the current mock state will be removed.",
+          "Staff assignments linked to this branch will no longer appear.",
+          "Appointment history and reporting references for this branch will be lost.",
+        ]}
+      />
     </section>
   );
 }

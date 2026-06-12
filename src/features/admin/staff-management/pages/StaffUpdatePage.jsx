@@ -1,4 +1,3 @@
-import { Modal } from "antd";
 import {
   ArrowLeft,
   BriefcaseBusiness,
@@ -15,6 +14,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { TimePicker } from "../../../../shared/components/ui/TimePicker";
 import { StaffSaveResultModal } from "../components/StaffSaveResultModal";
@@ -23,7 +23,6 @@ import {
   STAFF_CREATE_STATUS_OPTIONS,
   STAFF_DAYS_OF_WEEK,
   STAFF_EMPLOYMENT_TYPES,
-  STAFF_FORM_MODAL_STYLES,
   STAFF_UPDATE_CHECKLIST,
   STAFF_ROLE_OPTIONS,
   STAFF_SALON_OPTIONS,
@@ -613,66 +612,46 @@ export function StaffUpdatePage() {
         </>
       )}
 
-      <Modal
+      <ActionConfirmModal
         open={showCancelModal}
+        intent="warning"
+        title="Cancel Staff Update"
+        subtitle="You are leaving this edit session without saving."
+        description="Recent changes to this staff profile will be discarded if you leave now."
+        confirmText="Leave Page"
+        cancelText="Keep Editing"
+        confirmIcon={X}
+        onConfirm={handleConfirmCancel}
         onCancel={() => setShowCancelModal(false)}
-        footer={null}
-        styles={STAFF_FORM_MODAL_STYLES}
-      >
-        <div className="py-3">
-          <h3 className="text-[18px] font-black text-slate-800">Discard changes?</h3>
-          <p className="mt-2 text-[13px] text-slate-500">
-            The updates to this staff profile have not been saved yet. Do you want to leave this
-            page?
-          </p>
-          <div className="mt-5 flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setShowCancelModal(false)}
-              className="rounded-full border border-rose-200 bg-white px-4 py-2 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
-            >
-              Continue Editing
-            </button>
-            <button
-              type="button"
-              onClick={handleConfirmCancel}
-              className="rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2 text-[11px] font-bold text-white shadow-[0_10px_20px_rgba(226,93,143,0.22)] transition hover:opacity-95"
-            >
-              Leave Page
-            </button>
-          </div>
-        </div>
-      </Modal>
+        details={[
+          { label: "Editing Mode", value: "Update staff profile" },
+          { label: "Next Step", value: "Return to staff list" },
+        ]}
+        warnings={[
+          "Role, salon assignment, availability, and profile changes will not be saved.",
+          "The current staff record will remain unchanged until you confirm the update.",
+        ]}
+      />
 
-      <Modal
-        title="Confirm Update"
+      <ActionConfirmModal
         open={showSaveModal}
-        onOk={handleConfirmSave}
-        onCancel={() => !isSaving && setShowSaveModal(false)}
-        okText="Yes, Update Staff"
+        intent="success"
+        title="Save Staff Changes"
+        subtitle="This will update the profile in the current mock staff state."
+        description="Confirm to apply the latest changes to this staff member."
+        confirmText="Update Staff"
         cancelText="Review Again"
-        confirmLoading={isSaving}
-        closable={!isSaving}
-        maskClosable={!isSaving}
-        okButtonProps={{
-          className: "bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500",
-        }}
-        cancelButtonProps={{
-          className: "border-emerald-200 text-emerald-500 hover:text-emerald-600",
-          disabled: isSaving,
-        }}
-        styles={STAFF_FORM_MODAL_STYLES}
-      >
-        <div className="py-4">
-          <p className="mb-2 text-slate-700">Are you sure you want to update this staff member?</p>
-          <p className="text-sm text-slate-500">
-            This will update the profile for{" "}
-            <span className="font-semibold text-slate-700">{formData.fullName}</span> and keep it
-            assigned to{" "}
-            <span className="font-semibold text-slate-700">{formData.assignedSalon}</span>.
-          </p>
-        </div>
-      </Modal>
+        confirmIcon={Save}
+        loading={isSaving}
+        onConfirm={handleConfirmSave}
+        onCancel={() => !isSaving && setShowSaveModal(false)}
+        highlights={[formData.fullName || "Staff profile", formData.role || "Role pending", formData.status]}
+        details={[
+          { label: "Assigned Salon", value: formData.assignedSalon || "No salon selected" },
+          { label: "Employment Type", value: formData.employmentType || "Not selected" },
+        ]}
+        warnings={["This mock update changes the current UI state only and does not persist to a backend."]}
+      />
 
       <StaffSaveResultModal
         result={saveResult}

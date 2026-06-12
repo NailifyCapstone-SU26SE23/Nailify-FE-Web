@@ -1,6 +1,7 @@
-import { CalendarClock, PencilLine, Save, Trash2 } from "lucide-react";
+import { CalendarClock, PencilLine, Save, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { BookingFormFields } from "../components/BookingFormFields";
 import { BookingHeroCard } from "../components/BookingHeroCard";
 import { BookingSnapshotCard } from "../components/BookingSnapshotCard";
@@ -12,7 +13,10 @@ import {
 } from "../services/mockBookings";
 import { getBookingRoleFromPath } from "../utils/bookingMapper";
 import { ROLES } from "../../../../shared/constants/roles";
-import { getStaffBookingDesignStudioRoute } from "../../../../shared/constants/routes";
+import {
+  getStaffBookingDesignStudioRoute,
+  getStaffBookingServiceSessionRoute,
+} from "../../../../shared/constants/routes";
 
 export function BookingDetailPage() {
   const location = useLocation();
@@ -27,6 +31,11 @@ export function BookingDetailPage() {
   const [formValues, setFormValues] = useState(initialBooking);
   const [flashMessage, setFlashMessage] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(
+    role !== ROLES.staff && Boolean(location.state?.requestDelete),
+  );
   const staffActionMessage = useMemo(() => {
     const action = location.state?.staffAction;
 
@@ -41,13 +50,14 @@ export function BookingDetailPage() {
       start: "Mock start action opened. Confirm the design and proceed to service when ready.",
     }[action] ?? "";
   }, [location.state, role]);
+  const deleteRequested = role !== ROLES.staff && Boolean(location.state?.requestDelete);
 
   useEffect(() => {
-    if (!staffActionMessage) {
+    if (!staffActionMessage && !deleteRequested) {
       return;
     }
     navigate(location.pathname, { replace: true, state: null });
-  }, [location.pathname, navigate, staffActionMessage]);
+  }, [deleteRequested, location.pathname, navigate, staffActionMessage]);
 
   if (!initialBooking) {
     return <Navigate to={roleConfig.listRoute} replace />;
@@ -61,6 +71,7 @@ export function BookingDetailPage() {
   };
 
   const handleSave = () => {
+    setShowSaveConfirm(false);
     setIsEditing(false);
     setFlashMessage("Mock update completed. Changes are local to this booking detail screen.");
   };
@@ -71,12 +82,14 @@ export function BookingDetailPage() {
   };
 
   const handleCancelEdit = () => {
+    setShowCancelConfirm(false);
     setFormValues(initialBooking);
     setFlashMessage("");
     setIsEditing(false);
   };
 
   const handleDelete = () => {
+    setShowDeleteConfirm(false);
     navigate(roleConfig.listRoute, {
       state: {
         flashMessage: `Mock delete completed for ${formValues.customerName || formValues.id}.`,
@@ -178,6 +191,34 @@ export function BookingDetailPage() {
       ],
     };
 
+    const handleOpenServiceSession = () => {
+      navigate(getStaffBookingServiceSessionRoute(bookingId), {
+        state: {
+          serviceSession: {
+            bookingCode: staffExperience.bookingCode,
+            customerName: staffExperience.customer.name,
+            customerPhone: staffExperience.customer.phone,
+            customerAvatar: staffExperience.customer.avatar,
+            serviceLabel: initialBooking.service,
+            staffArtist: initialBooking.staffName,
+            chair: "Chair 02",
+            appointmentTime: `${initialBooking.bookingTime} - ${initialBooking.duration}`,
+            estimatedDuration: initialBooking.duration,
+            designName: staffExperience.design.name,
+            totalPrice: initialBooking.total,
+            backRoute: location.pathname,
+            designUpdateRoute: getStaffBookingDesignStudioRoute(bookingId),
+            confirmations: [
+              "Customer identity confirmed",
+              "Service design confirmed",
+              "Price confirmed",
+              "Before photo uploaded",
+            ],
+          },
+        },
+      });
+    };
+
     return (
       <>
         {flashMessage || staffActionMessage ? (
@@ -190,6 +231,7 @@ export function BookingDetailPage() {
           onDelete={handleDelete}
           onOpenDesignStudio={handleOpenDesignStudio}
           onSave={handleSave}
+          onStartServiceSession={handleOpenServiceSession}
         />
       </>
     );
@@ -229,7 +271,7 @@ export function BookingDetailPage() {
               <>
                 <button
                   type="button"
-                  onClick={handleSave}
+                  onClick={() => setShowSaveConfirm(true)}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_26px_rgba(239,93,180,0.24)] transition hover:scale-[1.01] sm:w-auto"
                 >
                   <Save size={16} />
@@ -237,7 +279,7 @@ export function BookingDetailPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={handleCancelEdit}
+                  onClick={() => setShowCancelConfirm(true)}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#fff5ef] px-5 py-3 text-sm font-semibold text-[var(--color-ink)] transition hover:bg-[#ffe9d7] sm:w-auto"
                 >
                   <span>Cancel</span>
@@ -256,7 +298,7 @@ export function BookingDetailPage() {
 
             <button
               type="button"
-              onClick={handleDelete}
+              onClick={() => setShowDeleteConfirm(true)}
               className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#fff0f5] px-5 py-3 text-sm font-semibold text-[#d14c84] transition hover:bg-[#ffe1ec] sm:w-auto"
             >
               <Trash2 size={16} />
@@ -270,6 +312,62 @@ export function BookingDetailPage() {
           notice="This is mock CRUD only. Save and delete actions update the UI flow, but they do not persist data outside this screen."
         />
       </div>
+
+      <ActionConfirmModal
+        open={showSaveConfirm}
+        intent="success"
+        title="Save Booking Changes"
+        subtitle="This will update the appointment in the current mock booking flow."
+        description="Confirm to apply the latest edits to this booking."
+        confirmText="Save Changes"
+        cancelText="Review Again"
+        confirmIcon={Save}
+        onConfirm={handleSave}
+        onCancel={() => setShowSaveConfirm(false)}
+        highlights={[formValues.customerName || "Booking detail", formValues.service || "Service pending", formValues.branch || "Branch pending"]}
+        details={[
+          { label: "Appointment Date", value: formValues.date || "No date selected" },
+          { label: "Appointment Time", value: formValues.time || "No time selected" },
+        ]}
+        warnings={["This mock update changes the UI flow only and does not persist outside this screen."]}
+      />
+
+      <ActionConfirmModal
+        open={showCancelConfirm}
+        intent="warning"
+        title="Discard Booking Edits"
+        subtitle="You are about to leave edit mode without saving."
+        description="Unsaved updates to this booking will be discarded."
+        confirmText="Discard Changes"
+        cancelText="Keep Editing"
+        confirmIcon={X}
+        onConfirm={handleCancelEdit}
+        onCancel={() => setShowCancelConfirm(false)}
+        details={[
+          { label: "Editing Mode", value: "Booking detail" },
+          { label: "Result", value: "Revert to last loaded values" },
+        ]}
+        warnings={["Any unsaved changes to customer, service, and schedule details will be lost."]}
+      />
+
+      <ActionConfirmModal
+        open={showDeleteConfirm}
+        intent="danger"
+        title="Delete Booking"
+        subtitle="This will remove the booking from the current mock booking flow."
+        description={`You are about to delete ${formValues.customerName || "this booking"}. This action cannot be undone.`}
+        confirmText="Delete Booking"
+        cancelText="Keep Booking"
+        confirmIcon={Trash2}
+        onConfirm={handleDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+        item={{
+          title: formValues.customerName || "Booking record",
+          meta: `${formValues.service || "Service pending"} • ${formValues.branch || "Branch pending"}`,
+          note: `${formValues.date || "No date"} • ${formValues.time || "No time"}`,
+        }}
+        warnings={["This mock delete updates the navigation flow only and does not persist outside this feature."]}
+      />
     </section>
   );
 }

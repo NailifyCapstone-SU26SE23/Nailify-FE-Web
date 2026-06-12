@@ -104,7 +104,7 @@ SuggestedCard.propTypes = {
   }).isRequired,
 };
 
-export function StaffBookingConsultationDetail({ data, onDelete, onOpenDesignStudio, onSave }) {
+export function StaffBookingConsultationDetail({ data, onDelete, onOpenDesignStudio, onSave, onStartServiceSession }) {
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff5fa_100%)]">
       <div className="rounded-[24px] border border-[#f6dbe8] bg-[#fff7fb] p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
@@ -297,7 +297,7 @@ export function StaffBookingConsultationDetail({ data, onDelete, onOpenDesignStu
 
                 <button
                   type="button"
-                  onClick={onSave}
+                  onClick={onStartServiceSession}
                   className="mt-5 w-full rounded-[14px] bg-[image:var(--gradient-accent)] px-5 py-4 text-sm font-bold text-white shadow-[0_16px_28px_rgba(236,72,153,0.2)]"
                 >
                   Proceed to Service Session
@@ -424,7 +424,7 @@ export function StaffBookingConsultationDetail({ data, onDelete, onOpenDesignStu
                   </button>
                   <button
                     type="button"
-                    onClick={onSave}
+                    onClick={onStartServiceSession}
                     className="flex w-full items-center justify-center gap-2 rounded-[12px] bg-[image:var(--gradient-accent)] px-4 py-2.5 text-xs font-bold text-white"
                   >
                     <ArrowUp size={13} />
@@ -533,4 +533,5 @@ StaffBookingConsultationDetail.propTypes = {
   onDelete: PropTypes.func.isRequired,
   onOpenDesignStudio: PropTypes.func.isRequired,
   onSave: PropTypes.func.isRequired,
+  onStartServiceSession: PropTypes.func.isRequired,
 };

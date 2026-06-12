@@ -1,6 +1,7 @@
 import { Save, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ROUTES } from "../../../../shared/constants/routes";
 import { UserManagementFormFields } from "../components/UserManagementFormFields";
 import { UserManagementHeroCard } from "../components/UserManagementHeroCard";
@@ -10,6 +11,7 @@ import { createEmptyUser } from "../services/mockUsers";
 export function UserManagementCreatePage() {
   const navigate = useNavigate();
   const [formValues, setFormValues] = useState(createEmptyUser);
+  const [showCreateConfirm, setShowCreateConfirm] = useState(false);
 
   const handleChange = (field) => (event) => {
     setFormValues((current) => ({
@@ -51,7 +53,7 @@ export function UserManagementCreatePage() {
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <button
               type="button"
-              onClick={handleCreate}
+              onClick={() => setShowCreateConfirm(true)}
               className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_26px_rgba(239,93,180,0.24)] transition hover:scale-[1.01] sm:w-auto"
             >
               <Save size={16} />
@@ -65,6 +67,25 @@ export function UserManagementCreatePage() {
           notice="This is mock CRUD only. Create action updates the UI flow, but it does not persist data outside this screen."
         />
       </div>
+
+      <ActionConfirmModal
+        open={showCreateConfirm}
+        intent="success"
+        title="Create User"
+        subtitle="This will add the user to the current mock admin state."
+        description="Confirm to create this internal account with the selected role and branch."
+        confirmText="Create User"
+        cancelText="Review Again"
+        confirmIcon={Save}
+        onConfirm={handleCreate}
+        onCancel={() => setShowCreateConfirm(false)}
+        highlights={[formValues.name || "New user", formValues.role || "Role pending", formValues.branch || "Branch pending"]}
+        details={[
+          { label: "Email", value: formValues.email || "No email entered" },
+          { label: "Status", value: formValues.status || "Not set" },
+        ]}
+        warnings={["This mock create updates the UI flow only and does not persist outside this feature."]}
+      />
     </section>
   );
 }

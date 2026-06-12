@@ -14,6 +14,7 @@ export const ROUTES = {
   staffBookingDetail: "/staff/bookings/:bookingId",
   staffBookingDesignStudio: "/staff/bookings/:bookingId/design-studio",
   staffBookingDesignUpdate: "/staff/bookings/:bookingId/update-booking-design",
+  staffBookingServiceSession: "/staff/bookings/:bookingId/service-session",
   receptionistBookings: "/receptionist/bookings",
   receptionistBookingsCreate: "/receptionist/bookings/create",
   receptionistBookingDetail: "/receptionist/bookings/:bookingId",
@@ -54,6 +55,8 @@ export const getStaffBookingDesignStudioRoute = (bookingId) =>
   `/staff/bookings/${bookingId}/design-studio`;
 export const getStaffBookingDesignUpdateRoute = (bookingId) =>
   `/staff/bookings/${bookingId}/update-booking-design`;
+export const getStaffBookingServiceSessionRoute = (bookingId) =>
+  `/staff/bookings/${bookingId}/service-session`;
 export const getReceptionistBookingDetailRoute = (bookingId) =>
   `/receptionist/bookings/${bookingId}`;
 export const getManagerBookingDetailRoute = (bookingId) =>

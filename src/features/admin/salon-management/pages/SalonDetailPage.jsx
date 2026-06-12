@@ -1,4 +1,3 @@
-import { Modal } from "antd";
 import {
   ArrowLeft,
   CalendarDays,
@@ -13,13 +12,13 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import {
   ROUTES,
   getAdminSalonUpdateRoute,
 } from "../../../../shared/constants/routes";
 import {
   SALON_DAYS_OF_WEEK,
-  SALON_FORM_MODAL_STYLES,
   fetchMockSalonFormById,
   getSalonsWithUpdates,
   removeMockSalonById,
@@ -261,29 +260,32 @@ export function SalonDetailPage() {
         </>
       )}
 
-      <Modal
-        title="Confirm Delete"
+      <ActionConfirmModal
         open={showDeleteModal}
-        onOk={handleDeleteSalon}
+        intent="danger"
+        title="Delete Salon"
+        subtitle="This action removes the selected branch from the current mock admin state."
+        description={`You are about to delete ${salonRow?.name ?? "this salon"}. This action cannot be undone.`}
+        confirmText="Delete Salon"
+        cancelText="Keep Salon"
+        confirmIcon={Trash2}
+        onConfirm={handleDeleteSalon}
         onCancel={() => setShowDeleteModal(false)}
-        okText="Yes, Delete Salon"
-        cancelText="Cancel"
-        okButtonProps={{
-          danger: true,
-          className: "bg-rose-500 hover:bg-rose-600 text-white border-rose-500",
-        }}
-        cancelButtonProps={{
-          className: "border-rose-200 text-rose-500 hover:text-rose-600",
-        }}
-        styles={SALON_FORM_MODAL_STYLES}
-      >
-        <div className="py-4">
-          <p className="mb-2 text-slate-700">Are you sure you want to delete this salon?</p>
-          <p className="text-sm text-slate-500">
-            This will remove {salonRow?.name ?? "the selected salon"} from the mock salon list.
-          </p>
-        </div>
-      </Modal>
+        item={
+          salonRow
+            ? {
+                image: salonRow.image,
+                title: salonRow.name,
+                meta: `#${salonRow.salonId} • ${salonRow.address}`,
+                note: `Manager: ${salonRow.manager}`,
+              }
+            : null
+        }
+        warnings={[
+          "This salon will be removed from the mock salon list immediately.",
+          "Any related UI references in the current mock state may no longer appear.",
+        ]}
+      />
     </section>
   );
 }

@@ -10,9 +10,11 @@ import {
   Trash2,
   Upload,
   WandSparkles,
+  X,
 } from "lucide-react";
 import { useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ROUTES } from "../../../../shared/constants/routes";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { getMockNailDesignDetailById } from "../services/mockNailDesigns";
@@ -114,6 +116,8 @@ export function NailDesignManagementDetailPage() {
   const [flashMessage, setFlashMessage] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [formValues, setFormValues] = useState(initialDesign);
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   if (!initialDesign) {
     return <Navigate to={ROUTES.adminNailDesigns} replace />;
@@ -132,12 +136,14 @@ export function NailDesignManagementDetailPage() {
   };
 
   const handleCancelEdit = () => {
+    setShowCancelConfirm(false);
     setFormValues(initialDesign);
     setFlashMessage("");
     setIsEditing(false);
   };
 
   const handleSave = () => {
+    setShowSaveConfirm(false);
     setFlashMessage("Mock update completed. Changes are local to this detail screen.");
     setIsEditing(false);
   };
@@ -175,14 +181,14 @@ export function NailDesignManagementDetailPage() {
               <>
                 <button
                   type="button"
-                  onClick={handleSave}
+                  onClick={() => setShowSaveConfirm(true)}
                   className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.2)]"
                 >
                   Save Changes
                 </button>
                 <button
                   type="button"
-                  onClick={handleCancelEdit}
+                  onClick={() => setShowCancelConfirm(true)}
                   className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#7e6075]"
                 >
                   Cancel
@@ -642,6 +648,44 @@ export function NailDesignManagementDetailPage() {
           </SectionCard>
         </aside>
       </div>
+
+      <ActionConfirmModal
+        open={showSaveConfirm}
+        intent="success"
+        title="Save Design Changes"
+        subtitle="This will update the design in the current mock detail flow."
+        description="Confirm to apply the latest edits to this nail design."
+        confirmText="Save Changes"
+        cancelText="Review Again"
+        confirmIcon={Sparkles}
+        width={520}
+        onConfirm={handleSave}
+        onCancel={() => setShowSaveConfirm(false)}
+        highlights={[formValues.name || "Design detail", formValues.designStatus || "Status pending", formValues.complexity || "Complexity pending"]}
+        details={[
+          { label: "Suggested Price", value: formValues.suggestedPrice || "No price entered" },
+          { label: "Est. Duration", value: formValues.estimatedDuration || "No duration entered" },
+        ]}
+        warnings={["This mock update changes the UI flow only and does not persist outside this screen."]}
+      />
+
+      <ActionConfirmModal
+        open={showCancelConfirm}
+        intent="warning"
+        title="Discard Design Edits"
+        subtitle="You are about to leave edit mode without saving."
+        description="Unsaved updates to this nail design will be discarded."
+        confirmText="Discard Changes"
+        cancelText="Keep Editing"
+        confirmIcon={X}
+        onConfirm={handleCancelEdit}
+        onCancel={() => setShowCancelConfirm(false)}
+        details={[
+          { label: "Editing Mode", value: "Nail design detail" },
+          { label: "Result", value: "Revert to last loaded values" },
+        ]}
+        warnings={["Current unsaved pricing, workflow, and profile changes will be lost."]}
+      />
     </section>
   );
 }

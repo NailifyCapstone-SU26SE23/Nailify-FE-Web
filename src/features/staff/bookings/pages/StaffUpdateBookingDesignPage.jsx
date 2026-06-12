@@ -16,6 +16,7 @@ import { getMockBookingById } from "../../../core/booking-management/services/mo
 import {
   getStaffBookingDesignStudioRoute,
   getStaffBookingDetailRoute,
+  getStaffBookingServiceSessionRoute,
   ROUTES,
 } from "../../../../shared/constants/routes";
 
@@ -257,6 +258,36 @@ export function StaffUpdateBookingDesignPage() {
   const allConfirmed = confirmations.every((item) => item.checked);
   const designStudioRoute = getStaffBookingDesignStudioRoute(bookingId);
   const detailRoute = getStaffBookingDetailRoute(bookingId);
+  const serviceSessionRoute = getStaffBookingServiceSessionRoute(bookingId);
+
+  const handleOpenServiceSession = () => {
+    navigate(serviceSessionRoute, {
+      state: {
+        serviceSession: {
+          bookingCode: data.bookingCode,
+          customerName: data.customer,
+          customerPhone: booking?.customerPhone ?? "+84 912 345 678",
+          customerAvatar:
+            "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=140&q=80",
+          serviceLabel: data.newDesign.name,
+          staffArtist: data.staffArtist,
+          chair: data.chair,
+          appointmentTime: `${data.appointment} • ${data.newDesign.duration}`,
+          estimatedDuration: data.pricing.updatedDuration,
+          designName: data.newDesign.name,
+          totalPrice: data.pricing.newPrice,
+          backRoute: detailRoute,
+          designUpdateRoute: location.pathname,
+          confirmations: [
+            "Customer identity confirmed",
+            "Service design confirmed",
+            "Price confirmed",
+            "Before photo uploaded",
+          ],
+        },
+      },
+    });
+  };
 
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f9_100%)]">
@@ -520,6 +551,7 @@ export function StaffUpdateBookingDesignPage() {
                 </button>
                 <button
                   type="button"
+                  onClick={handleOpenServiceSession}
                   className="w-full rounded-[12px] border border-[#f2bfd4] bg-white px-4 py-3 text-xs font-bold text-[#ea4f93]"
                 >
                   Start Service Session

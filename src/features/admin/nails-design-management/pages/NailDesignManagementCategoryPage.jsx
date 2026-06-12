@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ROUTES } from "../../../../shared/constants/routes";
 import { NAIL_DESIGN_CATEGORY_OPTIONS } from "../services/mockNailDesigns";
 
@@ -40,6 +41,8 @@ export function NailDesignManagementCategoryPage() {
   const [draft, setDraft] = useState(emptyDraft);
   const [editingId, setEditingId] = useState(null);
   const [flashMessage, setFlashMessage] = useState("");
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
   const summary = useMemo(() => {
     const total = categories.length;
@@ -62,9 +65,7 @@ export function NailDesignManagementCategoryPage() {
     setEditingId(null);
   };
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-
+  const applyDraftChanges = () => {
     const normalizedName = draft.name.trim();
     const normalizedDescription = draft.description.trim();
 
@@ -105,6 +106,11 @@ export function NailDesignManagementCategoryPage() {
     resetDraft();
   };
 
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    setShowSubmitConfirm(true);
+  };
+
   const handleEdit = (category) => {
     setEditingId(category.id);
     setDraft({
@@ -115,6 +121,7 @@ export function NailDesignManagementCategoryPage() {
   };
 
   const handleDelete = (categoryId) => {
+    setPendingDeleteId(null);
     setCategories((current) => current.filter((item) => item.id !== categoryId));
     if (editingId === categoryId) {
       resetDraft();
@@ -134,6 +141,8 @@ export function NailDesignManagementCategoryPage() {
       ),
     );
   };
+
+  const pendingDeleteCategory = categories.find((item) => item.id === pendingDeleteId) ?? null;
 
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)]">
@@ -330,7 +339,7 @@ export function NailDesignManagementCategoryPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleDelete(category.id)}
+                      onClick={() => setPendingDeleteId(category.id)}
                       className="rounded-full border border-[#f9d0dc] bg-white px-3 py-1.5 text-[10px] font-bold text-[#d14c84]"
                     >
                       <Trash2 size={12} className="mr-1 inline" />
@@ -343,6 +352,55 @@ export function NailDesignManagementCategoryPage() {
           </div>
         </section>
       </div>
+
+      <ActionConfirmModal
+        open={showSubmitConfirm}
+        intent="success"
+        title={editingId ? "Save Category Changes" : "Create Category"}
+        subtitle="This will update the current mock category catalog."
+        description={
+          editingId
+            ? "Confirm to save the latest category label and description changes."
+            : "Confirm to add this category to the nail design catalog."
+        }
+        confirmText={editingId ? "Save Category" : "Create Category"}
+        cancelText="Review Again"
+        confirmIcon={Save}
+        onConfirm={() => {
+          setShowSubmitConfirm(false);
+          applyDraftChanges();
+        }}
+        onCancel={() => setShowSubmitConfirm(false)}
+        highlights={[draft.name || "Category name pending", editingId ? "Edit mode" : "Create mode"]}
+        details={[
+          { label: "Description", value: draft.description || "No description entered" },
+          { label: "Catalog Scope", value: "Nail design categories" },
+        ]}
+        warnings={["This mock save updates the current UI state only and does not persist outside this feature."]}
+      />
+
+      <ActionConfirmModal
+        open={Boolean(pendingDeleteCategory)}
+        intent="danger"
+        title="Delete Category"
+        subtitle="This will remove the category from the current mock catalog."
+        description={`You are about to delete ${pendingDeleteCategory?.name ?? "this category"}. This action cannot be undone.`}
+        confirmText="Delete Category"
+        cancelText="Keep Category"
+        confirmIcon={Trash2}
+        onConfirm={() => handleDelete(pendingDeleteId)}
+        onCancel={() => setPendingDeleteId(null)}
+        item={
+          pendingDeleteCategory
+            ? {
+                title: pendingDeleteCategory.name,
+                meta: `${pendingDeleteCategory.status} • ${pendingDeleteCategory.designCount} mapped designs`,
+                note: pendingDeleteCategory.description,
+              }
+            : null
+        }
+        warnings={["Mapped catalog references in the current mock UI may no longer appear after deletion."]}
+      />
     </section>
   );
 }
