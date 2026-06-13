@@ -1,16 +1,22 @@
 import {
+  ArrowLeft,
+  ArrowRight,
   Camera,
   Check,
   CheckCircle2,
   ClipboardCheck,
   Clock3,
+  CreditCard,
   FilePenLine,
+  Heart,
   Image,
   ImageUp,
   Pause,
   Play,
   Plus,
+  Printer,
   Receipt,
+  Send,
   ShieldCheck,
   Sparkles,
   Upload,
@@ -182,6 +188,64 @@ ActionGhostButton.propTypes = {
   onClick: PropTypes.func.isRequired,
 };
 
+function CompareSummaryCard({ label, value, note, accent = false }) {
+  return (
+    <div className="rounded-[18px] border border-[#f2d3e1] bg-white p-4 shadow-[0_6px_18px_rgba(236,72,153,0.05)]">
+      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c197ad]">{label}</p>
+      <p className={`mt-2 text-sm font-extrabold ${accent ? "text-[#ea4f93]" : "text-[#3f2b3f]"}`}>
+        {value}
+      </p>
+      <p className="mt-1 text-[11px] text-[#a88a9d]">{note}</p>
+    </div>
+  );
+}
+
+CompareSummaryCard.propTypes = {
+  accent: PropTypes.bool,
+  label: PropTypes.string.isRequired,
+  note: PropTypes.string.isRequired,
+  value: PropTypes.string.isRequired,
+};
+
+function CompareActionButton({
+  icon: Icon,
+  label,
+  onClick,
+  tone = "primary",
+  disabled = false,
+}) {
+  const toneClassName = {
+    primary:
+      "border-transparent bg-[image:var(--gradient-accent)] text-white shadow-[0_14px_24px_rgba(236,72,153,0.2)]",
+    secondary: "border-[#eadcf4] bg-[#f8f0ff] text-[#8b5cf6]",
+    success: "border-[#ccefdc] bg-[#ecfbf2] text-[#16a365]",
+    outline: "border-[#f2bfd4] bg-white text-[#ea4f93]",
+    muted: "border-[#ece4ea] bg-[#f7f4f6] text-[#9b8c97]",
+  }[tone];
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-bold transition ${
+        disabled ? "cursor-not-allowed opacity-60" : "hover:-translate-y-0.5"
+      } ${toneClassName}`}
+    >
+      <Icon size={15} />
+      {label}
+    </button>
+  );
+}
+
+CompareActionButton.propTypes = {
+  disabled: PropTypes.bool,
+  icon: PropTypes.elementType.isRequired,
+  label: PropTypes.string.isRequired,
+  onClick: PropTypes.func.isRequired,
+  tone: PropTypes.oneOf(["muted", "outline", "primary", "secondary", "success"]),
+};
+
 export function StaffServiceSessionPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -273,6 +337,7 @@ export function StaffServiceSessionPage() {
   const [beforePhoto, setBeforePhoto] = useState(payload?.beforePhoto ?? null);
   const [afterPhoto, setAfterPhoto] = useState(payload?.afterPhoto ?? null);
   const [sessionNote, setSessionNote] = useState(payload?.sessionNote ?? "");
+  const [showComparisonView, setShowComparisonView] = useState(false);
   const [confirmations, setConfirmations] = useState(
     (data?.confirmations ?? []).map((label, index) => ({
       label,
@@ -304,6 +369,7 @@ export function StaffServiceSessionPage() {
   const allConfirmed = confirmations.every((item) => item.checked);
   const canStartService = allConfirmed && Boolean(beforePhoto);
   const canCompleteSession = completionChecks.every((item) => item.checked) && Boolean(afterPhoto);
+  const canOpenComparison = Boolean(beforePhoto) && Boolean(afterPhoto);
   const serviceProgress = phase === "done" ? 100 : started ? 65 : beforePhoto ? 35 : 0;
 
   const handleToggleConfirmation = (label) => {
@@ -391,6 +457,16 @@ export function StaffServiceSessionPage() {
     setFlashMessage(message);
   };
 
+  const handleOpenComparison = () => {
+    if (!canOpenComparison) {
+      handleSessionAction("Upload both before and after photos to prepare the comparison view.");
+      return;
+    }
+
+    setShowComparisonView(true);
+    setFlashMessage("");
+  };
+
   const progressSteps = [
     {
       label: "Start",
@@ -408,6 +484,354 @@ export function StaffServiceSessionPage() {
       state: completed ? "active" : "upcoming",
     },
   ];
+
+  const qualityChecks = [
+    "Shape matches selected design",
+    "Color matches selected design",
+    "Decoration completed",
+    "Final photo uploaded",
+    "Customer approved result",
+  ];
+
+  if (showComparisonView) {
+    return (
+      <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff3f8_100%)]">
+        <header className="rounded-[24px] border border-[#f3d5e2] bg-white/90 p-5 shadow-[0_14px_30px_rgba(236,72,153,0.06)]">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="flex items-start gap-3">
+              <button
+                type="button"
+                onClick={() => setShowComparisonView(false)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[#f2bfd4] bg-white text-[#ea4f93] transition hover:bg-[#fff4f8]"
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <div>
+                <h1 className="text-[1.65rem] font-black tracking-tight text-[#3f2b3f]">
+                  Before & After Comparison
+                </h1>
+                <p className="mt-1 text-sm text-[#a88a9d]">
+                  Compare customer hand photos before and after the nail service.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="rounded-xl border border-[#f2bfd4] bg-[#fff1f7] px-4 py-2 text-xs font-extrabold text-[#ea4f93]">
+                #{data.bookingCode}
+              </span>
+              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-bold text-emerald-600">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                Completed
+              </span>
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] text-xs font-extrabold text-white">
+                {data.staffArtist
+                  .split(" ")
+                  .map((part) => part[0])
+                  .join("")
+                  .slice(0, 2)}
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <article className="rounded-[24px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+          <SectionTitle
+            icon={Clock3}
+            title="Session Progress"
+            subtitle="Completed proof of the service workflow."
+          />
+          <div className="mt-6 flex flex-col gap-5 xl:flex-row">
+            {[
+              { label: "Start", statusLabel: "Completed", state: "complete" },
+              { label: "In Progress", statusLabel: "Completed", state: "complete" },
+              { label: "Done", statusLabel: "Completed", state: "complete" },
+            ].map((step, index, list) => (
+              <ProgressStep
+                key={step.label}
+                step={step}
+                index={index}
+                isLast={index === list.length - 1}
+              />
+            ))}
+          </div>
+        </article>
+
+        <article className="rounded-[24px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+          <SectionTitle
+            icon={Camera}
+            title="Photo Comparison"
+            subtitle="Side-by-side view of the nail transformation."
+          />
+
+          <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1fr)_84px_minmax(0,1fr)] xl:items-center">
+            <div className="overflow-hidden rounded-[22px] border border-[#f3d5e2] bg-[#fff8fb]">
+              <div className="flex items-center justify-between border-b border-[#f8e3ec] px-4 py-3">
+                <p className="text-sm font-extrabold text-[#3f2b3f]">Before Service</p>
+                <span className="rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-[10px] font-bold text-amber-600">
+                  Before Photo
+                </span>
+              </div>
+              <div className="p-4">
+                <div className="overflow-hidden rounded-[18px] border border-[#f0d5e2] bg-white">
+                  <img
+                    src={beforePhoto.previewUrl}
+                    alt={beforePhoto.fileName}
+                    className="h-[320px] w-full object-cover"
+                  />
+                </div>
+                <div className="mt-4 flex items-center gap-3 rounded-[16px] border border-[#f3dbe6] bg-white px-4 py-3">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fff1f7] text-[#ea4f93]">
+                    <Clock3 size={14} />
+                  </span>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-[#b59aab]">Uploaded at</p>
+                    <p className="text-sm font-bold text-[#3f2b3f]">{beforePhoto.uploadedAt}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center justify-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] text-white shadow-[0_12px_20px_rgba(236,72,153,0.24)]">
+                <ArrowRight size={18} />
+              </div>
+              <div className="rounded-xl border border-[#f2bfd4] bg-[#fff5fa] px-3 py-2 text-center text-[10px] font-bold uppercase tracking-[0.12em] text-[#ea4f93]">
+                Transformation
+                <br />
+                Result
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-[22px] border border-[#f3d5e2] bg-[#fff8fb]">
+              <div className="flex items-center justify-between border-b border-[#f8e3ec] px-4 py-3">
+                <p className="text-sm font-extrabold text-[#3f2b3f]">After Service</p>
+                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-bold text-emerald-600">
+                  After Photo
+                </span>
+              </div>
+              <div className="p-4">
+                <div className="overflow-hidden rounded-[18px] border border-[#f0d5e2] bg-white">
+                  <img
+                    src={afterPhoto.previewUrl}
+                    alt={afterPhoto.fileName}
+                    className="h-[320px] w-full object-cover"
+                  />
+                </div>
+                <div className="mt-4 flex items-center gap-3 rounded-[16px] border border-[#f3dbe6] bg-white px-4 py-3">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fff1f7] text-[#ea4f93]">
+                    <Clock3 size={14} />
+                  </span>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-[#b59aab]">Uploaded at</p>
+                    <p className="text-sm font-bold text-[#3f2b3f]">{afterPhoto.uploadedAt}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+          <CompareSummaryCard label="Service" value={data.serviceLabel} note={data.designName} />
+          <CompareSummaryCard label="Staff Artist" value={data.staffArtist} note="Senior Artist" />
+          <CompareSummaryCard label="Duration" value={data.estimatedDuration} note="On schedule" />
+          <CompareSummaryCard label="Design Match" value="96%" note="Excellent" accent />
+          <CompareSummaryCard label="Satisfaction" value="Pending" note="Awaiting review" />
+        </section>
+
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
+          <article className="rounded-[24px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+            <div className="flex items-center gap-3">
+              <div className="h-4 w-1 rounded-full bg-[image:var(--gradient-accent)]" />
+              <h2 className="text-sm font-extrabold text-[#3f2b3f]">Quality Check</h2>
+            </div>
+
+            <div className="mt-5 flex flex-wrap gap-3">
+              {qualityChecks.map((item) => (
+                <div
+                  key={item}
+                  className="inline-flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900"
+                >
+                  <span className="flex h-5 w-5 items-center justify-center rounded-md bg-emerald-600 text-white">
+                    <Check size={12} />
+                  </span>
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-8 flex flex-wrap gap-3">
+              <CompareActionButton
+                icon={Receipt}
+                label="Save to Customer History"
+                tone="primary"
+                onClick={() =>
+                  handleSessionAction("Completed comparison can now be saved to the customer history.")
+                }
+              />
+              <CompareActionButton
+                icon={Heart}
+                label="Add to Staff Portfolio"
+                tone="secondary"
+                onClick={() =>
+                  handleSessionAction("This completed nail set can be added to the staff portfolio.")
+                }
+              />
+              <CompareActionButton
+                icon={Send}
+                label="Send to Customer"
+                tone="success"
+                onClick={() =>
+                  handleSessionAction("Comparison proof has been prepared to send to the customer.")
+                }
+              />
+              <CompareActionButton
+                icon={CreditCard}
+                label="Go to Payment"
+                tone="outline"
+                onClick={() =>
+                  navigate(data.backRoute, {
+                    state: {
+                      fromServiceSession: true,
+                      readyForCheckout: true,
+                    },
+                  })
+                }
+              />
+              <CompareActionButton
+                icon={ArrowLeft}
+                label="Back to Service Session"
+                tone="muted"
+                onClick={() => setShowComparisonView(false)}
+              />
+            </div>
+          </article>
+
+          <aside className="space-y-4">
+            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#d75d93]">
+                Customer
+              </p>
+              <div className="mt-4 flex items-center gap-3">
+                <img
+                  src={data.customerAvatar}
+                  alt={data.customerName}
+                  className="h-14 w-14 rounded-full border border-[#f2bfd4] object-cover"
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                />
+                <div>
+                  <p className="text-sm font-extrabold text-[#3f2b3f]">{data.customerName}</p>
+                  <span className="mt-1 inline-flex rounded-full bg-[#ffd771] px-2.5 py-1 text-[10px] font-bold text-[#9a5b00]">
+                    Gold Member
+                  </span>
+                  <p className="mt-2 text-xs text-[#a88a9d]">#{data.bookingCode}</p>
+                </div>
+              </div>
+            </article>
+
+            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#d75d93]">
+                Selected Design
+              </p>
+              <div className="mt-4 overflow-hidden rounded-[16px] border border-[#f1d4e1]">
+                <img
+                  src={afterPhoto.previewUrl}
+                  alt={data.designName}
+                  className="h-32 w-full object-cover"
+                />
+              </div>
+              <div className="mt-4 space-y-3 text-sm">
+                {[
+                  ["Shape", "Almond"],
+                  ["Length", "Medium"],
+                  ["Color", "Pearl Chrome"],
+                  ["Finish", "Glossy"],
+                ].map(([label, value]) => (
+                  <div key={label} className="flex items-center justify-between gap-3">
+                    <span className="text-[#b08ea2]">{label}</span>
+                    <span className="font-bold text-[#3f2b3f]">{value}</span>
+                  </div>
+                ))}
+              </div>
+            </article>
+
+            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#d75d93]">
+                Proof Record
+              </p>
+              <div className="mt-4 space-y-3 text-sm text-[#866f80]">
+                <div className="flex items-start gap-3">
+                  <span className="mt-1 h-2 w-2 rounded-full bg-[#ea4f93]" />
+                  <div>
+                    <p>Before photo uploaded</p>
+                    <p className="font-bold text-[#3f2b3f]">{beforePhoto.uploadedAt}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="mt-1 h-2 w-2 rounded-full bg-[#ea4f93]" />
+                  <div>
+                    <p>After photo uploaded</p>
+                    <p className="font-bold text-[#3f2b3f]">{afterPhoto.uploadedAt}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="mt-1 h-2 w-2 rounded-full bg-[#ea4f93]" />
+                  <div>
+                    <p>Verified by</p>
+                    <p className="font-bold text-[#3f2b3f]">{data.staffArtist}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="mt-1 h-2 w-2 rounded-full bg-emerald-500" />
+                  <div>
+                    <p>Session status</p>
+                    <p className="font-bold text-emerald-600">Completed</p>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#d75d93]">
+                Next Step
+              </p>
+              <div className="mt-4 space-y-3">
+                <CompareActionButton
+                  icon={Receipt}
+                  label="Checkout"
+                  tone="primary"
+                  onClick={() =>
+                    navigate(data.backRoute, {
+                      state: {
+                        fromServiceSession: true,
+                        readyForCheckout: true,
+                      },
+                    })
+                  }
+                />
+                <CompareActionButton
+                  icon={ClipboardCheck}
+                  label="Request Review"
+                  tone="outline"
+                  onClick={() =>
+                    handleSessionAction("Customer review request can be sent after comparison is confirmed.")
+                  }
+                />
+                <CompareActionButton
+                  icon={Printer}
+                  label="Print Receipt"
+                  tone="secondary"
+                  onClick={() => handleSessionAction("Receipt printing can be prepared from the final payment flow.")}
+                />
+              </div>
+            </article>
+          </aside>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f9_100%)]">
@@ -1072,6 +1496,27 @@ export function StaffServiceSessionPage() {
                       <span className="mt-1 block text-xs text-[#a88a9d]">Archive this final result to the customer profile.</span>
                     </span>
                   </button>
+
+                  <button
+                    type="button"
+                    disabled={!canOpenComparison}
+                    onClick={handleOpenComparison}
+                    className={`flex min-h-20 items-start gap-3 rounded-2xl border px-4 py-4 text-left transition ${
+                      canOpenComparison
+                        ? "border-[#f2bfd4] bg-[#fff7fb] hover:bg-[#fff2f8]"
+                        : "cursor-not-allowed border-[#f4dbe7] bg-[#fffafb] opacity-70"
+                    }`}
+                  >
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#ffe7f1] text-[#ea4f93]">
+                      <Camera size={18} />
+                    </span>
+                    <span>
+                      <span className="block text-sm font-extrabold text-[#3f2b3f]">Compare Before & After</span>
+                      <span className="mt-1 block text-xs text-[#a88a9d]">
+                        Open the side-by-side transformation view after both photos are uploaded.
+                      </span>
+                    </span>
+                  </button>
                 </div>
               </article>
             </>
@@ -1185,11 +1630,7 @@ export function StaffServiceSessionPage() {
                   <ActionGhostButton
                     icon={Sparkles}
                     label="Compare Before & After"
-                    onClick={() =>
-                      handleSessionAction(
-                        "Before and after comparison can be prepared after the final photo is uploaded.",
-                      )
-                    }
+                    onClick={handleOpenComparison}
                   />
                 </div>
               </article>

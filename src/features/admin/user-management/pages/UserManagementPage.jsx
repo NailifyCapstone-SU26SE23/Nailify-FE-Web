@@ -59,33 +59,33 @@ const SUMMARY_CARDS = [
   },
 ];
 
-const QUICK_REGISTRATIONS = [
-  ["Sophia Nguyen", "2 mins ago", "Customer"],
-  ["Mia Tanaka", "11 mins ago", "Artist"],
-  ["Chloe Martin", "45 mins ago", "Customer"],
-  ["Aisha Patel", "1 hr ago", "Manager"],
-];
+// const QUICK_REGISTRATIONS = [
+//   ["Sophia Nguyen", "2 mins ago", "Customer"],
+//   ["Mia Tanaka", "11 mins ago", "Artist"],
+//   ["Chloe Martin", "45 mins ago", "Customer"],
+//   ["Aisha Patel", "1 hr ago", "Manager"],
+// ];
 
-const SUSPICIOUS_ACTIVITY = [
-  ["Multiple logins", "USR-2521", "3 devices"],
-  ["Fake booking spam", "USR-3312", "22 bookings"],
-  ["Profile photo abuse", "USR-1877", "Flagged"],
-];
+// const SUSPICIOUS_ACTIVITY = [
+//   ["Multiple logins", "USR-2521", "3 devices"],
+//   ["Fake booking spam", "USR-3312", "22 bookings"],
+//   ["Profile photo abuse", "USR-1877", "Flagged"],
+// ];
 
-const RECENTLY_SUSPENDED = [
-  ["Lena Kowalski", "No-shows x3", "3h ago"],
-  ["Tom Reeves", "Abusive review", "1d ago"],
-  ["Priya Sharma", "Payment fraud", "2d ago"],
-];
+// const RECENTLY_SUSPENDED = [
+//   ["Lena Kowalski", "No-shows x3", "3h ago"],
+//   ["Tom Reeves", "Abusive review", "1d ago"],
+//   ["Priya Sharma", "Payment fraud", "2d ago"],
+// ];
 
-const PERMISSION_SUMMARY = [
-  ["Customers", "Book & Review"],
-  ["Staff Artists", "Manage Schedule"],
-  ["Salon Managers", "Full Salon Access"],
-  ["Admins", "System-wide"],
-  ["Suspended", "Read Only"],
-  ["Banned", "No Access"],
-];
+// const PERMISSION_SUMMARY = [
+//   ["Customers", "Book & Review"],
+//   ["Staff Artists", "Manage Schedule"],
+//   ["Salon Managers", "Full Salon Access"],
+//   ["Admins", "System-wide"],
+//   ["Suspended", "Read Only"],
+//   ["Banned", "No Access"],
+// ];
 
 function getRoleTone(role) {
   switch (role) {
@@ -238,7 +238,8 @@ export function UserManagementPage() {
         ))}
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.65fr)_290px]">
+      {/* <div className="grid gap-4 xl:grid-cols-[minmax(0,1.65fr)_290px]"> */}
+      <div>
         <article className="rounded-[20px] border border-[#f7d8e6] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] md:p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <label className="relative block w-full sm:max-w-[420px]">
@@ -436,7 +437,7 @@ export function UserManagementPage() {
           </div>
         </article>
 
-        <aside className="rounded-[20px] border border-[#f7d8e6] bg-[linear-gradient(180deg,#fffdfd_0%,#fff7fb_100%)] p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
+        {/* <aside className="rounded-[20px] border border-[#f7d8e6] bg-[linear-gradient(180deg,#fffdfd_0%,#fff7fb_100%)] p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
           <h3 className="text-sm font-extrabold text-[#412643]">Quick Info Panel</h3>
 
           <div className="mt-5 space-y-6">
@@ -522,7 +523,7 @@ export function UserManagementPage() {
               </div>
             </div>
           </div>
-        </aside>
+        </aside> */}
       </div>
     </section>
   );
