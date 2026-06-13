@@ -27,6 +27,18 @@ const emptyDraft = {
   description: "",
 };
 
+function buildCategoryInitials(name) {
+  return (
+    name
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? "")
+      .join("") || "NC"
+  );
+}
+
 function Pill({ children, tone = "bg-[#fff1f7] text-[#ea4f93]" }) {
   return (
     <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold ${tone}`}>
@@ -143,6 +155,11 @@ export function NailDesignManagementCategoryPage() {
   };
 
   const pendingDeleteCategory = categories.find((item) => item.id === pendingDeleteId) ?? null;
+  const previewName = draft.name.trim() || "New category";
+  const previewDescription =
+    draft.description.trim() || "A short catalog description will appear here for admins.";
+  const previewInitials = buildCategoryInitials(previewName);
+  const descriptionLength = draft.description.trim().length;
 
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)]">
@@ -214,51 +231,120 @@ export function NailDesignManagementCategoryPage() {
       </section>
 
       <div className="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
-        <section className="rounded-[18px] border border-[#f8dce8] bg-white p-5 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-sm font-extrabold text-[#432744]">
-                {editingId ? "Edit Category" : "Add Category"}
-              </h2>
-              <p className="mt-1 text-[11px] text-[#c694ad]">
-                Update label and description used across the catalog.
-              </p>
+        <section className="overflow-hidden rounded-[22px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
+          <div className="border-b border-[#f8dce8] bg-[linear-gradient(135deg,#fff6fb_0%,#fff0f7_55%,#ffffff_100%)] p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <span className="inline-flex rounded-full bg-white/90 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#ea4f93] shadow-[0_8px_20px_rgba(236,72,153,0.08)]">
+                  Catalog Editor
+                </span>
+                <h2 className="mt-3 text-lg font-black text-[#432744]">
+                  {editingId ? "Edit Category" : "Add Category"}
+                </h2>
+                <p className="mt-1 text-[12px] leading-5 text-[#a37792]">
+                  Define a clear label and a concise description so the design catalog feels
+                  organized and easy to scan.
+                </p>
+              </div>
+              {editingId ? (
+                <button
+                  type="button"
+                  onClick={resetDraft}
+                  className="rounded-full border border-[#f4c6da] bg-white/90 p-2 text-[#ea4f93] shadow-sm"
+                  aria-label="Cancel editing"
+                >
+                  <X size={14} />
+                </button>
+              ) : null}
             </div>
-            {editingId ? (
-              <button
-                type="button"
-                onClick={resetDraft}
-                className="rounded-full border border-[#f4c6da] bg-[#fff7fb] p-2 text-[#ea4f93]"
-                aria-label="Cancel editing"
-              >
-                <X size={14} />
-              </button>
-            ) : null}
+
+            <div className="mt-5 rounded-[20px] border border-white/80 bg-white/80 p-4 shadow-[0_10px_24px_rgba(236,72,153,0.08)] backdrop-blur">
+              <div className="flex items-start gap-3">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] bg-[linear-gradient(135deg,#ec4899_0%,#f472b6_100%)] text-lg font-black text-white shadow-[0_12px_24px_rgba(236,72,153,0.22)]">
+                  {previewInitials}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="truncate text-[15px] font-extrabold text-[#432744]">
+                      {previewName}
+                    </p>
+                    <Pill tone="bg-[#fff1f7] text-[#ea4f93]">
+                      {editingId ? "Editing" : "New Draft"}
+                    </Pill>
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-[#8a7082]">{previewDescription}</p>
+                </div>
+              </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                <div className="rounded-[16px] border border-[#f9dfeb] bg-[#fff9fc] px-3 py-3">
+                  <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#c694ad]">
+                    Status
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-[#432744]">
+                    {editingId ? "Ready to update" : "Ready to create"}
+                  </p>
+                </div>
+                <div className="rounded-[16px] border border-[#f9dfeb] bg-[#fff9fc] px-3 py-3">
+                  <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#c694ad]">
+                    Name length
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-[#432744]">
+                    {draft.name.trim().length || 0} chars
+                  </p>
+                </div>
+                <div className="rounded-[16px] border border-[#f9dfeb] bg-[#fff9fc] px-3 py-3">
+                  <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#c694ad]">
+                    Description
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-[#432744]">{descriptionLength} chars</p>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
+          <form className="space-y-5 p-5" onSubmit={handleSubmit}>
             <label className="block">
-              <span className="mb-2 block text-[12px] font-bold text-[#8a7082]">Category Name</span>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <span className="block text-[12px] font-bold text-[#8a7082]">Category Name</span>
+                <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#c694ad]">
+                  Required
+                </span>
+              </div>
               <input
                 value={draft.name}
                 onChange={(event) => handleDraftChange("name", event.target.value)}
                 placeholder="Ex: Glitter Luxe"
-                className="h-11 w-full rounded-2xl border border-[#f5d7e4] bg-[#fff9fc] px-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
+                className="h-12 w-full rounded-2xl border border-[#f5d7e4] bg-[#fff9fc] px-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4] focus:bg-white"
               />
             </label>
 
             <label className="block">
-              <span className="mb-2 block text-[12px] font-bold text-[#8a7082]">Description</span>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <span className="block text-[12px] font-bold text-[#8a7082]">Description</span>
+                <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#c694ad]">
+                  Optional
+                </span>
+              </div>
               <textarea
                 value={draft.description}
                 onChange={(event) => handleDraftChange("description", event.target.value)}
                 placeholder="Short description for admins and merchandising."
                 rows={5}
-                className="w-full rounded-2xl border border-[#f5d7e4] bg-[#fff9fc] px-4 py-3 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
+                className="w-full rounded-2xl border border-[#f5d7e4] bg-[#fff9fc] px-4 py-3 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4] focus:bg-white"
               />
             </label>
 
-            <div className="flex gap-2">
+            <div className="rounded-[18px] border border-dashed border-[#f3c9dd] bg-[#fff8fb] px-4 py-3">
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#c694ad]">
+                Writing tip
+              </p>
+              <p className="mt-1 text-sm leading-6 text-[#8a7082]">
+                Use short names with a strong visual theme, then describe the collection mood,
+                finish, or intended merchandising use.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
               <button
                 type="submit"
                 className="inline-flex items-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2.5 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
