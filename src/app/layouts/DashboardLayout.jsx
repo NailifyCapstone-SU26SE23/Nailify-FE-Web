@@ -14,7 +14,7 @@ function getRoleLabel(role) {
     case "receptionist":
       return "Receptionist";
     case "staff":
-      return "Staff Artist";
+      return "Nail Artist";
     default:
       return "Workspace";
   }
@@ -102,6 +102,11 @@ function getHeaderContent(pathname, menus) {
       return {
         title: "Users",
         description: "Manage customers, staff artists, and salon managers.",
+      };
+    case "admin-service-pricing":
+      return {
+        title: "Service & Pricing Management",
+        description: "Manage services, add-ons, prices, and estimated durations.",
       };
     default:
       return {

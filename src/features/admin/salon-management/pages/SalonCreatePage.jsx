@@ -1,4 +1,3 @@
-import { Modal } from "antd";
 import {
   ArrowLeft,
   Calendar,
@@ -13,12 +12,12 @@ import {
 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { TimePicker } from "../../../../shared/components/ui/TimePicker";
 import { SalonSaveResultModal } from "../components/SalonSaveResultModal";
 import { ROUTES } from "../../../../shared/constants/routes";
 import {
   SALON_DAYS_OF_WEEK,
-  SALON_FORM_MODAL_STYLES,
   SALON_STATUS_OPTIONS,
   createEmptySalonForm,
   getSalonStatusStyle,
@@ -415,53 +414,46 @@ export function SalonCreatePage() {
         </label>
       </div>
 
-      <Modal
-        title="Confirm Cancel"
+      <ActionConfirmModal
         open={showCancelModal}
-        onOk={handleConfirmCancel}
+        intent="warning"
+        title="Cancel Salon Creation"
+        subtitle="You are leaving this form without saving."
+        description="All unsaved salon details will be discarded if you cancel now."
+        confirmText="Yes, Cancel"
+        cancelText="Keep Editing"
+        confirmIcon={X}
+        onConfirm={handleConfirmCancel}
         onCancel={() => setShowCancelModal(false)}
-        okText="Yes, Cancel"
-        cancelText="No, Continue Editing"
-        okButtonProps={{
-          className: "bg-rose-500 hover:bg-rose-600 text-white border-rose-500",
-        }}
-        cancelButtonProps={{
-          className: "border-rose-200 text-rose-500 hover:text-rose-600",
-        }}
-        styles={SALON_FORM_MODAL_STYLES}
-      >
-        <div className="py-4">
-          <p className="mb-2 text-slate-700">Are you sure you want to cancel?</p>
-          <p className="text-sm text-slate-500">All unsaved changes will be lost.</p>
-        </div>
-      </Modal>
+        details={[
+          { label: "Draft Status", value: "Not saved yet" },
+          { label: "Next Step", value: "Return to salon list" },
+        ]}
+        warnings={[
+          "Branch profile, manager contact, and operating hours in this draft will be lost.",
+          "You will need to re-enter the information if you start again later.",
+        ]}
+      />
 
-      <Modal
-        title="Confirm Save"
+      <ActionConfirmModal
         open={showSaveModal}
-        onOk={handleConfirmSave}
+        intent="success"
+        title="Save New Salon"
+        subtitle="This will create the salon in the current mock admin state."
+        description="Confirm to add this branch and make it available in salon management."
+        confirmText="Save Salon"
+        cancelText="Review Again"
+        confirmIcon={Save}
+        loading={isSaving}
+        onConfirm={handleConfirmSave}
         onCancel={() => !isSaving && setShowSaveModal(false)}
-        okText="Yes, Save Salon"
-        cancelText="No, Continue Editing"
-        confirmLoading={isSaving}
-        closable={!isSaving}
-        maskClosable={!isSaving}
-        okButtonProps={{
-          className: "bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500",
-        }}
-        cancelButtonProps={{
-          className: "border-emerald-200 text-emerald-500 hover:text-emerald-600",
-          disabled: isSaving,
-        }}
-        styles={SALON_FORM_MODAL_STYLES}
-      >
-        <div className="py-4">
-          <p className="mb-2 text-slate-700">Are you sure you want to save this salon?</p>
-          <p className="text-sm text-slate-500">
-            The salon will be added to the system and available for management.
-          </p>
-        </div>
-      </Modal>
+        highlights={[formData.name || "New salon", formData.manager || "Manager pending", formData.status]}
+        details={[
+          { label: "Address", value: formData.address || "No address entered" },
+          { label: "Staff Amount", value: formData.staffAmount || "0" },
+        ]}
+        warnings={["This mock save updates the UI state only and does not persist to a backend."]}
+      />
 
       <SalonSaveResultModal
         result={saveResult}

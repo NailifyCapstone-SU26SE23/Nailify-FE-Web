@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ROUTES } from "../../../../shared/constants/routes";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import {
@@ -417,6 +418,7 @@ export function NailDesignManagementCreatePage() {
   const [structureSelections, setStructureSelections] = useState(createInitialStructureSelections);
   const [variants, setVariants] = useState(VARIANT_PRESETS);
   const [activeVariantIndex, setActiveVariantIndex] = useState(0);
+  const [showCreateConfirm, setShowCreateConfirm] = useState(false);
 
   const handleChange = (field) => (event) => {
     setFormValues((current) => ({
@@ -550,7 +552,7 @@ export function NailDesignManagementCreatePage() {
             </button>
             <button
               type="button"
-              onClick={handleCreate}
+              onClick={() => setShowCreateConfirm(true)}
               className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.2)]"
             >
               <Sparkles size={13} className="mr-1.5 inline" />
@@ -1160,7 +1162,7 @@ export function NailDesignManagementCreatePage() {
             <div className="mt-5 flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={handleCreate}
+                onClick={() => setShowCreateConfirm(true)}
                 className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.2)]"
               >
                 <Sparkles size={13} className="mr-1.5 inline" />
@@ -1307,6 +1309,26 @@ export function NailDesignManagementCreatePage() {
           </section>
         </aside>
       </div>
+
+      <ActionConfirmModal
+        open={showCreateConfirm}
+        intent="success"
+        title="Publish Nail Design"
+        subtitle="This will add the design to the current mock catalog."
+        description="Confirm to publish this nail design with its selected style profile, pricing, and structure."
+        confirmText="Publish Design"
+        cancelText="Review Again"
+        confirmIcon={Sparkles}
+        width={520}
+        onConfirm={handleCreate}
+        onCancel={() => setShowCreateConfirm(false)}
+        highlights={[formValues.name || "New nail design", formValues.category || "Category pending", formValues.collection || "Collection pending"]}
+        details={[
+          { label: "Suggested Price", value: formValues.suggestedPrice || "No price entered" },
+          { label: "Est. Duration", value: formValues.estimatedDuration || "No duration entered" },
+        ]}
+        warnings={["This mock publish updates the UI flow only and does not persist outside this feature."]}
+      />
     </section>
   );
 }

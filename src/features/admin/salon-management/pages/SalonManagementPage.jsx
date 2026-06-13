@@ -1,9 +1,10 @@
-import { Modal } from "antd";
 import {
   AlertTriangle,
   BellRing,
   BriefcaseBusiness,
   Check,
+  ChevronLeft,
+  ChevronRight,
   Clock3,
   Eye,
   MapPin,
@@ -16,17 +17,19 @@ import {
   Trash2,
   TrendingUp,
   UserRound,
-  Wrench,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ROUTES, getAdminSalonUpdateRoute } from "../../../../shared/constants/routes";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
+import {
+  ROUTES,
+  getAdminSalonDetailRoute,
+  getAdminSalonUpdateRoute,
+} from "../../../../shared/constants/routes";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import {
   LOW_OCCUPANCY_SALON,
   SALON_ALERTS,
-  SALON_BRANCHES,
-  SALON_MODAL_STYLES,
   SALON_STATUS_FILTERS,
   SALON_SUMMARY,
   TOP_PERFORMING_SALON,
@@ -143,9 +146,13 @@ RightMetricCard.propTypes = {
   }).isRequired,
 };
 
-function BranchCard({ branch }) {
+function BranchCard({ branch, onClick }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-rose-100 bg-white shadow-[0_18px_32px_rgba(226,93,143,0.08)]">
+    <button
+      type="button"
+      onClick={onClick}
+      className="overflow-hidden rounded-2xl border border-rose-100 bg-white text-left shadow-[0_18px_32px_rgba(226,93,143,0.08)] transition hover:-translate-y-1 hover:border-rose-200 hover:shadow-[0_24px_40px_rgba(226,93,143,0.14)]"
+    >
       <img src={branch.image} alt={branch.name} className="h-36 w-full object-cover" />
       <div className="space-y-3 p-4">
         <div className="flex items-center justify-between gap-3">
@@ -189,7 +196,7 @@ function BranchCard({ branch }) {
           </p>
         </div>
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -207,24 +214,6 @@ BranchCard.propTypes = {
     status: PropTypes.string.isRequired,
     statusTone: PropTypes.string.isRequired,
   }).isRequired,
-};
-
-function CloseIconButton({ onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="rounded-full bg-white/20 p-1.5 text-white hover:bg-white/30"
-    >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-        <line x1="18" y1="6" x2="6" y2="18" />
-        <line x1="6" y1="6" x2="18" y2="18" />
-      </svg>
-    </button>
-  );
-}
-
-CloseIconButton.propTypes = {
   onClick: PropTypes.func.isRequired,
 };
 
@@ -248,11 +237,11 @@ SmallActionButton.propTypes = {
 export function SalonManagementPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [showViewModal, setShowViewModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedSalon, setSelectedSalon] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [branchOverviewStart, setBranchOverviewStart] = useState(0);
   const [salons, setSalons] = useState(getSalonsWithUpdates);
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
 
@@ -284,9 +273,20 @@ export function SalonManagementPage() {
     });
   }, [salons, searchTerm, statusFilter]);
 
+  const visibleBranchSalons = useMemo(
+    () => filteredSalons.slice(branchOverviewStart, branchOverviewStart + 3),
+    [branchOverviewStart, filteredSalons],
+  );
+
+  const canGoToPreviousBranchSet = branchOverviewStart > 0;
+  const canGoToNextBranchSet = branchOverviewStart + 3 < filteredSalons.length;
+
+  useEffect(() => {
+    setBranchOverviewStart(0);
+  }, [searchTerm, statusFilter]);
+
   const handleViewSalon = (salon) => {
-    setSelectedSalon(salon);
-    setShowViewModal(true);
+    navigate(getAdminSalonDetailRoute(salon.id));
   };
 
   const handleUpdateSalon = (salon) => {
@@ -312,6 +312,7 @@ export function SalonManagementPage() {
   const clearFilters = () => {
     setSearchTerm("");
     setStatusFilter("All");
+    setBranchOverviewStart(0);
   };
 
   return (
@@ -338,26 +339,61 @@ export function SalonManagementPage() {
                   Snapshot cards for the branches matching your current filters
                 </p>
               </div>
-              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em]">
-                {SALON_STATUS_FILTERS.map((tab) => (
-                  <button
-                    key={tab}
-                    type="button"
-                    onClick={() => setStatusFilter(tab)}
-                    className={`rounded-full px-3 py-1.5 ${statusFilter === tab
-                      ? "bg-rose-500 text-white"
-                      : "bg-[#fff2f6] text-slate-400 hover:bg-rose-100"
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em]">
+                  {SALON_STATUS_FILTERS.map((tab) => (
+                    <button
+                      key={tab}
+                      type="button"
+                      onClick={() => setStatusFilter(tab)}
+                      className={`rounded-full px-3 py-1.5 ${
+                        statusFilter === tab
+                          ? "bg-rose-500 text-white"
+                          : "bg-[#fff2f6] text-slate-400 hover:bg-rose-100"
                       }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+                {filteredSalons.length > 3 ? (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setBranchOverviewStart((current) => Math.max(current - 3, 0))
+                      }
+                      disabled={!canGoToPreviousBranchSet}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-rose-200 bg-white text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      aria-label="Previous salons"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setBranchOverviewStart((current) =>
+                          Math.min(current + 3, Math.max(filteredSalons.length - 3, 0)),
+                        )
+                      }
+                      disabled={!canGoToNextBranchSet}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-rose-200 bg-white text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      aria-label="Next salons"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                ) : null}
               </div>
             </div>
             {filteredSalons.length > 0 ? (
               <div className="grid gap-4 lg:grid-cols-3">
-                {filteredSalons.slice(0, 3).map((branch) => (
-                  <BranchCard key={branch.id} branch={branch} />
+                {visibleBranchSalons.map((branch) => (
+                  <BranchCard
+                    key={branch.id}
+                    branch={branch}
+                    onClick={() => handleViewSalon(branch)}
+                  />
                 ))}
               </div>
             ) : (
@@ -531,174 +567,34 @@ export function SalonManagementPage() {
         </aside>
       </div>
 
-      <Modal
-        open={showViewModal}
-        onCancel={() => setShowViewModal(false)}
-        footer={null}
-        closable={false}
-        width={440}
-        styles={SALON_MODAL_STYLES}
-      >
-        {selectedSalon ? (
-          <div>
-            <div className="bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-6 py-5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-xl bg-white/20 p-2">
-                    <Eye size={16} className="text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-[15px] font-black text-white">Salon Details</h3>
-                    <p className="text-[11px] text-white/70">View salon information</p>
-                  </div>
-                </div>
-                <CloseIconButton onClick={() => setShowViewModal(false)} />
-              </div>
-            </div>
-
-            <div className="space-y-4 px-6 py-5">
-              <div className="flex items-center gap-4">
-                <img
-                  src={selectedSalon.image}
-                  alt={selectedSalon.name}
-                  className="h-20 w-20 rounded-xl object-cover shadow-sm"
-                />
-                <div>
-                  <h3 className="text-[17px] font-bold text-slate-800">{selectedSalon.name}</h3>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-300">
-                    #{selectedSalon.salonId}
-                  </p>
-                  <span
-                    className={`mt-2 inline-block rounded-full px-2.5 py-1 text-[10px] font-bold ${selectedSalon.statusColor}`}
-                  >
-                    {selectedSalon.status}
-                  </span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { icon: MapPin, label: "Address", value: selectedSalon.address },
-                  { icon: UserRound, label: "Manager", value: selectedSalon.manager },
-                  { icon: Phone, label: "Phone", value: selectedSalon.phone },
-                  { icon: Clock3, label: "Operating Hours", value: selectedSalon.hours },
-                  { icon: Wrench, label: "Staff Amount", value: selectedSalon.staff },
-                  {
-                    icon: Star,
-                    label: "Rating",
-                    value: `${selectedSalon.rating} (${selectedSalon.reviews} reviews)`,
-                  },
-                ].map(({ icon: Icon, label, value }) => (
-                  <div key={label} className="rounded-xl border border-rose-50 bg-[#fff8fb] p-3">
-                    <div className="mb-1 flex items-center gap-1.5">
-                      <Icon size={11} className="text-rose-400" />
-                      <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">
-                        {label}
-                      </span>
-                    </div>
-                    <p className="text-[12px] font-semibold text-slate-700">{value}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex justify-end border-t border-rose-50 px-6 py-4">
-              <button
-                type="button"
-                onClick={() => setShowViewModal(false)}
-                className="rounded-full border border-rose-200 bg-white px-5 py-2 text-[11px] font-bold text-rose-400 transition hover:bg-rose-50"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        ) : null}
-      </Modal>
-
-      <Modal
+      <ActionConfirmModal
         open={showDeleteModal}
+        intent="danger"
+        title="Delete Salon"
+        subtitle="This will remove the branch from salon management."
+        description={`You are about to delete ${selectedSalon?.name ?? "this salon"}. This action cannot be undone.`}
+        confirmText="Delete Salon"
+        cancelText="Keep Salon"
+        confirmIcon={Trash2}
+        width={460}
+        onConfirm={handleConfirmDelete}
         onCancel={() => setShowDeleteModal(false)}
-        footer={null}
-        closable={false}
-        width={440}
-        styles={SALON_MODAL_STYLES}
-      >
-        {selectedSalon ? (
-          <div>
-            <div className="bg-gradient-to-r from-rose-500 to-rose-600 px-6 py-5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-xl bg-white/20 p-2">
-                    <Trash2 size={16} className="text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-[15px] font-black text-white">Delete Salon</h3>
-                    <p className="text-[11px] text-white/70">This action cannot be undone</p>
-                  </div>
-                </div>
-                <CloseIconButton onClick={() => setShowDeleteModal(false)} />
-              </div>
-            </div>
-
-            <div className="space-y-4 px-6 py-5">
-              <div className="rounded-2xl border border-rose-100 bg-[#fff8fb] p-4">
-                <div className="flex items-center gap-3">
-                  <img
-                    src={selectedSalon.image}
-                    alt={selectedSalon.name}
-                    className="h-14 w-14 rounded-xl object-cover shadow-sm"
-                  />
-                  <div>
-                    <p className="text-[13px] font-bold text-slate-800">{selectedSalon.name}</p>
-                    <p className="text-[11px] text-slate-400">
-                      #{selectedSalon.salonId} • {selectedSalon.address}
-                    </p>
-                    <p className="text-[11px] text-slate-400">Manager: {selectedSalon.manager}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                <div className="mb-2 flex items-center gap-2">
-                  <AlertTriangle size={14} className="text-amber-500" />
-                  <p className="text-[12px] font-bold text-amber-600">Warning</p>
-                </div>
-                <ul className="space-y-1.5">
-                  {[
-                    "All salon data will be permanently deleted",
-                    "Staff assignments will be removed",
-                    "Appointment history will be lost",
-                    "This action affects reporting and analytics",
-                  ].map((item) => (
-                    <li key={item} className="flex items-start gap-2 text-[11px] text-amber-700">
-                      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-amber-400" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 border-t border-rose-50 px-6 py-4">
-              <button
-                type="button"
-                onClick={() => setShowDeleteModal(false)}
-                className="rounded-full border border-rose-200 bg-white px-5 py-2 text-[11px] font-bold text-rose-400 transition hover:bg-rose-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmDelete}
-                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-rose-500 to-rose-600 px-5 py-2 text-[11px] font-bold text-white shadow-[0_8px_20px_rgba(239,68,68,0.35)] transition hover:opacity-90"
-              >
-                <Trash2 size={12} />
-                Delete Salon
-              </button>
-            </div>
-          </div>
-        ) : null}
-      </Modal>
+        item={
+          selectedSalon
+            ? {
+                image: selectedSalon.image,
+                title: selectedSalon.name,
+                meta: `#${selectedSalon.salonId} • ${selectedSalon.address}`,
+                note: `Manager: ${selectedSalon.manager}`,
+              }
+            : null
+        }
+        warnings={[
+          "All salon data in the current mock state will be removed.",
+          "Staff assignments linked to this branch will no longer appear.",
+          "Appointment history and reporting references for this branch will be lost.",
+        ]}
+      />
     </section>
   );
 }
