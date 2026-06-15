@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
+import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import {
   ADD_ON_TYPE_TONES,
@@ -124,35 +125,6 @@ function TogglePill({ enabled, onClick }) {
 TogglePill.propTypes = {
   enabled: PropTypes.bool.isRequired,
   onClick: PropTypes.func,
-};
-
-function ActionButton({ children, onClick, tone = "default", icon: Icon }) {
-  const className =
-    tone === "rose"
-      ? "border-[#f4c6da] text-[#ea4f93] bg-[#fff8fb]"
-      : tone === "violet"
-        ? "border-[#d9c6ff] text-[#7c57e9] bg-white"
-        : tone === "danger"
-          ? "border-[#f5cdd4] text-[#e35b73] bg-white"
-          : "border-[#f4d5e3] text-[#8a7082] bg-white";
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`inline-flex items-center justify-center gap-1 rounded-md border px-2.5 py-1 text-[10px] font-bold ${className}`}
-    >
-      {Icon ? <Icon size={11} /> : null}
-      {children}
-    </button>
-  );
-}
-
-ActionButton.propTypes = {
-  children: PropTypes.node,
-  icon: PropTypes.func,
-  onClick: PropTypes.func,
-  tone: PropTypes.string,
 };
 
 function SidePanel({ title, children }) {
@@ -584,6 +556,54 @@ export function ServicePricingManagementPage() {
     setAddOnModal({ open: true, mode: "edit", recordId: addOn.id });
   };
 
+  const getServiceActionItems = (service) => [
+    {
+      key: "edit-service",
+      label: "Edit Service",
+      icon: Pencil,
+      onSelect: () => openEditService(service),
+    },
+    {
+      key: "edit-duration",
+      label: "Edit Duration",
+      icon: CircleAlert,
+      onSelect: () => openEditService(service),
+    },
+    {
+      key: "delete-service",
+      label: "Delete Service",
+      icon: Trash2,
+      className: "text-[#d14c84]",
+      onSelect: () =>
+        setDeleteState({
+          type: "service",
+          recordId: service.id,
+          label: service.name,
+        }),
+    },
+  ];
+
+  const getAddOnActionItems = (item) => [
+    {
+      key: "edit-addon",
+      label: "Edit Add-on",
+      icon: Pencil,
+      onSelect: () => openEditAddOn(item),
+    },
+    {
+      key: "remove-addon",
+      label: "Remove Add-on",
+      icon: Trash2,
+      className: "text-[#d14c84]",
+      onSelect: () =>
+        setDeleteState({
+          type: "addon",
+          recordId: item.id,
+          label: item.name,
+        }),
+    },
+  ];
+
   const submitServiceForm = () => {
     const result =
       serviceModal.mode === "create"
@@ -733,27 +753,7 @@ export function ServicePricingManagementPage() {
                           <StatusBadge status={service.status} />
                         </td>
                         <td className="px-4 py-4">
-                          <div className="flex flex-col gap-1.5">
-                            <ActionButton tone="rose" icon={Pencil} onClick={() => openEditService(service)}>
-                              Edit
-                            </ActionButton>
-                            <ActionButton tone="violet" onClick={() => openEditService(service)}>
-                              Edit Duration
-                            </ActionButton>
-                            <ActionButton
-                              tone="danger"
-                              icon={Trash2}
-                              onClick={() =>
-                                setDeleteState({
-                                  type: "service",
-                                  recordId: service.id,
-                                  label: service.name,
-                                })
-                              }
-                            >
-                              Delete
-                            </ActionButton>
-                          </div>
+                          <ActionDropdown items={getServiceActionItems(service)} />
                         </td>
                       </tr>
                     ))}
@@ -807,24 +807,7 @@ export function ServicePricingManagementPage() {
                           <StatusBadge status={item.status} />
                         </td>
                         <td className="px-4 py-4">
-                          <div className="flex flex-wrap gap-2">
-                            <ActionButton tone="rose" icon={Pencil} onClick={() => openEditAddOn(item)}>
-                              Edit
-                            </ActionButton>
-                            <ActionButton
-                              tone="danger"
-                              icon={Trash2}
-                              onClick={() =>
-                                setDeleteState({
-                                  type: "addon",
-                                  recordId: item.id,
-                                  label: item.name,
-                                })
-                              }
-                            >
-                              Remove
-                            </ActionButton>
-                          </div>
+                          <ActionDropdown items={getAddOnActionItems(item)} />
                         </td>
                       </tr>
                     ))}

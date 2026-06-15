@@ -1,6 +1,6 @@
 import { PencilLine, Save, Trash2, X } from "lucide-react";
 import { useState } from "react";
-import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ROUTES } from "../../../../shared/constants/routes";
 import { UserManagementFormFields } from "../components/UserManagementFormFields";
@@ -9,15 +9,18 @@ import { UserManagementSnapshotCard } from "../components/UserManagementSnapshot
 import { getMockUserById } from "../services/mockUsers";
 
 export function UserManagementDetailPage() {
+  const location = useLocation();
   const navigate = useNavigate();
   const { userId } = useParams();
   const initialUser = getMockUserById(userId);
   const [formValues, setFormValues] = useState(initialUser);
   const [flashMessage, setFlashMessage] = useState("");
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(Boolean(location.state?.requestEdit));
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(
+    Boolean(location.state?.requestDelete),
+  );
 
   if (!initialUser) {
     return <Navigate to={ROUTES.adminUsers} replace />;

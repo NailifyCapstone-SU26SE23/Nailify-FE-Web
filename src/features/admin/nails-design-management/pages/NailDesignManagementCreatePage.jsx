@@ -24,7 +24,6 @@ import {
   createEmptyNailDesign,
 } from "../services/mockNailDesigns";
 
-const DESIGN_CODE = "NDF-2025-0047";
 const TAG_OPTIONS = [
   "Elegant",
   "Cute",
@@ -45,7 +44,7 @@ const PROFILE_GROUPS = [
   ["Vibe Level", ["Subtle", "Soft", "Moderate", "Eye-catching", "Luxury Statement"]],
   ["Occasion", ["Daily", "Office", "Wedding", "Party", "Holiday", "Valentine", "Birthday", "Photoshoot"]],
   ["Hand Shape", ["Slim Fingers", "Short Fingers", "Wide Hands", "Long Fingers"]],
-  ["Audience", ["Female", "Male", "Unisex", "Gay"]],
+  ["Audience", ["Female", "Male", "Others"]],
 ];
 
 const STRUCTURE_GROUPS = [
@@ -56,61 +55,23 @@ const STRUCTURE_GROUPS = [
   ["Nail Complexity", ["Simple", "Medium", "Complex", "+ Premium Art"]],
 ];
 
-const VARIANT_PRESETS = [
-  {
-    code: "BASE",
-    name: "Ruby Bow Base",
-    color: "Cherry Red",
-    finish: "Glitter",
-    shape: "Almond",
-    length: "Medium",
-    accessory: "Ribbon line art",
-    materialCost: "85,000",
-    extraFee: "0",
-    quantity: "1",
-    notes: ["Base color selected", "Bow artwork overlay"],
-    badgeTone: "bg-[#ea4f93] text-white",
-  },
-  {
-    code: "VAR 1",
-    name: "French Ruby Variant",
-    color: "Wine Red",
-    finish: "Glossy",
-    shape: "Oval",
-    length: "Medium",
-    accessory: "French tip replacement",
-    materialCost: "120,000",
-    extraFee: "50,000",
-    quantity: "1",
-    notes: ["French tip swap", "+2 complexity"],
-    badgeTone: "bg-[#d4a93f] text-white",
-  },
-  {
-    code: "VAR 2",
-    name: "Rose Gold Accent Variant",
-    color: "Rose Gold",
-    finish: "Chrome",
-    shape: "Almond",
-    length: "Long",
-    accessory: "Crystal charm cluster",
-    materialCost: "200,000",
-    extraFee: "100,000",
-    quantity: "1",
-    notes: ["Luxury accessory", "Overlay image required"],
-    badgeTone: "bg-[#8b5cf6] text-white",
-  },
-];
 
 const VARIANT_COLOR_OPTIONS = [
-  "Cherry Red",
-  "Wine Red",
-  "Rose Gold",
-  "Pearl White",
-  "Champagne Gold",
-  "Soft Pink",
+  { label: "Cherry Red", swatch: "linear-gradient(135deg,#d61f4b 0%,#8e0e22 100%)" },
+  { label: "Wine Red", swatch: "linear-gradient(135deg,#9c2438 0%,#5f1120 100%)" },
+  { label: "Rose Gold", swatch: "linear-gradient(135deg,#e2a3b8 0%,#bb5f79 100%)" },
+  { label: "Pearl White", swatch: "linear-gradient(135deg,#fff8fb 0%,#d9b8c8 100%)" },
+  { label: "Champagne Gold", swatch: "linear-gradient(135deg,#f0d28c 0%,#b98522 100%)" },
+  { label: "Soft Pink", swatch: "linear-gradient(135deg,#ffd9ea 0%,#e47fb0 100%)" },
 ];
 const VARIANT_FINISH_OPTIONS = ["Glossy", "Glitter", "Chrome", "Velvet", "Jelly"];
-const VARIANT_SHAPE_OPTIONS = ["Almond", "Oval", "Square", "Round", "Coffin"];
+const VARIANT_SHAPE_OPTIONS = [
+  { label: "Almond", previewStyle: { borderRadius: "999px 999px 720px 720px" } },
+  { label: "Oval", previewStyle: { borderRadius: "999px" } },
+  { label: "Square", previewStyle: { borderRadius: "10px" } },
+  { label: "Round", previewStyle: { borderRadius: "999px 999px 520px 520px" } },
+  { label: "Coffin", previewStyle: { clipPath: "polygon(18% 0, 82% 0, 100% 100%, 0 100%)" } },
+];
 const VARIANT_LENGTH_OPTIONS = ["Short", "Medium", "Long"];
 const VARIANT_ACCESSORY_OPTIONS = [
   "Ribbon line art",
@@ -119,34 +80,6 @@ const VARIANT_ACCESSORY_OPTIONS = [
   "Pearl charm",
   "Heart gem",
   "Gold foil sticker",
-];
-
-const WORKFLOW_STEPS = [
-  ["Preparation & Consultation", "Easy", "5"],
-  ["Cleaning & Cuticle Care", "Easy", "10"],
-  ["Nail Shaping & Filing", "Medium", "10"],
-  ["Base Coat Application", "Easy", "5"],
-  ["Color & Chrome Application", "Advanced", "20"],
-  ["Decoration Placement", "Advanced", "15"],
-  ["Top Coat Sealing", "Easy", "5"],
-  ["UV/LED Curing", "Easy", "8"],
-  ["Final Review & Polish", "Medium", "7"],
-];
-
-const COST_ROWS = [
-  ["Gel Polish", "1", "30,000"],
-  ["Chrome Powder", "1", "25,000"],
-  ["Pearl Decoration", "10", "40,000"],
-  ["Nail Extension", "5", "0"],
-  ["Tool Usage", "1", "15,000"],
-];
-
-const SERVICE_ROWS = [
-  ["Base Service", "200,000"],
-  ["Staff Labor Fee", "100,000"],
-  ["Complexity Fee", "50,000"],
-  ["Luxury Fee", "80,000"],
-  ["Variant Extra", "0"],
 ];
 
 const SKILL_CARDS = [
@@ -159,70 +92,52 @@ const SKILL_CARDS = [
 ];
 
 function createInitialProfileSelections() {
-  return {
-    "Skin Tone": ["Light Medium", "Medium"],
-    "Skin Undertone": ["Cool"],
-    "Color Palette": ["Red", "Pink", "Chrome"],
-    "Age Group": ["20s", "30s"],
-    "Style / Personality": ["Elegant", "Luxury", "Feminine"],
-    "Vibe Level": ["Moderate"],
-    Occasion: ["Wedding", "Party"],
-    "Hand Shape": ["Slim Fingers", "Long Fingers"],
-    Audience: ["Female"],
-  };
+  return Object.fromEntries(PROFILE_GROUPS.map(([label]) => [label, []]));
 }
 
 function createInitialStructureSelections() {
+  return Object.fromEntries(STRUCTURE_GROUPS.map(([label]) => [label, ""]));
+}
+
+function createEmptyVariant(index, structureSelections = {}) {
   return {
-    "Nail Length": "Medium",
-    "Nail Shape": "Almond",
-    "Surface / Finish": "Glitter",
-    "Main Pattern": "French Tip",
-    "Nail Complexity": "Medium",
+    code: index === 0 ? "BASE" : `VAR ${index}`,
+    name: "",
+    color: "Cherry Red",
+    finish: structureSelections["Surface / Finish"] || "Glossy",
+    shape: structureSelections["Nail Shape"] || "Almond",
+    length: structureSelections["Nail Length"] || "Medium",
+    accessory: "",
+    materialCost: "0",
+    extraFee: "0",
+    quantity: "1",
+    notes: [],
+    badgeTone: index === 0 ? "bg-[#ea4f93] text-white" : "bg-[#f2e9ff] text-[#8b5cf6]",
   };
 }
 
-function getPreviewTheme(color) {
-  switch (color) {
-    case "Rose Gold":
-      return {
-        nail: "#cf7f97",
-        glitter: "#f7bfd2",
-        accent: "#bb5f79",
-      };
-    case "Pearl White":
-      return {
-        nail: "#efe5ea",
-        glitter: "#f7f2f4",
-        accent: "#d58ea7",
-      };
-    case "Champagne Gold":
-      return {
-        nail: "#d6a34c",
-        glitter: "#f0d28c",
-        accent: "#a8741d",
-      };
-    case "Soft Pink":
-      return {
-        nail: "#f0aac8",
-        glitter: "#ffd6e7",
-        accent: "#cf5e94",
-      };
-    case "Wine Red":
-      return {
-        nail: "#82192a",
-        glitter: "#c42b43",
-        accent: "#671120",
-      };
-    case "Cherry Red":
-    default:
-      return {
-        nail: "#ad1128",
-        glitter: "#e13153",
-        accent: "#8e0e22",
-      };
-  }
+function createEmptyWorkflowStep(index) {
+  return [`Step ${index + 1}`, "Easy", "0"];
 }
+
+function createEmptyCostRow(index) {
+  return [`Material ${index + 1}`, "1", "0"];
+}
+
+function createEmptyServiceRow(index) {
+  return [`Service Fee ${index + 1}`, "0"];
+}
+
+function createInitialSkillCards() {
+  return SKILL_CARDS.map(([title, subtitle]) => [title, subtitle, 1, "Beginner"]);
+}
+
+function parseCurrencyValue(value) {
+  const normalized = String(value ?? "").replace(/[^\d.-]/g, "");
+  const parsed = Number.parseFloat(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 
 function PillButton({
   children,
@@ -253,6 +168,66 @@ PillButton.propTypes = {
   className: PropTypes.string,
   disabled: PropTypes.bool,
   onClick: PropTypes.func,
+};
+
+function ColorSwatchButton({ active = false, label, onClick, swatch }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex min-w-[92px] flex-col items-center gap-2 rounded-[18px] border px-3 py-3 text-center transition ${
+        active
+          ? "border-[#ea4f93] bg-[#fff0f7] shadow-[0_10px_20px_rgba(236,72,153,0.12)]"
+          : "border-[#f4c6da] bg-white hover:border-[#ef6bb4]"
+      }`}
+    >
+      <span
+        className="h-9 w-9 rounded-full border border-white shadow-[0_6px_14px_rgba(67,39,68,0.12)]"
+        style={{ background: swatch }}
+      />
+      <span className={`text-[11px] font-bold ${active ? "text-[#ea4f93]" : "text-[#7e6075]"}`}>
+        {label}
+      </span>
+    </button>
+  );
+}
+
+ColorSwatchButton.propTypes = {
+  active: PropTypes.bool,
+  label: PropTypes.string.isRequired,
+  onClick: PropTypes.func,
+  swatch: PropTypes.string.isRequired,
+};
+
+function ShapeOptionButton({ active = false, label, onClick, previewStyle }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex min-w-[92px] flex-col items-center gap-2 rounded-[18px] border px-3 py-3 text-center transition ${
+        active
+          ? "border-[#ea4f93] bg-[#fff0f7] shadow-[0_10px_20px_rgba(236,72,153,0.12)]"
+          : "border-[#f4c6da] bg-white hover:border-[#ef6bb4]"
+      }`}
+    >
+      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#fff4f8]">
+        <span
+          className="block h-6 w-4 bg-[linear-gradient(180deg,#f4c5b0_0%,#d69a7f_100%)]"
+          style={previewStyle}
+        />
+      </span>
+      <span className={`text-[11px] font-bold ${active ? "text-[#ea4f93]" : "text-[#7e6075]"}`}>
+        {label}
+      </span>
+    </button>
+  );
+}
+
+ShapeOptionButton.propTypes = {
+  active: PropTypes.bool,
+  label: PropTypes.string.isRequired,
+  onClick: PropTypes.func,
+  previewStyle: PropTypes.shape({}),
 };
 
 function SectionCard({ step, title, subtitle, icon, children }) {
@@ -320,103 +295,198 @@ SkillStars.propTypes = {
   count: PropTypes.number.isRequired,
 };
 
-function LiveNailReference({ colorTheme, title }) {
+function getVariantPreviewDecorations(accessory) {
+  switch (accessory) {
+    case "French tip replacement":
+      return ["French Tip"];
+    case "Crystal charm cluster":
+      return ["Stone"];
+    case "Pearl charm":
+      return ["Pearl"];
+    case "Gold foil sticker":
+      return ["Gold Line", "Sticker"];
+    case "Heart gem":
+      return ["Stone"];
+    case "Ribbon line art":
+      return ["Sticker"];
+    default:
+      return [];
+  }
+}
+
+function getColorStyle(color) {
+  const found = VARIANT_COLOR_OPTIONS.find((item) => item.label === color);
+
+  if (!found) {
+    return { background: "linear-gradient(180deg,#d7e0eb 0%,#bac8d8 100%)" };
+  }
+
+  return { backgroundImage: found.swatch };
+}
+
+function getFinishEffect(finish) {
+  switch (finish) {
+    case "Matte":
+      return "opacity-90 saturate-[0.85]";
+    case "Glitter":
+      return "before:absolute before:inset-[18%] before:rounded-inherit before:bg-[radial-gradient(circle,_rgba(255,255,255,0.95)_0%,_transparent_58%)] before:opacity-70";
+    case "Jelly":
+      return "opacity-80";
+    case "Chrome":
+      return "before:absolute before:inset-x-[16%] before:top-[10%] before:h-[28%] before:rounded-full before:bg-white/60";
+    default:
+      return "before:absolute before:inset-x-[22%] before:top-[10%] before:h-[18%] before:rounded-full before:bg-white/35";
+  }
+}
+
+function getNailMetrics(shape, length, index) {
+  const heightMap = {
+    Short: [42, 52, 60, 52, 40],
+    Medium: [52, 64, 78, 64, 48],
+    Long: [66, 84, 100, 84, 62],
+  };
+  const shapeClassMap = {
+    Almond: "rounded-t-[26px] rounded-b-[18px]",
+    Square: "rounded-t-[10px] rounded-b-[8px]",
+    Round: "rounded-t-[30px] rounded-b-[24px]",
+    Oval: "rounded-t-[24px] rounded-b-[22px]",
+    Coffin: "rounded-t-[14px] rounded-b-[8px] [clip-path:polygon(18%_0,82%_0,100%_100%,0_100%)]",
+  };
+
+  return {
+    height: heightMap[length]?.[index] ?? 60,
+    shapeClassName: shapeClassMap[shape] ?? shapeClassMap.Almond,
+  };
+}
+
+function PreviewNail({ colorStyle, decorationSet, finish, index, length, shape }) {
+  const metrics = getNailMetrics(shape, length, index);
+  const isChrome = finish === "Chrome";
+  const isJelly = finish === "Jelly";
+  const isMatte = finish === "Matte";
+  const isGlitter = finish === "Glitter";
+
   return (
-    <div className="overflow-hidden rounded-[24px] bg-[linear-gradient(135deg,#3f403c_0%,#545256_48%,#f0f0f0_100%)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
-      <div className="relative h-64 overflow-hidden rounded-[20px] bg-[linear-gradient(135deg,rgba(0,0,0,0.18)_0%,rgba(255,255,255,0)_58%)]">
-        <div className="absolute -right-12 -top-10 h-48 w-48 rotate-[32deg] bg-[radial-gradient(circle,#ffffff_0%,rgba(255,255,255,0.18)_40%,rgba(255,255,255,0)_72%)]" />
-        <div className="absolute -bottom-10 left-0 right-0 h-28 rounded-[40px] bg-[rgba(0,0,0,0.14)] blur-sm" />
+    <div
+      className={`relative w-9 ${metrics.shapeClassName} ${getFinishEffect(finish)} overflow-hidden shadow-[0_12px_18px_rgba(174,190,208,0.22)]`}
+      style={{ ...colorStyle, height: metrics.height }}
+    >
+      <span className="absolute inset-0 bg-[radial-gradient(circle_at_30%_18%,rgba(255,255,255,0.4),transparent_42%)]" />
+      {isChrome ? (
+        <>
+          <span className="absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.55)_0%,transparent_30%,rgba(255,255,255,0.1)_48%,rgba(255,255,255,0.45)_72%,transparent_100%)] mix-blend-screen" />
+          <span className="absolute inset-y-0 left-[18%] w-[18%] bg-white/25 blur-[3px]" />
+        </>
+      ) : null}
+      {isJelly ? (
+        <span className="absolute inset-[6%] rounded-[inherit] border border-white/35 bg-white/12" />
+      ) : null}
+      {isMatte ? (
+        <span className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,255,0.08),transparent_50%)] mix-blend-normal" />
+      ) : null}
+      {isGlitter ? (
+        <>
+          <span className="absolute inset-0 bg-[radial-gradient(circle_at_25%_35%,rgba(255,255,255,0.95)_0_1px,transparent_1.5px),radial-gradient(circle_at_70%_22%,rgba(255,255,255,0.75)_0_1px,transparent_1.6px),radial-gradient(circle_at_46%_68%,rgba(255,255,255,0.85)_0_1px,transparent_1.5px),radial-gradient(circle_at_78%_74%,rgba(255,255,255,0.9)_0_1px,transparent_1.8px)] opacity-85" />
+          <span className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,rgba(255,255,255,0.12)_55%,transparent_100%)]" />
+        </>
+      ) : null}
+      {decorationSet.has("Pearl") ? (
+        <span className="absolute left-1/2 top-[38%] h-2 w-2 -translate-x-1/2 rounded-full bg-white/90 shadow-[0_0_0_1px_rgba(255,255,255,0.5),0_2px_6px_rgba(255,255,255,0.55)]" />
+      ) : null}
+      {decorationSet.has("French Tip") ? (
+        <span className="absolute inset-x-[15%] bottom-[8%] h-[18%] rounded-full bg-white/95" />
+      ) : null}
+      {decorationSet.has("Gold Line") ? (
+        <span className="absolute inset-y-[18%] left-1/2 w-[2px] -translate-x-1/2 bg-[#f5c44f]/90" />
+      ) : null}
+      {decorationSet.has("Stone") ? (
+        <span className="absolute right-[18%] top-[24%] h-2.5 w-2.5 rounded-full bg-white/95 ring-1 ring-[#d4b6ff]" />
+      ) : null}
+      {decorationSet.has("Sticker") ? (
+        <span className="absolute left-1/2 top-[30%] -translate-x-1/2 rounded-full bg-white/90 px-1.5 py-0.5 text-[7px] font-extrabold text-[#ea4f93] shadow-sm">
+          S
+        </span>
+      ) : null}
+    </div>
+  );
+}
 
-        <div className="absolute left-[1.7rem] top-[6.1rem] h-[8.4rem] w-[2.15rem] rotate-[18deg] rounded-[999px] bg-[linear-gradient(180deg,#f4c5b0_0%,#d69a7f_58%,#a26b58_100%)] shadow-[0_12px_30px_rgba(0,0,0,0.16)]">
-          <div
-            className="absolute -top-[0.7rem] left-1/2 h-[3.4rem] w-[1.8rem] -translate-x-1/2 rounded-[999px]"
-            style={{
-              background: `linear-gradient(180deg, ${colorTheme.glitter} 0%, ${colorTheme.nail} 100%)`,
-            }}
-          />
-        </div>
-        <div className="absolute left-[4.4rem] top-[3.9rem] h-[10.9rem] w-[2.45rem] rotate-[6deg] rounded-[999px] bg-[linear-gradient(180deg,#f3c2ad_0%,#d4977e_58%,#a56d59_100%)] shadow-[0_12px_30px_rgba(0,0,0,0.16)]">
-          <div className="absolute -top-[0.9rem] left-1/2 h-[4.3rem] w-[2rem] -translate-x-1/2 rounded-[999px] bg-[linear-gradient(180deg,#f8dce6_0%,#f0b7ca_100%)]" />
-          <svg
-            viewBox="0 0 100 100"
-            className="absolute left-1/2 top-[-0.35rem] h-[3.1rem] w-[2.5rem] -translate-x-1/2"
-          >
-            <path
-              d="M49 50 C32 31, 17 28, 18 44 C19 58, 34 58, 49 50"
-              fill="none"
-              stroke={colorTheme.nail}
-              strokeWidth="8"
-              strokeLinecap="round"
-            />
-            <path
-              d="M51 50 C68 31, 83 28, 82 44 C81 58, 66 58, 51 50"
-              fill="none"
-              stroke={colorTheme.nail}
-              strokeWidth="8"
-              strokeLinecap="round"
-            />
-            <path
-              d="M50 49 C51 66, 49 77, 41 88"
-              fill="none"
-              stroke={colorTheme.nail}
-              strokeWidth="8"
-              strokeLinecap="round"
-            />
-          </svg>
-        </div>
-        <div className="absolute left-[7.8rem] top-[2.9rem] h-[12.2rem] w-[2.7rem] rotate-[2deg] rounded-[999px] bg-[linear-gradient(180deg,#f2c0aa_0%,#d3967d_58%,#a26c58_100%)] shadow-[0_12px_30px_rgba(0,0,0,0.16)]">
-          <div
-            className="absolute -top-[1rem] left-1/2 h-[4.8rem] w-[2.2rem] -translate-x-1/2 rounded-[999px]"
-            style={{
-              background: `linear-gradient(180deg, ${colorTheme.glitter} 0%, ${colorTheme.nail} 100%)`,
-              boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.18)",
-            }}
-          />
-          <div className="absolute left-[55%] top-[0.25rem] h-2.5 w-1.5 rotate-[18deg] rounded-full bg-white/85" />
-        </div>
-        <div className="absolute left-[11.2rem] top-[5.15rem] h-[8.8rem] w-[2.15rem] rotate-[-8deg] rounded-[999px] bg-[linear-gradient(180deg,#f2bfaa_0%,#d09279_58%,#a16b57_100%)] shadow-[0_12px_30px_rgba(0,0,0,0.16)]">
-          <div className="absolute -top-[0.75rem] left-1/2 h-[3.7rem] w-[1.8rem] -translate-x-1/2 rounded-[999px] bg-[linear-gradient(180deg,#f7d9e5_0%,#f1b6ca_100%)]" />
-          <div
-            className="absolute -top-[0.72rem] left-1/2 h-[1.25rem] w-[1.8rem] -translate-x-1/2 rounded-t-[999px]"
-            style={{ backgroundColor: colorTheme.nail }}
-          />
-          <div className="absolute left-[54%] top-[0.75rem] h-2 w-1.25 rotate-[18deg] rounded-full bg-white/85" />
-        </div>
-        <div className="absolute right-[-0.2rem] bottom-[-1.15rem] h-[6.7rem] w-[2.4rem] rotate-[26deg] rounded-[999px] bg-[linear-gradient(180deg,#f2bfaa_0%,#d09279_58%,#a16b57_100%)] shadow-[0_12px_30px_rgba(0,0,0,0.16)]">
-          <div
-            className="absolute -top-[0.65rem] left-1/2 h-[3.1rem] w-[1.9rem] -translate-x-1/2 rounded-[999px]"
-            style={{
-              background: `linear-gradient(180deg, ${colorTheme.glitter} 0%, ${colorTheme.nail} 100%)`,
-            }}
-          />
-        </div>
+PreviewNail.propTypes = {
+  colorStyle: PropTypes.shape({}).isRequired,
+  decorationSet: PropTypes.shape({ has: PropTypes.func.isRequired }).isRequired,
+  finish: PropTypes.string.isRequired,
+  index: PropTypes.number.isRequired,
+  length: PropTypes.string.isRequired,
+  shape: PropTypes.string.isRequired,
+};
 
-        <div className="absolute bottom-[-0.15rem] left-[-0.2rem] h-20 w-36 rounded-tr-[999px] bg-[#f9f6f1] shadow-[0_-4px_18px_rgba(255,255,255,0.25)]" />
+function LiveNailReference({ title, variant }) {
+  const colorStyle = getColorStyle(variant.color);
+  const decorationSet = new Set(getVariantPreviewDecorations(variant.accessory));
+
+  return (
+    <div className="overflow-hidden rounded-[24px] bg-[linear-gradient(180deg,#fff3f9_0%,#ffeef7_100%)] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
+      <div className="mb-4 flex items-center justify-between gap-3 rounded-[14px] bg-white/65 px-3 py-2 text-[10px] font-bold text-[#b07d97]">
+        <span>Surface Mode</span>
+        <span className="rounded-full bg-[#fff1f7] px-2.5 py-1 text-[#ea4f93]">
+          {variant.finish || "Glossy"}
+        </span>
       </div>
-      <p className="mt-4 text-center font-semibold text-white">{title}</p>
-      <p className="mt-1 text-center text-xs text-white/80">
-        Reference-style preview based on the selected variant
+      <div className="flex items-end justify-center gap-3 rounded-[18px] bg-white/55 p-5">
+        {Array.from({ length: 5 }).map((_, index) => (
+          <PreviewNail
+            key={index}
+            colorStyle={colorStyle}
+            decorationSet={decorationSet}
+            finish={variant.finish || "Glossy"}
+            index={index}
+            length={variant.length || "Medium"}
+            shape={variant.shape || "Almond"}
+          />
+        ))}
+      </div>
+      <p className="mt-4 text-center font-semibold text-[#432744]">{title}</p>
+      <p className="mt-1 text-center text-xs text-[#b07d97]">
+        Preview updates from the current variant selections
       </p>
+      <div className="mt-4 flex flex-wrap justify-center gap-2">
+        {[variant.shape, variant.length, variant.color, variant.finish, variant.accessory]
+          .filter(Boolean)
+          .map((item) => (
+            <span
+              key={item}
+              className="rounded-full border border-[#f2bfd4] bg-white px-2.5 py-1 text-[10px] font-bold text-[#ea4f93]"
+            >
+              {item}
+            </span>
+          ))}
+      </div>
     </div>
   );
 }
 
 LiveNailReference.propTypes = {
-  colorTheme: PropTypes.shape({
-    accent: PropTypes.string.isRequired,
-    glitter: PropTypes.string.isRequired,
-    nail: PropTypes.string.isRequired,
-  }).isRequired,
   title: PropTypes.string.isRequired,
+  variant: PropTypes.shape({
+    accessory: PropTypes.string,
+    color: PropTypes.string,
+    finish: PropTypes.string,
+    length: PropTypes.string,
+    shape: PropTypes.string,
+  }).isRequired,
 };
 
 export function NailDesignManagementCreatePage() {
   const navigate = useNavigate();
   const [formValues, setFormValues] = useState(createEmptyNailDesign);
-  const [selectedTags, setSelectedTags] = useState(["Elegant", "Trendy", "Luxury"]);
+  const [selectedTags, setSelectedTags] = useState([]);
   const [profileSelections, setProfileSelections] = useState(createInitialProfileSelections);
   const [structureSelections, setStructureSelections] = useState(createInitialStructureSelections);
-  const [variants, setVariants] = useState(VARIANT_PRESETS);
+  const [variants, setVariants] = useState([createEmptyVariant(0)]);
+  const [workflowSteps, setWorkflowSteps] = useState([createEmptyWorkflowStep(0)]);
+  const [costRows, setCostRows] = useState([createEmptyCostRow(0)]);
+  const [serviceRows, setServiceRows] = useState([createEmptyServiceRow(0)]);
+  const [skillCards, setSkillCards] = useState(createInitialSkillCards);
   const [activeVariantIndex, setActiveVariantIndex] = useState(0);
   const [showCreateConfirm, setShowCreateConfirm] = useState(false);
 
@@ -460,6 +530,19 @@ export function NailDesignManagementCreatePage() {
       ...current,
       [group]: value,
     }));
+
+    setVariants((current) =>
+      current.map((variant, variantIndex) =>
+        variantIndex === activeVariantIndex
+          ? {
+              ...variant,
+              shape: group === "Nail Shape" ? value : variant.shape,
+              length: group === "Nail Length" ? value : variant.length,
+              finish: group === "Surface / Finish" ? value : variant.finish,
+            }
+          : variant,
+      ),
+    );
   };
 
   const updateVariant = (index, field, value) => {
@@ -473,13 +556,7 @@ export function NailDesignManagementCreatePage() {
   const addVariant = () => {
     setVariants((current) => {
       const nextNumber = current.length;
-      const source = current[activeVariantIndex] ?? current[0];
-      const nextVariant = {
-        ...source,
-        code: `VAR ${nextNumber}`,
-        name: `${source.name} Copy`,
-      };
-      return [...current, nextVariant];
+      return [...current, createEmptyVariant(nextNumber, structureSelections)];
     });
     setActiveVariantIndex(variants.length);
   };
@@ -490,7 +567,8 @@ export function NailDesignManagementCreatePage() {
       const nextVariant = {
         ...source,
         code: `VAR ${current.length}`,
-        name: `${source.name} Copy`,
+        name: source.name ? `${source.name} Copy` : `Variant ${current.length}`,
+        badgeTone: "bg-[#f2e9ff] text-[#8b5cf6]",
       };
       return [...current, nextVariant];
     });
@@ -509,23 +587,131 @@ export function NailDesignManagementCreatePage() {
     });
   };
 
+  const updateWorkflowStep = (index, field, value) => {
+    setWorkflowSteps((current) =>
+      current.map((step, stepIndex) =>
+        stepIndex === index
+          ? [
+              field === "label" ? value : step[0],
+              field === "level" ? value : step[1],
+              field === "time" ? value : step[2],
+            ]
+          : step,
+      ),
+    );
+  };
+
+  const removeWorkflowStep = (index) => {
+    setWorkflowSteps((current) => {
+      if (current.length === 1) {
+        return current;
+      }
+
+      return current.filter((_, stepIndex) => stepIndex !== index);
+    });
+  };
+
+  const updateCostRow = (index, field, value) => {
+    setCostRows((current) =>
+      current.map((row, rowIndex) =>
+        rowIndex === index
+          ? [
+              field === "label" ? value : row[0],
+              field === "qty" ? value : row[1],
+              field === "price" ? value : row[2],
+            ]
+          : row,
+      ),
+    );
+  };
+
+  const removeCostRow = (index) => {
+    setCostRows((current) => {
+      if (current.length === 1) return current;
+      return current.filter((_, rowIndex) => rowIndex !== index);
+    });
+  };
+
+  const updateServiceRow = (index, field, value) => {
+    setServiceRows((current) =>
+      current.map((row, rowIndex) =>
+        rowIndex === index
+          ? [field === "label" ? value : row[0], field === "price" ? value : row[1]]
+          : row,
+      ),
+    );
+  };
+
+  const removeServiceRow = (index) => {
+    setServiceRows((current) => {
+      if (current.length === 1) return current;
+      return current.filter((_, rowIndex) => rowIndex !== index);
+    });
+  };
+
+  const updateSkillCard = (index, field, value) => {
+    setSkillCards((current) =>
+      current.map((skill, skillIndex) =>
+        skillIndex === index
+          ? [
+              field === "title" ? value : skill[0],
+              field === "subtitle" ? value : skill[1],
+              field === "score" ? value : skill[2],
+              field === "level" ? value : skill[3],
+            ]
+          : skill,
+      ),
+    );
+  };
+
   const activeVariant = variants[activeVariantIndex] ?? variants[0];
-  const colorTheme = getPreviewTheme(activeVariant?.color);
   const complexityValue = structureSelections["Nail Complexity"];
   const complexityProgress =
-    complexityValue === "Simple"
-      ? "w-[22%]"
-      : complexityValue === "Complex"
-        ? "w-[74%]"
-        : complexityValue === "+ Premium Art"
-          ? "w-full"
-          : "w-[52%]";
+    !complexityValue
+      ? "w-0"
+      : complexityValue === "Simple"
+        ? "w-[22%]"
+        : complexityValue === "Complex"
+          ? "w-[74%]"
+          : complexityValue === "+ Premium Art"
+            ? "w-full"
+            : "w-[52%]";
 
-  const previewTitle = `${activeVariant?.color ?? "Cherry Red"} / ${
-    structureSelections["Nail Shape"]
-  } / ${structureSelections["Nail Length"]}`;
+  const previewTitle = `${activeVariant?.name || "New Variant"} / ${activeVariant?.shape || "Shape"} / ${
+    activeVariant?.length || "Length"
+  }`;
 
-  const estimatedProfit = useMemo(() => "320,000 đ", []);
+  const totalEstimatedDuration = useMemo(
+    () => workflowSteps.reduce((total, [, , time]) => total + parseCurrencyValue(time), 0),
+    [workflowSteps],
+  );
+  const materialTotal = useMemo(
+    () =>
+      costRows.reduce(
+        (total, [, qty, price]) => total + parseCurrencyValue(qty) * parseCurrencyValue(price),
+        0,
+      ),
+    [costRows],
+  );
+  const serviceTotal = useMemo(
+    () => serviceRows.reduce((total, [, price]) => total + parseCurrencyValue(price), 0),
+    [serviceRows],
+  );
+  const sellingPrice = parseCurrencyValue(formValues.price);
+  const estimatedProfit = useMemo(
+    () => `${(sellingPrice - materialTotal - serviceTotal).toLocaleString("en-US")} VND`,
+    [materialTotal, sellingPrice, serviceTotal],
+  );
+  const profitMargin = useMemo(() => {
+    if (!sellingPrice) {
+      return "0%";
+    }
+
+    return `${Math.max(
+      0,
+      Math.round(((sellingPrice - materialTotal - serviceTotal) / sellingPrice) * 100),
+    )}%`;
+  }, [materialTotal, sellingPrice, serviceTotal]);
 
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)]">
@@ -533,7 +719,7 @@ export function NailDesignManagementCreatePage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h2 className="text-[1.7rem] font-extrabold text-[#432744]">
-              Create New Nail Design Template
+              Create New Nail Design
             </h2>
             <p className="mt-1 text-sm text-[#c694ad]">
               Build a complete AI-ready nail design profile for the Nailify system.
@@ -583,9 +769,10 @@ export function NailDesignManagementCreatePage() {
               <label className="space-y-2">
                 <span className="text-sm font-semibold text-[#5c4559]">Design Code</span>
                 <input
-                  value={DESIGN_CODE}
-                  readOnly
-                  className="h-12 w-full rounded-2xl border border-[#f4d4e2] bg-[#fff8fb] px-4 text-sm text-[#7e6075] outline-none"
+                  value={formValues.id}
+                  onChange={handleChange("id")}
+                  placeholder="e.g. ND-4001"
+                  className="h-12 w-full rounded-2xl border border-[#f4d4e2] bg-[#fffdfd] px-4 text-sm text-[#432744] outline-none transition focus:border-[#ef6bb4]"
                 />
               </label>
               <label className="space-y-2 md:col-span-2">
@@ -647,6 +834,27 @@ export function NailDesignManagementCreatePage() {
                 ))}
               </select>
             </label>
+
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              <label className="space-y-2">
+                <span className="text-sm font-semibold text-[#5c4559]">Selling Price</span>
+                <input
+                  value={formValues.price}
+                  onChange={handleChange("price")}
+                  placeholder="e.g. 430000"
+                  className="h-12 w-full rounded-2xl border border-[#f4d4e2] bg-[#fffdfd] px-4 text-sm text-[#432744] outline-none transition focus:border-[#ef6bb4]"
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="text-sm font-semibold text-[#5c4559]">Estimated Duration</span>
+                <input
+                  value={formValues.duration}
+                  onChange={handleChange("duration")}
+                  placeholder="e.g. 75 min"
+                  className="h-12 w-full rounded-2xl border border-[#f4d4e2] bg-[#fffdfd] px-4 text-sm text-[#432744] outline-none transition focus:border-[#ef6bb4]"
+                />
+              </label>
+            </div>
           </SectionCard>
 
           <SectionCard
@@ -785,23 +993,56 @@ export function NailDesignManagementCreatePage() {
                     </div>
                   </div>
 
-                  <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-                    <div className="space-y-4">
+                    <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+                      <div className="space-y-4">
+                        <label className="block space-y-2">
+                          <span className="text-sm font-semibold text-[#5c4559]">Variant Name</span>
+                          <input
+                            value={variant.name}
+                            onChange={(event) => updateVariant(index, "name", event.target.value)}
+                            placeholder={`Variant ${index + 1}`}
+                            className="h-11 w-full rounded-2xl border border-[#f4d4e2] bg-white px-4 text-sm text-[#432744] outline-none"
+                          />
+                        </label>
+
                       <div>
                         <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#c694ad]">
-                          Step A. Variant Color & Finish
+                          Step A. Choose Color
                         </p>
-                        <div className="mt-3 flex flex-wrap gap-2">
+                        <div className="mt-3 flex flex-wrap gap-3">
                           {VARIANT_COLOR_OPTIONS.map((item) => (
-                            <PillButton
-                              key={item}
-                              active={variant.color === item}
-                              onClick={() => updateVariant(index, "color", item)}
-                            >
-                              {item}
-                            </PillButton>
+                            <ColorSwatchButton
+                              key={item.label}
+                              active={variant.color === item.label}
+                              label={item.label}
+                              swatch={item.swatch}
+                              onClick={() => updateVariant(index, "color", item.label)}
+                            />
                           ))}
                         </div>
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#c694ad]">
+                          Step B. Choose Shape
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-3">
+                          {VARIANT_SHAPE_OPTIONS.map((item) => (
+                            <ShapeOptionButton
+                              key={item.label}
+                              active={variant.shape === item.label}
+                              label={item.label}
+                              previewStyle={item.previewStyle}
+                              onClick={() => updateVariant(index, "shape", item.label)}
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#c694ad]">
+                          Step C. Choose Surface
+                        </p>
                         <div className="mt-3 flex flex-wrap gap-2">
                           {VARIANT_FINISH_OPTIONS.map((item) => (
                             <PillButton
@@ -817,19 +1058,8 @@ export function NailDesignManagementCreatePage() {
 
                       <div>
                         <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#c694ad]">
-                          Step B. Nail Structure
+                          Step D. Choose Length
                         </p>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {VARIANT_SHAPE_OPTIONS.map((item) => (
-                            <PillButton
-                              key={item}
-                              active={variant.shape === item}
-                              onClick={() => updateVariant(index, "shape", item)}
-                            >
-                              {item}
-                            </PillButton>
-                          ))}
-                        </div>
                         <div className="mt-3 flex flex-wrap gap-2">
                           {VARIANT_LENGTH_OPTIONS.map((item) => (
                             <PillButton
@@ -845,7 +1075,7 @@ export function NailDesignManagementCreatePage() {
 
                       <div>
                         <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#c694ad]">
-                          Step C. Accessory Replacement
+                          Step E. Choose Decoration
                         </p>
                         <div className="mt-3 flex flex-wrap gap-2">
                           {VARIANT_ACCESSORY_OPTIONS.map((item) => (
@@ -859,7 +1089,7 @@ export function NailDesignManagementCreatePage() {
                           ))}
                         </div>
                         <div className="mt-3 flex flex-wrap gap-2">
-                          {variant.notes.map((item) => (
+                          {(variant.notes.length > 0 ? variant.notes : ["No accessory notes yet"]).map((item) => (
                             <PillButton key={item}>{item}</PillButton>
                           ))}
                         </div>
@@ -895,6 +1125,24 @@ export function NailDesignManagementCreatePage() {
                             onChange={(event) =>
                               updateVariant(index, "quantity", event.target.value)
                             }
+                            className="h-11 w-full rounded-2xl border border-[#f4d4e2] bg-white px-4 text-sm text-[#432744] outline-none"
+                          />
+                        </label>
+                        <label className="space-y-2 sm:col-span-2">
+                          <span className="text-sm font-semibold text-[#5c4559]">Accessory Notes</span>
+                          <input
+                            value={variant.notes.join(", ")}
+                            onChange={(event) =>
+                              updateVariant(
+                                index,
+                                "notes",
+                                event.target.value
+                                  .split(",")
+                                  .map((item) => item.trim())
+                                  .filter(Boolean),
+                              )
+                            }
+                            placeholder="Comma separated notes"
                             className="h-11 w-full rounded-2xl border border-[#f4d4e2] bg-white px-4 text-sm text-[#432744] outline-none"
                           />
                         </label>
@@ -967,37 +1215,63 @@ export function NailDesignManagementCreatePage() {
             icon={<Clock3 size={18} />}
           >
             <div className="space-y-3">
-              {WORKFLOW_STEPS.map(([label, level, time], index) => (
+              {workflowSteps.map(([label, level, time], index) => (
                 <div
                   key={label}
-                  className="grid gap-3 rounded-[18px] border border-[#f7d7e5] bg-[#fff3f8] px-4 py-3 md:grid-cols-[minmax(0,1fr)_110px_170px]"
+                  className="grid gap-3 rounded-[18px] border border-[#f7d7e5] bg-[#fff3f8] px-4 py-3 md:grid-cols-[minmax(0,1fr)_110px_170px_44px]"
                 >
                   <div className="flex items-center gap-3">
                     <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#ea4f93] text-[10px] font-bold text-white">
                       {index + 1}
                     </span>
-                    <p className="font-semibold text-[#432744]">{label}</p>
+                    <input
+                      value={label}
+                      onChange={(event) => updateWorkflowStep(index, "label", event.target.value)}
+                      className="h-10 w-full rounded-2xl border border-[#f4d4e2] bg-white px-4 text-sm font-semibold text-[#432744] outline-none"
+                    />
                   </div>
                   <div className="flex items-center md:justify-center">
-                    <PillButton disabled>{level}</PillButton>
+                    <select
+                      value={level}
+                      onChange={(event) => updateWorkflowStep(index, "level", event.target.value)}
+                      className="h-10 rounded-2xl border border-[#f4d4e2] bg-white px-3 text-sm text-[#432744] outline-none"
+                    >
+                      {["Easy", "Medium", "Advanced", "Expert"].map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div className="flex items-center gap-2">
                     <input
                       value={time}
-                      readOnly
+                      onChange={(event) => updateWorkflowStep(index, "time", event.target.value)}
                       className="h-10 w-full rounded-2xl border border-[#f4d4e2] bg-white px-4 text-sm text-[#432744] outline-none"
                     />
                     <span className="text-sm text-[#c694ad]">min</span>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => removeWorkflowStep(index)}
+                    disabled={workflowSteps.length === 1}
+                    className="inline-flex h-10 w-10 items-center justify-center self-center rounded-2xl border border-[#f4c6da] bg-white text-[#ea4f93] transition hover:bg-[#fff0f7] disabled:cursor-not-allowed disabled:opacity-45"
+                    aria-label={`Remove workflow step ${index + 1}`}
+                  >
+                    <Trash2 size={14} />
+                  </button>
                 </div>
               ))}
             </div>
             <div className="mt-4 flex items-center justify-between gap-3 rounded-[18px] bg-[#fff3f8] px-4 py-3 text-sm">
               <p className="font-semibold text-[#8c7085]">
-                Total Estimated Duration: <span className="text-[#432744]">85 minutes</span>
+                Total Estimated Duration: <span className="text-[#432744]">{totalEstimatedDuration} minutes</span>
               </p>
               <button
                 type="button"
+                onClick={() =>
+                  setWorkflowSteps((current) => [...current, createEmptyWorkflowStep(current.length)])
+                }
                 className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#ea4f93]"
               >
                 Add Step
@@ -1015,55 +1289,98 @@ export function NailDesignManagementCreatePage() {
               <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fff3f8] p-4">
                 <p className="font-bold text-[#432744]">Material Cost</p>
                 <div className="mt-4 space-y-3">
-                  {COST_ROWS.map(([label, qty, price]) => (
-                    <div key={label} className="grid grid-cols-[1fr_120px_140px] gap-3">
-                      <span className="self-center text-sm text-[#8c7085]">{label}</span>
+                  {costRows.map(([label, qty, price], index) => (
+                    <div
+                      key={`${label}-${index}`}
+                      className="grid grid-cols-[minmax(0,1fr)_84px_84px_40px] gap-2"
+                    >
                       <input
-                        value={`Amount   ${qty}`}
-                        readOnly
+                        value={label}
+                        onChange={(event) => updateCostRow(index, "label", event.target.value)}
                         className="h-10 rounded-2xl border border-[#f4d4e2] bg-white px-3 text-sm text-[#432744] outline-none"
                       />
                       <input
-                        value={`${price}   đ`}
-                        readOnly
+                        value={qty}
+                        onChange={(event) => updateCostRow(index, "qty", event.target.value)}
                         className="h-10 rounded-2xl border border-[#f4d4e2] bg-white px-3 text-sm text-[#432744] outline-none"
                       />
+                      <input
+                        value={price}
+                        onChange={(event) => updateCostRow(index, "price", event.target.value)}
+                        className="h-10 rounded-2xl border border-[#f4d4e2] bg-white px-3 text-sm text-[#432744] outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeCostRow(index)}
+                        disabled={costRows.length === 1}
+                        className="inline-flex h-10 w-10 items-center justify-center self-center rounded-2xl border border-[#f4c6da] bg-white text-[#ea4f93] transition hover:bg-[#fff0f7] disabled:cursor-not-allowed disabled:opacity-45"
+                        aria-label={`Remove material row ${index + 1}`}
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                   ))}
                 </div>
                 <div className="mt-4 flex items-center justify-between border-t border-[#f5cfe0] pt-4 text-sm font-bold">
                   <span className="text-[#432744]">Material Total</span>
-                  <span className="text-[#ea4f93]">110,000 đ</span>
+                  <span className="text-[#ea4f93]">{materialTotal.toLocaleString("en-US")} VND</span>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setCostRows((current) => [...current, createEmptyCostRow(current.length)])}
+                  className="mt-4 rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#ea4f93]"
+                >
+                  Add Material Row
+                </button>
               </div>
 
               <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fff3f8] p-4">
                 <p className="font-bold text-[#432744]">Service Pricing</p>
                 <div className="mt-4 space-y-3">
-                  {SERVICE_ROWS.map(([label, price]) => (
-                    <div key={label} className="grid grid-cols-[1fr_140px] gap-3">
-                      <span className="self-center text-sm text-[#8c7085]">{label}</span>
+                  {serviceRows.map(([label, price], index) => (
+                    <div key={`${label}-${index}`} className="grid grid-cols-[1fr_140px_44px] gap-3">
                       <input
-                        value={`${price}   đ`}
-                        readOnly
+                        value={label}
+                        onChange={(event) => updateServiceRow(index, "label", event.target.value)}
                         className="h-10 rounded-2xl border border-[#f4d4e2] bg-white px-3 text-sm text-[#432744] outline-none"
                       />
+                      <input
+                        value={price}
+                        onChange={(event) => updateServiceRow(index, "price", event.target.value)}
+                        className="h-10 rounded-2xl border border-[#f4d4e2] bg-white px-3 text-sm text-[#432744] outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeServiceRow(index)}
+                        disabled={serviceRows.length === 1}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[#f4c6da] bg-white text-[#ea4f93] transition hover:bg-[#fff0f7] disabled:cursor-not-allowed disabled:opacity-45"
+                        aria-label={`Remove service row ${index + 1}`}
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                   ))}
                 </div>
                 <div className="mt-4 flex items-center justify-between border-t border-[#f5cfe0] pt-4 text-sm font-bold">
                   <span className="text-[#432744]">Service Total</span>
-                  <span className="text-[#ea4f93]">430,000 đ</span>
+                  <span className="text-[#ea4f93]">{serviceTotal.toLocaleString("en-US")} VND</span>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setServiceRows((current) => [...current, createEmptyServiceRow(current.length)])}
+                  className="mt-4 rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#ea4f93]"
+                >
+                  Add Service Row
+                </button>
               </div>
             </div>
 
             <div className="mt-4 grid gap-3 rounded-[20px] bg-[image:var(--gradient-accent)] p-4 text-center text-white md:grid-cols-4">
               {[
-                ["540K đ", "Suggested Price"],
-                ["430K đ", "Selling Price"],
+                [`${(materialTotal + serviceTotal).toLocaleString("en-US")} VND`, "Suggested Cost"],
+                [formValues.price || "0", "Selling Price"],
                 [estimatedProfit, "Est. Profit"],
-                ["74%", "Margin"],
+                [profitMargin, "Margin"],
               ].map(([value, label]) => (
                 <div key={label}>
                   <p className="text-2xl font-extrabold">{value}</p>
@@ -1080,16 +1397,37 @@ export function NailDesignManagementCreatePage() {
             icon={<WandSparkles size={18} />}
           >
             <div className="grid gap-4 md:grid-cols-2">
-              {SKILL_CARDS.map(([title, subtitle, score, level]) => (
+              {skillCards.map(([title, subtitle, score, level], index) => (
                 <div
                   key={title}
                   className="rounded-[18px] border border-[#f7d7e5] bg-[#fff3f8] p-4"
                 >
-                  <p className="font-extrabold text-[#432744]">{title}</p>
-                  <p className="mt-1 text-xs text-[#c694ad]">{subtitle}</p>
+                  <h4 className="font-bold text-[#432744]">{title}</h4>
+                  <input
+                    value={subtitle}
+                    onChange={(event) => updateSkillCard(index, "subtitle", event.target.value)}
+                    className="mt-2 h-10 w-full rounded-2xl border border-[#f4d4e2] bg-white px-3 text-xs text-[#c694ad] outline-none"
+                  />
                   <div className="mt-3">
                     <SkillStars count={score} />
                   </div>
+                  <input
+                    type="range"
+                    min="1"
+                    max="5"
+                    step="1"
+                    value={score}
+                    onChange={(event) => {
+                      const nextScore = Number(event.target.value);
+                      updateSkillCard(index, "score", nextScore);
+                      updateSkillCard(
+                        index,
+                        "level",
+                        ["Beginner", "Junior", "Intermediate", "Advanced", "Expert"][nextScore - 1],
+                      );
+                    }}
+                    className="mt-3 w-full"
+                  />
                   <p className="mt-2 text-xs font-semibold text-[#8c7085]">
                     {score}★ {level}
                   </p>
@@ -1109,12 +1447,12 @@ export function NailDesignManagementCreatePage() {
           >
             <div className="grid gap-3 md:grid-cols-3">
               {[
-                [structureSelections["Nail Complexity"], "Complexity Level"],
-                ["430K đ", "Suggested Price"],
-                ["85 min", "Est. Duration"],
+                [structureSelections["Nail Complexity"] || "Not set", "Complexity Level"],
+                [formValues.price || "0", "Selling Price"],
+                [`${totalEstimatedDuration} min`, "Est. Duration"],
                 [String(variants.length), "Variants"],
-                ["9 Steps", "Workflow"],
-                ["74%", "Profit Margin"],
+                [`${workflowSteps.length} Steps`, "Workflow"],
+                [profitMargin, "Profit Margin"],
               ].map(([value, label]) => (
                 <div
                   key={label}
@@ -1128,10 +1466,10 @@ export function NailDesignManagementCreatePage() {
 
             <div className="mt-4 space-y-2">
               {[
-                ["Required fields completed", "Done"],
-                ["Pricing configured", "Done"],
-                ["Workflow mapped (9 steps)", "Done"],
-                ["Staff skills configured", "Done"],
+                [formValues.name && formValues.id ? "Required fields completed" : "Required fields incomplete", formValues.name && formValues.id ? "Done" : "Pending"],
+                [sellingPrice > 0 ? "Pricing configured" : "Pricing pending", sellingPrice > 0 ? "Done" : "Pending"],
+                [`Workflow mapped (${workflowSteps.length} steps)`, workflowSteps.length > 0 ? "Done" : "Pending"],
+                ["Staff skills configured", skillCards.length > 0 ? "Done" : "Pending"],
                 ["Media assets uploaded", "Pending"],
               ].map(([label, status]) => (
                 <div
@@ -1199,12 +1537,18 @@ export function NailDesignManagementCreatePage() {
               Live Nail Preview
             </div>
             <div className="mt-4">
-              <LiveNailReference colorTheme={colorTheme} title={previewTitle} />
+              <LiveNailReference variant={activeVariant} title={previewTitle} />
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
-              <PillButton active>Trending</PillButton>
-              <PillButton>New</PillButton>
-              <PillButton>Popular</PillButton>
+              {selectedTags.length > 0 ? (
+                selectedTags.slice(0, 3).map((tag) => (
+                  <PillButton key={tag} active>
+                    {tag}
+                  </PillButton>
+                ))
+              ) : (
+                <PillButton>No tags selected</PillButton>
+              )}
             </div>
           </section>
 
@@ -1213,66 +1557,35 @@ export function NailDesignManagementCreatePage() {
             <div className="mt-4 space-y-2 text-sm text-[#8c7085]">
               <div className="flex items-center justify-between gap-3">
                 <span>Color</span>
-                <span className="font-semibold text-[#432744]">{activeVariant.color}</span>
+                <span className="font-semibold text-[#432744]">{activeVariant.color || "Not set"}</span>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <span>Finish</span>
-                <span className="font-semibold text-[#432744]">{activeVariant.finish}</span>
+                <span className="font-semibold text-[#432744]">{activeVariant.finish || "Not set"}</span>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <span>Shape</span>
-                <span className="font-semibold text-[#432744]">{activeVariant.shape}</span>
+                <span className="font-semibold text-[#432744]">{activeVariant.shape || "Not set"}</span>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <span>Length</span>
-                <span className="font-semibold text-[#432744]">{activeVariant.length}</span>
+                <span className="font-semibold text-[#432744]">{activeVariant.length || "Not set"}</span>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <span>Accessory</span>
-                <span className="font-semibold text-right text-[#432744]">{activeVariant.accessory}</span>
+                <span className="font-semibold text-right text-[#432744]">{activeVariant.accessory || "Not set"}</span>
               </div>
             </div>
-          </section>
-
-          <section className="rounded-[24px] border border-[#f8d3e2] bg-[#fff7fb] p-4 shadow-[0_14px_34px_rgba(236,72,153,0.06)]">
-            <h3 className="font-extrabold text-[#432744]">Staff Matching</h3>
-            <div className="mt-4 space-y-3">
-              {[
-                ["My Linh", "Master Artist", "✓ Match"],
-                ["Thu Ha", "Advanced Artist", "✓ Match"],
-                ["Ngoc Anh", "Advanced Artist", "✓ Match"],
-              ].map(([name, role, status]) => (
-                <div key={name} className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ea4f93_0%,#9b5cf6_100%)] text-[10px] font-bold text-white">
-                      {name
-                        .split(" ")
-                        .map((part) => part[0])
-                        .join("")
-                        .slice(0, 2)}
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-[#432744]">{name}</p>
-                      <p className="text-[11px] text-[#c694ad]">{role} ★★★★★</p>
-                    </div>
-                  </div>
-                  <span className="text-xs font-bold text-[#2fa25f]">{status}</span>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 rounded-[16px] bg-[#fff4df] px-3 py-3 text-xs text-[#af7a22]">
-              Material skill requires expert level for the current accessory replacement.
-            </div>
-          </section>
+          </section>    
 
           <section className="rounded-[24px] border border-[#f8d3e2] bg-[#fff7fb] p-4 shadow-[0_14px_34px_rgba(236,72,153,0.06)]">
             <h3 className="font-extrabold text-[#432744]">Profit Analysis</h3>
             <div className="mt-4 space-y-2 text-sm">
               {[
-                ["Material Cost", "110,000 đ"],
-                ["Labor Cost", "100,000 đ"],
-                ["Overhead & Tools", "20,000 đ"],
-                ["Total Cost", "230,000 đ"],
+                ["Material Cost", `${materialTotal.toLocaleString("en-US")} VND`],
+                ["Service Cost", `${serviceTotal.toLocaleString("en-US")} VND`],
+                ["Selling Price", formValues.price || "0"],
+                ["Total Planned Duration", `${totalEstimatedDuration} min`],
               ].map(([label, value]) => (
                 <div key={label} className="flex items-center justify-between gap-3 text-[#8c7085]">
                   <span>{label}</span>
@@ -1283,7 +1596,7 @@ export function NailDesignManagementCreatePage() {
             <div className="mt-4 rounded-[18px] bg-[image:var(--gradient-accent)] px-4 py-5 text-center text-white">
               <p className="text-3xl font-extrabold">{estimatedProfit}</p>
               <p className="mt-1 text-xs text-white/80">Estimated Profit per Service</p>
-              <p className="mt-2 text-sm font-semibold">74% Margin</p>
+              <p className="mt-2 text-sm font-semibold">{profitMargin} Margin</p>
             </div>
           </section>
 

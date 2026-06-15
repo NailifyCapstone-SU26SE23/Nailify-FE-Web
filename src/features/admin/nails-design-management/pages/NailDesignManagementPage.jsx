@@ -248,36 +248,41 @@ export function NailDesignManagementPage() {
     );
   }, [designs, query]);
 
+  const toolbarButtonClassName =
+    "inline-flex items-center justify-center rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]";
+  const primaryToolbarButtonClassName =
+    "inline-flex items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]";
+
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)]">
       <div className="flex flex-col gap-3 rounded-[18px] bg-white/70 p-1 sm:flex-row sm:items-center sm:justify-end">
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
+            className={toolbarButtonClassName}
           >
-            <Tag size={13} className="mr-1.5 inline" />
+            <Tag size={13} className="mr-1.5 shrink-0" />
             Manage Tags
           </button>
           <Link
             to={getAdminNailDesignCategoriesRoute()}
-            className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
+            className={toolbarButtonClassName}
           >
-            <Plus size={13} className="mr-1.5 inline" />
+            <Plus size={13} className="mr-1.5 shrink-0" />
             Add Category
           </Link>
           <button
             type="button"
-            className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
+            className={toolbarButtonClassName}
           >
-            <Upload size={13} className="mr-1.5 inline" />
+            <Upload size={13} className="mr-1.5 shrink-0" />
             Upload Try-On Asset
           </button>
           <Link
             to={ROUTES.adminNailDesignsCreate}
-            className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
+            className={primaryToolbarButtonClassName}
           >
-            <Plus size={13} className="mr-1.5 inline" />
+            <Plus size={13} className="mr-1.5 shrink-0" />
             Add Design
           </Link>
         </div>

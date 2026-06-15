@@ -8,7 +8,9 @@ import {
   Plus,
   Sparkles,
   Star,
+  X,
 } from "lucide-react";
+import toast from "react-hot-toast";
 import { useMemo, useState } from "react";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { PropTypes } from "../../../../shared/utils/propTypes";
@@ -135,9 +137,12 @@ function AddonRow({ item }) {
         <span className="text-xs font-extrabold text-[#ea4f93]">{item.price}</span>
         <button
           type="button"
-          className="flex h-6 w-6 items-center justify-center rounded-md bg-[image:var(--gradient-accent)] text-white"
+          onClick={item.onToggle}
+          className={`flex h-6 w-6 items-center justify-center rounded-md text-white ${
+            item.isAdded ? "bg-[#22a865]" : "bg-[image:var(--gradient-accent)]"
+          }`}
         >
-          <Plus size={12} />
+          {item.isAdded ? <Check size={12} /> : <Plus size={12} />}
         </button>
       </div>
     </div>
@@ -146,12 +151,92 @@ function AddonRow({ item }) {
 
 AddonRow.propTypes = {
   item: PropTypes.shape({
+    isAdded: PropTypes.bool,
     kind: PropTypes.string.isRequired,
     note: PropTypes.string.isRequired,
+    onToggle: PropTypes.func.isRequired,
     price: PropTypes.string.isRequired,
     title: PropTypes.string.isRequired,
     tone: PropTypes.string.isRequired,
   }).isRequired,
+};
+
+function StaffArtistModal({ onClose, onSelect, selectedStaff, staffOptions }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2f1322]/35 p-4 backdrop-blur-[2px]">
+      <div className="w-full max-w-xl rounded-[24px] border border-[#f6dbe8] bg-white p-5 shadow-[0_26px_80px_rgba(93,28,63,0.18)]">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-extrabold text-[#3f2b3f]">Change Staff Artist</h3>
+            <p className="mt-1 text-sm text-[#a88a9d]">
+              Select another available artist for this updated booking.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#f0d7e3] text-[#9d8294]"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="mt-5 space-y-3">
+          {staffOptions.map((staff) => {
+            const isSelected = staff.name === selectedStaff;
+
+            return (
+              <button
+                key={staff.name}
+                type="button"
+                onClick={() => onSelect(staff.name)}
+                className={`flex w-full items-center justify-between gap-3 rounded-[18px] border px-4 py-4 text-left transition ${
+                  isSelected
+                    ? "border-[#f2bfd4] bg-[#fff2f8] shadow-[0_10px_20px_rgba(236,72,153,0.08)]"
+                    : "border-[#f4dbe7] bg-white hover:bg-[#fff8fc]"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-xs font-extrabold text-white">
+                    {staff.initials}
+                  </span>
+                  <div>
+                    <p className="text-sm font-extrabold text-[#3f2b3f]">{staff.name}</p>
+                    <p className="mt-1 text-[11px] text-[#a88a9d]">
+                      {staff.level} • {staff.specialty}
+                    </p>
+                  </div>
+                </div>
+                <span
+                  className={`rounded-full px-3 py-1 text-[10px] font-bold ${
+                    isSelected
+                      ? "bg-[#ea4f93] text-white"
+                      : "border border-[#d4efdc] bg-[#effcf3] text-[#22a865]"
+                  }`}
+                >
+                  {isSelected ? "Current" : "Available"}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+StaffArtistModal.propTypes = {
+  onClose: PropTypes.func.isRequired,
+  onSelect: PropTypes.func.isRequired,
+  selectedStaff: PropTypes.string.isRequired,
+  staffOptions: PropTypes.arrayOf(
+    PropTypes.shape({
+      initials: PropTypes.string.isRequired,
+      level: PropTypes.string.isRequired,
+      name: PropTypes.string.isRequired,
+      specialty: PropTypes.string.isRequired,
+    }),
+  ).isRequired,
 };
 
 export function StaffUpdateBookingDesignPage() {
@@ -242,6 +327,10 @@ export function StaffUpdateBookingDesignPage() {
 
   const data = payload ?? fallbackData;
   const [confirmations, setConfirmations] = useState(data?.confirmations ?? []);
+  const [selectedStaffArtist, setSelectedStaffArtist] = useState(data?.staffArtist ?? "Assigned Artist");
+  const [selectedAddOns, setSelectedAddOns] = useState([]);
+  const [isBookingConfirmed, setIsBookingConfirmed] = useState(false);
+  const [showStaffModal, setShowStaffModal] = useState(false);
 
   if (!data) {
     return <Navigate to={ROUTES.staffBookings} replace />;
@@ -259,6 +348,61 @@ export function StaffUpdateBookingDesignPage() {
   const designStudioRoute = getStaffBookingDesignStudioRoute(bookingId);
   const detailRoute = getStaffBookingDetailRoute(bookingId);
   const serviceSessionRoute = getStaffBookingServiceSessionRoute(bookingId);
+  const updatedDesignStatus = {
+    ...data.designStatus,
+    bookingUpdated: isBookingConfirmed ? "Confirmed" : data.designStatus.bookingUpdated,
+    customerAgreed: allConfirmed ? "Confirmed" : data.designStatus.customerAgreed,
+  };
+  const staffOptions = [
+    {
+      name: data.staffArtist,
+      initials: data.staffArtist
+        .split(" ")
+        .map((word) => word[0])
+        .slice(0, 2)
+        .join(""),
+      level: "Current Artist",
+      specialty: "Current assignment",
+    },
+    { name: "Linh Pham", initials: "LP", level: "Senior Artist", specialty: "Chrome / Ombre" },
+    { name: "Mia Tran", initials: "MT", level: "Design Specialist", specialty: "Floral / Bridal" },
+    { name: "An Nguyen", initials: "AN", level: "Express Artist", specialty: "Minimal / Glossy" },
+  ];
+
+  const handleToggleAddOn = (title) => {
+    setSelectedAddOns((current) =>
+      current.includes(title) ? current.filter((item) => item !== title) : [...current, title],
+    );
+  };
+
+  const handleConfirmBooking = () => {
+    if (!allConfirmed) {
+      toast.error("Complete all customer confirmations first.");
+      return;
+    }
+
+    setIsBookingConfirmed(true);
+    toast.success("Updated booking confirmed.");
+  };
+
+  const handleSaveAndContinue = () => {
+    toast.success("Updated design saved. You can continue to the next step.");
+  };
+
+  const handleCancelChanges = () => {
+    setConfirmations(data.confirmations ?? []);
+    setSelectedAddOns([]);
+    setIsBookingConfirmed(false);
+    setSelectedStaffArtist(data.staffArtist);
+    setShowStaffModal(false);
+    toast.success("Design update changes have been reset.");
+  };
+
+  const handleSelectStaffArtist = (staffName) => {
+    setSelectedStaffArtist(staffName);
+    setShowStaffModal(false);
+    toast.success(`Staff artist changed to ${staffName}.`);
+  };
 
   const handleOpenServiceSession = () => {
     navigate(serviceSessionRoute, {
@@ -270,7 +414,7 @@ export function StaffUpdateBookingDesignPage() {
           customerAvatar:
             "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=140&q=80",
           serviceLabel: data.newDesign.name,
-          staffArtist: data.staffArtist,
+          staffArtist: selectedStaffArtist,
           chair: data.chair,
           appointmentTime: `${data.appointment} • ${data.newDesign.duration}`,
           estimatedDuration: data.pricing.updatedDuration,
@@ -436,6 +580,7 @@ export function StaffUpdateBookingDesignPage() {
                 <button
                   type="button"
                   disabled={!allConfirmed}
+                  onClick={handleConfirmBooking}
                   className={`rounded-[12px] px-4 py-3 text-xs font-bold transition ${
                     allConfirmed
                       ? "bg-[image:var(--gradient-accent)] text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
@@ -446,6 +591,7 @@ export function StaffUpdateBookingDesignPage() {
                 </button>
                 <button
                   type="button"
+                  onClick={handleSaveAndContinue}
                   className="rounded-[12px] border border-[#f2bfd4] bg-white px-4 py-3 text-xs font-bold text-[#ea4f93]"
                 >
                   Save & Continue
@@ -466,6 +612,7 @@ export function StaffUpdateBookingDesignPage() {
                 </button>
                 <button
                   type="button"
+                  onClick={handleCancelChanges}
                   className="sm:col-span-2 rounded-[12px] border border-[#f0c2cf] bg-[#fff4f7] px-4 py-3 text-xs font-bold text-[#d84b80]"
                 >
                   Cancel Changes
@@ -480,7 +627,7 @@ export function StaffUpdateBookingDesignPage() {
               <div className="mt-4 space-y-3 text-sm">
                 {[
                   ["Customer", data.customer],
-                  ["Staff Artist", data.staffArtist],
+                  ["Staff Artist", selectedStaffArtist],
                   ["Appointment", data.appointment],
                   ["Chair", data.chair],
                   ["Status", data.summaryStatus],
@@ -502,7 +649,7 @@ export function StaffUpdateBookingDesignPage() {
             <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4">
               <SectionTitle icon={Sparkles} title="Design Update Status" />
               <div className="mt-4 space-y-3 text-sm">
-                {Object.entries(data.designStatus).map(([key, value]) => (
+                {Object.entries(updatedDesignStatus).map(([key, value]) => (
                   <div key={key} className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3 last:border-b-0 last:pb-0">
                     <span className="text-[11px] capitalize text-[#a98c9f]">
                       {key.replace(/([A-Z])/g, " $1")}
@@ -527,8 +674,20 @@ export function StaffUpdateBookingDesignPage() {
               <SectionTitle icon={Star} title="Recommended Add-ons" />
               <div className="mt-4 space-y-3">
                 {data.addOns.map((item) => (
-                  <AddonRow key={item.title} item={item} />
+                  <AddonRow
+                    key={item.title}
+                    item={{
+                      ...item,
+                      isAdded: selectedAddOns.includes(item.title),
+                      onToggle: () => handleToggleAddOn(item.title),
+                    }}
+                  />
                 ))}
+                {selectedAddOns.length ? (
+                  <div className="rounded-[14px] border border-[#cdeed7] bg-[#effcf3] px-3 py-2 text-[11px] font-semibold text-[#1f9f59]">
+                    Added add-ons: {selectedAddOns.join(", ")}
+                  </div>
+                ) : null}
               </div>
             </article>
 
@@ -541,6 +700,7 @@ export function StaffUpdateBookingDesignPage() {
                 <button
                   type="button"
                   disabled={!allConfirmed}
+                  onClick={handleConfirmBooking}
                   className={`w-full rounded-[12px] px-4 py-3 text-xs font-bold ${
                     allConfirmed
                       ? "bg-[image:var(--gradient-accent)] text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
@@ -558,6 +718,7 @@ export function StaffUpdateBookingDesignPage() {
                 </button>
                 <button
                   type="button"
+                  onClick={() => setShowStaffModal(true)}
                   className="w-full rounded-[12px] bg-[linear-gradient(135deg,#f36b98_0%,#e24384_100%)] px-4 py-3 text-xs font-bold text-white"
                 >
                   Change staff artist
@@ -567,6 +728,15 @@ export function StaffUpdateBookingDesignPage() {
           </aside>
         </div>
       </div>
+
+      {showStaffModal ? (
+        <StaffArtistModal
+          selectedStaff={selectedStaffArtist}
+          staffOptions={staffOptions}
+          onClose={() => setShowStaffModal(false)}
+          onSelect={handleSelectStaffArtist}
+        />
+      ) : null}
     </section>
   );
 }

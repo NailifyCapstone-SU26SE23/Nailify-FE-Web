@@ -1,16 +1,19 @@
 import {
   AlertTriangle,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Eye,
+  PencilLine,
   Search,
   Shield,
+  Trash2,
   UserCog,
   UserPlus,
   Users,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import {
   ROUTES,
   getAdminUserDetailRoute,
@@ -230,6 +233,27 @@ export function UserManagementPage() {
     );
   }, [query, users]);
 
+  const getActionItems = (user) => {
+    const detailRoute = getAdminUserDetailRoute(user.id);
+
+    return [
+      { key: "view", label: "View User", icon: Eye, onSelect: () => navigate(detailRoute) },
+      {
+        key: "edit",
+        label: "Edit User",
+        icon: PencilLine,
+        onSelect: () => navigate(detailRoute, { state: { requestEdit: true } }),
+      },
+      {
+        key: "delete",
+        label: "Delete User",
+        icon: Trash2,
+        className: "text-[#d14c84]",
+        onSelect: () => navigate(detailRoute, { state: { requestDelete: true } }),
+      },
+    ];
+  };
+
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)]">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
@@ -339,13 +363,7 @@ export function UserManagementPage() {
                         {user.lastActive}
                       </td>
                       <td className="px-4 py-3.5">
-                        <Link
-                          to={getAdminUserDetailRoute(user.id)}
-                          className="inline-flex items-center gap-1 rounded-full border border-[#f7cade] bg-[#fff6fa] px-3 py-1.5 text-xs font-bold text-[#ea4f93]"
-                        >
-                          Actions
-                          <ChevronDown size={12} />
-                        </Link>
+                        <ActionDropdown items={getActionItems(user)} />
                       </td>
                     </tr>
                   ))}
@@ -387,13 +405,9 @@ export function UserManagementPage() {
                       >
                         {user.statusLabel}
                       </span>
-                      <Link
-                        to={getAdminUserDetailRoute(user.id)}
-                        className="mt-2 inline-flex items-center gap-1 rounded-full border border-[#f7cade] bg-[#fff6fa] px-3 py-1.5 text-xs font-bold text-[#ea4f93]"
-                      >
-                        Actions
-                        <ChevronDown size={12} />
-                      </Link>
+                      <div className="mt-2 flex justify-end">
+                        <ActionDropdown items={getActionItems(user)} />
+                      </div>
                     </div>
                   </div>
                 </article>

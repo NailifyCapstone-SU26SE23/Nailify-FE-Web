@@ -18,6 +18,7 @@ import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfi
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { TimePicker } from "../../../../shared/components/ui/TimePicker";
 import { StaffSaveResultModal } from "../components/StaffSaveResultModal";
+import { StaffSkillAssessmentSection } from "../components/StaffSkillAssessmentSection";
 import { ROUTES } from "../../../../shared/constants/routes";
 import {
   STAFF_CREATE_STATUS_OPTIONS,
@@ -26,8 +27,8 @@ import {
   STAFF_ONBOARDING_CHECKLIST,
   STAFF_ROLE_OPTIONS,
   STAFF_SALON_OPTIONS,
-  STAFF_SPECIALTIES,
   createEmptyStaffForm,
+  getSpecialtiesFromSkillRatings,
   getStaffCreateStatusOption,
   getStaffInitials,
   getStaffRoleOption,
@@ -88,13 +89,19 @@ export function StaffCreatePage() {
     }));
   };
 
-  const toggleSpecialty = (specialty) => {
-    setFormData((current) => ({
-      ...current,
-      specialties: current.specialties.includes(specialty)
-        ? current.specialties.filter((item) => item !== specialty)
-        : [...current.specialties, specialty],
-    }));
+  const handleSkillRatingChange = (skillKey, rating) => {
+    setFormData((current) => {
+      const nextSkillRatings = {
+        ...current.skillRatings,
+        [skillKey]: rating,
+      };
+
+      return {
+        ...current,
+        skillRatings: nextSkillRatings,
+        specialties: getSpecialtiesFromSkillRatings(nextSkillRatings),
+      };
+    });
   };
 
   const handleScheduleChange = (day, field, value) => {
@@ -384,29 +391,12 @@ export function StaffCreatePage() {
             </div>
           </section>
 
-          <section className="rounded-[28px] bg-white/65 p-5 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
-            <h2 className="mb-4 text-[18px] font-bold text-slate-800">Skills & Specialties</h2>
-            <div className="flex flex-wrap gap-2">
-              {STAFF_SPECIALTIES.map((item) => {
-                const active = formData.specialties.includes(item);
-
-                return (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => toggleSpecialty(item)}
-                    className={`rounded-full px-4 py-2 text-[11px] font-bold transition ${
-                      active
-                        ? "bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] text-white shadow-[0_10px_20px_rgba(226,93,143,0.2)]"
-                        : "border border-rose-100 bg-white text-slate-500 hover:bg-rose-50"
-                    }`}
-                  >
-                    {item}
-                  </button>
-                );
-              })}
-            </div>
-
+          <section className="space-y-5">
+            <StaffSkillAssessmentSection
+              ratings={formData.skillRatings}
+              specialties={formData.specialties}
+              onRatingChange={handleSkillRatingChange}
+            />
             <label className="mt-5 block space-y-2">
               <span className="text-[12px] font-semibold text-slate-500">Notes</span>
               <textarea

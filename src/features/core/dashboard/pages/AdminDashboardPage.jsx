@@ -11,6 +11,11 @@ import {
   UserRound,
   Users,
 } from "lucide-react";
+import { Modal } from "antd";
+import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ROUTES } from "../../../../shared/constants/routes";
+import { getSalonsWithUpdates } from "../../../admin/salon-management/services/mockSalon";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 
 const metricCards = [
@@ -140,16 +145,6 @@ const recentActivities = [
   },
 ];
 
-const salons = [
-  ["Nailify Orchard", "Orchard Rd, SG", "Jessica Tan", "1,842", "$42,300", 92, "Active"],
-  ["Nailify Marina", "Marina Bay, SG", "Priya Sharma", "1,620", "$38,750", 87, "Busy"],
-  ["Nailify Bugis", "Bugis St, SG", "Mei Lin Chen", "1,390", "$31,200", 78, "Active"],
-  ["Nailify Tampines", "Tampines Mall, SG", "Rachel Lim", "1,105", "$24,800", 71, "Active"],
-  ["Nailify Jurong", "Jurong East, SG", "Amanda Koh", "980", "$21,450", 65, "Busy"],
-  ["Nailify Woodlands", "Woodlands Ave, SG", "Siti Rahimah", "740", "$16,900", 58, "Active"],
-  ["Nailify Sengkang", "Sengkang, SG", "Fiona Ng", "210", "$4,800", 22, "Closed"],
-];
-
 const artists = [
   ["Lily Nguyen", "Nailify Orchard", "384", "$8,920"],
   ["Mia Tanaka", "Nailify Marina", "361", "$8,340"],
@@ -256,7 +251,29 @@ StatusBadge.propTypes = {
   status: PropTypes.string.isRequired,
 };
 
+function formatDashboardStatus(status) {
+  return status ? `${status.charAt(0)}${status.slice(1).toLowerCase()}` : "Active";
+}
+
 export function AdminDashboardPage() {
+  const navigate = useNavigate();
+  const [selectedSalonReport, setSelectedSalonReport] = useState(null);
+  const salonPerformanceRows = useMemo(
+    () =>
+      getSalonsWithUpdates().slice(0, 7).map((salon, index) => ({
+        id: salon.id,
+        salonId: salon.salonId,
+        name: salon.name,
+        location: salon.address,
+        manager: salon.manager,
+        bookings: (1840 - index * 210).toLocaleString("en-US"),
+        revenue: `$${(42300 - index * 3850).toLocaleString("en-US")}`,
+        occupancy: Math.max(48, 92 - index * 7),
+        status: formatDashboardStatus(salon.status),
+      })),
+    [],
+  );
+
   return (
     <section className="flex min-h-full flex-col gap-5 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.8fr)_330px]">
@@ -418,6 +435,7 @@ export function AdminDashboardPage() {
                   </button>
                   <button
                     type="button"
+                    onClick={() => navigate(ROUTES.adminSalonsCreate)}
                     className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.2)]"
                   >
                     + Add Salon
@@ -439,38 +457,39 @@ export function AdminDashboardPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {salons.map(([name, location, manager, bookings, revenue, occupancy, status]) => (
-                      <tr key={name} className="border-b border-[#fbe7ef] last:border-b-0">
+                    {salonPerformanceRows.map((salon) => (
+                      <tr key={salon.id} className="border-b border-[#fbe7ef] last:border-b-0">
                         <td className="px-3 py-4">
                           <div className="flex items-center gap-2">
                             <span className="h-2.5 w-2.5 rounded-full bg-[#ea4f93]" />
                             <div>
-                              <p className="font-semibold text-[#402542]">{name}</p>
-                              <p className="mt-1 text-xs text-[#bc89a4]">{location}</p>
+                              <p className="font-semibold text-[#402542]">{salon.name}</p>
+                              <p className="mt-1 text-xs text-[#bc89a4]">{salon.location}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-3 py-4 text-sm text-[#7a6176]">{location}</td>
-                        <td className="px-3 py-4 text-sm text-[#7a6176]">{manager}</td>
-                        <td className="px-3 py-4 text-sm font-semibold text-[#402542]">{bookings}</td>
-                        <td className="px-3 py-4 text-sm font-bold text-[#ea4f93]">{revenue}</td>
+                        <td className="px-3 py-4 text-sm text-[#7a6176]">{salon.location}</td>
+                        <td className="px-3 py-4 text-sm text-[#7a6176]">{salon.manager}</td>
+                        <td className="px-3 py-4 text-sm font-semibold text-[#402542]">{salon.bookings}</td>
+                        <td className="px-3 py-4 text-sm font-bold text-[#ea4f93]">{salon.revenue}</td>
                         <td className="px-3 py-4">
                           <div className="flex items-center gap-3">
                             <div className="h-2 w-20 rounded-full bg-[#f7d7e5]">
                               <div
                                 className="h-full rounded-full bg-[#ea4f93]"
-                                style={{ width: `${occupancy}%` }}
+                                style={{ width: `${salon.occupancy}%` }}
                               />
                             </div>
-                            <span className="text-xs font-bold text-[#8a6d82]">{occupancy}%</span>
+                            <span className="text-xs font-bold text-[#8a6d82]">{salon.occupancy}%</span>
                           </div>
                         </td>
                         <td className="px-3 py-4">
-                          <StatusBadge status={status} />
+                          <StatusBadge status={salon.status} />
                         </td>
                         <td className="px-3 py-4">
                           <button
                             type="button"
+                            onClick={() => setSelectedSalonReport(salon)}
                             className="rounded-full border border-[#f4c7da] bg-[#fff6fa] px-3 py-1.5 text-xs font-bold text-[#e84d92]"
                           >
                             View
@@ -716,6 +735,100 @@ export function AdminDashboardPage() {
           </div>
         </div>
       </div>
+      <Modal
+        open={Boolean(selectedSalonReport)}
+        onCancel={() => setSelectedSalonReport(null)}
+        footer={null}
+        centered
+        width={520}
+        styles={{
+          content: {
+            borderRadius: 28,
+            padding: 0,
+            overflow: "hidden",
+          },
+          mask: {
+            backgroundColor: "rgba(226, 93, 143, 0.14)",
+          },
+        }}
+      >
+        {selectedSalonReport ? (
+          <div className="bg-[linear-gradient(180deg,#fff8fb_0%,#fffdfd_100%)]">
+            <div className="bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-6 py-5 text-white">
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/75">
+                Salon Performance Report
+              </p>
+              <h3 className="mt-2 text-[24px] font-black tracking-tight">
+                {selectedSalonReport.name}
+              </h3>
+              <p className="mt-1 text-sm text-white/80">{selectedSalonReport.location}</p>
+            </div>
+
+            <div className="space-y-4 px-6 py-6">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-[24px] border border-[#f6d8e6] bg-white p-5 shadow-[0_16px_32px_rgba(236,72,153,0.08)]">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff1f7] text-[#e84d92]">
+                      <Clock3 size={18} />
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#c693ad]">
+                        Total Booking
+                      </p>
+                      <p className="mt-1 text-[28px] font-black leading-none text-[#3f2240]">
+                        {selectedSalonReport.bookings}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-[24px] border border-[#f6d8e6] bg-white p-5 shadow-[0_16px_32px_rgba(236,72,153,0.08)]">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff1f7] text-[#e84d92]">
+                      <CircleDollarSign size={18} />
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#c693ad]">
+                        Revenue
+                      </p>
+                      <p className="mt-1 text-[28px] font-black leading-none text-[#3f2240]">
+                        {selectedSalonReport.revenue}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-3 rounded-[24px] border border-[#f6d8e6] bg-white p-5 text-sm text-[#7a6176] shadow-[0_16px_32px_rgba(236,72,153,0.08)]">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-semibold text-[#8f6f83]">Manager</span>
+                  <span className="font-bold text-[#3f2240]">{selectedSalonReport.manager}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-semibold text-[#8f6f83]">Occupancy</span>
+                  <span className="font-bold text-[#3f2240]">
+                    {selectedSalonReport.occupancy}%
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-semibold text-[#8f6f83]">Status</span>
+                  <StatusBadge status={selectedSalonReport.status} />
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setSelectedSalonReport(null)}
+                  className="rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-5 py-2.5 text-xs font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.28)]"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </Modal>
     </section>
   );
 }
