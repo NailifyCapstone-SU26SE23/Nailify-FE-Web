@@ -36,7 +36,7 @@ export function SalonSaveResultModal({
       onCancel={onFailureClose}
       footer={result?.success ? null : undefined}
       closable={!result?.success}
-      maskClosable={!result?.success}
+      mask={{ closable: !result?.success }}
       okText="Try Again"
       cancelButtonProps={{ style: { display: "none" } }}
       okButtonProps={{

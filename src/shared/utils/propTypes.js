@@ -11,6 +11,7 @@ export const PropTypes = {
   func: createValidator(),
   node: createValidator(),
   number: createValidator(),
+  objectOf: () => createValidator(),
   oneOf: () => createValidator(),
   oneOfType: () => createValidator(),
   shape: () => createValidator(),

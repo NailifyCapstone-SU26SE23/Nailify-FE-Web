@@ -104,7 +104,17 @@ SuggestedCard.propTypes = {
   }).isRequired,
 };
 
-export function StaffBookingConsultationDetail({ data, onDelete, onOpenDesignStudio, onSave, onStartServiceSession }) {
+export function StaffBookingConsultationDetail({
+  data,
+  onChooseAnotherDesign,
+  onConfirmCurrentDesign,
+  isCurrentDesignConfirmed = false,
+  onDelete,
+  onOpenDesignStudio,
+  onSave,
+  onStaffNoteChange,
+  onStartServiceSession,
+}) {
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff5fa_100%)]">
       <div className="rounded-[24px] border border-[#f6dbe8] bg-[#fff7fb] p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
@@ -239,13 +249,19 @@ export function StaffBookingConsultationDetail({ data, onDelete, onOpenDesignStu
                   <div className="flex w-full flex-col gap-3 sm:flex-row">
                     <button
                       type="button"
-                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-[14px] bg-[image:var(--gradient-accent)] px-5 py-4 text-sm font-bold text-white shadow-[0_16px_28px_rgba(236,72,153,0.2)]"
+                      onClick={onConfirmCurrentDesign}
+                      disabled={isCurrentDesignConfirmed}
+                      className={`inline-flex flex-1 items-center justify-center gap-2 rounded-[14px] px-5 py-4 text-sm font-bold shadow-[0_16px_28px_rgba(236,72,153,0.2)] ${isCurrentDesignConfirmed
+                        ? "cursor-default bg-[#e9f9ef] text-[#16975f] shadow-none"
+                        : "bg-[image:var(--gradient-accent)] text-white"
+                        }`}
                     >
                       <Check size={16} />
-                      Confirm Current Design
+                      {isCurrentDesignConfirmed ? "Current Design Confirmed" : "Confirm Current Design"}
                     </button>
                     <button
                       type="button"
+                      onClick={onChooseAnotherDesign}
                       className="inline-flex flex-1 items-center justify-center gap-2 rounded-[14px] border border-[#f4cada] bg-white px-5 py-4 text-sm font-bold text-[#ea4f93]"
                     >
                       <Palette size={16} />
@@ -263,12 +279,18 @@ export function StaffBookingConsultationDetail({ data, onDelete, onOpenDesignStu
                       <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
                         {item.label}
                       </p>
-                      <div className="mt-2 rounded-[14px] border border-[#f6dbe7] bg-[#fff9fc] px-4 py-4 text-sm text-[#634d5f]">
-                        {item.value}
-                      </div>
+                      <textarea
+                        value={item.value}
+                        onChange={(event) => onStaffNoteChange(item.label, event.target.value)}
+                        rows={3}
+                        className="mt-2 w-full resize-y rounded-[14px] border border-[#f6dbe7] bg-[#fff9fc] px-4 py-3 text-sm text-[#634d5f] outline-none transition focus:border-[#ea4f93] focus:bg-white"
+                      />
                     </div>
                   ))}
                 </div>
+                <p className="mt-3 text-[11px] font-medium text-[#b1859d]">
+                  Staff notes are editable here and saved locally when you update this booking.
+                </p>
               </article>
 
               <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
@@ -530,8 +552,12 @@ StaffBookingConsultationDetail.propTypes = {
       }),
     ).isRequired,
   }).isRequired,
+  isCurrentDesignConfirmed: PropTypes.bool,
+  onChooseAnotherDesign: PropTypes.func.isRequired,
+  onConfirmCurrentDesign: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
   onOpenDesignStudio: PropTypes.func.isRequired,
   onSave: PropTypes.func.isRequired,
+  onStaffNoteChange: PropTypes.func.isRequired,
   onStartServiceSession: PropTypes.func.isRequired,
 };

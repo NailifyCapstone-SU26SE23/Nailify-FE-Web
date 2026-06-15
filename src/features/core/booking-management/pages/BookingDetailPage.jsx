@@ -1,4 +1,5 @@
 import { CalendarClock, PencilLine, Save, Trash2, X } from "lucide-react";
+import toast from "react-hot-toast";
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
@@ -18,6 +19,14 @@ import {
   getStaffBookingServiceSessionRoute,
 } from "../../../../shared/constants/routes";
 
+function buildDefaultStaffNotes(booking) {
+  return [
+    { label: "Customer Requests", value: booking?.notes || "No customer notes yet." },
+    { label: "Design Adjustments", value: "Capture preferred shape and finish during consultation." },
+    { label: "Notes Before Service", value: "Verify timing, confirm final design, then start session." },
+  ];
+}
+
 export function BookingDetailPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -31,6 +40,10 @@ export function BookingDetailPage() {
   const [formValues, setFormValues] = useState(initialBooking);
   const [flashMessage, setFlashMessage] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const [isCurrentDesignConfirmed, setIsCurrentDesignConfirmed] = useState(false);
+  const [staffNotesDraft, setStaffNotesDraft] = useState(() => (
+    getStaffBookingExperienceById(bookingId)?.staffNotes ?? buildDefaultStaffNotes(initialBooking)
+  ));
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(
@@ -58,6 +71,17 @@ export function BookingDetailPage() {
     }
     navigate(location.pathname, { replace: true, state: null });
   }, [deleteRequested, location.pathname, navigate, staffActionMessage]);
+
+  useEffect(() => {
+    if (role !== ROLES.staff) {
+      return;
+    }
+
+    setStaffNotesDraft(
+      getStaffBookingExperienceById(bookingId)?.staffNotes ?? buildDefaultStaffNotes(initialBooking),
+    );
+    setIsCurrentDesignConfirmed(false);
+  }, [bookingId, initialBooking, role]);
 
   if (!initialBooking) {
     return <Navigate to={roleConfig.listRoute} replace />;
@@ -101,8 +125,28 @@ export function BookingDetailPage() {
     navigate(getStaffBookingDesignStudioRoute(bookingId));
   };
 
+  const handleConfirmCurrentDesign = () => {
+    if (isCurrentDesignConfirmed) {
+      return;
+    }
+
+    setIsCurrentDesignConfirmed(true);
+    setFlashMessage("Mock consultation confirmed. Current nail design has been accepted for this booking.");
+    toast.success("Current design confirmed for this booking.");
+  };
+
+  const handleChooseAnotherDesign = () => {
+    navigate(getStaffBookingDesignStudioRoute(bookingId));
+  };
+
+  const handleStaffNoteChange = (label, value) => {
+    setStaffNotesDraft((current) => current.map((item) => (
+      item.label === label ? { ...item, value } : item
+    )));
+  };
+
   if (role === ROLES.staff) {
-    const staffExperience = getStaffBookingExperienceById(bookingId) ?? {
+    const baseStaffExperience = getStaffBookingExperienceById(bookingId) ?? {
       bookingCode: initialBooking.id.replace("BKG", "BK"),
       statusLabel: initialBooking.status,
       artistInitials: "L",
@@ -178,11 +222,7 @@ export function BookingDetailPage() {
             "https://images.unsplash.com/photo-1610992015732-2449b76344bc?auto=format&fit=crop&w=240&q=80",
         },
       ],
-      staffNotes: [
-        { label: "Customer Requests", value: initialBooking.notes || "No customer notes yet." },
-        { label: "Design Adjustments", value: "Capture preferred shape and finish during consultation." },
-        { label: "Notes Before Service", value: "Verify timing, confirm final design, then start session." },
-      ],
+      staffNotes: staffNotesDraft,
       checklist: [
         { label: "Customer confirmed nail design", checked: false },
         { label: "Total price confirmed with customer", checked: false },
@@ -190,6 +230,36 @@ export function BookingDetailPage() {
         { label: "Service notes captured", checked: false },
       ],
     };
+
+    const staffExperience = isCurrentDesignConfirmed
+      ? {
+        ...baseStaffExperience,
+        steps: baseStaffExperience.steps.map((step) => {
+          if (step.key === "consult") {
+            return { ...step, state: "complete" };
+          }
+
+          if (step.key === "confirm") {
+            return { ...step, state: "current" };
+          }
+
+          return step;
+        }),
+        design: {
+          ...baseStaffExperience.design,
+          tags: [
+            ...baseStaffExperience.design.tags,
+            {
+              label: "Confirmed",
+              className: "border-[#cdeedb] bg-[#eefcf4] text-[#16975f]",
+            },
+          ],
+        },
+        checklist: baseStaffExperience.checklist.map((item, index) => (
+          index === 0 ? { ...item, checked: true } : item
+        )),
+      }
+      : baseStaffExperience;
 
     const handleOpenServiceSession = () => {
       navigate(getStaffBookingServiceSessionRoute(bookingId), {
@@ -228,9 +298,13 @@ export function BookingDetailPage() {
         ) : null}
         <StaffBookingConsultationDetail
           data={staffExperience}
+          isCurrentDesignConfirmed={isCurrentDesignConfirmed}
+          onChooseAnotherDesign={handleChooseAnotherDesign}
+          onConfirmCurrentDesign={handleConfirmCurrentDesign}
           onDelete={handleDelete}
           onOpenDesignStudio={handleOpenDesignStudio}
           onSave={handleSave}
+          onStaffNoteChange={handleStaffNoteChange}
           onStartServiceSession={handleOpenServiceSession}
         />
       </>

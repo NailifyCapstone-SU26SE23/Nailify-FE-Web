@@ -1,5 +1,7 @@
 import {
   Check,
+  ChevronLeft,
+  ChevronRight,
   Palette,
   Search,
   Star,
@@ -96,13 +98,6 @@ function TemplateCard({ item, isSelected, onSelect }) {
             className="flex-1 rounded-[10px] bg-[image:var(--gradient-accent)] px-3 py-2 text-[10px] font-extrabold text-white"
           >
             {isSelected ? "Selected" : item.ctaLabel}
-          </button>
-          <button
-            type="button"
-            onClick={onSelect}
-            className="rounded-[10px] border border-[#f2bfd4] bg-white px-3 py-2 text-[10px] font-extrabold text-[#ea4f93]"
-          >
-            Customize
           </button>
         </div>
       </div>
@@ -495,15 +490,31 @@ export function StaffNailDesignStudioPage() {
   const [selectedFinish, setSelectedFinish] = useState(studio?.builder.initialSelection.finish ?? "");
   const [isDesignConfirmed, setIsDesignConfirmed] = useState(false);
   const [activeNailIndex, setActiveNailIndex] = useState(3);
+  const [templateStartIndex, setTemplateStartIndex] = useState(0);
   const [nailDecorations, setNailDecorations] = useState(
     createNailDecorationLayout(studio?.builder.initialSelection.decorations ?? []),
   );
   const [selectedExtras, setSelectedExtras] = useState(studio?.builder.initialSelection.extras ?? []);
+  const templateWindowSize = 3;
 
   const activeTemplate = useMemo(
     () => studio?.templates.find((item) => item.id === selectedTemplateId) ?? studio?.selectedDesign,
     [selectedTemplateId, studio],
   );
+  const visibleTemplates = useMemo(() => {
+    if (!studio?.templates?.length) {
+      return [];
+    }
+
+    if (studio.templates.length <= templateWindowSize) {
+      return studio.templates;
+    }
+
+    return Array.from({ length: templateWindowSize }, (_, offset) => {
+      const index = (templateStartIndex + offset) % studio.templates.length;
+      return studio.templates[index];
+    });
+  }, [studio, templateStartIndex]);
   const previewColorStyle = useMemo(
     () => getColorStyle(selectedColor, studio?.builder.colors ?? []),
     [selectedColor, studio],
@@ -529,6 +540,17 @@ export function StaffNailDesignStudioPage() {
     setNailDecorations(createNailDecorationLayout(preset.decorations));
     setActiveNailIndex(preset.decorations.length > 0 ? 3 : 0);
     setSelectedExtras(preset.extras);
+  };
+
+  const handleTemplateSlide = (direction) => {
+    if (!studio?.templates?.length || studio.templates.length <= templateWindowSize) {
+      return;
+    }
+
+    setTemplateStartIndex((current) => {
+      const delta = direction === "next" ? 1 : -1;
+      return (current + delta + studio.templates.length) % studio.templates.length;
+    });
   };
 
   if (!booking || !studio) {
@@ -687,12 +709,43 @@ export function StaffNailDesignStudioPage() {
                       Select a template or customize from scratch
                     </p>
                   </div>
-                  <button type="button" className="text-[11px] font-bold text-[#ea4f93]">
-                    See all 48 designs
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleTemplateSlide("prev")}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#f2bfd4] bg-[#fff4f8] text-[#ea4f93] transition hover:bg-[#ffe9f2]"
+                      aria-label="Show previous nail templates"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleTemplateSlide("next")}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#f2bfd4] bg-[#fff4f8] text-[#ea4f93] transition hover:bg-[#ffe9f2]"
+                      aria-label="Show next nail templates"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                    <button type="button" className="text-[11px] font-bold text-[#ea4f93]">
+                      See all {studio.templates.length} designs
+                    </button>
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center justify-between gap-3">
+                  <p className="text-[11px] font-medium text-[#b48ba0]">
+                    Showing {Math.min(templateWindowSize, studio.templates.length)} preview templates at a time
+                  </p>
+                  <p className="text-[11px] font-bold text-[#ea4f93]">
+                    {studio.templates.length > templateWindowSize
+                      ? `${templateStartIndex + 1}-${Math.min(
+                        templateStartIndex + templateWindowSize,
+                        studio.templates.length,
+                      )} of ${studio.templates.length}`
+                      : `${studio.templates.length} templates`}
+                  </p>
                 </div>
                 <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                  {studio.templates.map((item) => (
+                  {visibleTemplates.map((item) => (
                     <TemplateCard
                       key={item.id}
                       item={item}

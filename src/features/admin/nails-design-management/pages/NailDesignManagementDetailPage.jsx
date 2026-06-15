@@ -9,7 +9,6 @@ import {
   Star,
   Trash2,
   Upload,
-  WandSparkles,
   X,
 } from "lucide-react";
 import { useRef, useState } from "react";
@@ -1172,29 +1171,6 @@ export function NailDesignManagementDetailPage() {
             </div>
           </SectionCard>
 
-          <SectionCard title="Staff Match" subtitle="" icon={<WandSparkles size={18} />}>
-            <div className="space-y-3">
-              {formValues.staffMatch.map(([name, score]) => (
-                <div key={name} className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ea4f93_0%,#9b5cf6_100%)] text-[10px] font-bold text-white">
-                      {name
-                        .split(" ")
-                        .map((part) => part[0])
-                        .join("")
-                        .slice(0, 2)}
-                    </div>
-                    <p className="text-sm font-bold text-[#432744]">{name}</p>
-                  </div>
-                  <span className="text-xs font-bold text-[#ea4f93]">{score}</span>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 rounded-[16px] bg-[#fff4df] px-3 py-3 text-xs text-[#af7a22]">
-              5 artists below required skill level filtered out for this design.
-            </div>
-          </SectionCard>
-
           <SectionCard title="Quick Actions" subtitle="" icon={<Settings2 size={18} />}>
             <div className="space-y-2">
               <button
@@ -1211,54 +1187,64 @@ export function NailDesignManagementDetailPage() {
                 <PencilLine size={13} className="mr-1.5 inline" />
                 Edit Design
               </button>
-              {[
-                [
-                  "Add Variant",
-                  Copy,
-                  () =>
-                    scrollToSection(designVariantsRef, {
-                      startEdit: true,
-                      sectionKey: "design-variants",
-                    }),
-                  "design-variants",
-                ],
-                [
-                  "Update Price",
-                  CircleDollarSign,
-                  () => scrollToSection(pricingRef, { sectionKey: "pricing" }),
-                  "pricing",
-                ],
-                [
-                  "Upload Media",
-                  Upload,
-                  () => scrollToSection(heroSectionRef, { sectionKey: "hero" }),
-                  "hero",
-                ],
-                [
-                  "Archive Design",
-                  Trash2,
-                  () =>
-                    scrollToSection(quickSummaryRef, {
-                      startEdit: true,
-                      sectionKey: "quick-summary",
-                    }),
-                  "quick-summary",
-                ],
-              ].map(([label, Icon, onClick, sectionKey]) => (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={onClick}
-                  className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${
-                    highlightedSection === sectionKey
-                      ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
-                      : "border-[#f4c6da] bg-white text-[#7e6075]"
-                  }`}
-                >
-                  <Icon size={13} className="mr-1.5 inline" />
-                  {label}
-                </button>
-              ))}
+              <button
+                type="button"
+                onClick={() =>
+                  scrollToSection(designVariantsRef, {
+                    startEdit: true,
+                    sectionKey: "design-variants",
+                  })
+                }
+                className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${
+                  highlightedSection === "design-variants"
+                    ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
+                    : "border-[#f4c6da] bg-white text-[#7e6075]"
+                }`}
+              >
+                <Copy size={13} className="mr-1.5 inline" />
+                Add Variant
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollToSection(pricingRef, { sectionKey: "pricing" })}
+                className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${
+                  highlightedSection === "pricing"
+                    ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
+                    : "border-[#f4c6da] bg-white text-[#7e6075]"
+                }`}
+              >
+                <CircleDollarSign size={13} className="mr-1.5 inline" />
+                Update Price
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollToSection(heroSectionRef, { sectionKey: "hero" })}
+                className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${
+                  highlightedSection === "hero"
+                    ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
+                    : "border-[#f4c6da] bg-white text-[#7e6075]"
+                }`}
+              >
+                <Upload size={13} className="mr-1.5 inline" />
+                Upload Media
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  scrollToSection(quickSummaryRef, {
+                    startEdit: true,
+                    sectionKey: "quick-summary",
+                  })
+                }
+                className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${
+                  highlightedSection === "quick-summary"
+                    ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
+                    : "border-[#f4c6da] bg-white text-[#7e6075]"
+                }`}
+              >
+                <Trash2 size={13} className="mr-1.5 inline" />
+                Archive Design
+              </button>
             </div>
           </SectionCard>
 

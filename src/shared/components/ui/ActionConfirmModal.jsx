@@ -100,7 +100,7 @@ export function ActionConfirmModal({
       onCancel={loading ? undefined : onCancel}
       footer={null}
       closable={false}
-      maskClosable={!loading}
+      mask={{ closable: !loading }}
       keyboard={!loading}
       width={width}
       styles={MODAL_STYLES}
