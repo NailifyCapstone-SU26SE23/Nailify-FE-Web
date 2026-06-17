@@ -1,25 +1,52 @@
-import { mockUsers } from "./mockUsers";
+import { axiosClient } from "../../../../lib/axiosClient";
+import { jwtDecode } from "jwt-decode";
+import { ROLES } from "../../../../shared/constants/roles";
 
-const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+function normalizeRole(role) {
+  const normalizedRole = String(role ?? "").trim().toLowerCase();
+
+  switch (normalizedRole) {
+    case "admin":
+      return ROLES.admin;
+    case "manager":
+      return ROLES.manager;
+    case "staff_artist":
+      return ROLES.staff;
+    default:
+      return normalizedRole;
+  }
+}
 
 export const authService = {
   async login({ email, password }) {
-    await wait(500);
+    try {
+      const response = await axiosClient.post("/Auth/login", {
+        email: email.trim(),
+        password,
+      });
+      const token = response.data?.data?.token;
 
-    const normalizedEmail = email.trim().toLowerCase();
-    const matchedUser = mockUsers.find((user) => user.email === normalizedEmail);
+      if (!token) {
+        throw new Error("Login response did not include a token.");
+      }
 
-    if (!matchedUser || matchedUser.credential !== password) {
-      throw new Error("Invalid email or password.");
+      const claims = jwtDecode(token);
+      const normalizedRole = normalizeRole(claims.role);
+
+      return {
+        accessToken: token,
+        user: {
+          id: claims.sub ?? claims.nameid ?? claims.jti ?? claims.email,
+          email: claims.email ?? email.trim().toLowerCase(),
+          fullName: claims.name ?? claims.email ?? "Nailify User",
+          role: normalizedRole,
+        },
+      };
+    } catch (error) {
+      const apiMessage = error.response?.data?.message;
+      throw new Error(apiMessage || error.message || "Sign-in failed.", {
+        cause: error,
+      });
     }
-
-    const user = Object.fromEntries(
-      Object.entries(matchedUser).filter(([key]) => key !== "credential"),
-    );
-
-    return {
-      accessToken: `mock-token-${user.id}`,
-      user,
-    };
   },
 };

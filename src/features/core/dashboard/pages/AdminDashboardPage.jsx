@@ -5,11 +5,13 @@ import {
   CircleDollarSign,
   Clock3,
   MapPin,
+  Phone,
   Sparkles,
   Star,
   Store,
   UserRound,
   Users,
+  X,
 } from "lucide-react";
 import { Modal } from "antd";
 import { useMemo, useState } from "react";
@@ -276,7 +278,7 @@ export function AdminDashboardPage() {
 
   return (
     <section className="flex min-h-full flex-col gap-5 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.8fr)_330px]">
+      <div className="">
         <div className="space-y-5">
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {metricCards.map((card) => {
@@ -630,85 +632,6 @@ export function AdminDashboardPage() {
             </div>
           </div>
         </div>
-
-        <div className="space-y-4">
-          <Card className="sticky top-0">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#ff76ab_0%,#df307d_100%)] text-white">
-                <Sparkles size={18} />
-              </div>
-              <div>
-                <p className="font-extrabold text-[#e84d92]">Nailify</p>
-                <p className="text-xs text-[#c18ba5]">Quick Status Panel</p>
-              </div>
-            </div>
-
-            <div className="mt-6 space-y-6">
-              <div>
-                <div className="mb-4 flex items-center justify-between gap-2">
-                  <h3 className="text-sm font-extrabold text-[#3f2240]">New Registrations</h3>
-                  <span className="rounded-full bg-[#eaf9ee] px-2 py-1 text-[10px] font-bold text-[#2fa25f]">
-                    +48 today
-                  </span>
-                </div>
-                <div className="space-y-3">
-                  {registrations.map(([name, time]) => (
-                    <div key={name} className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd0e2_0%,#ea4f93_100%)] text-xs font-bold text-white">
-                          {name
-                            .split(" ")
-                            .map((part) => part[0])
-                            .join("")
-                            .slice(0, 2)}
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-[#402542]">{name}</p>
-                          <p className="text-[11px] text-[#c190aa]">{time}</p>
-                        </div>
-                      </div>
-                      <span className="rounded-full border border-[#f7cade] bg-[#fff6fa] px-2 py-1 text-[10px] font-bold text-[#ea4f93]">
-                        New
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <h3 className="mb-4 text-sm font-extrabold text-[#3f2240]">Recent Activity</h3>
-                <div className="space-y-4">
-                  {recentActivities.map((item) => (
-                    <div key={item.title} className="flex gap-3">
-                      <div className={`mt-1 h-8 w-8 rounded-full ${item.color}`} />
-                      <div>
-                        <p className="text-sm font-medium leading-5 text-[#5e4760]">{item.title}</p>
-                        <p className="mt-1 text-[11px] text-[#c190aa]">{item.time}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <h3 className="mb-4 text-sm font-extrabold text-[#3f2240]">Today&apos;s Summary</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    ["142", "Bookings Today"],
-                    ["$3,284", "Revenue Today"],
-                    ["48", "New Customers"],
-                    ["96%", "Satisfaction"],
-                  ].map(([value, label]) => (
-                    <div key={label} className="rounded-[18px] border border-[#f8d9e7] bg-[#fff8fb] px-3 py-4 text-center">
-                      <p className="text-2xl font-extrabold text-[#e34b91]">{value}</p>
-                      <p className="mt-1 text-[11px] text-[#c08aa4]">{label}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
       </div>
 
       <div className="rounded-[24px] border border-[#f7d7e5] bg-[linear-gradient(90deg,#fff7fb_0%,#fffdf8_100%)] p-4 shadow-[0_12px_24px_rgba(236,72,153,0.08)]">
@@ -739,92 +662,81 @@ export function AdminDashboardPage() {
         open={Boolean(selectedSalonReport)}
         onCancel={() => setSelectedSalonReport(null)}
         footer={null}
-        centered
+        closable={false}
         width={520}
+        centered
+        destroyOnClose
         styles={{
           content: {
-            borderRadius: 28,
             padding: 0,
+            borderRadius: "24px",
             overflow: "hidden",
           },
           mask: {
-            backgroundColor: "rgba(226, 93, 143, 0.14)",
+            backdropFilter: "blur(4px)",
           },
         }}
       >
         {selectedSalonReport ? (
-          <div className="bg-[linear-gradient(180deg,#fff8fb_0%,#fffdfd_100%)]">
-            <div className="bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-6 py-5 text-white">
-              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/75">
-                Salon Performance Report
-              </p>
-              <h3 className="mt-2 text-[24px] font-black tracking-tight">
-                {selectedSalonReport.name}
-              </h3>
-              <p className="mt-1 text-sm text-white/80">{selectedSalonReport.location}</p>
-            </div>
-
-            <div className="space-y-4 px-6 py-6">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="rounded-[24px] border border-[#f6d8e6] bg-white p-5 shadow-[0_16px_32px_rgba(236,72,153,0.08)]">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff1f7] text-[#e84d92]">
-                      <Clock3 size={18} />
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#c693ad]">
-                        Total Booking
-                      </p>
-                      <p className="mt-1 text-[28px] font-black leading-none text-[#3f2240]">
-                        {selectedSalonReport.bookings}
-                      </p>
-                    </div>
+          <div>
+            <div className="bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-6 py-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-xl bg-white/20 p-2">
+                    <Store size={16} className="text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-[15px] font-black text-white">
+                      {selectedSalonReport.name}
+                    </h3>
+                    <p className="text-[11px] text-white/70">View salon details</p>
                   </div>
                 </div>
-
-                <div className="rounded-[24px] border border-[#f6d8e6] bg-white p-5 shadow-[0_16px_32px_rgba(236,72,153,0.08)]">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff1f7] text-[#e84d92]">
-                      <CircleDollarSign size={18} />
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#c693ad]">
-                        Revenue
-                      </p>
-                      <p className="mt-1 text-[28px] font-black leading-none text-[#3f2240]">
-                        {selectedSalonReport.revenue}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid gap-3 rounded-[24px] border border-[#f6d8e6] bg-white p-5 text-sm text-[#7a6176] shadow-[0_16px_32px_rgba(236,72,153,0.08)]">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="font-semibold text-[#8f6f83]">Manager</span>
-                  <span className="font-bold text-[#3f2240]">{selectedSalonReport.manager}</span>
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <span className="font-semibold text-[#8f6f83]">Occupancy</span>
-                  <span className="font-bold text-[#3f2240]">
-                    {selectedSalonReport.occupancy}%
-                  </span>
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <span className="font-semibold text-[#8f6f83]">Status</span>
-                  <StatusBadge status={selectedSalonReport.status} />
-                </div>
-              </div>
-
-              <div className="flex justify-end">
                 <button
                   type="button"
                   onClick={() => setSelectedSalonReport(null)}
-                  className="rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-5 py-2.5 text-xs font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.28)]"
+                  className="rounded-full bg-white/20 p-1.5 text-white hover:bg-white/30"
                 >
-                  Close
+                  <X size={14} />
                 </button>
               </div>
+            </div>
+
+            <div className="space-y-4 px-6 py-6">
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { icon: MapPin, label: "Address", value: selectedSalonReport.location },
+                  { icon: UserRound, label: "Manager", value: selectedSalonReport.manager },
+                  { icon: Phone, label: "Salon ID", value: selectedSalonReport.salonId },
+                  { icon: Users, label: "Bookings", value: selectedSalonReport.bookings },
+                  { icon: CircleDollarSign, label: "Revenue", value: selectedSalonReport.revenue },
+                  {
+                    icon: Clock3,
+                    label: "Occupancy",
+                    value: `${selectedSalonReport.occupancy}%`,
+                  },
+                ].map(({ icon: Icon, label, value }) => (
+                  <div key={label} className="rounded-xl border border-rose-100 bg-[#fff8fb] p-3">
+                    <div className="mb-1 flex items-center gap-1.5">
+                      <Icon size={11} className="shrink-0 text-rose-400" />
+                      <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">
+                        {label}
+                      </span>
+                    </div>
+                    <p className="text-[12px] font-semibold text-slate-700">{value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex justify-end border-t border-rose-100 px-6 py-4">
+              <button
+                type="button"
+                onClick={() => setSelectedSalonReport(null)}
+                className="rounded-full border border-rose-200 bg-white px-5 py-2 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
+              >
+                Close
+              </button>
             </div>
           </div>
         ) : null}

@@ -12,7 +12,9 @@ import {
   Star,
   TriangleAlert,
   Users,
+  X,
 } from "lucide-react";
+import { Modal } from "antd";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
@@ -21,6 +23,7 @@ import {
   STAFF_FILTER_OPTIONS,
   STAFF_LEAVE_LIST,
   STAFF_LOW_RATING_ALERTS,
+  STAFF_MODAL_STYLES,
   STAFF_QUICK_ACTIONS,
   STAFF_SUMMARY,
   STAFF_TOP_PERFORMERS,
@@ -199,7 +202,7 @@ StaffProfileCard.propTypes = {
   onTransfer: PropTypes.func.isRequired,
 };
 
-function QuickActionButton({ item, to }) {
+function QuickActionButton({ item, onClick, to }) {
   const Icon = QUICK_ACTION_ICON_MAP[item.icon] ?? Plus;
 
   const content = (
@@ -230,6 +233,7 @@ function QuickActionButton({ item, to }) {
   return (
     <button
       type="button"
+      onClick={onClick}
       className="group flex flex-col items-center gap-2 rounded-2xl border border-rose-50 bg-white px-3 py-4 text-center transition hover:border-rose-100 hover:shadow-[0_8px_20px_rgba(226,93,143,0.10)]"
     >
       {content}
@@ -245,6 +249,7 @@ QuickActionButton.propTypes = {
     label: PropTypes.string.isRequired,
     text: PropTypes.string.isRequired,
   }).isRequired,
+  onClick: PropTypes.func,
   to: PropTypes.string,
 };
 
@@ -263,6 +268,23 @@ SmallActionButton.propTypes = {
   children: PropTypes.node.isRequired,
   className: PropTypes.string,
   type: PropTypes.string,
+};
+
+function CloseIconButton({ onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="rounded-full bg-white/20 p-1.5 text-white transition hover:bg-white/30"
+      aria-label="Close modal"
+    >
+      <X size={14} />
+    </button>
+  );
+}
+
+CloseIconButton.propTypes = {
+  onClick: PropTypes.func.isRequired,
 };
 
 function PerformerAvatar({ person }) {
@@ -302,7 +324,18 @@ export function StaffManagementPage() {
   const [staffList, setStaffList] = useState(getStaffListWithUpdates);
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
   const [selectedStaff, setSelectedStaff] = useState(null);
+  const [showAssignSalonModal, setShowAssignSalonModal] = useState(false);
+  const [showDeactivateModal, setShowDeactivateModal] = useState(false);
+  const [showPerformanceModal, setShowPerformanceModal] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
+
+  const quickActionHandlers = {
+    Transfer: () => setShowTransferModal(true),
+    "Assign Salon": () => setShowAssignSalonModal(true),
+    Performance: () => setShowPerformanceModal(true),
+    Schedule: () => setShowScheduleModal(true),
+  };
 
   useEffect(() => {
     setStaffList(getStaffListWithUpdates());
@@ -467,6 +500,7 @@ export function StaffManagementPage() {
                 <QuickActionButton
                   key={item.label}
                   item={item}
+                  onClick={quickActionHandlers[item.label]}
                   to={item.label === "Add Staff" ? ROUTES.adminStaffCreate : undefined}
                 />
               ))}
@@ -584,37 +618,318 @@ export function StaffManagementPage() {
         </aside>
       </div>
 
-      <ActionConfirmModal
+      <Modal
         open={showTransferModal}
-        intent="info"
-        title="Transfer Staff"
-        subtitle="Move this team member to another salon branch."
-        description={`Transfer ${selectedStaff?.name ?? "this staff member"} from ${selectedStaff?.salon ?? "the current branch"} to a different salon.`}
-        confirmText="Continue Transfer"
-        cancelText="Keep Current Branch"
-        confirmIcon={ArrowRightLeft}
-        width={460}
-        onConfirm={() => setShowTransferModal(false)}
         onCancel={() => setShowTransferModal(false)}
-        item={
-          selectedStaff
-            ? {
-                image: selectedStaff.image,
-                title: selectedStaff.name,
-                meta: `${selectedStaff.role} • ${selectedStaff.id}`,
-                note: `Current salon: ${selectedStaff.salon}`,
-              }
-            : null
-        }
-        details={[
-          { label: "Current Branch", value: selectedStaff?.salon ?? "Not assigned" },
-          { label: "Next Step", value: "Open transfer flow" },
-        ]}
-        warnings={[
-          "This current action only confirms the transfer flow entry.",
-          "No branch reassignment is persisted until a transfer destination is completed.",
-        ]}
-      />
+        footer={null}
+        closable={false}
+        width={420}
+        styles={STAFF_MODAL_STYLES}
+      >
+        <div>
+          <div className="bg-gradient-to-r from-[#b57edc] to-[#9b6fd4] px-6 py-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="rounded-xl bg-white/20 p-2">
+                  <ArrowRightLeft size={16} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="text-[15px] font-black text-white">Transfer Staff</h3>
+                  <p className="text-[11px] text-white/70">Move to another salon branch</p>
+                </div>
+              </div>
+              <CloseIconButton onClick={() => setShowTransferModal(false)} />
+            </div>
+          </div>
+
+          <div className="px-6 py-5 space-y-4">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Select Staff</label>
+              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-400">
+                <option>Choose a staff member...</option>
+                {staffList.map((staff) => (
+                  <option key={staff.id} value={staff.id}>{staff.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Select Target Salon</label>
+              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-400">
+                <option>Choose a salon...</option>
+              </select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowTransferModal(false)}
+                className="rounded-full border border-rose-200 bg-white px-4 py-2 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowTransferModal(false)}
+                className="rounded-full bg-gradient-to-r from-[#b57edc] to-[#9b6fd4] px-4 py-2 text-[11px] font-bold text-white shadow-[0_10px_20px_rgba(155,111,212,0.22)] transition hover:opacity-95"
+              >
+                Continue Transfer
+              </button>
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ── Assign Salon Modal ── */}
+      <Modal
+        open={showAssignSalonModal}
+        onCancel={() => setShowAssignSalonModal(false)}
+        footer={null}
+        closable={false}
+        width={420}
+        styles={STAFF_MODAL_STYLES}
+      >
+        <div>
+          <div className="bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-6 py-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="rounded-xl bg-white/20 p-2">
+                  <BriefcaseBusiness size={16} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="text-[15px] font-black text-white">Assign Salon</h3>
+                  <p className="text-[11px] text-white/70">Assign staff to a salon branch</p>
+                </div>
+              </div>
+              <CloseIconButton onClick={() => setShowAssignSalonModal(false)} />
+            </div>
+          </div>
+
+          <div className="px-6 py-5 space-y-4">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Select Staff</label>
+              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400">
+                <option>Choose a staff member...</option>
+                {staffList.map((staff) => (
+                  <option key={staff.id} value={staff.id}>{staff.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Select Salon</label>
+              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400">
+                <option>Choose a salon...</option>
+              </select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowAssignSalonModal(false)}
+                className="rounded-full border border-rose-200 bg-white px-4 py-2 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowAssignSalonModal(false)}
+                className="rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2 text-[11px] font-bold text-white shadow-[0_10px_20px_rgba(226,93,143,0.22)] transition hover:opacity-95"
+              >
+                Assign Salon
+              </button>
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ── Performance Modal ── */}
+      <Modal
+        open={showPerformanceModal}
+        onCancel={() => setShowPerformanceModal(false)}
+        footer={null}
+        closable={false}
+        width={500}
+        styles={STAFF_MODAL_STYLES}
+      >
+        <div>
+          <div className="bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-6 py-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="rounded-xl bg-white/20 p-2">
+                  <BarChart3 size={16} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="text-[15px] font-black text-white">Staff Performance</h3>
+                  <p className="text-[11px] text-white/70">View staff performance metrics</p>
+                </div>
+              </div>
+              <CloseIconButton onClick={() => setShowPerformanceModal(false)} />
+            </div>
+          </div>
+
+          <div className="px-6 py-5 space-y-4">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Select Staff</label>
+              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400">
+                <option>Choose a staff member...</option>
+                {staffList.map((staff) => (
+                  <option key={staff.id} value={staff.id}>{staff.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div className="rounded-xl border border-rose-100 bg-[#fff8fb] p-3 text-center">
+                <p className="text-[22px] font-black text-slate-800">145</p>
+                <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-400">Bookings</p>
+              </div>
+              <div className="rounded-xl border border-rose-100 bg-[#fff8fb] p-3 text-center">
+                <p className="text-[22px] font-black text-slate-800">4.8</p>
+                <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-400">Rating</p>
+              </div>
+              <div className="rounded-xl border border-rose-100 bg-[#fff8fb] p-3 text-center">
+                <p className="text-[22px] font-black text-slate-800">$3.2k</p>
+                <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-400">Revenue</p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowPerformanceModal(false)}
+                className="rounded-full border border-rose-200 bg-white px-4 py-2 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                className="rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2 text-[11px] font-bold text-white shadow-[0_10px_20px_rgba(226,93,143,0.22)] transition hover:opacity-95"
+              >
+                Export Report
+              </button>
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ── Schedule Modal ── */}
+      <Modal
+        open={showScheduleModal}
+        onCancel={() => setShowScheduleModal(false)}
+        footer={null}
+        closable={false}
+        width={420}
+        styles={STAFF_MODAL_STYLES}
+      >
+        <div>
+          <div className="bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-6 py-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="rounded-xl bg-white/20 p-2">
+                  <CalendarClock size={16} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="text-[15px] font-black text-white">Manage Schedule</h3>
+                  <p className="text-[11px] text-white/70">Set staff working hours</p>
+                </div>
+              </div>
+              <CloseIconButton onClick={() => setShowScheduleModal(false)} />
+            </div>
+          </div>
+
+          <div className="px-6 py-5 space-y-4">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Select Staff</label>
+              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400">
+                <option>Choose a staff member...</option>
+                {staffList.map((staff) => (
+                  <option key={staff.id} value={staff.id}>{staff.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Shift Start</label>
+              <input type="time" className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400" />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Shift End</label>
+              <input type="time" className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400" />
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowScheduleModal(false)}
+                className="rounded-full border border-rose-200 bg-white px-4 py-2 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowScheduleModal(false)}
+                className="rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2 text-[11px] font-bold text-white shadow-[0_10px_20px_rgba(226,93,143,0.22)] transition hover:opacity-95"
+              >
+                Save Schedule
+              </button>
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ── Deactivate Modal ── */}
+      <Modal
+        open={showDeactivateModal}
+        onCancel={() => setShowDeactivateModal(false)}
+        footer={null}
+        closable={false}
+        width={420}
+        styles={STAFF_MODAL_STYLES}
+      >
+        <div>
+          <div className="bg-gradient-to-r from-rose-500 to-rose-600 px-6 py-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="rounded-xl bg-white/20 p-2">
+                  <ShieldCheck size={16} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="text-[15px] font-black text-white">Deactivate Staff</h3>
+                  <p className="text-[11px] text-white/70">Suspend staff access temporarily</p>
+                </div>
+              </div>
+              <CloseIconButton onClick={() => setShowDeactivateModal(false)} />
+            </div>
+          </div>
+
+          <div className="px-6 py-5 space-y-4">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Select Staff</label>
+              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400">
+                <option>Choose a staff member...</option>
+                {staffList.map((staff) => (
+                  <option key={staff.id} value={staff.id}>{staff.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Reason</label>
+              <input type="text" placeholder="e.g., Leave of absence" className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400" />
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowDeactivateModal(false)}
+                className="rounded-full border border-rose-200 bg-white px-4 py-2 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowDeactivateModal(false)}
+                className="rounded-full bg-gradient-to-r from-rose-500 to-rose-600 px-4 py-2 text-[11px] font-bold text-white shadow-[0_10px_20px_rgba(239,68,68,0.22)] transition hover:opacity-95"
+              >
+                Deactivate
+              </button>
+            </div>
+          </div>
+        </div>
+      </Modal>
     </section>
   );
 }
