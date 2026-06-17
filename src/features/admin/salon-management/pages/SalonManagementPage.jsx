@@ -1,7 +1,6 @@
 import {
-  AlertTriangle,
-  BellRing,
   BriefcaseBusiness,
+  CalendarClock,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -17,7 +16,9 @@ import {
   Trash2,
   TrendingUp,
   UserRound,
+  X,
 } from "lucide-react";
+import { Modal } from "antd";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
@@ -29,7 +30,7 @@ import {
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import {
   LOW_OCCUPANCY_SALON,
-  SALON_ALERTS,
+  SALON_MODAL_STYLES,
   SALON_STATUS_FILTERS,
   SALON_SUMMARY,
   TOP_PERFORMING_SALON,
@@ -217,10 +218,11 @@ BranchCard.propTypes = {
   onClick: PropTypes.func.isRequired,
 };
 
-function SmallActionButton({ children, className = "", type = "button" }) {
+function SmallActionButton({ children, className = "", onClick, type = "button" }) {
   return (
     <button
       type={type}
+      onClick={onClick}
       className={`inline-flex items-center justify-center rounded-full border border-rose-200 bg-white px-3 py-2 text-[9px] font-bold uppercase tracking-[0.08em] text-rose-500 transition hover:bg-rose-50 ${className}`.trim()}
     >
       {children}
@@ -231,23 +233,45 @@ function SmallActionButton({ children, className = "", type = "button" }) {
 SmallActionButton.propTypes = {
   children: PropTypes.node.isRequired,
   className: PropTypes.string,
+  onClick: PropTypes.func,
   type: PropTypes.string,
+};
+
+function CloseIconButton({ onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="rounded-full bg-white/20 p-1.5 text-white transition hover:bg-white/30"
+      aria-label="Close modal"
+    >
+      <X size={14} />
+    </button>
+  );
+}
+
+CloseIconButton.propTypes = {
+  onClick: PropTypes.func.isRequired,
 };
 
 export function SalonManagementPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [showAssignManagerModal, setShowAssignManagerModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showHolidayClosureModal, setShowHolidayClosureModal] = useState(false);
+  const [showSetHoursModal, setShowSetHoursModal] = useState(false);
   const [selectedSalon, setSelectedSalon] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [branchOverviewStart, setBranchOverviewStart] = useState(0);
-  const [salons, setSalons] = useState(getSalonsWithUpdates);
+  const [salonsRefreshKey, setSalonsRefreshKey] = useState(0);
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
 
-  useEffect(() => {
-    setSalons(getSalonsWithUpdates());
-  }, [location.pathname]);
+  const salons = useMemo(
+    () => getSalonsWithUpdates(),
+    [location.pathname, salonsRefreshKey],
+  );
 
   useEffect(() => {
     if (!location.state?.flashMessage) {
@@ -304,7 +328,7 @@ export function SalonManagementPage() {
     }
 
     removeMockSalonById(selectedSalon.id);
-    setSalons(getSalonsWithUpdates());
+    setSalonsRefreshKey((current) => current + 1);
     setShowDeleteModal(false);
     setSelectedSalon(null);
   };
@@ -451,9 +475,15 @@ export function SalonManagementPage() {
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-2">
-                  <SmallActionButton >Assign Manager</SmallActionButton>
-                  <SmallActionButton >Holiday Closure</SmallActionButton>
-                  <SmallActionButton >Set Hours</SmallActionButton>
+                  <SmallActionButton onClick={() => setShowAssignManagerModal(true)}>
+                    Assign Manager
+                  </SmallActionButton>
+                  <SmallActionButton onClick={() => setShowHolidayClosureModal(true)}>
+                    Holiday Closure
+                  </SmallActionButton>
+                  <SmallActionButton onClick={() => setShowSetHoursModal(true)}>
+                    Set Hours
+                  </SmallActionButton>
                 </div>
               </div>
             </div>
@@ -543,27 +573,6 @@ export function SalonManagementPage() {
         <aside className="space-y-5">
           <RightMetricCard {...TOP_PERFORMING_SALON} />
           <RightMetricCard {...LOW_OCCUPANCY_SALON} />
-          <div className="rounded-2xl border border-rose-100 bg-white p-4 shadow-[0_18px_32px_rgba(226,93,143,0.08)]">
-            <div className="mb-4 flex items-center gap-2 text-[12px] font-bold text-slate-700">
-              <BellRing size={14} className="text-rose-500" />
-              <span>Branch Alerts</span>
-            </div>
-            <div className="space-y-4">
-              {SALON_ALERTS.map((alert) => (
-                <div key={alert.title} className="flex gap-3">
-                  <div className={`pt-0.5 ${alert.color}`}>
-                    <AlertTriangle size={13} />
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-semibold leading-5 text-slate-600">
-                      {alert.title}
-                    </p>
-                    <p className="mt-1 text-[10px] font-medium text-slate-400">{alert.time}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         </aside>
       </div>
 
@@ -595,6 +604,194 @@ export function SalonManagementPage() {
           "Appointment history and reporting references for this branch will be lost.",
         ]}
       />
+       <Modal
+        open={showAssignManagerModal}
+        onCancel={() => setShowAssignManagerModal(false)}
+        footer={null}
+        closable={false}
+        width={440}
+        styles={SALON_MODAL_STYLES}
+      >
+        <div>
+          <div className="bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-6 py-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="rounded-xl bg-white/20 p-2">
+                  <UserRound size={16} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="text-[15px] font-black text-white">Assign Manager</h3>
+                  <p className="text-[11px] text-white/70">Assign a new manager to a salon</p>
+                </div>
+              </div>
+              <CloseIconButton onClick={() => setShowAssignManagerModal(false)} />
+            </div>
+          </div>
+
+          <div className="space-y-4 px-6 py-5">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Select Salon</label>
+              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400">
+                <option>Choose a salon...</option>
+                {salons.map((salon) => (
+                  <option key={salon.id} value={salon.id}>{salon.name} - {salon.address}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Select New Manager</label>
+              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400">
+                <option>Choose a staff member...</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 border-t border-rose-50 px-6 py-4">
+            <button
+              type="button"
+              onClick={() => setShowAssignManagerModal(false)}
+              className="rounded-full border border-rose-200 bg-white px-5 py-2 text-[11px] font-bold text-rose-400 transition hover:bg-rose-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowAssignManagerModal(false)}
+              className="rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-5 py-2 text-[11px] font-bold text-white shadow-[0_10px_20px_rgba(226,93,143,0.25)] transition hover:opacity-95"
+            >
+              Assign Manager
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ── Holiday Closure Modal ── */}
+      <Modal
+        open={showHolidayClosureModal}
+        onCancel={() => setShowHolidayClosureModal(false)}
+        footer={null}
+        closable={false}
+        width={440}
+        styles={SALON_MODAL_STYLES}
+      >
+        <div>
+          <div className="bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-6 py-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="rounded-xl bg-white/20 p-2">
+                  <CalendarClock size={16} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="text-[15px] font-black text-white">Holiday Closure</h3>
+                  <p className="text-[11px] text-white/70">Schedule salon closure for holidays</p>
+                </div>
+              </div>
+              <CloseIconButton onClick={() => setShowHolidayClosureModal(false)} />
+            </div>
+          </div>
+
+          <div className="space-y-4 px-6 py-5">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Select Salon</label>
+              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400">
+                <option>Choose a salon...</option>
+                {salons.map((salon) => (
+                  <option key={salon.id} value={salon.id}>{salon.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Closure Date</label>
+              <input type="date" className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400" />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Reason</label>
+              <input type="text" placeholder="e.g., Christmas Holiday" className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400" />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 border-t border-rose-50 px-6 py-4">
+            <button
+              type="button"
+              onClick={() => setShowHolidayClosureModal(false)}
+              className="rounded-full border border-rose-200 bg-white px-5 py-2 text-[11px] font-bold text-rose-400 transition hover:bg-rose-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowHolidayClosureModal(false)}
+              className="rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-5 py-2 text-[11px] font-bold text-white shadow-[0_10px_20px_rgba(226,93,143,0.25)] transition hover:opacity-95"
+            >
+              Schedule Closure
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ── Set Hours Modal ── */}
+      <Modal
+        open={showSetHoursModal}
+        onCancel={() => setShowSetHoursModal(false)}
+        footer={null}
+        closable={false}
+        width={440}
+        styles={SALON_MODAL_STYLES}
+      >
+        <div>
+          <div className="bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-6 py-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="rounded-xl bg-white/20 p-2">
+                  <Clock3 size={16} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="text-[15px] font-black text-white">Set Operating Hours</h3>
+                  <p className="text-[11px] text-white/70">Update salon opening and closing hours</p>
+                </div>
+              </div>
+              <CloseIconButton onClick={() => setShowSetHoursModal(false)} />
+            </div>
+          </div>
+
+          <div className="space-y-4 px-6 py-5">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Select Salon</label>
+              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400">
+                <option>Choose a salon...</option>
+                {salons.map((salon) => (
+                  <option key={salon.id} value={salon.id}>{salon.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Opening Time</label>
+              <input type="time" className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400" />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Closing Time</label>
+              <input type="time" className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400" />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 border-t border-rose-50 px-6 py-4">
+            <button
+              type="button"
+              onClick={() => setShowSetHoursModal(false)}
+              className="rounded-full border border-rose-200 bg-white px-5 py-2 text-[11px] font-bold text-rose-400 transition hover:bg-rose-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowSetHoursModal(false)}
+              className="rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-5 py-2 text-[11px] font-bold text-white shadow-[0_10px_20px_rgba(226,93,143,0.25)] transition hover:opacity-95"
+            >
+              Update Hours
+            </button>
+          </div>
+        </div>
+      </Modal>
     </section>
   );
 }

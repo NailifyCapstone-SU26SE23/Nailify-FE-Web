@@ -110,7 +110,10 @@ export function Sidebar({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-2 py-5">
+        <div
+          className="flex-1 overflow-y-auto px-2 py-5 [&::-webkit-scrollbar]:w-2.5 [&::-webkit-scrollbar-track]:bg-[rgba(255,255,255,0.12)] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[rgba(255,255,255,0.38)] [&::-webkit-scrollbar-thumb]:border-[2px] [&::-webkit-scrollbar-thumb]:border-solid [&::-webkit-scrollbar-thumb]:border-[#db5b91] [&::-webkit-scrollbar-thumb:hover]:bg-[rgba(255,255,255,0.5)]"
+          style={{ scrollbarColor: "#f6b2cc #db5b91", scrollbarWidth: "thin" }}
+        >
           {Object.entries(menuGroups).map(([section, items]) => (
             <div key={section} className="mb-5 last:mb-0">
               {!collapsed ? (

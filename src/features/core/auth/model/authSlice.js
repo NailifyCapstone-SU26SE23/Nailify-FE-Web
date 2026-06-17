@@ -61,6 +61,7 @@ const authSlice = createSlice({
         state.status = AUTH_STATUS.failed;
         state.error = action.payload ?? "Sign-in failed.";
         state.isAuthenticated = false;
+        toast.error(state.error);
       });
   },
 });

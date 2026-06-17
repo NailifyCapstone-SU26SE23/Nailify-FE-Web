@@ -98,7 +98,7 @@ function TemplateCard({ item, isSelected, onSelect }) {
             className="flex-1 rounded-[10px] bg-[image:var(--gradient-accent)] px-3 py-2 text-[10px] font-extrabold text-white"
           >
             {isSelected ? "Selected" : item.ctaLabel}
-          </button>
+          </button> 
         </div>
       </div>
     </article>
