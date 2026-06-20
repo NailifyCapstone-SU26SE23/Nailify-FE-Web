@@ -16,6 +16,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ROLES } from "../../../../shared/constants/roles";
 import { PropTypes } from "../../../../shared/utils/propTypes";
+import { formatDurationLabel } from "../../../../shared/utils/formatDuration";
 import { BOOKING_ROLE_CONFIG } from "../services/mockBookings";
 
 const roleConfig = BOOKING_ROLE_CONFIG[ROLES.manager];
@@ -462,7 +463,7 @@ export function ManagerBookingListPage() {
                     <tr key={row.id} className="border-b border-[#fbe7ef] last:border-b-0">
                       <td className="px-3 py-4">
                         <p className="text-sm font-semibold text-[#402542]">{row.time}</p>
-                        <p className="text-[11px] text-[#c08aa4]">{row.duration}</p>
+                        <p className="text-[11px] text-[#c08aa4]">{formatDurationLabel(row.duration)}</p>
                       </td>
                       <td className="px-3 py-4">
                         <div className="flex items-center gap-3">
@@ -644,7 +645,7 @@ export function ManagerBookingListPage() {
                     </div>
                     <div>
                       <p className="text-sm font-bold text-[#402542]">{slot.artist}</p>
-                      <p className="text-[11px] text-[#c08aa4]">{slot.duration}</p>
+                      <p className="text-[11px] text-[#c08aa4]">{formatDurationLabel(slot.duration)}</p>
                     </div>
                   </div>
                   <p className="mt-3 text-sm font-semibold text-[#7f6478]">{slot.service}</p>

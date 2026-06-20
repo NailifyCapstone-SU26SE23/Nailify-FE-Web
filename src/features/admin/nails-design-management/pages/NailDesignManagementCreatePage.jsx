@@ -17,6 +17,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ROUTES } from "../../../../shared/constants/routes";
+import { formatDurationLabel } from "../../../../shared/utils/formatDuration";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import {
   NAIL_DESIGN_CATEGORY_OPTIONS,
@@ -1638,7 +1639,7 @@ export function NailDesignManagementCreatePage() {
         highlights={[formValues.name || "New nail design", formValues.category || "Category pending", formValues.collection || "Collection pending"]}
         details={[
           { label: "Suggested Price", value: formValues.suggestedPrice || "No price entered" },
-          { label: "Est. Duration", value: formValues.estimatedDuration || "No duration entered" },
+          { label: "Est. Duration", value: formValues.estimatedDuration ? formatDurationLabel(formValues.estimatedDuration) : "No duration entered" },
         ]}
         warnings={["This mock publish updates the UI flow only and does not persist outside this feature."]}
       />

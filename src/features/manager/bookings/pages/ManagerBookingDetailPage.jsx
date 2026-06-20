@@ -18,6 +18,7 @@ import {
 import { useMemo, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { ROUTES } from "../../../../shared/constants/routes";
+import { formatDurationLabel } from "../../../../shared/utils/formatDuration";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { BOOKING_ROLE_CONFIG, getMockBookingById } from "../services/mockBookings";
 import { ROLES } from "../../../../shared/constants/roles";
@@ -460,7 +461,7 @@ export function ManagerBookingDetailPage() {
                   {layer.selected ? "Selected" : "Not Selected"}
                 </span>
               </div>
-              <p className="mt-2 pl-6 text-[11px] text-[#c08aa4]">{layer.meta}</p>
+              <p className="mt-2 pl-6 text-[11px] text-[#c08aa4]">{formatDurationLabel(layer.meta)}</p>
             </div>
           ))}
         </div>
@@ -468,7 +469,7 @@ export function ManagerBookingDetailPage() {
         <div className="mt-5 flex flex-col gap-3 rounded-[14px] border border-[#f8deea] bg-[#fffafb] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs text-[#c08aa4]">Total Selected Layers</p>
-            <p className="text-sm font-extrabold text-[#ea4f93]">4 Layers · Est. 110 minutes</p>
+            <p className="text-sm font-extrabold text-[#ea4f93]">{formatDurationLabel("4 Layers · Est. 110 minutes")}</p>
           </div>
           <div className="sm:text-right">
             <p className="text-xs text-[#c08aa4]">Overall Complexity</p>

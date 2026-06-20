@@ -1,7 +1,10 @@
 import {
+  ChevronLeft,
+  ChevronRight,
   CircleAlert,
   CircleCheck,
   CircleDollarSign,
+  LoaderCircle,
   Pencil,
   Plus,
   Search,
@@ -9,7 +12,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import { PropTypes } from "../../../../shared/utils/propTypes";
@@ -20,7 +23,6 @@ import {
   MOST_BOOKED_SERVICES,
   PRICING_ALERTS,
   SERVICE_CATEGORIES,
-  SERVICE_CATEGORY_FILTERS,
   SERVICE_CATEGORY_TONES,
   STATUS_OPTIONS,
   buildCategoryBreakdown,
@@ -28,14 +30,13 @@ import {
   createEmptyAddOn,
   createEmptyService,
   createMockAddOn,
-  createMockService,
+  formatVndCurrency,
   getAddOnRowsWithUpdates,
-  getServiceRowsWithUpdates,
   removeMockAddOnById,
-  removeMockServiceById,
   updateMockAddOn,
-  updateMockService,
 } from "../services/mockServicePricing";
+import { fetchAdminServices } from "../services/servicePricingService";
+import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 
 function MetricCard({ item }) {
   const Icon = item.icon;
@@ -461,16 +462,17 @@ function getAlertTone(tone) {
   }
 }
 
-function refreshRecords() {
-  const services = getServiceRowsWithUpdates();
+function refreshAddOns() {
   const addOns = getAddOnRowsWithUpdates();
 
-  return { services, addOns };
+  return addOns;
 }
 
 export function ServicePricingManagementPage() {
-  const [records, setRecords] = useState(refreshRecords);
+  const [services, setServices] = useState([]);
+  const [addOns, setAddOns] = useState(refreshAddOns);
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const [flashMessage, setFlashMessage] = useState("");
   const [serviceModal, setServiceModal] = useState({ open: false, mode: "create", recordId: null });
@@ -480,24 +482,82 @@ export function ServicePricingManagementPage() {
   const [addOnDraft, setAddOnDraft] = useState(createEmptyAddOn);
   const [serviceError, setServiceError] = useState("");
   const [addOnError, setAddOnError] = useState("");
+  const [serviceMetaData, setServiceMetaData] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    pageSize: 10,
+    totalItems: 0,
+    hasPrevious: false,
+    hasNext: false,
+    firstRowOnPage: 0,
+    lastRowOnPage: 0,
+  });
+  const [isLoadingServices, setIsLoadingServices] = useState(true);
+  const [serviceLoadError, setServiceLoadError] = useState("");
 
-  const { services, addOns } = records;
+  useEffect(() => {
+    const timerId = window.setTimeout(() => {
+      setDebouncedQuery(query.trim());
+      setServiceMetaData((current) => ({ ...current, currentPage: 1 }));
+    }, 350);
+
+    return () => window.clearTimeout(timerId);
+  }, [query]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadServices = async () => {
+      setIsLoadingServices(true);
+      setServiceLoadError("");
+
+      try {
+        const response = await fetchAdminServices({
+          pageNumber: serviceMetaData.currentPage,
+          pageSize: serviceMetaData.pageSize,
+          name: debouncedQuery,
+        });
+
+        if (!isMounted) {
+          return;
+        }
+
+        setServices(response.items);
+        setServiceMetaData(response.metaData);
+      } catch (loadError) {
+        if (!isMounted) {
+          return;
+        }
+
+        setServices([]);
+        setServiceLoadError(
+          loadError instanceof Error ? loadError.message : "Failed to load services.",
+        );
+      } finally {
+        if (isMounted) {
+          setIsLoadingServices(false);
+        }
+      }
+    };
+
+    void loadServices();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [debouncedQuery, serviceMetaData.currentPage, serviceMetaData.pageSize]);
+
+  const serviceCategories = useMemo(() => {
+    const categories = Array.from(new Set(services.map((service) => service.category).filter(Boolean)));
+    return ["All", ...categories];
+  }, [services]);
 
   const filteredServices = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-
     return services.filter((service) => {
       const matchesCategory = activeCategory === "All" || service.category === activeCategory;
-      const matchesQuery =
-        !normalizedQuery ||
-        [service.name, service.category, service.status]
-          .join(" ")
-          .toLowerCase()
-          .includes(normalizedQuery);
-
-      return matchesCategory && matchesQuery;
+      return matchesCategory;
     });
-  }, [activeCategory, query, services]);
+  }, [activeCategory, services]);
 
   const summaryCards = useMemo(
     () => buildServicePricingSummary(services, addOns),
@@ -514,10 +574,43 @@ export function ServicePricingManagementPage() {
     [services],
   );
 
-  const syncRecords = (message = "") => {
-    setRecords(refreshRecords());
+  const syncAddOns = (message = "") => {
+    setAddOns(refreshAddOns());
     setFlashMessage(message);
   };
+
+  useEffect(() => {
+    if (!serviceCategories.includes(activeCategory)) {
+      setActiveCategory("All");
+    }
+  }, [activeCategory, serviceCategories]);
+
+  const servicePaginationItems = useMemo(() => {
+    const currentPage = serviceMetaData.currentPage;
+    const totalPages = serviceMetaData.totalPages;
+
+    if (totalPages <= 1) {
+      return [1];
+    }
+
+    const pages = new Set([1, totalPages, currentPage, currentPage - 1, currentPage + 1]);
+    const normalizedPages = [...pages]
+      .filter((page) => page >= 1 && page <= totalPages)
+      .sort((left, right) => left - right);
+
+    const result = [];
+
+    normalizedPages.forEach((page, index) => {
+      result.push(page);
+
+      const nextPage = normalizedPages[index + 1];
+      if (nextPage && nextPage - page > 1) {
+        result.push("...");
+      }
+    });
+
+    return result;
+  }, [serviceMetaData.currentPage, serviceMetaData.totalPages]);
 
   const openCreateService = () => {
     setServiceDraft(createEmptyService());
@@ -605,19 +698,7 @@ export function ServicePricingManagementPage() {
   ];
 
   const submitServiceForm = () => {
-    const result =
-      serviceModal.mode === "create"
-        ? createMockService(serviceDraft)
-        : updateMockService(serviceModal.recordId, serviceDraft);
-
-    if (!result.success) {
-      setServiceError(result.message);
-      return;
-    }
-
-    setServiceModal({ open: false, mode: "create", recordId: null });
-    setServiceError("");
-    syncRecords(result.message);
+    setServiceError("Service create/update API is not connected yet.");
   };
 
   const submitAddOnForm = () => {
@@ -633,25 +714,11 @@ export function ServicePricingManagementPage() {
 
     setAddOnModal({ open: false, mode: "create", recordId: null });
     setAddOnError("");
-    syncRecords(result.message);
+    syncAddOns(result.message);
   };
 
   const handleToggleServiceAddOn = (service) => {
-    const result = updateMockService(service.id, {
-      name: service.name,
-      category: service.category,
-      price: String(service.price),
-      duration: String(service.duration),
-      hasAddOn: !service.hasAddOn,
-      status: service.status,
-    });
-
-    if (!result.success) {
-      setFlashMessage(result.message);
-      return;
-    }
-
-    syncRecords(`${service.name} add-on support updated.`);
+    setFlashMessage(`Service ${service.name} is loaded from API. Add-on toggle is not connected yet.`);
   };
 
   return (
@@ -704,7 +771,7 @@ export function ServicePricingManagementPage() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {SERVICE_CATEGORY_FILTERS.map((category) => (
+          {serviceCategories.map((category) => (
             <button key={category} type="button" onClick={() => setActiveCategory(category)}>
               <Pill active={category === activeCategory}>{category}</Pill>
             </button>
@@ -717,7 +784,8 @@ export function ServicePricingManagementPage() {
               <div className="border-b border-[#f6dbe7] px-5 py-4">
                 <h2 className="text-sm font-extrabold text-[#432744]">Services</h2>
                 <p className="mt-1 text-[11px] font-medium text-[#c694ad]">
-                  {filteredServices.length} services in current view
+                  Showing {serviceMetaData.firstRowOnPage}-{serviceMetaData.lastRowOnPage} of{" "}
+                  {serviceMetaData.totalItems} services
                 </p>
               </div>
 
@@ -735,30 +803,109 @@ export function ServicePricingManagementPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredServices.map((service) => (
-                      <tr key={service.id} className="border-t border-[#f9e6ef] align-top">
-                        <td className="px-5 py-4 text-sm font-bold text-[#432744]">{service.name}</td>
-                        <td className="px-4 py-4">
-                          <Pill className={SERVICE_CATEGORY_TONES[service.category]}>{service.category}</Pill>
-                        </td>
-                        <td className="px-4 py-4 text-sm text-[#5f4b5d]">${service.price.toFixed(2)}</td>
-                        <td className="px-4 py-4 text-sm text-[#5f4b5d]">{service.duration} min</td>
-                        <td className="px-4 py-4">
-                          <TogglePill
-                            enabled={service.hasAddOn}
-                            onClick={() => handleToggleServiceAddOn(service)}
-                          />
-                        </td>
-                        <td className="px-4 py-4">
-                          <StatusBadge status={service.status} />
-                        </td>
-                        <td className="px-4 py-4">
-                          <ActionDropdown items={getServiceActionItems(service)} />
+                    {isLoadingServices ? (
+                      <tr>
+                        <td colSpan="7" className="px-4 py-10">
+                          <div className="flex items-center justify-center gap-3 text-sm text-[#b38a9f]">
+                            <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
+                            Loading services...
+                          </div>
                         </td>
                       </tr>
-                    ))}
+                    ) : filteredServices.length ? (
+                      filteredServices.map((service) => (
+                        <tr key={service.id} className="border-t border-[#f9e6ef] align-top">
+                          <td className="px-5 py-4 text-sm font-bold text-[#432744]">{service.name}</td>
+                          <td className="px-4 py-4">
+                            <Pill
+                              className={
+                                SERVICE_CATEGORY_TONES[service.category] ??
+                                "border border-[#f4d5e3] bg-white text-[#8a7082]"
+                              }
+                            >
+                              {service.category}
+                            </Pill>
+                          </td>
+                          <td className="px-4 py-4 text-sm text-[#5f4b5d]">{formatVndCurrency(service.price)}</td>
+                          <td className="px-4 py-4 text-sm text-[#5f4b5d]">{formatDurationMinutes(service.duration)}</td>
+                          <td className="px-4 py-4">
+                            <TogglePill
+                              enabled={service.hasAddOn}
+                              onClick={() => handleToggleServiceAddOn(service)}
+                            />
+                          </td>
+                          <td className="px-4 py-4">
+                            <StatusBadge status={service.status} />
+                          </td>
+                          <td className="px-4 py-4">
+                            <ActionDropdown items={getServiceActionItems(service)} />
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="7" className="px-4 py-10 text-center text-sm text-[#8a7082]">
+                          {serviceLoadError || "No services found."}
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
+              </div>
+
+              <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-[11px] text-[#c694ad]">
+                  Showing {serviceMetaData.firstRowOnPage}-{serviceMetaData.lastRowOnPage} of{" "}
+                  {serviceMetaData.totalItems} services
+                </p>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    disabled={!serviceMetaData.hasPrevious || isLoadingServices}
+                    onClick={() =>
+                      setServiceMetaData((current) => ({
+                        ...current,
+                        currentPage: Math.max(current.currentPage - 1, 1),
+                      }))
+                    }
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <ChevronLeft size={12} />
+                  </button>
+                  {servicePaginationItems.map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      disabled={item === "..." || item === serviceMetaData.currentPage || isLoadingServices}
+                      onClick={() => {
+                        if (typeof item !== "number") {
+                          return;
+                        }
+
+                        setServiceMetaData((current) => ({ ...current, currentPage: item }));
+                      }}
+                      className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md px-2 text-[11px] ${item === serviceMetaData.currentPage
+                        ? "bg-[#ea4f93] font-bold text-white"
+                        : "border border-[#f3cade] bg-white font-medium text-[#b9849f]"
+                        } disabled:cursor-default disabled:opacity-100`}
+                    >
+                      {item}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    disabled={!serviceMetaData.hasNext || isLoadingServices}
+                    onClick={() =>
+                      setServiceMetaData((current) => ({
+                        ...current,
+                        currentPage: Math.min(current.currentPage + 1, current.totalPages),
+                      }))
+                    }
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <ChevronRight size={12} />
+                  </button>
+                </div>
               </div>
             </section>
 
@@ -799,7 +946,7 @@ export function ServicePricingManagementPage() {
                         <td className="px-4 py-4">
                           <Pill className={ADD_ON_TYPE_TONES[item.type]}>{item.type}</Pill>
                         </td>
-                        <td className="px-4 py-4 text-sm text-[#5f4b5d]">${item.price.toFixed(2)}</td>
+                        <td className="px-4 py-4 text-sm text-[#5f4b5d]">{formatVndCurrency(item.price)}</td>
                         <td className="px-4 py-4">
                           <Pill>{item.appliedTo}</Pill>
                         </td>
@@ -936,11 +1083,11 @@ export function ServicePricingManagementPage() {
           onCancel={() => setDeleteState(null)}
           onConfirm={() => {
             if (deleteState.type === "service") {
-              removeMockServiceById(deleteState.recordId);
+              setFlashMessage("Service delete API is not connected yet.");
             } else {
               removeMockAddOnById(deleteState.recordId);
+              syncAddOns(`${deleteState.label} deleted successfully.`);
             }
-            syncRecords(`${deleteState.label} deleted successfully.`);
             setDeleteState(null);
           }}
         />

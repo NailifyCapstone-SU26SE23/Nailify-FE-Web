@@ -1,5 +1,11 @@
 import { CircleDollarSign, Layers3, Sparkles, Wallet } from "lucide-react";
 
+export const formatVndCurrency = (value) =>
+  `${new Intl.NumberFormat("vi-VN", {
+    style: "decimal",
+    maximumFractionDigits: 0,
+  }).format(Number(value) || 0)} VND`;
+
 export const SERVICE_CATEGORY_TONES = {
   "Basic Nail": "bg-[#ffe7ef] text-[#ea4f93]",
   "Gel Nail": "bg-[#f1e9ff] text-[#8b5cf6]",
@@ -58,18 +64,18 @@ export const MOST_BOOKED_SERVICES = [
 ];
 
 export const HIGHEST_REVENUE_SERVICES = [
-  ["Gel Extension Full Set", "$9,900", 100],
-  ["Gel Manicure", "$9,424", 94],
-  ["Floral Nail Art", "$8,470", 85],
-  ["Gel Pedicure", "$6,750", 67],
-  ["Classic Manicure", "$4,312", 43],
+  ["Gel Extension Full Set", formatVndCurrency(9900), 100],
+  ["Gel Manicure", formatVndCurrency(9424), 94],
+  ["Floral Nail Art", formatVndCurrency(8470), 85],
+  ["Gel Pedicure", formatVndCurrency(6750), 67],
+  ["Classic Manicure", formatVndCurrency(4312), 43],
 ];
 
 export const PRICING_ALERTS = [
   {
     tone: "amber",
     title: "Below Market Rate",
-    body: "Classic Manicure at $22 is 18% below local avg. Consider updating.",
+    body: `Classic Manicure at ${formatVndCurrency(22)} is 18% below local avg. Consider updating.`,
   },
   {
     tone: "rose",
@@ -79,7 +85,7 @@ export const PRICING_ALERTS = [
   {
     tone: "sky",
     title: "New Competitor Pricing",
-    body: "Nearby salons offer Gel Extension at $68. You're at $75.",
+    body: `Nearby salons offer Gel Extension at ${formatVndCurrency(68)}. You're at ${formatVndCurrency(75)}.`,
   },
   {
     tone: "emerald",
@@ -183,7 +189,7 @@ export const buildServicePricingSummary = (services, addOns) => {
     },
     {
       label: "Avg. Service Price",
-      value: `$${avgPrice.toFixed(2)}`,
+      value: formatVndCurrency(avgPrice),
       note: `${services.filter((item) => item.price >= avgPrice).length} above avg.`,
       icon: Wallet,
       iconClassName: "bg-[#ffe6e7] text-[#ef4f67]",

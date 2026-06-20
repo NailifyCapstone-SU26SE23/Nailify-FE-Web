@@ -1,4 +1,4 @@
-import { CalendarClock, PencilLine, Save, Trash2, X } from "lucide-react";
+import { CalendarClock, LoaderCircle, PencilLine, RefreshCcw, Save, Trash2, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
@@ -10,7 +10,6 @@ import { StaffBookingConsultationDetail } from "../../../staff/bookings/componen
 import {
   BOOKING_ROLE_CONFIG,
   getMockBookingById,
-  getStaffBookingExperienceById,
 } from "../services/mockBookings";
 import { getBookingRoleFromPath } from "../utils/bookingMapper";
 import { ROLES } from "../../../../shared/constants/roles";
@@ -18,13 +17,180 @@ import {
   getStaffBookingDesignStudioRoute,
   getStaffBookingServiceSessionRoute,
 } from "../../../../shared/constants/routes";
+import {
+  buildStaffServiceSessionPayload,
+  fetchStaffBookingDetail,
+  formatBookingCode,
+  formatCurrency,
+  formatTimeValue,
+} from "../../../staff/bookings/services/staffBookingService";
+import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
+
+const DEFAULT_AVATAR =
+  "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=140&q=80";
+const DEFAULT_DESIGN_IMAGE =
+  "https://images.unsplash.com/photo-1604902396830-aca29e19b067?auto=format&fit=crop&w=600&q=80";
+const DEFAULT_UPLOAD_IMAGE =
+  "https://images.unsplash.com/photo-1632345031435-8727f6897d53?auto=format&fit=crop&w=240&q=80";
+
+function formatStaffDate(value) {
+  if (!value) {
+    return "--";
+  }
+
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(new Date(value));
+}
 
 function buildDefaultStaffNotes(booking) {
+  const serviceNames = booking?.bookingItems?.map((item) => item.serviceName).filter(Boolean).join(", ");
+
   return [
-    { label: "Customer Requests", value: booking?.notes || "No customer notes yet." },
-    { label: "Design Adjustments", value: "Capture preferred shape and finish during consultation." },
-    { label: "Notes Before Service", value: "Verify timing, confirm final design, then start session." },
+    {
+      label: "Customer Requests",
+      value: booking?.bookingItems?.find((item) => item.customerNailName)?.customerNailName || "No customer note from API.",
+    },
+    {
+      label: "Design Adjustments",
+      value: booking?.bookingItems?.find((item) => item.nailVariantName)?.nailVariantName || "Capture final design adjustments during consultation.",
+    },
+    {
+      label: "Notes Before Service",
+      value: serviceNames || "Verify services, confirm timing, then start session.",
+    },
   ];
+}
+
+function buildStaffExperienceFromBooking(booking, staffNotesDraft) {
+  const items = booking?.bookingItems ?? [];
+  const mainItem = items[0] ?? null;
+  const bookingCode = formatBookingCode(booking?.bookingId);
+  const startTime = formatTimeValue(booking?.startTime);
+  const totalDuration = booking?.totalDuration ? formatDurationMinutes(booking.totalDuration) : "--";
+  const serviceNames = items.map((item) => item.serviceName).filter(Boolean);
+  const designImage =
+    mainItem?.customerNailImageUrl || booking?.checkInImageUrl || booking?.checkOutImagesUrl || DEFAULT_DESIGN_IMAGE;
+  const requestedDesign = mainItem?.customerNailName || mainItem?.nailVariantName || "Selected design not specified";
+
+  return {
+    bookingCode,
+    statusLabel: booking?.status || "Pending",
+    artistInitials: (booking?.artistName || "A")
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase(),
+    steps: [
+      { key: "detail", label: "Booking Detail", state: "complete" },
+      { key: "consult", label: "Consultation", state: "current" },
+      { key: "confirm", label: "Confirm Design", state: "upcoming" },
+      { key: "start", label: "Start Service", state: "upcoming" },
+    ],
+    customer: {
+      name: booking?.customerName || "--",
+      phone: "--",
+      avatar: DEFAULT_AVATAR,
+      memberTier: "Customer Profile",
+      facts: [
+        { label: "Booking ID", value: bookingCode },
+        { label: "Salon", value: booking?.salonName || "--" },
+        { label: "Total Services", value: String(items.length || 0) },
+        { label: "Status", value: booking?.status || "--" },
+      ],
+      allergyNote: "--",
+      preferences: requestedDesign || "--",
+    },
+    bookingInfo: [
+      {
+        label: "Service",
+        value: serviceNames[0] || "--",
+        note: serviceNames.length > 1 ? `+${serviceNames.length - 1} more service(s)` : requestedDesign,
+      },
+      {
+        label: "Appointment",
+        value: startTime,
+        note: formatStaffDate(booking?.bookingDate),
+      },
+      {
+        label: "Duration",
+        value: totalDuration,
+        note: items.some((item) => item.duration) ? "Duration loaded from API" : "--",
+      },
+      {
+        label: "Total Price",
+        value: formatCurrency(booking?.totalPrice),
+        note: `Status: ${booking?.status || "--"}`,
+        tone: "success",
+      },
+      {
+        label: "Salon",
+        value: booking?.salonName || "--",
+        note: booking?.salonId || "--",
+      },
+      {
+        label: "Staff Artist",
+        value: booking?.artistName || "--",
+        note: booking?.nailArtistId || "--",
+      },
+    ],
+    design: {
+      name: requestedDesign,
+      image: designImage,
+      details: [
+        { label: "Service", value: serviceNames[0] || "--" },
+        { label: "Variant", value: mainItem?.nailVariantName || "--" },
+        { label: "Customer Design", value: mainItem?.customerNailName || "--" },
+        { label: "Quantity", value: mainItem?.quantity ? String(mainItem.quantity) : "--" },
+        { label: "Duration", value: mainItem?.duration ? formatDurationMinutes(mainItem.duration) : "--" },
+        { label: "Reference", value: mainItem?.customerNailImageUrl ? "Image available" : "--" },
+      ],
+      tags: [
+        { label: booking?.status || "Pending", className: "border-[#f4cada] bg-[#fff6fa] text-[#ea4f93]" },
+        { label: booking?.salonName || "Salon", className: "border-[#d8cbff] bg-[#f6f2ff] text-[#8c63ef]" },
+      ],
+    },
+    sessionStatus: [
+      { label: "Status", value: booking?.status || "--" },
+      { label: "Staff Artist", value: booking?.artistName || "--" },
+      { label: "Salon", value: booking?.salonName || "--" },
+      { label: "Time Slot", value: `${startTime} | ${totalDuration}` },
+    ],
+    customerHistory: {
+      favoriteStyles: serviceNames.length
+        ? serviceNames.slice(0, 3).map((label, index) => ({
+          label,
+          className: [
+            "border-[#f4cada] bg-[#fff6fa] text-[#ea4f93]",
+            "border-[#d8cbff] bg-[#f6f2ff] text-[#8c63ef]",
+            "border-[#cbe0ff] bg-[#f1f7ff] text-[#4b80e0]",
+          ][index % 3],
+        }))
+        : [{ label: "--", className: "border-[#f0d8e3] bg-white text-[#6f5c6b]" }],
+      previousShapes: mainItem?.nailVariantName || "--",
+      lastUpload: {
+        title: mainItem?.customerNailName || "Reference unavailable",
+        date: formatStaffDate(booking?.bookingDate),
+        image: mainItem?.customerNailImageUrl || DEFAULT_UPLOAD_IMAGE,
+      },
+    },
+    suggestedDesigns: (items.length ? items : [{ serviceName: "--", nailVariantName: "--", customerNailImageUrl: DEFAULT_DESIGN_IMAGE }]).slice(0, 3).map((item) => ({
+      name: item.customerNailName || item.serviceName || "--",
+      meta: `${item.nailVariantName || "--"} | ${item.duration ? formatDurationMinutes(item.duration) : "--"}`,
+      image: item.customerNailImageUrl || DEFAULT_DESIGN_IMAGE,
+    })),
+    staffNotes: staffNotesDraft,
+    checklist: [
+      { label: "Booking detail loaded from API", checked: true },
+      { label: "Artist assigned to booking", checked: Boolean(booking?.artistName) },
+      { label: "Customer design reference available", checked: Boolean(mainItem?.customerNailImageUrl) },
+      { label: "Service items captured", checked: items.length > 0 },
+    ],
+  };
 }
 
 export function BookingDetailPage() {
@@ -36,14 +202,16 @@ export function BookingDetailPage() {
     [location.pathname],
   );
   const roleConfig = BOOKING_ROLE_CONFIG[role];
-  const initialBooking = getMockBookingById(bookingId);
+  const isStaffRole = role === ROLES.staff;
+  const initialBooking = isStaffRole ? null : getMockBookingById(bookingId);
   const [formValues, setFormValues] = useState(initialBooking);
   const [flashMessage, setFlashMessage] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [isCurrentDesignConfirmed, setIsCurrentDesignConfirmed] = useState(false);
-  const [staffNotesDraft, setStaffNotesDraft] = useState(() => (
-    getStaffBookingExperienceById(bookingId)?.staffNotes ?? buildDefaultStaffNotes(initialBooking)
-  ));
+  const [staffBookingDetail, setStaffBookingDetail] = useState(null);
+  const [isStaffLoading, setIsStaffLoading] = useState(isStaffRole);
+  const [staffLoadError, setStaffLoadError] = useState("");
+  const [staffNotesDraft, setStaffNotesDraft] = useState([]);
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(
@@ -52,38 +220,70 @@ export function BookingDetailPage() {
   const staffActionMessage = useMemo(() => {
     const action = location.state?.staffAction;
 
-    if (role !== ROLES.staff || !action) {
+    if (!isStaffRole || !action) {
       return "";
     }
 
     return {
-      complete: "Mock complete action opened. Review the checklist before marking this service done.",
-      delete: "Mock delete requested from the action menu. Use Back to Queue if you want to leave this booking.",
-      notes: "Staff notes panel is ready for review. This remains a UI-only mock flow.",
-      start: "Mock start action opened. Confirm the design and proceed to service when ready.",
+      complete: "Review the checklist before marking this service done.",
+      delete: "Use Back to Queue if you want to leave this booking.",
+      notes: "Staff notes are ready for review.",
+      start: "Confirm the design and proceed to service when ready.",
     }[action] ?? "";
-  }, [location.state, role]);
+  }, [isStaffRole, location.state]);
   const deleteRequested = role !== ROLES.staff && Boolean(location.state?.requestDelete);
 
   useEffect(() => {
     if (!staffActionMessage && !deleteRequested) {
       return;
     }
+
     navigate(location.pathname, { replace: true, state: null });
   }, [deleteRequested, location.pathname, navigate, staffActionMessage]);
 
   useEffect(() => {
-    if (role !== ROLES.staff) {
+    if (!isStaffRole || !bookingId) {
       return;
     }
 
-    setStaffNotesDraft(
-      getStaffBookingExperienceById(bookingId)?.staffNotes ?? buildDefaultStaffNotes(initialBooking),
-    );
-    setIsCurrentDesignConfirmed(false);
-  }, [bookingId, initialBooking, role]);
+    let isMounted = true;
 
-  if (!initialBooking) {
+    const loadBooking = async () => {
+      setIsStaffLoading(true);
+      setStaffLoadError("");
+
+      try {
+        const data = await fetchStaffBookingDetail(bookingId);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setStaffBookingDetail(data);
+        setStaffNotesDraft(buildDefaultStaffNotes(data));
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        const message = error instanceof Error ? error.message : "Failed to load booking detail.";
+        setStaffLoadError(message);
+        toast.error(message);
+      } finally {
+        if (isMounted) {
+          setIsStaffLoading(false);
+        }
+      }
+    };
+
+    void loadBooking();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [bookingId, isStaffRole]);
+
+  if (!isStaffRole && !initialBooking) {
     return <Navigate to={roleConfig.listRoute} replace />;
   }
 
@@ -97,7 +297,11 @@ export function BookingDetailPage() {
   const handleSave = () => {
     setShowSaveConfirm(false);
     setIsEditing(false);
-    setFlashMessage("Mock update completed. Changes are local to this booking detail screen.");
+    setFlashMessage(
+      isStaffRole
+        ? "Booking detail updates are stored in the current UI session."
+        : "Mock update completed. Changes are local to this booking detail screen.",
+    );
   };
 
   const handleStartEdit = () => {
@@ -116,7 +320,9 @@ export function BookingDetailPage() {
     setShowDeleteConfirm(false);
     navigate(roleConfig.listRoute, {
       state: {
-        flashMessage: `Mock delete completed for ${formValues.customerName || formValues.id}.`,
+        flashMessage: isStaffRole
+          ? `Returned ${staffBookingDetail?.customerName || "this booking"} to the queue.`
+          : `Mock delete completed for ${formValues.customerName || formValues.id}.`,
       },
     });
   };
@@ -131,7 +337,7 @@ export function BookingDetailPage() {
     }
 
     setIsCurrentDesignConfirmed(true);
-    setFlashMessage("Mock consultation confirmed. Current nail design has been accepted for this booking.");
+    setFlashMessage("Current nail design has been confirmed for this booking.");
     toast.success("Current design confirmed for this booking.");
   };
 
@@ -145,92 +351,45 @@ export function BookingDetailPage() {
     )));
   };
 
-  if (role === ROLES.staff) {
-    const baseStaffExperience = getStaffBookingExperienceById(bookingId) ?? {
-      bookingCode: initialBooking.id.replace("BKG", "BK"),
-      statusLabel: initialBooking.status,
-      artistInitials: "L",
-      steps: [
-        { key: "detail", label: "Booking Detail", state: "complete" },
-        { key: "consult", label: "Consultation", state: "current" },
-        { key: "confirm", label: "Confirm Design", state: "upcoming" },
-        { key: "start", label: "Start Service", state: "upcoming" },
-      ],
-      customer: {
-        name: initialBooking.customerName,
-        phone: initialBooking.customerPhone,
-        avatar:
-          "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=140&q=80",
-        memberTier: "Returning Guest",
-        facts: [
-          { label: "Last Booking", value: initialBooking.createdAt.split(" ")[0] },
-          { label: "Total Visits", value: "6 sessions" },
-          { label: "Preferred Shape", value: "Oval / Almond" },
-          { label: "Preferred Length", value: "Short to Medium" },
-        ],
-        allergyNote: "No allergy note on file. Confirm product sensitivity before service.",
-        preferences: "Minimal design, clean finish, neutral or pastel palette",
-      },
-      bookingInfo: [
-        { label: "Service", value: initialBooking.service, note: initialBooking.notes || "No add-on recorded" },
-        { label: "Appointment", value: initialBooking.bookingTime, note: initialBooking.bookingDate },
-        { label: "Duration", value: initialBooking.duration, note: "Schedule confirmed" },
-        { label: "Assigned Chair", value: "Chair 02", note: "Standard Section" },
-        { label: "Payment", value: initialBooking.paymentStatus, note: initialBooking.total },
-        { label: "Staff Artist", value: initialBooking.staffName, note: "Assigned artist" },
-      ],
-      design: {
-        name: "Consultation Pending",
-        image:
-          "https://images.unsplash.com/photo-1604902396830-aca29e19b067?auto=format&fit=crop&w=600&q=80",
-        details: [
-          { label: "Shape", value: "To be confirmed" },
-          { label: "Length", value: "To be confirmed" },
-          { label: "Color", value: "To be confirmed" },
-          { label: "Finish", value: "To be confirmed" },
-          { label: "Decoration", value: "To be confirmed" },
-          { label: "Base", value: "Gel or classic" },
-        ],
-        tags: [
-          { label: "Consultation", className: "border-[#f4cada] bg-[#fff6fa] text-[#ea4f93]" },
-        ],
-      },
-      sessionStatus: [
-        { label: "Status", value: initialBooking.status },
-        { label: "Staff Artist", value: initialBooking.staffName },
-        { label: "Chair", value: "Chair 02" },
-        { label: "Time Slot", value: `${initialBooking.bookingTime} - Scheduled` },
-      ],
-      customerHistory: {
-        favoriteStyles: [
-          { label: "Minimal", className: "border-[#cbe0ff] bg-[#f1f7ff] text-[#4b80e0]" },
-          { label: "Pastel", className: "border-[#d9f2c8] bg-[#f3fce9] text-[#61a437]" },
-        ],
-        previousShapes: "No history synced yet",
-        lastUpload: {
-          title: "Reference pending",
-          date: initialBooking.createdAt.split(" ")[0],
-          image:
-            "https://images.unsplash.com/photo-1632345031435-8727f6897d53?auto=format&fit=crop&w=240&q=80",
-        },
-      },
-      suggestedDesigns: [
-        {
-          name: "Soft Nude",
-          meta: "Quick service - Neutral finish",
-          image:
-            "https://images.unsplash.com/photo-1610992015732-2449b76344bc?auto=format&fit=crop&w=240&q=80",
-        },
-      ],
-      staffNotes: staffNotesDraft,
-      checklist: [
-        { label: "Customer confirmed nail design", checked: false },
-        { label: "Total price confirmed with customer", checked: false },
-        { label: "Estimated duration confirmed", checked: false },
-        { label: "Service notes captured", checked: false },
-      ],
-    };
+  if (isStaffRole) {
+    if (isStaffLoading) {
+      return (
+        <section className="flex min-h-[50vh] items-center justify-center rounded-[24px] bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
+          <div className="flex items-center gap-3 text-sm font-medium text-[#b38a9f]">
+            <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
+            Loading booking detail...
+          </div>
+        </section>
+      );
+    }
 
+    if (staffLoadError || !staffBookingDetail) {
+      return (
+        <section className="rounded-[24px] border border-[#f6d8e5] bg-white p-6 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
+          <p className="text-lg font-extrabold text-[#412643]">Booking detail unavailable</p>
+          <p className="mt-2 text-sm text-[#b38a9f]">{staffLoadError || "This booking could not be loaded."}</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="inline-flex items-center gap-2 rounded-full border border-[#f3cade] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
+            >
+              <RefreshCcw size={14} />
+              Retry
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(roleConfig.listRoute)}
+              className="inline-flex items-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white"
+            >
+              Back to bookings
+            </button>
+          </div>
+        </section>
+      );
+    }
+
+    const baseStaffExperience = buildStaffExperienceFromBooking(staffBookingDetail, staffNotesDraft);
     const staffExperience = isCurrentDesignConfirmed
       ? {
         ...baseStaffExperience,
@@ -261,30 +420,18 @@ export function BookingDetailPage() {
       }
       : baseStaffExperience;
 
-    const handleOpenServiceSession = () => {
+  const handleOpenServiceSession = () => {
+    if (!isCurrentDesignConfirmed) {
+      toast.error("Confirm Current Design before starting the service session.");
+      return;
+    }
+
       navigate(getStaffBookingServiceSessionRoute(bookingId), {
         state: {
-          serviceSession: {
-            bookingCode: staffExperience.bookingCode,
-            customerName: staffExperience.customer.name,
-            customerPhone: staffExperience.customer.phone,
-            customerAvatar: staffExperience.customer.avatar,
-            serviceLabel: initialBooking.service,
-            staffArtist: initialBooking.staffName,
-            chair: "Chair 02",
-            appointmentTime: `${initialBooking.bookingTime} - ${initialBooking.duration}`,
-            estimatedDuration: initialBooking.duration,
-            designName: staffExperience.design.name,
-            totalPrice: initialBooking.total,
+          serviceSession: buildStaffServiceSessionPayload(staffBookingDetail, {
             backRoute: location.pathname,
             designUpdateRoute: getStaffBookingDesignStudioRoute(bookingId),
-            confirmations: [
-              "Customer identity confirmed",
-              "Service design confirmed",
-              "Price confirmed",
-              "Before photo uploaded",
-            ],
-          },
+          }),
         },
       });
     };
@@ -305,7 +452,7 @@ export function BookingDetailPage() {
           onOpenDesignStudio={handleOpenDesignStudio}
           onSave={handleSave}
           onStaffNoteChange={handleStaffNoteChange}
-          onStartServiceSession={handleOpenServiceSession}
+          onStartServiceSession={() => void handleOpenServiceSession()}
         />
       </>
     );

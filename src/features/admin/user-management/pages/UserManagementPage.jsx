@@ -3,6 +3,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
+  LoaderCircle,
   PencilLine,
   Search,
   Shield,
@@ -20,75 +21,9 @@ import {
 } from "../../../../shared/constants/routes";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import {
-  USER_ROWS,
   USER_STATUS_STYLES,
 } from "../services/mockUsers";
-
-const SUMMARY_CARDS = [
-  {
-    label: "Total Users",
-    value: "4,821",
-    note: "+128 this month",
-    icon: Users,
-    iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
-  },
-  {
-    label: "Customers",
-    value: "3,940",
-    note: "+104 this month",
-    icon: Users,
-    iconClassName: "bg-[#fff0f7] text-[#ea4f93]",
-  },
-  {
-    label: "Staff Artists",
-    value: "612",
-    note: "+18 this month",
-    icon: UserCog,
-    iconClassName: "bg-[#fff0f7] text-[#ea4f93]",
-  },
-  {
-    label: "Salon Managers",
-    value: "269",
-    note: "+6 this month",
-    icon: Shield,
-    iconClassName: "bg-[#eef4ff] text-[#7c5cff]",
-  },
-  {
-    label: "Suspended Users",
-    value: "47",
-    note: "+3 this week",
-    icon: AlertTriangle,
-    iconClassName: "bg-[#fff4ef] text-[#ff7a59]",
-  },
-];
-
-// const QUICK_REGISTRATIONS = [
-//   ["Sophia Nguyen", "2 mins ago", "Customer"],
-//   ["Mia Tanaka", "11 mins ago", "Artist"],
-//   ["Chloe Martin", "45 mins ago", "Customer"],
-//   ["Aisha Patel", "1 hr ago", "Manager"],
-// ];
-
-// const SUSPICIOUS_ACTIVITY = [
-//   ["Multiple logins", "USR-2521", "3 devices"],
-//   ["Fake booking spam", "USR-3312", "22 bookings"],
-//   ["Profile photo abuse", "USR-1877", "Flagged"],
-// ];
-
-// const RECENTLY_SUSPENDED = [
-//   ["Lena Kowalski", "No-shows x3", "3h ago"],
-//   ["Tom Reeves", "Abusive review", "1d ago"],
-//   ["Priya Sharma", "Payment fraud", "2d ago"],
-// ];
-
-// const PERMISSION_SUMMARY = [
-//   ["Customers", "Book & Review"],
-//   ["Staff Artists", "Manage Schedule"],
-//   ["Salon Managers", "Full Salon Access"],
-//   ["Admins", "System-wide"],
-//   ["Suspended", "Read Only"],
-//   ["Banned", "No Access"],
-// ];
+import { fetchAdminUsers } from "../services/userManagementService";
 
 function getRoleTone(role) {
   switch (role) {
@@ -103,50 +38,6 @@ function getRoleTone(role) {
     default:
       return "bg-[#ffe7ef] text-[#ea4f93]";
   }
-}
-
-function getDisplayRole(role) {
-  switch (role) {
-    case "Staff":
-      return "Staff Artist";
-    case "Manager":
-      return "Salon Manager";
-    default:
-      return role;
-  }
-}
-
-function getAvatar(name) {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
-}
-
-function normalizeUser(user, index) {
-  const displayRole = getDisplayRole(user.role);
-  const customPhone = [
-    "+1 310-555-0192",
-    "+1 213-555-0847",
-    "+1 424-555-0334",
-    "+1 818-555-0611",
-    "+1 323-555-0728",
-    "+1 626-555-0188",
-    "+1 714-555-0415",
-  ][index % 7];
-
-  return {
-    ...user,
-    displayId: user.id.toLowerCase(),
-    displayRole,
-    salon: user.branch === "Head Office" ? "No salon" : user.branch,
-    phone: customPhone,
-    avatar: getAvatar(user.name),
-    statusLabel: user.status,
-  };
 }
 
 function MetricCard({ item }) {
@@ -195,6 +86,20 @@ export function UserManagementPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [users, setUsers] = useState([]);
+  const [metaData, setMetaData] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    pageSize: 10,
+    totalItems: 0,
+    hasPrevious: false,
+    hasNext: false,
+    firstRowOnPage: 0,
+    lastRowOnPage: 0,
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
 
   useEffect(() => {
@@ -205,33 +110,127 @@ export function UserManagementPage() {
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
 
-  const users = useMemo(
-    () => USER_ROWS.map((user, index) => normalizeUser(user, index)),
-    [],
-  );
+  useEffect(() => {
+    const timerId = window.setTimeout(() => {
+      setDebouncedQuery(query.trim());
+      setMetaData((current) => ({ ...current, currentPage: 1 }));
+    }, 350);
 
-  const filteredUsers = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
+    return () => window.clearTimeout(timerId);
+  }, [query]);
 
-    if (!normalizedQuery) {
-      return users;
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadUsers = async () => {
+      setIsLoading(true);
+      setError("");
+
+      try {
+        const response = await fetchAdminUsers({
+          pageNumber: metaData.currentPage,
+          pageSize: metaData.pageSize,
+          searchTerm: debouncedQuery,
+        });
+
+        if (!isMounted) {
+          return;
+        }
+
+        setUsers(response.items);
+        setMetaData(response.metaData);
+      } catch (loadError) {
+        if (!isMounted) {
+          return;
+        }
+
+        setUsers([]);
+        setError(loadError instanceof Error ? loadError.message : "Failed to load users.");
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void loadUsers();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [debouncedQuery, metaData.currentPage, metaData.pageSize]);
+
+  const summaryCards = useMemo(() => {
+    const customers = users.filter((user) => user.role === "Customer").length;
+    const staffArtists = users.filter((user) => user.role === "Staff").length;
+    const managers = users.filter((user) => user.role === "Manager").length;
+    const suspendedUsers = users.filter((user) => user.statusLabel === "Suspended").length;
+
+    return [
+      {
+        label: "Total Users",
+        value: String(metaData.totalItems),
+        note: `${metaData.totalPages} pages`,
+        icon: Users,
+        iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
+      },
+      {
+        label: "Customers",
+        value: String(customers),
+        note: "On current page",
+        icon: Users,
+        iconClassName: "bg-[#fff0f7] text-[#ea4f93]",
+      },
+      {
+        label: "Staff Artists",
+        value: String(staffArtists),
+        note: "On current page",
+        icon: UserCog,
+        iconClassName: "bg-[#fff0f7] text-[#ea4f93]",
+      },
+      {
+        label: "Salon Managers",
+        value: String(managers),
+        note: "On current page",
+        icon: Shield,
+        iconClassName: "bg-[#eef4ff] text-[#7c5cff]",
+      },
+      {
+        label: "Suspended Users",
+        value: String(suspendedUsers),
+        note: "On current page",
+        icon: AlertTriangle,
+        iconClassName: "bg-[#fff4ef] text-[#ff7a59]",
+      },
+    ];
+  }, [metaData.totalItems, metaData.totalPages, users]);
+
+  const paginationItems = useMemo(() => {
+    const currentPage = metaData.currentPage;
+    const totalPages = metaData.totalPages;
+
+    if (totalPages <= 1) {
+      return [1];
     }
 
-    return users.filter((user) =>
-      [
-        user.name,
-        user.email,
-        user.phone,
-        user.displayRole,
-        user.salon,
-        user.statusLabel,
-        user.id,
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(normalizedQuery),
-    );
-  }, [query, users]);
+    const pages = new Set([1, totalPages, currentPage, currentPage - 1, currentPage + 1]);
+    const normalizedPages = [...pages]
+      .filter((page) => page >= 1 && page <= totalPages)
+      .sort((left, right) => left - right);
+
+    const result = [];
+
+    normalizedPages.forEach((page, index) => {
+      result.push(page);
+
+      const nextPage = normalizedPages[index + 1];
+      if (nextPage && nextPage - page > 1) {
+        result.push("...");
+      }
+    });
+
+    return result;
+  }, [metaData.currentPage, metaData.totalPages]);
 
   const getActionItems = (user) => {
     const detailRoute = getAdminUserDetailRoute(user.id);
@@ -257,7 +256,7 @@ export function UserManagementPage() {
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)]">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        {SUMMARY_CARDS.map((item) => (
+        {summaryCards.map((item) => (
           <MetricCard key={item.label} item={item} />
         ))}
       </div>
@@ -274,7 +273,7 @@ export function UserManagementPage() {
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search by name or phone..."
+                placeholder="Search by email, first name, last name..."
                 className="h-11 w-full rounded-full border border-[#f5d7e4] bg-[#fff9fc] pl-11 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
               />
             </label>
@@ -282,6 +281,10 @@ export function UserManagementPage() {
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
+                onClick={() => {
+                  setDebouncedQuery(query.trim());
+                  setMetaData((current) => ({ ...current, currentPage: 1 }));
+                }}
                 className="inline-flex items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2.5 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
               >
                 <Search size={14} className="mr-1.5" />
@@ -303,11 +306,17 @@ export function UserManagementPage() {
             </div>
           ) : null}
 
+          {error ? (
+            <div className="mt-4 rounded-[16px] bg-[#fff1f5] px-4 py-3 text-sm font-medium text-[#d14c84]">
+              {error}
+            </div>
+          ) : null}
+
           <div className="mt-4 overflow-hidden rounded-[18px] border border-[#f6dbe7]">
             <div className="flex items-center justify-between gap-3 border-b border-[#f7dce8] bg-[#fffafd] px-4 py-3">
               <p className="text-sm font-extrabold text-[#462a45]">All Users</p>
               <p className="text-[11px] font-medium text-[#d197b0]">
-                Showing {Math.min(filteredUsers.length, 10)} of {filteredUsers.length} users
+                Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} users
               </p>
             </div>
 
@@ -325,54 +334,74 @@ export function UserManagementPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#fae6ef] bg-white">
-                  {filteredUsers.map((user) => (
-                    <tr key={user.id} className="align-top">
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-start gap-3">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-xs font-extrabold text-white">
-                            {user.avatar}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="font-bold text-[#432744]">{user.name}</p>
-                            <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-[#c694ad]">
-                              {user.displayId}
-                            </p>
-                          </div>
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan="7" className="px-4 py-10">
+                        <div className="flex items-center justify-center gap-3 text-sm text-[#b38a9f]">
+                          <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
+                          Loading users...
                         </div>
                       </td>
-                      <td className="px-4 py-3.5">
-                        <SmallTag className={getRoleTone(user.role)}>
-                          {user.displayRole}
-                        </SmallTag>
-                      </td>
-                      <td className="px-4 py-3.5">
-                        <p className="text-sm text-[#6b5668]">{user.email.replace("@nailify.com", "@gmail.com")}</p>
-                        <p className="mt-1 text-[11px] text-[#d197b0]">{user.phone}</p>
-                      </td>
-                      <td className="px-4 py-3.5 text-sm text-[#8a7082]">
-                        {user.salon}
-                      </td>
-                      <td className="px-4 py-3.5">
-                        <span
-                          className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold ${USER_STATUS_STYLES[user.statusLabel]}`}
-                        >
-                          {user.statusLabel}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3.5 text-sm text-[#8a7082]">
-                        {user.lastActive}
-                      </td>
-                      <td className="px-4 py-3.5">
-                        <ActionDropdown items={getActionItems(user)} />
+                    </tr>
+                  ) : users.length ? (
+                    users.map((user) => (
+                      <tr key={user.id} className="align-top">
+                        <td className="px-4 py-3.5">
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-xs font-extrabold text-white">
+                              {user.avatar}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-bold text-[#432744]">{user.name}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3.5">
+                          <SmallTag className={getRoleTone(user.role)}>
+                            {user.displayRole}
+                          </SmallTag>
+                        </td>
+                        <td className="px-4 py-3.5">
+                          <p className="text-sm text-[#6b5668]">{user.email}</p>
+                          <p className="mt-1 text-[11px] text-[#d197b0]">{user.phone}</p>
+                        </td>
+                        <td className="px-4 py-3.5 text-sm text-[#8a7082]">
+                          {user.salon}
+                        </td>
+                        <td className="px-4 py-3.5">
+                          <span
+                            className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold ${USER_STATUS_STYLES[user.statusLabel] ?? "bg-[#f5f0f4] text-[#8a7082]"}`}
+                          >
+                            {user.statusLabel}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3.5 text-sm text-[#8a7082]">
+                          {user.lastActive}
+                        </td>
+                        <td className="px-4 py-3.5">
+                          <ActionDropdown items={getActionItems(user)} />
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="7" className="px-4 py-10 text-center text-sm text-[#8a7082]">
+                        No users found.
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
 
             <div className="space-y-3 p-4 lg:hidden">
-              {filteredUsers.map((user) => (
+              {isLoading ? (
+                <div className="flex items-center justify-center gap-3 rounded-[16px] border border-[#f8dce8] bg-[#fffafb] p-4 text-sm text-[#b38a9f]">
+                  <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
+                  Loading users...
+                </div>
+              ) : users.length ? (
+                users.map((user) => (
                 <article
                   key={user.id}
                   className="rounded-[16px] border border-[#f8dce8] bg-[#fffafb] p-4"
@@ -411,38 +440,62 @@ export function UserManagementPage() {
                     </div>
                   </div>
                 </article>
-              ))}
+                ))
+              ) : (
+                <div className="rounded-[16px] border border-[#f8dce8] bg-[#fffafb] p-4 text-center text-sm text-[#8a7082]">
+                  No users found.
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-[11px] text-[#c694ad]">
-                Showing 1-10 of 4,821 users
+                Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} users
               </p>
               <div className="flex items-center gap-1">
                 <button
                   type="button"
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92]"
+                  disabled={!metaData.hasPrevious || isLoading}
+                  onClick={() =>
+                    setMetaData((current) => ({
+                      ...current,
+                      currentPage: Math.max(current.currentPage - 1, 1),
+                    }))
+                  }
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <ChevronLeft size={12} />
                 </button>
-                <button
-                  type="button"
-                  className="inline-flex h-7 min-w-7 items-center justify-center rounded-md bg-[#ea4f93] px-2 text-[11px] font-bold text-white"
-                >
-                  1
-                </button>
-                {["2", "3", "...", "483"].map((item) => (
+                {paginationItems.map((item) => (
                   <button
                     key={item}
                     type="button"
-                    className="inline-flex h-7 min-w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white px-2 text-[11px] font-medium text-[#b9849f]"
+                    disabled={item === "..." || item === metaData.currentPage || isLoading}
+                    onClick={() => {
+                      if (typeof item !== "number") {
+                        return;
+                      }
+
+                      setMetaData((current) => ({ ...current, currentPage: item }));
+                    }}
+                    className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md px-2 text-[11px] ${item === metaData.currentPage
+                      ? "bg-[#ea4f93] font-bold text-white"
+                      : "border border-[#f3cade] bg-white font-medium text-[#b9849f]"
+                      } disabled:cursor-default disabled:opacity-100`}
                   >
                     {item}
                   </button>
                 ))}
                 <button
                   type="button"
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92]"
+                  disabled={!metaData.hasNext || isLoading}
+                  onClick={() =>
+                    setMetaData((current) => ({
+                      ...current,
+                      currentPage: Math.min(current.currentPage + 1, current.totalPages),
+                    }))
+                  }
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <ChevronRight size={12} />
                 </button>

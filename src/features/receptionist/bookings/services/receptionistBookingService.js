@@ -13,10 +13,11 @@ function getAuthHeaders() {
 }
 
 function getSalonId() {
-  const salonId = import.meta.env.VITE_RECEPTIONIST_SALON_ID?.trim();
+  const session = loadAuthSession();
+  const salonId = session?.user?.salonId || session?.salonId;
 
   if (!salonId) {
-    throw new Error("Missing VITE_RECEPTIONIST_SALON_ID in .env");
+    throw new Error("Salon ID is not available in the current account profile.");
   }
 
   return salonId;
@@ -36,18 +37,72 @@ function unwrapResponse(response, fallbackMessage) {
   return payload.data;
 }
 
-export async function fetchReceptionistBookings(date) {
+function extractBookingItems(data) {
+  if (Array.isArray(data)) {
+    return data;
+  }
+
+  if (Array.isArray(data?.items)) {
+    return data.items;
+  }
+
+  if (Array.isArray(data?.data)) {
+    return data.data;
+  }
+
+  return [];
+}
+
+function extractPaginationMeta(data, fallbackPageSize) {
+  const totalCount =
+    Number(data?.totalCount ?? data?.totalItems ?? data?.count ?? data?.total ?? 0) || 0;
+  const currentPage =
+    Number(data?.pageNumber ?? data?.currentPage ?? data?.pageIndex ?? 1) || 1;
+  const pageSize =
+    Number(data?.pageSize ?? data?.limit ?? fallbackPageSize ?? 10) || fallbackPageSize || 10;
+  const inferredTotalPages =
+    pageSize > 0 ? Math.max(1, Math.ceil(totalCount / pageSize)) : 1;
+  const totalPages =
+    Number(data?.totalPages ?? data?.pageCount ?? inferredTotalPages) || inferredTotalPages;
+
+  return {
+    currentPage,
+    pageSize,
+    totalCount,
+    totalPages: Math.max(1, totalPages),
+  };
+}
+
+export async function fetchReceptionistBookings(optionsOrDate) {
   const salonId = getSalonId();
+  const isLegacyDateArg = typeof optionsOrDate === "string";
+  const options = isLegacyDateArg ? { date: optionsOrDate } : optionsOrDate ?? {};
+  const {
+    date,
+    includePagination = false,
+    pageNumber,
+    pageSize,
+  } = options;
   const response = await axiosClient.get(`/Bookings/salon/${salonId}`, {
     headers: getAuthHeaders(),
-    params: date
-      ? {
-        date,
-      }
-      : undefined,
+    params: {
+      ...(date ? { date } : {}),
+      ...(pageNumber ? { pageNumber } : {}),
+      ...(pageSize ? { pageSize } : {}),
+    },
   });
 
-  return unwrapResponse(response, "Failed to load salon bookings.");
+  const data = unwrapResponse(response, "Failed to load salon bookings.");
+  const items = extractBookingItems(data);
+
+  if (includePagination) {
+    return {
+      items,
+      pagination: extractPaginationMeta(data, pageSize),
+    };
+  }
+
+  return items;
 }
 
 export async function fetchReceptionistBookingDetail(bookingId) {
@@ -129,4 +184,18 @@ export async function rejectReceptionistBooking(bookingId) {
   });
 
   return unwrapResponse(response, "Failed to reject booking.");
+}
+
+export async function manualCheckInReceptionistBooking(bookingId) {
+  const normalizedBookingId = String(bookingId || "").trim();
+
+  if (!normalizedBookingId) {
+    throw new Error("Booking ID is required.");
+  }
+
+  const response = await axiosClient.post(`/Bookings/${normalizedBookingId}/manual-checkin`, null, {
+    headers: getAuthHeaders(),
+  });
+
+  return unwrapResponse(response, "Failed to check in booking.");
 }

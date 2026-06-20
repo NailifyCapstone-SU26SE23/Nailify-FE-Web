@@ -1,7 +1,6 @@
 import {
   Bell,
   CalendarClock,
-  CircleAlert,
   Clock3,
   Eye,
   LoaderCircle,
@@ -26,6 +25,7 @@ import {
 } from "../../../../shared/constants/routes";
 import {
   fetchReceptionistBookings,
+  manualCheckInReceptionistBooking,
   verifyReceptionistQrToken,
 } from "../../../receptionist/bookings/services/receptionistBookingService";
 
@@ -70,7 +70,7 @@ const QUICK_STATUS = [
   ["Available Chairs", "4 / 10"],
   ["In Service Now", "6"],
   ["Completed Today", "12"],
-  ["Revenue Today", "$842"],
+  ["Revenue Today", "842.000 VNĐ"],
 ];
 
 const WAITING_QUEUE = [
@@ -100,12 +100,6 @@ const RECENT_CHECK_INS = [
   ["Chloe Kim", "French Tip Overlay", "10:55 AM | Completed", "CK", "bg-[#ef4f92]"],
   ["Zoe Parker", "Nail Art Design", "11:32 AM | In service", "ZP", "bg-[#8f5ce4]"],
   ["Walk-in #3", "Gel Manicure", "11:48 AM | Waiting", "WI", "bg-[#28b59b]"],
-];
-
-const AI_SUGGESTIONS = [
-  ["Gel Manicure Upgrade", "She books this every 3 weeks - due today", "$45 | 45 min"],
-  ["Nail Art Add-on", "Tried floral art last visit, loved it", "$25+ | 20 min"],
-  ["Spa Pedicure Bundle", "Last pedicure was 6 weeks ago", "$80 | 75 min"],
 ];
 
 function getInitials(name) {
@@ -188,10 +182,14 @@ function normalizeAppointmentRow(booking, index) {
   };
 }
 
+function canManualCheckIn(status) {
+  return !["CheckedIn", "Completed", "Cancelled"].includes(status);
+}
+
 function DashboardCard({ children, className = "" }) {
   return (
     <section
-      className={`rounded-[24px] border border-[#f4d8e3] bg-white p-4 shadow-[0_12px_30px_rgba(236,72,153,0.06)] ${className}`}
+      className={`w-full min-w-0 overflow-hidden rounded-[24px] border border-[#f4d8e3] bg-white p-4 shadow-[0_12px_30px_rgba(236,72,153,0.06)] ${className}`}
     >
       {children}
     </section>
@@ -200,10 +198,10 @@ function DashboardCard({ children, className = "" }) {
 
 function SectionTitle({ icon: Icon, title, action }) {
   return (
-    <div className="flex items-center justify-between gap-3">
-      <div className="flex items-center gap-2">
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+      <div className="flex min-w-0 items-center gap-2">
         {Icon ? <Icon size={14} className="text-[#eb5a98]" /> : null}
-        <h3 className="text-sm font-extrabold text-[#e14f91]">{title}</h3>
+        <h3 className="min-w-0 text-sm font-extrabold text-[#e14f91]">{title}</h3>
       </div>
       {action}
     </div>
@@ -228,6 +226,43 @@ function MetricCard({ item }) {
         </div>
       </div>
     </DashboardCard>
+  );
+}
+
+function MobileAppointmentCard({ row, actions }) {
+  return (
+    <article className="w-full min-w-0 rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-[#432744]">{row.customer}</p>
+          <p className="mt-1 text-xs font-semibold text-[#ea4f93]">{row.time}</p>
+        </div>
+        <span
+          className={`inline-flex max-w-full break-words rounded-full px-2.5 py-1 text-[10px] font-bold whitespace-normal ${row.tone}`}
+        >
+          {row.status}
+        </span>
+      </div>
+
+      <div className="mt-4 flex min-w-0 items-start gap-3">
+        <div
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold text-white ${row.avatarTone}`}
+        >
+          {getInitials(row.customer)}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="break-words text-xs text-[#584654]">{row.service}</p>
+          <p className="mt-1 break-words text-[11px] text-[#aa8a99]">{row.staff}</p>
+        </div>
+        <div className="shrink-0">
+          <ActionDropdown
+            label="Action"
+            items={actions}
+            buttonClassName="px-3 py-1.5 text-[11px]"
+          />
+        </div>
+      </div>
+    </article>
   );
 }
 
@@ -299,19 +334,47 @@ export function ReceptionistDashboardPage() {
     );
   }, [appointmentQuery, appointmentRows]);
 
-  const getActionItems = (bookingId) => [
+  const updateAppointmentRow = (updatedBooking) => {
+    if (!updatedBooking?.bookingId) {
+      return;
+    }
+
+    setAppointmentRows((currentRows) =>
+      currentRows.map((row, index) =>
+        row.bookingId === updatedBooking.bookingId ? normalizeAppointmentRow(updatedBooking, index) : row,
+      ),
+    );
+  };
+
+  const handleManualCheckIn = async (bookingId) => {
+    try {
+      const updatedBooking = await manualCheckInReceptionistBooking(bookingId);
+      updateAppointmentRow(updatedBooking);
+      toast.success(`Customer for booking ${bookingId} checked in successfully.`);
+    } catch (actionError) {
+      const message =
+        actionError instanceof Error ? actionError.message : "Failed to check in booking.";
+      toast.error(message);
+    }
+  };
+
+  const getActionItems = (bookingId, status) => [
     {
       key: "view",
       label: "View Booking",
       icon: Eye,
       onSelect: () => navigate(getReceptionistBookingDetailRoute(bookingId)),
     },
-    {
-      key: "check-in",
-      label: "Check In",
-      icon: UserCheck,
-      onSelect: () => toast.success(`Customer for booking ${bookingId} checked in successfully.`),
-    },
+    ...(canManualCheckIn(status)
+      ? [
+        {
+          key: "check-in",
+          label: "Check In",
+          icon: UserCheck,
+          onSelect: () => void handleManualCheckIn(bookingId),
+        },
+      ]
+      : []),
     {
       key: "reschedule",
       label: "Reschedule",
@@ -493,40 +556,22 @@ export function ReceptionistDashboardPage() {
   }, [isScannerOpen, navigate, scannerSupportMessage]);
 
   return (
-    <section className="flex min-h-full flex-col gap-5 bg-[linear-gradient(180deg,#fff8fb_0%,#fff4f8_100%)]">
-      <div className="flex flex-col gap-4 rounded-[28px] border border-[#f5d7e4] bg-[#fff7fb] p-4 shadow-[0_16px_38px_rgba(236,72,153,0.05)] md:p-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
+    <section className="flex min-h-full w-full min-w-0 flex-col gap-5 overflow-x-hidden bg-[linear-gradient(180deg,#fff8fb_0%,#fff4f8_100%)]">
+      <div className="flex w-full min-w-0 flex-col gap-4 rounded-[28px] border border-[#f5d7e4] bg-[#fff7fb] p-3 shadow-[0_16px_38px_rgba(236,72,153,0.05)] sm:p-4 md:p-5">
+        <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
             <p className="text-lg font-black text-[#ea4f93]">
               Good Morning, {greetingName}
               <span className="ml-1 text-[#f49fc2]">*</span>
             </p>
-            <p className="mt-1 text-xs text-[#bc8ca2]">
+            <p className="mt-1 break-words text-xs text-[#bc8ca2]">
               Saturday, July 12, 2025 | Salon opens at 9:00 AM
             </p>
           </div>
-
-          <div className="flex w-full flex-col gap-3 sm:flex-row lg:w-auto">
-            <label className="flex min-w-0 items-center gap-2 rounded-full border border-[#f4d6e2] bg-[#fff1f6] px-4 py-2.5 text-sm text-[#c59bb0] sm:min-w-[320px]">
-              <Search size={15} className="text-[#d7a8bc]" />
-              <input
-                type="text"
-                placeholder="Search customer, code..."
-                className="w-full bg-transparent text-sm text-[#5c4557] outline-none placeholder:text-[#c7a0b2]"
-              />
-            </label>
-            <button
-              type="button"
-              className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#f4d6e2] bg-[#fff1f6] text-[#ea4f93] shadow-[0_8px_18px_rgba(236,72,153,0.08)]"
-            >
-              <Bell size={17} />
-              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#ea4f93]" />
-            </button>
-          </div>
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.72fr)_280px]">
-          <div className="space-y-4">
+        <div className="grid w-full min-w-0 gap-4 xl:grid-cols-[minmax(0,1.72fr)_280px]">
+          <div className="min-w-0 space-y-4">
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {RECEPTION_METRICS.map((item) => (
                 <MetricCard key={item.label} item={item} />
@@ -536,7 +581,7 @@ export function ReceptionistDashboardPage() {
             <DashboardCard>
               <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                 <SectionTitle icon={CalendarClock} title="Today's Appointments" />
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] xl:w-auto xl:min-w-[720px]">
+                <div className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] xl:w-auto xl:min-w-[720px]">
                   <label className="flex h-11 min-w-0 items-center gap-2 rounded-full border border-[#f4d6e2] bg-white px-4 text-sm text-[#c59bb0] sm:min-w-[0] xl:min-w-[380px]">
                     <Search size={16} className="text-[#3f2f39]" />
                     <input
@@ -550,7 +595,7 @@ export function ReceptionistDashboardPage() {
                   <button
                     type="button"
                     onClick={() => setIsScannerOpen(true)}
-                    className="inline-flex h-11 min-w-[140px] items-center justify-center gap-2 rounded-full border border-[#e7dcff] bg-white px-4 text-sm font-bold text-[#7a57d9] shadow-[0_10px_24px_rgba(122,87,217,0.1)] whitespace-nowrap"
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-[#e7dcff] bg-white px-4 text-sm font-bold text-[#7a57d9] shadow-[0_10px_24px_rgba(122,87,217,0.1)] whitespace-nowrap sm:min-w-[140px]"
                   >
                     <UserCheck size={15} />
                     Check-in
@@ -558,7 +603,7 @@ export function ReceptionistDashboardPage() {
                   <button
                     type="button"
                     onClick={() => navigate(ROUTES.receptionistBookingsCreate)}
-                    className="inline-flex h-11 min-w-[170px] items-center justify-center gap-2 rounded-full border border-[#f3cfe0] bg-[#fff3f8] px-4 text-sm font-bold text-[#eb5a98] whitespace-nowrap"
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-[#f3cfe0] bg-[#fff3f8] px-4 text-sm font-bold text-[#eb5a98] whitespace-nowrap sm:min-w-[170px]"
                   >
                     <Plus size={15} />
                     Create Walk-In
@@ -566,7 +611,32 @@ export function ReceptionistDashboardPage() {
                 </div>
               </div>
 
-              <div className="mt-4 overflow-x-auto">
+              <div className="mt-4 space-y-3 md:hidden">
+                {isAppointmentsLoading ? (
+                  <div className="flex min-h-40 items-center justify-center gap-3 rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-sm font-medium text-[#b38a9f]">
+                    <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
+                    Loading today's appointments...
+                  </div>
+                ) : appointmentsError ? (
+                  <div className="rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-center text-sm text-[#d14c84]">
+                    {appointmentsError}
+                  </div>
+                ) : filteredAppointmentRows.length ? (
+                  filteredAppointmentRows.map((row) => (
+                    <MobileAppointmentCard
+                      key={row.id}
+                      row={row}
+                      actions={getActionItems(row.bookingId, row.status)}
+                    />
+                  ))
+                ) : (
+                  <div className="rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-center text-sm text-[#aa8a99]">
+                    No appointments found for today.
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-4 hidden overflow-x-auto md:block">
                 <table className="min-w-full">
                   <thead>
                     <tr className="border-b border-[#f7e4ec] text-left text-[11px] font-bold uppercase tracking-[0.14em] text-[#c899ac]">
@@ -625,7 +695,7 @@ export function ReceptionistDashboardPage() {
                           <td className="px-3 py-4">
                             <ActionDropdown
                               label="Action"
-                              items={getActionItems(row.bookingId)}
+                              items={getActionItems(row.bookingId, row.status)}
                               buttonClassName="px-3 py-1.5 text-[11px]"
                             />
                           </td>
@@ -643,25 +713,25 @@ export function ReceptionistDashboardPage() {
               </div>
             </DashboardCard>
 
-            <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+            <div className="grid w-full min-w-0 gap-4 xl:grid-cols-[0.95fr_1.05fr]">
               <DashboardCard>
                 <SectionTitle icon={Clock3} title="Waiting Queue" />
                 <div className="mt-4 space-y-3">
                   {WAITING_QUEUE.map(([name, service, wait], index) => (
                     <div
                       key={`${name}-${wait}`}
-                      className="flex items-center justify-between gap-3 rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-3"
+                      className="flex flex-col gap-3 rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
                     >
                       <div className="flex items-start gap-3">
                         <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#ea4f93] text-[10px] font-extrabold text-white">
                           {index + 1}
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <p className="text-sm font-bold text-[#432744]">{name}</p>
-                          <p className="mt-1 text-[11px] text-[#b28a9f]">{service}</p>
+                          <p className="mt-1 break-words text-[11px] text-[#b28a9f]">{service}</p>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-left sm:text-right">
                         <p className="text-sm font-extrabold text-[#ea4f93]">{wait}</p>
                         <p className="text-[10px] text-[#c59bb0]">waiting</p>
                       </div>
@@ -696,13 +766,13 @@ export function ReceptionistDashboardPage() {
             </div>
           </div>
 
-          <aside className="space-y-4">
+          <aside className="min-w-0 space-y-4">
             <DashboardCard>
               <SectionTitle icon={Sparkles} title="Quick Status" />
               <div className="mt-4 space-y-4">
                 {QUICK_STATUS.map(([label, value]) => (
-                  <div key={label} className="flex items-center justify-between gap-3 text-sm">
-                    <span className="text-[#9d8191]">{label}</span>
+                  <div key={label} className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                    <span className="break-words text-[#9d8191]">{label}</span>
                     <span className="font-extrabold text-[#ea4f93]">{value}</span>
                   </div>
                 ))}
@@ -719,42 +789,18 @@ export function ReceptionistDashboardPage() {
                     >
                       {initials}
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-xs font-bold text-[#432744]">{name}</p>
-                      <p className="mt-0.5 text-[10px] font-semibold text-[#ea4f93]">
+                      <p className="mt-0.5 break-words text-[10px] font-semibold text-[#ea4f93]">
                         {service}
                       </p>
-                      <p className="mt-0.5 text-[10px] text-[#aa8a99]">{meta}</p>
+                      <p className="mt-0.5 break-words text-[10px] text-[#aa8a99]">{meta}</p>
                     </div>
                   </div>
                 ))}
               </div>
             </DashboardCard>
-
-            <DashboardCard>
-              <SectionTitle icon={CircleAlert} title="AI Suggestions" />
-              <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#c59bb0]">
-                Based on Emma Rose&apos;s history
-              </p>
-              <div className="mt-4 space-y-3">
-                {AI_SUGGESTIONS.map(([title, note, meta]) => (
-                  <div
-                    key={title}
-                    className="rounded-[18px] border border-[#f4d7e2] bg-[linear-gradient(180deg,#fff1f6_0%,#ffe7f0_100%)] px-4 py-4"
-                  >
-                    <p className="text-xs font-extrabold text-[#ea4f93]">{title}</p>
-                    <p className="mt-2 text-[11px] leading-5 text-[#977d8c]">{note}</p>
-                    <p className="mt-3 text-xs font-extrabold text-[#432744]">{meta}</p>
-                  </div>
-                ))}
-              </div>
-              <button
-                type="button"
-                className="mt-4 w-full rounded-full border border-[#f4d6e2] bg-[#fff3f8] px-4 py-3 text-xs font-extrabold text-[#eb5a98]"
-              >
-                Suggest to Customer
-              </button>
-            </DashboardCard>
+ 
           </aside>
         </div>
       </div>

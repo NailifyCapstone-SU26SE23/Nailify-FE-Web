@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { formatDurationLabel } from "../../../../shared/utils/formatDuration";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import {
   getMockBookingById,
@@ -85,7 +86,7 @@ function TemplateCard({ item, isSelected, onSelect }) {
         <div className="mt-4 flex items-end justify-between gap-3">
           <div>
             <p className="text-sm font-extrabold text-[#ea4f93]">{item.price}</p>
-            <p className="mt-1 text-[10px] text-[#ae8da0]">{item.duration}</p>
+            <p className="mt-1 text-[10px] text-[#ae8da0]">{formatDurationLabel(item.duration)}</p>
           </div>
           <span className={`rounded-md px-2 py-1 text-[9px] font-extrabold ${item.accentClassName}`}>
             {item.accent}
@@ -871,7 +872,7 @@ export function StaffNailDesignStudioPage() {
                   </div>
                   <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-[#d34f88]">
                     <span className="h-1.5 w-1.5 rounded-full bg-[#ea4f93]" />
-                    Estimated Duration: {studio.builder.estimatedDuration}
+                    Estimated Duration: {formatDurationLabel(studio.builder.estimatedDuration)}
                   </div>
                 </div>
 

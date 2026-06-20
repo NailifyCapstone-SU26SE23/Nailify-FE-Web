@@ -16,8 +16,14 @@ import {
   XCircle,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ROLES } from "../../../../shared/constants/roles";
+import { usePagination } from "../../../../shared/hooks/usePagination";
+import {
+  getStaffBookingDesignStudioRoute,
+  getStaffBookingServiceSessionRoute,
+} from "../../../../shared/constants/routes";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import {
@@ -25,6 +31,12 @@ import {
   BOOKING_ROWS,
   BOOKING_STATUS_STYLES,
 } from "../services/mockBookings";
+import {
+  buildStaffServiceSessionPayload,
+  fetchStaffBookings,
+  getTodayDateParam,
+  normalizeStaffBooking,
+} from "../../../staff/bookings/services/staffBookingService";
 import { getBookingRoleFromPath } from "../utils/bookingMapper";
 
 const SUMMARY_BY_ROLE = {
@@ -195,6 +207,8 @@ const NO_SHOW_ALERTS = [
   ["Rachel Yu", "#BK-1235", "Northpark Studio", "No-show"],
 ];
 
+const BOOKING_PAGE_SIZE = 10;
+
 function MetricCard({ item }) {
   const Icon = item.icon;
 
@@ -362,10 +376,12 @@ export function BookingListPage() {
   const navigate = useNavigate();
   const role = getBookingRoleFromPath(location.pathname);
   const roleConfig = BOOKING_ROLE_CONFIG[role];
+  const isStaffRole = role === ROLES.staff;
   const normalizedBookings = useMemo(() => BOOKING_ROWS.map(normalizeBooking), []);
+  const todayDate = useMemo(() => getTodayDateParam(), []);
   const defaultDateRange = useMemo(
-    () => getDefaultDateRange(normalizedBookings),
-    [normalizedBookings],
+    () => (isStaffRole ? { from: todayDate, to: todayDate } : getDefaultDateRange(normalizedBookings)),
+    [isStaffRole, normalizedBookings, todayDate],
   );
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
   const [query, setQuery] = useState("");
@@ -375,6 +391,9 @@ export function BookingListPage() {
   const [statusFilter, setStatusFilter] = useState(STATUS_OPTIONS[0]);
   const [paymentFilter, setPaymentFilter] = useState(PAYMENT_OPTIONS[0]);
   const [staffFilter, setStaffFilter] = useState("All staff");
+  const [isLoading, setIsLoading] = useState(isStaffRole);
+  const [loadError, setLoadError] = useState("");
+  const [staffBookings, setStaffBookings] = useState([]);
 
   useEffect(() => {
     if (!location.state?.flashMessage) {
@@ -384,10 +403,76 @@ export function BookingListPage() {
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
 
+  useEffect(() => {
+    if (!isStaffRole) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadBookings = async () => {
+      setIsLoading(true);
+      setLoadError("");
+
+      try {
+        const data = await fetchStaffBookings();
+
+        if (!isMounted) {
+          return;
+        }
+
+        setStaffBookings(Array.isArray(data) ? data.map(normalizeStaffBooking) : []);
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        const message = error instanceof Error ? error.message : "Failed to load assigned bookings.";
+        setLoadError(message);
+        toast.error(message);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void loadBookings();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isStaffRole]);
+
+  const activeBookings = isStaffRole ? staffBookings : normalizedBookings;
+  const staffTodayBookingsFromApi = useMemo(
+    () =>
+      isStaffRole
+        ? staffBookings.filter((booking) => booking.bookingDateValue === todayDate)
+        : [],
+    [isStaffRole, staffBookings, todayDate],
+  );
+  const staffYesterdayBookingsFromApi = useMemo(() => {
+    if (!isStaffRole) {
+      return [];
+    }
+
+    const yesterday = new Date(todayDate);
+
+    if (Number.isNaN(yesterday.getTime())) {
+      return [];
+    }
+
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayDate = yesterday.toISOString().slice(0, 10);
+
+    return staffBookings.filter((booking) => booking.bookingDateValue === yesterdayDate);
+  }, [isStaffRole, staffBookings, todayDate]);
+
   const filteredBookings = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    return normalizedBookings.filter((booking) => {
+    return activeBookings.filter((booking) => {
       const matchesQuery =
         normalizedQuery.length === 0 ||
         [
@@ -406,14 +491,25 @@ export function BookingListPage() {
       const matchesStatus =
         statusFilter === "All" || booking.uiStatus === statusFilter;
       const matchesPayment =
-        paymentFilter === "All" || booking.uiPayment === paymentFilter;
+        isStaffRole || paymentFilter === "All" || booking.uiPayment === paymentFilter;
       const matchesSalon =
         salonFilter === "All salons" || booking.uiBranch === salonFilter;
       const matchesStaff =
         staffFilter === "All staff" || booking.staffName === staffFilter;
       const matchesDate =
-        (!dateFrom || booking.bookingDate >= dateFrom) &&
-        (!dateTo || booking.bookingDate <= dateTo);
+        (!dateFrom || booking.bookingDateValue >= dateFrom) &&
+        (!dateTo || booking.bookingDateValue <= dateTo);
+
+      if (isStaffRole) {
+        return (
+          matchesQuery &&
+          matchesStatus &&
+          matchesPayment &&
+          matchesSalon &&
+          matchesStaff &&
+          matchesDate
+        );
+      }
 
       if (role === ROLES.staff || role === ROLES.receptionist) {
         return (
@@ -449,9 +545,10 @@ export function BookingListPage() {
       );
     });
   }, [
+    activeBookings,
     dateFrom,
     dateTo,
-    normalizedBookings,
+    isStaffRole,
     paymentFilter,
     query,
     role,
@@ -459,12 +556,95 @@ export function BookingListPage() {
     staffFilter,
     statusFilter,
   ]);
+  const {
+    currentPage,
+    paginatedItems: paginatedBookings,
+    setCurrentPage,
+    totalPages,
+  } = usePagination(filteredBookings, BOOKING_PAGE_SIZE);
 
-  const summaryItems = SUMMARY_BY_ROLE[role] ?? SUMMARY_BY_ROLE[ROLES.admin];
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [dateFrom, dateTo, paymentFilter, query, role, salonFilter, setCurrentPage, staffFilter, statusFilter]);
+
+  const paginationLabel = useMemo(() => {
+    if (!filteredBookings.length) {
+      return "Showing 0 bookings";
+    }
+
+    const start = (currentPage - 1) * BOOKING_PAGE_SIZE + 1;
+    const end = Math.min(filteredBookings.length, currentPage * BOOKING_PAGE_SIZE);
+
+    return `Showing ${start}-${end} of ${filteredBookings.length} bookings`;
+  }, [currentPage, filteredBookings.length]);
+
+  const summaryItems = useMemo(() => {
+    if (!isStaffRole) {
+      return SUMMARY_BY_ROLE[role] ?? SUMMARY_BY_ROLE[ROLES.admin];
+    }
+
+    const pendingCount = activeBookings.filter((booking) => booking.status === "Pending").length;
+    const completedCount = activeBookings.filter((booking) => booking.status === "Completed").length;
+    const cancelledCount = activeBookings.filter((booking) => booking.status === "Cancelled").length;
+    const revenue = activeBookings.reduce((sum, booking) => sum + booking.totalPriceValue, 0);
+
+    return [
+      {
+        label: "Assigned Today",
+        value: String(activeBookings.length),
+        note: "Loaded from artist schedule",
+        icon: CalendarDays,
+        iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
+      },
+      {
+        label: "Pending",
+        value: String(pendingCount),
+        note: "Awaiting service progress",
+        icon: Clock3,
+        iconClassName: "bg-[#fff4e8] text-[#f59e0b]",
+      },
+      {
+        label: "Completed",
+        value: String(completedCount),
+        note: "Finished today",
+        icon: DollarSign,
+        iconClassName: "bg-[#eaf9ee] text-[#2fa25f]",
+      },
+      {
+        label: "Cancelled",
+        value: String(cancelledCount),
+        note: "Today",
+        icon: XCircle,
+        iconClassName: "bg-[#fff0f5] text-[#e1447f]",
+      },
+      {
+        label: "Revenue",
+        value: revenue > 0
+          ? `${new Intl.NumberFormat("vi-VN", {
+            maximumFractionDigits: 0,
+          }).format(revenue)} VNĐ`
+          : "0 VNĐ",
+        note: "Total loaded from API",
+        icon: AlertTriangle,
+        iconClassName: "bg-[#f5ecff] text-[#8b5cf6]",
+      },
+    ];
+  }, [activeBookings, isStaffRole, role]);
   const getActionItems = (booking) => {
     const detailRoute = roleConfig.getDetailRoute(booking.id);
 
     if (role === ROLES.staff) {
+      const startService = () => {
+        navigate(getStaffBookingServiceSessionRoute(booking.id), {
+          state: {
+            serviceSession: buildStaffServiceSessionPayload(booking, {
+              backRoute: detailRoute,
+              designUpdateRoute: getStaffBookingDesignStudioRoute(booking.id),
+            }),
+          },
+        });
+      };
+
       return [
         { key: "view", label: "View Booking", icon: Eye, onSelect: () => navigate(detailRoute) },
         { key: "edit", label: "Edit Booking", icon: PencilLine, onSelect: () => navigate(detailRoute) },
@@ -472,7 +652,7 @@ export function BookingListPage() {
           key: "start",
           label: "Start Service",
           icon: Play,
-          onSelect: () => navigate(detailRoute, { state: { staffAction: "start" } }),
+          onSelect: () => void startService(),
         },
         {
           key: "complete",
@@ -509,17 +689,49 @@ export function BookingListPage() {
     ];
   };
   const bookingVolume = [
-    { time: "9A", value: 4 },
-    { time: "10A", value: 8 },
-    { time: "11A", value: 11 },
-    { time: "12P", value: 14 },
-    { time: "1P", value: 9 },
-    { time: "2P", value: 12 },
-    { time: "3P", value: 10 },
-    { time: "4P", value: 7 },
-    { time: "5P", value: 6 },
-    { time: "6P", value: 3 },
+    ...(isStaffRole
+      ? Array.from({ length: 10 }, (_, index) => {
+        const hour = index + 9;
+        const label = hour < 12 ? `${hour}A` : hour === 12 ? "12P" : `${hour - 12}P`;
+        const value = staffTodayBookingsFromApi.filter(
+          (booking) => Number.parseInt(booking.bookingTime, 10) === hour,
+        ).length;
+
+        return { time: label, value };
+      })
+      : [
+        { time: "9A", value: 4 },
+        { time: "10A", value: 8 },
+        { time: "11A", value: 11 },
+        { time: "12P", value: 14 },
+        { time: "1P", value: 9 },
+        { time: "2P", value: 12 },
+        { time: "3P", value: 10 },
+        { time: "4P", value: 7 },
+        { time: "5P", value: 6 },
+        { time: "6P", value: 3 },
+      ]),
   ];
+  const staffTodayBookingStats = useMemo(() => {
+    if (!isStaffRole) {
+      return null;
+    }
+
+    const todayCount = staffTodayBookingsFromApi.length;
+    const yesterdayCount = staffYesterdayBookingsFromApi.length;
+    const percentDelta =
+      yesterdayCount > 0
+        ? `${todayCount >= yesterdayCount ? "+" : ""}${Math.round(((todayCount - yesterdayCount) / yesterdayCount) * 100)}%`
+        : todayCount > 0
+          ? "+100%"
+          : "0%";
+
+    return [
+      [String(todayCount), "Today"],
+      [String(yesterdayCount), "Yesterday"],
+      [percentDelta, "vs Yesterday"],
+    ];
+  }, [isStaffRole, staffTodayBookingsFromApi.length, staffYesterdayBookingsFromApi.length]);
 
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)]">
@@ -584,18 +796,22 @@ export function BookingListPage() {
                 </select>
               </label>
               <label className="space-y-2">
-                <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
-                  Payment
-                </span>
-                <select
-                  value={paymentFilter}
-                  onChange={(event) => setPaymentFilter(event.target.value)}
-                  className="h-10 w-full rounded-xl border border-[#f5d7e4] bg-[#fff9fc] px-3 text-sm text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
-                >
-                  {PAYMENT_OPTIONS.map((item) => (
-                    <option key={item}>{item}</option>
-                  ))}
-                </select>
+                {!isStaffRole ? (
+                  <>
+                    <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
+                      Payment
+                    </span>
+                    <select
+                      value={paymentFilter}
+                      onChange={(event) => setPaymentFilter(event.target.value)}
+                      className="h-10 w-full rounded-xl border border-[#f5d7e4] bg-[#fff9fc] px-3 text-sm text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
+                    >
+                      {PAYMENT_OPTIONS.map((item) => (
+                        <option key={item}>{item}</option>
+                      ))}
+                    </select>
+                  </>
+                ) : null}
               </label>
             </div>
 
@@ -662,7 +878,7 @@ export function BookingListPage() {
               <div>
                 <p className="text-sm font-extrabold text-[#462a45]">All Bookings</p>
                 <p className="mt-1 text-[11px] text-[#d197b0]">
-                  Showing 1 to {Math.min(filteredBookings.length, 10)} of 1,284 bookings
+                  {isStaffRole ? `${paginationLabel} for today` : paginationLabel}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -688,6 +904,12 @@ export function BookingListPage() {
               </div>
             ) : null}
 
+            {loadError ? (
+              <div className="mt-4 rounded-[16px] border border-[#f7d4df] bg-[#fff3f7] px-4 py-3 text-sm font-medium text-[#d14c84]">
+                {loadError}
+              </div>
+            ) : null}
+
             <div className="mt-4 overflow-hidden rounded-[18px] border border-[#f6dbe7]">
               <div className="flex items-center justify-between gap-3 border-b border-[#f7dce8] bg-[#fffafd] px-4 py-3">
                 <p className="text-sm font-extrabold text-[#462a45]">All Bookings</p>
@@ -699,27 +921,29 @@ export function BookingListPage() {
                 </button>
               </div>
 
-              <div className="hidden overflow-x-auto lg:block">
+              {isLoading ? (
+                <div className="px-5 py-10 text-center text-sm text-[#8a7082]">
+                  Loading assigned bookings...
+                </div>
+              ) : (
+                <>
+                  <div className="hidden overflow-x-auto lg:block">
                 <table className="min-w-full">
                   <thead className="border-b border-[#f8e1eb] bg-[#fffdfd]">
                     <tr className="text-left text-[10px] font-bold uppercase tracking-[0.16em] text-[#c696ad]">
-                      <th className="px-4 py-3">Booking ID</th>
                       <th className="px-4 py-3">Customer</th>
                       <th className="px-4 py-3">Salon</th>
                       <th className="px-4 py-3">Staff Artist</th>
                       <th className="px-4 py-3">Service</th>
                       <th className="px-4 py-3">Time</th>
-                      <th className="px-4 py-3">Payment</th>
+                      {!isStaffRole ? <th className="px-4 py-3">Payment</th> : null}
                       <th className="px-4 py-3">Status</th>
                       <th className="px-4 py-3">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#fae6ef] bg-white">
-                    {filteredBookings.map((booking) => (
+                    {paginatedBookings.map((booking) => (
                       <tr key={booking.id} className="align-top">
-                        <td className="px-4 py-3.5 text-xs font-bold text-[#f04f91]">
-                          {booking.uiId}
-                        </td>
                         <td className="px-4 py-3.5">
                           <div className="flex items-start gap-3">
                             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-[10px] font-extrabold text-white">
@@ -744,11 +968,13 @@ export function BookingListPage() {
                           </p>
                           <p className="mt-1 text-[11px] text-[#c694ad]">{booking.bookingTime}</p>
                         </td>
-                        <td className="px-4 py-3.5">
-                          <SmallTag className={getPaymentTone(booking.uiPayment)}>
-                            {booking.uiPayment}
-                          </SmallTag>
-                        </td>
+                        {!isStaffRole ? (
+                          <td className="px-4 py-3.5">
+                            <SmallTag className={getPaymentTone(booking.uiPayment)}>
+                              {booking.uiPayment}
+                            </SmallTag>
+                          </td>
+                        ) : null}
                         <td className="px-4 py-3.5">
                           <SmallTag className={getStatusTone(booking.uiStatus)}>
                             {booking.uiStatus}
@@ -761,10 +987,10 @@ export function BookingListPage() {
                     ))}
                   </tbody>
                 </table>
-              </div>
+                  </div>
 
-              <div className="space-y-3 p-4 lg:hidden">
-                {filteredBookings.map((booking) => (
+                  <div className="space-y-3 p-4 lg:hidden">
+                {paginatedBookings.map((booking) => (
                   <article
                     key={booking.id}
                     className="rounded-[16px] border border-[#f8dce8] bg-[#fffafb] p-4"
@@ -786,7 +1012,9 @@ export function BookingListPage() {
                     </div>
                     <div className="mt-4 flex flex-wrap gap-2">
                       <SmallTag className="bg-[#ffe7ef] text-[#ea4f93]">{booking.uiService}</SmallTag>
-                      <SmallTag className={getPaymentTone(booking.uiPayment)}>{booking.uiPayment}</SmallTag>
+                      {!isStaffRole ? (
+                        <SmallTag className={getPaymentTone(booking.uiPayment)}>{booking.uiPayment}</SmallTag>
+                      ) : null}
                       <SmallTag className={getStatusTone(booking.uiStatus)}>{booking.uiStatus}</SmallTag>
                     </div>
                     <div className="mt-4 flex items-center justify-between gap-3">
@@ -800,15 +1028,19 @@ export function BookingListPage() {
                     </div>
                   </article>
                 ))}
-              </div>
+                  </div>
+                </>
+              )}
 
               <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-[11px] text-[#c694ad]">
-                  Showing 1-10 of 1,284 bookings
+                  {paginationLabel}
                 </p>
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage <= 1}
                     className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92]"
                   >
                     <ChevronLeft size={12} />
@@ -817,19 +1049,15 @@ export function BookingListPage() {
                     type="button"
                     className="inline-flex h-7 min-w-7 items-center justify-center rounded-md bg-[#ea4f93] px-2 text-[11px] font-bold text-white"
                   >
-                    1
+                    {currentPage}
                   </button>
-                  {["2", "3", "...", "129"].map((item) => (
-                    <button
-                      key={item}
-                      type="button"
-                      className="inline-flex h-7 min-w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white px-2 text-[11px] font-medium text-[#b9849f]"
-                    >
-                      {item}
-                    </button>
-                  ))}
+                  <span className="px-2 text-[11px] font-medium text-[#b9849f]">
+                    / {totalPages}
+                  </span>
                   <button
                     type="button"
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage >= totalPages}
                     className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92]"
                   >
                     <ChevronRight size={12} />
@@ -838,7 +1066,7 @@ export function BookingListPage() {
               </div>
             </div>
 
-            {filteredBookings.length === 0 ? (
+            {!isLoading && filteredBookings.length === 0 ? (
               <div className="mt-4 rounded-[16px] border border-[#f8dce8] bg-[#fffafb] px-5 py-8 text-center text-sm text-[#8a7082]">
                 No bookings matched the current filters.
               </div>
@@ -867,11 +1095,13 @@ export function BookingListPage() {
               </div>
             </div>
             <div className="mt-3 grid grid-cols-3 gap-2">
-              {[
-                ["48", "Today"],
-                ["41", "Yesterday"],
-                ["+17%", "vs Avg"],
-              ].map(([value, label], index) => (
+              {(isStaffRole
+                ? staffTodayBookingStats
+                : [
+                  ["48", "Today"],
+                  ["41", "Yesterday"],
+                  ["+17%", "vs Avg"],
+                ]).map(([value, label], index) => (
                 <div key={label} className={`rounded-[14px] px-3 py-3 text-center ${index === 2 ? "bg-[#ffe7ef]" : "bg-[#fffafb]"} border border-[#f8dce8]`}>
                   <p className="text-xl font-extrabold text-[#ea4f93]">{value}</p>
                   <p className="mt-1 text-[10px] text-[#c694ad]">{label}</p>

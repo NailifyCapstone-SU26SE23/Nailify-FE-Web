@@ -11,6 +11,7 @@ import {
   ReceiptText,
   RefreshCcw,
   Sparkles,
+  SquareCheckBig,
   UserRound,
   XCircle,
 } from "lucide-react";
@@ -18,9 +19,11 @@ import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useParams } from "react-router-dom";
 import { ROUTES } from "../../../../shared/constants/routes";
+import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 import {
   fetchReceptionistBookingDetail,
   fetchReceptionistCustomerDetail,
+  manualCheckInReceptionistBooking,
 } from "../services/receptionistBookingService";
 
 function formatCurrency(value) {
@@ -30,11 +33,9 @@ function formatCurrency(value) {
     return "--";
   }
 
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
+  return `${new Intl.NumberFormat("vi-VN", {
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(amount)} VNĐ`;
 }
 
 function formatDate(value) {
@@ -149,6 +150,10 @@ function getProgressPercent(booking) {
   return Math.max(20, Math.round((completedCount / items.length) * 100));
 }
 
+function canManualCheckIn(status) {
+  return !["CheckedIn", "Completed", "Cancelled"].includes(status);
+}
+
 function DetailCard({ title, subtitle, badge, children, className = "" }) {
   return (
     <section
@@ -173,8 +178,8 @@ function DetailCard({ title, subtitle, badge, children, className = "" }) {
 const ACTION_CENTER = [
   {
     label: "Check In",
-    subtitle: "Open QR modal",
-    icon: QrCode,
+    subtitle: "Manual arrival check-in",
+    icon: SquareCheckBig,
     cardTone: "bg-[linear-gradient(180deg,#fff1f6_0%,#ffe6f0_100%)]",
     iconTone: "bg-[#ffdcea] text-[#eb5b92]",
   },
@@ -236,6 +241,7 @@ export function ReceptionistBookingDetailPage() {
   const [booking, setBooking] = useState(null);
   const [customerProfile, setCustomerProfile] = useState(null);
   const [isQrOpen, setIsQrOpen] = useState(false);
+  const [isManualCheckInSubmitting, setIsManualCheckInSubmitting] = useState(false);
   const [notes, setNotes] = useState(
     "Customer notes not available from API yet. Use this area for receptionist-only reminders.",
   );
@@ -297,7 +303,7 @@ export function ReceptionistBookingDetailPage() {
         service: item.serviceName || "--",
         serviceType: item.nailVariantName || item.customerNailName || "--",
         artist: booking?.artistName || "--",
-        duration: item.duration ? `${item.duration} min` : "--",
+        duration: item.duration ? formatDurationMinutes(item.duration) : "--",
         status,
         action: getServiceAction(status),
       };
@@ -308,6 +314,7 @@ export function ReceptionistBookingDetailPage() {
   const depositPaid = "--";
   const remainingBalance = totalAmount;
   const progressPercent = getProgressPercent(booking);
+  const isManualCheckInAllowed = canManualCheckIn(booking?.status);
 
   const handleRefresh = async () => {
     if (!bookingId) {
@@ -346,12 +353,27 @@ export function ReceptionistBookingDetailPage() {
   };
 
   const handleMockAction = (label) => {
-    if (label === "Check In") {
-      toast.success("Customer checked in successfully.");
+    toast.success(`${label} is ready for receptionist flow.`);
+  };
+
+  const handleManualCheckIn = async () => {
+    if (!bookingId || !isManualCheckInAllowed || isManualCheckInSubmitting) {
       return;
     }
 
-    toast.success(`${label} is ready for receptionist flow.`);
+    setIsManualCheckInSubmitting(true);
+
+    try {
+      const updatedBooking = await manualCheckInReceptionistBooking(bookingId);
+      setBooking(updatedBooking);
+      toast.success("Customer checked in successfully.");
+    } catch (actionError) {
+      const message =
+        actionError instanceof Error ? actionError.message : "Failed to check in booking.";
+      toast.error(message);
+    } finally {
+      setIsManualCheckInSubmitting(false);
+    }
   };
 
   if (isLoading) {
@@ -393,8 +415,35 @@ export function ReceptionistBookingDetailPage() {
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
       <div className="rounded-[24px] border border-[#f6d8e5] bg-white px-5 py-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
-        <p className="text-lg font-black text-[#412643]">Booking Details</p>
-        <p className="mt-1 text-xs text-[#b38a9f]">Manage customer appointment and salon operations</p>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-lg font-black text-[#412643]">Booking Details</p>
+            <p className="mt-1 text-xs text-[#b38a9f]">Manage customer appointment and salon operations</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setIsQrOpen(true)}
+              className="inline-flex items-center gap-2 rounded-full border border-[#f3cade] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
+            >
+              <QrCode size={14} />
+              View QR
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleManualCheckIn()}
+              disabled={!isManualCheckInAllowed || isManualCheckInSubmitting}
+              className="inline-flex items-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isManualCheckInSubmitting ? (
+                <LoaderCircle size={14} className="animate-spin" />
+              ) : (
+                <SquareCheckBig size={14} />
+              )}
+              Check In
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_300px]">
@@ -660,8 +709,16 @@ export function ReceptionistBookingDetailPage() {
                   <button
                     key={item.label}
                     type="button"
-                    onClick={() => handleMockAction(item.label)}
-                    className={`rounded-[18px] border border-[#f0d8e2] px-4 py-4 text-center shadow-[0_10px_22px_rgba(236,72,153,0.04)] transition hover:-translate-y-0.5 ${item.cardTone}`}
+                    onClick={() => {
+                      if (item.label === "Check In") {
+                        void handleManualCheckIn();
+                        return;
+                      }
+
+                      handleMockAction(item.label);
+                    }}
+                    disabled={item.label === "Check In" && (!isManualCheckInAllowed || isManualCheckInSubmitting)}
+                    className={`rounded-[18px] border border-[#f0d8e2] px-4 py-4 text-center shadow-[0_10px_22px_rgba(236,72,153,0.04)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 ${item.cardTone}`}
                   >
                     <span className={`mx-auto flex h-11 w-11 items-center justify-center rounded-2xl ${item.iconTone}`}>
                       <Icon size={18} />
@@ -682,7 +739,7 @@ export function ReceptionistBookingDetailPage() {
                 ["Current Status", booking.status || "--"],
                 ["Assigned Artist", booking.artistName || "--"],
                 ["Chair Number", "--"],
-                ["Remaining Time", booking.totalDuration ? `${booking.totalDuration} min` : "--"],
+                ["Remaining Time", booking.totalDuration ? formatDurationMinutes(booking.totalDuration) : "--"],
                 ["Est. Finish", "--"],
                 ["Check-in Time", booking.status === "CheckedIn" ? formatTime(booking.startTime) : "--"],
               ].map(([label, value], index) => (

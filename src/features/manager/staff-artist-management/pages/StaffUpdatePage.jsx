@@ -217,26 +217,29 @@ export function StaffUpdatePage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveResult, setSaveResult] = useState(null);
-  const [formData, setFormData] = useState(null);
+  const staff = getStaffById(staffId);
+  const [formData, setFormData] = useState(
+    staff
+      ? {
+          ...staff,
+          email: `${staff.name.toLowerCase().replace(" ", ".")}@nailify.com`,
+          phone: "+1 (555) 000-0000",
+          // seed existing skill ratings from staff data if available, else default to 3
+          skillRatings: staff.skillRatings ?? {
+            precision: 3,
+            color: 3,
+            form: 3,
+            material: 3,
+            design: 3,
+            speed: 3,
+          },
+        }
+      : null
+  );
 
   useEffect(() => {
     const staff = getStaffById(staffId);
-    if (staff) {
-      setFormData({
-        ...staff,
-        email: `${staff.name.toLowerCase().replace(" ", ".")}@nailify.com`,
-        phone: "+1 (555) 000-0000",
-        // seed existing skill ratings from staff data if available, else default to 3
-        skillRatings: staff.skillRatings ?? {
-          precision: 3,
-          color: 3,
-          form: 3,
-          material: 3,
-          design: 3,
-          speed: 3,
-        },
-      });
-    } else {
+    if (!staff) {
       navigate(ROUTES.managerStaffArtists);
     }
   }, [staffId, navigate]);

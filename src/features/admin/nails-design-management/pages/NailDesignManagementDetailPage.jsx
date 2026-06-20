@@ -3,6 +3,7 @@ import {
   CircleDollarSign,
   Copy,
   Eye,
+  LoaderCircle,
   PencilLine,
   Settings2,
   Sparkles,
@@ -11,12 +12,13 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ROUTES } from "../../../../shared/constants/routes";
+import { formatDurationLabel } from "../../../../shared/utils/formatDuration";
 import { PropTypes } from "../../../../shared/utils/propTypes";
-import { getMockNailDesignDetailById } from "../services/mockNailDesigns";
+import { fetchAdminNailDesignDetail } from "../services/nailDesignManagementService";
 
 const DESIGN_PREVIEW_IMAGE =
   "https://i0.wp.com/greenweddingshoes.com/wp-content/uploads/2025/12/red-cat-eye-christmas-holiday-nails-with-bow.webp?fit=1024%2C9999";
@@ -154,7 +156,7 @@ const DESIGN_COMPONENT_OPTIONS = {
   "Design Status": ["Active", "Draft", "Archived"],
   "Try-On Ready": ["Yes", "No"],
   Complexity: ["Basic", "Intermediate", "Advanced", "Expert"],
-  "Est. Duration": ["45 min", "60 min", "75 min", "90 min", "120 min"],
+  "Est. Duration": ["45 min", "1h", "1h15m", "1h30m", "2h"],
   "Nail Shape": ["Almond", "Square", "Round", "Oval", "Coffin", "Stiletto"],
   "Nail Length": ["Short", "Medium", "Long"],
 };
@@ -275,7 +277,6 @@ SkillLevelSlider.propTypes = {
 
 export function NailDesignManagementDetailPage() {
   const { designId } = useParams();
-  const initialDesign = getMockNailDesignDetailById(designId);
   const heroSectionRef = useRef(null);
   const customerProfileRef = useRef(null);
   const designComponentsRef = useRef(null);
@@ -287,13 +288,88 @@ export function NailDesignManagementDetailPage() {
   const customerPreviewRef = useRef(null);
   const [flashMessage, setFlashMessage] = useState("");
   const [isEditing, setIsEditing] = useState(false);
-  const [formValues, setFormValues] = useState(initialDesign);
+  const [initialDesign, setInitialDesign] = useState(null);
+  const [formValues, setFormValues] = useState(null);
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [highlightedSection, setHighlightedSection] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [isNotFound, setIsNotFound] = useState(false);
 
-  if (!initialDesign) {
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadDesignDetail = async () => {
+      setIsLoading(true);
+      setError("");
+      setIsNotFound(false);
+
+      try {
+        const detail = await fetchAdminNailDesignDetail(designId);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setInitialDesign(detail);
+        setFormValues(detail);
+      } catch (loadError) {
+        if (!isMounted) {
+          return;
+        }
+
+        setInitialDesign(null);
+        setFormValues(null);
+
+        const statusCode = loadError && typeof loadError === "object" ? loadError.response?.status : undefined;
+
+        if (statusCode === 404) {
+          setIsNotFound(true);
+        } else {
+          setError(
+            loadError instanceof Error
+              ? loadError.message
+              : "Failed to load nail design detail.",
+          );
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void loadDesignDetail();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [designId]);
+
+  if (isLoading) {
+    return (
+      <section className="flex min-h-full items-center justify-center bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)] px-4 py-10">
+        <div className="flex items-center gap-3 rounded-[18px] border border-[#f8dce8] bg-white px-5 py-4 text-sm text-[#b38a9f] shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
+          <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
+          Loading nail design detail...
+        </div>
+      </section>
+    );
+  }
+
+  if (isNotFound) {
     return <Navigate to={ROUTES.adminNailDesigns} replace />;
+  }
+
+  if (!formValues) {
+    return (
+      <section className="flex min-h-full items-center justify-center bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)] px-4 py-10">
+        <div className="rounded-[18px] border border-[#f8dce8] bg-white px-5 py-4 text-sm font-medium text-[#d14c84] shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
+          {error || "Failed to load nail design detail."}
+        </div>
+      </section>
+    );
   }
 
   const handleChange = (field) => (event) => {
@@ -458,7 +534,7 @@ export function NailDesignManagementDetailPage() {
     ["Design Status", formValues.designStatus],
     ["Try-On Ready", formValues.tryOnReady ? "Yes" : "No"],
     ["Complexity", formValues.complexity],
-    ["Est. Duration", formValues.estimatedDuration],
+    ["Est. Duration", formatDurationLabel(formValues.estimatedDuration)],
     ["Nail Shape", formValues.nailShape],
     ["Nail Length", formValues.nailLength],
     ["Suggested Price", formValues.suggestedPrice],
@@ -562,6 +638,12 @@ export function NailDesignManagementDetailPage() {
         </div>
       ) : null}
 
+      {error ? (
+        <div className="rounded-[16px] bg-[#fff1f5] px-4 py-3 text-sm font-medium text-[#d14c84]">
+          {error}
+        </div>
+      ) : null}
+
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_290px]">
         <div className="space-y-4">
           <article
@@ -576,13 +658,15 @@ export function NailDesignManagementDetailPage() {
             <div className="grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
               <div className="overflow-hidden rounded-[18px] bg-[#f6edf2]">
                 <img
-                  src={DESIGN_PREVIEW_IMAGE}
+                  src={formValues.previewImage || DESIGN_PREVIEW_IMAGE}
                   alt={formValues.heroTitle}
                   className="h-full w-full object-cover"
                   referrerPolicy="no-referrer"
                 />
                 <div className="p-3">
-                  <Pill tone="pink">Try-On Ready</Pill>
+                  <Pill tone={formValues.tryOnReady ? "green" : "pink"}>
+                    {formValues.tryOnReady ? "Try-On Ready" : "No Try-On"}
+                  </Pill>
                 </div>
               </div>
 
@@ -743,7 +827,7 @@ export function NailDesignManagementDetailPage() {
                 <div key={variant.name} className="rounded-[20px] border border-[#f7d7e5] bg-white p-3 shadow-[0_10px_20px_rgba(236,72,153,0.05)]">
                   <div className="overflow-hidden rounded-[16px] bg-[#f6edf2]">
                     <img
-                      src={DESIGN_PREVIEW_IMAGE}
+                      src={variant.imageUrl || formValues.previewImage || DESIGN_PREVIEW_IMAGE}
                       alt={variant.name}
                       className="h-44 w-full object-cover"
                       referrerPolicy="no-referrer"
@@ -796,7 +880,7 @@ export function NailDesignManagementDetailPage() {
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <Pill tone="blue">{variant.level}</Pill>
-                    <Pill tone="green">{variant.duration}</Pill>
+                    <Pill tone="green">{formatDurationLabel(variant.duration)}</Pill>
                   </div>
                   <div className="mt-4 flex gap-2">
                     <button
@@ -949,7 +1033,7 @@ export function NailDesignManagementDetailPage() {
                       <>
                         <p className="font-semibold text-[#432744]">{title}</p>
                         <div className="mt-2 flex flex-wrap gap-2">
-                          <Pill tone="pink">{duration}</Pill>
+                          <Pill tone="pink">{formatDurationLabel(duration)}</Pill>
                           {tools.map((tool, toolIndex) => (
                             <Pill key={tool} tone={toolIndex % 2 === 0 ? "blue" : "purple"}>
                               {tool}
@@ -1258,7 +1342,7 @@ export function NailDesignManagementDetailPage() {
           >
             <div className="overflow-hidden rounded-[18px] bg-[#f6edf2]">
               <img
-                src={DESIGN_PREVIEW_IMAGE}
+                src={formValues.previewImage || DESIGN_PREVIEW_IMAGE}
                 alt={formValues.heroTitle}
                 className="h-44 w-full object-cover"
                 referrerPolicy="no-referrer"
