@@ -3,6 +3,11 @@ import { PropTypes } from "../../../../shared/utils/propTypes";
 import { USER_STATUS_STYLES } from "../services/mockUsers";
 
 export function UserManagementSnapshotCard({ formValues, notice }) {
+  const displayName =
+    [formValues.firstName, formValues.lastName].filter(Boolean).join(" ").trim() ||
+    formValues.name ||
+    "New internal account";
+
   return (
     <article className="rounded-[24px] bg-white p-4 shadow-[0_16px_34px_rgba(94,76,62,0.06)] sm:p-5 md:p-6">
       <p className="text-sm uppercase tracking-[0.18em] text-[#d45b9f]">
@@ -12,7 +17,7 @@ export function UserManagementSnapshotCard({ formValues, notice }) {
       <div className="mt-5 rounded-[22px] bg-[linear-gradient(180deg,#fff5f9_0%,#fff8e8_100%)] p-5">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white font-semibold text-[#c84b91] shadow-[0_12px_24px_rgba(94,76,62,0.08)]">
-            {(formValues.name || "New User")
+            {(displayName || "New User")
               .split(" ")
               .slice(0, 2)
               .map((part) => part[0] ?? "")
@@ -20,7 +25,7 @@ export function UserManagementSnapshotCard({ formValues, notice }) {
           </div>
           <div>
             <p className="font-semibold text-[var(--color-ink)]">
-              {formValues.name || "New internal account"}
+              {displayName}
             </p>
             <p className="text-sm text-[var(--color-muted)]">
               {formValues.email || "Email not set"}
@@ -30,9 +35,9 @@ export function UserManagementSnapshotCard({ formValues, notice }) {
 
         <div className="mt-5 flex flex-wrap gap-2">
           <span
-            className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${USER_STATUS_STYLES[formValues.status]}`}
+            className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${USER_STATUS_STYLES[formValues.status] ?? "bg-[#fff0f5] text-[#d14c84]"}`}
           >
-            {formValues.status}
+            {formValues.status || "New account"}
           </span>
           <span className="inline-flex rounded-full bg-[#fff] px-3 py-1 text-xs font-semibold text-[var(--color-ink)]">
             {formValues.role}
@@ -42,14 +47,11 @@ export function UserManagementSnapshotCard({ formValues, notice }) {
 
       <div className="mt-5 space-y-4">
         <div className="rounded-2xl bg-[#fff7ef] px-4 py-4 text-sm leading-6 text-[var(--color-ink)]">
-          <span className="font-semibold">Branch:</span> {formValues.branch}
-        </div>
-        <div className="rounded-2xl bg-[#fff7ef] px-4 py-4 text-sm leading-6 text-[var(--color-ink)]">
           <span className="font-semibold">Phone:</span>{" "}
           {formValues.phone || "Not provided"}
         </div>
         <div className="rounded-2xl bg-[#fff7ef] px-4 py-4 text-sm leading-6 text-[var(--color-ink)]">
-          <span className="font-semibold">Joined:</span> {formValues.joinedAt}
+          <span className="font-semibold">Avatar URL:</span> {formValues.avatarUrl || "Not provided"}
         </div>
       </div>
 
@@ -65,13 +67,16 @@ export function UserManagementSnapshotCard({ formValues, notice }) {
 
 UserManagementSnapshotCard.propTypes = {
   formValues: PropTypes.shape({
-    branch: PropTypes.string.isRequired,
+    avatarUrl: PropTypes.string,
+    branch: PropTypes.string,
     email: PropTypes.string.isRequired,
-    joinedAt: PropTypes.string.isRequired,
-    name: PropTypes.string.isRequired,
+    firstName: PropTypes.string,
+    joinedAt: PropTypes.string,
+    lastName: PropTypes.string,
+    name: PropTypes.string,
     phone: PropTypes.string.isRequired,
     role: PropTypes.string.isRequired,
-    status: PropTypes.string.isRequired,
+    status: PropTypes.string,
   }).isRequired,
   notice: PropTypes.string.isRequired,
 };

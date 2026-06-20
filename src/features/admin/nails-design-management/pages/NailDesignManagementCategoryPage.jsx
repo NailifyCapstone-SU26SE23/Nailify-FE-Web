@@ -1,26 +1,22 @@
 import {
   ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
   FolderPlus,
+  LoaderCircle,
   PencilLine,
   Save,
+  Search,
   Sparkles,
   Tag,
   Trash2,
   X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ROUTES } from "../../../../shared/constants/routes";
-import { NAIL_DESIGN_CATEGORY_OPTIONS } from "../services/mockNailDesigns";
-
-const INITIAL_CATEGORY_ROWS = NAIL_DESIGN_CATEGORY_OPTIONS.map((name, index) => ({
-  id: `cat-${index + 1}`,
-  name,
-  description: `${name} design direction for curated admin collections and salon showcases.`,
-  status: index < 6 ? "Active" : "Draft",
-  designCount: 6 + index * 2,
-}));
+import { fetchAdminCategories } from "../services/nailDesignManagementService";
 
 const emptyDraft = {
   name: "",
@@ -49,21 +45,112 @@ function Pill({ children, tone = "bg-[#fff1f7] text-[#ea4f93]" }) {
 
 export function NailDesignManagementCategoryPage() {
   const navigate = useNavigate();
-  const [categories, setCategories] = useState(INITIAL_CATEGORY_ROWS);
+  const [categories, setCategories] = useState([]);
   const [draft, setDraft] = useState(emptyDraft);
   const [editingId, setEditingId] = useState(null);
   const [flashMessage, setFlashMessage] = useState("");
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
+  const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [metaData, setMetaData] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    pageSize: 10,
+    totalItems: 0,
+    hasPrevious: false,
+    hasNext: false,
+    firstRowOnPage: 0,
+    lastRowOnPage: 0,
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const timerId = window.setTimeout(() => {
+      setDebouncedQuery(query.trim());
+      setMetaData((current) => ({ ...current, currentPage: 1 }));
+    }, 350);
+
+    return () => window.clearTimeout(timerId);
+  }, [query]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadCategories = async () => {
+      setIsLoading(true);
+      setError("");
+
+      try {
+        const response = await fetchAdminCategories({
+          pageNumber: metaData.currentPage,
+          pageSize: metaData.pageSize,
+          name: debouncedQuery,
+        });
+
+        if (!isMounted) {
+          return;
+        }
+
+        setCategories(response.items);
+        setMetaData(response.metaData);
+      } catch (loadError) {
+        if (!isMounted) {
+          return;
+        }
+
+        setCategories([]);
+        setError(loadError instanceof Error ? loadError.message : "Failed to load categories.");
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void loadCategories();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [debouncedQuery, metaData.currentPage, metaData.pageSize]);
 
   const summary = useMemo(() => {
-    const total = categories.length;
+    const total = metaData.totalItems;
     const active = categories.filter((item) => item.status === "Active").length;
-    const draftCount = categories.filter((item) => item.status === "Draft").length;
-    const totalDesigns = categories.reduce((sum, item) => sum + item.designCount, 0);
+    const draftCount = categories.filter((item) => item.status !== "Active").length;
+    const totalTypes = new Set(categories.map((item) => item.categoryTypeName).filter(Boolean)).size;
 
-    return { total, active, draftCount, totalDesigns };
-  }, [categories]);
+    return { total, active, draftCount, totalTypes };
+  }, [categories, metaData.totalItems]);
+
+  const paginationItems = useMemo(() => {
+    const currentPage = metaData.currentPage;
+    const totalPages = metaData.totalPages;
+
+    if (totalPages <= 1) {
+      return [1];
+    }
+
+    const pages = new Set([1, totalPages, currentPage, currentPage - 1, currentPage + 1]);
+    const normalizedPages = [...pages]
+      .filter((page) => page >= 1 && page <= totalPages)
+      .sort((left, right) => left - right);
+
+    const result = [];
+
+    normalizedPages.forEach((page, index) => {
+      result.push(page);
+
+      const nextPage = normalizedPages[index + 1];
+      if (nextPage && nextPage - page > 1) {
+        result.push("...");
+      }
+    });
+
+    return result;
+  }, [metaData.currentPage, metaData.totalPages]);
 
   const handleDraftChange = (field, value) => {
     setDraft((current) => ({
@@ -79,41 +166,17 @@ export function NailDesignManagementCategoryPage() {
 
   const applyDraftChanges = () => {
     const normalizedName = draft.name.trim();
-    const normalizedDescription = draft.description.trim();
 
     if (!normalizedName) {
       setFlashMessage("Category name is required.");
       return;
     }
 
-    if (editingId) {
-      setCategories((current) =>
-        current.map((item) =>
-          item.id === editingId
-            ? {
-                ...item,
-                name: normalizedName,
-                description: normalizedDescription || item.description,
-              }
-            : item,
-        ),
-      );
-      setFlashMessage(`${normalizedName} has been updated.`);
-    } else {
-      setCategories((current) => [
-        {
-          id: `cat-${Date.now()}`,
-          name: normalizedName,
-          description:
-            normalizedDescription ||
-            `${normalizedName} design direction for curated admin collections and salon showcases.`,
-          status: "Draft",
-          designCount: 0,
-        },
-        ...current,
-      ]);
-      setFlashMessage(`${normalizedName} has been added.`);
-    }
+    setFlashMessage(
+      editingId
+        ? `${normalizedName} is ready, but category update API is not connected yet.`
+        : `${normalizedName} is ready, but category create API is not connected yet.`,
+    );
 
     resetDraft();
   };
@@ -127,31 +190,18 @@ export function NailDesignManagementCategoryPage() {
     setEditingId(category.id);
     setDraft({
       name: category.name,
-      description: category.description,
+      description: category.categoryTypeName || "",
     });
     setFlashMessage("");
   };
 
-  const handleDelete = (categoryId) => {
+  const handleDelete = () => {
     setPendingDeleteId(null);
-    setCategories((current) => current.filter((item) => item.id !== categoryId));
-    if (editingId === categoryId) {
-      resetDraft();
-    }
-    setFlashMessage("Category has been removed.");
+    setFlashMessage("Category delete API is not connected yet.");
   };
 
-  const handleToggleStatus = (categoryId) => {
-    setCategories((current) =>
-      current.map((item) =>
-        item.id === categoryId
-          ? {
-              ...item,
-              status: item.status === "Active" ? "Draft" : "Active",
-            }
-          : item,
-      ),
-    );
+  const handleToggleStatus = (category) => {
+    setFlashMessage(`Status change for ${category.name} is not connected to API yet.`);
   };
 
   const pendingDeleteCategory = categories.find((item) => item.id === pendingDeleteId) ?? null;
@@ -177,7 +227,7 @@ export function NailDesignManagementCategoryPage() {
                 Nail Design Categories
               </h1>
               <p className="mt-1 text-[12px] text-[#c694ad]">
-                Create and manage design categories for the admin nail catalog.
+                Category list is loaded from API `GET /Categories`.
               </p>
             </div>
           </div>
@@ -212,21 +262,21 @@ export function NailDesignManagementCategoryPage() {
             <Sparkles size={18} />
           </div>
           <p className="text-[28px] font-black text-[#432744]">{summary.active}</p>
-          <p className="mt-1 text-sm font-semibold text-[#8a7082]">Active Categories</p>
+          <p className="mt-1 text-sm font-semibold text-[#8a7082]">Active On Current Page</p>
         </div>
         <div className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
           <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-[#fff4df] text-[#d9871c]">
             <FolderPlus size={18} />
           </div>
           <p className="text-[28px] font-black text-[#432744]">{summary.draftCount}</p>
-          <p className="mt-1 text-sm font-semibold text-[#8a7082]">Draft Categories</p>
+          <p className="mt-1 text-sm font-semibold text-[#8a7082]">Non-Active On Current Page</p>
         </div>
         <div className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
           <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-[#eef4ff] text-[#3f68c9]">
             <Save size={18} />
           </div>
-          <p className="text-[28px] font-black text-[#432744]">{summary.totalDesigns}</p>
-          <p className="mt-1 text-sm font-semibold text-[#8a7082]">Mapped Designs</p>
+          <p className="text-[28px] font-black text-[#432744]">{summary.totalTypes}</p>
+          <p className="mt-1 text-sm font-semibold text-[#8a7082]">Category Types On Page</p>
         </div>
       </section>
 
@@ -242,8 +292,7 @@ export function NailDesignManagementCategoryPage() {
                   {editingId ? "Edit Category" : "Add Category"}
                 </h2>
                 <p className="mt-1 text-[12px] leading-5 text-[#a37792]">
-                  Define a clear label and a concise description so the design catalog feels
-                  organized and easy to scan.
+                  Form UI is available, but create/update/delete category APIs are not connected yet.
                 </p>
               </div>
               {editingId ? (
@@ -339,8 +388,8 @@ export function NailDesignManagementCategoryPage() {
                 Writing tip
               </p>
               <p className="mt-1 text-sm leading-6 text-[#8a7082]">
-                Use short names with a strong visual theme, then describe the collection mood,
-                finish, or intended merchandising use.
+                Use short names with a strong visual theme, then describe the collection mood or
+                catalog grouping.
               </p>
             </div>
 
@@ -369,10 +418,10 @@ export function NailDesignManagementCategoryPage() {
             <div>
               <h2 className="text-sm font-extrabold text-[#432744]">Category List</h2>
               <p className="mt-1 text-[11px] text-[#c694ad]">
-                Interactive mock list for adding, editing, and removing categories.
+                Loaded from API with pagination and name filter.
               </p>
             </div>
-            <Pill>{categories.length} items</Pill>
+            <Pill>{metaData.totalItems} items</Pill>
           </div>
 
           {flashMessage ? (
@@ -381,60 +430,149 @@ export function NailDesignManagementCategoryPage() {
             </div>
           ) : null}
 
-          <div className="space-y-3">
-            {categories.map((category) => (
-              <article
-                key={category.id}
-                className="rounded-[18px] border border-[#f8dce8] bg-[#fffafb] p-4"
-              >
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-[15px] font-extrabold text-[#432744]">{category.name}</h3>
-                      <Pill
-                        tone={
-                          category.status === "Active"
-                            ? "bg-[#edfdf4] text-[#16975f]"
-                            : "bg-[#fff7e7] text-[#cc8a16]"
-                        }
-                      >
-                        {category.status}
-                      </Pill>
-                    </div>
-                    <p className="mt-2 text-sm leading-6 text-[#8a7082]">{category.description}</p>
-                    <p className="mt-2 text-[11px] font-semibold text-[#c694ad]">
-                      {category.designCount} mapped designs
-                    </p>
-                  </div>
+          {error ? (
+            <div className="mb-4 rounded-[16px] bg-[#fff1f5] px-4 py-3 text-sm font-medium text-[#d14c84]">
+              {error}
+            </div>
+          ) : null}
 
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleToggleStatus(category.id)}
-                      className="rounded-full border border-[#f4c6da] bg-white px-3 py-1.5 text-[10px] font-bold text-[#8c7085]"
-                    >
-                      {category.status === "Active" ? "Mark Draft" : "Activate"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleEdit(category)}
-                      className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93]"
-                    >
-                      <PencilLine size={12} className="mr-1 inline" />
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPendingDeleteId(category.id)}
-                      className="rounded-full border border-[#f9d0dc] bg-white px-3 py-1.5 text-[10px] font-bold text-[#d14c84]"
-                    >
-                      <Trash2 size={12} className="mr-1 inline" />
-                      Delete
-                    </button>
-                  </div>
+          <label className="relative mb-4 block max-w-md">
+            <Search
+              size={15}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#df7baa]"
+            />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search categories by name..."
+              className="h-10 w-full rounded-full border border-[#f5d7e4] bg-[#fff9fc] pl-10 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
+            />
+          </label>
+
+          <div className="space-y-3">
+            {isLoading ? (
+              <div className="rounded-[18px] border border-[#f8dce8] bg-[#fffafb] px-5 py-10">
+                <div className="flex items-center justify-center gap-3 text-sm text-[#b38a9f]">
+                  <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
+                  Loading categories...
                 </div>
-              </article>
-            ))}
+              </div>
+            ) : categories.length ? (
+              categories.map((category) => (
+                <article
+                  key={category.id}
+                  className="rounded-[18px] border border-[#f8dce8] bg-[#fffafb] p-4"
+                >
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-[15px] font-extrabold text-[#432744]">{category.name}</h3>
+                        <Pill
+                          tone={
+                            category.status === "Active"
+                              ? "bg-[#edfdf4] text-[#16975f]"
+                              : "bg-[#fff7e7] text-[#cc8a16]"
+                          }
+                        >
+                          {category.status}
+                        </Pill>
+                        <Pill tone="bg-[#eef4ff] text-[#3f68c9]">{category.categoryTypeName}</Pill>
+                      </div>
+                      <p className="mt-2 text-sm leading-6 text-[#8a7082]">
+                        Category type ID: {category.categoryTypeId}
+                      </p>
+                      <p className="mt-2 text-[11px] font-semibold text-[#c694ad]">
+                        Category ID #{category.categoryId}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleStatus(category)}
+                        className="rounded-full border border-[#f4c6da] bg-white px-3 py-1.5 text-[10px] font-bold text-[#8c7085]"
+                      >
+                        Toggle Status
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleEdit(category)}
+                        className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93]"
+                      >
+                        <PencilLine size={12} className="mr-1 inline" />
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPendingDeleteId(category.id)}
+                        className="rounded-full border border-[#f9d0dc] bg-white px-3 py-1.5 text-[10px] font-bold text-[#d14c84]"
+                      >
+                        <Trash2 size={12} className="mr-1 inline" />
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              ))
+            ) : (
+              <div className="rounded-[18px] border border-[#f8dce8] bg-[#fffafb] px-5 py-10 text-center text-sm text-[#8a7082]">
+                No categories found.
+              </div>
+            )}
+          </div>
+
+          <div className="mt-4 flex flex-col gap-3 rounded-[16px] border border-[#f8dce8] bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-[11px] text-[#c694ad]">
+              Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} categories
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                disabled={!metaData.hasPrevious || isLoading}
+                onClick={() =>
+                  setMetaData((current) => ({
+                    ...current,
+                    currentPage: Math.max(current.currentPage - 1, 1),
+                  }))
+                }
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <ChevronLeft size={12} />
+              </button>
+              {paginationItems.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  disabled={item === "..." || item === metaData.currentPage || isLoading}
+                  onClick={() => {
+                    if (typeof item !== "number") {
+                      return;
+                    }
+
+                    setMetaData((current) => ({ ...current, currentPage: item }));
+                  }}
+                  className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md px-2 text-[11px] ${item === metaData.currentPage
+                    ? "bg-[#ea4f93] font-bold text-white"
+                    : "border border-[#f3cade] bg-white font-medium text-[#b9849f]"
+                    } disabled:cursor-default disabled:opacity-100`}
+                >
+                  {item}
+                </button>
+              ))}
+              <button
+                type="button"
+                disabled={!metaData.hasNext || isLoading}
+                onClick={() =>
+                  setMetaData((current) => ({
+                    ...current,
+                    currentPage: Math.min(current.currentPage + 1, current.totalPages),
+                  }))
+                }
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <ChevronRight size={12} />
+              </button>
+            </div>
           </div>
         </section>
       </div>
@@ -443,11 +581,11 @@ export function NailDesignManagementCategoryPage() {
         open={showSubmitConfirm}
         intent="success"
         title={editingId ? "Save Category Changes" : "Create Category"}
-        subtitle="This will update the current mock category catalog."
+        subtitle="Category create/update API is not connected yet."
         description={
           editingId
-            ? "Confirm to save the latest category label and description changes."
-            : "Confirm to add this category to the nail design catalog."
+            ? "Confirm to stage the latest category label and description changes."
+            : "Confirm to stage this category draft."
         }
         confirmText={editingId ? "Save Category" : "Create Category"}
         cancelText="Review Again"
@@ -462,30 +600,30 @@ export function NailDesignManagementCategoryPage() {
           { label: "Description", value: draft.description || "No description entered" },
           { label: "Catalog Scope", value: "Nail design categories" },
         ]}
-        warnings={["This mock save updates the current UI state only and does not persist outside this feature."]}
+        warnings={["The list on the right is loaded from API only. This form does not persist to backend yet."]}
       />
 
       <ActionConfirmModal
         open={Boolean(pendingDeleteCategory)}
         intent="danger"
         title="Delete Category"
-        subtitle="This will remove the category from the current mock catalog."
-        description={`You are about to delete ${pendingDeleteCategory?.name ?? "this category"}. This action cannot be undone.`}
+        subtitle="Category delete API is not connected yet."
+        description={`You are about to delete ${pendingDeleteCategory?.name ?? "this category"}.`}
         confirmText="Delete Category"
         cancelText="Keep Category"
         confirmIcon={Trash2}
-        onConfirm={() => handleDelete(pendingDeleteId)}
+        onConfirm={handleDelete}
         onCancel={() => setPendingDeleteId(null)}
         item={
           pendingDeleteCategory
             ? {
                 title: pendingDeleteCategory.name,
-                meta: `${pendingDeleteCategory.status} • ${pendingDeleteCategory.designCount} mapped designs`,
-                note: pendingDeleteCategory.description,
+                meta: `${pendingDeleteCategory.status} • ${pendingDeleteCategory.categoryTypeName}`,
+                note: `Category ID #${pendingDeleteCategory.categoryId}`,
               }
             : null
         }
-        warnings={["Mapped catalog references in the current mock UI may no longer appear after deletion."]}
+        warnings={["Delete is not connected to backend, so the API list will not change."]}
       />
     </section>
   );

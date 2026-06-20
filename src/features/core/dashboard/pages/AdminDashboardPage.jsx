@@ -6,7 +6,6 @@ import {
   Clock3,
   MapPin,
   Phone,
-  Sparkles,
   Star,
   Store,
   UserRound,
@@ -108,43 +107,6 @@ const peakBars = [
   ["5", 58],
   ["6", 44],
   ["7", 27],
-];
-
-
-const registrations = [
-  ["Jasmine Loh", "Just now"],
-  ["Priya Nair", "4 min ago"],
-  ["Yuki Matsuda", "12 min ago"],
-  ["Clara Mendez", "28 min ago"],
-  ["Hana Yoshida", "45 min ago"],
-];
-
-const recentActivities = [
-  {
-    title: "Booking #BK-8821 completed at Nailify Orchard",
-    time: "2 min ago",
-    color: "bg-[#f04f91]",
-  },
-  {
-    title: "New staff artist onboarded at Nailify Marina",
-    time: "15 min ago",
-    color: "bg-[#8b5cf6]",
-  },
-  {
-    title: "Payment of $284 received for Booking #BK-8819",
-    time: "22 min ago",
-    color: "bg-[#ec4899]",
-  },
-  {
-    title: "New complaint filed by Aisha Rahman",
-    time: "1 hour ago",
-    color: "bg-[#f59e0b]",
-  },
-  {
-    title: "Monthly analytics report generated for July",
-    time: "6 hours ago",
-    color: "bg-[#6366f1]",
-  },
 ];
 
 const artists = [

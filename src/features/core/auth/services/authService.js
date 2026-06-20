@@ -32,13 +32,38 @@ export const authService = {
 
       const claims = jwtDecode(token);
       const normalizedRole = normalizeRole(claims.role);
+      const profileResponse = await axiosClient.get("/Profile", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const profilePayload = profileResponse.data;
+
+      if (!profilePayload?.isSucceeded) {
+        throw new Error(profilePayload?.message || "Failed to load user profile.");
+      }
+
+      const profile = profilePayload.data ?? {};
+      const fullName =
+        [profile.firstName, profile.lastName].filter(Boolean).join(" ").trim() ||
+        claims.name ||
+        claims.email ||
+        "Nailify User";
 
       return {
         accessToken: token,
         user: {
-          id: claims.sub ?? claims.nameid ?? claims.jti ?? claims.email,
-          email: claims.email ?? email.trim().toLowerCase(),
-          fullName: claims.name ?? claims.email ?? "Nailify User",
+          id: profile.userId ?? claims.sub ?? claims.nameid ?? claims.jti ?? claims.email,
+          userId: profile.userId ?? claims.sub ?? claims.nameid ?? claims.jti ?? claims.email,
+          staffId: profile.staffId ?? null,
+          salonId: profile.salonId ?? null,
+          email: profile.email ?? claims.email ?? email.trim().toLowerCase(),
+          phone: profile.phone ?? null,
+          firstName: profile.firstName ?? "",
+          lastName: profile.lastName ?? "",
+          avatarUrl: profile.avatarUrl ?? "",
+          fullName,
+          status: profile.status ?? "",
           role: normalizedRole,
         },
       };

@@ -13,6 +13,7 @@ import {
 import toast from "react-hot-toast";
 import { useMemo, useState } from "react";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
+import { formatDurationLabel } from "../../../../shared/utils/formatDuration";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { getMockBookingById } from "../../../core/booking-management/services/mockBookings";
 import {
@@ -318,7 +319,7 @@ export function StaffUpdateBookingDesignPage() {
         {
           key: "duration",
           title: "Customer accepted updated duration",
-          note: "Customer acknowledges service will take approximately 75 minutes",
+          note: `Customer acknowledges service will take approximately ${formatDurationLabel("75 minutes")}`,
           checked: false,
         },
       ],
@@ -409,6 +410,7 @@ export function StaffUpdateBookingDesignPage() {
       state: {
         serviceSession: {
           bookingCode: data.bookingCode,
+          bookingItemId: booking?.bookingItems?.[0]?.bookingItemId ?? booking?.bookingItems?.[0]?.id ?? "",
           customerName: data.customer,
           customerPhone: booking?.customerPhone ?? "+84 912 345 678",
           customerAvatar:
@@ -416,7 +418,7 @@ export function StaffUpdateBookingDesignPage() {
           serviceLabel: data.newDesign.name,
           staffArtist: selectedStaffArtist,
           chair: data.chair,
-          appointmentTime: `${data.appointment} • ${data.newDesign.duration}`,
+          appointmentTime: `${data.appointment} • ${formatDurationLabel(data.newDesign.duration)}`,
           estimatedDuration: data.pricing.updatedDuration,
           designName: data.newDesign.name,
           totalPrice: data.pricing.newPrice,
@@ -458,7 +460,7 @@ export function StaffUpdateBookingDesignPage() {
                   <p className="mt-4 text-base font-extrabold text-[#3f2b3f]">{data.previousDesign.name}</p>
                   <div className="mt-3 flex gap-2">
                     <Tag className="border-[#f2bfd4] bg-[#fff1f7] text-[#ea4f93]">{data.previousDesign.price}</Tag>
-                    <Tag className="border-[#f4dbe7] bg-white text-[#ab8ea0]">{data.previousDesign.duration}</Tag>
+                    <Tag className="border-[#f4dbe7] bg-white text-[#ab8ea0]">{formatDurationLabel(data.previousDesign.duration)}</Tag>
                   </div>
                 </div>
 
@@ -487,7 +489,7 @@ export function StaffUpdateBookingDesignPage() {
                   <p className="mt-4 text-base font-extrabold text-[#3f2b3f]">{data.newDesign.name}</p>
                   <div className="mt-3 flex gap-2">
                     <Tag className="border-[#f2bfd4] bg-[#fff1f7] text-[#ea4f93]">{data.newDesign.price}</Tag>
-                    <Tag className="border-[#f4dbe7] bg-white text-[#ab8ea0]">{data.newDesign.duration}</Tag>
+                    <Tag className="border-[#f4dbe7] bg-white text-[#ab8ea0]">{formatDurationLabel(data.newDesign.duration)}</Tag>
                   </div>
                 </div>
               </div>

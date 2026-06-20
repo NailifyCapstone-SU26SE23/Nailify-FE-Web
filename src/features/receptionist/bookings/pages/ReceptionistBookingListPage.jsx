@@ -1,5 +1,5 @@
-import { CalendarDays, CheckCircle2, Eye, LoaderCircle, RefreshCcw, Search, UserPlus, XCircle } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Eye, LoaderCircle, RefreshCcw, Search, SquareCheckBig, UserPlus, XCircle } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useNavigate } from "react-router-dom";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
@@ -12,15 +12,14 @@ import {
   fetchReceptionistBookings,
   fetchReceptionistSalonDetail,
   getReceptionistSalonId,
+  manualCheckInReceptionistBooking,
   rejectReceptionistBooking,
 } from "../services/receptionistBookingService";
 
 function formatCurrency(value) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
+  return `${new Intl.NumberFormat("vi-VN", {
     maximumFractionDigits: 0,
-  }).format(Number(value || 0));
+  }).format(Number(value || 0))} VNĐ`;
 }
 
 function formatDate(value) {
@@ -74,6 +73,12 @@ function normalizeBooking(booking) {
   };
 }
 
+function canManualCheckIn(status) {
+  return !["CheckedIn", "Completed", "Cancelled"].includes(status);
+}
+
+const BOOKING_PAGE_SIZE = 10;
+
 export function ReceptionistBookingListPage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
@@ -82,14 +87,31 @@ export function ReceptionistBookingListPage() {
   const [bookings, setBookings] = useState([]);
   const [salonName, setSalonName] = useState("Receptionist Booking Management");
   const [salonMeta, setSalonMeta] = useState("Bookings are loaded from salon API.");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    pageSize: BOOKING_PAGE_SIZE,
+    totalCount: 0,
+    totalPages: 1,
+  });
 
-  const loadBookings = async () => {
+  const loadBookings = useCallback(async (page = currentPage) => {
     setIsLoading(true);
     setError("");
 
     try {
-      const data = await fetchReceptionistBookings();
-      setBookings(Array.isArray(data) ? data.map(normalizeBooking) : []);
+      const data = await fetchReceptionistBookings({
+        includePagination: true,
+        pageNumber: page,
+        pageSize: BOOKING_PAGE_SIZE,
+      });
+      setBookings(Array.isArray(data?.items) ? data.items.map(normalizeBooking) : []);
+      setPagination({
+        currentPage: data?.pagination?.currentPage ?? page,
+        pageSize: data?.pagination?.pageSize ?? BOOKING_PAGE_SIZE,
+        totalCount: data?.pagination?.totalCount ?? 0,
+        totalPages: data?.pagination?.totalPages ?? 1,
+      });
     } catch (loadError) {
       const message = loadError instanceof Error ? loadError.message : "Failed to load bookings.";
       setError(message);
@@ -97,15 +119,15 @@ export function ReceptionistBookingListPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentPage]);
 
   useEffect(() => {
     const timerId = window.setTimeout(() => {
-      void loadBookings();
+      void loadBookings(currentPage);
     }, 0);
 
     return () => window.clearTimeout(timerId);
-  }, []);
+  }, [currentPage, loadBookings]);
 
   useEffect(() => {
     const timerId = window.setTimeout(() => {
@@ -151,17 +173,28 @@ export function ReceptionistBookingListPage() {
     );
   }, [bookings, query]);
 
+  const paginationLabel = useMemo(() => {
+    if (!pagination.totalCount) {
+      return "Showing 0 bookings";
+    }
+
+    const start = (pagination.currentPage - 1) * pagination.pageSize + 1;
+    const end = Math.min(pagination.totalCount, start + bookings.length - 1);
+
+    return `Showing ${start}-${end} of ${pagination.totalCount} bookings`;
+  }, [bookings.length, pagination.currentPage, pagination.pageSize, pagination.totalCount]);
+
   const summary = useMemo(() => {
     const waitingCount = bookings.filter((booking) => booking.status === "Pending").length;
     const checkedInCount = bookings.filter((booking) => booking.status === "CheckedIn").length;
 
     return {
-      total: bookings.length,
+      total: pagination.totalCount,
       waiting: waitingCount,
       checkedIn: checkedInCount,
       revenue: bookings.reduce((sum, booking) => sum + Number(booking.totalPrice || 0), 0),
     };
-  }, [bookings]);
+  }, [bookings, pagination.totalCount]);
 
   const updateBookingRow = (updatedBooking) => {
     if (!updatedBooking?.bookingId) {
@@ -199,6 +232,18 @@ export function ReceptionistBookingListPage() {
     }
   };
 
+  const handleManualCheckIn = async (bookingId) => {
+    try {
+      const updatedBooking = await manualCheckInReceptionistBooking(bookingId);
+      updateBookingRow(updatedBooking);
+      toast.success("Customer checked in successfully.");
+    } catch (actionError) {
+      const message =
+        actionError instanceof Error ? actionError.message : "Failed to check in booking.";
+      toast.error(message);
+    }
+  };
+
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -228,7 +273,7 @@ export function ReceptionistBookingListPage() {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => loadBookings()}
+              onClick={() => loadBookings(currentPage)}
               className="inline-flex items-center gap-2 rounded-full border border-[#f3cade] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
             >
               <RefreshCcw size={14} />
@@ -248,7 +293,10 @@ export function ReceptionistBookingListPage() {
           <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#d47aa8]" />
           <input
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setCurrentPage(1);
+            }}
             placeholder="Search booking ID, customer, artist, service..."
             className="h-12 w-full rounded-2xl border border-[#f5d7e4] bg-[#fff9fc] pl-11 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
           />
@@ -316,6 +364,17 @@ export function ReceptionistBookingListPage() {
                               className: "text-[#1f9d61]",
                               onSelect: () => void handleConfirmBooking(booking.bookingId),
                             },
+                            ...(canManualCheckIn(booking.status)
+                              ? [
+                                {
+                                  key: "check-in",
+                                  label: "Check In",
+                                  icon: SquareCheckBig,
+                                  className: "text-[#4c71d9]",
+                                  onSelect: () => void handleManualCheckIn(booking.bookingId),
+                                },
+                              ]
+                              : []),
                             {
                               key: "reject",
                               label: "Reject Booking",
@@ -367,6 +426,17 @@ export function ReceptionistBookingListPage() {
                           className: "text-[#1f9d61]",
                           onSelect: () => void handleConfirmBooking(booking.bookingId),
                         },
+                        ...(canManualCheckIn(booking.status)
+                          ? [
+                            {
+                              key: "check-in",
+                              label: "Check In",
+                              icon: SquareCheckBig,
+                              className: "text-[#4c71d9]",
+                              onSelect: () => void handleManualCheckIn(booking.bookingId),
+                            },
+                          ]
+                          : []),
                         {
                           key: "reject",
                           label: "Reject Booking",
@@ -380,6 +450,37 @@ export function ReceptionistBookingListPage() {
                 </article>
               ))}
             </div>
+
+            {filteredBookings.length ? (
+              <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-[11px] text-[#c694ad]">{paginationLabel}</p>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage <= 1}
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92] disabled:opacity-50"
+                  >
+                    <ChevronLeft size={12} />
+                  </button>
+                  <button
+                    type="button"
+                    className="inline-flex h-7 min-w-7 items-center justify-center rounded-md bg-[#ea4f93] px-2 text-[11px] font-bold text-white"
+                  >
+                    {currentPage}
+                  </button>
+                  <span className="px-2 text-[11px] font-medium text-[#b9849f]">/ {pagination.totalPages}</span>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage(Math.min(pagination.totalPages, currentPage + 1))}
+                    disabled={currentPage >= pagination.totalPages}
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92] disabled:opacity-50"
+                  >
+                    <ChevronRight size={12} />
+                  </button>
+                </div>
+              </div>
+            ) : null}
 
             {!filteredBookings.length ? (
               <div className="border-t border-[#f7dce8] bg-[#fffafd] px-5 py-10 text-center text-sm text-[#8a7082]">

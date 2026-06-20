@@ -22,7 +22,8 @@ import {
   Upload,
   UserRound,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import toast from "react-hot-toast";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import {
@@ -32,6 +33,17 @@ import {
 } from "../../../../shared/constants/routes";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { getMockBookingById } from "../../../core/booking-management/services/mockBookings";
+import {
+  buildStaffServiceSessionPayload,
+  fetchStaffBookingDetail,
+  fetchBookingProceduresByBookingItem,
+  uploadImageBeforeService,
+  startStaffBookingService,
+  uploadImageAfterService,
+  updateBookingProcedureStatus,
+} from "../services/staffBookingService";
+import { useDispatch, useSelector } from "react-redux";
+import { setServiceSession } from "../../../../store/serviceSessionSlice";
 
 function SectionTitle({ icon: Icon, title, subtitle }) {
   return (
@@ -124,23 +136,23 @@ SummaryValue.propTypes = {
   value: PropTypes.string.isRequired,
 };
 
-function ConfirmationItem({ checked, label, onToggle }) {
+function ConfirmationItem({ checked, disabled = false, label, onToggle }) {
   return (
     <button
       type="button"
       onClick={onToggle}
-      className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm font-medium transition ${
-        checked
-          ? "border-[#f2bfd4] bg-[#fff1f7] text-[#3f2b3f]"
-          : "border-[#f4dbe7] bg-[#fff9fc] text-[#6f5c6b] hover:bg-[#fff4f8]"
-      }`}
+      disabled={disabled}
+      className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm font-medium transition ${disabled ? "cursor-not-allowed opacity-60" : ""
+        } ${checked
+        ? "border-[#f2bfd4] bg-[#fff1f7] text-[#3f2b3f]"
+        : "border-[#f4dbe7] bg-[#fff9fc] text-[#6f5c6b] hover:bg-[#fff4f8]"
+        }`}
     >
       <span
-        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
-          checked
-            ? "bg-[image:var(--gradient-accent)] text-white"
-            : "bg-white text-transparent ring-1 ring-[#e7cfdb]"
-        }`}
+        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${checked
+          ? "bg-[image:var(--gradient-accent)] text-white"
+          : "bg-white text-transparent ring-1 ring-[#e7cfdb]"
+          }`}
       >
         <Check size={12} />
       </span>
@@ -151,6 +163,7 @@ function ConfirmationItem({ checked, label, onToggle }) {
 
 ConfirmationItem.propTypes = {
   checked: PropTypes.bool.isRequired,
+  disabled: PropTypes.bool,
   label: PropTypes.string.isRequired,
   onToggle: PropTypes.func.isRequired,
 };
@@ -228,9 +241,8 @@ function CompareActionButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-bold transition ${
-        disabled ? "cursor-not-allowed opacity-60" : "hover:-translate-y-0.5"
-      } ${toneClassName}`}
+      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-bold transition ${disabled ? "cursor-not-allowed opacity-60" : "hover:-translate-y-0.5"
+        } ${toneClassName}`}
     >
       <Icon size={15} />
       {label}
@@ -246,20 +258,101 @@ CompareActionButton.propTypes = {
   tone: PropTypes.oneOf(["muted", "outline", "primary", "secondary", "success"]),
 };
 
+function resolvePhotoUrl(value) {
+  if (Array.isArray(value)) {
+    return String(value[0] || "").trim();
+  }
+
+  return String(value || "").trim();
+}
+
+function createRemotePhotoState(url, fileName, uploadedAt, fileSizeLabel = null) {
+  const normalizedUrl = resolvePhotoUrl(url);
+
+  if (!normalizedUrl) {
+    return null;
+  }
+
+  return {
+    fileName,
+    previewUrl: normalizedUrl,
+    uploadedAt,
+    fileSizeLabel,
+    uploadedToServer: true,
+  };
+}
+
+function serializePersistedPhoto(photo) {
+  const previewUrl = String(photo?.previewUrl || "").trim();
+
+  if (!previewUrl || previewUrl.startsWith("blob:")) {
+    return null;
+  }
+
+  return {
+    fileName: photo?.fileName || "Uploaded photo",
+    previewUrl,
+    uploadedAt: photo?.uploadedAt || "Uploaded",
+    fileSizeLabel: photo?.fileSizeLabel ?? null,
+    uploadedToServer: Boolean(photo?.uploadedToServer),
+  };
+}
+
 export function StaffServiceSessionPage() {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
   const { bookingId } = useParams();
   const booking = getMockBookingById(bookingId);
   const payload = location.state?.serviceSession;
+  const persistedSession = useSelector((state) =>
+    bookingId ? state.serviceSession.sessions?.[bookingId] ?? null : null,
+  );
+  const [bookingDetail, setBookingDetail] = useState(null);
+
+  useEffect(() => {
+    if (!bookingId) {
+      return undefined;
+    }
+
+    let isMounted = true;
+
+    const loadBookingDetail = async () => {
+      try {
+        const detail = await fetchStaffBookingDetail(bookingId);
+
+        if (isMounted) {
+          setBookingDetail(detail);
+        }
+      } catch {
+        if (isMounted) {
+          setBookingDetail(null);
+        }
+      }
+    };
+
+    loadBookingDetail();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [bookingId]);
 
   const fallbackData = useMemo(() => {
+    if (bookingDetail) {
+      return buildStaffServiceSessionPayload(bookingDetail, {
+        backRoute: getStaffBookingDetailRoute(bookingId),
+        designUpdateRoute: getStaffBookingDesignUpdateRoute(bookingId),
+      });
+    }
+
     if (!booking) {
       return null;
     }
 
     return {
       bookingCode: booking.id.replace("BKG", "BK"),
+      bookingItemId: booking.bookingItems?.[0]?.bookingItemId ?? booking.bookingItems?.[0]?.id ?? "",
       customerName: booking.customerName,
       customerPhone: booking.customerPhone,
       customerAvatar:
@@ -298,57 +391,126 @@ export function StaffServiceSessionPage() {
         "Before photo uploaded",
       ],
     };
-  }, [booking, bookingId]);
+  }, [booking, bookingDetail, bookingId]);
 
   const data = useMemo(() => {
     if (!fallbackData && !payload) {
       return null;
     }
 
+    const payloadBookingItemId = String(payload?.bookingItemId || "").trim();
+
     return {
       ...fallbackData,
       ...payload,
+      bookingItemId: payloadBookingItemId || fallbackData?.bookingItemId || "",
       confirmations: payload?.confirmations ?? fallbackData?.confirmations ?? [],
       materialsUsed: payload?.materialsUsed ?? fallbackData?.materialsUsed ?? [],
       customerNotes: payload?.customerNotes ?? fallbackData?.customerNotes ?? [],
     };
   }, [fallbackData, payload]);
 
-  const procedureSteps = useMemo(
-    () => [
-      "Step 1: Client Consultation",
-      "Step 2: Sanitation & Preparation",
-      "Step 3: Remove Old Product",
-      "Step 4: Nail Shaping",
-      "Step 5: Cuticle Care",
-      "Step 6: Base Application",
-      "Step 7: Color & Nail Art",
-      "Step 8: Top Coat & Finish",
-      "Step 9: Final Review",
-    ],
-    [],
+  const serverBeforePhoto = useMemo(
+    () =>
+      createRemotePhotoState(
+        bookingDetail?.checkInImageUrl,
+        "Before service photo",
+        data?.beforePhotoTimestamp || "Uploaded",
+      ),
+    [bookingDetail?.checkInImageUrl, data?.beforePhotoTimestamp],
+  );
+  const serverAfterPhoto = useMemo(
+    () =>
+      createRemotePhotoState(
+        bookingDetail?.checkOutImagesUrl,
+        "After service photo",
+        data?.completedAt || "Uploaded",
+      ),
+    [bookingDetail?.checkOutImagesUrl, data?.completedAt],
+  );
+  const initialConfirmations = useMemo(
+    () =>
+      persistedSession?.confirmations ??
+      (data?.confirmations ?? []).map((label, index) => ({
+        label,
+        checked: persistedSession?.started ?? payload?.started ? true : index < 3,
+      })),
+    [data?.confirmations, payload?.started, persistedSession?.confirmations, persistedSession?.started],
+  );
+  const initialCompletionChecks = useMemo(
+    () =>
+      persistedSession?.completionChecks ?? [
+        { label: "Service completed", checked: true },
+        { label: "Customer reviewed final nails", checked: true },
+        { label: "After photo uploaded", checked: Boolean(serverAfterPhoto || payload?.afterPhoto) },
+      ],
+    [payload?.afterPhoto, persistedSession?.completionChecks, serverAfterPhoto],
   );
 
   const [showStartConfirm, setShowStartConfirm] = useState(false);
   const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
-  const [started, setStarted] = useState(Boolean(payload?.started));
-  const [completed, setCompleted] = useState(Boolean(payload?.completed));
+  const [started, setStarted] = useState(() => persistedSession?.started ?? Boolean(payload?.started));
+  const [completed, setCompleted] = useState(() => persistedSession?.completed ?? Boolean(payload?.completed));
+  const [isStartingService, setIsStartingService] = useState(false);
+  const [isMarkingServiceDone, setIsMarkingServiceDone] = useState(false);
+  const [isCompletingSession, setIsCompletingSession] = useState(false);
   const [flashMessage, setFlashMessage] = useState("");
-  const [beforePhoto, setBeforePhoto] = useState(payload?.beforePhoto ?? null);
-  const [afterPhoto, setAfterPhoto] = useState(payload?.afterPhoto ?? null);
-  const [sessionNote, setSessionNote] = useState(payload?.sessionNote ?? "");
-  const [showComparisonView, setShowComparisonView] = useState(false);
-  const [confirmations, setConfirmations] = useState(
-    (data?.confirmations ?? []).map((label, index) => ({
-      label,
-      checked: payload?.started ? true : index < 3,
-    })),
+  const [beforePhoto, setBeforePhoto] = useState(
+    () => persistedSession?.beforePhoto ?? payload?.beforePhoto ?? serverBeforePhoto ?? null,
   );
-  const [completionChecks, setCompletionChecks] = useState([
-    { label: "Service completed", checked: true },
-    { label: "Customer reviewed final nails", checked: true },
-    { label: "After photo uploaded", checked: Boolean(payload?.afterPhoto) },
-  ]);
+  const [afterPhoto, setAfterPhoto] = useState(
+    () => persistedSession?.afterPhoto ?? payload?.afterPhoto ?? serverAfterPhoto ?? null,
+  );
+  const [sessionNote, setSessionNote] = useState(() => persistedSession?.sessionNote ?? payload?.sessionNote ?? "");
+  const [bookingProcedures, setBookingProcedures] = useState([]);
+  const [procedureLoadError, setProcedureLoadError] = useState("");
+  const [procedureStatusUpdates, setProcedureStatusUpdates] = useState({});
+  const loadedBookingItemIdRef = useRef("");
+  const [showComparisonView, setShowComparisonView] = useState(false);
+  const [confirmations, setConfirmations] = useState(initialConfirmations);
+  const [completionChecks, setCompletionChecks] = useState(initialCompletionChecks);
+  const initializedBookingIdRef = useRef(bookingId);
+  const effectiveBeforePhoto = beforePhoto ?? serverBeforePhoto;
+  const effectiveAfterPhoto = afterPhoto ?? serverAfterPhoto;
+  const displayConfirmations = useMemo(
+    () =>
+      confirmations.map((item) =>
+        item.label === "Before photo uploaded" && effectiveBeforePhoto
+          ? { ...item, checked: true }
+          : item,
+      ),
+    [confirmations, effectiveBeforePhoto],
+  );
+  const displayCompletionChecks = useMemo(
+    () =>
+      completionChecks.map((item) =>
+        item.label === "After photo uploaded" && effectiveAfterPhoto
+          ? { ...item, checked: true }
+          : item,
+      ),
+    [completionChecks, effectiveAfterPhoto],
+  );
+
+  const procedureChecklist = useMemo(() => {
+    if (bookingProcedures.length === 0) {
+      return [];
+    }
+
+    return [...bookingProcedures]
+      .sort((left, right) => (left.stepOrder ?? 0) - (right.stepOrder ?? 0))
+      .map((procedure) => {
+        const normalizedStatus = String(procedure.status || "").trim().toLowerCase();
+        const procedureName = String(procedure.procedureName || "").trim() || "--";
+        const hasStepOrder = Number.isFinite(procedure.stepOrder);
+
+        return {
+          ...procedure,
+          checked: ["completed", "done"].includes(normalizedStatus),
+          label: hasStepOrder ? `Step ${procedure.stepOrder}: ${procedureName}` : procedureName,
+          statusLabel: String(procedure.status || "").trim() || "--",
+        };
+      });
+  }, [bookingProcedures]);
 
   useEffect(() => {
     return () => {
@@ -361,16 +523,184 @@ export function StaffServiceSessionPage() {
     };
   }, [afterPhoto, beforePhoto]);
 
+  useEffect(() => {
+    if (initializedBookingIdRef.current === bookingId) {
+      return;
+    }
+
+    initializedBookingIdRef.current = bookingId;
+    setShowStartConfirm(false);
+    setShowCompleteConfirm(false);
+    setStarted(persistedSession?.started ?? Boolean(payload?.started));
+    setCompleted(persistedSession?.completed ?? Boolean(payload?.completed));
+    setFlashMessage("");
+    setBeforePhoto(persistedSession?.beforePhoto ?? payload?.beforePhoto ?? serverBeforePhoto ?? null);
+    setAfterPhoto(persistedSession?.afterPhoto ?? payload?.afterPhoto ?? serverAfterPhoto ?? null);
+    setSessionNote(persistedSession?.sessionNote ?? payload?.sessionNote ?? "");
+    setShowComparisonView(false);
+    setConfirmations(initialConfirmations);
+    setCompletionChecks(initialCompletionChecks);
+  }, [
+    bookingId,
+    initialCompletionChecks,
+    initialConfirmations,
+    payload?.beforePhoto,
+    payload?.afterPhoto,
+    payload?.completed,
+    payload?.sessionNote,
+    payload?.started,
+    persistedSession,
+    serverAfterPhoto,
+    serverBeforePhoto,
+  ]);
+
+  useEffect(() => {
+    if (!bookingId) {
+      return;
+    }
+
+    dispatch(
+      setServiceSession({
+        bookingId,
+        session: {
+          started,
+          completed,
+          beforePhoto: serializePersistedPhoto(beforePhoto),
+          afterPhoto: serializePersistedPhoto(afterPhoto),
+          sessionNote,
+          confirmations,
+          completionChecks,
+        },
+      }),
+    );
+  }, [
+    afterPhoto,
+    beforePhoto,
+    bookingId,
+    completed,
+    completionChecks,
+    confirmations,
+    dispatch,
+    sessionNote,
+    started,
+  ]);
+
+  const reloadBookingProcedures = async (bookingItemId, options = {}) => {
+    const normalizedBookingItemId = String(bookingItemId || "").trim();
+    const canApplyState = options.shouldApplyState ?? (() => true);
+
+    if (!normalizedBookingItemId) {
+      return;
+    }
+
+    try {
+      const procedures = await fetchBookingProceduresByBookingItem(normalizedBookingItemId);
+      if (!canApplyState()) {
+        return;
+      }
+
+      setProcedureLoadError("");
+      setBookingProcedures(procedures);
+      setProcedureStatusUpdates({});
+    } catch (error) {
+      if (!canApplyState()) {
+        return;
+      }
+
+      setBookingProcedures([]);
+      setProcedureStatusUpdates({});
+      const message =
+        error instanceof Error ? error.message : "Failed to load booking procedures.";
+      setProcedureLoadError(message);
+
+      if (options.showToast !== false) {
+        toast.error(message);
+      }
+    }
+  };
+
+  useEffect(() => {
+    const bookingItemId = String(data?.bookingItemId || "").trim();
+
+    if (!bookingItemId) {
+      return undefined;
+    }
+
+    if (loadedBookingItemIdRef.current === bookingItemId) {
+      return undefined;
+    }
+
+    loadedBookingItemIdRef.current = bookingItemId;
+
+    let isMounted = true;
+
+    const loadBookingProcedures = async () => {
+      await reloadBookingProcedures(bookingItemId, {
+        shouldApplyState: () => isMounted,
+        showToast: isMounted,
+      });
+    };
+
+    void loadBookingProcedures();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [data?.bookingItemId]);
+
+  // eslint-disable-next-line no-unused-vars
+  const currentProcedureNote = useMemo(() => {
+    const fallbackNote = String(data?.stepNote || "").trim() || "--";
+
+    if (bookingProcedures.length === 0) {
+      return fallbackNote;
+    }
+
+    const sortedProcedures = [...bookingProcedures].sort(
+      (left, right) => (left.stepOrder ?? 0) - (right.stepOrder ?? 0),
+    );
+    const activeProcedure =
+      sortedProcedures.find((procedure) => {
+        const normalizedStatus = String(procedure.status || "").trim().toLowerCase();
+
+        return normalizedStatus && !["completed", "done", "skipped"].includes(normalizedStatus);
+      }) || sortedProcedures[sortedProcedures.length - 1];
+
+    if (!activeProcedure) {
+      return fallbackNote;
+    }
+
+    const procedureName = String(activeProcedure.procedureName || "").trim();
+    const hasStepOrder = Number.isFinite(activeProcedure.stepOrder);
+    const baseLabel = procedureName && hasStepOrder ? `Step ${activeProcedure.stepOrder}: ${procedureName}` : "";
+
+    return activeProcedure.description
+      ? `${baseLabel || fallbackNote} - ${activeProcedure.description}`
+      : baseLabel || fallbackNote;
+  }, [bookingProcedures, data?.stepNote]);
+
+  const procedureStepSummary = useMemo(
+    () =>
+      procedureChecklist.map((procedure) => ({
+        id: procedure.bookingProcedureId,
+        label: procedure.label,
+        statusLabel: procedure.statusLabel,
+      })),
+    [procedureChecklist],
+  );
+
+  const resolvedProcedureLoadError = procedureLoadError && !bookingProcedures.length ? procedureLoadError : "";
+
   if (!data) {
     return <Navigate to={ROUTES.staffBookings} replace />;
   }
 
   const phase = !started ? "start" : completed ? "done" : "progress";
-  const allConfirmed = confirmations.every((item) => item.checked);
-  const canStartService = allConfirmed && Boolean(beforePhoto);
-  const canCompleteSession = completionChecks.every((item) => item.checked) && Boolean(afterPhoto);
-  const canOpenComparison = Boolean(beforePhoto) && Boolean(afterPhoto);
-  const serviceProgress = phase === "done" ? 100 : started ? 65 : beforePhoto ? 35 : 0;
+  const allConfirmed = displayConfirmations.every((item) => item.checked);
+  const canStartService = allConfirmed && Boolean(effectiveBeforePhoto);
+  const canCompleteSession = displayCompletionChecks.every((item) => item.checked) && Boolean(effectiveAfterPhoto);
+  const canOpenComparison = Boolean(effectiveBeforePhoto) && Boolean(effectiveAfterPhoto);
+  const serviceProgress = phase === "done" ? 100 : started ? 65 : effectiveBeforePhoto ? 35 : 0;
 
   const handleToggleConfirmation = (label) => {
     setConfirmations((current) =>
@@ -382,6 +712,45 @@ export function StaffServiceSessionPage() {
     setCompletionChecks((current) =>
       current.map((item) => (item.label === label ? { ...item, checked: !item.checked } : item)),
     );
+  };
+
+  const handleToggleProcedureStatus = async (procedure) => {
+    const procedureId = String(procedure?.bookingProcedureId || "").trim();
+
+    if (!procedureId) {
+      return;
+    }
+
+    const nextStatus = procedure.checked ? "Skipped" : "Completed";
+
+    setProcedureStatusUpdates((current) => ({
+      ...current,
+      [procedureId]: true,
+    }));
+
+    try {
+      const updatedProcedure = await updateBookingProcedureStatus(procedureId, nextStatus);
+
+      setBookingProcedures((current) =>
+        current.map((item) =>
+          item.bookingProcedureId === procedureId
+            ? {
+              ...item,
+              ...updatedProcedure,
+            }
+            : item,
+        ),
+      );
+      toast.success(`Procedure marked as ${nextStatus}.`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to update procedure status.";
+      toast.error(message);
+    } finally {
+      setProcedureStatusUpdates((current) => ({
+        ...current,
+        [procedureId]: false,
+      }));
+    }
   };
 
   const handleBeforePhotoChange = (event) => {
@@ -396,6 +765,7 @@ export function StaffServiceSessionPage() {
 
     const now = new Date();
     setBeforePhoto({
+      file,
       fileName: file.name,
       previewUrl: URL.createObjectURL(file),
       uploadedAt: now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
@@ -419,6 +789,7 @@ export function StaffServiceSessionPage() {
 
     const now = new Date();
     setAfterPhoto({
+      file,
       fileName: file.name,
       previewUrl: URL.createObjectURL(file),
       uploadedAt: now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
@@ -431,26 +802,124 @@ export function StaffServiceSessionPage() {
     );
   };
 
-  const handleStartService = () => {
-    setShowStartConfirm(false);
-    setStarted(true);
-    setFlashMessage(
-      "Service session started successfully. The booking is now in the live service phase.",
-    );
+  const handleStartService = async () => {
+    if (!bookingId || isStartingService || !beforePhoto?.file) {
+      return;
+    }
+
+    setIsStartingService(true);
+
+    try {
+      await uploadImageBeforeService(bookingId, beforePhoto.file);
+      await startStaffBookingService(bookingId);
+      const refreshedBookingDetail = await fetchStaffBookingDetail(bookingId).catch(() => null);
+
+      if (refreshedBookingDetail) {
+        setBookingDetail(refreshedBookingDetail);
+      }
+
+      await reloadBookingProcedures(
+        refreshedBookingDetail?.bookingItems?.[0]?.bookingItemId ||
+        refreshedBookingDetail?.bookingItems?.[0]?.id ||
+        data?.bookingItemId,
+      );
+
+      const refreshedBeforePhoto =
+        createRemotePhotoState(
+          refreshedBookingDetail?.checkInImageUrl,
+          beforePhoto.fileName || "Before service photo",
+          beforePhoto.uploadedAt || data.beforePhotoTimestamp || "Uploaded",
+        ) ||
+        (beforePhoto
+          ? {
+            ...beforePhoto,
+            uploadedToServer: true,
+          }
+          : null);
+
+      setShowStartConfirm(false);
+      setStarted(true);
+      setBeforePhoto(refreshedBeforePhoto);
+      setFlashMessage(
+        "Service session started successfully.",
+      );
+      toast.success("Service started successfully.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to upload before-service image and start service.";
+      toast.error(message);
+    } finally {
+      setIsStartingService(false);
+    }
   };
 
-  const handleMarkServiceDone = () => {
-    setCompleted(true);
-    setFlashMessage(
-      "Service marked as done. Upload the after-service photo and complete the final review.",
-    );
+  const handleMarkServiceDone = async () => {
+    if (isMarkingServiceDone) {
+      return;
+    }
+
+    if (canCompleteSession) {
+      setShowCompleteConfirm(true);
+      return;
+    }
+
+    setIsMarkingServiceDone(true);
+
+    try {
+      setCompleted(true);
+      setFlashMessage(
+        "Service marked as done. Upload the after-service photo and complete the final review.",
+      );
+      toast.success("Service moved to final review.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to move the service to final review.";
+      toast.error(message);
+    } finally {
+      setIsMarkingServiceDone(false);
+    }
   };
 
-  const handleCompleteSession = () => {
-    setShowCompleteConfirm(false);
-    setFlashMessage(
-      "Session completed successfully. The booking is ready for payment and history archiving.",
-    );
+  const handleCompleteSession = async () => {
+    if (!bookingId || isCompletingSession || !afterPhoto?.file) {
+      return;
+    }
+
+    setIsCompletingSession(true);
+
+    try {
+      await uploadImageAfterService(bookingId, afterPhoto.file);
+      const refreshedBookingDetail = await fetchStaffBookingDetail(bookingId).catch(() => null);
+
+      if (refreshedBookingDetail) {
+        setBookingDetail(refreshedBookingDetail);
+      }
+
+      const refreshedAfterPhoto =
+        createRemotePhotoState(
+          refreshedBookingDetail?.checkOutImagesUrl,
+          afterPhoto.fileName || "After service photo",
+          afterPhoto.uploadedAt || data.completedAt || "Uploaded",
+          afterPhoto.fileSizeLabel ?? null,
+        ) ||
+        (afterPhoto
+          ? {
+            ...afterPhoto,
+            uploadedToServer: true,
+          }
+          : null);
+
+      setCompleted(true);
+      setShowCompleteConfirm(false);
+      setAfterPhoto(refreshedAfterPhoto);
+      setFlashMessage(
+        "Session completed successfully. The booking is ready for payment and history archiving.",
+      );
+      toast.success("Session completed successfully.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to complete the service session.";
+      toast.error(message);
+    } finally {
+      setIsCompletingSession(false);
+    }
   };
 
   const handleSessionAction = (message) => {
@@ -575,8 +1044,8 @@ export function StaffServiceSessionPage() {
               <div className="p-4">
                 <div className="overflow-hidden rounded-[18px] border border-[#f0d5e2] bg-white">
                   <img
-                    src={beforePhoto.previewUrl}
-                    alt={beforePhoto.fileName}
+                    src={effectiveBeforePhoto.previewUrl}
+                    alt={effectiveBeforePhoto.fileName}
                     className="h-[320px] w-full object-cover"
                   />
                 </div>
@@ -586,7 +1055,7 @@ export function StaffServiceSessionPage() {
                   </span>
                   <div>
                     <p className="text-[10px] uppercase tracking-[0.14em] text-[#b59aab]">Uploaded at</p>
-                    <p className="text-sm font-bold text-[#3f2b3f]">{beforePhoto.uploadedAt}</p>
+                    <p className="text-sm font-bold text-[#3f2b3f]">{effectiveBeforePhoto.uploadedAt}</p>
                   </div>
                 </div>
               </div>
@@ -613,8 +1082,8 @@ export function StaffServiceSessionPage() {
               <div className="p-4">
                 <div className="overflow-hidden rounded-[18px] border border-[#f0d5e2] bg-white">
                   <img
-                    src={afterPhoto.previewUrl}
-                    alt={afterPhoto.fileName}
+                    src={effectiveAfterPhoto.previewUrl}
+                    alt={effectiveAfterPhoto.fileName}
                     className="h-[320px] w-full object-cover"
                   />
                 </div>
@@ -624,7 +1093,7 @@ export function StaffServiceSessionPage() {
                   </span>
                   <div>
                     <p className="text-[10px] uppercase tracking-[0.14em] text-[#b59aab]">Uploaded at</p>
-                    <p className="text-sm font-bold text-[#3f2b3f]">{afterPhoto.uploadedAt}</p>
+                    <p className="text-sm font-bold text-[#3f2b3f]">{effectiveAfterPhoto.uploadedAt}</p>
                   </div>
                 </div>
               </div>
@@ -737,7 +1206,7 @@ export function StaffServiceSessionPage() {
               </p>
               <div className="mt-4 overflow-hidden rounded-[16px] border border-[#f1d4e1]">
                 <img
-                  src={afterPhoto.previewUrl}
+                  src={effectiveAfterPhoto.previewUrl}
                   alt={data.designName}
                   className="h-32 w-full object-cover"
                 />
@@ -766,14 +1235,14 @@ export function StaffServiceSessionPage() {
                   <span className="mt-1 h-2 w-2 rounded-full bg-[#ea4f93]" />
                   <div>
                     <p>Before photo uploaded</p>
-                    <p className="font-bold text-[#3f2b3f]">{beforePhoto.uploadedAt}</p>
+                    <p className="font-bold text-[#3f2b3f]">{effectiveBeforePhoto.uploadedAt}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <span className="mt-1 h-2 w-2 rounded-full bg-[#ea4f93]" />
                   <div>
                     <p>After photo uploaded</p>
-                    <p className="font-bold text-[#3f2b3f]">{afterPhoto.uploadedAt}</p>
+                    <p className="font-bold text-[#3f2b3f]">{effectiveAfterPhoto.uploadedAt}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -843,13 +1312,12 @@ export function StaffServiceSessionPage() {
                 Service Session
               </span>
               <span
-                className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${
-                  phase === "done"
-                    ? "border-[#f3bfd4] bg-[image:var(--gradient-accent)] text-white"
-                    : phase === "progress"
-                      ? "border-rose-200 bg-[linear-gradient(135deg,#fff1f7_0%,#ffe3ee_100%)] text-[#d65b92]"
-                      : "border-[#f2bfd4] bg-[#fff5f8] text-[#d65b92]"
-                }`}
+                className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${phase === "done"
+                  ? "border-[#f3bfd4] bg-[image:var(--gradient-accent)] text-white"
+                  : phase === "progress"
+                    ? "border-rose-200 bg-[linear-gradient(135deg,#fff1f7_0%,#ffe3ee_100%)] text-[#d65b92]"
+                    : "border-[#f2bfd4] bg-[#fff5f8] text-[#d65b92]"
+                  }`}
               >
                 {phase === "done" ? "Done" : phase === "progress" ? "In Progress" : "Start"}
               </span>
@@ -913,9 +1381,8 @@ export function StaffServiceSessionPage() {
       </article>
 
       <div
-        className={`grid gap-4 ${
-          phase === "done" ? "xl:grid-cols-1" : "xl:grid-cols-[minmax(0,1fr)_320px]"
-        }`}
+        className={`grid gap-4 ${phase === "done" ? "xl:grid-cols-1" : "xl:grid-cols-[minmax(0,1fr)_320px]"
+          }`}
       >
         <div className="space-y-4">
           {phase === "start" ? (
@@ -996,19 +1463,19 @@ export function StaffServiceSessionPage() {
                   <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
                     Uploaded Preview
                   </p>
-                  {beforePhoto ? (
+                  {effectiveBeforePhoto ? (
                     <div className="mt-4 flex items-center gap-4 rounded-[20px] border border-[#f2bfd4] bg-[#fff8fb] p-4">
                       <img
-                        src={beforePhoto.previewUrl}
-                        alt={beforePhoto.fileName}
+                        src={effectiveBeforePhoto.previewUrl}
+                        alt={effectiveBeforePhoto.fileName}
                         className="h-20 w-20 rounded-2xl border border-[#f2bfd4] object-cover"
                       />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-extrabold text-[#3f2b3f]">
-                          {beforePhoto.fileName}
+                          {effectiveBeforePhoto.fileName}
                         </p>
                         <p className="mt-1 text-xs text-[#a88a9d]">
-                          Uploaded at {beforePhoto.uploadedAt} - Today
+                          Uploaded at {effectiveBeforePhoto.uploadedAt} - Today
                         </p>
                         <span className="mt-3 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-bold text-emerald-600">
                           <CheckCircle2 size={12} />
@@ -1031,7 +1498,7 @@ export function StaffServiceSessionPage() {
                   subtitle="Complete these checks before beginning the live service."
                 />
                 <div className="mt-5 space-y-3">
-                  {confirmations.map((item) => (
+                  {displayConfirmations.map((item) => (
                     <ConfirmationItem
                       key={item.label}
                       checked={item.checked}
@@ -1045,11 +1512,10 @@ export function StaffServiceSessionPage() {
                   type="button"
                   disabled={!canStartService}
                   onClick={() => setShowStartConfirm(true)}
-                  className={`mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-sm font-extrabold transition ${
-                    canStartService
-                      ? "bg-[image:var(--gradient-accent)] text-white shadow-[0_16px_28px_rgba(236,72,153,0.25)]"
-                      : "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
-                  }`}
+                  className={`mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-sm font-extrabold transition ${canStartService
+                    ? "bg-[image:var(--gradient-accent)] text-white shadow-[0_16px_28px_rgba(236,72,153,0.25)]"
+                    : "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
+                    }`}
                 >
                   <Play size={16} />
                   Start Service
@@ -1109,11 +1575,11 @@ export function StaffServiceSessionPage() {
                 />
 
                 <div className="mt-5 overflow-hidden rounded-[22px] border border-[#f2bfd4] bg-[#fff7fb]">
-                  {beforePhoto ? (
+                  {effectiveBeforePhoto ? (
                     <div className="relative">
                       <img
-                        src={beforePhoto.previewUrl}
-                        alt={beforePhoto.fileName}
+                        src={effectiveBeforePhoto.previewUrl}
+                        alt={effectiveBeforePhoto.fileName}
                         className="h-[260px] w-full object-cover"
                       />
                       <span className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/90 px-3 py-1 text-[10px] font-bold text-emerald-700 backdrop-blur">
@@ -1121,7 +1587,7 @@ export function StaffServiceSessionPage() {
                         Before Photo Uploaded
                       </span>
                       <span className="absolute bottom-4 right-4 rounded-full bg-white/90 px-3 py-1 text-[10px] font-semibold text-[#866f80] backdrop-blur">
-                        Uploaded {beforePhoto.uploadedAt ?? data.beforePhotoTimestamp}
+                        Uploaded {effectiveBeforePhoto.uploadedAt ?? data.beforePhotoTimestamp}
                       </span>
                     </div>
                   ) : (
@@ -1169,9 +1635,23 @@ export function StaffServiceSessionPage() {
                   </div>
                 </div>
 
-                <div className="mt-4 rounded-[14px] border border-[#f2bfd4] bg-[#fff1f7] px-4 py-3 text-sm text-[#866f80]">
-                  <span className="font-extrabold text-[#ea4f93]">Step Note:</span> {data.stepNote}
-                </div>
+                {procedureStepSummary.length > 0 ? (
+                  <div className="mt-3 rounded-[16px] border border-[#f2bfd4] bg-white px-4 py-4">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
+                      Procedure Steps
+                    </p>
+                    <div className="mt-3 flex flex-col gap-2">
+                      {procedureStepSummary.map((procedure) => (
+                        <span
+                          key={procedure.id}
+                          className="inline-flex items-center gap-2 rounded-full border border-[#f2bfd4] bg-[#fff6fa] px-3 py-1.5 text-[11px] font-bold text-[#ea4f93]"
+                        >
+                          <span>{procedure.label}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
               </article>
 
               <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
@@ -1209,10 +1689,11 @@ export function StaffServiceSessionPage() {
                 <button
                   type="button"
                   onClick={handleMarkServiceDone}
+                  disabled={isMarkingServiceDone}
                   className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[image:var(--gradient-accent)] px-5 py-4 text-sm font-extrabold text-white shadow-[0_16px_28px_rgba(236,72,153,0.25)]"
                 >
                   <CheckCircle2 size={16} />
-                  Mark Service as Done
+                  {isMarkingServiceDone ? "Opening Final Review..." : "Mark Service as Done"}
                 </button>
               </article>
 
@@ -1310,18 +1791,18 @@ export function StaffServiceSessionPage() {
                   <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#ea4f93]">
                     Preview - After Photo
                   </p>
-                  {afterPhoto ? (
+                  {effectiveAfterPhoto ? (
                     <div className="mt-4 overflow-hidden rounded-[20px] border border-[#f2bfd4] bg-white">
                       <img
-                        src={afterPhoto.previewUrl}
-                        alt={afterPhoto.fileName}
+                        src={effectiveAfterPhoto.previewUrl}
+                        alt={effectiveAfterPhoto.fileName}
                         className="h-[260px] w-full object-cover"
                       />
                       <div className="flex flex-col gap-3 border-t border-[#f5d9e6] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                          <p className="text-sm font-extrabold text-[#3f2b3f]">{afterPhoto.fileName}</p>
+                          <p className="text-sm font-extrabold text-[#3f2b3f]">{effectiveAfterPhoto.fileName}</p>
                           <p className="mt-1 text-xs text-[#a88a9d]">
-                            Uploaded at {afterPhoto.uploadedAt} - {afterPhoto.fileSizeLabel ?? "2.4 MB"}
+                            Uploaded at {effectiveAfterPhoto.uploadedAt} - {effectiveAfterPhoto.fileSizeLabel ?? "2.4 MB"}
                           </p>
                         </div>
                         <span className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[10px] font-bold text-emerald-600">
@@ -1346,7 +1827,7 @@ export function StaffServiceSessionPage() {
                 />
 
                 <div className="mt-5 space-y-3">
-                  {completionChecks.map((item) => (
+                  {displayCompletionChecks.map((item) => (
                     <ConfirmationItem
                       key={item.label}
                       checked={item.checked}
@@ -1361,17 +1842,30 @@ export function StaffServiceSessionPage() {
                     Nail Procedure
                   </p>
                   <div className="mt-4 space-y-3">
-                    {procedureSteps.map((step) => (
-                      <div
-                        key={step}
-                        className="flex items-center gap-3 rounded-xl border border-[#f2bfd4] bg-white px-4 py-3 text-sm font-medium text-[#3f2b3f]"
-                      >
-                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-[linear-gradient(135deg,#6ee7b7_0%,#10b981_100%)] text-white">
-                          <Check size={12} />
-                        </span>
-                        <span>{step}</span>
+                    {procedureChecklist.length > 0 ? (
+                      procedureChecklist.map((procedure) => (
+                        <div key={procedure.bookingProcedureId} className="space-y-2">
+                          <ConfirmationItem
+                            checked={procedure.checked}
+                            disabled={Boolean(procedureStatusUpdates[procedure.bookingProcedureId])}
+                            label={procedure.label}
+                            onToggle={() => handleToggleProcedureStatus(procedure)}
+                          />
+                          <div className="flex items-center justify-between px-1 text-xs text-[#a88a9d]">
+                            <span>Status: {procedure.statusLabel}</span>
+                            <span>
+                              {procedureStatusUpdates[procedure.bookingProcedureId]
+                                ? "Updating..."
+                                : procedure.description || "--"}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="rounded-[18px] border border-[#f4dbe7] bg-white px-4 py-4 text-sm text-[#a88a9d]">
+                        {resolvedProcedureLoadError || "--"}
                       </div>
-                    ))}
+                    )}
                   </div>
 
                   <div className="mt-4 rounded-xl border border-[#f2bfd4] bg-white px-4 py-4">
@@ -1423,16 +1917,15 @@ export function StaffServiceSessionPage() {
 
                 <button
                   type="button"
-                  disabled={!canCompleteSession}
+                  disabled={!canCompleteSession || isCompletingSession}
                   onClick={() => setShowCompleteConfirm(true)}
-                  className={`mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-sm font-extrabold transition ${
-                    canCompleteSession
-                      ? "bg-[image:var(--gradient-accent)] text-white shadow-[0_16px_28px_rgba(236,72,153,0.25)]"
-                      : "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
-                  }`}
+                  className={`mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-sm font-extrabold transition ${canCompleteSession && !isCompletingSession
+                    ? "bg-[image:var(--gradient-accent)] text-white shadow-[0_16px_28px_rgba(236,72,153,0.25)]"
+                    : "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
+                    }`}
                 >
                   <CheckCircle2 size={16} />
-                  Complete Session
+                  {isCompletingSession ? "Completing Session..." : "Complete Session"}
                 </button>
               </article>
 
@@ -1501,11 +1994,10 @@ export function StaffServiceSessionPage() {
                     type="button"
                     disabled={!canOpenComparison}
                     onClick={handleOpenComparison}
-                    className={`flex min-h-20 items-start gap-3 rounded-2xl border px-4 py-4 text-left transition ${
-                      canOpenComparison
-                        ? "border-[#f2bfd4] bg-[#fff7fb] hover:bg-[#fff2f8]"
-                        : "cursor-not-allowed border-[#f4dbe7] bg-[#fffafb] opacity-70"
-                    }`}
+                    className={`flex min-h-20 items-start gap-3 rounded-2xl border px-4 py-4 text-left transition ${canOpenComparison
+                      ? "border-[#f2bfd4] bg-[#fff7fb] hover:bg-[#fff2f8]"
+                      : "cursor-not-allowed border-[#f4dbe7] bg-[#fffafb] opacity-70"
+                      }`}
                   >
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#ffe7f1] text-[#ea4f93]">
                       <Camera size={18} />
@@ -1543,11 +2035,10 @@ export function StaffServiceSessionPage() {
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-[11px] text-[#a88a9d]">Photo Status</span>
                   <span
-                    className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
-                      beforePhoto ? "bg-emerald-50 text-emerald-600" : "bg-[#fff5ef] text-[#d9871c]"
-                    }`}
+                    className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${effectiveBeforePhoto ? "bg-emerald-50 text-emerald-600" : "bg-[#fff5ef] text-[#d9871c]"
+                      }`}
                   >
-                    {beforePhoto ? "Uploaded" : "Pending"}
+                    {effectiveBeforePhoto ? "Uploaded" : "Pending"}
                   </span>
                 </div>
               </div>

@@ -1,4 +1,7 @@
 import {
+  ChevronLeft,
+  ChevronRight,
+  LoaderCircle,
   Plus,
   Search,
   Sparkles,
@@ -15,45 +18,14 @@ import {
   getAdminNailDesignDetailRoute,
 } from "../../../../shared/constants/routes";
 import { PropTypes } from "../../../../shared/utils/propTypes";
-import { NAIL_DESIGN_ROWS } from "../services/mockNailDesigns";
-
-const SUMMARY_CARDS = [
-  {
-    label: "Total Designs",
-    value: "1,284",
-    note: "+46 this month",
-    icon: Tag,
-    iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
-  },
-  {
-    label: "Active Designs",
-    value: "987",
-    note: "+12 this week",
-    icon: WandSparkles,
-    iconClassName: "bg-[#f3ebff] text-[#8b5cf6]",
-  },
-  {
-    label: "Try-On Ready",
-    value: "642",
-    note: "+23 uploaded",
-    icon: Sparkles,
-    iconClassName: "bg-[#e7fbf4] text-[#23b68b]",
-  },
-  {
-    label: "Most Popular Style",
-    value: "French Ombre",
-    note: "4,821 saves",
-    icon: Star,
-    iconClassName: "bg-[#fff4df] text-[#f5a623]",
-  },
-];
+import { fetchAdminNailDesigns } from "../services/nailDesignManagementService";
 
 const DESIGN_CARD_PRESETS = [
   {
     title: "Nude Minimalist",
     tags: ["Minimalist", "Everyday", "Clean"],
     tones: ["Nude"],
-    price: "$28",
+    price: "28,000 VND",
     status: "No Try-On",
     accent: "bg-[#fff0f5] text-[#eb5a99]",
   },
@@ -61,7 +33,7 @@ const DESIGN_CARD_PRESETS = [
     title: "French Ombré Bliss",
     tags: ["Ombré", "Bridal", "Elegant"],
     tones: ["Pastel"],
-    price: "$48",
+    price: "48,000 VND",
     status: "Try-On Ready",
     accent: "bg-[#e7fbf4] text-[#23b68b]",
   },
@@ -69,7 +41,7 @@ const DESIGN_CARD_PRESETS = [
     title: "Chrome Glitter Storm",
     tags: ["Glitter", "Party", "Bold"],
     tones: ["Chrome"],
-    price: "$65",
+    price: "65,000 VND",
     status: "Try-On Ready",
     accent: "bg-[#e7fbf4] text-[#23b68b]",
   },
@@ -113,25 +85,31 @@ const SEASONAL_SUGGESTIONS = [
   ["Harvest Warmth", "Autumn Collection", "Plan Now", "bg-[#ffe7ef] text-[#ea4f93]"],
 ];
 
-const DESIGN_PREVIEW_IMAGE =
-  "https://i0.wp.com/greenweddingshoes.com/wp-content/uploads/2025/12/red-cat-eye-christmas-holiday-nails-with-bow.webp?fit=1024%2C9999";
-
 function getPreviewMeta(index) {
   return DESIGN_CARD_PRESETS[index % DESIGN_CARD_PRESETS.length];
 }
 
+function formatPriceVnd(value) {
+  return `${Number(value || 0).toLocaleString("vi-VN")} VND`;
+}
+
 function normalizeDesign(design, index) {
   const preview = getPreviewMeta(index);
-  const tags = design.tags.split(",").map((item) => item.trim()).filter(Boolean);
+  const tags = Array.isArray(design.categoryNames) ? design.categoryNames : [];
+  const hasTryOnAsset = Boolean(design.previewImage);
+  const price =
+    design.minPrice && design.maxPrice && design.minPrice !== design.maxPrice
+      ? `${formatPriceVnd(design.minPrice)} - ${formatPriceVnd(design.maxPrice)}`
+      : formatPriceVnd(design.maxPrice || design.minPrice || 0);
 
   return {
     ...design,
-    uiTitle: preview.title,
-    uiTags: preview.tags,
-    uiTones: preview.tones,
-    uiPrice: preview.price,
-    uiStatus: preview.status,
-    uiStatusTone: preview.accent,
+    uiTitle: design.name || preview.title,
+    uiTags: tags.length ? tags.slice(0, 3) : preview.tags,
+    uiTones: [design.status || "Inactive"],
+    uiPrice: price,
+    uiStatus: hasTryOnAsset ? "Try-On Ready" : "No Try-On",
+    uiStatusTone: hasTryOnAsset ? "bg-[#e7fbf4] text-[#23b68b]" : "bg-[#fff0f5] text-[#eb5a99]",
     uiTagsAll: tags,
     initials: design.name
       .split(" ")
@@ -188,19 +166,30 @@ SmallTag.propTypes = {
 function DesignPreview({ design }) {
   return (
     <div className="h-52 overflow-hidden rounded-t-[16px] bg-[#f6edf2]">
-      <img
-        src={DESIGN_PREVIEW_IMAGE}
-        alt={design.uiTitle}
-        className="h-full w-full object-cover"
-        loading="lazy"
-        referrerPolicy="no-referrer"
-      />
+      {design.previewImage ? (
+        <img
+          src={design.previewImage}
+          alt={design.uiTitle}
+          className="h-full w-full object-cover"
+          loading="lazy"
+          referrerPolicy="no-referrer"
+        />
+      ) : (
+        <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-[radial-gradient(circle_at_top,#fff6fb_0%,#f9e6ef_45%,#f3d7e6_100%)] text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/75 text-lg font-extrabold text-[#d85b96] shadow-[0_12px_24px_rgba(216,91,150,0.16)]">
+            {design.initials || "ND"}
+          </div>
+          <p className="px-4 text-xs font-semibold text-[#a76f8c]">No preview image</p>
+        </div>
+      )}
     </div>
   );
 }
 
 DesignPreview.propTypes = {
   design: PropTypes.shape({
+    initials: PropTypes.string,
+    previewImage: PropTypes.string,
     uiTitle: PropTypes.string.isRequired,
   }).isRequired,
 };
@@ -209,6 +198,20 @@ export function NailDesignManagementPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [designs, setDesigns] = useState([]);
+  const [metaData, setMetaData] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    pageSize: 9,
+    totalItems: 0,
+    hasPrevious: false,
+    hasNext: false,
+    firstRowOnPage: 0,
+    lastRowOnPage: 0,
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
 
   useEffect(() => {
@@ -219,34 +222,121 @@ export function NailDesignManagementPage() {
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
 
-  const designs = useMemo(
-    () => NAIL_DESIGN_ROWS.map((design, index) => normalizeDesign(design, index)),
-    [],
+  useEffect(() => {
+    const timerId = window.setTimeout(() => {
+      setDebouncedQuery(query.trim());
+      setMetaData((current) => ({ ...current, currentPage: 1 }));
+    }, 350);
+
+    return () => window.clearTimeout(timerId);
+  }, [query]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadDesigns = async () => {
+      setIsLoading(true);
+      setError("");
+
+      try {
+        const response = await fetchAdminNailDesigns({
+          pageNumber: metaData.currentPage,
+          pageSize: metaData.pageSize,
+          name: debouncedQuery,
+        });
+
+        if (!isMounted) {
+          return;
+        }
+
+        setDesigns(response.items);
+        setMetaData(response.metaData);
+      } catch (loadError) {
+        if (!isMounted) {
+          return;
+        }
+
+        setDesigns([]);
+        setError(loadError instanceof Error ? loadError.message : "Failed to load nail designs.");
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void loadDesigns();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [debouncedQuery, metaData.currentPage, metaData.pageSize]);
+
+  const normalizedDesigns = useMemo(
+    () => designs.map((design, index) => normalizeDesign(design, index)),
+    [designs],
   );
 
-  const filteredDesigns = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
+  const summaryCards = useMemo(
+    () => [
+      {
+        label: "Total Designs",
+        value: metaData.totalItems.toLocaleString(),
+        note: `${metaData.totalPages} pages`,
+        icon: Tag,
+        iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
+      },
+      {
+        label: "Active Designs",
+        value: normalizedDesigns.filter((design) => design.status === "Active").length.toLocaleString(),
+        note: "On current page",
+        icon: WandSparkles,
+        iconClassName: "bg-[#f3ebff] text-[#8b5cf6]",
+      },
+      {
+        label: "Try-On Ready",
+        value: normalizedDesigns.filter((design) => design.previewImage).length.toLocaleString(),
+        note: "Has preview image",
+        icon: Sparkles,
+        iconClassName: "bg-[#e7fbf4] text-[#23b68b]",
+      },
+      {
+        label: "Most Popular Style",
+        value: normalizedDesigns[0]?.uiTitle || "--",
+        note: "Current page highlight",
+        icon: Star,
+        iconClassName: "bg-[#fff4df] text-[#f5a623]",
+      },
+    ],
+    [metaData.totalItems, metaData.totalPages, normalizedDesigns],
+  );
 
-    if (!normalizedQuery) {
-      return designs;
+  const paginationItems = useMemo(() => {
+    const currentPage = metaData.currentPage;
+    const totalPages = metaData.totalPages;
+
+    if (totalPages <= 1) {
+      return [1];
     }
 
-    return designs.filter((design) =>
-      [
-        design.id,
-        design.name,
-        design.uiTitle,
-        design.category,
-        design.collection,
-        design.artist,
-        design.tags,
-        design.uiTagsAll.join(" "),
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(normalizedQuery),
-    );
-  }, [designs, query]);
+    const pages = new Set([1, totalPages, currentPage, currentPage - 1, currentPage + 1]);
+    const normalizedPages = [...pages]
+      .filter((page) => page >= 1 && page <= totalPages)
+      .sort((left, right) => left - right);
+
+    const result = [];
+
+    normalizedPages.forEach((page, index) => {
+      result.push(page);
+
+      const nextPage = normalizedPages[index + 1];
+      if (nextPage && nextPage - page > 1) {
+        result.push("...");
+      }
+    });
+
+    return result;
+  }, [metaData.currentPage, metaData.totalPages]);
 
   const toolbarButtonClassName =
     "inline-flex items-center justify-center rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]";
@@ -289,7 +379,7 @@ export function NailDesignManagementPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {SUMMARY_CARDS.map((item) => (
+        {summaryCards.map((item) => (
           <MetricCard key={item.label} item={item} />
         ))}
       </div>
@@ -300,7 +390,7 @@ export function NailDesignManagementPage() {
             <div>
               <h3 className="text-sm font-extrabold text-[#432744]">Design Gallery</h3>
               <p className="mt-1 text-[11px] text-[#c694ad]">
-                Showing {filteredDesigns.length} of 1,284 designs
+                Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} designs
               </p>
             </div>
             <div className="flex gap-2">
@@ -325,6 +415,12 @@ export function NailDesignManagementPage() {
             </div>
           ) : null}
 
+          {error ? (
+            <div className="mb-4 rounded-[16px] bg-[#fff1f5] px-4 py-3 text-sm font-medium text-[#d14c84]">
+              {error}
+            </div>
+          ) : null}
+
           <label className="relative mb-4 block max-w-md">
             <Search
               size={15}
@@ -339,77 +435,139 @@ export function NailDesignManagementPage() {
           </label>
 
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-            {filteredDesigns.map((design) => (
-              <article
-                key={design.id}
-                className="overflow-hidden rounded-[18px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(236,72,153,0.12)]"
-              >
-                <Link to={getAdminNailDesignDetailRoute(design.id)} className="block">
-                  <DesignPreview design={design} />
-                </Link>
-                <div className="p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <Link
-                        to={getAdminNailDesignDetailRoute(design.id)}
-                        className="font-extrabold text-[#432744] transition hover:text-[#ea4f93]"
-                      >
-                        {design.uiTitle}
-                      </Link>
-                      <p className="mt-1 text-[11px] text-[#c694ad]">{design.id}</p>
-                    </div>
-                    <p className="text-sm font-extrabold text-[#432744]">{design.uiPrice}</p>
-                  </div>
-
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {design.uiTags.map((tag, index) => (
-                      <SmallTag
-                        key={`${design.id}-${tag}`}
-                        className={
-                          [
-                            "bg-[#ffe7ef] text-[#ea4f93]",
-                            "bg-[#f5ecff] text-[#8b5cf6]",
-                            "bg-[#fff4df] text-[#d9871c]",
-                          ][index % 3]
-                        }
-                      >
-                        {tag}
-                      </SmallTag>
-                    ))}
-                    {design.uiTones.map((tag) => (
-                      <SmallTag key={`${design.id}-${tag}`} className="bg-[#fff7fb] text-[#c694ad]">
-                        {tag}
-                      </SmallTag>
-                    ))}
-                  </div>
-
-                  <div className="mt-4 flex items-center justify-between gap-3">
-                    <SmallTag className={design.uiStatusTone}>{design.uiStatus}</SmallTag>
-                    <div className="flex gap-2">
-                      <Link
-                        to={getAdminNailDesignDetailRoute(design.id)}
-                        className="rounded-full border border-[#f4c6da] bg-white px-3 py-1.5 text-[10px] font-bold text-[#8c7085]"
-                      >
-                        View
-                      </Link>
-                      <Link
-                        to={getAdminNailDesignDetailRoute(design.id)}
-                        className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93]"
-                      >
-                        Edit
-                      </Link>
-                    </div>
-                  </div>
+            {isLoading ? (
+              <div className="col-span-full rounded-[18px] border border-[#f8dce8] bg-[#fffafb] px-5 py-10">
+                <div className="flex items-center justify-center gap-3 text-sm text-[#b38a9f]">
+                  <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
+                  Loading nail designs...
                 </div>
-              </article>
-            ))}
+              </div>
+            ) : (
+              normalizedDesigns.map((design) => (
+                <article
+                  key={design.id}
+                  className="overflow-hidden rounded-[18px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(236,72,153,0.12)]"
+                >
+                  <Link to={getAdminNailDesignDetailRoute(design.id)} className="block">
+                    <DesignPreview design={design} />
+                  </Link>
+                  <div className="p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <Link
+                          to={getAdminNailDesignDetailRoute(design.id)}
+                          className="font-extrabold text-[#432744] transition hover:text-[#ea4f93]"
+                        >
+                          {design.uiTitle}
+                        </Link>
+                      </div>
+                      <p className="text-sm font-extrabold text-[#432744]">{design.uiPrice}</p>
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {design.uiTags.map((tag, index) => (
+                        <SmallTag
+                          key={`${design.id}-${tag}`}
+                          className={
+                            [
+                              "bg-[#ffe7ef] text-[#ea4f93]",
+                              "bg-[#f5ecff] text-[#8b5cf6]",
+                              "bg-[#fff4df] text-[#d9871c]",
+                            ][index % 3]
+                          }
+                        >
+                          {tag}
+                        </SmallTag>
+                      ))}
+                      {design.uiTones.map((tag) => (
+                        <SmallTag key={`${design.id}-${tag}`} className="bg-[#fff7fb] text-[#c694ad]">
+                          {tag}
+                        </SmallTag>
+                      ))}
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-between gap-3">
+                      <SmallTag className={design.uiStatusTone}>{design.uiStatus}</SmallTag>
+                      <div className="flex gap-2">
+                        <Link
+                          to={getAdminNailDesignDetailRoute(design.id)}
+                          className="rounded-full border border-[#f4c6da] bg-white px-3 py-1.5 text-[10px] font-bold text-[#8c7085]"
+                        >
+                          View
+                        </Link>
+                        <Link
+                          to={getAdminNailDesignDetailRoute(design.id)}
+                          className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93]"
+                        >
+                          Edit
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              ))
+            )}
           </div>
 
-          {filteredDesigns.length === 0 ? (
+          {!isLoading && normalizedDesigns.length === 0 ? (
             <div className="mt-4 rounded-[16px] border border-[#f8dce8] bg-[#fffafb] px-5 py-8 text-center text-sm text-[#8a7082]">
               No nail designs matched the current search.
             </div>
           ) : null}
+
+          <div className="mt-4 flex flex-col gap-3 rounded-[16px] border border-[#f8dce8] bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-[11px] text-[#c694ad]">
+              Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} designs
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                disabled={!metaData.hasPrevious || isLoading}
+                onClick={() =>
+                  setMetaData((current) => ({
+                    ...current,
+                    currentPage: Math.max(current.currentPage - 1, 1),
+                  }))
+                }
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <ChevronLeft size={12} />
+              </button>
+              {paginationItems.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  disabled={item === "..." || item === metaData.currentPage || isLoading}
+                  onClick={() => {
+                    if (typeof item !== "number") {
+                      return;
+                    }
+
+                    setMetaData((current) => ({ ...current, currentPage: item }));
+                  }}
+                  className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md px-2 text-[11px] ${item === metaData.currentPage
+                    ? "bg-[#ea4f93] font-bold text-white"
+                    : "border border-[#f3cade] bg-white font-medium text-[#b9849f]"
+                    } disabled:cursor-default disabled:opacity-100`}
+                >
+                  {item}
+                </button>
+              ))}
+              <button
+                type="button"
+                disabled={!metaData.hasNext || isLoading}
+                onClick={() =>
+                  setMetaData((current) => ({
+                    ...current,
+                    currentPage: Math.min(current.currentPage + 1, current.totalPages),
+                  }))
+                }
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <ChevronRight size={12} />
+              </button>
+            </div>
+          </div>
         </div>
 
         <aside className="space-y-4">

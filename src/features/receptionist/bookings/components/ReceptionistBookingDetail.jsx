@@ -13,6 +13,7 @@ import {
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { PropTypes } from "../../../../shared/utils/propTypes";
+import { formatDurationLabel } from "../../../../shared/utils/formatDuration";
 
 const SERVICE_ROWS = [
   {
@@ -321,7 +322,7 @@ export function ReceptionistBookingDetail({ booking }) {
                           <span className="text-xs font-medium text-[#4a3741]">{row.artist}</span>
                         </div>
                       </td>
-                      <td className="px-3 py-4 text-xs text-[#4a3741]">{row.duration}</td>
+                      <td className="px-3 py-4 text-xs text-[#4a3741]">{formatDurationLabel(row.duration)}</td>
                       <td className="px-3 py-4">
                         <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-extrabold ${row.statusTone}`}>
                           {row.status}

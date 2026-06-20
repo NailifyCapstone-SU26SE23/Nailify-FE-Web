@@ -115,6 +115,8 @@ export function StaffBookingConsultationDetail({
   onStaffNoteChange,
   onStartServiceSession,
 }) {
+  const canProceedToService = isCurrentDesignConfirmed;
+
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff5fa_100%)]">
       <div className="rounded-[24px] border border-[#f6dbe8] bg-[#fff7fb] p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
@@ -320,10 +322,20 @@ export function StaffBookingConsultationDetail({
                 <button
                   type="button"
                   onClick={onStartServiceSession}
-                  className="mt-5 w-full rounded-[14px] bg-[image:var(--gradient-accent)] px-5 py-4 text-sm font-bold text-white shadow-[0_16px_28px_rgba(236,72,153,0.2)]"
+                  disabled={!canProceedToService}
+                  className={`mt-5 w-full rounded-[14px] px-5 py-4 text-sm font-bold ${
+                    canProceedToService
+                      ? "bg-[image:var(--gradient-accent)] text-white shadow-[0_16px_28px_rgba(236,72,153,0.2)]"
+                      : "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
+                  }`}
                 >
                   Proceed to Service Session
                 </button>
+                {!canProceedToService ? (
+                  <p className="mt-3 text-xs font-medium text-[#b1859d]">
+                    Confirm Current Design before proceeding to the service session.
+                  </p>
+                ) : null}
 
                 <div className="mt-4 flex flex-wrap gap-3">
                   <button
@@ -447,7 +459,12 @@ export function StaffBookingConsultationDetail({
                   <button
                     type="button"
                     onClick={onStartServiceSession}
-                    className="flex w-full items-center justify-center gap-2 rounded-[12px] bg-[image:var(--gradient-accent)] px-4 py-2.5 text-xs font-bold text-white"
+                    disabled={!canProceedToService}
+                    className={`flex w-full items-center justify-center gap-2 rounded-[12px] px-4 py-2.5 text-xs font-bold ${
+                      canProceedToService
+                        ? "bg-[image:var(--gradient-accent)] text-white"
+                        : "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
+                    }`}
                   >
                     <ArrowUp size={13} />
                     Start Service

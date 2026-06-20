@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../../features/core/auth/hooks/useAuth";
 import { Header } from "../../shared/components/common/Header";
@@ -120,6 +120,7 @@ export function DashboardLayout() {
   const { user, logout } = useAuth();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const menus = getMenuConfig(user?.role);
   const menuGroups = groupMenusBySection(menus);
   const profileName = user?.fullName ?? "Nailify User";
@@ -128,15 +129,17 @@ export function DashboardLayout() {
   const headerContent = getHeaderContent(location.pathname, menus);
   const sidebarWidth = collapsed ? 80 : 200;
 
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
+
   return (
     <main className="h-screen overflow-hidden bg-[#fff7fb] text-[var(--color-ink)]">
-      <div
-        className="grid h-full"
-        style={{ gridTemplateColumns: `${sidebarWidth}px minmax(0, 1fr)` }}
-      >
+      <div className="hidden h-full md:grid" style={{ gridTemplateColumns: `${sidebarWidth}px minmax(0, 1fr)` }}>
         <Sidebar
           collapsed={collapsed}
           menuGroups={menuGroups}
+          onLogout={logout}
           onToggleCollapse={() => setCollapsed((current) => !current)}
           portalLabel={portalLabel}
           profileName={profileName}
@@ -149,6 +152,7 @@ export function DashboardLayout() {
             title={headerContent.title}
             description={headerContent.description}
             todayLabel={getTodayLabel()}
+            onOpenMobileMenu={() => setMobileMenuOpen(true)}
             onLogout={logout}
           />
 
@@ -159,6 +163,47 @@ export function DashboardLayout() {
           </section>
         </div>
       </div>
+
+      <div className="flex h-full min-h-0 flex-col md:hidden">
+        <Header
+          title={headerContent.title}
+          description={headerContent.description}
+          todayLabel={getTodayLabel()}
+          onOpenMobileMenu={() => setMobileMenuOpen(true)}
+          onLogout={logout}
+        />
+
+        <section className="flex-1 overflow-auto bg-white p-4 shadow-[0_18px_40px_rgba(94,76,62,0.08)]">
+          <div className="flex min-h-full flex-col">
+            <Outlet />
+          </div>
+        </section>
+      </div>
+
+      {mobileMenuOpen ? (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <button
+            type="button"
+            aria-label="Close menu overlay"
+            className="absolute inset-0 bg-[#3d2233]/45 backdrop-blur-[2px]"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          <div className="absolute inset-y-0 left-0 w-[86vw] max-w-[320px]">
+            <Sidebar
+              collapsed={false}
+              isMobile
+              menuGroups={menuGroups}
+              onCloseMobile={() => setMobileMenuOpen(false)}
+              onLogout={logout}
+              onToggleCollapse={() => {}}
+              portalLabel={portalLabel}
+              profileName={profileName}
+              profileRole={profileRole}
+              userInitials={getUserInitials(profileName)}
+            />
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }
