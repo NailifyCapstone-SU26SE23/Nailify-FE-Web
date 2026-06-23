@@ -284,7 +284,6 @@ export function ManagerBookingDetailPage() {
                   {booking?.status}
                 </span>
               </div>
-              <p className="mt-2 text-sm font-bold text-[#ea4f93]">{booking?.bookingId}</p>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-[#956f84]">
                 Review booking information, customer details, assigned staff, payment summary, and operational codes from one place.
               </p>
@@ -365,7 +364,6 @@ export function ManagerBookingDetailPage() {
               Booking Overview
             </SectionTitle>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <InfoTile label="Booking ID">{booking?.bookingId}</InfoTile>
               <InfoTile label="Status">
                 <span className={`inline-flex rounded-full px-3 py-1 text-[11px] font-bold ${getStatusTone(booking?.status)}`}>
                   {booking?.status}
@@ -377,9 +375,7 @@ export function ManagerBookingDetailPage() {
               <InfoTile label="Duration">{booking?.totalDuration ? formatDuration(booking.totalDuration) : "N/A"}</InfoTile>
               <InfoTile label="Customer Name">{booking?.customerName}</InfoTile>
               <InfoTile label="Phone">{booking?.phone}</InfoTile>
-              <InfoTile label="Customer ID">{booking?.customerId || "N/A"}</InfoTile>
               <InfoTile label="Artist Name">{booking?.artistName}</InfoTile>
-              <InfoTile label="Artist ID">{booking?.artistId || "N/A"}</InfoTile>
               <InfoTile label="Primary Service">{booking?.serviceName}</InfoTile>
             </div>
           </Card>
