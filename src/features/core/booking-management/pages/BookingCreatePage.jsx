@@ -1,6 +1,7 @@
 import { CalendarPlus, Save } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { BookingFormFields } from "../components/BookingFormFields";
 import { BookingHeroCard } from "../components/BookingHeroCard";
 import { BookingSnapshotCard } from "../components/BookingSnapshotCard";
@@ -19,6 +20,7 @@ export function BookingCreatePage() {
   );
   const roleConfig = BOOKING_ROLE_CONFIG[role];
   const [formValues, setFormValues] = useState(createEmptyBooking);
+  const [showCreateConfirm, setShowCreateConfirm] = useState(false);
 
   const handleChange = (field) => (event) => {
     setFormValues((current) => ({
@@ -28,6 +30,7 @@ export function BookingCreatePage() {
   };
 
   const handleCreate = () => {
+    setShowCreateConfirm(false);
     navigate(roleConfig.listRoute, {
       state: {
         flashMessage: `Mock create completed for ${formValues.customerName || "new booking"}.`,
@@ -60,7 +63,7 @@ export function BookingCreatePage() {
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <button
               type="button"
-              onClick={handleCreate}
+              onClick={() => setShowCreateConfirm(true)}
               className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_26px_rgba(239,93,180,0.24)] transition hover:scale-[1.01] sm:w-auto"
             >
               <Save size={16} />
@@ -74,6 +77,25 @@ export function BookingCreatePage() {
           notice="This is mock CRUD only. Create action updates the UI flow, but it does not persist data outside this screen."
         />
       </div>
+
+      <ActionConfirmModal
+        open={showCreateConfirm}
+        intent="success"
+        title="Create Booking"
+        subtitle="This will add the appointment to the current mock booking state."
+        description="Confirm to create this booking with the selected customer, service, and schedule details."
+        confirmText="Create Booking"
+        cancelText="Review Again"
+        confirmIcon={Save}
+        onConfirm={handleCreate}
+        onCancel={() => setShowCreateConfirm(false)}
+        highlights={[formValues.customerName || "New booking", formValues.service || "Service pending", formValues.branch || "Branch pending"]}
+        details={[
+          { label: "Appointment Date", value: formValues.date || "No date selected" },
+          { label: "Appointment Time", value: formValues.time || "No time selected" },
+        ]}
+        warnings={["This mock create updates the UI flow only and does not persist outside this screen."]}
+      />
     </section>
   );
 }

@@ -335,6 +335,45 @@ export const STAFF_SPECIALTIES = [
   "Training",
 ];
 
+export const STAFF_SKILL_CATEGORIES = [
+  {
+    key: "precision",
+    title: "Precision",
+    subtitle: "Accuracy & Detail",
+    specialty: "Manicure",
+  },
+  {
+    key: "color",
+    title: "Color",
+    subtitle: "Color Matching",
+    specialty: "Gel",
+  },
+  {
+    key: "design",
+    title: "Design",
+    subtitle: "Artistry",
+    specialty: "Nail Art",
+  },
+  {
+    key: "form",
+    title: "Form",
+    subtitle: "Nail Shape & Form",
+    specialty: "Extensions",
+  },
+  {
+    key: "material",
+    title: "Material",
+    subtitle: "Material Handling",
+    specialty: "Acrylic",
+  },
+  {
+    key: "speed",
+    title: "Speed",
+    subtitle: "Job Speed",
+    specialty: "Pedicure",
+  },
+];
+
 export const STAFF_EMPLOYMENT_TYPES = ["Full-time", "Part-time", "Contract", "Temporary"];
 
 export const STAFF_DAYS_OF_WEEK = [
@@ -371,6 +410,38 @@ const DEFAULT_STAFF_SCHEDULE = {
   friday: { enabled: true, start: "09:00", end: "18:00" },
   saturday: { enabled: true, start: "09:00", end: "16:00" },
   sunday: { enabled: false, start: "10:00", end: "15:00" },
+};
+
+export const createDefaultStaffSkillRatings = (defaultValue = 1) => ({
+  precision: defaultValue,
+  color: defaultValue,
+  design: defaultValue,
+  form: defaultValue,
+  material: defaultValue,
+  speed: defaultValue,
+});
+
+export const getStaffSkillRatingsFromSpecialties = (specialties = []) => {
+  const specialtySet = new Set(specialties);
+  const inferredRatings = createDefaultStaffSkillRatings(1);
+
+  STAFF_SKILL_CATEGORIES.forEach((skill) => {
+    if (specialtySet.has(skill.specialty)) {
+      inferredRatings[skill.key] = 4;
+    }
+  });
+
+  return inferredRatings;
+};
+
+export const getSpecialtiesFromSkillRatings = (skillRatings) => {
+  const normalizedRatings = skillRatings ?? {};
+
+  const mappedSpecialties = STAFF_SKILL_CATEGORIES.filter(
+    (skill) => Number(normalizedRatings[skill.key] ?? 0) >= 3,
+  ).map((skill) => skill.specialty);
+
+  return [...new Set(mappedSpecialties)];
 };
 
 const SPECIALTY_TONES = {
@@ -433,7 +504,15 @@ const STAFF_FORM_SEED = {
     status: "ACTIVE",
     employmentType: "Full-time",
     experience: "6 years",
-    specialties: ["Gel", "Nail Art", "Acrylic"],
+    specialties: ["Gel", "Nail Art", "Acrylic", "Manicure", "Extensions", "Pedicure"],
+    skillRatings: {
+      precision: 4,
+      color: 5,
+      design: 5,
+      form: 4,
+      material: 4,
+      speed: 3,
+    },
     emergencyContact: "Olivia Lee · +1 (555) 010-2001",
     address: "122 East 47th St, New York, NY",
     notes: "Top performer with strong retention and premium nail art skill set.",
@@ -457,7 +536,15 @@ const STAFF_FORM_SEED = {
     status: "ACTIVE",
     employmentType: "Full-time",
     experience: "8 years",
-    specialties: ["Management", "Training"],
+    specialties: ["Management", "Training", "Gel", "Nail Art", "Acrylic"],
+    skillRatings: {
+      precision: 4,
+      color: 4,
+      design: 4,
+      form: 3,
+      material: 3,
+      speed: 4,
+    },
     emergencyContact: "Marco Torres · +1 (555) 010-2003",
     address: "88 Madison Ave, New York, NY",
     notes: "Experienced salon manager focused on team coaching and daily operations.",
@@ -497,7 +584,8 @@ export const createEmptyStaffForm = () => ({
   status: "ONBOARDING",
   employmentType: "Full-time",
   experience: "",
-  specialties: ["Gel", "Nail Art"],
+  specialties: getSpecialtiesFromSkillRatings(createDefaultStaffSkillRatings(1)),
+  skillRatings: createDefaultStaffSkillRatings(1),
   emergencyContact: "",
   address: "",
   notes: "",
@@ -558,6 +646,7 @@ export const mapStaffMemberToForm = (member) => ({
   employmentType: "Full-time",
   experience: "",
   specialties: member.tags.map((tag) => tag.label),
+  skillRatings: getStaffSkillRatingsFromSpecialties(member.tags.map((tag) => tag.label)),
   emergencyContact: "",
   address: "",
   notes: "",
@@ -663,6 +752,10 @@ const isStaffIdTaken = (staffId) => {
 const cloneStaffForm = (formData) => ({
   ...formData,
   specialties: [...formData.specialties],
+  skillRatings: {
+    ...createDefaultStaffSkillRatings(1),
+    ...(formData.skillRatings ?? {}),
+  },
   schedule: Object.fromEntries(
     Object.entries(formData.schedule).map(([day, hours]) => [day, { ...hours }]),
   ),
@@ -670,6 +763,12 @@ const cloneStaffForm = (formData) => ({
 
 const formDataToStaffMember = (formData) => {
   const roleProfile = ROLE_PROFILE_MAP[formData.role] ?? ROLE_PROFILE_MAP.NAIL_ARTIST;
+  const mappedSpecialties = [
+    ...new Set([
+      ...getSpecialtiesFromSkillRatings(formData.skillRatings),
+      ...formData.specialties,
+    ]),
+  ];
 
   return {
     id: formData.staffId.trim(),
@@ -683,7 +782,7 @@ const formDataToStaffMember = (formData) => {
     retention: "—",
     accent: roleProfile.accent,
     accentTone: roleProfile.accentTone,
-    tags: formData.specialties.map((label) => ({
+    tags: mappedSpecialties.map((label) => ({
       label,
       tone: SPECIALTY_TONES[label] ?? "bg-slate-100 text-slate-600",
     })),

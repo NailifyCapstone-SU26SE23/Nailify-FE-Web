@@ -24,7 +24,6 @@ export function BookingTable({ bookings, getDetailRoute }) {
                 <td className="px-5 py-4">
                   <p className="font-semibold text-[var(--color-ink)]">{booking.customerName}</p>
                   <p className="mt-1 text-sm text-[var(--color-muted)]">{booking.customerPhone}</p>
-                  <p className="mt-2 text-xs uppercase tracking-[0.14em] text-[#d45b9f]">{booking.id}</p>
                 </td>
                 <td className="px-5 py-4 text-sm text-[var(--color-ink)]">{booking.service}</td>
                 <td className="px-5 py-4 text-sm text-[var(--color-muted)]">{booking.branch}</td>

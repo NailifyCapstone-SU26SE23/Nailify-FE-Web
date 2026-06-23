@@ -1,28 +1,66 @@
+import { Modal } from "antd";
 import {
   BarChart3,
   CircleDollarSign,
   Copy,
   Eye,
+  LoaderCircle,
   PencilLine,
+  Plus,
+  Save,
   Settings2,
   Sparkles,
   Star,
   Trash2,
   Upload,
-  WandSparkles,
+  X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ROUTES } from "../../../../shared/constants/routes";
+import { formatDurationLabel } from "../../../../shared/utils/formatDuration";
 import { PropTypes } from "../../../../shared/utils/propTypes";
-import { getMockNailDesignDetailById } from "../services/mockNailDesigns";
+import {
+  assignProceduresToVariant,
+  deleteAdminNailVariant,
+  fetchAdminNailDesignDetail,
+  fetchProceduresByVariant,
+  fetchAdminNailVariantDetail,
+  updateAdminNailDesign,
+  updateAdminNailVariant,
+} from "../services/nailDesignManagementService";
 
 const DESIGN_PREVIEW_IMAGE =
   "https://i0.wp.com/greenweddingshoes.com/wp-content/uploads/2025/12/red-cat-eye-christmas-holiday-nails-with-bow.webp?fit=1024%2C9999";
+const DETAIL_MODAL_STYLES = {
+  body: { padding: 0 },
+  content: { padding: 0, overflow: "hidden", borderRadius: 28 },
+  mask: {
+    backgroundColor: "rgba(47, 13, 33, 0.26)",
+    backdropFilter: "blur(8px)",
+  },
+};
 
-function SectionCard({ title, subtitle, icon, children }) {
+function SectionCard({
+  title,
+  subtitle,
+  icon,
+  children,
+  sectionId,
+  sectionRef,
+  highlighted = false,
+}) {
   return (
-    <article className="rounded-[22px] border border-[#f8d3e2] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] md:p-5">
+    <article
+      id={sectionId}
+      ref={sectionRef}
+      className={`scroll-mt-6 rounded-[22px] border bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] transition-all duration-300 md:p-5 ${
+        highlighted
+          ? "border-[#ea4f93] shadow-[0_18px_38px_rgba(236,72,153,0.18)] ring-4 ring-[#ffd8e8]"
+          : "border-[#f8d3e2]"
+      }`}
+    >
       <div className="flex items-start gap-3 border-b border-[#f8deea] pb-4">
         <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#fff0f6_0%,#fff8e9_100%)] text-[#ea4f93]">
           {icon}
@@ -39,7 +77,10 @@ function SectionCard({ title, subtitle, icon, children }) {
 
 SectionCard.propTypes = {
   children: PropTypes.node,
+  highlighted: PropTypes.bool,
   icon: PropTypes.node.isRequired,
+  sectionId: PropTypes.string,
+  sectionRef: PropTypes.shape({ current: PropTypes.any }),
   subtitle: PropTypes.string,
   title: PropTypes.string.isRequired,
 };
@@ -108,15 +149,306 @@ function getComparisonValueTone(label) {
   return label === "Premium vs Market" ? "text-[#2fa25f]" : "text-[#432744]";
 }
 
+function isHexColor(value) {
+  return /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(String(value || "").trim());
+}
+
+function extractVariantColors(colorJson) {
+  const rawValue = String(colorJson || "").trim();
+
+  if (!rawValue) {
+    return [];
+  }
+
+  const parsedColors = [];
+
+  const collectColors = (value) => {
+    if (!value) {
+      return;
+    }
+
+    if (typeof value === "string") {
+      const normalized = value.trim();
+
+      if (isHexColor(normalized)) {
+        parsedColors.push(normalized);
+      }
+      return;
+    }
+
+    if (Array.isArray(value)) {
+      value.forEach(collectColors);
+      return;
+    }
+
+    if (typeof value === "object") {
+      Object.values(value).forEach(collectColors);
+    }
+  };
+
+  try {
+    collectColors(JSON.parse(rawValue));
+  } catch {
+    collectColors(rawValue);
+  }
+
+  return [...new Set(parsedColors)];
+}
+
+const CUSTOMER_PROFILE_OPTIONS = {
+  "Skin Tone": ["Fair", "Light Medium", "Medium", "Tan", "Deep"],
+  "Skin Undertone": ["Warm", "Cool", "Neutral"],
+  "Color Palette": ["Nude", "Pink", "Red", "Black", "Chrome", "White", "Pastel", "Neon"],
+  "Age Group": ["Teen", "20s", "30s", "40+"],
+  "Style / Personality": [
+    "Elegant",
+    "Cute",
+    "Minimal",
+    "Sexy",
+    "Luxury",
+    "Feminine",
+    "Bold",
+    "Soft Girl",
+    "Korean Style",
+  ],
+  "Vibe Level": ["Subtle", "Soft", "Moderate", "Eye-catching", "Luxury Statement"],
+  Occasion: ["Daily", "Office", "Wedding", "Party", "Holiday", "Valentine", "Birthday", "Photoshoot"],
+  "Hand Shape": ["Slim Fingers", "Short Fingers", "Wide Hands", "Long Fingers"],
+  Audience: ["Female", "Male", "Unisex", "Gay"],
+};
+
+const DESIGN_COMPONENT_OPTIONS = {
+  "Design Status": ["Active", "Draft", "Archived"],
+  "Try-On Ready": ["Yes", "No"],
+  Complexity: ["Basic", "Intermediate", "Advanced", "Expert"],
+  "Est. Duration": ["45 min", "1h", "1h15m", "1h30m", "2h"],
+  "Nail Shape": ["Almond", "Square", "Round", "Oval", "Coffin", "Stiletto"],
+  "Nail Length": ["Short", "Medium", "Long"],
+};
+
+const COMPONENT_VALUE_OPTIONS = {
+  "Primary Finish": ["Glossy", "Matte", "Chrome", "Glitter", "Jelly", "Velvet"],
+  "Main Pattern": ["French Tip", "Floral", "Marble", "Stone", "Pearl", "Gold Line", "Sticker", "Cat Eye", "Ombre"],
+  "Color Direction": ["Nude", "Pink", "Red", "Black", "Chrome", "White", "Pastel", "Rose Gold"],
+  "Nail Shape": ["Almond", "Square", "Round", "Oval", "Coffin", "Stiletto"],
+  "Nail Length": ["Short", "Medium", "Long"],
+  Complexity: ["Simple", "Medium", "Complex", "Premium Art"],
+  "Collection Mood": ["Bridal", "Luxury", "Minimal", "Romantic", "Bold", "Soft Girl"],
+  Occasion: ["Daily", "Office", "Wedding", "Party", "Holiday", "Photoshoot"],
+};
+
+const VARIANT_LEVEL_OPTIONS = ["Basic", "Intermediate", "Advanced", "Expert", "Premium"];
+const WORKFLOW_LEVEL_OPTIONS = ["Easy", "Moderate", "Advanced", "Expert"];
+const SKILL_LEVEL_LABELS = {
+  1: "1★ Junior",
+  2: "2★ Developing",
+  3: "3★ Intermediate",
+  4: "4★ Advanced",
+  5: "5★ Expert",
+};
+
+function InputLabel({ children }) {
+  return (
+    <span className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-[#c694ad]">
+      {children}
+    </span>
+  );
+}
+
+InputLabel.propTypes = {
+  children: PropTypes.node,
+};
+
+function EditInput({ value, onChange, className = "", disabled = false }) {
+  return (
+    <input
+      value={value}
+      onChange={onChange}
+      disabled={disabled}
+      className={`h-11 w-full rounded-2xl border border-[#f4d4e2] bg-[#fffdfd] px-4 text-sm text-[#432744] outline-none transition focus:border-[#ef6bb4] disabled:cursor-not-allowed disabled:bg-[#f9f1f5] disabled:text-[#b2879f] ${className}`}
+    />
+  );
+}
+
+EditInput.propTypes = {
+  className: PropTypes.string,
+  disabled: PropTypes.bool,
+  onChange: PropTypes.func.isRequired,
+  value: PropTypes.string.isRequired,
+};
+
+function EditTextarea({ value, onChange, rows = 3, disabled = false }) {
+  return (
+    <textarea
+      value={value}
+      onChange={onChange}
+      rows={rows}
+      disabled={disabled}
+      className="w-full rounded-2xl border border-[#f4d4e2] bg-[#fffdfd] px-4 py-3 text-sm text-[#432744] outline-none transition focus:border-[#ef6bb4] disabled:cursor-not-allowed disabled:bg-[#f9f1f5] disabled:text-[#b2879f]"
+    />
+  );
+}
+
+EditTextarea.propTypes = {
+  disabled: PropTypes.bool,
+  onChange: PropTypes.func.isRequired,
+  rows: PropTypes.number,
+  value: PropTypes.string.isRequired,
+};
+
+function EditSelect({ value, onChange, options, disabled = false }) {
+  return (
+    <select
+      value={value}
+      onChange={onChange}
+      disabled={disabled}
+      className="h-11 w-full rounded-2xl border border-[#f4d4e2] bg-[#fffdfd] px-4 text-sm text-[#432744] outline-none transition focus:border-[#ef6bb4] disabled:cursor-not-allowed disabled:bg-[#f9f1f5] disabled:text-[#b2879f]"
+    >
+      {options.map((option) => (
+        <option key={option} value={option}>
+          {option}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+EditSelect.propTypes = {
+  disabled: PropTypes.bool,
+  onChange: PropTypes.func.isRequired,
+  options: PropTypes.arrayOf(PropTypes.string).isRequired,
+  value: PropTypes.string.isRequired,
+};
+
+function SkillLevelSlider({ value, onChange }) {
+  const progress = ((value - 1) / 4) * 100;
+
+  return (
+    <div className="pt-2">
+      <input
+        type="range"
+        min="1"
+        max="5"
+        step="1"
+        value={value}
+        onChange={onChange}
+        className="skill-level-slider h-2 w-full cursor-pointer appearance-none rounded-full"
+        style={{
+          background: `linear-gradient(90deg, #ea4f93 0%, #f59f61 55%, #f7d85f 100%) 0 / ${progress}% 100% no-repeat, #f6d5e3`,
+        }}
+      />
+    </div>
+  );
+}
+
+SkillLevelSlider.propTypes = {
+  onChange: PropTypes.func.isRequired,
+  value: PropTypes.number.isRequired,
+};
+
 export function NailDesignManagementDetailPage() {
   const { designId } = useParams();
-  const initialDesign = getMockNailDesignDetailById(designId);
+  const heroSectionRef = useRef(null);
+  const customerProfileRef = useRef(null);
+  const designComponentsRef = useRef(null);
+  const designVariantsRef = useRef(null);
+  const pricingRef = useRef(null);
+  const workflowRef = useRef(null);
+  const skillsRef = useRef(null);
+  const quickSummaryRef = useRef(null);
+  const customerPreviewRef = useRef(null);
   const [flashMessage, setFlashMessage] = useState("");
   const [isEditing, setIsEditing] = useState(false);
-  const [formValues, setFormValues] = useState(initialDesign);
+  const [initialDesign, setInitialDesign] = useState(null);
+  const [formValues, setFormValues] = useState(null);
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [pendingDeleteVariant, setPendingDeleteVariant] = useState(null);
+  const [selectedVariantDetail, setSelectedVariantDetail] = useState(null);
+  const [variantProcedureDraft, setVariantProcedureDraft] = useState([]);
+  const [highlightedSection, setHighlightedSection] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSavingVariants, setIsSavingVariants] = useState(false);
+  const [isDeletingVariant, setIsDeletingVariant] = useState(false);
+  const [isLoadingVariantDetail, setIsLoadingVariantDetail] = useState(false);
+  const [isLoadingVariantProcedures, setIsLoadingVariantProcedures] = useState(false);
+  const [isSavingVariantProcedures, setIsSavingVariantProcedures] = useState(false);
+  const [error, setError] = useState("");
+  const [isNotFound, setIsNotFound] = useState(false);
 
-  if (!initialDesign) {
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadDesignDetail = async () => {
+      setIsLoading(true);
+      setError("");
+      setIsNotFound(false);
+
+      try {
+        const detail = await fetchAdminNailDesignDetail(designId);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setInitialDesign(detail);
+        setFormValues(detail);
+      } catch (loadError) {
+        if (!isMounted) {
+          return;
+        }
+
+        setInitialDesign(null);
+        setFormValues(null);
+
+        const statusCode = loadError && typeof loadError === "object" ? loadError.response?.status : undefined;
+
+        if (statusCode === 404) {
+          setIsNotFound(true);
+        } else {
+          setError(
+            loadError instanceof Error
+              ? loadError.message
+              : "Failed to load nail design detail.",
+          );
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void loadDesignDetail();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [designId]);
+
+  if (isLoading) {
+    return (
+      <section className="flex min-h-full items-center justify-center bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)] px-4 py-10">
+        <div className="flex items-center gap-3 rounded-[18px] border border-[#f8dce8] bg-white px-5 py-4 text-sm text-[#b38a9f] shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
+          <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
+          Loading nail design detail...
+        </div>
+      </section>
+    );
+  }
+
+  if (isNotFound) {
     return <Navigate to={ROUTES.adminNailDesigns} replace />;
+  }
+
+  if (!formValues) {
+    return (
+      <section className="flex min-h-full items-center justify-center bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)] px-4 py-10">
+        <div className="rounded-[18px] border border-[#f8dce8] bg-white px-5 py-4 text-sm font-medium text-[#d14c84] shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
+          {error || "Failed to load nail design detail."}
+        </div>
+      </section>
+    );
   }
 
   const handleChange = (field) => (event) => {
@@ -126,27 +458,374 @@ export function NailDesignManagementDetailPage() {
     }));
   };
 
+  const handleBooleanChange = (field) => (event) => {
+    setFormValues((current) => ({
+      ...current,
+      [field]: event.target.value === "true",
+    }));
+  };
+
+  const handleCustomerProfileToggle = (label, option) => () => {
+    setFormValues((current) => {
+      const currentValues = current.customerProfile[label] ?? [];
+      const hasOption = currentValues.includes(option);
+
+      return {
+        ...current,
+        customerProfile: {
+          ...current.customerProfile,
+          [label]: hasOption
+            ? currentValues.filter((value) => value !== option)
+            : [...currentValues, option],
+        },
+      };
+    });
+  };
+
+  const handleDesignComponentChange = (index) => (event) => {
+    const nextValue = event.target.value;
+
+    setFormValues((current) => ({
+      ...current,
+      designComponents: current.designComponents.map((entry, entryIndex) =>
+        entryIndex === index ? [entry[0], nextValue] : entry,
+      ),
+    }));
+  };
+
+  const handleVariantFieldChange = (index, field) => (event) => {
+    const nextValue = event.target.value;
+
+    setFormValues((current) => ({
+      ...current,
+      variants: current.variants.map((variant, variantIndex) =>
+        variantIndex === index
+          ? {
+              ...variant,
+              [field]: nextValue,
+            }
+          : variant,
+      ),
+    }));
+  };
+
+  const handleWorkflowFieldChange = (index, field) => (event) => {
+    const nextValue = event.target.value;
+
+    setFormValues((current) => ({
+      ...current,
+      workflow: current.workflow.map((step, stepIndex) => {
+        if (stepIndex !== index) {
+          return step;
+        }
+
+        if (field === "title") {
+          return [nextValue, step[1], step[2], step[3]];
+        }
+
+        if (field === "duration") {
+          return [step[0], nextValue, step[2], step[3]];
+        }
+
+        if (field === "tools") {
+          return [
+            step[0],
+            step[1],
+            nextValue.split(",").map((item) => item.trim()).filter(Boolean),
+            step[3],
+          ];
+        }
+
+        return [step[0], step[1], step[2], nextValue];
+      }),
+    }));
+  };
+
+  const handleSkillFieldChange = (index, field) => (event) => {
+    const nextValue = event.target.value;
+
+    setFormValues((current) => ({
+      ...current,
+      skills: current.skills.map((skill, skillIndex) => {
+        if (skillIndex !== index) {
+          return skill;
+        }
+
+        if (field === "title") {
+          return [nextValue, skill[1], skill[2], skill[3]];
+        }
+
+        if (field === "subtitle") {
+          return [skill[0], nextValue, skill[2], skill[3]];
+        }
+
+        if (field === "score") {
+          const score = Number.parseInt(nextValue, 10);
+          const normalizedScore = Number.isNaN(score) ? 1 : Math.min(5, Math.max(1, score));
+
+          return [skill[0], skill[1], normalizedScore, SKILL_LEVEL_LABELS[normalizedScore]];
+        }
+
+        return [skill[0], skill[1], skill[2], nextValue];
+      }),
+    }));
+  };
+
   const handleStartEdit = () => {
     setFlashMessage("");
     setIsEditing(true);
   };
 
+  const scrollToSection = (sectionRef, options = {}) => {
+    if (options.startEdit && !isEditing) {
+      setFlashMessage("");
+      setIsEditing(true);
+    }
+
+    if (options.sectionKey) {
+      setHighlightedSection(options.sectionKey);
+      window.setTimeout(() => {
+        setHighlightedSection((current) => (current === options.sectionKey ? "" : current));
+      }, 2200);
+    }
+
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+  };
+
   const handleCancelEdit = () => {
+    setShowCancelConfirm(false);
     setFormValues(initialDesign);
+    setPendingDeleteVariant(null);
     setFlashMessage("");
     setIsEditing(false);
   };
 
-  const handleSave = () => {
-    setFlashMessage("Mock update completed. Changes are local to this detail screen.");
-    setIsEditing(false);
+  const handleSave = async () => {
+    setShowSaveConfirm(false);
+    setError("");
+
+    const initialVariants = Array.isArray(initialDesign?.variants) ? initialDesign.variants : [];
+    const currentVariants = Array.isArray(formValues?.variants) ? formValues.variants : [];
+    const designNameChanged =
+      String(initialDesign?.name || "").trim() !== String(formValues?.heroTitle || "").trim();
+    const designDescriptionChanged =
+      String(initialDesign?.description || "").trim()
+      !== String(formValues?.heroSubtitle || "").trim();
+    const variantsToUpdate = currentVariants.filter((variant) => {
+      const initialVariant = initialVariants.find(
+        (item) => Number(item?.nailVariantId || 0) === Number(variant?.nailVariantId || 0),
+      );
+
+      if (!initialVariant) {
+        return false;
+      }
+
+      return (
+        String(initialVariant.name || "").trim() !== String(variant.name || "").trim()
+        || String(initialVariant.imageUrl || "").trim() !== String(variant.imageUrl || "").trim()
+        || String(initialVariant.colorJson || "").trim() !== String(variant.colorJson || "").trim()
+      );
+    });
+
+    if (!designNameChanged && !designDescriptionChanged && !variantsToUpdate.length) {
+      setFlashMessage("No API-backed changes detected. Other edits on this screen remain local only.");
+      setIsEditing(false);
+      return;
+    }
+
+    setIsSavingVariants(true);
+
+    try {
+      if (designNameChanged || designDescriptionChanged) {
+        await updateAdminNailDesign(designId, {
+          name: formValues?.heroTitle,
+          description: formValues?.heroSubtitle,
+          categoryIds: formValues?.categoryIds,
+          nailVariantIds: currentVariants.map((variant) => variant.nailVariantId),
+          existingImageUrls: formValues?.imageUrls,
+        });
+      }
+
+      await Promise.all(
+        variantsToUpdate.map((variant) =>
+          updateAdminNailVariant(variant.nailVariantId, {
+            name: variant.name,
+            nailShapeId: variant.nailShapeId,
+            nailSurfaceId: variant.nailSurfaceId,
+            nailDesignId: variant.nailDesignId || Number(designId || 0),
+            imageUrl: variant.imageUrl,
+            colorJson: variant.colorJson,
+          }),
+        ),
+      );
+
+      const refreshedDetail = await fetchAdminNailDesignDetail(designId);
+      setInitialDesign(refreshedDetail);
+      setFormValues(refreshedDetail);
+      const successMessages = [];
+
+      if (designNameChanged || designDescriptionChanged) {
+        successMessages.push("nail design updated");
+      }
+
+      if (variantsToUpdate.length === 1) {
+        successMessages.push("1 variant updated");
+      } else if (variantsToUpdate.length > 1) {
+        successMessages.push(`${variantsToUpdate.length} variants updated`);
+      }
+
+      setFlashMessage(
+        successMessages.length
+          ? `${successMessages.join(" and ")} successfully.`
+          : "Changes saved successfully.",
+      );
+      setIsEditing(false);
+    } catch (saveError) {
+      setError(
+        saveError instanceof Error ? saveError.message : "Failed to update nail design.",
+      );
+    } finally {
+      setIsSavingVariants(false);
+    }
+  };
+
+  const handleDeleteVariant = async () => {
+    if (!pendingDeleteVariant?.nailVariantId) {
+      return;
+    }
+
+    setError("");
+    setIsDeletingVariant(true);
+
+    try {
+      await deleteAdminNailVariant(pendingDeleteVariant.nailVariantId);
+
+      const refreshedDetail = await fetchAdminNailDesignDetail(designId);
+      setInitialDesign(refreshedDetail);
+      setFormValues(refreshedDetail);
+      setFlashMessage(`Deleted variant "${pendingDeleteVariant.name}".`);
+      setPendingDeleteVariant(null);
+    } catch (deleteError) {
+      setError(
+        deleteError instanceof Error ? deleteError.message : "Failed to delete nail variant.",
+      );
+    } finally {
+      setIsDeletingVariant(false);
+    }
+  };
+
+  const handleViewVariant = async (variant) => {
+    if (!variant?.nailVariantId) {
+      setError("Variant ID is required.");
+      return;
+    }
+
+    setError("");
+    setIsLoadingVariantDetail(true);
+    setIsLoadingVariantProcedures(true);
+    setSelectedVariantDetail({
+      nailVariantId: variant.nailVariantId,
+      name: variant.name,
+      imageUrl: variant.imageUrl,
+      isPlaceholder: true,
+    });
+    setVariantProcedureDraft([]);
+
+    try {
+      const [detail, procedures] = await Promise.all([
+        fetchAdminNailVariantDetail(variant.nailVariantId),
+        fetchProceduresByVariant(variant.nailVariantId),
+      ]);
+      setSelectedVariantDetail(detail);
+      setVariantProcedureDraft(procedures);
+    } catch (detailError) {
+      setSelectedVariantDetail(null);
+      setVariantProcedureDraft([]);
+      setError(
+        detailError instanceof Error
+          ? detailError.message
+          : "Failed to load nail variant detail.",
+      );
+    } finally {
+      setIsLoadingVariantDetail(false);
+      setIsLoadingVariantProcedures(false);
+    }
+  };
+
+  const updateVariantProcedureDraft = (index, field, value) => {
+    setVariantProcedureDraft((current) =>
+      current.map((item, itemIndex) =>
+        itemIndex === index
+          ? {
+              ...item,
+              [field]: field === "stepOrder" ? value : value,
+            }
+          : item,
+      ),
+    );
+  };
+
+  const addVariantProcedureDraft = () => {
+    setVariantProcedureDraft((current) => [
+      ...current,
+      {
+        procedureId: "",
+        name: "",
+        description: "",
+        duration: 0,
+        durationLabel: "--",
+        status: "--",
+        createAt: "",
+        isRequired: false,
+        stepOrder: current.length + 1,
+      },
+    ]);
+  };
+
+  const removeVariantProcedureDraft = (index) => {
+    setVariantProcedureDraft((current) => current.filter((_, itemIndex) => itemIndex !== index));
+  };
+
+  const handleSaveVariantProcedures = async () => {
+    if (!selectedVariantDetail?.nailVariantId) {
+      return;
+    }
+
+    setError("");
+    setIsSavingVariantProcedures(true);
+
+    try {
+      await assignProceduresToVariant(
+        selectedVariantDetail.nailVariantId,
+        variantProcedureDraft.map((item, index) => ({
+          procedureId: item.procedureId,
+          stepOrder: Number(item.stepOrder || index + 1),
+        })),
+      );
+
+      const refreshedProcedures = await fetchProceduresByVariant(selectedVariantDetail.nailVariantId);
+      setVariantProcedureDraft(refreshedProcedures);
+      setFlashMessage(`Updated procedure steps for "${selectedVariantDetail.name}".`);
+    } catch (saveError) {
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : "Failed to assign procedures to variant.",
+      );
+    } finally {
+      setIsSavingVariantProcedures(false);
+    }
   };
 
   const summaryRows = [
     ["Design Status", formValues.designStatus],
     ["Try-On Ready", formValues.tryOnReady ? "Yes" : "No"],
     ["Complexity", formValues.complexity],
-    ["Est. Duration", formValues.estimatedDuration],
+    ["Est. Duration", formatDurationLabel(formValues.estimatedDuration)],
     ["Nail Shape", formValues.nailShape],
     ["Nail Length", formValues.nailLength],
     ["Suggested Price", formValues.suggestedPrice],
@@ -154,6 +833,36 @@ export function NailDesignManagementDetailPage() {
 
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)]">
+      <style>
+        {`
+          .skill-level-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 9999px;
+            background: #ea4f93;
+            border: 3px solid #fff7fb;
+            box-shadow: 0 4px 12px rgba(234, 79, 147, 0.28);
+          }
+
+          .skill-level-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 9999px;
+            background: #ea4f93;
+            border: 3px solid #fff7fb;
+            box-shadow: 0 4px 12px rgba(234, 79, 147, 0.28);
+          }
+
+          .skill-level-slider::-moz-range-track {
+            height: 8px;
+            border-radius: 9999px;
+            background: transparent;
+          }
+        `}
+      </style>
+
       <div className="rounded-[18px] border border-[#f8d8e6] bg-white px-5 py-4 shadow-[0_12px_28px_rgba(236,72,153,0.06)]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
@@ -164,7 +873,7 @@ export function NailDesignManagementDetailPage() {
               Nail Design Detail
             </h2>
             <p className="mt-1 text-sm text-[#c694ad]">
-              View design components, pricing, workflow, and AI recommendation profile.
+              View and edit design details, workflow, and AI recommendation profile. Pricing stays locked.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -175,14 +884,16 @@ export function NailDesignManagementDetailPage() {
               <>
                 <button
                   type="button"
-                  onClick={handleSave}
+                  onClick={() => setShowSaveConfirm(true)}
+                  disabled={isSavingVariants || isDeletingVariant}
                   className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.2)]"
                 >
-                  Save Changes
+                  {isSavingVariants ? "Saving..." : "Save Changes"}
                 </button>
                 <button
                   type="button"
-                  onClick={handleCancelEdit}
+                  onClick={() => setShowCancelConfirm(true)}
+                  disabled={isSavingVariants || isDeletingVariant}
                   className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#7e6075]"
                 >
                   Cancel
@@ -220,28 +931,41 @@ export function NailDesignManagementDetailPage() {
         </div>
       ) : null}
 
+      {error ? (
+        <div className="rounded-[16px] bg-[#fff1f5] px-4 py-3 text-sm font-medium text-[#d14c84]">
+          {error}
+        </div>
+      ) : null}
+
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_290px]">
         <div className="space-y-4">
-          <article className="rounded-[22px] border border-[#f8d3e2] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] md:p-5">
+          <article
+            ref={heroSectionRef}
+            id="hero-section"
+            className={`scroll-mt-6 rounded-[22px] border bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] transition-all duration-300 md:p-5 ${
+              highlightedSection === "hero"
+                ? "border-[#ea4f93] shadow-[0_18px_38px_rgba(236,72,153,0.18)] ring-4 ring-[#ffd8e8]"
+                : "border-[#f8d3e2]"
+            }`}
+          >
             <div className="grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
               <div className="overflow-hidden rounded-[18px] bg-[#f6edf2]">
                 <img
-                  src={DESIGN_PREVIEW_IMAGE}
+                  src={formValues.previewImage || DESIGN_PREVIEW_IMAGE}
                   alt={formValues.heroTitle}
                   className="h-full w-full object-cover"
                   referrerPolicy="no-referrer"
                 />
                 <div className="p-3">
-                  <Pill tone="pink">Try-On Ready</Pill>
+                  <Pill tone={formValues.tryOnReady ? "green" : "pink"}>
+                    {formValues.tryOnReady ? "Try-On Ready" : "No Try-On"}
+                  </Pill>
                 </div>
               </div>
 
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#c694ad]">
-                  {formValues.id}
-                </p>
                 {isEditing ? (
-                  <div className="mt-2 space-y-3">
+                  <div className="space-y-3">
                     <input
                       value={formValues.heroTitle}
                       onChange={handleChange("heroTitle")}
@@ -299,6 +1023,9 @@ export function NailDesignManagementDetailPage() {
             title="Customer Matching Profile"
             subtitle="AI recommendation and customer personalization profile"
             icon={<Sparkles size={18} />}
+            sectionId="customer-profile-section"
+            sectionRef={customerProfileRef}
+            highlighted={highlightedSection === "customer-profile"}
           >
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               {Object.entries(formValues.customerProfile).map(([label, values]) => (
@@ -306,16 +1033,42 @@ export function NailDesignManagementDetailPage() {
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c694ad]">
                     {label}
                   </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {values.map((value, index) => (
-                      <Pill
-                        key={value}
-                        tone={getProfileValueTone(index)}
-                      >
-                        {value}
-                      </Pill>
-                    ))}
-                  </div>
+                  {isEditing ? (
+                    <div className="mt-3 space-y-3">
+                      <div className="flex flex-wrap gap-2">
+                        {(CUSTOMER_PROFILE_OPTIONS[label] ?? []).map((option, index) => {
+                          const active = values.includes(option);
+
+                          return (
+                            <button
+                              key={option}
+                              type="button"
+                              onClick={handleCustomerProfileToggle(label, option)}
+                              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-bold transition ${
+                                active
+                                  ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93]"
+                                  : `text-[#8c7085] ${index % 3 === 0 ? "border-[#ead8ff] bg-[#f9f4ff]" : index % 3 === 1 ? "border-[#d7f3e0] bg-[#effcf4]" : "border-[#f8e3b3] bg-[#fff8e8]"}`
+                              }`}
+                            >
+                              <span className="text-xs">{active ? "−" : "+"}</span>
+                              {option}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="text-[11px] text-[#b2879f]">
+                        {values.length > 0 ? `Selected ${values.length} tags` : "Select one or more tags"}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {values.map((value, index) => (
+                        <Pill key={value} tone={getProfileValueTone(index)}>
+                          {value}
+                        </Pill>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -325,14 +1078,27 @@ export function NailDesignManagementDetailPage() {
             title="Design Components"
             subtitle="Core structure and styling decisions"
             icon={<Settings2 size={18} />}
+            sectionId="design-components-section"
+            sectionRef={designComponentsRef}
+            highlighted={highlightedSection === "design-components"}
           >
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {formValues.designComponents.map(([label, value]) => (
+              {formValues.designComponents.map(([label, value], index) => (
                 <div key={label} className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4 text-center">
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c694ad]">
                     {label}
                   </p>
-                  <p className="mt-3 text-sm font-extrabold text-[#432744]">{value}</p>
+                  {isEditing ? (
+                    <div className="mt-3 text-left">
+                      <EditSelect
+                        value={value}
+                        onChange={handleDesignComponentChange(index)}
+                        options={COMPONENT_VALUE_OPTIONS[label] ?? [value]}
+                      />
+                    </div>
+                  ) : (
+                    <p className="mt-3 text-sm font-extrabold text-[#432744]">{value}</p>
+                  )}
                 </div>
               ))}
             </div>
@@ -342,46 +1108,123 @@ export function NailDesignManagementDetailPage() {
             title="Design Variants"
             subtitle="Design variations have different accessories"
             icon={<Copy size={18} />}
+            sectionId="design-variants-section"
+            sectionRef={designVariantsRef}
+            highlighted={highlightedSection === "design-variants"}
           >
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {formValues.variants.map((variant) => (
-                <div key={variant.name} className="rounded-[20px] border border-[#f7d7e5] bg-white p-3 shadow-[0_10px_20px_rgba(236,72,153,0.05)]">
+              {formValues.variants.map((variant, index) => (
+                <div
+                  key={variant.id || variant.nailVariantId || `${variant.name}-${index}`}
+                  className="rounded-[20px] border border-[#f7d7e5] bg-white p-3 shadow-[0_10px_20px_rgba(236,72,153,0.05)]"
+                >
                   <div className="overflow-hidden rounded-[16px] bg-[#f6edf2]">
                     <img
-                      src={DESIGN_PREVIEW_IMAGE}
+                      src={variant.imageUrl || formValues.previewImage || DESIGN_PREVIEW_IMAGE}
                       alt={variant.name}
                       className="h-44 w-full object-cover"
                       referrerPolicy="no-referrer"
                     />
                   </div>
-                  <h4 className="mt-3 font-extrabold text-[#432744]">{variant.name}</h4>
-                  <p className="mt-1 text-sm text-[#8c7085]">{variant.description}</p>
+                  {isEditing ? (
+                    <div className="mt-3 space-y-3">
+                      <div>
+                        <InputLabel>Variant Name</InputLabel>
+                        <EditInput
+                          value={variant.name}
+                          onChange={handleVariantFieldChange(index, "name")}
+                        />
+                      </div>
+                      <div>
+                        <InputLabel>Description</InputLabel>
+                        <EditTextarea
+                          disabled
+                          value={variant.description}
+                          onChange={handleVariantFieldChange(index, "description")}
+                          rows={3}
+                        />
+                        <p className="mt-1 text-[11px] text-[#b2879f]">
+                          Description is derived from surface and accessories, not persisted by this API.
+                        </p>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div>
+                          <InputLabel>Level</InputLabel>
+                          <EditSelect
+                            disabled
+                            value={variant.level}
+                            onChange={handleVariantFieldChange(index, "level")}
+                            options={VARIANT_LEVEL_OPTIONS}
+                          />
+                        </div>
+                        <div>
+                          <InputLabel>Duration</InputLabel>
+                          <EditInput
+                            className="disabled:cursor-not-allowed disabled:bg-[#f9f1f5] disabled:text-[#b2879f]"
+                            disabled
+                            value={variant.duration}
+                            onChange={handleVariantFieldChange(index, "duration")}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <InputLabel>Image URL</InputLabel>
+                        <EditInput
+                          value={variant.imageUrl}
+                          onChange={handleVariantFieldChange(index, "imageUrl")}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <h4 className="mt-3 font-extrabold text-[#432744]">{variant.name}</h4>
+                      <p className="mt-1 text-sm text-[#8c7085]">{variant.description}</p>
+                    </>
+                  )}
                   <div className="mt-3 flex flex-wrap gap-2">
                     <Pill tone="pink">{variant.materialDelta}</Pill>
                     <Pill tone="yellow">{variant.priceDelta}</Pill>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <Pill tone="blue">{variant.level}</Pill>
-                    <Pill tone="green">{variant.duration}</Pill>
+                    <Pill tone="green">{formatDurationLabel(variant.duration)}</Pill>
                   </div>
                   <div className="mt-4 flex gap-2">
                     <button
                       type="button"
+                      onClick={() => void handleViewVariant(variant)}
+                      disabled={isLoadingVariantDetail}
                       className="flex-1 rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-2 text-xs font-bold text-[#ea4f93]"
                     >
-                      View
+                      {isLoadingVariantDetail && selectedVariantDetail?.nailVariantId === variant.nailVariantId
+                        ? "Loading..."
+                        : "View"}
                     </button>
                     <button
                       type="button"
+                      onClick={() => setFlashMessage(`Apply variant "${variant.name}" is not connected yet.`)}
                       className="flex-1 rounded-full bg-[image:var(--gradient-accent)] px-3 py-2 text-xs font-bold text-white"
                     >
                       Apply
                     </button>
                     <button
                       type="button"
-                      className="flex-1 rounded-full border border-[#f4c6da] bg-white px-3 py-2 text-xs font-bold text-[#8c7085]"
+                      onClick={() =>
+                        isEditing
+                          ? setPendingDeleteVariant(variant)
+                          : scrollToSection(designVariantsRef, {
+                              startEdit: true,
+                              sectionKey: "design-variants",
+                            })
+                      }
+                      disabled={isSavingVariants || isDeletingVariant}
+                      className={`flex-1 rounded-full border px-3 py-2 text-xs font-bold ${
+                        isEditing
+                          ? "border-[#f3b1c7] bg-[#fff2f6] text-[#d14c84]"
+                          : "border-[#f4c6da] bg-white text-[#8c7085]"
+                      }`}
                     >
-                      Edit
+                      {isEditing ? "Delete" : "Edit"}
                     </button>
                   </div>
                 </div>
@@ -393,6 +1236,9 @@ export function NailDesignManagementDetailPage() {
             title="Pricing & Cost Breakdown"
             subtitle=""
             icon={<CircleDollarSign size={18} />}
+            sectionId="pricing-section"
+            sectionRef={pricingRef}
+            highlighted={highlightedSection === "pricing"}
           >
             <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_240px]">
               <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
@@ -458,58 +1304,72 @@ export function NailDesignManagementDetailPage() {
           </SectionCard>
 
           <SectionCard
-            title="Service Workflow"
-            subtitle=""
-            icon={<BarChart3 size={18} />}
-          >
-            <div className="space-y-3">
-              {formValues.workflow.map(([title, duration, tools, level], index) => (
-                <div
-                  key={title}
-                  className="grid gap-3 rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] px-4 py-3 md:grid-cols-[34px_minmax(0,1fr)]"
-                >
-                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#ea4f93] text-[10px] font-bold text-white">
-                    {index + 1}
-                  </span>
-                  <div>
-                    <p className="font-semibold text-[#432744]">{title}</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      <Pill tone="pink">{duration}</Pill>
-                      {tools.map((tool, toolIndex) => (
-                        <Pill key={tool} tone={toolIndex % 2 === 0 ? "blue" : "purple"}>
-                          {tool}
-                        </Pill>
-                      ))}
-                      <Pill tone="yellow">{level}</Pill>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </SectionCard>
-
-          <SectionCard
             title="Required Staff Skills"
             subtitle=""
             icon={<Star size={18} />}
+            sectionId="skills-section"
+            sectionRef={skillsRef}
+            highlighted={highlightedSection === "skills"}
           >
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {formValues.skills.map(([title, subtitle, score, label]) => (
+              {formValues.skills.map(([title, subtitle, score, label], index) => (
                 <div key={title} className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c694ad]">
-                    {title}
-                  </p>
-                  <p className="mt-1 text-xs text-[#c694ad]">{subtitle}</p>
-                  <div className="mt-3">
-                    <SkillStars count={score} />
-                  </div>
-                  <div className="mt-3 h-1.5 rounded-full bg-[#f9d8e5]">
-                    <div
-                      className="h-full rounded-full bg-[image:var(--gradient-accent)]"
-                      style={{ width: `${score * 20}%` }}
-                    />
-                  </div>
-                  <p className="mt-2 text-xs font-semibold text-[#8c7085]">{label}</p>
+                  {isEditing ? (
+                    <div className="space-y-3">
+                      <div>
+                        <InputLabel>Skill</InputLabel>
+                        <EditInput value={title} onChange={handleSkillFieldChange(index, "title")} />
+                      </div>
+                      <div>
+                        <InputLabel>Subtitle</InputLabel>
+                        <EditInput
+                          value={subtitle}
+                          onChange={handleSkillFieldChange(index, "subtitle")}
+                        />
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div>
+                          <InputLabel>Level Control</InputLabel>
+                          <SkillLevelSlider
+                            value={score}
+                            onChange={handleSkillFieldChange(index, "score")}
+                          />
+                        </div>
+                        <div>
+                          <InputLabel>Label</InputLabel>
+                          <div className="rounded-2xl border border-[#f4d4e2] bg-white px-4 py-3">
+                            <SkillStars count={score} />
+                            <p className="mt-2 text-sm font-semibold text-[#8c7085]">
+                              {SKILL_LEVEL_LABELS[score]}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-[#f9d8e5]">
+                        <div
+                          className="h-full rounded-full bg-[linear-gradient(90deg,#ea4f93_0%,#f59f61_55%,#f7d85f_100%)]"
+                          style={{ width: `${score * 20}%` }}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c694ad]">
+                        {title}
+                      </p>
+                      <p className="mt-1 text-xs text-[#c694ad]">{subtitle}</p>
+                      <div className="mt-3">
+                        <SkillStars count={score} />
+                      </div>
+                      <div className="mt-3 h-1.5 rounded-full bg-[#f9d8e5]">
+                        <div
+                          className="h-full rounded-full bg-[image:var(--gradient-accent)]"
+                          style={{ width: `${score * 20}%` }}
+                        />
+                      </div>
+                      <p className="mt-2 text-xs font-semibold text-[#8c7085]">{label}</p>
+                    </>
+                  )}
                 </div>
               ))}
             </div>
@@ -527,8 +1387,26 @@ export function NailDesignManagementDetailPage() {
                 [formValues.advancedLevel, "Advanced Level"],
               ].map(([value, label]) => (
                 <div key={label} className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] px-4 py-4 text-center">
-                  <p className="text-2xl font-extrabold text-[#ea4f93]">{value}</p>
-                  <p className="mt-1 text-xs text-[#c694ad]">{label}</p>
+                  {isEditing ? (
+                    <div className="text-left">
+                      <InputLabel>{label}</InputLabel>
+                      <EditInput
+                        value={value}
+                        onChange={handleChange(
+                          label === "Eligible Artists"
+                            ? "eligibleArtists"
+                            : label === "Expert Level"
+                              ? "expertLevel"
+                              : "advancedLevel",
+                        )}
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-2xl font-extrabold text-[#ea4f93]">{value}</p>
+                      <p className="mt-1 text-xs text-[#c694ad]">{label}</p>
+                    </>
+                  )}
                 </div>
               ))}
             </div>
@@ -536,17 +1414,83 @@ export function NailDesignManagementDetailPage() {
         </div>
 
         <aside className="space-y-4">
-          <SectionCard title="Quick Summary" subtitle="" icon={<Sparkles size={18} />}>
-            <div className="space-y-3 text-sm">
-              {summaryRows.map(([label, value], index) => (
-                <div key={label} className="flex items-center justify-between gap-3">
-                  <span className="text-[#8c7085]">{label}</span>
-                  <span className={`font-semibold ${index === 6 ? "text-[#ea4f93]" : "text-[#432744]"}`}>
-                    {value}
-                  </span>
+          <SectionCard
+            title="Quick Summary"
+            subtitle=""
+            icon={<Sparkles size={18} />}
+            sectionId="quick-summary-section"
+            sectionRef={quickSummaryRef}
+            highlighted={highlightedSection === "quick-summary"}
+          >
+            {isEditing ? (
+              <div className="space-y-3">
+                <div>
+                  <InputLabel>Design Status</InputLabel>
+                  <EditSelect
+                    value={formValues.designStatus}
+                    onChange={handleChange("designStatus")}
+                    options={DESIGN_COMPONENT_OPTIONS["Design Status"]}
+                  />
                 </div>
-              ))}
-            </div>
+                <div>
+                  <InputLabel>Try-On Ready</InputLabel>
+                  <select
+                    value={String(formValues.tryOnReady)}
+                    onChange={handleBooleanChange("tryOnReady")}
+                    className="h-11 w-full rounded-2xl border border-[#f4d4e2] bg-[#fffdfd] px-4 text-sm text-[#432744] outline-none transition focus:border-[#ef6bb4]"
+                  >
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                  </select>
+                </div>
+                <div>
+                  <InputLabel>Complexity</InputLabel>
+                  <EditSelect
+                    value={formValues.complexity}
+                    onChange={handleChange("complexity")}
+                    options={DESIGN_COMPONENT_OPTIONS.Complexity}
+                  />
+                </div>
+                <div>
+                  <InputLabel>Est. Duration</InputLabel>
+                  <EditSelect
+                    value={formValues.estimatedDuration}
+                    onChange={handleChange("estimatedDuration")}
+                    options={DESIGN_COMPONENT_OPTIONS["Est. Duration"]}
+                  />
+                </div>
+                <div>
+                  <InputLabel>Nail Shape</InputLabel>
+                  <EditSelect
+                    value={formValues.nailShape}
+                    onChange={handleChange("nailShape")}
+                    options={DESIGN_COMPONENT_OPTIONS["Nail Shape"]}
+                  />
+                </div>
+                <div>
+                  <InputLabel>Nail Length</InputLabel>
+                  <EditSelect
+                    value={formValues.nailLength}
+                    onChange={handleChange("nailLength")}
+                    options={DESIGN_COMPONENT_OPTIONS["Nail Length"]}
+                  />
+                </div>
+                <div className="rounded-[16px] border border-dashed border-[#f3c9dd] bg-[#fff8fb] px-4 py-3 text-xs text-[#8c7085]">
+                  Suggested price remains locked in edit mode.
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3 text-sm">
+                {summaryRows.map(([label, value], index) => (
+                  <div key={label} className="flex items-center justify-between gap-3">
+                    <span className="text-[#8c7085]">{label}</span>
+                    <span className={`font-semibold ${index === 6 ? "text-[#ea4f93]" : "text-[#432744]"}`}>
+                      {value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </SectionCard>
 
           <SectionCard title="Performance" subtitle="" icon={<BarChart3 size={18} />}>
@@ -565,60 +1509,94 @@ export function NailDesignManagementDetailPage() {
             </div>
           </SectionCard>
 
-          <SectionCard title="Staff Match" subtitle="" icon={<WandSparkles size={18} />}>
-            <div className="space-y-3">
-              {formValues.staffMatch.map(([name, score]) => (
-                <div key={name} className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ea4f93_0%,#9b5cf6_100%)] text-[10px] font-bold text-white">
-                      {name
-                        .split(" ")
-                        .map((part) => part[0])
-                        .join("")
-                        .slice(0, 2)}
-                    </div>
-                    <p className="text-sm font-bold text-[#432744]">{name}</p>
-                  </div>
-                  <span className="text-xs font-bold text-[#ea4f93]">{score}</span>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 rounded-[16px] bg-[#fff4df] px-3 py-3 text-xs text-[#af7a22]">
-              5 artists below required skill level filtered out for this design.
-            </div>
-          </SectionCard>
-
           <SectionCard title="Quick Actions" subtitle="" icon={<Settings2 size={18} />}>
             <div className="space-y-2">
               <button
                 type="button"
-                className="w-full rounded-full bg-[image:var(--gradient-accent)] px-4 py-2.5 text-left text-xs font-bold text-white"
+                onClick={() =>
+                  scrollToSection(heroSectionRef, { startEdit: true, sectionKey: "hero" })
+                }
+                className={`w-full rounded-full px-4 py-2.5 text-left text-xs font-bold text-white transition ${
+                  highlightedSection === "hero"
+                    ? "bg-[image:var(--gradient-accent)] shadow-[0_14px_26px_rgba(236,72,153,0.28)] ring-4 ring-[#ffd8e8]"
+                    : "bg-[image:var(--gradient-accent)]"
+                }`}
               >
                 <PencilLine size={13} className="mr-1.5 inline" />
                 Edit Design
               </button>
-              {[
-                ["Add Variant", Copy],
-                ["Update Price", CircleDollarSign],
-                ["Upload Media", Upload],
-                ["Archive Design", Trash2],
-              ].map(([label, Icon]) => (
-                <button
-                  key={label}
-                  type="button"
-                  className="w-full rounded-full border border-[#f4c6da] bg-white px-4 py-2.5 text-left text-xs font-bold text-[#7e6075]"
-                >
-                  <Icon size={13} className="mr-1.5 inline" />
-                  {label}
-                </button>
-              ))}
+              <button
+                type="button"
+                onClick={() =>
+                  scrollToSection(designVariantsRef, {
+                    startEdit: true,
+                    sectionKey: "design-variants",
+                  })
+                }
+                className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${
+                  highlightedSection === "design-variants"
+                    ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
+                    : "border-[#f4c6da] bg-white text-[#7e6075]"
+                }`}
+              >
+                <Copy size={13} className="mr-1.5 inline" />
+                Add Variant
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollToSection(pricingRef, { sectionKey: "pricing" })}
+                className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${
+                  highlightedSection === "pricing"
+                    ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
+                    : "border-[#f4c6da] bg-white text-[#7e6075]"
+                }`}
+              >
+                <CircleDollarSign size={13} className="mr-1.5 inline" />
+                Update Price
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollToSection(heroSectionRef, { sectionKey: "hero" })}
+                className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${
+                  highlightedSection === "hero"
+                    ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
+                    : "border-[#f4c6da] bg-white text-[#7e6075]"
+                }`}
+              >
+                <Upload size={13} className="mr-1.5 inline" />
+                Upload Media
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  scrollToSection(quickSummaryRef, {
+                    startEdit: true,
+                    sectionKey: "quick-summary",
+                  })
+                }
+                className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${
+                  highlightedSection === "quick-summary"
+                    ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
+                    : "border-[#f4c6da] bg-white text-[#7e6075]"
+                }`}
+              >
+                <Trash2 size={13} className="mr-1.5 inline" />
+                Archive Design
+              </button>
             </div>
           </SectionCard>
 
-          <SectionCard title="Customer Preview" subtitle="How customers see this design" icon={<Eye size={18} />}>
+          <SectionCard
+            title="Customer Preview"
+            subtitle="How customers see this design"
+            icon={<Eye size={18} />}
+            sectionId="customer-preview-section"
+            sectionRef={customerPreviewRef}
+            highlighted={highlightedSection === "customer-preview"}
+          >
             <div className="overflow-hidden rounded-[18px] bg-[#f6edf2]">
               <img
-                src={DESIGN_PREVIEW_IMAGE}
+                src={formValues.previewImage || DESIGN_PREVIEW_IMAGE}
                 alt={formValues.heroTitle}
                 className="h-44 w-full object-cover"
                 referrerPolicy="no-referrer"
@@ -642,6 +1620,379 @@ export function NailDesignManagementDetailPage() {
           </SectionCard>
         </aside>
       </div>
+
+      <ActionConfirmModal
+        open={showSaveConfirm}
+        intent="success"
+        title="Save Design Changes"
+        subtitle="Nail design and variant edits are synced to backend when supported by the current APIs."
+        description="Confirm to update the current nail design and any changed variants with the latest API-supported values."
+        confirmText="Save Changes"
+        cancelText="Review Again"
+        confirmIcon={Sparkles}
+        width={520}
+        loading={isSavingVariants}
+        onConfirm={handleSave}
+        onCancel={() => setShowSaveConfirm(false)}
+        highlights={[formValues.name || "Design detail", formValues.designStatus || "Status pending", formValues.complexity || "Complexity pending"]}
+        details={[
+          { label: "Suggested Price", value: formValues.suggestedPrice || "No price entered" },
+          { label: "Est. Duration", value: formValues.estimatedDuration || "No duration entered" },
+        ]}
+        warnings={["This screen now persists design edits through PUT /api/NailDesigns/{id} and variant edits through PUT /api/NailVariants/{id}."]}
+      />
+
+      <ActionConfirmModal
+        open={showCancelConfirm}
+        intent="warning"
+        title="Discard Design Edits"
+        subtitle="You are about to leave edit mode without saving."
+        description="Unsaved updates to this nail design will be discarded."
+        confirmText="Discard Changes"
+        cancelText="Keep Editing"
+        confirmIcon={X}
+        onConfirm={handleCancelEdit}
+        onCancel={() => setShowCancelConfirm(false)}
+        details={[
+          { label: "Editing Mode", value: "Nail design detail" },
+          { label: "Result", value: "Revert to last loaded values" },
+        ]}
+        warnings={["Current unsaved non-pricing edits on this screen will be lost. Pricing remains read-only."]}
+      />
+
+      <ActionConfirmModal
+        open={Boolean(pendingDeleteVariant)}
+        intent="danger"
+        title="Delete Variant"
+        subtitle="This action will call DELETE /api/NailVariants/{id}."
+        description={`You are about to delete ${pendingDeleteVariant?.name ?? "this variant"}.`}
+        confirmText="Delete Variant"
+        cancelText="Keep Variant"
+        confirmIcon={Trash2}
+        loading={isDeletingVariant}
+        onConfirm={handleDeleteVariant}
+        onCancel={() => setPendingDeleteVariant(null)}
+        item={
+          pendingDeleteVariant
+            ? {
+                title: pendingDeleteVariant.name,
+                image: pendingDeleteVariant.imageUrl || formValues.previewImage || DESIGN_PREVIEW_IMAGE,
+                meta: pendingDeleteVariant.level,
+                note: pendingDeleteVariant.description || "Selected variant will be removed from this design.",
+              }
+            : null
+        }
+        warnings={["This permanently removes the variant from backend if the API call succeeds."]}
+      />
+
+      <Modal
+        open={Boolean(selectedVariantDetail)}
+        onCancel={isLoadingVariantDetail ? undefined : () => setSelectedVariantDetail(null)}
+        footer={null}
+        closable={false}
+        centered
+        width={760}
+        styles={DETAIL_MODAL_STYLES}
+        maskClosable={!isLoadingVariantDetail}
+        keyboard={!isLoadingVariantDetail}
+      >
+        <div className="overflow-hidden">
+          <div className="bg-[linear-gradient(135deg,#fff0f6_0%,#fff8e9_100%)] px-6 py-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/70 text-[#ea4f93]">
+                  <Eye size={20} />
+                </div>
+                <div>
+                  <span className="inline-flex rounded-full bg-white/70 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#b25784]">
+                    Variant Detail
+                  </span>
+                  <h3 className="mt-3 text-lg font-black text-[#432744]">
+                    {selectedVariantDetail?.name || "Variant"}
+                  </h3>
+                  <p className="mt-1 text-sm text-[#9c7089]">
+                    Data loaded from `GET /api/NailVariants/{'{id}'}`.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedVariantDetail(null)}
+                disabled={isLoadingVariantDetail}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#f3c9dd] bg-white/80 text-[#a35d84] transition disabled:cursor-not-allowed disabled:opacity-60"
+                aria-label="Close variant detail modal"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+
+          {isLoadingVariantDetail && selectedVariantDetail?.isPlaceholder ? (
+            <div className="flex items-center gap-3 px-6 py-8 text-sm text-[#8c7085]">
+              <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
+              Loading nail variant detail...
+            </div>
+          ) : (
+            <div className="space-y-5 px-6 py-5">
+              <div className="grid gap-5 lg:grid-cols-[260px_minmax(0,1fr)]">
+                <div className="overflow-hidden rounded-[20px] bg-[#f6edf2]">
+                  <img
+                    src={selectedVariantDetail?.imageUrl || formValues.previewImage || DESIGN_PREVIEW_IMAGE}
+                    alt={selectedVariantDetail?.name || "Variant"}
+                    className="h-60 w-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+
+                <div className="space-y-4">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {[
+                      ["Price", selectedVariantDetail?.priceLabel || "--"],
+                      ["Duration", selectedVariantDetail?.durationLabel || "--"],
+                    ].map(([label, value]) => (
+                      <div key={label} className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
+                          {label}
+                        </p>
+                        <p className="mt-2 text-sm font-bold text-[#432744]">{value}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
+                      Description
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-[#6d5669]">
+                      {selectedVariantDetail?.description || "--"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
+                  <p className="font-bold text-[#432744]">Nail Shape</p>
+                  <div className="mt-4 space-y-3 text-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[#8c7085]">Name</span>
+                      <span className="font-semibold text-[#432744]">
+                        {selectedVariantDetail?.nailShape?.name || "--"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[#8c7085]">Price</span>
+                      <span className="font-semibold text-[#432744]">
+                        {selectedVariantDetail?.nailShape?.priceLabel || "--"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
+                  <p className="font-bold text-[#432744]">Nail Surface</p>
+                  <div className="mt-4 space-y-3 text-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[#8c7085]">Name</span>
+                      <span className="font-semibold text-[#432744]">
+                        {selectedVariantDetail?.nailSurface?.name || "--"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[#8c7085]">Shader</span>
+                      <span className="font-semibold text-[#432744]">
+                        {selectedVariantDetail?.nailSurface?.shaderParam || "--"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[#8c7085]">Price</span>
+                      <span className="font-semibold text-[#432744]">
+                        {selectedVariantDetail?.nailSurface?.priceLabel || "--"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-bold text-[#432744]">Accessories / Components</p>
+                  <Pill tone="purple">
+                    {String(selectedVariantDetail?.nailComponents?.length || 0)} items
+                  </Pill>
+                </div>
+                {selectedVariantDetail?.nailComponents?.length ? (
+                  <div className="mt-4 space-y-3">
+                    {selectedVariantDetail.nailComponents.map((item) => (
+                      <div
+                        key={item.id}
+                        className="rounded-[18px] border border-[#f1d7e3] bg-white p-4"
+                      >
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Pill tone="pink">{item.component?.name || "--"}</Pill>
+                          <Pill tone="blue">{item.component?.componentType || "--"}</Pill>
+                          <Pill tone="yellow">{item.component?.priceLabel || "--"}</Pill>
+                        </div>
+                        <div className="mt-3 grid gap-2 text-sm md:grid-cols-4">
+                          <div>
+                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">Finger</p>
+                            <p className="mt-1 font-semibold text-[#432744]">{item.fingerIndex}</p>
+                          </div>
+                          <div>
+                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">Pos X</p>
+                            <p className="mt-1 font-semibold text-[#432744]">{item.posX}</p>
+                          </div>
+                          <div>
+                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">Pos Y</p>
+                            <p className="mt-1 font-semibold text-[#432744]">{item.posY}</p>
+                          </div>
+                          <div>
+                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">Config</p>
+                            <p className="mt-1 font-semibold break-all text-[#432744]">
+                              {item.configJson || "--"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-4 text-sm text-[#8c7085]">This variant has no accessory components.</p>
+                )}
+              </div>
+
+              <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
+                <p className="font-bold text-[#432744]">Color Preview</p>
+                {extractVariantColors(selectedVariantDetail?.colorJson).length > 0 ? (
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    {extractVariantColors(selectedVariantDetail?.colorJson).length > 1 ? (
+                      <div className="w-[170px] rounded-[18px] border border-[#f4d4e2] bg-white p-3 shadow-[0_8px_20px_rgba(236,72,153,0.05)]">
+                        <div
+                          className="h-16 rounded-[14px] border border-white shadow-inner"
+                          style={{
+                            backgroundImage: `linear-gradient(135deg, ${extractVariantColors(selectedVariantDetail?.colorJson).join(", ")})`,
+                          }}
+                        />
+                        <p className="mt-3 text-center text-[11px] font-bold text-[#6d5669]">Gradient Mix</p>
+                      </div>
+                    ) : null}
+                    {extractVariantColors(selectedVariantDetail?.colorJson).map((color) => (
+                      <div
+                        key={color}
+                        className="w-[110px] rounded-[18px] border border-[#f4d4e2] bg-white p-3 shadow-[0_8px_20px_rgba(236,72,153,0.05)]"
+                      >
+                        <div
+                          className="h-16 rounded-[14px] border border-white shadow-inner"
+                          style={{ backgroundColor: color }}
+                        />
+                        <p className="mt-3 text-center text-[11px] font-bold text-[#6d5669]">{color}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <pre className="mt-4 overflow-x-auto rounded-[16px] bg-[#fff] p-4 text-xs leading-6 text-[#6d5669]">
+                    {selectedVariantDetail?.colorJson || "--"}
+                  </pre>
+                )}
+              </div>
+
+              <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-bold text-[#432744]">Procedure Steps</p>
+                    <p className="mt-1 text-xs text-[#b2879f]">
+                      Loaded from `GET /api/Procedures/variant/{'{nailVariantId}'}`. Step order is initialized from response order because the GET schema does not include `stepOrder`.
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={addVariantProcedureDraft}
+                      disabled={isLoadingVariantProcedures || isSavingVariantProcedures}
+                      className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#ea4f93]"
+                    >
+                      <Plus size={13} className="mr-1.5 inline" />
+                      Add Step
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleSaveVariantProcedures()}
+                      disabled={isLoadingVariantProcedures || isSavingVariantProcedures}
+                      className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white"
+                    >
+                      <Save size={13} className="mr-1.5 inline" />
+                      {isSavingVariantProcedures ? "Saving..." : "Save Steps"}
+                    </button>
+                  </div>
+                </div>
+
+                {isLoadingVariantProcedures ? (
+                  <div className="mt-4 flex items-center gap-3 text-sm text-[#8c7085]">
+                    <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
+                    Loading procedure configuration...
+                  </div>
+                ) : variantProcedureDraft.length ? (
+                  <div className="mt-4 space-y-3">
+                    {variantProcedureDraft.map((item, index) => (
+                      <div
+                        key={`${item.procedureId || "draft"}-${index}`}
+                        className="rounded-[18px] border border-[#f1d7e3] bg-white p-4"
+                      >
+                        <div className="grid gap-3 md:grid-cols-[110px_minmax(0,1fr)_auto]">
+                          <label className="space-y-2">
+                            <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
+                              Step Order
+                            </span>
+                            <EditInput
+                              value={String(item.stepOrder || index + 1)}
+                              onChange={(event) =>
+                                updateVariantProcedureDraft(index, "stepOrder", event.target.value)
+                              }
+                            />
+                          </label> 
+                          <button
+                            type="button"
+                            onClick={() => removeVariantProcedureDraft(index)}
+                            disabled={isSavingVariantProcedures}
+                            className="self-end rounded-full border border-[#f3b1c7] bg-[#fff2f6] px-4 py-2 text-xs font-bold text-[#d14c84]"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                        <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
+                          <div>
+                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">Name</p>
+                            <p className="mt-1 font-semibold text-[#432744]">{item.name || "--"}</p>
+                          </div>
+                          <div>
+                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">Duration</p>
+                            <p className="mt-1 font-semibold text-[#432744]">{item.durationLabel || "--"}</p>
+                          </div>
+                          <div>
+                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">Status</p>
+                            <p className="mt-1 font-semibold text-[#432744]">{item.status || "--"}</p>
+                          </div>
+                          <div>
+                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">Required</p>
+                            <p className="mt-1 font-semibold text-[#432744]">{item.isRequired ? "Yes" : "No"}</p>
+                          </div>
+                        </div>
+                        {item.description ? (
+                          <p className="mt-3 text-sm leading-6 text-[#6d5669]">{item.description}</p>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="mt-4 rounded-[16px] border border-dashed border-[#f3c9dd] bg-white px-4 py-4 text-sm text-[#8c7085]">
+                    No procedures configured for this variant yet. Add rows and save to call `POST /api/Procedures/assign/{'{nailVariantId}'}`.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </Modal>
     </section>
   );
 }

@@ -3,6 +3,7 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  LogOut,
   LayoutDashboard,
   MapPin,
   MessageSquareWarning,
@@ -11,6 +12,7 @@ import {
   Star,
   Store,
   Users,
+  X,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { PropTypes } from "../../utils/propTypes";
@@ -79,7 +81,10 @@ SidebarItem.propTypes = {
 
 export function Sidebar({
   collapsed,
+  isMobile = false,
   menuGroups,
+  onCloseMobile,
+  onLogout,
   onToggleCollapse,
   portalLabel,
   profileName,
@@ -95,22 +100,37 @@ export function Sidebar({
             collapsed ? "px-2 py-4" : "px-4 py-6",
           ].join(" ")}
         >
-          <div className="flex items-center justify-center gap-2 text-center">
-            {!collapsed ? <MapPin size={18} className="shrink-0 text-white" /> : null}
-            <div className="min-w-0">
-              <p className="truncate text-[1.55rem] font-black leading-none tracking-[0.01em] text-white">
-                {collapsed ? "N" : "Nailify"}
-              </p>
-              {!collapsed ? (
-                <p className="mt-2 text-[9px] font-semibold uppercase tracking-[0.28em] text-white/70">
-                  {portalLabel}
+          <div className={`flex items-center gap-2 text-center ${isMobile ? "justify-between" : "justify-center"}`}>
+            <div className="flex items-center justify-center gap-2 text-center">
+              {!collapsed ? <MapPin size={18} className="shrink-0 text-white" /> : null}
+              <div className="min-w-0">
+                <p className="truncate text-[1.55rem] font-black leading-none tracking-[0.01em] text-white">
+                  {collapsed ? "N" : "Nailify"}
                 </p>
-              ) : null}
+                {!collapsed ? (
+                  <p className="mt-2 text-[9px] font-semibold uppercase tracking-[0.28em] text-white/70">
+                    {portalLabel}
+                  </p>
+                ) : null}
+              </div>
             </div>
+            {isMobile ? (
+              <button
+                type="button"
+                onClick={onCloseMobile}
+                title="Close menu"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-white transition hover:bg-white/15"
+              >
+                <X size={18} />
+              </button>
+            ) : null}
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-2 py-5">
+        <div
+          className="flex-1 overflow-y-auto px-2 py-5 [&::-webkit-scrollbar]:w-2.5 [&::-webkit-scrollbar-track]:bg-[rgba(255,255,255,0.12)] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[rgba(255,255,255,0.38)] [&::-webkit-scrollbar-thumb]:border-[2px] [&::-webkit-scrollbar-thumb]:border-solid [&::-webkit-scrollbar-thumb]:border-[#db5b91] [&::-webkit-scrollbar-thumb:hover]:bg-[rgba(255,255,255,0.5)]"
+          style={{ scrollbarColor: "#f6b2cc #db5b91", scrollbarWidth: "thin" }}
+        >
           {Object.entries(menuGroups).map(([section, items]) => (
             <div key={section} className="mb-5 last:mb-0">
               {!collapsed ? (
@@ -152,17 +172,29 @@ export function Sidebar({
                 </div>
               ) : null}
             </div>
+            {!collapsed ? (
+              <button
+                type="button"
+                onClick={onLogout}
+                className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/15 md:hidden"
+              >
+                <LogOut size={16} />
+                <span>Sign out</span>
+              </button>
+            ) : null}
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={onToggleCollapse}
-          className="flex h-10 items-center justify-center border-t border-white/15 text-white/80 transition hover:bg-white/10"
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-        </button>
+        {!isMobile ? (
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            className="flex h-10 items-center justify-center border-t border-white/15 text-white/80 transition hover:bg-white/10"
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          </button>
+        ) : null}
       </div>
     </aside>
   );
@@ -170,7 +202,10 @@ export function Sidebar({
 
 Sidebar.propTypes = {
   collapsed: PropTypes.bool.isRequired,
+  isMobile: PropTypes.bool,
   menuGroups: PropTypes.shape({}).isRequired,
+  onCloseMobile: PropTypes.func,
+  onLogout: PropTypes.func.isRequired,
   onToggleCollapse: PropTypes.func.isRequired,
   portalLabel: PropTypes.string.isRequired,
   profileName: PropTypes.string.isRequired,
