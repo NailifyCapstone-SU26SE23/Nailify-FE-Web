@@ -1,19 +1,18 @@
-import { X, XCircle, Clock, User, DollarSign, AlertTriangle } from "lucide-react";
+import { X, XCircle, Clock, User, DollarSign, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { Modal, Spin, message, Input, Checkbox, Select } from "antd";
 import { PropTypes } from "../../../../shared/utils/propTypes";
-import { rejectBooking } from "../services/bookingsService";
+import { cancelBooking } from "../services/bookingsService";
 
-const REJECT_REASONS = [
-  { label: "Customer not responding", value: "no_response" },
-  { label: "Invalid booking details", value: "invalid_details" },
-  { label: "Service not available", value: "service_unavailable" },
-  { label: "Payment issues", value: "payment_issue" },
-  { label: "Suspicious activity", value: "suspicious" },
+const CANCEL_REASONS = [
+  { label: "Customer requested", value: "customer_request" },
+  { label: "Staff unavailable", value: "staff_unavailable" },
+  { label: "Salon closed", value: "salon_closed" },
+  { label: "Double booking", value: "double_booking" },
   { label: "Other", value: "other" },
 ];
 
-export function RejectBookingModal({
+export function CancelBookingModal({
   open,
   onClose,
   bookingId,
@@ -25,27 +24,27 @@ export function RejectBookingModal({
   const [details, setDetails] = useState("");
   const [isConfirmed, setIsConfirmed] = useState(false);
 
-  const handleReject = async () => {
+  const handleCancelBooking = async () => {
     if (!reason) {
-      message.warning("Please select a rejection reason");
+      message.warning("Please select a cancellation reason");
       return;
     }
 
     if (!isConfirmed) {
-      message.warning("Please confirm the rejection");
+      message.warning("Please confirm the cancellation");
       return;
     }
 
     try {
       setIsLoading(true);
-      await rejectBooking(bookingId);
-      message.success("Booking rejected successfully!");
+      await cancelBooking(bookingId);
+      message.success("Booking cancelled successfully!");
       onSuccess?.();
       onClose();
       resetForm();
     } catch (err) {
-      console.error("Failed to reject booking:", err);
-      message.error(err.message || "Failed to reject booking.");
+      console.error("Failed to cancel booking:", err);
+      message.error(err.message || "Failed to cancel booking.");
     } finally {
       setIsLoading(false);
     }
@@ -76,27 +75,27 @@ export function RejectBookingModal({
       }}
     >
       {/* Header */}
-      <div className="bg-gradient-to-r from-[#ffe6ec] via-[#fad5e5] to-[#f8c4d8] px-6 pt-6 pb-8">
+      <div className="bg-gradient-to-r from-[#fff0dd] via-[#fae8d0] to-[#f5d0a0] px-6 pt-6 pb-8">
         <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#e1447f] text-white shadow-lg">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#db8520] text-white shadow-lg">
             <XCircle size={24} />
           </div>
           <div>
-            <h2 className="text-2xl font-extrabold text-[#402542]">Reject Booking</h2>
-            <p className="mt-1 text-xs text-[#b5849a]">This will decline the booking request</p>
+            <h2 className="text-2xl font-extrabold text-[#402542]">Cancel Booking</h2>
+            <p className="mt-1 text-xs text-[#a8825e]">This action cannot be undone</p>
           </div>
         </div>
       </div>
 
       {/* Body */}
       <div className="-mt-6 rounded-t-[24px] bg-white px-6 pt-8 pb-6 space-y-5">
-        {/* Alert Banner */}
-        <div className="flex gap-3 rounded-xl border border-[#ffd4e5] bg-[#fffaf8] p-4">
-          <AlertTriangle size={18} className="mt-0.5 shrink-0 text-[#e1447f]" />
+        {/* Warning Alert */}
+        <div className="flex gap-3 rounded-xl border border-[#ffe6cc] bg-[#fffaf2] p-4">
+          <AlertCircle size={18} className="mt-0.5 shrink-0 text-[#db8520]" />
           <div>
-            <p className="text-xs font-bold text-[#8b4f6d]">Important</p>
-            <p className="mt-1 text-xs text-[#b5849a] leading-relaxed">
-              Rejecting this booking will notify the customer and may impact their trust. Use this only when necessary.
+            <p className="text-xs font-bold text-[#8b6f47]">Warning</p>
+            <p className="mt-1 text-xs text-[#a8825e] leading-relaxed">
+              Cancelling this booking will notify the customer and may affect their satisfaction rating.
             </p>
           </div>
         </div>
@@ -116,21 +115,15 @@ export function RejectBookingModal({
               )}
               {booking.customerName && (
                 <div className="flex items-center gap-2 text-sm">
-                  <User size={14} className="text-[#e1447f]" />
+                  <User size={14} className="text-[#db8520]" />
                   <span className="text-[#7a6176]">Customer:</span>
                   <span className="font-semibold text-[#402542]">{booking.customerName}</span>
                 </div>
               )}
-              {booking.phone && (
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-[#7a6176]">Phone:</span>
-                  <span className="font-semibold text-[#402542]">{booking.phone}</span>
-                </div>
-              )}
               {booking.date && booking.time && (
                 <div className="flex items-center gap-2 text-sm">
-                  <Clock size={14} className="text-[#e1447f]" />
-                  <span className="text-[#7a6176]">Requested:</span>
+                  <Clock size={14} className="text-[#db8520]" />
+                  <span className="text-[#7a6176]">Scheduled:</span>
                   <span className="font-semibold text-[#402542]">
                     {booking.date} at {booking.time}
                   </span>
@@ -138,9 +131,9 @@ export function RejectBookingModal({
               )}
               {booking.totalPrice && (
                 <div className="flex items-center gap-2 text-sm">
-                  <DollarSign size={14} className="text-[#e1447f]" />
-                  <span className="text-[#7a6176]">Amount:</span>
-                  <span className="font-semibold text-[#e1447f]">{booking.totalPrice}</span>
+                  <DollarSign size={14} className="text-[#db8520]" />
+                  <span className="text-[#7a6176]">Total:</span>
+                  <span className="font-semibold text-[#db8520]">{booking.totalPrice}</span>
                 </div>
               )}
             </div>
@@ -150,14 +143,14 @@ export function RejectBookingModal({
         {/* Reason Selection */}
         <div className="space-y-2">
           <label className="text-xs font-bold uppercase tracking-wide text-[#7a6176]">
-            Rejection Reason <span className="text-[#e1447f]">*</span>
+            Cancellation Reason <span className="text-[#db8520]">*</span>
           </label>
           <Select
             value={reason || undefined}
             onChange={setReason}
             placeholder="Select a reason..."
             disabled={isLoading}
-            options={REJECT_REASONS}
+            options={CANCEL_REASONS}
             style={{
               width: "100%",
             }}
@@ -167,12 +160,12 @@ export function RejectBookingModal({
         {/* Details Field */}
         <div className="space-y-2">
           <label className="text-xs font-bold uppercase tracking-wide text-[#7a6176]">
-            Rejection Message <span className="text-[#e1447f]">*</span>
+            Additional Details (Optional)
           </label>
           <Input.TextArea
             value={details}
             onChange={(e) => setDetails(e.target.value)}
-            placeholder="Explain why this booking is being rejected. This message will be sent to the customer..."
+            placeholder="Provide more context about the cancellation..."
             rows={3}
             maxLength={300}
             disabled={isLoading}
@@ -181,20 +174,17 @@ export function RejectBookingModal({
               borderRadius: "12px",
               fontFamily: "inherit",
             }}
-            status={details.length === 0 ? "error" : ""}
           />
-          <p className={`text-[10px] ${details.length === 0 ? "text-[#e1447f]" : "text-[#c08aa4]"}`}>
-            {details.length}/300 - {details.length === 0 ? "Required" : ""}
-          </p>
+          <p className="text-[10px] text-[#c08aa4]">{details.length}/300</p>
         </div>
 
         {/* Info Box */}
-        <div className="space-y-2 rounded-xl border border-[#ffd4e5] bg-[#fffaf8] p-3">
-          <p className="text-xs font-semibold text-[#402542]">Customer will be notified:</p>
+        <div className="space-y-2 rounded-xl border border-[#ffe6cc] bg-[#fffaf2] p-3">
+          <p className="text-xs font-semibold text-[#402542]">Upon cancellation:</p>
           <ul className="space-y-1 text-xs text-[#7a6176]">
-            <li>• Rejection reason and message</li>
-            <li>• Available time to rebook</li>
-            <li>• Contact information for support</li>
+            <li>• Customer will receive cancellation notification</li>
+            <li>• Booking status will be locked</li>
+            <li>• Deposit will be handled per policy</li>
           </ul>
         </div>
 
@@ -206,7 +196,7 @@ export function RejectBookingModal({
           className="text-sm"
         >
           <span className="text-[#7a6176]">
-            I confirm to <span className="font-semibold text-[#e1447f]">reject this booking</span> and notify the customer
+            I understand and confirm to <span className="font-semibold text-[#db8520]">cancel this booking</span>
           </span>
         </Checkbox>
 
@@ -219,19 +209,19 @@ export function RejectBookingModal({
             disabled={isLoading}
           >
             <X size={14} className="inline mr-2" />
-            Cancel
+            Keep Booking
           </button>
           <button
             type="button"
-            onClick={handleReject}
-            className="flex-1 rounded-full bg-[#e1447f] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#c9366b] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            disabled={isLoading || !reason || !details || !isConfirmed}
+            onClick={handleCancelBooking}
+            className="flex-1 rounded-full bg-[#db8520] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#c8781d] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            disabled={isLoading || !reason || !isConfirmed}
           >
             {isLoading && <Spin size="small" />}
-            {isLoading ? "Rejecting..." : (
+            {isLoading ? "Cancelling..." : (
               <>
                 <XCircle size={14} />
-                Reject Booking
+                Cancel Booking
               </>
             )}
           </button>
@@ -241,7 +231,7 @@ export function RejectBookingModal({
   );
 }
 
-RejectBookingModal.propTypes = {
+CancelBookingModal.propTypes = {
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   bookingId: PropTypes.string.isRequired,

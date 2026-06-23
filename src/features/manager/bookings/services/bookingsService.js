@@ -31,17 +31,73 @@ function unwrapResponse(response, fallbackMessage, isDetail = false) {
   return payload.data;
 }
 
-export async function fetchBookingsBySalonId(salonId) {
-  console.log("Fetching bookings for salon:", salonId);
+function extractBookingItems(data) {
+  if (Array.isArray(data)) {
+    return data;
+  }
+
+  if (Array.isArray(data?.items)) {
+    return data.items;
+  }
+
+  if (Array.isArray(data?.data)) {
+    return data.data;
+  }
+
+  return [];
+}
+
+function extractPaginationMeta(data, fallbackPageSize) {
+  const totalCount =
+    Number(data?.totalCount ?? data?.totalItems ?? data?.count ?? data?.total ?? 0) || 0;
+  const currentPage =
+    Number(data?.pageNumber ?? data?.currentPage ?? data?.pageIndex ?? 1) || 1;
+  const pageSize =
+    Number(data?.pageSize ?? data?.limit ?? fallbackPageSize ?? 10) || fallbackPageSize || 10;
+  const inferredTotalPages =
+    pageSize > 0 ? Math.max(1, Math.ceil(totalCount / pageSize)) : 1;
+  const totalPages =
+    Number(data?.totalPages ?? data?.pageCount ?? inferredTotalPages) || inferredTotalPages;
+
+  return {
+    currentPage,
+    pageSize,
+    totalCount,
+    totalPages: Math.max(1, totalPages),
+  };
+}
+
+export async function fetchBookingsBySalonId(salonId, options = {}) {
+  const {
+    includePagination = false,
+    pageNumber,
+    pageSize,
+  } = options;
+
+  console.log("Fetching bookings for salon:", salonId, { pageNumber, pageSize, includePagination });
   try {
     const response = await axiosClient.get(`/Bookings/salon/${salonId}`, {
       headers: getAuthHeaders(),
+      params: {
+        ...(pageNumber ? { pageNumber } : {}),
+        ...(pageSize ? { pageSize } : {}),
+      },
     });
 
-    return unwrapResponse(response, "Failed to load bookings.");
+    const data = unwrapResponse(response, "Failed to load bookings.");
+    const items = extractBookingItems(data);
+
+    if (includePagination) {
+      return {
+        items,
+        pagination: extractPaginationMeta(data, pageSize),
+      };
+    }
+
+    return items;
   } catch (error) {
     console.error("Error fetching bookings:", error.response?.data || error);
-    throw new Error(error.response?.data?.message || error.message || "Failed to load bookings.");
+    throw new Error(error.response?.data?.message || error.message || "Failed to load bookings.", { cause: error });
   }
 }
 
@@ -61,7 +117,7 @@ export async function fetchBookingById(bookingId) {
     return unwrapResponse(response, "Failed to load booking details.", true);
   } catch (error) {
     console.error("Error fetching booking:", error.response?.data || error);
-    throw new Error(error.response?.data?.message || error.message || "Failed to load booking details.");
+    throw new Error(error.response?.data?.message || error.message || "Failed to load booking details.", { cause: error });
   }
 }
 
@@ -81,7 +137,7 @@ export async function confirmBooking(bookingId) {
     return unwrapResponse(response, "Failed to confirm booking.");
   } catch (error) {
     console.error("Error confirming booking:", error.response?.data || error);
-    throw new Error(error.response?.data?.message || error.message || "Failed to confirm booking.");
+    throw new Error(error.response?.data?.message || error.message || "Failed to confirm booking.", { cause: error });
   }
 }
 
@@ -101,7 +157,27 @@ export async function rejectBooking(bookingId) {
     return unwrapResponse(response, "Failed to reject booking.");
   } catch (error) {
     console.error("Error rejecting booking:", error.response?.data || error);
-    throw new Error(error.response?.data?.message || error.message || "Failed to reject booking.");
+    throw new Error(error.response?.data?.message || error.message || "Failed to reject booking.", { cause: error });
+  }
+}
+
+export async function cancelBooking(bookingId) {
+  const normalizedId = String(bookingId || "").trim();
+
+  if (!normalizedId) {
+    throw new Error("Booking ID is required.");
+  }
+
+  console.log("Cancelling booking:", normalizedId);
+  try {
+    const response = await axiosClient.post(`/Bookings/${normalizedId}/cancel`, null, {
+      headers: getAuthHeaders(),
+    });
+
+    return unwrapResponse(response, "Failed to cancel booking.");
+  } catch (error) {
+    console.error("Error cancelling booking:", error.response?.data || error);
+    throw new Error(error.response?.data?.message || error.message || "Failed to cancel booking.", { cause: error });
   }
 }
 
@@ -132,7 +208,7 @@ export async function fetchSalonStaff(salonId, options = {}) {
     return unwrapResponse(response, "Failed to load salon staff.");
   } catch (error) {
     console.error("Error fetching salon staff:", error.response?.data || error);
-    throw new Error(error.response?.data?.message || error.message || "Failed to load salon staff.");
+    throw new Error(error.response?.data?.message || error.message || "Failed to load salon staff.", { cause: error });
   }
 }
 
@@ -169,6 +245,6 @@ export async function assignArtistToBooking(bookingId, staffArtistId) {
     console.error("- Response data:", error.response?.data);
     console.error("- Request config:", error.config);
     console.error("- Error message:", error.message);
-    throw new Error(error.response?.data?.message || error.message || "Failed to assign artist to booking.");
+    throw new Error(error.response?.data?.message || error.message || "Failed to assign artist to booking.", { cause: error });
   }
 }

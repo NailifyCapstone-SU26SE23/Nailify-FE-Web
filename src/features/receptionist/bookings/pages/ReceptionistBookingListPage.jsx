@@ -4,6 +4,7 @@ import { Table } from "antd";
 import toast from "react-hot-toast";
 import { Link, useNavigate } from "react-router-dom";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
+import { usePagination } from "../../../../shared/hooks/usePagination";
 import {
   ROUTES,
   getReceptionistBookingDetailRoute,
@@ -43,6 +44,24 @@ function formatTime(value) {
   return value.slice(0, 5);
 }
 
+function toDateInputValue(value) {
+  if (!value) {
+    return "";
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value).slice(0, 10);
+  }
+
+  return date.toISOString().slice(0, 10);
+}
+
+function getTodayDateParam() {
+  return toDateInputValue(new Date());
+}
+
 function getStatusTone(status) {
   switch (status) {
     case "Completed":
@@ -66,6 +85,7 @@ function normalizeBooking(booking) {
     artistName: booking.artistName || "Unassigned",
     salonName: booking.salonName || "--",
     bookingDate: booking.bookingDate,
+    bookingDateValue: toDateInputValue(booking.bookingDate),
     startTime: booking.startTime,
     totalPrice: booking.totalPrice,
     status: booking.status || "Pending",
@@ -79,40 +99,39 @@ function canManualCheckIn(status) {
 }
 
 const BOOKING_PAGE_SIZE = 10;
+const RECEPTIONIST_BOOKING_FETCH_SIZE = 200;
+const STATUS_OPTIONS = ["All", "Pending", "Confirmed", "CheckedIn", "Completed", "Cancelled"];
 
 export function ReceptionistBookingListPage() {
   const navigate = useNavigate();
-  const [query, setQuery] = useState("");
+  const todayDate = useMemo(() => getTodayDateParam(), []);
+  const [draftQuery, setDraftQuery] = useState("");
+  const [appliedQuery, setAppliedQuery] = useState("");
+  const [dateFrom, setDateFrom] = useState(todayDate);
+  const [dateTo, setDateTo] = useState(todayDate);
+  const [appliedDateFrom, setAppliedDateFrom] = useState(todayDate);
+  const [appliedDateTo, setAppliedDateTo] = useState(todayDate);
+  const [salonFilter, setSalonFilter] = useState("All salons");
+  const [appliedSalonFilter, setAppliedSalonFilter] = useState("All salons");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [appliedStatusFilter, setAppliedStatusFilter] = useState("All");
+  const [staffFilter, setStaffFilter] = useState("All staff");
+  const [appliedStaffFilter, setAppliedStaffFilter] = useState("All staff");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [bookings, setBookings] = useState([]);
   const [salonName, setSalonName] = useState("Receptionist Booking Management");
   const [salonMeta, setSalonMeta] = useState("Bookings are loaded from salon API.");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pagination, setPagination] = useState({
-    currentPage: 1,
-    pageSize: BOOKING_PAGE_SIZE,
-    totalCount: 0,
-    totalPages: 1,
-  });
-
-  const loadBookings = useCallback(async (page = currentPage) => {
+  const loadBookings = useCallback(async () => {
     setIsLoading(true);
     setError("");
 
     try {
       const data = await fetchReceptionistBookings({
-        includePagination: true,
-        pageNumber: page,
-        pageSize: BOOKING_PAGE_SIZE,
+        pageNumber: 1,
+        pageSize: RECEPTIONIST_BOOKING_FETCH_SIZE,
       });
-      setBookings(Array.isArray(data?.items) ? data.items.map(normalizeBooking) : []);
-      setPagination({
-        currentPage: data?.pagination?.currentPage ?? page,
-        pageSize: data?.pagination?.pageSize ?? BOOKING_PAGE_SIZE,
-        totalCount: data?.pagination?.totalCount ?? 0,
-        totalPages: data?.pagination?.totalPages ?? 1,
-      });
+      setBookings(Array.isArray(data) ? data.map(normalizeBooking) : []);
     } catch (loadError) {
       const message = loadError instanceof Error ? loadError.message : "Failed to load bookings.";
       setError(message);
@@ -120,15 +139,15 @@ export function ReceptionistBookingListPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage]);
+  }, []);
 
   useEffect(() => {
     const timerId = window.setTimeout(() => {
-      void loadBookings(currentPage);
+      void loadBookings();
     }, 0);
 
     return () => window.clearTimeout(timerId);
-  }, [currentPage, loadBookings]);
+  }, [loadBookings]);
 
   useEffect(() => {
     const timerId = window.setTimeout(() => {
@@ -152,50 +171,77 @@ export function ReceptionistBookingListPage() {
     return () => window.clearTimeout(timerId);
   }, []);
 
+  const salonOptions = useMemo(
+    () => ["All salons", ...new Set(bookings.map((booking) => booking.salonName).filter(Boolean))],
+    [bookings],
+  );
+
+  const staffOptions = useMemo(
+    () => ["All staff", ...new Set(bookings.map((booking) => booking.artistName).filter(Boolean))],
+    [bookings],
+  );
+
   const filteredBookings = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
+    const normalizedQuery = appliedQuery.trim().toLowerCase();
 
-    if (!normalizedQuery) {
-      return bookings;
-    }
+    return bookings.filter((booking) => {
+      const matchesQuery =
+        normalizedQuery.length === 0 ||
+        [
+          booking.bookingId,
+          booking.customerName,
+          booking.artistName,
+          booking.salonName,
+          booking.status,
+          booking.services.join(" "),
+        ]
+          .join(" ")
+          .toLowerCase()
+          .includes(normalizedQuery);
 
-    return bookings.filter((booking) =>
-      [
-        booking.bookingId,
-        booking.customerName,
-        booking.artistName,
-        booking.salonName,
-        booking.status,
-        booking.services.join(" "),
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(normalizedQuery),
-    );
-  }, [bookings, query]);
+      const matchesDate =
+        (!appliedDateFrom || booking.bookingDateValue >= appliedDateFrom) &&
+        (!appliedDateTo || booking.bookingDateValue <= appliedDateTo);
+      const matchesSalon =
+        appliedSalonFilter === "All salons" || booking.salonName === appliedSalonFilter;
+      const matchesStatus =
+        appliedStatusFilter === "All" || booking.status === appliedStatusFilter;
+      const matchesStaff =
+        appliedStaffFilter === "All staff" || booking.artistName === appliedStaffFilter;
+
+      return matchesQuery && matchesDate && matchesSalon && matchesStatus && matchesStaff;
+    });
+  }, [appliedDateFrom, appliedDateTo, appliedQuery, appliedSalonFilter, appliedStaffFilter, appliedStatusFilter, bookings]);
+
+  const {
+    currentPage,
+    paginatedItems: paginatedBookings,
+    setCurrentPage,
+    totalPages,
+  } = usePagination(filteredBookings, BOOKING_PAGE_SIZE);
 
   const paginationLabel = useMemo(() => {
-    if (!pagination.totalCount) {
+    if (!filteredBookings.length) {
       return "Showing 0 bookings";
     }
 
-    const start = (pagination.currentPage - 1) * pagination.pageSize + 1;
-    const end = Math.min(pagination.totalCount, start + bookings.length - 1);
+    const start = (currentPage - 1) * BOOKING_PAGE_SIZE + 1;
+    const end = Math.min(filteredBookings.length, start + paginatedBookings.length - 1);
 
-    return `Showing ${start}-${end} of ${pagination.totalCount} bookings`;
-  }, [bookings.length, pagination.currentPage, pagination.pageSize, pagination.totalCount]);
+    return `Showing ${start}-${end} of ${filteredBookings.length} bookings`;
+  }, [currentPage, filteredBookings.length, paginatedBookings.length]);
 
   const summary = useMemo(() => {
     const waitingCount = bookings.filter((booking) => booking.status === "Pending").length;
     const checkedInCount = bookings.filter((booking) => booking.status === "CheckedIn").length;
 
     return {
-      total: pagination.totalCount,
+      total: filteredBookings.length,
       waiting: waitingCount,
       checkedIn: checkedInCount,
       revenue: bookings.reduce((sum, booking) => sum + Number(booking.totalPrice || 0), 0),
     };
-  }, [bookings, pagination.totalCount]);
+  }, [bookings, filteredBookings.length]);
 
   const bookingColumns = useMemo(() => ([
     {
@@ -215,11 +261,6 @@ export function ReceptionistBookingListPage() {
       dataIndex: "artistName",
       key: "artistName",
       render: (value) => <span className="text-sm text-[#6b5668]">{value}</span>,
-    },
-    {
-      title: "Service",
-      key: "service",
-      render: (_, booking) => <span className="text-sm text-[#6b5668]">{booking.services[0] || "--"}</span>,
     },
     {
       title: "Schedule",
@@ -367,7 +408,7 @@ export function ReceptionistBookingListPage() {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => loadBookings(currentPage)}
+              onClick={() => loadBookings()}
               className="inline-flex items-center gap-2 rounded-full border border-[#f3cade] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
             >
               <RefreshCcw size={14} />
@@ -383,18 +424,132 @@ export function ReceptionistBookingListPage() {
           </div>
         </div>
 
-        <label className="relative mt-4 block">
-          <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#d47aa8]" />
-          <input
-            value={query}
-            onChange={(event) => {
-              setQuery(event.target.value);
-              setCurrentPage(1);
-            }}
-            placeholder="Search booking ID, customer, artist, service..."
-            className="h-12 w-full rounded-2xl border border-[#f5d7e4] bg-[#fff9fc] pl-11 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
-          />
-        </label>
+        <div className="mt-4 rounded-[20px] border border-[#f7d8e6] bg-white p-4">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <label className="space-y-2">
+              <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
+                Date From
+              </span>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(event) => setDateFrom(event.target.value)}
+                className="h-12 w-full rounded-2xl border border-[#f5d7e4] bg-[#fff9fc] px-4 text-sm text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
+              />
+            </label>
+            <label className="space-y-2">
+              <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
+                Date To
+              </span>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(event) => setDateTo(event.target.value)}
+                className="h-12 w-full rounded-2xl border border-[#f5d7e4] bg-[#fff9fc] px-4 text-sm text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
+              />
+            </label>
+            <label className="space-y-2">
+              <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
+                Salon
+              </span>
+              <select
+                value={salonFilter}
+                onChange={(event) => setSalonFilter(event.target.value)}
+                className="h-12 w-full rounded-2xl border border-[#f5d7e4] bg-[#fff9fc] px-4 text-sm text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
+              >
+                {salonOptions.map((item) => (
+                  <option key={item}>{item}</option>
+                ))}
+              </select>
+            </label>
+            <label className="space-y-2">
+              <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
+                Booking Status
+              </span>
+              <select
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value)}
+                className="h-12 w-full rounded-2xl border border-[#f5d7e4] bg-[#fff9fc] px-4 text-sm text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
+              >
+                {STATUS_OPTIONS.map((item) => (
+                  <option key={item}>{item}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-end">
+            <label className="space-y-2 md:w-64">
+              <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
+                Staff Artist
+              </span>
+              <select
+                value={staffFilter}
+                onChange={(event) => setStaffFilter(event.target.value)}
+                className="h-12 w-full rounded-2xl border border-[#f5d7e4] bg-[#fff9fc] px-4 text-sm text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
+              >
+                {staffOptions.map((item) => (
+                  <option key={item}>{item}</option>
+                ))}
+              </select>
+            </label>
+
+            <label className="relative block flex-1">
+              <span className="mb-2 block text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
+                Search
+              </span>
+              <Search
+                size={16}
+                className="pointer-events-none absolute left-4 top-[2.6rem] -translate-y-1/2 text-[#d47aa8]"
+              />
+              <input
+                value={draftQuery}
+                onChange={(event) => setDraftQuery(event.target.value)}
+                placeholder="Search booking ID, customer, artist, service..."
+                className="h-12 w-full rounded-2xl border border-[#f5d7e4] bg-[#fff9fc] pl-11 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
+              />
+            </label>
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setAppliedDateFrom(dateFrom);
+                  setAppliedDateTo(dateTo);
+                  setAppliedSalonFilter(salonFilter);
+                  setAppliedStatusFilter(statusFilter);
+                  setAppliedStaffFilter(staffFilter);
+                  setAppliedQuery(draftQuery);
+                  setCurrentPage(1);
+                }}
+                className="rounded-full bg-[image:var(--gradient-accent)] px-5 py-3 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
+              >
+                Apply
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDateFrom(todayDate);
+                  setDateTo(todayDate);
+                  setSalonFilter("All salons");
+                  setStatusFilter("All");
+                  setStaffFilter("All staff");
+                  setDraftQuery("");
+                  setAppliedDateFrom(todayDate);
+                  setAppliedDateTo(todayDate);
+                  setAppliedSalonFilter("All salons");
+                  setAppliedStatusFilter("All");
+                  setAppliedStaffFilter("All staff");
+                  setAppliedQuery("");
+                  setCurrentPage(1);
+                }}
+                className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-5 py-3 text-sm font-bold text-[#ea4f93]"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+        </div>
 
         {error ? (
           <div className="mt-4 rounded-[16px] border border-[#f7d4df] bg-[#fff3f7] px-4 py-3 text-sm font-medium text-[#d14c84]">
@@ -415,7 +570,7 @@ export function ReceptionistBookingListPage() {
               <Table
                 rowKey="bookingId"
                 columns={bookingColumns}
-                dataSource={filteredBookings}
+                dataSource={paginatedBookings}
                 pagination={false}
                 scroll={{ x: 1100 }}
                 locale={{ emptyText: "No bookings matched the current search." }}
@@ -423,7 +578,7 @@ export function ReceptionistBookingListPage() {
             </div>
 
             <div className="space-y-3 p-4 lg:hidden">
-              {filteredBookings.map((booking) => (
+              {paginatedBookings.map((booking) => (
                 <article key={booking.bookingId} className="rounded-[18px] border border-[#f8dce8] bg-[#fffafb] p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -499,11 +654,11 @@ export function ReceptionistBookingListPage() {
                   >
                     {currentPage}
                   </button>
-                  <span className="px-2 text-[11px] font-medium text-[#b9849f]">/ {pagination.totalPages}</span>
+                  <span className="px-2 text-[11px] font-medium text-[#b9849f]">/ {totalPages}</span>
                   <button
                     type="button"
-                    onClick={() => setCurrentPage(Math.min(pagination.totalPages, currentPage + 1))}
-                    disabled={currentPage >= pagination.totalPages}
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage >= totalPages}
                     className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92] disabled:opacity-50"
                   >
                     <ChevronRight size={12} />

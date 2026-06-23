@@ -9,12 +9,16 @@ import {
   ChevronLeft,
   Image as ImageIcon,
   AlertTriangle,
+  Mail,
+  Phone,
+  UserRound,
+  BriefcaseBusiness,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { ROUTES } from "../../../../shared/constants/routes";
-import { fetchCustomerNailById, approveCustomerNail, rejectCustomerNail, fetchSalonStaff, assignReviewer, managerApproveQuote, managerReject } from "../services/customerNailsService";
+import { fetchCustomerNailById, approveCustomerNail, fetchSalonStaff, assignReviewer, managerApproveQuote, managerReject } from "../services/customerNailsService";
 
 function Card({ className = "", children }) {
   return (
@@ -82,11 +86,76 @@ function formatVND(amount) {
   }).format(amount);
 }
 
+function formatDuration(duration) {
+  if (duration === null || duration === undefined || duration === "") return "N/A";
+  return `${duration} mins`;
+}
+
+function getStaffDisplayName(staff) {
+  const fullName = [staff?.firstName, staff?.lastName].filter(Boolean).join(" ").trim();
+  return fullName || staff?.fullName || staff?.name || "Unknown Staff";
+}
+
+function getStaffInitials(staff) {
+  return getStaffDisplayName(staff)
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+}
+
+function InfoTile({ label, value, valueClassName = "text-[#3f2240]" }) {
+  return (
+    <div className="rounded-2xl border border-[#f6d4e3] bg-gradient-to-br from-[#fffafb] to-[#fff3f8] p-4 shadow-[0_8px_20px_rgba(236,72,153,0.04)]">
+      <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">
+        {label}
+      </p>
+      <p className={`text-sm font-semibold ${valueClassName}`}>{value || "N/A"}</p>
+    </div>
+  );
+}
+
+InfoTile.propTypes = {
+  label: PropTypes.string.isRequired,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number, PropTypes.node]),
+  valueClassName: PropTypes.string,
+};
+
+function ActionButton({
+  onClick,
+  disabled,
+  icon: Icon,
+  children,
+  className,
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-bold text-white shadow-[0_10px_22px_rgba(236,72,153,0.18)] transition disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+    >
+      <Icon size={16} />
+      {children}
+    </button>
+  );
+}
+
+ActionButton.propTypes = {
+  onClick: PropTypes.func.isRequired,
+  disabled: PropTypes.bool,
+  icon: PropTypes.elementType.isRequired,
+  children: PropTypes.node.isRequired,
+  className: PropTypes.string.isRequired,
+};
+
 export function CustomerNailDetailPage() {
   const { customerNailId } = useParams();
   const navigate = useNavigate();
   const [nail, setNail] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [errorType, setErrorType] = useState(""); // 'auth', 'notfound', 'network', 'unknown'
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
@@ -97,20 +166,20 @@ export function CustomerNailDetailPage() {
   const [selectedStaff, setSelectedStaff] = useState(null);
   const [isLoadingStaff, setIsLoadingStaff] = useState(false);
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
+  const [isAssignRequiredModalOpen, setIsAssignRequiredModalOpen] = useState(false);
   const [finalPrice, setFinalPrice] = useState('');
   const [finalDuration, setFinalDuration] = useState('');
 
-  useEffect(() => {
-    if (customerNailId) {
-      loadCustomerNailDetail();
-    }
-  }, [customerNailId]);
-
-  const loadCustomerNailDetail = async () => {
+  const loadCustomerNailDetail = useCallback(async (options = {}) => {
+    const { silent = false } = options;
     try {
-      setIsLoading(true);
-      setError("");
-      setErrorType("");
+      if (silent) {
+        setIsRefreshing(true);
+      } else {
+        setIsLoading(true);
+        setError("");
+        setErrorType("");
+      }
 
       console.log("[Page] Loading nail detail for ID:", customerNailId);
       const data = await fetchCustomerNailById(customerNailId);
@@ -164,11 +233,36 @@ export function CustomerNailDetailPage() {
         setError(errorMessage);
       }
     } finally {
-      setIsLoading(false);
+      if (silent) {
+        setIsRefreshing(false);
+      } else {
+        setIsLoading(false);
+      }
     }
-  };
+  }, [customerNailId]);
+
+  useEffect(() => {
+    if (customerNailId) {
+      Promise.resolve().then(() => loadCustomerNailDetail());
+    }
+  }, [customerNailId, loadCustomerNailDetail]);
+
+  useEffect(() => {
+    if (!customerNailId) return undefined;
+
+    const intervalId = window.setInterval(() => {
+      loadCustomerNailDetail({ silent: true });
+    }, 3000);
+
+    return () => window.clearInterval(intervalId);
+  }, [customerNailId, loadCustomerNailDetail]);
 
   const handleApprove = async () => {
+    if (!nail?.assignedStaff && !nail?.approvedArtistId) {
+      setIsAssignRequiredModalOpen(true);
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       await approveCustomerNail(customerNailId);
@@ -177,26 +271,6 @@ export function CustomerNailDetailPage() {
     } catch (err) {
       console.error("[Page] Error approving nail:", err);
       message.error(err.message || "Failed to approve customer nail.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleReject = async () => {
-    if (!rejectReason.trim()) {
-      message.error("Please enter a reject reason.");
-      return;
-    }
-    try {
-      setIsSubmitting(true);
-      await rejectCustomerNail(customerNailId, rejectReason.trim());
-      message.success("Customer nail rejected successfully!");
-      setIsRejectModalOpen(false);
-      setRejectReason("");
-      await loadCustomerNailDetail();
-    } catch (err) {
-      console.error("[Page] Error rejecting nail:", err);
-      message.error(err.message || "Failed to reject customer nail.");
     } finally {
       setIsSubmitting(false);
     }
@@ -375,116 +449,144 @@ export function CustomerNailDetailPage() {
     );
   }
 
+  const assignedStaffName = getStaffDisplayName(nail?.assignedStaff);
+  const selectedStaffName = getStaffDisplayName(selectedStaff);
+
   return (
-    <div className="flex min-h-full flex-col gap-4">
+    <div className="flex min-h-full flex-col gap-5">
       {/* Back Button */}
-      <button
-        onClick={() => navigate(ROUTES.managerCustomerNails)}
-        className="inline-flex items-center gap-2 rounded-full border border-[#f4c1d8] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93] shadow-[0_4px_12px_rgba(234,79,147,0.1)] transition hover:bg-[#fff7fb] w-fit"
-      >
-        <ChevronLeft size={14} />
-        Back to Customer Nails
-      </button>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <button
+          onClick={() => navigate(ROUTES.managerCustomerNails)}
+          className="inline-flex w-fit items-center gap-2 rounded-full border border-[#f4c1d8] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93] shadow-[0_4px_12px_rgba(234,79,147,0.1)] transition hover:bg-[#fff7fb]"
+        >
+          <ChevronLeft size={14} />
+          Back to Customer Nails
+        </button>
+        <div className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-bold transition ${
+          isRefreshing
+            ? "bg-[#fff0f8] text-[#ea4f93]"
+            : "bg-[#f8f4f7] text-[#9b7b8f]"
+        }`}>
+          <span className={`h-2.5 w-2.5 rounded-full ${isRefreshing ? "bg-[#ea4f93]" : "bg-[#d4b7c7]"}`} />
+          {isRefreshing ? "Refreshing..." : "Auto refresh every 3s"}
+        </div>
+      </div>
 
       <Card className="p-0">
         {/* Header */}
-        <div className="bg-gradient-to-r from-[#fff0f8] to-[#fffafb] border-b border-[#f6dce7] p-5">
-          <div className="flex items-center gap-4">
-            {nail?.imageUrl ? (
-              <img
-                src={nail.imageUrl}
-                alt={nail.name}
-                className="h-20 w-20 rounded-[20px] object-cover border-4 border-white shadow-lg"
-              />
-            ) : (
-              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[20px] bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-2xl font-black text-white shadow-lg">
-                <Palette size={32} />
+        <div className="border-b border-[#f6dce7] bg-[linear-gradient(135deg,#fff0f8_0%,#fffafb_55%,#fff5fb_100%)] p-6">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-4">
+              {nail?.imageUrl ? (
+                <img
+                  src={nail.imageUrl}
+                  alt={nail.name}
+                  className="h-24 w-24 rounded-[24px] border-4 border-white object-cover shadow-[0_16px_32px_rgba(236,72,153,0.18)]"
+                />
+              ) : (
+                <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-[24px] bg-gradient-to-br from-[#ff9ac2] via-[#ea4f93] to-[#c63d79] text-2xl font-black text-white shadow-[0_16px_32px_rgba(234,79,147,0.22)]">
+                  <Palette size={34} />
+                </div>
+              )}
+              <div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <h2 className="text-2xl font-extrabold text-[#402542]">
+                    {nail?.name || "Untitled Design"}
+                  </h2>
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold ${getStatusTone(
+                      nail?.status
+                    )}`}
+                  >
+                    {nail?.status === "Approved" ? (
+                      <CheckCircle2 size={14} />
+                    ) : nail?.status === "Rejected" ? (
+                      <XCircle size={14} />
+                    ) : (
+                      <Calendar size={14} />
+                    )}
+                    {nail?.status || "Draft"}
+                  </span>
+                </div>
+                <p className="mt-2 max-w-2xl text-sm text-[#9c6f87]">
+                  Review custom design details, inspect the requested colors, assign a staff artist,
+                  and complete manager actions from one place.
+                </p>
+                <div className="mt-3 flex flex-wrap items-center gap-2.5">
+                  <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold ${nail?.basedOnNailVariantId !== null ? "bg-[#e7ecff] text-[#4755b8]" : "bg-[#fef3c7] text-[#d97706]"}`}>
+                    {nail?.basedOnNailVariantId !== null ? "Preset" : "Custom Design"}
+                  </span>
+                  {nail?.isFavorite ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#ffe6f1] px-3 py-1.5 text-[11px] font-bold text-[#ea4f93]">
+                      <Heart size={12} fill="currentColor" />
+                      Favorite
+                    </span>
+                  ) : null}
+                  {nail?.isPublic ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f3f4f6] px-3 py-1.5 text-[11px] font-bold text-[#6b7280]">
+                      <Eye size={12} />
+                      Public
+                    </span>
+                  ) : null}
+                </div>
               </div>
-            )}
-            <div>
-              <h2 className="text-2xl font-extrabold text-[#402542]">
-                {nail?.name || "Untitled Design"}
-              </h2>
-              <div className="mt-2 flex items-center gap-3">
-                <span
-                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold ${getStatusTone(
-                    nail?.status
-                  )}`}
-                >
-                  {nail?.status === "Approved" ? (
-                    <CheckCircle2 size={14} />
-                  ) : nail?.status === "Rejected" ? (
-                    <XCircle size={14} />
-                  ) : (
-                    <Calendar size={14} />
-                  )}
-                  {nail?.status || "Draft"}
-                </span>
-                <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold ${nail?.basedOnNailVariantId !== null ? "bg-[#e7ecff] text-[#4755b8]" : "bg-[#fef3c7] text-[#d97706]"}`}>
-                  {nail?.basedOnNailVariantId !== null ? "Preset" : "Custom Design"}
-                </span>
-                {nail?.isFavorite && (
-                  <div className="flex items-center gap-1 text-xs font-semibold text-[#ea4f93]">
-                    <Heart size={14} fill="currentColor" />
-                    Favorite
-                  </div>
-                )}
-                {nail?.isPublic && (
-                  <div className="flex items-center gap-1 text-xs font-semibold text-[#6b7280]">
-                    <Eye size={14} />
-                    Public
-                  </div>
-                )}
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[420px]">
+              <div className="rounded-2xl border border-white/70 bg-white/75 p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)] backdrop-blur">
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">
+                  Price
+                </p>
+                <p className="mt-1 text-lg font-extrabold text-[#ea4f93]">
+                  {formatVND(nail?.price)}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-white/70 bg-white/75 p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)] backdrop-blur">
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">
+                  Duration
+                </p>
+                <p className="mt-1 text-lg font-extrabold text-[#402542]">
+                  {formatDuration(nail?.duration)}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-white/70 bg-white/75 p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)] backdrop-blur">
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">
+                  Created
+                </p>
+                <p className="mt-1 text-sm font-bold text-[#402542]">
+                  {formatDate(nail?.createdAt)}
+                </p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Content */}
-        <div className="p-5 space-y-5">
+        <div className="space-y-6 p-6">
           {/* Basic Info */}
-          <SectionHeading title="Design Information" />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="rounded-xl border border-[#f4c7da] bg-[#fffafb] p-4">
-              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#c08aa4] mb-1">
-                Nail Shape
-              </p>
-              <p className="text-sm font-semibold text-[#3f2240]">
-                {nail?.nailShape?.name || "Custom Shape"}
-              </p>
-            </div>
-            <div className="rounded-xl border border-[#f4c7da] bg-[#fffafb] p-4">
-              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#c08aa4] mb-1">
-                Nail Surface
-              </p>
-              <p className="text-sm font-semibold text-[#3f2240]">
-                {nail?.nailSurface?.name || "Custom Surface"}
-              </p>
-            </div>
-            <div className="rounded-xl border border-[#f4c7da] bg-[#fffafb] p-4">
-              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#c08aa4] mb-1">
-                Price
-              </p>
-              <p className="text-sm font-semibold text-[#3f2240]">
-                {formatVND(nail?.price)}
-              </p>
-            </div>
-            <div className="rounded-xl border border-[#f4c7da] bg-[#fffafb] p-4">
-              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#c08aa4] mb-1">
-                Created At
-              </p>
-              <p className="text-sm font-semibold text-[#3f2240]">
-                {formatDate(nail?.createdAt)}
-              </p>
+          <div className="space-y-4">
+            <SectionHeading
+              title="Design Information"
+              subtitle="High-level summary of the requested customer nail design."
+            />
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <InfoTile label="Nail Shape" value={nail?.nailShape?.name || "Custom Shape"} />
+              <InfoTile label="Nail Surface" value={nail?.nailSurface?.name || "Custom Surface"} />
+              <InfoTile label="Price" value={formatVND(nail?.price)} valueClassName="text-[#ea4f93]" />
+              <InfoTile label="Duration" value={formatDuration(nail?.duration)} />
             </div>
           </div>
 
           {/* Custom Color */}
           {nail?.customColor && (
-            <>
-              <SectionHeading title="Custom Color" />
-              <div className="rounded-xl border border-[#f4c7da] bg-[#fffafb] p-4">
-                <div className="flex items-center gap-3">
+            <div className="space-y-4">
+              <SectionHeading
+                title="Custom Color"
+                subtitle="Preview the requested color configuration for this custom design."
+              />
+              <div className="rounded-[24px] border border-[#f4d6e4] bg-[linear-gradient(180deg,#fffafb_0%,#fff5f9_100%)] p-5 shadow-[0_10px_26px_rgba(236,72,153,0.05)]">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center">
                   {(() => {
                     try {
                       const colorData =
@@ -496,14 +598,14 @@ export function CustomerNailDetailPage() {
                         return (
                           <>
                             <div
-                              className="h-12 w-12 rounded-[12px] border-2 border-white shadow-md"
+                              className="h-16 w-16 rounded-[18px] border-4 border-white shadow-[0_10px_24px_rgba(0,0,0,0.08)]"
                               style={{ backgroundColor: colorData.color }}
                             />
                             <div>
-                              <p className="text-sm font-semibold text-[#3f2240]">
+                              <p className="text-sm font-bold text-[#3f2240]">
                                 Solid Color
                               </p>
-                              <p className="text-xs text-[#c08aa4]">
+                              <p className="mt-1 text-xs text-[#c08aa4]">
                                 {colorData.color}
                               </p>
                             </div>
@@ -516,7 +618,7 @@ export function CustomerNailDetailPage() {
                         return (
                           <>
                             <div
-                              className="h-12 w-12 rounded-[12px] border-2 border-white shadow-md"
+                              className="h-16 w-16 rounded-[18px] border-4 border-white shadow-[0_10px_24px_rgba(0,0,0,0.08)]"
                               style={{
                                 background: `linear-gradient(to right, ${colorData.gradient.join(
                                   ", "
@@ -524,10 +626,10 @@ export function CustomerNailDetailPage() {
                               }}
                             />
                             <div>
-                              <p className="text-sm font-semibold text-[#3f2240]">
+                              <p className="text-sm font-bold text-[#3f2240]">
                                 Gradient Color
                               </p>
-                              <p className="text-xs text-[#c08aa4]">
+                              <p className="mt-1 text-xs text-[#c08aa4]">
                                 {colorData.gradient.join(" → ")}
                               </p>
                             </div>
@@ -539,11 +641,11 @@ export function CustomerNailDetailPage() {
                       ) {
                         return (
                           <>
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-wrap gap-3">
                               {colorData.fingers.map((finger, index) => (
-                                <div key={finger.fingerIndex || index} className="flex flex-col items-center gap-1">
+                                <div key={finger.fingerIndex || index} className="flex flex-col items-center gap-1.5 rounded-2xl border border-white/70 bg-white/70 p-2 shadow-[0_8px_18px_rgba(236,72,153,0.06)]">
                                   <div
-                                    className="h-8 w-6 rounded-[8px] border-2 border-white shadow-md"
+                                    className="h-10 w-8 rounded-[10px] border-2 border-white shadow-md"
                                     style={{ backgroundColor: finger.color || "#ccc" }}
                                   />
                                   <span className="text-[10px] font-bold text-[#c08aa4]">
@@ -553,10 +655,10 @@ export function CustomerNailDetailPage() {
                               ))}
                             </div>
                             <div>
-                              <p className="text-sm font-semibold text-[#3f2240]">
+                              <p className="text-sm font-bold text-[#3f2240]">
                                 Per-Finger Color
                               </p>
-                              <p className="text-xs text-[#c08aa4]">
+                              <p className="mt-1 text-xs text-[#c08aa4]">
                                 {colorData.fingers.length} fingers
                               </p>
                             </div>
@@ -576,113 +678,154 @@ export function CustomerNailDetailPage() {
                   })()}
                 </div>
               </div>
-            </>
+            </div>
           )}
 
           {/* Reject Reason */}
           {nail?.rejectReason && (
-            <>
-              <SectionHeading title="Reject Reason" />
-              <div className="rounded-xl border border-[#e1447f] bg-[#ffe6ec] p-4">
+            <div className="space-y-4">
+              <SectionHeading
+                title="Reject Reason"
+                subtitle="Latest manager feedback for this request."
+              />
+              <div className="rounded-[24px] border border-[#f4b8cb] bg-[linear-gradient(180deg,#fff1f5_0%,#ffe7ef_100%)] p-5 shadow-[0_10px_24px_rgba(225,68,127,0.08)]">
                 <p className="text-sm text-[#e1447f]">{nail.rejectReason}</p>
               </div>
-            </>
+            </div>
           )}
 
           {/* Approve/Reject Buttons - Only show when status is PendingReview */}
           {nail?.status === "PendingReview" && (
-            <>
-              <SectionHeading title="Review Actions" />
-              <div className="flex gap-3">
-                <button
+            <div className="space-y-4">
+              <SectionHeading
+                title="Review Actions"
+                subtitle="Approve the submission or reject it with a clear reason."
+              />
+              <div className="rounded-[24px] border border-[#f4d6e4] bg-[linear-gradient(180deg,#fffafb_0%,#fff5f9_100%)] p-5">
+                <div className="flex flex-col gap-3 md:flex-row">
+                  <ActionButton
                   onClick={handleApprove}
                   disabled={isSubmitting}
-                  className="flex-1 rounded-full bg-[#2fa25f] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#2a9255] disabled:opacity-50 inline-flex items-center justify-center gap-2"
-                >
-                  <CheckCircle2 size={16} />
-                  Approve
-                </button>
-                <button
+                  icon={CheckCircle2}
+                  className="flex-1 bg-[#2fa25f] hover:bg-[#2a9255]"
+                  >
+                    Approve
+                  </ActionButton>
+                  <ActionButton
                   onClick={() => setIsRejectModalOpen(true)}
                   disabled={isSubmitting}
-                  className="flex-1 rounded-full bg-[#e1447f] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#d63e75] disabled:opacity-50 inline-flex items-center justify-center gap-2"
-                >
-                  <XCircle size={16} />
-                  Reject
-                </button>
+                  icon={XCircle}
+                  className="flex-1 bg-[#e1447f] hover:bg-[#d63e75]"
+                  >
+                    Reject
+                  </ActionButton>
+                </div>
               </div>
-            </>
+            </div>
           )}
 
           {/* Assigned Staff Info - Show if staff already assigned */}
           {nail?.status === "Assigned" && nail?.assignedStaff && (
-            <>
-              <SectionHeading title="Assigned Staff" />
-              <div className="rounded-xl border border-[#a8d5ba] bg-[#eaf9ee] p-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#a8d5ba] to-[#2fa25f] text-lg font-bold text-white">
-                    {nail.assignedStaff.firstName?.[0]}{nail.assignedStaff.lastName?.[0]}
+            <div className="space-y-4">
+              <SectionHeading
+                title="Assigned Staff"
+                subtitle="Current artist or reviewer handling this customer nail request."
+              />
+              <div className="rounded-[24px] border border-[#caecd5] bg-[linear-gradient(180deg,#f3fff7_0%,#eaf9ee_100%)] p-5 shadow-[0_10px_24px_rgba(47,162,95,0.08)]">
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#8bd5a8] to-[#2fa25f] text-lg font-bold text-white shadow-[0_10px_20px_rgba(47,162,95,0.18)]">
+                      {getStaffInitials(nail.assignedStaff)}
+                    </div>
+                    <div>
+                      <p className="text-lg font-extrabold text-[#246c48]">
+                        {assignedStaffName}
+                      </p>
+                      <p className="mt-1 text-sm text-[#3b8d5f]">
+                        {nail.assignedStaff.role || "Staff Artist"}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-[#2fa25f]">
-                      {nail.assignedStaff.firstName} {nail.assignedStaff.lastName}
-                    </p>
-                    <p className="text-xs text-[#2d8a5f]">{nail.assignedStaff.email}</p>
-                    {nail.assignedStaff.role && (
-                      <p className="text-xs text-[#2d8a5f]">{nail.assignedStaff.role}</p>
-                    )}
+
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <InfoTile
+                      label="Email"
+                      value={nail.assignedStaff.email || "N/A"}
+                      valueClassName="text-[#246c48]"
+                    />
+                    <InfoTile
+                      label="Phone"
+                      value={nail.assignedStaff.phone || nail.assignedStaff.phoneNumber || "N/A"}
+                      valueClassName="text-[#246c48]"
+                    />
+                    <InfoTile
+                      label="Staff ID"
+                      value={nail.assignedStaff.staffId || nail.assignedStaff.id || "N/A"}
+                      valueClassName="text-[#246c48]"
+                    />
                   </div>
                 </div>
               </div>
-            </>
+            </div>
           )}
 
           {/* Assign Staff Button - Only show if status is PendingReview and no staff assigned */}
           {nail?.status === "PendingReview" && !nail?.assignedStaff && (
-            <>
-              <SectionHeading title="Assign Staff" />
-              <button
+            <div className="space-y-4">
+              <SectionHeading
+                title="Assign Staff"
+                subtitle="Choose a staff artist so the review can continue with the right owner."
+              />
+              <div className="rounded-[24px] border border-[#f4d6e4] bg-[linear-gradient(180deg,#fffafb_0%,#fff6fa_100%)] p-5">
+                <ActionButton
                 onClick={handleOpenAssignModal}
                 disabled={isSubmitting}
-                className="rounded-full bg-[#ea4f93] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#df4588] disabled:opacity-50 w-fit inline-flex items-center gap-2"
-              >
-                Assign Staff
-              </button>
-            </>
+                icon={UserRound}
+                className="w-fit bg-[#ea4f93] hover:bg-[#df4588]"
+                >
+                  Assign Staff
+                </ActionButton>
+              </div>
+            </div>
           )}
 
           {/* Confirm/Reject Buttons - Only show when status is Reviewed */}
           {nail?.status === "Reviewed" && (
-            <>
-              <SectionHeading title="Review Actions" />
-              <div className="flex gap-3">
-                <button
+            <div className="space-y-4">
+              <SectionHeading
+                title="Review Actions"
+                subtitle="Finalize the quoted design by confirming or rejecting it."
+              />
+              <div className="rounded-[24px] border border-[#f4d6e4] bg-[linear-gradient(180deg,#fffafb_0%,#fff5f9_100%)] p-5">
+                <div className="flex flex-col gap-3 md:flex-row">
+                  <ActionButton
                   onClick={() => setIsApproveModalOpen(true)}
                   disabled={isSubmitting}
-                  className="flex-1 rounded-full bg-[#2fa25f] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#2a9255] disabled:opacity-50 inline-flex items-center justify-center gap-2"
-                >
-                  <CheckCircle2 size={16} />
-                  Confirm
-                </button>
-                <button
+                  icon={CheckCircle2}
+                  className="flex-1 bg-[#2fa25f] hover:bg-[#2a9255]"
+                  >
+                    Confirm
+                  </ActionButton>
+                  <ActionButton
                   onClick={() => setIsRejectModalOpen(true)}
                   disabled={isSubmitting}
-                  className="flex-1 rounded-full bg-[#e1447f] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#d63e75] disabled:opacity-50 inline-flex items-center justify-center gap-2"
-                >
-                  <XCircle size={16} />
-                  Reject
-                </button>
+                  icon={XCircle}
+                  className="flex-1 bg-[#e1447f] hover:bg-[#d63e75]"
+                  >
+                    Reject
+                  </ActionButton>
+                </div>
               </div>
-            </>
+            </div>
           )}
         </div>
       </Card>
 
       {/* Reject Modal */}
       <Modal
-        title="Reject Customer Nail"
+        title={null}
         open={isRejectModalOpen}
-        onOk={nail?.status === "Reviewed" ? handleManagerReject : handleReject}
+        onOk={handleManagerReject}
         onCancel={() => {
           setIsRejectModalOpen(false);
           setRejectReason("");
@@ -690,17 +833,43 @@ export function CustomerNailDetailPage() {
         confirmLoading={isSubmitting}
         okText="Reject"
         cancelText="Cancel"
-        okButtonProps={{ style: { backgroundColor: '#e1447f', color: '#fff' } }}
+        okButtonProps={{ style: { backgroundColor: "#e1447f", color: "#fff", borderRadius: 9999, fontWeight: 700 } }}
+        cancelButtonProps={{ style: { borderRadius: 9999, fontWeight: 700 } }}
+        centered
+        destroyOnClose
+        styles={{
+          content: { padding: 0, borderRadius: 28, overflow: "hidden" },
+          body: { padding: 0 },
+          mask: { backdropFilter: "blur(6px)" },
+        }}
       >
-        <div className="py-4">
-          <p className="mb-2 text-sm text-[#402542]">
-            Please provide a reason for rejecting this customer nail:
-          </p>
+        <div className="bg-[linear-gradient(135deg,#fff0f5_0%,#ffe7ef_100%)] px-6 pb-10 pt-6">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#e1447f] text-white">
+              <XCircle size={20} />
+            </div>
+            <div>
+              <h3 className="text-xl font-extrabold text-[#402542]">Reject Customer Nail</h3>
+              <p className="mt-1 text-sm text-[#b35f82]">
+                Give the customer a clear reason so the next revision is easier to handle.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="-mt-6 space-y-4 rounded-[28px] bg-white px-6 pb-6 pt-6">
+          <div className="rounded-2xl border border-[#f7d8e4] bg-[#fffafb] p-4">
+            <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">
+              Reject Reason
+            </p>
+            <p className="mb-3 text-sm text-[#6f5568]">
+              Explain what needs to be adjusted before this request can move forward.
+            </p>
+          </div>
           <Input.TextArea
             value={rejectReason}
             onChange={(e) => setRejectReason(e.target.value)}
             placeholder="Enter reject reason"
-            rows={4}
+            rows={5}
             className="mt-2"
           />
         </div>
@@ -708,7 +877,7 @@ export function CustomerNailDetailPage() {
 
       {/* Approve Quote Modal */}
       <Modal
-        title="Confirm Quote"
+        title={null}
         open={isApproveModalOpen}
         onOk={handleManagerApproveQuote}
         onCancel={() => {
@@ -719,14 +888,37 @@ export function CustomerNailDetailPage() {
         confirmLoading={isSubmitting}
         okText="Confirm"
         cancelText="Cancel"
-        okButtonProps={{ style: { backgroundColor: '#2fa25f', color: '#fff' } }}
+        okButtonProps={{ style: { backgroundColor: "#2fa25f", color: "#fff", borderRadius: 9999, fontWeight: 700 } }}
+        cancelButtonProps={{ style: { borderRadius: 9999, fontWeight: 700 } }}
+        centered
+        destroyOnClose
+        styles={{
+          content: { padding: 0, borderRadius: 28, overflow: "hidden" },
+          body: { padding: 0 },
+          mask: { backdropFilter: "blur(6px)" },
+        }}
       >
-        <div className="py-4 space-y-4">
-          <p className="text-sm text-[#402542]">
-            Please enter the final quote details:
-          </p>
+        <div className="bg-[linear-gradient(135deg,#eefbf2_0%,#e6f8ec_100%)] px-6 pb-10 pt-6">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#2fa25f] text-white">
+              <CheckCircle2 size={20} />
+            </div>
+            <div>
+              <h3 className="text-xl font-extrabold text-[#31543f]">Confirm Quote</h3>
+              <p className="mt-1 text-sm text-[#5d8b70]">
+                Enter the final approved quote details for this custom design.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="-mt-6 space-y-4 rounded-[28px] bg-white px-6 pb-6 pt-6">
+          <div className="rounded-2xl border border-[#d8efdf] bg-[#f8fffa] p-4">
+            <p className="text-sm text-[#496455]">
+              Provide the final price and expected duration that the customer will see.
+            </p>
+          </div>
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#c08aa4] mb-2">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.1em] text-[#c08aa4]">
               Final Price
             </p>
             <Input
@@ -737,7 +929,7 @@ export function CustomerNailDetailPage() {
             />
           </div>
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#c08aa4] mb-2">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.1em] text-[#c08aa4]">
               Final Duration (minutes)
             </p>
             <Input
@@ -750,9 +942,63 @@ export function CustomerNailDetailPage() {
         </div>
       </Modal>
 
+      <Modal
+        title={null}
+        open={isAssignRequiredModalOpen}
+        footer={null}
+        centered
+        destroyOnClose
+        onCancel={() => setIsAssignRequiredModalOpen(false)}
+        styles={{
+          content: { padding: 0, borderRadius: 28, overflow: "hidden" },
+          body: { padding: 0 },
+          mask: { backdropFilter: "blur(6px)" },
+        }}
+      >
+        <div className="bg-[linear-gradient(135deg,#fff8ec_0%,#fff0dd_100%)] px-6 pb-10 pt-6">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#db8520] text-white">
+              <AlertTriangle size={20} />
+            </div>
+            <div>
+              <h3 className="text-xl font-extrabold text-[#5a3821]">Assign Staff First</h3>
+              <p className="mt-1 text-sm text-[#9a6a40]">
+                You need to assign a staff artist before approving this customer nail request.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="-mt-6 rounded-[28px] bg-white px-6 pb-6 pt-6">
+          <div className="rounded-2xl border border-[#f5ddbd] bg-[#fffaf2] p-4">
+            <p className="text-sm text-[#6f5568]">
+              Please assign the appropriate staff artist so the request can be reviewed and handled correctly.
+            </p>
+          </div>
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+            <button
+              type="button"
+              onClick={() => setIsAssignRequiredModalOpen(false)}
+              className="flex-1 rounded-full border border-[#f4c1d8] bg-white px-5 py-3 text-sm font-bold text-[#ea4f93] transition hover:bg-[#fff7fb]"
+            >
+              Close
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsAssignRequiredModalOpen(false);
+                handleOpenAssignModal();
+              }}
+              className="flex-1 rounded-full bg-[#ea4f93] px-5 py-3 text-sm font-bold text-white shadow-[0_10px_22px_rgba(234,79,147,0.18)] transition hover:bg-[#df4588]"
+            >
+              Assign Staff Now
+            </button>
+          </div>
+        </div>
+      </Modal>
+
       {/* Assign Staff Modal */}
       <Modal
-        title="Assign Staff"
+        title={null}
         open={isAssignModalOpen}
         onOk={handleAssignReviewer}
         onCancel={() => {
@@ -762,15 +1008,51 @@ export function CustomerNailDetailPage() {
         confirmLoading={isSubmitting}
         okText="Confirm"
         cancelText="Cancel"
-        okButtonProps={{ style: { backgroundColor: '#ea4f93', color: '#fff' } }}
+        okButtonProps={{
+          style: { backgroundColor: "#ea4f93", color: "#fff", borderRadius: 9999, fontWeight: 700 },
+          disabled: !selectedStaff,
+        }}
+        cancelButtonProps={{ style: { borderRadius: 9999, fontWeight: 700 } }}
+        width={760}
+        centered
+        destroyOnClose
+        styles={{
+          content: { padding: 0, borderRadius: 28, overflow: "hidden" },
+          body: { padding: 0 },
+          mask: { backdropFilter: "blur(6px)" },
+        }}
       >
-        <div className="py-4">
+        <div className="bg-[linear-gradient(135deg,#fff0f8_0%,#fff5fb_100%)] px-6 pb-10 pt-6">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#ea4f93] text-white">
+              <UserRound size={20} />
+            </div>
+            <div>
+              <h3 className="text-xl font-extrabold text-[#402542]">Assign Staff Artist</h3>
+              <p className="mt-1 text-sm text-[#b06484]">
+                Choose the best staff artist to take ownership of this request.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="-mt-6 rounded-[28px] bg-white px-6 pb-6 pt-6">
+          <div className="mb-4 rounded-2xl border border-[#f6d8e6] bg-[#fffafb] p-4">
+            <p className="text-sm text-[#6f5568]">
+              Browse the available staff below. The selected profile will be assigned immediately
+              after confirmation.
+            </p>
+            {selectedStaff ? (
+              <p className="mt-2 text-sm font-semibold text-[#ea4f93]">
+                Selected: {selectedStaffName}
+              </p>
+            ) : null}
+          </div>
           {isLoadingStaff ? (
             <div className="flex items-center justify-center py-8">
               <Spin tip="Loading staff..." />
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="grid gap-3 md:grid-cols-2">
               {staffList.length === 0 ? (
                 <p className="text-sm text-[#c08aa4]">No staff available.</p>
               ) : (
@@ -778,19 +1060,51 @@ export function CustomerNailDetailPage() {
                   <div
                     key={staff.staffId}
                     onClick={() => setSelectedStaff(staff)}
-                    className={`p-3 rounded-xl border cursor-pointer transition ${
+                    className={`cursor-pointer rounded-[24px] border p-4 transition ${
                       selectedStaff?.staffId === staff.staffId
-                        ? "border-[#ea4f93] bg-[#fff0f8]"
-                        : "border-[#f4c7da] hover:border-[#ea4f93]"
+                        ? "border-[#ea4f93] bg-[linear-gradient(180deg,#fff0f8_0%,#fff7fb_100%)] shadow-[0_14px_28px_rgba(234,79,147,0.12)]"
+                        : "border-[#f4c7da] bg-white hover:border-[#ea4f93] hover:shadow-[0_12px_24px_rgba(236,72,153,0.08)]"
                     }`}
                   >
-                    <p className="text-sm font-semibold text-[#3f2240]">
-                      {staff.firstName} {staff.lastName}
-                    </p>
-                    <p className="text-xs text-[#c08aa4]">{staff.email}</p>
-                    {staff.role && (
-                      <p className="text-xs text-[#c08aa4]">{staff.role}</p>
-                    )}
+                    <div className="flex items-start gap-3">
+                      <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${
+                        selectedStaff?.staffId === staff.staffId
+                          ? "bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93]"
+                          : "bg-gradient-to-br from-[#d8c4ff] to-[#8b5cf6]"
+                      }`}>
+                        {getStaffInitials(staff)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-extrabold text-[#3f2240]">
+                            {getStaffDisplayName(staff)}
+                          </p>
+                          {staff.role ? (
+                            <span className="inline-flex rounded-full bg-[#fce7f3] px-2.5 py-1 text-[10px] font-bold text-[#ea4f93]">
+                              {staff.role}
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="mt-3 space-y-2">
+                          <div className="flex items-center gap-2 text-xs text-[#7f6478]">
+                            <Mail size={12} className="text-[#c08aa4]" />
+                            <span>{staff.email || "No email"}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-[#7f6478]">
+                            <Phone size={12} className="text-[#c08aa4]" />
+                            <span>{staff.phone || staff.phoneNumber || "No phone"}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-[#7f6478]">
+                            <BriefcaseBusiness size={12} className="text-[#c08aa4]" />
+                            <span>{staff.specialty || staff.role || "Staff Artist"}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-[#7f6478]">
+                            <UserRound size={12} className="text-[#c08aa4]" />
+                            <span>ID: {staff.staffId || staff.id || "N/A"}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 ))
               )}

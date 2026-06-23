@@ -1,6 +1,8 @@
 import {
   Bell,
   CalendarClock,
+  ChevronLeft,
+  ChevronRight,
   Clock3,
   Eye,
   LoaderCircle,
@@ -19,6 +21,7 @@ import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/hooks/useAuth";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
+import { usePagination } from "../../../../shared/hooks/usePagination";
 import {
   ROUTES,
   getReceptionistBookingDetailRoute,
@@ -101,6 +104,8 @@ const RECENT_CHECK_INS = [
   ["Zoe Parker", "Nail Art Design", "11:32 AM | In service", "ZP", "bg-[#8f5ce4]"],
   ["Walk-in #3", "Gel Manicure", "11:48 AM | Waiting", "WI", "bg-[#28b59b]"],
 ];
+
+const APPOINTMENTS_PAGE_SIZE = 5;
 
 function getInitials(name) {
   return (name || "--")
@@ -333,6 +338,13 @@ export function ReceptionistDashboardPage() {
         .includes(normalizedQuery),
     );
   }, [appointmentQuery, appointmentRows]);
+
+  const {
+    currentPage: appointmentPage,
+    paginatedItems: paginatedAppointmentRows,
+    setCurrentPage: setAppointmentPage,
+    totalPages: appointmentTotalPages,
+  } = usePagination(filteredAppointmentRows, APPOINTMENTS_PAGE_SIZE);
 
   const updateAppointmentRow = (updatedBooking) => {
     if (!updatedBooking?.bookingId) {
@@ -675,8 +687,8 @@ export function ReceptionistDashboardPage() {
                   <div className="rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-center text-sm text-[#d14c84]">
                     {appointmentsError}
                   </div>
-                ) : filteredAppointmentRows.length ? (
-                  filteredAppointmentRows.map((row) => (
+                ) : paginatedAppointmentRows.length ? (
+                  paginatedAppointmentRows.map((row) => (
                     <MobileAppointmentCard
                       key={row.id}
                       row={row}
@@ -694,13 +706,54 @@ export function ReceptionistDashboardPage() {
                 <Table
                   rowKey="id"
                   columns={appointmentColumns}
-                  dataSource={filteredAppointmentRows}
+                  dataSource={paginatedAppointmentRows}
                   loading={isAppointmentsLoading}
                   pagination={false}
                   scroll={{ x: 960 }}
                   locale={{ emptyText: appointmentsError || "No appointments found for today." }}
                 />
               </div>
+
+              {!isAppointmentsLoading && !appointmentsError && filteredAppointmentRows.length > 0 ? (
+                <div className="mt-4 flex flex-col gap-3 border-t border-[#f7e0ea] pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-xs text-[#aa8a99]">
+                    Showing {(appointmentPage - 1) * APPOINTMENTS_PAGE_SIZE + 1}
+                    {" - "}
+                    {Math.min(appointmentPage * APPOINTMENTS_PAGE_SIZE, filteredAppointmentRows.length)}
+                    {" of "}
+                    {filteredAppointmentRows.length} appointments
+                  </p>
+                  <div className="flex items-center gap-2 self-end sm:self-auto">
+                    <button
+                      type="button"
+                      onClick={() => setAppointmentPage(Math.max(1, appointmentPage - 1))}
+                      disabled={appointmentPage === 1}
+                      className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition ${
+                        appointmentPage === 1
+                          ? "cursor-not-allowed border-[#f2dce6] bg-[#fff7fb] text-[#d4b5c4]"
+                          : "border-[#f2bfd4] bg-white text-[#ea4f93] hover:bg-[#fff2f8]"
+                      }`}
+                    >
+                      <ChevronLeft size={15} />
+                    </button>
+                    <span className="min-w-[84px] text-center text-xs font-bold text-[#7f6478]">
+                      Page {appointmentPage}/{appointmentTotalPages}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setAppointmentPage(Math.min(appointmentTotalPages, appointmentPage + 1))}
+                      disabled={appointmentPage === appointmentTotalPages}
+                      className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition ${
+                        appointmentPage === appointmentTotalPages
+                          ? "cursor-not-allowed border-[#f2dce6] bg-[#fff7fb] text-[#d4b5c4]"
+                          : "border-[#f2bfd4] bg-white text-[#ea4f93] hover:bg-[#fff2f8]"
+                      }`}
+                    >
+                      <ChevronRight size={15} />
+                    </button>
+                  </div>
+                </div>
+              ) : null}
             </DashboardCard>
 
             <div className="grid w-full min-w-0 gap-4 xl:grid-cols-[0.95fr_1.05fr]">

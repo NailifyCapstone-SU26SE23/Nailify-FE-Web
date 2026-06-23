@@ -357,30 +357,30 @@ export function StaffDashboardPage() {
         </div>
       ),
     },
-    {
-      title: "Service",
-      key: "service",
-      render: (_, booking) => <span className="text-sm text-[#6d5669]">{booking.services.join(", ") || "--"}</span>,
-    },
-    {
-      title: "Design",
-      key: "design",
-      render: (_, booking) => (
-        booking.previewImage ? (
-          <img
-            src={booking.previewImage}
-            alt={booking.service}
-            className="h-9 w-9 rounded-xl object-cover shadow-sm"
-            loading="lazy"
-            referrerPolicy="no-referrer"
-          />
-        ) : (
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff1f6] text-[10px] font-bold text-[#ea4f93]">
-            --
-          </div>
-        )
-      ),
-    },
+    // {
+    //   title: "Service",
+    //   key: "service",
+    //   render: (_, booking) => <span className="text-sm text-[#6d5669]">{booking.services.join(", ") || "--"}</span>,
+    // },
+    // {
+    //   title: "Design",
+    //   key: "design",
+    //   render: (_, booking) => (
+    //     booking.previewImage ? (
+    //       <img
+    //         src={booking.previewImage}
+    //         alt={booking.service}
+    //         className="h-9 w-9 rounded-xl object-cover shadow-sm"
+    //         loading="lazy"
+    //         referrerPolicy="no-referrer"
+    //       />
+    //     ) : (
+    //       <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff1f6] text-[10px] font-bold text-[#ea4f93]">
+    //         --
+    //       </div>
+    //     )
+    //   ),
+    // },
     {
       title: "Status",
       dataIndex: "status",
