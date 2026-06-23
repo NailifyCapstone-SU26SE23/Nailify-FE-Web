@@ -120,6 +120,46 @@ ProgressStep.propTypes = {
   }).isRequired,
 };
 
+function ProcedureTimelineStep({ step, isLast }) {
+  const tone = {
+    dot: "bg-[linear-gradient(135deg,#f857a6_0%,#ffcc70_100%)] text-white shadow-[0_12px_24px_rgba(244,114,182,0.2)]",
+    line: "bg-[linear-gradient(180deg,#f8bfd8_0%,#ffe09c_100%)]",
+    card: "bg-[linear-gradient(135deg,#fff0f7_0%,#fff6d8_100%)]",
+    title: "text-[#8a7082]",
+    note: "text-[#a78c9d]",
+  };
+
+  return (
+    <div className="flex gap-4">
+      <div className="flex w-10 shrink-0 flex-col items-center">
+        <div
+          className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-extrabold ${tone.dot}`}
+        >
+          {step.stepNumber}
+        </div>
+        {!isLast ? <div className={`mt-2 w-1 flex-1 rounded-full ${tone.line}`} /> : null}
+      </div>
+
+      <div className={`flex-1 rounded-[20px] px-5 py-4 shadow-[0_14px_32px_rgba(236,72,153,0.08)] ${tone.card}`}>
+        <div className="min-w-0">
+          <p className={`text-sm font-extrabold ${tone.title}`}>{step.label}</p>
+          {step.note ? <p className={`mt-1 text-xs ${tone.note}`}>{step.note}</p> : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ProcedureTimelineStep.propTypes = {
+  isLast: PropTypes.bool.isRequired,
+  step: PropTypes.shape({
+    label: PropTypes.string.isRequired,
+    note: PropTypes.string,
+    state: PropTypes.oneOf(["active", "upcoming", "complete"]).isRequired,
+    stepNumber: PropTypes.number.isRequired,
+  }).isRequired,
+};
+
 function SummaryValue({ label, value, accent = false }) {
   return (
     <div>
@@ -679,12 +719,22 @@ export function StaffServiceSessionPage() {
   }, [bookingProcedures, data?.stepNote]);
 
   const procedureStepSummary = useMemo(
-    () =>
-      procedureChecklist.map((procedure) => ({
+    () => {
+      const firstPendingIndex = procedureChecklist.findIndex((procedure) => !procedure.checked);
+
+      return procedureChecklist.map((procedure, index) => ({
         id: procedure.bookingProcedureId,
         label: procedure.label,
-        statusLabel: procedure.statusLabel,
-      })),
+        note: procedure.description || "",
+        stepNumber: Number.isFinite(procedure.stepOrder) ? procedure.stepOrder : index + 1,
+        state:
+          procedure.checked
+            ? "complete"
+            : firstPendingIndex === -1 || index === firstPendingIndex
+              ? "active"
+              : "upcoming",
+      }));
+    },
     [procedureChecklist],
   );
 
@@ -713,14 +763,13 @@ export function StaffServiceSessionPage() {
     );
   };
 
-  const handleToggleProcedureStatus = async (procedure) => {
+  const handleUpdateProcedureStatus = async (procedure, nextStatus) => {
     const procedureId = String(procedure?.bookingProcedureId || "").trim();
+    const normalizedNextStatus = String(nextStatus || "").trim();
 
-    if (!procedureId) {
+    if (!procedureId || !normalizedNextStatus) {
       return;
     }
-
-    const nextStatus = procedure.checked ? "Skipped" : "Completed";
 
     setProcedureStatusUpdates((current) => ({
       ...current,
@@ -728,7 +777,7 @@ export function StaffServiceSessionPage() {
     }));
 
     try {
-      const updatedProcedure = await updateBookingProcedureStatus(procedureId, nextStatus);
+      const updatedProcedure = await updateBookingProcedureStatus(procedureId, normalizedNextStatus);
 
       setBookingProcedures((current) =>
         current.map((item) =>
@@ -740,7 +789,7 @@ export function StaffServiceSessionPage() {
             : item,
         ),
       );
-      toast.success(`Procedure marked as ${nextStatus}.`);
+      toast.success(`Procedure marked as ${normalizedNextStatus}.`);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to update procedure status.";
       toast.error(message);
@@ -885,6 +934,50 @@ export function StaffServiceSessionPage() {
     setIsCompletingSession(true);
 
     try {
+      const proceduresToSkip = procedureChecklist.filter((procedure) => {
+        const normalizedStatus = String(procedure.status || "").trim().toLowerCase();
+
+        return !procedure.checked && !["completed", "done", "skipped"].includes(normalizedStatus);
+      });
+
+      if (proceduresToSkip.length > 0) {
+        setProcedureStatusUpdates((current) => {
+          const nextState = { ...current };
+
+          proceduresToSkip.forEach((procedure) => {
+            nextState[procedure.bookingProcedureId] = true;
+          });
+
+          return nextState;
+        });
+
+        const skippedProcedures = await Promise.all(
+          proceduresToSkip.map(async (procedure) => {
+            const updatedProcedure = await updateBookingProcedureStatus(procedure.bookingProcedureId, "Skipped");
+
+            return {
+              procedureId: procedure.bookingProcedureId,
+              updatedProcedure,
+            };
+          }),
+        );
+
+        setBookingProcedures((current) =>
+          current.map((item) => {
+            const matchedProcedure = skippedProcedures.find(
+              (procedure) => procedure.procedureId === item.bookingProcedureId,
+            );
+
+            return matchedProcedure
+              ? {
+                ...item,
+                ...matchedProcedure.updatedProcedure,
+              }
+              : item;
+          }),
+        );
+      }
+
       await uploadImageAfterService(bookingId, afterPhoto.file);
       const refreshedBookingDetail = await fetchStaffBookingDetail(bookingId).catch(() => null);
 
@@ -910,13 +1003,14 @@ export function StaffServiceSessionPage() {
       setShowCompleteConfirm(false);
       setAfterPhoto(refreshedAfterPhoto);
       setFlashMessage(
-        "Session completed successfully. The booking is ready for payment and history archiving.",
+        "Service completed successfully. The booking is ready for payment and history archiving.",
       );
-      toast.success("Session completed successfully.");
+      toast.success("Service completed successfully.");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to complete the service session.";
       toast.error(message);
     } finally {
+      setProcedureStatusUpdates({});
       setIsCompletingSession(false);
     }
   };
@@ -1550,19 +1644,6 @@ export function StaffServiceSessionPage() {
                       </div>
                     </div>
                   </div>
-
-                  <div>
-                    <div className="flex items-center justify-between gap-3 text-xs font-bold uppercase tracking-[0.12em]">
-                      <span className="text-[#a88a9d]">Service Progress</span>
-                      <span className="text-[#ea4f93]">{serviceProgress}%</span>
-                    </div>
-                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#f8d9e8]">
-                      <div
-                        className="h-full rounded-full bg-[image:var(--gradient-accent)] transition-[width] duration-500"
-                        style={{ width: `${serviceProgress}%` }}
-                      />
-                    </div>
-                  </div>
                 </div>
               </article>
 
@@ -1635,18 +1716,17 @@ export function StaffServiceSessionPage() {
                 </div>
 
                 {procedureStepSummary.length > 0 ? (
-                  <div className="mt-3 rounded-[16px] border border-[#f2bfd4] bg-white px-4 py-4">
+                  <div className="mt-3 rounded-[22px] border border-[#f4cfdd] bg-[linear-gradient(180deg,#fffdfd_0%,#fff8f2_100%)] px-4 py-4 shadow-[0_14px_28px_rgba(236,72,153,0.05)]">
                     <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
                       Procedure Steps
                     </p>
-                    <div className="mt-3 flex flex-col gap-2">
-                      {procedureStepSummary.map((procedure) => (
-                        <span
+                    <div className="mt-4 flex flex-col gap-4">
+                      {procedureStepSummary.map((procedure, index) => (
+                        <ProcedureTimelineStep
                           key={procedure.id}
-                          className="inline-flex items-center gap-2 rounded-full border border-[#f2bfd4] bg-[#fff6fa] px-3 py-1.5 text-[11px] font-bold text-[#ea4f93]"
-                        >
-                          <span>{procedure.label}</span>
-                        </span>
+                          step={procedure}
+                          isLast={index === procedureStepSummary.length - 1}
+                        />
                       ))}
                     </div>
                   </div>
@@ -1838,15 +1918,25 @@ export function StaffServiceSessionPage() {
                             checked={procedure.checked}
                             disabled={Boolean(procedureStatusUpdates[procedure.bookingProcedureId])}
                             label={procedure.label}
-                            onToggle={() => handleToggleProcedureStatus(procedure)}
+                            onToggle={() => handleUpdateProcedureStatus(procedure, "Completed")}
                           />
-                          <div className="flex items-center justify-between px-1 text-xs text-[#a88a9d]">
+                          <div className="flex items-center justify-between gap-3 px-1 text-xs text-[#a88a9d]">
                             <span>Status: {procedure.statusLabel}</span>
-                            <span>
-                              {procedureStatusUpdates[procedure.bookingProcedureId]
-                                ? "Updating..."
-                                : procedure.description || "--"}
-                            </span>
+                            <div className="flex items-center gap-3">
+                              <span>
+                                {procedureStatusUpdates[procedure.bookingProcedureId]
+                                  ? "Updating..."
+                                  : procedure.description || "--"}
+                              </span>
+                              <button
+                                type="button"
+                                disabled={Boolean(procedureStatusUpdates[procedure.bookingProcedureId])}
+                                onClick={() => handleUpdateProcedureStatus(procedure, "Skipped")}
+                                className="inline-flex min-h-8 items-center justify-center rounded-full border border-[#f4c7d9] bg-[#fff4f8] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#d95a95] transition hover:bg-[#ffe8f2] disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Skip
+                              </button>
+                            </div>
                           </div>
                         </div>
                       ))

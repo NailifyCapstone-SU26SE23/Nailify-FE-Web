@@ -330,7 +330,7 @@ export const saveMockSalonForm = (recordId, formData) => {
   deletedSalonIds.delete(String(recordId));
 };
 
-const validateSalonForm = (formData, { requireSalonId = false } = {}) => {
+export const validateSalonForm = (formData, { requireSalonId = false } = {}) => {
   if (!formData.salonName?.trim()) {
     return "Salon name is required.";
   }
@@ -343,17 +343,8 @@ const validateSalonForm = (formData, { requireSalonId = false } = {}) => {
     return "Address is required.";
   }
 
-  if (!formData.manager?.trim()) {
-    return "Manager name is required.";
-  }
-
   if (!formData.phone?.trim()) {
     return "Phone number is required.";
-  }
-
-  const staffAmount = Number(formData.staffAmount);
-  if (!Number.isFinite(staffAmount) || staffAmount < 1) {
-    return "Staff amount must be at least 1.";
   }
 
   return null;

@@ -1,4 +1,4 @@
-import { Modal } from "antd";
+import { Modal, Spin, Alert } from "antd";
 import {
   ArrowRightLeft,
   Award,
@@ -15,7 +15,7 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { ROUTES, getManagerStaffUpdateRoute } from "../../../../shared/constants/routes";
@@ -26,18 +26,16 @@ import {
   SCHEDULE_DAY_KEYS,
   SCHEDULE_STATUS_STYLES,
   STAFF_ALERTS,
-  STAFF_ARTISTS,
   STAFF_FILTER_TABS,
-  STAFF_MINI_STATS,
   STAFF_ON_LEAVE,
   STAFF_STATUS_STYLES,
-  STAFF_SUMMARY_STATS,
   TOP_PERFORMER,
   WEEKLY_SCHEDULE,
   WORKLOAD_BALANCE,
   filterStaffByStatus,
   getStaffInitials,
 } from "../services/mockStaffArtists";
+import { fetchNailArtists } from "../services/nailArtistsService";
 
 const SUMMARY_ICON_MAP = {
   users: Users,
@@ -109,7 +107,7 @@ SummaryStatCard.propTypes = {
 
 // ── Staff Detail Modal (Ant Design) ──────────────────────────────────────────
 
-function StaffDetailModal({ staff, onClose }) {
+function StaffDetailModal({ staff, onClose, loading }) {
   const avgPerDay =
     staff?.stats?.month && staff.stats.month > 0
       ? (staff.stats.month / 26).toFixed(1)
@@ -128,7 +126,11 @@ function StaffDetailModal({ staff, onClose }) {
         mask: { backdropFilter: "blur(4px)" },
       }}
     >
-      {staff && (
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Spin size="large" tip="Loading artist detail..." />
+        </div>
+      ) : staff && (
         <>
           {/* Pink gradient header */}
           <div className="bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] px-6 pt-6 pb-10">
@@ -255,6 +257,7 @@ function StaffDetailModal({ staff, onClose }) {
 StaffDetailModal.propTypes = {
   staff: PropTypes.object,
   onClose: PropTypes.func.isRequired,
+  loading: PropTypes.bool,
 };
 
 // ── StaffArtistCard (with View button) ───────────────────────────────────────
@@ -391,7 +394,7 @@ function EditScheduleModal({ open, onClose }) {
             <label className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#c08aa4] block mb-2">Select Staff</label>
             <select className="w-full rounded-xl border border-[#f8deea] bg-[#fffafb] px-4 py-2.5 text-sm text-[#402542] focus:outline-none focus:ring-2 focus:ring-[#ea4f93]">
               <option>Choose a staff member...</option>
-              {STAFF_ARTISTS.map(staff => <option key={staff.id} value={staff.id}>{staff.name}</option>)}
+              {/* Staff list will be populated when API integration is complete */}
             </select>
           </div>
 
@@ -553,7 +556,7 @@ function AssignSkillModal({ open, onClose }) {
             <label className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#c08aa4] block mb-2">Select Staff</label>
             <select className="w-full rounded-xl border border-[#f8deea] bg-[#fffafb] px-4 py-2.5 text-sm text-[#402542] focus:outline-none focus:ring-2 focus:ring-[#ea4f93]">
               <option>Choose a staff member...</option>
-              {STAFF_ARTISTS.map(staff => <option key={staff.id} value={staff.id}>{staff.name}</option>)}
+              {/* Staff list will be populated when API integration is complete */}
             </select>
           </div>
 
@@ -649,7 +652,7 @@ function ViewPerformanceModal({ open, onClose }) {
             <label className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#c08aa4] block mb-2">Select Staff</label>
             <select className="w-full rounded-xl border border-[#f8deea] bg-[#fffafb] px-4 py-2.5 text-sm text-[#402542] focus:outline-none focus:ring-2 focus:ring-[#ea4f93]">
               <option>Choose a staff member...</option>
-              {STAFF_ARTISTS.map(staff => <option key={staff.id} value={staff.id}>{staff.name}</option>)}
+              {/* Staff list will be populated when API integration is complete */}
             </select>
           </div>
 
@@ -729,7 +732,7 @@ function TransferStaffModal({ open, onClose }) {
             <label className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#c08aa4] block mb-2">Select Staff to Transfer</label>
             <select className="w-full rounded-xl border border-[#f8deea] bg-[#fffafb] px-4 py-2.5 text-sm text-[#402542] focus:outline-none focus:ring-2 focus:ring-[#ea4f93]">
               <option>Choose a staff member...</option>
-              {STAFF_ARTISTS.map(staff => <option key={staff.id} value={staff.id}>{staff.name}</option>)}
+              {/* Staff list will be populated when API integration is complete */}
             </select>
           </div>
 
@@ -788,15 +791,121 @@ TransferStaffModal.propTypes = {
 export function StaffManagementPage() {
   const [activeFilter, setActiveFilter] = useState("All");
   const [viewingStaff, setViewingStaff] = useState(null);
+  const [viewingStaffDetail, setViewingStaffDetail] = useState(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
   const [isEditScheduleModalOpen, setIsEditScheduleModalOpen] = useState(false);
   const [isAssignSkillModalOpen, setIsAssignSkillModalOpen] = useState(false);
   const [isViewPerformanceModalOpen, setIsViewPerformanceModalOpen] = useState(false);
   const [isTransferStaffModalOpen, setIsTransferStaffModalOpen] = useState(false);
+  const [staffArtists, setStaffArtists] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Function to map API data to UI format
+  const mapApiArtistToUiFormat = (apiArtist) => {
+    console.log("Mapping API artist:", apiArtist);
+    return {
+      id: apiArtist.nailArtistId || apiArtist.id || `artist-${Math.random()}`,
+      name: `${apiArtist.firstName || ""} ${apiArtist.lastName || ""}`.trim() || "Unnamed Artist",
+      role: apiArtist.specialty || "Nail Artist",
+      rating: apiArtist.averageRating || 4.5,
+      status: apiArtist.status || "Available",
+      skills: [], // API doesn't seem to return skills yet, we'll add defaults
+      stats: {
+        today: 0,
+        month: 0,
+        revenue: "$0",
+      },
+      avatarTone: "from-[#ffc5de] to-[#ea4f93]", // Default gradient
+      email: apiArtist.email || "",
+      phone: apiArtist.phone || "",
+    };
+  };
+
+  // Function to fetch detailed artist info
+  const fetchArtistDetail = async (artistId) => {
+    try {
+      setLoadingDetail(true);
+      const detail = await fetchNailArtistById(artistId);
+      console.log("Fetched artist detail:", detail);
+      
+      // Map the detailed data (using the same mapping function)
+      const mappedDetail = mapApiArtistToUiFormat(detail);
+      setViewingStaffDetail(mappedDetail);
+      setViewingStaff(mappedDetail);
+    } catch (err) {
+      console.error("Failed to fetch artist detail:", err);
+      // Fallback to the basic data if detail fails
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+
+  useEffect(() => {
+    const loadNailArtists = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await fetchNailArtists();
+        const mappedData = Array.isArray(data)
+          ? data.map(mapApiArtistToUiFormat)
+          : [];
+        setStaffArtists(mappedData);
+      } catch (err) {
+        console.error("Failed to load nail artists:", err);
+        setError(err.message || "Failed to load staff artists");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadNailArtists();
+  }, []);
 
   const filteredStaff = useMemo(
-    () => filterStaffByStatus(STAFF_ARTISTS, activeFilter),
-    [activeFilter],
+    () => filterStaffByStatus(staffArtists, activeFilter),
+    [staffArtists, activeFilter],
   );
+
+  // Derived stats
+  const STAFF_SUMMARY_STATS = [
+    {
+      label: "Total Staff",
+      value: staffArtists.length.toString(),
+      icon: "users",
+      iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
+    },
+    {
+      label: "Available Today",
+      value: staffArtists.filter(s => s.status === "Available").length.toString(),
+      icon: "check",
+      iconClassName: "bg-[#eaf9ee] text-[#2fa25f]",
+    },
+    {
+      label: "Average Rating",
+      value: staffArtists.length > 0 
+        ? (staffArtists.reduce((acc, s) => acc + s.rating, 0) / staffArtists.length).toFixed(1)
+        : "0",
+      icon: "star",
+      iconClassName: "bg-[#fff8e1] text-[#f59e0b]",
+    },
+    {
+      label: "Completed Services",
+      value: staffArtists.reduce((acc, s) => acc + s.stats.month, 0).toLocaleString(),
+      icon: "clipboard",
+      iconClassName: "bg-[#f3ebff] text-[#8b5cf6]",
+    },
+  ];
+
+  const STAFF_MINI_STATS = [
+    { label: "Total Staff", value: staffArtists.length.toString() },
+    { label: "Available Today", value: staffArtists.filter(s => s.status === "Available").length.toString() },
+    { label: "Average Rating", value: staffArtists.length > 0 
+      ? (staffArtists.reduce((acc, s) => acc + s.rating, 0) / staffArtists.length).toFixed(1)
+      : "0" },
+    { label: "Completed Services", value: staffArtists.reduce((acc, s) => acc + s.stats.month, 0).toLocaleString() },
+    { label: "Staff On Leave", value: staffArtists.filter(s => s.status === "On Leave").length.toString() },
+  ];
 
   // Helper to find action by label
   const getActionHandler = (label) => {
@@ -811,93 +920,111 @@ export function StaffManagementPage() {
 
   return (
     <section className="flex min-h-full flex-col gap-4">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {STAFF_SUMMARY_STATS.map((item) => (
-          <SummaryStatCard key={item.label} item={item} />
-        ))}
-      </div>
+      {error && (
+        <Alert
+          message="Error Loading Staff"
+          description={error}
+          type="error"
+          showIcon
+        />
+      )}
+      
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <Spin size="large" tip="Loading staff artists..." />
+        </div>
+      ) : (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {STAFF_SUMMARY_STATS.map((item) => (
+              <SummaryStatCard key={item.label} item={item} />
+            ))}
+          </div>
 
-      <div className="flex flex-wrap gap-2">
-        {QUICK_ACTIONS.map((action) => {
-          const Icon = ACTION_ICON_MAP[action.icon] ?? CalendarDays;
-          const handler = getActionHandler(action.label);
+          <div className="flex flex-wrap gap-2">
+            {QUICK_ACTIONS.map((action) => {
+              const Icon = ACTION_ICON_MAP[action.icon] ?? CalendarDays;
+              const handler = getActionHandler(action.label);
 
-          return (
-            <button
-              key={action.label}
-              type="button"
-              onClick={handler}
-              className="inline-flex items-center gap-2 rounded-2xl border border-[#f4c1d8] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93] shadow-[0_8px_18px_rgba(236,72,153,0.06)] transition hover:bg-[#fff7fb]"
-            >
-              <Icon size={14} />
-              {action.label}
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
-        <div className="space-y-4">
-          <Card>
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <SectionHeading
-                title="Staff Artist Management"
-                subtitle="Manage staff schedules, skills, ratings, and performance"
-              />
-              <Link
-                to={ROUTES.managerStaffArtistsCreate}
-                className="inline-flex items-center gap-1.5 rounded-2xl bg-[#ea4f93] px-4 py-2.5 text-xs font-bold text-white shadow-[0_10px_22px_rgba(234,79,147,0.22)] transition hover:bg-[#df4588]"
-              >
-                <UserPlus size={14} />
-                Add Staff Artist
-              </Link>
-            </div>
-
-            <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-              {STAFF_MINI_STATS.map((stat) => (
-                <div
-                  key={stat.label}
-                  className="rounded-[12px] border border-[#f8deea] bg-[#fffafb] px-3 py-2.5 text-center"
-                >
-                  <p className="text-lg font-extrabold text-[#ea4f93]">{stat.value}</p>
-                  <p className="mt-0.5 text-[10px] text-[#c08aa4]">{stat.label}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-5 flex flex-wrap gap-2">
-              {STAFF_FILTER_TABS.map((filter) => (
+              return (
                 <button
-                  key={filter}
+                  key={action.label}
                   type="button"
-                  onClick={() => setActiveFilter(filter)}
-                  className={
-                    activeFilter === filter
-                      ? "rounded-full bg-[#ea4f93] px-4 py-1.5 text-[11px] font-bold text-white"
-                      : "rounded-full border border-[#f4c1d8] bg-[#fff7fb] px-4 py-1.5 text-[11px] font-bold text-[#c08aa4]"
-                  }
+                  onClick={handler}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-[#f4c1d8] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93] shadow-[0_8px_18px_rgba(236,72,153,0.06)] transition hover:bg-[#fff7fb]"
                 >
-                  {filter}
+                  <Icon size={14} />
+                  {action.label}
                 </button>
-              ))}
-            </div>
+              );
+            })}
+          </div>
 
-            <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {filteredStaff.map((staff) => (
-                <StaffArtistCard
-                  key={staff.id}
-                  staff={staff}
-                  onView={setViewingStaff}
-                />
-              ))}
-            </div>
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
+            <div className="space-y-4">
+              <Card>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <SectionHeading
+                    title="Staff Artist Management"
+                    subtitle="Manage staff schedules, skills, ratings, and performance"
+                  />
+                  <Link
+                    to={ROUTES.managerStaffArtistsCreate}
+                    className="inline-flex items-center gap-1.5 rounded-2xl bg-[#ea4f93] px-4 py-2.5 text-xs font-bold text-white shadow-[0_10px_22px_rgba(234,79,147,0.22)] transition hover:bg-[#df4588]"
+                  >
+                    <UserPlus size={14} />
+                    Add Staff Artist
+                  </Link>
+                </div>
 
-            {filteredStaff.length === 0 ? (
-              <div className="mt-5 rounded-[14px] border border-[#f8deea] bg-[#fffafb] px-4 py-8 text-center text-sm text-[#8a7082]">
-                No staff artists matched the current filter.
-              </div>
-            ) : null}
-          </Card>
+                <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+                  {STAFF_MINI_STATS.map((stat) => (
+                    <div
+                      key={stat.label}
+                      className="rounded-[12px] border border-[#f8deea] bg-[#fffafb] px-3 py-2.5 text-center"
+                    >
+                      <p className="text-lg font-extrabold text-[#ea4f93]">{stat.value}</p>
+                      <p className="mt-0.5 text-[10px] text-[#c08aa4]">{stat.label}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {STAFF_FILTER_TABS.map((filter) => (
+                    <button
+                      key={filter}
+                      type="button"
+                      onClick={() => setActiveFilter(filter)}
+                      className={
+                        activeFilter === filter
+                          ? "rounded-full bg-[#ea4f93] px-4 py-1.5 text-[11px] font-bold text-white"
+                          : "rounded-full border border-[#f4c1d8] bg-[#fff7fb] px-4 py-1.5 text-[11px] font-bold text-[#c08aa4]"
+                      }
+                    >
+                      {filter}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {filteredStaff.map((staff) => (
+                    <StaffArtistCard
+                      key={staff.id}
+                      staff={staff}
+                      onView={(selectedStaff) => {
+                        setViewingStaff(selectedStaff); // Show basic data immediately
+                        fetchArtistDetail(selectedStaff.id); // Then fetch detailed data
+                      }}
+                    />
+                  ))}
+                </div>
+
+                {filteredStaff.length === 0 ? (
+                  <div className="mt-5 rounded-[14px] border border-[#f8deea] bg-[#fffafb] px-4 py-8 text-center text-sm text-[#8a7082]">
+                    No staff artists matched the current filter.
+                  </div>
+                ) : null}
+              </Card>
 
           <Card className="p-0">
             <div className="flex flex-col gap-3 border-b border-[#f6dce7] p-5 sm:flex-row sm:items-center sm:justify-between">
@@ -1152,8 +1279,12 @@ export function StaffManagementPage() {
 
       {/* Staff Detail Modal */}
       <StaffDetailModal
-        staff={viewingStaff}
-        onClose={() => setViewingStaff(null)}
+        staff={viewingStaffDetail || viewingStaff}
+        loading={loadingDetail}
+        onClose={() => {
+          setViewingStaff(null);
+          setViewingStaffDetail(null);
+        }}
       />
 
       {/* Quick Action Modals */}
@@ -1173,6 +1304,8 @@ export function StaffManagementPage() {
         open={isTransferStaffModalOpen}
         onClose={() => setIsTransferStaffModalOpen(false)}
       />
+        </>
+      )}
     </section>
   );
 }

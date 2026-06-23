@@ -22,7 +22,10 @@ export function ActionDropdown({
     }
 
     const handlePointerDown = (event) => {
-      if (!containerRef.current?.contains(event.target)) {
+      const clickedTrigger = containerRef.current?.contains(event.target);
+      const clickedMenu = menuRef.current?.contains(event.target);
+
+      if (!clickedTrigger && !clickedMenu) {
         setIsOpen(false);
       }
     };

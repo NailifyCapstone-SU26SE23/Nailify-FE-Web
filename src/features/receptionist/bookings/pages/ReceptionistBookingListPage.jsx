@@ -427,8 +427,7 @@ export function ReceptionistBookingListPage() {
                 <article key={booking.bookingId} className="rounded-[18px] border border-[#f8dce8] bg-[#fffafb] p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-xs font-bold text-[#ea4f93]">{booking.bookingId}</p>
-                      <p className="mt-1 text-sm font-bold text-[#412643]">{booking.customerName}</p>
+                      <p className="text-sm font-bold text-[#412643]">{booking.customerName}</p>
                       <p className="mt-1 text-[11px] text-[#b38a9f]">{booking.artistName}</p>
                     </div>
                     <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-extrabold ${getStatusTone(booking.status)}`}>

@@ -9,6 +9,8 @@ import {
   User,
   Users,
   X,
+  Upload,
+  Image as ImageIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
@@ -20,16 +22,16 @@ import {
   SALON_DAYS_OF_WEEK,
   SALON_STATUS_OPTIONS,
   createEmptySalonForm,
-  fetchMockSalonFormById,
   getSalonStatusStyle,
-  submitMockSalonUpdate,
+  validateSalonForm,
 } from "../services/mockSalon";
+import { fetchSalonById, updateSalon, uploadSalonImage } from "../services/salonsService";
 
 const inputWrapperClassName =
-  "flex items-center gap-2 rounded-xl border border-rose-100 bg-[#fff6f9] px-4 py-3";
+  "flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5 transition-all duration-300 hover:border-rose-200 hover:bg-[#fff5f9] focus-within:border-rose-400 focus-within:bg-white focus-within:shadow-[0_0_0_3px_rgba(234,79,147,0.15)]";
 const inputClassName =
-  "w-full min-w-0 bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-rose-200";
-const readOnlyInputClassName = `${inputClassName} cursor-not-allowed text-slate-500`;
+  "w-full min-w-0 bg-transparent text-[14px] text-slate-800 outline-none placeholder:text-rose-300 font-medium";
+const readOnlyInputClassName = `${inputClassName} cursor-not-allowed text-slate-500 bg-[#fff5f9]`;
 
 function SalonUpdateLoadingState() {
   return (
@@ -52,6 +54,9 @@ export function SalonUpdatePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isNotFound, setIsNotFound] = useState(false);
   const [formData, setFormData] = useState(createEmptySalonForm);
+  const [formError, setFormError] = useState("");
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -59,21 +64,33 @@ export function SalonUpdatePage() {
     const loadSalon = async () => {
       setIsLoading(true);
       setIsNotFound(false);
+      try {
+        const salon = await fetchSalonById(salonId);
+        
+        if (!isMounted) {
+          return;
+        }
 
-      const salonForm = await fetchMockSalonFormById(salonId);
-
-      if (!isMounted) {
-        return;
-      }
-
-      if (!salonForm) {
+        setFormData({
+          ...createEmptySalonForm(),
+          salonName: salon.salonName || salon.name || "",
+          salonId: (salon.salonId || salon.id || salonId || "").toString().trim(),
+          address: salon.address || "",
+          manager: "",
+          phone: salon.phone || "",
+          staffAmount: "",
+          status: salon.status || "ACTIVE",
+        });
+        // Set image preview if available
+        if (salon.imageUrl || salon.image) {
+          setImagePreview(salon.imageUrl || salon.image);
+        }
+      } catch (error) {
+        console.error("Failed to load salon:", error);
         setIsNotFound(true);
+      } finally {
         setIsLoading(false);
-        return;
       }
-
-      setFormData(salonForm);
-      setIsLoading(false);
     };
 
     loadSalon();
@@ -88,6 +105,7 @@ export function SalonUpdatePage() {
       ...current,
       [field]: value,
     }));
+    if (formError) setFormError("");
   };
 
   const handleHoursChange = (day, field, value) => {
@@ -101,21 +119,63 @@ export function SalonUpdatePage() {
         },
       },
     }));
+    if (formError) setFormError("");
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onload = (e) => setImagePreview(e.target.result);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
   };
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    setFormError("");
+    const validationError = validateSalonForm(formData, { requireSalonId: false });
+    if (validationError) {
+      setFormError(validationError);
+      return;
+    }
     setShowSaveModal(true);
   };
 
   const handleConfirmSave = async () => {
     setIsSaving(true);
+    try {
+      const validationError = validateSalonForm(formData, { requireSalonId: false });
+      if (validationError) {
+        setSaveResult({
+          success: false,
+          message: validationError,
+        });
+        setShowSaveModal(false);
+        return;
+      }
 
-    const result = await submitMockSalonUpdate(salonId, formData);
+      await updateSalon(salonId, formData, selectedImage);
 
-    setIsSaving(false);
-    setShowSaveModal(false);
-    setSaveResult(result);
+      setSaveResult({
+        success: true,
+        message: `${formData.salonName.trim()} has been updated successfully.`,
+      });
+    } catch (error) {
+      setSaveResult({
+        success: false,
+        message: error.message || "Failed to update salon. Please try again.",
+      });
+    } finally {
+      setIsSaving(false);
+      setShowSaveModal(false);
+    }
   };
 
   const handleCloseResultModal = () => {
@@ -189,15 +249,21 @@ export function SalonUpdatePage() {
       ) : (
         <>
           <form onSubmit={handleSubmit} className="grid gap-4 lg:grid-cols-3 lg:gap-5">
+            {formError && (
+              <div className="lg:col-span-3 mb-2 rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-rose-600 text-[13px] font-semibold">
+                {formError}
+              </div>
+            )}
             <div className="space-y-4 lg:col-span-2 lg:space-y-5">
-              <div className="rounded-[20px] bg-white/65 p-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] sm:rounded-[24px] sm:p-5 lg:rounded-[28px]">
-                <h2 className="mb-4 text-[16px] font-bold text-slate-800 sm:text-[18px]">
+              <div className="rounded-[24px] bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
+                <h2 className="mb-5 text-[18px] font-bold text-slate-800 sm:text-[20px] flex items-center gap-2">
+                  <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]"></div>
                   Salon Details
                 </h2>
 
-                <div className="grid gap-4 md:grid-cols-2">
-                  <label className="space-y-2">
-                    <span className="text-[12px] font-semibold text-slate-500">
+                <div className="grid gap-5 md:grid-cols-2">
+                  <label className="space-y-2.5">
+                    <span className="text-[13px] font-semibold text-slate-600">
                       Salon Name <span className="text-rose-500">*</span>
                     </span>
                     <div className={inputWrapperClassName}>
@@ -213,58 +279,8 @@ export function SalonUpdatePage() {
                     </div>
                   </label>
 
-                  <label className="space-y-2">
-                    <span className="text-[12px] font-semibold text-slate-500">
-                      Salon ID <span className="text-rose-500">*</span>
-                    </span>
-                    <div className={inputWrapperClassName}>
-                      <span className="text-[12px] font-bold text-rose-300">#</span>
-                      <input
-                        type="text"
-                        value={formData.salonId}
-                        readOnly
-                        className={readOnlyInputClassName}
-                        required
-                      />
-                    </div>
-                  </label>
-
-                  <label className="space-y-2 md:col-span-2">
-                    <span className="text-[12px] font-semibold text-slate-500">
-                      Address <span className="text-rose-500">*</span>
-                    </span>
-                    <div className={`${inputWrapperClassName} items-start`}>
-                      <MapPin size={14} className="mt-0.5 shrink-0 text-rose-300" />
-                      <textarea
-                        value={formData.address}
-                        onChange={(event) => handleInputChange("address", event.target.value)}
-                        placeholder="Full address including city and zip code"
-                        className={`${inputClassName} resize-none`}
-                        rows={3}
-                        required
-                      />
-                    </div>
-                  </label>
-
-                  <label className="space-y-2">
-                    <span className="text-[12px] font-semibold text-slate-500">
-                      Manager <span className="text-rose-500">*</span>
-                    </span>
-                    <div className={inputWrapperClassName}>
-                      <User size={14} className="shrink-0 text-rose-300" />
-                      <input
-                        type="text"
-                        value={formData.manager}
-                        onChange={(event) => handleInputChange("manager", event.target.value)}
-                        placeholder="Manager's full name"
-                        className={inputClassName}
-                        required
-                      />
-                    </div>
-                  </label>
-
-                  <label className="space-y-2">
-                    <span className="text-[12px] font-semibold text-slate-500">
+                  <label className="space-y-2.5">
+                    <span className="text-[13px] font-semibold text-slate-600">
                       Phone Number <span className="text-rose-500">*</span>
                     </span>
                     <div className={inputWrapperClassName}>
@@ -280,39 +296,93 @@ export function SalonUpdatePage() {
                     </div>
                   </label>
 
-                  <label className="space-y-2">
-                    <span className="text-[12px] font-semibold text-slate-500">
-                      Staff Amount <span className="text-rose-500">*</span>
+                  <label className="space-y-2.5 md:col-span-2">
+                    <span className="text-[13px] font-semibold text-slate-600">
+                      Salon ID <span className="text-rose-500">*</span>
                     </span>
                     <div className={inputWrapperClassName}>
-                      <Users size={14} className="shrink-0 text-rose-300" />
+                      <span className="text-[12px] font-bold text-rose-300">#</span>
                       <input
-                        type="number"
-                        min="1"
-                        max="50"
-                        value={formData.staffAmount}
-                        onChange={(event) => handleInputChange("staffAmount", event.target.value)}
-                        placeholder="Number of staff members"
-                        className={inputClassName}
+                        type="text"
+                        value={formData.salonId}
+                        readOnly
+                        className={readOnlyInputClassName}
                         required
                       />
                     </div>
                   </label>
 
-                  <div className="space-y-2">
-                    <span className="text-[12px] font-semibold text-slate-500">
+                  <label className="space-y-2.5 md:col-span-2">
+                    <span className="text-[13px] font-semibold text-slate-600">
+                      Address <span className="text-rose-500">*</span>
+                    </span>
+                    <div className={`${inputWrapperClassName} items-start`}>
+                      <MapPin size={14} className="mt-0.5 shrink-0 text-rose-300" />
+                      <textarea
+                        value={formData.address}
+                        onChange={(event) => handleInputChange("address", event.target.value)}
+                        placeholder="Full address including city and zip code"
+                        className={`${inputClassName} resize-none`}
+                        rows={3}
+                        required
+                      />
+                    </div>
+                  </label>
+
+                  <label className="space-y-2 md:col-span-2">
+                    <span className="text-[13px] font-semibold text-slate-600">
+                      Salon Image
+                    </span>
+                    <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-rose-200 bg-gradient-to-br from-[#fffafc] to-[#fff5f9] px-6 py-8 cursor-pointer transition-all duration-300 hover:border-rose-300 hover:bg-gradient-to-br hover:from-[#fff8fb] hover:to-[#fff1f6] hover:shadow-[0_8px_24px_rgba(226,93,143,0.12)]">
+                      {imagePreview ? (
+                        <div className="relative w-full">
+                          <img
+                            src={imagePreview}
+                            alt="Preview"
+                            className="h-40 w-full object-cover rounded-2xl shadow-lg"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleRemoveImage}
+                            className="absolute -top-3 -right-3 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] text-white shadow-lg transition-transform duration-200 hover:scale-110"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ) : (
+                        <label className="flex flex-col items-center gap-3 cursor-pointer">
+                          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] text-white shadow-lg transition-transform duration-200 hover:scale-105">
+                            <Upload size={28} />
+                          </div>
+                          <div className="text-center">
+                            <p className="text-base font-semibold text-slate-700">Click to upload salon image</p>
+                            <p className="text-xs text-slate-400 mt-1">PNG, JPG up to 5MB</p>
+                          </div>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageChange}
+                            className="hidden"
+                          />
+                        </label>
+                      )}
+                    </div>
+                  </label>
+
+                  <div className="space-y-2 md:col-span-2">
+                    <span className="text-[13px] font-semibold text-slate-600">
                       Status <span className="text-rose-500">*</span>
                     </span>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-2.5">
                       {SALON_STATUS_OPTIONS.map((option) => (
                         <button
                           key={option.value}
                           type="button"
                           onClick={() => handleInputChange("status", option.value)}
-                          className={`rounded-xl px-3 py-2.5 text-center text-[11px] font-bold transition ${
+                          className={`rounded-2xl px-4 py-3.5 text-center text-sm font-bold transition-all duration-300 transform hover:scale-[1.02] ${
                             formData.status === option.value
-                              ? option.color
-                              : "bg-[#fff2f6] text-slate-400"
+                              ? `${option.color} shadow-lg`
+                              : "bg-[#fff5f9] text-slate-400 hover:text-slate-600 hover:bg-[#fff0f5] border border-rose-100"
                           }`}
                         >
                           {option.label}
@@ -323,34 +393,35 @@ export function SalonUpdatePage() {
                 </div>
               </div>
 
-              <div className="rounded-[20px] bg-white/65 p-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] sm:rounded-[24px] sm:p-5 lg:rounded-[28px]">
-                <h2 className="mb-4 text-[16px] font-bold text-slate-800 sm:text-[18px]">
+              <div className="rounded-[24px] bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
+                <h2 className="mb-5 text-[18px] font-bold text-slate-800 sm:text-[20px] flex items-center gap-2">
+                  <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]"></div>
                   Operating Hours
                 </h2>
 
-                <div className="space-y-3">
+                <div className="space-y-3.5">
                   {SALON_DAYS_OF_WEEK.map((day) => (
                     <div
                       key={day.key}
-                      className="flex flex-col gap-3 rounded-xl border border-rose-100 bg-[#fff6f9] px-4 py-3 sm:flex-row sm:items-center"
+                      className="flex flex-col gap-3 rounded-2xl border border-rose-100 bg-gradient-to-r from-[#fffafc] to-[#fff8fb] px-5 py-4 sm:flex-row sm:items-center transition-all duration-300 hover:border-rose-200 hover:shadow-[0_4px_16px_rgba(226,93,143,0.08)]"
                     >
-                      <div className="w-full sm:w-24">
-                        <span className="text-[12px] font-bold text-slate-600">{day.label}</span>
+                      <div className="w-full sm:w-28">
+                        <span className="text-[13px] font-bold text-slate-700">{day.label}</span>
                       </div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Clock size={12} className="shrink-0 text-rose-300" />
+                      <div className="flex flex-wrap items-center gap-3">
+                        <Clock size={14} className="shrink-0 text-rose-400" />
                         <TimePicker
                           value={formData.operatingHours[day.key].open}
                           onChange={(value) => handleHoursChange(day.key, "open", value)}
                           placeholder="Open time"
-                          className="w-full min-w-[6.5rem] sm:w-24"
+                          className="w-full min-w-[7rem] sm:w-28"
                         />
-                        <span className="text-[11px] text-slate-400">to</span>
+                        <span className="text-sm text-slate-400 font-semibold">to</span>
                         <TimePicker
                           value={formData.operatingHours[day.key].close}
                           onChange={(value) => handleHoursChange(day.key, "close", value)}
                           placeholder="Close time"
-                          className="w-full min-w-[6.5rem] sm:w-24"
+                          className="w-full min-w-[7rem] sm:w-28"
                         />
                       </div>
                     </div>
@@ -360,89 +431,87 @@ export function SalonUpdatePage() {
             </div>
 
             <aside className="space-y-4 lg:space-y-5">
-              <div className="rounded-[20px] bg-white/65 p-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] sm:rounded-[24px] sm:p-5 lg:rounded-[28px]">
-                <h2 className="mb-4 text-[16px] font-bold text-slate-800 sm:text-[18px]">Actions</h2>
+              <div className="rounded-[24px] bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
+                <h2 className="mb-5 text-[18px] font-bold text-slate-800 sm:text-[20px] flex items-center gap-2">
+                  <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]"></div>
+                  Actions
+                </h2>
 
-                <div className="space-y-3">
+                <div className="space-y-3.5">
                   <button
                     type="button"
-                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-[12px] font-bold text-blue-600 transition hover:bg-blue-100"
+                    className="flex w-full items-center justify-center gap-2.5 rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 to-blue-100 px-4 py-3.5 text-[13px] font-bold text-blue-700 transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-100 hover:to-blue-200 hover:shadow-[0_4px_16px_rgba(59,130,246,0.15)] hover:scale-[1.02]"
                   >
-                    <Eye size={14} />
+                    <Eye size={16} />
                     View Salon Details
                   </button>
 
                   <button
                     type="button"
-                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[12px] font-bold text-amber-600 transition hover:bg-amber-100"
+                    className="flex w-full items-center justify-center gap-2.5 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-amber-100 px-4 py-3.5 text-[13px] font-bold text-amber-700 transition-all duration-300 hover:bg-gradient-to-r hover:from-amber-100 hover:to-amber-200 hover:shadow-[0_4px_16px_rgba(245,158,11,0.15)] hover:scale-[1.02]"
                   >
-                    <Calendar size={14} />
+                    <Calendar size={16} />
                     Set Holiday Schedule
                   </button>
 
                   <button
                     type="button"
-                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[12px] font-bold text-emerald-600 transition hover:bg-emerald-100"
+                    className="flex w-full items-center justify-center gap-2.5 rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-100 px-4 py-3.5 text-[13px] font-bold text-emerald-700 transition-all duration-300 hover:bg-gradient-to-r hover:from-emerald-100 hover:to-emerald-200 hover:shadow-[0_4px_16px_rgba(16,185,129,0.15)] hover:scale-[1.02]"
                   >
-                    <Users size={14} />
+                    <Users size={16} />
                     Manage Staff
                   </button>
 
                   <button
                     type="button"
                     onClick={handleCancel}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-[12px] font-bold text-rose-600 transition hover:bg-rose-100"
+                    className="flex w-full items-center justify-center gap-2.5 rounded-2xl border border-rose-200 bg-gradient-to-r from-rose-50 to-rose-100 px-4 py-3.5 text-[13px] font-bold text-rose-700 transition-all duration-300 hover:bg-gradient-to-r hover:from-rose-100 hover:to-rose-200 hover:shadow-[0_4px_16px_rgba(244,63,94,0.15)] hover:scale-[1.02]"
                   >
-                    <X size={14} />
+                    <X size={16} />
                     Discard Changes
                   </button>
                 </div>
               </div>
 
-              <div className="rounded-[20px] bg-white/65 p-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] sm:rounded-[24px] sm:p-5 lg:rounded-[28px]">
-                <h2 className="mb-4 text-[16px] font-bold text-slate-800 sm:text-[18px]">Preview</h2>
+              <div className="rounded-[24px] bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
+                <h2 className="mb-5 text-[18px] font-bold text-slate-800 sm:text-[20px] flex items-center gap-2">
+                  <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]"></div>
+                  Preview
+                </h2>
 
-                <div className="space-y-3">
-                  <div className="rounded-xl border border-rose-100 bg-[#fff6f9] p-4">
-                    <div className="mb-3 flex items-center justify-between gap-2">
-                      <h3 className="text-[14px] font-bold text-slate-700">Salon Summary</h3>
+                <div className="space-y-4">
+                  <div className="rounded-2xl border border-rose-100 bg-gradient-to-br from-[#fffafc] to-[#fff8fb] p-5 shadow-[0_2px_12px_rgba(226,93,143,0.05)]">
+                    <div className="mb-4 flex items-center justify-between gap-2">
+                      <h3 className="text-[15px] font-bold text-slate-700">Salon Summary</h3>
                       <span
-                        className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${getSalonStatusStyle(formData.status)}`}
+                        className={`shrink-0 rounded-full px-3.5 py-1.5 text-[11px] font-bold ${getSalonStatusStyle(formData.status)}`}
                       >
                         {formData.status}
                       </span>
                     </div>
 
-                    <div className="space-y-2 text-[12px] text-slate-600">
+                    <div className="space-y-3 text-[13px] text-slate-600">
                       <div className="flex justify-between gap-3">
-                        <span className="font-semibold">Name:</span>
-                        <span className="text-right">{formData.salonName || "Not set"}</span>
+                        <span className="font-semibold text-slate-700">Name:</span>
+                        <span className="text-right font-medium text-slate-800">{formData.salonName || "Not set"}</span>
                       </div>
                       <div className="flex justify-between gap-3">
-                        <span className="font-semibold">ID:</span>
-                        <span className="text-right">{formData.salonId || "Not set"}</span>
-                      </div>
-                      <div className="flex justify-between gap-3">
-                        <span className="font-semibold">Manager:</span>
-                        <span className="text-right">{formData.manager || "Not set"}</span>
-                      </div>
-                      <div className="flex justify-between gap-3">
-                        <span className="font-semibold">Staff:</span>
-                        <span className="text-right">{formData.staffAmount || "0"} members</span>
+                        <span className="font-semibold text-slate-700">ID:</span>
+                        <span className="text-right font-medium text-slate-800">{formData.salonId || "Not set"}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="rounded-xl border border-rose-100 bg-[#fff6f9] p-4">
-                    <h3 className="mb-2 text-[14px] font-bold text-slate-700">Quick Stats</h3>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="rounded-lg bg-white p-2 text-center">
-                        <div className="text-[10px] font-semibold text-slate-400">Capacity</div>
-                        <div className="text-[16px] font-bold text-slate-700">85%</div>
+                  <div className="rounded-2xl border border-rose-100 bg-gradient-to-br from-[#fffafc] to-[#fff8fb] p-5 shadow-[0_2px_12px_rgba(226,93,143,0.05)]">
+                    <h3 className="mb-3 text-[15px] font-bold text-slate-700">Quick Stats</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="rounded-xl bg-white p-4 text-center shadow-sm">
+                        <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Capacity</div>
+                        <div className="text-[18px] font-bold text-slate-800 mt-1">85%</div>
                       </div>
-                      <div className="rounded-lg bg-white p-2 text-center">
-                        <div className="text-[10px] font-semibold text-slate-400">Revenue</div>
-                        <div className="text-[16px] font-bold text-slate-700">$12.5K</div>
+                      <div className="rounded-xl bg-white p-4 text-center shadow-sm">
+                        <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Revenue</div>
+                        <div className="text-[18px] font-bold text-slate-800 mt-1">$12.5K</div>
                       </div>
                     </div>
                   </div>
@@ -451,18 +520,19 @@ export function SalonUpdatePage() {
             </aside>
           </form>
 
-          <div className="mt-4 rounded-[20px] bg-white/65 p-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] sm:mt-5 sm:rounded-[24px] sm:p-5 lg:rounded-[28px]">
-            <h2 className="mb-4 text-[16px] font-bold text-slate-800 sm:text-[18px]">
+          <div className="mt-4 rounded-[24px] bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:mt-5 sm:p-6 lg:p-7 border border-rose-50">
+            <h2 className="mb-5 text-[18px] font-bold text-slate-800 sm:text-[20px] flex items-center gap-2">
+              <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]"></div>
               Additional Information
             </h2>
 
-            <label className="block space-y-2">
-              <span className="text-[12px] font-semibold text-slate-500">Description</span>
+            <label className="block space-y-2.5">
+              <span className="text-[13px] font-semibold text-slate-600">Description</span>
               <textarea
                 value={formData.description}
                 onChange={(event) => handleInputChange("description", event.target.value)}
                 placeholder="Add any additional notes or description about this salon..."
-                className="w-full rounded-xl border border-rose-100 bg-[#fff6f9] px-4 py-3 text-[13px] text-slate-700 outline-none placeholder:text-rose-200"
+                className="w-full rounded-2xl border border-rose-100 bg-gradient-to-r from-[#fffafc] to-[#fff8fb] px-4 py-3.5 text-[14px] text-slate-800 outline-none placeholder:text-rose-300 font-medium transition-all duration-300 focus:border-rose-400 focus:bg-white focus:shadow-[0_0_0_3px_rgba(234,79,147,0.15)]"
                 rows={4}
               />
             </label>
@@ -486,7 +556,7 @@ export function SalonUpdatePage() {
           { label: "Next Step", value: "Return to salon list" },
         ]}
         warnings={[
-          "Recent edits to branch info, manager details, and operating hours will be lost.",
+          "Recent edits to branch info and operating hours will be lost.",
           "The salon will remain unchanged until you confirm an update.",
         ]}
       />
@@ -495,7 +565,7 @@ export function SalonUpdatePage() {
         open={showSaveModal}
         intent="success"
         title="Save Salon Changes"
-        subtitle="This will update the salon in the current mock admin state."
+        subtitle="This will update the salon in the system."
         description="Confirm to apply your edits and refresh the salon record with the latest values."
         confirmText="Update Salon"
         cancelText="Review Again"
@@ -503,12 +573,10 @@ export function SalonUpdatePage() {
         loading={isSaving}
         onConfirm={handleConfirmSave}
         onCancel={() => !isSaving && setShowSaveModal(false)}
-        highlights={[formData.name || "Salon record", formData.manager || "Manager pending", formData.status]}
+        highlights={[formData.salonName || "Salon record", formData.status]}
         details={[
           { label: "Address", value: formData.address || "No address entered" },
-          { label: "Staff Amount", value: formData.staffAmount || "0" },
         ]}
-        warnings={["This mock update changes the current UI state only and does not persist to a backend."]}
       />
 
       <SalonSaveResultModal

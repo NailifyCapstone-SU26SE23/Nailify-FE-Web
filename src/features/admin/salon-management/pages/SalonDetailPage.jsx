@@ -18,11 +18,12 @@ import {
   ROUTES,
   getAdminSalonUpdateRoute,
 } from "../../../../shared/constants/routes";
-import { SALON_DAYS_OF_WEEK } from "../services/mockSalon";
 import {
-  fetchAdminSalonDetail,
-  mapSalonOperatingHours,
-} from "../services/salonManagementService";
+  SALON_DAYS_OF_WEEK,
+  fetchMockSalonFormById,
+  getSalonsWithUpdates,
+  removeMockSalonById,
+} from "../services/mockSalon";
 
 function SalonDetailLoadingState() {
   return (
@@ -35,13 +36,54 @@ function SalonDetailLoadingState() {
   );
 }
 
+function mapApiSalonToFormAndRow(apiSalon) {
+  console.log("Mapping API salon to form/row:", apiSalon);
+  const salonForm = {
+    salonId: (apiSalon.salonId || apiSalon.id || "").toString().trim(),
+    salonName: apiSalon.salonName || apiSalon.name || "Unknown Salon",
+    manager: apiSalon.managerName || apiSalon.manager || "Unassigned",
+    staffAmount: apiSalon.staffAmount || 0,
+    status: apiSalon.status || "Active",
+    description: apiSalon.description || "",
+    operatingHours: {
+      monday: { open: "09:00", close: "21:00" },
+      tuesday: { open: "09:00", close: "21:00" },
+      wednesday: { open: "09:00", close: "21:00" },
+      thursday: { open: "09:00", close: "21:00" },
+      friday: { open: "09:00", close: "21:00" },
+      saturday: { open: "10:00", close: "20:00" },
+      sunday: { open: "10:00", close: "20:00" },
+    },
+    phone: apiSalon.phone || "No phone",
+  };
+
+  const salonRow = {
+    id: (apiSalon.salonId || apiSalon.id || "").toString().trim(),
+    salonId: (apiSalon.salonId || apiSalon.id || "").toString().trim(),
+    name: apiSalon.salonName || apiSalon.name || "Unknown Salon",
+    address: apiSalon.address || "No address",
+    manager: apiSalon.managerName || apiSalon.manager || "Unassigned",
+    phone: apiSalon.phone || "No phone",
+    image: apiSalon.imageUrl || apiSalon.image || "https://placehold.co/400x200/eb5b92/ffffff?text=Salon",
+    status: apiSalon.status || "Active",
+    statusColor: "bg-[#e6fdf0] text-[#16975f]",
+    staff: apiSalon.staffAmount || 0,
+    hours: "9AM - 9PM",
+    rating: "4.8",
+    reviews: "128",
+  };
+
+  return { salonForm, salonRow };
+}
+
 export function SalonDetailPage() {
   const navigate = useNavigate();
   const { salonId } = useParams();
   const [isLoading, setIsLoading] = useState(true);
   const [isNotFound, setIsNotFound] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [salonDetail, setSalonDetail] = useState(null);
+  const [salonForm, setSalonForm] = useState(null);
+  const [salonRow, setSalonRow] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -50,31 +92,25 @@ export function SalonDetailPage() {
       setIsLoading(true);
       setIsNotFound(false);
 
-      try {
-        const detail = await fetchAdminSalonDetail(salonId);
+      const form = await fetchMockSalonFormById(salonId);
+      const row = getSalonsWithUpdates().find(
+        (entry) =>
+          String(entry.id) === String(salonId) || entry.salonId === String(salonId),
+      );
 
-        if (!isMounted) {
-          return;
-        }
-
-        setSalonDetail(detail);
-      } catch (loadError) {
-        if (!isMounted) {
-          return;
-        }
-
-        const message = loadError instanceof Error ? loadError.message : "Failed to load salon detail.";
-
-        if (message.toLowerCase().includes("not found")) {
-          setIsNotFound(true);
-        } else {
-          toast.error(message);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+      if (!isMounted) {
+        return;
       }
+
+      if (!form || !row) {
+        setIsNotFound(true);
+        setIsLoading(false);
+        return;
+      }
+
+      setSalonForm(form);
+      setSalonRow(row);
+      setIsLoading(false);
     };
 
     void loadSalon();
@@ -109,8 +145,16 @@ export function SalonDetailPage() {
   );
 
   const handleDeleteSalon = () => {
-    setShowDeleteModal(false);
-    toast("Delete salon API is not connected yet.");
+    if (!salonRow) {
+      return;
+    }
+
+    removeMockSalonById(salonRow.id);
+    navigate(ROUTES.adminSalons, {
+      state: {
+        flashMessage: `${salonRow.name} has been deleted successfully.`,
+      },
+    });
   };
 
   if (isNotFound) {
@@ -119,6 +163,16 @@ export function SalonDetailPage() {
 
   return (
     <section className="mx-auto w-full min-w-0 max-w-[1300px] text-slate-700">
+      {error ? (
+        <div className="mb-4">
+          <Alert
+            message="Error Loading Salon"
+            description={error}
+            type="error"
+            showIcon
+          />
+        </div>
+      ) : null}
       <header className="mb-4 flex flex-col gap-4 rounded-[20px] bg-white/70 px-4 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur sm:mb-5 sm:rounded-[24px] sm:px-5 lg:rounded-[28px] lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-start gap-3">
           <Link
@@ -173,9 +227,6 @@ export function SalonDetailPage() {
                 />
                 <div className="min-w-0">
                   <h2 className="text-[22px] font-black tracking-tight">{salonDetail.name}</h2>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/75">
-                    #{salonDetail.salonId}
-                  </p>
                   <span
                     className={`mt-3 inline-flex rounded-full px-3 py-1 text-[10px] font-bold ${salonDetail.statusColor}`}
                   >
@@ -233,10 +284,6 @@ export function SalonDetailPage() {
                   <span className="text-right">{salonDetail.name}</span>
                 </div>
                 <div className="flex justify-between gap-3 rounded-xl bg-[#fff6f9] px-4 py-3">
-                  <span className="font-semibold">Salon ID</span>
-                  <span className="text-right">{salonDetail.salonId}</span>
-                </div>
-                <div className="flex justify-between gap-3 rounded-xl bg-[#fff6f9] px-4 py-3">
                   <span className="font-semibold">Manager</span>
                   <span className="text-right">{salonDetail.manager || "Unassigned"}</span>
                 </div>
@@ -277,7 +324,7 @@ export function SalonDetailPage() {
             ? {
                 image: salonDetail.image,
                 title: salonDetail.name,
-                meta: `#${salonDetail.salonId} • ${salonDetail.address}`,
+                meta: salonDetail.address,
                 note: `Manager: ${salonDetail.manager || "Unassigned"}`,
               }
             : null

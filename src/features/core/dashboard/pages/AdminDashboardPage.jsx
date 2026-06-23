@@ -692,7 +692,7 @@ export function AdminDashboardPage() {
                 {[
                   { icon: MapPin, label: "Address", value: selectedSalonReport.location },
                   { icon: UserRound, label: "Manager", value: selectedSalonReport.manager },
-                  { icon: Phone, label: "Salon ID", value: selectedSalonReport.salonId },
+                  { icon: Phone, label: "Phone", value: selectedSalonReport.phone || "--" },
                   { icon: Users, label: "Bookings", value: selectedSalonReport.bookings },
                   { icon: CircleDollarSign, label: "Revenue", value: selectedSalonReport.revenue },
                   {
