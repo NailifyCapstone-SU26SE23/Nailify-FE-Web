@@ -41,7 +41,7 @@ export async function fetchBookingsBySalonId(salonId) {
     return unwrapResponse(response, "Failed to load bookings.");
   } catch (error) {
     console.error("Error fetching bookings:", error.response?.data || error);
-    throw new Error(error.response?.data?.message || error.message || "Failed to load bookings.");
+    throw new Error(error.response?.data?.message || error.message || "Failed to load bookings.", { cause: error });
   }
 }
 
@@ -61,7 +61,7 @@ export async function fetchBookingById(bookingId) {
     return unwrapResponse(response, "Failed to load booking details.", true);
   } catch (error) {
     console.error("Error fetching booking:", error.response?.data || error);
-    throw new Error(error.response?.data?.message || error.message || "Failed to load booking details.");
+    throw new Error(error.response?.data?.message || error.message || "Failed to load booking details.", { cause: error });
   }
 }
 
@@ -81,7 +81,7 @@ export async function confirmBooking(bookingId) {
     return unwrapResponse(response, "Failed to confirm booking.");
   } catch (error) {
     console.error("Error confirming booking:", error.response?.data || error);
-    throw new Error(error.response?.data?.message || error.message || "Failed to confirm booking.");
+    throw new Error(error.response?.data?.message || error.message || "Failed to confirm booking.", { cause: error });
   }
 }
 
@@ -101,7 +101,27 @@ export async function rejectBooking(bookingId) {
     return unwrapResponse(response, "Failed to reject booking.");
   } catch (error) {
     console.error("Error rejecting booking:", error.response?.data || error);
-    throw new Error(error.response?.data?.message || error.message || "Failed to reject booking.");
+    throw new Error(error.response?.data?.message || error.message || "Failed to reject booking.", { cause: error });
+  }
+}
+
+export async function cancelBooking(bookingId) {
+  const normalizedId = String(bookingId || "").trim();
+
+  if (!normalizedId) {
+    throw new Error("Booking ID is required.");
+  }
+
+  console.log("Cancelling booking:", normalizedId);
+  try {
+    const response = await axiosClient.post(`/Bookings/${normalizedId}/cancel`, null, {
+      headers: getAuthHeaders(),
+    });
+
+    return unwrapResponse(response, "Failed to cancel booking.");
+  } catch (error) {
+    console.error("Error cancelling booking:", error.response?.data || error);
+    throw new Error(error.response?.data?.message || error.message || "Failed to cancel booking.", { cause: error });
   }
 }
 
@@ -132,7 +152,7 @@ export async function fetchSalonStaff(salonId, options = {}) {
     return unwrapResponse(response, "Failed to load salon staff.");
   } catch (error) {
     console.error("Error fetching salon staff:", error.response?.data || error);
-    throw new Error(error.response?.data?.message || error.message || "Failed to load salon staff.");
+    throw new Error(error.response?.data?.message || error.message || "Failed to load salon staff.", { cause: error });
   }
 }
 
@@ -169,6 +189,6 @@ export async function assignArtistToBooking(bookingId, staffArtistId) {
     console.error("- Response data:", error.response?.data);
     console.error("- Request config:", error.config);
     console.error("- Error message:", error.message);
-    throw new Error(error.response?.data?.message || error.message || "Failed to assign artist to booking.");
+    throw new Error(error.response?.data?.message || error.message || "Failed to assign artist to booking.", { cause: error });
   }
 }
