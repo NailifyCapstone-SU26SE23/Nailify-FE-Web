@@ -14,7 +14,185 @@ export function UserManagementFormFields({
   formValues,
   onFieldChange,
   disabled = false,
+  showAccountFields = false,
+  createApiFieldsOnly = false,
+  updateApiFieldsOnly = false,
 }) {
+  if (createApiFieldsOnly) {
+    return (
+      <>
+        <label className="space-y-2">
+          <span className="text-sm font-medium text-[var(--color-ink)]">First name</span>
+          <input
+            value={formValues.firstName}
+            onChange={onFieldChange("firstName")}
+            disabled={disabled}
+            className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
+            placeholder="Enter first name"
+          />
+        </label>
+
+        <label className="space-y-2">
+          <span className="text-sm font-medium text-[var(--color-ink)]">Last name</span>
+          <input
+            value={formValues.lastName}
+            onChange={onFieldChange("lastName")}
+            disabled={disabled}
+            className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
+            placeholder="Enter last name"
+          />
+        </label>
+
+        <label className="space-y-2">
+          <span className="text-sm font-medium text-[var(--color-ink)]">Email</span>
+          <input
+            value={formValues.email}
+            onChange={onFieldChange("email")}
+            disabled={disabled}
+            className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
+            placeholder="Enter work email"
+          />
+        </label>
+
+        <label className="space-y-2">
+          <span className="text-sm font-medium text-[var(--color-ink)]">Password</span>
+          <input
+            type="password"
+            value={formValues.password}
+            onChange={onFieldChange("password")}
+            disabled={disabled}
+            className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
+            placeholder="Enter account password"
+          />
+        </label>
+
+        <label className="space-y-2">
+          <span className="text-sm font-medium text-[var(--color-ink)]">Phone</span>
+          <input
+            value={formValues.phone}
+            onChange={onFieldChange("phone")}
+            disabled={disabled}
+            className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
+            placeholder="Enter phone number"
+          />
+        </label>
+
+        <label className="space-y-2">
+          <span className="text-sm font-medium text-[var(--color-ink)]">Avatar URL</span>
+          <input
+            value={formValues.avatarUrl}
+            onChange={onFieldChange("avatarUrl")}
+            disabled={disabled}
+            className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
+            placeholder="Enter avatar image URL"
+          />
+        </label>
+
+        <label className="space-y-2 md:col-span-2">
+          <span className="text-sm font-medium text-[var(--color-ink)]">Role</span>
+          <select
+            value={formValues.role}
+            onChange={onFieldChange("role")}
+            disabled={disabled}
+            className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
+          >
+            {USER_ROLE_OPTIONS.map((role) => (
+              <option key={role} value={role}>
+                {role}
+              </option>
+            ))}
+          </select>
+        </label>
+      </>
+    );
+  }
+
+  if (updateApiFieldsOnly) {
+    return (
+      <>
+        <label className="space-y-2">
+          <span className="text-sm font-medium text-[var(--color-ink)]">First name</span>
+          <input
+            value={formValues.firstName}
+            onChange={onFieldChange("firstName")}
+            disabled={disabled}
+            className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
+            placeholder="Enter first name"
+          />
+        </label>
+
+        <label className="space-y-2">
+          <span className="text-sm font-medium text-[var(--color-ink)]">Last name</span>
+          <input
+            value={formValues.lastName}
+            onChange={onFieldChange("lastName")}
+            disabled={disabled}
+            className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
+            placeholder="Enter last name"
+          />
+        </label>
+
+        <label className="space-y-2">
+          <span className="text-sm font-medium text-[var(--color-ink)]">Email</span>
+          <input
+            value={formValues.email}
+            onChange={onFieldChange("email")}
+            disabled={disabled}
+            className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
+            placeholder="Enter work email"
+          />
+        </label>
+
+        <label className="space-y-2">
+          <span className="text-sm font-medium text-[var(--color-ink)]">Phone</span>
+          <input
+            value={formValues.phone}
+            onChange={onFieldChange("phone")}
+            disabled={disabled}
+            className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
+            placeholder="Enter phone number"
+          />
+        </label>
+
+        <label className="space-y-2">
+          <span className="text-sm font-medium text-[var(--color-ink)]">Status</span>
+          <select
+            value={formValues.status}
+            onChange={onFieldChange("status")}
+            disabled={disabled}
+            className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
+          >
+            {FORM_STATUS_OPTIONS.map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="space-y-2">
+          <span className="text-sm font-medium text-[var(--color-ink)]">Role</span>
+          <input
+            value={formValues.role}
+            disabled
+            className={`${INPUT_CLASSNAME} ${DISABLED_INPUT_CLASSNAME}`}
+            placeholder="Role"
+          />
+        </label>
+
+        <label className="space-y-2 md:col-span-2">
+          <span className="text-sm font-medium text-[var(--color-ink)]">Avatar URL</span>
+          <input
+            value={formValues.avatarUrl}
+            disabled
+            className={`${INPUT_CLASSNAME} ${DISABLED_INPUT_CLASSNAME}`}
+            placeholder="Avatar URL"
+          />
+        </label>
+      </>
+    );
+  }
+
   return (
     <>
       <label className="space-y-2">
@@ -51,6 +229,33 @@ export function UserManagementFormFields({
           placeholder="Enter phone number"
         />
       </label>
+
+      {showAccountFields ? (
+        <label className="space-y-2">
+          <span className="text-sm font-medium text-[var(--color-ink)]">Password</span>
+          <input
+            type="password"
+            value={formValues.password}
+            onChange={onFieldChange("password")}
+            disabled={disabled}
+            className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
+            placeholder="Enter account password"
+          />
+        </label>
+      ) : null}
+
+      {showAccountFields ? (
+        <label className="space-y-2">
+          <span className="text-sm font-medium text-[var(--color-ink)]">Avatar URL</span>
+          <input
+            value={formValues.avatarUrl}
+            onChange={onFieldChange("avatarUrl")}
+            disabled={disabled}
+            className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
+            placeholder="Enter avatar image URL"
+          />
+        </label>
+      ) : null}
 
       <label className="space-y-2">
         <span className="text-sm font-medium text-[var(--color-ink)]">
@@ -143,16 +348,23 @@ export function UserManagementFormFields({
 
 UserManagementFormFields.propTypes = {
   formValues: PropTypes.shape({
+    avatarUrl: PropTypes.string,
     branch: PropTypes.string.isRequired,
     email: PropTypes.string.isRequired,
+    firstName: PropTypes.string,
     joinedAt: PropTypes.string.isRequired,
+    lastName: PropTypes.string,
     lastActive: PropTypes.string.isRequired,
     name: PropTypes.string.isRequired,
     notes: PropTypes.string.isRequired,
+    password: PropTypes.string,
     phone: PropTypes.string.isRequired,
     role: PropTypes.string.isRequired,
     status: PropTypes.string.isRequired,
   }).isRequired,
   onFieldChange: PropTypes.func.isRequired,
   disabled: PropTypes.bool,
+  createApiFieldsOnly: PropTypes.bool,
+  showAccountFields: PropTypes.bool,
+  updateApiFieldsOnly: PropTypes.bool,
 };

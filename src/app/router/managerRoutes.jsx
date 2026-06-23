@@ -1,9 +1,14 @@
 import { Navigate } from "react-router-dom";
 import { ManagerLayout } from "../layouts/ManagerLayout";
 import { ManagerDashboardPage } from "../../features/core/dashboard/pages/ManagerDashboardPage";
-import { BookingListPage } from "../../features/core/booking-management/pages/BookingListPage";
 import { BookingCreatePage } from "../../features/core/booking-management/pages/BookingCreatePage";
-import { BookingDetailPage } from "../../features/core/booking-management/pages/BookingDetailPage";
+import { ManagerBookingDetailPage } from "../../features/manager/bookings/pages/ManagerBookingDetailPage";
+import { ManagerBookingListPage } from "../../features/manager/bookings/pages/ManagerBookingListPage";
+import { StaffCreatePage } from "../../features/manager/staff-artist-management/pages/StaffCreatePage";
+import { StaffManagementPage } from "../../features/manager/staff-artist-management/pages/StaffManagementPage";
+import { StaffUpdatePage } from "../../features/manager/staff-artist-management/pages/StaffUpdatePage";
+import { CustomerNailPage } from "../../features/manager/customer-nail/pages/CustomerNailPage";
+import { CustomerNailDetailPage } from "../../features/manager/customer-nail/pages/CustomerNailDetailPage";
 import { AuthGuard } from "../../shared/components/guards/AuthGuard";
 import { RoleGuard } from "../../shared/components/guards/RoleGuard";
 import { ROLES } from "../../shared/constants/roles";
@@ -30,7 +35,27 @@ export const managerRoutes = [
       },
       {
         path: ROUTES.managerBookings,
-        element: <BookingListPage />,
+        element: <ManagerBookingListPage />,
+      },
+      {
+        path: ROUTES.managerCustomerNails,
+        element: <CustomerNailPage />,
+      },
+      {
+          path: ROUTES.managerCustomerNailDetail,
+          element: <CustomerNailDetailPage />,
+        },
+      {
+        path: ROUTES.managerStaffArtists,
+        element: <StaffManagementPage />,
+      },
+      {
+        path: ROUTES.managerStaffArtistsCreate,
+        element: <StaffCreatePage />,
+      },
+      {
+        path: ROUTES.managerStaffArtistUpdate,
+        element: <StaffUpdatePage />,
       },
       {
         path: ROUTES.managerBookingsCreate,
@@ -38,7 +63,7 @@ export const managerRoutes = [
       },
       {
         path: ROUTES.managerBookingDetail,
-        element: <BookingDetailPage />,
+        element: <ManagerBookingDetailPage />,
       },
     ],
   },

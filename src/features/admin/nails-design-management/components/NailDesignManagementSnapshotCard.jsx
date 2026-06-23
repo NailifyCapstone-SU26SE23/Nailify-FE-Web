@@ -1,4 +1,5 @@
 import { Sparkles } from "lucide-react";
+import { formatDurationLabel } from "../../../../shared/utils/formatDuration";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { NAIL_DESIGN_STATUS_STYLES } from "../services/mockNailDesigns";
 
@@ -46,7 +47,7 @@ export function NailDesignManagementSnapshotCard({ formValues, notice }) {
           {formValues.price || "Not priced yet"}
         </div>
         <div className="rounded-2xl bg-[#fff7ef] px-4 py-4 text-sm leading-6 text-[var(--color-ink)]">
-          <span className="font-semibold">Duration:</span> {formValues.duration}
+          <span className="font-semibold">Duration:</span> {formatDurationLabel(formValues.duration)}
         </div>
         <div className="rounded-2xl bg-[#fff7ef] px-4 py-4 text-sm leading-6 text-[var(--color-ink)]">
           <span className="font-semibold">Palette:</span>{" "}

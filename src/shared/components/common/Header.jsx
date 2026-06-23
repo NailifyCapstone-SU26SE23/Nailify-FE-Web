@@ -1,8 +1,9 @@
-import { Bell, Calendar, LogOut } from "lucide-react";
+import { Bell, Calendar, LogOut, Menu } from "lucide-react";
 import { PropTypes } from "../../utils/propTypes";
 
 export function Header({
   description,
+  onOpenMobileMenu,
   onLogout,
   title,
   todayLabel,
@@ -11,6 +12,23 @@ export function Header({
     <header className="bg-white px-5 py-4 shadow-[0_18px_40px_rgba(94,76,62,0.08)]">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
+          <div className="mb-3 flex items-center justify-between md:hidden">
+            <button
+              type="button"
+              onClick={onOpenMobileMenu}
+              title="Open menu"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#f8c8db] bg-[#fff8fb] text-[#eb5a99] shadow-[0_12px_24px_rgba(235,90,153,0.12)] transition hover:bg-[#fff0f7]"
+            >
+              <Menu size={20} />
+            </button>
+            <button
+              type="button"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#f8c8db] bg-[#fff8fb] text-[#eb5a99] shadow-[0_12px_24px_rgba(235,90,153,0.12)] transition hover:bg-[#fff0f7]"
+              title="Notifications"
+            >
+              <Bell size={18} />
+            </button>
+          </div>
           <h1 className="text-[1.85rem] font-extrabold leading-none text-[#3d2a3a]">
             {title}
           </h1>
@@ -26,14 +44,14 @@ export function Header({
               type="button"
               onClick={onLogout}
               title="Sign out"
-              className="inline-flex h-11 items-center gap-2 rounded-2xl border border-[#f8c8db] bg-[#fff8fb] px-4 text-sm font-semibold text-[#eb5a99] shadow-[0_12px_24px_rgba(235,90,153,0.12)] transition hover:bg-[#fff0f7]"
+              className="hidden h-11 items-center gap-2 rounded-2xl border border-[#f8c8db] bg-[#fff8fb] px-4 text-sm font-semibold text-[#eb5a99] shadow-[0_12px_24px_rgba(235,90,153,0.12)] transition hover:bg-[#fff0f7] md:inline-flex"
             >
               <LogOut size={16} />
               <span>Sign out</span>
             </button>
             <button
               type="button"
-              className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#f8c8db] bg-[#fff8fb] text-[#eb5a99] shadow-[0_12px_24px_rgba(235,90,153,0.12)] transition hover:bg-[#fff0f7]"
+              className="hidden h-11 w-11 items-center justify-center rounded-2xl border border-[#f8c8db] bg-[#fff8fb] text-[#eb5a99] shadow-[0_12px_24px_rgba(235,90,153,0.12)] transition hover:bg-[#fff0f7] md:inline-flex"
               title="Notifications"
             >
               <Bell size={18} />
@@ -47,6 +65,7 @@ export function Header({
 
 Header.propTypes = {
   description: PropTypes.string.isRequired,
+  onOpenMobileMenu: PropTypes.func.isRequired,
   onLogout: PropTypes.func.isRequired,
   title: PropTypes.string.isRequired,
   todayLabel: PropTypes.string.isRequired,

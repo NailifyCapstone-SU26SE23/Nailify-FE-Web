@@ -10,6 +10,7 @@ import { UserManagementCreatePage } from "../../features/admin/user-management/p
 import { UserManagementDetailPage } from "../../features/admin/user-management/pages/UserManagementDetailPage";
 import { SalonManagementPage } from "../../features/admin/salon-management/pages/SalonManagementPage";
 import { SalonCreatePage } from "../../features/admin/salon-management/pages/SalonCreatePage";
+import { SalonDetailPage } from "../../features/admin/salon-management/pages/SalonDetailPage";
 import { SalonUpdatePage } from "../../features/admin/salon-management/pages/SalonUpdatePage";
 import { StaffManagementPage } from "../../features/admin/staff-management/pages/StaffManagementPage";
 import { StaffCreatePage } from "../../features/admin/staff-management/pages/StaffCreatePage";
@@ -18,8 +19,10 @@ import { BookingListPage } from "../../features/core/booking-management/pages/Bo
 import { BookingCreatePage } from "../../features/core/booking-management/pages/BookingCreatePage";
 import { BookingDetailPage } from "../../features/core/booking-management/pages/BookingDetailPage";
 import { NailDesignManagementPage } from "../../features/admin/nails-design-management/pages/NailDesignManagementPage";
+import { NailDesignManagementCategoryPage } from "../../features/admin/nails-design-management/pages/NailDesignManagementCategoryPage";
 import { NailDesignManagementCreatePage } from "../../features/admin/nails-design-management/pages/NailDesignManagementCreatePage";
 import { NailDesignManagementDetailPage } from "../../features/admin/nails-design-management/pages/NailDesignManagementDetailPage";
+import { ServicePricingManagementPage } from "../../features/admin/service-pricing-management/pages/ServicePricingManagementPage";
 
 export const adminRoutes = [
   {
@@ -61,6 +64,10 @@ export const adminRoutes = [
         element: <SalonCreatePage />,
       },
       {
+        path: ROUTES.adminSalonDetail,
+        element: <SalonDetailPage />,
+      },
+      {
         path: ROUTES.adminSalonUpdate,
         element: <SalonUpdatePage />,
       },
@@ -81,8 +88,16 @@ export const adminRoutes = [
         element: <UserManagementPage />,
       },
       {
+        path: ROUTES.adminServicePricing,
+        element: <ServicePricingManagementPage />,
+      },
+      {
         path: ROUTES.adminNailDesigns,
         element: <NailDesignManagementPage />,
+      },
+      {
+        path: ROUTES.adminNailDesignCategories,
+        element: <NailDesignManagementCategoryPage />,
       },
       {
         path: ROUTES.adminNailDesignsCreate,

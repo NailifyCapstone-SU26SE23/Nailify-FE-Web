@@ -5,12 +5,18 @@ import {
   CircleDollarSign,
   Clock3,
   MapPin,
-  Sparkles,
+  Phone,
   Star,
   Store,
   UserRound,
   Users,
+  X,
 } from "lucide-react";
+import { Modal, Table } from "antd";
+import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ROUTES } from "../../../../shared/constants/routes";
+import { getSalonsWithUpdates } from "../../../admin/salon-management/services/mockSalon";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 
 const metricCards = [
@@ -101,92 +107,6 @@ const peakBars = [
   ["5", 58],
   ["6", 44],
   ["7", 27],
-];
-
-const healthItems = [
-  ["API Server", 98, "#4cbf6a"],
-  ["Database", 95, "#4cbf6a"],
-  ["Image CDN", 78, "#ffad33"],
-  ["Booking Engine", 99, "#4cbf6a"],
-  ["Payment Gateway", 100, "#4cbf6a"],
-  ["AR Try-On", 61, "#ef4444"],
-];
-
-const complaints = [
-  {
-    name: "Aisha Rahman",
-    salon: "Nailify Orchard",
-    note: "Nail art peeled off after 2 days at Orchard branch",
-    severity: "High",
-    tone: "bg-[#ffe6ec] text-[#e1447f]",
-  },
-  {
-    name: "Grace Teo",
-    salon: "Nailify Marina",
-    note: "Booking cancelled without prior notification",
-    severity: "Medium",
-    tone: "bg-[#fff0dd] text-[#d9871c]",
-  },
-  {
-    name: "Nurul Huda",
-    salon: "Nailify Bugis",
-    note: "Long wait time despite confirmed appointment",
-    severity: "Medium",
-    tone: "bg-[#fff0dd] text-[#d9871c]",
-  },
-  {
-    name: "Wendy Chua",
-    salon: "Nailify Jurong",
-    note: "Requested refund for unused gift voucher",
-    severity: "Low",
-    tone: "bg-[#e8faef] text-[#35a164]",
-  },
-];
-
-const registrations = [
-  ["Jasmine Loh", "Just now"],
-  ["Priya Nair", "4 min ago"],
-  ["Yuki Matsuda", "12 min ago"],
-  ["Clara Mendez", "28 min ago"],
-  ["Hana Yoshida", "45 min ago"],
-];
-
-const recentActivities = [
-  {
-    title: "Booking #BK-8821 completed at Nailify Orchard",
-    time: "2 min ago",
-    color: "bg-[#f04f91]",
-  },
-  {
-    title: "New staff artist onboarded at Nailify Marina",
-    time: "15 min ago",
-    color: "bg-[#8b5cf6]",
-  },
-  {
-    title: "Payment of $284 received for Booking #BK-8819",
-    time: "22 min ago",
-    color: "bg-[#ec4899]",
-  },
-  {
-    title: "New complaint filed by Aisha Rahman",
-    time: "1 hour ago",
-    color: "bg-[#f59e0b]",
-  },
-  {
-    title: "Monthly analytics report generated for July",
-    time: "6 hours ago",
-    color: "bg-[#6366f1]",
-  },
-];
-
-const salons = [
-  ["Nailify Orchard", "Orchard Rd, SG", "Jessica Tan", "1,842", "$42,300", 92, "Active"],
-  ["Nailify Marina", "Marina Bay, SG", "Priya Sharma", "1,620", "$38,750", 87, "Busy"],
-  ["Nailify Bugis", "Bugis St, SG", "Mei Lin Chen", "1,390", "$31,200", 78, "Active"],
-  ["Nailify Tampines", "Tampines Mall, SG", "Rachel Lim", "1,105", "$24,800", 71, "Active"],
-  ["Nailify Jurong", "Jurong East, SG", "Amanda Koh", "980", "$21,450", 65, "Busy"],
-  ["Nailify Woodlands", "Woodlands Ave, SG", "Siti Rahimah", "740", "$16,900", 58, "Active"],
-  ["Nailify Sengkang", "Sengkang, SG", "Fiona Ng", "210", "$4,800", 22, "Closed"],
 ];
 
 const artists = [
@@ -295,10 +215,104 @@ StatusBadge.propTypes = {
   status: PropTypes.string.isRequired,
 };
 
+function formatDashboardStatus(status) {
+  return status ? `${status.charAt(0)}${status.slice(1).toLowerCase()}` : "Active";
+}
+
 export function AdminDashboardPage() {
+  const navigate = useNavigate();
+  const [selectedSalonReport, setSelectedSalonReport] = useState(null);
+  const salonPerformanceRows = useMemo(
+    () =>
+      getSalonsWithUpdates().slice(0, 7).map((salon, index) => ({
+        id: salon.id,
+        salonId: salon.salonId,
+        name: salon.name,
+        location: salon.address,
+        manager: salon.manager,
+        bookings: (1840 - index * 210).toLocaleString("en-US"),
+        revenue: `$${(42300 - index * 3850).toLocaleString("en-US")}`,
+        occupancy: Math.max(48, 92 - index * 7),
+        status: formatDashboardStatus(salon.status),
+      })),
+    [],
+  );
+
+  const salonPerformanceColumns = useMemo(() => ([
+    {
+      title: "Salon Name",
+      key: "name",
+      render: (_, salon) => (
+        <div className="flex items-center gap-2">
+          <span className="h-2.5 w-2.5 rounded-full bg-[#ea4f93]" />
+          <div>
+            <p className="font-semibold text-[#402542]">{salon.name}</p>
+            <p className="mt-1 text-xs text-[#bc89a4]">{salon.location}</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Location",
+      dataIndex: "location",
+      key: "location",
+      render: (value) => <span className="text-sm text-[#7a6176]">{value}</span>,
+    },
+    {
+      title: "Manager",
+      dataIndex: "manager",
+      key: "manager",
+      render: (value) => <span className="text-sm text-[#7a6176]">{value}</span>,
+    },
+    {
+      title: "Bookings",
+      dataIndex: "bookings",
+      key: "bookings",
+      render: (value) => <span className="text-sm font-semibold text-[#402542]">{value}</span>,
+    },
+    {
+      title: "Revenue",
+      dataIndex: "revenue",
+      key: "revenue",
+      render: (value) => <span className="text-sm font-bold text-[#ea4f93]">{value}</span>,
+    },
+    {
+      title: "Occupancy",
+      dataIndex: "occupancy",
+      key: "occupancy",
+      render: (value) => (
+        <div className="flex items-center gap-3">
+          <div className="h-2 w-20 rounded-full bg-[#f7d7e5]">
+            <div className="h-full rounded-full bg-[#ea4f93]" style={{ width: `${value}%` }} />
+          </div>
+          <span className="text-xs font-bold text-[#8a6d82]">{value}%</span>
+        </div>
+      ),
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      render: (value) => <StatusBadge status={value} />,
+    },
+    {
+      title: "Action",
+      key: "action",
+      render: (_, salon) => (
+        <button
+          type="button"
+          onClick={() => setSelectedSalonReport(salon)}
+          className="rounded-full border border-[#f4c7da] bg-[#fff6fa] px-3 py-1.5 text-xs font-bold text-[#e84d92]"
+        >
+          View
+        </button>
+      ),
+    },
+  ]), []);
+
   return (
     <section className="flex min-h-full flex-col gap-5 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.8fr)_330px]">
+      <div className="">
         <div className="space-y-5">
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {metricCards.map((card) => {
@@ -457,68 +471,21 @@ export function AdminDashboardPage() {
                   </button>
                   <button
                     type="button"
+                    onClick={() => navigate(ROUTES.adminSalonsCreate)}
                     className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.2)]"
                   >
                     + Add Salon
                   </button>
                 </div>
               </div>
-              <div className="mt-5 overflow-x-auto">
-                <table className="min-w-full text-left">
-                  <thead>
-                    <tr className="border-b border-[#f6dce7] text-[11px] uppercase tracking-[0.18em] text-[#c693ad]">
-                      <th className="px-3 py-3">Salon Name</th>
-                      <th className="px-3 py-3">Location</th>
-                      <th className="px-3 py-3">Manager</th>
-                      <th className="px-3 py-3">Bookings</th>
-                      <th className="px-3 py-3">Revenue</th>
-                      <th className="px-3 py-3">Occupancy</th>
-                      <th className="px-3 py-3">Status</th>
-                      <th className="px-3 py-3">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {salons.map(([name, location, manager, bookings, revenue, occupancy, status]) => (
-                      <tr key={name} className="border-b border-[#fbe7ef] last:border-b-0">
-                        <td className="px-3 py-4">
-                          <div className="flex items-center gap-2">
-                            <span className="h-2.5 w-2.5 rounded-full bg-[#ea4f93]" />
-                            <div>
-                              <p className="font-semibold text-[#402542]">{name}</p>
-                              <p className="mt-1 text-xs text-[#bc89a4]">{location}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-3 py-4 text-sm text-[#7a6176]">{location}</td>
-                        <td className="px-3 py-4 text-sm text-[#7a6176]">{manager}</td>
-                        <td className="px-3 py-4 text-sm font-semibold text-[#402542]">{bookings}</td>
-                        <td className="px-3 py-4 text-sm font-bold text-[#ea4f93]">{revenue}</td>
-                        <td className="px-3 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="h-2 w-20 rounded-full bg-[#f7d7e5]">
-                              <div
-                                className="h-full rounded-full bg-[#ea4f93]"
-                                style={{ width: `${occupancy}%` }}
-                              />
-                            </div>
-                            <span className="text-xs font-bold text-[#8a6d82]">{occupancy}%</span>
-                          </div>
-                        </td>
-                        <td className="px-3 py-4">
-                          <StatusBadge status={status} />
-                        </td>
-                        <td className="px-3 py-4">
-                          <button
-                            type="button"
-                            className="rounded-full border border-[#f4c7da] bg-[#fff6fa] px-3 py-1.5 text-xs font-bold text-[#e84d92]"
-                          >
-                            View
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="mt-5">
+                <Table
+                  rowKey="id"
+                  columns={salonPerformanceColumns}
+                  dataSource={salonPerformanceRows}
+                  pagination={false}
+                  scroll={{ x: 1180 }}
+                />
               </div>
             </Card>
 
@@ -650,137 +617,6 @@ export function AdminDashboardPage() {
             </div>
           </div>
         </div>
-
-        <div className="space-y-4">
-          <Card className="sticky top-0">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#ff76ab_0%,#df307d_100%)] text-white">
-                <Sparkles size={18} />
-              </div>
-              <div>
-                <p className="font-extrabold text-[#e84d92]">Nailify</p>
-                <p className="text-xs text-[#c18ba5]">Quick Status Panel</p>
-              </div>
-            </div>
-
-            <div className="mt-6 space-y-6">
-              <div>
-                <div className="mb-4 flex items-center justify-between gap-2">
-                  <h3 className="text-sm font-extrabold text-[#3f2240]">System Health</h3>
-                  <span className="rounded-full bg-[#fff6fa] px-2 py-1 text-[10px] font-bold text-[#ea4f93]">
-                    Live
-                  </span>
-                </div>
-                <div className="space-y-4">
-                  {healthItems.map(([label, value, color]) => (
-                    <div key={label}>
-                      <div className="mb-1.5 flex items-center justify-between gap-3 text-xs">
-                        <span className="font-medium text-[#7f6478]">{label}</span>
-                        <span className="font-bold" style={{ color }}>
-                          {value}%
-                        </span>
-                      </div>
-                      <div className="h-2 rounded-full bg-[#f6dde8]">
-                        <div
-                          className="h-full rounded-full"
-                          style={{ width: `${value}%`, backgroundColor: color }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <div className="mb-4 flex items-center justify-between gap-2">
-                  <h3 className="text-sm font-extrabold text-[#3f2240]">Pending Complaints</h3>
-                  <span className="rounded-full bg-[#ffe7ef] px-2 py-1 text-[10px] font-bold text-[#e1447f]">
-                    7 Open
-                  </span>
-                </div>
-                <div className="space-y-3">
-                  {complaints.map((item) => (
-                    <div key={item.name} className="rounded-[18px] border border-[#f8d9e7] bg-[#fffafb] p-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="font-bold text-[#402542]">{item.name}</p>
-                          <p className="mt-1 text-[11px] text-[#c190aa]">{item.salon}</p>
-                        </div>
-                        <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${item.tone}`}>
-                          {item.severity}
-                        </span>
-                      </div>
-                      <p className="mt-3 text-xs leading-5 text-[#7a6176]">{item.note}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <div className="mb-4 flex items-center justify-between gap-2">
-                  <h3 className="text-sm font-extrabold text-[#3f2240]">New Registrations</h3>
-                  <span className="rounded-full bg-[#eaf9ee] px-2 py-1 text-[10px] font-bold text-[#2fa25f]">
-                    +48 today
-                  </span>
-                </div>
-                <div className="space-y-3">
-                  {registrations.map(([name, time]) => (
-                    <div key={name} className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd0e2_0%,#ea4f93_100%)] text-xs font-bold text-white">
-                          {name
-                            .split(" ")
-                            .map((part) => part[0])
-                            .join("")
-                            .slice(0, 2)}
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-[#402542]">{name}</p>
-                          <p className="text-[11px] text-[#c190aa]">{time}</p>
-                        </div>
-                      </div>
-                      <span className="rounded-full border border-[#f7cade] bg-[#fff6fa] px-2 py-1 text-[10px] font-bold text-[#ea4f93]">
-                        New
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <h3 className="mb-4 text-sm font-extrabold text-[#3f2240]">Recent Activity</h3>
-                <div className="space-y-4">
-                  {recentActivities.map((item) => (
-                    <div key={item.title} className="flex gap-3">
-                      <div className={`mt-1 h-8 w-8 rounded-full ${item.color}`} />
-                      <div>
-                        <p className="text-sm font-medium leading-5 text-[#5e4760]">{item.title}</p>
-                        <p className="mt-1 text-[11px] text-[#c190aa]">{item.time}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <h3 className="mb-4 text-sm font-extrabold text-[#3f2240]">Today&apos;s Summary</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    ["142", "Bookings Today"],
-                    ["$3,284", "Revenue Today"],
-                    ["48", "New Customers"],
-                    ["96%", "Satisfaction"],
-                  ].map(([value, label]) => (
-                    <div key={label} className="rounded-[18px] border border-[#f8d9e7] bg-[#fff8fb] px-3 py-4 text-center">
-                      <p className="text-2xl font-extrabold text-[#e34b91]">{value}</p>
-                      <p className="mt-1 text-[11px] text-[#c08aa4]">{label}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
       </div>
 
       <div className="rounded-[24px] border border-[#f7d7e5] bg-[linear-gradient(90deg,#fff7fb_0%,#fffdf8_100%)] p-4 shadow-[0_12px_24px_rgba(236,72,153,0.08)]">
@@ -807,6 +643,89 @@ export function AdminDashboardPage() {
           </div>
         </div>
       </div>
+      <Modal
+        open={Boolean(selectedSalonReport)}
+        onCancel={() => setSelectedSalonReport(null)}
+        footer={null}
+        closable={false}
+        width={520}
+        centered
+        destroyOnClose
+        styles={{
+          content: {
+            padding: 0,
+            borderRadius: "24px",
+            overflow: "hidden",
+          },
+          mask: {
+            backdropFilter: "blur(4px)",
+          },
+        }}
+      >
+        {selectedSalonReport ? (
+          <div>
+            <div className="bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-6 py-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-xl bg-white/20 p-2">
+                    <Store size={16} className="text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-[15px] font-black text-white">
+                      {selectedSalonReport.name}
+                    </h3>
+                    <p className="text-[11px] text-white/70">View salon details</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedSalonReport(null)}
+                  className="rounded-full bg-white/20 p-1.5 text-white hover:bg-white/30"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-4 px-6 py-6">
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { icon: MapPin, label: "Address", value: selectedSalonReport.location },
+                  { icon: UserRound, label: "Manager", value: selectedSalonReport.manager },
+                  { icon: Phone, label: "Phone", value: selectedSalonReport.phone || "--" },
+                  { icon: Users, label: "Bookings", value: selectedSalonReport.bookings },
+                  { icon: CircleDollarSign, label: "Revenue", value: selectedSalonReport.revenue },
+                  {
+                    icon: Clock3,
+                    label: "Occupancy",
+                    value: `${selectedSalonReport.occupancy}%`,
+                  },
+                ].map(({ icon: Icon, label, value }) => (
+                  <div key={label} className="rounded-xl border border-rose-100 bg-[#fff8fb] p-3">
+                    <div className="mb-1 flex items-center gap-1.5">
+                      <Icon size={11} className="shrink-0 text-rose-400" />
+                      <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">
+                        {label}
+                      </span>
+                    </div>
+                    <p className="text-[12px] font-semibold text-slate-700">{value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex justify-end border-t border-rose-100 px-6 py-4">
+              <button
+                type="button"
+                onClick={() => setSelectedSalonReport(null)}
+                className="rounded-full border border-rose-200 bg-white px-5 py-2 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </Modal>
     </section>
   );
 }
