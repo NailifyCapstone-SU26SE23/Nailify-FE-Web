@@ -3,7 +3,7 @@ import axios from "axios";
 const baseURL = import.meta.env.VITE_API_BASE_URL?.trim();
 
 export const axiosClient = axios.create({
-  baseURL: baseURL ? `${baseURL}/api` : "",
+  baseURL: baseURL || "",
 });
 
 // Add a request interceptor to handle Content-Type
