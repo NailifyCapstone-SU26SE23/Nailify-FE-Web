@@ -149,6 +149,52 @@ function getComparisonValueTone(label) {
   return label === "Premium vs Market" ? "text-[#2fa25f]" : "text-[#432744]";
 }
 
+function isHexColor(value) {
+  return /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(String(value || "").trim());
+}
+
+function extractVariantColors(colorJson) {
+  const rawValue = String(colorJson || "").trim();
+
+  if (!rawValue) {
+    return [];
+  }
+
+  const parsedColors = [];
+
+  const collectColors = (value) => {
+    if (!value) {
+      return;
+    }
+
+    if (typeof value === "string") {
+      const normalized = value.trim();
+
+      if (isHexColor(normalized)) {
+        parsedColors.push(normalized);
+      }
+      return;
+    }
+
+    if (Array.isArray(value)) {
+      value.forEach(collectColors);
+      return;
+    }
+
+    if (typeof value === "object") {
+      Object.values(value).forEach(collectColors);
+    }
+  };
+
+  try {
+    collectColors(JSON.parse(rawValue));
+  } catch {
+    collectColors(rawValue);
+  }
+
+  return [...new Set(parsedColors)];
+}
+
 const CUSTOMER_PROFILE_OPTIONS = {
   "Skin Tone": ["Fair", "Light Medium", "Medium", "Tan", "Deep"],
   "Skin Undertone": ["Warm", "Cool", "Neutral"],
@@ -918,11 +964,8 @@ export function NailDesignManagementDetailPage() {
               </div>
 
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#c694ad]">
-                  {formValues.id}
-                </p>
                 {isEditing ? (
-                  <div className="mt-2 space-y-3">
+                  <div className="space-y-3">
                     <input
                       value={formValues.heroTitle}
                       onChange={handleChange("heroTitle")}
@@ -1257,77 +1300,6 @@ export function NailDesignManagementDetailPage() {
                   </div>
                 </div>
               </div>
-            </div>
-          </SectionCard>
-
-          <SectionCard
-            title="Service Workflow"
-            subtitle=""
-            icon={<BarChart3 size={18} />}
-            sectionId="workflow-section"
-            sectionRef={workflowRef}
-            highlighted={highlightedSection === "workflow"}
-          >
-            <div className="space-y-3">
-              {formValues.workflow.map(([title, duration, tools, level], index) => (
-                <div
-                  key={title}
-                  className="grid gap-3 rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] px-4 py-3 md:grid-cols-[34px_minmax(0,1fr)]"
-                >
-                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#ea4f93] text-[10px] font-bold text-white">
-                    {index + 1}
-                  </span>
-                  <div>
-                    {isEditing ? (
-                      <div className="grid gap-3 md:grid-cols-2">
-                        <div>
-                          <InputLabel>Step Title</InputLabel>
-                          <EditInput
-                            value={title}
-                            onChange={handleWorkflowFieldChange(index, "title")}
-                          />
-                        </div>
-                        <div>
-                          <InputLabel>Duration</InputLabel>
-                          <EditInput
-                            value={duration}
-                            onChange={handleWorkflowFieldChange(index, "duration")}
-                          />
-                        </div>
-                        <div className="md:col-span-2">
-                          <InputLabel>Tools</InputLabel>
-                          <EditTextarea
-                            value={tools.join(", ")}
-                            onChange={handleWorkflowFieldChange(index, "tools")}
-                            rows={2}
-                          />
-                        </div>
-                        <div>
-                          <InputLabel>Skill Level</InputLabel>
-                          <EditSelect
-                            value={level}
-                            onChange={handleWorkflowFieldChange(index, "level")}
-                            options={WORKFLOW_LEVEL_OPTIONS}
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <p className="font-semibold text-[#432744]">{title}</p>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          <Pill tone="pink">{formatDurationLabel(duration)}</Pill>
-                          {tools.map((tool, toolIndex) => (
-                            <Pill key={tool} tone={toolIndex % 2 === 0 ? "blue" : "purple"}>
-                              {tool}
-                            </Pill>
-                          ))}
-                          <Pill tone="yellow">{level}</Pill>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              ))}
             </div>
           </SectionCard>
 
@@ -1706,7 +1678,7 @@ export function NailDesignManagementDetailPage() {
                 title: pendingDeleteVariant.name,
                 image: pendingDeleteVariant.imageUrl || formValues.previewImage || DESIGN_PREVIEW_IMAGE,
                 meta: pendingDeleteVariant.level,
-                note: `Variant ID #${pendingDeleteVariant.nailVariantId}`,
+                note: pendingDeleteVariant.description || "Selected variant will be removed from this design.",
               }
             : null
         }
@@ -1775,8 +1747,6 @@ export function NailDesignManagementDetailPage() {
                 <div className="space-y-4">
                   <div className="grid gap-3 sm:grid-cols-2">
                     {[
-                      ["Variant ID", String(selectedVariantDetail?.nailVariantId || "--")],
-                      ["Design ID", String(selectedVariantDetail?.nailDesignId || "--")],
                       ["Price", selectedVariantDetail?.priceLabel || "--"],
                       ["Duration", selectedVariantDetail?.durationLabel || "--"],
                     ].map(([label, value]) => (
@@ -1808,12 +1778,6 @@ export function NailDesignManagementDetailPage() {
                       <span className="text-[#8c7085]">Name</span>
                       <span className="font-semibold text-[#432744]">
                         {selectedVariantDetail?.nailShape?.name || "--"}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-[#8c7085]">Shape ID</span>
-                      <span className="font-semibold text-[#432744]">
-                        {selectedVariantDetail?.nailShape?.nailShapeId || "--"}
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-3">
@@ -1898,10 +1862,38 @@ export function NailDesignManagementDetailPage() {
               </div>
 
               <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
-                <p className="font-bold text-[#432744]">Color JSON</p>
-                <pre className="mt-4 overflow-x-auto rounded-[16px] bg-[#fff] p-4 text-xs leading-6 text-[#6d5669]">
-                  {selectedVariantDetail?.colorJson || "--"}
-                </pre>
+                <p className="font-bold text-[#432744]">Color Preview</p>
+                {extractVariantColors(selectedVariantDetail?.colorJson).length > 0 ? (
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    {extractVariantColors(selectedVariantDetail?.colorJson).length > 1 ? (
+                      <div className="w-[170px] rounded-[18px] border border-[#f4d4e2] bg-white p-3 shadow-[0_8px_20px_rgba(236,72,153,0.05)]">
+                        <div
+                          className="h-16 rounded-[14px] border border-white shadow-inner"
+                          style={{
+                            backgroundImage: `linear-gradient(135deg, ${extractVariantColors(selectedVariantDetail?.colorJson).join(", ")})`,
+                          }}
+                        />
+                        <p className="mt-3 text-center text-[11px] font-bold text-[#6d5669]">Gradient Mix</p>
+                      </div>
+                    ) : null}
+                    {extractVariantColors(selectedVariantDetail?.colorJson).map((color) => (
+                      <div
+                        key={color}
+                        className="w-[110px] rounded-[18px] border border-[#f4d4e2] bg-white p-3 shadow-[0_8px_20px_rgba(236,72,153,0.05)]"
+                      >
+                        <div
+                          className="h-16 rounded-[14px] border border-white shadow-inner"
+                          style={{ backgroundColor: color }}
+                        />
+                        <p className="mt-3 text-center text-[11px] font-bold text-[#6d5669]">{color}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <pre className="mt-4 overflow-x-auto rounded-[16px] bg-[#fff] p-4 text-xs leading-6 text-[#6d5669]">
+                    {selectedVariantDetail?.colorJson || "--"}
+                  </pre>
+                )}
               </div>
 
               <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
@@ -1957,18 +1949,7 @@ export function NailDesignManagementDetailPage() {
                                 updateVariantProcedureDraft(index, "stepOrder", event.target.value)
                               }
                             />
-                          </label>
-                          <label className="space-y-2">
-                            <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
-                              Procedure ID
-                            </span>
-                            <EditInput
-                              value={item.procedureId || ""}
-                              onChange={(event) =>
-                                updateVariantProcedureDraft(index, "procedureId", event.target.value)
-                              }
-                            />
-                          </label>
+                          </label> 
                           <button
                             type="button"
                             onClick={() => removeVariantProcedureDraft(index)}

@@ -155,6 +155,13 @@ export const MENU_CONFIG = {
       badge: "16",
     },
     {
+      key: "manager-customer-nails",
+      label: "Customer Nails",
+      to: ROUTES.managerCustomerNails,
+      icon: "palette",
+      section: "Main",
+    },
+    {
       key: "manager-schedules",
       label: "Schedules",
       icon: "calendar",

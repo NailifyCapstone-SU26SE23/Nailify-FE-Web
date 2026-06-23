@@ -11,7 +11,6 @@ export function BookingInfoCard({ booking }) {
         </div>
         <div>
           <p className="font-semibold">{booking.customerName}</p>
-          <p className="text-sm text-[var(--color-muted)]">{booking.id}</p>
         </div>
       </div>
 

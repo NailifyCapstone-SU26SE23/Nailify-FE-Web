@@ -525,7 +525,7 @@ export function ReceptionistBookingDetailPage() {
         <div className="space-y-4">
           <DetailCard
             title="Customer Overview"
-            subtitle={`Booking ${booking.bookingId || "--"}`}
+            subtitle={booking.status || "Appointment details"}
             badge="Active Booking"
           >
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
@@ -872,7 +872,7 @@ export function ReceptionistBookingDetailPage() {
           )}
           <div className="text-center">
             <p className="text-sm font-bold text-[#4a3741]">{customerDisplayName}</p>
-            <p className="mt-1 text-xs text-[#a48796]">{booking.bookingId || "--"}</p>
+            <p className="mt-1 text-xs text-[#a48796]">{booking.status || "Active booking"}</p>
           </div>
         </div>
       </Modal>

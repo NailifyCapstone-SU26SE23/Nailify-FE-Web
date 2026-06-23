@@ -268,7 +268,12 @@ export function buildStaffServiceSessionPayload(booking, options = {}) {
 
   return {
     bookingCode: formatBookingCode(booking?.bookingId),
-    bookingItemId: firstNamedItem?.bookingItemId || items[0]?.bookingItemId || "",
+    bookingItemId:
+      firstNamedItem?.bookingItemId ||
+      firstNamedItem?.id ||
+      items[0]?.bookingItemId ||
+      items[0]?.id ||
+      "",
     customerName: booking?.customerName || "--",
     customerPhone: booking?.customerPhone || "--",
     customerAvatar:
