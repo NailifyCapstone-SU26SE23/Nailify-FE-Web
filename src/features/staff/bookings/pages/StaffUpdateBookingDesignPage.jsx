@@ -16,6 +16,7 @@ import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom"
 import { formatDurationLabel } from "../../../../shared/utils/formatDuration";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { getMockBookingById } from "../../../core/booking-management/services/mockBookings";
+import { formatAppointmentEndTime, formatTimeValue } from "../services/staffBookingService";
 import {
   getStaffBookingDesignStudioRoute,
   getStaffBookingDetailRoute,
@@ -246,6 +247,8 @@ export function StaffUpdateBookingDesignPage() {
   const { bookingId } = useParams();
   const booking = getMockBookingById(bookingId);
   const payload = location.state?.designUpdate;
+  const appointmentStartTime = booking?.bookingTime ? formatTimeValue(booking.bookingTime) : "--";
+  const appointmentEndTime = formatAppointmentEndTime(appointmentStartTime, booking?.totalDuration || booking?.duration);
 
   const fallbackData = useMemo(() => {
     if (!booking) {
@@ -256,9 +259,12 @@ export function StaffUpdateBookingDesignPage() {
       bookingCode: booking.id.replace("BKG", "BK"),
       statusLabel: "Updating Design",
       summaryStatus: "Updating Design",
-      customer: "Minh Thornton",
+      customer: booking.customerName || "Minh Thornton",
+      customerPhone: booking.customerPhone || "--",
+      customerAvatar:
+        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=140&q=80",
       staffArtist: "Sophie Lee",
-      appointment: "Today, 2:30 PM",
+      appointment: appointmentStartTime,
       chair: "Chair #3",
       previousDesign: {
         name: "Classic French Manicure",
@@ -324,7 +330,7 @@ export function StaffUpdateBookingDesignPage() {
         },
       ],
     };
-  }, [booking]);
+  }, [appointmentStartTime, booking]);
 
   const data = payload ?? fallbackData;
   const [confirmations, setConfirmations] = useState(data?.confirmations ?? []);
@@ -411,15 +417,16 @@ export function StaffUpdateBookingDesignPage() {
         serviceSession: {
           bookingCode: data.bookingCode,
           bookingItemId: booking?.bookingItems?.[0]?.bookingItemId ?? booking?.bookingItems?.[0]?.id ?? "",
-          customerName: data.customer,
-          customerPhone: booking?.customerPhone ?? "+84 912 345 678",
+          customerName: booking?.customerName ?? data.customer,
+          customerPhone: booking?.customerPhone ?? data.customerPhone ?? "--",
           customerAvatar:
+            data.customerAvatar ||
             "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=140&q=80",
           serviceLabel: data.newDesign.name,
           staffArtist: selectedStaffArtist,
           chair: data.chair,
-          appointmentTime: `${data.appointment} • ${formatDurationLabel(data.newDesign.duration)}`,
-          estimatedDuration: data.pricing.updatedDuration,
+          appointmentTime: appointmentStartTime,
+          estimatedDuration: appointmentEndTime,
           designName: data.newDesign.name,
           totalPrice: data.pricing.newPrice,
           backRoute: detailRoute,

@@ -27,6 +27,7 @@ import { AssignArtistModal } from "../components/AssignArtistModal";
 import { ConfirmBookingModal } from "../components/ConfirmBookingModal";
 import { RejectBookingModal } from "../components/RejectBookingModal";
 import { CancelBookingModal } from "../components/CancelBookingModal";
+import { Pagination } from "../../../../shared/components/common/Pagination";
 
 const roleConfig = BOOKING_ROLE_CONFIG[ROLES.manager];
 const DEFAULT_SALON_ID = "484c3aef-3ae1-4ad6-8aba-6b0bc6df586d";
@@ -214,6 +215,7 @@ function getStatusTone(status) {
     case "Confirmed":
       return "bg-[#eaf9ee] text-[#2fa25f]";
     case "Completed":
+    case "ServiceCompleted":
       return "bg-[#eaf9ee] text-[#2fa25f]";
     case "Rejected":
       return "bg-[#ffe6ec] text-[#e1447f]";
@@ -243,12 +245,14 @@ function formatStatusDisplay(status) {
   if (status === "CheckedIn") return "Checked In";
   if (status === "InProgress") return "In Progress";
   if (status === "RescheduleReq") return "Reschedule Req";
+  if (status === "ServiceCompleted") return "Completed";
   return status;
 }
 
 function matchesFilter(status, filter) {
   if (filter === "All") return true;
   if (filter === "Reschedule") return status === "RescheduleReq" || status === "Reschedule Req";
+  if (filter === "Completed") return status === "Completed" || status === "ServiceCompleted";
   return status === filter;
 }
 
@@ -392,16 +396,11 @@ export function ManagerBookingListPage() {
   const [query, setQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
   const [selectedDate, setSelectedDate] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
   const [bookings, setBookings] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [pagination, setPagination] = useState({
-    currentPage: 1,
-    pageSize: BOOKING_PAGE_SIZE,
-    totalCount: 0,
-    totalPages: 1,
-  });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [filteredPageSize] = useState(10); // ✅ Client-side page size
 
   // Assign Artist modal
   const [isAssignArtistModalOpen, setIsAssignArtistModalOpen] = useState(false);
@@ -417,19 +416,20 @@ export function ManagerBookingListPage() {
     setIsLoading(true);
     setError("");
     try {
-      const response = await fetchBookingsBySalonId(DEFAULT_SALON_ID, {
-        includePagination: true,
-        pageNumber: page,
-        pageSize: BOOKING_PAGE_SIZE,
-      });
-      const uiBookings = response.items.map(mapApiBookingToUiFormat);
+      // Load ALL bookings with a large page size (1000)
+      const result = await fetchBookingsBySalonId(DEFAULT_SALON_ID, { pageNumber: 1, pageSize: 1000 });
+      console.log("loadBookings all bookings result:", result);
+      
+      let apiBookings = [];
+      if (result?.items) {
+        apiBookings = result.items;
+      } else if (Array.isArray(result)) {
+        apiBookings = result;
+      }
+
+      const uiBookings = apiBookings.map(mapApiBookingToUiFormat);
+      console.log("loadBookings all uiBookings loaded:", uiBookings.length, "bookings");
       setBookings(uiBookings);
-      setPagination({
-        currentPage: response.pagination?.currentPage ?? page,
-        pageSize: response.pagination?.pageSize ?? BOOKING_PAGE_SIZE,
-        totalCount: response.pagination?.totalCount ?? uiBookings.length,
-        totalPages: response.pagination?.totalPages ?? 1,
-      });
     } catch (err) {
       console.error("Failed to load bookings:", err);
       setError(err.message || "Failed to load bookings. Please try again.");
@@ -438,17 +438,7 @@ export function ManagerBookingListPage() {
     }
   }, [currentPage]);
 
-  useEffect(() => {
-    if (!location.state?.flashMessage) {
-      return;
-    }
-    navigate(location.pathname, { replace: true, state: null });
-  }, [location.pathname, location.state, navigate]);
-
-  useEffect(() => {
-    Promise.resolve().then(() => loadBookings(currentPage));
-  }, [currentPage, loadBookings]);
-
+  // ✅ Filtered appointments (after applying search & filters)
   const filteredAppointments = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
@@ -464,33 +454,75 @@ export function ManagerBookingListPage() {
       if (selectedDate) {
         const bookingDate = dayjs(appointment.bookingDate || appointment.createdAt);
         matchesDate = bookingDate.isSame(selectedDate, "day");
+        console.log("matchesDate check:", { appointment, selectedDate, bookingDate, matchesDate });
       }
 
-      return matchesQuery && matchesFilter(appointment.status, activeFilter) && matchesDate;
+      const matchesFilterResult = matchesFilter(appointment.status, activeFilter);
+      console.log("Filter check for appointment:", { 
+        appointment, 
+        matchesQuery, 
+        matchesDate, 
+        matchesFilterResult,
+        activeFilter 
+      });
+
+      return matchesQuery && matchesFilterResult && matchesDate;
     });
   }, [activeFilter, query, bookings, selectedDate]);
 
+  // ✅ Client-side pagination for filtered results
+  const paginatedAppointments = useMemo(() => {
+    const startIndex = (currentPage - 1) * filteredPageSize;
+    const endIndex = startIndex + filteredPageSize;
+    console.log("Pagination slicing:", { startIndex, endIndex, filteredLength: filteredAppointments.length });
+    return filteredAppointments.slice(startIndex, endIndex);
+  }, [filteredAppointments, currentPage, filteredPageSize]);
+
+  // ✅ Calculate totalPages based on filtered results
+  const filteredTotalPages = useMemo(() => {
+    const pages = Math.max(1, Math.ceil(filteredAppointments.length / filteredPageSize));
+    console.log("filteredTotalPages calculated:", pages, "from", filteredAppointments.length, "items");
+    return pages;
+  }, [filteredAppointments.length, filteredPageSize]);
+
+  // ✅ Reset to page 1 when filters change
   useEffect(() => {
+    console.log("Filters changed, resetting to page 1");
     setCurrentPage(1);
-  }, [activeFilter, query, selectedDate]);
+  }, [query, activeFilter, selectedDate]);
 
-  const paginationLabel = useMemo(() => {
-    if (!pagination.totalCount) {
-      return "Showing 0 appointments";
+  const handlePageChange = useCallback((newPage) => {
+    console.log("handlePageChange called with:", newPage);
+    setCurrentPage(newPage);
+  }, []);
+
+  // Log current pagination state
+  console.log("ManagerBookingListPage pagination state:", { 
+    currentPage, 
+    filteredTotalPages, 
+    filteredAppointmentsLength: filteredAppointments.length,
+    paginatedAppointmentsLength: paginatedAppointments.length,
+    filteredPageSize 
+  });
+
+  useEffect(() => {
+    if (!location.state?.flashMessage) {
+      return;
     }
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, location.state, navigate]);
 
-    const start = (pagination.currentPage - 1) * pagination.pageSize + 1;
-    const end = Math.min(pagination.totalCount, start + bookings.length - 1);
-
-    return `Showing ${start}-${end} of ${pagination.totalCount} appointments`;
-  }, [bookings.length, pagination.currentPage, pagination.pageSize, pagination.totalCount]);
+  useEffect(() => {
+    Promise.resolve().then(() => loadBookings());
+  }, [loadBookings]);
 
   const summaryStats = useMemo(() => {
     const pending = bookings.filter(b => b.status === "Pending").length;
     const confirmed = bookings.filter(b => b.status === "Confirmed").length;
-    const checkedIn = bookings.filter(b => b.status === "Checked In").length;
+    const checkedIn = bookings.filter(b => b.status === "CheckedIn" || b.status === "Checked In").length;
     const noShows = bookings.filter(b => b.status === "No Show").length;
-    const rescheduleReqs = bookings.filter(b => b.status === "Reschedule Req").length;
+    const rescheduleReqs = bookings.filter(b => b.status === "RescheduleReq" || b.status === "Reschedule Req").length;
+    const completed = bookings.filter(b => b.status === "Completed" || b.status === "ServiceCompleted").length;
 
     return [
       {
@@ -515,6 +547,14 @@ export function ManagerBookingListPage() {
         note: "+2 this hour",
         icon: UserCheck,
         iconClassName: "bg-[#e7ecff] text-[#4755b8]",
+        noteClassName: "text-[#2fa25f]",
+      },
+      {
+        label: "Completed Bookings",
+        value: completed.toString(),
+        note: "services finished",
+        icon: CheckCircle2,
+        iconClassName: "bg-[#eaf9ee] text-[#2fa25f]",
         noteClassName: "text-[#2fa25f]",
       },
       {
@@ -670,7 +710,7 @@ export function ManagerBookingListPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredAppointments.map((row) => (
+                    {paginatedAppointments.map((row) => (
                       <tr key={row.id} className="border-b border-[#fbe7ef] transition hover:bg-[#fff9fc] last:border-b-0">
                         <td className="px-2 py-3 whitespace-nowrap">
                           <p className="text-sm font-semibold text-[#402542]">{row.time}</p>
@@ -802,37 +842,13 @@ export function ManagerBookingListPage() {
                     No appointments matched the current filters.
                   </div>
                 ) : null}
-
-                {filteredAppointments.length > 0 ? (
-                  <div className="mt-4 flex flex-col gap-3 border-t border-[#f7dce8] pt-4 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="text-[11px] text-[#c694ad]">{paginationLabel}</p>
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                        disabled={currentPage <= 1}
-                        className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92] disabled:opacity-50"
-                      >
-                        <ChevronLeft size={12} />
-                      </button>
-                      <button
-                        type="button"
-                        className="inline-flex h-7 min-w-7 items-center justify-center rounded-md bg-[#ea4f93] px-2 text-[11px] font-bold text-white"
-                      >
-                        {currentPage}
-                      </button>
-                      <span className="px-2 text-[11px] font-medium text-[#b9849f]">/ {pagination.totalPages}</span>
-                      <button
-                        type="button"
-                        onClick={() => setCurrentPage(Math.min(pagination.totalPages, currentPage + 1))}
-                        disabled={currentPage >= pagination.totalPages}
-                        className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92] disabled:opacity-50"
-                      >
-                        <ChevronRight size={12} />
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
+                <div className="flex justify-end p-4 border-t border-[#f6dce7]">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={filteredTotalPages}
+                    onPageChange={handlePageChange}
+                  />
+                </div>
               </div>
             </Card>
 

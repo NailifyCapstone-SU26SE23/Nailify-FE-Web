@@ -73,6 +73,47 @@ export async function fetchStaffBookings(filters = {}) {
   return [];
 }
 
+export async function fetchServiceCatalog(filters = {}) {
+  const {
+    pageNumber = 1,
+    pageSize = 10,
+    name,
+  } = filters ?? {};
+
+  const response = await axiosClient.get("/Services", {
+    headers: getAuthHeaders(),
+    params: {
+      pageNumber,
+      pageSize,
+      ...(name ? { name } : {}),
+    },
+  });
+
+  const data = unwrapResponse(response, "Failed to load services.");
+
+  return {
+    items: Array.isArray(data?.items) ? data.items.map((item) => ({
+      serviceId: String(item?.serviceId || "").trim(),
+      name: String(item?.name || "").trim() || "--",
+      description: String(item?.description || "").trim(),
+      price: Number(item?.price || 0),
+      duration: Number(item?.duration || 0),
+      status: String(item?.status || "").trim() || "--",
+      createAt: String(item?.createAt || "").trim(),
+    })) : [],
+    metaData: data?.metaData ?? {
+      currentPage: 1,
+      totalPages: 1,
+      pageSize,
+      totalItems: 0,
+      hasPrevious: false,
+      hasNext: false,
+      firstRowOnPage: 0,
+      lastRowOnPage: 0,
+    },
+  };
+}
+
 export async function fetchStaffBookingDetail(bookingId) {
   const normalizedBookingId = String(bookingId || "").trim();
 
@@ -85,6 +126,20 @@ export async function fetchStaffBookingDetail(bookingId) {
   });
 
   return unwrapResponse(response, "Failed to load booking detail.");
+}
+
+export async function updateStaffBooking(bookingId, payload) {
+  const normalizedBookingId = String(bookingId || "").trim();
+
+  if (!normalizedBookingId) {
+    throw new Error("Booking ID is required.");
+  }
+
+  const response = await axiosClient.put(`/Bookings/${normalizedBookingId}`, payload, {
+    headers: getAuthHeaders(),
+  });
+
+  return unwrapResponse(response, "Failed to update booking.");
 }
 
 export async function fetchStaffNailVariantDetail(variantId) {
@@ -318,6 +373,46 @@ export function formatTimeValue(value) {
   return value ? String(value).slice(0, 5) : "--";
 }
 
+export function parseDurationMinutes(value) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return Math.max(0, Math.round(value));
+  }
+
+  const normalizedValue = String(value || "").trim();
+
+  if (!normalizedValue) {
+    return 0;
+  }
+
+  const matchedMinutes = normalizedValue.match(/(\d+)/);
+
+  return matchedMinutes ? Math.max(0, Number(matchedMinutes[1])) : 0;
+}
+
+export function formatAppointmentEndTime(startTime, durationValue) {
+  const normalizedStartTime = formatTimeValue(startTime);
+
+  if (normalizedStartTime === "--") {
+    return "--";
+  }
+
+  const [hoursText = "0", minutesText = "0"] = normalizedStartTime.split(":");
+  const baseDate = new Date();
+  baseDate.setHours(Number(hoursText), Number(minutesText), 0, 0);
+
+  if (Number.isNaN(baseDate.getTime())) {
+    return "--";
+  }
+
+  const endDate = new Date(baseDate.getTime() + parseDurationMinutes(durationValue) * 60000);
+
+  return new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(endDate);
+}
+
 export function formatCurrency(value) {
   const amount = Number(value);
 
@@ -341,6 +436,7 @@ export function formatBookingCode(bookingId) {
 }
 
 export function buildStaffServiceSessionPayload(booking, options = {}) {
+  const customerDetail = options.customerDetail ?? null;
   const items = booking?.bookingItems ?? [];
   const serviceNames = items.map((item) => item.serviceName).filter(Boolean);
   const firstNamedItem = items.find((item) => item.serviceName || item.customerNailName || item.nailVariantName);
@@ -355,6 +451,7 @@ export function buildStaffServiceSessionPayload(booking, options = {}) {
     booking?.duration ||
     (booking?.totalDuration ? formatDurationMinutes(booking.totalDuration) : "--");
   const appointmentStartTime = booking?.bookingTime || formatTimeValue(booking?.startTime);
+  const estimatedFinishTime = formatAppointmentEndTime(appointmentStartTime, booking?.totalDuration || booking?.duration);
   const totalPriceLabel =
     booking?.totalPriceLabel ||
     booking?.total ||
@@ -368,16 +465,25 @@ export function buildStaffServiceSessionPayload(booking, options = {}) {
       items[0]?.bookingItemId ||
       items[0]?.id ||
       "",
-    customerName: booking?.customerName || "--",
-    customerPhone: booking?.customerPhone || "--",
+    customerName:
+      customerDetail?.fullName ||
+      booking?.customerName ||
+      "--",
+    customerPhone:
+      customerDetail?.phone ||
+      booking?.customerPhone ||
+      "--",
     customerAvatar:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=140&q=80",
+      customerDetail?.avatarUrl ||
+      booking?.customerAvatar ||
+      booking?.avatarUrl ||
+      "",
     serviceLabel,
     staffArtist: booking?.artistName || booking?.staffName || "--",
     chair: "--",
-    appointmentTime: `${appointmentStartTime} - ${estimatedDuration}`,
-    estimatedDuration,
-    estimatedFinishTime: "--",
+    appointmentTime: appointmentStartTime,
+    estimatedDuration: estimatedFinishTime,
+    estimatedFinishTime,
     completedAt: "--",
     designName:
       firstNamedItem?.customerNailName ||

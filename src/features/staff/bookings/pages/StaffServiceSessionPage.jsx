@@ -15,11 +15,13 @@ import {
   Plus,
   Printer,
   Receipt,
+  Search,
   Send,
   ShieldCheck,
   Sparkles,
   Upload,
   UserRound,
+  X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
@@ -34,11 +36,16 @@ import { PropTypes } from "../../../../shared/utils/propTypes";
 import { getMockBookingById } from "../../../core/booking-management/services/mockBookings";
 import {
   buildStaffServiceSessionPayload,
+  fetchServiceCatalog,
+  formatAppointmentEndTime,
   fetchStaffBookingDetail,
   fetchBookingProceduresByBookingItem,
+  fetchStaffCustomerDetail,
+  formatTimeValue,
   uploadImageBeforeService,
   startStaffBookingService,
   uploadImageAfterService,
+  updateStaffBooking,
   updateBookingProcedureStatus,
 } from "../services/staffBookingService";
 import { useDispatch, useSelector } from "react-redux";
@@ -175,28 +182,37 @@ SummaryValue.propTypes = {
   value: PropTypes.string.isRequired,
 };
 
-function ConfirmationItem({ checked, disabled = false, label, onToggle }) {
+function ConfirmationItem({ checked, disabled = false, label, onToggle, trailing = null }) {
   return (
-    <button
-      type="button"
-      onClick={onToggle}
-      disabled={disabled}
-      className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm font-medium transition ${disabled ? "cursor-not-allowed opacity-60" : ""
-        } ${checked
-        ? "border-[#f2bfd4] bg-[#fff1f7] text-[#3f2b3f]"
-        : "border-[#f4dbe7] bg-[#fff9fc] text-[#6f5c6b] hover:bg-[#fff4f8]"
-        }`}
-    >
-      <span
-        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${checked
-          ? "bg-[image:var(--gradient-accent)] text-white"
-          : "bg-white text-transparent ring-1 ring-[#e7cfdb]"
+    <div className="relative">
+      <button
+        type="button"
+        onClick={onToggle}
+        disabled={disabled}
+        className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm font-medium transition ${trailing ? "pr-24" : ""
+          } ${disabled ? "cursor-not-allowed opacity-60" : ""
+          } ${checked
+            ? "border-[#f2bfd4] bg-[#fff1f7] text-[#3f2b3f]"
+            : "border-[#f4dbe7] bg-[#fff9fc] text-[#6f5c6b] hover:bg-[#fff4f8]"
           }`}
       >
-        <Check size={12} />
-      </span>
-      <span>{label}</span>
-    </button>
+        <span
+          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${checked
+            ? "bg-[image:var(--gradient-accent)] text-white"
+            : "bg-white text-transparent ring-1 ring-[#e7cfdb]"
+            }`}
+        >
+          <Check size={12} />
+        </span>
+        <span>{label}</span>
+      </button>
+
+      {trailing ? (
+        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+          {trailing}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -205,6 +221,7 @@ ConfirmationItem.propTypes = {
   disabled: PropTypes.bool,
   label: PropTypes.string.isRequired,
   onToggle: PropTypes.func.isRequired,
+  trailing: PropTypes.node,
 };
 
 function SessionChip({ icon: Icon, label }) {
@@ -238,6 +255,196 @@ ActionGhostButton.propTypes = {
   icon: PropTypes.elementType.isRequired,
   label: PropTypes.string.isRequired,
   onClick: PropTypes.func.isRequired,
+};
+
+function ExtraServiceModal({
+  open,
+  services,
+  selectedServiceIds,
+  searchValue,
+  isLoading,
+  isSaving,
+  meta,
+  onClose,
+  onSearchChange,
+  onSearchSubmit,
+  onSelect,
+  onPageChange,
+  onConfirm,
+}) {
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2f1c2e]/45 px-4 py-6 backdrop-blur-sm">
+      <div className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-[28px] border border-[#f1cddd] bg-white shadow-[0_24px_60px_rgba(63,43,63,0.24)]">
+        <div className="flex items-start justify-between gap-4 border-b border-[#f7dfeb] px-6 py-5">
+          <div>
+            <h3 className="text-lg font-extrabold text-[#3f2b3f]">Add Extra Service</h3>
+            <p className="mt-1 text-sm text-[#a88a9d]">Select one or more active services and append them to this booking.</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#f2bfd4] bg-white text-[#ea4f93] transition hover:bg-[#fff5f8]"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+          <form onSubmit={onSearchSubmit} className="flex flex-col gap-3 sm:flex-row">
+            <label className="flex flex-1 items-center gap-3 rounded-2xl border border-[#f2bfd4] bg-[#fff9fc] px-4 py-3">
+              <Search size={16} className="text-[#ea4f93]" />
+              <input
+                value={searchValue}
+                onChange={onSearchChange}
+                placeholder="Search service name..."
+                className="w-full bg-transparent text-sm text-[#3f2b3f] outline-none placeholder:text-[#c59ab0]"
+              />
+            </label>
+            <button
+              type="submit"
+              className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-[image:var(--gradient-accent)] px-5 py-3 text-sm font-bold text-white"
+            >
+              Search
+            </button>
+          </form>
+
+          <div className="mt-5 space-y-3 pr-1">
+            {isLoading ? (
+              <div className="rounded-[20px] border border-dashed border-[#f1cade] bg-[#fff8fb] px-4 py-10 text-center text-sm font-medium text-[#a88a9d]">
+                Loading services...
+              </div>
+            ) : services.length ? (
+              services.map((service) => {
+                const isSelected = selectedServiceIds.includes(service.serviceId);
+
+                return (
+                  <button
+                    key={service.serviceId}
+                    type="button"
+                    onClick={() => onSelect(service.serviceId)}
+                    className={`w-full rounded-[22px] border px-4 py-4 text-left transition ${isSelected
+                        ? "border-[#ea4f93] bg-[#fff1f7] shadow-[0_14px_28px_rgba(236,72,153,0.12)]"
+                        : "border-[#f3d5e2] bg-white hover:bg-[#fff8fb]"
+                      }`}
+                  >
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0">
+                        <p className="text-sm font-extrabold text-[#3f2b3f]">{service.name}</p>
+                        <p className="mt-1 text-xs text-[#a88a9d]">{service.description || "No description provided."}</p>
+                      </div>
+                      <span className="inline-flex shrink-0 rounded-full border border-[#cdeed7] bg-[#effcf3] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#1f9e5b]">
+                        {service.status}
+                      </span>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <span className="rounded-full bg-[#fff4da] px-3 py-1 text-[11px] font-bold text-[#bd8517]">
+                        {new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(service.price)} VND
+                      </span>
+                      <span className="rounded-full bg-[#f7efff] px-3 py-1 text-[11px] font-bold text-[#8b5cf6]">
+                        {service.duration} min
+                      </span>
+                    </div>
+                  </button>
+                );
+              })
+            ) : (
+              <div className="rounded-[20px] border border-dashed border-[#f1cade] bg-[#fff8fb] px-4 py-10 text-center text-sm font-medium text-[#a88a9d]">
+                No services found.
+              </div>
+            )}
+          </div>
+
+        </div>
+
+        <div className="shrink-0 bg-white">
+          <div className="flex flex-col gap-3 border-t border-[#f7dfeb] px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-[#a88a9d]">
+              Showing {meta?.firstRowOnPage ?? 0}-{meta?.lastRowOnPage ?? 0} of {meta?.totalItems ?? 0} services
+            </p>
+            <p className="text-xs font-bold text-[#ea4f93]">
+              Selected: {selectedServiceIds.length}
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onPageChange((meta?.currentPage ?? 1) - 1)}
+                disabled={!meta?.hasPrevious || isLoading}
+                className="rounded-xl border border-[#f2bfd4] bg-white px-3 py-2 text-xs font-bold text-[#ea4f93] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <span className="text-xs font-bold text-[#866f80]">
+                Page {meta?.currentPage ?? 1}/{meta?.totalPages ?? 1}
+              </span>
+              <button
+                type="button"
+                onClick={() => onPageChange((meta?.currentPage ?? 1) + 1)}
+                disabled={!meta?.hasNext || isLoading}
+                className="rounded-xl border border-[#f2bfd4] bg-white px-3 py-2 text-xs font-bold text-[#ea4f93] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+
+          <div className="flex flex-col-reverse gap-3 border-t border-[#f7dfeb] px-6 py-5 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-2xl border border-[#f2bfd4] bg-white px-5 py-3 text-sm font-bold text-[#ea4f93]"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              disabled={!selectedServiceIds.length || isSaving || isLoading}
+              className="rounded-2xl bg-[image:var(--gradient-accent)] px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isSaving ? "Adding Services..." : "Add Selected Services"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ExtraServiceModal.propTypes = {
+  isLoading: PropTypes.bool.isRequired,
+  isSaving: PropTypes.bool.isRequired,
+  meta: PropTypes.shape({
+    currentPage: PropTypes.number,
+    firstRowOnPage: PropTypes.number,
+    hasNext: PropTypes.bool,
+    hasPrevious: PropTypes.bool,
+    lastRowOnPage: PropTypes.number,
+    totalItems: PropTypes.number,
+    totalPages: PropTypes.number,
+  }),
+  onClose: PropTypes.func.isRequired,
+  onConfirm: PropTypes.func.isRequired,
+  onPageChange: PropTypes.func.isRequired,
+  onSearchChange: PropTypes.func.isRequired,
+  onSearchSubmit: PropTypes.func.isRequired,
+  onSelect: PropTypes.func.isRequired,
+  open: PropTypes.bool.isRequired,
+  searchValue: PropTypes.string.isRequired,
+  selectedServiceIds: PropTypes.arrayOf(PropTypes.string).isRequired,
+  services: PropTypes.arrayOf(
+    PropTypes.shape({
+      description: PropTypes.string,
+      duration: PropTypes.number,
+      name: PropTypes.string.isRequired,
+      price: PropTypes.number,
+      serviceId: PropTypes.string.isRequired,
+      status: PropTypes.string,
+    }),
+  ).isRequired,
 };
 
 function CompareSummaryCard({ label, value, note, accent = false }) {
@@ -348,6 +555,7 @@ export function StaffServiceSessionPage() {
     bookingId ? state.serviceSession.sessions?.[bookingId] ?? null : null,
   );
   const [bookingDetail, setBookingDetail] = useState(null);
+  const [customerDetail, setCustomerDetail] = useState(null);
 
   useEffect(() => {
     if (!bookingId) {
@@ -377,10 +585,42 @@ export function StaffServiceSessionPage() {
     };
   }, [bookingId]);
 
+  useEffect(() => {
+    const customerId = String(bookingDetail?.customerId || "").trim();
+
+    if (!customerId) {
+      setCustomerDetail(null);
+      return undefined;
+    }
+
+    let isMounted = true;
+
+    const loadCustomerDetail = async () => {
+      try {
+        const detail = await fetchStaffCustomerDetail(customerId);
+
+        if (isMounted) {
+          setCustomerDetail(detail);
+        }
+      } catch {
+        if (isMounted) {
+          setCustomerDetail(null);
+        }
+      }
+    };
+
+    void loadCustomerDetail();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [bookingDetail?.customerId]);
+
   const fallbackData = useMemo(() => {
     if (bookingDetail) {
       return buildStaffServiceSessionPayload(bookingDetail, {
         backRoute: getStaffBookingDetailRoute(bookingId),
+        customerDetail,
         designUpdateRoute: getStaffBookingDesignUpdateRoute(bookingId),
       });
     }
@@ -388,6 +628,9 @@ export function StaffServiceSessionPage() {
     if (!booking) {
       return null;
     }
+
+    const appointmentStartTime = formatTimeValue(booking.bookingTime);
+    const appointmentEndTime = formatAppointmentEndTime(appointmentStartTime, booking.totalDuration || booking.duration);
 
     return {
       bookingCode: booking.id.replace("BKG", "BK"),
@@ -399,9 +642,9 @@ export function StaffServiceSessionPage() {
       serviceLabel: booking.service,
       staffArtist: booking.staffName,
       chair: "Chair 03",
-      appointmentTime: `${booking.bookingTime} - ${booking.duration}`,
-      estimatedDuration: booking.duration,
-      estimatedFinishTime: "11:30 AM",
+      appointmentTime: appointmentStartTime,
+      estimatedDuration: appointmentEndTime,
+      estimatedFinishTime: appointmentEndTime,
       completedAt: "11:25 AM",
       designName: "Confirmed service design",
       totalPrice: booking.total,
@@ -430,7 +673,7 @@ export function StaffServiceSessionPage() {
         "Before photo uploaded",
       ],
     };
-  }, [booking, bookingDetail, bookingId]);
+  }, [booking, bookingDetail, bookingId, customerDetail]);
 
   const data = useMemo(() => {
     if (!fallbackData && !payload) {
@@ -438,11 +681,22 @@ export function StaffServiceSessionPage() {
     }
 
     const payloadBookingItemId = String(payload?.bookingItemId || "").trim();
+    const summaryAppointmentTime = fallbackData?.appointmentTime || payload?.appointmentTime || "--";
+    const summaryEstimatedDuration = fallbackData?.estimatedDuration || payload?.estimatedDuration || "--";
+    const summaryCustomerName = fallbackData?.customerName || payload?.customerName || "--";
+    const summaryCustomerPhone = fallbackData?.customerPhone || payload?.customerPhone || "--";
+    const summaryCustomerAvatar = fallbackData?.customerAvatar || payload?.customerAvatar || "";
 
     return {
       ...fallbackData,
       ...payload,
       bookingItemId: payloadBookingItemId || fallbackData?.bookingItemId || "",
+      appointmentTime: summaryAppointmentTime,
+      estimatedDuration: summaryEstimatedDuration,
+      estimatedFinishTime: fallbackData?.estimatedFinishTime || payload?.estimatedFinishTime || summaryEstimatedDuration,
+      customerName: summaryCustomerName,
+      customerPhone: summaryCustomerPhone,
+      customerAvatar: summaryCustomerAvatar,
       confirmations: payload?.confirmations ?? fallbackData?.confirmations ?? [],
       materialsUsed: payload?.materialsUsed ?? fallbackData?.materialsUsed ?? [],
       customerNotes: payload?.customerNotes ?? fallbackData?.customerNotes ?? [],
@@ -488,6 +742,24 @@ export function StaffServiceSessionPage() {
 
   const [showStartConfirm, setShowStartConfirm] = useState(false);
   const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
+  const [showExtraServiceModal, setShowExtraServiceModal] = useState(false);
+  const [serviceCatalog, setServiceCatalog] = useState([]);
+  const [serviceCatalogMeta, setServiceCatalogMeta] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    pageSize: 10,
+    totalItems: 0,
+    hasPrevious: false,
+    hasNext: false,
+    firstRowOnPage: 0,
+    lastRowOnPage: 0,
+  });
+  const [serviceSearchInput, setServiceSearchInput] = useState("");
+  const [serviceSearchKeyword, setServiceSearchKeyword] = useState("");
+  const [serviceCatalogPage, setServiceCatalogPage] = useState(1);
+  const [selectedExtraServiceIds, setSelectedExtraServiceIds] = useState([]);
+  const [isLoadingServiceCatalog, setIsLoadingServiceCatalog] = useState(false);
+  const [isSavingExtraService, setIsSavingExtraService] = useState(false);
   const [started, setStarted] = useState(() => persistedSession?.started ?? Boolean(payload?.started));
   const [completed, setCompleted] = useState(() => persistedSession?.completed ?? Boolean(payload?.completed));
   const [isStartingService, setIsStartingService] = useState(false);
@@ -623,6 +895,61 @@ export function StaffServiceSessionPage() {
     sessionNote,
     started,
   ]);
+
+  useEffect(() => {
+    if (!showExtraServiceModal) {
+      return undefined;
+    }
+
+    let isMounted = true;
+
+    const loadServiceCatalog = async () => {
+      setIsLoadingServiceCatalog(true);
+
+      try {
+        const response = await fetchServiceCatalog({
+          pageNumber: serviceCatalogPage,
+          pageSize: 10,
+          name: serviceSearchKeyword.trim() || undefined,
+        });
+
+        if (!isMounted) {
+          return;
+        }
+
+        setServiceCatalog(response.items);
+        setServiceCatalogMeta(response.metaData ?? {});
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        setServiceCatalog([]);
+        setServiceCatalogMeta({
+          currentPage: serviceCatalogPage,
+          totalPages: 1,
+          pageSize: 10,
+          totalItems: 0,
+          hasPrevious: false,
+          hasNext: false,
+          firstRowOnPage: 0,
+          lastRowOnPage: 0,
+        });
+        const message = error instanceof Error ? error.message : "Failed to load services.";
+        toast.error(message);
+      } finally {
+        if (isMounted) {
+          setIsLoadingServiceCatalog(false);
+        }
+      }
+    };
+
+    void loadServiceCatalog();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [serviceCatalogPage, serviceSearchKeyword, showExtraServiceModal]);
 
   const reloadBookingProcedures = async (bookingItemId, options = {}) => {
     const normalizedBookingItemId = String(bookingItemId || "").trim();
@@ -1017,6 +1344,99 @@ export function StaffServiceSessionPage() {
 
   const handleSessionAction = (message) => {
     setFlashMessage(message);
+  };
+
+  const handleOpenExtraServiceModal = () => {
+    setSelectedExtraServiceIds([]);
+    setServiceSearchInput("");
+    setServiceSearchKeyword("");
+    setServiceCatalogPage(1);
+    setShowExtraServiceModal(true);
+    setFlashMessage("");
+  };
+
+  const handleCloseExtraServiceModal = () => {
+    if (isSavingExtraService) {
+      return;
+    }
+
+    setShowExtraServiceModal(false);
+  };
+
+  const handleSearchExtraServices = (event) => {
+    event.preventDefault();
+    setServiceCatalogPage(1);
+    setSelectedExtraServiceIds([]);
+    setServiceSearchKeyword(serviceSearchInput.trim());
+  };
+
+  const handleAddExtraService = async () => {
+    const normalizedBookingId = String(bookingId || "").trim();
+    const normalizedServiceIds = selectedExtraServiceIds
+      .map((serviceId) => String(serviceId || "").trim())
+      .filter(Boolean);
+
+    if (!normalizedBookingId || normalizedServiceIds.length === 0 || !bookingDetail || isSavingExtraService) {
+      return;
+    }
+
+    setIsSavingExtraService(true);
+
+    try {
+      const bookingItems = Array.isArray(bookingDetail.bookingItems) ? bookingDetail.bookingItems : [];
+      const toNullableNumber = (value) => {
+        if (value === null || value === undefined || value === "") {
+          return null;
+        }
+
+        const normalizedValue = Number(value);
+
+        return Number.isFinite(normalizedValue) && normalizedValue > 0 ? normalizedValue : null;
+      };
+      const payloadBookingItems = [
+        ...bookingItems.map((item) => ({
+          nailVariantId: toNullableNumber(item?.nailVariantId),
+          serviceId: String(item?.serviceId || "").trim() || null,
+          customerNailId: toNullableNumber(item?.customerNailId),
+          quantity: Number(item?.quantity || 1) || 1,
+        })),
+        ...normalizedServiceIds.map((serviceId) => ({
+          nailVariantId: null,
+          serviceId,
+          customerNailId: null,
+          quantity: 1,
+        })),
+      ];
+
+      const updatedBooking = await updateStaffBooking(normalizedBookingId, {
+        bookingDate: bookingDetail.bookingDate,
+        startTime: bookingDetail.startTime,
+        nailArtistId: bookingDetail.nailArtistId || bookingDetail.artistId || null,
+        bookingItems: payloadBookingItems,
+      });
+
+      setBookingDetail(updatedBooking);
+      setShowExtraServiceModal(false);
+      setSelectedExtraServiceIds([]);
+
+      const addedServices = serviceCatalog.filter((item) => normalizedServiceIds.includes(item.serviceId));
+      const addedServiceNames = addedServices.map((item) => item.name).filter(Boolean);
+      setFlashMessage(
+        addedServiceNames.length
+          ? `${addedServiceNames.join(", ")} ${addedServiceNames.length > 1 ? "have" : "has"} been added to this booking.`
+          : "Extra services have been added to this booking.",
+      );
+      toast.success(
+        addedServiceNames.length
+          ? `Added ${addedServiceNames.length} service${addedServiceNames.length > 1 ? "s" : ""} to the booking.`
+          : "Extra services added successfully.",
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to add extra service.";
+      toast.error(message);
+    } finally {
+      setIsSavingExtraService(false);
+    }
   };
 
   const handleOpenComparison = () => {
@@ -1506,7 +1926,7 @@ export function StaffServiceSessionPage() {
                 <div className="mt-5 grid gap-5 md:grid-cols-2">
                   <SummaryValue label="Service" value={data.serviceLabel} accent />
                   <SummaryValue label="Staff Artist" value={data.staffArtist} />
-                  <SummaryValue label="Chair" value={data.chair} />
+                  {/* <SummaryValue label="Chair" value={data.chair} /> */}
                   <SummaryValue label="Appointment Time" value={data.appointmentTime} />
                   <SummaryValue label="Estimated Duration" value={data.estimatedDuration} />
                   <SummaryValue label="Confirmed Design" value={data.designName} />
@@ -1638,8 +2058,8 @@ export function StaffServiceSessionPage() {
                       <p className="mt-1 text-sm font-medium text-[#ea4f93]">{data.serviceLabel}</p>
                       <div className="mt-3 flex flex-wrap gap-2">
                         <SessionChip icon={UserRound} label={data.staffArtist} />
-                        <SessionChip icon={Sparkles} label={data.chair} />
-                        <SessionChip icon={Clock3} label={`Start: ${booking?.bookingTime ?? "10:00 AM"}`} />
+                        <SessionChip icon={Sparkles} label={data.serviceLabel} />
+                        <SessionChip icon={Clock3} label={`Start: ${data.appointmentTime ?? "--"}`} />
                         <SessionChip icon={Clock3} label={`Est. Finish: ${data.estimatedFinishTime}`} />
                       </div>
                     </div>
@@ -1694,24 +2114,9 @@ export function StaffServiceSessionPage() {
                   </div>
                   <div className="rounded-[18px] border border-[#f2bfd4] bg-[#fff6fa] p-4">
                     <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
-                      Estimated Remaining
+                      Estimate Time
                     </p>
                     <p className="mt-2 text-sm font-extrabold text-[#3f2b3f]">{data.remainingTime}</p>
-                  </div>
-                  <div className="rounded-[18px] border border-[#f2bfd4] bg-[#fff6fa] p-4 md:col-span-2">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
-                      Materials Used
-                    </p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {(data.materialsUsed ?? []).map((item) => (
-                        <span
-                          key={item}
-                          className="rounded-full border border-[#f1c6d8] bg-[#ffeaf3] px-3 py-1 text-[11px] font-bold text-[#ea4f93]"
-                        >
-                          {item}
-                        </span>
-                      ))}
-                    </div>
                   </div>
                 </div>
 
@@ -1744,7 +2149,7 @@ export function StaffServiceSessionPage() {
                   <ActionGhostButton
                     icon={Plus}
                     label="Add Extra Service"
-                    onClick={() => handleSessionAction("Extra service flow can be added to this booking session.")}
+                    onClick={handleOpenExtraServiceModal}
                   />
                   <ActionGhostButton
                     icon={FilePenLine}
@@ -1809,11 +2214,12 @@ export function StaffServiceSessionPage() {
 
                 <div className="mt-5 grid gap-5 md:grid-cols-3">
                   <SummaryValue label="Staff Artist" value={data.staffArtist} />
-                  <SummaryValue label="Chair" value={data.chair} />
+                  {/* <SummaryValue label="Chair" value={data.chair} /> */}
+                  <SummaryValue label="Start Time" value={data.appointmentTime} />
                   <SummaryValue label="Duration" value={data.estimatedDuration} accent />
-                  <SummaryValue label="Start Time" value={booking?.bookingTime ?? "10:00 AM"} />
-                  <SummaryValue label="Completed" value={data.completedAt} />
+                  {/* <SummaryValue label="Completed" value={data.completedAt} /> */}
                   <SummaryValue label="Service" value={data.serviceLabel} />
+                  <SummaryValue label="Nail Design" value={data.designName} />
                 </div>
               </article>
 
@@ -1913,32 +2319,26 @@ export function StaffServiceSessionPage() {
                   <div className="mt-4 space-y-3">
                     {procedureChecklist.length > 0 ? (
                       procedureChecklist.map((procedure) => (
-                        <div key={procedure.bookingProcedureId} className="space-y-2">
-                          <ConfirmationItem
-                            checked={procedure.checked}
-                            disabled={Boolean(procedureStatusUpdates[procedure.bookingProcedureId])}
-                            label={procedure.label}
-                            onToggle={() => handleUpdateProcedureStatus(procedure, "Completed")}
-                          />
-                          <div className="flex items-center justify-between gap-3 px-1 text-xs text-[#a88a9d]">
-                            <span>Status: {procedure.statusLabel}</span>
-                            <div className="flex items-center gap-3">
-                              <span>
-                                {procedureStatusUpdates[procedure.bookingProcedureId]
-                                  ? "Updating..."
-                                  : procedure.description || "--"}
-                              </span>
-                              <button
-                                type="button"
-                                disabled={Boolean(procedureStatusUpdates[procedure.bookingProcedureId])}
-                                onClick={() => handleUpdateProcedureStatus(procedure, "Skipped")}
-                                className="inline-flex min-h-8 items-center justify-center rounded-full border border-[#f4c7d9] bg-[#fff4f8] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#d95a95] transition hover:bg-[#ffe8f2] disabled:cursor-not-allowed disabled:opacity-60"
-                              >
-                                Skip
-                              </button>
-                            </div>
-                          </div>
-                        </div>
+                        <ConfirmationItem
+                          key={procedure.bookingProcedureId}
+                          checked={procedure.checked}
+                          disabled={Boolean(procedureStatusUpdates[procedure.bookingProcedureId])}
+                          label={procedure.label}
+                          onToggle={() => handleUpdateProcedureStatus(procedure, "Completed")}
+                          trailing={
+                            <button
+                              type="button"
+                              disabled={Boolean(procedureStatusUpdates[procedure.bookingProcedureId])}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleUpdateProcedureStatus(procedure, "Skipped");
+                              }}
+                              className="inline-flex min-h-8 items-center justify-center rounded-full border border-[#f4c7d9] bg-[#fff4f8] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#d95a95] transition hover:bg-[#ffe8f2] disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              Skip
+                            </button>
+                          }
+                        />
                       ))
                     ) : (
                       <div className="rounded-[18px] border border-[#f4dbe7] bg-white px-4 py-4 text-sm text-[#a88a9d]">
@@ -2141,7 +2541,7 @@ export function StaffServiceSessionPage() {
                   </div>
                   <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
                     <span className="text-[11px] text-[#a88a9d]">Duration</span>
-                    <span className="font-extrabold text-[#3f2b3f]">{data.estimatedDuration}</span>
+                    <span className="font-extrabold text-[#3f2b3f]">{data.appointmentTime} - {data.estimatedFinishTime}</span>
                   </div>
                   <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
                     <span className="text-[11px] text-[#a88a9d]">Estimated Total</span>
@@ -2249,6 +2649,35 @@ export function StaffServiceSessionPage() {
         warnings={[
           "Completing this session should only happen after the final photo and completion checks are done.",
         ]}
+      />
+
+      <ExtraServiceModal
+        open={showExtraServiceModal}
+        services={serviceCatalog}
+        selectedServiceIds={selectedExtraServiceIds}
+        searchValue={serviceSearchInput}
+        isLoading={isLoadingServiceCatalog}
+        isSaving={isSavingExtraService}
+        meta={serviceCatalogMeta}
+        onClose={handleCloseExtraServiceModal}
+        onSearchChange={(event) => setServiceSearchInput(event.target.value)}
+        onSearchSubmit={handleSearchExtraServices}
+        onSelect={(serviceId) =>
+          setSelectedExtraServiceIds((current) =>
+            current.includes(serviceId)
+              ? current.filter((item) => item !== serviceId)
+              : [...current, serviceId],
+          )
+        }
+        onPageChange={(page) => {
+          if (page < 1 || page > (serviceCatalogMeta?.totalPages ?? 1)) {
+            return;
+          }
+
+          setSelectedExtraServiceIds([]);
+          setServiceCatalogPage(page);
+        }}
+        onConfirm={handleAddExtraService}
       />
     </section>
   );
