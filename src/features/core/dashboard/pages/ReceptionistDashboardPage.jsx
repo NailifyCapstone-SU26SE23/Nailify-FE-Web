@@ -12,7 +12,7 @@ import {
   UserRound,
   Users,
 } from "lucide-react";
-import { Modal } from "antd";
+import { Modal, Table } from "antd";
 import jsQR from "jsqr";
 import { useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
@@ -389,6 +389,60 @@ export function ReceptionistDashboardPage() {
     },
   ];
 
+  const appointmentColumns = useMemo(() => ([
+    {
+      title: "Time",
+      dataIndex: "time",
+      key: "time",
+      render: (value) => <span className="text-xs font-semibold text-[#ea4f93]">{value}</span>,
+    },
+    {
+      title: "Customer",
+      key: "customer",
+      render: (_, row) => (
+        <div className="flex items-center gap-3">
+          <div className={`flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-extrabold text-white ${row.avatarTone}`}>
+            {getInitials(row.customer)}
+          </div>
+          <p className="text-xs font-bold text-[#432744]">{row.customer}</p>
+        </div>
+      ),
+    },
+    {
+      title: "Service",
+      dataIndex: "service",
+      key: "service",
+      render: (value) => <span className="text-xs text-[#584654]">{value}</span>,
+    },
+    {
+      title: "Staff",
+      dataIndex: "staff",
+      key: "staff",
+      render: (value) => <span className="text-xs text-[#584654]">{value}</span>,
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      render: (value, row) => (
+        <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${row.tone}`}>
+          {value}
+        </span>
+      ),
+    },
+    {
+      title: "Action",
+      key: "action",
+      render: (_, row) => (
+        <ActionDropdown
+          label="Action"
+          items={getActionItems(row.bookingId, row.status)}
+          buttonClassName="px-3 py-1.5 text-[11px]"
+        />
+      ),
+    },
+  ]), [getActionItems]);
+
   useEffect(() => {
     if (!isScannerOpen) {
       return undefined;
@@ -636,80 +690,16 @@ export function ReceptionistDashboardPage() {
                 )}
               </div>
 
-              <div className="mt-4 hidden overflow-x-auto md:block">
-                <table className="min-w-full">
-                  <thead>
-                    <tr className="border-b border-[#f7e4ec] text-left text-[11px] font-bold uppercase tracking-[0.14em] text-[#c899ac]">
-                      <th className="px-3 py-3">Time</th>
-                      <th className="px-3 py-3">Customer</th>
-                      <th className="px-3 py-3">Service</th>
-                      <th className="px-3 py-3">Staff</th>
-                      <th className="px-3 py-3">Status</th>
-                      <th className="px-3 py-3">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {isAppointmentsLoading ? (
-                      <tr>
-                        <td colSpan="6" className="px-3 py-10">
-                          <div className="flex items-center justify-center gap-3 text-sm font-medium text-[#b38a9f]">
-                            <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
-                            Loading today's appointments...
-                          </div>
-                        </td>
-                      </tr>
-                    ) : appointmentsError ? (
-                      <tr>
-                        <td colSpan="6" className="px-3 py-8 text-center text-sm text-[#d14c84]">
-                          {appointmentsError}
-                        </td>
-                      </tr>
-                    ) : filteredAppointmentRows.length ? (
-                      filteredAppointmentRows.map((row) => (
-                        <tr key={row.id} className="border-b border-[#fbeaf1] last:border-b-0">
-                          <td className="px-3 py-4 text-xs font-semibold text-[#ea4f93]">
-                            {row.time}
-                          </td>
-                          <td className="px-3 py-4">
-                            <div className="flex items-center gap-3">
-                              <div
-                                className={`flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-extrabold text-white ${row.avatarTone}`}
-                              >
-                                {getInitials(row.customer)}
-                              </div>
-                              <div>
-                                <p className="text-xs font-bold text-[#432744]">{row.customer}</p>
-                               
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-3 py-4 text-xs text-[#584654]">{row.service}</td>
-                          <td className="px-3 py-4 text-xs text-[#584654]">{row.staff}</td>
-                          <td className="px-3 py-4">
-                            <span
-                              className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${row.tone}`}
-                            >
-                              {row.status}
-                            </span>
-                          </td>
-                          <td className="px-3 py-4">
-                            <ActionDropdown
-                              label="Action"
-                              items={getActionItems(row.bookingId, row.status)}
-                              buttonClassName="px-3 py-1.5 text-[11px]"
-                            />
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="6" className="px-3 py-8 text-center text-sm text-[#aa8a99]">
-                          No appointments found for today.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+              <div className="mt-4 hidden md:block">
+                <Table
+                  rowKey="id"
+                  columns={appointmentColumns}
+                  dataSource={filteredAppointmentRows}
+                  loading={isAppointmentsLoading}
+                  pagination={false}
+                  scroll={{ x: 960 }}
+                  locale={{ emptyText: appointmentsError || "No appointments found for today." }}
+                />
               </div>
             </DashboardCard>
 

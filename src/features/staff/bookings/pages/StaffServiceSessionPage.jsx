@@ -11,7 +11,6 @@ import {
   Heart,
   Image,
   ImageUp,
-  Pause,
   Play,
   Plus,
   Printer,
@@ -1662,16 +1661,6 @@ export function StaffServiceSessionPage() {
                 />
 
                 <div className="mt-5 grid gap-3 md:grid-cols-2">
-                  <ActionGhostButton
-                    icon={Play}
-                    label="Continue Service"
-                    onClick={() => handleSessionAction("Service session continues with the current workflow.")}
-                  />
-                  <ActionGhostButton
-                    icon={Pause}
-                    label="Pause Session"
-                    onClick={() => handleSessionAction("Service session has been marked as paused for this booking.")}
-                  />
                   <ActionGhostButton
                     icon={Plus}
                     label="Add Extra Service"

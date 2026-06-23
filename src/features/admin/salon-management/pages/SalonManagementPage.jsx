@@ -18,10 +18,12 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import { Modal } from "antd";
+import { Modal, Table } from "antd";
 import { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
+import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import {
   ROUTES,
   getAdminSalonDetailRoute,
@@ -34,10 +36,9 @@ import {
   SALON_STATUS_FILTERS,
   SALON_SUMMARY,
   TOP_PERFORMING_SALON,
-  getSalonsWithUpdates,
   matchesSalonStatusFilter,
-  removeMockSalonById,
 } from "../services/mockSalon";
+import { fetchAdminSalons } from "../services/salonManagementService";
 
 const SUMMARY_ICON_MAP = {
   briefcase: BriefcaseBusiness,
@@ -254,6 +255,8 @@ CloseIconButton.propTypes = {
   onClick: PropTypes.func.isRequired,
 };
 
+const SALON_TABLE_PAGE_SIZE = 10;
+
 export function SalonManagementPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -263,15 +266,25 @@ export function SalonManagementPage() {
   const [showSetHoursModal, setShowSetHoursModal] = useState(false);
   const [selectedSalon, setSelectedSalon] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [branchOverviewStart, setBranchOverviewStart] = useState(0);
-  const [salonsRefreshKey, setSalonsRefreshKey] = useState(0);
+  const [salonTablePage, setSalonTablePage] = useState(1);
+  const [salons, setSalons] = useState([]);
+  const [metaData, setMetaData] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    pageSize: SALON_TABLE_PAGE_SIZE,
+    totalItems: 0,
+    hasPrevious: false,
+    hasNext: false,
+    firstRowOnPage: 0,
+    lastRowOnPage: 0,
+  });
+  const [dismissedSalonIds, setDismissedSalonIds] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
-
-  const salons = useMemo(
-    () => getSalonsWithUpdates(),
-    [location.pathname, salonsRefreshKey],
-  );
 
   useEffect(() => {
     if (!location.state?.flashMessage) {
@@ -281,21 +294,74 @@ export function SalonManagementPage() {
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
 
+  useEffect(() => {
+    const timerId = window.setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm.trim());
+      setSalonTablePage(1);
+    }, 350);
+
+    return () => window.clearTimeout(timerId);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSalons = async () => {
+      setIsLoading(true);
+      setError("");
+
+      try {
+        const response = await fetchAdminSalons({
+          pageIndex: salonTablePage,
+          pageSize: SALON_TABLE_PAGE_SIZE,
+          searchTerm: debouncedSearchTerm,
+        });
+
+        if (!isMounted) {
+          return;
+        }
+
+        setSalons(response.items);
+        setMetaData(response.metaData);
+      } catch (loadError) {
+        if (!isMounted) {
+          return;
+        }
+
+        setSalons([]);
+        setMetaData((current) => ({
+          ...current,
+          currentPage: salonTablePage,
+          totalPages: 1,
+          totalItems: 0,
+          firstRowOnPage: 0,
+          lastRowOnPage: 0,
+        }));
+        const message = loadError instanceof Error ? loadError.message : "Failed to load salons.";
+        setError(message);
+        toast.error(message);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void loadSalons();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [debouncedSearchTerm, salonTablePage]);
+
   const filteredSalons = useMemo(() => {
-    const normalizedSearch = searchTerm.trim().toLowerCase();
-
     return salons.filter((salon) => {
-      const matchesSearch =
-        normalizedSearch.length === 0 ||
-        [salon.name, salon.address, salon.manager]
-          .join(" ")
-          .toLowerCase()
-          .includes(normalizedSearch);
       const matchesStatus = matchesSalonStatusFilter(salon.status, statusFilter);
+      const isDismissed = dismissedSalonIds.includes(String(salon.salonId || salon.id));
 
-      return matchesSearch && matchesStatus;
+      return matchesStatus && !isDismissed;
     });
-  }, [salons, searchTerm, statusFilter]);
+  }, [dismissedSalonIds, salons, statusFilter]);
 
   const visibleBranchSalons = useMemo(
     () => filteredSalons.slice(branchOverviewStart, branchOverviewStart + 3),
@@ -307,6 +373,7 @@ export function SalonManagementPage() {
 
   useEffect(() => {
     setBranchOverviewStart(0);
+    setSalonTablePage(1);
   }, [searchTerm, statusFilter]);
 
   const handleViewSalon = (salon) => {
@@ -327,8 +394,8 @@ export function SalonManagementPage() {
       return;
     }
 
-    removeMockSalonById(selectedSalon.id);
-    setSalonsRefreshKey((current) => current + 1);
+    setDismissedSalonIds((current) => [...current, String(selectedSalon.salonId || selectedSalon.id)]);
+    toast.success(`${selectedSalon.name} has been removed from the current list.`);
     setShowDeleteModal(false);
     setSelectedSalon(null);
   };
@@ -339,11 +406,102 @@ export function SalonManagementPage() {
     setBranchOverviewStart(0);
   };
 
+  const getSalonActionItems = (salon) => [
+    {
+      key: "view",
+      label: "View Salon",
+      icon: Eye,
+      onSelect: () => handleViewSalon(salon),
+    },
+    {
+      key: "edit",
+      label: "Edit Salon",
+      icon: Pencil,
+      onSelect: () => handleUpdateSalon(salon),
+    },
+    {
+      key: "delete",
+      label: "Delete Salon",
+      icon: Trash2,
+      className: "text-[#d14c84]",
+      onSelect: () => handleDeleteSalon(salon),
+    },
+  ];
+
+  const salonColumns = useMemo(() => ([
+    {
+      title: "Salon Name",
+      key: "name",
+      render: (_, salon) => (
+        <div className="flex items-center gap-3">
+          <img
+            src={salon.image}
+            alt={salon.name}
+            className="h-10 w-10 rounded-xl object-cover"
+          />
+          <div>
+            <p className="font-bold text-slate-700">{salon.name}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-300">
+              #{salon.salonId}
+            </p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Address",
+      dataIndex: "address",
+      key: "address",
+    },
+    {
+      title: "Manager",
+      dataIndex: "manager",
+      key: "manager",
+    },
+    {
+      title: "Staff",
+      dataIndex: "staff",
+      key: "staff",
+    },
+    {
+      title: "Operating Hours",
+      dataIndex: "hours",
+      key: "hours",
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      render: (value, salon) => (
+        <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${salon.statusColor}`}>
+          {value}
+        </span>
+      ),
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      render: (_, salon) => (
+        <ActionDropdown
+          label="Action"
+          items={getSalonActionItems(salon)}
+          buttonClassName="min-w-[108px] justify-between border-[#f1bfd5] bg-white px-4 text-[11px] shadow-sm"
+        />
+      ),
+    },
+  ]), [getSalonActionItems]);
+
   return (
     <section className="mx-auto max-w-[1300px] text-slate-700">
       {flashMessage ? (
         <div className="mb-4 rounded-[20px] bg-[#edfdf4] px-4 py-3 text-sm font-medium text-[#16975f] sm:mb-5 sm:px-5 sm:py-4">
           {flashMessage}
+        </div>
+      ) : null}
+
+      {error ? (
+        <div className="mb-4 rounded-[20px] bg-[#fff1f5] px-4 py-3 text-sm font-medium text-[#d14c84] sm:mb-5 sm:px-5 sm:py-4">
+          {error}
         </div>
       ) : null}
 
@@ -353,7 +511,7 @@ export function SalonManagementPage() {
         ))}
       </section>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_290px]">
+      <div className="space-y-5">
         <div className="space-y-5">
           <section className="rounded-[28px] bg-white/65 p-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
             <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -435,7 +593,7 @@ export function SalonManagementPage() {
               <div>
                 <h2 className="text-[16px] font-black text-slate-xl">Branch Controls</h2>
                 <p className="text-[11px] font-medium text-slate-400">
-                  Showing {filteredSalons.length} of {salons.length} salons
+                  Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} salons
                   {searchTerm ? ` • Search: "${searchTerm}"` : ""}
                   {statusFilter !== "All" ? ` • Status: ${statusFilter}` : ""}
                 </p>
@@ -487,85 +645,23 @@ export function SalonManagementPage() {
                 </div>
               </div>
             </div>
-            <div className="overflow-hidden rounded-2xl border border-rose-100">
-              <div className="overflow-x-auto bg-white">
-                <table className="min-w-full text-left">
-                  <thead className="bg-[#fff5f8]">
-                    <tr className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                      <th className="px-4 py-3">Salon Name</th>
-                      <th className="px-4 py-3">Address</th>
-                      <th className="px-4 py-3">Manager</th>
-                      <th className="px-4 py-3">Staff</th>
-                      <th className="px-4 py-3">Operating Hours</th>
-                      <th className="px-4 py-3">Status</th>
-                      <th className="px-4 py-3">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredSalons.map((salon) => (
-                      <tr
-                        key={`${salon.name}-${salon.id}`}
-                        className="border-t border-rose-50 text-[12px] text-slate-500"
-                      >
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            <img
-                              src={salon.image}
-                              alt={salon.name}
-                              className="h-10 w-10 rounded-xl object-cover"
-                            />
-                            <div>
-                              <p className="font-bold text-slate-700">{salon.name}</p>
-                              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-300">
-                                #{salon.salonId}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">{salon.address}</td>
-                        <td className="px-4 py-3">{salon.manager}</td>
-                        <td className="px-4 py-3">{salon.staff}</td>
-                        <td className="px-4 py-3">{salon.hours}</td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${salon.statusColor}`}
-                          >
-                            {salon.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2 text-rose-400">
-                            <button
-                              type="button"
-                              onClick={() => handleViewSalon(salon)}
-                              className="rounded-lg border border-rose-100 p-1.5 hover:bg-rose-50"
-                              title="View"
-                            >
-                              <Eye size={12} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateSalon(salon)}
-                              className="rounded-lg border border-rose-100 p-1.5 hover:bg-rose-50"
-                              title="Edit"
-                            >
-                              <Pencil size={12} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteSalon(salon)}
-                              className="rounded-lg border border-rose-100 p-1.5 hover:bg-rose-50"
-                              title="Delete"
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+            <div className="overflow-hidden rounded-2xl border border-rose-100 bg-white">
+              <Table
+                rowKey="id"
+                columns={salonColumns}
+                dataSource={filteredSalons}
+                loading={isLoading}
+                pagination={{
+                  current: metaData.currentPage,
+                  pageSize: metaData.pageSize,
+                  total: metaData.totalItems,
+                  onChange: (page) => setSalonTablePage(page),
+                  showSizeChanger: false,
+                  showTotal: (_, range) => `${range[0]}-${range[1]} of ${metaData.totalItems} salons`,
+                }}
+                scroll={{ x: 1180 }}
+                locale={{ emptyText: "No salons matched the current filters." }}
+              />
             </div>
           </section>
         </div>

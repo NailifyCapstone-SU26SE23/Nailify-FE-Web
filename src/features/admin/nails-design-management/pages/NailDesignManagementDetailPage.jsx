@@ -1,3 +1,4 @@
+import { Modal } from "antd";
 import {
   BarChart3,
   CircleDollarSign,
@@ -5,6 +6,8 @@ import {
   Eye,
   LoaderCircle,
   PencilLine,
+  Plus,
+  Save,
   Settings2,
   Sparkles,
   Star,
@@ -18,10 +21,26 @@ import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfi
 import { ROUTES } from "../../../../shared/constants/routes";
 import { formatDurationLabel } from "../../../../shared/utils/formatDuration";
 import { PropTypes } from "../../../../shared/utils/propTypes";
-import { fetchAdminNailDesignDetail } from "../services/nailDesignManagementService";
+import {
+  assignProceduresToVariant,
+  deleteAdminNailVariant,
+  fetchAdminNailDesignDetail,
+  fetchProceduresByVariant,
+  fetchAdminNailVariantDetail,
+  updateAdminNailDesign,
+  updateAdminNailVariant,
+} from "../services/nailDesignManagementService";
 
 const DESIGN_PREVIEW_IMAGE =
   "https://i0.wp.com/greenweddingshoes.com/wp-content/uploads/2025/12/red-cat-eye-christmas-holiday-nails-with-bow.webp?fit=1024%2C9999";
+const DETAIL_MODAL_STYLES = {
+  body: { padding: 0 },
+  content: { padding: 0, overflow: "hidden", borderRadius: 28 },
+  mask: {
+    backgroundColor: "rgba(47, 13, 33, 0.26)",
+    backdropFilter: "blur(8px)",
+  },
+};
 
 function SectionCard({
   title,
@@ -194,45 +213,50 @@ InputLabel.propTypes = {
   children: PropTypes.node,
 };
 
-function EditInput({ value, onChange, className = "" }) {
+function EditInput({ value, onChange, className = "", disabled = false }) {
   return (
     <input
       value={value}
       onChange={onChange}
-      className={`h-11 w-full rounded-2xl border border-[#f4d4e2] bg-[#fffdfd] px-4 text-sm text-[#432744] outline-none transition focus:border-[#ef6bb4] ${className}`}
+      disabled={disabled}
+      className={`h-11 w-full rounded-2xl border border-[#f4d4e2] bg-[#fffdfd] px-4 text-sm text-[#432744] outline-none transition focus:border-[#ef6bb4] disabled:cursor-not-allowed disabled:bg-[#f9f1f5] disabled:text-[#b2879f] ${className}`}
     />
   );
 }
 
 EditInput.propTypes = {
   className: PropTypes.string,
+  disabled: PropTypes.bool,
   onChange: PropTypes.func.isRequired,
   value: PropTypes.string.isRequired,
 };
 
-function EditTextarea({ value, onChange, rows = 3 }) {
+function EditTextarea({ value, onChange, rows = 3, disabled = false }) {
   return (
     <textarea
       value={value}
       onChange={onChange}
       rows={rows}
-      className="w-full rounded-2xl border border-[#f4d4e2] bg-[#fffdfd] px-4 py-3 text-sm text-[#432744] outline-none transition focus:border-[#ef6bb4]"
+      disabled={disabled}
+      className="w-full rounded-2xl border border-[#f4d4e2] bg-[#fffdfd] px-4 py-3 text-sm text-[#432744] outline-none transition focus:border-[#ef6bb4] disabled:cursor-not-allowed disabled:bg-[#f9f1f5] disabled:text-[#b2879f]"
     />
   );
 }
 
 EditTextarea.propTypes = {
+  disabled: PropTypes.bool,
   onChange: PropTypes.func.isRequired,
   rows: PropTypes.number,
   value: PropTypes.string.isRequired,
 };
 
-function EditSelect({ value, onChange, options }) {
+function EditSelect({ value, onChange, options, disabled = false }) {
   return (
     <select
       value={value}
       onChange={onChange}
-      className="h-11 w-full rounded-2xl border border-[#f4d4e2] bg-[#fffdfd] px-4 text-sm text-[#432744] outline-none transition focus:border-[#ef6bb4]"
+      disabled={disabled}
+      className="h-11 w-full rounded-2xl border border-[#f4d4e2] bg-[#fffdfd] px-4 text-sm text-[#432744] outline-none transition focus:border-[#ef6bb4] disabled:cursor-not-allowed disabled:bg-[#f9f1f5] disabled:text-[#b2879f]"
     >
       {options.map((option) => (
         <option key={option} value={option}>
@@ -244,6 +268,7 @@ function EditSelect({ value, onChange, options }) {
 }
 
 EditSelect.propTypes = {
+  disabled: PropTypes.bool,
   onChange: PropTypes.func.isRequired,
   options: PropTypes.arrayOf(PropTypes.string).isRequired,
   value: PropTypes.string.isRequired,
@@ -292,8 +317,16 @@ export function NailDesignManagementDetailPage() {
   const [formValues, setFormValues] = useState(null);
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [pendingDeleteVariant, setPendingDeleteVariant] = useState(null);
+  const [selectedVariantDetail, setSelectedVariantDetail] = useState(null);
+  const [variantProcedureDraft, setVariantProcedureDraft] = useState([]);
   const [highlightedSection, setHighlightedSection] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isSavingVariants, setIsSavingVariants] = useState(false);
+  const [isDeletingVariant, setIsDeletingVariant] = useState(false);
+  const [isLoadingVariantDetail, setIsLoadingVariantDetail] = useState(false);
+  const [isLoadingVariantProcedures, setIsLoadingVariantProcedures] = useState(false);
+  const [isSavingVariantProcedures, setIsSavingVariantProcedures] = useState(false);
   const [error, setError] = useState("");
   const [isNotFound, setIsNotFound] = useState(false);
 
@@ -520,14 +553,226 @@ export function NailDesignManagementDetailPage() {
   const handleCancelEdit = () => {
     setShowCancelConfirm(false);
     setFormValues(initialDesign);
+    setPendingDeleteVariant(null);
     setFlashMessage("");
     setIsEditing(false);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setShowSaveConfirm(false);
-    setFlashMessage("Mock update completed. Changes are local to this detail screen.");
-    setIsEditing(false);
+    setError("");
+
+    const initialVariants = Array.isArray(initialDesign?.variants) ? initialDesign.variants : [];
+    const currentVariants = Array.isArray(formValues?.variants) ? formValues.variants : [];
+    const designNameChanged =
+      String(initialDesign?.name || "").trim() !== String(formValues?.heroTitle || "").trim();
+    const designDescriptionChanged =
+      String(initialDesign?.description || "").trim()
+      !== String(formValues?.heroSubtitle || "").trim();
+    const variantsToUpdate = currentVariants.filter((variant) => {
+      const initialVariant = initialVariants.find(
+        (item) => Number(item?.nailVariantId || 0) === Number(variant?.nailVariantId || 0),
+      );
+
+      if (!initialVariant) {
+        return false;
+      }
+
+      return (
+        String(initialVariant.name || "").trim() !== String(variant.name || "").trim()
+        || String(initialVariant.imageUrl || "").trim() !== String(variant.imageUrl || "").trim()
+        || String(initialVariant.colorJson || "").trim() !== String(variant.colorJson || "").trim()
+      );
+    });
+
+    if (!designNameChanged && !designDescriptionChanged && !variantsToUpdate.length) {
+      setFlashMessage("No API-backed changes detected. Other edits on this screen remain local only.");
+      setIsEditing(false);
+      return;
+    }
+
+    setIsSavingVariants(true);
+
+    try {
+      if (designNameChanged || designDescriptionChanged) {
+        await updateAdminNailDesign(designId, {
+          name: formValues?.heroTitle,
+          description: formValues?.heroSubtitle,
+          categoryIds: formValues?.categoryIds,
+          nailVariantIds: currentVariants.map((variant) => variant.nailVariantId),
+          existingImageUrls: formValues?.imageUrls,
+        });
+      }
+
+      await Promise.all(
+        variantsToUpdate.map((variant) =>
+          updateAdminNailVariant(variant.nailVariantId, {
+            name: variant.name,
+            nailShapeId: variant.nailShapeId,
+            nailSurfaceId: variant.nailSurfaceId,
+            nailDesignId: variant.nailDesignId || Number(designId || 0),
+            imageUrl: variant.imageUrl,
+            colorJson: variant.colorJson,
+          }),
+        ),
+      );
+
+      const refreshedDetail = await fetchAdminNailDesignDetail(designId);
+      setInitialDesign(refreshedDetail);
+      setFormValues(refreshedDetail);
+      const successMessages = [];
+
+      if (designNameChanged || designDescriptionChanged) {
+        successMessages.push("nail design updated");
+      }
+
+      if (variantsToUpdate.length === 1) {
+        successMessages.push("1 variant updated");
+      } else if (variantsToUpdate.length > 1) {
+        successMessages.push(`${variantsToUpdate.length} variants updated`);
+      }
+
+      setFlashMessage(
+        successMessages.length
+          ? `${successMessages.join(" and ")} successfully.`
+          : "Changes saved successfully.",
+      );
+      setIsEditing(false);
+    } catch (saveError) {
+      setError(
+        saveError instanceof Error ? saveError.message : "Failed to update nail design.",
+      );
+    } finally {
+      setIsSavingVariants(false);
+    }
+  };
+
+  const handleDeleteVariant = async () => {
+    if (!pendingDeleteVariant?.nailVariantId) {
+      return;
+    }
+
+    setError("");
+    setIsDeletingVariant(true);
+
+    try {
+      await deleteAdminNailVariant(pendingDeleteVariant.nailVariantId);
+
+      const refreshedDetail = await fetchAdminNailDesignDetail(designId);
+      setInitialDesign(refreshedDetail);
+      setFormValues(refreshedDetail);
+      setFlashMessage(`Deleted variant "${pendingDeleteVariant.name}".`);
+      setPendingDeleteVariant(null);
+    } catch (deleteError) {
+      setError(
+        deleteError instanceof Error ? deleteError.message : "Failed to delete nail variant.",
+      );
+    } finally {
+      setIsDeletingVariant(false);
+    }
+  };
+
+  const handleViewVariant = async (variant) => {
+    if (!variant?.nailVariantId) {
+      setError("Variant ID is required.");
+      return;
+    }
+
+    setError("");
+    setIsLoadingVariantDetail(true);
+    setIsLoadingVariantProcedures(true);
+    setSelectedVariantDetail({
+      nailVariantId: variant.nailVariantId,
+      name: variant.name,
+      imageUrl: variant.imageUrl,
+      isPlaceholder: true,
+    });
+    setVariantProcedureDraft([]);
+
+    try {
+      const [detail, procedures] = await Promise.all([
+        fetchAdminNailVariantDetail(variant.nailVariantId),
+        fetchProceduresByVariant(variant.nailVariantId),
+      ]);
+      setSelectedVariantDetail(detail);
+      setVariantProcedureDraft(procedures);
+    } catch (detailError) {
+      setSelectedVariantDetail(null);
+      setVariantProcedureDraft([]);
+      setError(
+        detailError instanceof Error
+          ? detailError.message
+          : "Failed to load nail variant detail.",
+      );
+    } finally {
+      setIsLoadingVariantDetail(false);
+      setIsLoadingVariantProcedures(false);
+    }
+  };
+
+  const updateVariantProcedureDraft = (index, field, value) => {
+    setVariantProcedureDraft((current) =>
+      current.map((item, itemIndex) =>
+        itemIndex === index
+          ? {
+              ...item,
+              [field]: field === "stepOrder" ? value : value,
+            }
+          : item,
+      ),
+    );
+  };
+
+  const addVariantProcedureDraft = () => {
+    setVariantProcedureDraft((current) => [
+      ...current,
+      {
+        procedureId: "",
+        name: "",
+        description: "",
+        duration: 0,
+        durationLabel: "--",
+        status: "--",
+        createAt: "",
+        isRequired: false,
+        stepOrder: current.length + 1,
+      },
+    ]);
+  };
+
+  const removeVariantProcedureDraft = (index) => {
+    setVariantProcedureDraft((current) => current.filter((_, itemIndex) => itemIndex !== index));
+  };
+
+  const handleSaveVariantProcedures = async () => {
+    if (!selectedVariantDetail?.nailVariantId) {
+      return;
+    }
+
+    setError("");
+    setIsSavingVariantProcedures(true);
+
+    try {
+      await assignProceduresToVariant(
+        selectedVariantDetail.nailVariantId,
+        variantProcedureDraft.map((item, index) => ({
+          procedureId: item.procedureId,
+          stepOrder: Number(item.stepOrder || index + 1),
+        })),
+      );
+
+      const refreshedProcedures = await fetchProceduresByVariant(selectedVariantDetail.nailVariantId);
+      setVariantProcedureDraft(refreshedProcedures);
+      setFlashMessage(`Updated procedure steps for "${selectedVariantDetail.name}".`);
+    } catch (saveError) {
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : "Failed to assign procedures to variant.",
+      );
+    } finally {
+      setIsSavingVariantProcedures(false);
+    }
   };
 
   const summaryRows = [
@@ -594,13 +839,15 @@ export function NailDesignManagementDetailPage() {
                 <button
                   type="button"
                   onClick={() => setShowSaveConfirm(true)}
+                  disabled={isSavingVariants || isDeletingVariant}
                   className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.2)]"
                 >
-                  Save Changes
+                  {isSavingVariants ? "Saving..." : "Save Changes"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowCancelConfirm(true)}
+                  disabled={isSavingVariants || isDeletingVariant}
                   className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#7e6075]"
                 >
                   Cancel
@@ -824,7 +1071,10 @@ export function NailDesignManagementDetailPage() {
           >
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {formValues.variants.map((variant, index) => (
-                <div key={variant.name} className="rounded-[20px] border border-[#f7d7e5] bg-white p-3 shadow-[0_10px_20px_rgba(236,72,153,0.05)]">
+                <div
+                  key={variant.id || variant.nailVariantId || `${variant.name}-${index}`}
+                  className="rounded-[20px] border border-[#f7d7e5] bg-white p-3 shadow-[0_10px_20px_rgba(236,72,153,0.05)]"
+                >
                   <div className="overflow-hidden rounded-[16px] bg-[#f6edf2]">
                     <img
                       src={variant.imageUrl || formValues.previewImage || DESIGN_PREVIEW_IMAGE}
@@ -845,15 +1095,20 @@ export function NailDesignManagementDetailPage() {
                       <div>
                         <InputLabel>Description</InputLabel>
                         <EditTextarea
+                          disabled
                           value={variant.description}
                           onChange={handleVariantFieldChange(index, "description")}
                           rows={3}
                         />
+                        <p className="mt-1 text-[11px] text-[#b2879f]">
+                          Description is derived from surface and accessories, not persisted by this API.
+                        </p>
                       </div>
                       <div className="grid gap-3 sm:grid-cols-2">
                         <div>
                           <InputLabel>Level</InputLabel>
                           <EditSelect
+                            disabled
                             value={variant.level}
                             onChange={handleVariantFieldChange(index, "level")}
                             options={VARIANT_LEVEL_OPTIONS}
@@ -862,10 +1117,19 @@ export function NailDesignManagementDetailPage() {
                         <div>
                           <InputLabel>Duration</InputLabel>
                           <EditInput
+                            className="disabled:cursor-not-allowed disabled:bg-[#f9f1f5] disabled:text-[#b2879f]"
+                            disabled
                             value={variant.duration}
                             onChange={handleVariantFieldChange(index, "duration")}
                           />
                         </div>
+                      </div>
+                      <div>
+                        <InputLabel>Image URL</InputLabel>
+                        <EditInput
+                          value={variant.imageUrl}
+                          onChange={handleVariantFieldChange(index, "imageUrl")}
+                        />
                       </div>
                     </div>
                   ) : (
@@ -885,21 +1149,39 @@ export function NailDesignManagementDetailPage() {
                   <div className="mt-4 flex gap-2">
                     <button
                       type="button"
+                      onClick={() => void handleViewVariant(variant)}
+                      disabled={isLoadingVariantDetail}
                       className="flex-1 rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-2 text-xs font-bold text-[#ea4f93]"
                     >
-                      View
+                      {isLoadingVariantDetail && selectedVariantDetail?.nailVariantId === variant.nailVariantId
+                        ? "Loading..."
+                        : "View"}
                     </button>
                     <button
                       type="button"
+                      onClick={() => setFlashMessage(`Apply variant "${variant.name}" is not connected yet.`)}
                       className="flex-1 rounded-full bg-[image:var(--gradient-accent)] px-3 py-2 text-xs font-bold text-white"
                     >
                       Apply
                     </button>
                     <button
                       type="button"
-                      className="flex-1 rounded-full border border-[#f4c6da] bg-white px-3 py-2 text-xs font-bold text-[#8c7085]"
+                      onClick={() =>
+                        isEditing
+                          ? setPendingDeleteVariant(variant)
+                          : scrollToSection(designVariantsRef, {
+                              startEdit: true,
+                              sectionKey: "design-variants",
+                            })
+                      }
+                      disabled={isSavingVariants || isDeletingVariant}
+                      className={`flex-1 rounded-full border px-3 py-2 text-xs font-bold ${
+                        isEditing
+                          ? "border-[#f3b1c7] bg-[#fff2f6] text-[#d14c84]"
+                          : "border-[#f4c6da] bg-white text-[#8c7085]"
+                      }`}
                     >
-                      Edit
+                      {isEditing ? "Delete" : "Edit"}
                     </button>
                   </div>
                 </div>
@@ -1371,12 +1653,13 @@ export function NailDesignManagementDetailPage() {
         open={showSaveConfirm}
         intent="success"
         title="Save Design Changes"
-        subtitle="This will update the design in the current mock detail flow."
-        description="Confirm to apply the latest edits to this nail design."
+        subtitle="Nail design and variant edits are synced to backend when supported by the current APIs."
+        description="Confirm to update the current nail design and any changed variants with the latest API-supported values."
         confirmText="Save Changes"
         cancelText="Review Again"
         confirmIcon={Sparkles}
         width={520}
+        loading={isSavingVariants}
         onConfirm={handleSave}
         onCancel={() => setShowSaveConfirm(false)}
         highlights={[formValues.name || "Design detail", formValues.designStatus || "Status pending", formValues.complexity || "Complexity pending"]}
@@ -1384,7 +1667,7 @@ export function NailDesignManagementDetailPage() {
           { label: "Suggested Price", value: formValues.suggestedPrice || "No price entered" },
           { label: "Est. Duration", value: formValues.estimatedDuration || "No duration entered" },
         ]}
-        warnings={["This mock update changes the UI flow only and does not persist outside this screen."]}
+        warnings={["This screen now persists design edits through PUT /api/NailDesigns/{id} and variant edits through PUT /api/NailVariants/{id}."]}
       />
 
       <ActionConfirmModal
@@ -1404,6 +1687,331 @@ export function NailDesignManagementDetailPage() {
         ]}
         warnings={["Current unsaved non-pricing edits on this screen will be lost. Pricing remains read-only."]}
       />
+
+      <ActionConfirmModal
+        open={Boolean(pendingDeleteVariant)}
+        intent="danger"
+        title="Delete Variant"
+        subtitle="This action will call DELETE /api/NailVariants/{id}."
+        description={`You are about to delete ${pendingDeleteVariant?.name ?? "this variant"}.`}
+        confirmText="Delete Variant"
+        cancelText="Keep Variant"
+        confirmIcon={Trash2}
+        loading={isDeletingVariant}
+        onConfirm={handleDeleteVariant}
+        onCancel={() => setPendingDeleteVariant(null)}
+        item={
+          pendingDeleteVariant
+            ? {
+                title: pendingDeleteVariant.name,
+                image: pendingDeleteVariant.imageUrl || formValues.previewImage || DESIGN_PREVIEW_IMAGE,
+                meta: pendingDeleteVariant.level,
+                note: `Variant ID #${pendingDeleteVariant.nailVariantId}`,
+              }
+            : null
+        }
+        warnings={["This permanently removes the variant from backend if the API call succeeds."]}
+      />
+
+      <Modal
+        open={Boolean(selectedVariantDetail)}
+        onCancel={isLoadingVariantDetail ? undefined : () => setSelectedVariantDetail(null)}
+        footer={null}
+        closable={false}
+        centered
+        width={760}
+        styles={DETAIL_MODAL_STYLES}
+        maskClosable={!isLoadingVariantDetail}
+        keyboard={!isLoadingVariantDetail}
+      >
+        <div className="overflow-hidden">
+          <div className="bg-[linear-gradient(135deg,#fff0f6_0%,#fff8e9_100%)] px-6 py-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/70 text-[#ea4f93]">
+                  <Eye size={20} />
+                </div>
+                <div>
+                  <span className="inline-flex rounded-full bg-white/70 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#b25784]">
+                    Variant Detail
+                  </span>
+                  <h3 className="mt-3 text-lg font-black text-[#432744]">
+                    {selectedVariantDetail?.name || "Variant"}
+                  </h3>
+                  <p className="mt-1 text-sm text-[#9c7089]">
+                    Data loaded from `GET /api/NailVariants/{'{id}'}`.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedVariantDetail(null)}
+                disabled={isLoadingVariantDetail}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#f3c9dd] bg-white/80 text-[#a35d84] transition disabled:cursor-not-allowed disabled:opacity-60"
+                aria-label="Close variant detail modal"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+
+          {isLoadingVariantDetail && selectedVariantDetail?.isPlaceholder ? (
+            <div className="flex items-center gap-3 px-6 py-8 text-sm text-[#8c7085]">
+              <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
+              Loading nail variant detail...
+            </div>
+          ) : (
+            <div className="space-y-5 px-6 py-5">
+              <div className="grid gap-5 lg:grid-cols-[260px_minmax(0,1fr)]">
+                <div className="overflow-hidden rounded-[20px] bg-[#f6edf2]">
+                  <img
+                    src={selectedVariantDetail?.imageUrl || formValues.previewImage || DESIGN_PREVIEW_IMAGE}
+                    alt={selectedVariantDetail?.name || "Variant"}
+                    className="h-60 w-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+
+                <div className="space-y-4">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {[
+                      ["Variant ID", String(selectedVariantDetail?.nailVariantId || "--")],
+                      ["Design ID", String(selectedVariantDetail?.nailDesignId || "--")],
+                      ["Price", selectedVariantDetail?.priceLabel || "--"],
+                      ["Duration", selectedVariantDetail?.durationLabel || "--"],
+                    ].map(([label, value]) => (
+                      <div key={label} className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
+                          {label}
+                        </p>
+                        <p className="mt-2 text-sm font-bold text-[#432744]">{value}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
+                      Description
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-[#6d5669]">
+                      {selectedVariantDetail?.description || "--"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
+                  <p className="font-bold text-[#432744]">Nail Shape</p>
+                  <div className="mt-4 space-y-3 text-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[#8c7085]">Name</span>
+                      <span className="font-semibold text-[#432744]">
+                        {selectedVariantDetail?.nailShape?.name || "--"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[#8c7085]">Shape ID</span>
+                      <span className="font-semibold text-[#432744]">
+                        {selectedVariantDetail?.nailShape?.nailShapeId || "--"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[#8c7085]">Price</span>
+                      <span className="font-semibold text-[#432744]">
+                        {selectedVariantDetail?.nailShape?.priceLabel || "--"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
+                  <p className="font-bold text-[#432744]">Nail Surface</p>
+                  <div className="mt-4 space-y-3 text-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[#8c7085]">Name</span>
+                      <span className="font-semibold text-[#432744]">
+                        {selectedVariantDetail?.nailSurface?.name || "--"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[#8c7085]">Shader</span>
+                      <span className="font-semibold text-[#432744]">
+                        {selectedVariantDetail?.nailSurface?.shaderParam || "--"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[#8c7085]">Price</span>
+                      <span className="font-semibold text-[#432744]">
+                        {selectedVariantDetail?.nailSurface?.priceLabel || "--"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-bold text-[#432744]">Accessories / Components</p>
+                  <Pill tone="purple">
+                    {String(selectedVariantDetail?.nailComponents?.length || 0)} items
+                  </Pill>
+                </div>
+                {selectedVariantDetail?.nailComponents?.length ? (
+                  <div className="mt-4 space-y-3">
+                    {selectedVariantDetail.nailComponents.map((item) => (
+                      <div
+                        key={item.id}
+                        className="rounded-[18px] border border-[#f1d7e3] bg-white p-4"
+                      >
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Pill tone="pink">{item.component?.name || "--"}</Pill>
+                          <Pill tone="blue">{item.component?.componentType || "--"}</Pill>
+                          <Pill tone="yellow">{item.component?.priceLabel || "--"}</Pill>
+                        </div>
+                        <div className="mt-3 grid gap-2 text-sm md:grid-cols-4">
+                          <div>
+                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">Finger</p>
+                            <p className="mt-1 font-semibold text-[#432744]">{item.fingerIndex}</p>
+                          </div>
+                          <div>
+                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">Pos X</p>
+                            <p className="mt-1 font-semibold text-[#432744]">{item.posX}</p>
+                          </div>
+                          <div>
+                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">Pos Y</p>
+                            <p className="mt-1 font-semibold text-[#432744]">{item.posY}</p>
+                          </div>
+                          <div>
+                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">Config</p>
+                            <p className="mt-1 font-semibold break-all text-[#432744]">
+                              {item.configJson || "--"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-4 text-sm text-[#8c7085]">This variant has no accessory components.</p>
+                )}
+              </div>
+
+              <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
+                <p className="font-bold text-[#432744]">Color JSON</p>
+                <pre className="mt-4 overflow-x-auto rounded-[16px] bg-[#fff] p-4 text-xs leading-6 text-[#6d5669]">
+                  {selectedVariantDetail?.colorJson || "--"}
+                </pre>
+              </div>
+
+              <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-bold text-[#432744]">Procedure Steps</p>
+                    <p className="mt-1 text-xs text-[#b2879f]">
+                      Loaded from `GET /api/Procedures/variant/{'{nailVariantId}'}`. Step order is initialized from response order because the GET schema does not include `stepOrder`.
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={addVariantProcedureDraft}
+                      disabled={isLoadingVariantProcedures || isSavingVariantProcedures}
+                      className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#ea4f93]"
+                    >
+                      <Plus size={13} className="mr-1.5 inline" />
+                      Add Step
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleSaveVariantProcedures()}
+                      disabled={isLoadingVariantProcedures || isSavingVariantProcedures}
+                      className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white"
+                    >
+                      <Save size={13} className="mr-1.5 inline" />
+                      {isSavingVariantProcedures ? "Saving..." : "Save Steps"}
+                    </button>
+                  </div>
+                </div>
+
+                {isLoadingVariantProcedures ? (
+                  <div className="mt-4 flex items-center gap-3 text-sm text-[#8c7085]">
+                    <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
+                    Loading procedure configuration...
+                  </div>
+                ) : variantProcedureDraft.length ? (
+                  <div className="mt-4 space-y-3">
+                    {variantProcedureDraft.map((item, index) => (
+                      <div
+                        key={`${item.procedureId || "draft"}-${index}`}
+                        className="rounded-[18px] border border-[#f1d7e3] bg-white p-4"
+                      >
+                        <div className="grid gap-3 md:grid-cols-[110px_minmax(0,1fr)_auto]">
+                          <label className="space-y-2">
+                            <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
+                              Step Order
+                            </span>
+                            <EditInput
+                              value={String(item.stepOrder || index + 1)}
+                              onChange={(event) =>
+                                updateVariantProcedureDraft(index, "stepOrder", event.target.value)
+                              }
+                            />
+                          </label>
+                          <label className="space-y-2">
+                            <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
+                              Procedure ID
+                            </span>
+                            <EditInput
+                              value={item.procedureId || ""}
+                              onChange={(event) =>
+                                updateVariantProcedureDraft(index, "procedureId", event.target.value)
+                              }
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => removeVariantProcedureDraft(index)}
+                            disabled={isSavingVariantProcedures}
+                            className="self-end rounded-full border border-[#f3b1c7] bg-[#fff2f6] px-4 py-2 text-xs font-bold text-[#d14c84]"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                        <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
+                          <div>
+                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">Name</p>
+                            <p className="mt-1 font-semibold text-[#432744]">{item.name || "--"}</p>
+                          </div>
+                          <div>
+                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">Duration</p>
+                            <p className="mt-1 font-semibold text-[#432744]">{item.durationLabel || "--"}</p>
+                          </div>
+                          <div>
+                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">Status</p>
+                            <p className="mt-1 font-semibold text-[#432744]">{item.status || "--"}</p>
+                          </div>
+                          <div>
+                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">Required</p>
+                            <p className="mt-1 font-semibold text-[#432744]">{item.isRequired ? "Yes" : "No"}</p>
+                          </div>
+                        </div>
+                        {item.description ? (
+                          <p className="mt-3 text-sm leading-6 text-[#6d5669]">{item.description}</p>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="mt-4 rounded-[16px] border border-dashed border-[#f3c9dd] bg-white px-4 py-4 text-sm text-[#8c7085]">
+                    No procedures configured for this variant yet. Add rows and save to call `POST /api/Procedures/assign/{'{nailVariantId}'}`.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </Modal>
     </section>
   );
 }
