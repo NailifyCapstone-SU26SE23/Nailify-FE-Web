@@ -13,7 +13,7 @@ function getAuthHeaders() {
     : {};
 }
 
-function unwrapResponse(response, fallbackMessage, isDetail = false) {
+function unwrapResponse(response, fallbackMessage) {
   const payload = response?.data;
 
   if (!payload?.isSucceeded) {
@@ -38,7 +38,7 @@ export async function fetchCustomerNails() {
     return unwrapResponse(response, "Failed to load customer nails.");
   } catch (error) {
     console.error("Error fetching customer nails:", error.response?.data || error);
-    throw new Error(error.response?.data?.message || error.message || "Failed to load customer nails.");
+    throw new Error(error.response?.data?.message || error.message || "Failed to load customer nails.", { cause: error });
   }
 }
 
@@ -59,7 +59,7 @@ export async function fetchCustomerNailById(customerNailId) {
     return unwrapResponse(response, "Failed to load customer nail detail.");
   } catch (error) {
     console.error("Error fetching customer nail detail:", error.response?.data || error);
-    throw new Error(error.response?.data?.message || error.message || "Failed to load customer nail detail.");
+    throw new Error(error.response?.data?.message || error.message || "Failed to load customer nail detail.", { cause: error });
   }
 }
 
@@ -80,7 +80,7 @@ export async function approveCustomerNail(customerNailId) {
     return unwrapResponse(response, "Failed to approve customer nail.");
   } catch (error) {
     console.error("Error approving customer nail:", error.response?.data || error);
-    throw new Error(error.response?.data?.message || error.message || "Failed to approve customer nail.");
+    throw new Error(error.response?.data?.message || error.message || "Failed to approve customer nail.", { cause: error });
   }
 }
 
@@ -101,7 +101,7 @@ export async function rejectCustomerNail(customerNailId, rejectReason) {
     return unwrapResponse(response, "Failed to reject customer nail.");
   } catch (error) {
     console.error("Error rejecting customer nail:", error.response?.data || error);
-    throw new Error(error.response?.data?.message || error.message || "Failed to reject customer nail.");
+    throw new Error(error.response?.data?.message || error.message || "Failed to reject customer nail.", { cause: error });
   }
 }
 
@@ -122,7 +122,7 @@ export async function fetchSalonStaff(salonId) {
     return unwrapResponse(response, "Failed to load salon staff.");
   } catch (error) {
     console.error("Error fetching salon staff:", error.response?.data || error);
-    throw new Error(error.response?.data?.message || error.message || "Failed to load salon staff.");
+    throw new Error(error.response?.data?.message || error.message || "Failed to load salon staff.", { cause: error });
   }
 }
 
@@ -144,7 +144,7 @@ export async function assignReviewer(customerNailId, staffId) {
     return unwrapResponse(response, "Failed to assign reviewer.");
   } catch (error) {
     console.error("Error assigning reviewer:", error.response?.data || error);
-    throw new Error(error.response?.data?.message || error.message || "Failed to assign reviewer.");
+    throw new Error(error.response?.data?.message || error.message || "Failed to assign reviewer.", { cause: error });
   }
 }
 
@@ -165,27 +165,31 @@ export async function managerApproveQuote(customerNailId, finalPrice, finalDurat
     return unwrapResponse(response, "Failed to approve quote.");
   } catch (error) {
     console.error("Error approving quote:", error.response?.data || error);
-    throw new Error(error.response?.data?.message || error.message || "Failed to approve quote.");
+    throw new Error(error.response?.data?.message || error.message || "Failed to approve quote.", { cause: error });
   }
 }
 
 export async function managerReject(customerNailId, reason) {
   const normalizedId = String(customerNailId || "").trim();
+  const normalizedReason = String(reason || "").trim();
 
   if (!normalizedId) {
     throw new Error("Customer Nail ID is required.");
   }
+  if (!normalizedReason) {
+    throw new Error("Reject reason is required.");
+  }
 
-  console.log("Rejecting customer nail (manager):", normalizedId, "with reason:", reason);
+  console.log("Rejecting customer nail (manager):", normalizedId, "with reason:", normalizedReason);
 
   try {
-    const response = await axiosClient.post(`/CustomerNails/${normalizedId}/manager-reject`, { reason }, {
+    const response = await axiosClient.post(`/CustomerNails/${normalizedId}/manager-reject`, { reason: normalizedReason }, {
       headers: getAuthHeaders(),
     });
 
     return unwrapResponse(response, "Failed to reject customer nail.");
   } catch (error) {
     console.error("Error rejecting customer nail (manager):", error.response?.data || error);
-    throw new Error(error.response?.data?.message || error.message || "Failed to reject customer nail.");
+    throw new Error(error.response?.data?.message || error.message || "Failed to reject customer nail.", { cause: error });
   }
 }

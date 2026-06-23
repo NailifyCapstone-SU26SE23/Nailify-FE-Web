@@ -20,6 +20,8 @@ import {
 import {
   buildStaffServiceSessionPayload,
   fetchStaffBookingDetail,
+  fetchStaffCustomerDetail,
+  fetchStaffNailVariantDetail,
   formatBookingCode,
   formatCurrency,
   formatTimeValue,
@@ -45,6 +47,42 @@ function formatStaffDate(value) {
   }).format(new Date(value));
 }
 
+function formatAppointmentEndTime(startTime, durationMinutes) {
+  const normalizedStartTime = String(startTime || "").trim();
+  const normalizedDuration = Number(durationMinutes || 0);
+
+  if (!normalizedStartTime) {
+    return "--";
+  }
+
+  const [hoursText = "0", minutesText = "0"] = normalizedStartTime.split(":");
+  const baseDate = new Date();
+  baseDate.setHours(Number(hoursText), Number(minutesText), 0, 0);
+
+  if (Number.isNaN(baseDate.getTime())) {
+    return "--";
+  }
+
+  const endDate = new Date(baseDate.getTime() + Math.max(0, normalizedDuration) * 60000);
+
+  return new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(endDate);
+}
+
+function formatTimeRange(startTime, durationMinutes) {
+  const appointmentStartTime = formatTimeValue(startTime);
+  const appointmentEndTime = formatAppointmentEndTime(startTime, durationMinutes);
+
+  if (appointmentStartTime === "--" || appointmentEndTime === "--") {
+    return "--";
+  }
+
+  return `${appointmentStartTime} - ${appointmentEndTime}`;
+}
+
 function buildDefaultStaffNotes(booking) {
   const serviceNames = booking?.bookingItems?.map((item) => item.serviceName).filter(Boolean).join(", ");
 
@@ -64,16 +102,30 @@ function buildDefaultStaffNotes(booking) {
   ];
 }
 
-function buildStaffExperienceFromBooking(booking, staffNotesDraft) {
+function buildStaffExperienceFromBooking(booking, staffNotesDraft, nailVariantDetail, customerDetail) {
   const items = booking?.bookingItems ?? [];
   const mainItem = items[0] ?? null;
   const bookingCode = formatBookingCode(booking?.bookingId);
   const startTime = formatTimeValue(booking?.startTime);
   const totalDuration = booking?.totalDuration ? formatDurationMinutes(booking.totalDuration) : "--";
+  const timeRange = formatTimeRange(booking?.startTime, booking?.totalDuration);
   const serviceNames = items.map((item) => item.serviceName).filter(Boolean);
   const designImage =
     mainItem?.customerNailImageUrl || booking?.checkInImageUrl || booking?.checkOutImagesUrl || DEFAULT_DESIGN_IMAGE;
   const requestedDesign = mainItem?.customerNailName || mainItem?.nailVariantName || "Selected design not specified";
+  const resolvedVariantName = nailVariantDetail?.name || mainItem?.nailVariantName || "--";
+  const resolvedDesignImage = nailVariantDetail?.imageUrl || designImage;
+  const componentSummary = nailVariantDetail?.nailComponents?.length
+    ? `${nailVariantDetail.nailComponents.length} component(s)`
+    : "--";
+  const customerDisplayName =
+    customerDetail?.fullName ||
+    booking?.customerName ||
+    "--";
+  const customerPhone = customerDetail?.phone || "--";
+  const customerAvatar = customerDetail?.avatarUrl || DEFAULT_AVATAR;
+  const customerMemberTier = customerDetail?.role || "Customer";
+  const customerStatus = customerDetail?.status || booking?.status || "--";
 
   return {
     bookingCode,
@@ -92,17 +144,16 @@ function buildStaffExperienceFromBooking(booking, staffNotesDraft) {
       { key: "start", label: "Start Service", state: "upcoming" },
     ],
     customer: {
-      name: booking?.customerName || "--",
-      phone: "--",
-      avatar: DEFAULT_AVATAR,
-      memberTier: "Customer Profile",
+      name: customerDisplayName,
+      phone: customerPhone,
+      avatar: customerAvatar,
+      memberTier: customerMemberTier,
       facts: [
-        { label: "Booking ID", value: bookingCode },
         { label: "Salon", value: booking?.salonName || "--" },
         { label: "Total Services", value: String(items.length || 0) },
-        { label: "Status", value: booking?.status || "--" },
+        { label: "Status", value: customerStatus },
       ],
-      allergyNote: "--",
+      allergyNote: customerDetail?.email || "--",
       preferences: requestedDesign || "--",
     },
     bookingInfo: [
@@ -118,8 +169,8 @@ function buildStaffExperienceFromBooking(booking, staffNotesDraft) {
       },
       {
         label: "Duration",
-        value: totalDuration,
-        note: items.some((item) => item.duration) ? "Duration loaded from API" : "--",
+        value: timeRange,
+        note: totalDuration,
       },
       {
         label: "Total Price",
@@ -130,24 +181,26 @@ function buildStaffExperienceFromBooking(booking, staffNotesDraft) {
       {
         label: "Salon",
         value: booking?.salonName || "--",
-        note: booking?.salonId || "--",
+        note: booking?.status || "--",
       },
       {
         label: "Staff Artist",
         value: booking?.artistName || "--",
-        note: booking?.nailArtistId || "--",
+        note: serviceNames[0] || "--",
       },
     ],
     design: {
-      name: requestedDesign,
-      image: designImage,
+      name: nailVariantDetail?.name || requestedDesign,
+      image: resolvedDesignImage,
       details: [
         { label: "Service", value: serviceNames[0] || "--" },
-        { label: "Variant", value: mainItem?.nailVariantName || "--" },
+        { label: "Variant", value: resolvedVariantName },
+        { label: "Shape", value: nailVariantDetail?.nailShape?.name || "--" },
+        { label: "Surface", value: nailVariantDetail?.nailSurface?.name || "--" },
         { label: "Customer Design", value: mainItem?.customerNailName || "--" },
-        { label: "Quantity", value: mainItem?.quantity ? String(mainItem.quantity) : "--" },
-        { label: "Duration", value: mainItem?.duration ? formatDurationMinutes(mainItem.duration) : "--" },
-        { label: "Reference", value: mainItem?.customerNailImageUrl ? "Image available" : "--" },
+        { label: "Duration", value: timeRange },
+        { label: "Price", value: nailVariantDetail?.priceLabel || formatCurrency(booking?.totalPrice) },
+        { label: "Components", value: componentSummary },
       ],
       tags: [
         { label: booking?.status || "Pending", className: "border-[#f4cada] bg-[#fff6fa] text-[#ea4f93]" },
@@ -158,7 +211,7 @@ function buildStaffExperienceFromBooking(booking, staffNotesDraft) {
       { label: "Status", value: booking?.status || "--" },
       { label: "Staff Artist", value: booking?.artistName || "--" },
       { label: "Salon", value: booking?.salonName || "--" },
-      { label: "Time Slot", value: `${startTime} | ${totalDuration}` },
+      { label: "Time Slot", value: timeRange },
     ],
     customerHistory: {
       favoriteStyles: serviceNames.length
@@ -209,6 +262,8 @@ export function BookingDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [isCurrentDesignConfirmed, setIsCurrentDesignConfirmed] = useState(false);
   const [staffBookingDetail, setStaffBookingDetail] = useState(null);
+  const [staffCustomerDetail, setStaffCustomerDetail] = useState(null);
+  const [staffNailVariantDetail, setStaffNailVariantDetail] = useState(null);
   const [isStaffLoading, setIsStaffLoading] = useState(isStaffRole);
   const [staffLoadError, setStaffLoadError] = useState("");
   const [staffNotesDraft, setStaffNotesDraft] = useState([]);
@@ -283,6 +338,76 @@ export function BookingDetailPage() {
     };
   }, [bookingId, isStaffRole]);
 
+  useEffect(() => {
+    if (!isStaffRole) {
+      return;
+    }
+
+    const customerId = String(staffBookingDetail?.customerId || "").trim();
+
+    if (!customerId) {
+      setStaffCustomerDetail(null);
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadCustomerDetail = async () => {
+      try {
+        const detail = await fetchStaffCustomerDetail(customerId);
+
+        if (isMounted) {
+          setStaffCustomerDetail(detail);
+        }
+      } catch {
+        if (isMounted) {
+          setStaffCustomerDetail(null);
+        }
+      }
+    };
+
+    void loadCustomerDetail();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isStaffRole, staffBookingDetail?.customerId]);
+
+  useEffect(() => {
+    if (!isStaffRole) {
+      return;
+    }
+
+    const variantId = Number(staffBookingDetail?.bookingItems?.[0]?.nailVariantId || 0);
+
+    if (!Number.isInteger(variantId) || variantId <= 0) {
+      setStaffNailVariantDetail(null);
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadNailVariantDetail = async () => {
+      try {
+        const detail = await fetchStaffNailVariantDetail(variantId);
+
+        if (isMounted) {
+          setStaffNailVariantDetail(detail);
+        }
+      } catch {
+        if (isMounted) {
+          setStaffNailVariantDetail(null);
+        }
+      }
+    };
+
+    void loadNailVariantDetail();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isStaffRole, staffBookingDetail?.bookingItems]);
+
   if (!isStaffRole && !initialBooking) {
     return <Navigate to={roleConfig.listRoute} replace />;
   }
@@ -328,7 +453,30 @@ export function BookingDetailPage() {
   };
 
   const handleOpenDesignStudio = () => {
-    navigate(getStaffBookingDesignStudioRoute(bookingId));
+    navigate(getStaffBookingDesignStudioRoute(bookingId), {
+      state: {
+        designStudio: {
+          booking: {
+            id: bookingId,
+          },
+          bookingCode: staffBookingDetail ? formatBookingCode(staffBookingDetail.bookingId) : "",
+          customerName: staffBookingDetail?.customerName || formValues?.customerName || "--",
+          staffName: staffBookingDetail?.artistName || "--",
+          statusLabel: staffBookingDetail?.status || "Pending",
+          selectedDesignName:
+            staffBookingDetail?.bookingItems?.[0]?.customerNailName ||
+            staffBookingDetail?.bookingItems?.[0]?.nailVariantName ||
+            staffBookingDetail?.bookingItems?.[0]?.serviceName ||
+            "--",
+          selectedDesignImage:
+            staffBookingDetail?.bookingItems?.[0]?.customerNailImageUrl ||
+            staffBookingDetail?.checkInImageUrl ||
+            staffBookingDetail?.checkOutImagesUrl ||
+            DEFAULT_DESIGN_IMAGE,
+          totalDuration: staffBookingDetail?.totalDuration || 0,
+        },
+      },
+    });
   };
 
   const handleConfirmCurrentDesign = () => {
@@ -342,7 +490,7 @@ export function BookingDetailPage() {
   };
 
   const handleChooseAnotherDesign = () => {
-    navigate(getStaffBookingDesignStudioRoute(bookingId));
+    handleOpenDesignStudio();
   };
 
   const handleStaffNoteChange = (label, value) => {
@@ -389,7 +537,12 @@ export function BookingDetailPage() {
       );
     }
 
-    const baseStaffExperience = buildStaffExperienceFromBooking(staffBookingDetail, staffNotesDraft);
+    const baseStaffExperience = buildStaffExperienceFromBooking(
+      staffBookingDetail,
+      staffNotesDraft,
+      staffNailVariantDetail,
+      staffCustomerDetail,
+    );
     const staffExperience = isCurrentDesignConfirmed
       ? {
         ...baseStaffExperience,

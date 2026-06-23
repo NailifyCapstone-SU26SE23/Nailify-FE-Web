@@ -23,9 +23,14 @@ import { PropTypes } from "../../../../shared/utils/propTypes";
 import { formatDurationLabel } from "../../../../shared/utils/formatDuration";
 import { BOOKING_ROLE_CONFIG } from "../services/mockBookings";
 import { fetchBookingsBySalonId } from "../services/bookingsService";
+import { AssignArtistModal } from "../components/AssignArtistModal";
+import { ConfirmBookingModal } from "../components/ConfirmBookingModal";
+import { RejectBookingModal } from "../components/RejectBookingModal";
+import { CancelBookingModal } from "../components/CancelBookingModal";
 
 const roleConfig = BOOKING_ROLE_CONFIG[ROLES.manager];
 const DEFAULT_SALON_ID = "484c3aef-3ae1-4ad6-8aba-6b0bc6df586d";
+const BOOKING_PAGE_SIZE = 10;
 
 const appointmentFilters = [
   { value: "All", label: "All" },
@@ -37,7 +42,6 @@ const appointmentFilters = [
   { value: "Rejected", label: "Rejected" },
   { value: "Reschedule", label: "Reschedule" },
 ];
-
 
 const scheduleStaff = [
   {
@@ -225,7 +229,7 @@ function formatDuration(totalMinutes) {
   if (!totalMinutes) return "0m";
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
-  
+
   if (hours > 0 && minutes > 0) {
     return `${hours}h${minutes}m`;
   } else if (hours > 0) {
@@ -254,29 +258,87 @@ function formatHourLabel(hour) {
   return `${hour} AM`;
 }
 
+function parseDatePart(dateString) {
+  const normalized = String(dateString || "").trim();
+  if (!normalized) return null;
+
+  const datePart = normalized.includes("T") ? normalized.split("T")[0] : normalized;
+  const [year, month, day] = datePart.split("-").map(Number);
+
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
+}
+
+function parseTimePart(timeString) {
+  const normalized = String(timeString || "").trim();
+  if (!normalized) return null;
+
+  const rawTime = normalized.includes("T")
+    ? normalized.split("T")[1]?.replace("Z", "")
+    : normalized;
+  const [hours, minutes = 0, seconds = 0] = String(rawTime || "")
+    .split(".")[0]
+    .split(":")
+    .map(Number);
+
+  if (Number.isNaN(hours) || Number.isNaN(minutes) || Number.isNaN(seconds)) {
+    return null;
+  }
+
+  return new Date(2000, 0, 1, hours, minutes, seconds);
+}
+
+function formatBookingDate(dateString) {
+  const parsedDate = parseDatePart(dateString);
+  if (!parsedDate) return "N/A";
+
+  return parsedDate.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function formatBookingTime(startTime, bookingDate) {
+  const parsedTime = parseTimePart(startTime) || parseTimePart(bookingDate);
+  if (!parsedTime) return "N/A";
+
+  return parsedTime.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
 function getArtistDisplayName(artist) {
   const name = artist?.nailArtistName || artist?.artistName || artist?.fullName || artist?.name;
   return name === "Chưa chỉ định" ? "Unassigned" : name || "Unassigned";
 }
 
+function normalizeStatusKey(status) {
+  return String(status || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_]+/g, "");
+}
+
+function isCheckedInStatus(status) {
+  const key = normalizeStatusKey(status);
+  return key === "checkedin" || key.includes("checkedin");
+}
+
+function isFinalStatus(status) {
+  const s = String(status || "").trim().toLowerCase();
+  return s.includes("cancel") || s.includes("reject") || s.includes("complete");
+}
+
+function hasAssignedArtist(row) {
+  return Boolean(row?.staffId || row?.staffArtistId || row?.nailArtistId || row?.artistId);
+}
+
 function mapApiBookingToUiFormat(apiBooking) {
   console.log("Mapping API booking:", apiBooking);
-  
-  
-  // Helper to format date and time
-  const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-  };
-  
-  const formatTime = (dateString) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-  };
 
-  // Get customer name and initials
   const customerName = apiBooking.customerName || "Unknown Customer";
   const customerInitials = customerName
     .split(" ")
@@ -285,7 +347,6 @@ function mapApiBookingToUiFormat(apiBooking) {
     .slice(0, 2)
     .toUpperCase();
 
-  // Get artist name
   const artistName = getArtistDisplayName(apiBooking);
   const artistId = apiBooking.staffId || apiBooking.nailArtistId || apiBooking.staffArtistId || apiBooking.artistId || null;
 
@@ -293,8 +354,8 @@ function mapApiBookingToUiFormat(apiBooking) {
     id: apiBooking.bookingId || apiBooking.id,
     bookingId: apiBooking.bookingId || apiBooking.id,
     bookingDate: apiBooking.bookingDate,
-    date: formatDate(apiBooking.bookingDate || apiBooking.createdAt),
-    time: formatTime(apiBooking.bookingDate || apiBooking.createdAt),
+    date: formatBookingDate(apiBooking.bookingDate || apiBooking.createdAt),
+    time: formatBookingTime(apiBooking.startTime, apiBooking.bookingDate || apiBooking.createdAt),
     startTime: apiBooking.startTime,
     duration: formatDuration(apiBooking.totalDuration || 60),
     totalDuration: apiBooking.totalDuration,
@@ -320,7 +381,7 @@ function mapApiBookingToUiFormat(apiBooking) {
     initials: customerInitials,
     avatarTone: "from-[#ffc5de] to-[#ea4f93]",
     artistTone: "from-[#d8c4ff] to-[#8b5cf6]",
-    ...apiBooking, // Include all other fields
+    ...apiBooking,
   };
 }
 
@@ -331,36 +392,62 @@ export function ManagerBookingListPage() {
   const [query, setQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
   const [selectedDate, setSelectedDate] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [bookings, setBookings] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    pageSize: BOOKING_PAGE_SIZE,
+    totalCount: 0,
+    totalPages: 1,
+  });
 
-  const loadBookings = useCallback(async () => {
+  // Assign Artist modal
+  const [isAssignArtistModalOpen, setIsAssignArtistModalOpen] = useState(false);
+  const [selectedBookingForAssign, setSelectedBookingForAssign] = useState(null);
+
+  // Confirm / Cancel / Reject modals
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+  const [selectedBookingForAction, setSelectedBookingForAction] = useState(null);
+
+  const loadBookings = useCallback(async (page = currentPage) => {
     setIsLoading(true);
     setError("");
     try {
-      const apiBookings = await fetchBookingsBySalonId(DEFAULT_SALON_ID);
-      const uiBookings = apiBookings.map(mapApiBookingToUiFormat);
+      const response = await fetchBookingsBySalonId(DEFAULT_SALON_ID, {
+        includePagination: true,
+        pageNumber: page,
+        pageSize: BOOKING_PAGE_SIZE,
+      });
+      const uiBookings = response.items.map(mapApiBookingToUiFormat);
       setBookings(uiBookings);
+      setPagination({
+        currentPage: response.pagination?.currentPage ?? page,
+        pageSize: response.pagination?.pageSize ?? BOOKING_PAGE_SIZE,
+        totalCount: response.pagination?.totalCount ?? uiBookings.length,
+        totalPages: response.pagination?.totalPages ?? 1,
+      });
     } catch (err) {
       console.error("Failed to load bookings:", err);
       setError(err.message || "Failed to load bookings. Please try again.");
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [currentPage]);
 
   useEffect(() => {
     if (!location.state?.flashMessage) {
       return;
     }
-
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
 
   useEffect(() => {
-    loadBookings();
-  }, [loadBookings]);
+    Promise.resolve().then(() => loadBookings(currentPage));
+  }, [currentPage, loadBookings]);
 
   const filteredAppointments = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -373,7 +460,6 @@ export function ManagerBookingListPage() {
           .toLowerCase()
           .includes(normalizedQuery);
 
-      // Date filtering
       let matchesDate = true;
       if (selectedDate) {
         const bookingDate = dayjs(appointment.bookingDate || appointment.createdAt);
@@ -383,6 +469,21 @@ export function ManagerBookingListPage() {
       return matchesQuery && matchesFilter(appointment.status, activeFilter) && matchesDate;
     });
   }, [activeFilter, query, bookings, selectedDate]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeFilter, query, selectedDate]);
+
+  const paginationLabel = useMemo(() => {
+    if (!pagination.totalCount) {
+      return "Showing 0 appointments";
+    }
+
+    const start = (pagination.currentPage - 1) * pagination.pageSize + 1;
+    const end = Math.min(pagination.totalCount, start + bookings.length - 1);
+
+    return `Showing ${start}-${end} of ${pagination.totalCount} appointments`;
+  }, [bookings.length, pagination.currentPage, pagination.pageSize, pagination.totalCount]);
 
   const summaryStats = useMemo(() => {
     const pending = bookings.filter(b => b.status === "Pending").length;
@@ -436,23 +537,41 @@ export function ManagerBookingListPage() {
   }, [bookings]);
 
   return (
-    <section className="flex min-h-full flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        <button
-          type="button"
-          className="inline-flex items-center gap-1.5 rounded-2xl border border-[#f4c1d8] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93] shadow-[0_8px_18px_rgba(236,72,153,0.06)] transition hover:bg-[#fff7fb]"
-        >
-          <Download size={14} />
-          Export
-        </button>
-        <Link
-          to={roleConfig.createRoute}
-          className="inline-flex items-center gap-1.5 rounded-2xl bg-[#ea4f93] px-4 py-2.5 text-xs font-bold text-white shadow-[0_10px_22px_rgba(234,79,147,0.22)] transition hover:bg-[#df4588]"
-        >
-          <UserPlus size={14} />
-          New Booking
-        </Link>
-      </div>
+    <section className="flex min-h-full flex-col gap-5">
+      <Card className="overflow-hidden border-none bg-[linear-gradient(135deg,#fff0f8_0%,#fffafb_58%,#fff5fb_100%)] p-0 shadow-[0_18px_36px_rgba(236,72,153,0.12)]">
+        <div className="flex flex-col gap-6 p-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-[18px] bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-white shadow-[0_10px_22px_rgba(234,79,147,0.28)]">
+                <Calendar size={22} />
+              </div>
+              <div>
+                <h1 className="text-3xl font-extrabold text-[#402542]">Branch Bookings</h1>
+                <p className="text-sm text-[#b07a94]">Track appointments, assign artists, and monitor branch activity in one workspace.</p>
+              </div>
+            </div>
+            <p className="mt-4 text-sm leading-6 text-[#8f6b80]">
+              Keep an eye on daily flow, customer arrivals, staffing assignments, and potential conflicts with a manager-focused booking dashboard.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 rounded-2xl border border-[#f4c1d8] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93] shadow-[0_8px_18px_rgba(236,72,153,0.06)] transition hover:bg-[#fff7fb]"
+            >
+              <Download size={14} />
+              Export
+            </button>
+            <Link
+              to={roleConfig.createRoute}
+              className="inline-flex items-center gap-1.5 rounded-2xl bg-[#ea4f93] px-4 py-2.5 text-xs font-bold text-white shadow-[0_10px_22px_rgba(234,79,147,0.22)] transition hover:bg-[#df4588]"
+            >
+              <UserPlus size={14} />
+              New Booking
+            </Link>
+          </div>
+        </div>
+      </Card>
 
       {flashMessage ? (
         <div className="rounded-[16px] bg-[#edfdf4] px-4 py-3 text-sm font-medium text-[#16975f]">
@@ -484,381 +603,528 @@ export function ManagerBookingListPage() {
       ) : null}
 
       {!isLoading && !error ? (
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_300px]">
           <div className="space-y-4">
-            <Card className="p-0">
-            <div className="flex flex-col gap-4 border-b border-[#f6dce7] p-5 lg:flex-row lg:items-center lg:justify-between">
-              <SectionHeading title="Today's Appointments" />
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <div className="flex flex-wrap gap-2">
-                  {/* Status Filter Dropdown */}
-                  <Dropdown
-                    menu={{
-                      items: appointmentFilters.map((filter) => ({
-                        key: filter.value,
-                        label: (
-                          <span className={activeFilter === filter.value ? "text-[#ea4f93] font-bold" : "text-[#5c4559]"}>
-                            {filter.label}
-                          </span>
-                        ),
-                        onClick: () => setActiveFilter(filter.value),
-                      })),
-                    }}
-                  >
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-2 rounded-full border border-[#f4c1d8] bg-white px-4 py-2 text-xs font-bold text-[#5c4559] transition hover:bg-[#fff7fb]"
+            <Card className="overflow-hidden p-0">
+              <div className="flex flex-col gap-4 border-b border-[#f6dce7] bg-[linear-gradient(180deg,#fffafb_0%,#fff8fb_100%)] p-6 lg:flex-row lg:items-center lg:justify-between">
+                <SectionHeading
+                  title="Today's Appointments"
+                  subtitle={`${filteredAppointments.length} appointments match the current filters`}
+                />
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <div className="flex flex-wrap gap-2">
+                    <Dropdown
+                      menu={{
+                        items: appointmentFilters.map((filter) => ({
+                          key: filter.value,
+                          label: (
+                            <span className={activeFilter === filter.value ? "font-bold text-[#ea4f93]" : "text-[#5c4559]"}>
+                              {filter.label}
+                            </span>
+                          ),
+                          onClick: () => setActiveFilter(filter.value),
+                        })),
+                      }}
                     >
-                      <span>{appointmentFilters.find(f => f.value === activeFilter)?.label || activeFilter}</span>
-                      <ChevronDown size={12} />
-                    </button>
-                  </Dropdown>
-                  {/* Date Picker */}
-                  <DatePicker
-                    value={selectedDate}
-                    onChange={(date) => setSelectedDate(date)}
-                    placeholder="Select date"
-                    className="h-9 rounded-full border border-[#f5d7e4] bg-[#fff9fc] text-xs text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
-                    suffixIcon={<Calendar size={14} className="text-[#c08aa4]" />}
-                  />
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-2 rounded-full border border-[#f4c1d8] bg-white px-4 py-2.5 text-xs font-bold text-[#5c4559] transition hover:bg-[#fff7fb]"
+                      >
+                        <span>{appointmentFilters.find((f) => f.value === activeFilter)?.label || activeFilter}</span>
+                        <ChevronDown size={12} />
+                      </button>
+                    </Dropdown>
+                    <DatePicker
+                      value={selectedDate}
+                      onChange={(date) => setSelectedDate(date)}
+                      placeholder="Select date"
+                      className="h-10 rounded-full border border-[#f5d7e4] bg-white text-xs text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
+                      suffixIcon={<Calendar size={14} className="text-[#c08aa4]" />}
+                    />
+                  </div>
+                  <label className="relative block min-w-[220px]">
+                    <Search
+                      size={14}
+                      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#c08aa4]"
+                    />
+                    <input
+                      value={query}
+                      onChange={(event) => setQuery(event.target.value)}
+                      placeholder="Search customer, artist, phone..."
+                      className="h-10 w-full rounded-full border border-[#f5d7e4] bg-white pl-9 pr-4 text-xs text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
+                    />
+                  </label>
                 </div>
-                <label className="relative block min-w-[200px]">
-                  <Search
-                    size={14}
-                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#c08aa4]"
-                  />
-                  <input
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    placeholder="Search bookings..."
-                    className="h-9 w-full rounded-full border border-[#f5d7e4] bg-[#fff9fc] pl-9 pr-4 text-xs text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
-                  />
-                </label>
               </div>
-            </div>
 
-            <div className="overflow-x-auto p-5 pt-0">
-              <table className="min-w-full text-left">
-                <thead>
-                  <tr className="border-b border-[#f6dce7] text-[10px] uppercase tracking-[0.16em] text-[#c693ad]">
-                    <th className="px-3 py-3 whitespace-nowrap">Time</th>
-                    <th className="px-3 py-3 whitespace-nowrap">Customer</th>
-                    <th className="px-3 py-3 whitespace-nowrap">Staff Artist</th>
-                    <th className="px-3 py-3 whitespace-nowrap">Deposit</th>
-                    <th className="px-3 py-3 whitespace-nowrap">Status</th>
-                    <th className="px-3 py-3 whitespace-nowrap">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredAppointments.map((row) => (
-                    <tr key={row.id} className="border-b border-[#fbe7ef] last:border-b-0">
-                      <td className="px-3 py-4 whitespace-nowrap">
-                        <p className="text-sm font-semibold text-[#402542]">{row.time}</p>
-                        <p className="text-[11px] text-[#c08aa4]">{formatDurationLabel(row.duration)}</p>
-                      </td>
-                      <td className="px-3 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${row.avatarTone} text-[10px] font-bold text-white`}
-                          >
-                            {row.initials}
-                          </div>
-                          <div>
-                            <p className="text-sm font-bold text-[#402542]">{row.customer}</p>
-                            <p className="text-[11px] text-[#c08aa4]">{row.phone}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-3 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${row.artistTone} text-[9px] font-bold text-white`}
-                          >
-                            {row.artist
-                              .split(" ")
-                              .map((part) => part[0])
-                              .join("")}
-                          </div>
-                          <span className="text-sm text-[#7a6176]">{row.artist}</span>
-                        </div>
-                      </td>
-                      <td className="px-3 py-4 whitespace-nowrap">
-                        <span className={`text-sm font-semibold ${row.depositTone}`}>{row.deposit}</span>
-                      </td>
-                      <td className="px-3 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold whitespace-nowrap ${getStatusTone(row.status)}`}
-                        >
-                          {formatStatusDisplay(row.status)}
-                        </span>
-                      </td>
-                      <td className="px-3 py-4 whitespace-nowrap">
-                        <Link
-                          to={roleConfig.getDetailRoute(row.id)}
-                          className="inline-flex items-center gap-1 rounded-full bg-[#ea4f93] px-2.5 py-1 text-[10px] font-bold text-white shadow-[0_4px_12px_rgba(234,79,147,0.25)] transition hover:bg-[#df4588]"
-                        >
-                          <Eye size={12} />
-                          View
-                        </Link>
-                      </td>
+              <div className="overflow-x-auto px-4 pt-0 pb-6">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-[#f6dce7] text-[10px] uppercase tracking-[0.16em] text-[#c693ad]">
+                      <th className="px-2 py-3 whitespace-nowrap">Time</th>
+                      <th className="px-2 py-3 whitespace-nowrap">Customer</th>
+                      <th className="px-2 py-3 whitespace-nowrap">Staff Artist</th>
+                      <th className="px-2 py-3 whitespace-nowrap">Deposit</th>
+                      <th className="px-2 py-3 whitespace-nowrap">Status</th>
+                      <th className="px-2 py-3 whitespace-nowrap">Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {filteredAppointments.map((row) => (
+                      <tr key={row.id} className="border-b border-[#fbe7ef] transition hover:bg-[#fff9fc] last:border-b-0">
+                        <td className="px-2 py-3 whitespace-nowrap">
+                          <p className="text-sm font-semibold text-[#402542]">{row.time}</p>
+                          <p className="text-[11px] text-[#c08aa4]">{row.duration}</p>
+                        </td>
+                        <td className="px-2 py-3 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <div
+                              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${row.avatarTone} text-[9px] font-bold text-white shadow-[0_8px_18px_rgba(236,72,153,0.12)]`}
+                            >
+                              {row.initials}
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-[#402542]">{row.customer}</p>
+                              <p className="text-[11px] text-[#c08aa4]">{row.phone}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-2 py-3 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <div
+                              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${row.artistTone} text-[8px] font-bold text-white shadow-[0_8px_18px_rgba(139,92,246,0.12)]`}
+                            >
+                              {row.artist
+                                .split(" ")
+                                .map((part) => part[0])
+                                .join("")}
+                            </div>
+                            <span className="text-sm text-[#7a6176]">{row.artist}</span>
+                          </div>
+                        </td>
+                        <td className="px-2 py-3 whitespace-nowrap">
+                          <span className={`text-sm font-semibold ${row.depositTone}`}>{row.deposit}</span>
+                        </td>
+                        <td className="px-2 py-3 whitespace-nowrap">
+                          <span
+                            className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold whitespace-nowrap ${getStatusTone(row.status)}`}
+                          >
+                            {formatStatusDisplay(row.status)}
+                          </span>
+                        </td>
+                        <td className="px-2 py-3 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5">
+                            <Link
+                              to={roleConfig.getDetailRoute(row.id)}
+                              className="inline-flex items-center gap-1 rounded-full bg-[#ea4f93] px-3 py-1.5 text-[10px] font-bold text-white shadow-[0_4px_12px_rgba(234,79,147,0.25)] transition hover:bg-[#df4588]"
+                            >
+                              <Eye size={12} />
+                              View
+                            </Link>
 
-              {filteredAppointments.length === 0 ? (
-                <div className="py-8 text-center text-sm text-[#8a7082]">
-                  No appointments matched the current filters.
-                </div>
-              ) : null}
-            </div>
-          </Card>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedBookingForAssign(row);
+                                setIsAssignArtistModalOpen(true);
+                              }}
+                              className="inline-flex items-center gap-1 rounded-full bg-[#4755b8] px-3 py-1.5 text-[10px] font-bold text-white shadow-[0_4px_12px_rgba(71,85,184,0.25)] transition hover:bg-[#3d4aa8]"
+                            >
+                              <UserCheck size={12} />
+                              Assign
+                            </button>
 
-          <Card>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <SectionHeading title="Staff Schedule - Day View" />
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="flex rounded-full border border-[#f4c1d8] bg-[#fff7fb] p-0.5">
-                  {["Day", "Week", "Month"].map((view, index) => (
+                            {!isFinalStatus(row.status) ? (
+                              <Dropdown
+                                trigger={["click"]}
+                                menu={{
+                                  items: [
+                                    {
+                                      key: "confirm",
+                                      label: (
+                                        <span className="flex items-center gap-2 text-xs font-semibold text-[#2fa25f]">
+                                          <CheckCircle2 size={13} />
+                                          Confirm
+                                        </span>
+                                      ),
+                                      onClick: () => {
+                                        setSelectedBookingForAction(row);
+                                        setIsConfirmModalOpen(true);
+                                      },
+                                    },
+                                    {
+                                      key: "cancel",
+                                      label: (
+                                        <span className="flex items-center gap-2 text-xs font-semibold text-[#db8520]">
+                                          <XCircle size={13} />
+                                          Cancel
+                                        </span>
+                                      ),
+                                      onClick: () => {
+                                        setSelectedBookingForAction(row);
+                                        setIsCancelModalOpen(true);
+                                      },
+                                    },
+                                    {
+                                      key: "reject",
+                                      label: (
+                                        <span className="flex items-center gap-2 text-xs font-semibold text-[#e1447f]">
+                                          <XCircle size={13} />
+                                          Reject
+                                        </span>
+                                      ),
+                                      onClick: () => {
+                                        setSelectedBookingForAction(row);
+                                        setIsRejectModalOpen(true);
+                                      },
+                                    },
+                                  ],
+                                }}
+                              >
+                                <button
+                                  type="button"
+                                  className="inline-flex items-center gap-1 rounded-full border border-[#f4c1d8] bg-white px-3 py-1.5 text-[10px] font-bold text-[#ea4f93] transition hover:bg-[#fff7fb]"
+                                >
+                                  More
+                                  <ChevronDown size={12} />
+                                </button>
+                              </Dropdown>
+                            ) : null}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {filteredAppointments.length === 0 ? (
+                  <div className="py-10 text-center text-sm text-[#8a7082]">
+                    No appointments matched the current filters.
+                  </div>
+                ) : null}
+
+                {filteredAppointments.length > 0 ? (
+                  <div className="mt-4 flex flex-col gap-3 border-t border-[#f7dce8] pt-4 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-[11px] text-[#c694ad]">{paginationLabel}</p>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                        disabled={currentPage <= 1}
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92] disabled:opacity-50"
+                      >
+                        <ChevronLeft size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        className="inline-flex h-7 min-w-7 items-center justify-center rounded-md bg-[#ea4f93] px-2 text-[11px] font-bold text-white"
+                      >
+                        {currentPage}
+                      </button>
+                      <span className="px-2 text-[11px] font-medium text-[#b9849f]">/ {pagination.totalPages}</span>
+                      <button
+                        type="button"
+                        onClick={() => setCurrentPage(Math.min(pagination.totalPages, currentPage + 1))}
+                        disabled={currentPage >= pagination.totalPages}
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92] disabled:opacity-50"
+                      >
+                        <ChevronRight size={12} />
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </Card>
+
+            {/* Assign Artist Modal */}
+            <AssignArtistModal
+              open={isAssignArtistModalOpen}
+              onClose={() => {
+                setIsAssignArtistModalOpen(false);
+                setSelectedBookingForAssign(null);
+              }}
+              bookingId={selectedBookingForAssign?.id ? String(selectedBookingForAssign.id) : ""}
+              salonId={
+                selectedBookingForAssign?.salonId
+                  ? String(selectedBookingForAssign.salonId)
+                  : DEFAULT_SALON_ID
+              }
+              onSuccess={() => loadBookings()}
+            />
+
+            {/* Confirm / Cancel / Reject Modals */}
+            <ConfirmBookingModal
+              open={isConfirmModalOpen}
+              onClose={() => {
+                setIsConfirmModalOpen(false);
+                setSelectedBookingForAction(null);
+              }}
+              bookingId={selectedBookingForAction?.id ? String(selectedBookingForAction.id) : ""}
+              onSuccess={() => loadBookings()}
+            />
+            <CancelBookingModal
+              open={isCancelModalOpen}
+              onClose={() => {
+                setIsCancelModalOpen(false);
+                setSelectedBookingForAction(null);
+              }}
+              bookingId={selectedBookingForAction?.id ? String(selectedBookingForAction.id) : ""}
+              onSuccess={() => loadBookings()}
+            />
+            <RejectBookingModal
+              open={isRejectModalOpen}
+              onClose={() => {
+                setIsRejectModalOpen(false);
+                setSelectedBookingForAction(null);
+              }}
+              bookingId={selectedBookingForAction?.id ? String(selectedBookingForAction.id) : ""}
+              onSuccess={() => loadBookings()}
+            />
+
+            <Card className="overflow-hidden">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <SectionHeading title="Staff Schedule - Day View" />
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex rounded-full border border-[#f4c1d8] bg-[#fff7fb] p-0.5">
+                    {["Day", "Week", "Month"].map((view, index) => (
+                      <button
+                        key={view}
+                        type="button"
+                        className={
+                          index === 0
+                            ? "rounded-full bg-[#ea4f93] px-3 py-1 text-[10px] font-bold text-white"
+                            : "rounded-full px-3 py-1 text-[10px] font-bold text-[#c08aa4]"
+                        }
+                      >
+                        {view}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-1">
                     <button
-                      key={view}
                       type="button"
-                      className={
-                        index === 0
-                          ? "rounded-full bg-[#ea4f93] px-3 py-1 text-[10px] font-bold text-white"
-                          : "rounded-full px-3 py-1 text-[10px] font-bold text-[#c08aa4]"
-                      }
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92]"
                     >
-                      {view}
+                      <ChevronLeft size={12} />
                     </button>
-                  ))}
-                </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92]"
-                  >
-                    <ChevronLeft size={12} />
-                  </button>
-                  <span className="px-2 text-xs font-bold text-[#7f6478]">Jul 12, 2025</span>
-                  <button
-                    type="button"
-                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92]"
-                  >
-                    <ChevronRight size={12} />
-                  </button>
+                    <span className="px-2 text-xs font-bold text-[#7f6478]">Jul 12, 2025</span>
+                    <button
+                      type="button"
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92]"
+                    >
+                      <ChevronRight size={12} />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="mt-5 overflow-x-auto">
-              <div className="min-w-[720px]">
-                <div className="grid grid-cols-[120px_repeat(9,minmax(0,1fr))] gap-1 border-b border-[#f6dce7] pb-2">
-                  <div />
-                  {scheduleHours.map((hour) => (
-                    <div key={hour} className="text-center text-[10px] font-bold text-[#c08aa4]">
-                      {formatHourLabel(hour)}
+              <div className="mt-5 overflow-x-auto rounded-2xl border border-[#f7d7e5] bg-[linear-gradient(180deg,#fffafb_0%,#fff6fa_100%)] p-4">
+                <div className="min-w-[720px]">
+                  <div className="grid grid-cols-[120px_repeat(9,minmax(0,1fr))] gap-1 border-b border-[#f6dce7] pb-2">
+                    <div />
+                    {scheduleHours.map((hour) => (
+                      <div key={hour} className="text-center text-[10px] font-bold text-[#c08aa4]">
+                        {formatHourLabel(hour)}
+                      </div>
+                    ))}
+                  </div>
+
+                  {scheduleStaff.map((staff) => (
+                    <div
+                      key={staff.name}
+                      className="grid grid-cols-[120px_repeat(9,minmax(0,1fr))] gap-1 border-b border-[#fbe7ef] py-3 last:border-b-0"
+                    >
+                      <p className="pr-2 text-xs font-bold text-[#402542]">{staff.name}</p>
+                      <div className="relative col-span-9 grid grid-cols-9 gap-1">
+                        {scheduleHours.map((hour) => (
+                          <div key={hour} className="h-10 rounded-md bg-[#fffafb] border border-[#f8deea]" />
+                        ))}
+                        {staff.blocks.map((block) => {
+                          const startOffset = ((block.start - 9) / 8) * 100;
+                          const width = ((block.end - block.start) / 8) * 100;
+
+                          return (
+                            <div
+                              key={`${block.label}-${block.start}`}
+                              className={`absolute top-0 flex h-10 flex-col justify-center rounded-md border px-2 ${staff.tone} ${block.alert ? "ring-2 ring-[#e1447f]" : ""}`}
+                              style={{ left: `${startOffset}%`, width: `${width}%` }}
+                            >
+                              <p className="truncate text-[10px] font-bold">{block.label}</p>
+                              <p className="truncate text-[9px] opacity-80">{block.service}</p>
+                              {block.alert ? (
+                                <span className="absolute -top-2 right-1 rounded-full bg-[#e1447f] px-1.5 py-0.5 text-[8px] font-bold text-white">
+                                  Conflict
+                                </span>
+                              ) : null}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   ))}
                 </div>
+              </div>
+            </Card>
 
-                {scheduleStaff.map((staff) => (
+            <Card className="overflow-hidden">
+              <div className="mb-4 flex items-center gap-2">
+                <div className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#ffe7ef] text-[#ea4f93]">
+                  <Sparkles size={15} />
+                </div>
+                <SectionHeading
+                  title="Smart Slot Suggestions"
+                  subtitle="AI-recommended openings based on staff availability & service type"
+                />
+              </div>
+              <div className="grid gap-4 md:grid-cols-3">
+                {smartSlots.map((slot) => (
                   <div
-                    key={staff.name}
-                    className="grid grid-cols-[120px_repeat(9,minmax(0,1fr))] gap-1 border-b border-[#fbe7ef] py-3 last:border-b-0"
+                    key={slot.time}
+                    className="rounded-[18px] border border-[#f8deea] bg-[linear-gradient(180deg,#fffafb_0%,#fff6fa_100%)] p-4 shadow-[0_10px_24px_rgba(236,72,153,0.05)]"
                   >
-                    <p className="pr-2 text-xs font-bold text-[#402542]">{staff.name}</p>
-                    <div className="relative col-span-9 grid grid-cols-9 gap-1">
-                      {scheduleHours.map((hour) => (
-                        <div key={hour} className="h-10 rounded-md bg-[#fffafb] border border-[#f8deea]" />
-                      ))}
-                      {staff.blocks.map((block) => {
-                        const startOffset = ((block.start - 9) / 8) * 100;
-                        const width = ((block.end - block.start) / 8) * 100;
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-lg font-extrabold text-[#402542]">{slot.time}</p>
+                        <p className="text-[11px] text-[#c08aa4]">{slot.date}</p>
+                      </div>
+                      <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${slot.tagTone}`}>
+                        {slot.tag}
+                      </span>
+                    </div>
+                    <div className="mt-4 flex items-center gap-2">
+                      <div
+                        className={`flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br ${slot.avatarTone} text-[9px] font-bold text-white`}
+                      >
+                        {slot.artist
+                          .split(" ")
+                          .map((part) => part[0])
+                          .join("")}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-[#402542]">{slot.artist}</p>
+                        <p className="text-[11px] text-[#c08aa4]">{slot.duration}</p>
+                      </div>
+                    </div>
+                    <p className="mt-3 text-sm font-semibold text-[#7f6478]">{slot.service}</p>
+                    <p className="mt-1 text-[11px] text-[#c08aa4]">{slot.complexity}</p>
+                    <button
+                      type="button"
+                      className="mt-4 w-full rounded-full border border-[#f4c1d8] bg-white py-2 text-xs font-bold text-[#ea4f93] transition hover:bg-[#fff7fb]"
+                    >
+                      Book This Slot
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
 
-                        return (
-                          <div
-                            key={`${block.label}-${block.start}`}
-                            className={`absolute top-0 flex h-10 flex-col justify-center rounded-md border px-2 ${staff.tone} ${block.alert ? "ring-2 ring-[#e1447f]" : ""}`}
-                            style={{ left: `${startOffset}%`, width: `${width}%` }}
-                          >
-                            <p className="truncate text-[10px] font-bold">{block.label}</p>
-                            <p className="truncate text-[9px] opacity-80">{block.service}</p>
-                            {block.alert ? (
-                              <span className="absolute -top-2 right-1 rounded-full bg-[#e1447f] px-1.5 py-0.5 text-[8px] font-bold text-white">
-                                Conflict
-                              </span>
-                            ) : null}
-                          </div>
-                        );
-                      })}
+          <aside className="space-y-4 xl:sticky xl:top-5 xl:self-start">
+            <Card className="overflow-hidden">
+              <SectionHeading title="Today's Capacity" />
+              <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                {[
+                  ["31", "Booked"],
+                  ["40", "Total Slots"],
+                  ["78%", "Filled"],
+                ].map(([value, label]) => (
+                  <div key={label} className="rounded-[12px] border border-[#f8deea] bg-[#fffafb] px-2 py-3">
+                    <p className="text-xl font-extrabold text-[#ea4f93]">{value}</p>
+                    <p className="mt-1 text-[10px] text-[#c08aa4]">{label}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-5 space-y-4">
+                {capacityPeriods.map((period) => (
+                  <div key={period.label}>
+                    <div className="mb-1.5 flex items-center justify-between gap-3 text-xs">
+                      <span className="font-medium text-[#7f6478]">{period.label}</span>
+                      <span className="font-bold text-[#ea4f93]">{period.value}%</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-[#fbe1ec]">
+                      <div
+                        className={`h-full rounded-full ${period.tone}`}
+                        style={{ width: `${period.value}%` }}
+                      />
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
-          </Card>
+            </Card>
 
-          <Card>
-            <div className="mb-4 flex items-center gap-2">
-              <div className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#ffe7ef] text-[#ea4f93]">
-                <Sparkles size={15} />
-              </div>
-              <SectionHeading
-                title="Smart Slot Suggestions"
-                subtitle="AI-recommended openings based on staff availability & service type"
-              />
-            </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              {smartSlots.map((slot) => (
-                <div
-                  key={slot.time}
-                  className="rounded-[16px] border border-[#f8deea] bg-[#fffafb] p-4"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="text-lg font-extrabold text-[#402542]">{slot.time}</p>
-                      <p className="text-[11px] text-[#c08aa4]">{slot.date}</p>
-                    </div>
-                    <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${slot.tagTone}`}>
-                      {slot.tag}
-                    </span>
-                  </div>
-                  <div className="mt-4 flex items-center gap-2">
+            <Card className="overflow-hidden">
+              <SectionHeading title="Staff Workload" />
+              <div className="mt-4 space-y-4">
+                {staffWorkload.map((staff) => (
+                  <div key={staff.name} className="flex items-center gap-3">
                     <div
-                      className={`flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br ${slot.avatarTone} text-[9px] font-bold text-white`}
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${staff.tone} text-[9px] font-bold text-white`}
                     >
-                      {slot.artist
+                      {staff.name
                         .split(" ")
                         .map((part) => part[0])
                         .join("")}
                     </div>
-                    <div>
-                      <p className="text-sm font-bold text-[#402542]">{slot.artist}</p>
-                      <p className="text-[11px] text-[#c08aa4]">{formatDurationLabel(slot.duration)}</p>
-                    </div>
-                  </div>
-                  <p className="mt-3 text-sm font-semibold text-[#7f6478]">{slot.service}</p>
-                  <p className="mt-1 text-[11px] text-[#c08aa4]">{slot.complexity}</p>
-                  <button
-                    type="button"
-                    className="mt-4 w-full rounded-full border border-[#f4c1d8] bg-white py-2 text-xs font-bold text-[#ea4f93] transition hover:bg-[#fff7fb]"
-                  >
-                    Book This Slot
-                  </button>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </div>
-
-        <aside className="space-y-4 xl:sticky xl:top-0 xl:self-start">
-          <Card>
-            <SectionHeading title="Today's Capacity" />
-            <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-              {[
-                ["31", "Booked"],
-                ["40", "Total Slots"],
-                ["78%", "Filled"],
-              ].map(([value, label]) => (
-                <div key={label} className="rounded-[12px] border border-[#f8deea] bg-[#fffafb] px-2 py-3">
-                  <p className="text-xl font-extrabold text-[#ea4f93]">{value}</p>
-                  <p className="mt-1 text-[10px] text-[#c08aa4]">{label}</p>
-                </div>
-              ))}
-            </div>
-            <div className="mt-5 space-y-4">
-              {capacityPeriods.map((period) => (
-                <div key={period.label}>
-                  <div className="mb-1.5 flex items-center justify-between gap-3 text-xs">
-                    <span className="font-medium text-[#7f6478]">{period.label}</span>
-                    <span className="font-bold text-[#ea4f93]">{period.value}%</span>
-                  </div>
-                  <div className="h-2 rounded-full bg-[#fbe1ec]">
-                    <div
-                      className={`h-full rounded-full ${period.tone}`}
-                      style={{ width: `${period.value}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          <Card>
-            <SectionHeading title="Staff Workload" />
-            <div className="mt-4 space-y-4">
-              {staffWorkload.map((staff) => (
-                <div key={staff.name} className="flex items-center gap-3">
-                  <div
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${staff.tone} text-[9px] font-bold text-white`}
-                  >
-                    {staff.name
-                      .split(" ")
-                      .map((part) => part[0])
-                      .join("")}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="mb-1 flex items-center justify-between gap-2 text-xs">
-                      <span className="font-semibold text-[#402542]">{staff.name}</span>
-                      <span className="font-bold text-[#ea4f93]">
-                        {staff.filled}/{staff.total}
-                      </span>
-                    </div>
-                    <div className="h-2 rounded-full bg-[#fbe1ec]">
-                      <div
-                        className="h-full rounded-full bg-[#ea4f93]"
-                        style={{ width: `${(staff.filled / staff.total) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          <Card>
-            <SectionHeading title="Waitlist" subtitle="Customers waiting for an opening" />
-            <div className="mt-4 space-y-3">
-              {waitlist.map((item) => (
-                <div
-                  key={item.name}
-                  className="rounded-[12px] border border-[#f8deea] bg-[#fffafb] px-3 py-3"
-                >
-                  <p className="text-sm font-bold text-[#402542]">{item.name}</p>
-                  <p className="mt-1 text-xs text-[#7a6176]">{item.service}</p>
-                  <p className="mt-1 text-[11px] font-semibold text-[#ea4f93]">{item.time}</p>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          <Card>
-            <SectionHeading title="Booking Conflicts" subtitle="3 items need attention" />
-            <div className="mt-4 space-y-3">
-              {bookingConflicts.map((conflict) => (
-                <div
-                  key={conflict.title}
-                  className="rounded-[12px] border border-[#f8c4d8] bg-[#fff0f6] px-3 py-3"
-                >
-                  <div className="flex items-start gap-2">
-                    <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#e1447f]" />
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-extrabold text-[#e1447f]">{conflict.title}</p>
-                      <p className="mt-1 text-[11px] text-[#c08aa4]">{conflict.time}</p>
-                      <button type="button" className="mt-2 text-[11px] font-bold text-[#ea4f93]">
-                        {conflict.action}
-                      </button>
+                      <div className="mb-1 flex items-center justify-between gap-2 text-xs">
+                        <span className="font-semibold text-[#402542]">{staff.name}</span>
+                        <span className="font-bold text-[#ea4f93]">
+                          {staff.filled}/{staff.total}
+                        </span>
+                      </div>
+                      <div className="h-2 rounded-full bg-[#fbe1ec]">
+                        <div
+                          className="h-full rounded-full bg-[#ea4f93]"
+                          style={{ width: `${(staff.filled / staff.total) * 100}%` }}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </aside>
+                ))}
+              </div>
+            </Card>
+
+            <Card className="overflow-hidden">
+              <SectionHeading title="Waitlist" subtitle="Customers waiting for an opening" />
+              <div className="mt-4 space-y-3">
+                {waitlist.map((item) => (
+                  <div
+                    key={item.name}
+                    className="rounded-[12px] border border-[#f8deea] bg-[#fffafb] px-3 py-3"
+                  >
+                    <p className="text-sm font-bold text-[#402542]">{item.name}</p>
+                    <p className="mt-1 text-xs text-[#7a6176]">{item.service}</p>
+                    <p className="mt-1 text-[11px] font-semibold text-[#ea4f93]">{item.time}</p>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            <Card className="overflow-hidden">
+              <SectionHeading title="Booking Conflicts" subtitle="3 items need attention" />
+              <div className="mt-4 space-y-3">
+                {bookingConflicts.map((conflict) => (
+                  <div
+                    key={conflict.title}
+                    className="rounded-[12px] border border-[#f8c4d8] bg-[#fff0f6] px-3 py-3"
+                  >
+                    <div className="flex items-start gap-2">
+                      <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#e1447f]" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-extrabold text-[#e1447f]">{conflict.title}</p>
+                        <p className="mt-1 text-[11px] text-[#c08aa4]">{conflict.time}</p>
+                        <button type="button" className="mt-2 text-[11px] font-bold text-[#ea4f93]">
+                          {conflict.action}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </aside>
         </div>
       ) : null}
-
     </section>
   );
 }

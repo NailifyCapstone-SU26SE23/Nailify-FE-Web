@@ -87,6 +87,100 @@ export async function fetchStaffBookingDetail(bookingId) {
   return unwrapResponse(response, "Failed to load booking detail.");
 }
 
+export async function fetchStaffNailVariantDetail(variantId) {
+  const normalizedVariantId = Number(variantId || 0);
+
+  if (!Number.isInteger(normalizedVariantId) || normalizedVariantId <= 0) {
+    throw new Error("Variant ID is required.");
+  }
+
+  const response = await axiosClient.get(`/NailVariants/${normalizedVariantId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  const data = unwrapResponse(response, "Failed to load nail variant detail.");
+
+  return {
+    nailVariantId: Number(data?.nailVariantId || 0),
+    name: String(data?.name || "").trim() || "--",
+    price: Number(data?.price || 0),
+    priceLabel: formatCurrency(data?.price || 0),
+    duration: Number(data?.duration || 0),
+    durationLabel: formatDurationMinutes(Number(data?.duration || 0)),
+    imageUrl: String(data?.imageUrl || "").trim(),
+    colorJson: String(data?.colorJson || "").trim(),
+    nailShape: data?.nailShape
+      ? {
+        nailShapeId: Number(data.nailShape.nailShapeId || 0),
+        name: String(data.nailShape.name || "").trim() || "--",
+        imageUrl: String(data.nailShape.imageUrl || "").trim(),
+        price: Number(data.nailShape.price || 0),
+        duration: Number(data.nailShape.duration || 0),
+      }
+      : null,
+    nailSurface: data?.nailSurface
+      ? {
+        nailSurfaceId: Number(data.nailSurface.nailSurfaceId || 0),
+        name: String(data.nailSurface.name || "").trim() || "--",
+        shaderParam: String(data.nailSurface.shaderParam || "").trim(),
+        price: Number(data.nailSurface.price || 0),
+        duration: Number(data.nailSurface.duration || 0),
+      }
+      : null,
+    nailComponents: Array.isArray(data?.nailComponents)
+      ? data.nailComponents.map((item) => ({
+        nailComponentId: Number(item?.nailComponentId || 0),
+        componentId: Number(item?.componentId || 0),
+        fingerIndex: Number(item?.fingerIndex || 0),
+        posX: Number(item?.posX || 0),
+        posY: Number(item?.posY || 0),
+        configJson: String(item?.configJson || "").trim(),
+        component: item?.component
+          ? {
+            componentId: Number(item.component.componentId || 0),
+            name: String(item.component.name || "").trim() || "--",
+            imageUrl: String(item.component.imageUrl || "").trim(),
+            componentType: String(item.component.componentType || "").trim() || "--",
+            price: Number(item.component.price || 0),
+            duration: Number(item.component.duration || 0),
+          }
+          : null,
+      }))
+      : [],
+  };
+}
+
+export async function fetchStaffCustomerDetail(userId) {
+  const normalizedUserId = String(userId || "").trim();
+
+  if (!normalizedUserId) {
+    throw new Error("Customer user ID is required.");
+  }
+
+  const response = await axiosClient.get(`/Users/${normalizedUserId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  const data = unwrapResponse(response, "Failed to load customer detail.");
+
+  return {
+    userId: String(data?.userId || "").trim(),
+    email: String(data?.email || "").trim(),
+    phone: String(data?.phone || "").trim(),
+    firstName: String(data?.firstName || "").trim(),
+    lastName: String(data?.lastName || "").trim(),
+    fullName: [String(data?.firstName || "").trim(), String(data?.lastName || "").trim()]
+      .filter(Boolean)
+      .join(" ")
+      .trim(),
+    avatarUrl: String(data?.avatarUrl || "").trim(),
+    status: String(data?.status || "").trim(),
+    role: String(data?.role || "").trim(),
+    salonId: String(data?.salonId || "").trim(),
+    staffId: String(data?.staffId || "").trim(),
+  };
+}
+
 export async function fetchBookingProceduresByBookingItem(bookingItemId) {
   const normalizedBookingItemId = String(bookingItemId || "").trim();
 

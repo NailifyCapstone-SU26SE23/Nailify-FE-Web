@@ -7,7 +7,7 @@ import {
   Star,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { formatDurationLabel } from "../../../../shared/utils/formatDuration";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import {
@@ -480,9 +480,40 @@ ChoiceGrid.propTypes = {
 
 export function StaffNailDesignStudioPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { bookingId } = useParams();
-  const booking = getMockBookingById(bookingId);
-  const studio = getStaffDesignStudioExperienceById(bookingId);
+  const studioState = location.state?.designStudio ?? null;
+  const booking = getMockBookingById(bookingId) ?? studioState?.booking ?? null;
+  const studio = useMemo(() => {
+    const mockStudio = getStaffDesignStudioExperienceById(bookingId);
+
+    if (mockStudio) {
+      return mockStudio;
+    }
+
+    if (!studioState) {
+      return null;
+    }
+
+    const baseStudio = getStaffDesignStudioExperienceById("BKG-2408");
+
+    if (!baseStudio) {
+      return null;
+    }
+
+    return {
+      ...baseStudio,
+      bookingCode: studioState.bookingCode || baseStudio.bookingCode,
+      customerName: studioState.customerName || baseStudio.customerName,
+      staffName: studioState.staffName || baseStudio.staffName,
+      statusLabel: studioState.statusLabel || baseStudio.statusLabel,
+      selectedDesign: {
+        ...baseStudio.selectedDesign,
+        name: studioState.selectedDesignName || baseStudio.selectedDesign.name,
+        image: studioState.selectedDesignImage || baseStudio.selectedDesign.image,
+      },
+    };
+  }, [bookingId, studioState]);
 
   const [selectedTemplateId, setSelectedTemplateId] = useState(studio?.selectedDesign.id ?? "");
   const [selectedShape, setSelectedShape] = useState(studio?.builder.initialSelection.shape ?? "");

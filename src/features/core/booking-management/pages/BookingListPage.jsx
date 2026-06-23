@@ -767,20 +767,7 @@ export function BookingListPage() {
                   className="h-10 w-full rounded-xl border border-[#f5d7e4] bg-[#fff9fc] px-3 text-sm text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
                 />
               </label>
-              <label className="space-y-2">
-                <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
-                  Salon
-                </span>
-                <select
-                  value={salonFilter}
-                  onChange={(event) => setSalonFilter(event.target.value)}
-                  className="h-10 w-full rounded-xl border border-[#f5d7e4] bg-[#fff9fc] px-3 text-sm text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
-                >
-                  {SALON_OPTIONS.map((item) => (
-                    <option key={item}>{item}</option>
-                  ))}
-                </select>
-              </label>
+              
               <label className="space-y-2">
                 <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
                   Booking Status
@@ -816,20 +803,6 @@ export function BookingListPage() {
             </div>
 
             <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-end">
-              <label className="space-y-2 md:w-52">
-                <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
-                  Staff Artist
-                </span>
-                <select
-                  value={staffFilter}
-                  onChange={(event) => setStaffFilter(event.target.value)}
-                  className="h-10 w-full rounded-xl border border-[#f5d7e4] bg-[#fff9fc] px-3 text-sm text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
-                >
-                  {["All staff", "Ariana Vo", "Bao Tran", "Linh Pham", "Mia Nguyen"].map((item) => (
-                    <option key={item}>{item}</option>
-                  ))}
-                </select>
-              </label>
 
               <label className="relative block flex-1">
                 <span className="mb-2 block text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
@@ -934,7 +907,7 @@ export function BookingListPage() {
                       <th className="px-4 py-3">Customer</th>
                       <th className="px-4 py-3">Salon</th>
                       <th className="px-4 py-3">Staff Artist</th>
-                      <th className="px-4 py-3">Service</th>
+                      {/* <th className="px-4 py-3">Service</th> */}
                       <th className="px-4 py-3">Time</th>
                       {!isStaffRole ? <th className="px-4 py-3">Payment</th> : null}
                       <th className="px-4 py-3">Status</th>
@@ -957,11 +930,11 @@ export function BookingListPage() {
                         </td>
                         <td className="px-4 py-3.5 text-sm text-[#6b5668]">{booking.uiBranch}</td>
                         <td className="px-4 py-3.5 text-sm text-[#8a7082]">{booking.staffName}</td>
-                        <td className="px-4 py-3.5">
+                        {/* <td className="px-4 py-3.5">
                           <SmallTag className="bg-[#ffe7ef] text-[#ea4f93]">
                             {booking.uiService}
                           </SmallTag>
-                        </td>
+                        </td> */}
                         <td className="px-4 py-3.5">
                           <p className="text-sm font-semibold text-[#432744]">
                             {formatDateLabel(booking.bookingDate)}

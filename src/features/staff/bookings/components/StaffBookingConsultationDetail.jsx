@@ -428,14 +428,14 @@ export function StaffBookingConsultationDetail({
                 </div>
               </article>
 
-              <article className="rounded-[18px] border border-[#f3d5e2] bg-white p-4">
+              {/* <article className="rounded-[18px] border border-[#f3d5e2] bg-white p-4">
                 <SectionTitle icon={Sparkles} title="Suggested Designs" />
                 <div className="mt-4 space-y-3">
                   {data.suggestedDesigns.map((item) => (
                     <SuggestedCard key={item.name} item={item} />
                   ))}
                 </div>
-              </article>
+              </article> */}
 
               <article className="rounded-[18px] border border-[#f3d5e2] bg-white p-4">
                 <SectionTitle icon={CheckCheck} title="Next Actions" />
