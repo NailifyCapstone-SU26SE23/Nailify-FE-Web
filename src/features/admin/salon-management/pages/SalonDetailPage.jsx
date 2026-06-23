@@ -11,18 +11,18 @@ import {
   Wrench,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import {
   ROUTES,
   getAdminSalonUpdateRoute,
 } from "../../../../shared/constants/routes";
+import { SALON_DAYS_OF_WEEK } from "../services/mockSalon";
 import {
-  SALON_DAYS_OF_WEEK,
-  fetchMockSalonFormById,
-  getSalonsWithUpdates,
-  removeMockSalonById,
-} from "../services/mockSalon";
+  fetchAdminSalonDetail,
+  mapSalonOperatingHours,
+} from "../services/salonManagementService";
 
 function SalonDetailLoadingState() {
   return (
@@ -41,8 +41,7 @@ export function SalonDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isNotFound, setIsNotFound] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [salonForm, setSalonForm] = useState(null);
-  const [salonRow, setSalonRow] = useState(null);
+  const [salonDetail, setSalonDetail] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -51,28 +50,34 @@ export function SalonDetailPage() {
       setIsLoading(true);
       setIsNotFound(false);
 
-      const form = await fetchMockSalonFormById(salonId);
-      const row = getSalonsWithUpdates().find(
-        (entry) =>
-          String(entry.id) === String(salonId) || entry.salonId === String(salonId),
-      );
+      try {
+        const detail = await fetchAdminSalonDetail(salonId);
 
-      if (!isMounted) {
-        return;
+        if (!isMounted) {
+          return;
+        }
+
+        setSalonDetail(detail);
+      } catch (loadError) {
+        if (!isMounted) {
+          return;
+        }
+
+        const message = loadError instanceof Error ? loadError.message : "Failed to load salon detail.";
+
+        if (message.toLowerCase().includes("not found")) {
+          setIsNotFound(true);
+        } else {
+          toast.error(message);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
-
-      if (!form || !row) {
-        setIsNotFound(true);
-        setIsLoading(false);
-        return;
-      }
-
-      setSalonForm(form);
-      setSalonRow(row);
-      setIsLoading(false);
     };
 
-    loadSalon();
+    void loadSalon();
 
     return () => {
       isMounted = false;
@@ -80,35 +85,32 @@ export function SalonDetailPage() {
   }, [salonId]);
 
   const detailItems = useMemo(() => {
-    if (!salonRow || !salonForm) {
+    if (!salonDetail) {
       return [];
     }
 
     return [
-      { icon: MapPin, label: "Address", value: salonRow.address },
-      { icon: UserRound, label: "Manager", value: salonRow.manager },
-      { icon: Phone, label: "Phone", value: salonRow.phone || salonForm.phone || "Not set" },
-      { icon: Clock3, label: "Operating Hours", value: salonRow.hours || "Custom schedule" },
-      { icon: Wrench, label: "Staff Amount", value: salonRow.staff || salonForm.staffAmount || "0" },
+      { icon: MapPin, label: "Address", value: salonDetail.address },
+      { icon: UserRound, label: "Manager", value: salonDetail.manager || "Unassigned" },
+      { icon: Phone, label: "Phone", value: salonDetail.phone || "Not set" },
+      { icon: Clock3, label: "Operating Hours", value: salonDetail.hours || "Operating hours unavailable" },
+      { icon: Wrench, label: "Staff Amount", value: salonDetail.staff || "--" },
       {
         icon: Star,
         label: "Rating",
-        value: `${salonRow.rating || "—"} (${salonRow.reviews || "0"} reviews)`,
+        value: `${salonDetail.rating || "-"} (${salonDetail.reviews || "0"} reviews)`,
       },
     ];
-  }, [salonForm, salonRow]);
+  }, [salonDetail]);
+
+  const operatingHoursMap = useMemo(
+    () => mapSalonOperatingHours(salonDetail?.operatingHours),
+    [salonDetail?.operatingHours],
+  );
 
   const handleDeleteSalon = () => {
-    if (!salonRow) {
-      return;
-    }
-
-    removeMockSalonById(salonRow.id);
-    navigate(ROUTES.adminSalons, {
-      state: {
-        flashMessage: `${salonRow.name} has been deleted successfully.`,
-      },
-    });
+    setShowDeleteModal(false);
+    toast("Delete salon API is not connected yet.");
   };
 
   if (isNotFound) {
@@ -160,130 +162,129 @@ export function SalonDetailPage() {
       {isLoading ? (
         <SalonDetailLoadingState />
       ) : (
-        <>
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
-            <section className="overflow-hidden rounded-[20px] bg-white/70 shadow-[0_20px_45px_rgba(226,93,143,0.06)] sm:rounded-[24px] lg:rounded-[28px]">
-              <div className="bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-5 py-5 text-white">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                  <img
-                    src={salonRow.image}
-                    alt={salonRow.name}
-                    className="h-24 w-24 rounded-2xl object-cover shadow-lg"
-                  />
-                  <div className="min-w-0">
-                    <h2 className="text-[22px] font-black tracking-tight">{salonRow.name}</h2>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/75">
-                      #{salonRow.salonId}
-                    </p>
-                    <span
-                      className={`mt-3 inline-flex rounded-full px-3 py-1 text-[10px] font-bold ${salonRow.statusColor}`}
-                    >
-                      {salonRow.status}
-                    </span>
-                  </div>
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
+          <section className="overflow-hidden rounded-[20px] bg-white/70 shadow-[0_20px_45px_rgba(226,93,143,0.06)] sm:rounded-[24px] lg:rounded-[28px]">
+            <div className="bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-5 py-5 text-white">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                <img
+                  src={salonDetail.image}
+                  alt={salonDetail.name}
+                  className="h-24 w-24 rounded-2xl object-cover shadow-lg"
+                />
+                <div className="min-w-0">
+                  <h2 className="text-[22px] font-black tracking-tight">{salonDetail.name}</h2>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/75">
+                    #{salonDetail.salonId}
+                  </p>
+                  <span
+                    className={`mt-3 inline-flex rounded-full px-3 py-1 text-[10px] font-bold ${salonDetail.statusColor}`}
+                  >
+                    {salonDetail.status}
+                  </span>
                 </div>
               </div>
+            </div>
 
-              <div className="space-y-4 p-5">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {detailItems.map(({ icon: Icon, label, value }) => (
-                    <div key={label} className="rounded-2xl border border-rose-100 bg-[#fff8fb] p-4">
-                      <div className="mb-2 flex items-center gap-2">
-                        <Icon size={14} className="text-rose-400" />
-                        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
-                          {label}
-                        </span>
-                      </div>
-                      <p className="text-[13px] font-semibold text-slate-700">{value}</p>
+            <div className="space-y-4 p-5">
+              <div className="grid gap-3 sm:grid-cols-2">
+                {detailItems.map(({ icon: Icon, label, value }) => (
+                  <div key={label} className="rounded-2xl border border-rose-100 bg-[#fff8fb] p-4">
+                    <div className="mb-2 flex items-center gap-2">
+                      <Icon size={14} className="text-rose-400" />
+                      <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+                        {label}
+                      </span>
+                    </div>
+                    <p className="text-[13px] font-semibold text-slate-700">{value}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="rounded-2xl border border-rose-100 bg-white p-4">
+                <div className="mb-3 flex items-center gap-2">
+                  <CalendarDays size={15} className="text-rose-400" />
+                  <h3 className="text-[15px] font-bold text-slate-800">Weekly Schedule</h3>
+                </div>
+                <div className="grid gap-2">
+                  {SALON_DAYS_OF_WEEK.map((day) => (
+                    <div
+                      key={day.key}
+                      className="flex items-center justify-between rounded-xl bg-[#fff6f9] px-4 py-3 text-[12px]"
+                    >
+                      <span className="font-semibold text-slate-600">{day.label}</span>
+                      <span className="text-slate-500">
+                        {operatingHoursMap[day.key]?.closed
+                          ? "Closed"
+                          : `${operatingHoursMap[day.key]?.open} - ${operatingHoursMap[day.key]?.close}`}
+                      </span>
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+          </section>
 
-                <div className="rounded-2xl border border-rose-100 bg-white p-4">
-                  <div className="mb-3 flex items-center gap-2">
-                    <CalendarDays size={15} className="text-rose-400" />
-                    <h3 className="text-[15px] font-bold text-slate-800">Weekly Schedule</h3>
-                  </div>
-                  <div className="grid gap-2">
-                    {SALON_DAYS_OF_WEEK.map((day) => (
-                      <div
-                        key={day.key}
-                        className="flex items-center justify-between rounded-xl bg-[#fff6f9] px-4 py-3 text-[12px]"
-                      >
-                        <span className="font-semibold text-slate-600">{day.label}</span>
-                        <span className="text-slate-500">
-                          {salonForm.operatingHours[day.key].open} -{" "}
-                          {salonForm.operatingHours[day.key].close}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+          <aside className="space-y-4">
+            <section className="rounded-[20px] bg-white/70 p-5 shadow-[0_20px_45px_rgba(226,93,143,0.06)] sm:rounded-[24px] lg:rounded-[28px]">
+              <h2 className="text-[16px] font-bold text-slate-800">Management Snapshot</h2>
+              <div className="mt-4 space-y-3 text-[12px] text-slate-600">
+                <div className="flex justify-between gap-3 rounded-xl bg-[#fff6f9] px-4 py-3">
+                  <span className="font-semibold">Salon Name</span>
+                  <span className="text-right">{salonDetail.name}</span>
+                </div>
+                <div className="flex justify-between gap-3 rounded-xl bg-[#fff6f9] px-4 py-3">
+                  <span className="font-semibold">Salon ID</span>
+                  <span className="text-right">{salonDetail.salonId}</span>
+                </div>
+                <div className="flex justify-between gap-3 rounded-xl bg-[#fff6f9] px-4 py-3">
+                  <span className="font-semibold">Manager</span>
+                  <span className="text-right">{salonDetail.manager || "Unassigned"}</span>
+                </div>
+                <div className="flex justify-between gap-3 rounded-xl bg-[#fff6f9] px-4 py-3">
+                  <span className="font-semibold">Staff Amount</span>
+                  <span className="text-right">{salonDetail.staff}</span>
+                </div>
+                <div className="flex justify-between gap-3 rounded-xl bg-[#fff6f9] px-4 py-3">
+                  <span className="font-semibold">Status</span>
+                  <span className="text-right">{salonDetail.status}</span>
                 </div>
               </div>
             </section>
 
-            <aside className="space-y-4">
-              <section className="rounded-[20px] bg-white/70 p-5 shadow-[0_20px_45px_rgba(226,93,143,0.06)] sm:rounded-[24px] lg:rounded-[28px]">
-                <h2 className="text-[16px] font-bold text-slate-800">Management Snapshot</h2>
-                <div className="mt-4 space-y-3 text-[12px] text-slate-600">
-                  <div className="flex justify-between gap-3 rounded-xl bg-[#fff6f9] px-4 py-3">
-                    <span className="font-semibold">Salon Name</span>
-                    <span className="text-right">{salonForm.salonName}</span>
-                  </div>
-                  <div className="flex justify-between gap-3 rounded-xl bg-[#fff6f9] px-4 py-3">
-                    <span className="font-semibold">Salon ID</span>
-                    <span className="text-right">{salonForm.salonId}</span>
-                  </div>
-                  <div className="flex justify-between gap-3 rounded-xl bg-[#fff6f9] px-4 py-3">
-                    <span className="font-semibold">Manager</span>
-                    <span className="text-right">{salonForm.manager}</span>
-                  </div>
-                  <div className="flex justify-between gap-3 rounded-xl bg-[#fff6f9] px-4 py-3">
-                    <span className="font-semibold">Staff Amount</span>
-                    <span className="text-right">{salonForm.staffAmount}</span>
-                  </div>
-                  <div className="flex justify-between gap-3 rounded-xl bg-[#fff6f9] px-4 py-3">
-                    <span className="font-semibold">Status</span>
-                    <span className="text-right">{salonForm.status}</span>
-                  </div>
-                </div>
-              </section>
-
-              <section className="rounded-[20px] bg-white/70 p-5 shadow-[0_20px_45px_rgba(226,93,143,0.06)] sm:rounded-[24px] lg:rounded-[28px]">
-                <h2 className="text-[16px] font-bold text-slate-800">Description</h2>
-                <p className="mt-3 whitespace-pre-line text-[13px] leading-6 text-slate-500">
-                  {salonForm.description?.trim() || "No description available for this salon."}
-                </p>
-              </section>
-            </aside>
-          </div>
-        </>
+            <section className="rounded-[20px] bg-white/70 p-5 shadow-[0_20px_45px_rgba(226,93,143,0.06)] sm:rounded-[24px] lg:rounded-[28px]">
+              <h2 className="text-[16px] font-bold text-slate-800">Description</h2>
+              <p className="mt-3 whitespace-pre-line text-[13px] leading-6 text-slate-500">
+                Salon detail API does not return description yet.
+              </p>
+            </section>
+          </aside>
+        </div>
       )}
 
       <ActionConfirmModal
         open={showDeleteModal}
         intent="danger"
         title="Delete Salon"
-        subtitle="This action removes the selected branch from the current mock admin state."
-        description={`You are about to delete ${salonRow?.name ?? "this salon"}. This action cannot be undone.`}
-        confirmText="Delete Salon"
-        cancelText="Keep Salon"
+        subtitle="Delete salon API is not connected yet."
+        description={`You are about to delete ${salonDetail?.name ?? "this salon"}.`}
+        confirmText="Close"
+        cancelText="Cancel"
         confirmIcon={Trash2}
         onConfirm={handleDeleteSalon}
         onCancel={() => setShowDeleteModal(false)}
         item={
-          salonRow
+          salonDetail
             ? {
-                image: salonRow.image,
-                title: salonRow.name,
-                meta: `#${salonRow.salonId} • ${salonRow.address}`,
-                note: `Manager: ${salonRow.manager}`,
+                image: salonDetail.image,
+                title: salonDetail.name,
+                meta: `#${salonDetail.salonId} • ${salonDetail.address}`,
+                note: `Manager: ${salonDetail.manager || "Unassigned"}`,
               }
             : null
         }
         warnings={[
-          "This salon will be removed from the mock salon list immediately.",
-          "Any related UI references in the current mock state may no longer appear.",
+          "Delete salon API is not connected yet.",
+          "This action currently shows a placeholder notification only.",
         ]}
       />
     </section>

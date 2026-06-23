@@ -13,6 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { Table } from "antd";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import {
@@ -253,6 +254,64 @@ export function UserManagementPage() {
     ];
   };
 
+  const userColumns = useMemo(() => ([
+    {
+      title: "User",
+      key: "user",
+      render: (_, user) => (
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-xs font-extrabold text-white">
+            {user.avatar}
+          </div>
+          <p className="font-bold text-[#432744]">{user.name}</p>
+        </div>
+      ),
+    },
+    {
+      title: "Role",
+      dataIndex: "displayRole",
+      key: "displayRole",
+      render: (value, user) => <SmallTag className={getRoleTone(user.role)}>{value}</SmallTag>,
+    },
+    {
+      title: "Email / Phone",
+      key: "contact",
+      render: (_, user) => (
+        <div>
+          <p className="text-sm text-[#6b5668]">{user.email}</p>
+          <p className="mt-1 text-[11px] text-[#d197b0]">{user.phone}</p>
+        </div>
+      ),
+    },
+    {
+      title: "Salon",
+      dataIndex: "salon",
+      key: "salon",
+      render: (value) => <span className="text-sm text-[#8a7082]">{value}</span>,
+    },
+    {
+      title: "Status",
+      dataIndex: "statusLabel",
+      key: "statusLabel",
+      render: (value) => (
+        <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold ${USER_STATUS_STYLES[value] ?? "bg-[#f5f0f4] text-[#8a7082]"}`}>
+          {value}
+        </span>
+      ),
+    },
+    {
+      title: "Last Active",
+      dataIndex: "lastActive",
+      key: "lastActive",
+      render: (value) => <span className="text-sm text-[#8a7082]">{value}</span>,
+    },
+    {
+      title: "Action",
+      key: "action",
+      render: (_, user) => <ActionDropdown items={getActionItems(user)} />,
+    },
+  ]), [getActionItems]);
+
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)]">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
@@ -320,78 +379,16 @@ export function UserManagementPage() {
               </p>
             </div>
 
-            <div className="hidden overflow-x-auto lg:block">
-              <table className="min-w-full">
-                <thead className="border-b border-[#f8e1eb] bg-[#fffdfd]">
-                  <tr className="text-left text-[10px] font-bold uppercase tracking-[0.16em] text-[#c696ad]">
-                    <th className="px-4 py-3">User</th>
-                    <th className="px-4 py-3">Role</th>
-                    <th className="px-4 py-3">Email / Phone</th>
-                    <th className="px-4 py-3">Salon</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Last Active</th>
-                    <th className="px-4 py-3">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#fae6ef] bg-white">
-                  {isLoading ? (
-                    <tr>
-                      <td colSpan="7" className="px-4 py-10">
-                        <div className="flex items-center justify-center gap-3 text-sm text-[#b38a9f]">
-                          <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
-                          Loading users...
-                        </div>
-                      </td>
-                    </tr>
-                  ) : users.length ? (
-                    users.map((user) => (
-                      <tr key={user.id} className="align-top">
-                        <td className="px-4 py-3.5">
-                          <div className="flex items-start gap-3">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-xs font-extrabold text-white">
-                              {user.avatar}
-                            </div>
-                            <div className="min-w-0">
-                              <p className="font-bold text-[#432744]">{user.name}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3.5">
-                          <SmallTag className={getRoleTone(user.role)}>
-                            {user.displayRole}
-                          </SmallTag>
-                        </td>
-                        <td className="px-4 py-3.5">
-                          <p className="text-sm text-[#6b5668]">{user.email}</p>
-                          <p className="mt-1 text-[11px] text-[#d197b0]">{user.phone}</p>
-                        </td>
-                        <td className="px-4 py-3.5 text-sm text-[#8a7082]">
-                          {user.salon}
-                        </td>
-                        <td className="px-4 py-3.5">
-                          <span
-                            className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold ${USER_STATUS_STYLES[user.statusLabel] ?? "bg-[#f5f0f4] text-[#8a7082]"}`}
-                          >
-                            {user.statusLabel}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3.5 text-sm text-[#8a7082]">
-                          {user.lastActive}
-                        </td>
-                        <td className="px-4 py-3.5">
-                          <ActionDropdown items={getActionItems(user)} />
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="7" className="px-4 py-10 text-center text-sm text-[#8a7082]">
-                        No users found.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+            <div className="hidden lg:block">
+              <Table
+                rowKey="id"
+                columns={userColumns}
+                dataSource={users}
+                loading={isLoading}
+                pagination={false}
+                scroll={{ x: 1100 }}
+                locale={{ emptyText: "No users found." }}
+              />
             </div>
 
             <div className="space-y-3 p-4 lg:hidden">

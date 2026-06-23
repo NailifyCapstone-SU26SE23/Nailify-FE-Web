@@ -13,7 +13,7 @@ import {
   Upload,
   WandSparkles,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ROUTES } from "../../../../shared/constants/routes";
@@ -24,6 +24,13 @@ import {
   NAIL_DESIGN_COLLECTION_OPTIONS,
   createEmptyNailDesign,
 } from "../services/mockNailDesigns";
+import {
+  createAdminNailDesign,
+  createAdminNailVariant,
+  fetchAdminCategories,
+  fetchAdminNailVariantReferences,
+  updateAdminNailDesign,
+} from "../services/nailDesignManagementService";
 
 const TAG_OPTIONS = [
   "Elegant",
@@ -82,6 +89,14 @@ const VARIANT_ACCESSORY_OPTIONS = [
   "Heart gem",
   "Gold foil sticker",
 ];
+const COLOR_HEX_BY_LABEL = {
+  "Cherry Red": "#d61f4b",
+  "Wine Red": "#9c2438",
+  "Rose Gold": "#e2a3b8",
+  "Pearl White": "#fff8fb",
+  "Champagne Gold": "#f0d28c",
+  "Soft Pink": "#ffd9ea",
+};
 
 const SKILL_CARDS = [
   ["Precision", "Accuracy & Detail", 4, "Advanced"],
@@ -105,6 +120,7 @@ function createEmptyVariant(index, structureSelections = {}) {
     code: index === 0 ? "BASE" : `VAR ${index}`,
     name: "",
     color: "Cherry Red",
+    colorHex: COLOR_HEX_BY_LABEL["Cherry Red"],
     finish: structureSelections["Surface / Finish"] || "Glossy",
     shape: structureSelections["Nail Shape"] || "Almond",
     length: structureSelections["Nail Length"] || "Medium",
@@ -113,6 +129,7 @@ function createEmptyVariant(index, structureSelections = {}) {
     extraFee: "0",
     quantity: "1",
     notes: [],
+    imageFile: null,
     badgeTone: index === 0 ? "bg-[#ea4f93] text-white" : "bg-[#f2e9ff] text-[#8b5cf6]",
   };
 }
@@ -137,6 +154,28 @@ function parseCurrencyValue(value) {
   const normalized = String(value ?? "").replace(/[^\d.-]/g, "");
   const parsed = Number.parseFloat(normalized);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function normalizeDigitsOnly(value) {
+  return String(value ?? "").replace(/[^\d]/g, "");
+}
+
+function normalizeLookupValue(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function buildVariantColorJson(colorHex) {
+  const color = String(colorHex || "").trim() || "#d61f4b";
+
+  return JSON.stringify({
+    mode: "solid",
+    color,
+    gradient: null,
+  });
 }
 
 
@@ -315,8 +354,14 @@ function getVariantPreviewDecorations(accessory) {
   }
 }
 
-function getColorStyle(color) {
-  const found = VARIANT_COLOR_OPTIONS.find((item) => item.label === color);
+function getColorStyle(variant) {
+  const colorHex = String(variant?.colorHex || "").trim();
+
+  if (colorHex) {
+    return { background: colorHex };
+  }
+
+  const found = VARIANT_COLOR_OPTIONS.find((item) => item.label === variant?.color);
 
   if (!found) {
     return { background: "linear-gradient(180deg,#d7e0eb 0%,#bac8d8 100%)" };
@@ -422,7 +467,7 @@ PreviewNail.propTypes = {
 };
 
 function LiveNailReference({ title, variant }) {
-  const colorStyle = getColorStyle(variant.color);
+  const colorStyle = getColorStyle(variant);
   const decorationSet = new Set(getVariantPreviewDecorations(variant.accessory));
 
   return (
@@ -480,6 +525,7 @@ LiveNailReference.propTypes = {
 export function NailDesignManagementCreatePage() {
   const navigate = useNavigate();
   const [formValues, setFormValues] = useState(createEmptyNailDesign);
+  const [designImageFiles, setDesignImageFiles] = useState([]);
   const [selectedTags, setSelectedTags] = useState([]);
   const [profileSelections, setProfileSelections] = useState(createInitialProfileSelections);
   const [structureSelections, setStructureSelections] = useState(createInitialStructureSelections);
@@ -490,20 +536,162 @@ export function NailDesignManagementCreatePage() {
   const [skillCards, setSkillCards] = useState(createInitialSkillCards);
   const [activeVariantIndex, setActiveVariantIndex] = useState(0);
   const [showCreateConfirm, setShowCreateConfirm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [categoryRecords, setCategoryRecords] = useState([]);
+  const [variantReferences, setVariantReferences] = useState({ shapes: [], surfaces: [] });
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadReferences = async () => {
+      try {
+        const [categoryResponse, variantReferenceResponse] = await Promise.all([
+          fetchAdminCategories({ pageNumber: 1, pageSize: 100 }),
+          fetchAdminNailVariantReferences(),
+        ]);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setCategoryRecords(categoryResponse.items);
+        setVariantReferences(variantReferenceResponse);
+      } catch (loadError) {
+        if (!isMounted) {
+          return;
+        }
+
+        setSubmitError(
+          loadError instanceof Error
+            ? loadError.message
+            : "Failed to load nail design reference data.",
+        );
+      }
+    };
+
+    void loadReferences();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleChange = (field) => (event) => {
     setFormValues((current) => ({
       ...current,
-      [field]: event.target.value,
+      [field]: field === "price" ? normalizeDigitsOnly(event.target.value) : event.target.value,
     }));
   };
 
-  const handleCreate = () => {
-    navigate(ROUTES.adminNailDesigns, {
-      state: {
-        flashMessage: `Mock create completed for ${formValues.name || "new nail design"}.`,
-      },
+  const handleCreate = async () => {
+    setShowCreateConfirm(false);
+    setSubmitError("");
+
+    const normalizedName = String(formValues.name || "").trim();
+    const normalizedDescription = String(formValues.description || "").trim();
+    const normalizedSellingPrice = normalizeDigitsOnly(formValues.price);
+
+    if (!normalizedName) {
+      setSubmitError("Nail design name is required.");
+      return;
+    }
+
+    if (!normalizedSellingPrice) {
+      setSubmitError("Selling Price is required and must be a number.");
+      return;
+    }
+
+    if (!/^\d+$/.test(normalizedSellingPrice)) {
+      setSubmitError("Selling Price must contain digits only.");
+      return;
+    }
+
+    const selectedCategory = categoryRecords.find(
+      (item) => normalizeLookupValue(item.name) === normalizeLookupValue(formValues.category),
+    );
+
+    if (!selectedCategory?.categoryId) {
+      setSubmitError(`Category "${formValues.category}" is not available from API categories.`);
+      return;
+    }
+
+    const shapeByName = new Map(
+      variantReferences.shapes.map((item) => [normalizeLookupValue(item.name), item]),
+    );
+    const surfaceByName = new Map(
+      variantReferences.surfaces.flatMap((item) => {
+        const entries = [[normalizeLookupValue(item.name), item]];
+
+        if (normalizeLookupValue(item.name) === "bong") {
+          entries.push(["glossy", item]);
+        }
+
+        return entries;
+      }),
+    );
+
+    const unresolvedVariant = variants.find((variant) => {
+      const shapeMatch = shapeByName.get(normalizeLookupValue(variant.shape));
+      const surfaceMatch = surfaceByName.get(normalizeLookupValue(variant.finish));
+
+      return !shapeMatch || !surfaceMatch;
     });
+
+    if (unresolvedVariant) {
+      setSubmitError(
+        `Variant "${unresolvedVariant.name || unresolvedVariant.code}" has unsupported shape or surface mapping for API create.`,
+      );
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const createdDesign = await createAdminNailDesign({
+        name: normalizedName,
+        description: normalizedDescription,
+        categoryIds: [selectedCategory.categoryId],
+        nailVariantIds: [],
+        images: designImageFiles,
+      });
+
+      const createdVariants = await Promise.all(
+        variants.map((variant, index) => {
+          const shapeMatch = shapeByName.get(normalizeLookupValue(variant.shape));
+          const surfaceMatch = surfaceByName.get(normalizeLookupValue(variant.finish));
+
+          return createAdminNailVariant({
+            name: String(variant.name || "").trim() || `Variant ${index + 1}`,
+            nailShapeId: shapeMatch?.nailShapeId,
+            nailSurfaceId: surfaceMatch?.nailSurfaceId,
+            nailDesignId: createdDesign.nailDesignId,
+            colorJson: buildVariantColorJson(variant.colorHex),
+            image: variant.imageFile,
+          });
+        }),
+      );
+
+      await updateAdminNailDesign(createdDesign.nailDesignId, {
+        name: normalizedName,
+        description: normalizedDescription,
+        categoryIds: [selectedCategory.categoryId],
+        nailVariantIds: createdVariants.map((item) => item.nailVariantId),
+        existingImageUrls: createdDesign.imageUrls,
+      });
+
+      navigate(ROUTES.adminNailDesigns, {
+        state: {
+          flashMessage: `Created ${normalizedName} with ${createdVariants.length} variants successfully.`,
+        },
+      });
+    } catch (createError) {
+      setSubmitError(
+        createError instanceof Error ? createError.message : "Failed to create nail design.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const toggleTag = (tag) => {
@@ -732,6 +920,7 @@ export function NailDesignManagementCreatePage() {
             </span>
             <button
               type="button"
+              disabled={isSubmitting}
               className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#7e6075]"
             >
               <Save size={13} className="mr-1.5 inline" />
@@ -740,14 +929,21 @@ export function NailDesignManagementCreatePage() {
             <button
               type="button"
               onClick={() => setShowCreateConfirm(true)}
+              disabled={isSubmitting}
               className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.2)]"
             >
               <Sparkles size={13} className="mr-1.5 inline" />
-              Publish Design
+              {isSubmitting ? "Publishing..." : "Publish Design"}
             </button>
           </div>
         </div>
       </div>
+
+      {submitError ? (
+        <div className="rounded-[16px] bg-[#fff1f5] px-4 py-3 text-sm font-medium text-[#d14c84]">
+          {submitError}
+        </div>
+      ) : null}
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-4">
@@ -842,6 +1038,7 @@ export function NailDesignManagementCreatePage() {
                 <input
                   value={formValues.price}
                   onChange={handleChange("price")}
+                  inputMode="numeric"
                   placeholder="e.g. 430000"
                   className="h-12 w-full rounded-2xl border border-[#f4d4e2] bg-[#fffdfd] px-4 text-sm text-[#432744] outline-none transition focus:border-[#ef6bb4]"
                 />
@@ -1017,10 +1214,50 @@ export function NailDesignManagementCreatePage() {
                               active={variant.color === item.label}
                               label={item.label}
                               swatch={item.swatch}
-                              onClick={() => updateVariant(index, "color", item.label)}
+                              onClick={() => {
+                                updateVariant(index, "color", item.label);
+                                updateVariant(
+                                  index,
+                                  "colorHex",
+                                  COLOR_HEX_BY_LABEL[item.label] || "#d61f4b",
+                                );
+                              }}
                             />
                           ))}
                         </div>
+                        <div className="mt-4 grid gap-3 sm:grid-cols-[88px_minmax(0,1fr)]">
+                          <label className="space-y-2">
+                            <span className="text-sm font-semibold text-[#5c4559]">Pick</span>
+                            <input
+                              type="color"
+                              value={variant.colorHex || "#d61f4b"}
+                              onChange={(event) =>
+                                updateVariant(index, "colorHex", event.target.value)
+                              }
+                              className="h-11 w-full cursor-pointer rounded-2xl border border-[#f4d4e2] bg-white p-1"
+                            />
+                          </label>
+                          <label className="space-y-2">
+                            <span className="text-sm font-semibold text-[#5c4559]">Hex Color</span>
+                            <input
+                              value={variant.colorHex || ""}
+                              onChange={(event) =>
+                                updateVariant(index, "colorHex", event.target.value)
+                              }
+                              placeholder="#d61f4b"
+                              className="h-11 w-full rounded-2xl border border-[#f4d4e2] bg-white px-4 text-sm text-[#432744] outline-none"
+                            />
+                          </label>
+                        </div>
+                        <label className="mt-4 block space-y-2">
+                          <span className="text-sm font-semibold text-[#5c4559]">Color JSON Preview</span>
+                          <textarea
+                            value={buildVariantColorJson(variant.colorHex)}
+                            readOnly
+                            rows={3}
+                            className="w-full rounded-2xl border border-[#f4d4e2] bg-[#fffafb] px-4 py-3 text-xs text-[#6b5367] outline-none"
+                          />
+                        </label>
                       </div>
 
                       <div>
@@ -1159,11 +1396,26 @@ export function NailDesignManagementCreatePage() {
                         </p>
                         <button
                           type="button"
+                          onClick={() =>
+                            document.getElementById(`variant-image-input-${index}`)?.click()
+                          }
                           className="mt-4 rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
                         >
                           <Upload size={13} className="mr-1.5 inline" />
                           Upload Variant Asset
                         </button>
+                        <input
+                          id={`variant-image-input-${index}`}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(event) =>
+                            updateVariant(index, "imageFile", event.target.files?.[0] ?? null)
+                          }
+                        />
+                        <p className="mt-3 text-xs text-[#b2879f]">
+                          {variant.imageFile ? variant.imageFile.name : "No variant image selected"}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -1185,6 +1437,31 @@ export function NailDesignManagementCreatePage() {
                   subtitle="The primary showcase image — high resolution recommended"
                   badge="Primary Asset"
                 />
+                <div className="mt-3 rounded-[18px] border border-[#f7d7e5] bg-white px-4 py-4 text-center">
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById("design-images-input")?.click()}
+                    className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
+                  >
+                    <Upload size={13} className="mr-1.5 inline" />
+                    Choose Design Images
+                  </button>
+                  <input
+                    id="design-images-input"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={(event) =>
+                      setDesignImageFiles(Array.from(event.target.files ?? []))
+                    }
+                  />
+                  <p className="mt-3 text-xs text-[#b2879f]">
+                    {designImageFiles.length
+                      ? `${designImageFiles.length} file(s): ${designImageFiles.map((file) => file.name).join(", ")}`
+                      : "No design images selected"}
+                  </p>
+                </div>
               </div>
               <UploadPanel
                 title="Gallery Images"
@@ -1628,20 +1905,21 @@ export function NailDesignManagementCreatePage() {
         open={showCreateConfirm}
         intent="success"
         title="Publish Nail Design"
-        subtitle="This will add the design to the current mock catalog."
-        description="Confirm to publish this nail design with its selected style profile, pricing, and structure."
+        subtitle="This will call POST /api/NailDesigns and POST /api/NailVariants."
+        description="Confirm to create this nail design first, then create its variants and link them back to the design."
         confirmText="Publish Design"
         cancelText="Review Again"
         confirmIcon={Sparkles}
         width={520}
+        loading={isSubmitting}
         onConfirm={handleCreate}
-        onCancel={() => setShowCreateConfirm(false)}
+        onCancel={() => !isSubmitting && setShowCreateConfirm(false)}
         highlights={[formValues.name || "New nail design", formValues.category || "Category pending", formValues.collection || "Collection pending"]}
         details={[
           { label: "Suggested Price", value: formValues.suggestedPrice || "No price entered" },
           { label: "Est. Duration", value: formValues.estimatedDuration ? formatDurationLabel(formValues.estimatedDuration) : "No duration entered" },
         ]}
-        warnings={["This mock publish updates the UI flow only and does not persist outside this feature."]}
+        warnings={["Category, shape, and surface values must resolve to backend IDs before the create APIs can succeed."]}
       />
     </section>
   );

@@ -4,7 +4,6 @@ import {
   CircleAlert,
   CircleCheck,
   CircleDollarSign,
-  LoaderCircle,
   Pencil,
   Plus,
   Search,
@@ -13,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { Table } from "antd";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import { PropTypes } from "../../../../shared/utils/propTypes";
@@ -721,6 +721,98 @@ export function ServicePricingManagementPage() {
     setFlashMessage(`Service ${service.name} is loaded from API. Add-on toggle is not connected yet.`);
   };
 
+  const serviceColumns = useMemo(() => ([
+    {
+      title: "Service Name",
+      dataIndex: "name",
+      key: "name",
+      render: (value) => <span className="text-sm font-bold text-[#432744]">{value}</span>,
+    },
+    {
+      title: "Category",
+      dataIndex: "category",
+      key: "category",
+      render: (value) => (
+        <Pill
+          className={SERVICE_CATEGORY_TONES[value] ?? "border border-[#f4d5e3] bg-white text-[#8a7082]"}
+        >
+          {value}
+        </Pill>
+      ),
+    },
+    {
+      title: "Base Price",
+      dataIndex: "price",
+      key: "price",
+      render: (value) => <span className="text-sm text-[#5f4b5d]">{formatVndCurrency(value)}</span>,
+    },
+    {
+      title: "Est. Duration",
+      dataIndex: "duration",
+      key: "duration",
+      render: (value) => <span className="text-sm text-[#5f4b5d]">{formatDurationMinutes(value)}</span>,
+    },
+    {
+      title: "Add-on",
+      key: "hasAddOn",
+      render: (_, service) => (
+        <TogglePill
+          enabled={service.hasAddOn}
+          onClick={() => handleToggleServiceAddOn(service)}
+        />
+      ),
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      render: (value) => <StatusBadge status={value} />,
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      render: (_, service) => <ActionDropdown items={getServiceActionItems(service)} />,
+    },
+  ]), [getServiceActionItems]);
+
+  const addOnColumns = useMemo(() => ([
+    {
+      title: "Add-on Name",
+      dataIndex: "name",
+      key: "name",
+      render: (value) => <span className="text-sm font-bold text-[#432744]">{value}</span>,
+    },
+    {
+      title: "Type",
+      dataIndex: "type",
+      key: "type",
+      render: (value) => <Pill className={ADD_ON_TYPE_TONES[value]}>{value}</Pill>,
+    },
+    {
+      title: "Price",
+      dataIndex: "price",
+      key: "price",
+      render: (value) => <span className="text-sm text-[#5f4b5d]">{formatVndCurrency(value)}</span>,
+    },
+    {
+      title: "Applied To",
+      dataIndex: "appliedTo",
+      key: "appliedTo",
+      render: (value) => <Pill>{value}</Pill>,
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      render: (value) => <StatusBadge status={value} />,
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      render: (_, item) => <ActionDropdown items={getAddOnActionItems(item)} />,
+    },
+  ]), [getAddOnActionItems]);
+
   return (
     <>
       <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4fa_100%)]">
@@ -789,69 +881,15 @@ export function ServicePricingManagementPage() {
                 </p>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="min-w-full">
-                  <thead className="bg-[#fff9fc]">
-                    <tr className="text-left text-[10px] font-bold uppercase tracking-[0.18em] text-[#c58ea8]">
-                      <th className="px-5 py-3">Service Name</th>
-                      <th className="px-4 py-3">Category</th>
-                      <th className="px-4 py-3">Base Price</th>
-                      <th className="px-4 py-3">Est. Duration</th>
-                      <th className="px-4 py-3">Add-on</th>
-                      <th className="px-4 py-3">Status</th>
-                      <th className="px-4 py-3">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {isLoadingServices ? (
-                      <tr>
-                        <td colSpan="7" className="px-4 py-10">
-                          <div className="flex items-center justify-center gap-3 text-sm text-[#b38a9f]">
-                            <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
-                            Loading services...
-                          </div>
-                        </td>
-                      </tr>
-                    ) : filteredServices.length ? (
-                      filteredServices.map((service) => (
-                        <tr key={service.id} className="border-t border-[#f9e6ef] align-top">
-                          <td className="px-5 py-4 text-sm font-bold text-[#432744]">{service.name}</td>
-                          <td className="px-4 py-4">
-                            <Pill
-                              className={
-                                SERVICE_CATEGORY_TONES[service.category] ??
-                                "border border-[#f4d5e3] bg-white text-[#8a7082]"
-                              }
-                            >
-                              {service.category}
-                            </Pill>
-                          </td>
-                          <td className="px-4 py-4 text-sm text-[#5f4b5d]">{formatVndCurrency(service.price)}</td>
-                          <td className="px-4 py-4 text-sm text-[#5f4b5d]">{formatDurationMinutes(service.duration)}</td>
-                          <td className="px-4 py-4">
-                            <TogglePill
-                              enabled={service.hasAddOn}
-                              onClick={() => handleToggleServiceAddOn(service)}
-                            />
-                          </td>
-                          <td className="px-4 py-4">
-                            <StatusBadge status={service.status} />
-                          </td>
-                          <td className="px-4 py-4">
-                            <ActionDropdown items={getServiceActionItems(service)} />
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="7" className="px-4 py-10 text-center text-sm text-[#8a7082]">
-                          {serviceLoadError || "No services found."}
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              <Table
+                rowKey="id"
+                columns={serviceColumns}
+                dataSource={filteredServices}
+                loading={isLoadingServices}
+                pagination={false}
+                scroll={{ x: 1080 }}
+                locale={{ emptyText: serviceLoadError || "No services found." }}
+              />
 
               <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-[11px] text-[#c694ad]">
@@ -927,40 +965,14 @@ export function ServicePricingManagementPage() {
                 </button>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="min-w-full">
-                  <thead className="bg-[#fff9fc]">
-                    <tr className="text-left text-[10px] font-bold uppercase tracking-[0.18em] text-[#c58ea8]">
-                      <th className="px-5 py-3">Add-on Name</th>
-                      <th className="px-4 py-3">Type</th>
-                      <th className="px-4 py-3">Price</th>
-                      <th className="px-4 py-3">Applied To</th>
-                      <th className="px-4 py-3">Status</th>
-                      <th className="px-4 py-3">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {addOns.map((item) => (
-                      <tr key={item.id} className="border-t border-[#f9e6ef]">
-                        <td className="px-5 py-4 text-sm font-bold text-[#432744]">{item.name}</td>
-                        <td className="px-4 py-4">
-                          <Pill className={ADD_ON_TYPE_TONES[item.type]}>{item.type}</Pill>
-                        </td>
-                        <td className="px-4 py-4 text-sm text-[#5f4b5d]">{formatVndCurrency(item.price)}</td>
-                        <td className="px-4 py-4">
-                          <Pill>{item.appliedTo}</Pill>
-                        </td>
-                        <td className="px-4 py-4">
-                          <StatusBadge status={item.status} />
-                        </td>
-                        <td className="px-4 py-4">
-                          <ActionDropdown items={getAddOnActionItems(item)} />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <Table
+                rowKey="id"
+                columns={addOnColumns}
+                dataSource={addOns}
+                pagination={false}
+                scroll={{ x: 940 }}
+                locale={{ emptyText: "No add-ons found." }}
+              />
             </section>
           </div>
 

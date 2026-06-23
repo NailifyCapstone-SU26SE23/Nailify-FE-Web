@@ -14,6 +14,7 @@ const loginSchema = z.object({
 });
 
 const demoAccounts = [
+  "admin@nailify.com / 123456",
   "manager1@gmail.com / 123456",
   "artist@gmail.com / 123456",
   "admin1@gmail.com / 123456",

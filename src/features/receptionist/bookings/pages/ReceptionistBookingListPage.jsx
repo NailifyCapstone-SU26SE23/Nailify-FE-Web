@@ -1,5 +1,6 @@
 import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Eye, LoaderCircle, RefreshCcw, Search, SquareCheckBig, UserPlus, XCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Table } from "antd";
 import toast from "react-hot-toast";
 import { Link, useNavigate } from "react-router-dom";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
@@ -196,7 +197,100 @@ export function ReceptionistBookingListPage() {
     };
   }, [bookings, pagination.totalCount]);
 
-  const updateBookingRow = (updatedBooking) => {
+  const bookingColumns = useMemo(() => ([
+    {
+      title: "Customer",
+      dataIndex: "customerName",
+      key: "customerName",
+      render: (value) => <span className="text-sm font-bold text-[#412643]">{value}</span>,
+    },
+    {
+      title: "Salon",
+      dataIndex: "salonName",
+      key: "salonName",
+      render: (value) => <span className="text-sm text-[#6b5668]">{value}</span>,
+    },
+    {
+      title: "Artist",
+      dataIndex: "artistName",
+      key: "artistName",
+      render: (value) => <span className="text-sm text-[#6b5668]">{value}</span>,
+    },
+    {
+      title: "Service",
+      key: "service",
+      render: (_, booking) => <span className="text-sm text-[#6b5668]">{booking.services[0] || "--"}</span>,
+    },
+    {
+      title: "Schedule",
+      key: "schedule",
+      render: (_, booking) => (
+        <div>
+          <p className="text-sm font-semibold text-[#412643]">{formatDate(booking.bookingDate)}</p>
+          <p className="mt-1 text-[11px] text-[#b38a9f]">{formatTime(booking.startTime)}</p>
+        </div>
+      ),
+    },
+    {
+      title: "Price",
+      dataIndex: "totalPrice",
+      key: "totalPrice",
+      render: (value) => <span className="text-sm font-semibold text-[#412643]">{formatCurrency(value)}</span>,
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      render: (status) => (
+        <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-extrabold ${getStatusTone(status)}`}>
+          {status}
+        </span>
+      ),
+    },
+    {
+      title: "Action",
+      key: "action",
+      render: (_, booking) => (
+        <ActionDropdown
+          items={[
+            {
+              key: "view",
+              label: "View Booking",
+              icon: Eye,
+              onSelect: () => navigate(getReceptionistBookingDetailRoute(booking.bookingId)),
+            },
+            {
+              key: "confirm",
+              label: "Confirm Booking",
+              icon: CheckCircle2,
+              className: "text-[#1f9d61]",
+              onSelect: () => void handleConfirmBooking(booking.bookingId),
+            },
+            ...(canManualCheckIn(booking.status)
+              ? [
+                {
+                  key: "check-in",
+                  label: "Check In",
+                  icon: SquareCheckBig,
+                  className: "text-[#4c71d9]",
+                  onSelect: () => void handleManualCheckIn(booking.bookingId),
+                },
+              ]
+              : []),
+            {
+              key: "reject",
+              label: "Reject Booking",
+              icon: XCircle,
+              className: "text-[#df4e86]",
+              onSelect: () => void handleRejectBooking(booking.bookingId),
+            },
+          ]}
+        />
+      ),
+    },
+  ]), [handleConfirmBooking, handleManualCheckIn, handleRejectBooking, navigate]);
+
+  function updateBookingRow(updatedBooking) {
     if (!updatedBooking?.bookingId) {
       return;
     }
@@ -206,9 +300,9 @@ export function ReceptionistBookingListPage() {
         booking.bookingId === updatedBooking.bookingId ? normalizeBooking(updatedBooking) : booking,
       ),
     );
-  };
+  }
 
-  const handleConfirmBooking = async (bookingId) => {
+  async function handleConfirmBooking(bookingId) {
     try {
       const updatedBooking = await confirmReceptionistBooking(bookingId);
       updateBookingRow(updatedBooking);
@@ -218,9 +312,9 @@ export function ReceptionistBookingListPage() {
         actionError instanceof Error ? actionError.message : "Failed to confirm booking.";
       toast.error(message);
     }
-  };
+  }
 
-  const handleRejectBooking = async (bookingId) => {
+  async function handleRejectBooking(bookingId) {
     try {
       const updatedBooking = await rejectReceptionistBooking(bookingId);
       updateBookingRow(updatedBooking);
@@ -230,9 +324,9 @@ export function ReceptionistBookingListPage() {
         actionError instanceof Error ? actionError.message : "Failed to reject booking.";
       toast.error(message);
     }
-  };
+  }
 
-  const handleManualCheckIn = async (bookingId) => {
+  async function handleManualCheckIn(bookingId) {
     try {
       const updatedBooking = await manualCheckInReceptionistBooking(bookingId);
       updateBookingRow(updatedBooking);
@@ -242,7 +336,7 @@ export function ReceptionistBookingListPage() {
         actionError instanceof Error ? actionError.message : "Failed to check in booking.";
       toast.error(message);
     }
-  };
+  }
 
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
@@ -317,78 +411,15 @@ export function ReceptionistBookingListPage() {
           </div>
         ) : (
           <div className="mt-6 overflow-hidden rounded-[20px] border border-[#f7dce8]">
-            <div className="hidden overflow-x-auto lg:block">
-              <table className="min-w-full">
-                <thead className="border-b border-[#f8e1eb] bg-[#fffdfd]">
-                  <tr className="text-left text-[10px] font-bold uppercase tracking-[0.16em] text-[#c696ad]">
-                    <th className="px-4 py-3">Customer</th>
-                    <th className="px-4 py-3">Salon</th>
-                    <th className="px-4 py-3">Artist</th>
-                    <th className="px-4 py-3">Service</th>
-                    <th className="px-4 py-3">Schedule</th>
-                    <th className="px-4 py-3">Price</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#fae6ef] bg-white">
-                  {filteredBookings.map((booking) => (
-                    <tr key={booking.bookingId}>
-                      <td className="px-4 py-4 text-sm font-bold text-[#412643]">{booking.customerName}</td>
-                      <td className="px-4 py-4 text-sm text-[#6b5668]">{booking.salonName}</td>
-                      <td className="px-4 py-4 text-sm text-[#6b5668]">{booking.artistName}</td>
-                      <td className="px-4 py-4 text-sm text-[#6b5668]">{booking.services[0] || "--"}</td>
-                      <td className="px-4 py-4">
-                        <p className="text-sm font-semibold text-[#412643]">{formatDate(booking.bookingDate)}</p>
-                        <p className="mt-1 text-[11px] text-[#b38a9f]">{formatTime(booking.startTime)}</p>
-                      </td>
-                      <td className="px-4 py-4 text-sm font-semibold text-[#412643]">{formatCurrency(booking.totalPrice)}</td>
-                      <td className="px-4 py-4">
-                        <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-extrabold ${getStatusTone(booking.status)}`}>
-                          {booking.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4">
-                        <ActionDropdown
-                          items={[
-                            {
-                              key: "view",
-                              label: "View Booking",
-                              icon: Eye,
-                              onSelect: () => navigate(getReceptionistBookingDetailRoute(booking.bookingId)),
-                            },
-                            {
-                              key: "confirm",
-                              label: "Confirm Booking",
-                              icon: CheckCircle2,
-                              className: "text-[#1f9d61]",
-                              onSelect: () => void handleConfirmBooking(booking.bookingId),
-                            },
-                            ...(canManualCheckIn(booking.status)
-                              ? [
-                                {
-                                  key: "check-in",
-                                  label: "Check In",
-                                  icon: SquareCheckBig,
-                                  className: "text-[#4c71d9]",
-                                  onSelect: () => void handleManualCheckIn(booking.bookingId),
-                                },
-                              ]
-                              : []),
-                            {
-                              key: "reject",
-                              label: "Reject Booking",
-                              icon: XCircle,
-                              className: "text-[#df4e86]",
-                              onSelect: () => void handleRejectBooking(booking.bookingId),
-                            },
-                          ]}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="hidden lg:block">
+              <Table
+                rowKey="bookingId"
+                columns={bookingColumns}
+                dataSource={filteredBookings}
+                pagination={false}
+                scroll={{ x: 1100 }}
+                locale={{ emptyText: "No bookings matched the current search." }}
+              />
             </div>
 
             <div className="space-y-3 p-4 lg:hidden">

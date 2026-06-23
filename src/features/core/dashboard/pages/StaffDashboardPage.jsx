@@ -19,6 +19,7 @@ import {
   Trophy,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { Table } from "antd";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
@@ -332,6 +333,67 @@ export function StaffDashboardPage() {
 
   const greetingName = sessionUser?.fullName || sessionUser?.email || "Artist";
 
+  const bookingColumns = useMemo(() => ([
+    {
+      title: "Time",
+      key: "time",
+      render: (_, booking) => (
+        <span className="text-sm font-bold text-[#3f2b3f]">{formatBookingWindow(booking)}</span>
+      ),
+    },
+    {
+      title: "Customer",
+      key: "customer",
+      render: (_, booking) => (
+        <div className="flex items-center gap-3">
+          <img
+            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(booking.customerName)}&background=fde7ef&color=8f365c&bold=true`}
+            alt={booking.customerName}
+            className="h-9 w-9 rounded-full border border-[#f6d3e3]"
+            loading="lazy"
+            referrerPolicy="no-referrer"
+          />
+          <p className="text-sm font-bold text-[#432744]">{booking.customerName}</p>
+        </div>
+      ),
+    },
+    {
+      title: "Service",
+      key: "service",
+      render: (_, booking) => <span className="text-sm text-[#6d5669]">{booking.services.join(", ") || "--"}</span>,
+    },
+    {
+      title: "Design",
+      key: "design",
+      render: (_, booking) => (
+        booking.previewImage ? (
+          <img
+            src={booking.previewImage}
+            alt={booking.service}
+            className="h-9 w-9 rounded-xl object-cover shadow-sm"
+            loading="lazy"
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff1f6] text-[10px] font-bold text-[#ea4f93]">
+            --
+          </div>
+        )
+      ),
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      render: (value) => <StatusChip label={value} className={getStatusTone(value)} />,
+    },
+    {
+      title: "Action",
+      key: "action",
+      render: (_, booking) => <ActionDropdown items={getActionItems(booking)} />,
+    },
+  ]), [getActionItems]);
+
   return (
     <section className="flex min-h-full w-full min-w-0 flex-col gap-4 overflow-x-hidden bg-[linear-gradient(180deg,#fff9fc_0%,#fff5fa_100%)]">
       <div className="flex w-full min-w-0 flex-col gap-4 rounded-[24px] border border-[#f6dbe8] bg-[#fff7fb] p-3 shadow-[0_14px_30px_rgba(236,72,153,0.05)] sm:p-4">
@@ -400,71 +462,15 @@ export function StaffDashboardPage() {
                       ) : null}
                     </div>
 
-                    <div className="hidden overflow-x-auto md:block">
-                      <table className="min-w-full">
-                        <thead className="bg-[#fff9fc]">
-                          <tr className="text-left text-[10px] font-bold uppercase tracking-[0.18em] text-[#c58ea8]">
-                            <th className="px-5 py-4">Time</th>
-                            <th className="px-4 py-4">Customer</th>
-                            <th className="px-4 py-4">Service</th>
-                            <th className="px-4 py-4">Design</th>
-                            <th className="px-4 py-4">Status</th>
-                            <th className="px-4 py-4">Action</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {sortedBookings.map((booking) => (
-                            <tr key={booking.id} className="border-t border-[#f9e6ef]">
-                              <td className="px-5 py-4 text-sm font-bold text-[#3f2b3f]">
-                                {formatBookingWindow(booking)}
-                              </td>
-                              <td className="px-4 py-4">
-                                <div className="flex items-center gap-3">
-                                  <img
-                                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(booking.customerName)}&background=fde7ef&color=8f365c&bold=true`}
-                                    alt={booking.customerName}
-                                    className="h-9 w-9 rounded-full border border-[#f6d3e3]"
-                                    loading="lazy"
-                                    referrerPolicy="no-referrer"
-                                  />
-                                  <div>
-                                    <p className="text-sm font-bold text-[#432744]">{booking.customerName}</p>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="px-4 py-4 text-sm text-[#6d5669]">{booking.services.join(", ") || "--"}</td>
-                              <td className="px-4 py-4">
-                                {booking.previewImage ? (
-                                  <img
-                                    src={booking.previewImage}
-                                    alt={booking.service}
-                                    className="h-9 w-9 rounded-xl object-cover shadow-sm"
-                                    loading="lazy"
-                                    referrerPolicy="no-referrer"
-                                  />
-                                ) : (
-                                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff1f6] text-[10px] font-bold text-[#ea4f93]">
-                                    --
-                                  </div>
-                                )}
-                              </td>
-                              <td className="px-4 py-4">
-                                <StatusChip label={booking.status} className={getStatusTone(booking.status)} />
-                              </td>
-                              <td className="px-4 py-4">
-                                <ActionDropdown items={getActionItems(booking)} />
-                              </td>
-                            </tr>
-                          ))}
-                          {!sortedBookings.length ? (
-                            <tr>
-                              <td colSpan="6" className="px-5 py-10 text-center text-sm text-[#8a7082]">
-                                No bookings found for today.
-                              </td>
-                            </tr>
-                          ) : null}
-                        </tbody>
-                      </table>
+                    <div className="hidden md:block">
+                      <Table
+                        rowKey="id"
+                        columns={bookingColumns}
+                        dataSource={sortedBookings}
+                        pagination={false}
+                        scroll={{ x: 980 }}
+                        locale={{ emptyText: "No bookings found for today." }}
+                      />
                     </div>
                   </>
                 )}

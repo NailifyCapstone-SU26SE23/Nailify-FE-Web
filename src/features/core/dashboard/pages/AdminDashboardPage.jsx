@@ -12,7 +12,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { Modal } from "antd";
+import { Modal, Table } from "antd";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../../../shared/constants/routes";
@@ -238,6 +238,78 @@ export function AdminDashboardPage() {
     [],
   );
 
+  const salonPerformanceColumns = useMemo(() => ([
+    {
+      title: "Salon Name",
+      key: "name",
+      render: (_, salon) => (
+        <div className="flex items-center gap-2">
+          <span className="h-2.5 w-2.5 rounded-full bg-[#ea4f93]" />
+          <div>
+            <p className="font-semibold text-[#402542]">{salon.name}</p>
+            <p className="mt-1 text-xs text-[#bc89a4]">{salon.location}</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Location",
+      dataIndex: "location",
+      key: "location",
+      render: (value) => <span className="text-sm text-[#7a6176]">{value}</span>,
+    },
+    {
+      title: "Manager",
+      dataIndex: "manager",
+      key: "manager",
+      render: (value) => <span className="text-sm text-[#7a6176]">{value}</span>,
+    },
+    {
+      title: "Bookings",
+      dataIndex: "bookings",
+      key: "bookings",
+      render: (value) => <span className="text-sm font-semibold text-[#402542]">{value}</span>,
+    },
+    {
+      title: "Revenue",
+      dataIndex: "revenue",
+      key: "revenue",
+      render: (value) => <span className="text-sm font-bold text-[#ea4f93]">{value}</span>,
+    },
+    {
+      title: "Occupancy",
+      dataIndex: "occupancy",
+      key: "occupancy",
+      render: (value) => (
+        <div className="flex items-center gap-3">
+          <div className="h-2 w-20 rounded-full bg-[#f7d7e5]">
+            <div className="h-full rounded-full bg-[#ea4f93]" style={{ width: `${value}%` }} />
+          </div>
+          <span className="text-xs font-bold text-[#8a6d82]">{value}%</span>
+        </div>
+      ),
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      render: (value) => <StatusBadge status={value} />,
+    },
+    {
+      title: "Action",
+      key: "action",
+      render: (_, salon) => (
+        <button
+          type="button"
+          onClick={() => setSelectedSalonReport(salon)}
+          className="rounded-full border border-[#f4c7da] bg-[#fff6fa] px-3 py-1.5 text-xs font-bold text-[#e84d92]"
+        >
+          View
+        </button>
+      ),
+    },
+  ]), []);
+
   return (
     <section className="flex min-h-full flex-col gap-5 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
       <div className="">
@@ -406,63 +478,14 @@ export function AdminDashboardPage() {
                   </button>
                 </div>
               </div>
-              <div className="mt-5 overflow-x-auto">
-                <table className="min-w-full text-left">
-                  <thead>
-                    <tr className="border-b border-[#f6dce7] text-[11px] uppercase tracking-[0.18em] text-[#c693ad]">
-                      <th className="px-3 py-3">Salon Name</th>
-                      <th className="px-3 py-3">Location</th>
-                      <th className="px-3 py-3">Manager</th>
-                      <th className="px-3 py-3">Bookings</th>
-                      <th className="px-3 py-3">Revenue</th>
-                      <th className="px-3 py-3">Occupancy</th>
-                      <th className="px-3 py-3">Status</th>
-                      <th className="px-3 py-3">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {salonPerformanceRows.map((salon) => (
-                      <tr key={salon.id} className="border-b border-[#fbe7ef] last:border-b-0">
-                        <td className="px-3 py-4">
-                          <div className="flex items-center gap-2">
-                            <span className="h-2.5 w-2.5 rounded-full bg-[#ea4f93]" />
-                            <div>
-                              <p className="font-semibold text-[#402542]">{salon.name}</p>
-                              <p className="mt-1 text-xs text-[#bc89a4]">{salon.location}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-3 py-4 text-sm text-[#7a6176]">{salon.location}</td>
-                        <td className="px-3 py-4 text-sm text-[#7a6176]">{salon.manager}</td>
-                        <td className="px-3 py-4 text-sm font-semibold text-[#402542]">{salon.bookings}</td>
-                        <td className="px-3 py-4 text-sm font-bold text-[#ea4f93]">{salon.revenue}</td>
-                        <td className="px-3 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="h-2 w-20 rounded-full bg-[#f7d7e5]">
-                              <div
-                                className="h-full rounded-full bg-[#ea4f93]"
-                                style={{ width: `${salon.occupancy}%` }}
-                              />
-                            </div>
-                            <span className="text-xs font-bold text-[#8a6d82]">{salon.occupancy}%</span>
-                          </div>
-                        </td>
-                        <td className="px-3 py-4">
-                          <StatusBadge status={salon.status} />
-                        </td>
-                        <td className="px-3 py-4">
-                          <button
-                            type="button"
-                            onClick={() => setSelectedSalonReport(salon)}
-                            className="rounded-full border border-[#f4c7da] bg-[#fff6fa] px-3 py-1.5 text-xs font-bold text-[#e84d92]"
-                          >
-                            View
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="mt-5">
+                <Table
+                  rowKey="id"
+                  columns={salonPerformanceColumns}
+                  dataSource={salonPerformanceRows}
+                  pagination={false}
+                  scroll={{ x: 1180 }}
+                />
               </div>
             </Card>
 

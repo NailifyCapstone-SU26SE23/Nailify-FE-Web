@@ -1,4 +1,4 @@
-import { Button, Modal } from "antd";
+import { Button, Modal, Table } from "antd";
 import {
   CalendarClock,
   CheckCircle2,
@@ -316,6 +316,81 @@ export function ReceptionistBookingDetailPage() {
   const progressPercent = getProgressPercent(booking);
   const isManualCheckInAllowed = canManualCheckIn(booking?.status);
 
+  const serviceColumns = useMemo(() => ([
+    {
+      title: "Time",
+      dataIndex: "time",
+      key: "time",
+      render: (value) => <span className="text-xs font-bold text-[#eb5b92]">{value}</span>,
+    },
+    {
+      title: "Service",
+      key: "service",
+      render: (_, row) => (
+        <div>
+          <p className="text-xs font-bold text-[#4a3741]">{row.service}</p>
+          <p className="mt-1 text-[10px] text-[#a48796]">{row.serviceType}</p>
+        </div>
+      ),
+    },
+    {
+      title: "Nail Artist",
+      key: "artist",
+      render: (_, row) => (
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#ef5b94] text-[10px] font-extrabold text-white">
+            {(row.artist || "--")
+              .split(" ")
+              .filter(Boolean)
+              .slice(0, 2)
+              .map((part) => part[0])
+              .join("")
+              .toUpperCase() || "--"}
+          </div>
+          <span className="text-xs font-medium text-[#4a3741]">{row.artist}</span>
+        </div>
+      ),
+    },
+    {
+      title: "Duration",
+      dataIndex: "duration",
+      key: "duration",
+      render: (value) => <span className="text-xs text-[#4a3741]">{value}</span>,
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      render: (status) => (
+        <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-extrabold ${getStatusTone(status)}`}>
+          {status}
+        </span>
+      ),
+    },
+    {
+      title: "Action",
+      key: "action",
+      render: (_, row) => (
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => handleMockAction(`View ${row.service}`)}
+            className="rounded-xl bg-[#fff1f6] px-3 py-1.5 text-[10px] font-bold text-[#eb5b92]"
+          >
+            View
+          </button>
+          <button
+            type="button"
+            onClick={() => handleMockAction(`${row.action} ${row.service}`)}
+            className={`rounded-xl px-3 py-1.5 text-[10px] font-bold ${getActionTone(row.action)}`}
+          >
+            {row.action}
+          </button>
+        </div>
+      ),
+    },
+  ]), []);
+
   const handleRefresh = async () => {
     if (!bookingId) {
       return;
@@ -559,75 +634,14 @@ export function ReceptionistBookingDetailPage() {
             subtitle="Today's scheduled services"
             badge={`${serviceRows.length || 0} Services`}
           >
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead>
-                  <tr className="border-b border-[#f7e2eb] text-left text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#aa8f9d]">
-                    <th className="px-3 py-3">Time</th>
-                    <th className="px-3 py-3">Service</th>
-                    <th className="px-3 py-3">Nail Artist</th>
-                    <th className="px-3 py-3">Duration</th>
-                    <th className="px-3 py-3">Status</th>
-                    <th className="px-3 py-3">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {serviceRows.length ? serviceRows.map((row) => (
-                    <tr key={row.id} className="border-b border-[#fbeaf1] last:border-b-0">
-                      <td className="px-3 py-4 text-xs font-bold text-[#eb5b92]">{row.time}</td>
-                      <td className="px-3 py-4">
-                        <p className="text-xs font-bold text-[#4a3741]">{row.service}</p>
-                        <p className="mt-1 text-[10px] text-[#a48796]">{row.serviceType}</p>
-                      </td>
-                      <td className="px-3 py-4">
-                        <div className="flex items-center gap-2.5">
-                          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#ef5b94] text-[10px] font-extrabold text-white">
-                            {(row.artist || "--")
-                              .split(" ")
-                              .filter(Boolean)
-                              .slice(0, 2)
-                              .map((part) => part[0])
-                              .join("")
-                              .toUpperCase() || "--"}
-                          </div>
-                          <span className="text-xs font-medium text-[#4a3741]">{row.artist}</span>
-                        </div>
-                      </td>
-                      <td className="px-3 py-4 text-xs text-[#4a3741]">{row.duration}</td>
-                      <td className="px-3 py-4">
-                        <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-extrabold ${getStatusTone(row.status)}`}>
-                          {row.status}
-                        </span>
-                      </td>
-                      <td className="px-3 py-4">
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleMockAction(`View ${row.service}`)}
-                            className="rounded-xl bg-[#fff1f6] px-3 py-1.5 text-[10px] font-bold text-[#eb5b92]"
-                          >
-                            View
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleMockAction(`${row.action} ${row.service}`)}
-                            className={`rounded-xl px-3 py-1.5 text-[10px] font-bold ${getActionTone(row.action)}`}
-                          >
-                            {row.action}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )) : (
-                    <tr>
-                      <td colSpan="6" className="px-3 py-8 text-center text-sm text-[#a48796]">
-                        No appointment services available.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+            <Table
+              rowKey="id"
+              columns={serviceColumns}
+              dataSource={serviceRows}
+              pagination={false}
+              scroll={{ x: 860 }}
+              locale={{ emptyText: "No appointment services available." }}
+            />
           </DetailCard>
 
           <DetailCard
