@@ -28,6 +28,8 @@ export const ROUTES = {
   managerStaffArtists: "/manager/staff-artists",
   managerStaffArtistsCreate: "/manager/staff-artists/create",
   managerStaffArtistUpdate: "/manager/staff-artists/:staffId",
+  managerCustomerNails: "/manager/customer-nails",
+  managerCustomerNailDetail: "/manager/customer-nails/:customerNailId",
 
   // Admin routes
   adminRoot: "/admin",
