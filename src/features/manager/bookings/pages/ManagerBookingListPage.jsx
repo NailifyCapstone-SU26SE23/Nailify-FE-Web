@@ -1,162 +1,42 @@
 import {
-  CheckCircle2,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   Clock3,
   Download,
+  Eye,
   RefreshCw,
   Search,
   Sparkles,
   UserCheck,
   UserPlus,
+  Calendar,
+  CheckCircle2,
   XCircle,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Spin, Alert, DatePicker, Dropdown } from "antd";
+import dayjs from "dayjs";
 import { ROLES } from "../../../../shared/constants/roles";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { BOOKING_ROLE_CONFIG } from "../services/mockBookings";
+import { fetchBookingsBySalonId } from "../services/bookingsService";
 
 const roleConfig = BOOKING_ROLE_CONFIG[ROLES.manager];
+const DEFAULT_SALON_ID = "484c3aef-3ae1-4ad6-8aba-6b0bc6df586d";
 
-const summaryCards = [
-  {
-    label: "Pending Bookings",
-    value: "14",
-    note: "awaiting confirmation",
-    icon: Clock3,
-    iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
-    noteClassName: "text-[#c08aa4]",
-  },
-  {
-    label: "Confirmed Bookings",
-    value: "31",
-    note: "+5 since yesterday",
-    icon: CheckCircle2,
-    iconClassName: "bg-[#eaf9ee] text-[#2fa25f]",
-    noteClassName: "text-[#2fa25f]",
-  },
-  {
-    label: "Checked-in Customers",
-    value: "9",
-    note: "+2 this hour",
-    icon: UserCheck,
-    iconClassName: "bg-[#e7ecff] text-[#4755b8]",
-    noteClassName: "text-[#2fa25f]",
-  },
-  {
-    label: "No-shows Today",
-    value: "3",
-    note: "+1 from last week",
-    icon: XCircle,
-    iconClassName: "bg-[#ffe6ec] text-[#e1447f]",
-    noteClassName: "text-[#e1447f]",
-  },
-  {
-    label: "Reschedule Requests",
-    value: "6",
-    note: "needs attention",
-    icon: RefreshCw,
-    iconClassName: "bg-[#fff0dd] text-[#db8520]",
-    noteClassName: "text-[#db8520]",
-  },
+const appointmentFilters = [
+  { value: "All", label: "All" },
+  { value: "Pending", label: "Pending" },
+  { value: "Confirmed", label: "Confirmed" },
+  { value: "CheckedIn", label: "Checked In" },
+  { value: "InProgress", label: "In Progress" },
+  { value: "Completed", label: "Completed" },
+  { value: "Rejected", label: "Rejected" },
+  { value: "Reschedule", label: "Reschedule" },
 ];
 
-const appointmentFilters = ["All", "Pending", "Confirmed", "Checked In", "Reschedule"];
-
-const todayAppointments = [
-  {
-    id: "BKG-2401",
-    time: "9:00 AM",
-    duration: "60 min",
-    customer: "Sarah Chen",
-    phone: "+65 9123 4567",
-    service: "Gel Full Set + Art",
-    artist: "Luna Park",
-    deposit: "$25.00 Paid",
-    depositTone: "text-[#2fa25f]",
-    status: "Checked In",
-    initials: "SC",
-    avatarTone: "from-[#ffc5de] to-[#ea4f93]",
-    artistTone: "from-[#d8c4ff] to-[#8b5cf6]",
-  },
-  {
-    id: "BKG-2402",
-    time: "9:30 AM",
-    duration: "90 min",
-    customer: "Emily Wong",
-    phone: "+65 8234 5678",
-    service: "Nail Art Design",
-    artist: "Aria Nguyen",
-    deposit: "$30.00 Paid",
-    depositTone: "text-[#2fa25f]",
-    status: "In Progress",
-    initials: "EW",
-    avatarTone: "from-[#b8f0d8] to-[#2fc5a9]",
-    artistTone: "from-[#ffc5de] to-[#ea4f93]",
-  },
-  {
-    id: "BKG-2403",
-    time: "10:00 AM",
-    duration: "45 min",
-    customer: "Jessica Tan",
-    phone: "+65 9345 6789",
-    service: "Gel Manicure",
-    artist: "Chloe Davis",
-    deposit: "Pending",
-    depositTone: "text-[#db8520]",
-    status: "Pending",
-    initials: "JT",
-    avatarTone: "from-[#ffe0b2] to-[#ff9800]",
-    artistTone: "from-[#b8f0d8] to-[#2fc5a9]",
-  },
-  {
-    id: "BKG-2404",
-    time: "10:30 AM",
-    duration: "75 min",
-    customer: "Grace Teo",
-    phone: "+65 8456 7890",
-    service: "Acrylic Full Set",
-    artist: "Mel Santos",
-    deposit: "$20.00 Paid",
-    depositTone: "text-[#2fa25f]",
-    status: "Confirmed",
-    initials: "GT",
-    avatarTone: "from-[#d8c4ff] to-[#8b5cf6]",
-    artistTone: "from-[#ffe0b2] to-[#ff9800]",
-  },
-  {
-    id: "BKG-2405",
-    time: "11:00 AM",
-    duration: "60 min",
-    customer: "Wendy Chua",
-    phone: "+65 9567 8901",
-    service: "French Tip",
-    artist: "Luna Park",
-    deposit: "Pending",
-    depositTone: "text-[#db8520]",
-    status: "Reschedule Req",
-    initials: "WC",
-    avatarTone: "from-[#ffd0e2] to-[#f04f91]",
-    artistTone: "from-[#d8c4ff] to-[#8b5cf6]",
-  },
-  {
-    id: "BKG-2406",
-    time: "11:30 AM",
-    duration: "60 min",
-    customer: "Priya Nair",
-    phone: "+65 9678 9012",
-    service: "Gel Pedicure",
-    artist: "Aria Nguyen",
-    deposit: "$15.00 Paid",
-    depositTone: "text-[#2fa25f]",
-    status: "No Show",
-    initials: "PN",
-    avatarTone: "from-[#b8f0d8] to-[#2fc5a9]",
-    artistTone: "from-[#ffc5de] to-[#ea4f93]",
-  },
-];
 
 const scheduleStaff = [
   {
@@ -318,14 +198,21 @@ MetricCard.propTypes = {
 
 function getStatusTone(status) {
   switch (status) {
+    case "CheckedIn":
     case "Checked In":
       return "bg-[#e7ecff] text-[#4755b8]";
+    case "InProgress":
     case "In Progress":
       return "bg-[#f3ebff] text-[#7e4fe6]";
     case "Pending":
       return "bg-[#fff0dd] text-[#db8520]";
     case "Confirmed":
       return "bg-[#eaf9ee] text-[#2fa25f]";
+    case "Completed":
+      return "bg-[#eaf9ee] text-[#2fa25f]";
+    case "Rejected":
+      return "bg-[#ffe6ec] text-[#e1447f]";
+    case "RescheduleReq":
     case "Reschedule Req":
       return "bg-[#fff0dd] text-[#db8520]";
     default:
@@ -333,10 +220,30 @@ function getStatusTone(status) {
   }
 }
 
+function formatDuration(totalMinutes) {
+  if (!totalMinutes) return "0m";
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  
+  if (hours > 0 && minutes > 0) {
+    return `${hours}h${minutes}m`;
+  } else if (hours > 0) {
+    return `${hours}h`;
+  } else {
+    return `${minutes}m`;
+  }
+}
+
+function formatStatusDisplay(status) {
+  if (status === "CheckedIn") return "Checked In";
+  if (status === "InProgress") return "In Progress";
+  if (status === "RescheduleReq") return "Reschedule Req";
+  return status;
+}
+
 function matchesFilter(status, filter) {
   if (filter === "All") return true;
-  if (filter === "Checked In") return status === "Checked In";
-  if (filter === "Reschedule") return status === "Reschedule Req";
+  if (filter === "Reschedule") return status === "RescheduleReq" || status === "Reschedule Req";
   return status === filter;
 }
 
@@ -346,12 +253,101 @@ function formatHourLabel(hour) {
   return `${hour} AM`;
 }
 
+function getArtistDisplayName(artist) {
+  const name = artist?.nailArtistName || artist?.artistName || artist?.fullName || artist?.name;
+  return name === "Chưa chỉ định" ? "Unassigned" : name || "Unassigned";
+}
+
+function mapApiBookingToUiFormat(apiBooking) {
+  console.log("Mapping API booking:", apiBooking);
+  
+  
+  // Helper to format date and time
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  };
+  
+  const formatTime = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  };
+
+  // Get customer name and initials
+  const customerName = apiBooking.customerName || "Unknown Customer";
+  const customerInitials = customerName
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  // Get artist name
+  const artistName = getArtistDisplayName(apiBooking);
+  const artistId = apiBooking.staffId || apiBooking.nailArtistId || apiBooking.staffArtistId || apiBooking.artistId || null;
+
+  return {
+    id: apiBooking.bookingId || apiBooking.id,
+    bookingId: apiBooking.bookingId || apiBooking.id,
+    bookingDate: apiBooking.bookingDate,
+    date: formatDate(apiBooking.bookingDate || apiBooking.createdAt),
+    time: formatTime(apiBooking.bookingDate || apiBooking.createdAt),
+    startTime: apiBooking.startTime,
+    duration: formatDuration(apiBooking.totalDuration || 60),
+    totalDuration: apiBooking.totalDuration,
+    customer: customerName,
+    customerName: apiBooking.customerName,
+    customerId: apiBooking.customerId,
+    phone: apiBooking.customerPhone || "N/A",
+    service: apiBooking.serviceName || "Nail Service",
+    serviceName: apiBooking.serviceName,
+    artist: artistName,
+    nailArtistName: artistName,
+    nailArtistId: artistId,
+    deposit: apiBooking.depositAmount ? `$${apiBooking.depositAmount} Paid` : "Pending",
+    depositAmount: apiBooking.depositAmount,
+    depositTone: apiBooking.depositAmount ? "text-[#2fa25f]" : "text-[#db8520]",
+    status: apiBooking.status || "Pending",
+    totalPrice: apiBooking.totalPrice,
+    qrCode: apiBooking.qrCode,
+    qtCode: apiBooking.qtCode,
+    checkInImageUrl: apiBooking.checkInImageUrl,
+    bookingItems: apiBooking.bookingItems || [],
+    salonId: apiBooking.salonId,
+    initials: customerInitials,
+    avatarTone: "from-[#ffc5de] to-[#ea4f93]",
+    artistTone: "from-[#d8c4ff] to-[#8b5cf6]",
+    ...apiBooking, // Include all other fields
+  };
+}
+
 export function ManagerBookingListPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
   const [query, setQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [bookings, setBookings] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const loadBookings = useCallback(async () => {
+    setIsLoading(true);
+    setError("");
+    try {
+      const apiBookings = await fetchBookingsBySalonId(DEFAULT_SALON_ID);
+      const uiBookings = apiBookings.map(mapApiBookingToUiFormat);
+      setBookings(uiBookings);
+    } catch (err) {
+      console.error("Failed to load bookings:", err);
+      setError(err.message || "Failed to load bookings. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (!location.state?.flashMessage) {
@@ -361,20 +357,82 @@ export function ManagerBookingListPage() {
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
 
+  useEffect(() => {
+    loadBookings();
+  }, [loadBookings]);
+
   const filteredAppointments = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    return todayAppointments.filter((appointment) => {
+    return bookings.filter((appointment) => {
       const matchesQuery =
         normalizedQuery.length === 0 ||
-        [appointment.customer, appointment.phone, appointment.service, appointment.artist, appointment.time]
+        [appointment.customer, appointment.phone, appointment.artist, appointment.time]
           .join(" ")
           .toLowerCase()
           .includes(normalizedQuery);
 
-      return matchesQuery && matchesFilter(appointment.status, activeFilter);
+      // Date filtering
+      let matchesDate = true;
+      if (selectedDate) {
+        const bookingDate = dayjs(appointment.bookingDate || appointment.createdAt);
+        matchesDate = bookingDate.isSame(selectedDate, "day");
+      }
+
+      return matchesQuery && matchesFilter(appointment.status, activeFilter) && matchesDate;
     });
-  }, [activeFilter, query]);
+  }, [activeFilter, query, bookings, selectedDate]);
+
+  const summaryStats = useMemo(() => {
+    const pending = bookings.filter(b => b.status === "Pending").length;
+    const confirmed = bookings.filter(b => b.status === "Confirmed").length;
+    const checkedIn = bookings.filter(b => b.status === "Checked In").length;
+    const noShows = bookings.filter(b => b.status === "No Show").length;
+    const rescheduleReqs = bookings.filter(b => b.status === "Reschedule Req").length;
+
+    return [
+      {
+        label: "Pending Bookings",
+        value: pending.toString(),
+        note: "awaiting confirmation",
+        icon: Clock3,
+        iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
+        noteClassName: "text-[#c08aa4]",
+      },
+      {
+        label: "Confirmed Bookings",
+        value: confirmed.toString(),
+        note: "+5 since yesterday",
+        icon: CheckCircle2,
+        iconClassName: "bg-[#eaf9ee] text-[#2fa25f]",
+        noteClassName: "text-[#2fa25f]",
+      },
+      {
+        label: "Checked-in Customers",
+        value: checkedIn.toString(),
+        note: "+2 this hour",
+        icon: UserCheck,
+        iconClassName: "bg-[#e7ecff] text-[#4755b8]",
+        noteClassName: "text-[#2fa25f]",
+      },
+      {
+        label: "No-shows Today",
+        value: noShows.toString(),
+        note: "+1 from last week",
+        icon: XCircle,
+        iconClassName: "bg-[#ffe6ec] text-[#e1447f]",
+        noteClassName: "text-[#e1447f]",
+      },
+      {
+        label: "Reschedule Requests",
+        value: rescheduleReqs.toString(),
+        note: "needs attention",
+        icon: RefreshCw,
+        iconClassName: "bg-[#fff0dd] text-[#db8520]",
+        noteClassName: "text-[#db8520]",
+      },
+    ];
+  }, [bookings]);
 
   return (
     <section className="flex min-h-full flex-col gap-4">
@@ -401,33 +459,67 @@ export function ManagerBookingListPage() {
         </div>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        {summaryCards.map((item) => (
-          <MetricCard key={item.label} item={item} />
-        ))}
-      </div>
+      {error ? (
+        <Alert
+          message="Error Loading Bookings"
+          description={error}
+          type="error"
+          showIcon
+        />
+      ) : null}
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
-        <div className="space-y-4">
-          <Card className="p-0">
+      {isLoading ? (
+        <div className="flex min-h-[300px] items-center justify-center">
+          <Spin size="large" />
+        </div>
+      ) : null}
+
+      {!isLoading && !error ? (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+          {summaryStats.map((item) => (
+            <MetricCard key={item.label} item={item} />
+          ))}
+        </div>
+      ) : null}
+
+      {!isLoading && !error ? (
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
+          <div className="space-y-4">
+            <Card className="p-0">
             <div className="flex flex-col gap-4 border-b border-[#f6dce7] p-5 lg:flex-row lg:items-center lg:justify-between">
               <SectionHeading title="Today's Appointments" />
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <div className="flex flex-wrap gap-2">
-                  {appointmentFilters.map((filter) => (
+                  {/* Status Filter Dropdown */}
+                  <Dropdown
+                    menu={{
+                      items: appointmentFilters.map((filter) => ({
+                        key: filter.value,
+                        label: (
+                          <span className={activeFilter === filter.value ? "text-[#ea4f93] font-bold" : "text-[#5c4559]"}>
+                            {filter.label}
+                          </span>
+                        ),
+                        onClick: () => setActiveFilter(filter.value),
+                      })),
+                    }}
+                  >
                     <button
-                      key={filter}
                       type="button"
-                      onClick={() => setActiveFilter(filter)}
-                      className={
-                        activeFilter === filter
-                          ? "rounded-full bg-[#ea4f93] px-3 py-1.5 text-[11px] font-bold text-white"
-                          : "rounded-full border border-[#f4c1d8] bg-[#fff7fb] px-3 py-1.5 text-[11px] font-bold text-[#c08aa4]"
-                      }
+                      className="inline-flex items-center gap-2 rounded-full border border-[#f4c1d8] bg-white px-4 py-2 text-xs font-bold text-[#5c4559] transition hover:bg-[#fff7fb]"
                     >
-                      {filter}
+                      <span>{appointmentFilters.find(f => f.value === activeFilter)?.label || activeFilter}</span>
+                      <ChevronDown size={12} />
                     </button>
-                  ))}
+                  </Dropdown>
+                  {/* Date Picker */}
+                  <DatePicker
+                    value={selectedDate}
+                    onChange={(date) => setSelectedDate(date)}
+                    placeholder="Select date"
+                    className="h-9 rounded-full border border-[#f5d7e4] bg-[#fff9fc] text-xs text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
+                    suffixIcon={<Calendar size={14} className="text-[#c08aa4]" />}
+                  />
                 </div>
                 <label className="relative block min-w-[200px]">
                   <Search
@@ -448,23 +540,22 @@ export function ManagerBookingListPage() {
               <table className="min-w-full text-left">
                 <thead>
                   <tr className="border-b border-[#f6dce7] text-[10px] uppercase tracking-[0.16em] text-[#c693ad]">
-                    <th className="px-3 py-3">Time</th>
-                    <th className="px-3 py-3">Customer</th>
-                    <th className="px-3 py-3">Service</th>
-                    <th className="px-3 py-3">Staff Artist</th>
-                    <th className="px-3 py-3">Deposit</th>
-                    <th className="px-3 py-3">Status</th>
-                    <th className="px-3 py-3">Action</th>
+                    <th className="px-3 py-3 whitespace-nowrap">Time</th>
+                    <th className="px-3 py-3 whitespace-nowrap">Customer</th>
+                    <th className="px-3 py-3 whitespace-nowrap">Staff Artist</th>
+                    <th className="px-3 py-3 whitespace-nowrap">Deposit</th>
+                    <th className="px-3 py-3 whitespace-nowrap">Status</th>
+                    <th className="px-3 py-3 whitespace-nowrap">Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredAppointments.map((row) => (
                     <tr key={row.id} className="border-b border-[#fbe7ef] last:border-b-0">
-                      <td className="px-3 py-4">
+                      <td className="px-3 py-4 whitespace-nowrap">
                         <p className="text-sm font-semibold text-[#402542]">{row.time}</p>
                         <p className="text-[11px] text-[#c08aa4]">{row.duration}</p>
                       </td>
-                      <td className="px-3 py-4">
+                      <td className="px-3 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-3">
                           <div
                             className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${row.avatarTone} text-[10px] font-bold text-white`}
@@ -477,8 +568,7 @@ export function ManagerBookingListPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-3 py-4 text-sm text-[#7a6176]">{row.service}</td>
-                      <td className="px-3 py-4">
+                      <td className="px-3 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           <div
                             className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${row.artistTone} text-[9px] font-bold text-white`}
@@ -491,23 +581,23 @@ export function ManagerBookingListPage() {
                           <span className="text-sm text-[#7a6176]">{row.artist}</span>
                         </div>
                       </td>
-                      <td className="px-3 py-4">
+                      <td className="px-3 py-4 whitespace-nowrap">
                         <span className={`text-sm font-semibold ${row.depositTone}`}>{row.deposit}</span>
                       </td>
-                      <td className="px-3 py-4">
+                      <td className="px-3 py-4 whitespace-nowrap">
                         <span
-                          className={`inline-flex rounded-full px-3 py-1 text-[11px] font-bold ${getStatusTone(row.status)}`}
+                          className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold whitespace-nowrap ${getStatusTone(row.status)}`}
                         >
-                          {row.status}
+                          {formatStatusDisplay(row.status)}
                         </span>
                       </td>
-                      <td className="px-3 py-4">
+                      <td className="px-3 py-4 whitespace-nowrap">
                         <Link
                           to={roleConfig.getDetailRoute(row.id)}
-                          className="inline-flex items-center gap-1 rounded-full border border-[#f4c7da] bg-[#fff6fa] px-3 py-1.5 text-xs font-bold text-[#e84d92]"
+                          className="inline-flex items-center gap-1 rounded-full bg-[#ea4f93] px-2.5 py-1 text-[10px] font-bold text-white shadow-[0_4px_12px_rgba(234,79,147,0.25)] transition hover:bg-[#df4588]"
                         >
-                          Actions
-                          <ChevronDown size={12} />
+                          <Eye size={12} />
+                          View
                         </Link>
                       </td>
                     </tr>
@@ -765,7 +855,9 @@ export function ManagerBookingListPage() {
             </div>
           </Card>
         </aside>
-      </div>
+        </div>
+      ) : null}
+
     </section>
   );
 }

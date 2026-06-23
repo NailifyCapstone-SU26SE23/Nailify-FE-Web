@@ -7,6 +7,8 @@ import { ManagerBookingListPage } from "../../features/manager/bookings/pages/Ma
 import { StaffCreatePage } from "../../features/manager/staff-artist-management/pages/StaffCreatePage";
 import { StaffManagementPage } from "../../features/manager/staff-artist-management/pages/StaffManagementPage";
 import { StaffUpdatePage } from "../../features/manager/staff-artist-management/pages/StaffUpdatePage";
+import { CustomerNailPage } from "../../features/manager/customer-nail/pages/CustomerNailPage";
+import { CustomerNailDetailPage } from "../../features/manager/customer-nail/pages/CustomerNailDetailPage";
 import { AuthGuard } from "../../shared/components/guards/AuthGuard";
 import { RoleGuard } from "../../shared/components/guards/RoleGuard";
 import { ROLES } from "../../shared/constants/roles";
@@ -35,6 +37,14 @@ export const managerRoutes = [
         path: ROUTES.managerBookings,
         element: <ManagerBookingListPage />,
       },
+      {
+        path: ROUTES.managerCustomerNails,
+        element: <CustomerNailPage />,
+      },
+      {
+          path: ROUTES.managerCustomerNailDetail,
+          element: <CustomerNailDetailPage />,
+        },
       {
         path: ROUTES.managerStaffArtists,
         element: <StaffManagementPage />,

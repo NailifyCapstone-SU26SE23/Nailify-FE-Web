@@ -19,10 +19,9 @@ import {
 } from "../../../../shared/constants/routes";
 import {
   SALON_DAYS_OF_WEEK,
-  fetchMockSalonFormById,
-  getSalonsWithUpdates,
-  removeMockSalonById,
 } from "../services/mockSalon";
+import { fetchSalonById, deleteSalon } from "../services/salonsService";
+import { Spin, Alert } from "antd";
 
 function SalonDetailLoadingState() {
   return (
@@ -35,6 +34,46 @@ function SalonDetailLoadingState() {
   );
 }
 
+function mapApiSalonToFormAndRow(apiSalon) {
+  console.log("Mapping API salon to form/row:", apiSalon);
+  const salonForm = {
+    salonId: (apiSalon.salonId || apiSalon.id || "").toString().trim(),
+    salonName: apiSalon.salonName || apiSalon.name || "Unknown Salon",
+    manager: apiSalon.managerName || apiSalon.manager || "Unassigned",
+    staffAmount: apiSalon.staffAmount || 0,
+    status: apiSalon.status || "Active",
+    description: apiSalon.description || "",
+    operatingHours: {
+      monday: { open: "09:00", close: "21:00" },
+      tuesday: { open: "09:00", close: "21:00" },
+      wednesday: { open: "09:00", close: "21:00" },
+      thursday: { open: "09:00", close: "21:00" },
+      friday: { open: "09:00", close: "21:00" },
+      saturday: { open: "10:00", close: "20:00" },
+      sunday: { open: "10:00", close: "20:00" },
+    },
+    phone: apiSalon.phone || "No phone",
+  };
+
+  const salonRow = {
+    id: (apiSalon.salonId || apiSalon.id || "").toString().trim(),
+    salonId: (apiSalon.salonId || apiSalon.id || "").toString().trim(),
+    name: apiSalon.salonName || apiSalon.name || "Unknown Salon",
+    address: apiSalon.address || "No address",
+    manager: apiSalon.managerName || apiSalon.manager || "Unassigned",
+    phone: apiSalon.phone || "No phone",
+    image: apiSalon.imageUrl || apiSalon.image || "https://placehold.co/400x200/eb5b92/ffffff?text=Salon",
+    status: apiSalon.status || "Active",
+    statusColor: "bg-[#e6fdf0] text-[#16975f]",
+    staff: apiSalon.staffAmount || 0,
+    hours: "9AM - 9PM",
+    rating: "4.8",
+    reviews: "128",
+  };
+
+  return { salonForm, salonRow };
+}
+
 export function SalonDetailPage() {
   const navigate = useNavigate();
   const { salonId } = useParams();
@@ -43,6 +82,7 @@ export function SalonDetailPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [salonForm, setSalonForm] = useState(null);
   const [salonRow, setSalonRow] = useState(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -50,26 +90,24 @@ export function SalonDetailPage() {
     const loadSalon = async () => {
       setIsLoading(true);
       setIsNotFound(false);
+      setError("");
 
-      const form = await fetchMockSalonFormById(salonId);
-      const row = getSalonsWithUpdates().find(
-        (entry) =>
-          String(entry.id) === String(salonId) || entry.salonId === String(salonId),
-      );
-
-      if (!isMounted) {
-        return;
-      }
-
-      if (!form || !row) {
+      try {
+        const apiSalon = await fetchSalonById(salonId);
+        if (!isMounted) return;
+        
+        const { salonForm: form, salonRow: row } = mapApiSalonToFormAndRow(apiSalon);
+        setSalonForm(form);
+        setSalonRow(row);
+      } catch (err) {
+        console.error("Failed to load salon:", err);
+        if (!isMounted) return;
+        
+        setError(err.message || "Failed to load salon.");
         setIsNotFound(true);
-        setIsLoading(false);
-        return;
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
-
-      setSalonForm(form);
-      setSalonRow(row);
-      setIsLoading(false);
     };
 
     loadSalon();
@@ -98,17 +136,22 @@ export function SalonDetailPage() {
     ];
   }, [salonForm, salonRow]);
 
-  const handleDeleteSalon = () => {
+  const handleDeleteSalon = async () => {
     if (!salonRow) {
       return;
     }
 
-    removeMockSalonById(salonRow.id);
-    navigate(ROUTES.adminSalons, {
-      state: {
-        flashMessage: `${salonRow.name} has been deleted successfully.`,
-      },
-    });
+    try {
+      await deleteSalon(salonRow.id);
+      navigate(ROUTES.adminSalons, {
+        state: {
+          flashMessage: `${salonRow.name} has been deleted successfully.`,
+        },
+      });
+    } catch (err) {
+      console.error("Failed to delete salon:", err);
+      setError(err.message || "Failed to delete salon.");
+    }
   };
 
   if (isNotFound) {
@@ -117,6 +160,16 @@ export function SalonDetailPage() {
 
   return (
     <section className="mx-auto w-full min-w-0 max-w-[1300px] text-slate-700">
+      {error ? (
+        <div className="mb-4">
+          <Alert
+            message="Error Loading Salon"
+            description={error}
+            type="error"
+            showIcon
+          />
+        </div>
+      ) : null}
       <header className="mb-4 flex flex-col gap-4 rounded-[20px] bg-white/70 px-4 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur sm:mb-5 sm:rounded-[24px] sm:px-5 lg:rounded-[28px] lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-start gap-3">
           <Link
