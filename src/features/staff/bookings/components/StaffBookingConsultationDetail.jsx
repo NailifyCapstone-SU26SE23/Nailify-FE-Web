@@ -5,13 +5,16 @@ import {
   CheckCheck,
   ClipboardCheck,
   Clock3,
+  Eye,
   Palette,
   PencilLine,
   Search,
   Sparkles,
   Star,
   UserRound,
+  X,
 } from "lucide-react";
+import { useMemo, useState } from "react";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 
 const STEP_STYLES = {
@@ -52,17 +55,334 @@ function InfoCard({ label, value, note, tone = "default" }) {
   return (
     <article className="rounded-[16px] border border-[#f6dbe7] bg-[#fff9fc] p-4">
       <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{label}</p>
-      <p className={`mt-2 text-sm font-extrabold ${valueTone}`}>{value}</p>
-      <p className="mt-1 text-xs text-[#9a7f90]">{note}</p>
+      <p className={`mt-2 whitespace-pre-line text-sm font-extrabold ${valueTone}`}>{value}</p>
+      {note ? <p className="mt-1 text-xs text-[#9a7f90]">{note}</p> : null}
     </article>
   );
 }
 
 InfoCard.propTypes = {
   label: PropTypes.string.isRequired,
-  note: PropTypes.string.isRequired,
+  note: PropTypes.string,
   tone: PropTypes.oneOf(["default", "success"]),
   value: PropTypes.string.isRequired,
+};
+
+function formatVariantCurrency(value) {
+  const amount = Number(value || 0);
+
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return "--";
+  }
+
+  return `${new Intl.NumberFormat("vi-VN", {
+    maximumFractionDigits: 0,
+  }).format(amount)} VNĐ`;
+}
+
+function formatVariantDuration(value) {
+  const duration = Number(value || 0);
+
+  if (!Number.isFinite(duration) || duration <= 0) {
+    return "--";
+  }
+
+  return `${duration} min`;
+}
+
+function parseVariantColorJson(value) {
+  const raw = String(value || "").trim();
+
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function buildVariantColorPreviewStyle(colorConfig) {
+  const fallbackColor = String(colorConfig?.color || "").trim() || "#f3d5e2";
+  const gradient = colorConfig?.gradient;
+  const gradientStops = Array.isArray(gradient?.stops)
+    ? gradient.stops.filter((item) => String(item || "").trim())
+    : [];
+
+  if (gradient?.enabled && gradientStops.length >= 2) {
+    const gradientType = String(gradient?.type || "linear").trim().toLowerCase();
+
+    return {
+      background:
+        gradientType === "radial"
+          ? `radial-gradient(circle at center, ${gradientStops.join(", ")})`
+          : `linear-gradient(135deg, ${gradientStops.join(", ")})`,
+    };
+  }
+
+  return {
+    background: fallbackColor,
+  };
+}
+
+function VariantDetailModal({ open, variantDetail, onClose }) {
+  const colorConfig = useMemo(
+    () => parseVariantColorJson(variantDetail?.colorJson),
+    [variantDetail?.colorJson],
+  );
+
+  if (!open || !variantDetail) {
+    return null;
+  }
+
+  const gradientStops = Array.isArray(colorConfig?.gradient?.stops)
+    ? colorConfig.gradient.stops.filter(Boolean)
+    : [];
+  const colorSwatches = gradientStops.length
+    ? gradientStops
+    : colorConfig?.color
+      ? [colorConfig.color]
+      : [];
+  const colorPreviewStyle = buildVariantColorPreviewStyle(colorConfig);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2f1322]/45 p-4 backdrop-blur-[2px]">
+      <div className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-[28px] border border-[#f1cade] bg-white shadow-[0_30px_80px_rgba(63,43,63,0.24)]">
+        <div className="flex items-start justify-between gap-4 border-b border-[#f7dfeb] px-6 py-5">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
+              Nail Variant Detail
+            </p>
+            <h3 className="mt-2 text-2xl font-extrabold text-[#ea4f93]">{variantDetail.name}</h3>
+            <p className="mt-1 text-sm text-[#a88a9d]">
+              ID #{variantDetail.nailVariantId} • Nail Design #{variantDetail.nailDesignId}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#f2bfd4] bg-white text-[#ea4f93] transition hover:bg-[#fff5f8]"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
+          <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+            <div className="space-y-4">
+              <img
+                src={variantDetail.imageUrl}
+                alt={variantDetail.name}
+                className="h-72 w-full rounded-[22px] border border-[#f4dbe7] object-cover"
+                loading="lazy"
+                referrerPolicy="no-referrer"
+              />
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                <InfoCard label="Price" value={formatVariantCurrency(variantDetail.price)} note="" tone="success" />
+                <InfoCard label="Duration" value={formatVariantDuration(variantDetail.duration)} note="" />
+              </div>
+            </div>
+
+            <div className="space-y-5">
+              <div className="grid gap-3 md:grid-cols-2">
+                <InfoCard
+                  label="Variant Name"
+                  value={variantDetail.name || "--"}
+                  note={`Variant ID: ${variantDetail.nailVariantId || "--"}`}
+                />
+                <InfoCard
+                  label="Design Reference"
+                  value={`Design #${variantDetail.nailDesignId || "--"}`}
+                  note={`Shape ID: ${variantDetail.nailShapeId || "--"} • Surface ID: ${variantDetail.nailSurfaceId || "--"}`}
+                />
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <article className="rounded-[20px] border border-[#f3d5e2] bg-[#fff9fc] p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Nail Shape</p>
+                  <div className="mt-3 flex items-start gap-3">
+                    <img
+                      src={variantDetail.nailShape?.imageUrl || variantDetail.imageUrl}
+                      alt={variantDetail.nailShape?.name || "Nail shape"}
+                      className="h-20 w-20 rounded-2xl border border-[#f4dbe7] object-cover"
+                      loading="lazy"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="min-w-0">
+                      <p className="text-base font-extrabold capitalize text-[#3f2b3f]">
+                        {variantDetail.nailShape?.name || "--"}
+                      </p>
+                      <p className="mt-1 text-xs text-[#a88a9d]">
+                        Price: {formatVariantCurrency(variantDetail.nailShape?.price)}
+                      </p>
+                      <p className="mt-1 text-xs text-[#a88a9d]">
+                        Duration: {formatVariantDuration(variantDetail.nailShape?.duration)}
+                      </p>
+                    </div>
+                  </div>
+                </article>
+
+                <article className="rounded-[20px] border border-[#f3d5e2] bg-[#fff9fc] p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Nail Surface</p>
+                  <div className="mt-3">
+                    <p className="text-base font-extrabold text-[#3f2b3f]">
+                      {variantDetail.nailSurface?.name || "--"}
+                    </p>
+                    <p className="mt-2 text-xs text-[#a88a9d]">
+                      Shader: {variantDetail.nailSurface?.shaderParam || "--"}
+                    </p>
+                    <p className="mt-1 text-xs text-[#a88a9d]">
+                      Price: {formatVariantCurrency(variantDetail.nailSurface?.price)}
+                    </p>
+                    <p className="mt-1 text-xs text-[#a88a9d]">
+                      Duration: {formatVariantDuration(variantDetail.nailSurface?.duration)}
+                    </p>
+                  </div>
+                </article>
+              </div>
+
+              <article className="rounded-[20px] border border-[#f3d5e2] bg-[#fff9fc] p-4">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Color Configuration</p>
+                <div className="mt-3 rounded-[18px] border border-[#f4dbe7] bg-white p-3">
+                  <div
+                    className="h-28 w-full rounded-[14px] border border-white/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]"
+                    style={colorPreviewStyle}
+                  />
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {colorSwatches.length ? (
+                    colorSwatches.map((color) => (
+                      <span
+                        key={color}
+                        className="inline-flex items-center gap-2 rounded-full border border-[#f2bfd4] bg-white px-3 py-1.5 text-xs font-bold text-[#6f5c6b]"
+                      >
+                        <span
+                          className="h-3.5 w-3.5 rounded-full border border-[#ead6df]"
+                          style={{ backgroundColor: color }}
+                        />
+                        {color}
+                      </span>
+                    ))
+                  ) : (
+                    <p className="text-sm text-[#a88a9d]">No color configuration available.</p>
+                  )}
+                </div>
+                <div className="mt-4 grid gap-3 md:grid-cols-3">
+                  <InfoCard label="Mode" value={String(colorConfig?.mode || "--")} note="" />
+                  <InfoCard
+                    label="Gradient"
+                    value={colorConfig?.gradient?.enabled ? "Enabled" : "Disabled"}
+                    note={String(colorConfig?.gradient?.type || "--")}
+                  />
+                  <InfoCard
+                    label="Stops"
+                    value={String(gradientStops.length || 0)}
+                    note={`Stop Count: ${colorConfig?.gradient?.stopCount ?? "--"}`}
+                  />
+                </div>
+                <div className="mt-4 rounded-[16px] border border-[#f4dbe7] bg-white p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Raw JSON</p>
+                  <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-words text-xs text-[#6f5c6b]">
+                    {variantDetail.colorJson || "--"}
+                  </pre>
+                </div>
+              </article>
+
+              <article className="rounded-[20px] border border-[#f3d5e2] bg-[#fff9fc] p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Nail Components</p>
+                  <span className="rounded-full border border-[#d8cbff] bg-[#f6f2ff] px-3 py-1 text-[10px] font-bold text-[#8c63ef]">
+                    {variantDetail.nailComponents?.length || 0} item(s)
+                  </span>
+                </div>
+                <div className="mt-4 space-y-3">
+                  {variantDetail.nailComponents?.length ? (
+                    variantDetail.nailComponents.map((item) => (
+                      <div
+                        key={`${item.nailComponentId}-${item.componentId}`}
+                        className="rounded-[16px] border border-[#f4dbe7] bg-white p-4"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-extrabold text-[#3f2b3f]">
+                              {item.component?.name || "--"}
+                            </p>
+                            <p className="mt-1 text-xs text-[#a88a9d]">
+                              Type: {item.component?.componentType || "--"}
+                            </p>
+                          </div>
+                          <span className="rounded-full border border-[#f2bfd4] bg-[#fff5f9] px-3 py-1 text-[10px] font-bold text-[#ea4f93]">
+                            Finger #{item.fingerIndex ?? "--"}
+                          </span>
+                        </div>
+                        <div className="mt-3 grid gap-2 md:grid-cols-2">
+                          <p className="text-xs text-[#6f5c6b]">Position: X {item.posX ?? "--"} • Y {item.posY ?? "--"}</p>
+                          <p className="text-xs text-[#6f5c6b]">Price: {formatVariantCurrency(item.component?.price)}</p>
+                          <p className="text-xs text-[#6f5c6b]">Duration: {formatVariantDuration(item.component?.duration)}</p>
+                          <p className="text-xs text-[#6f5c6b]">Config: {item.configJson || "--"}</p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="rounded-[16px] border border-dashed border-[#f1cade] bg-white px-4 py-6 text-sm text-[#a88a9d]">
+                      This variant does not have any nail components.
+                    </div>
+                  )}
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+VariantDetailModal.propTypes = {
+  onClose: PropTypes.func.isRequired,
+  open: PropTypes.bool.isRequired,
+  variantDetail: PropTypes.shape({
+    colorJson: PropTypes.string,
+    duration: PropTypes.number,
+    imageUrl: PropTypes.string,
+    name: PropTypes.string,
+    nailComponents: PropTypes.arrayOf(
+      PropTypes.shape({
+        componentId: PropTypes.number,
+        configJson: PropTypes.string,
+        fingerIndex: PropTypes.number,
+        nailComponentId: PropTypes.number,
+        posX: PropTypes.number,
+        posY: PropTypes.number,
+        component: PropTypes.shape({
+          componentType: PropTypes.string,
+          duration: PropTypes.number,
+          imageUrl: PropTypes.string,
+          name: PropTypes.string,
+          price: PropTypes.number,
+        }),
+      }),
+    ),
+    nailDesignId: PropTypes.number,
+    nailShape: PropTypes.shape({
+      duration: PropTypes.number,
+      imageUrl: PropTypes.string,
+      name: PropTypes.string,
+      price: PropTypes.number,
+    }),
+    nailShapeId: PropTypes.number,
+    nailSurface: PropTypes.shape({
+      duration: PropTypes.number,
+      name: PropTypes.string,
+      price: PropTypes.number,
+      shaderParam: PropTypes.string,
+    }),
+    nailSurfaceId: PropTypes.number,
+    nailVariantId: PropTypes.number,
+    price: PropTypes.number,
+  }),
 };
 
 function Tag({ children, className = "" }) {
@@ -111,11 +431,13 @@ export function StaffBookingConsultationDetail({
   isCurrentDesignConfirmed = false,
   onDelete,
   onOpenDesignStudio,
-  onSave,
+  onOpenUpdateBooking,
   onStaffNoteChange,
   onStartServiceSession,
 }) {
   const canProceedToService = isCurrentDesignConfirmed;
+  const [isVariantModalOpen, setIsVariantModalOpen] = useState(false);
+  const canViewVariantDetail = Boolean(data.design.variantDetail?.nailVariantId);
 
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff5fa_100%)]">
@@ -208,7 +530,22 @@ export function StaffBookingConsultationDetail({
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
             <div className="space-y-4">
               <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
-                <SectionTitle icon={Sparkles} title="Current Selected Nail Design" />
+                <div className="flex items-center justify-between gap-3">
+                  <SectionTitle icon={Sparkles} title="Current Selected Nail Design" />
+                  <button
+                    type="button"
+                    onClick={() => setIsVariantModalOpen(true)}
+                    disabled={!canViewVariantDetail}
+                    className={`inline-flex h-10 w-10 items-center justify-center rounded-full border ${
+                      canViewVariantDetail
+                        ? "border-[#f2bfd4] bg-[#fff5f9] text-[#ea4f93] hover:bg-[#fff0f6]"
+                        : "cursor-not-allowed border-[#ece4ea] bg-[#f7f4f6] text-[#b9a8b3]"
+                    }`}
+                    title={canViewVariantDetail ? "View nail variant detail" : "Nail variant detail unavailable"}
+                  >
+                    <Eye size={16} />
+                  </button>
+                </div>
 
                 <div className="mt-5 flex flex-col gap-4 lg:flex-row">
                   <img
@@ -347,7 +684,7 @@ export function StaffBookingConsultationDetail({
                   </button>
                   <button
                     type="button"
-                    onClick={onSave}
+                    onClick={onOpenUpdateBooking}
                     className="rounded-[12px] border border-[#f4cada] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
                   >
                     Update Booking
@@ -442,7 +779,7 @@ export function StaffBookingConsultationDetail({
                 <div className="mt-4 space-y-3">
                   <button
                     type="button"
-                    onClick={onSave}
+                    onClick={onOpenUpdateBooking}
                     className="flex w-full items-center justify-center gap-2 rounded-[12px] border border-[#f4cada] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
                   >
                     <PencilLine size={13} />
@@ -475,6 +812,11 @@ export function StaffBookingConsultationDetail({
           </div>
         </div>
       </div>
+      <VariantDetailModal
+        open={isVariantModalOpen}
+        variantDetail={data.design.variantDetail}
+        onClose={() => setIsVariantModalOpen(false)}
+      />
     </section>
   );
 }
@@ -540,6 +882,46 @@ StaffBookingConsultationDetail.propTypes = {
           label: PropTypes.string.isRequired,
         }),
       ).isRequired,
+      variantDetail: PropTypes.shape({
+        colorJson: PropTypes.string,
+        duration: PropTypes.number,
+        imageUrl: PropTypes.string,
+        name: PropTypes.string,
+        nailComponents: PropTypes.arrayOf(
+          PropTypes.shape({
+            componentId: PropTypes.number,
+            configJson: PropTypes.string,
+            fingerIndex: PropTypes.number,
+            nailComponentId: PropTypes.number,
+            posX: PropTypes.number,
+            posY: PropTypes.number,
+            component: PropTypes.shape({
+              componentType: PropTypes.string,
+              duration: PropTypes.number,
+              imageUrl: PropTypes.string,
+              name: PropTypes.string,
+              price: PropTypes.number,
+            }),
+          }),
+        ),
+        nailDesignId: PropTypes.number,
+        nailShape: PropTypes.shape({
+          duration: PropTypes.number,
+          imageUrl: PropTypes.string,
+          name: PropTypes.string,
+          price: PropTypes.number,
+        }),
+        nailShapeId: PropTypes.number,
+        nailSurface: PropTypes.shape({
+          duration: PropTypes.number,
+          name: PropTypes.string,
+          price: PropTypes.number,
+          shaderParam: PropTypes.string,
+        }),
+        nailSurfaceId: PropTypes.number,
+        nailVariantId: PropTypes.number,
+        price: PropTypes.number,
+      }),
     }).isRequired,
     sessionStatus: PropTypes.arrayOf(
       PropTypes.shape({
@@ -574,7 +956,7 @@ StaffBookingConsultationDetail.propTypes = {
   onConfirmCurrentDesign: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
   onOpenDesignStudio: PropTypes.func.isRequired,
-  onSave: PropTypes.func.isRequired,
+  onOpenUpdateBooking: PropTypes.func.isRequired,
   onStaffNoteChange: PropTypes.func.isRequired,
   onStartServiceSession: PropTypes.func.isRequired,
 };

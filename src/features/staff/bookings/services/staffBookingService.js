@@ -158,6 +158,9 @@ export async function fetchStaffNailVariantDetail(variantId) {
   return {
     nailVariantId: Number(data?.nailVariantId || 0),
     name: String(data?.name || "").trim() || "--",
+    nailShapeId: Number(data?.nailShapeId || 0),
+    nailSurfaceId: Number(data?.nailSurfaceId || 0),
+    nailDesignId: Number(data?.nailDesignId || 0),
     price: Number(data?.price || 0),
     priceLabel: formatCurrency(data?.price || 0),
     duration: Number(data?.duration || 0),
@@ -438,15 +441,27 @@ export function formatBookingCode(bookingId) {
 export function buildStaffServiceSessionPayload(booking, options = {}) {
   const customerDetail = options.customerDetail ?? null;
   const items = booking?.bookingItems ?? [];
-  const serviceNames = items.map((item) => item.serviceName).filter(Boolean);
+  const bookingItemIds = [
+    ...new Set(
+      items
+        .map((item) => String(item?.bookingItemId || item?.id || "").trim())
+        .filter(Boolean),
+    ),
+  ];
+  const serviceNames = [...new Set(items.map((item) => String(item?.serviceName || "").trim()).filter(Boolean))];
+  const variantNames = [...new Set(items.map((item) => String(item?.nailVariantName || "").trim()).filter(Boolean))];
   const firstNamedItem = items.find((item) => item.serviceName || item.customerNailName || item.nailVariantName);
   const serviceLabel =
-    serviceNames[0] ||
+    serviceNames.length ? serviceNames.join("\n") :
     booking?.service ||
     booking?.uiService ||
     firstNamedItem?.customerNailName ||
     firstNamedItem?.nailVariantName ||
     "--";
+  const currentProcessLabel = [
+    serviceNames.length ? serviceNames.join(" | ") : "",
+    variantNames[0] || "",
+  ].filter(Boolean).join(" | ") || "--";
   const estimatedDuration =
     booking?.duration ||
     (booking?.totalDuration ? formatDurationMinutes(booking.totalDuration) : "--");
@@ -465,6 +480,7 @@ export function buildStaffServiceSessionPayload(booking, options = {}) {
       items[0]?.bookingItemId ||
       items[0]?.id ||
       "",
+    bookingItemIds,
     customerName:
       customerDetail?.fullName ||
       booking?.customerName ||
@@ -486,9 +502,8 @@ export function buildStaffServiceSessionPayload(booking, options = {}) {
     estimatedFinishTime,
     completedAt: "--",
     designName:
-      firstNamedItem?.customerNailName ||
-      firstNamedItem?.nailVariantName ||
-      "Confirmed service design",
+      variantNames[0] ||
+      "--",
     totalPrice: totalPriceLabel,
     totalAmount: totalPriceLabel,
     originalServicePrice: totalPriceLabel,
@@ -497,7 +512,7 @@ export function buildStaffServiceSessionPayload(booking, options = {}) {
     discountValue: "0 VNĐ",
     remainingBalance: totalPriceLabel,
     beforePhotoTimestamp: "--",
-    currentProcess: serviceLabel,
+    currentProcess: currentProcessLabel,
     remainingTime: estimatedDuration,
     materialsUsed: serviceNames.length ? serviceNames : ["--"],
     stepNote: "",

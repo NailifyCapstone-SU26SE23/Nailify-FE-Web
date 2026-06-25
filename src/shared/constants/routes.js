@@ -48,6 +48,15 @@ export const ROUTES = {
   adminUsersCreate: "/admin/users/create",
   adminUserDetail: "/admin/users/:userId",
   adminServicePricing: "/admin/service-pricing",
+  adminNailShapes: "/admin/nail-shapes",
+  adminNailShapesCreate: "/admin/nail-shapes/create",
+  adminNailShapeDetail: "/admin/nail-shapes/:shapeId",
+  adminNailSurfaces: "/admin/nail-surfaces",
+  adminNailSurfacesCreate: "/admin/nail-surfaces/create",
+  adminNailSurfaceDetail: "/admin/nail-surfaces/:surfaceId",
+  adminComponents: "/admin/components",
+  adminComponentsCreate: "/admin/components/create",
+  adminComponentDetail: "/admin/components/:componentId",
   adminNailDesigns: "/admin/nail-designs",
   adminNailDesignCategories: "/admin/nail-designs/categories",
   adminNailDesignsCreate: "/admin/nail-designs/create",
@@ -75,6 +84,9 @@ export const getAdminSalonUpdateRoute = (salonId) => `/admin/salons/${salonId}/e
 export const getAdminStaffUpdateRoute = (staffId) => `/admin/staff/${staffId}`;
 export const getAdminUserDetailRoute = (userId) => `/admin/users/${userId}`;
 export const getAdminServicePricingRoute = () => "/admin/service-pricing";
+export const getAdminNailShapeDetailRoute = (shapeId) => `/admin/nail-shapes/${shapeId}`;
+export const getAdminNailSurfaceDetailRoute = (surfaceId) => `/admin/nail-surfaces/${surfaceId}`;
+export const getAdminComponentDetailRoute = (componentId) => `/admin/components/${componentId}`;
 export const getAdminNailDesignCategoriesRoute = () => "/admin/nail-designs/categories";
 export const getAdminNailDesignDetailRoute = (designId) =>
   `/admin/nail-designs/${designId}`;
