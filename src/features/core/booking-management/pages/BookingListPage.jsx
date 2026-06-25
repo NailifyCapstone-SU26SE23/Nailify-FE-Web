@@ -1,5 +1,6 @@
 import {
   AlertTriangle,
+  ArrowUpDown,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
@@ -257,6 +258,31 @@ function formatDateLabel(dateValue) {
   return `${parts[1]}/${parts[2]}/${parts[0]}`;
 }
 
+function getBookingDateTimeValue(booking) {
+  const normalizedDate = String(
+    booking?.bookingDateValue || booking?.bookingDate || booking?.bookingDateTime || "",
+  ).trim();
+  const normalizedTime = String(booking?.startTimeValue || booking?.bookingTime || "").trim();
+
+  if (!normalizedDate) {
+    return Number.MAX_SAFE_INTEGER;
+  }
+
+  const baseDate = new Date(normalizedDate);
+
+  if (Number.isNaN(baseDate.getTime())) {
+    return Number.MAX_SAFE_INTEGER;
+  }
+
+  const [hoursText = "0", minutesText = "0"] = normalizedTime.split(":");
+  const hours = Number(hoursText);
+  const minutes = Number(minutesText);
+
+  baseDate.setHours(Number.isNaN(hours) ? 0 : hours, Number.isNaN(minutes) ? 0 : minutes, 0, 0);
+
+  return baseDate.getTime();
+}
+
 function getInitials(name) {
   return name
     .split(" ")
@@ -391,6 +417,7 @@ export function BookingListPage() {
   const [statusFilter, setStatusFilter] = useState(STATUS_OPTIONS[0]);
   const [paymentFilter, setPaymentFilter] = useState(PAYMENT_OPTIONS[0]);
   const [staffFilter, setStaffFilter] = useState("All staff");
+  const [staffTimeSortDirection, setStaffTimeSortDirection] = useState("asc");
   const [isLoading, setIsLoading] = useState(isStaffRole);
   const [loadError, setLoadError] = useState("");
   const [staffBookings, setStaffBookings] = useState([]);
@@ -556,16 +583,33 @@ export function BookingListPage() {
     staffFilter,
     statusFilter,
   ]);
+  const sortedBookings = useMemo(() => {
+    if (!isStaffRole) {
+      return filteredBookings;
+    }
+
+    const sortMultiplier = staffTimeSortDirection === "desc" ? -1 : 1;
+
+    return [...filteredBookings].sort((left, right) => {
+      const timeDifference = getBookingDateTimeValue(left) - getBookingDateTimeValue(right);
+
+      if (timeDifference !== 0) {
+        return timeDifference * sortMultiplier;
+      }
+
+      return left.customerName.localeCompare(right.customerName) * sortMultiplier;
+    });
+  }, [filteredBookings, isStaffRole, staffTimeSortDirection]);
   const {
     currentPage,
     paginatedItems: paginatedBookings,
     setCurrentPage,
     totalPages,
-  } = usePagination(filteredBookings, BOOKING_PAGE_SIZE);
+  } = usePagination(sortedBookings, BOOKING_PAGE_SIZE);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [dateFrom, dateTo, paymentFilter, query, role, salonFilter, setCurrentPage, staffFilter, statusFilter]);
+  }, [dateFrom, dateTo, paymentFilter, query, role, salonFilter, setCurrentPage, staffFilter, staffTimeSortDirection, statusFilter]);
 
   const paginationLabel = useMemo(() => {
     if (!filteredBookings.length) {
@@ -741,7 +785,7 @@ export function BookingListPage() {
         ))}
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_290px]">
+      <div className="">
         <div className="space-y-4">
           <article className="rounded-[20px] border border-[#f7d8e6] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] md:p-5">
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
@@ -767,7 +811,7 @@ export function BookingListPage() {
                   className="h-10 w-full rounded-xl border border-[#f5d7e4] bg-[#fff9fc] px-3 text-sm text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
                 />
               </label>
-              
+
               <label className="space-y-2">
                 <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
                   Booking Status
@@ -901,106 +945,126 @@ export function BookingListPage() {
               ) : (
                 <>
                   <div className="hidden overflow-x-auto lg:block">
-                <table className="min-w-full">
-                  <thead className="border-b border-[#f8e1eb] bg-[#fffdfd]">
-                    <tr className="text-left text-[10px] font-bold uppercase tracking-[0.16em] text-[#c696ad]">
-                      <th className="px-4 py-3">Customer</th>
-                      <th className="px-4 py-3">Salon</th>
-                      <th className="px-4 py-3">Staff Artist</th>
-                      {/* <th className="px-4 py-3">Service</th> */}
-                      <th className="px-4 py-3">Time</th>
-                      {!isStaffRole ? <th className="px-4 py-3">Payment</th> : null}
-                      <th className="px-4 py-3">Status</th>
-                      <th className="px-4 py-3">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#fae6ef] bg-white">
-                    {paginatedBookings.map((booking) => (
-                      <tr key={booking.id} className="align-top">
-                        <td className="px-4 py-3.5">
-                          <div className="flex items-start gap-3">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-[10px] font-extrabold text-white">
-                              {booking.avatar}
-                            </div>
-                            <div className="min-w-0">
-                              <p className="font-bold text-[#432744]">{booking.customerName}</p>
-                              <p className="mt-1 text-[11px] text-[#c694ad]">{booking.customerPhone}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3.5 text-sm text-[#6b5668]">{booking.uiBranch}</td>
-                        <td className="px-4 py-3.5 text-sm text-[#8a7082]">{booking.staffName}</td>
-                        {/* <td className="px-4 py-3.5">
+                    <table className="min-w-full">
+                      <thead className="border-b border-[#f8e1eb] bg-[#fffdfd]">
+                        <tr className="text-left text-[10px] font-bold uppercase tracking-[0.16em] text-[#c696ad]">
+                          <th className="px-4 py-3">Customer</th>
+                          <th className="px-4 py-3">Salon</th>
+                          <th className="px-4 py-3">Staff Artist</th>
+                          {/* <th className="px-4 py-3">Service</th> */}
+                          <th className="px-4 py-3">
+                            {isStaffRole ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setStaffTimeSortDirection((currentDirection) =>
+                                    currentDirection === "asc" ? "desc" : "asc",
+                                  )
+                                }
+                                className="inline-flex items-center gap-1 text-left text-[10px] font-bold uppercase tracking-[0.16em] text-[#c696ad]"
+                              >
+                                Time
+                                <ArrowUpDown size={12} className="text-[#df7baa]" />
+                                <span className="text-[9px] normal-case tracking-normal text-[#df7baa]">
+                                  {staffTimeSortDirection === "asc" ? "Earliest" : "Latest"}
+                                </span>
+                              </button>
+                            ) : (
+                              "Time"
+                            )}
+                          </th>
+                          {!isStaffRole ? <th className="px-4 py-3">Payment</th> : null}
+                          <th className="px-4 py-3">Status</th>
+                          <th className="px-4 py-3">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#fae6ef] bg-white">
+                        {paginatedBookings.map((booking) => (
+                          <tr key={booking.id} className="align-top">
+                            <td className="px-4 py-3.5">
+                              <div className="flex items-start gap-3">
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-[10px] font-extrabold text-white">
+                                  {booking.avatar}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="font-bold text-[#432744]">{booking.customerName}</p>
+                                  <p className="mt-1 text-[11px] text-[#c694ad]">{booking.customerPhone}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3.5 text-sm text-[#6b5668]">{booking.uiBranch}</td>
+                            <td className="px-4 py-3.5 text-sm text-[#8a7082]">{booking.staffName}</td>
+                            {/* <td className="px-4 py-3.5">
                           <SmallTag className="bg-[#ffe7ef] text-[#ea4f93]">
                             {booking.uiService}
                           </SmallTag>
                         </td> */}
-                        <td className="px-4 py-3.5">
-                          <p className="text-sm font-semibold text-[#432744]">
-                            {formatDateLabel(booking.bookingDate)}
-                          </p>
-                          <p className="mt-1 text-[11px] text-[#c694ad]">{booking.bookingTime}</p>
-                        </td>
-                        {!isStaffRole ? (
-                          <td className="px-4 py-3.5">
-                            <SmallTag className={getPaymentTone(booking.uiPayment)}>
-                              {booking.uiPayment}
-                            </SmallTag>
-                          </td>
-                        ) : null}
-                        <td className="px-4 py-3.5">
-                          <SmallTag className={getStatusTone(booking.uiStatus)}>
-                            {booking.uiStatus}
-                          </SmallTag>
-                        </td>
-                        <td className="px-4 py-3.5">
-                          <ActionDropdown items={getActionItems(booking)} />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                            <td className="px-4 py-3.5">
+                              <p className="text-sm font-semibold text-[#432744]">
+                                {formatDateLabel(booking.bookingDate)}
+                              </p>
+                              <p className="mt-1 text-[11px] text-[#c694ad]">{booking.bookingTime}</p>
+                            </td>
+                            {!isStaffRole ? (
+                              <td className="px-4 py-3.5">
+                                <SmallTag className={getPaymentTone(booking.uiPayment)}>
+                                  {booking.uiPayment}
+                                </SmallTag>
+                              </td>
+                            ) : null}
+                            <td className="px-4 py-3.5">
+                              <SmallTag className={getStatusTone(booking.uiStatus)}>
+                                {booking.uiStatus}
+                              </SmallTag>
+                            </td>
+                            <td className="px-4 py-3.5">
+                              <ActionDropdown items={getActionItems(booking)} />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
 
                   <div className="space-y-3 p-4 lg:hidden">
-                {paginatedBookings.map((booking) => (
-                  <article
-                    key={booking.id}
-                    className="rounded-[16px] border border-[#f8dce8] bg-[#fffafb] p-4"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-[10px] font-extrabold text-white">
-                        {booking.avatar}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="font-bold text-[#432744]">{booking.customerName}</p>
-                          <span className="text-[10px] font-bold text-[#f04f91]">{booking.uiId}</span>
+                    {paginatedBookings.map((booking) => (
+                      <article
+                        key={booking.id}
+                        className="rounded-[16px] border border-[#f8dce8] bg-[#fffafb] p-4"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-[10px] font-extrabold text-white">
+                            {booking.avatar}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="font-bold text-[#432744]">{booking.customerName}</p>
+                              <span className="text-[10px] font-bold text-[#f04f91]">{booking.uiId}</span>
+                            </div>
+                            <p className="mt-1 text-sm text-[#6b5668]">{booking.customerPhone}</p>
+                            <p className="mt-1 text-[11px] text-[#c694ad]">
+                              {booking.uiBranch} • {booking.staffName}
+                            </p>
+                          </div>
                         </div>
-                        <p className="mt-1 text-sm text-[#6b5668]">{booking.customerPhone}</p>
-                        <p className="mt-1 text-[11px] text-[#c694ad]">
-                          {booking.uiBranch} • {booking.staffName}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <SmallTag className="bg-[#ffe7ef] text-[#ea4f93]">{booking.uiService}</SmallTag>
-                      {!isStaffRole ? (
-                        <SmallTag className={getPaymentTone(booking.uiPayment)}>{booking.uiPayment}</SmallTag>
-                      ) : null}
-                      <SmallTag className={getStatusTone(booking.uiStatus)}>{booking.uiStatus}</SmallTag>
-                    </div>
-                    <div className="mt-4 flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold text-[#432744]">
-                          {formatDateLabel(booking.bookingDate)}
-                        </p>
-                        <p className="mt-1 text-[11px] text-[#c694ad]">{booking.bookingTime}</p>
-                      </div>
-                      <ActionDropdown items={getActionItems(booking)} />
-                    </div>
-                  </article>
-                ))}
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          <SmallTag className="bg-[#ffe7ef] text-[#ea4f93]">{booking.uiService}</SmallTag>
+                          {!isStaffRole ? (
+                            <SmallTag className={getPaymentTone(booking.uiPayment)}>{booking.uiPayment}</SmallTag>
+                          ) : null}
+                          <SmallTag className={getStatusTone(booking.uiStatus)}>{booking.uiStatus}</SmallTag>
+                        </div>
+                        <div className="mt-4 flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-[#432744]">
+                              {formatDateLabel(booking.bookingDate)}
+                            </p>
+                            <p className="mt-1 text-[11px] text-[#c694ad]">{booking.bookingTime}</p>
+                          </div>
+                          <ActionDropdown items={getActionItems(booking)} />
+                        </div>
+                      </article>
+                    ))}
                   </div>
                 </>
               )}
@@ -1046,105 +1110,6 @@ export function BookingListPage() {
             ) : null}
           </article>
         </div>
-
-        <aside className="rounded-[20px] border border-[#f7d8e6] bg-[linear-gradient(180deg,#fffdfd_0%,#fff7fb_100%)] p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
-          <div>
-            <div className="mb-4 flex items-center justify-between gap-2">
-              <p className="text-sm font-extrabold text-[#412643]">Today&apos;s Booking Volume</p>
-              <SmallTag className="bg-[#ffe7ef] text-[#ea4f93]">Live</SmallTag>
-            </div>
-            <div className="rounded-[16px] border border-[#f8dce8] bg-[#fffafb] p-3">
-              <div className="flex h-24 items-end gap-2">
-                {bookingVolume.map((item, index) => (
-                  <div key={item.time} className="flex flex-1 flex-col items-center gap-1">
-                    <span className="text-[10px] font-bold text-[#ea4f93]">{item.value}</span>
-                    <div
-                      className={`w-full rounded-t-full ${index === 3 ? "bg-[#cf3f89]" : "bg-[#f48ab7]"}`}
-                      style={{ height: `${(item.value / 14) * 100}%` }}
-                    />
-                    <span className="text-[9px] font-medium text-[#c694ad]">{item.time}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="mt-3 grid grid-cols-3 gap-2">
-              {(isStaffRole
-                ? staffTodayBookingStats
-                : [
-                  ["48", "Today"],
-                  ["41", "Yesterday"],
-                  ["+17%", "vs Avg"],
-                ]).map(([value, label], index) => (
-                <div key={label} className={`rounded-[14px] px-3 py-3 text-center ${index === 2 ? "bg-[#ffe7ef]" : "bg-[#fffafb]"} border border-[#f8dce8]`}>
-                  <p className="text-xl font-extrabold text-[#ea4f93]">{value}</p>
-                  <p className="mt-1 text-[10px] text-[#c694ad]">{label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-6">
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#ce97b1]">
-                Booking Conflicts
-              </p>
-              <SmallTag className="bg-[#fff0dd] text-[#d9871c]">3 issues</SmallTag>
-            </div>
-            <div className="space-y-3">
-              {BOOKING_CONFLICTS.map(([code, name, time, branch, status]) => (
-                <div key={code} className="rounded-[16px] border border-[#f7dce8] bg-[#fffafb] p-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="text-[11px] font-bold text-[#f04f91]">{code}</p>
-                      <p className="mt-1 text-sm font-bold text-[#432744]">{name}</p>
-                    </div>
-                    <SmallTag className="bg-[#ffe7ef] text-[#e1447f]">{status}</SmallTag>
-                  </div>
-                  <p className="mt-2 text-[11px] text-[#8a7082]">{time}</p>
-                  <p className="mt-1 text-[11px] text-[#c694ad]">{branch}</p>
-                </div>
-              ))}
-            </div>
-            <button
-              type="button"
-              className="mt-3 w-full rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
-            >
-              View All Conflicts
-            </button>
-          </div>
-
-          <div className="mt-6">
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#ce97b1]">
-                No-show Alerts
-              </p>
-              <SmallTag className="bg-[#f3ebff] text-[#7e4fe6]">4 users</SmallTag>
-            </div>
-            <div className="space-y-3">
-              {NO_SHOW_ALERTS.map(([name, code, branch, status]) => (
-                <div key={code} className="flex items-center justify-between gap-3 rounded-[16px] border border-[#f7dce8] bg-[#fffafb] p-3">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-[10px] font-extrabold text-white">
-                      {getInitials(name)}
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-[#432744]">{name}</p>
-                      <p className="text-[11px] text-[#c694ad]">{code}</p>
-                      <p className="text-[11px] text-[#8a7082]">{branch}</p>
-                    </div>
-                  </div>
-                  <SmallTag className="bg-[#f3ebff] text-[#7e4fe6]">{status}</SmallTag>
-                </div>
-              ))}
-            </div>
-            <button
-              type="button"
-              className="mt-3 w-full rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
-            >
-              View All No-shows
-            </button>
-          </div>
-        </aside>
       </div>
     </section>
   );

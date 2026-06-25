@@ -300,13 +300,13 @@ export function ReceptionistBookingListPage() {
               icon: Eye,
               onSelect: () => navigate(getReceptionistBookingDetailRoute(booking.bookingId)),
             },
-            {
-              key: "confirm",
-              label: "Confirm Booking",
-              icon: CheckCircle2,
-              className: "text-[#1f9d61]",
-              onSelect: () => void handleConfirmBooking(booking.bookingId),
-            },
+            // {
+            //   key: "confirm",
+            //   label: "Confirm Booking",
+            //   icon: CheckCircle2,
+            //   className: "text-[#1f9d61]",
+            //   onSelect: () => void handleConfirmBooking(booking.bookingId),
+            // },
             ...(canManualCheckIn(booking.status)
               ? [
                 {
@@ -318,13 +318,13 @@ export function ReceptionistBookingListPage() {
                 },
               ]
               : []),
-            {
-              key: "reject",
-              label: "Reject Booking",
-              icon: XCircle,
-              className: "text-[#df4e86]",
-              onSelect: () => void handleRejectBooking(booking.bookingId),
-            },
+            // {
+            //   key: "reject",
+            //   label: "Reject Booking",
+            //   icon: XCircle,
+            //   className: "text-[#df4e86]",
+            //   onSelect: () => void handleRejectBooking(booking.bookingId),
+            // },
           ]}
         />
       ),
@@ -604,13 +604,13 @@ export function ReceptionistBookingListPage() {
                           icon: Eye,
                           onSelect: () => navigate(getReceptionistBookingDetailRoute(booking.bookingId)),
                         },
-                        {
-                          key: "confirm",
-                          label: "Confirm Booking",
-                          icon: CheckCircle2,
-                          className: "text-[#1f9d61]",
-                          onSelect: () => void handleConfirmBooking(booking.bookingId),
-                        },
+                        // {
+                        //   key: "confirm",
+                        //   label: "Confirm Booking",
+                        //   icon: CheckCircle2,
+                        //   className: "text-[#1f9d61]",
+                        //   onSelect: () => void handleConfirmBooking(booking.bookingId),
+                        // },
                         ...(canManualCheckIn(booking.status)
                           ? [
                             {
@@ -622,13 +622,13 @@ export function ReceptionistBookingListPage() {
                             },
                           ]
                           : []),
-                        {
-                          key: "reject",
-                          label: "Reject Booking",
-                          icon: XCircle,
-                          className: "text-[#df4e86]",
-                          onSelect: () => void handleRejectBooking(booking.bookingId),
-                        },
+                        // {
+                        //   key: "reject",
+                        //   label: "Reject Booking",
+                        //   icon: XCircle,
+                        //   className: "text-[#df4e86]",
+                        //   onSelect: () => void handleRejectBooking(booking.bookingId),
+                        // },
                       ]}
                     />
                   </div>

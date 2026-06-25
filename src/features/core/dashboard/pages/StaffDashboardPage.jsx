@@ -633,7 +633,7 @@ export function StaffDashboardPage() {
               )}
             </Panel>
 
-            <Panel title="Session Timer" icon={Clock3}>
+            {/* <Panel title="Session Timer" icon={Clock3}>
               <div className="text-center">
                 <p className="break-all text-[1.7rem] font-extrabold tracking-[0.04em] text-[#d94e85] sm:text-[2.2rem] sm:tracking-[0.08em]">
                   00:00:00
@@ -655,7 +655,7 @@ export function StaffDashboardPage() {
                   Reset
                 </button>
               </div>
-            </Panel>
+            </Panel> */}
 
             <Panel title="Break Schedule" icon={TimerReset}>
               <div className="space-y-3">
