@@ -251,6 +251,27 @@ export const MENU_CONFIG = {
       section: "Main",
     },
     {
+      key: "admin-nail-shapes",
+      label: "Nail Shapes",
+      to: ROUTES.adminNailShapes,
+      icon: "palette",
+      section: "Main",
+    },
+    {
+      key: "admin-nail-surfaces",
+      label: "Nail Surfaces",
+      to: ROUTES.adminNailSurfaces,
+      icon: "palette",
+      section: "Main",
+    },
+    {
+      key: "admin-components",
+      label: "Components",
+      to: ROUTES.adminComponents,
+      icon: "palette",
+      section: "Main",
+    },
+    {
       key: "admin-nail-designs",
       label: "Nail Designs",
       to: ROUTES.adminNailDesigns,
