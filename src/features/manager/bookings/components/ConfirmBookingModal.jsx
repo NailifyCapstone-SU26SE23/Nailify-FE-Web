@@ -1,6 +1,7 @@
 import { Check, X, Clock, User, DollarSign } from "lucide-react";
 import { useState } from "react";
-import { Modal, Spin, message, Input, Checkbox } from "antd";
+import { Modal, Spin, Input } from "antd";
+import toast from "react-hot-toast";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { confirmBooking } from "../services/bookingsService";
 
@@ -13,25 +14,18 @@ export function ConfirmBookingModal({
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [note, setNote] = useState("");
-  const [isConfirmed, setIsConfirmed] = useState(false);
 
   const handleConfirm = async () => {
-    if (!isConfirmed) {
-      message.warning("Please confirm that you want to proceed");
-      return;
-    }
-
     try {
       setIsLoading(true);
       await confirmBooking(bookingId);
-      message.success("Booking confirmed successfully!");
+      toast.success("Booking confirmed successfully!");
       onSuccess?.();
       onClose();
       setNote("");
-      setIsConfirmed(false);
     } catch (err) {
       console.error("Failed to confirm booking:", err);
-      message.error(err.message || "Failed to confirm booking.");
+      toast.error("Failed to confirm booking.");
     } finally {
       setIsLoading(false);
     }
@@ -39,7 +33,6 @@ export function ConfirmBookingModal({
 
   const handleClose = () => {
     setNote("");
-    setIsConfirmed(false);
     onClose();
   };
 
@@ -59,7 +52,7 @@ export function ConfirmBookingModal({
       {/* Header */}
       <div className="bg-gradient-to-r from-[#eaf9ee] via-[#e0f5eb] to-[#d8f0e4] px-6 pt-6 pb-8">
         <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#2fa25f] text-white shadow-lg">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#2fa25f] text-white">
             <Check size={24} />
           </div>
           <div>
@@ -75,7 +68,7 @@ export function ConfirmBookingModal({
         {Object.keys(booking).length > 0 && (
           <div className="space-y-3 rounded-2xl border border-[#e8f5f0] bg-[#f8fffe] p-4">
             <h3 className="text-xs font-bold uppercase tracking-wide text-[#7a9a7e]">
-              Booking Details
+              Booking details
             </h3>
             <div className="space-y-2">
               {booking.bookingId && (
@@ -114,7 +107,7 @@ export function ConfirmBookingModal({
         {/* Note Field */}
         <div className="space-y-2">
           <label className="text-xs font-bold uppercase tracking-wide text-[#7a6176]">
-            Internal Note (Optional)
+            Internal note (Optional)
           </label>
           <Input.TextArea
             value={note}
@@ -142,24 +135,12 @@ export function ConfirmBookingModal({
           </ul>
         </div>
 
-        {/* Confirmation Checkbox */}
-        <Checkbox
-          checked={isConfirmed}
-          onChange={(e) => setIsConfirmed(e.target.checked)}
-          disabled={isLoading}
-          className="text-sm"
-        >
-          <span className="text-[#7a6176]">
-            I confirm this booking should be marked as <span className="font-semibold text-[#2fa25f]">confirmed</span>
-          </span>
-        </Checkbox>
-
         {/* Action Buttons */}
         <div className="flex gap-3 pt-4">
           <button
             type="button"
             onClick={handleClose}
-            className="flex-1 rounded-full border border-[#f4c1d8] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93] transition hover:bg-[#fff7fb] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 rounded-full border border-[#e3e3e3] bg-white px-4 py-2.5 text-xs font-bold text-[#6b6b6b] transition hover:bg-[#f9f9f9] disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isLoading}
           >
             <X size={14} className="inline mr-2" />
@@ -168,14 +149,14 @@ export function ConfirmBookingModal({
           <button
             type="button"
             onClick={handleConfirm}
-            className="flex-1 rounded-full bg-[#2fa25f] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#1e8a4e] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            disabled={isLoading || !isConfirmed}
+            className="flex-1 rounded-full bg-[#ea4f93] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#c9366b] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            disabled={isLoading}
           >
             {isLoading && <Spin size="small" />}
             {isLoading ? "Processing..." : (
               <>
                 <Check size={14} />
-                Confirm Booking
+                Confirm booking
               </>
             )}
           </button>
