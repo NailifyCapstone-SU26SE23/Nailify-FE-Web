@@ -17,8 +17,6 @@ import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfi
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import {
-  ADD_ON_TYPE_TONES,
-  ADD_ON_TYPES,
   HIGHEST_REVENUE_SERVICES,
   MOST_BOOKED_SERVICES,
   PRICING_ALERTS,
@@ -27,13 +25,8 @@ import {
   STATUS_OPTIONS,
   buildCategoryBreakdown,
   buildServicePricingSummary,
-  createEmptyAddOn,
   createEmptyService,
-  createMockAddOn,
   formatVndCurrency,
-  getAddOnRowsWithUpdates,
-  removeMockAddOnById,
-  updateMockAddOn,
 } from "../services/mockServicePricing";
 import { fetchAdminServices } from "../services/servicePricingService";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
@@ -256,16 +249,6 @@ function ServiceFormModal({ draft, mode, onChange, onClose, onSubmit, errorMessa
               ))}
             </select>
           </FormField>
-          <FormField label="Add-on Support">
-            <button
-              type="button"
-              onClick={() => onChange("hasAddOn", !draft.hasAddOn)}
-              className="flex h-11 w-full items-center justify-between rounded-2xl border border-[#f4d7e5] px-4 text-sm text-[#5b4658]"
-            >
-              <span>{draft.hasAddOn ? "Enabled" : "Disabled"}</span>
-              <TogglePill enabled={draft.hasAddOn} />
-            </button>
-          </FormField>
         </div>
 
         {errorMessage ? (
@@ -301,117 +284,6 @@ ServiceFormModal.propTypes = {
   onChange: PropTypes.func.isRequired,
   onClose: PropTypes.func.isRequired,
   onSubmit: PropTypes.func.isRequired,
-};
-
-function AddOnFormModal({ draft, mode, onChange, onClose, onSubmit, serviceOptions, errorMessage }) {
-  return (
-    <ModalShell
-      title={mode === "create" ? "Create Add-on" : "Edit Add-on"}
-      subtitle="Manage mock add-on pricing and service assignment."
-      onClose={onClose}
-    >
-      <form
-        className="space-y-4"
-        onSubmit={(event) => {
-          event.preventDefault();
-          onSubmit();
-        }}
-      >
-        <div className="grid gap-4 md:grid-cols-2">
-          <FormField label="Add-on Name">
-            <input
-              value={draft.name}
-              onChange={(event) => onChange("name", event.target.value)}
-              className="h-11 w-full rounded-2xl border border-[#f4d7e5] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
-            />
-          </FormField>
-          <FormField label="Type">
-            <select
-              value={draft.type}
-              onChange={(event) => onChange("type", event.target.value)}
-              className="h-11 w-full rounded-2xl border border-[#f4d7e5] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
-            >
-              {ADD_ON_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-          </FormField>
-          <FormField label="Price">
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={draft.price}
-              onChange={(event) => onChange("price", event.target.value)}
-              className="h-11 w-full rounded-2xl border border-[#f4d7e5] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
-            />
-          </FormField>
-          <FormField label="Status">
-            <select
-              value={draft.status}
-              onChange={(event) => onChange("status", event.target.value)}
-              className="h-11 w-full rounded-2xl border border-[#f4d7e5] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
-            >
-              {STATUS_OPTIONS.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
-          </FormField>
-        </div>
-
-        <FormField label="Applied To">
-          <select
-            value={draft.appliedTo}
-            onChange={(event) => onChange("appliedTo", event.target.value)}
-            className="h-11 w-full rounded-2xl border border-[#f4d7e5] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
-          >
-            <option value="All Services">All Services</option>
-            {serviceOptions.map((service) => (
-              <option key={service.id} value={service.category}>
-                {service.category}
-              </option>
-            ))}
-          </select>
-        </FormField>
-
-        {errorMessage ? (
-          <div className="rounded-2xl bg-[#fff1f5] px-4 py-3 text-sm font-medium text-[#d33b6e]">
-            {errorMessage}
-          </div>
-        ) : null}
-
-        <div className="flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-full border border-[#f4d5e3] px-4 py-2 text-sm font-bold text-[#8a7082]"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="rounded-full bg-[image:var(--gradient-accent)] px-5 py-2 text-sm font-bold text-white"
-          >
-            {mode === "create" ? "Create Add-on" : "Save Changes"}
-          </button>
-        </div>
-      </form>
-    </ModalShell>
-  );
-}
-
-AddOnFormModal.propTypes = {
-  draft: PropTypes.shape({}).isRequired,
-  errorMessage: PropTypes.string,
-  mode: PropTypes.string.isRequired,
-  onChange: PropTypes.func.isRequired,
-  onClose: PropTypes.func.isRequired,
-  onSubmit: PropTypes.func.isRequired,
-  serviceOptions: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
 };
 
 function ConfirmModal({ title, body, label, recordType, onCancel, onConfirm }) {
@@ -462,26 +334,16 @@ function getAlertTone(tone) {
   }
 }
 
-function refreshAddOns() {
-  const addOns = getAddOnRowsWithUpdates();
-
-  return addOns;
-}
-
 export function ServicePricingManagementPage() {
   const [services, setServices] = useState([]);
-  const [addOns, setAddOns] = useState(refreshAddOns);
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const [flashMessage, setFlashMessage] = useState("");
   const [serviceModal, setServiceModal] = useState({ open: false, mode: "create", recordId: null });
-  const [addOnModal, setAddOnModal] = useState({ open: false, mode: "create", recordId: null });
   const [deleteState, setDeleteState] = useState(null);
   const [serviceDraft, setServiceDraft] = useState(createEmptyService);
-  const [addOnDraft, setAddOnDraft] = useState(createEmptyAddOn);
   const [serviceError, setServiceError] = useState("");
-  const [addOnError, setAddOnError] = useState("");
   const [serviceMetaData, setServiceMetaData] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -560,24 +422,11 @@ export function ServicePricingManagementPage() {
   }, [activeCategory, services]);
 
   const summaryCards = useMemo(
-    () => buildServicePricingSummary(services, addOns),
-    [services, addOns],
-  );
-
-  const categoryBreakdown = useMemo(() => buildCategoryBreakdown(services), [services]);
-
-  const addOnAppliedToOptions = useMemo(
-    () =>
-      Array.from(
-        new Map(services.map((service) => [service.category, service])).values(),
-      ),
+    () => buildServicePricingSummary(services, []).filter((item) => item.label !== "Add-ons Available"),
     [services],
   );
 
-  const syncAddOns = (message = "") => {
-    setAddOns(refreshAddOns());
-    setFlashMessage(message);
-  };
+  const categoryBreakdown = useMemo(() => buildCategoryBreakdown(services), [services]);
 
   useEffect(() => {
     if (!serviceCategories.includes(activeCategory)) {
@@ -631,24 +480,6 @@ export function ServicePricingManagementPage() {
     setServiceModal({ open: true, mode: "edit", recordId: service.id });
   };
 
-  const openCreateAddOn = () => {
-    setAddOnDraft(createEmptyAddOn());
-    setAddOnError("");
-    setAddOnModal({ open: true, mode: "create", recordId: null });
-  };
-
-  const openEditAddOn = (addOn) => {
-    setAddOnDraft({
-      name: addOn.name,
-      type: addOn.type,
-      price: String(addOn.price),
-      appliedTo: addOn.appliedTo,
-      status: addOn.status,
-    });
-    setAddOnError("");
-    setAddOnModal({ open: true, mode: "edit", recordId: addOn.id });
-  };
-
   const getServiceActionItems = (service) => [
     {
       key: "edit-service",
@@ -676,49 +507,8 @@ export function ServicePricingManagementPage() {
     },
   ];
 
-  const getAddOnActionItems = (item) => [
-    {
-      key: "edit-addon",
-      label: "Edit Add-on",
-      icon: Pencil,
-      onSelect: () => openEditAddOn(item),
-    },
-    {
-      key: "remove-addon",
-      label: "Remove Add-on",
-      icon: Trash2,
-      className: "text-[#d14c84]",
-      onSelect: () =>
-        setDeleteState({
-          type: "addon",
-          recordId: item.id,
-          label: item.name,
-        }),
-    },
-  ];
-
   const submitServiceForm = () => {
     setServiceError("Service create/update API is not connected yet.");
-  };
-
-  const submitAddOnForm = () => {
-    const result =
-      addOnModal.mode === "create"
-        ? createMockAddOn(addOnDraft)
-        : updateMockAddOn(addOnModal.recordId, addOnDraft);
-
-    if (!result.success) {
-      setAddOnError(result.message);
-      return;
-    }
-
-    setAddOnModal({ open: false, mode: "create", recordId: null });
-    setAddOnError("");
-    syncAddOns(result.message);
-  };
-
-  const handleToggleServiceAddOn = (service) => {
-    setFlashMessage(`Service ${service.name} is loaded from API. Add-on toggle is not connected yet.`);
   };
 
   const serviceColumns = useMemo(() => ([
@@ -753,16 +543,6 @@ export function ServicePricingManagementPage() {
       render: (value) => <span className="text-sm text-[#5f4b5d]">{formatDurationMinutes(value)}</span>,
     },
     {
-      title: "Add-on",
-      key: "hasAddOn",
-      render: (_, service) => (
-        <TogglePill
-          enabled={service.hasAddOn}
-          onClick={() => handleToggleServiceAddOn(service)}
-        />
-      ),
-    },
-    {
       title: "Status",
       dataIndex: "status",
       key: "status",
@@ -774,44 +554,6 @@ export function ServicePricingManagementPage() {
       render: (_, service) => <ActionDropdown items={getServiceActionItems(service)} />,
     },
   ]), [getServiceActionItems]);
-
-  const addOnColumns = useMemo(() => ([
-    {
-      title: "Add-on Name",
-      dataIndex: "name",
-      key: "name",
-      render: (value) => <span className="text-sm font-bold text-[#432744]">{value}</span>,
-    },
-    {
-      title: "Type",
-      dataIndex: "type",
-      key: "type",
-      render: (value) => <Pill className={ADD_ON_TYPE_TONES[value]}>{value}</Pill>,
-    },
-    {
-      title: "Price",
-      dataIndex: "price",
-      key: "price",
-      render: (value) => <span className="text-sm text-[#5f4b5d]">{formatVndCurrency(value)}</span>,
-    },
-    {
-      title: "Applied To",
-      dataIndex: "appliedTo",
-      key: "appliedTo",
-      render: (value) => <Pill>{value}</Pill>,
-    },
-    {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
-      render: (value) => <StatusBadge status={value} />,
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      render: (_, item) => <ActionDropdown items={getAddOnActionItems(item)} />,
-    },
-  ]), [getAddOnActionItems]);
 
   return (
     <>
@@ -831,14 +573,6 @@ export function ServicePricingManagementPage() {
           </label>
 
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={openCreateAddOn}
-              className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#ea4f93]"
-            >
-              <Plus size={13} className="mr-1.5 inline" />
-              Add Add-on
-            </button>
             <button
               type="button"
               onClick={openCreateService}
@@ -946,34 +680,6 @@ export function ServicePricingManagementPage() {
                 </div>
               </div>
             </section>
-
-            <section className="overflow-hidden rounded-[20px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
-              <div className="flex items-center justify-between gap-3 border-b border-[#f6dbe7] px-5 py-4">
-                <div>
-                  <h2 className="text-sm font-extrabold text-[#432744]">Add-ons</h2>
-                  <p className="mt-1 text-[11px] font-medium text-[#c694ad]">
-                    {addOns.length} mock add-ons configured
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={openCreateAddOn}
-                  className="rounded-full border border-[#f4c6da] bg-white px-3 py-1.5 text-[10px] font-bold text-[#ea4f93]"
-                >
-                  <Plus size={12} className="mr-1 inline" />
-                  Add Add-on
-                </button>
-              </div>
-
-              <Table
-                rowKey="id"
-                columns={addOnColumns}
-                dataSource={addOns}
-                pagination={false}
-                scroll={{ x: 940 }}
-                locale={{ emptyText: "No add-ons found." }}
-              />
-            </section>
           </div>
 
           <aside className="space-y-4">
@@ -1074,32 +780,15 @@ export function ServicePricingManagementPage() {
         />
       ) : null}
 
-      {addOnModal.open ? (
-        <AddOnFormModal
-          mode={addOnModal.mode}
-          draft={addOnDraft}
-          errorMessage={addOnError}
-          serviceOptions={addOnAppliedToOptions}
-          onClose={() => setAddOnModal({ open: false, mode: "create", recordId: null })}
-          onChange={(field, value) => setAddOnDraft((current) => ({ ...current, [field]: value }))}
-          onSubmit={submitAddOnForm}
-        />
-      ) : null}
-
       {deleteState ? (
         <ConfirmModal
-          title={deleteState.type === "service" ? "Delete Service" : "Delete Add-on"}
-          body={`Are you sure you want to delete ${deleteState.label}? This mock record will be removed from the current admin UI state.`}
+          title="Delete Service"
+          body={`Are you sure you want to delete ${deleteState.label}? This record will be removed from the current admin UI state.`}
           label={deleteState.label}
-          recordType={deleteState.type === "service" ? "Service" : "Add-on"}
+          recordType="Service"
           onCancel={() => setDeleteState(null)}
           onConfirm={() => {
-            if (deleteState.type === "service") {
-              setFlashMessage("Service delete API is not connected yet.");
-            } else {
-              removeMockAddOnById(deleteState.recordId);
-              syncAddOns(`${deleteState.label} deleted successfully.`);
-            }
+            setFlashMessage("Service delete API is not connected yet.");
             setDeleteState(null);
           }}
         />

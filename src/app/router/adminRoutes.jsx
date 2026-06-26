@@ -32,6 +32,15 @@ import { NailSurfaceDetailPage } from "../../features/admin/nail-surfaces-manage
 import { ComponentsManagementPage } from "../../features/admin/components-management/pages/ComponentsManagementPage";
 import { ComponentCreatePage } from "../../features/admin/components-management/pages/ComponentCreatePage";
 import { ComponentDetailPage } from "../../features/admin/components-management/pages/ComponentDetailPage";
+import { ProceduresManagementPage } from "../../features/admin/procedures-management/pages/ProceduresManagementPage";
+import { ProcedureCreatePage } from "../../features/admin/procedures-management/pages/ProcedureCreatePage";
+import { ProcedureDetailPage } from "../../features/admin/procedures-management/pages/ProcedureDetailPage";
+import { CategoryTypesManagementPage } from "../../features/admin/category-types-management/pages/CategoryTypesManagementPage";
+import { CategoryTypeCreatePage } from "../../features/admin/category-types-management/pages/CategoryTypeCreatePage";
+import { CategoryTypeDetailPage } from "../../features/admin/category-types-management/pages/CategoryTypeDetailPage";
+import { CategoriesManagementPage } from "../../features/admin/categories-management/pages/CategoriesManagementPage";
+import { CategoryCreatePage } from "../../features/admin/categories-management/pages/CategoryCreatePage";
+import { CategoryDetailPage } from "../../features/admin/categories-management/pages/CategoryDetailPage";
 
 export const adminRoutes = [
   {
@@ -135,6 +144,42 @@ export const adminRoutes = [
       {
         path: ROUTES.adminComponentDetail,
         element: <ComponentDetailPage />,
+      },
+      {
+        path: ROUTES.adminProcedures,
+        element: <ProceduresManagementPage />,
+      },
+      {
+        path: ROUTES.adminProceduresCreate,
+        element: <ProcedureCreatePage />,
+      },
+      {
+        path: ROUTES.adminProcedureDetail,
+        element: <ProcedureDetailPage />,
+      },
+      {
+        path: ROUTES.adminCategoryTypes,
+        element: <CategoryTypesManagementPage />,
+      },
+      {
+        path: ROUTES.adminCategoryTypesCreate,
+        element: <CategoryTypeCreatePage />,
+      },
+      {
+        path: ROUTES.adminCategoryTypeDetail,
+        element: <CategoryTypeDetailPage />,
+      },
+      {
+        path: ROUTES.adminCategories,
+        element: <CategoriesManagementPage />,
+      },
+      {
+        path: ROUTES.adminCategoriesCreate,
+        element: <CategoryCreatePage />,
+      },
+      {
+        path: ROUTES.adminCategoryDetail,
+        element: <CategoryDetailPage />,
       },
       {
         path: ROUTES.adminNailDesigns,

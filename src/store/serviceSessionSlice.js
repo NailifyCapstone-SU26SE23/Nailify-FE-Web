@@ -3,10 +3,43 @@ import { storage } from "../shared/utils/storage";
 
 const SERVICE_SESSION_STORAGE_KEY = "nailify.staff.service-session";
 
+function sanitizePersistedPhoto(photo) {
+  const previewUrl = String(photo?.previewUrl || "").trim();
+
+  if (!previewUrl || previewUrl.startsWith("blob:")) {
+    return null;
+  }
+
+  return {
+    fileName: photo?.fileName || "Uploaded photo",
+    previewUrl,
+    uploadedAt: photo?.uploadedAt || "Uploaded",
+    fileSizeLabel: photo?.fileSizeLabel ?? null,
+    uploadedToServer: Boolean(photo?.uploadedToServer),
+  };
+}
+
+function normalizeLoadedSessions(sessions) {
+  if (!sessions || typeof sessions !== "object") {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(sessions).map(([bookingId, session]) => [
+      bookingId,
+      {
+        ...(session && typeof session === "object" ? session : {}),
+        beforePhoto: sanitizePersistedPhoto(session?.beforePhoto),
+        afterPhoto: sanitizePersistedPhoto(session?.afterPhoto),
+      },
+    ]),
+  );
+}
+
 function loadPersistedSessions() {
   const persistedValue = storage.get(SERVICE_SESSION_STORAGE_KEY, {});
 
-  return persistedValue && typeof persistedValue === "object" ? persistedValue : {};
+  return normalizeLoadedSessions(persistedValue);
 }
 
 const serviceSessionSlice = createSlice({
@@ -36,6 +69,10 @@ const serviceSessionSlice = createSlice({
 export const SERVICE_SESSION_STORAGE = {
   key: SERVICE_SESSION_STORAGE_KEY,
 };
+
+export function sanitizeServiceSessionsForStorage(sessions) {
+  return normalizeLoadedSessions(sessions);
+}
 
 export const { clearServiceSession, setServiceSession } = serviceSessionSlice.actions;
 export const serviceSessionReducer = serviceSessionSlice.reducer;

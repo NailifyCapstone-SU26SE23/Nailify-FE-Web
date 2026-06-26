@@ -1,11 +1,16 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { authReducer } from "./authSlice";
-import { bookingReducer } from "./bookingSlice";
+import {
+  BOOKING_STORAGE,
+  bookingReducer,
+  sanitizeBookingStateForStorage,
+} from "./bookingSlice";
 import { layoutReducer } from "./layoutSlice";
 import { nailDesignReducer } from "./nailDesignSlice";
 import {
   SERVICE_SESSION_STORAGE,
   serviceSessionReducer,
+  sanitizeServiceSessionsForStorage,
 } from "./serviceSessionSlice";
 import { storage } from "../shared/utils/storage";
 
@@ -21,7 +26,11 @@ export const store = configureStore({
 
 store.subscribe(() => {
   storage.set(
+    BOOKING_STORAGE.key,
+    sanitizeBookingStateForStorage(store.getState().booking),
+  );
+  storage.set(
     SERVICE_SESSION_STORAGE.key,
-    store.getState().serviceSession.sessions,
+    sanitizeServiceSessionsForStorage(store.getState().serviceSession.sessions),
   );
 });

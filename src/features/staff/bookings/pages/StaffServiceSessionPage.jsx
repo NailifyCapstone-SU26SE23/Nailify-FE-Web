@@ -9,7 +9,7 @@ import {
   CreditCard,
   FilePenLine,
   Heart,
-  Image,
+  // Image,
   ImageUp,
   Play,
   Plus,
@@ -50,6 +50,7 @@ import {
 } from "../services/staffBookingService";
 import { useDispatch, useSelector } from "react-redux";
 import { setServiceSession } from "../../../../store/serviceSessionSlice";
+import { Image } from "antd";
 
 function SectionTitle({ icon: Icon, title, subtitle }) {
   return (
@@ -185,6 +186,56 @@ SummaryValue.propTypes = {
   accent: PropTypes.bool,
   label: PropTypes.string.isRequired,
   value: PropTypes.string.isRequired,
+};
+
+function ServiceSummaryValue({ services = [], fallbackValue = "" }) {
+  const hasServices = Array.isArray(services) && services.length > 0;
+
+  if (!hasServices) {
+    return (
+      <div className="rounded-[18px] border border-[#f4dbe7] bg-[#fff9fc] px-4 py-4">
+        <p className="break-words text-sm font-extrabold leading-6 text-[#ea4f93]">{fallbackValue || "--"}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {services.map((service, index) => (
+        <div
+          key={service.id || `${service.name}-${index}`}
+          className="flex items-center justify-between gap-3 rounded-[18px] border border-[#f2bfd4] bg-white px-4 py-4 shadow-[0_10px_22px_rgba(236,72,153,0.05)]"
+        >
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
+              Service {index + 1}
+            </p>
+            <p className="mt-2 break-words text-sm font-extrabold text-[#ea4f93]">{service.name || "--"}</p>
+            {service.nailServiceName ? (
+              <p className="mt-1 text-xs font-semibold text-[#7a6275]">
+                Nail service: {service.nailServiceName}
+              </p>
+            ) : null}
+          </div>
+          <span className="shrink-0 rounded-full bg-[#f4efff] px-4 py-2 text-sm font-extrabold text-[#8c63ef]">
+            {service.durationLabel || "--"}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+ServiceSummaryValue.propTypes = {
+  fallbackValue: PropTypes.string,
+  services: PropTypes.arrayOf(
+    PropTypes.shape({
+      durationLabel: PropTypes.string,
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+      name: PropTypes.string,
+      nailServiceName: PropTypes.string,
+    }),
+  ),
 };
 
 function ConfirmationItem({ checked, disabled = false, label, onToggle, trailing = null }) {
@@ -332,8 +383,8 @@ function ExtraServiceModal({
                     type="button"
                     onClick={() => onSelect(service.serviceId)}
                     className={`w-full rounded-[22px] border px-4 py-4 text-left transition ${isSelected
-                        ? "border-[#ea4f93] bg-[#fff1f7] shadow-[0_14px_28px_rgba(236,72,153,0.12)]"
-                        : "border-[#f3d5e2] bg-white hover:bg-[#fff8fb]"
+                      ? "border-[#ea4f93] bg-[#fff1f7] shadow-[0_14px_28px_rgba(236,72,153,0.12)]"
+                      : "border-[#f3d5e2] bg-white hover:bg-[#fff8fb]"
                       }`}
                   >
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -533,22 +584,6 @@ function createRemotePhotoState(url, fileName, uploadedAt, fileSizeLabel = null)
   };
 }
 
-function serializePersistedPhoto(photo) {
-  const previewUrl = String(photo?.previewUrl || "").trim();
-
-  if (!previewUrl || previewUrl.startsWith("blob:")) {
-    return null;
-  }
-
-  return {
-    fileName: photo?.fileName || "Uploaded photo",
-    previewUrl,
-    uploadedAt: photo?.uploadedAt || "Uploaded",
-    fileSizeLabel: photo?.fileSizeLabel ?? null,
-    uploadedToServer: Boolean(photo?.uploadedToServer),
-  };
-}
-
 function normalizeSessionText(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
 }
@@ -662,6 +697,26 @@ export function StaffServiceSessionPage() {
       customerAvatar:
         "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=140&q=80",
       serviceLabel: Array.isArray(booking.services) && booking.services.length ? booking.services.join("\n") : booking.service,
+      serviceBreakdown: Array.isArray(booking.bookingItems)
+        ? booking.bookingItems
+          .map((item, index) => {
+            const name = String(item?.serviceName || item?.customerNailName || item?.nailVariantName || "").trim();
+
+            if (!name) {
+              return null;
+            }
+
+            const durationValue = String(item?.duration || "").trim();
+
+            return {
+              id: String(item?.bookingItemId || item?.id || `${name}-${index}`).trim(),
+              name,
+              duration: durationValue ? Number.parseInt(durationValue, 10) || 0 : 0,
+              durationLabel: durationValue || "--",
+            };
+          })
+          .filter(Boolean)
+        : [],
       staffArtist: booking.staffName,
       chair: "Chair 03",
       appointmentTime: appointmentStartTime,
@@ -745,6 +800,15 @@ export function StaffServiceSessionPage() {
 
     return serviceText;
   }, [data?.designName, data?.serviceLabel]);
+  const hasConfirmedDesign = useMemo(() => {
+    const normalizedDesignName = normalizeSessionText(data?.designName).toLowerCase();
+
+    if (!normalizedDesignName || normalizedDesignName === "--") {
+      return false;
+    }
+
+    return normalizedDesignName !== "selected design not specified";
+  }, [data?.designName]);
 
   const serverBeforePhoto = useMemo(
     () =>
@@ -919,8 +983,8 @@ export function StaffServiceSessionPage() {
         session: {
           started,
           completed,
-          beforePhoto: serializePersistedPhoto(beforePhoto),
-          afterPhoto: serializePersistedPhoto(afterPhoto),
+          beforePhoto,
+          afterPhoto,
           sessionNote,
           confirmations,
           completionChecks,
@@ -1912,7 +1976,7 @@ export function StaffServiceSessionPage() {
       </article>
 
       <div
-        className={`grid gap-4 ${phase === "done" ? "xl:grid-cols-1" : "xl:grid-cols-[minmax(0,1fr)_320px]"
+        className={`grid gap-4 ${phase === "progress" ? "xl:grid-cols-[minmax(0,1fr)_320px]" : "xl:grid-cols-1"
           }`}
       >
         <div className="space-y-4">
@@ -1947,7 +2011,7 @@ export function StaffServiceSessionPage() {
                   {/* <SummaryValue label="Chair" value={data.chair} /> */}
                   <SummaryValue label="Appointment Time" value={data.appointmentTime} />
                   <SummaryValue label="Estimated Duration" value={data.estimatedDuration} />
-                  <SummaryValue label="Confirmed Design" value={data.designName} />
+                  {hasConfirmedDesign ? <SummaryValue label="Confirmed Design" value={data.designName} /> : null}
                 </div>
               </article>
 
@@ -1996,10 +2060,11 @@ export function StaffServiceSessionPage() {
                   </p>
                   {effectiveBeforePhoto ? (
                     <div className="mt-4 flex items-center gap-4 rounded-[20px] border border-[#f2bfd4] bg-[#fff8fb] p-4">
-                      <img
+                      <Image
                         src={effectiveBeforePhoto.previewUrl}
                         alt={effectiveBeforePhoto.fileName}
-                        className="h-20 w-20 rounded-2xl border border-[#f2bfd4] object-cover"
+                        // className="h-20 w-20 rounded-2xl border border-[#f2bfd4] object-cover"
+                        style={{ width: "80px", height: "80px", borderRadius: "16px", objectFit: "cover", border: "1px solid #f2bfd4" }}
                       />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-extrabold text-[#3f2b3f]">
@@ -2073,10 +2138,10 @@ export function StaffServiceSessionPage() {
                     />
                     <div className="min-w-0 flex-1">
                       <p className="text-lg font-extrabold text-[#3f2b3f]">{data.customerName}</p>
-                      <p className="mt-1 text-sm font-medium text-[#ea4f93]">{overviewServiceLabel}</p>
+                      {/* <p className="mt-1 text-sm font-medium text-[#ea4f93]">{overviewServiceLabel}</p> */}
                       <div className="mt-3 flex flex-wrap gap-2">
                         <SessionChip icon={UserRound} label={data.staffArtist} />
-                        <SessionChip icon={Sparkles} label={overviewServiceLabel} />
+                        {/* <SessionChip icon={Sparkles} label={overviewServiceLabel} /> */}
                         <SessionChip icon={Clock3} label={`Start: ${data.appointmentTime ?? "--"}`} />
                         <SessionChip icon={Clock3} label={`Est. Finish: ${data.estimatedFinishTime}`} />
                       </div>
@@ -2124,19 +2189,64 @@ export function StaffServiceSessionPage() {
                 />
 
                 <div className="mt-5 grid gap-4 md:grid-cols-2">
-                  <div className="min-h-[112px] rounded-[18px] border border-[#f2bfd4] bg-[#fff6fa] p-4">
+                  <div className={`rounded-[18px] border border-[#f2bfd4] bg-[linear-gradient(180deg,#fff8fb_0%,#fff3f8_100%)] p-4 shadow-[0_12px_24px_rgba(236,72,153,0.06)] ${hasConfirmedDesign ? "" : "md:col-span-2"}`}>
                     <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
                       Current Process
                     </p>
-                    <p className="mt-2 whitespace-pre-line break-words text-sm font-extrabold leading-6 text-[#ea4f93]">
-                      {data.serviceLabel} <br/> Nail service: {data.designName}
-                    </p>
+                    <div className="mt-3 space-y-3">
+                      {Array.isArray(data.serviceBreakdown) && data.serviceBreakdown.length ? (
+                        data.serviceBreakdown.map((service, index) => (
+                          <div
+                            key={service.id || `${service.name}-${index}`}
+                            className="flex items-start justify-between gap-3 rounded-[16px] border border-[#f7d5e3] bg-white/90 px-3 py-3"
+                          >
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#c694ad]">
+                                Service {index + 1}
+                              </p>
+                              <p className="mt-1 break-words text-sm font-extrabold leading-6 text-[#ea4f93]">
+                                {service.name}
+                              </p>
+                            </div>
+                            <span className="inline-flex shrink-0 rounded-full bg-[#f7efff] px-3 py-1 text-[11px] font-bold text-[#8b5cf6]">
+                              {service.durationLabel || "--"}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="rounded-[16px] border border-[#f7d5e3] bg-white/90 px-3 py-3">
+                          <p className="break-words text-sm font-extrabold leading-6 text-[#ea4f93]">
+                            {data.serviceLabel}
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="rounded-[18px] border border-[#f2bfd4] bg-[#fff6fa] p-4">
+                  {hasConfirmedDesign ? (
+                    <div className="rounded-[18px] border border-[#f2bfd4] bg-[linear-gradient(180deg,#fff8fb_0%,#fff3f8_100%)] p-4 shadow-[0_12px_24px_rgba(236,72,153,0.06)]">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
+                        Nail Service
+                      </p>
+                      <div className="mt-3 rounded-[16px] border border-[#f7d5e3] bg-white/90 px-3 py-3">
+                        <p className="text-sm font-extrabold leading-6 text-[#ea4f93]">{data.designName}</p>
+                      </div>
+                      <div className="mt-4 border-t border-[#f7dce8] pt-4">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
+                          Estimate Time
+                        </p>
+                        <p className="mt-2 text-sm font-extrabold text-[#3f2b3f]">{data.remainingTime}</p>
+                      </div>
+                    </div>
+                  ) : null}
+                  <div className="rounded-[18px] border border-[#f2bfd4] bg-[#fff6fa] p-4 md:col-span-2">
                     <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
-                      Estimate Time
+                      Session Summary
                     </p>
-                    <p className="mt-2 text-sm font-extrabold text-[#3f2b3f]">{data.remainingTime}</p>
+                    <p className="mt-2 text-sm leading-6 text-[#8a7082]">
+                      {Array.isArray(data.serviceBreakdown) && data.serviceBreakdown.length
+                        ? `${data.serviceBreakdown.length} service item(s) are currently queued in this session.`
+                        : "Service details are currently loaded for this active session."}
+                    </p>
                   </div>
                 </div>
 
@@ -2238,8 +2348,16 @@ export function StaffServiceSessionPage() {
                   <SummaryValue label="Start Time" value={data.appointmentTime} />
                   <SummaryValue label="Duration" value={data.estimatedDuration} accent />
                   {/* <SummaryValue label="Completed" value={data.completedAt} /> */}
-                  <SummaryValue label="Service" value={data.serviceLabel} />
-                  <SummaryValue label="Nail Design" value={data.designName} />
+                  <div className="md:col-span-3">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">Service</p>
+                    <div className="mt-3">
+                      <ServiceSummaryValue
+                        services={Array.isArray(data.serviceBreakdown) ? data.serviceBreakdown : []}
+                        fallbackValue={data.serviceLabel}
+                      />
+                    </div>
+                  </div>
+                  {hasConfirmedDesign ? <SummaryValue label="Nail Design" value={data.designName} /> : null}
                 </div>
               </article>
 
@@ -2258,7 +2376,7 @@ export function StaffServiceSessionPage() {
                     onChange={handleAfterPhotoChange}
                   />
                   <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[linear-gradient(135deg,#ffe6f1_0%,#f9bfd5_100%)] text-[#ea4f93]">
-                    <Image size={26} />
+                    <ImageUp size={26} />
                   </div>
                   <h3 className="mt-5 text-base font-extrabold text-[#3f2b3f]">
                     Upload completed nail photo
@@ -2287,20 +2405,21 @@ export function StaffServiceSessionPage() {
                     Preview - After Photo
                   </p>
                   {effectiveAfterPhoto ? (
-                    <div className="mt-4 overflow-hidden rounded-[20px] border border-[#f2bfd4] bg-white">
-                      <img
+                    <div className="mt-4 flex items-center gap-4 rounded-[20px] border border-[#f2bfd4] bg-[#fff8fb] p-4">
+                      <Image
                         src={effectiveAfterPhoto.previewUrl}
                         alt={effectiveAfterPhoto.fileName}
-                        className="h-[260px] w-full object-cover"
+                        // className="h-20 w-20 rounded-2xl border border-[#f2bfd4] object-cover"
+                        style={{ width: "80px", height: "80px", borderRadius: "16px", objectFit: "cover", border: "1px solid #f2bfd4" }}
                       />
-                      <div className="flex flex-col gap-3 border-t border-[#f5d9e6] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                          <p className="text-sm font-extrabold text-[#3f2b3f]">{effectiveAfterPhoto.fileName}</p>
-                          <p className="mt-1 text-xs text-[#a88a9d]">
-                            Uploaded at {effectiveAfterPhoto.uploadedAt} - {effectiveAfterPhoto.fileSizeLabel ?? "2.4 MB"}
-                          </p>
-                        </div>
-                        <span className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[10px] font-bold text-emerald-600">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-extrabold text-[#3f2b3f]">
+                          {effectiveAfterPhoto.fileName}
+                        </p>
+                        <p className="mt-1 text-xs text-[#a88a9d]">
+                          Uploaded at {effectiveAfterPhoto.uploadedAt} - {effectiveAfterPhoto.fileSizeLabel ?? "2.4 MB"}
+                        </p>
+                        <span className="mt-3 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-bold text-emerald-600">
                           <CheckCircle2 size={12} />
                           After Photo Uploaded
                         </span>
@@ -2332,41 +2451,45 @@ export function StaffServiceSessionPage() {
                   ))}
                 </div>
 
-                <div className="mt-5 rounded-[18px] border border-[#f2bfd4] bg-[#fff6fa] p-4">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
-                    Nail Procedure
-                  </p>
-                  <div className="mt-4 space-y-3">
-                    {procedureChecklist.length > 0 ? (
-                      procedureChecklist.map((procedure) => (
-                        <ConfirmationItem
-                          key={procedure.bookingProcedureId}
-                          checked={procedure.checked}
-                          disabled={Boolean(procedureStatusUpdates[procedure.bookingProcedureId])}
-                          label={procedure.label}
-                          onToggle={() => handleUpdateProcedureStatus(procedure, "Completed")}
-                          trailing={
-                            <button
-                              type="button"
-                              disabled={Boolean(procedureStatusUpdates[procedure.bookingProcedureId])}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                handleUpdateProcedureStatus(procedure, "Skipped");
-                              }}
-                              className="inline-flex min-h-8 items-center justify-center rounded-full border border-[#f4c7d9] bg-[#fff4f8] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#d95a95] transition hover:bg-[#ffe8f2] disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              Skip
-                            </button>
-                          }
-                        />
-                      ))
-                    ) : (
-                      <div className="rounded-[18px] border border-[#f4dbe7] bg-white px-4 py-4 text-sm text-[#a88a9d]">
-                        {resolvedProcedureLoadError || "--"}
-                      </div>
-                    )}
+                {hasConfirmedDesign ? (
+                  <div className="mt-5 rounded-[18px] border border-[#f2bfd4] bg-[#fff6fa] p-4">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
+                      Nail Procedure
+                    </p>
+                    <div className="mt-4 space-y-3">
+                      {procedureChecklist.length > 0 ? (
+                        procedureChecklist.map((procedure) => (
+                          <ConfirmationItem
+                            key={procedure.bookingProcedureId}
+                            checked={procedure.checked}
+                            disabled={Boolean(procedureStatusUpdates[procedure.bookingProcedureId])}
+                            label={procedure.label}
+                            onToggle={() => handleUpdateProcedureStatus(procedure, "Completed")}
+                            trailing={
+                              <button
+                                type="button"
+                                disabled={Boolean(procedureStatusUpdates[procedure.bookingProcedureId])}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  handleUpdateProcedureStatus(procedure, "Skipped");
+                                }}
+                                className="inline-flex min-h-8 items-center justify-center rounded-full border border-[#f4c7d9] bg-[#fff4f8] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#d95a95] transition hover:bg-[#ffe8f2] disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Skip
+                              </button>
+                            }
+                          />
+                        ))
+                      ) : (
+                        <div className="rounded-[18px] border border-[#f4dbe7] bg-white px-4 py-4 text-sm text-[#a88a9d]">
+                          {resolvedProcedureLoadError || "--"}
+                        </div>
+                      )}
+                    </div>
                   </div>
+                ) : null}
 
+                {hasConfirmedDesign ? (
                   <div className="mt-4 rounded-xl border border-[#f2bfd4] bg-white px-4 py-4">
                     <div className="flex items-start gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
@@ -2380,7 +2503,7 @@ export function StaffServiceSessionPage() {
                       </div>
                     </div>
                   </div>
-                </div>
+                ) : null}
               </article>
 
               <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
@@ -2514,15 +2637,15 @@ export function StaffServiceSessionPage() {
           )}
         </div>
 
-        <aside className={`space-y-4 self-start xl:sticky xl:top-0 ${phase === "done" ? "hidden" : ""}`}>
+        <aside className={`space-y-4 self-start xl:sticky xl:top-0 ${phase === "done" || phase === "start" ? "hidden" : ""}`}>
           {phase === "start" ? (
             <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
               <SectionTitle icon={Clock3} title="Session Snapshot" />
               <div className="mt-4 space-y-3 text-sm">
-                <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
+                {/* <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
                   <span className="text-[11px] text-[#a88a9d]">Booking Code</span>
                   <span className="font-extrabold text-[#3f2b3f]">#{data.bookingCode}</span>
-                </div>
+                </div> */}
                 <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
                   <span className="text-[11px] text-[#a88a9d]">Design Status</span>
                   <span className="font-extrabold text-[#ea4f93]">{data.designName}</span>
@@ -2551,14 +2674,16 @@ export function StaffServiceSessionPage() {
                   subtitle="Confirmed design context for the active booking."
                 />
                 <div className="mt-4 space-y-3 text-sm">
-                  <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
+                  {/* <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
                     <span className="text-[11px] text-[#a88a9d]">Booking Code</span>
                     <span className="font-extrabold text-[#3f2b3f]">#{data.bookingCode}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
-                    <span className="text-[11px] text-[#a88a9d]">Confirmed Design</span>
-                    <span className="text-right font-extrabold text-[#ea4f93]">{data.designName}</span>
-                  </div>
+                  </div> */}
+                  {hasConfirmedDesign ? (
+                    <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
+                      <span className="text-[11px] text-[#a88a9d]">Confirmed Design</span>
+                      <span className="text-right font-extrabold text-[#ea4f93]">{data.designName}</span>
+                    </div>
+                  ) : null}
                   <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
                     <span className="text-[11px] text-[#a88a9d]">Duration</span>
                     <span className="font-extrabold text-[#3f2b3f]">{data.appointmentTime} - {data.estimatedFinishTime}</span>
