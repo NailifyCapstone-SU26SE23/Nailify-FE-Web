@@ -1,6 +1,7 @@
 import { X, XCircle, Clock, User, DollarSign, AlertCircle } from "lucide-react";
 import { useState } from "react";
-import { Modal, Spin, message, Input, Checkbox, Select } from "antd";
+import { Modal, Spin, Input, Checkbox, Select } from "antd";
+import toast from "react-hot-toast";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { cancelBooking } from "../services/bookingsService";
 
@@ -26,25 +27,25 @@ export function CancelBookingModal({
 
   const handleCancelBooking = async () => {
     if (!reason) {
-      message.warning("Please select a cancellation reason");
+      toast("Please select a cancellation reason", { icon: "⚠️" });
       return;
     }
 
     if (!isConfirmed) {
-      message.warning("Please confirm the cancellation");
+      toast("Please confirm the cancellation", { icon: "⚠️" });
       return;
     }
 
     try {
       setIsLoading(true);
       await cancelBooking(bookingId);
-      message.success("Booking cancelled successfully!");
+      toast.success("Booking cancelled successfully!");
       onSuccess?.();
       onClose();
       resetForm();
     } catch (err) {
       console.error("Failed to cancel booking:", err);
-      message.error(err.message || "Failed to cancel booking.");
+      toast.error("Failed to cancel booking.");
     } finally {
       setIsLoading(false);
     }
@@ -143,7 +144,7 @@ export function CancelBookingModal({
         {/* Reason Selection */}
         <div className="space-y-2">
           <label className="text-xs font-bold uppercase tracking-wide text-[#7a6176]">
-            Cancellation Reason <span className="text-[#db8520]">*</span>
+            Cancellation reason <span className="text-[#db8520]">*</span>
           </label>
           <Select
             value={reason || undefined}
@@ -160,7 +161,7 @@ export function CancelBookingModal({
         {/* Details Field */}
         <div className="space-y-2">
           <label className="text-xs font-bold uppercase tracking-wide text-[#7a6176]">
-            Additional Details (Optional)
+            Additional details (Optional)
           </label>
           <Input.TextArea
             value={details}
@@ -205,11 +206,11 @@ export function CancelBookingModal({
           <button
             type="button"
             onClick={handleClose}
-            className="flex-1 rounded-full border border-[#f4c1d8] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93] transition hover:bg-[#fff7fb] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 rounded-full border border-[#e3e3e3] bg-white px-4 py-2.5 text-xs font-bold text-[#6b6b6b] transition hover:bg-[#f9f9f9] disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isLoading}
           >
             <X size={14} className="inline mr-2" />
-            Keep Booking
+            Keep booking
           </button>
           <button
             type="button"
@@ -221,7 +222,7 @@ export function CancelBookingModal({
             {isLoading ? "Cancelling..." : (
               <>
                 <XCircle size={14} />
-                Cancel Booking
+                Cancel booking
               </>
             )}
           </button>

@@ -52,8 +52,9 @@ export async function fetchBookingsBySalonId(salonId, options = {}) {
 
     return unwrapResponse(response, "Failed to load bookings.", false, true);
   } catch (error) {
-    console.error("Error fetching bookings:", error.response?.data || error);
-    throw new Error(error.response?.data?.message || error.message || "Failed to load bookings.", { cause: error });
+    const errorMessage = error?.response?.data?.message || error?.message || "Failed to load bookings.";
+    console.error("Error fetching bookings:", error?.response?.data || error);
+    throw new Error(errorMessage, { cause: error });
   }
 }
 
@@ -72,8 +73,9 @@ export async function fetchBookingById(bookingId) {
 
     return unwrapResponse(response, "Failed to load booking details.", true);
   } catch (error) {
-    console.error("Error fetching booking:", error.response?.data || error);
-    throw new Error(error.response?.data?.message || error.message || "Failed to load booking details.", { cause: error });
+    const errorMessage = error?.response?.data?.message || error?.message || "Failed to load booking details.";
+    console.error("Error fetching booking:", error?.response?.data || error);
+    throw new Error(errorMessage, { cause: error });
   }
 }
 
@@ -92,8 +94,9 @@ export async function confirmBooking(bookingId) {
 
     return unwrapResponse(response, "Failed to confirm booking.");
   } catch (error) {
-    console.error("Error confirming booking:", error.response?.data || error);
-    throw new Error(error.response?.data?.message || error.message || "Failed to confirm booking.", { cause: error });
+    const errorMessage = error?.response?.data?.message || error?.message || "Failed to confirm booking.";
+    console.error("Error confirming booking:", error?.response?.data || error);
+    throw new Error(errorMessage, { cause: error });
   }
 }
 
@@ -112,8 +115,9 @@ export async function rejectBooking(bookingId) {
 
     return unwrapResponse(response, "Failed to reject booking.");
   } catch (error) {
-    console.error("Error rejecting booking:", error.response?.data || error);
-    throw new Error(error.response?.data?.message || error.message || "Failed to reject booking.", { cause: error });
+    const errorMessage = error?.response?.data?.message || error?.message || "Failed to reject booking.";
+    console.error("Error rejecting booking:", error?.response?.data || error);
+    throw new Error(errorMessage, { cause: error });
   }
 }
 
@@ -132,8 +136,9 @@ export async function cancelBooking(bookingId) {
 
     return unwrapResponse(response, "Failed to cancel booking.");
   } catch (error) {
-    console.error("Error cancelling booking:", error.response?.data || error);
-    throw new Error(error.response?.data?.message || error.message || "Failed to cancel booking.", { cause: error });
+    const errorMessage = error?.response?.data?.message || error?.message || "Failed to cancel booking.";
+    console.error("Error cancelling booking:", error?.response?.data || error);
+    throw new Error(errorMessage, { cause: error });
   }
 }
 
@@ -163,12 +168,43 @@ export async function fetchSalonStaff(salonId, options = {}) {
 
     return unwrapResponse(response, "Failed to load salon staff.");
   } catch (error) {
-    console.error("Error fetching salon staff:", error.response?.data || error);
-    throw new Error(error.response?.data?.message || error.message || "Failed to load salon staff.", { cause: error });
+    const errorMessage = error?.response?.data?.message || error?.message || "Failed to load salon staff.";
+    console.error("Error fetching salon staff:", error?.response?.data || error);
+    throw new Error(errorMessage, { cause: error });
   }
 }
 
-export async function assignArtistToBooking(bookingId, staffArtistId) {
+export async function updateBooking(bookingId, updateData) {
+  const normalizedBookingId = String(bookingId || "").trim();
+  
+  if (!normalizedBookingId) {
+    throw new Error("Booking ID is required.");
+  }
+  
+  console.log("updateBooking - Booking ID:", normalizedBookingId, "Update data:", updateData);
+  
+  try {
+    const response = await axiosClient.put(`/Bookings/${normalizedBookingId}`, 
+      updateData,
+      { headers: getAuthHeaders() }
+    );
+    
+    console.log("updateBooking response status:", response?.status);
+    console.log("updateBooking response:", response);
+    return unwrapResponse(response, "Failed to update booking.");
+  } catch (error) {
+    const errorMessage = error?.response?.data?.message || error?.message || "Failed to update booking.";
+    console.error("Error updating booking:");
+    console.error("- Response status:", error?.response?.status);
+    console.error("- Response data:", error?.response?.data);
+    console.error("- Request config:", error?.config);
+    console.error("- Error message:", error?.message);
+    throw new Error(errorMessage, { cause: error });
+  }
+}
+
+// Old assign API (POST /receptionist-assign-artist)
+export async function assignArtistToBookingOld(bookingId, staffArtistId, slotInfo = null) {
   const normalizedBookingId = String(bookingId || "").trim();
   const normalizedStaffId = String(staffArtistId || "").trim();
 
@@ -179,28 +215,116 @@ export async function assignArtistToBooking(bookingId, staffArtistId) {
     throw new Error("Staff Artist ID is required.");
   }
 
-  console.log("assignArtistToBooking - Booking ID:", normalizedBookingId, "Staff Artist ID:", normalizedStaffId);
+  console.log("assignArtistToBookingOld - Booking ID:", normalizedBookingId, "Staff Artist ID:", normalizedStaffId, "Slot:", slotInfo);
   
-  // Get full URL for debugging
-  const baseUrl = import.meta.env.VITE_API_BASE_URL?.trim() || "";
-  const fullUrl = `${baseUrl}/api/Bookings/${normalizedBookingId}/receptionist-assign-artist`;
-  console.log("assignArtistToBooking - Full URL:", fullUrl);
+  const payload = { staffArtistId: normalizedStaffId };
+  if (slotInfo) {
+    payload.slotStartTime = slotInfo.startTime;
+    payload.slotEndTime = slotInfo.endTime;
+  }
   
   try {
     const response = await axiosClient.post(`/Bookings/${normalizedBookingId}/receptionist-assign-artist`, 
-      { staffArtistId: normalizedStaffId },
+      payload,
       { headers: getAuthHeaders() }
     );
-
-    console.log("assignArtistToBooking response status:", response.status);
-    console.log("assignArtistToBooking response:", response);
-    return unwrapResponse(response, "Failed to assign artist to booking.");
+    console.log("assignArtistToBookingOld response status:", response?.status);
+    return unwrapResponse(response, "Failed to assign artist to booking (old endpoint).");
   } catch (error) {
-    console.error("Error assigning artist to booking:");
-    console.error("- Response status:", error.response?.status);
-    console.error("- Response data:", error.response?.data);
-    console.error("- Request config:", error.config);
-    console.error("- Error message:", error.message);
-    throw new Error(error.response?.data?.message || error.message || "Failed to assign artist to booking.", { cause: error });
+    const errorMessage = error?.response?.data?.message || error?.message || "Failed to assign artist to booking (old endpoint).";
+    console.error("Error assigning artist to booking (old endpoint):");
+    console.error("- Response status:", error?.response?.status);
+    console.error("- Response data:", error?.response?.data);
+    console.error("- Request config:", error?.config);
+    throw new Error(errorMessage, { cause: error });
+  }
+}
+
+// New assign API using PUT /Bookings/{id}
+export async function assignArtistToBooking(bookingId, staffArtistId, slotInfo = null, bookingDate = null, bookingItems = []) {
+  const normalizedBookingId = String(bookingId || "").trim();
+  const normalizedStaffId = String(staffArtistId || "").trim();
+
+  if (!normalizedBookingId) {
+    throw new Error("Booking ID is required.");
+  }
+  if (!normalizedStaffId) {
+    throw new Error("Staff Artist ID is required.");
+  }
+
+  console.log("assignArtistToBooking - Booking ID:", normalizedBookingId, "Staff Artist ID:", normalizedStaffId, "Slot:", slotInfo, "Booking date:", bookingDate);
+  
+  const payload = { nailArtistId: normalizedStaffId };
+  if (bookingDate) {
+    payload.bookingDate = bookingDate;
+  }
+  if (slotInfo) {
+    payload.startTime = slotInfo.startTime;
+  }
+  if (bookingItems && bookingItems.length > 0) {
+    payload.bookingItems = bookingItems;
+  }
+  
+  try {
+    const response = await axiosClient.put(`/Bookings/${normalizedBookingId}`, 
+      payload,
+      { headers: getAuthHeaders() }
+    );
+    console.log("assignArtistToBooking response status:", response?.status);
+    return unwrapResponse(response, "Failed to assign artist to booking (new endpoint).");
+  } catch (error) {
+    const errorMessage = error?.response?.data?.message || error?.message || "Failed to assign artist to booking (new endpoint).";
+    console.error("Error assigning artist to booking (new endpoint):");
+    console.error("- Response status:", error?.response?.status);
+    console.error("- Response data:", error?.response?.data);
+    console.error("- Request config:", error?.config);
+    throw new Error(errorMessage, { cause: error });
+  }
+}
+
+export async function fetchArtistBusySlots(nailArtistId, bookingDate) {
+  console.log("=== fetchArtistBusySlots ===");
+  console.log("Params:", { nailArtistId, bookingDate });
+  
+  try {
+    const response = await axiosClient.get("/Bookings/artist-available-slots", {
+      headers: getAuthHeaders(),
+      params: {
+        nailArtistId,
+        bookingDate
+      }
+    });
+    
+    console.log("Axios raw response:", response);
+    console.log("Axios response.data:", response?.data);
+    
+    return unwrapResponse(response, "Failed to load artist busy slots.");
+  } catch (error) {
+    const errorMessage = error?.response?.data?.message || error?.message || "Failed to load artist busy slots.";
+    console.error("=== fetchArtistBusySlots ERROR ===");
+    console.error("Error:", error);
+    console.error("Error response data:", error?.response?.data);
+    throw new Error(errorMessage, { cause: error });
+  }
+}
+
+export async function fetchUserById(userId) {
+  const normalizedId = String(userId || "").trim();
+
+  if (!normalizedId) {
+    throw new Error("User ID is required.");
+  }
+
+  console.log("Fetching user by ID:", normalizedId);
+  try {
+    const response = await axiosClient.get(`/Users/${normalizedId}`, {
+      headers: getAuthHeaders(),
+    });
+
+    return unwrapResponse(response, "Failed to load user details.");
+  } catch (error) {
+    const errorMessage = error?.response?.data?.message || error?.message || "Failed to load user details.";
+    console.error("Error fetching user:", error?.response?.data || error);
+    throw new Error(errorMessage, { cause: error });
   }
 }
