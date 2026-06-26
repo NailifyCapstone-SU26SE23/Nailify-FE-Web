@@ -46,6 +46,14 @@ function toTitleCase(value) {
     .join(" ");
 }
 
+function normalizeLookupKey(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
 function inferComplexity(nailVariants) {
   if (nailVariants.length >= 4) {
     return "Expert";
@@ -520,13 +528,13 @@ export async function fetchAdminNailDesignDetail(designId) {
 }
 
 export async function fetchAdminNailVariantReferences() {
-  const shapesById = new Map();
-  const surfacesById = new Map();
+  const shapesByName = new Map();
+  const surfacesByName = new Map();
   let pageNumber = 1;
   let hasNext = true;
 
   while (hasNext) {
-    const response = await axiosClient.get("/NailVariants", {
+    const response = await axiosClient.get("/NailShapes", {
       headers: getAuthHeaders(),
       params: {
         pageNumber,
@@ -537,19 +545,55 @@ export async function fetchAdminNailVariantReferences() {
     const items = Array.isArray(data?.items) ? data.items : [];
     const metaData = data?.metaData ?? {};
 
-    items.forEach((variant) => {
-      if (variant?.nailShape?.nailShapeId) {
-        shapesById.set(Number(variant.nailShape.nailShapeId), {
-          nailShapeId: Number(variant.nailShape.nailShapeId),
-          name: String(variant.nailShape.name || "").trim(),
+    items.forEach((shape) => {
+      if (shape?.nailShapeId) {
+        const normalizedName = normalizeLookupKey(shape.name);
+        if (!normalizedName || shapesByName.has(normalizedName)) {
+          return;
+        }
+
+        shapesByName.set(normalizedName, {
+          nailShapeId: Number(shape.nailShapeId),
+          name: String(shape.name || "").trim(),
+          imageUrl: String(shape.imageUrl || "").trim(),
+          price: Number(shape.price || 0),
+          duration: Number(shape.duration || 0),
         });
       }
+    });
 
-      if (variant?.nailSurface?.nailSurfaceId) {
-        surfacesById.set(Number(variant.nailSurface.nailSurfaceId), {
-          nailSurfaceId: Number(variant.nailSurface.nailSurfaceId),
-          name: String(variant.nailSurface.name || "").trim(),
-          shaderParam: String(variant.nailSurface.shaderParam || "").trim(),
+    hasNext = Boolean(metaData.hasNext);
+    pageNumber += 1;
+  }
+
+  pageNumber = 1;
+  hasNext = true;
+
+  while (hasNext) {
+    const response = await axiosClient.get("/NailSurfaces", {
+      headers: getAuthHeaders(),
+      params: {
+        pageNumber,
+        pageSize: 100,
+      },
+    });
+    const data = unwrapResponse(response, "Failed to load nail variant references.");
+    const items = Array.isArray(data?.items) ? data.items : [];
+    const metaData = data?.metaData ?? {};
+
+    items.forEach((surface) => {
+      if (surface?.nailSurfaceId) {
+        const normalizedName = normalizeLookupKey(surface.name);
+        if (!normalizedName || surfacesByName.has(normalizedName)) {
+          return;
+        }
+
+        surfacesByName.set(normalizedName, {
+          nailSurfaceId: Number(surface.nailSurfaceId),
+          name: String(surface.name || "").trim(),
+          shaderParam: String(surface.shaderParam || "").trim(),
+          price: Number(surface.price || 0),
+          duration: Number(surface.duration || 0),
         });
       }
     });
@@ -559,8 +603,8 @@ export async function fetchAdminNailVariantReferences() {
   }
 
   return {
-    shapes: [...shapesById.values()],
-    surfaces: [...surfacesById.values()],
+    shapes: [...shapesByName.values()],
+    surfaces: [...surfacesByName.values()],
   };
 }
 
@@ -574,17 +618,9 @@ export async function createAdminNailDesign(designFormValues) {
         .map((value) => normalizeIntegerId(value, -1))
         .filter((value) => value > 0)
     : [];
-  const nailVariantIds = Array.isArray(designFormValues?.nailVariantIds)
-    ? designFormValues.nailVariantIds
-        .map((value) => normalizeIntegerId(value, -1))
-        .filter((value) => value > 0)
-    : [];
 
   categoryIds.forEach((value) => {
     formData.append("CategoryIds", String(value));
-  });
-  nailVariantIds.forEach((value) => {
-    formData.append("NailVariantIds", String(value));
   });
   if (Array.isArray(designFormValues?.images)) {
     designFormValues.images.forEach((file) => {
