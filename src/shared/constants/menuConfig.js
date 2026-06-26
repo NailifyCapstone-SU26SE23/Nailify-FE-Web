@@ -272,6 +272,27 @@ export const MENU_CONFIG = {
       section: "Main",
     },
     {
+      key: "admin-procedures",
+      label: "Procedures",
+      to: ROUTES.adminProcedures,
+      icon: "palette",
+      section: "Main",
+    },
+    {
+      key: "admin-category-types",
+      label: "Category Types",
+      to: ROUTES.adminCategoryTypes,
+      icon: "palette",
+      section: "Main",
+    },
+    {
+      key: "admin-categories",
+      label: "Categories",
+      to: ROUTES.adminCategories,
+      icon: "palette",
+      section: "Main",
+    },
+    {
       key: "admin-nail-designs",
       label: "Nail Designs",
       to: ROUTES.adminNailDesigns,
