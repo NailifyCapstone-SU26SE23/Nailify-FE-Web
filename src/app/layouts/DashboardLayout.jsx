@@ -1,3 +1,4 @@
+import { Menu } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../../features/core/auth/hooks/useAuth";
@@ -149,6 +150,7 @@ export function DashboardLayout() {
 
         <div className="flex min-h-0 flex-col">
           <Header
+            backButtonFallbackTo="/"
             title={headerContent.title}
             description={headerContent.description}
             todayLabel={getTodayLabel()}
@@ -164,16 +166,17 @@ export function DashboardLayout() {
         </div>
       </div>
 
-      <div className="flex h-full min-h-0 flex-col md:hidden">
-        <Header
-          title={headerContent.title}
-          description={headerContent.description}
-          todayLabel={getTodayLabel()}
-          onOpenMobileMenu={() => setMobileMenuOpen(true)}
-          onLogout={logout}
-        />
+      <div className="relative flex h-full min-h-0 flex-col md:hidden">
+        <button
+          type="button"
+          onClick={() => setMobileMenuOpen(true)}
+          title="Open menu"
+          className="absolute left-4 top-4 z-40 inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#f8c8db] bg-white/95 text-[#eb5a99] shadow-[0_12px_24px_rgba(235,90,153,0.12)] transition hover:bg-[#fff0f7]"
+        >
+          <Menu size={20} />
+        </button>
 
-        <section className="flex-1 overflow-auto bg-white p-4 shadow-[0_18px_40px_rgba(94,76,62,0.08)]">
+        <section className="flex-1 overflow-auto bg-white p-4 pt-16 shadow-[0_18px_40px_rgba(94,76,62,0.08)]">
           <div className="flex min-h-full flex-col">
             <Outlet />
           </div>
