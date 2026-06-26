@@ -438,6 +438,40 @@ export function formatBookingCode(bookingId) {
   return `BK-${normalized.slice(0, 8).toUpperCase()}`;
 }
 
+function buildServiceSessionBreakdown(items = [], fallbackDurationValue = 0) {
+  const normalizedItems = Array.isArray(items) ? items : [];
+  const serviceRows = normalizedItems
+    .map((item, index) => {
+      const name = String(
+        item?.serviceName || item?.customerNailName || item?.nailVariantName || "",
+      ).trim();
+
+      if (!name) {
+        return null;
+      }
+
+      const duration = parseDurationMinutes(
+        item?.duration || item?.serviceDuration || item?.estimatedDuration || 0,
+      );
+
+      return {
+        id: String(item?.bookingItemId || item?.id || `${name}-${index}`).trim(),
+        name,
+        duration,
+        durationLabel: formatDurationMinutes(duration),
+      };
+    })
+    .filter(Boolean);
+
+  if (serviceRows.length > 0) {
+    return serviceRows;
+  }
+
+  const fallbackDuration = parseDurationMinutes(fallbackDurationValue);
+
+  return [];
+}
+
 export function buildStaffServiceSessionPayload(booking, options = {}) {
   const customerDetail = options.customerDetail ?? null;
   const items = booking?.bookingItems ?? [];
@@ -465,6 +499,7 @@ export function buildStaffServiceSessionPayload(booking, options = {}) {
   const estimatedDuration =
     booking?.duration ||
     (booking?.totalDuration ? formatDurationMinutes(booking.totalDuration) : "--");
+  const serviceBreakdown = buildServiceSessionBreakdown(items, booking?.totalDuration || booking?.duration);
   const appointmentStartTime = booking?.bookingTime || formatTimeValue(booking?.startTime);
   const estimatedFinishTime = formatAppointmentEndTime(appointmentStartTime, booking?.totalDuration || booking?.duration);
   const totalPriceLabel =
@@ -495,6 +530,7 @@ export function buildStaffServiceSessionPayload(booking, options = {}) {
       booking?.avatarUrl ||
       "",
     serviceLabel,
+    serviceBreakdown,
     staffArtist: booking?.artistName || booking?.staffName || "--",
     chair: "--",
     appointmentTime: appointmentStartTime,

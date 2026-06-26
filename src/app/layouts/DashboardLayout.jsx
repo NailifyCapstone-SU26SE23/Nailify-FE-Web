@@ -107,7 +107,7 @@ function getHeaderContent(pathname, menus) {
     case "admin-service-pricing":
       return {
         title: "Service & Pricing Management",
-        description: "Manage services, add-ons, prices, and estimated durations.",
+        description: "Manage services, prices, and estimated durations.",
       };
     default:
       return {
