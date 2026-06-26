@@ -7,6 +7,8 @@ import { BookingDetailPage } from "../../features/core/booking-management/pages/
 import { StaffNailDesignStudioPage } from "../../features/staff/bookings/pages/StaffNailDesignStudioPage";
 import { StaffServiceSessionPage } from "../../features/staff/bookings/pages/StaffServiceSessionPage";
 import { StaffUpdateBookingDesignPage } from "../../features/staff/bookings/pages/StaffUpdateBookingDesignPage";
+import { StaffCustomerNailsListPage } from "../../features/staff/customer-nail/pages/StaffCustomerNailsListPage";
+import { StaffCustomerNailReviewPage } from "../../features/staff/customer-nail/pages/StaffCustomerNailReviewPage";
 import { AuthGuard } from "../../shared/components/guards/AuthGuard";
 import { RoleGuard } from "../../shared/components/guards/RoleGuard";
 import { ROLES } from "../../shared/constants/roles";
@@ -54,6 +56,14 @@ export const staffRoutes = [
       {
         path: ROUTES.staffBookingDetail,
         element: <BookingDetailPage />,
+      },
+      {
+        path: ROUTES.staffCustomerNails,
+        element: <StaffCustomerNailsListPage />,
+      },
+      {
+        path: ROUTES.staffCustomerNailDetail,
+        element: <StaffCustomerNailReviewPage />,
       },
     ],
   },

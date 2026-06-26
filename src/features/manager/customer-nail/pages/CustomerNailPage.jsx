@@ -59,17 +59,48 @@ function formatDate(dateString) {
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-function formatVND(amount) {
-  if (amount === null || amount === undefined) return "N/A";
+function formatVND(amount, status) {
+  if (amount === null || amount === undefined || amount === 0) {
+    if (status === "PendingReview" || status === "Assigned") {
+      return "Pending Quote";
+    }
+    return "0 ₫";
+  }
   return new Intl.NumberFormat('vi-VN', {
     style: 'currency',
     currency: 'VND'
   }).format(amount);
 }
 
-function formatDuration(duration) {
-  if (!duration) return "N/A";
+function formatDuration(duration, status) {
+  if (duration === null || duration === undefined || duration === "" || duration === 0) {
+    if (status === "PendingReview" || status === "Assigned") {
+      return "Pending Quote";
+    }
+    return "0 mins";
+  }
   return `${duration} mins`;
+}
+
+function getCardColorStyle(customColor) {
+  if (!customColor) return { backgroundColor: '#fdf2f8' };
+  try {
+    const parsed = typeof customColor === 'string' ? JSON.parse(customColor) : customColor;
+    if (parsed.mode === 'solid' && parsed.color) {
+      return { backgroundColor: parsed.color };
+    }
+    if (parsed.mode === 'gradient' && Array.isArray(parsed.gradient)) {
+      return { background: `linear-gradient(to bottom, ${parsed.gradient.join(', ')})` };
+    }
+    if (parsed.mode === 'perFinger' && Array.isArray(parsed.fingers)) {
+      const colors = parsed.fingers.map(f => f.color).filter(Boolean);
+      if (colors.length > 0) {
+        if (colors.length === 1) return { backgroundColor: colors[0] };
+        return { background: `linear-gradient(to right, ${colors.slice(0, 3).join(', ')})` };
+      }
+    }
+  } catch (e) { }
+  return { backgroundColor: '#fdf2f8' };
 }
 
 function StatCard({ title, value, note, icon: Icon, toneClassName }) {
@@ -100,21 +131,43 @@ StatCard.propTypes = {
 function CustomerNailCard({ nail }) {
   const initials = nail.name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() || "CN";
   const isPreset = nail.basedOnNailVariantId !== null;
+  const cardColorStyle = getCardColorStyle(nail.customColor);
+
+  const maskStyle = nail.nailShape?.imageUrl ? {
+    maskImage: `url(${nail.nailShape.imageUrl})`,
+    WebkitMaskImage: `url(${nail.nailShape.imageUrl})`,
+    maskSize: '100% 100%',
+    WebkitMaskSize: '100% 100%',
+    maskRepeat: 'no-repeat',
+    WebkitMaskRepeat: 'no-repeat',
+  } : {};
+
   return (
     <div className="group rounded-[24px] border border-[#f8deea] bg-[linear-gradient(180deg,#fffafb_0%,#fff6fa_100%)] p-5 shadow-[0_10px_24px_rgba(236,72,153,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_36px_rgba(236,72,153,0.14)]">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
-          {nail.imageUrl ? (
-            <img
-              src={nail.imageUrl}
-              alt={nail.name}
-              className="h-16 w-16 rounded-[18px] border-4 border-white object-cover shadow-[0_10px_20px_rgba(0,0,0,0.08)]"
-            />
-          ) : (
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[18px] bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-sm font-bold text-white shadow-[0_10px_20px_rgba(234,79,147,0.18)]">
-              {initials}
-            </div>
-          )}
+          <div className="relative h-16 w-12 shrink-0 rounded-t-[14px] rounded-b-[4px] border border-[#f4c1d8] bg-white shadow-[0_6px_14px_rgba(236,72,153,0.05)] overflow-hidden flex items-center justify-center">
+            {nail.imageUrl ? (
+              <img
+                src={nail.imageUrl}
+                alt={nail.name}
+                className="h-full w-full object-cover pointer-events-none"
+              />
+            ) : nail.nailShape?.imageUrl ? (
+              <>
+                <div className="absolute inset-0 w-full h-full" style={{ ...maskStyle, ...cardColorStyle }} />
+                <img
+                  src={nail.nailShape.imageUrl}
+                  alt={nail.name}
+                  className="absolute inset-0 w-full h-full object-cover mix-blend-multiply opacity-80 pointer-events-none"
+                />
+              </>
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-[10px] font-bold text-white uppercase">
+                {initials}
+              </div>
+            )}
+          </div>
           <div>
             <h4 className="text-base font-extrabold text-[#3f2240] transition group-hover:text-[#ea4f93]">{nail.name || "Untitled Design"}</h4>
             <p className="mt-1 text-xs text-[#c08aa4]">
@@ -127,15 +180,15 @@ function CustomerNailCard({ nail }) {
           {nail.isPublic && <Eye size={16} className="text-[#6b7280]" />}
         </div>
       </div>
-      
+
       <div className="mt-5 grid grid-cols-3 gap-3">
         <div className="rounded-[16px] border border-[#f4c7da] bg-white/80 p-3">
           <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#c08aa4]">Price</p>
-          <p className="text-sm font-semibold text-[#ea4f93]">{formatVND(nail.price)}</p>
+          <p className="text-sm font-semibold text-[#ea4f93]">{formatVND(nail.price, nail.status)}</p>
         </div>
         <div className="rounded-[16px] border border-[#f4c7da] bg-white/80 p-3">
           <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#c08aa4]">Duration</p>
-          <p className="text-sm font-semibold text-[#3f2240]">{formatDuration(nail.duration)}</p>
+          <p className="text-sm font-semibold text-[#3f2240]">{formatDuration(nail.duration, nail.status)}</p>
         </div>
         <div className="rounded-[16px] border border-[#f4c7da] bg-white/80 p-3">
           <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#c08aa4]">Created</p>
@@ -144,7 +197,7 @@ function CustomerNailCard({ nail }) {
           </p>
         </div>
       </div>
-      
+
       <div className="mt-5 flex items-center justify-between gap-3 flex-wrap">
         <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-bold ${getStatusTone(nail.status)}`}>
           {nail.status === "Approved" ? <CheckCircle2 size={12} /> : nail.status === "Rejected" ? <XCircle size={12} /> : <Calendar size={12} />}
@@ -154,7 +207,7 @@ function CustomerNailCard({ nail }) {
           {isPreset ? "Preset" : "Custom Design"}
         </span>
         {nail.rejectReason && (
-          <p className="text-[10px] text-[#e1447f]">Rejected: {nail.rejectReason}</p>
+          <p className="text-[10px] text-[#e1447f] font-medium">Rejected: {nail.rejectReason}</p>
         )}
       </div>
     </div>
@@ -405,11 +458,10 @@ export function CustomerNailPage() {
               </p>
             </div>
             <div className="flex flex-col items-start gap-3 lg:items-end">
-              <div className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-bold transition ${
-                isRefreshing
-                  ? "bg-white text-[#ea4f93] shadow-[0_8px_18px_rgba(234,79,147,0.12)]"
-                  : "bg-white/80 text-[#9b7b8f]"
-              }`}>
+              <div className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-bold transition ${isRefreshing
+                ? "bg-white text-[#ea4f93] shadow-[0_8px_18px_rgba(234,79,147,0.12)]"
+                : "bg-white/80 text-[#9b7b8f]"
+                }`}>
                 <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} />
                 {isRefreshing ? "Refreshing..." : "Auto refresh every 3s"}
               </div>
@@ -461,8 +513,8 @@ export function CustomerNailPage() {
                 <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                   {paginatedNails.map((nail) => (
                     <Link
-                      key={nail.customerNailId || nail.id}
-                      to={`${ROUTES.managerCustomerNails}/${nail.customerNailId || nail.id}`}
+                      key={nail.customerNailRequestId || nail.customerNailId || nail.id}
+                      to={`${ROUTES.managerCustomerNails}/${nail.customerNailRequestId || nail.customerNailId || nail.id}`}
                       className="block"
                     >
                       <CustomerNailCard nail={nail} />
@@ -524,7 +576,7 @@ export function CustomerNailPage() {
             <button
               type="button"
               onClick={() => {
-                const id = pendingReviewModalNail?.customerNailId || pendingReviewModalNail?.id;
+                const id = pendingReviewModalNail?.customerNailRequestId || pendingReviewModalNail?.customerNailId || pendingReviewModalNail?.id;
                 setIsPendingReviewModalOpen(false);
                 if (id) {
                   navigate(`${ROUTES.managerCustomerNails}/${id}`);

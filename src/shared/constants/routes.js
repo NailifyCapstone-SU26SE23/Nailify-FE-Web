@@ -15,6 +15,8 @@ export const ROUTES = {
   staffBookingDesignStudio: "/staff/bookings/:bookingId/design-studio",
   staffBookingDesignUpdate: "/staff/bookings/:bookingId/update-booking-design",
   staffBookingServiceSession: "/staff/bookings/:bookingId/service-session",
+  staffCustomerNails: "/staff/customer-nails",
+  staffCustomerNailDetail: "/staff/customer-nails/:customerNailId",
   receptionistBookings: "/receptionist/bookings",
   receptionistBookingsCreate: "/receptionist/bookings/create",
   receptionistBookingDetail: "/receptionist/bookings/:bookingId",

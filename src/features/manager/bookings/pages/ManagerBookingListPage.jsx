@@ -30,9 +30,17 @@ import { ConfirmBookingModal } from "../components/ConfirmBookingModal";
 import { RejectBookingModal } from "../components/RejectBookingModal";
 import { CancelBookingModal } from "../components/CancelBookingModal";
 import { Pagination } from "../../../../shared/components/common/Pagination";
+import { loadAuthSession } from "../../../core/auth/model/authStorage";
 
 const roleConfig = BOOKING_ROLE_CONFIG[ROLES.manager];
-const DEFAULT_SALON_ID = "484c3aef-3ae1-4ad6-8aba-6b0bc6df586d";
+const getSalonId = () => {
+  const session = loadAuthSession();
+  const salonId = session?.user?.salonId || session?.salonId;
+  if (!salonId) {
+    throw new Error("Salon ID is not available in the current account profile.");
+  }
+  return salonId;
+};
 const BOOKING_PAGE_SIZE = 10;
 
 function Card({ className = "", children }) {
@@ -167,7 +175,7 @@ function formatDuration(totalMinutes) {
   if (!totalMinutes) return "0m";
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
-  
+
   if (hours > 0 && minutes > 0) {
     return `${hours}h${minutes}m`;
   } else if (hours > 0) {
@@ -542,13 +550,13 @@ export function ManagerBookingListPage() {
   const navigate = useNavigate();
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
   const tableContainerRef = useRef(null);
-  
+
   // Drawer state
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedBookingForDrawer, setSelectedBookingForDrawer] = useState(null);
   const [selectedCustomerForDrawer, setSelectedCustomerForDrawer] = useState(null);
   const [isLoadingDrawer, setIsLoadingDrawer] = useState(false);
-  
+
   const getStoredState = () => {
     try {
       const stored = sessionStorage.getItem(SESSION_STORAGE_KEY);
@@ -568,7 +576,7 @@ export function ManagerBookingListPage() {
   };
 
   const initialState = getStoredState();
-  
+
   const [query, setQuery] = useState(initialState.query);
   const [activeFilter, setActiveFilter] = useState(initialState.activeFilter);
   const [selectedDate, setSelectedDate] = useState(initialState.selectedDate);
@@ -578,7 +586,7 @@ export function ManagerBookingListPage() {
   const [currentPage, setCurrentPage] = useState(initialState.currentPage);
   const [filteredPageSize] = useState(10);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
-  
+
   useEffect(() => {
     try {
       sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({
@@ -611,7 +619,7 @@ export function ManagerBookingListPage() {
       const rawBooking = await fetchBookingById(bookingId);
       const mappedBooking = mapBookingForDrawer(rawBooking);
       setSelectedBookingForDrawer(mappedBooking);
-      
+
       if (mappedBooking.customerId) {
         try {
           const rawCustomer = await fetchUserById(mappedBooking.customerId);
@@ -631,9 +639,11 @@ export function ManagerBookingListPage() {
     setIsLoading(true);
     setError("");
     try {
-      const result = await fetchBookingsBySalonId(DEFAULT_SALON_ID, { pageNumber: 1, pageSize: 1000 });
+      const salonId = getSalonId();
+      // Load ALL bookings with a large page size (1000)
+      const result = await fetchBookingsBySalonId(salonId, { pageNumber: 1, pageSize: 1000 });
       console.log("loadBookings all bookings result:", result);
-      
+
       let apiBookings = [];
       if (result?.items) {
         apiBookings = result.items;
@@ -671,6 +681,13 @@ export function ManagerBookingListPage() {
       }
 
       const matchesFilterResult = matchesFilter(appointment.status, activeFilter);
+      console.log("Filter check for appointment:", {
+        appointment,
+        matchesQuery,
+        matchesDate,
+        matchesFilterResult,
+        activeFilter
+      });
 
       return matchesQuery && matchesFilterResult && matchesDate;
     });
@@ -696,34 +713,14 @@ export function ManagerBookingListPage() {
     setCurrentPage(newPage);
   }, []);
 
-  useEffect(() => {
-    if (!hasLoadedOnce) {
-      console.log("First load - fetching bookings");
-      loadBookings();
-    } else {
-      console.log("Data already loaded - skipping fetch");
-    }
-  }, [hasLoadedOnce, loadBookings]);
-
-  useEffect(() => {
-    const savedScrollPos = sessionStorage.getItem(SCROLL_POSITION_KEY);
-    if (savedScrollPos && tableContainerRef.current) {
-      setTimeout(() => {
-        if (tableContainerRef.current) {
-          tableContainerRef.current.scrollTop = parseInt(savedScrollPos, 10);
-          console.log("📍 Scroll restored to:", savedScrollPos);
-        }
-      }, 100);
-    }
-  }, []);
-
-  const handleViewBooking = (bookingId) => {
-    if (tableContainerRef.current) {
-      sessionStorage.setItem(SCROLL_POSITION_KEY, tableContainerRef.current.scrollTop.toString());
-      console.log("📍 Scroll saved:", tableContainerRef.current.scrollTop);
-    }
-    navigate(roleConfig.getDetailRoute(bookingId));
-  };
+  // Log current pagination state
+  console.log("ManagerBookingListPage pagination state:", {
+    currentPage,
+    filteredTotalPages,
+    filteredAppointmentsLength: filteredAppointments.length,
+    paginatedAppointmentsLength: paginatedAppointments.length,
+    filteredPageSize
+  });
 
   useEffect(() => {
     if (!location.state?.flashMessage) {
@@ -731,6 +728,104 @@ export function ManagerBookingListPage() {
     }
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
+
+  const computedConflicts = useMemo(() => {
+    const list = [];
+
+    // Group bookings by date
+    const bookingsByDate = {};
+    bookings.forEach(b => {
+      if (!b.bookingDate) return;
+      const dateKey = b.bookingDate.split("T")[0];
+      if (!bookingsByDate[dateKey]) bookingsByDate[dateKey] = [];
+      bookingsByDate[dateKey].push(b);
+    });
+
+    Object.keys(bookingsByDate).forEach(dateKey => {
+      const dayBookings = bookingsByDate[dateKey];
+
+      // 1. Check for excessive bookings per customer (more than 2 bookings on the same day)
+      const customerCounts = {};
+      dayBookings.forEach(b => {
+        const key = b.customerId || b.customer;
+        if (!key) return;
+        customerCounts[key] = (customerCounts[key] || 0) + 1;
+      });
+
+      // 2. Check for staff double booking overlap
+      const withTimes = dayBookings.map(b => {
+        const parsedTime = parseTimePart(b.startTime) || parseTimePart(b.bookingDate);
+        const startMin = parsedTime ? parsedTime.getHours() * 60 + parsedTime.getMinutes() : null;
+        const duration = Number(b.totalDuration || 60);
+        return {
+          ...b,
+          startMin,
+          endMin: startMin !== null ? startMin + duration : null
+        };
+      }).filter(b => b.startMin !== null && !isFinalStatus(b.status));
+
+      // Compare pairs for staff overlap
+      for (let i = 0; i < withTimes.length; i++) {
+        for (let j = i + 1; j < withTimes.length; j++) {
+          const b1 = withTimes[i];
+          const b2 = withTimes[j];
+
+          if (b1.nailArtistId && b2.nailArtistId && b1.nailArtistId === b2.nailArtistId) {
+            if (b1.startMin < b2.endMin && b2.startMin < b1.endMin) {
+              list.push({
+                type: "DoubleBooking",
+                title: "Staff Overlap",
+                description: `${b1.artist} double-booked at ${b1.time} & ${b2.time}`,
+                time: `${b1.date} · ${b1.time}`,
+                bookingId: b1.id,
+                severity: "error"
+              });
+            }
+          }
+        }
+      }
+
+      // Add customer multi-booking warnings
+      dayBookings.forEach(b => {
+        const key = b.customerId || b.customer;
+        if (key && customerCounts[key] > 2) {
+          const exists = list.some(item => item.type === "MultiBooking" && item.customerKey === key && item.date === dateKey);
+          if (!exists) {
+            list.push({
+              type: "MultiBooking",
+              customerKey: key,
+              date: dateKey,
+              title: "Excessive Daily Bookings",
+              description: `${b.customer} has ${customerCounts[key]} appointments on ${b.date}`,
+              time: `${b.date} · ${customerCounts[key]} slots`,
+              bookingId: b.id,
+              severity: "warning"
+            });
+          }
+        }
+      });
+    });
+
+    // Identify unassigned bookings
+    bookings.forEach(b => {
+      if (!isFinalStatus(b.status) && !b.nailArtistId) {
+        list.push({
+          type: "Unassigned",
+          title: "Unassigned Booking",
+          description: `No artist assigned for ${b.customer} at ${b.time}`,
+          time: `${b.date} · ${b.time}`,
+          bookingId: b.id,
+          severity: "info"
+        });
+      }
+    });
+
+    return list.slice(0, 10);
+  }, [bookings]);
+
+  useEffect(() => {
+    Promise.resolve().then(() => loadBookings());
+  }, [loadBookings]);
 
   const summaryStats = useMemo(() => {
     const pending = bookings.filter(b => b.status === "Pending").length;
@@ -940,8 +1035,22 @@ export function ManagerBookingListPage() {
                             >
                               {row.initials}
                             </div>
-                            <div className="min-w-0">
-                              <p className="text-xs font-semibold text-[#2d1b35] truncate">{row.customer}</p>
+                            <div>
+                              <div className="flex items-center gap-1.5">
+                                <p className="text-sm font-bold text-[#402542]">{row.customer}</p>
+                                {(() => {
+                                  const customerConflicts = computedConflicts.filter(c => c.bookingId === row.id && c.type === "MultiBooking");
+                                  if (customerConflicts.length > 0) {
+                                    return (
+                                      <span className="rounded bg-[#ffeef2] px-1.5 py-0.5 text-[9px] font-bold text-[#e1447f] border border-[#fccad6]">
+                                        Spam Alert
+                                      </span>
+                                    );
+                                  }
+                                  return null;
+                                })()}
+                              </div>
+                              <p className="text-[11px] text-[#c08aa4]">{row.phone}</p>
                             </div>
                           </div>
                         </td>
@@ -988,18 +1097,18 @@ export function ManagerBookingListPage() {
                               (row.nailArtistId || row.staffId || row.staffArtistId || row.artistId) &&
                               (row.status === "CheckedIn" || row.status === "Checked In")
                             ) && (!isFinalStatus(row.status) || row.status === "Approved") && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setSelectedBookingForAssign(row);
-                                  setIsAssignArtistModalOpen(true);
-                                }}
-                                className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#e7ecff] text-[#4755b8] hover:bg-[#4755b8] hover:text-white transition"
-                                title="Assign"
-                              >
-                                <UserCheck size={12} />
-                              </button>
-                            )}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedBookingForAssign(row);
+                                    setIsAssignArtistModalOpen(true);
+                                  }}
+                                  className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#e7ecff] text-[#4755b8] hover:bg-[#4755b8] hover:text-white transition"
+                                  title="Assign"
+                                >
+                                  <UserCheck size={12} />
+                                </button>
+                              )}
 
                             {!isFinalStatus(row.status) && !(row.status === "CheckedIn" || row.status === "Checked In" || row.status === "InProgress" || row.status === "In Progress") && (
                               <>
@@ -1157,8 +1266,8 @@ export function ManagerBookingListPage() {
                       <h3 className="text-sm font-bold text-[#2d1b35] mb-4">Customer Information</h3>
                       <div className="space-y-4">
                         <InfoItem label="Customer Name">
-                          {selectedCustomerForDrawer 
-                            ? `${selectedCustomerForDrawer.firstName || ''} ${selectedCustomerForDrawer.lastName || ''}`.trim() 
+                          {selectedCustomerForDrawer
+                            ? `${selectedCustomerForDrawer.firstName || ''} ${selectedCustomerForDrawer.lastName || ''}`.trim()
                             : selectedBookingForDrawer.customerName}
                         </InfoItem>
                         {(selectedBookingForDrawer.phone || selectedCustomerForDrawer?.phone) && (
@@ -1543,25 +1652,51 @@ export function ManagerBookingListPage() {
             </Card>
 
             <Card className="overflow-hidden">
-              <SectionHeading title="Booking Conflicts" subtitle="3 items need attention" />
+              <SectionHeading
+                title="Booking Conflicts"
+                subtitle={computedConflicts.length > 0 ? `${computedConflicts.length} items need attention` : "System is running smoothly"}
+              />
               <div className="mt-4 space-y-3">
-                {bookingConflicts.map((conflict) => (
-                  <div
-                    key={conflict.title}
-                    className="rounded-[12px] border border-[#f8c4d8] bg-[#fff0f6] px-3 py-3"
-                  >
-                    <div className="flex items-start gap-2">
-                      <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#e1447f]" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-extrabold text-[#e1447f]">{conflict.title}</p>
-                        <p className="mt-1 text-[11px] text-[#c08aa4]">{conflict.time}</p>
-                        <button type="button" className="mt-2 text-[11px] font-bold text-[#ea4f93]">
-                          {conflict.action}
-                        </button>
+                {computedConflicts.length === 0 ? (
+                  <div className="rounded-[12px] border border-[#b8e6cc] bg-[#eaf9ee] p-4 text-center">
+                    <p className="text-xs font-bold text-[#2fa25f]">✓ All clear</p>
+                    <p className="mt-0.5 text-[10px] text-[#71a687]">No booking overlaps or spam detected today.</p>
+                  </div>
+                ) : (
+                  computedConflicts.map((conflict, idx) => (
+                    <div
+                      key={idx}
+                      className={`rounded-[12px] border p-3 ${conflict.severity === "error"
+                          ? "border-[#f8c4d8] bg-[#fff0f6]"
+                          : conflict.severity === "warning"
+                            ? "border-[#fbe3b5] bg-[#fffaf0]"
+                            : "border-[#c7d7ff] bg-[#f0f4ff]"
+                        }`}
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${conflict.severity === "error"
+                            ? "bg-[#e1447f]"
+                            : conflict.severity === "warning"
+                              ? "bg-[#db8520]"
+                              : "bg-[#4755b8]"
+                          }`} />
+                        <div className="min-w-0 flex-1">
+                          <p className={`text-xs font-bold ${conflict.severity === "error"
+                              ? "text-[#e1447f]"
+                              : conflict.severity === "warning"
+                                ? "text-[#db8520]"
+                                : "text-[#4755b8]"
+                            }`}>{conflict.title}</p>
+                          <p className="mt-0.5 text-xs font-semibold text-[#5c4559]">{conflict.description}</p>
+                          <p className="mt-1 text-[10px] text-[#c08aa4]">{conflict.time}</p>
+                          <Link to={roleConfig.getDetailRoute(conflict.bookingId)} className="mt-2 inline-block text-[10px] font-bold text-[#ea4f93] hover:underline">
+                            View Booking
+                          </Link>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </Card>
           </aside>
