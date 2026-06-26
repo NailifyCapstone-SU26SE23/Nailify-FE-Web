@@ -7,6 +7,7 @@ import { BookingFormFields } from "../components/BookingFormFields";
 import { BookingHeroCard } from "../components/BookingHeroCard";
 import { BookingSnapshotCard } from "../components/BookingSnapshotCard";
 import { StaffBookingConsultationDetail } from "../../../staff/bookings/components/StaffBookingConsultationDetail";
+import { ExtraServiceModal } from "../../../staff/bookings/components/ExtraServiceModal";
 import {
   BOOKING_ROLE_CONFIG,
   getMockBookingById,
@@ -19,12 +20,14 @@ import {
 } from "../../../../shared/constants/routes";
 import {
   buildStaffServiceSessionPayload,
+  fetchServiceCatalog,
   fetchStaffBookingDetail,
   fetchStaffCustomerDetail,
   fetchStaffNailVariantDetail,
   formatBookingCode,
   formatCurrency,
   formatTimeValue,
+  updateStaffBooking,
 } from "../../../staff/bookings/services/staffBookingService";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 
@@ -83,8 +86,27 @@ function formatTimeRange(startTime, durationMinutes) {
   return `${appointmentStartTime} - ${appointmentEndTime}`;
 }
 
+function normalizeBookingText(value) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function getUniqueBookingLabels(values) {
+  return [...new Set(values.map(normalizeBookingText).filter(Boolean))];
+}
+
+function getPrimaryNailVariantId(bookingItems) {
+  const matchedItem = (Array.isArray(bookingItems) ? bookingItems : []).find((item) => {
+    const variantId = Number(item?.nailVariantId || 0);
+    return Number.isInteger(variantId) && variantId > 0;
+  });
+
+  return Number(matchedItem?.nailVariantId || 0);
+}
+
 function buildDefaultStaffNotes(booking) {
-  const serviceNames = booking?.bookingItems?.map((item) => item.serviceName).filter(Boolean).join(", ");
+  const serviceNames = getUniqueBookingLabels(
+    (booking?.bookingItems ?? []).map((item) => item?.serviceName),
+  ).join(", ");
 
   return [
     {
@@ -104,19 +126,61 @@ function buildDefaultStaffNotes(booking) {
 
 function buildStaffExperienceFromBooking(booking, staffNotesDraft, nailVariantDetail, customerDetail) {
   const items = booking?.bookingItems ?? [];
-  const mainItem = items[0] ?? null;
+  const normalizedItems = items.map((item) => ({
+    ...item,
+    serviceName: normalizeBookingText(item?.serviceName),
+    nailVariantName: normalizeBookingText(item?.nailVariantName),
+    customerNailName: normalizeBookingText(item?.customerNailName),
+    nailVariantImageUrl: normalizeBookingText(item?.nailVariantImageUrl),
+    customerNailImageUrl: normalizeBookingText(item?.customerNailImageUrl),
+  }));
+  const mainItem = normalizedItems[0] ?? null;
+  const primaryDesignItem =
+    normalizedItems.find(
+      (item) =>
+        item.customerNailName ||
+        item.nailVariantName ||
+        item.nailVariantImageUrl ||
+        item.customerNailImageUrl,
+    ) ?? mainItem;
   const bookingCode = formatBookingCode(booking?.bookingId);
   const startTime = formatTimeValue(booking?.startTime);
   const totalDuration = booking?.totalDuration ? formatDurationMinutes(booking.totalDuration) : "--";
   const timeRange = formatTimeRange(booking?.startTime, booking?.totalDuration);
-  const serviceNames = items.map((item) => item.serviceName).filter(Boolean);
+  const serviceNames = getUniqueBookingLabels(normalizedItems.map((item) => item.serviceName));
+  const variantNames = getUniqueBookingLabels(normalizedItems.map((item) => item.nailVariantName));
+  const customerDesignNames = getUniqueBookingLabels(normalizedItems.map((item) => item.customerNailName));
+  const selectedItemLabels = getUniqueBookingLabels([
+    ...serviceNames,
+    ...variantNames,
+    ...customerDesignNames,
+  ]);
+  const primaryServiceLabel =
+    serviceNames[0] ||
+    variantNames[0] ||
+    customerDesignNames[0] ||
+    "--";
+  const fullSelectionSummary =
+    selectedItemLabels.length > 0 ? selectedItemLabels.join("\n") : primaryServiceLabel;
+  const serviceSummary = serviceNames.length ? serviceNames.join(", ") : "--";
   const designImage =
-    mainItem?.customerNailImageUrl || booking?.checkInImageUrl || booking?.checkOutImagesUrl || DEFAULT_DESIGN_IMAGE;
-  const requestedDesign = mainItem?.customerNailName || mainItem?.nailVariantName || "Selected design not specified";
-  const resolvedVariantName = nailVariantDetail?.name || mainItem?.nailVariantName || "--";
+    nailVariantDetail?.imageUrl ||
+    primaryDesignItem?.nailVariantImageUrl ||
+    primaryDesignItem?.customerNailImageUrl ||
+    booking?.checkInImageUrl ||
+    booking?.checkOutImagesUrl ||
+    DEFAULT_DESIGN_IMAGE;
+  const requestedDesign =
+    customerDesignNames[0] ||
+    variantNames[0] ||
+    "Selected design not specified";
+  const resolvedVariantName = nailVariantDetail?.name || variantNames[0] || "--";
   const resolvedDesignImage = nailVariantDetail?.imageUrl || designImage;
   const componentSummary = nailVariantDetail?.nailComponents?.length
-    ? `${nailVariantDetail.nailComponents.length} component(s)`
+    ? nailVariantDetail.nailComponents
+      .map((item) => item?.component?.name)
+      .filter(Boolean)
+      .join(", ") || `${nailVariantDetail.nailComponents.length} component(s)`
     : "--";
   const customerDisplayName =
     customerDetail?.fullName ||
@@ -159,8 +223,8 @@ function buildStaffExperienceFromBooking(booking, staffNotesDraft, nailVariantDe
     bookingInfo: [
       {
         label: "Service",
-        value: serviceNames[0] || "--",
-        note: serviceNames.length > 1 ? `+${serviceNames.length - 1} more service(s)` : requestedDesign,
+        value: fullSelectionSummary,
+        // note: requestedDesign,
       },
       {
         label: "Appointment",
@@ -175,37 +239,53 @@ function buildStaffExperienceFromBooking(booking, staffNotesDraft, nailVariantDe
       {
         label: "Total Price",
         value: formatCurrency(booking?.totalPrice),
-        note: `Status: ${booking?.status || "--"}`,
+        // note: `Status: ${booking?.status || "--"}`,
         tone: "success",
       },
       {
         label: "Salon",
         value: booking?.salonName || "--",
-        note: booking?.status || "--",
+        // note: `${selectedItemLabels.length || 0} selected item(s)`,
       },
       {
         label: "Staff Artist",
         value: booking?.artistName || "--",
-        note: serviceNames[0] || "--",
+        // note: serviceSummary,
       },
     ],
     design: {
       name: nailVariantDetail?.name || requestedDesign,
       image: resolvedDesignImage,
       details: [
-        { label: "Service", value: serviceNames[0] || "--" },
+        { label: "Service", value: serviceSummary },
         { label: "Variant", value: resolvedVariantName },
         { label: "Shape", value: nailVariantDetail?.nailShape?.name || "--" },
         { label: "Surface", value: nailVariantDetail?.nailSurface?.name || "--" },
-        { label: "Customer Design", value: mainItem?.customerNailName || "--" },
+        { label: "Customer Design", value: customerDesignNames[0] || "--" },
         { label: "Duration", value: timeRange },
-        { label: "Price", value: nailVariantDetail?.priceLabel || formatCurrency(booking?.totalPrice) },
+        { label: "Price", value: formatCurrency(booking?.totalPrice) },
         { label: "Components", value: componentSummary },
       ],
       tags: [
         { label: booking?.status || "Pending", className: "border-[#f4cada] bg-[#fff6fa] text-[#ea4f93]" },
         { label: booking?.salonName || "Salon", className: "border-[#d8cbff] bg-[#f6f2ff] text-[#8c63ef]" },
       ],
+      variantDetail: nailVariantDetail
+        ? {
+          nailVariantId: nailVariantDetail.nailVariantId,
+          name: nailVariantDetail.name,
+          nailShapeId: nailVariantDetail.nailShape?.nailShapeId || nailVariantDetail.nailShapeId || 0,
+          nailSurfaceId: nailVariantDetail.nailSurface?.nailSurfaceId || nailVariantDetail.nailSurfaceId || 0,
+          nailDesignId: nailVariantDetail.nailDesignId || 0,
+          price: nailVariantDetail.price,
+          duration: nailVariantDetail.duration,
+          imageUrl: nailVariantDetail.imageUrl || resolvedDesignImage,
+          colorJson: nailVariantDetail.colorJson || "",
+          nailShape: nailVariantDetail.nailShape,
+          nailSurface: nailVariantDetail.nailSurface,
+          nailComponents: nailVariantDetail.nailComponents || [],
+        }
+        : null,
     },
     sessionStatus: [
       { label: "Status", value: booking?.status || "--" },
@@ -224,23 +304,33 @@ function buildStaffExperienceFromBooking(booking, staffNotesDraft, nailVariantDe
           ][index % 3],
         }))
         : [{ label: "--", className: "border-[#f0d8e3] bg-white text-[#6f5c6b]" }],
-      previousShapes: mainItem?.nailVariantName || "--",
+      previousShapes: variantNames[0] || "--",
       lastUpload: {
-        title: mainItem?.customerNailName || "Reference unavailable",
+        title: primaryDesignItem?.customerNailName || primaryDesignItem?.nailVariantName || "Reference unavailable",
         date: formatStaffDate(booking?.bookingDate),
-        image: mainItem?.customerNailImageUrl || DEFAULT_UPLOAD_IMAGE,
+        image:
+          primaryDesignItem?.customerNailImageUrl ||
+          primaryDesignItem?.nailVariantImageUrl ||
+          DEFAULT_UPLOAD_IMAGE,
       },
     },
-    suggestedDesigns: (items.length ? items : [{ serviceName: "--", nailVariantName: "--", customerNailImageUrl: DEFAULT_DESIGN_IMAGE }]).slice(0, 3).map((item) => ({
-      name: item.customerNailName || item.serviceName || "--",
-      meta: `${item.nailVariantName || "--"} | ${item.duration ? formatDurationMinutes(item.duration) : "--"}`,
-      image: item.customerNailImageUrl || DEFAULT_DESIGN_IMAGE,
+    suggestedDesigns: (normalizedItems.length
+      ? normalizedItems
+      : [{ serviceName: "--", nailVariantName: "--", customerNailImageUrl: DEFAULT_DESIGN_IMAGE }])
+      .slice(0, 3)
+      .map((item) => ({
+        name: item.customerNailName || item.nailVariantName || item.serviceName || "--",
+        meta: `${item.serviceName || "--"} | ${item.duration ? formatDurationMinutes(item.duration) : "--"}`,
+        image: item.nailVariantImageUrl || item.customerNailImageUrl || DEFAULT_DESIGN_IMAGE,
     })),
     staffNotes: staffNotesDraft,
     checklist: [
       { label: "Booking detail loaded from API", checked: true },
       { label: "Artist assigned to booking", checked: Boolean(booking?.artistName) },
-      { label: "Customer design reference available", checked: Boolean(mainItem?.customerNailImageUrl) },
+      {
+        label: "Customer design reference available",
+        checked: Boolean(primaryDesignItem?.customerNailImageUrl || primaryDesignItem?.nailVariantImageUrl),
+      },
       { label: "Service items captured", checked: items.length > 0 },
     ],
   };
@@ -267,6 +357,24 @@ export function BookingDetailPage() {
   const [isStaffLoading, setIsStaffLoading] = useState(isStaffRole);
   const [staffLoadError, setStaffLoadError] = useState("");
   const [staffNotesDraft, setStaffNotesDraft] = useState([]);
+  const [showUpdateBookingModal, setShowUpdateBookingModal] = useState(false);
+  const [serviceCatalog, setServiceCatalog] = useState([]);
+  const [serviceCatalogMeta, setServiceCatalogMeta] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    pageSize: 10,
+    totalItems: 0,
+    hasPrevious: false,
+    hasNext: false,
+    firstRowOnPage: 0,
+    lastRowOnPage: 0,
+  });
+  const [serviceCatalogPage, setServiceCatalogPage] = useState(1);
+  const [serviceSearchInput, setServiceSearchInput] = useState("");
+  const [serviceSearchKeyword, setServiceSearchKeyword] = useState("");
+  const [selectedExtraServiceIds, setSelectedExtraServiceIds] = useState([]);
+  const [isLoadingServiceCatalog, setIsLoadingServiceCatalog] = useState(false);
+  const [isSavingExtraService, setIsSavingExtraService] = useState(false);
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(
@@ -378,7 +486,7 @@ export function BookingDetailPage() {
       return;
     }
 
-    const variantId = Number(staffBookingDetail?.bookingItems?.[0]?.nailVariantId || 0);
+    const variantId = getPrimaryNailVariantId(staffBookingDetail?.bookingItems);
 
     if (!Number.isInteger(variantId) || variantId <= 0) {
       setStaffNailVariantDetail(null);
@@ -407,6 +515,70 @@ export function BookingDetailPage() {
       isMounted = false;
     };
   }, [isStaffRole, staffBookingDetail?.bookingItems]);
+
+  useEffect(() => {
+    if (!showUpdateBookingModal) {
+      return undefined;
+    }
+
+    let isMounted = true;
+
+    const loadServiceCatalog = async () => {
+      setIsLoadingServiceCatalog(true);
+
+      try {
+        const response = await fetchServiceCatalog({
+          pageNumber: serviceCatalogPage,
+          pageSize: 10,
+          name: serviceSearchKeyword.trim() || undefined,
+        });
+
+        if (!isMounted) {
+          return;
+        }
+
+        setServiceCatalog(response.items);
+        setServiceCatalogMeta(response.metaData ?? {
+          currentPage: serviceCatalogPage,
+          totalPages: 1,
+          pageSize: 10,
+          totalItems: 0,
+          hasPrevious: false,
+          hasNext: false,
+          firstRowOnPage: 0,
+          lastRowOnPage: 0,
+        });
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        setServiceCatalog([]);
+        setServiceCatalogMeta({
+          currentPage: serviceCatalogPage,
+          totalPages: 1,
+          pageSize: 10,
+          totalItems: 0,
+          hasPrevious: false,
+          hasNext: false,
+          firstRowOnPage: 0,
+          lastRowOnPage: 0,
+        });
+        const message = error instanceof Error ? error.message : "Failed to load services.";
+        toast.error(message);
+      } finally {
+        if (isMounted) {
+          setIsLoadingServiceCatalog(false);
+        }
+      }
+    };
+
+    void loadServiceCatalog();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [serviceCatalogPage, serviceSearchKeyword, showUpdateBookingModal]);
 
   if (!isStaffRole && !initialBooking) {
     return <Navigate to={roleConfig.listRoute} replace />;
@@ -497,6 +669,95 @@ export function BookingDetailPage() {
     setStaffNotesDraft((current) => current.map((item) => (
       item.label === label ? { ...item, value } : item
     )));
+  };
+
+  const handleOpenUpdateBooking = () => {
+    setSelectedExtraServiceIds([]);
+    setServiceSearchInput("");
+    setServiceSearchKeyword("");
+    setServiceCatalogPage(1);
+    setShowUpdateBookingModal(true);
+    setFlashMessage("");
+  };
+
+  const handleCloseUpdateBooking = () => {
+    if (isSavingExtraService) {
+      return;
+    }
+
+    setShowUpdateBookingModal(false);
+  };
+
+  const handleSearchExtraServices = (event) => {
+    event.preventDefault();
+    setServiceCatalogPage(1);
+    setSelectedExtraServiceIds([]);
+    setServiceSearchKeyword(serviceSearchInput.trim());
+  };
+
+  const handleAddExtraService = async () => {
+    const normalizedBookingId = String(bookingId || "").trim();
+    const normalizedServiceIds = selectedExtraServiceIds
+      .map((serviceId) => String(serviceId || "").trim())
+      .filter(Boolean);
+
+    if (!normalizedBookingId || normalizedServiceIds.length === 0 || !staffBookingDetail || isSavingExtraService) {
+      return;
+    }
+
+    setIsSavingExtraService(true);
+
+    try {
+      const bookingItems = Array.isArray(staffBookingDetail.bookingItems) ? staffBookingDetail.bookingItems : [];
+      const toNullableNumber = (value) => {
+        if (value === null || value === undefined || value === "") {
+          return null;
+        }
+
+        const normalizedValue = Number(value);
+        return Number.isFinite(normalizedValue) && normalizedValue > 0 ? normalizedValue : null;
+      };
+
+      const payloadBookingItems = [
+        ...bookingItems.map((item) => ({
+          nailVariantId: toNullableNumber(item?.nailVariantId),
+          serviceId: String(item?.serviceId || "").trim() || null,
+          customerNailId: toNullableNumber(item?.customerNailId),
+          quantity: Number(item?.quantity || 1) || 1,
+        })),
+        ...normalizedServiceIds.map((serviceId) => ({
+          nailVariantId: null,
+          serviceId,
+          customerNailId: null,
+          quantity: 1,
+        })),
+      ];
+
+      const updatedBooking = await updateStaffBooking(normalizedBookingId, {
+        bookingDate: staffBookingDetail.bookingDate,
+        startTime: staffBookingDetail.startTime,
+        nailArtistId: staffBookingDetail.nailArtistId || staffBookingDetail.artistId || null,
+        bookingItems: payloadBookingItems,
+      });
+
+      setStaffBookingDetail(updatedBooking);
+      setShowUpdateBookingModal(false);
+      setSelectedExtraServiceIds([]);
+
+      const addedServices = serviceCatalog.filter((item) => normalizedServiceIds.includes(item.serviceId));
+      const addedServiceNames = addedServices.map((item) => item.name).filter(Boolean);
+      const message = addedServiceNames.length
+        ? `${addedServiceNames.join(", ")} ${addedServiceNames.length > 1 ? "have" : "has"} been added to this booking.`
+        : "Extra services have been added to this booking.";
+
+      setFlashMessage(message);
+      toast.success(message);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to update booking services.";
+      toast.error(message);
+    } finally {
+      setIsSavingExtraService(false);
+    }
   };
 
   if (isStaffRole) {
@@ -603,9 +864,39 @@ export function BookingDetailPage() {
           onConfirmCurrentDesign={handleConfirmCurrentDesign}
           onDelete={handleDelete}
           onOpenDesignStudio={handleOpenDesignStudio}
-          onSave={handleSave}
+          onOpenUpdateBooking={handleOpenUpdateBooking}
           onStaffNoteChange={handleStaffNoteChange}
           onStartServiceSession={() => void handleOpenServiceSession()}
+        />
+        <ExtraServiceModal
+          open={showUpdateBookingModal}
+          services={serviceCatalog}
+          selectedServiceIds={selectedExtraServiceIds}
+          searchValue={serviceSearchInput}
+          isLoading={isLoadingServiceCatalog}
+          isSaving={isSavingExtraService}
+          meta={serviceCatalogMeta}
+          onClose={handleCloseUpdateBooking}
+          onSearchChange={(event) => setServiceSearchInput(event.target.value)}
+          onSearchSubmit={handleSearchExtraServices}
+          onSelect={(serviceId) =>
+            setSelectedExtraServiceIds((current) =>
+              current.includes(serviceId)
+                ? current.filter((item) => item !== serviceId)
+                : [...current, serviceId],
+            )
+          }
+          onPageChange={(page) => {
+            if (page < 1 || page > (serviceCatalogMeta?.totalPages ?? 1)) {
+              return;
+            }
+
+            setSelectedExtraServiceIds([]);
+            setServiceCatalogPage(page);
+          }}
+          onConfirm={handleAddExtraService}
+          title="Update Booking Services"
+          description="Select extra services to add into the current booking before starting the service session."
         />
       </>
     );

@@ -23,6 +23,15 @@ import { NailDesignManagementCategoryPage } from "../../features/admin/nails-des
 import { NailDesignManagementCreatePage } from "../../features/admin/nails-design-management/pages/NailDesignManagementCreatePage";
 import { NailDesignManagementDetailPage } from "../../features/admin/nails-design-management/pages/NailDesignManagementDetailPage";
 import { ServicePricingManagementPage } from "../../features/admin/service-pricing-management/pages/ServicePricingManagementPage";
+import { NailShapesManagementPage } from "../../features/admin/nail-shapes-management/pages/NailShapesManagementPage";
+import { NailShapeCreatePage } from "../../features/admin/nail-shapes-management/pages/NailShapeCreatePage";
+import { NailShapeDetailPage } from "../../features/admin/nail-shapes-management/pages/NailShapeDetailPage";
+import { NailSurfacesManagementPage } from "../../features/admin/nail-surfaces-management/pages/NailSurfacesManagementPage";
+import { NailSurfaceCreatePage } from "../../features/admin/nail-surfaces-management/pages/NailSurfaceCreatePage";
+import { NailSurfaceDetailPage } from "../../features/admin/nail-surfaces-management/pages/NailSurfaceDetailPage";
+import { ComponentsManagementPage } from "../../features/admin/components-management/pages/ComponentsManagementPage";
+import { ComponentCreatePage } from "../../features/admin/components-management/pages/ComponentCreatePage";
+import { ComponentDetailPage } from "../../features/admin/components-management/pages/ComponentDetailPage";
 
 export const adminRoutes = [
   {
@@ -90,6 +99,42 @@ export const adminRoutes = [
       {
         path: ROUTES.adminServicePricing,
         element: <ServicePricingManagementPage />,
+      },
+      {
+        path: ROUTES.adminNailShapes,
+        element: <NailShapesManagementPage />,
+      },
+      {
+        path: ROUTES.adminNailShapesCreate,
+        element: <NailShapeCreatePage />,
+      },
+      {
+        path: ROUTES.adminNailShapeDetail,
+        element: <NailShapeDetailPage />,
+      },
+      {
+        path: ROUTES.adminNailSurfaces,
+        element: <NailSurfacesManagementPage />,
+      },
+      {
+        path: ROUTES.adminNailSurfacesCreate,
+        element: <NailSurfaceCreatePage />,
+      },
+      {
+        path: ROUTES.adminNailSurfaceDetail,
+        element: <NailSurfaceDetailPage />,
+      },
+      {
+        path: ROUTES.adminComponents,
+        element: <ComponentsManagementPage />,
+      },
+      {
+        path: ROUTES.adminComponentsCreate,
+        element: <ComponentCreatePage />,
+      },
+      {
+        path: ROUTES.adminComponentDetail,
+        element: <ComponentDetailPage />,
       },
       {
         path: ROUTES.adminNailDesigns,
