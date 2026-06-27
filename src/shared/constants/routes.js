@@ -57,6 +57,15 @@ export const ROUTES = {
   adminComponents: "/admin/components",
   adminComponentsCreate: "/admin/components/create",
   adminComponentDetail: "/admin/components/:componentId",
+  adminProcedures: "/admin/procedures",
+  adminProceduresCreate: "/admin/procedures/create",
+  adminProcedureDetail: "/admin/procedures/:procedureId",
+  adminCategoryTypes: "/admin/category-types",
+  adminCategoryTypesCreate: "/admin/category-types/create",
+  adminCategoryTypeDetail: "/admin/category-types/:categoryTypeId",
+  adminCategories: "/admin/categories",
+  adminCategoriesCreate: "/admin/categories/create",
+  adminCategoryDetail: "/admin/categories/:categoryId",
   adminNailDesigns: "/admin/nail-designs",
   adminNailDesignCategories: "/admin/nail-designs/categories",
   adminNailDesignsCreate: "/admin/nail-designs/create",
@@ -87,6 +96,9 @@ export const getAdminServicePricingRoute = () => "/admin/service-pricing";
 export const getAdminNailShapeDetailRoute = (shapeId) => `/admin/nail-shapes/${shapeId}`;
 export const getAdminNailSurfaceDetailRoute = (surfaceId) => `/admin/nail-surfaces/${surfaceId}`;
 export const getAdminComponentDetailRoute = (componentId) => `/admin/components/${componentId}`;
+export const getAdminProcedureDetailRoute = (procedureId) => `/admin/procedures/${procedureId}`;
+export const getAdminCategoryTypeDetailRoute = (categoryTypeId) => `/admin/category-types/${categoryTypeId}`;
+export const getAdminCategoryDetailRoute = (categoryId) => `/admin/categories/${categoryId}`;
 export const getAdminNailDesignCategoriesRoute = () => "/admin/nail-designs/categories";
 export const getAdminNailDesignDetailRoute = (designId) =>
   `/admin/nail-designs/${designId}`;

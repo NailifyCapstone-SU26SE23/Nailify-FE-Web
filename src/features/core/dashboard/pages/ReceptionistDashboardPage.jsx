@@ -420,12 +420,12 @@ export function ReceptionistDashboardPage() {
         </div>
       ),
     },
-    {
-      title: "Service",
-      dataIndex: "service",
-      key: "service",
-      render: (value) => <span className="text-xs text-[#584654]">{value}</span>,
-    },
+    // {
+    //   title: "Service",
+    //   dataIndex: "service",
+    //   key: "service",
+    //   render: (value) => <span className="text-xs text-[#584654]">{value}</span>,
+    // },
     {
       title: "Staff",
       dataIndex: "staff",

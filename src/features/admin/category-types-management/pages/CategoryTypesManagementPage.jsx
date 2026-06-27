@@ -2,6 +2,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
+  FolderTree,
   Layers3,
   LoaderCircle,
   Pencil,
@@ -9,8 +10,6 @@ import {
   Search,
   Sparkles,
   Trash2,
-  WandSparkles,
-  Wallet,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
@@ -20,14 +19,12 @@ import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfi
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import {
   ROUTES,
-  getAdminNailSurfaceDetailRoute,
+  getAdminCategoryTypeDetailRoute,
 } from "../../../../shared/constants/routes";
 import {
-  deleteAdminNailSurface,
-  fetchAdminNailSurfaces,
-  formatNailSurfaceCurrency,
-  formatNailSurfaceDuration,
-} from "../services/nailSurfacesManagementService";
+  deleteAdminCategoryType,
+  fetchAdminCategoryTypes,
+} from "../services/categoryTypesManagementService";
 
 function MetricCard({ item }) {
   const Icon = item.icon;
@@ -44,20 +41,22 @@ function MetricCard({ item }) {
   );
 }
 
-function SurfaceBadge({ surface }) {
-  return (
-    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#e7d7ff_0%,#ffd7ea_100%)] text-xs font-extrabold text-[#7e4fe6]">
-      {surface.initials || "NS"}
-    </div>
-  );
+function CategoryTypeStatusBadge({ status }) {
+  const normalizedStatus = String(status || "").toLowerCase();
+  const className =
+    normalizedStatus === "active"
+      ? "bg-[#e7fbf4] text-[#159669]"
+      : "bg-[#fff1f5] text-[#d14c84]";
+
+  return <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${className}`}>{status}</span>;
 }
 
-export function NailSurfacesManagementPage() {
+export function CategoryTypesManagementPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [surfaces, setSurfaces] = useState([]);
+  const [categoryTypes, setCategoryTypes] = useState([]);
   const [metaData, setMetaData] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -97,12 +96,12 @@ export function NailSurfacesManagementPage() {
   useEffect(() => {
     let isMounted = true;
 
-    const loadSurfaces = async () => {
+    const loadCategoryTypes = async () => {
       setIsLoading(true);
       setError("");
 
       try {
-        const response = await fetchAdminNailSurfaces({
+        const response = await fetchAdminCategoryTypes({
           pageNumber: metaData.currentPage,
           pageSize: metaData.pageSize,
           name: debouncedQuery,
@@ -112,15 +111,15 @@ export function NailSurfacesManagementPage() {
           return;
         }
 
-        setSurfaces(response.items);
+        setCategoryTypes(response.items);
         setMetaData(response.metaData);
       } catch (loadError) {
         if (!isMounted) {
           return;
         }
 
-        setSurfaces([]);
-        setError(loadError instanceof Error ? loadError.message : "Failed to load nail surfaces.");
+        setCategoryTypes([]);
+        setError(loadError instanceof Error ? loadError.message : "Failed to load category types.");
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -128,7 +127,7 @@ export function NailSurfacesManagementPage() {
       }
     };
 
-    void loadSurfaces();
+    void loadCategoryTypes();
 
     return () => {
       isMounted = false;
@@ -136,43 +135,40 @@ export function NailSurfacesManagementPage() {
   }, [debouncedQuery, metaData.currentPage, metaData.pageSize]);
 
   const summaryCards = useMemo(() => {
-    const totalPrice = surfaces.reduce((sum, item) => sum + item.price, 0);
-    const totalDuration = surfaces.reduce((sum, item) => sum + item.duration, 0);
-    const averagePrice = surfaces.length ? Math.round(totalPrice / surfaces.length) : 0;
-    const averageDuration = surfaces.length ? Math.round(totalDuration / surfaces.length) : 0;
-    const uniqueShaders = new Set(surfaces.map((item) => item.shaderParam).filter(Boolean));
+    const activeCount = categoryTypes.filter((item) => String(item.status).toLowerCase() === "active").length;
+    const totalCategories = categoryTypes.reduce((sum, item) => sum + item.categoriesCount, 0);
 
     return [
       {
-        label: "Total Surfaces",
+        label: "Total Types",
         value: metaData.totalItems.toLocaleString(),
         note: `${metaData.totalPages} pages`,
-        icon: Layers3,
+        icon: FolderTree,
         iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
       },
       {
-        label: "Visible Items",
-        value: surfaces.length.toLocaleString(),
+        label: "Active Types",
+        value: activeCount.toLocaleString(),
         note: "Current page",
         icon: Sparkles,
+        iconClassName: "bg-[#e7fbf4] text-[#20ab77]",
+      },
+      {
+        label: "Visible Categories",
+        value: totalCategories.toLocaleString(),
+        note: "Nested categories on page",
+        icon: Layers3,
         iconClassName: "bg-[#fff4df] text-[#d9871c]",
       },
       {
-        label: "Avg Price",
-        value: formatNailSurfaceCurrency(averagePrice),
-        note: "Current page",
-        icon: Wallet,
+        label: "Page Items",
+        value: categoryTypes.length.toLocaleString(),
+        note: debouncedQuery || "Current page",
+        icon: FolderTree,
         iconClassName: "bg-[#f3ebff] text-[#8b5cf6]",
       },
-      {
-        label: "Shader Types",
-        value: uniqueShaders.size.toLocaleString(),
-        note: averageDuration ? `Avg ${formatNailSurfaceDuration(averageDuration)}` : "Current page",
-        icon: WandSparkles,
-        iconClassName: "bg-[#e7fbf4] text-[#20ab77]",
-      },
     ];
-  }, [metaData.totalItems, metaData.totalPages, surfaces]);
+  }, [categoryTypes, debouncedQuery, metaData.totalItems, metaData.totalPages]);
 
   const paginationItems = useMemo(() => {
     const currentPage = metaData.currentPage;
@@ -204,62 +200,61 @@ export function NailSurfacesManagementPage() {
   const columns = useMemo(
     () => [
       {
-        title: "Surface",
-        key: "surface",
-        render: (_, surface) => (
+        title: "Category Type",
+        key: "categoryType",
+        render: (_, categoryType) => (
           <div className="flex items-center gap-3">
-            <SurfaceBadge surface={surface} />
+            
             <div>
-              <p className="text-sm font-bold text-[#432744]">{surface.name}</p>  
+              <p className="text-sm font-bold text-[#432744]">{categoryType.name}</p>
+             
             </div>
           </div>
         ),
       },
       {
-        title: "Shader Param",
-        dataIndex: "shaderParam",
-        key: "shaderParam",
-        render: (value) => <span className="text-sm text-[#6b5668]">{value}</span>,
+        title: "Status",
+        dataIndex: "status",
+        key: "status",
+        render: (value) => <CategoryTypeStatusBadge status={value} />,
       },
       {
-        title: "Price",
-        dataIndex: "priceLabel",
-        key: "priceLabel",
-        render: (value) => <span className="text-sm font-semibold text-[#432744]">{value}</span>,
-      },
-      {
-        title: "Duration",
-        dataIndex: "durationLabel",
-        key: "durationLabel",
-        render: (value) => <span className="text-sm text-[#6b5668]">{value}</span>,
+        title: "Categories",
+        key: "categories",
+        render: (_, categoryType) => (
+          <div>
+            <p className="text-sm font-semibold text-[#432744]">{categoryType.categoriesCount}</p>
+            <p className="mt-1 text-[11px] text-[#c694ad]">{categoryType.categoriesLabel}</p>
+          </div>
+        ),
       },
       {
         title: "Actions",
         key: "actions",
-        render: (_, surface) => (
+        render: (_, categoryType) => (
           <ActionDropdown
             items={[
               {
                 key: "view",
                 label: "View Detail",
                 icon: Eye,
-                onSelect: () => navigate(getAdminNailSurfaceDetailRoute(surface.nailSurfaceId)),
+                onSelect: () => navigate(getAdminCategoryTypeDetailRoute(categoryType.categoryTypeId)),
               },
               {
                 key: "edit",
-                label: "Edit Surface",
+                label: "Edit Category Type",
                 icon: Pencil,
                 onSelect: () =>
-                  navigate(getAdminNailSurfaceDetailRoute(surface.nailSurfaceId), {
+                  navigate(getAdminCategoryTypeDetailRoute(categoryType.categoryTypeId), {
                     state: { startInEdit: true },
                   }),
               },
               {
                 key: "delete",
-                label: "Delete Surface",
+                label: "Delete Category Type",
                 icon: Trash2,
                 className: "text-[#d14c84]",
-                onSelect: () => setDeleteTarget(surface),
+                onSelect: () => setDeleteTarget(categoryType),
               },
             ]}
           />
@@ -269,7 +264,7 @@ export function NailSurfacesManagementPage() {
     [navigate],
   );
 
-  const handleDeleteSurface = async () => {
+  const handleDeleteCategoryType = async () => {
     if (!deleteTarget || isDeleting) {
       return;
     }
@@ -277,22 +272,22 @@ export function NailSurfacesManagementPage() {
     setIsDeleting(true);
 
     try {
-      await deleteAdminNailSurface(deleteTarget.nailSurfaceId);
+      await deleteAdminCategoryType(deleteTarget.categoryTypeId);
       setDeleteTarget(null);
       toast.success(`${deleteTarget.name} deleted successfully.`);
 
-      const shouldMoveBack = surfaces.length === 1 && metaData.currentPage > 1;
+      const shouldMoveBack = categoryTypes.length === 1 && metaData.currentPage > 1;
       const targetPage = shouldMoveBack ? Math.max(metaData.currentPage - 1, 1) : metaData.currentPage;
 
-      const response = await fetchAdminNailSurfaces({
+      const response = await fetchAdminCategoryTypes({
         pageNumber: targetPage,
         pageSize: metaData.pageSize,
         name: debouncedQuery,
       });
-      setSurfaces(response.items);
+      setCategoryTypes(response.items);
       setMetaData(response.metaData);
     } catch (deleteError) {
-      toast.error(deleteError instanceof Error ? deleteError.message : "Failed to delete nail surface.");
+      toast.error(deleteError instanceof Error ? deleteError.message : "Failed to delete category type.");
     } finally {
       setIsDeleting(false);
     }
@@ -303,24 +298,21 @@ export function NailSurfacesManagementPage() {
       <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4fa_100%)]">
         <div className="flex flex-col gap-3 rounded-[20px] border border-[#f8deea] bg-white/70 p-4 shadow-[0_12px_26px_rgba(236,72,153,0.05)] lg:flex-row lg:items-center lg:justify-between">
           <label className="relative w-full max-w-md">
-            <Search
-              size={15}
-              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#dd8eb0]"
-            />
+            <Search size={15} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#dd8eb0]" />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search nail surface by name..."
+              placeholder="Search category type by name..."
               className="h-10 w-full rounded-full border border-[#f4d7e5] bg-[#fffafc] pl-11 pr-4 text-sm text-[#5b4658] outline-none placeholder:text-[#d4a1b8] focus:border-[#ea4f93]"
             />
           </label>
 
           <Link
-            to={ROUTES.adminNailSurfacesCreate}
+            to={ROUTES.adminCategoryTypesCreate}
             className="inline-flex items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
           >
             <Plus size={13} className="mr-1.5 shrink-0" />
-            Add Nail Surface
+            Add Category Type
           </Link>
         </div>
 
@@ -331,9 +323,7 @@ export function NailSurfacesManagementPage() {
         ) : null}
 
         {error ? (
-          <div className="rounded-[16px] bg-[#fff1f5] px-4 py-3 text-sm font-medium text-[#d14c84]">
-            {error}
-          </div>
+          <div className="rounded-[16px] bg-[#fff1f5] px-4 py-3 text-sm font-medium text-[#d14c84]">{error}</div>
         ) : null}
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -344,28 +334,28 @@ export function NailSurfacesManagementPage() {
 
         <section className="overflow-hidden rounded-[20px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
           <div className="border-b border-[#f6dbe7] px-5 py-4">
-            <h2 className="text-sm font-extrabold text-[#432744]">Nail Surfaces</h2>
+            <h2 className="text-sm font-extrabold text-[#432744]">Category Types</h2>
             <p className="mt-1 text-[11px] font-medium text-[#c694ad]">
-              Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} nail surfaces
+              Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} category types
             </p>
           </div>
 
           <Table
-            rowKey="id"
+            rowKey="categoryTypeId"
             columns={columns}
-            dataSource={surfaces}
+            dataSource={categoryTypes}
             loading={{
               spinning: isLoading,
               indicator: <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />,
             }}
             pagination={false}
             scroll={{ x: 980 }}
-            locale={{ emptyText: error || "No nail surfaces found." }}
+            locale={{ emptyText: error || "No category types found." }}
           />
 
           <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-[11px] text-[#c694ad]">
-              Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} nail surfaces
+              Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} category types
             </p>
             <div className="flex items-center gap-1">
               <button
@@ -424,21 +414,21 @@ export function NailSurfacesManagementPage() {
         <ActionConfirmModal
           open
           intent="danger"
-          title="Delete Nail Surface"
-          subtitle="This will permanently remove the nail surface from backend."
-          description={`You are about to delete ${deleteTarget.name}. This action cannot be undone.`}
-          confirmText="Delete Surface"
-          cancelText="Keep Surface"
+          title="Delete Category Type"
+          subtitle="This will set the category type status to inactive in backend."
+          description={`You are about to delete ${deleteTarget.name}. This action cannot be undone from this page.`}
+          confirmText="Delete Category Type"
+          cancelText="Keep Category Type"
           confirmIcon={Trash2}
           loading={isDeleting}
-          onConfirm={handleDeleteSurface}
+          onConfirm={handleDeleteCategoryType}
           onCancel={() => !isDeleting && setDeleteTarget(null)}
           item={{
             title: deleteTarget.name,
-            meta: `${deleteTarget.shaderParam} • ${deleteTarget.priceLabel}`,
-            note: `Surface ID: ${deleteTarget.nailSurfaceId}`,
+            meta: `${deleteTarget.categoriesCount} categories | ${deleteTarget.status}`,
+            note: `Category Type ID: ${deleteTarget.categoryTypeId}`,
           }}
-          warnings={["This action calls the backend delete endpoint and removes this nail surface record."]}
+          warnings={["Backend delete for this resource changes the status to inactive."]}
         />
       ) : null}
     </>
