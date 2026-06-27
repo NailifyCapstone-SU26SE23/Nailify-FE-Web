@@ -22,6 +22,8 @@ import { NailDesignManagementPage } from "../../features/admin/nails-design-mana
 import { NailDesignManagementCategoryPage } from "../../features/admin/nails-design-management/pages/NailDesignManagementCategoryPage";
 import { NailDesignManagementCreatePage } from "../../features/admin/nails-design-management/pages/NailDesignManagementCreatePage";
 import { NailDesignManagementDetailPage } from "../../features/admin/nails-design-management/pages/NailDesignManagementDetailPage";
+import { NailVariantCreatePage } from "../../features/admin/nails-design-management/pages/NailVariantCreatePage";
+import { NailVariantDetailPage } from "../../features/admin/nails-design-management/pages/NailVariantDetailPage";
 import { ServicePricingManagementPage } from "../../features/admin/service-pricing-management/pages/ServicePricingManagementPage";
 import { NailShapesManagementPage } from "../../features/admin/nail-shapes-management/pages/NailShapesManagementPage";
 import { NailShapeCreatePage } from "../../features/admin/nail-shapes-management/pages/NailShapeCreatePage";
@@ -196,6 +198,14 @@ export const adminRoutes = [
       {
         path: ROUTES.adminNailDesignDetail,
         element: <NailDesignManagementDetailPage />,
+      },
+      {
+        path: ROUTES.adminNailVariantCreate,
+        element: <NailVariantCreatePage />,
+      },
+      {
+        path: ROUTES.adminNailVariantDetail,
+        element: <NailVariantDetailPage />,
       },
       {
         path: ROUTES.adminUsersCreate,
