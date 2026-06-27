@@ -147,6 +147,7 @@ class HandLandmarkerTask extends BaseVisionTask {
 
     this.currentNailSet = await this.deserializeNailSet(normalizedConfig);
     this.selectedLayerIndex = -1;
+    this.syncBuilderControls();
     this.renderLayersList();
     this.triggerRedetection();
   }
@@ -164,6 +165,7 @@ class HandLandmarkerTask extends BaseVisionTask {
 
   public startImageTryOn(): void {
     this.switchStep('upload');
+    this.resetImageUpload();
   }
 
   protected override onInitializeUI() {
@@ -225,18 +227,15 @@ class HandLandmarkerTask extends BaseVisionTask {
 
     btnBackToBuilder.forEach((btn) => {
       btn.addEventListener('click', () => {
-        if (this.wasOpenedInTryOnMode()) {
-          window.history.back();
-        } else {
-          this.switchStep('builder');
-        }
+        if (this.returnToPreviousPageWhenLaunchedFromDetail()) return;
+        this.switchStep('builder');
       });
     });
 
     btnBackToStep.addEventListener('click', () => {
-      if (this.wasOpenedInTryOnMode()) {
-        window.history.back();
-      } else if (this.runningMode === 'VIDEO') {
+      if (this.returnToPreviousPageWhenLaunchedFromDetail()) return;
+
+      if (this.runningMode === 'VIDEO') {
         this.switchStep('builder');
       } else {
         this.switchStep('upload');
@@ -244,7 +243,11 @@ class HandLandmarkerTask extends BaseVisionTask {
     });
 
     // Step 2: Upload Flow
-    uploadArea.addEventListener('click', () => imageUpload.click());
+    imageUpload.addEventListener('click', (event) => event.stopPropagation());
+    uploadArea.addEventListener('click', (event) => {
+      if (event.target === imageUpload) return;
+      imageUpload.click();
+    });
     imageUpload.addEventListener('change', (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
@@ -260,6 +263,11 @@ class HandLandmarkerTask extends BaseVisionTask {
           // Set result image as well
           const testImage = document.getElementById('test-image') as HTMLImageElement;
           testImage.src = src;
+          testImage.onload = () => {
+            if (this.runningMode === 'IMAGE') {
+              this.detectImage(testImage);
+            }
+          };
         };
         reader.readAsDataURL(file);
       }
@@ -659,7 +667,12 @@ class HandLandmarkerTask extends BaseVisionTask {
     ]);
 
     this.currentNailSet = this.createDefaultNailSet();
-    if (variant.nailShape?.name) this.currentNailSet.shape = variant.nailShape.name;
+    if (variant.nailShape?.name) {
+      this.currentNailSet.shape = variant.nailShape.name;
+      if (variant.nailShape.imageUrl && !this.nailImages[variant.nailShape.name]) {
+        this.nailImages[variant.nailShape.name] = await this.loadImage(variant.nailShape.imageUrl);
+      }
+    }
     if (variant.nailSurface?.shaderParam || variant.nailSurface?.name) {
       this.currentNailSet.material = (variant.nailSurface.shaderParam || variant.nailSurface.name).toLowerCase() as
         | 'standard'
@@ -699,8 +712,34 @@ class HandLandmarkerTask extends BaseVisionTask {
     }
 
     this.selectedLayerIndex = -1;
+    this.syncBuilderControls();
     this.renderLayersList();
     this.triggerRedetection();
+  }
+
+  private syncBuilderControls() {
+    document.querySelectorAll('.shape-btn').forEach((shapeButton) => {
+      const button = shapeButton as HTMLElement;
+      button.classList.toggle('active', button.dataset.shape === this.currentNailSet.shape);
+    });
+
+    document.querySelectorAll('.material-btn').forEach((materialButton) => {
+      const button = materialButton as HTMLElement;
+      button.classList.toggle('active', button.dataset.material === this.currentNailSet.material);
+    });
+
+    const firstNail = this.currentNailSet.nails[0];
+    const customColorPicker = document.getElementById('custom-color') as HTMLInputElement | null;
+    if (customColorPicker && firstNail?.color) {
+      customColorPicker.value = firstNail.color;
+    }
+
+    const enableGradient = document.getElementById('enable-gradient') as HTMLInputElement | null;
+    const gradientControls = document.getElementById('gradient-controls');
+    if (enableGradient && gradientControls) {
+      enableGradient.checked = Boolean(this.currentNailSet.gradient.enabled || firstNail?.gradient);
+      gradientControls.style.display = enableGradient.checked ? 'flex' : 'none';
+    }
   }
 
   private createDefaultNailSet(): typeof this.currentNailSet {
@@ -1247,6 +1286,27 @@ class HandLandmarkerTask extends BaseVisionTask {
 
   private wasOpenedInTryOnMode() {
     return new URLSearchParams(window.location.search).has('mode');
+  }
+
+  private returnToPreviousPageWhenLaunchedFromDetail() {
+    if (!this.wasOpenedInTryOnMode()) return false;
+
+    window.dispatchEvent(new CustomEvent('nailify:try-on-return'));
+    return true;
+  }
+
+  private resetImageUpload() {
+    const imageUpload = document.getElementById('image-upload') as HTMLInputElement | null;
+    const previewImg = document.getElementById('hand-preview-img') as HTMLImageElement | null;
+    const testImage = document.getElementById('test-image') as HTMLImageElement | null;
+    const startButton = document.getElementById('btn-start-image-tryon') as HTMLButtonElement | null;
+
+    if (imageUpload) imageUpload.value = '';
+    if (previewImg) previewImg.removeAttribute('src');
+    if (testImage) testImage.removeAttribute('src');
+    document.querySelector('.upload-placeholder')?.setAttribute('style', 'display: flex');
+    document.querySelector('.hand-preview-container')?.setAttribute('style', 'display: none');
+    if (startButton) startButton.style.display = 'none';
   }
 
   private switchMode(mode: 'VIDEO' | 'IMAGE') {

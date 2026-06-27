@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import {
   getAdminNailDesignDetailRoute,
+  getAdminNailVariantDetailRoute,
   getAdminNailVariantTryOnRoute,
   ROUTES,
 } from "../../../../shared/constants/routes";
@@ -141,9 +142,9 @@ export function NailVariantDetailPage() {
       current.map((item, itemIndex) =>
         itemIndex === index
           ? {
-              ...item,
-              stepOrder: value,
-            }
+            ...item,
+            stepOrder: value,
+          }
           : item,
       ),
     );
@@ -188,7 +189,11 @@ export function NailVariantDetailPage() {
   };
 
   const openTryOn = (mode) => {
-    navigate(getAdminNailVariantTryOnRoute(designId, variantId, mode));
+    navigate(getAdminNailVariantTryOnRoute(designId, variantId, mode), {
+      state: {
+        returnTo: getAdminNailVariantDetailRoute(designId, variantId),
+      },
+    });
   };
 
   if (isLoading) {
@@ -276,6 +281,7 @@ export function NailVariantDetailPage() {
             <div className="grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)]">
               <div className="overflow-hidden rounded-[20px] bg-[#f6edf2]">
                 <img
+                  crossorigin="anonymous"
                   src={variant.imageUrl || DESIGN_PREVIEW_IMAGE}
                   alt={variant.name}
                   className="h-72 w-full object-cover"
