@@ -68,6 +68,65 @@ InfoCard.propTypes = {
   value: PropTypes.string.isRequired,
 };
 
+function ServiceInfoCard({ label, value, note, services = [] }) {
+  return (
+    <article className="rounded-[16px] border border-[#f6dbe7] bg-[#fff9fc] p-4 xl:col-span-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{label}</p>
+          <p className="mt-2 text-sm font-extrabold text-[#3f2b3f]">{value}</p>
+          {note ? <p className="mt-1 text-xs text-[#9a7f90]">{note}</p> : null}
+        </div>
+        {services.length > 1 ? (
+          <span className="rounded-full border border-[#f2bfd4] bg-white px-4 py-1.5 text-xs font-bold text-[#ea4f93]">
+            Multi-service
+          </span>
+        ) : null}
+      </div>
+
+      {services.length ? (
+        <div className="mt-5 space-y-3">
+          {services.map((service, index) => (
+            <div
+              key={service.id || `${service.name}-${index}`}
+              className="flex items-center justify-between gap-3 rounded-[18px] border border-[#f2bfd4] bg-white px-4 py-4"
+            >
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
+                  Service {index + 1}
+                </p>
+                <p className="mt-2 break-words text-sm font-extrabold text-[#ea4f93]">{service.name || "--"}</p>
+                {service.nailServiceName ? (
+                  <p className="mt-1 text-xs font-semibold text-[#7a6275]">
+                    Nail service: {service.nailServiceName}
+                  </p>
+                ) : null}
+              </div>
+              <span className="shrink-0 rounded-full bg-[#f4efff] px-4 py-2 text-sm font-extrabold text-[#8c63ef]">
+                {service.duration || "--"}
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
+ServiceInfoCard.propTypes = {
+  label: PropTypes.string.isRequired,
+  note: PropTypes.string,
+  services: PropTypes.arrayOf(
+    PropTypes.shape({
+      duration: PropTypes.string,
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+      name: PropTypes.string,
+      nailServiceName: PropTypes.string,
+    }),
+  ),
+  value: PropTypes.string.isRequired,
+};
+
 function formatVariantCurrency(value) {
   const amount = Number(value || 0);
 
@@ -438,6 +497,12 @@ export function StaffBookingConsultationDetail({
   const canProceedToService = isCurrentDesignConfirmed;
   const [isVariantModalOpen, setIsVariantModalOpen] = useState(false);
   const canViewVariantDetail = Boolean(data.design.variantDetail?.nailVariantId);
+  const consultationQuestion = canViewVariantDetail
+    ? `Does the customer want to continue with the selected nail design - ${data.design.name}?`
+    : "Does the customer want to continue with no nail design ?";
+  const confirmButtonLabel = canViewVariantDetail ? "Confirm Current Design" : "Confirm booking";
+  const confirmedButtonLabel = canViewVariantDetail ? "Current Design Confirmed" : "Booking Confirmed";
+  const chooseAnotherDesignButtonLabel = canViewVariantDetail ? "Choose Another Design" : "Choose Design";
 
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff5fa_100%)]">
@@ -515,76 +580,94 @@ export function StaffBookingConsultationDetail({
           <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
             <SectionTitle icon={CalendarClock} title="Booking Information" />
             <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {data.bookingInfo.map((item) => (
-                <InfoCard
-                  key={item.label}
-                  label={item.label}
-                  value={item.value}
-                  note={item.note}
-                  tone={item.tone}
-                />
-              ))}
+              {data.bookingInfo.map((item) =>
+                item.label === "Service" ? (
+                  <ServiceInfoCard
+                    key={item.label}
+                    label={item.label}
+                    value={item.value}
+                    note={item.note}
+                    services={item.services}
+                  />
+                ) : (
+                  <InfoCard
+                    key={item.label}
+                    label={item.label}
+                    value={item.value}
+                    note={item.note}
+                    tone={item.tone}
+                  />
+                ),
+              )}
             </div>
           </article>
 
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
             <div className="space-y-4">
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
-                <div className="flex items-center justify-between gap-3">
-                  <SectionTitle icon={Sparkles} title="Current Selected Nail Design" />
-                  <button
-                    type="button"
-                    onClick={() => setIsVariantModalOpen(true)}
-                    disabled={!canViewVariantDetail}
-                    className={`inline-flex h-10 w-10 items-center justify-center rounded-full border ${
-                      canViewVariantDetail
-                        ? "border-[#f2bfd4] bg-[#fff5f9] text-[#ea4f93] hover:bg-[#fff0f6]"
-                        : "cursor-not-allowed border-[#ece4ea] bg-[#f7f4f6] text-[#b9a8b3]"
-                    }`}
-                    title={canViewVariantDetail ? "View nail variant detail" : "Nail variant detail unavailable"}
-                  >
-                    <Eye size={16} />
-                  </button>
-                </div>
+              {canViewVariantDetail ? (
+                <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <SectionTitle icon={Sparkles} title="Current Selected Nail Design" />
+                    <button
+                      type="button"
+                      onClick={() => setIsVariantModalOpen(true)}
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#f2bfd4] bg-[#fff5f9] text-[#ea4f93] hover:bg-[#fff0f6]"
+                      title="View nail variant detail"
+                    >
+                      <Eye size={16} />
+                    </button>
+                  </div>
 
-                <div className="mt-5 flex flex-col gap-4 lg:flex-row">
-                  <img
-                    src={data.design.image}
-                    alt={data.design.name}
-                    className="h-40 w-full rounded-[18px] object-cover lg:w-44"
-                    loading="lazy"
-                    referrerPolicy="no-referrer"
-                  />
+                  <div className="mt-5 flex flex-col gap-4 lg:flex-row">
+                    <img
+                      src={data.design.image}
+                      alt={data.design.name}
+                      className="h-40 w-full rounded-[18px] object-cover lg:w-44"
+                      loading="lazy"
+                      referrerPolicy="no-referrer"
+                    />
 
-                  <div className="flex-1">
-                    <h3 className="text-[1.5rem] font-extrabold text-[#ea4f93]">{data.design.name}</h3>
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                      {data.design.details.map((item) => (
-                        <div key={item.label}>
-                          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
-                            {item.label}
-                          </p>
-                          <p className="mt-1 text-sm font-semibold text-[#4b3348]">{item.value}</p>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {data.design.tags.map((tag) => (
-                        <Tag key={tag.label} className={tag.className}>
-                          {tag.label}
-                        </Tag>
-                      ))}
+                    <div className="flex-1">
+                      <h3 className="text-[1.5rem] font-extrabold text-[#ea4f93]">{data.design.name}</h3>
+                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                        {data.design.details
+                          .filter((item) => {
+                            if (item.label === "Service") {
+                              return false;
+                            }
+
+                            if (item.label === "Customer Design") {
+                              const normalizedValue = String(item.value || "").trim();
+                              return normalizedValue && normalizedValue !== "--";
+                            }
+
+                            return true;
+                          })
+                          .map((item) => (
+                            <div key={item.label}>
+                              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
+                                {item.label}
+                              </p>
+                              <p className="mt-1 text-sm font-semibold text-[#4b3348]">{item.value}</p>
+                            </div>
+                          ))}
+                      </div>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {data.design.tags.map((tag) => (
+                          <Tag key={tag.label} className={tag.className}>
+                            {tag.label}
+                          </Tag>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </article>
+                </article>
+              ) : null}
 
               <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
                 <SectionTitle icon={Search} title="Customer Consultation" />
                 <div className="mt-5 flex flex-col items-center gap-6 text-center">
-                  <p className="text-lg font-bold text-[#3f2b3f]">
-                    Does the customer want to continue with the selected nail design — {data.design.name}?
-                  </p>
+                  <p className="text-lg font-bold text-[#3f2b3f]">{consultationQuestion}</p>
                   <div className="flex w-full flex-col gap-3 sm:flex-row">
                     <button
                       type="button"
@@ -596,15 +679,16 @@ export function StaffBookingConsultationDetail({
                         }`}
                     >
                       <Check size={16} />
-                      {isCurrentDesignConfirmed ? "Current Design Confirmed" : "Confirm Current Design"}
+                      {isCurrentDesignConfirmed ? confirmedButtonLabel : confirmButtonLabel}
                     </button>
+                    
                     <button
                       type="button"
                       onClick={onChooseAnotherDesign}
                       className="inline-flex flex-1 items-center justify-center gap-2 rounded-[14px] border border-[#f4cada] bg-white px-5 py-4 text-sm font-bold text-[#ea4f93]"
                     >
                       <Palette size={16} />
-                      Choose Another Design
+                      {chooseAnotherDesignButtonLabel}
                     </button>
                   </div>
                 </div>
@@ -701,7 +785,7 @@ export function StaffBookingConsultationDetail({
             </div>
 
             <aside className="space-y-4 border-t border-[#f3d5e2] pt-4 xl:border-l xl:border-t-0 xl:pl-4 xl:pt-0">
-              <article className="rounded-[18px] border border-[#f3d5e2] bg-[#fff9fc] p-4">
+              {/* <article className="rounded-[18px] border border-[#f3d5e2] bg-[#fff9fc] p-4">
                 <SectionTitle icon={Clock3} title="Session Status" />
                 <div className="mt-4 space-y-3">
                   {data.sessionStatus.map((item) => (
@@ -713,7 +797,7 @@ export function StaffBookingConsultationDetail({
                     </div>
                   ))}
                 </div>
-              </article>
+              </article> */}
 
               <article className="rounded-[18px] border border-[#f3d5e2] bg-[#fff9fc] p-4">
                 <SectionTitle icon={ArrowUp} title="Customer History" />
@@ -829,6 +913,14 @@ StaffBookingConsultationDetail.propTypes = {
       PropTypes.shape({
         label: PropTypes.string.isRequired,
         note: PropTypes.string.isRequired,
+        services: PropTypes.arrayOf(
+          PropTypes.shape({
+            duration: PropTypes.string,
+            id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+            name: PropTypes.string,
+            nailServiceName: PropTypes.string,
+          }),
+        ),
         tone: PropTypes.oneOf(["default", "success"]),
         value: PropTypes.string.isRequired,
       }),

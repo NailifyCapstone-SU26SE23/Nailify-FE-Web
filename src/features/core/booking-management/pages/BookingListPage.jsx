@@ -678,13 +678,20 @@ export function BookingListPage() {
     const detailRoute = roleConfig.getDetailRoute(booking.id);
 
     if (role === ROLES.staff) {
-      const startService = () => {
+      const normalizedBookingStatus = String(booking?.status || booking?.uiStatus || "").trim().toLowerCase();
+      const isInProgressBooking = normalizedBookingStatus === "inprogress";
+
+      const openServiceSession = () => {
         navigate(getStaffBookingServiceSessionRoute(booking.id), {
           state: {
-            serviceSession: buildStaffServiceSessionPayload(booking, {
-              backRoute: detailRoute,
-              designUpdateRoute: getStaffBookingDesignStudioRoute(booking.id),
-            }),
+            serviceSession: {
+              ...buildStaffServiceSessionPayload(booking, {
+                backRoute: detailRoute,
+                designUpdateRoute: getStaffBookingDesignStudioRoute(booking.id),
+              }),
+              started: isInProgressBooking,
+              completed: false,
+            },
           },
         });
       };
@@ -693,10 +700,10 @@ export function BookingListPage() {
         { key: "view", label: "View Booking", icon: Eye, onSelect: () => navigate(detailRoute) },
         { key: "edit", label: "Edit Booking", icon: PencilLine, onSelect: () => navigate(detailRoute) },
         {
-          key: "start",
-          label: "Start Service",
+          key: isInProgressBooking ? "continue" : "start",
+          label: isInProgressBooking ? "Continue Service" : "Start Service",
           icon: Play,
-          onSelect: () => void startService(),
+          onSelect: () => void openServiceSession(),
         },
         {
           key: "complete",

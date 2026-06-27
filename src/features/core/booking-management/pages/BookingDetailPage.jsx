@@ -1,6 +1,7 @@
 import { CalendarClock, LoaderCircle, PencilLine, RefreshCcw, Save, Trash2, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { BookingFormFields } from "../components/BookingFormFields";
@@ -18,6 +19,7 @@ import {
   getStaffBookingDesignStudioRoute,
   getStaffBookingServiceSessionRoute,
 } from "../../../../shared/constants/routes";
+import { confirmCurrentDesign, setActiveBooking } from "../../../../store/bookingSlice";
 import {
   buildStaffServiceSessionPayload,
   fetchServiceCatalog,
@@ -90,6 +92,16 @@ function normalizeBookingText(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
 }
 
+function normalizeBookingItemDuration(value) {
+  const duration = Number(value || 0);
+
+  if (!Number.isFinite(duration) || duration <= 0) {
+    return "--";
+  }
+
+  return formatDurationMinutes(duration);
+}
+
 function getUniqueBookingLabels(values) {
   return [...new Set(values.map(normalizeBookingText).filter(Boolean))];
 }
@@ -150,11 +162,26 @@ function buildStaffExperienceFromBooking(booking, staffNotesDraft, nailVariantDe
   const serviceNames = getUniqueBookingLabels(normalizedItems.map((item) => item.serviceName));
   const variantNames = getUniqueBookingLabels(normalizedItems.map((item) => item.nailVariantName));
   const customerDesignNames = getUniqueBookingLabels(normalizedItems.map((item) => item.customerNailName));
-  const selectedItemLabels = getUniqueBookingLabels([
-    ...serviceNames,
-    ...variantNames,
-    ...customerDesignNames,
-  ]);
+  const bookingServiceEntries = normalizedItems
+    .map((item, index) => {
+      const name = item.serviceName || "";
+      const nailServiceName = item.nailVariantName || item.customerNailName || "";
+
+      if (!name && !nailServiceName) {
+        return null;
+      }
+
+      const displayName = name || nailServiceName;
+
+      return {
+        id: String(item?.bookingItemId || item?.id || `${displayName}-${index}`),
+        name: displayName,
+        nailServiceName,
+        duration: normalizeBookingItemDuration(item?.duration || item?.serviceDuration),
+      };
+    })
+    .filter(Boolean);
+  const selectedItemLabels = bookingServiceEntries.map((item) => item.name);
   const primaryServiceLabel =
     serviceNames[0] ||
     variantNames[0] ||
@@ -224,7 +251,8 @@ function buildStaffExperienceFromBooking(booking, staffNotesDraft, nailVariantDe
       {
         label: "Service",
         value: fullSelectionSummary,
-        // note: requestedDesign,
+        note: selectedItemLabels.length > 1 ? "Selected services in this booking." : requestedDesign,
+        services: bookingServiceEntries,
       },
       {
         label: "Appointment",
@@ -337,6 +365,7 @@ function buildStaffExperienceFromBooking(booking, staffNotesDraft, nailVariantDe
 }
 
 export function BookingDetailPage() {
+  const dispatch = useDispatch();
   const location = useLocation();
   const navigate = useNavigate();
   const { bookingId } = useParams();
@@ -346,11 +375,11 @@ export function BookingDetailPage() {
   );
   const roleConfig = BOOKING_ROLE_CONFIG[role];
   const isStaffRole = role === ROLES.staff;
+  const normalizedBookingId = String(bookingId || "").trim();
   const initialBooking = isStaffRole ? null : getMockBookingById(bookingId);
   const [formValues, setFormValues] = useState(initialBooking);
   const [flashMessage, setFlashMessage] = useState("");
   const [isEditing, setIsEditing] = useState(false);
-  const [isCurrentDesignConfirmed, setIsCurrentDesignConfirmed] = useState(false);
   const [staffBookingDetail, setStaffBookingDetail] = useState(null);
   const [staffCustomerDetail, setStaffCustomerDetail] = useState(null);
   const [staffNailVariantDetail, setStaffNailVariantDetail] = useState(null);
@@ -380,6 +409,9 @@ export function BookingDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(
     role !== ROLES.staff && Boolean(location.state?.requestDelete),
   );
+  const isCurrentDesignConfirmed = useSelector((state) => (
+    Boolean(state.booking.designConfirmations?.[normalizedBookingId])
+  ));
   const staffActionMessage = useMemo(() => {
     const action = location.state?.staffAction;
 
@@ -403,6 +435,14 @@ export function BookingDetailPage() {
 
     navigate(location.pathname, { replace: true, state: null });
   }, [deleteRequested, location.pathname, navigate, staffActionMessage]);
+
+  useEffect(() => {
+    if (!isStaffRole || !normalizedBookingId) {
+      return;
+    }
+
+    dispatch(setActiveBooking(normalizedBookingId));
+  }, [dispatch, isStaffRole, normalizedBookingId]);
 
   useEffect(() => {
     if (!isStaffRole || !bookingId) {
@@ -656,7 +696,7 @@ export function BookingDetailPage() {
       return;
     }
 
-    setIsCurrentDesignConfirmed(true);
+    dispatch(confirmCurrentDesign(normalizedBookingId));
     setFlashMessage("Current nail design has been confirmed for this booking.");
     toast.success("Current design confirmed for this booking.");
   };

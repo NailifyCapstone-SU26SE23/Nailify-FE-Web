@@ -657,7 +657,7 @@ export function StaffDashboardPage() {
               </div>
             </Panel> */}
 
-            <Panel title="Break Schedule" icon={TimerReset}>
+            {/* <Panel title="Break Schedule" icon={TimerReset}>
               <div className="space-y-3">
                 {BREAK_SCHEDULE.map((item) => (
                   <div
@@ -672,7 +672,7 @@ export function StaffDashboardPage() {
                   </div>
                 ))}
               </div>
-            </Panel>
+            </Panel> */}
 
             <Panel title="Latest Review" icon={MessageSquareText}>
               <div className="flex items-center gap-1 text-[#f5a623]">

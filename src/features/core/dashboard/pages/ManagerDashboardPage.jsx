@@ -310,12 +310,7 @@ export function ManagerDashboardPage() {
   return (
     <>
       <section className="flex min-h-full flex-col gap-4 gap-y-6">
-        <div className="rounded-[18px] border border-[#f8deea] bg-gradient-to-r from-white via-[#fffafd] to-[#fff0f6] px-5 py-4 shadow-[0_10px_24px_rgba(236,72,153,0.05)]">
-          <p className="text-sm font-semibold text-[#3f2240]">Good morning, Anh 👋</p>
-          <p className="mt-1 text-sm text-[#c08aa4]">
-            Here is today&apos;s salon operation overview.
-          </p>
-        </div>
+        
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {metricCards.map((card) => {
