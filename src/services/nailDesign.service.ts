@@ -2,6 +2,7 @@ import {
   fetchAdminNailVariantDetail,
 } from '@/features/admin/nails-design-management/services/nailDesignManagementService';
 import { axiosClient } from '@/lib/axiosClient';
+import { loadAuthSession } from '@/features/core/auth/model/authStorage';
 
 export type NailDesignFormValues = Record<string, unknown> & {
   imageFile?: File;
@@ -47,6 +48,26 @@ export type PlacedNailComponent = {
   posY: number;
   configJson?: string;
 };
+
+export type PlacedNailComponentFormValues = {
+  componentId: string | number;
+  nailVariantId: string | number;
+  posX: number;
+  posY: number;
+  fingerIndex: number;
+  configJson?: string;
+};
+
+function getAuthHeaders() {
+  const session = loadAuthSession();
+  const token = session?.accessToken || session?.token;
+
+  return token
+    ? {
+        Authorization: `Bearer ${token}`,
+      }
+    : {};
+}
 
 function unwrapItems(response: any) {
   const data = response?.data?.data;
@@ -105,13 +126,16 @@ export async function getPlacedNailComponents(nailVariantId?: string | number): 
 }
 
 export async function getComponent(id: string | number): Promise<Component> {
-  const response = await axiosClient.get(`/Components/${id}`);
+  const response = await axiosClient.get(`/Components/${id}`, {
+    headers: getAuthHeaders(),
+  });
   const payload = response?.data?.data ?? response?.data;
   return normalizeComponent(payload);
 }
 
 export async function getComponents(componentType?: number | string): Promise<Component[]> {
   const response = await axiosClient.get('/Components', {
+    headers: getAuthHeaders(),
     params: {
       pageNumber: 1,
       pageSize: 100,
@@ -124,6 +148,7 @@ export async function getComponents(componentType?: number | string): Promise<Co
 
 export async function getNailShapes(): Promise<NailShape[]> {
   const response = await axiosClient.get('/NailShapes', {
+    headers: getAuthHeaders(),
     params: {
       pageNumber: 1,
       pageSize: 100,
@@ -139,6 +164,7 @@ export async function getNailShapes(): Promise<NailShape[]> {
 
 export async function getNailSurfaces(): Promise<NailSurface[]> {
   const response = await axiosClient.get('/NailSurfaces', {
+    headers: getAuthHeaders(),
     params: {
       pageNumber: 1,
       pageSize: 100,
@@ -150,4 +176,29 @@ export async function getNailSurfaces(): Promise<NailSurface[]> {
     name: String(surface?.name ?? '--'),
     shaderParam: String(surface?.shaderParam || surface?.name || 'standard'),
   }));
+}
+
+export async function createPlacedNailComponent(values: PlacedNailComponentFormValues): Promise<PlacedNailComponent> {
+  const payload = {
+    ComponentId: Number(values.componentId),
+    NailVariantId: Number(values.nailVariantId),
+    PosX: Number(values.posX || 0),
+    PosY: Number(values.posY || 0),
+    FingerIndex: Number(values.fingerIndex || 0),
+    ConfigJson: String(values.configJson || ''),
+  };
+
+  const response = await axiosClient.post('/NailComponents', payload, {
+    headers: getAuthHeaders(),
+  });
+  const item = response?.data?.data ?? response?.data;
+
+  return {
+    id: String(item?.nailComponentId ?? item?.id ?? ''),
+    componentId: String(item?.componentId ?? values.componentId),
+    fingerIndex: Number(item?.fingerIndex ?? values.fingerIndex),
+    posX: Number(item?.posX ?? values.posX),
+    posY: Number(item?.posY ?? values.posY),
+    configJson: String(item?.configJson ?? values.configJson ?? ''),
+  };
 }

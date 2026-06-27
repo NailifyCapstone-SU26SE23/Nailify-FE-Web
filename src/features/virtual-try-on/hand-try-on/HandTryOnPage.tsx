@@ -29,6 +29,20 @@ export function HandTryOnPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
+    const handleTryOnReturn = () => {
+      if (routeState?.returnTo) {
+        navigate(routeState.returnTo);
+        return;
+      }
+
+      navigate(-1);
+    };
+
+    window.addEventListener('nailify:try-on-return', handleTryOnReturn);
+    return () => window.removeEventListener('nailify:try-on-return', handleTryOnReturn);
+  }, [navigate, routeState?.returnTo]);
+
+  useEffect(() => {
     if (!taskHandle) return;
 
     let ignore = false;

@@ -46,11 +46,10 @@ function SectionCard({
     <article
       id={sectionId}
       ref={sectionRef}
-      className={`scroll-mt-6 rounded-[22px] border bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] transition-all duration-300 md:p-5 ${
-        highlighted
-          ? "border-[#ea4f93] shadow-[0_18px_38px_rgba(236,72,153,0.18)] ring-4 ring-[#ffd8e8]"
-          : "border-[#f8d3e2]"
-      }`}
+      className={`scroll-mt-6 rounded-[22px] border bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] transition-all duration-300 md:p-5 ${highlighted
+        ? "border-[#ea4f93] shadow-[0_18px_38px_rgba(236,72,153,0.18)] ring-4 ring-[#ffd8e8]"
+        : "border-[#f8d3e2]"
+        }`}
     >
       <div className="flex items-start gap-3 border-b border-[#f8deea] pb-4">
         <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#fff0f6_0%,#fff8e9_100%)] text-[#ea4f93]">
@@ -440,9 +439,9 @@ export function NailDesignManagementDetailPage() {
       variants: current.variants.map((variant, variantIndex) =>
         variantIndex === index
           ? {
-              ...variant,
-              [field]: nextValue,
-            }
+            ...variant,
+            [field]: nextValue,
+          }
           : variant,
       ),
     }));
@@ -755,15 +754,15 @@ export function NailDesignManagementDetailPage() {
           <article
             ref={heroSectionRef}
             id="hero-section"
-            className={`scroll-mt-6 rounded-[22px] border bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] transition-all duration-300 md:p-5 ${
-              highlightedSection === "hero"
-                ? "border-[#ea4f93] shadow-[0_18px_38px_rgba(236,72,153,0.18)] ring-4 ring-[#ffd8e8]"
-                : "border-[#f8d3e2]"
-            }`}
+            className={`scroll-mt-6 rounded-[22px] border bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] transition-all duration-300 md:p-5 ${highlightedSection === "hero"
+              ? "border-[#ea4f93] shadow-[0_18px_38px_rgba(236,72,153,0.18)] ring-4 ring-[#ffd8e8]"
+              : "border-[#f8d3e2]"
+              }`}
           >
             <div className="grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
               <div className="overflow-hidden rounded-[18px] bg-[#f6edf2]">
                 <img
+                  crossorigin="anonymous"
                   src={formValues.previewImage || DESIGN_PREVIEW_IMAGE}
                   alt={formValues.heroTitle}
                   className="h-full w-full object-cover"
@@ -857,11 +856,10 @@ export function NailDesignManagementDetailPage() {
                               key={option}
                               type="button"
                               onClick={handleCustomerProfileToggle(label, option)}
-                              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-bold transition ${
-                                active
-                                  ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93]"
-                                  : `text-[#8c7085] ${index % 3 === 0 ? "border-[#ead8ff] bg-[#f9f4ff]" : index % 3 === 1 ? "border-[#d7f3e0] bg-[#effcf4]" : "border-[#f8e3b3] bg-[#fff8e8]"}`
-                              }`}
+                              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-bold transition ${active
+                                ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93]"
+                                : `text-[#8c7085] ${index % 3 === 0 ? "border-[#ead8ff] bg-[#f9f4ff]" : index % 3 === 1 ? "border-[#d7f3e0] bg-[#effcf4]" : "border-[#f8e3b3] bg-[#fff8e8]"}`
+                                }`}
                             >
                               <span className="text-xs">{active ? "−" : "+"}</span>
                               {option}
@@ -943,6 +941,7 @@ export function NailDesignManagementDetailPage() {
                 >
                   <div className="overflow-hidden rounded-[16px] bg-[#f6edf2]">
                     <img
+                      crossorigin="anonymous"
                       src={variant.imageUrl || formValues.previewImage || DESIGN_PREVIEW_IMAGE}
                       alt={variant.name}
                       className="h-44 w-full object-cover"
@@ -1033,16 +1032,15 @@ export function NailDesignManagementDetailPage() {
                         isEditing
                           ? setPendingDeleteVariant(variant)
                           : scrollToSection(designVariantsRef, {
-                              startEdit: true,
-                              sectionKey: "design-variants",
-                            })
+                            startEdit: true,
+                            sectionKey: "design-variants",
+                          })
                       }
                       disabled={isSavingVariants || isDeletingVariant}
-                      className={`flex-1 rounded-full border px-3 py-2 text-xs font-bold ${
-                        isEditing
-                          ? "border-[#f3b1c7] bg-[#fff2f6] text-[#d14c84]"
-                          : "border-[#f4c6da] bg-white text-[#8c7085]"
-                      }`}
+                      className={`flex-1 rounded-full border px-3 py-2 text-xs font-bold ${isEditing
+                        ? "border-[#f3b1c7] bg-[#fff2f6] text-[#d14c84]"
+                        : "border-[#f4c6da] bg-white text-[#8c7085]"
+                        }`}
                     >
                       {isEditing ? "Delete" : "Edit"}
                     </button>
@@ -1096,9 +1094,8 @@ export function NailDesignManagementDetailPage() {
                       <div key={label} className="flex items-center justify-between gap-3">
                         <span className="text-[#8c7085]">{label}</span>
                         <span
-                          className={`font-semibold ${
-                            index >= 3 ? "text-[#ea4f93]" : "text-[#432744]"
-                          }`}
+                          className={`font-semibold ${index >= 3 ? "text-[#ea4f93]" : "text-[#432744]"
+                            }`}
                         >
                           {value}
                         </span>
@@ -1336,11 +1333,10 @@ export function NailDesignManagementDetailPage() {
                 onClick={() =>
                   scrollToSection(heroSectionRef, { startEdit: true, sectionKey: "hero" })
                 }
-                className={`w-full rounded-full px-4 py-2.5 text-left text-xs font-bold text-white transition ${
-                  highlightedSection === "hero"
-                    ? "bg-[image:var(--gradient-accent)] shadow-[0_14px_26px_rgba(236,72,153,0.28)] ring-4 ring-[#ffd8e8]"
-                    : "bg-[image:var(--gradient-accent)]"
-                }`}
+                className={`w-full rounded-full px-4 py-2.5 text-left text-xs font-bold text-white transition ${highlightedSection === "hero"
+                  ? "bg-[image:var(--gradient-accent)] shadow-[0_14px_26px_rgba(236,72,153,0.28)] ring-4 ring-[#ffd8e8]"
+                  : "bg-[image:var(--gradient-accent)]"
+                  }`}
               >
                 <PencilLine size={13} className="mr-1.5 inline" />
                 Edit Design
@@ -1350,11 +1346,10 @@ export function NailDesignManagementDetailPage() {
                 onClick={() =>
                   navigate(getAdminNailVariantCreateRoute(designId))
                 }
-                className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${
-                  highlightedSection === "design-variants"
-                    ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
-                    : "border-[#f4c6da] bg-white text-[#7e6075]"
-                }`}
+                className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${highlightedSection === "design-variants"
+                  ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
+                  : "border-[#f4c6da] bg-white text-[#7e6075]"
+                  }`}
               >
                 <Copy size={13} className="mr-1.5 inline" />
                 Add Variant
@@ -1362,11 +1357,10 @@ export function NailDesignManagementDetailPage() {
               <button
                 type="button"
                 onClick={() => scrollToSection(pricingRef, { sectionKey: "pricing" })}
-                className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${
-                  highlightedSection === "pricing"
-                    ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
-                    : "border-[#f4c6da] bg-white text-[#7e6075]"
-                }`}
+                className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${highlightedSection === "pricing"
+                  ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
+                  : "border-[#f4c6da] bg-white text-[#7e6075]"
+                  }`}
               >
                 <CircleDollarSign size={13} className="mr-1.5 inline" />
                 Update Price
@@ -1374,11 +1368,10 @@ export function NailDesignManagementDetailPage() {
               <button
                 type="button"
                 onClick={() => scrollToSection(heroSectionRef, { sectionKey: "hero" })}
-                className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${
-                  highlightedSection === "hero"
-                    ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
-                    : "border-[#f4c6da] bg-white text-[#7e6075]"
-                }`}
+                className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${highlightedSection === "hero"
+                  ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
+                  : "border-[#f4c6da] bg-white text-[#7e6075]"
+                  }`}
               >
                 <Upload size={13} className="mr-1.5 inline" />
                 Upload Media
@@ -1391,11 +1384,10 @@ export function NailDesignManagementDetailPage() {
                     sectionKey: "quick-summary",
                   })
                 }
-                className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${
-                  highlightedSection === "quick-summary"
-                    ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
-                    : "border-[#f4c6da] bg-white text-[#7e6075]"
-                }`}
+                className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${highlightedSection === "quick-summary"
+                  ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
+                  : "border-[#f4c6da] bg-white text-[#7e6075]"
+                  }`}
               >
                 <Trash2 size={13} className="mr-1.5 inline" />
                 Archive Design
@@ -1413,6 +1405,7 @@ export function NailDesignManagementDetailPage() {
           >
             <div className="overflow-hidden rounded-[18px] bg-[#f6edf2]">
               <img
+                crossorigin="anonymous"
                 src={formValues.previewImage || DESIGN_PREVIEW_IMAGE}
                 alt={formValues.heroTitle}
                 className="h-44 w-full object-cover"
@@ -1492,11 +1485,11 @@ export function NailDesignManagementDetailPage() {
         item={
           pendingDeleteVariant
             ? {
-                title: pendingDeleteVariant.name,
-                image: pendingDeleteVariant.imageUrl || formValues.previewImage || DESIGN_PREVIEW_IMAGE,
-                meta: pendingDeleteVariant.level,
-                note: pendingDeleteVariant.description || "Selected variant will be removed from this design.",
-              }
+              title: pendingDeleteVariant.name,
+              image: pendingDeleteVariant.imageUrl || formValues.previewImage || DESIGN_PREVIEW_IMAGE,
+              meta: pendingDeleteVariant.level,
+              note: pendingDeleteVariant.description || "Selected variant will be removed from this design.",
+            }
             : null
         }
         warnings={["This permanently removes the variant from backend if the API call succeeds."]}

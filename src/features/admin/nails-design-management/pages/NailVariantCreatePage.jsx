@@ -1,6 +1,7 @@
 import { ArrowLeft, FileImage, LoaderCircle, Save, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
+import { createPlacedNailComponent } from "../../../../services/nailDesign.service";
 import {
   getAdminNailDesignDetailRoute,
   getAdminNailVariantCreateRoute,
@@ -58,6 +59,57 @@ function buildColorJsonFromTryOn(config) {
     mode: "perFinger",
     fingers,
   });
+}
+
+function buildPlacedNailComponentValues(nailVariantId, config) {
+  const groupedDecorations = new Map();
+  const nails = Array.isArray(config?.nails) ? config.nails : [];
+
+  nails.forEach((nail, nailIndex) => {
+    const decorations = Array.isArray(nail?.decorations) ? nail.decorations : [];
+
+    decorations.forEach((decoration) => {
+      const componentId = String(decoration?.componentId || "").trim();
+      if (!componentId) {
+        return;
+      }
+
+      const decorationId = String(decoration?.id || `${componentId}-${nailIndex}`);
+      const existing = groupedDecorations.get(decorationId);
+
+      if (existing) {
+        existing.nailIndexes.push(nailIndex);
+        return;
+      }
+
+      groupedDecorations.set(decorationId, {
+        decoration,
+        nailIndexes: [nailIndex],
+      });
+    });
+  });
+
+  return [...groupedDecorations.values()].map(({ decoration, nailIndexes }) => ({
+    componentId: decoration.componentId,
+    nailVariantId,
+    posX: Number(decoration.x || 0),
+    posY: Number(decoration.y || 0),
+    fingerIndex: nailIndexes.length === 5 ? -1 : nailIndexes[0] + 1,
+    configJson: JSON.stringify({
+      scale: Number(decoration.scale || 0),
+      rotation: Number(decoration.rotation || 0),
+    }),
+  }));
+}
+
+async function createVariantNailComponents(nailVariantId, config) {
+  const placedComponents = buildPlacedNailComponentValues(nailVariantId, config);
+
+  if (!placedComponents.length) {
+    return;
+  }
+
+  await Promise.all(placedComponents.map((component) => createPlacedNailComponent(component)));
 }
 
 function findShapeId(shapes, config) {
@@ -195,6 +247,10 @@ export function NailVariantCreatePage() {
         image: formValues.image,
       });
       const savedVariantId = savedVariant?.nailVariantId ?? savedVariant?.id;
+
+      if (savedVariantId && formValues.tryOnConfig) {
+        await createVariantNailComponents(savedVariantId, formValues.tryOnConfig);
+      }
 
       navigate(
         savedVariantId
@@ -367,6 +423,7 @@ export function NailVariantCreatePage() {
             <div className="mt-4 overflow-hidden rounded-[18px] bg-[#f6edf2]">
               {previewImageUrl ? (
                 <img
+                  crossorigin="anonymous"
                   src={previewImageUrl}
                   alt={formValues.name || "Variant preview"}
                   className="h-64 w-full object-cover"
