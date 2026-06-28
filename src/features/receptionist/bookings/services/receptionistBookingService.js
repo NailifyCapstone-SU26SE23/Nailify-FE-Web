@@ -199,3 +199,20 @@ export async function manualCheckInReceptionistBooking(bookingId) {
 
   return unwrapResponse(response, "Failed to check in booking.");
 }
+
+export async function checkoutReceptionistBooking(bookingId) {
+  const normalizedBookingId = String(bookingId || "").trim();
+
+  if (!normalizedBookingId) {
+    throw new Error("Booking ID is required.");
+  }
+
+  const formData = new FormData();
+  formData.append("BookingId", normalizedBookingId);
+
+  const response = await axiosClient.post("/Bookings/check-out", formData, {
+    headers: getAuthHeaders(),
+  });
+
+  return unwrapResponse(response, "Failed to check out booking.");
+}

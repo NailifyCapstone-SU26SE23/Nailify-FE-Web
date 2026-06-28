@@ -1,0 +1,14 @@
+version: 2
+updates:
+  # Kích hoạt kiểm tra phiên bản cho npm/yarn
+  # Tự động quét và nâng cấp thư viện npm/yarn cho dự án ReactJS
+  - package-ecosystem: "npm"
+    directory: "/" # Thư mục gốc chứa file package.json của ReactJS
+    schedule:
+      interval: "weekly" # Kiểm tra hàng tuần vào mỗi thứ 2
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "npm"
+    commit-message:
+      prefix: "deps"

@@ -228,12 +228,6 @@ function buildStaffExperienceFromBooking(booking, staffNotesDraft, nailVariantDe
       .map((part) => part[0])
       .join("")
       .toUpperCase(),
-    steps: [
-      { key: "detail", label: "Booking Detail", state: "complete" },
-      { key: "consult", label: "Consultation", state: "current" },
-      { key: "confirm", label: "Confirm Design", state: "upcoming" },
-      { key: "start", label: "Start Service", state: "upcoming" },
-    ],
     customer: {
       name: customerDisplayName,
       phone: customerPhone,
@@ -364,6 +358,10 @@ function buildStaffExperienceFromBooking(booking, staffNotesDraft, nailVariantDe
   };
 }
 
+function normalizeStaffBookingStatus(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
 export function BookingDetailPage() {
   const dispatch = useDispatch();
   const location = useLocation();
@@ -427,6 +425,13 @@ export function BookingDetailPage() {
     }[action] ?? "";
   }, [isStaffRole, location.state]);
   const deleteRequested = role !== ROLES.staff && Boolean(location.state?.requestDelete);
+  const normalizedStaffBookingStatus = normalizeStaffBookingStatus(staffBookingDetail?.status);
+  const hasServiceStarted = ["inprogress", "checkedin", "servicecompleted", "completed"].includes(
+    normalizedStaffBookingStatus,
+  );
+  const isServiceCompleted = ["servicecompleted", "completed"].includes(normalizedStaffBookingStatus);
+  const isServiceInProgress = hasServiceStarted && !isServiceCompleted;
+  const effectiveDesignConfirmed = isCurrentDesignConfirmed || hasServiceStarted;
 
   useEffect(() => {
     if (!staffActionMessage && !deleteRequested) {
@@ -847,17 +852,6 @@ export function BookingDetailPage() {
     const staffExperience = isCurrentDesignConfirmed
       ? {
         ...baseStaffExperience,
-        steps: baseStaffExperience.steps.map((step) => {
-          if (step.key === "consult") {
-            return { ...step, state: "complete" };
-          }
-
-          if (step.key === "confirm") {
-            return { ...step, state: "current" };
-          }
-
-          return step;
-        }),
         design: {
           ...baseStaffExperience.design,
           tags: [
@@ -873,19 +867,40 @@ export function BookingDetailPage() {
         )),
       }
       : baseStaffExperience;
+    const resolvedStaffExperience = effectiveDesignConfirmed
+      ? {
+        ...staffExperience,
+        design: {
+          ...staffExperience.design,
+          tags: [
+            ...staffExperience.design.tags.filter((tag) => tag.label !== "Confirmed" && tag.label !== "Completed"),
+            {
+              label: isServiceCompleted ? "Completed" : "Confirmed",
+              className: isServiceCompleted
+                ? "border-[#cde8f8] bg-[#eef7ff] text-[#327adf]"
+                : "border-[#cdeedb] bg-[#eefcf4] text-[#16975f]",
+            },
+          ],
+        },
+      }
+      : staffExperience;
 
   const handleOpenServiceSession = () => {
-    if (!isCurrentDesignConfirmed) {
+    if (!effectiveDesignConfirmed) {
       toast.error("Confirm Current Design before starting the service session.");
       return;
     }
 
       navigate(getStaffBookingServiceSessionRoute(bookingId), {
         state: {
-          serviceSession: buildStaffServiceSessionPayload(staffBookingDetail, {
-            backRoute: location.pathname,
-            designUpdateRoute: getStaffBookingDesignStudioRoute(bookingId),
-          }),
+          serviceSession: {
+            ...buildStaffServiceSessionPayload(staffBookingDetail, {
+              backRoute: location.pathname,
+              designUpdateRoute: getStaffBookingDesignStudioRoute(bookingId),
+            }),
+            started: hasServiceStarted,
+            completed: isServiceCompleted,
+          },
         },
       });
     };
@@ -898,8 +913,10 @@ export function BookingDetailPage() {
           </div>
         ) : null}
         <StaffBookingConsultationDetail
-          data={staffExperience}
-          isCurrentDesignConfirmed={isCurrentDesignConfirmed}
+          data={resolvedStaffExperience}
+          isCurrentDesignConfirmed={effectiveDesignConfirmed}
+          isServiceInProgress={isServiceInProgress}
+          isServiceCompleted={isServiceCompleted}
           onChooseAnotherDesign={handleChooseAnotherDesign}
           onConfirmCurrentDesign={handleConfirmCurrentDesign}
           onDelete={handleDelete}
