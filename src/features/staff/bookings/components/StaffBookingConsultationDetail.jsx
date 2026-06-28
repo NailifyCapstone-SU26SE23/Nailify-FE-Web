@@ -17,24 +17,6 @@ import {
 import { useMemo, useState } from "react";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 
-const STEP_STYLES = {
-  complete: {
-    bullet: "bg-[image:var(--gradient-accent)] text-white shadow-[0_10px_20px_rgba(236,72,153,0.18)]",
-    label: "text-[#ea4f93]",
-    line: "bg-[#f3bfd4]",
-  },
-  current: {
-    bullet: "bg-[image:var(--gradient-accent)] text-white shadow-[0_10px_20px_rgba(236,72,153,0.18)]",
-    label: "text-[#ea4f93]",
-    line: "bg-[#f3bfd4]",
-  },
-  upcoming: {
-    bullet: "border border-[#f2cade] bg-[#fff7fb] text-[#d45b9f]",
-    label: "text-[#9f8a9a]",
-    line: "bg-[#f6dce8]",
-  },
-};
-
 function SectionTitle({ icon: Icon, title }) {
   return (
     <div className="flex items-center gap-2">
@@ -488,46 +470,31 @@ export function StaffBookingConsultationDetail({
   onChooseAnotherDesign,
   onConfirmCurrentDesign,
   isCurrentDesignConfirmed = false,
+  isServiceInProgress = false,
+  isServiceCompleted = false,
   onDelete,
   onOpenDesignStudio,
   onOpenUpdateBooking,
   onStaffNoteChange,
   onStartServiceSession,
 }) {
-  const canProceedToService = isCurrentDesignConfirmed;
+  const canProceedToService = isCurrentDesignConfirmed && !isServiceCompleted;
   const [isVariantModalOpen, setIsVariantModalOpen] = useState(false);
   const canViewVariantDetail = Boolean(data.design.variantDetail?.nailVariantId);
   const consultationQuestion = canViewVariantDetail
     ? `Does the customer want to continue with the selected nail design - ${data.design.name}?`
     : "Does the customer want to continue with no nail design ?";
   const confirmButtonLabel = canViewVariantDetail ? "Confirm Current Design" : "Confirm booking";
-  const confirmedButtonLabel = canViewVariantDetail ? "Current Design Confirmed" : "Booking Confirmed";
+  const confirmedButtonLabel = isServiceCompleted
+    ? "Service Completed"
+    : canViewVariantDetail
+      ? "Current Design Confirmed"
+      : "Booking Confirmed";
   const chooseAnotherDesignButtonLabel = canViewVariantDetail ? "Choose Another Design" : "Choose Design";
 
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff5fa_100%)]">
       <div className="rounded-[24px] border border-[#f6dbe8] bg-[#fff7fb] p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
-
-        <div className="mt-4 rounded-[22px] border border-[#f3d5e2] bg-white p-4">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center">
-            {data.steps.map((step, index) => {
-              const tone = STEP_STYLES[step.state];
-
-              return (
-                <div key={step.key} className="flex flex-1 items-center gap-3">
-                  <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-extrabold ${tone.bullet}`}>
-                    {index + 1}
-                  </div>
-                  <p className={`whitespace-nowrap text-xs font-bold ${tone.label}`}>{step.label}</p>
-                  {index < data.steps.length - 1 ? (
-                    <div className={`hidden h-px flex-1 md:block ${tone.line}`} />
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
         <div className="mt-4 space-y-4">
           <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
             <SectionTitle icon={UserRound} title="Customer Information" />
@@ -664,35 +631,37 @@ export function StaffBookingConsultationDetail({
                 </article>
               ) : null}
 
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
-                <SectionTitle icon={Search} title="Customer Consultation" />
-                <div className="mt-5 flex flex-col items-center gap-6 text-center">
-                  <p className="text-lg font-bold text-[#3f2b3f]">{consultationQuestion}</p>
-                  <div className="flex w-full flex-col gap-3 sm:flex-row">
-                    <button
-                      type="button"
-                      onClick={onConfirmCurrentDesign}
-                      disabled={isCurrentDesignConfirmed}
-                      className={`inline-flex flex-1 items-center justify-center gap-2 rounded-[14px] px-5 py-4 text-sm font-bold shadow-[0_16px_28px_rgba(236,72,153,0.2)] ${isCurrentDesignConfirmed
-                        ? "cursor-default bg-[#e9f9ef] text-[#16975f] shadow-none"
-                        : "bg-[image:var(--gradient-accent)] text-white"
-                        }`}
-                    >
-                      <Check size={16} />
-                      {isCurrentDesignConfirmed ? confirmedButtonLabel : confirmButtonLabel}
-                    </button>
-                    
-                    <button
-                      type="button"
-                      onClick={onChooseAnotherDesign}
-                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-[14px] border border-[#f4cada] bg-white px-5 py-4 text-sm font-bold text-[#ea4f93]"
-                    >
-                      <Palette size={16} />
-                      {chooseAnotherDesignButtonLabel}
-                    </button>
+              {!isServiceInProgress && !isServiceCompleted ? (
+                <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
+                  <SectionTitle icon={Search} title="Customer Consultation" />
+                  <div className="mt-5 flex flex-col items-center gap-6 text-center">
+                    <p className="text-lg font-bold text-[#3f2b3f]">{consultationQuestion}</p>
+                    <div className="flex w-full flex-col gap-3 sm:flex-row">
+                      <button
+                        type="button"
+                        onClick={onConfirmCurrentDesign}
+                        disabled={isCurrentDesignConfirmed || isServiceCompleted}
+                        className={`inline-flex flex-1 items-center justify-center gap-2 rounded-[14px] px-5 py-4 text-sm font-bold shadow-[0_16px_28px_rgba(236,72,153,0.2)] ${isCurrentDesignConfirmed || isServiceCompleted
+                          ? "cursor-default bg-[#e9f9ef] text-[#16975f] shadow-none"
+                          : "bg-[image:var(--gradient-accent)] text-white"
+                          }`}
+                      >
+                        <Check size={16} />
+                        {isCurrentDesignConfirmed || isServiceCompleted ? confirmedButtonLabel : confirmButtonLabel}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={onChooseAnotherDesign}
+                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-[14px] border border-[#f4cada] bg-white px-5 py-4 text-sm font-bold text-[#ea4f93]"
+                      >
+                        <Palette size={16} />
+                        {chooseAnotherDesignButtonLabel}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </article>
+                </article>
+              ) : null}
 
               <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
                 <SectionTitle icon={PencilLine} title="Staff Notes" />
@@ -716,72 +685,76 @@ export function StaffBookingConsultationDetail({
                 </p>
               </article>
 
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
-                <SectionTitle icon={ClipboardCheck} title="Final Confirmation Checklist" />
-                <div className="mt-5 space-y-3">
-                  {data.checklist.map((item) => (
-                    <div
-                      key={item.label}
-                      className={`flex items-center gap-3 rounded-[14px] border px-4 py-3 text-sm font-semibold ${item.checked
-                          ? "border-[#f2a9c9] bg-[#fff1f7] text-[#d74f8d]"
-                          : "border-[#f0d8e3] bg-white text-[#6f5c6b]"
-                        }`}
-                    >
-                      <span
-                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${item.checked
-                            ? "border-[#df5c96] bg-[#df5c96] text-white"
-                            : "border-[#e4cbd7] bg-[#fff7fb] text-transparent"
+              {!isServiceCompleted ? (
+                <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
+                  <SectionTitle icon={ClipboardCheck} title="Final Confirmation Checklist" />
+                  <div className="mt-5 space-y-3">
+                    {data.checklist.map((item) => (
+                      <div
+                        key={item.label}
+                        className={`flex items-center gap-3 rounded-[14px] border px-4 py-3 text-sm font-semibold ${item.checked
+                            ? "border-[#f2a9c9] bg-[#fff1f7] text-[#d74f8d]"
+                            : "border-[#f0d8e3] bg-white text-[#6f5c6b]"
                           }`}
                       >
-                        <Check size={12} />
-                      </span>
-                      <span>{item.label}</span>
+                        <span
+                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${item.checked
+                              ? "border-[#df5c96] bg-[#df5c96] text-white"
+                              : "border-[#e4cbd7] bg-[#fff7fb] text-transparent"
+                            }`}
+                        >
+                          <Check size={12} />
+                        </span>
+                        <span>{item.label}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={onStartServiceSession}
+                    disabled={!canProceedToService}
+                    className={`mt-5 w-full rounded-[14px] px-5 py-4 text-sm font-bold ${
+                      canProceedToService
+                        ? "bg-[image:var(--gradient-accent)] text-white shadow-[0_16px_28px_rgba(236,72,153,0.2)]"
+                        : "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
+                    }`}
+                  >
+                    {isServiceInProgress ? "Continue Service" : "Proceed to Service Session"}
+                  </button>
+                  {!canProceedToService ? (
+                    <p className="mt-3 text-xs font-medium text-[#b1859d]">
+                      Confirm Current Design before proceeding to the service session.
+                    </p>
+                  ) : null}
+
+                  {!isServiceInProgress ? (
+                    <div className="mt-4 flex flex-wrap gap-3">
+                      <button
+                        type="button"
+                        onClick={onOpenDesignStudio}
+                        className="rounded-[12px] border border-[#f4cada] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
+                      >
+                        Open Design Studio
+                      </button>
+                      <button
+                        type="button"
+                        onClick={onOpenUpdateBooking}
+                        className="rounded-[12px] border border-[#f4cada] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
+                      >
+                        Update Booking
+                      </button>
+                      <button
+                        type="button"
+                        onClick={onDelete}
+                        className="rounded-[12px] border border-[#ddd0d8] bg-white px-4 py-2.5 text-xs font-bold text-[#8e7786]"
+                      >
+                        Back to Queue
+                      </button>
                     </div>
-                  ))}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={onStartServiceSession}
-                  disabled={!canProceedToService}
-                  className={`mt-5 w-full rounded-[14px] px-5 py-4 text-sm font-bold ${
-                    canProceedToService
-                      ? "bg-[image:var(--gradient-accent)] text-white shadow-[0_16px_28px_rgba(236,72,153,0.2)]"
-                      : "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
-                  }`}
-                >
-                  Proceed to Service Session
-                </button>
-                {!canProceedToService ? (
-                  <p className="mt-3 text-xs font-medium text-[#b1859d]">
-                    Confirm Current Design before proceeding to the service session.
-                  </p>
-                ) : null}
-
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    onClick={onOpenDesignStudio}
-                    className="rounded-[12px] border border-[#f4cada] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
-                  >
-                    Open Design Studio
-                  </button>
-                  <button
-                    type="button"
-                    onClick={onOpenUpdateBooking}
-                    className="rounded-[12px] border border-[#f4cada] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
-                  >
-                    Update Booking
-                  </button>
-                  <button
-                    type="button"
-                    onClick={onDelete}
-                    className="rounded-[12px] border border-[#ddd0d8] bg-white px-4 py-2.5 text-xs font-bold text-[#8e7786]"
-                  >
-                    Back to Queue
-                  </button>
-                </div>
-              </article>
+                  ) : null}
+                </article>
+              ) : null}
             </div>
 
             <aside className="space-y-4 border-t border-[#f3d5e2] pt-4 xl:border-l xl:border-t-0 xl:pl-4 xl:pt-0">
@@ -858,40 +831,49 @@ export function StaffBookingConsultationDetail({
                 </div>
               </article> */}
 
-              <article className="rounded-[18px] border border-[#f3d5e2] bg-white p-4">
-                <SectionTitle icon={CheckCheck} title="Next Actions" />
-                <div className="mt-4 space-y-3">
-                  <button
-                    type="button"
-                    onClick={onOpenUpdateBooking}
-                    className="flex w-full items-center justify-center gap-2 rounded-[12px] border border-[#f4cada] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
-                  >
-                    <PencilLine size={13} />
-                    Update Booking
-                  </button>
-                  <button
-                    type="button"
-                    onClick={onOpenDesignStudio}
-                    className="flex w-full items-center justify-center gap-2 rounded-[12px] border border-[#f4cada] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
-                  >
-                    <Search size={13} />
-                    Open Design Studio
-                  </button>
-                  <button
-                    type="button"
-                    onClick={onStartServiceSession}
-                    disabled={!canProceedToService}
-                    className={`flex w-full items-center justify-center gap-2 rounded-[12px] px-4 py-2.5 text-xs font-bold ${
-                      canProceedToService
-                        ? "bg-[image:var(--gradient-accent)] text-white"
-                        : "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
-                    }`}
-                  >
-                    <ArrowUp size={13} />
-                    Start Service
-                  </button>
-                </div>
-              </article>
+              {!isServiceCompleted ? (
+                <article className="rounded-[18px] border border-[#f3d5e2] bg-white p-4">
+                  <SectionTitle
+                    icon={CheckCheck}
+                    title={isServiceInProgress ? "Continue Service" : "Next Actions"}
+                  />
+                  <div className="mt-4 space-y-3">
+                    {!isServiceInProgress ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={onOpenUpdateBooking}
+                          className="flex w-full items-center justify-center gap-2 rounded-[12px] border border-[#f4cada] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
+                        >
+                          <PencilLine size={13} />
+                          Update Booking
+                        </button>
+                        <button
+                          type="button"
+                          onClick={onOpenDesignStudio}
+                          className="flex w-full items-center justify-center gap-2 rounded-[12px] border border-[#f4cada] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
+                        >
+                          <Search size={13} />
+                          Open Design Studio
+                        </button>
+                      </>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={onStartServiceSession}
+                      disabled={!canProceedToService}
+                      className={`flex w-full items-center justify-center gap-2 rounded-[12px] px-4 py-2.5 text-xs font-bold ${
+                        canProceedToService
+                          ? "bg-[image:var(--gradient-accent)] text-white"
+                          : "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
+                      }`}
+                    >
+                      <ArrowUp size={13} />
+                      {isServiceInProgress ? "Continue Service" : "Start Service"}
+                    </button>
+                  </div>
+                </article>
+              ) : null}
             </aside>
           </div>
         </div>
@@ -1028,13 +1010,6 @@ StaffBookingConsultationDetail.propTypes = {
       }),
     ).isRequired,
     statusLabel: PropTypes.string.isRequired,
-    steps: PropTypes.arrayOf(
-      PropTypes.shape({
-        key: PropTypes.string.isRequired,
-        label: PropTypes.string.isRequired,
-        state: PropTypes.oneOf(["complete", "current", "upcoming"]).isRequired,
-      }),
-    ).isRequired,
     suggestedDesigns: PropTypes.arrayOf(
       PropTypes.shape({
         image: PropTypes.string.isRequired,
@@ -1044,6 +1019,8 @@ StaffBookingConsultationDetail.propTypes = {
     ).isRequired,
   }).isRequired,
   isCurrentDesignConfirmed: PropTypes.bool,
+  isServiceInProgress: PropTypes.bool,
+  isServiceCompleted: PropTypes.bool,
   onChooseAnotherDesign: PropTypes.func.isRequired,
   onConfirmCurrentDesign: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,

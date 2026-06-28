@@ -10,6 +10,7 @@ import {
   getReceptionistBookingDetailRoute,
 } from "../../../../shared/constants/routes";
 import {
+  checkoutReceptionistBooking,
   confirmReceptionistBooking,
   fetchReceptionistBookings,
   fetchReceptionistSalonDetail,
@@ -95,7 +96,11 @@ function normalizeBooking(booking) {
 }
 
 function canManualCheckIn(status) {
-  return !["CheckedIn", "Completed", "Cancelled"].includes(status);
+  return !["CheckedIn", "Completed", "ServiceCompleted", "Cancelled"].includes(status);
+}
+
+function isReadyForCheckout(status) {
+  return String(status || "").trim() === "ServiceCompleted";
 }
 
 const BOOKING_PAGE_SIZE = 10;
@@ -318,6 +323,17 @@ export function ReceptionistBookingListPage() {
                 },
               ]
               : []),
+            ...(isReadyForCheckout(booking.status)
+              ? [
+                {
+                  key: "checkout",
+                  label: "Checkout",
+                  icon: SquareCheckBig,
+                  className: "text-[#4c71d9]",
+                  onSelect: () => void handleCheckout(booking.bookingId),
+                },
+              ]
+              : []),
             // {
             //   key: "reject",
             //   label: "Reject Booking",
@@ -329,7 +345,7 @@ export function ReceptionistBookingListPage() {
         />
       ),
     },
-  ]), [handleConfirmBooking, handleManualCheckIn, handleRejectBooking, navigate]);
+  ]), [handleConfirmBooking, handleCheckout, handleManualCheckIn, handleRejectBooking, navigate]);
 
   function updateBookingRow(updatedBooking) {
     if (!updatedBooking?.bookingId) {
@@ -375,6 +391,18 @@ export function ReceptionistBookingListPage() {
     } catch (actionError) {
       const message =
         actionError instanceof Error ? actionError.message : "Failed to check in booking.";
+      toast.error(message);
+    }
+  }
+
+  async function handleCheckout(bookingId) {
+    try {
+      const updatedBooking = await checkoutReceptionistBooking(bookingId);
+      updateBookingRow(updatedBooking);
+      toast.success("Checkout completed successfully.");
+    } catch (actionError) {
+      const message =
+        actionError instanceof Error ? actionError.message : "Failed to check out booking.";
       toast.error(message);
     }
   }
@@ -619,6 +647,17 @@ export function ReceptionistBookingListPage() {
                               icon: SquareCheckBig,
                               className: "text-[#4c71d9]",
                               onSelect: () => void handleManualCheckIn(booking.bookingId),
+                            },
+                          ]
+                          : []),
+                        ...(isReadyForCheckout(booking.status)
+                          ? [
+                            {
+                              key: "checkout",
+                              label: "Checkout",
+                              icon: SquareCheckBig,
+                              className: "text-[#4c71d9]",
+                              onSelect: () => void handleCheckout(booking.bookingId),
                             },
                           ]
                           : []),

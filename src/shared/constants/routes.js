@@ -18,6 +18,7 @@ export const ROUTES = {
   receptionistBookings: "/receptionist/bookings",
   receptionistBookingsCreate: "/receptionist/bookings/create",
   receptionistBookingDetail: "/receptionist/bookings/:bookingId",
+  receptionistBookingCheckout: "/receptionist/bookings/:bookingId/checkout",
 
   // Manager routes
   managerRoot: "/manager",
@@ -82,6 +83,8 @@ export const getStaffBookingServiceSessionRoute = (bookingId) =>
   `/staff/bookings/${bookingId}/service-session`;
 export const getReceptionistBookingDetailRoute = (bookingId) =>
   `/receptionist/bookings/${bookingId}`;
+export const getReceptionistBookingCheckoutRoute = (bookingId) =>
+  `/receptionist/bookings/${bookingId}/checkout`;
 export const getManagerBookingDetailRoute = (bookingId) =>
   `/manager/bookings/${bookingId}`;
 export const getManagerStaffUpdateRoute = (staffId) =>

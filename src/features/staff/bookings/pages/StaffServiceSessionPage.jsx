@@ -869,6 +869,9 @@ export function StaffServiceSessionPage() {
   const [isSavingExtraService, setIsSavingExtraService] = useState(false);
   const [started, setStarted] = useState(() => persistedSession?.started ?? Boolean(payload?.started));
   const [completed, setCompleted] = useState(() => persistedSession?.completed ?? Boolean(payload?.completed));
+  const [isSessionFinalized, setIsSessionFinalized] = useState(
+    () => persistedSession?.isSessionFinalized ?? false,
+  );
   const [isStartingService, setIsStartingService] = useState(false);
   const [isMarkingServiceDone, setIsMarkingServiceDone] = useState(false);
   const [isCompletingSession, setIsCompletingSession] = useState(false);
@@ -880,7 +883,10 @@ export function StaffServiceSessionPage() {
     () => persistedSession?.afterPhoto ?? payload?.afterPhoto ?? serverAfterPhoto ?? null,
   );
   const [sessionNote, setSessionNote] = useState(() => persistedSession?.sessionNote ?? payload?.sessionNote ?? "");
-  const [bookingProcedures, setBookingProcedures] = useState([]);
+  const [bookingProcedures, setBookingProcedures] = useState(
+    () => persistedSession?.bookingProcedures ?? [],
+  );
+  const [isLoadingProcedures, setIsLoadingProcedures] = useState(false);
   const [procedureLoadError, setProcedureLoadError] = useState("");
   const [procedureStatusUpdates, setProcedureStatusUpdates] = useState({});
   const loadedBookingItemIdRef = useRef("");
@@ -929,6 +935,14 @@ export function StaffServiceSessionPage() {
         };
       });
   }, [bookingProcedures]);
+  const sessionBookingItemIds = useMemo(
+    () => getSessionBookingItemIds(data?.bookingItemIds),
+    [data?.bookingItemIds],
+  );
+  const sessionBookingItemKey = useMemo(
+    () => sessionBookingItemIds.join("|"),
+    [sessionBookingItemIds],
+  );
 
   useEffect(() => {
     return () => {
@@ -951,6 +965,7 @@ export function StaffServiceSessionPage() {
     setShowCompleteConfirm(false);
     setStarted(persistedSession?.started ?? Boolean(payload?.started));
     setCompleted(persistedSession?.completed ?? Boolean(payload?.completed));
+    setIsSessionFinalized(persistedSession?.isSessionFinalized ?? false);
     setFlashMessage("");
     setBeforePhoto(persistedSession?.beforePhoto ?? payload?.beforePhoto ?? serverBeforePhoto ?? null);
     setAfterPhoto(persistedSession?.afterPhoto ?? payload?.afterPhoto ?? serverAfterPhoto ?? null);
@@ -983,22 +998,28 @@ export function StaffServiceSessionPage() {
         session: {
           started,
           completed,
+          isSessionFinalized,
           beforePhoto,
           afterPhoto,
           sessionNote,
           confirmations,
           completionChecks,
+          bookingProcedures,
+          procedureLoadError,
         },
       }),
     );
   }, [
     afterPhoto,
     beforePhoto,
+    bookingProcedures,
     bookingId,
     completed,
     completionChecks,
     confirmations,
     dispatch,
+    isSessionFinalized,
+    procedureLoadError,
     sessionNote,
     started,
   ]);
@@ -1065,7 +1086,15 @@ export function StaffServiceSessionPage() {
     const canApplyState = options.shouldApplyState ?? (() => true);
 
     if (normalizedBookingItemIds.length === 0) {
+      if (canApplyState()) {
+        setIsLoadingProcedures(false);
+      }
       return;
+    }
+
+    if (canApplyState()) {
+      setIsLoadingProcedures(true);
+      setProcedureLoadError("");
     }
 
     try {
@@ -1110,27 +1139,30 @@ export function StaffServiceSessionPage() {
       if (options.showToast !== false) {
         toast.error(message);
       }
+    } finally {
+      if (canApplyState()) {
+        setIsLoadingProcedures(false);
+      }
     }
   };
 
   useEffect(() => {
-    const bookingItemIds = getSessionBookingItemIds(data?.bookingItemIds);
-    const bookingItemKey = bookingItemIds.join("|");
-
-    if (!bookingItemKey) {
+    if (!sessionBookingItemKey) {
+      setIsLoadingProcedures(false);
       return undefined;
     }
 
-    if (loadedBookingItemIdRef.current === bookingItemKey) {
+    if (loadedBookingItemIdRef.current === sessionBookingItemKey) {
+      setIsLoadingProcedures(false);
       return undefined;
     }
 
-    loadedBookingItemIdRef.current = bookingItemKey;
+    loadedBookingItemIdRef.current = sessionBookingItemKey;
 
     let isMounted = true;
 
     const loadBookingProcedures = async () => {
-      await reloadBookingProcedures(bookingItemIds, {
+      await reloadBookingProcedures(sessionBookingItemIds, {
         shouldApplyState: () => isMounted,
         showToast: isMounted,
       });
@@ -1141,7 +1173,7 @@ export function StaffServiceSessionPage() {
     return () => {
       isMounted = false;
     };
-  }, [data?.bookingItemIds]);
+  }, [sessionBookingItemIds, sessionBookingItemKey]);
 
   // eslint-disable-next-line no-unused-vars
   const currentProcedureNote = useMemo(() => {
@@ -1206,6 +1238,8 @@ export function StaffServiceSessionPage() {
   const canCompleteSession = displayCompletionChecks.every((item) => item.checked) && Boolean(effectiveAfterPhoto);
   const canOpenComparison = Boolean(effectiveBeforePhoto) && Boolean(effectiveAfterPhoto);
   const serviceProgress = phase === "done" ? 100 : started ? 65 : effectiveBeforePhoto ? 35 : 0;
+  const shouldShowProcedureChecklist =
+    phase === "progress" || procedureChecklist.length > 0 || Boolean(resolvedProcedureLoadError);
 
   const handleToggleConfirmation = (label) => {
     setConfirmations((current) =>
@@ -1460,6 +1494,7 @@ export function StaffServiceSessionPage() {
           : null);
 
       setCompleted(true);
+      setIsSessionFinalized(true);
       setShowCompleteConfirm(false);
       setAfterPhoto(refreshedAfterPhoto);
       setFlashMessage(
@@ -1948,6 +1983,117 @@ export function StaffServiceSessionPage() {
     );
   }
 
+  if (isSessionFinalized) {
+    return (
+      <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff3f8_100%)]">
+        <article className="rounded-[26px] border border-[#f3d5e2] bg-white p-6 shadow-[0_18px_40px_rgba(236,72,153,0.08)]">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#ea4f93]">
+                Session Completed
+              </p>
+              <h1 className="mt-2 text-[2rem] font-black tracking-tight text-[#3f2b3f]">
+                Complete Session Successfully
+              </h1>
+              <p className="mt-2 max-w-2xl text-sm text-[#a88a9d]">
+                The service session has been finalized. Continue with the handoff actions below or return to the booking list.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate(ROUTES.staffBookings)}
+              className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-[#f2bfd4] bg-white px-5 py-3 text-sm font-bold text-[#ea4f93] transition hover:bg-[#fff5f9]"
+            >
+              Back to Booking List
+            </button>
+          </div>
+        </article>
+
+        <article className="rounded-[26px] border border-[#f3d5e2] bg-white p-6 shadow-[0_18px_40px_rgba(236,72,153,0.06)]">
+          <SectionTitle
+            icon={Sparkles}
+            title="Next Step"
+            subtitle="Handoff actions after the staff session is finished."
+          />
+
+          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <button
+              type="button"
+              onClick={() =>
+                navigate(data.backRoute, {
+                  state: {
+                    fromServiceSession: true,
+                    readyForCheckout: true,
+                  },
+                })
+              }
+              className="flex min-h-24 items-start gap-4 rounded-[24px] border border-[#f2bfd4] bg-[#fff7fb] px-5 py-5 text-left transition hover:bg-[#fff2f8]"
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#ffe7f1] text-[#ea4f93]">
+                <Receipt size={19} />
+              </span>
+              <span>
+                <span className="block text-base font-extrabold text-[#3f2b3f]">Go to Checkout</span>
+                <span className="mt-1 block text-sm text-[#a88a9d]">Proceed from staff handoff to payment review.</span>
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                handleSessionAction("Customer review request can be sent after the final session handoff.")
+              }
+              className="flex min-h-24 items-start gap-4 rounded-[24px] border border-[#f2bfd4] bg-[#fff7fb] px-5 py-5 text-left transition hover:bg-[#fff2f8]"
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#f4eaff] text-[#8b5cf6]">
+                <ClipboardCheck size={19} />
+              </span>
+              <span>
+                <span className="block text-base font-extrabold text-[#3f2b3f]">Request Customer Review</span>
+                <span className="mt-1 block text-sm text-[#a88a9d]">Send the final review prompt to the customer profile.</span>
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                handleSessionAction("Completed design can now be saved to the customer history archive.")
+              }
+              className="flex min-h-24 items-start gap-4 rounded-[24px] border border-[#f2bfd4] bg-[#fff7fb] px-5 py-5 text-left transition hover:bg-[#fff2f8]"
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+                <Sparkles size={19} />
+              </span>
+              <span>
+                <span className="block text-base font-extrabold text-[#3f2b3f]">Save Design to History</span>
+                <span className="mt-1 block text-sm text-[#a88a9d]">Archive this final result to the customer profile.</span>
+              </span>
+            </button>
+
+            <button
+              type="button"
+              disabled={!canOpenComparison}
+              onClick={handleOpenComparison}
+              className={`flex min-h-24 items-start gap-4 rounded-[24px] border px-5 py-5 text-left transition ${
+                canOpenComparison
+                  ? "border-[#f2bfd4] bg-[#fff7fb] hover:bg-[#fff2f8]"
+                  : "cursor-not-allowed border-[#f4dbe7] bg-[#fffafb] opacity-70"
+              }`}
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#ffe7f1] text-[#ea4f93]">
+                <Camera size={19} />
+              </span>
+              <span>
+                <span className="block text-base font-extrabold text-[#3f2b3f]">Compare Before & After</span>
+                <span className="mt-1 block text-sm text-[#a88a9d]">Open the side-by-side transformation view after both photos are uploaded.</span>
+              </span>
+            </button>
+          </div>
+        </article>
+      </section>
+    );
+  }
+
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f9_100%)]">
 
@@ -2250,20 +2396,30 @@ export function StaffServiceSessionPage() {
                   </div>
                 </div>
 
-                {procedureStepSummary.length > 0 ? (
+                {phase === "progress" ? (
                   <div className="mt-3 rounded-[22px] border border-[#f4cfdd] bg-[linear-gradient(180deg,#fffdfd_0%,#fff8f2_100%)] px-4 py-4 shadow-[0_14px_28px_rgba(236,72,153,0.05)]">
                     <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
                       Procedure Steps
                     </p>
-                    <div className="mt-4 flex flex-col gap-4">
-                      {procedureStepSummary.map((procedure, index) => (
-                        <ProcedureTimelineStep
-                          key={procedure.id}
-                          step={procedure}
-                          isLast={index === procedureStepSummary.length - 1}
-                        />
-                      ))}
-                    </div>
+                    {isLoadingProcedures ? (
+                      <div className="mt-4 rounded-[18px] border border-[#f4dbe7] bg-white px-4 py-4 text-sm text-[#a88a9d]">
+                        Loading procedure steps...
+                      </div>
+                    ) : procedureStepSummary.length > 0 ? (
+                      <div className="mt-4 flex flex-col gap-4">
+                        {procedureStepSummary.map((procedure, index) => (
+                          <ProcedureTimelineStep
+                            key={procedure.id}
+                            step={procedure}
+                            isLast={index === procedureStepSummary.length - 1}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="mt-4 rounded-[18px] border border-[#f4dbe7] bg-white px-4 py-4 text-sm text-[#a88a9d]">
+                        {resolvedProcedureLoadError || "No procedure steps found for this booking item."}
+                      </div>
+                    )}
                   </div>
                 ) : null}
               </article>
@@ -2451,7 +2607,7 @@ export function StaffServiceSessionPage() {
                   ))}
                 </div>
 
-                {hasConfirmedDesign ? (
+                {shouldShowProcedureChecklist ? (
                   <div className="mt-5 rounded-[18px] border border-[#f2bfd4] bg-[#fff6fa] p-4">
                     <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
                       Nail Procedure

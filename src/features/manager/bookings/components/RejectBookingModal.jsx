@@ -1,6 +1,7 @@
 import { X, XCircle, Clock, User, DollarSign, AlertTriangle } from "lucide-react";
 import { useState } from "react";
-import { Modal, Spin, message, Input, Checkbox, Select } from "antd";
+import { Modal, Spin, Input, Checkbox, Select } from "antd";
+import toast from "react-hot-toast";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { rejectBooking } from "../services/bookingsService";
 
@@ -27,25 +28,25 @@ export function RejectBookingModal({
 
   const handleReject = async () => {
     if (!reason) {
-      message.warning("Please select a rejection reason");
+      toast("Please select a rejection reason", { icon: "⚠️" });
       return;
     }
 
     if (!isConfirmed) {
-      message.warning("Please confirm the rejection");
+      toast("Please confirm the rejection", { icon: "⚠️" });
       return;
     }
 
     try {
       setIsLoading(true);
       await rejectBooking(bookingId);
-      message.success("Booking rejected successfully!");
+      toast.success("Booking rejected successfully!");
       onSuccess?.();
       onClose();
       resetForm();
     } catch (err) {
       console.error("Failed to reject booking:", err);
-      message.error(err.message || "Failed to reject booking.");
+      toast.error("Failed to reject booking.");
     } finally {
       setIsLoading(false);
     }
@@ -150,7 +151,7 @@ export function RejectBookingModal({
         {/* Reason Selection */}
         <div className="space-y-2">
           <label className="text-xs font-bold uppercase tracking-wide text-[#7a6176]">
-            Rejection Reason <span className="text-[#e1447f]">*</span>
+            Rejection reason <span className="text-[#e1447f]">*</span>
           </label>
           <Select
             value={reason || undefined}
@@ -167,7 +168,7 @@ export function RejectBookingModal({
         {/* Details Field */}
         <div className="space-y-2">
           <label className="text-xs font-bold uppercase tracking-wide text-[#7a6176]">
-            Rejection Message <span className="text-[#e1447f]">*</span>
+            Rejection message <span className="text-[#e1447f]">*</span>
           </label>
           <Input.TextArea
             value={details}
@@ -215,23 +216,24 @@ export function RejectBookingModal({
           <button
             type="button"
             onClick={handleClose}
-            className="flex-1 rounded-full border border-[#f4c1d8] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93] transition hover:bg-[#fff7fb] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 rounded-full border border-[#e3e3e3] bg-white px-4 py-2.5 text-xs font-bold text-[#6b6b6b] transition hover:bg-[#f9f9f9] disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isLoading}
           >
             <X size={14} className="inline mr-2" />
             Cancel
           </button>
+          <div className="w-2"></div>
           <button
             type="button"
             onClick={handleReject}
-            className="flex-1 rounded-full bg-[#e1447f] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#c9366b] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="flex-1 rounded-full border border-[#e1447f] bg-white px-4 py-2.5 text-xs font-bold text-[#e1447f] transition hover:bg-[#fff4f8] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             disabled={isLoading || !reason || !details || !isConfirmed}
           >
             {isLoading && <Spin size="small" />}
             {isLoading ? "Rejecting..." : (
               <>
                 <XCircle size={14} />
-                Reject Booking
+                Reject booking
               </>
             )}
           </button>

@@ -23,6 +23,35 @@ function unwrapResponse(response, fallbackMessage) {
   return payload.data;
 }
 
+function extractPaginationMeta(data, fallbackPageSize) {
+  const metaData = data?.metaData ?? data?.pagination ?? data ?? {};
+  const totalItems =
+    Number(metaData?.totalItems ?? metaData?.totalCount ?? metaData?.count ?? metaData?.total ?? 0) || 0;
+  const currentPage =
+    Number(metaData?.currentPage ?? metaData?.pageNumber ?? metaData?.pageIndex ?? 1) || 1;
+  const pageSize =
+    Number(metaData?.pageSize ?? metaData?.limit ?? fallbackPageSize ?? 10) || fallbackPageSize || 10;
+  const inferredTotalPages =
+    pageSize > 0 ? Math.max(1, Math.ceil(totalItems / pageSize)) : 1;
+  const totalPages =
+    Number(metaData?.totalPages ?? metaData?.pageCount ?? inferredTotalPages) || inferredTotalPages;
+  const firstRowOnPage =
+    Number(metaData?.firstRowOnPage || (totalItems > 0 ? (currentPage - 1) * pageSize + 1 : 0)) || 0;
+  const lastRowOnPage =
+    Number(metaData?.lastRowOnPage || Math.min(totalItems, currentPage * pageSize)) || 0;
+
+  return {
+    currentPage,
+    totalPages: Math.max(1, totalPages),
+    pageSize,
+    totalItems,
+    hasPrevious: currentPage > 1,
+    hasNext: currentPage < Math.max(1, totalPages),
+    firstRowOnPage,
+    lastRowOnPage,
+  };
+}
+
 export function getStaffArtistId() {
   const session = loadAuthSession();
   const artistId = session?.user?.staffId || session?.staffId || session?.user?.id || session?.userId;
@@ -42,6 +71,7 @@ export async function fetchStaffBookings(filters = {}) {
   const artistId = getStaffArtistId();
   const {
     endDate,
+    includePagination = false,
     pageNumber,
     pageSize,
     search,
@@ -61,16 +91,20 @@ export async function fetchStaffBookings(filters = {}) {
   });
 
   const data = unwrapResponse(response, "Failed to load assigned bookings.");
+  const items = Array.isArray(data)
+    ? data
+    : Array.isArray(data?.items)
+      ? data.items
+      : [];
 
-  if (Array.isArray(data)) {
-    return data;
+  if (includePagination) {
+    return {
+      items,
+      pagination: extractPaginationMeta(data, pageSize),
+    };
   }
 
-  if (Array.isArray(data?.items)) {
-    return data.items;
-  }
-
-  return [];
+  return items;
 }
 
 export async function fetchServiceCatalog(filters = {}) {

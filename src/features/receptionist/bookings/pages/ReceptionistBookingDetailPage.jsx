@@ -17,10 +17,11 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { Link, useParams } from "react-router-dom";
-import { ROUTES } from "../../../../shared/constants/routes";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { ROUTES, getReceptionistBookingCheckoutRoute } from "../../../../shared/constants/routes";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 import {
+  checkoutReceptionistBooking,
   fetchReceptionistBookingDetail,
   fetchReceptionistCustomerDetail,
   manualCheckInReceptionistBooking,
@@ -151,7 +152,29 @@ function getProgressPercent(booking) {
 }
 
 function canManualCheckIn(status) {
-  return !["CheckedIn", "Completed", "Cancelled"].includes(status);
+  return !["CheckedIn", "Completed", "ServiceCompleted", "Cancelled"].includes(status);
+}
+
+function normalizeBookingStatus(status) {
+  return String(status || "").trim().toLowerCase();
+}
+
+function getReceptionistActionAvailability(status) {
+  const normalizedStatus = normalizeBookingStatus(status);
+
+  return {
+    canCheckIn: ["pending", "confirmed"].includes(normalizedStatus),
+    canStartService: normalizedStatus === "checkedin",
+    canReassignArtist: ["pending", "confirmed", "checkedin"].includes(normalizedStatus),
+    canMoveSchedule: ["pending", "confirmed"].includes(normalizedStatus),
+    canAddService: ["checkedin", "in progress", "inprogress"].includes(normalizedStatus),
+    canCompleteBooking: ["in progress", "inprogress"].includes(normalizedStatus),
+    canCancelBooking: ["pending", "confirmed"].includes(normalizedStatus),
+    canSendInvoice: ["servicecompleted", "completed"].includes(normalizedStatus),
+    canCheckout: normalizedStatus === "servicecompleted",
+    canAddPayment: normalizedStatus === "servicecompleted",
+    canPrintReceipt: ["servicecompleted", "completed"].includes(normalizedStatus),
+  };
 }
 
 function DetailCard({ title, subtitle, badge, children, className = "" }) {
@@ -236,12 +259,14 @@ const ACTION_CENTER = [
 
 export function ReceptionistBookingDetailPage() {
   const { bookingId } = useParams();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [booking, setBooking] = useState(null);
   const [customerProfile, setCustomerProfile] = useState(null);
   const [isQrOpen, setIsQrOpen] = useState(false);
   const [isManualCheckInSubmitting, setIsManualCheckInSubmitting] = useState(false);
+  const [isCheckoutSubmitting, setIsCheckoutSubmitting] = useState(false);
   const [notes, setNotes] = useState(
     "Customer notes not available from API yet. Use this area for receptionist-only reminders.",
   );
@@ -315,6 +340,15 @@ export function ReceptionistBookingDetailPage() {
   const remainingBalance = totalAmount;
   const progressPercent = getProgressPercent(booking);
   const isManualCheckInAllowed = canManualCheckIn(booking?.status);
+  const actionAvailability = useMemo(
+    () => getReceptionistActionAvailability(booking?.status),
+    [booking?.status],
+  );
+  const primaryHeaderAction = actionAvailability.canCheckout ? "Checkout" : "Check In";
+  const isPrimaryHeaderActionDisabled =
+    actionAvailability.canCheckout
+      ? isCheckoutSubmitting
+      : !isManualCheckInAllowed || isManualCheckInSubmitting;
 
   const serviceColumns = useMemo(() => ([
     {
@@ -451,6 +485,125 @@ export function ReceptionistBookingDetailPage() {
     }
   };
 
+  const handleCheckout = async () => {
+    if (!bookingId || !actionAvailability.canCheckout || isCheckoutSubmitting) {
+      return;
+    }
+
+    setIsCheckoutSubmitting(true);
+
+    try {
+      const updatedBooking = await checkoutReceptionistBooking(bookingId);
+      setBooking(updatedBooking);
+      toast.success("Checkout completed successfully.");
+      navigate(getReceptionistBookingCheckoutRoute(bookingId), {
+        state: {
+          booking: updatedBooking,
+          customerProfile,
+        },
+      });
+    } catch (actionError) {
+      const message =
+        actionError instanceof Error ? actionError.message : "Failed to check out booking.";
+      toast.error(message);
+    } finally {
+      setIsCheckoutSubmitting(false);
+    }
+  };
+
+  const handlePrimaryHeaderAction = async () => {
+    if (actionAvailability.canCheckout) {
+      await handleCheckout();
+      return;
+    }
+
+    await handleManualCheckIn();
+  };
+
+  const receptionistActionCenterItems = useMemo(
+    () => [
+      {
+        label: actionAvailability.canCheckout ? "Checkout" : "Check In",
+        subtitle: actionAvailability.canCheckout ? "Collect payment and finalize" : "Manual arrival check-in",
+        icon: actionAvailability.canCheckout ? CreditCard : SquareCheckBig,
+        cardTone: "bg-[linear-gradient(180deg,#fff1f6_0%,#ffe6f0_100%)]",
+        iconTone: "bg-[#ffdcea] text-[#eb5b92]",
+        disabled: !(actionAvailability.canCheckIn || actionAvailability.canCheckout),
+        loading:
+          actionAvailability.canCheckout ? isCheckoutSubmitting : isManualCheckInSubmitting,
+        onClick: () => void handlePrimaryHeaderAction(),
+      },
+      {
+        label: "Start Service",
+        subtitle: "Begin session",
+        icon: Sparkles,
+        cardTone: "bg-[linear-gradient(180deg,#f2edff_0%,#e9e1ff_100%)]",
+        iconTone: "bg-[#dfd1ff] text-[#8160df]",
+        disabled: !actionAvailability.canStartService,
+        onClick: () => handleMockAction("Start Service"),
+      },
+      {
+        label: "Reassign Artist",
+        subtitle: "Change staff",
+        icon: UserRound,
+        cardTone: "bg-[linear-gradient(180deg,#fff8df_0%,#fff0bf_100%)]",
+        iconTone: "bg-[#ffe6a1] text-[#d8a01c]",
+        disabled: !actionAvailability.canReassignArtist,
+        onClick: () => handleMockAction("Reassign Artist"),
+      },
+      {
+        label: "Move Schedule",
+        subtitle: "Reschedule time",
+        icon: CalendarClock,
+        cardTone: "bg-[linear-gradient(180deg,#ebf7ff_0%,#dff1ff_100%)]",
+        iconTone: "bg-[#cfe8fb] text-[#4391c9]",
+        disabled: !actionAvailability.canMoveSchedule,
+        onClick: () => handleMockAction("Move Schedule"),
+      },
+      {
+        label: "Add Service",
+        subtitle: "Extra treatment",
+        icon: Sparkles,
+        cardTone: "bg-[linear-gradient(180deg,#e6f8ef_0%,#d8f2e5_100%)]",
+        iconTone: "bg-[#cdeedb] text-[#2da466]",
+        disabled: !actionAvailability.canAddService,
+        onClick: () => handleMockAction("Add Service"),
+      },
+      {
+        label: "Complete Booking",
+        subtitle: "Finalize session",
+        icon: CheckCircle2,
+        cardTone: "bg-[linear-gradient(180deg,#f2edff_0%,#ebe3ff_100%)]",
+        iconTone: "bg-[#ddd2ff] text-[#8260df]",
+        disabled: !actionAvailability.canCompleteBooking,
+        onClick: () => handleMockAction("Complete Booking"),
+      },
+      {
+        label: "Cancel Booking",
+        subtitle: "Void appointment",
+        icon: XCircle,
+        cardTone: "bg-[linear-gradient(180deg,#fff1f1_0%,#ffe9e9_100%)]",
+        iconTone: "bg-[#ffd8d8] text-[#ef6b6b]",
+        disabled: !actionAvailability.canCancelBooking,
+        onClick: () => handleMockAction("Cancel Booking"),
+      },
+      {
+        label: "Send Invoice",
+        subtitle: "Email to client",
+        icon: ReceiptText,
+        cardTone: "bg-[linear-gradient(180deg,#fff9eb_0%,#fff2cd_100%)]",
+        iconTone: "bg-[#ffe7ae] text-[#d19a15]",
+        disabled: !actionAvailability.canSendInvoice,
+        onClick: () => handleMockAction("Send Invoice"),
+      },
+    ],
+    [
+      actionAvailability,
+      isCheckoutSubmitting,
+      isManualCheckInSubmitting,
+    ],
+  );
+
   if (isLoading) {
     return (
       <section className="flex min-h-[50vh] items-center justify-center rounded-[24px] bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
@@ -506,16 +659,16 @@ export function ReceptionistBookingDetailPage() {
             </button>
             <button
               type="button"
-              onClick={() => void handleManualCheckIn()}
-              disabled={!isManualCheckInAllowed || isManualCheckInSubmitting}
+              onClick={() => void handlePrimaryHeaderAction()}
+              disabled={isPrimaryHeaderActionDisabled}
               className="inline-flex items-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isManualCheckInSubmitting ? (
+              {isManualCheckInSubmitting || isCheckoutSubmitting ? (
                 <LoaderCircle size={14} className="animate-spin" />
               ) : (
                 <SquareCheckBig size={14} />
               )}
-              Check In
+              {primaryHeaderAction}
             </button>
           </div>
         </div>
@@ -694,7 +847,8 @@ export function ReceptionistBookingDetailPage() {
                 <button
                   type="button"
                   onClick={() => handleMockAction("Add Payment")}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(90deg,#cf3d82_0%,#ef5b92_100%)] px-4 py-3 text-xs font-extrabold text-white shadow-[0_12px_24px_rgba(235,91,146,0.22)]"
+                  disabled={!actionAvailability.canAddPayment}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(90deg,#cf3d82_0%,#ef5b92_100%)] px-4 py-3 text-xs font-extrabold text-white shadow-[0_12px_24px_rgba(235,91,146,0.22)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <CreditCard size={14} />
                   Add Payment
@@ -702,7 +856,8 @@ export function ReceptionistBookingDetailPage() {
                 <button
                   type="button"
                   onClick={() => handleMockAction("Print Receipt")}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#f3d7e2] bg-[#fff3f8] px-4 py-3 text-xs font-extrabold text-[#eb5b92]"
+                  disabled={!actionAvailability.canPrintReceipt}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#f3d7e2] bg-[#fff3f8] px-4 py-3 text-xs font-extrabold text-[#eb5b92] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <Printer size={14} />
                   Print Receipt
@@ -716,26 +871,19 @@ export function ReceptionistBookingDetailPage() {
             subtitle="Quick operational controls for this booking"
           >
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {ACTION_CENTER.map((item) => {
+              {receptionistActionCenterItems.map((item) => {
                 const Icon = item.icon;
 
                 return (
                   <button
                     key={item.label}
                     type="button"
-                    onClick={() => {
-                      if (item.label === "Check In") {
-                        void handleManualCheckIn();
-                        return;
-                      }
-
-                      handleMockAction(item.label);
-                    }}
-                    disabled={item.label === "Check In" && (!isManualCheckInAllowed || isManualCheckInSubmitting)}
+                    onClick={item.onClick}
+                    disabled={item.disabled || item.loading}
                     className={`rounded-[18px] border border-[#f0d8e2] px-4 py-4 text-center shadow-[0_10px_22px_rgba(236,72,153,0.04)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 ${item.cardTone}`}
                   >
                     <span className={`mx-auto flex h-11 w-11 items-center justify-center rounded-2xl ${item.iconTone}`}>
-                      <Icon size={18} />
+                      {item.loading ? <LoaderCircle size={18} className="animate-spin" /> : <Icon size={18} />}
                     </span>
                     <p className="mt-3 text-xs font-extrabold text-[#4a3741]">{item.label}</p>
                     <p className="mt-1 text-[10px] text-[#9f8896]">{item.subtitle}</p>
@@ -755,7 +903,7 @@ export function ReceptionistBookingDetailPage() {
                 ["Chair Number", "--"],
                 ["Remaining Time", booking.totalDuration ? formatDurationMinutes(booking.totalDuration) : "--"],
                 ["Est. Finish", "--"],
-                ["Check-in Time", booking.status === "CheckedIn" ? formatTime(booking.startTime) : "--"],
+                ["Check-in Time", ["CheckedIn", "In Progress", "ServiceCompleted", "Completed"].includes(String(booking.status || "")) ? formatTime(booking.startTime) : "--"],
               ].map(([label, value], index) => (
                 <div key={label} className="flex items-center justify-between gap-3">
                   <span className="text-[#8f7b88]">{label}</span>

@@ -1,0 +1,27 @@
+name: Lint Code
+
+# Bot này sẽ chạy khi nào?
+on:
+  push: # 1. Khi có ai đó push code lên
+    branches: ["main", "develop"] # chỉ trên nhánh main và develop
+  pull_request: # 2. Khi có ai đó tạo Pull Request
+    branches: ["main", "develop"] # nhắm vào nhánh main và develop
+
+# Các bước nó sẽ làm:
+jobs:
+  build:
+    runs-on: ubuntu-latest # Dùng một máy chủ ảo Ubuntu
+    steps:
+      - uses: actions/checkout@v4 # 1. Lấy code của bạn về
+      
+      - name: Use Node.js
+        uses: actions/setup-node@v4 # 2. Cài đặt Node.js
+        with:
+          node-version: "20" # Dùng Node.js phiên bản 20
+          cache: "npm" # Lưu lại cache npm cho nhanh
+
+      - name: Install dependencies
+        run: npm install # 3. Chạy 'npm install'
+
+      - name: Run linter  # 4. Chạy 'npm run lint' (giống hệt bạn chạy ở máy)
+        run: npm run lint
