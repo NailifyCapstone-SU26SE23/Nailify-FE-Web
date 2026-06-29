@@ -64,6 +64,9 @@ export const ROUTES = {
   adminCategoryTypes: "/admin/category-types",
   adminCategoryTypesCreate: "/admin/category-types/create",
   adminCategoryTypeDetail: "/admin/category-types/:categoryTypeId",
+  adminSkillTypes: "/admin/skill-types",
+  adminSkillTypesCreate: "/admin/skill-types/create",
+  adminSkillTypeDetail: "/admin/skill-types/:skillTypeId",
   adminCategories: "/admin/categories",
   adminCategoriesCreate: "/admin/categories/create",
   adminCategoryDetail: "/admin/categories/:categoryId",
@@ -101,6 +104,7 @@ export const getAdminNailSurfaceDetailRoute = (surfaceId) => `/admin/nail-surfac
 export const getAdminComponentDetailRoute = (componentId) => `/admin/components/${componentId}`;
 export const getAdminProcedureDetailRoute = (procedureId) => `/admin/procedures/${procedureId}`;
 export const getAdminCategoryTypeDetailRoute = (categoryTypeId) => `/admin/category-types/${categoryTypeId}`;
+export const getAdminSkillTypeDetailRoute = (skillTypeId) => `/admin/skill-types/${skillTypeId}`;
 export const getAdminCategoryDetailRoute = (categoryId) => `/admin/categories/${categoryId}`;
 export const getAdminNailDesignCategoriesRoute = () => "/admin/nail-designs/categories";
 export const getAdminNailDesignDetailRoute = (designId) =>
