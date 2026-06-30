@@ -13,8 +13,7 @@ function getStaffDisplayName(staff) {
 }
 
 function getStaffKey(staff) {
-  // ✅ FIX: Ưu tiên staffId theo đúng response API (ảnh 2)
-  return staff?.staffId || staff?.staffArtistId || staff?.id || "";
+  return staff?.staffId || staff?.staffArtistId || staff?.userId || staff?.id || "";
 }
 
 function getStaffInitials(staff) {
@@ -60,7 +59,13 @@ export function AssignArtistModal({
         setSelectedStaff(null);
         const staff = await fetchSalonStaff(normalizedSalonId);
         if (isCancelled) return;
-        setStaffList(Array.isArray(staff) ? staff : []);
+        const artists = (staff || []).filter(
+          (member) =>
+            member.role === "Staff_Artist" ||
+            member.role === "StaffArtist" ||
+            (member.role && member.role.toLowerCase().includes("artist"))
+        );
+        setStaffList(artists);
       } catch (err) {
         console.error("Failed to load salon staff:", err);
         toast.error("Failed to load salon staff.");
@@ -77,7 +82,7 @@ export function AssignArtistModal({
 
   const normalizedBookingId = useMemo(() => String(bookingId || "").trim(), [bookingId]);
   const selectedStaffName = selectedStaff ? getStaffDisplayName(selectedStaff) : "";
-  
+
   // Fetch slots when selectedStaff or booking changes
   useEffect(() => {
     if (!selectedStaff || !booking) {
@@ -86,19 +91,19 @@ export function AssignArtistModal({
       setSelectedSlot(null);
       return;
     }
-    
+
     const staffKey = getStaffKey(selectedStaff);
     if (!staffKey) {
       console.warn("No staffKey found in selectedStaff:", selectedStaff);
       return;
     }
-    
+
     const rawBookingDate = booking?.bookingDate || booking?.createdAt;
     if (!rawBookingDate) {
       console.warn("No booking date found in booking object!");
       return;
     }
-    
+
     // ✅ FIX: Format đúng ISO datetime mà API yêu cầu (2026-06-24T00:00:00Z)
     let isoBookingDate;
     try {
@@ -108,18 +113,18 @@ export function AssignArtistModal({
       console.error("Error formatting date:", e);
       return;
     }
-    
+
     const fetchSlots = async () => {
       setIsLoadingBusySlots(true);
       setBusySlots([]);
       setAvailableSlots([]);
       setSelectedSlot(null);
-      
+
       try {
         console.log("Calling fetchArtistBusySlots with:", { staffKey, isoBookingDate });
         const response = await fetchArtistBusySlots(staffKey, isoBookingDate);
         console.log("fetchArtistBusySlots response:", response);
-        
+
         if (response && Array.isArray(response.timeSlots)) {
           const available = response.timeSlots.filter(s => s?.isAvailable);
           const busy = response.timeSlots.filter(s => !s?.isAvailable);
@@ -142,7 +147,7 @@ export function AssignArtistModal({
         setIsLoadingBusySlots(false);
       }
     };
-    
+
     fetchSlots();
   }, [selectedStaff, booking]);
 
@@ -167,12 +172,12 @@ export function AssignArtistModal({
       const bookingDate = booking?.bookingDate || booking?.createdAt;
       // ✅ FIX: Dùng ISO format cho bookingDate
       const isoBookingDate = bookingDate ? dayjs(bookingDate).toISOString() : null;
-      
+
       await Promise.all([
         assignArtistToBookingOld(normalizedBookingId, staffKey, selectedSlotData),
         assignArtistToBooking(normalizedBookingId, staffKey, selectedSlotData, isoBookingDate, booking?.bookingItems || [])
       ]);
-      
+
       toast.success("Artist assigned successfully!");
       onSuccess?.();
       onClose();
@@ -261,13 +266,13 @@ export function AssignArtistModal({
                   Change staff
                 </button>
               </div>
-              
+
               {selectedSlotData ? (
                 <p className="text-sm font-semibold text-[#2fa25f] mb-4">
                   ✓ Selected Slot: {selectedSlotData.startTime} - {selectedSlotData.endTime}
                 </p>
               ) : null}
-              
+
               <div className="space-y-4">
                 {/* Available slots */}
                 <div>
@@ -295,11 +300,10 @@ export function AssignArtistModal({
                                 endTime: slot.endTime
                               });
                             }}
-                            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold transition-all ${
-                              isSelected
-                                ? "bg-[#2fa25f] text-white shadow-[0_4px_12px_rgba(47,162,95,0.3)]"
-                                : "bg-[#eaf9ee] text-[#2fa25f] hover:bg-[#2fa25f] hover:text-white hover:shadow-[0_4px_12px_rgba(47,162,95,0.25)]"
-                            }`}
+                            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold transition-all ${isSelected
+                              ? "bg-[#2fa25f] text-white shadow-[0_4px_12px_rgba(47,162,95,0.3)]"
+                              : "bg-[#eaf9ee] text-[#2fa25f] hover:bg-[#2fa25f] hover:text-white hover:shadow-[0_4px_12px_rgba(47,162,95,0.25)]"
+                              }`}
                           >
                             <Clock size={10} />
                             {`${slot.startTime} - ${slot.endTime}`}
@@ -311,7 +315,7 @@ export function AssignArtistModal({
                     <p className="text-xs text-[#c08aa4]">No available slots found for this date.</p>
                   )}
                 </div>
-                
+
                 {/* Busy slots */}
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wider text-[#b06484] mb-3 flex items-center gap-1.5">
@@ -342,7 +346,7 @@ export function AssignArtistModal({
             </>
           )}
         </div>
-        
+
         {!selectedStaff && (
           isLoadingStaff ? (
             <div className="flex items-center justify-center py-8">

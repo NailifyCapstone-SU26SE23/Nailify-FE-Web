@@ -14,10 +14,11 @@ function getAuthHeaders() {
 }
 
 function getSalonId() {
-  const salonId = import.meta.env.VITE_RECEPTIONIST_SALON_ID?.trim();
+  const session = loadAuthSession();
+  const salonId = session?.user?.salonId || session?.salonId;
 
   if (!salonId) {
-    throw new Error("Missing VITE_RECEPTIONIST_SALON_ID in .env");
+    throw new Error("Salon ID is not available in the current account profile.");
   }
 
   return salonId;
