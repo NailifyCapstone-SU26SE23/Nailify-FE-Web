@@ -242,6 +242,156 @@ export async function fetchStaffNailVariantDetail(variantId) {
   };
 }
 
+export async function fetchStaffCustomerNailDetail(customerNailId) {
+  const normalizedCustomerNailId = Number(customerNailId || 0);
+
+  if (!Number.isInteger(normalizedCustomerNailId) || normalizedCustomerNailId <= 0) {
+    throw new Error("Customer nail ID is required.");
+  }
+
+  const response = await axiosClient.get(`/CustomerNails/${normalizedCustomerNailId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  const data = unwrapResponse(response, "Failed to load customer nail detail.");
+  const normalizedCustomerNailComponents = Array.isArray(data?.customerNailComponents)
+    ? data.customerNailComponents.map((item) => ({
+      nailComponentId: Number(item?.customerNailComponentId || 0),
+      customerNailComponentId: Number(item?.customerNailComponentId || 0),
+      customerNailId: Number(item?.customerNailId || 0),
+      componentId: Number(item?.componentId || 0),
+      customerComponentId: Number(item?.customerComponentId || 0),
+      fingerIndex: Number(item?.fingerIndex || 0),
+      posX: Number(item?.posX || 0),
+      posY: Number(item?.posY || 0),
+      configJson: String(item?.configJson || "").trim(),
+      component: item?.component
+        ? {
+          componentId: Number(item.component.componentId || 0),
+          name: String(item.component.name || "").trim() || "--",
+          imageUrl: String(item.component.imageUrl || "").trim(),
+          componentType: String(item.component.componentType || "").trim() || "--",
+          price: Number(item.component.price || 0),
+          duration: Number(item.component.duration || 0),
+        }
+        : item?.customerComponent
+          ? {
+            componentId: Number(item.customerComponent.customerComponentId || 0),
+            name: String(item.customerComponent.name || "").trim() || "--",
+            imageUrl: String(item.customerComponent.imageUrl || "").trim(),
+            componentType: String(item.customerComponent.componentType || "").trim() || "--",
+            price: 0,
+            duration: 0,
+          }
+          : null,
+      customerComponent: item?.customerComponent
+        ? {
+          customerComponentId: Number(item.customerComponent.customerComponentId || 0),
+          userId: String(item.customerComponent.userId || "").trim(),
+          name: String(item.customerComponent.name || "").trim() || "--",
+          imageUrl: String(item.customerComponent.imageUrl || "").trim(),
+          componentType: String(item.customerComponent.componentType || "").trim() || "--",
+          createdAt: String(item.customerComponent.createdAt || "").trim(),
+          isPublic: Boolean(item.customerComponent.isPublic),
+        }
+        : null,
+    }))
+    : [];
+
+  return {
+    detailType: "customerNail",
+    customerNailId: Number(data?.customerNailId || 0),
+    nailVariantId: Number(data?.basedOnNailVariant?.nailVariantId || data?.basedOnNailVariantId || data?.customerNailId || 0),
+    nailDesignId: Number(data?.basedOnNailVariant?.nailDesignId || 0),
+    userId: String(data?.userId || "").trim(),
+    name: String(data?.name || "").trim() || "--",
+    imageUrl: String(data?.imageUrl || "").trim(),
+    nailShapeId: Number(data?.nailShapeId || 0),
+    nailSurfaceId: Number(data?.nailSurfaceId || 0),
+    price: Number(data?.price || 0),
+    priceLabel: formatCurrency(data?.price || 0),
+    customColor: String(data?.customColor || "").trim(),
+    colorJson: String(data?.basedOnNailVariant?.colorJson || data?.customColor || "").trim(),
+    duration: Number(data?.duration || 0),
+    durationLabel: formatDurationMinutes(Number(data?.duration || 0)),
+    createdAt: String(data?.createdAt || "").trim(),
+    isPublic: Boolean(data?.isPublic),
+    basedOnNailVariantId: Number(data?.basedOnNailVariantId || 0),
+    status: String(data?.status || "").trim() || "--",
+    nailShape: data?.nailShape
+      ? {
+        nailShapeId: Number(data.nailShape.nailShapeId || 0),
+        name: String(data.nailShape.name || "").trim() || "--",
+        imageUrl: String(data.nailShape.imageUrl || "").trim(),
+        price: Number(data.nailShape.price || 0),
+        duration: Number(data.nailShape.duration || 0),
+      }
+      : null,
+    nailSurface: data?.nailSurface
+      ? {
+        nailSurfaceId: Number(data.nailSurface.nailSurfaceId || 0),
+        name: String(data.nailSurface.name || "").trim() || "--",
+        shaderParam: String(data.nailSurface.shaderParam || "").trim(),
+        price: Number(data.nailSurface.price || 0),
+        duration: Number(data.nailSurface.duration || 0),
+      }
+      : null,
+    basedOnNailVariant: data?.basedOnNailVariant
+      ? {
+        nailVariantId: Number(data.basedOnNailVariant.nailVariantId || 0),
+        name: String(data.basedOnNailVariant.name || "").trim() || "--",
+        nailShapeId: Number(data.basedOnNailVariant.nailShapeId || 0),
+        nailSurfaceId: Number(data.basedOnNailVariant.nailSurfaceId || 0),
+        nailDesignId: Number(data.basedOnNailVariant.nailDesignId || 0),
+        price: Number(data.basedOnNailVariant.price || 0),
+        duration: Number(data.basedOnNailVariant.duration || 0),
+        imageUrl: String(data.basedOnNailVariant.imageUrl || "").trim(),
+        colorJson: String(data.basedOnNailVariant.colorJson || "").trim(),
+        nailShape: data.basedOnNailVariant.nailShape
+          ? {
+            nailShapeId: Number(data.basedOnNailVariant.nailShape.nailShapeId || 0),
+            name: String(data.basedOnNailVariant.nailShape.name || "").trim() || "--",
+            imageUrl: String(data.basedOnNailVariant.nailShape.imageUrl || "").trim(),
+            price: Number(data.basedOnNailVariant.nailShape.price || 0),
+            duration: Number(data.basedOnNailVariant.nailShape.duration || 0),
+          }
+          : null,
+        nailSurface: data.basedOnNailVariant.nailSurface
+          ? {
+            nailSurfaceId: Number(data.basedOnNailVariant.nailSurface.nailSurfaceId || 0),
+            name: String(data.basedOnNailVariant.nailSurface.name || "").trim() || "--",
+            shaderParam: String(data.basedOnNailVariant.nailSurface.shaderParam || "").trim(),
+            price: Number(data.basedOnNailVariant.nailSurface.price || 0),
+            duration: Number(data.basedOnNailVariant.nailSurface.duration || 0),
+          }
+          : null,
+        nailComponents: Array.isArray(data?.basedOnNailVariant?.nailComponents)
+          ? data.basedOnNailVariant.nailComponents.map((item) => ({
+            nailComponentId: Number(item?.nailComponentId || 0),
+            componentId: Number(item?.componentId || 0),
+            fingerIndex: Number(item?.fingerIndex || 0),
+            posX: Number(item?.posX || 0),
+            posY: Number(item?.posY || 0),
+            configJson: String(item?.configJson || "").trim(),
+            component: item?.component
+              ? {
+                componentId: Number(item.component.componentId || 0),
+                name: String(item.component.name || "").trim() || "--",
+                imageUrl: String(item.component.imageUrl || "").trim(),
+                componentType: String(item.component.componentType || "").trim() || "--",
+                price: Number(item.component.price || 0),
+                duration: Number(item.component.duration || 0),
+              }
+              : null,
+          }))
+          : [],
+      }
+      : null,
+    nailComponents: normalizedCustomerNailComponents,
+    customerNailComponents: normalizedCustomerNailComponents,
+  };
+}
+
 export async function fetchStaffCustomerDetail(userId) {
   const normalizedUserId = String(userId || "").trim();
 
@@ -472,7 +622,7 @@ export function formatBookingCode(bookingId) {
   return `BK-${normalized.slice(0, 8).toUpperCase()}`;
 }
 
-function buildServiceSessionBreakdown(items = [], fallbackDurationValue = 0) {
+function buildServiceSessionBreakdown(items = []) {
   const normalizedItems = Array.isArray(items) ? items : [];
   const serviceRows = normalizedItems
     .map((item, index) => {
@@ -500,8 +650,6 @@ function buildServiceSessionBreakdown(items = [], fallbackDurationValue = 0) {
   if (serviceRows.length > 0) {
     return serviceRows;
   }
-
-  const fallbackDuration = parseDurationMinutes(fallbackDurationValue);
 
   return [];
 }
@@ -533,7 +681,7 @@ export function buildStaffServiceSessionPayload(booking, options = {}) {
   const estimatedDuration =
     booking?.duration ||
     (booking?.totalDuration ? formatDurationMinutes(booking.totalDuration) : "--");
-  const serviceBreakdown = buildServiceSessionBreakdown(items, booking?.totalDuration || booking?.duration);
+  const serviceBreakdown = buildServiceSessionBreakdown(items);
   const appointmentStartTime = booking?.bookingTime || formatTimeValue(booking?.startTime);
   const estimatedFinishTime = formatAppointmentEndTime(appointmentStartTime, booking?.totalDuration || booking?.duration);
   const totalPriceLabel =

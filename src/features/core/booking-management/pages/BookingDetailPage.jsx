@@ -19,11 +19,12 @@ import {
   getStaffBookingDesignStudioRoute,
   getStaffBookingServiceSessionRoute,
 } from "../../../../shared/constants/routes";
-import { confirmCurrentDesign, setActiveBooking } from "../../../../store/bookingSlice";
+import { confirmCurrentDesign, confirmCustomerNail, setActiveBooking } from "../../../../store/bookingSlice";
 import {
   buildStaffServiceSessionPayload,
   fetchServiceCatalog,
   fetchStaffBookingDetail,
+  fetchStaffCustomerNailDetail,
   fetchStaffCustomerDetail,
   fetchStaffNailVariantDetail,
   formatBookingCode,
@@ -115,6 +116,15 @@ function getPrimaryNailVariantId(bookingItems) {
   return Number(matchedItem?.nailVariantId || 0);
 }
 
+function getPrimaryCustomerNailId(bookingItems) {
+  const matchedItem = (Array.isArray(bookingItems) ? bookingItems : []).find((item) => {
+    const customerNailId = Number(item?.customerNailId || 0);
+    return Number.isInteger(customerNailId) && customerNailId > 0;
+  });
+
+  return Number(matchedItem?.customerNailId || 0);
+}
+
 function buildDefaultStaffNotes(booking) {
   const serviceNames = getUniqueBookingLabels(
     (booking?.bookingItems ?? []).map((item) => item?.serviceName),
@@ -136,7 +146,13 @@ function buildDefaultStaffNotes(booking) {
   ];
 }
 
-function buildStaffExperienceFromBooking(booking, staffNotesDraft, nailVariantDetail, customerDetail) {
+function buildStaffExperienceFromBooking(
+  booking,
+  staffNotesDraft,
+  nailVariantDetail,
+  customerNailDetail,
+  customerDetail,
+) {
   const items = booking?.bookingItems ?? [];
   const normalizedItems = items.map((item) => ({
     ...item,
@@ -190,7 +206,26 @@ function buildStaffExperienceFromBooking(booking, staffNotesDraft, nailVariantDe
   const fullSelectionSummary =
     selectedItemLabels.length > 0 ? selectedItemLabels.join("\n") : primaryServiceLabel;
   const serviceSummary = serviceNames.length ? serviceNames.join(", ") : "--";
+  const resolvedDesignDetail = customerNailDetail || nailVariantDetail;
+  const detailType = resolvedDesignDetail?.detailType || (customerNailDetail ? "customerNail" : "variant");
+  const resolvedShape =
+    customerNailDetail?.nailShape ||
+    customerNailDetail?.basedOnNailVariant?.nailShape ||
+    nailVariantDetail?.nailShape ||
+    null;
+  const resolvedSurface =
+    customerNailDetail?.nailSurface ||
+    customerNailDetail?.basedOnNailVariant?.nailSurface ||
+    nailVariantDetail?.nailSurface ||
+    null;
+  const resolvedComponents =
+    detailType === "customerNail"
+      ? customerNailDetail?.customerNailComponents?.length
+        ? customerNailDetail.customerNailComponents
+        : customerNailDetail?.basedOnNailVariant?.nailComponents || []
+      : nailVariantDetail?.nailComponents || [];
   const designImage =
+    customerNailDetail?.imageUrl ||
     nailVariantDetail?.imageUrl ||
     primaryDesignItem?.nailVariantImageUrl ||
     primaryDesignItem?.customerNailImageUrl ||
@@ -201,13 +236,17 @@ function buildStaffExperienceFromBooking(booking, staffNotesDraft, nailVariantDe
     customerDesignNames[0] ||
     variantNames[0] ||
     "Selected design not specified";
-  const resolvedVariantName = nailVariantDetail?.name || variantNames[0] || "--";
-  const resolvedDesignImage = nailVariantDetail?.imageUrl || designImage;
-  const componentSummary = nailVariantDetail?.nailComponents?.length
-    ? nailVariantDetail.nailComponents
+  const resolvedVariantName =
+    resolvedDesignDetail?.name || customerDesignNames[0] || variantNames[0] || "--";
+  const resolvedDesignImage = resolvedDesignDetail?.imageUrl || designImage;
+  const hasCustomerNailSelected = Boolean(
+    normalizedItems.some((item) => Number(item?.customerNailId || 0) > 0),
+  );
+  const componentSummary = resolvedComponents?.length
+    ? resolvedComponents
       .map((item) => item?.component?.name)
       .filter(Boolean)
-      .join(", ") || `${nailVariantDetail.nailComponents.length} component(s)`
+      .join(", ") || `${resolvedComponents.length} component(s)`
     : "--";
   const customerDisplayName =
     customerDetail?.fullName ||
@@ -276,13 +315,13 @@ function buildStaffExperienceFromBooking(booking, staffNotesDraft, nailVariantDe
       },
     ],
     design: {
-      name: nailVariantDetail?.name || requestedDesign,
+      name: resolvedDesignDetail?.name || requestedDesign,
       image: resolvedDesignImage,
       details: [
         { label: "Service", value: serviceSummary },
         { label: "Variant", value: resolvedVariantName },
-        { label: "Shape", value: nailVariantDetail?.nailShape?.name || "--" },
-        { label: "Surface", value: nailVariantDetail?.nailSurface?.name || "--" },
+        { label: "Shape", value: resolvedShape?.name || "--" },
+        { label: "Surface", value: resolvedSurface?.name || "--" },
         { label: "Customer Design", value: customerDesignNames[0] || "--" },
         { label: "Duration", value: timeRange },
         { label: "Price", value: formatCurrency(booking?.totalPrice) },
@@ -292,20 +331,28 @@ function buildStaffExperienceFromBooking(booking, staffNotesDraft, nailVariantDe
         { label: booking?.status || "Pending", className: "border-[#f4cada] bg-[#fff6fa] text-[#ea4f93]" },
         { label: booking?.salonName || "Salon", className: "border-[#d8cbff] bg-[#f6f2ff] text-[#8c63ef]" },
       ],
-      variantDetail: nailVariantDetail
+      variantDetail: resolvedDesignDetail
         ? {
-          nailVariantId: nailVariantDetail.nailVariantId,
-          name: nailVariantDetail.name,
-          nailShapeId: nailVariantDetail.nailShape?.nailShapeId || nailVariantDetail.nailShapeId || 0,
-          nailSurfaceId: nailVariantDetail.nailSurface?.nailSurfaceId || nailVariantDetail.nailSurfaceId || 0,
-          nailDesignId: nailVariantDetail.nailDesignId || 0,
-          price: nailVariantDetail.price,
-          duration: nailVariantDetail.duration,
-          imageUrl: nailVariantDetail.imageUrl || resolvedDesignImage,
-          colorJson: nailVariantDetail.colorJson || "",
-          nailShape: nailVariantDetail.nailShape,
-          nailSurface: nailVariantDetail.nailSurface,
-          nailComponents: nailVariantDetail.nailComponents || [],
+          ...resolvedDesignDetail,
+          detailType,
+          imageUrl: resolvedDesignImage,
+          name: resolvedDesignDetail.name || requestedDesign,
+          nailVariantId:
+            resolvedDesignDetail.nailVariantId ||
+            customerNailDetail?.basedOnNailVariantId ||
+            customerNailDetail?.customerNailId ||
+            0,
+          nailDesignId:
+            resolvedDesignDetail.nailDesignId ||
+            customerNailDetail?.basedOnNailVariant?.nailDesignId ||
+            0,
+          colorJson:
+            resolvedDesignDetail.colorJson ||
+            customerNailDetail?.customColor ||
+            "",
+          nailShape: resolvedShape,
+          nailSurface: resolvedSurface,
+          nailComponents: resolvedComponents,
         }
         : null,
     },
@@ -348,6 +395,8 @@ function buildStaffExperienceFromBooking(booking, staffNotesDraft, nailVariantDe
     staffNotes: staffNotesDraft,
     checklist: [
       { label: "Booking detail loaded from API", checked: true },
+      { label: "Current nail design confirmed", checked: false },
+      ...(hasCustomerNailSelected ? [{ label: "Customer nail confirmed", checked: false }] : []),
       { label: "Artist assigned to booking", checked: Boolean(booking?.artistName) },
       {
         label: "Customer design reference available",
@@ -381,6 +430,7 @@ export function BookingDetailPage() {
   const [staffBookingDetail, setStaffBookingDetail] = useState(null);
   const [staffCustomerDetail, setStaffCustomerDetail] = useState(null);
   const [staffNailVariantDetail, setStaffNailVariantDetail] = useState(null);
+  const [staffCustomerNailDetail, setStaffCustomerNailDetail] = useState(null);
   const [isStaffLoading, setIsStaffLoading] = useState(isStaffRole);
   const [staffLoadError, setStaffLoadError] = useState("");
   const [staffNotesDraft, setStaffNotesDraft] = useState([]);
@@ -410,6 +460,9 @@ export function BookingDetailPage() {
   const isCurrentDesignConfirmed = useSelector((state) => (
     Boolean(state.booking.designConfirmations?.[normalizedBookingId])
   ));
+  const isCustomerNailConfirmed = useSelector((state) => (
+    Boolean(state.booking.customerNailConfirmations?.[normalizedBookingId])
+  ));
   const staffActionMessage = useMemo(() => {
     const action = location.state?.staffAction;
 
@@ -426,12 +479,16 @@ export function BookingDetailPage() {
   }, [isStaffRole, location.state]);
   const deleteRequested = role !== ROLES.staff && Boolean(location.state?.requestDelete);
   const normalizedStaffBookingStatus = normalizeStaffBookingStatus(staffBookingDetail?.status);
-  const hasServiceStarted = ["inprogress", "checkedin", "servicecompleted", "completed"].includes(
+  const hasServiceStarted = ["inprogress", "servicecompleted", "completed"].includes(
     normalizedStaffBookingStatus,
   );
   const isServiceCompleted = ["servicecompleted", "completed"].includes(normalizedStaffBookingStatus);
   const isServiceInProgress = hasServiceStarted && !isServiceCompleted;
-  const effectiveDesignConfirmed = isCurrentDesignConfirmed || hasServiceStarted;
+  const hasCustomerNailSelection = Boolean(getPrimaryCustomerNailId(staffBookingDetail?.bookingItems));
+  const requiresCustomerNailConfirmation = hasCustomerNailSelection;
+  const isBookingReadyForService =
+    requiresCustomerNailConfirmation ? isCustomerNailConfirmed : isCurrentDesignConfirmed;
+  const effectiveDesignConfirmed = isBookingReadyForService || hasServiceStarted;
 
   useEffect(() => {
     if (!staffActionMessage && !deleteRequested) {
@@ -497,15 +554,16 @@ export function BookingDetailPage() {
     }
 
     const customerId = String(staffBookingDetail?.customerId || "").trim();
-
-    if (!customerId) {
-      setStaffCustomerDetail(null);
-      return;
-    }
-
     let isMounted = true;
 
     const loadCustomerDetail = async () => {
+      if (!customerId) {
+        if (isMounted) {
+          setStaffCustomerDetail(null);
+        }
+        return;
+      }
+
       try {
         const detail = await fetchStaffCustomerDetail(customerId);
 
@@ -531,16 +589,53 @@ export function BookingDetailPage() {
       return;
     }
 
-    const variantId = getPrimaryNailVariantId(staffBookingDetail?.bookingItems);
+    const customerNailId = getPrimaryCustomerNailId(staffBookingDetail?.bookingItems);
+    let isMounted = true;
 
-    if (!Number.isInteger(variantId) || variantId <= 0) {
-      setStaffNailVariantDetail(null);
+    const loadCustomerNailDetail = async () => {
+      if (!Number.isInteger(customerNailId) || customerNailId <= 0) {
+        if (isMounted) {
+          setStaffCustomerNailDetail(null);
+        }
+        return;
+      }
+
+      try {
+        const detail = await fetchStaffCustomerNailDetail(customerNailId);
+
+        if (isMounted) {
+          setStaffCustomerNailDetail(detail);
+        }
+      } catch {
+        if (isMounted) {
+          setStaffCustomerNailDetail(null);
+        }
+      }
+    };
+
+    void loadCustomerNailDetail();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isStaffRole, staffBookingDetail?.bookingItems]);
+
+  useEffect(() => {
+    if (!isStaffRole) {
       return;
     }
 
+    const variantId = getPrimaryNailVariantId(staffBookingDetail?.bookingItems);
     let isMounted = true;
 
     const loadNailVariantDetail = async () => {
+      if (!Number.isInteger(variantId) || variantId <= 0) {
+        if (isMounted) {
+          setStaffNailVariantDetail(null);
+        }
+        return;
+      }
+
       try {
         const detail = await fetchStaffNailVariantDetail(variantId);
 
@@ -697,13 +792,23 @@ export function BookingDetailPage() {
   };
 
   const handleConfirmCurrentDesign = () => {
-    if (isCurrentDesignConfirmed) {
+    if (requiresCustomerNailConfirmation || isCurrentDesignConfirmed) {
       return;
     }
 
     dispatch(confirmCurrentDesign(normalizedBookingId));
     setFlashMessage("Current nail design has been confirmed for this booking.");
     toast.success("Current design confirmed for this booking.");
+  };
+
+  const handleConfirmCustomerNail = () => {
+    if (!requiresCustomerNailConfirmation || isCustomerNailConfirmed) {
+      return;
+    }
+
+    dispatch(confirmCustomerNail(normalizedBookingId));
+    setFlashMessage("Customer nail has been confirmed for this booking.");
+    toast.success("Customer nail confirmed for this booking.");
   };
 
   const handleChooseAnotherDesign = () => {
@@ -847,9 +952,10 @@ export function BookingDetailPage() {
       staffBookingDetail,
       staffNotesDraft,
       staffNailVariantDetail,
+      staffCustomerNailDetail,
       staffCustomerDetail,
     );
-    const staffExperience = isCurrentDesignConfirmed
+    const staffExperience = !requiresCustomerNailConfirmation && isCurrentDesignConfirmed
       ? {
         ...baseStaffExperience,
         design: {
@@ -862,18 +968,28 @@ export function BookingDetailPage() {
             },
           ],
         },
-        checklist: baseStaffExperience.checklist.map((item, index) => (
-          index === 0 ? { ...item, checked: true } : item
+        checklist: baseStaffExperience.checklist.map((item) => (
+          item.label === "Current nail design confirmed" ? { ...item, checked: true } : item
         )),
       }
       : baseStaffExperience;
-    const resolvedStaffExperience = effectiveDesignConfirmed
+    const staffExperienceWithCustomerNail = requiresCustomerNailConfirmation
       ? {
         ...staffExperience,
+        checklist: staffExperience.checklist.map((item) => (
+          item.label === "Customer nail confirmed"
+            ? { ...item, checked: isCustomerNailConfirmed || hasServiceStarted }
+            : item
+        )),
+      }
+      : staffExperience;
+    const resolvedStaffExperience = effectiveDesignConfirmed
+      ? {
+        ...staffExperienceWithCustomerNail,
         design: {
-          ...staffExperience.design,
+          ...staffExperienceWithCustomerNail.design,
           tags: [
-            ...staffExperience.design.tags.filter((tag) => tag.label !== "Confirmed" && tag.label !== "Completed"),
+            ...staffExperienceWithCustomerNail.design.tags.filter((tag) => tag.label !== "Confirmed" && tag.label !== "Completed"),
             {
               label: isServiceCompleted ? "Completed" : "Confirmed",
               className: isServiceCompleted
@@ -883,11 +999,15 @@ export function BookingDetailPage() {
           ],
         },
       }
-      : staffExperience;
+      : staffExperienceWithCustomerNail;
 
   const handleOpenServiceSession = () => {
-    if (!effectiveDesignConfirmed) {
-      toast.error("Confirm Current Design before starting the service session.");
+    if (!isBookingReadyForService && !hasServiceStarted) {
+      toast.error(
+        hasCustomerNailSelection
+          ? "Confirm current nail before starting the service session."
+          : "Confirm Current Design before starting the service session.",
+      );
       return;
     }
 
@@ -914,11 +1034,18 @@ export function BookingDetailPage() {
         ) : null}
         <StaffBookingConsultationDetail
           data={resolvedStaffExperience}
-          isCurrentDesignConfirmed={effectiveDesignConfirmed}
+          isCurrentDesignConfirmed={
+            requiresCustomerNailConfirmation
+              ? false
+              : isCurrentDesignConfirmed || hasServiceStarted
+          }
+          isCustomerNailConfirmed={isCustomerNailConfirmed || hasServiceStarted}
+          requiresCustomerNailConfirmation={requiresCustomerNailConfirmation}
           isServiceInProgress={isServiceInProgress}
           isServiceCompleted={isServiceCompleted}
           onChooseAnotherDesign={handleChooseAnotherDesign}
           onConfirmCurrentDesign={handleConfirmCurrentDesign}
+          onConfirmCustomerNail={handleConfirmCustomerNail}
           onDelete={handleDelete}
           onOpenDesignStudio={handleOpenDesignStudio}
           onOpenUpdateBooking={handleOpenUpdateBooking}

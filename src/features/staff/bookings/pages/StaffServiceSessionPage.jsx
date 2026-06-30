@@ -52,6 +52,9 @@ import { useDispatch, useSelector } from "react-redux";
 import { setServiceSession } from "../../../../store/serviceSessionSlice";
 import { Image } from "antd";
 
+const DEFAULT_CUSTOMER_AVATAR =
+  "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=140&q=80";
+
 function SectionTitle({ icon: Icon, title, subtitle }) {
   return (
     <div className="flex items-start gap-3">
@@ -641,15 +644,16 @@ export function StaffServiceSessionPage() {
 
   useEffect(() => {
     const customerId = String(bookingDetail?.customerId || "").trim();
-
-    if (!customerId) {
-      setCustomerDetail(null);
-      return undefined;
-    }
-
     let isMounted = true;
 
     const loadCustomerDetail = async () => {
+      if (!customerId) {
+        if (isMounted) {
+          setCustomerDetail(null);
+        }
+        return;
+      }
+
       try {
         const detail = await fetchStaffCustomerDetail(customerId);
 
@@ -694,8 +698,7 @@ export function StaffServiceSessionPage() {
       ),
       customerName: booking.customerName,
       customerPhone: booking.customerPhone,
-      customerAvatar:
-        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=140&q=80",
+      customerAvatar: DEFAULT_CUSTOMER_AVATAR,
       serviceLabel: Array.isArray(booking.services) && booking.services.length ? booking.services.join("\n") : booking.service,
       serviceBreakdown: Array.isArray(booking.bookingItems)
         ? booking.bookingItems
@@ -764,7 +767,10 @@ export function StaffServiceSessionPage() {
     const summaryEstimatedDuration = fallbackData?.estimatedDuration || payload?.estimatedDuration || "--";
     const summaryCustomerName = fallbackData?.customerName || payload?.customerName || "--";
     const summaryCustomerPhone = fallbackData?.customerPhone || payload?.customerPhone || "--";
-    const summaryCustomerAvatar = fallbackData?.customerAvatar || payload?.customerAvatar || "";
+    const summaryCustomerAvatar =
+      fallbackData?.customerAvatar ||
+      payload?.customerAvatar ||
+      DEFAULT_CUSTOMER_AVATAR;
 
     return {
       ...fallbackData,
@@ -784,22 +790,6 @@ export function StaffServiceSessionPage() {
       customerNotes: payload?.customerNotes ?? fallbackData?.customerNotes ?? [],
     };
   }, [fallbackData, payload]);
-
-  console.log("Service Session Data:", fallbackData);
-  const overviewServiceLabel = useMemo(() => {
-    const serviceText = String(data?.serviceLabel || "")
-      .split("\n")
-      .map(normalizeSessionText)
-      .filter(Boolean)
-      .join(" | ") || "--";
-    const variantText = normalizeSessionText(data?.designName);
-
-    if (variantText && variantText !== "--") {
-      return `${serviceText} | ${variantText}`;
-    }
-
-    return serviceText;
-  }, [data?.designName, data?.serviceLabel]);
   const hasConfirmedDesign = useMemo(() => {
     const normalizedDesignName = normalizeSessionText(data?.designName).toLowerCase();
 
@@ -1147,21 +1137,25 @@ export function StaffServiceSessionPage() {
   };
 
   useEffect(() => {
-    if (!sessionBookingItemKey) {
-      setIsLoadingProcedures(false);
-      return undefined;
-    }
-
-    if (loadedBookingItemIdRef.current === sessionBookingItemKey) {
-      setIsLoadingProcedures(false);
-      return undefined;
-    }
-
-    loadedBookingItemIdRef.current = sessionBookingItemKey;
-
     let isMounted = true;
 
     const loadBookingProcedures = async () => {
+      if (!sessionBookingItemKey) {
+        if (isMounted) {
+          setIsLoadingProcedures(false);
+        }
+        return;
+      }
+
+      if (loadedBookingItemIdRef.current === sessionBookingItemKey) {
+        if (isMounted) {
+          setIsLoadingProcedures(false);
+        }
+        return;
+      }
+
+      loadedBookingItemIdRef.current = sessionBookingItemKey;
+
       await reloadBookingProcedures(sessionBookingItemIds, {
         shouldApplyState: () => isMounted,
         showToast: isMounted,
@@ -1237,7 +1231,6 @@ export function StaffServiceSessionPage() {
   const canStartService = allConfirmed && Boolean(effectiveBeforePhoto);
   const canCompleteSession = displayCompletionChecks.every((item) => item.checked) && Boolean(effectiveAfterPhoto);
   const canOpenComparison = Boolean(effectiveBeforePhoto) && Boolean(effectiveAfterPhoto);
-  const serviceProgress = phase === "done" ? 100 : started ? 65 : effectiveBeforePhoto ? 35 : 0;
   const shouldShowProcedureChecklist =
     phase === "progress" || procedureChecklist.length > 0 || Boolean(resolvedProcedureLoadError);
 
@@ -1986,23 +1979,24 @@ export function StaffServiceSessionPage() {
   if (isSessionFinalized) {
     return (
       <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff3f8_100%)]">
-        <article className="rounded-[26px] border border-[#f3d5e2] bg-white p-6 shadow-[0_18px_40px_rgba(236,72,153,0.08)]">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div className="min-w-0">
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#ea4f93]">
-                Session Completed
-              </p>
-              <h1 className="mt-2 text-[2rem] font-black tracking-tight text-[#3f2b3f]">
-                Complete Session Successfully
-              </h1>
-              <p className="mt-2 max-w-2xl text-sm text-[#a88a9d]">
-                The service session has been finalized. Continue with the handoff actions below or return to the booking list.
-              </p>
-            </div>
+        <article className="rounded-[26px] border border-[#d8f0e2] bg-[linear-gradient(180deg,#ffffff_0%,#f5fff8_100%)] p-6 shadow-[0_18px_40px_rgba(22,163,74,0.10)]">
+          <div className="flex flex-col items-center text-center">
+            <span className="flex h-16 w-16 items-center justify-center rounded-full border border-[#b7e6c8] bg-[linear-gradient(180deg,#e9fff1_0%,#d8f8e5_100%)] text-[#16975f] shadow-[0_18px_35px_rgba(22,151,95,0.18)]">
+              <CheckCircle2 size={30} strokeWidth={2.6} />
+            </span>
+            <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.18em] text-[#16975f]">
+              Session Completed
+            </p>
+            <h1 className="mt-2 text-[2rem] font-black tracking-tight text-[#15803d]">
+              Complete Session Successfully
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm text-[#5f8a70]">
+              The service session has been finalized. Continue with the handoff actions below or return to the booking list.
+            </p>
             <button
               type="button"
               onClick={() => navigate(ROUTES.staffBookings)}
-              className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-[#f2bfd4] bg-white px-5 py-3 text-sm font-bold text-[#ea4f93] transition hover:bg-[#fff5f9]"
+              className="mt-5 inline-flex min-h-11 items-center justify-center rounded-2xl border border-[#b7e6c8] bg-white px-5 py-3 text-sm font-bold text-[#16975f] transition hover:bg-[#f3fff7]"
             >
               Back to Booking List
             </button>
