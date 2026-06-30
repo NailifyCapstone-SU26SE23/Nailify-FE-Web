@@ -1012,8 +1012,7 @@ export function ManagerBookingListPage() {
                                   className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#eaf9ee] text-[#2fa25f] hover:bg-[#2fa25f] hover:text-white transition"
                                   title="Confirm"
                                 >
-                                  <CheckCircle2 size={12} />
-                                </button>
+                                  <CheckCircle2 size={12} />                                </button>
                                 <button
                                   type="button"
                                   onClick={() => {
