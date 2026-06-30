@@ -7,8 +7,8 @@ function getAuthHeaders() {
 
   return token
     ? {
-        Authorization: `Bearer ${token}`,
-      }
+      Authorization: `Bearer ${token}`,
+    }
     : {};
 }
 
@@ -24,7 +24,7 @@ function unwrapResponse(response, fallbackMessage, isDetail = false, includePagi
   if (isDetail && payload.data && payload.data.booking) {
     return payload.data.booking;
   }
-  
+
   // Handle both formats: data.items (for lists) or just data (for single items)
   if (payload.data && payload.data.items) {
     if (includePagination) {
@@ -149,20 +149,21 @@ export async function fetchSalonStaff(salonId, options = {}) {
     throw new Error("Salon ID is required.");
   }
 
-  const { 
-    pageNumber = 1, 
-    pageSize = 100, 
-    role = "Staff_Artist" 
+  const {
+    pageNumber = 1,
+    pageSize = 100,
+    role = "Staff_Artist"
   } = options;
 
   console.log("Fetching salon staff:", normalizedId, { pageNumber, pageSize, role });
   try {
-    const response = await axiosClient.get(`/Users/salon/${normalizedId}/staff`, {
+    const response = await axiosClient.get(`/Users`, {
       headers: getAuthHeaders(),
       params: {
         pageNumber,
         pageSize,
-        role
+        role,
+        salonId: normalizedId
       }
     });
 
@@ -176,19 +177,19 @@ export async function fetchSalonStaff(salonId, options = {}) {
 
 export async function updateBooking(bookingId, updateData) {
   const normalizedBookingId = String(bookingId || "").trim();
-  
+
   if (!normalizedBookingId) {
     throw new Error("Booking ID is required.");
   }
-  
+
   console.log("updateBooking - Booking ID:", normalizedBookingId, "Update data:", updateData);
-  
+
   try {
-    const response = await axiosClient.put(`/Bookings/${normalizedBookingId}`, 
+    const response = await axiosClient.put(`/Bookings/${normalizedBookingId}`,
       updateData,
       { headers: getAuthHeaders() }
     );
-    
+
     console.log("updateBooking response status:", response?.status);
     console.log("updateBooking response:", response);
     return unwrapResponse(response, "Failed to update booking.");
@@ -216,15 +217,15 @@ export async function assignArtistToBookingOld(bookingId, staffArtistId, slotInf
   }
 
   console.log("assignArtistToBookingOld - Booking ID:", normalizedBookingId, "Staff Artist ID:", normalizedStaffId, "Slot:", slotInfo);
-  
+
   const payload = { staffArtistId: normalizedStaffId };
   if (slotInfo) {
     payload.slotStartTime = slotInfo.startTime;
     payload.slotEndTime = slotInfo.endTime;
   }
-  
+
   try {
-    const response = await axiosClient.post(`/Bookings/${normalizedBookingId}/receptionist-assign-artist`, 
+    const response = await axiosClient.post(`/Bookings/${normalizedBookingId}/receptionist-assign-artist`,
       payload,
       { headers: getAuthHeaders() }
     );
@@ -253,7 +254,7 @@ export async function assignArtistToBooking(bookingId, staffArtistId, slotInfo =
   }
 
   console.log("assignArtistToBooking - Booking ID:", normalizedBookingId, "Staff Artist ID:", normalizedStaffId, "Slot:", slotInfo, "Booking date:", bookingDate);
-  
+
   const payload = { nailArtistId: normalizedStaffId };
   if (bookingDate) {
     payload.bookingDate = bookingDate;
@@ -264,9 +265,9 @@ export async function assignArtistToBooking(bookingId, staffArtistId, slotInfo =
   if (bookingItems && bookingItems.length > 0) {
     payload.bookingItems = bookingItems;
   }
-  
+
   try {
-    const response = await axiosClient.put(`/Bookings/${normalizedBookingId}`, 
+    const response = await axiosClient.put(`/Bookings/${normalizedBookingId}`,
       payload,
       { headers: getAuthHeaders() }
     );
@@ -285,7 +286,7 @@ export async function assignArtistToBooking(bookingId, staffArtistId, slotInfo =
 export async function fetchArtistBusySlots(nailArtistId, bookingDate) {
   console.log("=== fetchArtistBusySlots ===");
   console.log("Params:", { nailArtistId, bookingDate });
-  
+
   try {
     const response = await axiosClient.get("/Bookings/artist-available-slots", {
       headers: getAuthHeaders(),
@@ -294,10 +295,10 @@ export async function fetchArtistBusySlots(nailArtistId, bookingDate) {
         bookingDate
       }
     });
-    
+
     console.log("Axios raw response:", response);
     console.log("Axios response.data:", response?.data);
-    
+
     return unwrapResponse(response, "Failed to load artist busy slots.");
   } catch (error) {
     const errorMessage = error?.response?.data?.message || error?.message || "Failed to load artist busy slots.";

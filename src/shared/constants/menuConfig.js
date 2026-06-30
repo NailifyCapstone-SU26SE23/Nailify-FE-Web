@@ -68,6 +68,13 @@ export const MENU_CONFIG = {
       badge: "8",
     },
     {
+      key: "staff-customer-nails",
+      label: "Custom Reviews",
+      to: ROUTES.staffCustomerNails,
+      icon: "palette",
+      section: "Main",
+    },
+    {
       key: "staff-schedule",
       label: "Schedule",
       icon: "calendar",
