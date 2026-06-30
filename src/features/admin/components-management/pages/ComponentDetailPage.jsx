@@ -24,6 +24,7 @@ import {
   formatComponentDuration,
   updateAdminComponent,
 } from "../services/componentsManagementService";
+import { Image } from "antd";
 
 function validateForm(formValues) {
   if (!String(formValues.name || "").trim()) {
@@ -337,7 +338,7 @@ export function ComponentDetailPage() {
           <div className="text-center text-sm text-slate-600">Loading component details...</div>
         </div>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_360px]">
+        <div className="grid gap-4 ">
           <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
             <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
               <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
@@ -425,6 +426,7 @@ export function ComponentDetailPage() {
                       src={imagePreview}
                       alt="Component preview"
                       className="h-48 w-full rounded-2xl object-cover shadow-lg"
+                      style={{ objectFit: "cover", height: "12rem", width: "100%", borderRadius: "1rem" }}
                     />
                   ) : (
                     <>
@@ -452,7 +454,7 @@ export function ComponentDetailPage() {
             </div>
           </section>
 
-          <aside className="space-y-4">
+          {/* <aside className="space-y-4">
             <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
               <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
                 <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
@@ -481,7 +483,7 @@ export function ComponentDetailPage() {
                 </div>
               </div>
             </section>
-          </aside>
+          </aside> */}
         </div>
       )}
 
