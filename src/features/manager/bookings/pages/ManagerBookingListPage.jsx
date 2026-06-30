@@ -5,7 +5,6 @@ import {
   Clock3,
   Download,
   Eye,
-  RefreshCw,
   Search,
   Sparkles,
   UserCheck,
@@ -13,16 +12,19 @@ import {
   Calendar,
   CheckCircle2,
   XCircle,
+  X,
+  Loader2,
+  Maximize2,
 } from "lucide-react";
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Spin, Alert, DatePicker, Dropdown } from "antd";
+import { Spin, Alert, DatePicker, Dropdown, Drawer, Modal } from "antd";
 import dayjs from "dayjs";
 import { ROLES } from "../../../../shared/constants/roles";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { formatDurationLabel } from "../../../../shared/utils/formatDuration";
 import { BOOKING_ROLE_CONFIG } from "../services/mockBookings";
-import { fetchBookingsBySalonId } from "../services/bookingsService";
+import { fetchBookingsBySalonId, fetchBookingById, fetchUserById } from "../services/bookingsService";
 import { AssignArtistModal } from "../components/AssignArtistModal";
 import { ConfirmBookingModal } from "../components/ConfirmBookingModal";
 import { RejectBookingModal } from "../components/RejectBookingModal";
@@ -33,10 +35,200 @@ const roleConfig = BOOKING_ROLE_CONFIG[ROLES.manager];
 const DEFAULT_SALON_ID = "484c3aef-3ae1-4ad6-8aba-6b0bc6df586d";
 const BOOKING_PAGE_SIZE = 10;
 
+function Card({ className = "", children }) {
+  return (
+    <article
+      className={`rounded-2xl border border-[#f0d9e8] bg-white p-6 shadow-[0_4px_16px_rgba(236,72,153,0.08)] transition-shadow duration-200 hover:shadow-[0_6px_24px_rgba(236,72,153,0.12)] md:p-7 ${className}`}
+    >
+      {children}
+    </article>
+  );
+}
+
+Card.propTypes = {
+  className: PropTypes.string,
+  children: PropTypes.node,
+};
+
+function SectionTitle({ children, subtitle }) {
+  return (
+    <div className="mb-6">
+      <h2 className="text-xl font-bold text-[#2d1b35]">{children}</h2>
+      {subtitle ? <p className="mt-2 text-sm text-[#a88a9f]">{subtitle}</p> : null}
+    </div>
+  );
+}
+
+SectionTitle.propTypes = {
+  children: PropTypes.node.isRequired,
+  subtitle: PropTypes.string,
+};
+
+function InfoItem({ label, children }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-xs font-semibold uppercase tracking-widest text-[#a88a9f]">{label}</p>
+      <div className="mt-2 text-sm font-medium text-[#2d1b35] break-all">{children}</div>
+    </div>
+  );
+}
+
+InfoItem.propTypes = {
+  label: PropTypes.string.isRequired,
+  children: PropTypes.node,
+};
+
+function formatDate(dateString) {
+  if (!dateString) return "N/A";
+  const normalized = String(dateString).trim();
+  const datePart = normalized.includes("T") ? normalized.split("T")[0] : normalized;
+  const [year, month, day] = datePart.split("-").map(Number);
+
+  if (!year || !month || !day) return "N/A";
+
+  return new Date(year, month - 1, day).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function formatTime(startTime, fallbackDateTime) {
+  const normalizedTime = String(startTime || "").trim();
+  const rawTime = normalizedTime
+    || String(fallbackDateTime || "")
+      .trim()
+      .split("T")[1]
+      ?.replace("Z", "")
+      ?.split(".")[0];
+
+  if (!rawTime) return "N/A";
+
+  const [hours, minutes = 0, seconds = 0] = rawTime.split(":").map(Number);
+  if (Number.isNaN(hours) || Number.isNaN(minutes) || Number.isNaN(seconds)) {
+    return "N/A";
+  }
+
+  return new Date(2000, 0, 1, hours, minutes, seconds).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
+function formatTimeRange(startTime, durationMinutes, fallbackDateTime) {
+  const formattedStart = formatTime(startTime, fallbackDateTime);
+  if (!durationMinutes || formattedStart === "N/A") {
+    return formattedStart;
+  }
+
+  // Parse start time
+  const normalizedTime = String(startTime || "").trim();
+  let rawTime = normalizedTime
+    || String(fallbackDateTime || "")
+      .trim()
+      .split("T")[1]
+      ?.replace("Z", "")
+      ?.split(".")[0];
+
+  if (!rawTime) {
+    return formattedStart;
+  }
+
+  let [hours, minutes = 0] = rawTime.split(":").map(Number);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+    return formattedStart;
+  }
+
+  // Calculate end time
+  const totalStartMinutes = hours * 60 + minutes;
+  const totalEndMinutes = totalStartMinutes + durationMinutes;
+  const endHours = Math.floor(totalEndMinutes / 60) % 24;
+  const endMinutes = totalEndMinutes % 60;
+
+  const formattedEnd = new Date(2000, 0, 1, endHours, endMinutes).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+
+  return `${formattedStart} - ${formattedEnd}`;
+}
+
+function formatVND(amount) {
+  if (amount === null || amount === undefined) return "N/A";
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND'
+  }).format(amount);
+}
+
+function formatDuration(totalMinutes) {
+  if (!totalMinutes) return "0m";
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  
+  if (hours > 0 && minutes > 0) {
+    return `${hours}h${minutes}m`;
+  } else if (hours > 0) {
+    return `${hours}h`;
+  } else {
+    return `${minutes}m`;
+  }
+}
+
+function getDrawerStatusTone(status) {
+  switch (status) {
+    case "Checked In":
+    case "CheckedIn":
+      return "bg-[#e7ecff] text-[#4755b8]";
+    case "In Progress":
+    case "InProgress":
+      return "bg-[#f3ebff] text-[#7e4fe6]";
+    case "Pending":
+      return "bg-[#fff0dd] text-[#db8520]";
+    case "Confirmed":
+    case "Approved":
+      return "bg-[#eaf9ee] text-[#2fa25f]";
+    case "Reschedule Req":
+    case "RescheduleReq":
+      return "bg-[#fff0dd] text-[#db8520]";
+    default:
+      return "bg-[#f3f4f6] text-[#6b7280]";
+  }
+}
+
+function getStatusTone(status) {
+  switch (status) {
+    case "CheckedIn":
+    case "Checked In":
+      return "bg-[#4755b8] text-white border-[#4755b8]";
+    case "InProgress":
+    case "In Progress":
+      return "bg-[#7e4fe6] text-white border-[#7e4fe6]";
+    case "Pending":
+      return "bg-[#db8520] text-white border-[#db8520]";
+    case "Confirmed":
+    case "Approved":
+      return "bg-[#2fa25f] text-white border-[#2fa25f]";
+    case "Completed":
+    case "ServiceCompleted":
+      return "bg-[#2fa25f] text-white border-[#2fa25f]";
+    case "Rejected":
+      return "bg-[#e1447f] text-white border-[#e1447f]";
+    case "RescheduleReq":
+    case "Reschedule Req":
+      return "bg-[#db8520] text-white border-[#db8520]";
+    default:
+      return "bg-[#6b7280] text-white border-[#6b7280]";
+  }
+}
+
 const appointmentFilters = [
   { value: "All", label: "All" },
   { value: "Pending", label: "Pending" },
   { value: "Confirmed", label: "Confirmed" },
+  { value: "Approved", label: "Approved" },
   { value: "CheckedIn", label: "Checked In" },
   { value: "InProgress", label: "In Progress" },
   { value: "Completed", label: "Completed" },
@@ -145,26 +337,11 @@ const bookingConflicts = [
 
 const scheduleHours = [9, 10, 11, 12, 13, 14, 15, 16, 17];
 
-function Card({ className = "", children }) {
-  return (
-    <article
-      className={`rounded-[18px] border border-[#f8deea] bg-white p-5 shadow-[0_10px_24px_rgba(236,72,153,0.06)] ${className}`}
-    >
-      {children}
-    </article>
-  );
-}
-
-Card.propTypes = {
-  className: PropTypes.string,
-  children: PropTypes.node,
-};
-
 function SectionHeading({ title, subtitle }) {
   return (
     <div>
-      <h3 className="text-sm font-extrabold text-[#3f2240]">{title}</h3>
-      {subtitle ? <p className="mt-1 text-xs text-[#c08aa4]">{subtitle}</p> : null}
+      <h3 className="text-base font-bold text-[#2d1b35]">{title}</h3>
+      {subtitle ? <p className="mt-1.5 text-xs text-[#a88a9f]">{subtitle}</p> : null}
     </div>
   );
 }
@@ -178,15 +355,15 @@ function MetricCard({ item }) {
   const Icon = item.icon;
 
   return (
-    <Card className="p-4">
+    <Card className="p-5">
       <div className="flex items-start justify-between gap-3">
-        <div className={`inline-flex h-9 w-9 items-center justify-center rounded-xl ${item.iconClassName}`}>
-          <Icon size={16} />
+        <div className={`inline-flex h-12 w-12 items-center justify-center rounded-xl ${item.iconClassName} shadow-lg`}>
+          <Icon size={24} />
         </div>
       </div>
-      <p className="mt-3 text-[1.65rem] font-extrabold leading-none text-[#3b2241]">{item.value}</p>
-      <p className="mt-2 text-[13px] font-semibold text-[#7f6478]">{item.label}</p>
-      <p className={`mt-1 text-[11px] font-medium ${item.noteClassName}`}>{item.note}</p>
+      <p className="mt-4 text-2xl font-bold leading-none text-[#2d1b35]">{item.value}</p>
+      <p className="mt-2 text-sm font-medium text-[#8b7382]">{item.label}</p>
+      <p className={`mt-2 text-xs font-medium ${item.noteClassName}`}>{item.note}</p>
     </Card>
   );
 }
@@ -201,45 +378,6 @@ MetricCard.propTypes = {
     value: PropTypes.string.isRequired,
   }).isRequired,
 };
-
-function getStatusTone(status) {
-  switch (status) {
-    case "CheckedIn":
-    case "Checked In":
-      return "bg-[#e7ecff] text-[#4755b8]";
-    case "InProgress":
-    case "In Progress":
-      return "bg-[#f3ebff] text-[#7e4fe6]";
-    case "Pending":
-      return "bg-[#fff0dd] text-[#db8520]";
-    case "Confirmed":
-      return "bg-[#eaf9ee] text-[#2fa25f]";
-    case "Completed":
-    case "ServiceCompleted":
-      return "bg-[#eaf9ee] text-[#2fa25f]";
-    case "Rejected":
-      return "bg-[#ffe6ec] text-[#e1447f]";
-    case "RescheduleReq":
-    case "Reschedule Req":
-      return "bg-[#fff0dd] text-[#db8520]";
-    default:
-      return "bg-[#f3f4f6] text-[#6b7280]";
-  }
-}
-
-function formatDuration(totalMinutes) {
-  if (!totalMinutes) return "0m";
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-
-  if (hours > 0 && minutes > 0) {
-    return `${hours}h${minutes}m`;
-  } else if (hours > 0) {
-    return `${hours}h`;
-  } else {
-    return `${minutes}m`;
-  }
-}
 
 function formatStatusDisplay(status) {
   if (status === "CheckedIn") return "Checked In";
@@ -292,31 +430,46 @@ function parseTimePart(timeString) {
   return new Date(2000, 0, 1, hours, minutes, seconds);
 }
 
-function formatBookingDate(dateString) {
-  const parsedDate = parseDatePart(dateString);
-  if (!parsedDate) return "N/A";
-
-  return parsedDate.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
-
-function formatBookingTime(startTime, bookingDate) {
-  const parsedTime = parseTimePart(startTime) || parseTimePart(bookingDate);
-  if (!parsedTime) return "N/A";
-
-  return parsedTime.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
-}
-
 function getArtistDisplayName(artist) {
   const name = artist?.nailArtistName || artist?.artistName || artist?.fullName || artist?.name;
   return name === "Chưa chỉ định" ? "Unassigned" : name || "Unassigned";
+}
+
+function mapBookingForDrawer(rawBooking) {
+  const artistName = getArtistDisplayName(rawBooking);
+  const artistId =
+    rawBooking.staffId ||
+    rawBooking.nailArtistId ||
+    rawBooking.staffArtistId ||
+    rawBooking.artistId ||
+    null;
+
+  return {
+    ...rawBooking,
+    id: rawBooking.bookingId || rawBooking.id,
+    bookingId: rawBooking.bookingId || rawBooking.id,
+    date: formatDate(rawBooking.bookingDate || rawBooking.createdAt),
+    time: formatTime(rawBooking.startTime, rawBooking.bookingDate || rawBooking.createdAt),
+    customerName: rawBooking.customerName || (rawBooking.customer ? `${rawBooking.customer.firstName} ${rawBooking.customer.lastName}` : "Unknown Customer"),
+    customerId: rawBooking.customerId,
+    phone: rawBooking.customerPhone || rawBooking.phone || (rawBooking.customer ? rawBooking.customer.phone : ""),
+    email: rawBooking.email || (rawBooking.customer ? rawBooking.customer.email : ""),
+    serviceName: rawBooking.serviceName || "Nail Service",
+    artistName,
+    artistId,
+    deposit: rawBooking.depositAmount ? formatVND(rawBooking.depositAmount) : "Pending",
+    depositAmount: rawBooking.depositAmount,
+    depositTone: rawBooking.depositAmount ? "text-[#2fa25f]" : "text-[#db8520]",
+    status: rawBooking.status || "Pending",
+    totalPrice: rawBooking.totalPrice,
+    qrCode: rawBooking.qrCode,
+    qtCode: rawBooking.qtCode,
+    checkInImageUrl: rawBooking.checkInImageUrl,
+    bookingItems: rawBooking.bookingItems || [],
+    totalDuration: rawBooking.totalDuration,
+    startTime: rawBooking.startTime,
+    salonId: rawBooking.salonId,
+  };
 }
 
 function normalizeStatusKey(status) {
@@ -326,24 +479,15 @@ function normalizeStatusKey(status) {
     .replace(/[\s_]+/g, "");
 }
 
-function isCheckedInStatus(status) {
-  const key = normalizeStatusKey(status);
-  return key === "checkedin" || key.includes("checkedin");
-}
-
 function isFinalStatus(status) {
   const s = String(status || "").trim().toLowerCase();
-  return s.includes("cancel") || s.includes("reject") || s.includes("complete");
-}
-
-function hasAssignedArtist(row) {
-  return Boolean(row?.staffId || row?.staffArtistId || row?.nailArtistId || row?.artistId);
+  return s.includes("cancel") || s.includes("reject") || s.includes("complete") || s.includes("confirmed") || s.includes("approved");
 }
 
 function mapApiBookingToUiFormat(apiBooking) {
   console.log("Mapping API booking:", apiBooking);
 
-  const customerName = apiBooking.customerName || "Unknown Customer";
+  const customerName = apiBooking.customerName || (apiBooking.customer ? `${apiBooking.customer.firstName} ${apiBooking.customer.lastName}` : "Unknown Customer");
   const customerInitials = customerName
     .split(" ")
     .map((part) => part[0])
@@ -358,21 +502,22 @@ function mapApiBookingToUiFormat(apiBooking) {
     id: apiBooking.bookingId || apiBooking.id,
     bookingId: apiBooking.bookingId || apiBooking.id,
     bookingDate: apiBooking.bookingDate,
-    date: formatBookingDate(apiBooking.bookingDate || apiBooking.createdAt),
-    time: formatBookingTime(apiBooking.startTime, apiBooking.bookingDate || apiBooking.createdAt),
+    date: formatDate(apiBooking.bookingDate || apiBooking.createdAt),
+    time: formatTimeRange(apiBooking.startTime, apiBooking.totalDuration, apiBooking.bookingDate || apiBooking.createdAt),
     startTime: apiBooking.startTime,
     duration: formatDuration(apiBooking.totalDuration || 60),
     totalDuration: apiBooking.totalDuration,
     customer: customerName,
-    customerName: apiBooking.customerName,
+    customerName: customerName,
     customerId: apiBooking.customerId,
-    phone: apiBooking.customerPhone || "N/A",
+    phone: apiBooking.customerPhone || apiBooking.phone || (apiBooking.customer ? apiBooking.customer.phone : ""),
+    email: apiBooking.email || (apiBooking.customer ? apiBooking.customer.email : ""),
     service: apiBooking.serviceName || "Nail Service",
     serviceName: apiBooking.serviceName,
     artist: artistName,
     nailArtistName: artistName,
     nailArtistId: artistId,
-    deposit: apiBooking.depositAmount ? `$${apiBooking.depositAmount} Paid` : "Pending",
+    deposit: apiBooking.depositAmount ? formatVND(apiBooking.depositAmount) : "Pending",
     depositAmount: apiBooking.depositAmount,
     depositTone: apiBooking.depositAmount ? "text-[#2fa25f]" : "text-[#db8520]",
     status: apiBooking.status || "Pending",
@@ -389,18 +534,63 @@ function mapApiBookingToUiFormat(apiBooking) {
   };
 }
 
+const SESSION_STORAGE_KEY = "managerBookingListPageState";
+const SCROLL_POSITION_KEY = "managerBookingListScrollPos";
+
 export function ManagerBookingListPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
-  const [query, setQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState("All");
-  const [selectedDate, setSelectedDate] = useState(null);
+  const tableContainerRef = useRef(null);
+  
+  // Drawer state
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [selectedBookingForDrawer, setSelectedBookingForDrawer] = useState(null);
+  const [selectedCustomerForDrawer, setSelectedCustomerForDrawer] = useState(null);
+  const [isLoadingDrawer, setIsLoadingDrawer] = useState(false);
+  
+  const getStoredState = () => {
+    try {
+      const stored = sessionStorage.getItem(SESSION_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return {
+          query: parsed.query || "",
+          activeFilter: parsed.activeFilter || "All",
+          selectedDate: parsed.selectedDate ? dayjs(parsed.selectedDate).isValid() ? dayjs(parsed.selectedDate) : null : null,
+          currentPage: parsed.currentPage || 1
+        };
+      }
+    } catch (e) {
+      console.error("Failed to parse stored state:", e);
+    }
+    return { query: "", activeFilter: "All", selectedDate: null, currentPage: 1 };
+  };
+
+  const initialState = getStoredState();
+  
+  const [query, setQuery] = useState(initialState.query);
+  const [activeFilter, setActiveFilter] = useState(initialState.activeFilter);
+  const [selectedDate, setSelectedDate] = useState(initialState.selectedDate);
   const [bookings, setBookings] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [filteredPageSize] = useState(10); // ✅ Client-side page size
+  const [currentPage, setCurrentPage] = useState(initialState.currentPage);
+  const [filteredPageSize] = useState(10);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({
+        query,
+        activeFilter,
+        selectedDate: selectedDate ? selectedDate.toISOString() : null,
+        currentPage
+      }));
+    } catch (e) {
+      console.error("Failed to save state to sessionStorage:", e);
+    }
+  }, [query, activeFilter, selectedDate, currentPage]);
 
   // Assign Artist modal
   const [isAssignArtistModalOpen, setIsAssignArtistModalOpen] = useState(false);
@@ -411,12 +601,36 @@ export function ManagerBookingListPage() {
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [selectedBookingForAction, setSelectedBookingForAction] = useState(null);
+  const [isQrExpanded, setIsQrExpanded] = useState(false);
 
-  const loadBookings = useCallback(async (page = currentPage) => {
+  // Function to open drawer and load booking details
+  const handleOpenDrawer = useCallback(async (bookingId) => {
+    setIsDrawerOpen(true);
+    setIsLoadingDrawer(true);
+    try {
+      const rawBooking = await fetchBookingById(bookingId);
+      const mappedBooking = mapBookingForDrawer(rawBooking);
+      setSelectedBookingForDrawer(mappedBooking);
+      
+      if (mappedBooking.customerId) {
+        try {
+          const rawCustomer = await fetchUserById(mappedBooking.customerId);
+          setSelectedCustomerForDrawer(rawCustomer);
+        } catch (err) {
+          console.warn("Failed to load customer details for drawer:", err);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load booking for drawer:", err);
+    } finally {
+      setIsLoadingDrawer(false);
+    }
+  }, []);
+
+  const loadBookings = useCallback(async () => {
     setIsLoading(true);
     setError("");
     try {
-      // Load ALL bookings with a large page size (1000)
       const result = await fetchBookingsBySalonId(DEFAULT_SALON_ID, { pageNumber: 1, pageSize: 1000 });
       console.log("loadBookings all bookings result:", result);
       
@@ -430,15 +644,15 @@ export function ManagerBookingListPage() {
       const uiBookings = apiBookings.map(mapApiBookingToUiFormat);
       console.log("loadBookings all uiBookings loaded:", uiBookings.length, "bookings");
       setBookings(uiBookings);
+      setHasLoadedOnce(true);
     } catch (err) {
       console.error("Failed to load bookings:", err);
       setError(err.message || "Failed to load bookings. Please try again.");
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage]);
+  }, []);
 
-  // ✅ Filtered appointments (after applying search & filters)
   const filteredAppointments = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
@@ -454,40 +668,26 @@ export function ManagerBookingListPage() {
       if (selectedDate) {
         const bookingDate = dayjs(appointment.bookingDate || appointment.createdAt);
         matchesDate = bookingDate.isSame(selectedDate, "day");
-        console.log("matchesDate check:", { appointment, selectedDate, bookingDate, matchesDate });
       }
 
       const matchesFilterResult = matchesFilter(appointment.status, activeFilter);
-      console.log("Filter check for appointment:", { 
-        appointment, 
-        matchesQuery, 
-        matchesDate, 
-        matchesFilterResult,
-        activeFilter 
-      });
 
       return matchesQuery && matchesFilterResult && matchesDate;
     });
   }, [activeFilter, query, bookings, selectedDate]);
 
-  // ✅ Client-side pagination for filtered results
   const paginatedAppointments = useMemo(() => {
     const startIndex = (currentPage - 1) * filteredPageSize;
     const endIndex = startIndex + filteredPageSize;
-    console.log("Pagination slicing:", { startIndex, endIndex, filteredLength: filteredAppointments.length });
     return filteredAppointments.slice(startIndex, endIndex);
   }, [filteredAppointments, currentPage, filteredPageSize]);
 
-  // ✅ Calculate totalPages based on filtered results
   const filteredTotalPages = useMemo(() => {
     const pages = Math.max(1, Math.ceil(filteredAppointments.length / filteredPageSize));
-    console.log("filteredTotalPages calculated:", pages, "from", filteredAppointments.length, "items");
     return pages;
   }, [filteredAppointments.length, filteredPageSize]);
 
-  // ✅ Reset to page 1 when filters change
   useEffect(() => {
-    console.log("Filters changed, resetting to page 1");
     setCurrentPage(1);
   }, [query, activeFilter, selectedDate]);
 
@@ -496,14 +696,34 @@ export function ManagerBookingListPage() {
     setCurrentPage(newPage);
   }, []);
 
-  // Log current pagination state
-  console.log("ManagerBookingListPage pagination state:", { 
-    currentPage, 
-    filteredTotalPages, 
-    filteredAppointmentsLength: filteredAppointments.length,
-    paginatedAppointmentsLength: paginatedAppointments.length,
-    filteredPageSize 
-  });
+  useEffect(() => {
+    if (!hasLoadedOnce) {
+      console.log("First load - fetching bookings");
+      loadBookings();
+    } else {
+      console.log("Data already loaded - skipping fetch");
+    }
+  }, [hasLoadedOnce, loadBookings]);
+
+  useEffect(() => {
+    const savedScrollPos = sessionStorage.getItem(SCROLL_POSITION_KEY);
+    if (savedScrollPos && tableContainerRef.current) {
+      setTimeout(() => {
+        if (tableContainerRef.current) {
+          tableContainerRef.current.scrollTop = parseInt(savedScrollPos, 10);
+          console.log("📍 Scroll restored to:", savedScrollPos);
+        }
+      }, 100);
+    }
+  }, []);
+
+  const handleViewBooking = (bookingId) => {
+    if (tableContainerRef.current) {
+      sessionStorage.setItem(SCROLL_POSITION_KEY, tableContainerRef.current.scrollTop.toString());
+      console.log("📍 Scroll saved:", tableContainerRef.current.scrollTop);
+    }
+    navigate(roleConfig.getDetailRoute(bookingId));
+  };
 
   useEffect(() => {
     if (!location.state?.flashMessage) {
@@ -512,16 +732,10 @@ export function ManagerBookingListPage() {
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
 
-  useEffect(() => {
-    Promise.resolve().then(() => loadBookings());
-  }, [loadBookings]);
-
   const summaryStats = useMemo(() => {
     const pending = bookings.filter(b => b.status === "Pending").length;
     const confirmed = bookings.filter(b => b.status === "Confirmed").length;
     const checkedIn = bookings.filter(b => b.status === "CheckedIn" || b.status === "Checked In").length;
-    const noShows = bookings.filter(b => b.status === "No Show").length;
-    const rescheduleReqs = bookings.filter(b => b.status === "RescheduleReq" || b.status === "Reschedule Req").length;
     const completed = bookings.filter(b => b.status === "Completed" || b.status === "ServiceCompleted").length;
 
     return [
@@ -557,56 +771,40 @@ export function ManagerBookingListPage() {
         iconClassName: "bg-[#eaf9ee] text-[#2fa25f]",
         noteClassName: "text-[#2fa25f]",
       },
-      {
-        label: "No-shows Today",
-        value: noShows.toString(),
-        note: "+1 from last week",
-        icon: XCircle,
-        iconClassName: "bg-[#ffe6ec] text-[#e1447f]",
-        noteClassName: "text-[#e1447f]",
-      },
-      {
-        label: "Reschedule Requests",
-        value: rescheduleReqs.toString(),
-        note: "needs attention",
-        icon: RefreshCw,
-        iconClassName: "bg-[#fff0dd] text-[#db8520]",
-        noteClassName: "text-[#db8520]",
-      },
     ];
   }, [bookings]);
 
   return (
     <section className="flex min-h-full flex-col gap-5">
-      <Card className="overflow-hidden border-none bg-[linear-gradient(135deg,#fff0f8_0%,#fffafb_58%,#fff5fb_100%)] p-0 shadow-[0_18px_36px_rgba(236,72,153,0.12)]">
-        <div className="flex flex-col gap-6 p-6 lg:flex-row lg:items-end lg:justify-between">
+      <Card className="overflow-hidden border-none bg-gradient-to-br from-[#fff3f8] via-[#fffafb] to-[#fff5fb] p-0 shadow-lg">
+        <div className="flex flex-col gap-6 p-7 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-[18px] bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-white shadow-[0_10px_22px_rgba(234,79,147,0.28)]">
-                <Calendar size={22} />
+            <div className="flex items-center gap-4">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-white shadow-xl">
+                <Calendar size={28} />
               </div>
               <div>
-                <h1 className="text-3xl font-extrabold text-[#402542]">Branch Bookings</h1>
-                <p className="text-sm text-[#b07a94]">Track appointments, assign artists, and monitor branch activity in one workspace.</p>
+                <h1 className="text-3xl font-bold text-[#2d1b35]">Branch Bookings</h1>
+                <p className="text-sm text-[#a88a9f]">Track appointments, assign artists, and monitor activity</p>
               </div>
             </div>
-            <p className="mt-4 text-sm leading-6 text-[#8f6b80]">
-              Keep an eye on daily flow, customer arrivals, staffing assignments, and potential conflicts with a manager-focused booking dashboard.
+            <p className="mt-4 text-sm leading-relaxed text-[#8b7382]">
+              Manage your salon&apos;s daily operations with real-time booking management, staff scheduling, and seamless customer tracking.
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              className="inline-flex items-center gap-1.5 rounded-2xl border border-[#f4c1d8] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93] shadow-[0_8px_18px_rgba(236,72,153,0.06)] transition hover:bg-[#fff7fb]"
+              className="inline-flex items-center gap-2 rounded-2xl border border-[#f0d9e8] bg-white px-4 py-2.5 text-xs font-semibold text-[#ea4f93] shadow-md hover:shadow-lg hover:border-[#ea4f93] transition duration-200"
             >
-              <Download size={14} />
+              <Download size={16} />
               Export
             </button>
             <Link
               to={roleConfig.createRoute}
-              className="inline-flex items-center gap-1.5 rounded-2xl bg-[#ea4f93] px-4 py-2.5 text-xs font-bold text-white shadow-[0_10px_22px_rgba(234,79,147,0.22)] transition hover:bg-[#df4588]"
+              className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#ea4f93] to-[#ff8ebb] px-4 py-2.5 text-xs font-semibold text-white shadow-lg hover:shadow-xl transition duration-200"
             >
-              <UserPlus size={14} />
+              <UserPlus size={16} />
               New Booking
             </Link>
           </div>
@@ -646,10 +844,10 @@ export function ManagerBookingListPage() {
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_300px]">
           <div className="space-y-4">
             <Card className="overflow-hidden p-0">
-              <div className="flex flex-col gap-4 border-b border-[#f6dce7] bg-[linear-gradient(180deg,#fffafb_0%,#fff8fb_100%)] p-6 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-col gap-4 border-b border-[#f0d9e8] bg-gradient-to-b from-[#fff9fb] to-[#fffafb] p-6 lg:flex-row lg:items-center lg:justify-between">
                 <SectionHeading
                   title="Today's Appointments"
-                  subtitle={`${filteredAppointments.length} appointments match the current filters`}
+                  subtitle={`${filteredAppointments.length} booking${filteredAppointments.length !== 1 ? 's' : ''}`}
                 />
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                   <div className="flex flex-wrap gap-2">
@@ -658,7 +856,7 @@ export function ManagerBookingListPage() {
                         items: appointmentFilters.map((filter) => ({
                           key: filter.value,
                           label: (
-                            <span className={activeFilter === filter.value ? "font-bold text-[#ea4f93]" : "text-[#5c4559]"}>
+                            <span className={activeFilter === filter.value ? "font-semibold text-[#ea4f93]" : "text-[#5c4559]"}>
                               {filter.label}
                             </span>
                           ),
@@ -668,168 +866,166 @@ export function ManagerBookingListPage() {
                     >
                       <button
                         type="button"
-                        className="inline-flex items-center gap-2 rounded-full border border-[#f4c1d8] bg-white px-4 py-2.5 text-xs font-bold text-[#5c4559] transition hover:bg-[#fff7fb]"
+                        className="inline-flex items-center gap-2 rounded-full border border-[#f0d9e8] bg-white px-4 py-2.5 text-xs font-semibold text-[#5c4559] transition hover:border-[#ea4f93] hover:bg-[#fff7fb]"
                       >
                         <span>{appointmentFilters.find((f) => f.value === activeFilter)?.label || activeFilter}</span>
-                        <ChevronDown size={12} />
+                        <ChevronDown size={14} />
                       </button>
                     </Dropdown>
                     <DatePicker
                       value={selectedDate}
                       onChange={(date) => setSelectedDate(date)}
                       placeholder="Select date"
-                      className="h-10 rounded-full border border-[#f5d7e4] bg-white text-xs text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
-                      suffixIcon={<Calendar size={14} className="text-[#c08aa4]" />}
+                      className="h-10 rounded-full border border-[#f0d9e8] bg-white text-xs text-[#5c4559] outline-none transition placeholder:text-[#c8b0bf] focus:border-[#ea4f93] focus:ring-2 focus:ring-[#ea4f93]/10"
+                      suffixIcon={<Calendar size={14} className="text-[#a88a9f]" />}
                     />
                   </div>
                   <label className="relative block min-w-[220px]">
                     <Search
                       size={14}
-                      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#c08aa4]"
+                      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#a88a9f]"
                     />
                     <input
                       value={query}
                       onChange={(event) => setQuery(event.target.value)}
-                      placeholder="Search customer, artist, phone..."
-                      className="h-10 w-full rounded-full border border-[#f5d7e4] bg-white pl-9 pr-4 text-xs text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
+                      placeholder="Search customer, artist..."
+                      className="h-10 w-full rounded-full border border-[#f0d9e8] bg-white pl-9 pr-4 text-xs text-[#5c4559] outline-none transition placeholder:text-[#c8b0bf] focus:border-[#ea4f93] focus:ring-2 focus:ring-[#ea4f93]/10"
                     />
                   </label>
                 </div>
               </div>
 
-              <div className="overflow-x-auto px-4 pt-0 pb-6">
-                <table className="w-full text-left">
+              {/* ── TABLE: fixed layout with colgroup for perfect header alignment ── */}
+              <div ref={tableContainerRef} className="overflow-x-auto">
+                <table className="w-full table-fixed text-left">
+                  <colgroup>
+                    {/* Time */}
+                    <col className="w-[100px]" />
+                    {/* Customer */}
+                    <col className="w-[140px]" />
+                    {/* Staff Artist */}
+                    <col className="w-[120px]" />
+                    {/* Status */}
+                    <col className="w-[110px]" />
+                    {/* Action */}
+                    <col className="w-[100px]" />
+                  </colgroup>
                   <thead>
-                    <tr className="border-b border-[#f6dce7] text-[10px] uppercase tracking-[0.16em] text-[#c693ad]">
-                      <th className="px-2 py-3 whitespace-nowrap">Time</th>
-                      <th className="px-2 py-3 whitespace-nowrap">Customer</th>
-                      <th className="px-2 py-3 whitespace-nowrap">Staff Artist</th>
-                      <th className="px-2 py-3 whitespace-nowrap">Deposit</th>
-                      <th className="px-2 py-3 whitespace-nowrap">Status</th>
-                      <th className="px-2 py-3 whitespace-nowrap">Action</th>
+                    <tr className="border-b border-[#f0d9e8] bg-[#fff8fb] text-xs uppercase tracking-wide text-[#a88a9f] font-semibold">
+                      <th className="px-3 py-2.5 font-semibold text-left">Time</th>
+                      <th className="px-3 py-2.5 font-semibold text-left">Customer</th>
+                      <th className="px-3 py-2.5 font-semibold text-left">Artist</th>
+                      <th className="px-3 py-2.5 font-semibold text-left">Status</th>
+                      <th className="px-3 py-2.5 font-semibold text-left">Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {paginatedAppointments.map((row) => (
-                      <tr key={row.id} className="border-b border-[#fbe7ef] transition hover:bg-[#fff9fc] last:border-b-0">
-                        <td className="px-2 py-3 whitespace-nowrap">
-                          <p className="text-sm font-semibold text-[#402542]">{row.time}</p>
-                          <p className="text-[11px] text-[#c08aa4]">{row.duration}</p>
+                      <tr
+                        key={row.id}
+                        className="group relative border-b border-[#f0d9e8] transition-all duration-300 hover:bg-[#fff9fb] cursor-pointer last:border-b-0"
+                        onClick={() => handleOpenDrawer(row.id)}
+                      >
+                        {/* Time */}
+                        <td className="px-3 py-2 align-middle">
+                          <p className="text-xs font-semibold text-[#2d1b35] truncate">{row.time}</p>
+                          <p className="text-[10px] text-[#a88a9f]">{row.duration}</p>
                         </td>
-                        <td className="px-2 py-3 whitespace-nowrap">
-                          <div className="flex items-center gap-2">
+
+                        {/* Customer */}
+                        <td className="px-3 py-2 align-middle">
+                          <div className="flex items-center gap-1.5 min-w-0">
                             <div
-                              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${row.avatarTone} text-[9px] font-bold text-white shadow-[0_8px_18px_rgba(236,72,153,0.12)]`}
+                              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${row.avatarTone} text-[10px] font-bold text-white shadow-sm`}
                             >
                               {row.initials}
                             </div>
-                            <div>
-                              <p className="text-sm font-bold text-[#402542]">{row.customer}</p>
-                              <p className="text-[11px] text-[#c08aa4]">{row.phone}</p>
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-[#2d1b35] truncate">{row.customer}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-2 py-3 whitespace-nowrap">
-                          <div className="flex items-center gap-2">
+
+                        {/* Staff Artist */}
+                        <td className="px-3 py-2 align-middle">
+                          <div className="flex items-center gap-1 min-w-0">
                             <div
-                              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${row.artistTone} text-[8px] font-bold text-white shadow-[0_8px_18px_rgba(139,92,246,0.12)]`}
+                              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${row.artistTone} text-[8px] font-bold text-white shadow-sm`}
                             >
                               {row.artist
                                 .split(" ")
                                 .map((part) => part[0])
                                 .join("")}
                             </div>
-                            <span className="text-sm text-[#7a6176]">{row.artist}</span>
+                            <span className="text-xs text-[#8b7382] truncate">{row.artist}</span>
                           </div>
                         </td>
-                        <td className="px-2 py-3 whitespace-nowrap">
-                          <span className={`text-sm font-semibold ${row.depositTone}`}>{row.deposit}</span>
-                        </td>
-                        <td className="px-2 py-3 whitespace-nowrap">
+
+                        {/* Status */}
+                        <td className="px-3 py-2 align-middle">
                           <span
-                            className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold whitespace-nowrap ${getStatusTone(row.status)}`}
+                            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold whitespace-nowrap ${getStatusTone(row.status)}`}
                           >
+                            {(row.status === "InProgress" || row.status === "In Progress") && (
+                              <Loader2 size={11} className="animate-spin" />
+                            )}
                             {formatStatusDisplay(row.status)}
                           </span>
                         </td>
-                        <td className="px-2 py-3 whitespace-nowrap">
-                          <div className="flex items-center gap-1.5">
-                            <Link
-                              to={roleConfig.getDetailRoute(row.id)}
-                              className="inline-flex items-center gap-1 rounded-full bg-[#ea4f93] px-3 py-1.5 text-[10px] font-bold text-white shadow-[0_4px_12px_rgba(234,79,147,0.25)] transition hover:bg-[#df4588]"
-                            >
-                              <Eye size={12} />
-                              View
-                            </Link>
 
+                        {/* Action */}
+                        <td className="px-3 py-2 align-middle" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center gap-1">
                             <button
                               type="button"
-                              onClick={() => {
-                                setSelectedBookingForAssign(row);
-                                setIsAssignArtistModalOpen(true);
-                              }}
-                              className="inline-flex items-center gap-1 rounded-full bg-[#4755b8] px-3 py-1.5 text-[10px] font-bold text-white shadow-[0_4px_12px_rgba(71,85,184,0.25)] transition hover:bg-[#3d4aa8]"
+                              onClick={() => handleViewBooking(row.id)}
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#fff0f8] text-[#ea4f93] hover:bg-[#ea4f93] hover:text-white transition text-center"
+                              title="View"
                             >
-                              <UserCheck size={12} />
-                              Assign
+                              <Eye size={12} />
                             </button>
-
-                            {!isFinalStatus(row.status) ? (
-                              <Dropdown
-                                trigger={["click"]}
-                                menu={{
-                                  items: [
-                                    {
-                                      key: "confirm",
-                                      label: (
-                                        <span className="flex items-center gap-2 text-xs font-semibold text-[#2fa25f]">
-                                          <CheckCircle2 size={13} />
-                                          Confirm
-                                        </span>
-                                      ),
-                                      onClick: () => {
-                                        setSelectedBookingForAction(row);
-                                        setIsConfirmModalOpen(true);
-                                      },
-                                    },
-                                    {
-                                      key: "cancel",
-                                      label: (
-                                        <span className="flex items-center gap-2 text-xs font-semibold text-[#db8520]">
-                                          <XCircle size={13} />
-                                          Cancel
-                                        </span>
-                                      ),
-                                      onClick: () => {
-                                        setSelectedBookingForAction(row);
-                                        setIsCancelModalOpen(true);
-                                      },
-                                    },
-                                    {
-                                      key: "reject",
-                                      label: (
-                                        <span className="flex items-center gap-2 text-xs font-semibold text-[#e1447f]">
-                                          <XCircle size={13} />
-                                          Reject
-                                        </span>
-                                      ),
-                                      onClick: () => {
-                                        setSelectedBookingForAction(row);
-                                        setIsRejectModalOpen(true);
-                                      },
-                                    },
-                                  ],
+                            {!(
+                              (row.nailArtistId || row.staffId || row.staffArtistId || row.artistId) &&
+                              (row.status === "CheckedIn" || row.status === "Checked In")
+                            ) && (!isFinalStatus(row.status) || row.status === "Approved") && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedBookingForAssign(row);
+                                  setIsAssignArtistModalOpen(true);
                                 }}
+                                className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#e7ecff] text-[#4755b8] hover:bg-[#4755b8] hover:text-white transition"
+                                title="Assign"
                               >
+                                <UserCheck size={12} />
+                              </button>
+                            )}
+
+                            {!isFinalStatus(row.status) && !(row.status === "CheckedIn" || row.status === "Checked In" || row.status === "InProgress" || row.status === "In Progress") && (
+                              <>
                                 <button
                                   type="button"
-                                  className="inline-flex items-center gap-1 rounded-full border border-[#f4c1d8] bg-white px-3 py-1.5 text-[10px] font-bold text-[#ea4f93] transition hover:bg-[#fff7fb]"
+                                  onClick={() => {
+                                    setSelectedBookingForAction(row);
+                                    setIsConfirmModalOpen(true);
+                                  }}
+                                  className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#eaf9ee] text-[#2fa25f] hover:bg-[#2fa25f] hover:text-white transition"
+                                  title="Confirm"
                                 >
-                                  More
-                                  <ChevronDown size={12} />
+                                  <CheckCircle2 size={12} />                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedBookingForAction(row);
+                                    setIsCancelModalOpen(true);
+                                  }}
+                                  className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#fff0dd] text-[#db8520] hover:bg-[#db8520] hover:text-white transition"
+                                  title="Cancel"
+                                >
+                                  <XCircle size={12} />
                                 </button>
-                              </Dropdown>
-                            ) : null}
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -842,31 +1038,35 @@ export function ManagerBookingListPage() {
                     No appointments matched the current filters.
                   </div>
                 ) : null}
-                <div className="flex justify-end p-4 border-t border-[#f6dce7]">
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={filteredTotalPages}
-                    onPageChange={handlePageChange}
-                  />
-                </div>
+              </div>
+
+              <div className="flex justify-end p-4 border-t border-[#f0d9e8] bg-gradient-to-b from-[#fffafb] to-white">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={filteredTotalPages}
+                  onPageChange={handlePageChange}
+                />
               </div>
             </Card>
 
             {/* Assign Artist Modal */}
-            <AssignArtistModal
-              open={isAssignArtistModalOpen}
-              onClose={() => {
-                setIsAssignArtistModalOpen(false);
-                setSelectedBookingForAssign(null);
-              }}
-              bookingId={selectedBookingForAssign?.id ? String(selectedBookingForAssign.id) : ""}
-              salonId={
-                selectedBookingForAssign?.salonId
-                  ? String(selectedBookingForAssign.salonId)
-                  : DEFAULT_SALON_ID
-              }
-              onSuccess={() => loadBookings()}
-            />
+            {selectedBookingForAssign && (
+              <AssignArtistModal
+                open={isAssignArtistModalOpen}
+                onClose={() => {
+                  setIsAssignArtistModalOpen(false);
+                  setSelectedBookingForAssign(null);
+                }}
+                bookingId={String(selectedBookingForAssign.id)}
+                salonId={
+                  selectedBookingForAssign.salonId
+                    ? String(selectedBookingForAssign.salonId)
+                    : DEFAULT_SALON_ID
+                }
+                booking={selectedBookingForAssign}
+                onSuccess={() => loadBookings()}
+              />
+            )}
 
             {/* Confirm / Cancel / Reject Modals */}
             <ConfirmBookingModal
@@ -896,6 +1096,231 @@ export function ManagerBookingListPage() {
               bookingId={selectedBookingForAction?.id ? String(selectedBookingForAction.id) : ""}
               onSuccess={() => loadBookings()}
             />
+
+            {/* Booking Detail Drawer */}
+            <Drawer
+              title={null}
+              open={isDrawerOpen}
+              onClose={() => {
+                setIsDrawerOpen(false);
+                setSelectedBookingForDrawer(null);
+              }}
+              width={480}
+              styles={{
+                body: { padding: 0 },
+                content: { background: "#fafafa" }
+              }}
+              placement="right"
+              mask={true}
+              maskClosable={true}
+              destroyOnClose
+              closable={false}
+            >
+              {isLoadingDrawer ? (
+                <div className="flex min-h-[400px] items-center justify-center">
+                  <Spin size="large" />
+                </div>
+              ) : selectedBookingForDrawer ? (
+                <div className="bg-[#fafafa] h-full flex flex-col">
+                  {/* Drawer Header */}
+                  <div className="sticky top-0 z-10 bg-gradient-to-r from-[#ea4f93] via-[#ff7ba4] to-[#ffaab6] shadow-md p-6 rounded-b-3xl">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex-1">
+                        <p className="text-xs font-semibold uppercase tracking-widest text-white/85">Booking Details</p>
+                        <h2 className="text-xl font-bold text-white mt-1">#{String(selectedBookingForDrawer.bookingId || selectedBookingForDrawer.id).slice(0, 8)}</h2>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsDrawerOpen(false);
+                          setSelectedBookingForDrawer(null);
+                        }}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white transition hover:bg-white/30 flex-shrink-0"
+                      >
+                        <X size={20} />
+                      </button>
+                    </div>
+                    <div className="mt-3">
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${getDrawerStatusTone(selectedBookingForDrawer.status)}`}>
+                        {(selectedBookingForDrawer.status === "InProgress" || selectedBookingForDrawer.status === "In Progress") && (
+                          <Loader2 size={13} className="animate-spin" />
+                        )}
+                        {formatStatusDisplay(selectedBookingForDrawer.status)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                    {/* Customer Information */}
+                    <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f0d9e8]">
+                      <h3 className="text-sm font-bold text-[#2d1b35] mb-4">Customer Information</h3>
+                      <div className="space-y-4">
+                        <InfoItem label="Customer Name">
+                          {selectedCustomerForDrawer 
+                            ? `${selectedCustomerForDrawer.firstName || ''} ${selectedCustomerForDrawer.lastName || ''}`.trim() 
+                            : selectedBookingForDrawer.customerName}
+                        </InfoItem>
+                        {(selectedBookingForDrawer.phone || selectedCustomerForDrawer?.phone) && (
+                          <InfoItem label="Phone Number">
+                            {selectedCustomerForDrawer?.phone || selectedBookingForDrawer.phone}
+                          </InfoItem>
+                        )}
+                        {(selectedBookingForDrawer.email || selectedCustomerForDrawer?.email) && (
+                          <InfoItem label="Email">
+                            {selectedCustomerForDrawer?.email || selectedBookingForDrawer.email}
+                          </InfoItem>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Service Information */}
+                    <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f0d9e8]">
+                      <h3 className="text-sm font-bold text-[#2d1b35] mb-4">Service Information</h3>
+                      <div className="space-y-4">
+                        <InfoItem label="Service">{selectedBookingForDrawer.serviceName}</InfoItem>
+                        <InfoItem label="Nail Artist">{selectedBookingForDrawer.artistName}</InfoItem>
+                        <div className="grid grid-cols-2 gap-3">
+                          <InfoItem label="Date">{selectedBookingForDrawer.date}</InfoItem>
+                          <InfoItem label="Time">{selectedBookingForDrawer.time}</InfoItem>
+                        </div>
+                        {selectedBookingForDrawer.totalDuration && (
+                          <InfoItem label="Estimated Duration">{formatDuration(selectedBookingForDrawer.totalDuration)}</InfoItem>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Booking Items */}
+                    {selectedBookingForDrawer.bookingItems && selectedBookingForDrawer.bookingItems.length > 0 && (
+                      <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f0d9e8]">
+                        <h3 className="text-sm font-bold text-[#2d1b35] mb-4">Service Details</h3>
+                        <div className="space-y-3">
+                          {selectedBookingForDrawer.bookingItems.map((item, idx) => (
+                            <div key={idx} className="rounded-xl border border-[#f0d9e8] bg-gradient-to-br from-[#fff9fb] to-[#fffafb] p-4 hover:shadow-md transition-shadow">
+                              <p className="text-sm font-bold text-[#402542]">{item.serviceName || "Nail Service"}</p>
+                              {item.nailVariantName && (
+                                <p className="mt-1 text-xs text-[#c08aa4]">Variant: {item.nailVariantName}</p>
+                              )}
+                              {item.customerNailName && (
+                                <p className="text-xs text-[#c08aa4]">Nail Set: {item.customerNailName}</p>
+                              )}
+                              <div className="mt-3 grid grid-cols-3 gap-2">
+                                <InfoItem label="Quantity">{item.quantity !== undefined ? item.quantity : "-"}</InfoItem>
+                                <InfoItem label="Duration">{item.duration !== undefined ? formatDuration(item.duration) : "-"}</InfoItem>
+                                <InfoItem label="Price">{item.price !== undefined ? formatVND(item.price) : "-"}</InfoItem>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Payment Information */}
+                    <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f0d9e8]">
+                      <h3 className="text-sm font-bold text-[#2d1b35] mb-4">Payment & Codes</h3>
+                      <div className="space-y-4">
+                        <InfoItem label="Deposit Status">
+                          <span className={selectedBookingForDrawer.depositTone}>{selectedBookingForDrawer.deposit}</span>
+                        </InfoItem>
+                        <InfoItem label="Total Amount">{formatVND(selectedBookingForDrawer.totalPrice)}</InfoItem>
+
+                        {(selectedBookingForDrawer.qrCode || selectedBookingForDrawer.qtCode) && (
+                          <div className="pt-4 border-t border-[#f0d9e8]">
+                            <p className="text-xs font-semibold uppercase tracking-widest text-[#a88a9f] mb-3">Confirmation Codes</p>
+                            {selectedBookingForDrawer.qrCode && (
+                              <div
+                                className="rounded-xl border border-[#f0d9e8] bg-gradient-to-br from-white to-[#fffafb] p-4 mb-3 cursor-pointer hover:border-[#ea4f93] hover:shadow-md transition-all"
+                                onClick={() => setIsQrExpanded(true)}
+                              >
+                                <div className="flex items-center justify-between mb-3">
+                                  <p className="text-xs font-semibold uppercase tracking-widest text-[#a88a9f]">QR Code</p>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); setIsQrExpanded(true); }}
+                                    className="text-[#ea4f93] hover:text-[#c9366b] transition"
+                                  >
+                                    <Maximize2 size={16} />
+                                  </button>
+                                </div>
+                                <img
+                                  src={
+                                    typeof selectedBookingForDrawer.qrCode === "string" && selectedBookingForDrawer.qrCode.startsWith("data:")
+                                      ? selectedBookingForDrawer.qrCode
+                                      : typeof selectedBookingForDrawer.qrCode === "string" && selectedBookingForDrawer.qrCode.length > 100
+                                        ? `data:image/png;base64,${selectedBookingForDrawer.qrCode}`
+                                        : selectedBookingForDrawer.qrCode
+                                  }
+                                  alt="QR Code"
+                                  className="max-w-[120px] mx-auto rounded-xl"
+                                  onError={(e) => {
+                                    console.error("QR Code image failed to load:", selectedBookingForDrawer.qrCode);
+                                    e.target.style.display = "none";
+                                  }}
+                                />
+                              </div>
+                            )}
+                            {selectedBookingForDrawer.qtCode && (
+                              <div className="rounded-xl border border-[#f0d9e8] bg-gradient-to-br from-white to-[#fffafb] p-4">
+                                <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-[#a88a9f]">QT Code</p>
+                                <p className="break-all text-sm font-medium text-[#2d1b35]">{selectedBookingForDrawer.qtCode}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Check-in Image */}
+                    {selectedBookingForDrawer.checkInImageUrl && (
+                      <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f0d9e8]">
+                        <h3 className="text-sm font-bold text-[#2d1b35] mb-4">Check-in Photo</h3>
+                        <div className="overflow-hidden rounded-xl border border-[#f0d9e8] bg-gradient-to-br from-white to-[#fffafb] p-2">
+                          <img src={selectedBookingForDrawer.checkInImageUrl} alt="Check-in" className="max-w-full rounded-lg w-full object-cover" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : null}
+            </Drawer>
+
+            {/* QR Code Expand Modal */}
+            <Modal
+              open={isQrExpanded}
+              onCancel={() => setIsQrExpanded(false)}
+              footer={null}
+              centered
+              width={400}
+              styles={{
+                content: { padding: 0, borderRadius: 24, overflow: "hidden" },
+                mask: { backdropFilter: "blur(4px)" },
+              }}
+            >
+              <div className="bg-white p-6 text-center">
+                <div className="flex justify-between items-center mb-4">
+                  <p className="text-sm font-bold text-[#402542]">QR Code</p>
+                  <button
+                    type="button"
+                    onClick={() => setIsQrExpanded(false)}
+                    className="text-[#c08aa4] hover:text-[#ea4f93] transition"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+                {selectedBookingForDrawer && (
+                  <img
+                    src={
+                      typeof selectedBookingForDrawer.qrCode === "string" && selectedBookingForDrawer.qrCode.startsWith("data:")
+                        ? selectedBookingForDrawer.qrCode
+                        : typeof selectedBookingForDrawer.qrCode === "string" && selectedBookingForDrawer.qrCode.length > 100
+                          ? `data:image/png;base64,${selectedBookingForDrawer.qrCode}`
+                          : selectedBookingForDrawer.qrCode
+                    }
+                    alt="QR Code"
+                    className="max-w-[280px] mx-auto rounded-xl"
+                  />
+                )}
+              </div>
+            </Modal>
 
             <Card className="overflow-hidden">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

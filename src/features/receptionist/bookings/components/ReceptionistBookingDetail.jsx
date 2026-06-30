@@ -534,7 +534,7 @@ export function ReceptionistBookingDetail({ booking }) {
             </button>
           </SectionCard>
 
-          <SectionCard title="Next Appointment">
+          {/* <SectionCard title="Next Appointment">
             <div className="rounded-[20px] border border-[#f3d7e2] bg-[#fff7fb] px-4 py-4">
               <p className="text-xs font-extrabold text-[#eb5b92]">Tomorrow - 2:30 PM</p>
               <p className="mt-2 text-sm font-bold text-[#4a3741]">Gel Manicure + Nail Art</p>
@@ -556,7 +556,7 @@ export function ReceptionistBookingDetail({ booking }) {
                 Edit
               </button>
             </div>
-          </SectionCard>
+          </SectionCard> */}
         </aside>
       </div>
     </section>

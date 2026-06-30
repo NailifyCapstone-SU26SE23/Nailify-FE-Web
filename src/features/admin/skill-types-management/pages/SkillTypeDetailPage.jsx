@@ -1,33 +1,32 @@
-import { ArrowLeft, FolderTree, Pencil, Save, ShieldCheck, Trash2, X } from "lucide-react";
+import { ArrowLeft, FileText, FolderTree, Pencil, Save, ShieldCheck, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ROUTES } from "../../../../shared/constants/routes";
 import {
-  CATEGORY_TYPE_STATUS_OPTIONS,
-  deleteAdminCategoryType,
-  fetchAdminCategoryTypeDetail,
-  updateAdminCategoryType,
-} from "../services/categoryTypesManagementService";
+  deleteAdminSkillType,
+  fetchAdminSkillTypeDetail,
+  updateAdminSkillType,
+} from "../services/skillTypesManagementService";
 
 function validateForm(formValues) {
   if (!String(formValues.name || "").trim()) {
-    return "Category type name is required.";
+    return "Skill type name is required.";
   }
 
-  if (!String(formValues.status || "").trim()) {
-    return "Status is required.";
+  if (!String(formValues.description || "").trim()) {
+    return "Skill type description is required.";
   }
 
   return "";
 }
 
-export function CategoryTypeDetailPage() {
+export function SkillTypeDetailPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { categoryTypeId } = useParams();
-  const [categoryType, setCategoryType] = useState(null);
+  const { skillTypeId } = useParams();
+  const [skillType, setSkillType] = useState(null);
   const [draft, setDraft] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -49,28 +48,28 @@ export function CategoryTypeDetailPage() {
   useEffect(() => {
     let isMounted = true;
 
-    const loadCategoryType = async () => {
+    const loadSkillType = async () => {
       setIsLoading(true);
       setError("");
 
       try {
-        const response = await fetchAdminCategoryTypeDetail(categoryTypeId);
+        const response = await fetchAdminSkillTypeDetail(skillTypeId);
 
         if (!isMounted) {
           return;
         }
 
-        setCategoryType(response);
+        setSkillType(response);
         setDraft({
           name: response.name,
-          status: response.status,
+          description: response.description,
         });
       } catch (loadError) {
         if (!isMounted) {
           return;
         }
 
-        setError(loadError instanceof Error ? loadError.message : "Failed to load category type detail.");
+        setError(loadError instanceof Error ? loadError.message : "Failed to load skill type detail.");
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -78,25 +77,24 @@ export function CategoryTypeDetailPage() {
       }
     };
 
-    void loadCategoryType();
+    void loadSkillType();
 
     return () => {
       isMounted = false;
     };
-  }, [categoryTypeId]);
+  }, [skillTypeId]);
 
   const summaryItems = useMemo(() => {
-    if (!categoryType || !draft) {
+    if (!skillType || !draft) {
       return [];
     }
 
     return [
-      ["Category Type ID", String(categoryType.categoryTypeId)],
-      ["Status", draft.status || "--"],
-      ["Categories Count", String(categoryType.categoriesCount)],
-      ["Categories", categoryType.categoriesLabel],
+      ["Skill Type ID", skillType.skillTypeId],
+      ["Status", skillType.status || "--"],
+      ["Description", draft.description || "--"],
     ];
-  }, [categoryType, draft]);
+  }, [draft, skillType]);
 
   const handleFieldChange = (field, value) => {
     setDraft((current) => ({
@@ -110,26 +108,26 @@ export function CategoryTypeDetailPage() {
   };
 
   const handleStartEdit = () => {
-    if (!categoryType) {
+    if (!skillType) {
       return;
     }
 
     setDraft({
-      name: categoryType.name,
-      status: categoryType.status,
+      name: skillType.name,
+      description: skillType.description,
     });
     setError("");
     setIsEditing(true);
   };
 
   const handleCancelEdit = () => {
-    if (!categoryType) {
+    if (!skillType) {
       return;
     }
 
     setDraft({
-      name: categoryType.name,
-      status: categoryType.status,
+      name: skillType.name,
+      description: skillType.description,
     });
     setError("");
     setIsEditing(false);
@@ -147,23 +145,23 @@ export function CategoryTypeDetailPage() {
   };
 
   const handleSave = async () => {
-    if (!categoryType || !draft) {
+    if (!skillType || !draft) {
       return;
     }
 
     setIsSaving(true);
 
     try {
-      const updatedCategoryType = await updateAdminCategoryType(categoryType.categoryTypeId, draft);
-      setCategoryType(updatedCategoryType);
+      const updatedSkillType = await updateAdminSkillType(skillType.skillTypeId, draft);
+      setSkillType(updatedSkillType);
       setDraft({
-        name: updatedCategoryType.name,
-        status: updatedCategoryType.status,
+        name: updatedSkillType.name,
+        description: updatedSkillType.description,
       });
       setIsEditing(false);
-      toast.success(`${updatedCategoryType.name} updated successfully.`);
+      toast.success(`${updatedSkillType.name} updated successfully.`);
     } catch (saveError) {
-      const message = saveError instanceof Error ? saveError.message : "Failed to update category type.";
+      const message = saveError instanceof Error ? saveError.message : "Failed to update skill type.";
       setError(message);
       toast.error(message);
     } finally {
@@ -173,22 +171,22 @@ export function CategoryTypeDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (!categoryType) {
+    if (!skillType) {
       return;
     }
 
     setIsDeleting(true);
 
     try {
-      await deleteAdminCategoryType(categoryType.categoryTypeId);
-      toast.success(`${categoryType.name} deleted successfully.`);
-      navigate(ROUTES.adminCategoryTypes, {
+      await deleteAdminSkillType(skillType.skillTypeId);
+      toast.success(`${skillType.name} deleted successfully.`);
+      navigate(ROUTES.adminSkillTypes, {
         state: {
-          flashMessage: `${categoryType.name} has been deleted successfully.`,
+          flashMessage: `${skillType.name} has been deleted successfully.`,
         },
       });
     } catch (deleteError) {
-      const message = deleteError instanceof Error ? deleteError.message : "Failed to delete category type.";
+      const message = deleteError instanceof Error ? deleteError.message : "Failed to delete skill type.";
       toast.error(message);
     } finally {
       setIsDeleting(false);
@@ -196,8 +194,8 @@ export function CategoryTypeDetailPage() {
     }
   };
 
-  if (!isLoading && !categoryType) {
-    return <Navigate to={ROUTES.adminCategoryTypes} replace />;
+  if (!isLoading && !skillType) {
+    return <Navigate to={ROUTES.adminSkillTypes} replace />;
   }
 
   return (
@@ -205,14 +203,14 @@ export function CategoryTypeDetailPage() {
       <header className="flex flex-col gap-4 rounded-[24px] bg-white/70 px-5 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-start gap-3">
           <Link
-            to={ROUTES.adminCategoryTypes}
+            to={ROUTES.adminSkillTypes}
             className="inline-flex shrink-0 rounded-xl border border-rose-100 bg-white p-2 text-rose-500 transition hover:bg-rose-50"
           >
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-[#cf3d74]">Category Type Detail</h1>
-            <p className="text-xs font-medium text-slate-400">Review, edit, and delete this category type from one page.</p>
+            <h1 className="text-2xl font-black tracking-tight text-[#cf3d74]">Skill Type Detail</h1>
+            <p className="text-xs font-medium text-slate-400">Review, edit, and delete this skill type from one page.</p>
           </div>
         </div>
 
@@ -224,7 +222,7 @@ export function CategoryTypeDetailPage() {
             className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Trash2 size={14} />
-            Delete Category Type
+            Delete Skill Type
           </button>
           {isEditing ? (
             <>
@@ -253,7 +251,7 @@ export function CategoryTypeDetailPage() {
               className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Pencil size={14} />
-              Edit Category Type
+              Edit Skill Type
             </button>
           )}
         </div>
@@ -273,19 +271,19 @@ export function CategoryTypeDetailPage() {
 
       {isLoading ? (
         <div className="flex min-h-[320px] items-center justify-center rounded-[24px] bg-white/80 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
-          <div className="text-center text-sm text-slate-600">Loading category type details...</div>
+          <div className="text-center text-sm text-slate-600">Loading skill type details...</div>
         </div>
       ) : (
-        <div className="grid gap-4 ">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_360px]">
           <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
             <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
               <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
-              Category Type Information
+              Skill Type Information
             </h2>
 
             <div className="grid gap-5">
               <label className="space-y-2.5">
-                <span className="text-[13px] font-semibold text-slate-600">Category Type Name</span>
+                <span className="text-[13px] font-semibold text-slate-600">Skill Type Name</span>
                 <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                   <FolderTree size={14} className="shrink-0 text-rose-300" />
                   <input
@@ -299,45 +297,32 @@ export function CategoryTypeDetailPage() {
               </label>
 
               <label className="space-y-2.5">
-                <span className="text-[13px] font-semibold text-slate-600">Status</span>
-                <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
-                  <ShieldCheck size={14} className="shrink-0 text-rose-300" />
-                  <select
-                    value={draft?.status || CATEGORY_TYPE_STATUS_OPTIONS[0]}
-                    onChange={(event) => handleFieldChange("status", event.target.value)}
+                <span className="text-[13px] font-semibold text-slate-600">Description</span>
+                <div className="flex items-start gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
+                  <FileText size={14} className="mt-0.5 shrink-0 text-rose-300" />
+                  <textarea
+                    rows={5}
+                    value={draft?.description || ""}
+                    onChange={(event) => handleFieldChange("description", event.target.value)}
                     disabled={!isEditing}
-                    className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
-                  >
-                    {CATEGORY_TYPE_STATUS_OPTIONS.map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
+                    className="w-full resize-none bg-transparent text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
+                  />
                 </div>
               </label>
 
               <div className="rounded-2xl border border-rose-100 bg-[#fff8fb] p-4">
-                <p className="text-[13px] font-semibold text-slate-600">Nested Categories</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {categoryType?.categories?.length ? (
-                    categoryType.categories.map((category) => (
-                      <span
-                        key={category.categoryId}
-                        className="inline-flex rounded-full bg-white px-3 py-1 text-[11px] font-semibold text-[#b15f84] shadow-sm"
-                      >
-                        {category.name} ({category.status})
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-sm text-slate-400">No categories assigned.</span>
-                  )}
+                <div className="flex items-center gap-2">
+                  <ShieldCheck size={14} className="shrink-0 text-rose-300" />
+                  <div>
+                    <p className="text-[13px] font-semibold text-slate-600">Current Status</p>
+                    <p className="mt-1 text-sm font-bold text-slate-800">{skillType?.status || "--"}</p>
+                  </div>
                 </div>
               </div>
             </div>
           </section>
 
-          {/* <aside className="space-y-4">
+          <aside className="space-y-4">
             <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
               <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
                 <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
@@ -353,44 +338,47 @@ export function CategoryTypeDetailPage() {
                 ))}
               </div>
             </section>
-          </aside> */}
+          </aside>
         </div>
       )}
 
       <ActionConfirmModal
         open={showSaveConfirm}
         intent="success"
-        title="Save Category Type Changes"
-        subtitle="This will update the category type in backend."
-        description="Confirm to save the latest changes to this category type."
+        title="Save Skill Type Changes"
+        subtitle="This will update the skill type in backend."
+        description="Confirm to save the latest changes to this skill type."
         confirmText="Save Changes"
         cancelText="Review Again"
         confirmIcon={Save}
         loading={isSaving}
         onConfirm={handleSave}
         onCancel={() => !isSaving && setShowSaveConfirm(false)}
-        highlights={[draft?.name || categoryType?.name || "Category type"]}
-        details={[{ label: "Status", value: draft?.status || "--" }]}
+        highlights={[draft?.name || skillType?.name || "Skill type"]}
+        details={[
+          { label: "Status", value: skillType?.status || "--" },
+          { label: "Description", value: draft?.description || "--" },
+        ]}
       />
 
       <ActionConfirmModal
         open={showDeleteConfirm}
         intent="danger"
-        title="Delete Category Type"
-        subtitle="This will set the category type status to inactive in backend."
-        description={`You are about to delete ${categoryType?.name || "this category type"}.`}
-        confirmText="Delete Category Type"
-        cancelText="Keep Category Type"
+        title="Delete Skill Type"
+        subtitle="This will set the skill type status to inactive in backend."
+        description={`You are about to delete ${skillType?.name || "this skill type"}.`}
+        confirmText="Delete Skill Type"
+        cancelText="Keep Skill Type"
         confirmIcon={Trash2}
         loading={isDeleting}
         onConfirm={handleDelete}
         onCancel={() => !isDeleting && setShowDeleteConfirm(false)}
         item={
-          categoryType
+          skillType
             ? {
-                title: categoryType.name,
-                meta: `${categoryType.categoriesCount} categories | ${categoryType.status}`,
-                note: `Category Type ID: ${categoryType.categoryTypeId}`,
+                title: skillType.name,
+                meta: skillType.status,
+                note: `Skill Type ID: ${skillType.skillTypeId}`,
               }
             : null
         }
