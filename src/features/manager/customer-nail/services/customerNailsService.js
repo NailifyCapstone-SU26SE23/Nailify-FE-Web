@@ -41,6 +41,7 @@ function unwrapResponse(response, fallbackMessage) {
 async function fetchAllRawCustomerNails() {
   try {
     const response = await axiosClient.get(`/CustomerNails`, {
+      params: { pageSize: 1000 },
       headers: getAuthHeaders(),
     });
     return unwrapResponse(response, "Failed to load raw nails.");
@@ -63,7 +64,7 @@ export function normalizeCustomerNail(item, rawNailsList = []) {
     const isPendingOrAssigned = item.status === "PendingReview" || item.status === "Assigned" || item.status === "Pending";
 
     return {
-      customerNailRequestId: item.customerNailRequestId,
+      customerNailRequestId: item.customerNailRequestId || item.id,
       salonId: item.salonId,
       salonName: item.salonName,
       status: item.status, // request status (PendingReview, Approved, etc.)
@@ -104,7 +105,7 @@ export function normalizeCustomerNail(item, rawNailsList = []) {
 }
 
 export async function fetchCustomerNails(params = {}) {
-  const finalParams = { ...params };
+  const finalParams = { pageSize: 1000, ...params };
   if (!finalParams.salonId) {
     try {
       const salonId = getManagerSalonId();
@@ -265,17 +266,23 @@ export async function rejectCustomerNail(customerNailId, rejectReason) {
   }
 }
 
-export async function fetchSalonStaff(salonId) {
+export async function fetchSalonStaff(salonId, role = "Staff_Artist") {
   const normalizedId = String(salonId || "").trim();
 
   if (!normalizedId) {
     throw new Error("Salon ID is required.");
   }
 
-  console.log("Fetching salon staff with salonId:", normalizedId);
+  console.log("Fetching salon staff with salonId:", normalizedId, "role:", role);
 
   try {
-    const response = await axiosClient.get(`/Users/salon/${normalizedId}/staff`, {
+    const response = await axiosClient.get(`/Users`, {
+      params: {
+        pageNumber: 1,
+        pageSize: 100,
+        role: role,
+        salonId: normalizedId
+      },
       headers: getAuthHeaders(),
     });
 
@@ -298,27 +305,35 @@ export async function assignReviewer(customerNailId, staffId) {
   console.log("Assigning reviewer for customer nail:", normalizedId, "with staffId:", normalizedStaffId);
 
   try {
-    const response = await axiosClient.post(`/CustomerNailRequests/${normalizedId}/assign-reviewer`, payload, {
+    const response = await axiosClient.post(`/CustomerNails/requests/${normalizedId}/assign-reviewer`, payload, {
       headers: getAuthHeaders(),
     });
     return unwrapResponse(response, "Failed to assign reviewer.");
   } catch (error) {
-    console.warn("Failed /CustomerNailRequests/assign-reviewer, trying /CustomerNailRequests/assign-artist...", error.response?.data || error);
+    console.warn("Failed /CustomerNails/requests/assign-reviewer, trying /CustomerNailRequests/assign-reviewer...", error.response?.data || error);
     try {
-      const response2 = await axiosClient.post(`/CustomerNailRequests/${normalizedId}/assign-artist`, payload, {
+      const response2 = await axiosClient.post(`/CustomerNailRequests/${normalizedId}/assign-reviewer`, payload, {
         headers: getAuthHeaders(),
       });
       return unwrapResponse(response2, "Failed to assign reviewer.");
     } catch (err2) {
-      console.warn("Failed /CustomerNailRequests/assign-artist, trying /CustomerNails/assign-reviewer...", err2.response?.data || err2);
+      console.warn("Failed /CustomerNailRequests/assign-reviewer, trying /CustomerNailRequests/assign-artist...", err2.response?.data || err2);
       try {
-        const response3 = await axiosClient.post(`/CustomerNails/${normalizedId}/assign-reviewer`, payload, {
+        const response3 = await axiosClient.post(`/CustomerNailRequests/${normalizedId}/assign-artist`, payload, {
           headers: getAuthHeaders(),
         });
         return unwrapResponse(response3, "Failed to assign reviewer.");
       } catch (err3) {
-        console.error("Error assigning reviewer:", err3.response?.data || err3);
-        throw new Error(err3.response?.data?.message || err3.message || "Failed to assign reviewer.", { cause: err3 });
+        console.warn("Failed /CustomerNailRequests/assign-artist, trying /CustomerNails/assign-reviewer...", err3.response?.data || err3);
+        try {
+          const response4 = await axiosClient.post(`/CustomerNails/${normalizedId}/assign-reviewer`, payload, {
+            headers: getAuthHeaders(),
+          });
+          return unwrapResponse(response4, "Failed to assign reviewer.");
+        } catch (err4) {
+          console.error("Error assigning reviewer:", err4.response?.data || err4);
+          throw new Error(err4.response?.data?.message || err4.message || "Failed to assign reviewer.", { cause: err4 });
+        }
       }
     }
   }
@@ -335,20 +350,28 @@ export async function managerApproveQuote(customerNailId, finalPrice, finalDurat
   console.log("Approving quote for customer nail:", normalizedId);
 
   try {
-    const response = await axiosClient.post(`/CustomerNailRequests/${normalizedId}/manager-approve-quote`, payload, {
+    const response = await axiosClient.post(`/CustomerNails/requests/${normalizedId}/manager-approve-quote`, payload, {
       headers: getAuthHeaders(),
     });
     return unwrapResponse(response, "Failed to approve quote.");
   } catch (error) {
-    console.warn("Failed /CustomerNailRequests/manager-approve-quote, trying /CustomerNails/manager-approve-quote...", error.response?.data || error);
+    console.warn("Failed /CustomerNails/requests/manager-approve-quote, trying /CustomerNailRequests/manager-approve-quote...", error.response?.data || error);
     try {
-      const response2 = await axiosClient.post(`/CustomerNails/${normalizedId}/manager-approve-quote`, payload, {
+      const response2 = await axiosClient.post(`/CustomerNailRequests/${normalizedId}/manager-approve-quote`, payload, {
         headers: getAuthHeaders(),
       });
       return unwrapResponse(response2, "Failed to approve quote.");
     } catch (err2) {
-      console.error("Error approving quote:", err2.response?.data || err2);
-      throw new Error(err2.response?.data?.message || err2.message || "Failed to approve quote.", { cause: err2 });
+      console.warn("Failed /CustomerNailRequests/manager-approve-quote, trying /CustomerNails/${normalizedId}/manager-approve-quote...", err2.response?.data || err2);
+      try {
+        const response3 = await axiosClient.post(`/CustomerNails/${normalizedId}/manager-approve-quote`, payload, {
+          headers: getAuthHeaders(),
+        });
+        return unwrapResponse(response3, "Failed to approve quote.");
+      } catch (err3) {
+        console.error("Error approving quote:", err3.response?.data || err3);
+        throw new Error(err3.response?.data?.message || err3.message || "Failed to approve quote.", { cause: err3 });
+      }
     }
   }
 }
@@ -368,26 +391,45 @@ export async function managerReject(customerNailId, reason) {
   console.log("Rejecting customer nail (manager):", normalizedId, "with reason:", normalizedReason);
 
   try {
-    const response = await axiosClient.post(`/CustomerNailRequests/${normalizedId}/manager-reject`, payload, {
+    const response = await axiosClient.post(`/CustomerNails/requests/${normalizedId}/manager-reject`, payload, {
       headers: getAuthHeaders(),
     });
     return unwrapResponse(response, "Failed to reject customer nail.");
   } catch (error) {
-    console.warn("Failed /CustomerNailRequests/manager-reject, trying /CustomerNails/manager-reject...", error.response?.data || error);
+    console.warn("Failed /CustomerNails/requests/manager-reject, trying /CustomerNailRequests/manager-reject...", error.response?.data || error);
     try {
-      const response2 = await axiosClient.post(`/CustomerNails/${normalizedId}/manager-reject`, payload, {
+      const response2 = await axiosClient.post(`/CustomerNailRequests/${normalizedId}/manager-reject`, payload, {
         headers: getAuthHeaders(),
       });
       return unwrapResponse(response2, "Failed to reject customer nail.");
     } catch (err2) {
-      console.error("Error rejecting customer nail (manager):", err2.response?.data || err2);
-      throw new Error(err2.response?.data?.message || err2.message || "Failed to reject customer nail.", { cause: err2 });
+      console.warn("Failed /CustomerNailRequests/manager-reject, trying /CustomerNails/${normalizedId}/manager-reject...", err2.response?.data || err2);
+      try {
+        const response3 = await axiosClient.post(`/CustomerNails/${normalizedId}/manager-reject`, payload, {
+          headers: getAuthHeaders(),
+        });
+        return unwrapResponse(response3, "Failed to reject customer nail.");
+      } catch (err3) {
+        console.error("Error rejecting customer nail (manager):", err3.response?.data || err3);
+        throw new Error(err3.response?.data?.message || err3.message || "Failed to reject customer nail.", { cause: err3 });
+      }
     }
   }
 }
 
 export async function fetchCustomerNailRequests(params = {}) {
   return fetchCustomerNails(params);
+}
+
+export async function fetchStaffCustomerNailRequests(staffArtistId, params = {}) {
+  const normalizedArtistId = String(staffArtistId || "").trim();
+  if (!normalizedArtistId) {
+    throw new Error("Staff Artist ID is required.");
+  }
+  return fetchCustomerNails({
+    approvedArtistId: normalizedArtistId,
+    ...params
+  });
 }
 
 export async function fetchCustomerNailRequestById(id) {
@@ -405,20 +447,20 @@ export async function staffSubmitArtistQuote(customerNailId, quotedPrice, quoted
   };
 
   try {
-    console.log("Submitting artist quote (primary: /CustomerNailRequests/{id}/artist-quote)...");
-    const response = await axiosClient.post(`/CustomerNailRequests/${normalizedId}/artist-quote`, payload, {
+    console.log("Submitting artist quote (primary: /CustomerNails/requests/{id}/artist-quote)...");
+    const response = await axiosClient.post(`/CustomerNails/requests/${normalizedId}/artist-quote`, payload, {
       headers: getAuthHeaders(),
     });
     return unwrapResponse(response, "Failed to submit artist quote.");
   } catch (error) {
-    console.warn("Failed /CustomerNailRequests/artist-quote, trying /CustomerNails/requests/artist-quote...", error.response?.data || error);
+    console.warn("Failed /CustomerNails/requests/artist-quote, trying /CustomerNailRequests/artist-quote...", error.response?.data || error);
     try {
-      const response2 = await axiosClient.post(`/CustomerNails/requests/${normalizedId}/artist-quote`, payload, {
+      const response2 = await axiosClient.post(`/CustomerNailRequests/${normalizedId}/artist-quote`, payload, {
         headers: getAuthHeaders(),
       });
       return unwrapResponse(response2, "Failed to submit artist quote.");
     } catch (err2) {
-      console.warn("Failed /CustomerNails/requests/artist-quote, trying /CustomerNails/artist-quote...", err2.response?.data || err2);
+      console.warn("Failed /CustomerNailRequests/artist-quote, trying /CustomerNails/artist-quote...", err2.response?.data || err2);
       try {
         const response3 = await axiosClient.post(`/CustomerNails/${normalizedId}/artist-quote`, payload, {
           headers: getAuthHeaders(),

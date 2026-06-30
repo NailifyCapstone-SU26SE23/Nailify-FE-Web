@@ -10,7 +10,7 @@ import { fetchCustomerNails } from "../services/customerNailsService";
 function Card({ className = "", children }) {
   return (
     <article
-      className={`rounded-[18px] border border-[#f8deea] bg-white p-5 shadow-[0_10px_24px_rgba(236,72,153,0.06)] ${className}`}
+      className={`rounded-[24px] border border-[#f8deea] bg-white/90 p-5 shadow-[0_12px_28px_rgba(236,72,153,0.06)] backdrop-blur-md transition-all duration-300 hover:shadow-[0_18px_38px_rgba(236,72,153,0.1)] ${className}`}
     >
       {children}
     </article>
@@ -143,7 +143,7 @@ function CustomerNailCard({ nail }) {
   } : {};
 
   return (
-    <div className="group rounded-[24px] border border-[#f8deea] bg-[linear-gradient(180deg,#fffafb_0%,#fff6fa_100%)] p-5 shadow-[0_10px_24px_rgba(236,72,153,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_36px_rgba(236,72,153,0.14)]">
+    <div className="group rounded-[28px] border border-[#f8deea] bg-white p-5 shadow-[0_10px_28px_rgba(236,72,153,0.05)] transition-all duration-350 hover:-translate-y-1.5 hover:border-[#ea4f93]/40 hover:shadow-[0_22px_44px_rgba(236,72,153,0.16)]">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="relative h-16 w-12 shrink-0 rounded-t-[14px] rounded-b-[4px] border border-[#f4c1d8] bg-white shadow-[0_6px_14px_rgba(236,72,153,0.05)] overflow-hidden flex items-center justify-center">
