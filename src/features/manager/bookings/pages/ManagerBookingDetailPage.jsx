@@ -1,6 +1,5 @@
 import {
   Calendar,
-  ChevronLeft,
   Clock3,
   CreditCard,
   ScanQrCode,
@@ -10,7 +9,7 @@ import {
   Search,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { ROUTES } from "../../../../shared/constants/routes";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { ROLES } from "../../../../shared/constants/roles";
@@ -221,7 +220,6 @@ function getArtistDisplayName(booking) {
 
 export function ManagerBookingDetailPage() {
   const { bookingId } = useParams();
-  const navigate = useNavigate();
   const [booking, setBooking] = useState(null);
   const [customer, setCustomer] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -319,13 +317,7 @@ export function ManagerBookingDetailPage() {
           type="error"
           showIcon
         />
-        <Link
-          to={roleConfig.listRoute}
-          className="inline-flex items-center gap-1.5 rounded-full bg-[#ea4f93] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#df4588] w-fit"
-        >
-          <ChevronLeft size={14} />
-          Back to Bookings
-        </Link>
+
       </section>
     );
   }
@@ -388,14 +380,6 @@ export function ManagerBookingDetailPage() {
             
             {/* Action Buttons Container - Responsive Layout */}
             <div className="flex w-full flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end lg:w-auto">
-              <button
-                type="button"
-                onClick={() => navigate(roleConfig.listRoute)}
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-[#f0d9e8] bg-white px-4 py-2.5 text-xs font-semibold text-[#ea4f93] transition hover:border-[#ea4f93] hover:bg-[#fff7fb] disabled:opacity-50 whitespace-nowrap"
-              >
-                <ChevronLeft size={16} />
-                Back
-              </button>
 
               {/* Only show action buttons if not final, not checked in, and not in progress */}
               {!isFinalStatus && 
