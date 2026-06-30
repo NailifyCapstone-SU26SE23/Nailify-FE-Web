@@ -120,7 +120,7 @@ export function BuilderControls() {
               nailSurfaces.map((surface, index) => (
                 <button
                   className={`material-btn ${index === 0 ? 'active' : ''}`}
-                  data-material={surface.shaderParam.toLowerCase()}
+                  data-material={surface.name}
                   key={surface.id}
                   type="button"
                 >

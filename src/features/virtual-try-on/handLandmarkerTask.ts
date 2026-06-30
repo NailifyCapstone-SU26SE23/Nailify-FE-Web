@@ -53,7 +53,7 @@ type VariantColorConfig =
 export type SerializedNailSet = {
   shape: string;
   length: number;
-  material: 'standard' | 'metallic' | 'iridescent' | 'matte';
+  material: string;
   gradient: {
     enabled: boolean;
     type: 'linear' | 'horizontal' | 'radial';
@@ -78,7 +78,7 @@ class HandLandmarkerTask extends BaseVisionTask {
   private currentNailSet = {
     shape: 'ballerina',
     length: 1.0,
-    material: 'standard' as 'standard' | 'metallic' | 'iridescent' | 'matte',
+    material: 'Glossy',
     gradient: {
       enabled: false,
       type: 'linear' as 'linear' | 'horizontal' | 'radial',
@@ -453,7 +453,7 @@ class HandLandmarkerTask extends BaseVisionTask {
 
       document.querySelectorAll('.material-btn').forEach((materialButton) => materialButton.classList.remove('active'));
       button.classList.add('active');
-      this.currentNailSet.material = button.dataset.material as SerializedNailSet['material'];
+      this.currentNailSet.material = button.dataset.material || 'Glossy';
       this.triggerRedetection();
     });
 
@@ -623,6 +623,15 @@ class HandLandmarkerTask extends BaseVisionTask {
     return new URL(fileName, new URL(import.meta.env.BASE_URL, window.location.origin)).href;
   }
 
+  private getRenderMaterial(surfaceName?: string | null): 'standard' | 'metallic' | 'iridescent' | 'matte' {
+    const normalized = String(surfaceName || '').trim().toLowerCase();
+    if (normalized.includes('iridescent') || normalized.includes('iridescence')) return 'iridescent';
+    if (normalized.includes('holographic') || normalized.includes('hologram')) return 'iridescent';
+    if (normalized.includes('metallic') || normalized.includes('chrome')) return 'metallic';
+    if (normalized.includes('matte')) return 'matte';
+    return 'standard';
+  }
+
   private normalizeSerializedNailSet(config: SerializedNailSet | { configJson?: string }): SerializedNailSet | null {
     if ('configJson' in config && typeof config.configJson === 'string') {
       try {
@@ -674,11 +683,7 @@ class HandLandmarkerTask extends BaseVisionTask {
       }
     }
     if (variant.nailSurface?.shaderParam || variant.nailSurface?.name) {
-      this.currentNailSet.material = (variant.nailSurface.shaderParam || variant.nailSurface.name).toLowerCase() as
-        | 'standard'
-        | 'metallic'
-        | 'iridescent'
-        | 'matte';
+      this.currentNailSet.material = variant.nailSurface.name;
     }
     this.applyVariantColorJson(variant.colorJson);
 
@@ -746,7 +751,7 @@ class HandLandmarkerTask extends BaseVisionTask {
     return {
       shape: 'ballerina',
       length: 1.0,
-      material: 'standard',
+      material: 'Glossy',
       gradient: {
         enabled: false,
         type: 'linear',
@@ -874,7 +879,7 @@ class HandLandmarkerTask extends BaseVisionTask {
     return {
       shape: config.shape,
       length: config.length,
-      material: config.material,
+      material: config.material || 'Glossy',
       gradient: { ...config.gradient },
       nails,
     };
@@ -987,7 +992,7 @@ class HandLandmarkerTask extends BaseVisionTask {
           offCtx.fillRect(0, materialY, nailWidth, nailHeight);
         } else {
           // Apply Material Logic to Base Color
-          const mat = this.currentNailSet.material;
+          const mat = this.getRenderMaterial(this.currentNailSet.material);
           if (mat === 'metallic') {
             const metallicGrad = offCtx.createLinearGradient(0, materialY, nailWidth, materialY + nailHeight);
             metallicGrad.addColorStop(0, chroma(color).darken(1).hex());
@@ -1012,7 +1017,7 @@ class HandLandmarkerTask extends BaseVisionTask {
         }
 
         // Add Dynamic Shine for Standard/Metallic/Iridescent
-        if (this.currentNailSet.material !== 'matte') {
+        if (this.getRenderMaterial(this.currentNailSet.material) !== 'matte') {
           offCtx.globalCompositeOperation = 'screen';
           const shineGrad = offCtx.createLinearGradient(0, 0, nailWidth, 0);
           shineGrad.addColorStop(0, 'rgba(255,255,255,0)');
@@ -1137,7 +1142,7 @@ class HandLandmarkerTask extends BaseVisionTask {
         offCtx.fillStyle = fillGrad;
       } else {
         // Apply Material Logic to Base Color
-        const mat = this.currentNailSet.material;
+        const mat = this.getRenderMaterial(this.currentNailSet.material);
         if (mat === 'metallic') {
           const metallicGrad = offCtx.createLinearGradient(0, 0, nailWidth, totalHeight);
           metallicGrad.addColorStop(0, chroma(color).darken(1).hex());
@@ -1163,7 +1168,7 @@ class HandLandmarkerTask extends BaseVisionTask {
       offCtx.fillRect(0, 0, nailWidth, totalHeight);
 
       // Add Dynamic Shine
-      if (this.currentNailSet.material !== 'matte') {
+      if (this.getRenderMaterial(this.currentNailSet.material) !== 'matte') {
         offCtx.globalCompositeOperation = 'screen';
         const shineGrad = offCtx.createLinearGradient(0, 0, nailWidth, 0);
         shineGrad.addColorStop(0, 'rgba(255,255,255,0)');
