@@ -3,8 +3,10 @@ import {
   CalendarClock,
   CheckCircle2,
   CreditCard,
+  Eye,
   LoaderCircle,
   MessageCircleMore,
+  PencilLine,
   Phone,
   Printer,
   QrCode,
@@ -15,11 +17,13 @@ import {
   UserRound,
   XCircle,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ROUTES, getReceptionistBookingCheckoutRoute } from "../../../../shared/constants/routes";
+import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
+import { AssignReceptionistArtistModal } from "../components/AssignReceptionistArtistModal";
 import {
   checkoutReceptionistBooking,
   fetchReceptionistBookingDetail,
@@ -134,6 +138,32 @@ function getServiceAction(status) {
   return "View";
 }
 
+function getServiceActionItems(row, handleViewService, handleMockAction) {
+  const secondaryActionIcon =
+    row.actionLabel === "Edit" ? PencilLine : row.actionLabel === "Manage" ? Sparkles : Eye;
+
+  return [
+    {
+      key: `view-${row.id}`,
+      label: "View",
+      icon: Eye,
+      onSelect: () => handleViewService(row),
+    },
+    {
+      key: `${String(row.actionLabel || "view").toLowerCase()}-${row.id}`,
+      label: row.actionLabel,
+      icon: secondaryActionIcon,
+      className:
+        row.actionLabel === "Manage"
+          ? "text-[#7c63d8]"
+          : row.actionLabel === "Edit"
+            ? "text-[#656565]"
+            : "text-[#eb5b92]",
+      onSelect: () => handleMockAction(`${row.actionLabel} ${row.service}`),
+    },
+  ];
+}
+
 function getProgressPercent(booking) {
   const items = booking?.bookingItems ?? [];
 
@@ -149,6 +179,27 @@ function getProgressPercent(booking) {
         : 0;
 
   return Math.max(20, Math.round((completedCount / items.length) * 100));
+}
+
+function sanitizeImageUrl(value) {
+  const normalizedValue = String(value || "").trim();
+
+  if (!normalizedValue) {
+    return "";
+  }
+
+  return normalizedValue.replace(/`/g, "");
+}
+
+function isNailBookingItem(item) {
+  return Boolean(
+    item?.nailVariantId ||
+    item?.customerNailId ||
+    String(item?.nailVariantName || "").trim() ||
+    String(item?.customerNailName || "").trim() ||
+    sanitizeImageUrl(item?.nailVariantImageUrl) ||
+    sanitizeImageUrl(item?.customerNailImageUrl),
+  );
 }
 
 function canManualCheckIn(status) {
@@ -198,64 +249,64 @@ function DetailCard({ title, subtitle, badge, children, className = "" }) {
   );
 }
 
-const ACTION_CENTER = [
-  {
-    label: "Check In",
-    subtitle: "Manual arrival check-in",
-    icon: SquareCheckBig,
-    cardTone: "bg-[linear-gradient(180deg,#fff1f6_0%,#ffe6f0_100%)]",
-    iconTone: "bg-[#ffdcea] text-[#eb5b92]",
-  },
-  {
-    label: "Start Service",
-    subtitle: "Begin session",
-    icon: Sparkles,
-    cardTone: "bg-[linear-gradient(180deg,#f2edff_0%,#e9e1ff_100%)]",
-    iconTone: "bg-[#dfd1ff] text-[#8160df]",
-  },
-  {
-    label: "Reassign Artist",
-    subtitle: "Change staff",
-    icon: UserRound,
-    cardTone: "bg-[linear-gradient(180deg,#fff8df_0%,#fff0bf_100%)]",
-    iconTone: "bg-[#ffe6a1] text-[#d8a01c]",
-  },
-  {
-    label: "Move Schedule",
-    subtitle: "Reschedule time",
-    icon: CalendarClock,
-    cardTone: "bg-[linear-gradient(180deg,#ebf7ff_0%,#dff1ff_100%)]",
-    iconTone: "bg-[#cfe8fb] text-[#4391c9]",
-  },
-  {
-    label: "Add Service",
-    subtitle: "Extra treatment",
-    icon: Sparkles,
-    cardTone: "bg-[linear-gradient(180deg,#e6f8ef_0%,#d8f2e5_100%)]",
-    iconTone: "bg-[#cdeedb] text-[#2da466]",
-  },
-  {
-    label: "Complete Booking",
-    subtitle: "Finalize session",
-    icon: CheckCircle2,
-    cardTone: "bg-[linear-gradient(180deg,#f2edff_0%,#ebe3ff_100%)]",
-    iconTone: "bg-[#ddd2ff] text-[#8260df]",
-  },
-  {
-    label: "Cancel Booking",
-    subtitle: "Void appointment",
-    icon: XCircle,
-    cardTone: "bg-[linear-gradient(180deg,#fff1f1_0%,#ffe9e9_100%)]",
-    iconTone: "bg-[#ffd8d8] text-[#ef6b6b]",
-  },
-  {
-    label: "Send Invoice",
-    subtitle: "Email to client",
-    icon: ReceiptText,
-    cardTone: "bg-[linear-gradient(180deg,#fff9eb_0%,#fff2cd_100%)]",
-    iconTone: "bg-[#ffe7ae] text-[#d19a15]",
-  },
-];
+// const ACTION_CENTER = [
+//   {
+//     label: "Check In",
+//     subtitle: "Manual arrival check-in",
+//     icon: SquareCheckBig,
+//     cardTone: "bg-[linear-gradient(180deg,#fff1f6_0%,#ffe6f0_100%)]",
+//     iconTone: "bg-[#ffdcea] text-[#eb5b92]",
+//   },
+//   {
+//     label: "Start Service",
+//     subtitle: "Begin session",
+//     icon: Sparkles,
+//     cardTone: "bg-[linear-gradient(180deg,#f2edff_0%,#e9e1ff_100%)]",
+//     iconTone: "bg-[#dfd1ff] text-[#8160df]",
+//   },
+//   {
+//     label: "Reassign Artist",
+//     subtitle: "Change staff",
+//     icon: UserRound,
+//     cardTone: "bg-[linear-gradient(180deg,#fff8df_0%,#fff0bf_100%)]",
+//     iconTone: "bg-[#ffe6a1] text-[#d8a01c]",
+//   },
+//   {
+//     label: "Move Schedule",
+//     subtitle: "Reschedule time",
+//     icon: CalendarClock,
+//     cardTone: "bg-[linear-gradient(180deg,#ebf7ff_0%,#dff1ff_100%)]",
+//     iconTone: "bg-[#cfe8fb] text-[#4391c9]",
+//   },
+//   {
+//     label: "Add Service",
+//     subtitle: "Extra treatment",
+//     icon: Sparkles,
+//     cardTone: "bg-[linear-gradient(180deg,#e6f8ef_0%,#d8f2e5_100%)]",
+//     iconTone: "bg-[#cdeedb] text-[#2da466]",
+//   },
+//   {
+//     label: "Complete Booking",
+//     subtitle: "Finalize session",
+//     icon: CheckCircle2,
+//     cardTone: "bg-[linear-gradient(180deg,#f2edff_0%,#ebe3ff_100%)]",
+//     iconTone: "bg-[#ddd2ff] text-[#8260df]",
+//   },
+//   {
+//     label: "Cancel Booking",
+//     subtitle: "Void appointment",
+//     icon: XCircle,
+//     cardTone: "bg-[linear-gradient(180deg,#fff1f1_0%,#ffe9e9_100%)]",
+//     iconTone: "bg-[#ffd8d8] text-[#ef6b6b]",
+//   },
+//   {
+//     label: "Send Invoice",
+//     subtitle: "Email to client",
+//     icon: ReceiptText,
+//     cardTone: "bg-[linear-gradient(180deg,#fff9eb_0%,#fff2cd_100%)]",
+//     iconTone: "bg-[#ffe7ae] text-[#d19a15]",
+//   },
+// ];
 
 export function ReceptionistBookingDetailPage() {
   const { bookingId } = useParams();
@@ -265,6 +316,8 @@ export function ReceptionistBookingDetailPage() {
   const [booking, setBooking] = useState(null);
   const [customerProfile, setCustomerProfile] = useState(null);
   const [isQrOpen, setIsQrOpen] = useState(false);
+  const [isAssignArtistOpen, setIsAssignArtistOpen] = useState(false);
+  const [selectedServiceRow, setSelectedServiceRow] = useState(null);
   const [isManualCheckInSubmitting, setIsManualCheckInSubmitting] = useState(false);
   const [isCheckoutSubmitting, setIsCheckoutSubmitting] = useState(false);
   const [notes, setNotes] = useState(
@@ -312,25 +365,45 @@ export function ReceptionistBookingDetailPage() {
     return () => window.clearTimeout(timerId);
   }, [bookingId]);
 
+  function addMinutes(time, minutes) {
+    const [h, m, s] = time.split(":").map(Number);
+
+    const date = new Date();
+    date.setHours(h, m, s || 0, 0);
+
+    date.setMinutes(date.getMinutes() + minutes);
+
+    return date.toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+  }
+
   const qrImageSrc = useMemo(() => (
     booking?.qrCode ? `data:image/png;base64,${booking.qrCode}` : ""
   ), [booking]);
   const customerDisplayName = getCustomerDisplayName(customerProfile, booking);
   const customerInitials = getCustomerInitials(customerProfile, booking);
+  const isSelectedRowNail = isNailBookingItem(selectedServiceRow?.sourceItem);
 
   const serviceRows = useMemo(() => (
     (booking?.bookingItems ?? []).map((item, index) => {
       const status = getServiceStatus(index, booking?.status);
 
       return {
-        id: item.bookingItemId,
-        time: `${formatTime(booking?.startTime)} - --`,
-        service: item.serviceName || "--",
+        id: item.bookingItemId || `${item.serviceId || "service"}-${index}`,
+        time: `${formatTime(booking?.startTime)} - ${addMinutes(
+          booking?.startTime,
+          item.duration
+        )}`,
+        service: item.serviceName,
         serviceType: item.nailVariantName || item.customerNailName || "--",
         artist: booking?.artistName || "--",
         duration: item.duration ? formatDurationMinutes(item.duration) : "--",
         status,
-        action: getServiceAction(status),
+        actionLabel: getServiceAction(status),
+        sourceItem: item,
       };
     })
   ), [booking]);
@@ -362,8 +435,8 @@ export function ReceptionistBookingDetailPage() {
       key: "service",
       render: (_, row) => (
         <div>
-          <p className="text-xs font-bold text-[#4a3741]">{row.service}</p>
-          <p className="mt-1 text-[10px] text-[#a48796]">{row.serviceType}</p>
+          <p className="text-xs font-bold text-[#4a3741]">{row.service ? row.service : `Nail service: ${row.serviceType}`}</p>
+
         </div>
       ),
     },
@@ -405,22 +478,11 @@ export function ReceptionistBookingDetailPage() {
       title: "Action",
       key: "action",
       render: (_, row) => (
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => handleMockAction(`View ${row.service}`)}
-            className="rounded-xl bg-[#fff1f6] px-3 py-1.5 text-[10px] font-bold text-[#eb5b92]"
-          >
-            View
-          </button>
-          <button
-            type="button"
-            onClick={() => handleMockAction(`${row.action} ${row.service}`)}
-            className={`rounded-xl px-3 py-1.5 text-[10px] font-bold ${getActionTone(row.action)}`}
-          >
-            {row.action}
-          </button>
-        </div>
+        <ActionDropdown
+          items={getServiceActionItems(row, handleViewService, handleMockAction)}
+          buttonClassName={getActionTone(row.actionLabel)}
+          label={row.actionLabel}
+        />
       ),
     },
   ]), []);
@@ -465,7 +527,11 @@ export function ReceptionistBookingDetailPage() {
     toast.success(`${label} is ready for receptionist flow.`);
   };
 
-  const handleManualCheckIn = async () => {
+  const handleViewService = (row) => {
+    setSelectedServiceRow(row);
+  };
+
+  const handleManualCheckIn = useCallback(async () => {
     if (!bookingId || !isManualCheckInAllowed || isManualCheckInSubmitting) {
       return;
     }
@@ -483,9 +549,9 @@ export function ReceptionistBookingDetailPage() {
     } finally {
       setIsManualCheckInSubmitting(false);
     }
-  };
+  }, [bookingId, isManualCheckInAllowed, isManualCheckInSubmitting]);
 
-  const handleCheckout = async () => {
+  const handleCheckout = useCallback(async () => {
     if (!bookingId || !actionAvailability.canCheckout || isCheckoutSubmitting) {
       return;
     }
@@ -509,16 +575,16 @@ export function ReceptionistBookingDetailPage() {
     } finally {
       setIsCheckoutSubmitting(false);
     }
-  };
+  }, [actionAvailability.canCheckout, bookingId, customerProfile, isCheckoutSubmitting, navigate]);
 
-  const handlePrimaryHeaderAction = async () => {
+  const handlePrimaryHeaderAction = useCallback(async () => {
     if (actionAvailability.canCheckout) {
       await handleCheckout();
       return;
     }
 
     await handleManualCheckIn();
-  };
+  }, [actionAvailability.canCheckout, handleCheckout, handleManualCheckIn]);
 
   const receptionistActionCenterItems = useMemo(
     () => [
@@ -549,7 +615,7 @@ export function ReceptionistBookingDetailPage() {
         cardTone: "bg-[linear-gradient(180deg,#fff8df_0%,#fff0bf_100%)]",
         iconTone: "bg-[#ffe6a1] text-[#d8a01c]",
         disabled: !actionAvailability.canReassignArtist,
-        onClick: () => handleMockAction("Reassign Artist"),
+        onClick: () => setIsAssignArtistOpen(true),
       },
       {
         label: "Move Schedule",
@@ -599,6 +665,7 @@ export function ReceptionistBookingDetailPage() {
     ],
     [
       actionAvailability,
+      handlePrimaryHeaderAction,
       isCheckoutSubmitting,
       isManualCheckInSubmitting,
     ],
@@ -969,7 +1036,7 @@ export function ReceptionistBookingDetailPage() {
             </button>
           </DetailCard>
 
-          <DetailCard title="Next Appointment">
+          {/* <DetailCard title="Next Appointment">
             <div className="rounded-[20px] border border-[#f3d7e2] bg-[#fff7fb] px-4 py-4">
               <p className="text-xs font-extrabold text-[#eb5b92]">Next slot --</p>
               <p className="mt-2 text-sm font-bold text-[#4a3741]">{serviceRows[0]?.service || "--"}</p>
@@ -991,9 +1058,125 @@ export function ReceptionistBookingDetailPage() {
                 Edit
               </button>
             </div>
-          </DetailCard>
+          </DetailCard> */}
         </aside>
       </div>
+
+      <Modal
+        open={Boolean(selectedServiceRow)}
+        onCancel={() => setSelectedServiceRow(null)}
+        footer={[
+          <Button key="close-service-view" onClick={() => setSelectedServiceRow(null)}>
+            Close
+          </Button>,
+        ]}
+        centered
+        width={760}
+        title="Service & Nail Detail"
+      >
+        {selectedServiceRow ? (
+          <div className="space-y-5 py-1">
+            {isSelectedRowNail ? (
+              <div className="space-y-4">
+                <div className="rounded-[18px] border border-[#f4d6e2] bg-[#fffafb] p-4">
+                  <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#c38ea8]">
+                    Nail Data
+                  </p>
+                  <div className="mt-4 space-y-3 text-sm">
+                    {[
+                      // ["Booking Item ID", selectedServiceRow.sourceItem?.bookingItemId || selectedServiceRow.id || "--"],
+                      // ["Nail Variant ID", selectedServiceRow.sourceItem?.nailVariantId || "--"],
+                      ["Nail Variant Name", selectedServiceRow.sourceItem?.nailVariantName || "--"],
+                      // ["Customer Nail ID", selectedServiceRow.sourceItem?.customerNailId || "--"],
+                      ["Customer Nail Name", selectedServiceRow.sourceItem?.customerNailName || "--"],
+                      ["Display Name", selectedServiceRow.serviceType || "--"],
+                      ["Duration", selectedServiceRow.duration || "--"],
+                      ["Price", formatCurrency(selectedServiceRow.sourceItem?.price)],
+                      ["Status", selectedServiceRow.status || "--"],
+                      ["Artist", selectedServiceRow.artist || "--"],
+                    ].map(([label, value]) => (
+                      <div key={label} className="flex items-start justify-between gap-4">
+                        <span className="text-[#8f7b88]">{label}</span>
+                        <span className="text-right font-bold text-[#4a3741]">{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="rounded-[18px] border border-[#f4d6e2] bg-white p-4">
+                    <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#c38ea8]">
+                      Nail Variant Image
+                    </p>
+                    <div className="mt-4 flex min-h-[220px] items-center justify-center rounded-[18px] border border-dashed border-[#f1d8e4] bg-[#fffafb] p-3">
+                      {sanitizeImageUrl(selectedServiceRow.sourceItem?.nailVariantImageUrl) ? (
+                        <img
+                          src={sanitizeImageUrl(selectedServiceRow.sourceItem?.nailVariantImageUrl)}
+                          alt={selectedServiceRow.sourceItem?.nailVariantName || "Nail variant"}
+                          className="max-h-[220px] rounded-2xl object-contain"
+                        />
+                      ) : (
+                        <span className="text-sm text-[#a48796]">No nail variant image.</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="rounded-[18px] border border-[#f4d6e2] bg-white p-4">
+                    <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#c38ea8]">
+                      Customer Nail Image
+                    </p>
+                    <div className="mt-4 flex min-h-[220px] items-center justify-center rounded-[18px] border border-dashed border-[#f1d8e4] bg-[#fffafb] p-3">
+                      {sanitizeImageUrl(selectedServiceRow.sourceItem?.customerNailImageUrl) ? (
+                        <img
+                          src={sanitizeImageUrl(selectedServiceRow.sourceItem?.customerNailImageUrl)}
+                          alt={selectedServiceRow.sourceItem?.customerNailName || "Customer nail"}
+                          className="max-h-[220px] rounded-2xl object-contain"
+                        />
+                      ) : (
+                        <span className="text-sm text-[#a48796]">No customer nail image.</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-[18px] border border-[#f4d6e2] bg-[#fffafb] p-4">
+                <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#c38ea8]">
+                  Service Data
+                </p>
+                <div className="mt-4 space-y-3 text-sm">
+                  {[
+                    // ["Booking Item ID", selectedServiceRow.sourceItem?.bookingItemId || selectedServiceRow.id || "--"],
+                    // ["Service ID", selectedServiceRow.sourceItem?.serviceId || "--"],
+                    ["Service Name", selectedServiceRow.sourceItem?.serviceName || selectedServiceRow.service || "--"],
+                    ["Duration", selectedServiceRow.duration || "--"],
+                    ["Quantity", selectedServiceRow.sourceItem?.quantity ?? "--"],
+                    ["Price", formatCurrency(selectedServiceRow.sourceItem?.price)],
+                    ["Status", selectedServiceRow.status || "--"],
+                    ["Artist", selectedServiceRow.artist || "--"],
+                  ].map(([label, value]) => (
+                    <div key={label} className="flex items-start justify-between gap-4">
+                      <span className="text-[#8f7b88]">{label}</span>
+                      <span className="text-right font-bold text-[#4a3741]">{value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : null}
+      </Modal>
+
+      <AssignReceptionistArtistModal
+        open={isAssignArtistOpen}
+        bookingId={booking?.bookingId || bookingId || ""}
+        currentArtistName={booking?.artistName || ""}
+        onClose={() => setIsAssignArtistOpen(false)}
+        onAssigned={(updatedBooking) => {
+          setBooking(updatedBooking);
+          setIsAssignArtistOpen(false);
+        }}
+      />
 
       <Modal
         open={isQrOpen}
