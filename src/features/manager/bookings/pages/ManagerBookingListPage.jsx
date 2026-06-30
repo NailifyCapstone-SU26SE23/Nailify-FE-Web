@@ -975,7 +975,7 @@ export function ManagerBookingListPage() {
 
                         {/* Action */}
                         <td className="px-3 py-2 align-middle" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                          <div className="flex items-center gap-1">
                             <button
                               type="button"
                               onClick={() => handleViewBooking(row.id)}
