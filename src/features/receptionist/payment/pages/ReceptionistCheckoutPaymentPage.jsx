@@ -87,7 +87,7 @@ function getCustomerInitials(customerProfile, booking) {
 function getBillItems(booking) {
   return (booking?.bookingItems ?? []).map((item, index) => ({
     id: item.bookingItemId || `${item.serviceId || "service"}-${index}`,
-    name: item.serviceName || "--",
+    name: item.serviceName ,
     subtitle: item.nailVariantName || item.customerNailName || "Service item",
     duration: item.duration ? formatDurationMinutes(item.duration) : "--",
     total: Number(item.price || 0) * Math.max(1, Number(item.quantity || 1)),
@@ -384,7 +384,7 @@ export function ReceptionistCheckoutPaymentPage() {
                 {billItems.map((item) => (
                   <div key={item.id} className="grid grid-cols-[minmax(0,1.4fr)_140px_140px] gap-4 px-4 py-4">
                     <div>
-                      <p className="text-sm font-extrabold text-[#412643]">{item.name}</p>
+                      <p className="text-sm font-extrabold text-[#412643]">{item.name} </p>
                       <p className="mt-1 text-xs text-[#b38a9f]">{item.subtitle}</p>
                     </div>
                     <p className="text-sm text-[#8f7b88]">{item.duration}</p>

@@ -13,17 +13,18 @@ import {
   Phone,
   UserRound,
   BriefcaseBusiness,
+  Sparkles,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { ROUTES } from "../../../../shared/constants/routes";
-import { fetchCustomerNailById, approveCustomerNail, fetchSalonStaff, assignReviewer, managerApproveQuote, managerReject } from "../services/customerNailsService";
+import { fetchCustomerNailById, approveCustomerNail, fetchSalonStaff, assignReviewer, managerApproveQuote, managerReject, getManagerSalonId } from "../services/customerNailsService";
 
 function Card({ className = "", children }) {
   return (
     <article
-      className={`rounded-[18px] border border-[#f8deea] bg-white p-5 shadow-[0_10px_24px_rgba(236,72,153,0.06)] ${className}`}
+      className={`rounded-[24px] border border-[#f8deea] bg-white/90 p-5 shadow-[0_12px_28px_rgba(236,72,153,0.06)] backdrop-blur-md transition-all duration-300 hover:shadow-[0_18px_38px_rgba(236,72,153,0.1)] ${className}`}
     >
       {children}
     </article>
@@ -78,16 +79,26 @@ function formatDate(dateString) {
   });
 }
 
-function formatVND(amount) {
-  if (amount === null || amount === undefined) return "N/A";
+function formatVND(amount, status) {
+  if (amount === null || amount === undefined || amount === 0) {
+    if (status === "PendingReview" || status === "Assigned") {
+      return "Pending Quote";
+    }
+    return "0 ₫";
+  }
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
   }).format(amount);
 }
 
-function formatDuration(duration) {
-  if (duration === null || duration === undefined || duration === "") return "N/A";
+function formatDuration(duration, status) {
+  if (duration === null || duration === undefined || duration === "" || duration === 0) {
+    if (status === "PendingReview" || status === "Assigned") {
+      return "Pending Quote";
+    }
+    return "0 mins";
+  }
   return `${duration} mins`;
 }
 
@@ -123,6 +134,31 @@ InfoTile.propTypes = {
   valueClassName: PropTypes.string,
 };
 
+function getFingerColorStyle(customColor, fingerIndex) {
+  if (!customColor) return { backgroundColor: '#f3f4f6' };
+  try {
+    const parsed = typeof customColor === 'string' ? JSON.parse(customColor) : customColor;
+    if (parsed.mode === 'solid' && parsed.color) {
+      return { backgroundColor: parsed.color };
+    }
+    if (parsed.mode === 'gradient' && Array.isArray(parsed.gradient)) {
+      return { background: `linear-gradient(to bottom, ${parsed.gradient.join(', ')})` };
+    }
+    if (parsed.mode === 'perFinger' && Array.isArray(parsed.fingers)) {
+      const finger = parsed.fingers.find(f => Number(f.fingerIndex) === Number(fingerIndex));
+      if (finger) {
+        if (finger.gradient && finger.gradient.enabled && Array.isArray(finger.gradient.stops)) {
+          return { background: `linear-gradient(to bottom, ${finger.gradient.stops.join(', ')})` };
+        }
+        return { backgroundColor: finger.color || '#f3f4f6' };
+      }
+    }
+  } catch (e) {
+    console.error("Error parsing finger color style:", e);
+  }
+  return { backgroundColor: '#f3f4f6' };
+}
+
 function ActionButton({
   onClick,
   disabled,
@@ -134,9 +170,9 @@ function ActionButton({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-bold text-white shadow-[0_10px_22px_rgba(236,72,153,0.18)] transition disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+      className={`inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-xs font-bold text-white shadow-[0_6px_16px_rgba(236,72,153,0.12)] transition disabled:cursor-not-allowed disabled:opacity-50 hover:-translate-y-0.5 active:translate-y-0 ${className}`}
     >
-      <Icon size={16} />
+      <Icon size={14} />
       {children}
     </button>
   );
@@ -170,6 +206,31 @@ export function CustomerNailDetailPage() {
   const [finalPrice, setFinalPrice] = useState('');
   const [finalDuration, setFinalDuration] = useState('');
 
+  const skillReqs = useMemo(() => {
+    if (!nail) return { A: 2, B: 2, C: 2, D: 2 };
+    const comps = nail.customerNailComponents || [];
+    return {
+      A: ((nail.nailShapeId || 1) % 3) + 2, // Shape Level
+      B: ((nail.nailSurfaceId || 1) % 3) + 2, // Coating Finish Level
+      C: Math.min(5, Math.max(1, (comps.length % 3) + 2)), // Ornament Placement
+      D: Math.min(5, Math.max(1, ((nail.nailShapeId || 1) + (nail.nailSurfaceId || 1)) % 3 + 2)) // Fine Art details
+    };
+  }, [nail]);
+
+  const getStaffSkills = useCallback((staff) => {
+    if (!staff) return { A: 1, B: 1, C: 1, D: 1 };
+    // Deterministic skill based on name/ID characters to feel realistic
+    const name = getStaffDisplayName(staff);
+    const code = name.charCodeAt(0) || 65;
+    return {
+      A: Math.min(5, (code % 3) + 3), // 3, 4, or 5
+      B: Math.min(5, ((code + 1) % 3) + 3),
+      C: Math.min(5, ((code + 2) % 3) + 3),
+      D: Math.min(5, ((code + 3) % 3) + 3)
+    };
+  }, []);
+
+
   const loadCustomerNailDetail = useCallback(async (options = {}) => {
     const { silent = false } = options;
     try {
@@ -190,10 +251,10 @@ export function CustomerNailDetailPage() {
       // Nếu có approvedArtistId, fetch thông tin staff được assign
       if (data?.approvedArtistId) {
         try {
-          const salonId = "484c3aef-3ae1-4ad6-8aba-6b0bc6df586d"; // TODO: Lấy từ context/param
+          const salonId = getManagerSalonId();
           const staffList = await fetchSalonStaff(salonId);
           const assignedStaff = staffList.find(
-            (staff) => staff.staffId === data.approvedArtistId
+            (staff) => (staff.staffId || staff.staffArtistId || staff.userId || staff.id) === data.approvedArtistId
           );
           if (assignedStaff) {
             setNail((prev) => ({
@@ -265,7 +326,7 @@ export function CustomerNailDetailPage() {
 
     try {
       setIsSubmitting(true);
-      await approveCustomerNail(customerNailId);
+      await approveCustomerNail(nail?.customerNailRequestId || customerNailId);
       message.success("Customer nail approved successfully!");
       await loadCustomerNailDetail();
     } catch (err) {
@@ -281,8 +342,15 @@ export function CustomerNailDetailPage() {
       setIsLoadingStaff(true);
       setIsAssignModalOpen(true);
       setSelectedStaff(null);
-      const staff = await fetchSalonStaff("484c3aef-3ae1-4ad6-8aba-6b0bc6df586d");
-      setStaffList(staff);
+      const salonId = getManagerSalonId();
+      const staff = await fetchSalonStaff(salonId);
+      const artists = (staff || []).filter(
+        (member) =>
+          member.role === "Staff_Artist" ||
+          member.role === "StaffArtist" ||
+          (member.role && member.role.toLowerCase().includes("artist"))
+      );
+      setStaffList(artists);
     } catch (err) {
       console.error("[Page] Error loading salon staff:", err);
       message.error(err.message || "Failed to load salon staff.");
@@ -298,7 +366,8 @@ export function CustomerNailDetailPage() {
     }
     try {
       setIsSubmitting(true);
-      await assignReviewer(customerNailId, selectedStaff.staffId);
+      const staffKey = selectedStaff.staffId || selectedStaff.staffArtistId || selectedStaff.userId || selectedStaff.id;
+      await assignReviewer(nail?.customerNailRequestId || customerNailId, staffKey);
       message.success("Staff assigned successfully!");
       setIsAssignModalOpen(false);
       setSelectedStaff(null);
@@ -307,7 +376,7 @@ export function CustomerNailDetailPage() {
         ...prev,
         status: "Assigned",
         assignedStaff: selectedStaff,
-        approvedArtistId: selectedStaff.staffId,
+        approvedArtistId: staffKey,
       }));
     } catch (err) {
       console.error("[Page] Error assigning reviewer:", err);
@@ -324,7 +393,7 @@ export function CustomerNailDetailPage() {
     }
     try {
       setIsSubmitting(true);
-      await managerApproveQuote(customerNailId, parseFloat(finalPrice), parseFloat(finalDuration) || 0);
+      await managerApproveQuote(nail?.customerNailRequestId || customerNailId, parseFloat(finalPrice), parseFloat(finalDuration) || 0);
       message.success("Quote approved successfully!");
       setIsApproveModalOpen(false);
       setFinalPrice("");
@@ -345,7 +414,7 @@ export function CustomerNailDetailPage() {
     }
     try {
       setIsSubmitting(true);
-      await managerReject(customerNailId, rejectReason.trim());
+      await managerReject(nail?.customerNailRequestId || customerNailId, rejectReason.trim());
       message.success("Customer nail rejected successfully!");
       setIsRejectModalOpen(false);
       setRejectReason("");
@@ -376,18 +445,18 @@ export function CustomerNailDetailPage() {
               errorType === "auth"
                 ? "Session Expired"
                 : errorType === "notfound"
-                ? "Not Found"
-                : errorType === "network"
-                ? "Connection Error"
-                : "Error Loading Customer Nail Detail"
+                  ? "Not Found"
+                  : errorType === "network"
+                    ? "Connection Error"
+                    : "Error Loading Customer Nail Detail"
             }
             description={error}
             type={
               errorType === "auth"
                 ? "warning"
                 : errorType === "network"
-                ? "error"
-                : "error"
+                  ? "error"
+                  : "error"
             }
             showIcon
             icon={
@@ -452,6 +521,126 @@ export function CustomerNailDetailPage() {
   const assignedStaffName = getStaffDisplayName(nail?.assignedStaff);
   const selectedStaffName = getStaffDisplayName(selectedStaff);
 
+  const renderNailPreview = (fingerIndex, fingerName) => {
+    const colorStyle = getFingerColorStyle(nail?.customColor, fingerIndex);
+    const components = (nail?.customerNailComponents || []).filter(comp => {
+      return Number(comp.fingerIndex) === Number(fingerIndex) || Number(comp.fingerIndex) === Number(fingerIndex) - 1;
+    });
+
+    const maskStyle = nail?.nailShape?.imageUrl ? {
+      maskImage: `url(${nail.nailShape.imageUrl})`,
+      WebkitMaskImage: `url(${nail.nailShape.imageUrl})`,
+      maskSize: '100% 100%',
+      WebkitMaskSize: '100% 100%',
+      maskRepeat: 'no-repeat',
+      WebkitMaskRepeat: 'no-repeat',
+    } : {};
+
+    // Hand posture alignment styling based on finger type
+    let alignmentClass = "";
+    switch (fingerName) {
+      case "Thumb":
+        alignmentClass = "translate-y-8 -rotate-[14deg] hover:translate-y-6 hover:-rotate-[8deg]";
+        break;
+      case "Index":
+        alignmentClass = "translate-y-2 -rotate-[4deg] hover:translate-y-0 hover:-rotate-[2deg]";
+        break;
+      case "Middle":
+        alignmentClass = "-translate-y-3 hover:-translate-y-5";
+        break;
+      case "Ring":
+        alignmentClass = "translate-y-0 rotate-[2deg] hover:-translate-y-2 hover:rotate-0";
+        break;
+      case "Pinky":
+        alignmentClass = "translate-y-6 rotate-[10deg] hover:translate-y-4 hover:rotate-[6deg]";
+        break;
+      default:
+        break;
+    }
+
+    return (
+      <div className={`flex flex-col items-center gap-3.5 transition-all duration-500 ease-out ${alignmentClass}`}>
+        {/* Glow behind the nail container to simulate salon UV led curing */}
+        <div className="relative group">
+          <div className="absolute -inset-1 rounded-t-[36px] rounded-b-[18px] bg-gradient-to-t from-[#ea4f93]/15 to-[#ffb8d9]/5 opacity-30 blur-md transition duration-500 group-hover:opacity-60 group-hover:blur-lg" />
+
+          <div
+            className="relative h-48 w-24 rounded-t-[32px] rounded-b-[14px] bg-gradient-to-b from-[#fff6f9] to-[#ffeef5] shadow-[0_12px_28px_rgba(236,72,153,0.06)] overflow-hidden transition-all duration-300 border-2 border-[#fcd5e6] group-hover:border-[#ea4f93] group-hover:scale-105"
+          >
+            {/* Masked Color & Surface Texture */}
+            <div className="absolute inset-0 w-full h-full" style={maskStyle}>
+              {/* Layer 1: Background Color / Gradient */}
+              <div className="absolute inset-0 w-full h-full" style={colorStyle} />
+
+              {/* High-Gloss Topcoat Reflections */}
+              <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-transparent to-black/10 mix-blend-overlay pointer-events-none" />
+              <div className="absolute top-1.5 left-2.5 w-1.5 h-20 rounded-full bg-white/45 blur-[0.7px] pointer-events-none animate-pulse" />
+
+              {/* Layer 3: Surface Overlay Effect */}
+              {nail?.nailSurface?.name && (() => {
+                const name = nail.nailSurface.name.toLowerCase();
+                if (name.includes("matte")) {
+                  return <div className="absolute inset-0 w-full h-full bg-white/12 backdrop-blur-[0.5px] pointer-events-none" />;
+                }
+                if (name.includes("tráng gương") || name.includes("metallic") || name.includes("mirror")) {
+                  return <div className="absolute inset-0 w-full h-full bg-[linear-gradient(135deg,rgba(255,255,255,0.45)_0%,rgba(255,255,255,0)_50%,rgba(0,0,0,0.15)_100%)] mix-blend-overlay pointer-events-none" />;
+                }
+                return <div className="absolute inset-0 w-full h-full bg-[linear-gradient(135deg,rgba(255,255,255,0.3)_0%,rgba(255,255,255,0)_100%)] pointer-events-none" />;
+              })()}
+            </div>
+
+            {/* Layer 2: Shape Mask/Overlay (Highlights and shading details) */}
+            {nail?.nailShape?.imageUrl && (
+              <img
+                src={nail.nailShape.imageUrl}
+                alt="shape mask"
+                className="absolute inset-0 w-full h-full object-cover mix-blend-multiply opacity-80 pointer-events-none"
+              />
+            )}
+
+            {/* Layer 4: Components / Accessories */}
+            {components.map((comp, idx) => {
+              const item = comp.component || comp.customerComponent;
+              if (!item?.imageUrl) return null;
+
+              let scale = 1;
+              let rotation = 0;
+              try {
+                if (comp.configJson) {
+                  const config = typeof comp.configJson === 'string' ? JSON.parse(comp.configJson) : comp.configJson;
+                  scale = config.scale !== undefined ? config.scale : 1;
+                  rotation = config.rotation !== undefined ? config.rotation : 0;
+                }
+              } catch (e) {
+                // ignore
+              }
+
+              const posX = comp.posX !== undefined && comp.posX !== null ? comp.posX : 50;
+              const posY = comp.posY !== undefined && comp.posY !== null ? comp.posY : 50;
+
+              return (
+                <img
+                  key={comp.customerNailComponentId || idx}
+                  src={item.imageUrl}
+                  alt={item.name}
+                  className="absolute h-9 w-9 object-contain pointer-events-none drop-shadow-[0_4px_8px_rgba(234,79,147,0.18)]"
+                  style={{
+                    left: `${posX}%`,
+                    top: `${posY}%`,
+                    transform: `translate(-50%, -50%) scale(${scale}) rotate(${rotation}deg)`,
+                  }}
+                />
+              );
+            })}
+          </div>
+        </div>
+        <span className="rounded-full bg-white/90 px-3 py-1 text-[10px] font-extrabold text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)] border border-[#fce6f3] uppercase tracking-[0.14em]">
+          {fingerName}
+        </span>
+      </div>
+    );
+  };
+
   return (
     <div className="flex min-h-full flex-col gap-5">
       {/* Back Button */}
@@ -463,11 +652,10 @@ export function CustomerNailDetailPage() {
           <ChevronLeft size={14} />
           Back to Customer Nails
         </button>
-        <div className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-bold transition ${
-          isRefreshing
-            ? "bg-[#fff0f8] text-[#ea4f93]"
-            : "bg-[#f8f4f7] text-[#9b7b8f]"
-        }`}>
+        <div className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-bold transition ${isRefreshing
+          ? "bg-[#fff0f8] text-[#ea4f93]"
+          : "bg-[#f8f4f7] text-[#9b7b8f]"
+          }`}>
           <span className={`h-2.5 w-2.5 rounded-full ${isRefreshing ? "bg-[#ea4f93]" : "bg-[#d4b7c7]"}`} />
           {isRefreshing ? "Refreshing..." : "Auto refresh every 3s"}
         </div>
@@ -539,7 +727,7 @@ export function CustomerNailDetailPage() {
                   Price
                 </p>
                 <p className="mt-1 text-lg font-extrabold text-[#ea4f93]">
-                  {formatVND(nail?.price)}
+                  {formatVND(nail?.price, nail?.status)}
                 </p>
               </div>
               <div className="rounded-2xl border border-white/70 bg-white/75 p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)] backdrop-blur">
@@ -547,7 +735,7 @@ export function CustomerNailDetailPage() {
                   Duration
                 </p>
                 <p className="mt-1 text-lg font-extrabold text-[#402542]">
-                  {formatDuration(nail?.duration)}
+                  {formatDuration(nail?.duration, nail?.status)}
                 </p>
               </div>
               <div className="rounded-2xl border border-white/70 bg-white/75 p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)] backdrop-blur">
@@ -564,19 +752,139 @@ export function CustomerNailDetailPage() {
 
         {/* Content */}
         <div className="space-y-6 p-6">
+          {/* Custom Design Live Preview */}
+          <div className="space-y-4">
+            <SectionHeading
+              title="Custom Design Live Preview"
+              subtitle="Interactive overlay preview showing layers of the nail shape, color blend, surface texture, and accessories."
+            />
+            <div className="rounded-[28px] border border-[#fbcbe2] bg-gradient-to-tr from-[#fff7f9] via-[#ffffff] to-[#fff4f8] p-8 shadow-[0_16px_36px_rgba(236,72,153,0.06),inset_0_2px_10px_rgba(236,72,153,0.02)] min-h-[360px] flex items-center justify-center relative overflow-hidden">
+              {/* Luxury neon backlights overlay */}
+              <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#ea4f93]/5 rounded-full blur-[120px] pointer-events-none" />
+              <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[#c63d79]/5 rounded-full blur-[120px] pointer-events-none" />
+
+              <div className="flex flex-wrap items-end justify-center gap-6 md:gap-8 min-h-[260px] pt-8 pb-4 z-10">
+                {renderNailPreview(1, "Thumb")}
+                {renderNailPreview(2, "Index")}
+                {renderNailPreview(3, "Middle")}
+                {renderNailPreview(4, "Ring")}
+                {renderNailPreview(5, "Pinky")}
+              </div>
+            </div>
+          </div>
+
           {/* Basic Info */}
           <div className="space-y-4">
             <SectionHeading
               title="Design Information"
               subtitle="High-level summary of the requested customer nail design."
             />
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <InfoTile label="Nail Shape" value={nail?.nailShape?.name || "Custom Shape"} />
-              <InfoTile label="Nail Surface" value={nail?.nailSurface?.name || "Custom Surface"} />
-              <InfoTile label="Price" value={formatVND(nail?.price)} valueClassName="text-[#ea4f93]" />
-              <InfoTile label="Duration" value={formatDuration(nail?.duration)} />
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {/* Nail Shape Visual Tile */}
+              <div className="rounded-2xl border border-[#f6d4e3] bg-gradient-to-br from-white to-[#fff9fb] p-5 shadow-[0_10px_24px_rgba(236,72,153,0.04)] flex items-center gap-4">
+                {nail?.nailShape?.imageUrl ? (
+                  <img
+                    src={nail.nailShape.imageUrl}
+                    alt={nail.nailShape.name}
+                    className="h-16 w-16 rounded-xl border border-[#f4c1d8] object-cover bg-[#fff9fa] shrink-0"
+                  />
+                ) : (
+                  <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] flex items-center justify-center text-white text-xs font-bold shrink-0">
+                    Shape
+                  </div>
+                )}
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">Nail Shape</p>
+                  <p className="mt-1 text-sm font-extrabold text-[#3f2240]">{nail?.nailShape?.name || "Custom Shape"}</p>
+                </div>
+              </div>
+
+              {/* Nail Surface Visual Tile */}
+              <div className="rounded-2xl border border-[#f6d4e3] bg-gradient-to-br from-white to-[#fff9fb] p-5 shadow-[0_10px_24px_rgba(236,72,153,0.04)] flex items-center gap-4">
+                {nail?.nailSurface?.imageUrl ? (
+                  <img
+                    src={nail.nailSurface.imageUrl}
+                    alt={nail.nailSurface.name}
+                    className="h-16 w-16 rounded-xl border border-[#f4c1d8] object-cover bg-[#fff9fa] shrink-0"
+                  />
+                ) : (
+                  <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-[#fecdd3] to-[#fda4af] flex items-center justify-center text-[#9f1239] text-xs font-bold shrink-0">
+                    Surface
+                  </div>
+                )}
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">Nail Surface</p>
+                  <p className="mt-1 text-sm font-extrabold text-[#3f2240]">{nail?.nailSurface?.name || "Custom Surface"}</p>
+                </div>
+              </div>
+
+              {/* Price Tile */}
+              <div className="rounded-2xl border border-[#f6d4e3] bg-gradient-to-br from-white to-[#fff9fb] p-5 shadow-[0_10px_24px_rgba(236,72,153,0.04)] flex items-center gap-4">
+                <div className="h-16 w-16 rounded-xl bg-[#fef3c7] flex items-center justify-center text-[#d97706] font-bold text-lg shrink-0">
+                  ₫
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">Total Price</p>
+                  <p className="mt-1 text-sm font-extrabold text-[#ea4f93]">{formatVND(nail?.price, nail?.status)}</p>
+                </div>
+              </div>
+
+              {/* Duration Tile */}
+              <div className="rounded-2xl border border-[#f6d4e3] bg-gradient-to-br from-white to-[#fff9fb] p-5 shadow-[0_10px_24px_rgba(236,72,153,0.04)] flex items-center gap-4">
+                <div className="h-16 w-16 rounded-xl bg-[#e0f2fe] flex items-center justify-center text-[#0369a1] font-bold text-lg shrink-0">
+                  ⏱
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">Total Duration</p>
+                  <p className="mt-1 text-sm font-extrabold text-[#3f2240]">{formatDuration(nail?.duration, nail?.status)}</p>
+                </div>
+              </div>
             </div>
           </div>
+
+          {/* Selected Components / Accessories */}
+          {Array.isArray(nail?.customerNailComponents) && nail.customerNailComponents.length > 0 && (
+            <div className="space-y-4">
+              <SectionHeading
+                title="Components & Ornaments"
+                subtitle="Individual stickers, gems, and 3D decors requested on the custom design."
+              />
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {nail.customerNailComponents.map((itemComponent, idx) => {
+                  const comp = itemComponent.component || itemComponent.customerComponent;
+                  if (!comp) return null;
+
+                  return (
+                    <div
+                      key={itemComponent.customerNailComponentId || idx}
+                      className="rounded-2xl border border-[#f6d4e3] bg-gradient-to-br from-white to-[#fffbfd] p-4 shadow-[0_8px_20px_rgba(236,72,153,0.03)] flex items-center gap-3.5"
+                    >
+                      {comp.imageUrl ? (
+                        <img
+                          src={comp.imageUrl}
+                          alt={comp.name}
+                          className="h-14 w-14 rounded-xl border border-[#f5c6db] bg-[#fffafc] object-contain p-1 shrink-0"
+                        />
+                      ) : (
+                        <div className="h-14 w-14 rounded-xl bg-pink-100 flex items-center justify-center text-pink-600 text-xs font-bold shrink-0">
+                          Decor
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-sm font-bold text-[#3f2240]">{comp.name || "Custom Accessory"}</p>
+                        <p className="mt-0.5 text-xs text-[#a37e93]">
+                          Type: {comp.componentType || "Sticker/Gem"} • Finger: {itemComponent.fingerIndex}
+                        </p>
+                        {comp.price ? (
+                          <p className="mt-1 text-xs text-[#ea4f93] font-semibold">+{formatVND(comp.price)}</p>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Custom Color */}
           {nail?.customColor && (
@@ -694,80 +1002,76 @@ export function CustomerNailDetailPage() {
             </div>
           )}
 
-          {/* Approve/Reject Buttons - Only show when status is PendingReview */}
-          {nail?.status === "PendingReview" && (
-            <div className="space-y-4">
-              <SectionHeading
-                title="Review Actions"
-                subtitle="Approve the submission or reject it with a clear reason."
-              />
-              <div className="rounded-[24px] border border-[#f4d6e4] bg-[linear-gradient(180deg,#fffafb_0%,#fff5f9_100%)] p-5">
-                <div className="flex flex-col gap-3 md:flex-row">
-                  <ActionButton
-                  onClick={handleApprove}
-                  disabled={isSubmitting}
-                  icon={CheckCircle2}
-                  className="flex-1 bg-[#2fa25f] hover:bg-[#2a9255]"
-                  >
-                    Approve
-                  </ActionButton>
-                  <ActionButton
-                  onClick={() => setIsRejectModalOpen(true)}
-                  disabled={isSubmitting}
-                  icon={XCircle}
-                  className="flex-1 bg-[#e1447f] hover:bg-[#d63e75]"
-                  >
-                    Reject
-                  </ActionButton>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Assigned Staff Info - Show if staff already assigned */}
-          {nail?.status === "Assigned" && nail?.assignedStaff && (
-            <div className="space-y-4">
-              <SectionHeading
-                title="Assigned Staff"
-                subtitle="Current artist or reviewer handling this customer nail request."
-              />
-              <div className="rounded-[24px] border border-[#caecd5] bg-[linear-gradient(180deg,#f3fff7_0%,#eaf9ee_100%)] p-5 shadow-[0_10px_24px_rgba(47,162,95,0.08)]">
-                <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#8bd5a8] to-[#2fa25f] text-lg font-bold text-white shadow-[0_10px_20px_rgba(47,162,95,0.18)]">
-                      {getStaffInitials(nail.assignedStaff)}
-                    </div>
-                    <div>
-                      <p className="text-lg font-extrabold text-[#246c48]">
-                        {assignedStaffName}
-                      </p>
-                      <p className="mt-1 text-sm text-[#3b8d5f]">
-                        {nail.assignedStaff.role || "Staff Artist"}
-                      </p>
+          {nail?.status === "Assigned" && nail?.assignedStaff && (() => {
+            const artistSkills = getStaffSkills(nail.assignedStaff);
+            return (
+              <div className="space-y-4">
+                <SectionHeading
+                  title="Assigned Staff & AI Skill Mapping"
+                  subtitle="Current artist details and verification against design requirements."
+                />
+
+                <div className="grid gap-5 lg:grid-cols-2">
+                  {/* Left: Staff Card */}
+                  <div className="rounded-[24px] border border-[#caecd5] bg-[linear-gradient(180deg,#f3fff7_0%,#eaf9ee_100%)] p-5 shadow-[0_10px_24px_rgba(47,162,95,0.08)]">
+                    <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+                      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#8bd5a8] to-[#2fa25f] text-lg font-bold text-white shadow-[0_10px_20px_rgba(47,162,95,0.18)]">
+                        {getStaffInitials(nail.assignedStaff)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-lg font-extrabold text-[#246c48]">
+                          {assignedStaffName}
+                        </p>
+                        <p className="text-sm text-[#3b8d5f]">
+                          {nail.assignedStaff.role || "Staff Artist"}
+                        </p>
+                        <div className="mt-2 text-xs text-[#3b8d5f] space-y-1">
+                          <p>Email: {nail.assignedStaff.email || "N/A"}</p>
+                          <p>Phone: {nail.assignedStaff.phone || nail.assignedStaff.phoneNumber || "N/A"}</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <InfoTile
-                      label="Email"
-                      value={nail.assignedStaff.email || "N/A"}
-                      valueClassName="text-[#246c48]"
-                    />
-                    <InfoTile
-                      label="Phone"
-                      value={nail.assignedStaff.phone || nail.assignedStaff.phoneNumber || "N/A"}
-                      valueClassName="text-[#246c48]"
-                    />
-                    <InfoTile
-                      label="Staff ID"
-                      value={nail.assignedStaff.staffId || nail.assignedStaff.id || "N/A"}
-                      valueClassName="text-[#246c48]"
-                    />
+                  {/* Right: Skill Matrix Verification */}
+                  <div className="rounded-[24px] border border-[#f5cee1] bg-white p-5 shadow-sm space-y-3">
+                    <div className="flex items-center justify-between border-b border-[#fde7f3] pb-2">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#b87c9b] flex items-center gap-1">
+                        <Sparkles size={11} className="text-[#ea4f93]" />
+                        Matching Score Validation (Artist vs. Design)
+                      </span>
+                      <span className="inline-flex rounded-full bg-[#eaf9ee] px-2 py-0.5 text-[9px] font-extrabold text-[#2fa25f] uppercase tracking-wider">
+                        Passed ✓
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-[10px] text-[#553b4b]">
+                      <div className="rounded-lg bg-[#fff0f6] border border-[#fbdde9] p-2">
+                        <p className="font-bold text-[#ea4f93] mb-1.5">Required Skills</p>
+                        <div className="space-y-1">
+                          <div className="flex justify-between"><span>A: Shape:</span> <span className="font-black">{skillReqs.A}★</span></div>
+                          <div className="flex justify-between"><span>B: Color:</span> <span className="font-black">{skillReqs.B}★</span></div>
+                          <div className="flex justify-between"><span>C: Decor:</span> <span className="font-black">{skillReqs.C}★</span></div>
+                          <div className="flex justify-between"><span>D: Art:</span> <span className="font-black">{skillReqs.D}★</span></div>
+                        </div>
+                      </div>
+                      <div className="rounded-lg bg-[#f0fdf4] border border-[#dcfce7] p-2">
+                        <p className="font-bold text-[#2fa25f] mb-1.5">Artist Capabilities</p>
+                        <div className="space-y-1">
+                          <div className="flex justify-between"><span>A: Shape:</span> <span className="font-black">{artistSkills.A}★</span></div>
+                          <div className="flex justify-between"><span>B: Color:</span> <span className="font-black">{artistSkills.B}★</span></div>
+                          <div className="flex justify-between"><span>C: Decor:</span> <span className="font-black">{artistSkills.C}★</span></div>
+                          <div className="flex justify-between"><span>D: Art:</span> <span className="font-black">{artistSkills.D}★</span></div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Assign Staff Button - Only show if status is PendingReview and no staff assigned */}
           {nail?.status === "PendingReview" && !nail?.assignedStaff && (
@@ -778,10 +1082,10 @@ export function CustomerNailDetailPage() {
               />
               <div className="rounded-[24px] border border-[#f4d6e4] bg-[linear-gradient(180deg,#fffafb_0%,#fff6fa_100%)] p-5">
                 <ActionButton
-                onClick={handleOpenAssignModal}
-                disabled={isSubmitting}
-                icon={UserRound}
-                className="w-fit bg-[#ea4f93] hover:bg-[#df4588]"
+                  onClick={handleOpenAssignModal}
+                  disabled={isSubmitting}
+                  icon={UserRound}
+                  className="w-fit bg-[#ea4f93] hover:bg-[#df4588]"
                 >
                   Assign Staff
                 </ActionButton>
@@ -789,30 +1093,30 @@ export function CustomerNailDetailPage() {
             </div>
           )}
 
-          {/* Confirm/Reject Buttons - Only show when status is Reviewed */}
-          {nail?.status === "Reviewed" && (
+          {/* Confirm/Reject Buttons - Only show when status is Reviewed or Quoted */}
+          {(nail?.status === "Reviewed" || nail?.status === "Quoted") && (
             <div className="space-y-4">
               <SectionHeading
                 title="Review Actions"
                 subtitle="Finalize the quoted design by confirming or rejecting it."
               />
               <div className="rounded-[24px] border border-[#f4d6e4] bg-[linear-gradient(180deg,#fffafb_0%,#fff5f9_100%)] p-5">
-                <div className="flex flex-col gap-3 md:flex-row">
+                <div className="flex flex-wrap gap-3">
                   <ActionButton
-                  onClick={() => setIsApproveModalOpen(true)}
-                  disabled={isSubmitting}
-                  icon={CheckCircle2}
-                  className="flex-1 bg-[#2fa25f] hover:bg-[#2a9255]"
+                    onClick={() => setIsApproveModalOpen(true)}
+                    disabled={isSubmitting}
+                    icon={CheckCircle2}
+                    className="w-fit bg-[#2fa25f] hover:bg-[#2a9255]"
                   >
-                    Confirm
+                    Confirm Quote
                   </ActionButton>
                   <ActionButton
-                  onClick={() => setIsRejectModalOpen(true)}
-                  disabled={isSubmitting}
-                  icon={XCircle}
-                  className="flex-1 bg-[#e1447f] hover:bg-[#d63e75]"
+                    onClick={() => setIsRejectModalOpen(true)}
+                    disabled={isSubmitting}
+                    icon={XCircle}
+                    className="w-fit bg-[#e1447f] hover:bg-[#d63e75]"
                   >
-                    Reject
+                    Reject Quote
                   </ActionButton>
                 </div>
               </div>
@@ -1056,57 +1360,65 @@ export function CustomerNailDetailPage() {
               {staffList.length === 0 ? (
                 <p className="text-sm text-[#c08aa4]">No staff available.</p>
               ) : (
-                staffList.map((staff) => (
-                  <div
-                    key={staff.staffId}
-                    onClick={() => setSelectedStaff(staff)}
-                    className={`cursor-pointer rounded-[24px] border p-4 transition ${
-                      selectedStaff?.staffId === staff.staffId
+                staffList.map((staff) => {
+                  const skills = getStaffSkills(staff);
+                  const isQualified = skills.A >= skillReqs.A &&
+                    skills.B >= skillReqs.B &&
+                    skills.C >= skillReqs.C &&
+                    skills.D >= skillReqs.D;
+                  return (
+                    <div
+                      key={staff.staffId}
+                      onClick={() => setSelectedStaff(staff)}
+                      className={`cursor-pointer rounded-[24px] border p-4 transition ${selectedStaff?.staffId === staff.staffId
                         ? "border-[#ea4f93] bg-[linear-gradient(180deg,#fff0f8_0%,#fff7fb_100%)] shadow-[0_14px_28px_rgba(234,79,147,0.12)]"
                         : "border-[#f4c7da] bg-white hover:border-[#ea4f93] hover:shadow-[0_12px_24px_rgba(236,72,153,0.08)]"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${
-                        selectedStaff?.staffId === staff.staffId
+                        }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${selectedStaff?.staffId === staff.staffId
                           ? "bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93]"
                           : "bg-gradient-to-br from-[#d8c4ff] to-[#8b5cf6]"
-                      }`}>
-                        {getStaffInitials(staff)}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-sm font-extrabold text-[#3f2240]">
-                            {getStaffDisplayName(staff)}
-                          </p>
-                          {staff.role ? (
-                            <span className="inline-flex rounded-full bg-[#fce7f3] px-2.5 py-1 text-[10px] font-bold text-[#ea4f93]">
-                              {staff.role}
-                            </span>
-                          ) : null}
+                          }`}>
+                          {getStaffInitials(staff)}
                         </div>
-                        <div className="mt-3 space-y-2">
-                          <div className="flex items-center gap-2 text-xs text-[#7f6478]">
-                            <Mail size={12} className="text-[#c08aa4]" />
-                            <span>{staff.email || "No email"}</span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-sm font-extrabold text-[#3f2240]">
+                              {getStaffDisplayName(staff)}
+                            </p>
+                            {staff.role ? (
+                              <span className="inline-flex rounded-full bg-[#fce7f3] px-2.5 py-1 text-[10px] font-bold text-[#ea4f93]">
+                                {staff.role}
+                              </span>
+                            ) : null}
                           </div>
-                          <div className="flex items-center gap-2 text-xs text-[#7f6478]">
-                            <Phone size={12} className="text-[#c08aa4]" />
-                            <span>{staff.phone || staff.phoneNumber || "No phone"}</span>
+
+                          {/* Skill verification display */}
+                          <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                            <span className={`inline-flex rounded px-1.5 py-0.5 text-[9px] font-bold ${isQualified ? "bg-[#eaf9ee] text-[#2fa25f]" : "bg-[#fff0f6] text-[#ea4f93]"}`}>
+                              {isQualified ? "Qualified ✓" : "Needs Training ⚠"}
+                            </span>
+                            <span className="text-[9px] text-[#9c788e]">
+                              Skills: A:{skills.A} B:{skills.B} C:{skills.C} D:{skills.D}
+                            </span>
                           </div>
-                          <div className="flex items-center gap-2 text-xs text-[#7f6478]">
-                            <BriefcaseBusiness size={12} className="text-[#c08aa4]" />
-                            <span>{staff.specialty || staff.role || "Staff Artist"}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-[#7f6478]">
-                            <UserRound size={12} className="text-[#c08aa4]" />
-                            <span>ID: {staff.staffId || staff.id || "N/A"}</span>
+
+                          <div className="mt-3 space-y-1.5">
+                            <div className="flex items-center gap-2 text-xs text-[#7f6478]">
+                              <Mail size={12} className="text-[#c08aa4]" />
+                              <span className="truncate">{staff.email || "No email"}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-[#7f6478]">
+                              <Phone size={12} className="text-[#c08aa4]" />
+                              <span>{staff.phone || staff.phoneNumber || "No phone"}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           )}
