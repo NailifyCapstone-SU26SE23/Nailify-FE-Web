@@ -587,6 +587,26 @@ function createRemotePhotoState(url, fileName, uploadedAt, fileSizeLabel = null)
   };
 }
 
+function serializeSessionPhoto(photo) {
+  if (!photo || typeof photo !== "object") {
+    return null;
+  }
+
+  const previewUrl = String(photo.previewUrl || "").trim();
+
+  if (!previewUrl) {
+    return null;
+  }
+
+  return {
+    fileName: photo.fileName || "Uploaded photo",
+    previewUrl,
+    uploadedAt: photo.uploadedAt || "Uploaded",
+    fileSizeLabel: photo.fileSizeLabel ?? null,
+    uploadedToServer: Boolean(photo.uploadedToServer),
+  };
+}
+
 function normalizeSessionText(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
 }
@@ -989,8 +1009,8 @@ export function StaffServiceSessionPage() {
           started,
           completed,
           isSessionFinalized,
-          beforePhoto,
-          afterPhoto,
+          beforePhoto: serializeSessionPhoto(beforePhoto),
+          afterPhoto: serializeSessionPhoto(afterPhoto),
           sessionNote,
           confirmations,
           completionChecks,
