@@ -3,7 +3,6 @@ import {
   CalendarDays,
   CircleDollarSign,
   ClipboardList,
-  Clock3,
   Eye,
   FileText,
   LoaderCircle,
@@ -14,7 +13,6 @@ import {
   Sparkles,
   SquareCheckBig,
   Star,
-  TimerReset,
   Trash2,
   Trophy,
 } from "lucide-react";
@@ -39,11 +37,7 @@ import {
   startStaffBookingService,
 } from "../../../staff/bookings/services/staffBookingService";
 
-const BREAK_SCHEDULE = [
-  { time: "11:15 AM", note: "15 min break", badge: "Done", tone: "bg-[#eefcf3] text-[#35b56b]" },
-  { time: "1:30 PM", note: "30 min lunch", badge: "Next", tone: "bg-[#fff4df] text-[#df8e1d]" },
-  { time: "3:45 PM", note: "15 min break", badge: "Later", tone: "bg-[#f4f5f7] text-[#8b95a7]" },
-];
+const DEFAULT_BOOKING_PAGE_SIZE = 10;
 
 function formatDate(value) {
   if (!value) {
@@ -177,6 +171,16 @@ export function StaffDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [bookings, setBookings] = useState([]);
+  const [bookingPagination, setBookingPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    pageSize: DEFAULT_BOOKING_PAGE_SIZE,
+    totalItems: 0,
+    hasPrevious: false,
+    hasNext: false,
+    firstRowOnPage: 0,
+    lastRowOnPage: 0,
+  });
   const sessionUser = getStaffSessionUser();
   const todayDate = useMemo(() => getTodayDateParam(), []);
 
@@ -188,9 +192,10 @@ export function StaffDashboardPage() {
       setError("");
 
       try {
-        const data = await fetchStaffBookings({
-          pageNumber: 1,
-          pageSize: 100,
+        const response = await fetchStaffBookings({
+          includePagination: true,
+          pageNumber: bookingPagination.currentPage,
+          pageSize: bookingPagination.pageSize,
           startDate: todayDate,
           endDate: todayDate,
         });
@@ -199,7 +204,14 @@ export function StaffDashboardPage() {
           return;
         }
 
-        setBookings(Array.isArray(data) ? data.map(normalizeStaffBooking) : []);
+        const normalizedBookings = Array.isArray(response?.items)
+          ? response.items.map(normalizeStaffBooking)
+          : [];
+        setBookings(normalizedBookings);
+        setBookingPagination((current) => ({
+          ...current,
+          ...(response?.pagination ?? {}),
+        }));
       } catch (loadError) {
         if (!isMounted) {
           return;
@@ -220,7 +232,7 @@ export function StaffDashboardPage() {
     return () => {
       isMounted = false;
     };
-  }, [todayDate]);
+  }, [bookingPagination.currentPage, bookingPagination.pageSize, todayDate]);
 
   const sortedBookings = useMemo(
     () => [...bookings].sort((left, right) => left.bookingTime.localeCompare(right.bookingTime)),
@@ -244,8 +256,8 @@ export function StaffDashboardPage() {
     return [
       {
         label: "Today's Bookings",
-        value: String(bookings.length),
-        note: bookings.length ? `${Math.max(bookings.length - completedCount, 0)} remaining` : "No appointments",
+        value: String(bookingPagination.totalItems),
+        note: bookingPagination.totalItems ? `${bookingPagination.totalPages} pages scheduled` : "No appointments",
         icon: CalendarDays,
         iconClassName: "bg-[#fff0f5] text-[#f06292]",
       },
@@ -266,7 +278,7 @@ export function StaffDashboardPage() {
       {
         label: "Revenue",
         value: formatCurrency(revenue),
-        note: "Loaded from API",
+        note: `Page ${bookingPagination.currentPage}`,
         icon: CircleDollarSign,
         iconClassName: "bg-[#f3efff] text-[#8b5cf6]",
       },
@@ -278,7 +290,7 @@ export function StaffDashboardPage() {
         iconClassName: "bg-[#edf7ff] text-[#4ea1ff]",
       },
     ];
-  }, [bookings, nextBooking, sortedBookings]);
+  }, [bookingPagination.currentPage, bookingPagination.totalItems, bookings, nextBooking, sortedBookings]);
 
   const getActionItems = (booking) => {
     const detailRoute = getStaffBookingDetailRoute(booking.id);
@@ -332,6 +344,27 @@ export function StaffDashboardPage() {
   };
 
   const greetingName = sessionUser?.fullName || sessionUser?.email || "Artist";
+  const tablePagination = useMemo(
+    () => ({
+      current: bookingPagination.currentPage,
+      pageSize: bookingPagination.pageSize,
+      total: bookingPagination.totalItems,
+      showSizeChanger: true,
+      pageSizeOptions: ["5", "10", "20", "50"],
+      showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} bookings`,
+    }),
+    [bookingPagination.currentPage, bookingPagination.pageSize, bookingPagination.totalItems],
+  );
+  const handleTableChange = (pagination) => {
+    const nextPage = Number(pagination?.current || 1);
+    const nextPageSize = Number(pagination?.pageSize || DEFAULT_BOOKING_PAGE_SIZE);
+
+    setBookingPagination((current) => ({
+      ...current,
+      currentPage: nextPageSize !== current.pageSize ? 1 : nextPage,
+      pageSize: nextPageSize,
+    }));
+  };
 
   const bookingColumns = useMemo(() => ([
     {
@@ -401,8 +434,8 @@ export function StaffDashboardPage() {
           <div className="min-w-0">
             <p className="text-base font-extrabold text-[#ea4f93]">Good morning, {greetingName}!</p>
             <p className="mt-1 break-words text-sm text-[#b5859f]">
-              {bookings.length
-                ? `You have ${bookings.length} bookings scheduled for today.`
+              {bookingPagination.totalItems
+                ? `You have ${bookingPagination.totalItems} bookings scheduled for today.`
                 : "No bookings have been assigned for today."}
             </p>
           </div>
@@ -434,7 +467,7 @@ export function StaffDashboardPage() {
               <div className="mb-3 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
                 <h3 className="text-sm font-extrabold text-[#432744]">Today&apos;s Schedule</h3>
                 <StatusChip
-                  label={`${bookings.length} bookings`}
+                  label={`${bookingPagination.totalItems} bookings`}
                   className="border border-[#f6d3e3] bg-[#fff1f6] text-[#b48aa0]"
                 />
               </div>
@@ -460,6 +493,39 @@ export function StaffDashboardPage() {
                           No bookings found for today.
                         </div>
                       ) : null}
+                      {bookingPagination.totalPages > 1 ? (
+                        <div className="flex items-center justify-between gap-3 border-t border-[#f8dce8] px-1 pt-3">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setBookingPagination((current) => ({
+                                ...current,
+                                currentPage: Math.max(1, current.currentPage - 1),
+                              }))
+                            }
+                            disabled={!bookingPagination.hasPrevious}
+                            className="rounded-xl border border-[#f2bfd4] bg-white px-3 py-2 text-xs font-bold text-[#ea4f93] disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Previous
+                          </button>
+                          <span className="text-xs font-bold text-[#866f80]">
+                            Page {bookingPagination.currentPage}/{bookingPagination.totalPages}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setBookingPagination((current) => ({
+                                ...current,
+                                currentPage: Math.min(current.totalPages, current.currentPage + 1),
+                              }))
+                            }
+                            disabled={!bookingPagination.hasNext}
+                            className="rounded-xl border border-[#f2bfd4] bg-white px-3 py-2 text-xs font-bold text-[#ea4f93] disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Next
+                          </button>
+                        </div>
+                      ) : null}
                     </div>
 
                     <div className="hidden md:block">
@@ -467,7 +533,8 @@ export function StaffDashboardPage() {
                         rowKey="id"
                         columns={bookingColumns}
                         dataSource={sortedBookings}
-                        pagination={false}
+                        pagination={tablePagination}
+                        onChange={handleTableChange}
                         scroll={{ x: 980 }}
                         locale={{ emptyText: "No bookings found for today." }}
                       />
@@ -555,10 +622,10 @@ export function StaffDashboardPage() {
               >
                 <div className="grid gap-3 sm:grid-cols-2">
                   {[
-                    [String(bookings.length), "Assigned Bookings", "From API"],
-                    [String(bookings.filter((booking) => booking.status === "Completed").length), "Completed", "Today"],
-                    [String(bookings.reduce((sum, booking) => sum + booking.services.length, 0)), "Service Items", "Planned"],
-                    [formatCurrency(bookings.reduce((sum, booking) => sum + booking.totalPriceValue, 0)), "Revenue", "Loaded"],
+                    [String(bookingPagination.totalItems), "Assigned Bookings", `${bookingPagination.totalPages} pages`],
+                    [String(bookings.filter((booking) => booking.status === "Completed").length), "Completed", "Current page"],
+                    [String(bookings.reduce((sum, booking) => sum + booking.services.length, 0)), "Service Items", "Current page"],
+                    [formatCurrency(bookings.reduce((sum, booking) => sum + booking.totalPriceValue, 0)), "Revenue", `Page ${bookingPagination.currentPage}`],
                   ].map(([value, label, note]) => (
                     <div
                       key={label}

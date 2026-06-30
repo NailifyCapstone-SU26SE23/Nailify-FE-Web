@@ -38,6 +38,9 @@ import { ProcedureDetailPage } from "../../features/admin/procedures-management/
 import { CategoryTypesManagementPage } from "../../features/admin/category-types-management/pages/CategoryTypesManagementPage";
 import { CategoryTypeCreatePage } from "../../features/admin/category-types-management/pages/CategoryTypeCreatePage";
 import { CategoryTypeDetailPage } from "../../features/admin/category-types-management/pages/CategoryTypeDetailPage";
+import { SkillTypesManagementPage } from "../../features/admin/skill-types-management/pages/SkillTypesManagementPage";
+import { SkillTypeCreatePage } from "../../features/admin/skill-types-management/pages/SkillTypeCreatePage";
+import { SkillTypeDetailPage } from "../../features/admin/skill-types-management/pages/SkillTypeDetailPage";
 import { CategoriesManagementPage } from "../../features/admin/categories-management/pages/CategoriesManagementPage";
 import { CategoryCreatePage } from "../../features/admin/categories-management/pages/CategoryCreatePage";
 import { CategoryDetailPage } from "../../features/admin/categories-management/pages/CategoryDetailPage";
@@ -168,6 +171,18 @@ export const adminRoutes = [
       {
         path: ROUTES.adminCategoryTypeDetail,
         element: <CategoryTypeDetailPage />,
+      },
+      {
+        path: ROUTES.adminSkillTypes,
+        element: <SkillTypesManagementPage />,
+      },
+      {
+        path: ROUTES.adminSkillTypesCreate,
+        element: <SkillTypeCreatePage />,
+      },
+      {
+        path: ROUTES.adminSkillTypeDetail,
+        element: <SkillTypeDetailPage />,
       },
       {
         path: ROUTES.adminCategories,

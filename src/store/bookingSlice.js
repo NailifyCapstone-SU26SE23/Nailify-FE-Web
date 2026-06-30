@@ -7,12 +7,22 @@ function normalizePersistedBookingState(value) {
   if (!value || typeof value !== "object") {
     return {
       activeBookingId: null,
+      customerNailConfirmations: {},
       designConfirmations: {},
     };
   }
 
   const activeBookingId = value.activeBookingId ?? null;
+  const rawCustomerNailConfirmations = value.customerNailConfirmations;
   const rawConfirmations = value.designConfirmations;
+  const customerNailConfirmations =
+    rawCustomerNailConfirmations && typeof rawCustomerNailConfirmations === "object"
+      ? Object.fromEntries(
+        Object.entries(rawCustomerNailConfirmations).filter(([bookingId, isConfirmed]) => (
+          String(bookingId || "").trim() && Boolean(isConfirmed)
+        )),
+      )
+      : {};
 
   const designConfirmations = rawConfirmations && typeof rawConfirmations === "object"
     ? Object.fromEntries(
@@ -24,6 +34,7 @@ function normalizePersistedBookingState(value) {
 
   return {
     activeBookingId,
+    customerNailConfirmations,
     designConfirmations,
   };
 }
@@ -39,8 +50,20 @@ const bookingSlice = createSlice({
     clearActiveBooking(state) {
       state.activeBookingId = null;
     },
+    clearCustomerNailConfirmation(state, action) {
+      delete state.customerNailConfirmations[action.payload];
+    },
     clearDesignConfirmation(state, action) {
       delete state.designConfirmations[action.payload];
+    },
+    confirmCustomerNail(state, action) {
+      const bookingId = String(action.payload || "").trim();
+
+      if (!bookingId) {
+        return;
+      }
+
+      state.customerNailConfirmations[bookingId] = true;
     },
     confirmCurrentDesign(state, action) {
       const bookingId = String(action.payload || "").trim();
@@ -67,7 +90,9 @@ export function sanitizeBookingStateForStorage(bookingState) {
 
 export const {
   clearActiveBooking,
+  clearCustomerNailConfirmation,
   clearDesignConfirmation,
+  confirmCustomerNail,
   confirmCurrentDesign,
   setActiveBooking,
 } = bookingSlice.actions;

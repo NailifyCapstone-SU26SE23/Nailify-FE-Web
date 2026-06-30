@@ -27,6 +27,7 @@ import {
   getReceptionistBookingDetailRoute,
 } from "../../../../shared/constants/routes";
 import {
+  checkoutReceptionistBooking,
   fetchReceptionistBookings,
   manualCheckInReceptionistBooking,
   verifyReceptionistQrToken,
@@ -188,7 +189,11 @@ function normalizeAppointmentRow(booking, index) {
 }
 
 function canManualCheckIn(status) {
-  return !["CheckedIn", "Completed", "Cancelled"].includes(status);
+  return !["CheckedIn", "Completed", "ServiceCompleted", "Cancelled"].includes(status);
+}
+
+function isReadyForCheckout(status) {
+  return String(status || "").trim() === "ServiceCompleted";
 }
 
 function DashboardCard({ children, className = "" }) {
@@ -370,6 +375,18 @@ export function ReceptionistDashboardPage() {
     }
   };
 
+  const handleCheckout = async (bookingId) => {
+    try {
+      const updatedBooking = await checkoutReceptionistBooking(bookingId);
+      updateAppointmentRow(updatedBooking);
+      toast.success(`Checkout completed successfully for booking ${bookingId}.`);
+    } catch (actionError) {
+      const message =
+        actionError instanceof Error ? actionError.message : "Failed to check out booking.";
+      toast.error(message);
+    }
+  };
+
   const getActionItems = (bookingId, status) => [
     {
       key: "view",
@@ -384,6 +401,16 @@ export function ReceptionistDashboardPage() {
           label: "Check In",
           icon: UserCheck,
           onSelect: () => void handleManualCheckIn(bookingId),
+        },
+      ]
+      : []),
+    ...(isReadyForCheckout(status)
+      ? [
+        {
+          key: "checkout",
+          label: "Checkout",
+          icon: UserCheck,
+          onSelect: () => void handleCheckout(bookingId),
         },
       ]
       : []),

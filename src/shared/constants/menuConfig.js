@@ -286,6 +286,13 @@ export const MENU_CONFIG = {
       section: "Main",
     },
     {
+      key: "admin-skill-types",
+      label: "Skill Types",
+      to: ROUTES.adminSkillTypes,
+      icon: "palette",
+      section: "Main",
+    },
+    {
       key: "admin-categories",
       label: "Categories",
       to: ROUTES.adminCategories,
