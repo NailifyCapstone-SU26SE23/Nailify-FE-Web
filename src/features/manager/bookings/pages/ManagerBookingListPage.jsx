@@ -635,6 +635,10 @@ export function ManagerBookingListPage() {
     }
   }, []);
 
+  const handleViewBooking = useCallback((bookingId) => {
+    handleOpenDrawer(bookingId);
+  }, [handleOpenDrawer]);
+
   const loadBookings = useCallback(async () => {
     setIsLoading(true);
     setError("");
@@ -1171,7 +1175,7 @@ export function ManagerBookingListPage() {
                 salonId={
                   selectedBookingForAssign.salonId
                     ? String(selectedBookingForAssign.salonId)
-                    : DEFAULT_SALON_ID
+                    : getSalonId()
                 }
                 booking={selectedBookingForAssign}
                 onSuccess={() => loadBookings()}
@@ -1667,25 +1671,25 @@ export function ManagerBookingListPage() {
                     <div
                       key={idx}
                       className={`rounded-[12px] border p-3 ${conflict.severity === "error"
-                          ? "border-[#f8c4d8] bg-[#fff0f6]"
-                          : conflict.severity === "warning"
-                            ? "border-[#fbe3b5] bg-[#fffaf0]"
-                            : "border-[#c7d7ff] bg-[#f0f4ff]"
+                        ? "border-[#f8c4d8] bg-[#fff0f6]"
+                        : conflict.severity === "warning"
+                          ? "border-[#fbe3b5] bg-[#fffaf0]"
+                          : "border-[#c7d7ff] bg-[#f0f4ff]"
                         }`}
                     >
                       <div className="flex items-start gap-2">
                         <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${conflict.severity === "error"
-                            ? "bg-[#e1447f]"
-                            : conflict.severity === "warning"
-                              ? "bg-[#db8520]"
-                              : "bg-[#4755b8]"
+                          ? "bg-[#e1447f]"
+                          : conflict.severity === "warning"
+                            ? "bg-[#db8520]"
+                            : "bg-[#4755b8]"
                           }`} />
                         <div className="min-w-0 flex-1">
                           <p className={`text-xs font-bold ${conflict.severity === "error"
-                              ? "text-[#e1447f]"
-                              : conflict.severity === "warning"
-                                ? "text-[#db8520]"
-                                : "text-[#4755b8]"
+                            ? "text-[#e1447f]"
+                            : conflict.severity === "warning"
+                              ? "text-[#db8520]"
+                              : "text-[#4755b8]"
                             }`}>{conflict.title}</p>
                           <p className="mt-0.5 text-xs font-semibold text-[#5c4559]">{conflict.description}</p>
                           <p className="mt-1 text-[10px] text-[#c08aa4]">{conflict.time}</p>
