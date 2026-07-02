@@ -100,16 +100,16 @@ export async function confirmBooking(bookingId) {
   }
 }
 
-export async function rejectBooking(bookingId) {
+export async function rejectBooking(bookingId, reason) {
   const normalizedId = String(bookingId || "").trim();
 
   if (!normalizedId) {
     throw new Error("Booking ID is required.");
   }
 
-  console.log("Rejecting booking:", normalizedId);
+  console.log("Rejecting booking:", normalizedId, "with reason:", reason);
   try {
-    const response = await axiosClient.post(`/Bookings/${normalizedId}/reject`, null, {
+    const response = await axiosClient.post(`/Bookings/${normalizedId}/reject`, { reason }, {
       headers: getAuthHeaders(),
     });
 
@@ -121,16 +121,21 @@ export async function rejectBooking(bookingId) {
   }
 }
 
-export async function cancelBooking(bookingId) {
+export async function cancelBooking(bookingId, reason, holdToken) {
   const normalizedId = String(bookingId || "").trim();
 
   if (!normalizedId) {
     throw new Error("Booking ID is required.");
   }
 
-  console.log("Cancelling booking:", normalizedId);
+  const payload = { reason };
+  if (holdToken) {
+    payload.holdToken = holdToken;
+  }
+
+  console.log("Cancelling booking:", normalizedId, "with payload:", payload);
   try {
-    const response = await axiosClient.post(`/Bookings/${normalizedId}/cancel`, null, {
+    const response = await axiosClient.post(`/Bookings/${normalizedId}/cancel`, payload, {
       headers: getAuthHeaders(),
     });
 
