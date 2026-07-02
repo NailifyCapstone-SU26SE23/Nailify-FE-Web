@@ -134,6 +134,7 @@ function normalizeAdminNailVariantDetail(variant) {
           price: Number(variant.nailShape.price || 0),
           priceLabel: formatVnd(variant.nailShape.price || 0),
           duration: Number(variant.nailShape.duration || 0),
+          durationLabel: formatDurationMinutes(Number(variant.nailShape.duration || 0)),
         }
       : null,
     nailSurface: variant?.nailSurface
@@ -141,9 +142,13 @@ function normalizeAdminNailVariantDetail(variant) {
           nailSurfaceId: normalizeIntegerId(variant.nailSurface.nailSurfaceId),
           name: String(variant.nailSurface.name || "").trim() || "--",
           shaderParam: String(variant.nailSurface.shaderParam || "").trim(),
+          lightnessOffset: Number(variant.nailSurface.lightnessOffset || 0),
+          saturationOffset: Number(variant.nailSurface.saturationOffset || 0),
+          hueOffset: Number(variant.nailSurface.hueOffset || 0),
           price: Number(variant.nailSurface.price || 0),
           priceLabel: formatVnd(variant.nailSurface.price || 0),
           duration: Number(variant.nailSurface.duration || 0),
+          durationLabel: formatDurationMinutes(Number(variant.nailSurface.duration || 0)),
         }
       : null,
     nailComponents: nailComponents.map((item, index) => ({
@@ -201,7 +206,7 @@ const DEFAULT_NAIL_DESIGN_DETAIL = {
   customerProfile: {
     "Skin Tone": ["Fair", "Light Medium", "Medium"],
     "Skin Undertone": ["Neutral"],
-    "Color Palette": ["Nude", "Pink"],
+    "Category": ["Nude", "Pink"],
     "Age Group": ["20s", "30s"],
     "Style / Personality": ["Elegant", "Feminine"],
     "Vibe Level": ["Soft", "Eye-catching"],
@@ -339,14 +344,14 @@ export function normalizeAdminNailDesignDetail(design) {
     customerRating: `${Math.min(5, 4.2 + normalized.variantCount * 0.15).toFixed(1)}★`,
     customerProfile: {
       ...DEFAULT_NAIL_DESIGN_DETAIL.customerProfile,
-      "Color Palette": categoryNames.slice(0, 3),
+      "Category": categoryNames.slice(0, 3),
       "Style / Personality": categoryNames.slice(0, 3),
       Occasion: normalized.status === "Active" ? ["Daily", "Party", "Photoshoot"] : ["Consultation"],
     },
     designComponents: [
       ["Nail Length", nailLength],
       ["Nail Shape", nailShape],
-      ["Main Color", categoryNames[0] || "Custom"],
+      ["Category", categoryNames[0] || "Custom"],
       ["Surface / Finish", nailSurface],
       ["Decoration", uniqueDecorations.join(", ") || "Minimal Detail"],
       ["Complexity", complexity],
@@ -365,8 +370,13 @@ export function normalizeAdminNailDesignDetail(design) {
       priceDelta: formatVnd(Number(variant?.price || 0)),
       level: getVariantLevel(variant?.price),
       duration: formatDurationMinutes(Number(variant?.duration || 0) || maxDuration || 90),
+      rawDuration: Number(variant?.duration || 0) || maxDuration || 90,
+      price: Number(variant?.price || 0),
       imageUrl: String(variant?.imageUrl || normalized.previewImage || "").trim(),
       colorJson: String(variant?.colorJson || "").trim(),
+      nailShape: variant?.nailShape || null,
+      nailSurface: variant?.nailSurface || null,
+      nailComponents: Array.isArray(variant?.nailComponents) ? variant.nailComponents : [],
     })),
     pricing: {
       materialCosts: [

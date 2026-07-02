@@ -27,6 +27,7 @@ import {
 } from "../../../../shared/constants/routes";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import { PropTypes } from "../../../../shared/utils/propTypes";
+import { StaffBookingNotesModal } from "../components/StaffBookingNotesModal";
 import {
   BOOKING_ROLE_CONFIG,
   BOOKING_ROWS,
@@ -363,6 +364,49 @@ function getStatusTone(status) {
   }
 }
 
+function escapeCsvCell(value) {
+  const normalizedValue = String(value ?? "").replace(/"/g, "\"\"");
+  return `"${normalizedValue}"`;
+}
+
+function buildBookingsCsvRows(bookings, isStaffRole) {
+  const headers = isStaffRole
+    ? ["Booking ID", "Customer", "Phone", "Salon", "Staff Artist", "Date", "Time", "Status", "Service", "Total Price"]
+    : ["Booking ID", "Customer", "Phone", "Salon", "Staff Artist", "Date", "Time", "Status", "Payment", "Service", "Total Price"];
+
+  const rows = bookings.map((booking) => {
+    const baseCells = [
+      booking.uiId || booking.id || "--",
+      booking.customerName || "--",
+      booking.customerPhone || "--",
+      booking.uiBranch || booking.branch || "--",
+      booking.staffName || "--",
+      booking.bookingDate || booking.bookingDateValue || "--",
+      booking.bookingTime || "--",
+      booking.uiStatus || booking.status || "--",
+    ];
+
+    if (isStaffRole) {
+      return [
+        ...baseCells,
+        booking.uiService || booking.service || "--",
+        booking.totalPriceLabel || booking.totalPrice || "--",
+      ];
+    }
+
+    return [
+      ...baseCells,
+      booking.uiPayment || booking.paymentStatus || "--",
+      booking.uiService || booking.service || "--",
+      booking.totalPriceLabel || booking.totalPrice || "--",
+    ];
+  });
+
+  return [headers, ...rows]
+    .map((row) => row.map(escapeCsvCell).join(","))
+    .join("\r\n");
+}
+
 function normalizeBooking(booking) {
   const status = mapStatus(booking.status);
   const payment = mapPayment(booking.paymentStatus);
@@ -421,6 +465,7 @@ export function BookingListPage() {
   const [isLoading, setIsLoading] = useState(isStaffRole);
   const [loadError, setLoadError] = useState("");
   const [staffBookings, setStaffBookings] = useState([]);
+  const [selectedStaffNotesBooking, setSelectedStaffNotesBooking] = useState(null);
 
   useEffect(() => {
     if (!location.state?.flashMessage) {
@@ -680,6 +725,8 @@ export function BookingListPage() {
     if (role === ROLES.staff) {
       const normalizedBookingStatus = String(booking?.status || booking?.uiStatus || "").trim().toLowerCase();
       const isInProgressBooking = normalizedBookingStatus === "inprogress";
+      const isCompletedBooking = normalizedBookingStatus === "completed";
+      const isServiceCompletedBooking = normalizedBookingStatus === "servicecompleted";
 
       const openServiceSession = () => {
         navigate(getStaffBookingServiceSessionRoute(booking.id), {
@@ -698,31 +745,27 @@ export function BookingListPage() {
 
       return [
         { key: "view", label: "View Booking", icon: Eye, onSelect: () => navigate(detailRoute) },
-        { key: "edit", label: "Edit Booking", icon: PencilLine, onSelect: () => navigate(detailRoute) },
-        {
-          key: isInProgressBooking ? "continue" : "start",
-          label: isInProgressBooking ? "Continue Service" : "Start Service",
-          icon: Play,
-          onSelect: () => void openServiceSession(),
-        },
-        {
-          key: "complete",
-          label: "Complete Service",
-          icon: SquareCheckBig,
-          onSelect: () => navigate(detailRoute, { state: { staffAction: "complete" } }),
-        },
+        ...(!isCompletedBooking && !isServiceCompletedBooking
+          ? [{
+            key: isInProgressBooking ? "continue" : "start",
+            label: isInProgressBooking ? "Continue Service" : "Start Service",
+            icon: Play,
+            onSelect: () => void openServiceSession(),
+          }]
+          : []),
+        ...(!isCompletedBooking && !isServiceCompletedBooking
+          ? [{
+            key: "complete",
+            label: "Complete Service",
+            icon: SquareCheckBig,
+            onSelect: () => navigate(detailRoute, { state: { staffAction: "complete" } }),
+          }]
+          : []),
         {
           key: "notes",
           label: "View Notes",
           icon: FileText,
-          onSelect: () => navigate(detailRoute, { state: { staffAction: "notes" } }),
-        },
-        {
-          key: "delete",
-          label: "Delete Booking",
-          icon: Trash2,
-          className: "text-[#d14c84]",
-          onSelect: () => navigate(detailRoute, { state: { staffAction: "delete" } }),
+          onSelect: () => setSelectedStaffNotesBooking(booking),
         },
       ];
     }
@@ -784,8 +827,33 @@ export function BookingListPage() {
     ];
   }, [isStaffRole, staffTodayBookingsFromApi.length, staffYesterdayBookingsFromApi.length]);
 
+  const handleExportCsv = () => {
+    if (!sortedBookings.length) {
+      toast.error("No bookings available to export.");
+      return;
+    }
+
+    const csvContent = buildBookingsCsvRows(sortedBookings, isStaffRole);
+    const csvBlob = new Blob([`\uFEFF${csvContent}`], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const downloadUrl = URL.createObjectURL(csvBlob);
+    const link = document.createElement("a");
+    const dateLabel = new Date().toISOString().slice(0, 10);
+
+    link.href = downloadUrl;
+    link.download = `bookings-${role}-${dateLabel}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(downloadUrl);
+
+    toast.success("CSV exported successfully.");
+  };
+
   return (
-    <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)]">
+    <>
+      <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)]">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         {summaryItems.map((item) => (
           <MetricCard key={item.label} item={item} />
@@ -908,17 +976,20 @@ export function BookingListPage() {
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
+                  onClick={handleExportCsv}
                   className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
                 >
                   Export CSV
                 </button>
-                <Link
-                  to={roleConfig.createRoute}
-                  className="inline-flex items-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
-                >
-                  <UserPlus size={13} className="mr-1.5" />
-                  {roleConfig.createLabel}
-                </Link>
+                {!isStaffRole ? (
+                  <Link
+                    to={roleConfig.createRoute}
+                    className="inline-flex items-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
+                  >
+                    <UserPlus size={13} className="mr-1.5" />
+                    {roleConfig.createLabel}
+                  </Link>
+                ) : null}
               </div>
             </div>
 
@@ -937,12 +1008,14 @@ export function BookingListPage() {
             <div className="mt-4 overflow-hidden rounded-[18px] border border-[#f6dbe7]">
               <div className="flex items-center justify-between gap-3 border-b border-[#f7dce8] bg-[#fffafd] px-4 py-3">
                 <p className="text-sm font-extrabold text-[#462a45]">All Bookings</p>
-                <button
-                  type="button"
-                  className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93]"
-                >
-                  Bulk Actions
-                </button>
+                {!isStaffRole ? (
+                  <button
+                    type="button"
+                    className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93]"
+                  >
+                    Bulk Actions
+                  </button>
+                ) : null}
               </div>
 
               {isLoading ? (
@@ -1118,6 +1191,12 @@ export function BookingListPage() {
           </article>
         </div>
       </div>
-    </section>
+      </section>
+      <StaffBookingNotesModal
+        open={Boolean(selectedStaffNotesBooking)}
+        booking={selectedStaffNotesBooking}
+        onClose={() => setSelectedStaffNotesBooking(null)}
+      />
+    </>
   );
 }

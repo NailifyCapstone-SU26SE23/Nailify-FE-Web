@@ -283,8 +283,7 @@ function buildStaffExperienceFromBooking(
     bookingInfo: [
       {
         label: "Service",
-        value: fullSelectionSummary,
-        note: selectedItemLabels.length > 1 ? "Selected services in this booking." : requestedDesign,
+       
         services: bookingServiceEntries,
       },
       {

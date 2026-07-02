@@ -104,7 +104,7 @@ function isReadyForCheckout(status) {
 
 const BOOKING_PAGE_SIZE = 10;
 const RECEPTIONIST_BOOKING_FETCH_SIZE = 200;
-const STATUS_OPTIONS = ["All", "Pending", "Confirmed", "CheckedIn", "Completed", "Cancelled"];
+const STATUS_OPTIONS = ["All", "Pending", "Confirmed", "Approved", "CheckedIn", "Completed", "Cancelled"];
 
 export function ReceptionistBookingListPage() {
   const navigate = useNavigate();

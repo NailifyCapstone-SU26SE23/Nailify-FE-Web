@@ -195,9 +195,9 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
               Nail Variant Detail
             </p>
             <h3 className="mt-2 text-2xl font-extrabold text-[#ea4f93]">{variantDetail.name}</h3>
-            <p className="mt-1 text-sm text-[#a88a9d]">
+            {/* <p className="mt-1 text-sm text-[#a88a9d]">
               ID #{variantDetail.nailVariantId} • Nail Design #{variantDetail.nailDesignId}
-            </p>
+            </p> */}
           </div>
           <button
             type="button"
@@ -229,12 +229,12 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                 <InfoCard
                   label="Variant Name"
                   value={variantDetail.name || "--"}
-                  note={`Variant ID: ${variantDetail.nailVariantId || "--"}`}
+                  // note={`Variant ID: ${variantDetail.nailVariantId || "--"}`}
                 />
                 <InfoCard
                   label="Design Reference"
                   value={`Design #${variantDetail.nailDesignId || "--"}`}
-                  note={`Shape ID: ${variantDetail.nailShapeId || "--"} • Surface ID: ${variantDetail.nailSurfaceId || "--"}`}
+                  // note={`Shape ID: ${variantDetail.nailShapeId || "--"} • Surface ID: ${variantDetail.nailSurfaceId || "--"}`}
                 />
               </div>
 
