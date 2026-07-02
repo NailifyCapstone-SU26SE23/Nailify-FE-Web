@@ -217,16 +217,16 @@ export function ReceptionistBookingDetail({ booking }) {
       key: "duration",
       render: (value) => <span className="text-xs text-[#4a3741]">{formatDurationLabel(value)}</span>,
     },
-    {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
-      render: (value, row) => (
-        <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-extrabold ${row.statusTone}`}>
-          {value}
-        </span>
-      ),
-    },
+    // {
+    //   title: "Status",
+    //   dataIndex: "status",
+    //   key: "status",
+    //   render: (value, row) => (
+    //     <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-extrabold ${row.statusTone}`}>
+    //       {value}
+    //     </span>
+    //   ),
+    // },
     {
       title: "Action",
       key: "action",

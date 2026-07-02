@@ -75,6 +75,14 @@ export const MENU_CONFIG = {
       section: "Main",
     },
     {
+      key: "staff-waitting",
+      label: "Waitlist Alerts",
+      to: ROUTES.staffWaitting,
+      icon: "support",
+      section: "Main",
+      badge: "4",
+    },
+    {
       key: "staff-schedule",
       label: "Schedule",
       icon: "calendar",

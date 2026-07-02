@@ -478,12 +478,12 @@ export function NailDesignManagementCategoryPage() {
                         </Pill>
                         <Pill tone="bg-[#eef4ff] text-[#3f68c9]">{category.categoryTypeName}</Pill>
                       </div>
-                      <p className="mt-2 text-sm leading-6 text-[#8a7082]">
+                      {/* <p className="mt-2 text-sm leading-6 text-[#8a7082]">
                         Category type ID: {category.categoryTypeId}
                       </p>
                       <p className="mt-2 text-[11px] font-semibold text-[#c694ad]">
                         Category ID #{category.categoryId}
-                      </p>
+                      </p> */}
                     </div>
 
                     <div className="flex flex-wrap gap-2">

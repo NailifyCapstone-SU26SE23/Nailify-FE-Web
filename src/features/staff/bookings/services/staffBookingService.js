@@ -23,6 +23,18 @@ function unwrapResponse(response, fallbackMessage) {
   return payload.data;
 }
 
+function normalizeBookingStatusValue(status) {
+  return String(status || "").trim().toLowerCase();
+}
+
+export function isRejectedStaffBooking(booking) {
+  return normalizeBookingStatusValue(booking?.status) === "rejected";
+}
+
+function filterVisibleStaffBookings(bookings) {
+  return (Array.isArray(bookings) ? bookings : []).filter((booking) => !isRejectedStaffBooking(booking));
+}
+
 function extractPaginationMeta(data, fallbackPageSize) {
   const metaData = data?.metaData ?? data?.pagination ?? data ?? {};
   const totalItems =
@@ -91,11 +103,11 @@ export async function fetchStaffBookings(filters = {}) {
   });
 
   const data = unwrapResponse(response, "Failed to load assigned bookings.");
-  const items = Array.isArray(data)
+  const items = filterVisibleStaffBookings(Array.isArray(data)
     ? data
     : Array.isArray(data?.items)
       ? data.items
-      : [];
+      : []);
 
   if (includePagination) {
     return {
@@ -159,7 +171,13 @@ export async function fetchStaffBookingDetail(bookingId) {
     headers: getAuthHeaders(),
   });
 
-  return unwrapResponse(response, "Failed to load booking detail.");
+  const data = unwrapResponse(response, "Failed to load booking detail.");
+
+  if (isRejectedStaffBooking(data)) {
+    throw new Error("Rejected bookings are not available in the staff workspace.");
+  }
+
+  return data;
 }
 
 export async function updateStaffBooking(bookingId, payload) {
@@ -719,9 +737,7 @@ export function buildStaffServiceSessionPayload(booking, options = {}) {
     estimatedDuration: estimatedFinishTime,
     estimatedFinishTime,
     completedAt: "--",
-    designName:
-      variantNames[0] ||
-      "--",
+    designName: variantNames[0] || "--",
     totalPrice: totalPriceLabel,
     totalAmount: totalPriceLabel,
     originalServicePrice: totalPriceLabel,

@@ -214,13 +214,13 @@ function getReceptionistActionAvailability(status) {
   const normalizedStatus = normalizeBookingStatus(status);
 
   return {
-    canCheckIn: ["pending", "confirmed"].includes(normalizedStatus),
+    canCheckIn: ["pending", "confirmed", "approved"].includes(normalizedStatus),
     canStartService: normalizedStatus === "checkedin",
-    canReassignArtist: ["pending", "confirmed", "checkedin"].includes(normalizedStatus),
-    canMoveSchedule: ["pending", "confirmed"].includes(normalizedStatus),
+    canReassignArtist: ["pending", "confirmed", "approved", "checkedin"].includes(normalizedStatus),
+    canMoveSchedule: ["pending", "confirmed", "approved"].includes(normalizedStatus),
     canAddService: ["checkedin", "in progress", "inprogress"].includes(normalizedStatus),
     canCompleteBooking: ["in progress", "inprogress"].includes(normalizedStatus),
-    canCancelBooking: ["pending", "confirmed"].includes(normalizedStatus),
+    canCancelBooking: ["pending", "confirmed", "approved"].includes(normalizedStatus),
     canSendInvoice: ["servicecompleted", "completed"].includes(normalizedStatus),
     canCheckout: normalizedStatus === "servicecompleted",
     canAddPayment: normalizedStatus === "servicecompleted",
@@ -409,6 +409,7 @@ export function ReceptionistBookingDetailPage() {
   ), [booking]);
 
   const totalAmount = formatCurrency(booking?.totalPrice);
+  const discount = formatCurrency(booking?.discount);
   const depositPaid = "--";
   const remainingBalance = totalAmount;
   const progressPercent = getProgressPercent(booking);
@@ -464,16 +465,16 @@ export function ReceptionistBookingDetailPage() {
       key: "duration",
       render: (value) => <span className="text-xs text-[#4a3741]">{value}</span>,
     },
-    {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
-      render: (status) => (
-        <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-extrabold ${getStatusTone(status)}`}>
-          {status}
-        </span>
-      ),
-    },
+    // {
+    //   title: "Status",
+    //   dataIndex: "status",
+    //   key: "status",
+    //   render: (status) => (
+    //     <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-extrabold ${getStatusTone(status)}`}>
+    //       {status}
+    //     </span>
+    //   ),
+    // },
     {
       title: "Action",
       key: "action",
@@ -874,7 +875,7 @@ export function ReceptionistBookingDetailPage() {
                 <div className="space-y-3 text-sm">
                   {[
                     ["Subtotal", totalAmount],
-                    ["Gold Member Discount (10%)", "--"],
+                    ["Discount", discount],
                     ["Deposit Paid", depositPaid],
                   ].map(([label, value]) => (
                     <div key={label} className="flex items-center justify-between gap-3">
@@ -1021,7 +1022,7 @@ export function ReceptionistBookingDetailPage() {
             </p>
           </DetailCard>
 
-          <DetailCard title="Internal Notes">
+          {/* <DetailCard title="Internal Notes">
             <textarea
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
@@ -1034,7 +1035,7 @@ export function ReceptionistBookingDetailPage() {
             >
               Save Notes
             </button>
-          </DetailCard>
+          </DetailCard> */}
 
           {/* <DetailCard title="Next Appointment">
             <div className="rounded-[20px] border border-[#f3d7e2] bg-[#fff7fb] px-4 py-4">

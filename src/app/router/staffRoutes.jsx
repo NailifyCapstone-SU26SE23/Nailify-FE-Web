@@ -9,6 +9,7 @@ import { StaffServiceSessionPage } from "../../features/staff/bookings/pages/Sta
 import { StaffUpdateBookingDesignPage } from "../../features/staff/bookings/pages/StaffUpdateBookingDesignPage";
 import { StaffCustomerNailsListPage } from "../../features/staff/customer-nail/pages/StaffCustomerNailsListPage";
 import { StaffCustomerNailReviewPage } from "../../features/staff/customer-nail/pages/StaffCustomerNailReviewPage";
+import { StaffWaittingPage } from "../../features/staff/waitting/pages/StaffWaittingPage";
 import { AuthGuard } from "../../shared/components/guards/AuthGuard";
 import { RoleGuard } from "../../shared/components/guards/RoleGuard";
 import { ROLES } from "../../shared/constants/roles";
@@ -64,6 +65,10 @@ export const staffRoutes = [
       {
         path: ROUTES.staffCustomerNailDetail,
         element: <StaffCustomerNailReviewPage />,
+      },
+      {
+        path: ROUTES.staffWaitting,
+        element: <StaffWaittingPage />,
       },
     ],
   },

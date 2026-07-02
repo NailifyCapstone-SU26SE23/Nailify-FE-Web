@@ -7,13 +7,11 @@ import {
   FileText,
   LoaderCircle,
   MessageSquareText,
-  PencilLine,
   Play,
   RefreshCcw,
   Sparkles,
   SquareCheckBig,
   Star,
-  Trash2,
   Trophy,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -21,6 +19,7 @@ import { Table } from "antd";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
+import { StaffBookingNotesModal } from "../../../core/booking-management/components/StaffBookingNotesModal";
 import {
   getStaffBookingDetailRoute,
   getStaffBookingDesignStudioRoute,
@@ -171,6 +170,7 @@ export function StaffDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [bookings, setBookings] = useState([]);
+  const [selectedStaffNotesBooking, setSelectedStaffNotesBooking] = useState(null);
   const [bookingPagination, setBookingPagination] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -294,6 +294,9 @@ export function StaffDashboardPage() {
 
   const getActionItems = (booking) => {
     const detailRoute = getStaffBookingDetailRoute(booking.id);
+    const normalizedBookingStatus = String(booking?.status || booking?.uiStatus || "").trim().toLowerCase();
+    const isCompletedBooking = normalizedBookingStatus === "completed";
+    const isServiceCompletedBooking = normalizedBookingStatus === "servicecompleted";
     const startService = async () => {
       try {
         const updatedBooking = await startStaffBookingService(booking.id);
@@ -314,31 +317,27 @@ export function StaffDashboardPage() {
 
     return [
       { key: "view", label: "View Booking", icon: Eye, onSelect: () => navigate(detailRoute) },
-      { key: "edit", label: "Edit Booking", icon: PencilLine, onSelect: () => navigate(detailRoute) },
-      {
-        key: "start",
-        label: "Start Service",
-        icon: Play,
-        onSelect: () => void startService(),
-      },
-      {
-        key: "complete",
-        label: "Complete Service",
-        icon: SquareCheckBig,
-        onSelect: () => navigate(detailRoute, { state: { staffAction: "complete" } }),
-      },
+      ...(!isCompletedBooking && !isServiceCompletedBooking
+        ? [{
+          key: "start",
+          label: "Start Service",
+          icon: Play,
+          onSelect: () => void startService(),
+        }]
+        : []),
+      ...(!isCompletedBooking && !isServiceCompletedBooking
+        ? [{
+          key: "complete",
+          label: "Complete Service",
+          icon: SquareCheckBig,
+          onSelect: () => navigate(detailRoute, { state: { staffAction: "complete" } }),
+        }]
+        : []),
       {
         key: "notes",
         label: "View Notes",
         icon: FileText,
-        onSelect: () => navigate(detailRoute, { state: { staffAction: "notes" } }),
-      },
-      {
-        key: "delete",
-        label: "Delete Booking",
-        icon: Trash2,
-        className: "text-[#d14c84]",
-        onSelect: () => navigate(detailRoute, { state: { staffAction: "delete" } }),
+        onSelect: () => setSelectedStaffNotesBooking(booking),
       },
     ];
   };
@@ -428,7 +427,8 @@ export function StaffDashboardPage() {
   ]), [getActionItems]);
 
   return (
-    <section className="flex min-h-full w-full min-w-0 flex-col gap-4 overflow-x-hidden bg-[linear-gradient(180deg,#fff9fc_0%,#fff5fa_100%)]">
+    <>
+      <section className="flex min-h-full w-full min-w-0 flex-col gap-4 overflow-x-hidden bg-[linear-gradient(180deg,#fff9fc_0%,#fff5fa_100%)]">
       <div className="flex w-full min-w-0 flex-col gap-4 rounded-[24px] border border-[#f6dbe8] bg-[#fff7fb] p-3 shadow-[0_14px_30px_rgba(236,72,153,0.05)] sm:p-4">
         <div className="flex min-w-0 flex-col gap-3 rounded-[20px] border border-[#f4d5e3] bg-[linear-gradient(90deg,#ffe8f1_0%,#ffdce8_100%)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
           <div className="min-w-0">
@@ -760,6 +760,12 @@ export function StaffDashboardPage() {
           </aside>
         </div>
       </div>
-    </section>
+      </section>
+      <StaffBookingNotesModal
+        open={Boolean(selectedStaffNotesBooking)}
+        booking={selectedStaffNotesBooking}
+        onClose={() => setSelectedStaffNotesBooking(null)}
+      />
+    </>
   );
 }
