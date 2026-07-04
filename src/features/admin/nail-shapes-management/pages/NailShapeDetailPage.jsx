@@ -392,9 +392,11 @@ export function NailShapeDetailPage() {
                 >
                   {imagePreview ? (
                     <Image
+                      crossOrigin="anonymous"
                       src={imagePreview}
                       alt="Nail shape preview"
                       className="h-48 w-full rounded-2xl object-cover shadow-lg"
+                      referrerPolicy="no-referrer"
                     />
                   ) : (
                     <>

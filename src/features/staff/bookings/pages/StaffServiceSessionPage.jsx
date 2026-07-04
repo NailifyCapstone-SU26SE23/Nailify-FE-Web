@@ -301,7 +301,7 @@ function SessionSummaryPanel({
       <div className={`mt-5 rounded-[22px] border border-[#f5d9e6] p-5 ${summaryToneByPhase[phase] || summaryToneByPhase.start}`}>
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex min-w-0 items-center gap-4">
-            <img
+            <img crossOrigin="anonymous"
               src={data.customerAvatar}
               alt={data.customerName}
               className="h-16 w-16 rounded-2xl border border-[#f2bfd4] object-cover"
@@ -1938,7 +1938,7 @@ export function StaffServiceSessionPage() {
               </div>
               <div className="bg-[#fff7fb] p-4">
                 {effectiveBeforePhoto ? (
-                  <Image
+                  <Image crossOrigin="anonymous"
                     src={effectiveBeforePhoto.previewUrl}
                     alt={effectiveBeforePhoto.fileName}
                     className="h-[280px] w-full rounded-[22px] object-cover sm:h-[360px]"
@@ -1967,7 +1967,7 @@ export function StaffServiceSessionPage() {
               </div>
               <div className="bg-[#fff7fb] p-4">
                 {effectiveAfterPhoto ? (
-                  <Image
+                  <Image crossOrigin="anonymous"
                     src={effectiveAfterPhoto.previewUrl}
                     alt={effectiveAfterPhoto.fileName}
                     className="h-[280px] w-full rounded-[22px] object-cover sm:h-[360px]"
@@ -2258,7 +2258,7 @@ export function StaffServiceSessionPage() {
                   </p>
                   {effectiveBeforePhoto ? (
                     <div className="mt-4 flex items-center gap-4 rounded-[20px] border border-[#f2bfd4] bg-[#fff8fb] p-4">
-                      <Image
+                      <Image crossOrigin="anonymous"
                         src={effectiveBeforePhoto.previewUrl}
                         alt={effectiveBeforePhoto.fileName}
                         // className="h-20 w-20 rounded-2xl border border-[#f2bfd4] object-cover"
@@ -2337,7 +2337,7 @@ export function StaffServiceSessionPage() {
                 <div className="mt-5 overflow-hidden rounded-[22px] border border-[#f2bfd4] bg-[#fff7fb]">
                   {effectiveBeforePhoto ? (
                     <div className="relative">
-                      <img
+                      <img crossOrigin="anonymous"
                         src={effectiveBeforePhoto.previewUrl}
                         alt={effectiveBeforePhoto.fileName}
                         className="h-[260px] w-full object-cover"
@@ -2541,7 +2541,7 @@ export function StaffServiceSessionPage() {
                   </p>
                   {effectiveAfterPhoto ? (
                     <div className="mt-4 flex items-center gap-4 rounded-[20px] border border-[#f2bfd4] bg-[#fff8fb] p-4">
-                      <Image
+                      <Image crossOrigin="anonymous"
                         src={effectiveAfterPhoto.previewUrl}
                         alt={effectiveAfterPhoto.fileName}
                         // className="h-20 w-20 rounded-2xl border border-[#f2bfd4] object-cover"
@@ -2967,3 +2967,4 @@ export function StaffServiceSessionPage() {
     </section>
   );
 }
+

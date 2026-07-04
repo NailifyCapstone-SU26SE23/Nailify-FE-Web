@@ -428,7 +428,7 @@ export function StaffCreatePage() {
                 <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-rose-200 bg-gradient-to-br from-[#fffafc] to-[#fff5f9] px-6 py-8 cursor-pointer transition-all duration-300 hover:border-rose-300 hover:bg-gradient-to-br hover:from-[#fff8fb] hover:to-[#fff1f6] hover:shadow-[0_8px_24px_rgba(226,93,143,0.12)]">
                   {imagePreview ? (
                     <div className="relative w-full flex items-center justify-center">
-                      <img
+                      <img crossOrigin="anonymous"
                         src={imagePreview}
                         alt="Preview"
                         className="h-40 w-40 object-cover rounded-full shadow-lg border-4 border-rose-100"
@@ -543,7 +543,7 @@ export function StaffCreatePage() {
                 <div className="flex flex-col items-center justify-center">
                   <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full overflow-hidden border-4 border-rose-100 shadow-lg mb-4">
                     {imagePreview ? (
-                      <img
+                      <img crossOrigin="anonymous"
                         src={imagePreview}
                         alt="Profile"
                         className="h-full w-full object-cover"
@@ -647,3 +647,4 @@ export function StaffCreatePage() {
     </section>
   );
 }
+

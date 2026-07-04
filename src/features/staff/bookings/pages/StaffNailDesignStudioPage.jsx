@@ -6,8 +6,10 @@ import {
   Search,
   Star,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
+import { axiosClient } from "../../../../lib/axiosClient";
+import { loadAuthSession } from "../../../../features/core/auth/model/authStorage";
 import { formatDurationLabel } from "../../../../shared/utils/formatDuration";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import {
@@ -19,6 +21,70 @@ import {
   getStaffBookingDesignUpdateRoute,
   ROUTES,
 } from "../../../../shared/constants/routes";
+
+const DEFAULT_DESIGN_IMAGE = "https://images.unsplash.com/photo-1604902396830-aca29e19b067?auto=format&fit=crop&w=800&q=80";
+
+function getAuthHeaders() {
+  const session = loadAuthSession();
+  const token = session?.accessToken || session?.token;
+
+  return token
+    ? {
+        Authorization: `Bearer ${token}`,
+      }
+    : {};
+}
+
+function unwrapApiResponse(response, fallbackMessage) {
+  const payload = response?.data;
+
+  if (!payload?.isSucceeded) {
+    throw new Error(payload?.message || fallbackMessage);
+  }
+
+  return payload.data;
+}
+
+function formatCurrencyValue(value) {
+  return `${Number(value || 0).toLocaleString("vi-VN")} VND`;
+}
+
+function buildDesignTemplateFromApi(item) {
+  const imageUrl = Array.isArray(item?.imageUrls) ? item.imageUrls.find(Boolean) : "";
+  const categories = Array.isArray(item?.categories) ? item.categories.map((category) => category?.name).filter(Boolean) : [];
+  const firstVariant = Array.isArray(item?.nailVariants) ? item.nailVariants[0] : null;
+  const duration = Number(firstVariant?.duration || 0);
+  const minPrice = Number(item?.minPrice || 0);
+  const maxPrice = Number(item?.maxPrice || 0);
+
+  return {
+    id: String(item?.nailDesignId ?? ""),
+    name: String(item?.name || "Untitled design").trim(),
+    image: imageUrl || DEFAULT_DESIGN_IMAGE,
+    price: minPrice || maxPrice
+      ? `${formatCurrencyValue(minPrice || maxPrice)}${minPrice !== maxPrice ? ` - ${formatCurrencyValue(maxPrice)}` : ""}`
+      : "Contact for quote",
+    duration: duration > 0 ? formatDurationLabel(duration) : "Flexible",
+    tags: categories.length ? categories : ["Custom design"],
+    accent: categories.length ? "Live" : "Ready",
+    accentClassName: "rounded-md bg-[#fff1f7] px-2 py-1 text-[9px] font-extrabold text-[#ea4f93]",
+    ctaLabel: "View variants",
+    description: String(item?.description || "").trim(),
+    raw: item,
+  };
+}
+
+function buildVariantTemplateFromApi(item) {
+  return {
+    id: String(item?.nailVariantId ?? ""),
+    name: String(item?.name || "Untitled variant").trim(),
+    image: String(item?.imageUrl || DEFAULT_DESIGN_IMAGE),
+    price: formatCurrencyValue(item?.price || 0),
+    duration: Number(item?.duration || 0) > 0 ? formatDurationLabel(Number(item?.duration || 0)) : "Flexible",
+    tags: [item?.nailShape?.name, item?.nailSurface?.name].filter(Boolean),
+    raw: item,
+  };
+}
 
 function SectionTitle({ icon: Icon, title }) {
   return (
@@ -64,7 +130,7 @@ function TemplateCard({ item, isSelected, onSelect }) {
         isSelected ? "border-[#ef6aac] ring-2 ring-[#ef6aac]/20" : "border-[#f4dbe7]"
       }`}
     >
-      <img
+      <img crossOrigin="anonymous"
         src={item.image}
         alt={item.name}
         className="h-28 w-full object-cover"
@@ -523,30 +589,126 @@ export function StaffNailDesignStudioPage() {
   const [isDesignConfirmed, setIsDesignConfirmed] = useState(false);
   const [activeNailIndex, setActiveNailIndex] = useState(3);
   const [templateStartIndex, setTemplateStartIndex] = useState(0);
+  const [designTemplates, setDesignTemplates] = useState([]);
+  const [designVariants, setDesignVariants] = useState([]);
+  const [selectedDesign, setSelectedDesign] = useState(null);
+  const [designView, setDesignView] = useState("designs");
+  const [designQuery, setDesignQuery] = useState("");
+  const [isDesignsLoading, setIsDesignsLoading] = useState(true);
+  const [isVariantsLoading, setIsVariantsLoading] = useState(false);
+  const [designError, setDesignError] = useState("");
   const [nailDecorations, setNailDecorations] = useState(
     createNailDecorationLayout(studio?.builder.initialSelection.decorations ?? []),
   );
   const [selectedExtras, setSelectedExtras] = useState(studio?.builder.initialSelection.extras ?? []);
   const templateWindowSize = 3;
 
-  const activeTemplate = useMemo(
-    () => studio?.templates.find((item) => item.id === selectedTemplateId) ?? studio?.selectedDesign,
-    [selectedTemplateId, studio],
-  );
+  const loadDesignVariants = async (designId) => {
+    if (!designId) {
+      return;
+    }
+
+    setIsVariantsLoading(true);
+    setDesignError("");
+
+    try {
+      const response = await axiosClient.get("/NailVariants", {
+        headers: getAuthHeaders(),
+        params: {
+          pageNumber: 1,
+          pageSize: 100,
+          nailDesignId: designId,
+        },
+      });
+      const payload = unwrapApiResponse(response, "Failed to load nail design variants.");
+      const items = Array.isArray(payload?.items) ? payload.items.map(buildVariantTemplateFromApi) : [];
+
+      setDesignVariants(items);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to load nail design variants.";
+      setDesignError(message);
+    } finally {
+      setIsVariantsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchTemplates = async () => {
+      setIsDesignsLoading(true);
+      setDesignError("");
+
+      try {
+        const response = await axiosClient.get("/NailDesigns", {
+          headers: getAuthHeaders(),
+          params: {
+            pageNumber: 1,
+            pageSize: 50,
+            name: designQuery || undefined,
+          },
+        });
+
+        const payload = unwrapApiResponse(response, "Failed to load nail design templates.");
+        const items = Array.isArray(payload?.items) ? payload.items.map(buildDesignTemplateFromApi) : [];
+
+        if (!isMounted) {
+          return;
+        }
+
+        setDesignTemplates(items);
+        setTemplateStartIndex(0);
+        if (!selectedTemplateId && items[0]) {
+          setSelectedTemplateId(items[0].id);
+        }
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        const message = error instanceof Error ? error.message : "Failed to load nail design templates.";
+        setDesignError(message);
+      } finally {
+        if (isMounted) {
+          setIsDesignsLoading(false);
+        }
+      }
+    };
+
+    void fetchTemplates();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [designQuery, selectedTemplateId]);
+
+  const activeTemplate = useMemo(() => {
+    const selectedDesignTemplate = designTemplates.find((item) => item.id === selectedTemplateId);
+
+    if (selectedDesignTemplate) {
+      return selectedDesignTemplate;
+    }
+
+    return selectedDesign ?? studio?.selectedDesign;
+  }, [designTemplates, selectedDesign, selectedTemplateId, studio]);
   const visibleTemplates = useMemo(() => {
-    if (!studio?.templates?.length) {
+    if (designView === "variants") {
+      return designVariants;
+    }
+
+    if (!designTemplates.length) {
       return [];
     }
 
-    if (studio.templates.length <= templateWindowSize) {
-      return studio.templates;
+    if (designTemplates.length <= templateWindowSize) {
+      return designTemplates;
     }
 
     return Array.from({ length: templateWindowSize }, (_, offset) => {
-      const index = (templateStartIndex + offset) % studio.templates.length;
-      return studio.templates[index];
+      const index = (templateStartIndex + offset) % designTemplates.length;
+      return designTemplates[index];
     });
-  }, [studio, templateStartIndex]);
+  }, [designTemplates, designVariants, designView, templateStartIndex]);
   const previewColorStyle = useMemo(
     () => getColorStyle(selectedColor, studio?.builder.colors ?? []),
     [selectedColor, studio],
@@ -556,8 +718,16 @@ export function StaffNailDesignStudioPage() {
     [activeNailIndex, nailDecorations],
   );
 
-  const applyTemplatePreset = (templateId) => {
+  const applyTemplatePreset = async (templateId) => {
     setSelectedTemplateId(templateId);
+
+    const matchingTemplate = designTemplates.find((item) => item.id === templateId);
+    if (matchingTemplate) {
+      setSelectedDesign(matchingTemplate);
+      setDesignView("variants");
+      await loadDesignVariants(templateId);
+      return;
+    }
 
     const preset = TEMPLATE_PRESETS[templateId];
 
@@ -575,14 +745,20 @@ export function StaffNailDesignStudioPage() {
   };
 
   const handleTemplateSlide = (direction) => {
-    if (!studio?.templates?.length || studio.templates.length <= templateWindowSize) {
+    if (!designTemplates.length || designTemplates.length <= templateWindowSize) {
       return;
     }
 
     setTemplateStartIndex((current) => {
       const delta = direction === "next" ? 1 : -1;
-      return (current + delta + studio.templates.length) % studio.templates.length;
+      return (current + delta + designTemplates.length) % designTemplates.length;
     });
+  };
+
+  const handleBackToDesigns = () => {
+    setDesignView("designs");
+    setDesignVariants([]);
+    setSelectedDesign(null);
   };
 
   if (!booking || !studio) {
@@ -717,7 +893,8 @@ export function StaffNailDesignStudioPage() {
               <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#80687d]" />
               <input
                 type="text"
-                defaultValue=""
+                value={designQuery}
+                onChange={(event) => setDesignQuery(event.target.value)}
                 placeholder="Search nails designs..."
                 className="h-11 w-full rounded-[12px] border border-[#f4dbe7] bg-[#fffafc] pl-11 pr-4 text-sm text-[#594456] outline-none transition focus:border-[#ef6aac]"
               />
@@ -738,53 +915,123 @@ export function StaffNailDesignStudioPage() {
                   <div>
                     <h2 className="text-sm font-extrabold text-[#38253a]">Ready-Made Design Templates</h2>
                     <p className="mt-1 text-[11px] text-[#a8899c]">
-                      Select a template or customize from scratch
+                      {designView === "designs"
+                        ? "Select a template to view its available variants"
+                        : "Review the variants for the selected design"}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleTemplateSlide("prev")}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#f2bfd4] bg-[#fff4f8] text-[#ea4f93] transition hover:bg-[#ffe9f2]"
-                      aria-label="Show previous nail templates"
-                    >
-                      <ChevronLeft size={16} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleTemplateSlide("next")}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#f2bfd4] bg-[#fff4f8] text-[#ea4f93] transition hover:bg-[#ffe9f2]"
-                      aria-label="Show next nail templates"
-                    >
-                      <ChevronRight size={16} />
-                    </button>
+                    {designView === "designs" ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleTemplateSlide("prev")}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#f2bfd4] bg-[#fff4f8] text-[#ea4f93] transition hover:bg-[#ffe9f2]"
+                          aria-label="Show previous nail templates"
+                        >
+                          <ChevronLeft size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleTemplateSlide("next")}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#f2bfd4] bg-[#fff4f8] text-[#ea4f93] transition hover:bg-[#ffe9f2]"
+                          aria-label="Show next nail templates"
+                        >
+                          <ChevronRight size={16} />
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleBackToDesigns}
+                        className="rounded-full border border-[#f2bfd4] bg-[#fff4f8] px-3 py-1.5 text-[11px] font-bold text-[#ea4f93]"
+                      >
+                        ← Back to designs
+                      </button>
+                    )}
                     <button type="button" className="text-[11px] font-bold text-[#ea4f93]">
-                      See all {studio.templates.length} designs
+                      {designView === "designs"
+                        ? `See all ${designTemplates.length} designs`
+                        : `${designVariants.length} variants`}
                     </button>
                   </div>
                 </div>
                 <div className="mt-4 flex items-center justify-between gap-3">
                   <p className="text-[11px] font-medium text-[#b48ba0]">
-                    Showing {Math.min(templateWindowSize, studio.templates.length)} preview templates at a time
+                    {designView === "designs"
+                      ? `Showing ${Math.min(templateWindowSize, designTemplates.length)} preview templates at a time`
+                      : `Showing ${designVariants.length} variant${designVariants.length === 1 ? "" : "s"}`}
                   </p>
                   <p className="text-[11px] font-bold text-[#ea4f93]">
-                    {studio.templates.length > templateWindowSize
-                      ? `${templateStartIndex + 1}-${Math.min(
-                        templateStartIndex + templateWindowSize,
-                        studio.templates.length,
-                      )} of ${studio.templates.length}`
-                      : `${studio.templates.length} templates`}
+                    {designView === "designs"
+                      ? designTemplates.length > templateWindowSize
+                        ? `${templateStartIndex + 1}-${Math.min(
+                          templateStartIndex + templateWindowSize,
+                          designTemplates.length,
+                        )} of ${designTemplates.length}`
+                        : `${designTemplates.length} templates`
+                      : `${designVariants.length} variants`}
                   </p>
                 </div>
+                {designError ? (
+                  <p className="mt-3 text-[11px] font-semibold text-[#d14c84]">{designError}</p>
+                ) : null}
                 <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                  {visibleTemplates.map((item) => (
-                    <TemplateCard
-                      key={item.id}
-                      item={item}
-                      isSelected={item.id === selectedTemplateId}
-                      onSelect={() => applyTemplatePreset(item.id)}
-                    />
-                  ))}
+                  {designView === "designs" ? (
+                    isDesignsLoading ? (
+                      <p className="text-[11px] font-semibold text-[#a8899c] sm:col-span-2 xl:col-span-3">
+                        Loading nail designs from the API...
+                      </p>
+                    ) : (
+                      visibleTemplates.map((item) => (
+                        <TemplateCard
+                          key={item.id}
+                          item={item}
+                          isSelected={item.id === selectedTemplateId}
+                          onSelect={() => void applyTemplatePreset(item.id)}
+                        />
+                      ))
+                    )
+                  ) : isVariantsLoading ? (
+                    <p className="text-[11px] font-semibold text-[#a8899c] sm:col-span-2 xl:col-span-3">
+                      Loading variants...
+                    </p>
+                  ) : (
+                    visibleTemplates.map((item) => (
+                      <article
+                        key={item.id}
+                        className="overflow-hidden rounded-[20px] border border-[#f4dbe7] bg-white shadow-[0_10px_24px_rgba(236,72,153,0.08)]"
+                      >
+                        <img
+                          crossOrigin="anonymous"
+                          src={item.image}
+                          alt={item.name}
+                          className="h-28 w-full object-cover"
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="p-3">
+                          <h3 className="text-xs font-extrabold text-[#38253a]">{item.name}</h3>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {item.tags.map((tag) => (
+                              <span key={tag} className="rounded-md bg-[#fff1f7] px-2 py-1 text-[9px] font-bold text-[#ea4f93]">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                          <div className="mt-4 flex items-end justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-extrabold text-[#ea4f93]">{item.price}</p>
+                              <p className="mt-1 text-[10px] text-[#ae8da0]">{item.duration}</p>
+                            </div>
+                            <span className="rounded-md bg-[#f3f1ff] px-2 py-1 text-[9px] font-extrabold text-[#7d5ce6]">
+                              Variant
+                            </span>
+                          </div>
+                        </div>
+                      </article>
+                    ))
+                  )}
                 </div>
               </article>
 
@@ -944,7 +1191,7 @@ export function StaffNailDesignStudioPage() {
               </article>
             </div>
 
-            <aside className="space-y-4">
+            <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
               <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4">
                 <SectionTitle icon={Palette} title="Live Nail Preview" />
                 <div className="mt-4 rounded-[18px] bg-[linear-gradient(180deg,#fff3f9_0%,#ffeef7_100%)] p-5">
@@ -1015,7 +1262,7 @@ export function StaffNailDesignStudioPage() {
                 </div>
               </article>
 
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4">
+              {/* <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4">
                 <SectionTitle icon={Star} title="Customer Preferences" />
                 <div className="mt-4 space-y-4">
                   {studio.preferences.map((item) => (
@@ -1025,9 +1272,9 @@ export function StaffNailDesignStudioPage() {
                     </div>
                   ))}
                 </div>
-              </article>
+              </article> */}
 
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4">
+              {/* <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4">
                 <SectionTitle icon={Check} title="Current Booking Summary" />
                 <div className="mt-4 space-y-3 text-sm">
                   {[
@@ -1058,7 +1305,7 @@ export function StaffNailDesignStudioPage() {
                     </div>
                   ))}
                 </div>
-              </article>
+              </article> */}
             </aside>
           </div>
         </div>
@@ -1066,3 +1313,4 @@ export function StaffNailDesignStudioPage() {
     </section>
   );
 }
+

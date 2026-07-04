@@ -155,7 +155,7 @@ export function AssignReceptionistArtistModal({
                 >
                   <div className="flex items-start gap-3">
                     {artist?.avatarUrl ? (
-                      <img
+                      <img crossOrigin="anonymous"
                         src={artist.avatarUrl}
                         alt={getArtistName(artist)}
                         className="h-12 w-12 rounded-full object-cover"
@@ -224,3 +224,4 @@ AssignReceptionistArtistModal.propTypes = {
   onClose: PropTypes.func.isRequired,
   open: PropTypes.bool.isRequired,
 };
+

@@ -14,6 +14,7 @@ import {
   Star,
   Trophy,
 } from "lucide-react";
+import { buildAvatarDataUrl } from "../../../../shared/utils/avatar";
 import { useEffect, useMemo, useState } from "react";
 import { Table } from "antd";
 import toast from "react-hot-toast";
@@ -139,7 +140,7 @@ function MobileBookingCard({ booking, actions }) {
 
       <div className="mt-4 flex min-w-0 items-center gap-3">
         {booking.previewImage ? (
-          <img
+          <img crossOrigin="anonymous"
             src={booking.previewImage}
             alt={booking.service}
             className="h-12 w-12 rounded-2xl object-cover shadow-sm"
@@ -299,6 +300,7 @@ export function StaffDashboardPage() {
     const isCheckedInBooking = normalizedBookingStatus === "checkedin";
     const isCompletedBooking = normalizedBookingStatus === "completed";
     const isServiceCompletedBooking = normalizedBookingStatus === "servicecompleted";
+    const isCancelledBooking = ["cancelled", "canceled"].includes(normalizedBookingStatus);
     const startService = async () => {
       try {
         const updatedBooking = await startStaffBookingService(booking.id);
@@ -319,7 +321,7 @@ export function StaffDashboardPage() {
 
     return [
       { key: "view", label: "View Booking", icon: Eye, onSelect: () => navigate(detailRoute) },
-      ...(!isPendingBooking && !isCompletedBooking && !isServiceCompletedBooking
+      ...(!isCancelledBooking && !isPendingBooking && !isCompletedBooking && !isServiceCompletedBooking
         ? [{
           key: "start",
           label: "Start Service",
@@ -327,7 +329,7 @@ export function StaffDashboardPage() {
           onSelect: () => void startService(),
         }]
         : []),
-      ...(!isPendingBooking && !isCheckedInBooking && !isCompletedBooking && !isServiceCompletedBooking
+      ...(!isCancelledBooking && !isPendingBooking && !isCheckedInBooking && !isCompletedBooking && !isServiceCompletedBooking
         ? [{
           key: "complete",
           label: "Complete Service",
@@ -381,11 +383,10 @@ export function StaffDashboardPage() {
       render: (_, booking) => (
         <div className="flex items-center gap-3">
           <img
-            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(booking.customerName)}&background=fde7ef&color=8f365c&bold=true`}
+            src={buildAvatarDataUrl(booking.customerName)}
             alt={booking.customerName}
             className="h-9 w-9 rounded-full border border-[#f6d3e3]"
             loading="lazy"
-            referrerPolicy="no-referrer"
           />
           <p className="text-sm font-bold text-[#432744]">{booking.customerName}</p>
         </div>
@@ -401,7 +402,7 @@ export function StaffDashboardPage() {
     //   key: "design",
     //   render: (_, booking) => (
     //     booking.previewImage ? (
-    //       <img
+    //       <img crossOrigin="anonymous"
     //         src={booking.previewImage}
     //         alt={booking.service}
     //         className="h-9 w-9 rounded-xl object-cover shadow-sm"
@@ -552,11 +553,10 @@ export function StaffDashboardPage() {
                   <>
                     <div className="flex items-start gap-3">
                       <img
-                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(currentBooking.customerName)}&background=fde7ef&color=8f365c&bold=true`}
+                        src={buildAvatarDataUrl(currentBooking.customerName)}
                         alt={currentBooking.customerName}
                         className="h-12 w-12 rounded-full border border-[#f6d3e3]"
                         loading="lazy"
-                        referrerPolicy="no-referrer"
                       />
                       <div className="min-w-0">
                         <p className="text-sm font-extrabold text-[#432744]">{currentBooking.customerName}</p>
@@ -573,7 +573,7 @@ export function StaffDashboardPage() {
 
                     <div className="mt-4 overflow-hidden rounded-[18px] bg-[#f7eef4]">
                       {currentBooking.previewImage ? (
-                        <img
+                        <img crossOrigin="anonymous"
                           src={currentBooking.previewImage}
                           alt={currentBooking.service}
                           className="h-40 w-full object-cover"
@@ -664,7 +664,7 @@ export function StaffDashboardPage() {
               {nextBooking ? (
                 <>
                   <div className="flex items-start gap-3">
-                    <img
+                    <img crossOrigin="anonymous"
                       src={`https://ui-avatars.com/api/?name=${encodeURIComponent(nextBooking.customerName)}&background=fde7ef&color=8f365c&bold=true`}
                       alt={nextBooking.customerName}
                       className="h-11 w-11 rounded-full border border-[#f6d3e3]"
@@ -771,3 +771,4 @@ export function StaffDashboardPage() {
     </>
   );
 }
+

@@ -15,7 +15,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Image, Table } from "antd";
+import { Table } from "antd";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import {
@@ -47,12 +47,13 @@ function MetricCard({ item }) {
 function NailShapePreview({ shape }) {
   if (shape.imageUrl) {
     return (
-      <Image
+      <img
+        crossOrigin="anonymous"
         src={shape.imageUrl}
         alt={shape.name}
         loading="lazy"
         referrerPolicy="no-referrer"
-        style={{height: "44px", width: "44px", borderRadius: "12px", border: "1px solid #f4dbe7", objectFit: "cover"}}
+        className="h-11 w-11 rounded-xl border border-[#f4dbe7] object-cover"
       />
     );
   }

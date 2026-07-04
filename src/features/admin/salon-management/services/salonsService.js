@@ -27,7 +27,6 @@ function unwrapResponse(response, fallbackMessage) {
 }
 
 export async function fetchSalons() {
-  console.log("Fetching salons...");
   try {
     const response = await axiosClient.get(`/Salons`, {
       headers: getAuthHeaders(),
@@ -47,7 +46,6 @@ export async function fetchSalonById(salonId) {
     throw new Error("Salon ID is required.");
   }
 
-  console.log("Fetching salon by ID:", normalizedId);
   try {
     const response = await axiosClient.get(`/Salons/${normalizedId}`, {
       headers: getAuthHeaders(),
@@ -61,7 +59,6 @@ export async function fetchSalonById(salonId) {
 }
 
 export async function createSalon(formData, imageFile) {
-  console.log("Creating salon with data:", formData);
   try {
     const form = new FormData();
     form.append("name", formData.salonName);
@@ -94,7 +91,6 @@ export async function updateSalon(salonId, formData, imageFile) {
     throw new Error("Salon ID is required.");
   }
 
-  console.log("Updating salon with data:", formData);
   try {
     const form = new FormData();
     form.append("name", formData.salonName);
@@ -127,7 +123,6 @@ export async function deleteSalon(salonId) {
     throw new Error("Salon ID is required.");
   }
 
-  console.log("Deleting salon:", normalizedId);
   try {
     const response = await axiosClient.delete(`/Salons/${normalizedId}`, {
       headers: getAuthHeaders(),
@@ -151,7 +146,6 @@ export async function uploadSalonImage(salonId, imageFile) {
     throw new Error("Image file is required.");
   }
 
-  console.log("Uploading image for salon:", normalizedId);
   try {
     const formData = new FormData();
     formData.append("file", imageFile);

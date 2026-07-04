@@ -22,6 +22,8 @@ import { fetchSalonStaff } from "../services/staffManagementService";
 import { fetchUserById } from "../../../manager/bookings/services/bookingsService";
 import { fetchNailArtistSkills } from "../../../manager/staff-artist-management/services/nailArtistsService";
 
+const ALL_ROLES_VALUE = "__all__";
+
 function Card({ className = "", children }) {
   return (
     <article
@@ -93,6 +95,36 @@ InfoItem.propTypes = {
   children: PropTypes.node,
 };
 
+function StaffAvatar({ staff, className, fallbackClassName = "" }) {
+  const [hasImageError, setHasImageError] = useState(false);
+  const avatarUrl = typeof staff.avatarUrl === "string" ? staff.avatarUrl.trim() : "";
+
+  if (avatarUrl && !hasImageError) {
+    return (
+      <img
+        crossOrigin="anonymous"
+        src={avatarUrl}
+        alt={staff.name}
+        className={className}
+        referrerPolicy="no-referrer"
+        onError={() => setHasImageError(true)}
+      />
+    );
+  }
+
+  return <div className={fallbackClassName}>{staff.initials}</div>;
+}
+
+StaffAvatar.propTypes = {
+  className: PropTypes.string,
+  fallbackClassName: PropTypes.string,
+  staff: PropTypes.shape({
+    avatarUrl: PropTypes.string,
+    initials: PropTypes.string.isRequired,
+    name: PropTypes.string.isRequired,
+  }).isRequired,
+};
+
 function StaffCard({ staff, onClick }) {
   return (
     <div
@@ -100,19 +132,11 @@ function StaffCard({ staff, onClick }) {
       className="group cursor-pointer rounded-2xl border border-[#f0d9e8] bg-white p-5 shadow-[0_4px_16px_rgba(236,72,153,0.08)] transition-all duration-200 hover:shadow-[0_6px_24px_rgba(236,72,153,0.12)]"
     >
       <div className="flex items-start gap-3">
-        {staff.avatarUrl ? (
-          <img
-            src={staff.avatarUrl.trim()}
-            alt={staff.name}
-            className="h-12 w-12 shrink-0 rounded-full object-cover"
-          />
-        ) : (
-          <div
-            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${staff.avatarTone} text-xs font-bold text-white`}
-          >
-            {staff.initials}
-          </div>
-        )}
+        <StaffAvatar
+          staff={staff}
+          className="h-12 w-12 shrink-0 rounded-full object-cover"
+          fallbackClassName={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${staff.avatarTone} text-xs font-bold text-white`}
+        />
         <div className="min-w-0 flex-1">
           <p className="font-bold text-[#2d1b35] truncate">{staff.name}</p>
           <p className="text-xs text-[#a88a9f] truncate">{staff.role}</p>
@@ -146,7 +170,7 @@ export function StaffManagementPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [error, setError] = useState(null);
-  const [selectedRole, setSelectedRole] = useState(null);
+  const [selectedRole, setSelectedRole] = useState(ALL_ROLES_VALUE);
 
   // Drawer state
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -157,28 +181,23 @@ export function StaffManagementPage() {
 
   // Handle opening staff detail drawer
   const handleOpenDrawer = useCallback(async (userId) => {
-    console.log("🔍 Opening drawer for USER ID:", userId);
     setIsDrawerOpen(true);
     setIsLoadingDrawer(true);
     setIsLoadingSkills(true);
     setStaffSkills([]);
     try {
       const staffData = await fetchUserById(userId);
-      console.log("👤 Selected staff details (full):", staffData);
       
       // Fetch skills if staff is a nail artist and has staffId (nail artist ID)
       if ((staffData.role === 'Staff_Artist' || staffData.role === 'NAIL_ARTIST') && staffData.staffId) {
         try {
-          console.log("🔍 Using nail artist ID (staffId) to fetch skills:", staffData.staffId);
           const skillsData = await fetchNailArtistSkills(staffData.staffId);
-          console.log("🛠️ Staff skills loaded (full):", skillsData);
           setStaffSkills(skillsData || []);
         } catch (skillErr) {
           console.warn("Failed to load staff skills:", skillErr);
           setStaffSkills([]);
         }
       } else {
-        console.log("🎯 Staff is not a nail artist or no staffId found, no skills to load");
         setStaffSkills([]);
       }
       
@@ -194,7 +213,7 @@ export function StaffManagementPage() {
   const itemsPerPage = 6;
 
   const roleOptions = [
-    { value: null, label: "Tất cả" },
+    { value: ALL_ROLES_VALUE, label: "Tất cả" },
     { value: "Staff_Artist", label: "Staff Artist" },
     { value: "Manager", label: "Manager" },
     { value: "Receptionist", label: "Receptionist" },
@@ -228,16 +247,8 @@ export function StaffManagementPage() {
       const result = await fetchSalonStaff(salonId, {
         pageIndex: currentPage,
         pageSize: itemsPerPage,
-        role: selectedRole,
+        role: selectedRole === ALL_ROLES_VALUE ? null : selectedRole,
       });
-      console.log("✅ Loaded staff list:", result.items);
-      console.log("📋 Staff items with skills:", result.items.map(staff => ({
-        id: staff.id,
-        name: staff.name,
-        role: staff.role,
-        skills: staff.skills || 'No skills data',
-        fullStaffData: staff
-      })));
       setStaffList(result.items || []);
       setTotalPages(result.metaData?.totalPages || 1);
     } catch (err) {
@@ -385,7 +396,10 @@ export function StaffManagementPage() {
                 placeholder="Chọn vai trò"
                 value={selectedRole}
                 onChange={setSelectedRole}
-                options={roleOptions}
+                options={roleOptions.map((option) => ({
+                  ...option,
+                  value: option.value ?? ALL_ROLES_VALUE,
+                }))}
                 disabled={loadingStaff}
               />
               <label className="relative block min-w-[220px]">
@@ -428,13 +442,7 @@ export function StaffManagementPage() {
                     <StaffCard
                       key={staff.id}
                       staff={staff}
-                      onClick={() => {
-                        console.log("Opening drawer, staff data:", staff);
-                        // Use userId for fetchUserById
-                        const userIdToUse = staff.userId || staff.id;
-                        console.log("Using userId for fetchUserById:", userIdToUse);
-                        handleOpenDrawer(userIdToUse);
-                      }}
+                      onClick={() => handleOpenDrawer(staff.userId || staff.id)}
                     />
                   ))}
                 </div>
@@ -460,14 +468,14 @@ export function StaffManagementPage() {
             setIsDrawerOpen(false);
             setSelectedStaff(null);
           }}
-          width={480}
+          size="large"
           styles={{
             body: { padding: 0 },
-            content: { background: "#fafafa" }
+            section: { background: "#fafafa" }
           }}
           placement="right"
           mask={true}
-          maskClosable={true}
+          mask={{ closable: true }}
           destroyOnClose
           closable={false}
         >
@@ -481,17 +489,15 @@ export function StaffManagementPage() {
               <div className="sticky top-0 z-10 bg-gradient-to-r from-[#ea4f93] via-[#ff7ba4] to-[#ffaab6] shadow-md p-6 rounded-b-3xl">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-4 flex-1 min-w-0">
-                    {selectedStaff.avatarUrl ? (
-                      <img
-                        src={selectedStaff.avatarUrl}
-                        alt="Avatar"
-                        className="h-14 w-14 rounded-full object-cover border-2 border-white/30 flex-shrink-0"
-                      />
-                    ) : (
-                      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-white text-2xl font-bold border-2 border-white/30 flex-shrink-0">
-                        {`${(selectedStaff.firstName || 'S')[0]}${(selectedStaff.lastName || '')[0]}`.toUpperCase()}
-                      </div>
-                    )}
+                    <StaffAvatar
+                      staff={{
+                        ...selectedStaff,
+                        name: `${selectedStaff.firstName || ""} ${selectedStaff.lastName || ""}`.trim() || "Avatar",
+                        initials: `${(selectedStaff.firstName || "S")[0]}${(selectedStaff.lastName || "")[0]}`.toUpperCase(),
+                      }}
+                      className="h-14 w-14 rounded-full object-cover border-2 border-white/30 flex-shrink-0"
+                      fallbackClassName="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-white text-2xl font-bold border-2 border-white/30 flex-shrink-0"
+                    />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold uppercase tracking-widest text-white/85">Staff Details</p>
                       <h2 className="text-xl font-bold text-white mt-1 truncate">
@@ -580,9 +586,7 @@ export function StaffManagementPage() {
                 <div className="pt-4 border-t border-[#f0d9e8]">
                   <Link
                     to={getAdminStaffUpdateRoute(selectedStaff.id || selectedStaff.userId)}
-                    onClick={(e) => {
-                      console.log("=== Update Profile Link Clicked ===");
-                      console.log("selectedStaff:", selectedStaff);
+                    onClick={() => {
                       setIsDrawerOpen(false);
                     }}
                     className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-violet-500 bg-white px-4 py-3 text-xs font-bold text-violet-600 shadow-lg transition-all hover:bg-violet-50 hover:border-violet-600 hover:scale-[1.02]"

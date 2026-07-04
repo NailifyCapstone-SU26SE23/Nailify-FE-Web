@@ -263,7 +263,7 @@ export function ReceptionistBookingDetail({ booking }) {
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex flex-1 items-start gap-4">
                 <div className="relative">
-                  <img
+                  <img crossOrigin="anonymous"
                     src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=160&q=80"
                     alt={booking.customerName}
                     className="h-20 w-20 rounded-[20px] border-2 border-[#f4d6e2] object-cover"
@@ -497,7 +497,7 @@ export function ReceptionistBookingDetail({ booking }) {
 
           <SectionCard title="Latest Review">
             <div className="flex items-start gap-3">
-              <img
+              <img crossOrigin="anonymous"
                 src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80"
                 alt="Sophia Hartwell"
                 className="h-10 w-10 rounded-full border border-[#f3d7e2] object-cover"
@@ -570,3 +570,4 @@ ReceptionistBookingDetail.propTypes = {
     id: PropTypes.string,
   }).isRequired,
 };
+

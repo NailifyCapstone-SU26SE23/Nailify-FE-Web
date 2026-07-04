@@ -591,7 +591,7 @@ export function CustomerNailDetailPage() {
 
             {/* Layer 2: Shape Mask/Overlay (Highlights and shading details) */}
             {nail?.nailShape?.imageUrl && (
-              <img
+              <img crossOrigin="anonymous"
                 src={nail.nailShape.imageUrl}
                 alt="shape mask"
                 className="absolute inset-0 w-full h-full object-cover mix-blend-multiply opacity-80 pointer-events-none"
@@ -619,7 +619,7 @@ export function CustomerNailDetailPage() {
               const posY = comp.posY !== undefined && comp.posY !== null ? comp.posY : 50;
 
               return (
-                <img
+                <img crossOrigin="anonymous"
                   key={comp.customerNailComponentId || idx}
                   src={item.imageUrl}
                   alt={item.name}
@@ -667,7 +667,7 @@ export function CustomerNailDetailPage() {
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-4">
               {nail?.imageUrl ? (
-                <img
+                <img crossOrigin="anonymous"
                   src={nail.imageUrl}
                   alt={nail.name}
                   className="h-24 w-24 rounded-[24px] border-4 border-white object-cover shadow-[0_16px_32px_rgba(236,72,153,0.18)]"
@@ -783,7 +783,7 @@ export function CustomerNailDetailPage() {
               {/* Nail Shape Visual Tile */}
               <div className="rounded-2xl border border-[#f6d4e3] bg-gradient-to-br from-white to-[#fff9fb] p-5 shadow-[0_10px_24px_rgba(236,72,153,0.04)] flex items-center gap-4">
                 {nail?.nailShape?.imageUrl ? (
-                  <img
+                  <img crossOrigin="anonymous"
                     src={nail.nailShape.imageUrl}
                     alt={nail.nailShape.name}
                     className="h-16 w-16 rounded-xl border border-[#f4c1d8] object-cover bg-[#fff9fa] shrink-0"
@@ -802,7 +802,7 @@ export function CustomerNailDetailPage() {
               {/* Nail Surface Visual Tile */}
               <div className="rounded-2xl border border-[#f6d4e3] bg-gradient-to-br from-white to-[#fff9fb] p-5 shadow-[0_10px_24px_rgba(236,72,153,0.04)] flex items-center gap-4">
                 {nail?.nailSurface?.imageUrl ? (
-                  <img
+                  <img crossOrigin="anonymous"
                     src={nail.nailSurface.imageUrl}
                     alt={nail.nailSurface.name}
                     className="h-16 w-16 rounded-xl border border-[#f4c1d8] object-cover bg-[#fff9fa] shrink-0"
@@ -860,7 +860,7 @@ export function CustomerNailDetailPage() {
                       className="rounded-2xl border border-[#f6d4e3] bg-gradient-to-br from-white to-[#fffbfd] p-4 shadow-[0_8px_20px_rgba(236,72,153,0.03)] flex items-center gap-3.5"
                     >
                       {comp.imageUrl ? (
-                        <img
+                        <img crossOrigin="anonymous"
                           src={comp.imageUrl}
                           alt={comp.name}
                           className="h-14 w-14 rounded-xl border border-[#f5c6db] bg-[#fffafc] object-contain p-1 shrink-0"
@@ -1427,3 +1427,4 @@ export function CustomerNailDetailPage() {
     </div>
   );
 }
+

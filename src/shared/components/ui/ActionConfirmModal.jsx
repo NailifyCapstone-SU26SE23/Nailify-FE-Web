@@ -160,7 +160,7 @@ export function ActionConfirmModal({
             <div className="rounded-[22px] border border-slate-200 bg-slate-50/80 p-4">
               <div className="flex items-center gap-3">
                 {item.image ? (
-                  <img
+                  <img crossOrigin="anonymous"
                     src={item.image}
                     alt={item.title}
                     className="h-14 w-14 rounded-2xl object-cover shadow-sm"
@@ -275,3 +275,4 @@ ActionConfirmModal.defaultProps = {
   warnings: [],
   width: 480,
 };
+

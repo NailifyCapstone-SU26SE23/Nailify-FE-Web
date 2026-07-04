@@ -474,7 +474,7 @@ export function ManagerBookingDetailPage() {
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-widest text-[#a88a9f] mb-3">Check-in Photo</p>
                     <div className="overflow-hidden rounded-xl border border-[#f0d9e8] bg-gradient-to-br from-white to-[#fffafb] p-2">
-                      <img src={booking.checkInImageUrl} alt="Check-in" className="max-w-full rounded-lg w-full object-cover" />
+                      <img crossOrigin="anonymous" src={booking.checkInImageUrl} alt="Check-in" className="max-w-full rounded-lg w-full object-cover" />
                     </div>
                   </div>
                 )}
@@ -485,11 +485,11 @@ export function ManagerBookingDetailPage() {
                       {Array.isArray(booking.checkOutImagesUrl) ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           {booking.checkOutImagesUrl.map((url, idx) => (
-                            <img key={idx} src={url} alt={`Check-out ${idx + 1}`} className="rounded-lg w-full h-40 object-cover" />
+                            <img crossOrigin="anonymous" key={idx} src={url} alt={`Check-out ${idx + 1}`} className="rounded-lg w-full h-40 object-cover" />
                           ))}
                         </div>
                       ) : (
-                        <img src={booking.checkOutImagesUrl} alt="Check-out" className="max-w-full rounded-lg w-full object-cover" />
+                        <img crossOrigin="anonymous" src={booking.checkOutImagesUrl} alt="Check-out" className="max-w-full rounded-lg w-full object-cover" />
                       )}
                     </div>
                   </div>
@@ -542,7 +542,7 @@ export function ManagerBookingDetailPage() {
                               <div>
                                 <p className="text-xs font-semibold uppercase tracking-widest text-[#a88a9f] mb-2">Nail Variant</p>
                                 <div className="rounded-lg border border-[#f0d9e8] overflow-hidden">
-                                  <img 
+                                  <img crossOrigin="anonymous" 
                                     src={item.nailVariantImageUrl.replace(/`/g, '')} 
                                     alt={item.nailVariantName} 
                                     className="w-full h-40 object-cover"
@@ -555,7 +555,7 @@ export function ManagerBookingDetailPage() {
                               <div>
                                 <p className="text-xs font-semibold uppercase tracking-widest text-[#a88a9f] mb-2">Customer Nail</p>
                                 <div className="rounded-lg border border-[#f0d9e8] overflow-hidden">
-                                  <img 
+                                  <img crossOrigin="anonymous" 
                                     src={item.customerNailImageUrl.replace(/`/g, '')} 
                                     alt={item.customerNailName} 
                                     className="w-full h-40 object-cover"
@@ -616,7 +616,7 @@ export function ManagerBookingDetailPage() {
                             <Maximize2 size={16} />
                           </button>
                         </div>
-                        <img
+                        <img crossOrigin="anonymous"
                           src={
                             typeof booking.qrCode === "string" && booking.qrCode.startsWith("data:")
                               ? booking.qrCode
@@ -670,7 +670,7 @@ export function ManagerBookingDetailPage() {
               <X size={20} />
             </button>
           </div>
-          <img
+          <img crossOrigin="anonymous"
             src={
               typeof booking?.qrCode === "string" && booking.qrCode.startsWith("data:")
                 ? booking.qrCode
@@ -709,3 +709,4 @@ export function ManagerBookingDetailPage() {
     </section>
   );
 }
+
