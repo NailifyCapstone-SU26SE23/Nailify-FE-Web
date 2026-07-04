@@ -168,6 +168,7 @@ function DesignPreview({ design }) {
     <div className="h-52 overflow-hidden rounded-t-[16px] bg-[#f6edf2]">
       {design.previewImage ? (
         <img
+          crossorigin="anonymous"
           src={design.previewImage}
           alt={design.uiTitle}
           className="h-full w-full object-cover"
@@ -203,7 +204,7 @@ export function NailDesignManagementPage() {
   const [metaData, setMetaData] = useState({
     currentPage: 1,
     totalPages: 1,
-    pageSize: 9,
+    pageSize: 6,
     totalItems: 0,
     hasPrevious: false,
     hasNext: false,
