@@ -202,28 +202,57 @@ function ServiceSummaryValue({ services = [], fallbackValue = "" }) {
   }
 
   return (
-    <div className="space-y-3">
-      {services.map((service, index) => (
-        <div
-          key={service.id || `${service.name}-${index}`}
-          className="flex items-center justify-between gap-3 rounded-[18px] border border-[#f2bfd4] bg-white px-4 py-4 shadow-[0_10px_22px_rgba(236,72,153,0.05)]"
-        >
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
-              Service {index + 1}
-            </p>
-            <p className="mt-2 break-words text-sm font-extrabold text-[#ea4f93]">{service.name || "--"}</p>
-            {service.nailServiceName ? (
-              <p className="mt-1 text-xs font-semibold text-[#7a6275]">
-                Nail service: {service.nailServiceName}
-              </p>
-            ) : null}
-          </div>
-          <span className="shrink-0 rounded-full bg-[#f4efff] px-4 py-2 text-sm font-extrabold text-[#8c63ef]">
-            {service.durationLabel || "--"}
-          </span>
+    <div className="overflow-hidden rounded-[20px] border border-[#f2bfd4] bg-white shadow-[0_10px_22px_rgba(236,72,153,0.05)]">
+      <div className="overflow-x-auto">
+        <div className="hidden min-w-[620px] grid-cols-[minmax(220px,1.8fr)_90px_140px_110px] items-center gap-3 border-b border-[#f8dce8] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f7_100%)] px-5 py-3 md:grid">
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Service</p>
+          <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Qty</p>
+          <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Price</p>
+          <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Duration</p>
         </div>
-      ))}
+
+        <div className="divide-y divide-[#f9dfeb]">
+          {services.map((service, index) => (
+            <div
+              key={service.id || `${service.name}-${index}`}
+              className="px-4 py-4 md:grid md:min-w-[620px] md:grid-cols-[minmax(220px,1.8fr)_90px_140px_110px] md:items-center md:gap-3 md:px-5"
+            >
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
+                  Service {index + 1}
+                </p>
+                <p className="mt-2 text-sm font-extrabold text-[#ea4f93] md:break-words">{service.name || "--"}</p>
+                {service.nailServiceName ? (
+                  <p className="mt-1 text-xs font-semibold text-[#7a6275] md:break-words">
+                    Nail service: {service.nailServiceName}
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="mt-4 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Qty</p>
+                <span className="inline-flex rounded-full border border-[#f6dbe7] bg-[#fff9fc] px-3 py-1 text-[11px] font-bold text-[#6f5c6b]">
+                  {service.quantity || 1}
+                </span>
+              </div>
+
+              <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Price</p>
+                <span className="inline-flex rounded-full border border-[#d8f0df] bg-[#f1fcf4] px-3 py-1 text-[11px] font-bold text-[#16975f]">
+                  {service.priceLabel || "--"}
+                </span>
+              </div>
+
+              <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Duration</p>
+                <span className="inline-flex rounded-full bg-[#f4efff] px-4 py-2 text-sm font-extrabold text-[#8c63ef]">
+                  {service.durationLabel || "--"}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -236,6 +265,8 @@ ServiceSummaryValue.propTypes = {
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string,
       nailServiceName: PropTypes.string,
+      priceLabel: PropTypes.string,
+      quantity: PropTypes.number,
     }),
   ),
 };
@@ -252,6 +283,11 @@ function SessionSummaryPanel({
     start: "bg-[linear-gradient(180deg,#fffafc_0%,#fff5f9_100%)]",
     progress: "bg-[linear-gradient(180deg,#fffafc_0%,#fff4f8_100%)]",
     done: "bg-[linear-gradient(180deg,#fffafc_0%,#fff6fb_100%)]",
+  };
+  const serviceStatusToneByPhase = {
+    start: "border-[#cfead8] bg-[#f2fcf5] text-[#1f9d57] shadow-[0_8px_18px_rgba(31,157,87,0.12)]",
+    progress: "border-[#f6d6b8] bg-[#fff7ed] text-[#dd8a12] shadow-[0_8px_18px_rgba(221,138,18,0.12)]",
+    done: "border-[#cde3ff] bg-[#eef6ff] text-[#327adf] shadow-[0_8px_18px_rgba(50,122,223,0.12)]",
   };
 
   return (
@@ -278,7 +314,9 @@ function SessionSummaryPanel({
             </div>
           </div>
 
-          <span className="inline-flex w-fit items-center rounded-full border border-[#f2bfd4] bg-white px-4 py-2 text-xs font-bold text-[#ea4f93] shadow-[0_8px_18px_rgba(236,72,153,0.08)]">
+          <span
+            className={`inline-flex w-fit items-center rounded-full border px-4 py-2 text-xs font-bold ${serviceStatusToneByPhase[phase] || serviceStatusToneByPhase.start}`}
+          >
             {serviceStatusLabel}
           </span>
         </div>
@@ -292,13 +330,13 @@ function SessionSummaryPanel({
 
       <div className="mt-5 grid gap-5 md:grid-cols-2">
         <div className="md:col-span-2">
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">Service</p>
-          <div className="mt-3">
+          {/* <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">Service</p>
+          <div className="mt-3"> */}
             <ServiceSummaryValue
               services={Array.isArray(data.serviceBreakdown) ? data.serviceBreakdown : []}
               fallbackValue={data.serviceLabel}
             />
-          </div>
+          {/* </div> */}
         </div>
         <SummaryValue label="Staff Artist" value={data.staffArtist || "--"} />
         <SummaryValue label="Appointment Time" value={data.appointmentTime || "--"} />
@@ -324,6 +362,17 @@ SessionSummaryPanel.propTypes = {
         durationLabel: PropTypes.string,
         id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         name: PropTypes.string,
+        priceLabel: PropTypes.string,
+        quantity: PropTypes.number,
+      }),
+    ),
+    nailServiceBreakdown: PropTypes.arrayOf(
+      PropTypes.shape({
+        durationLabel: PropTypes.string,
+        id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        name: PropTypes.string,
+        priceLabel: PropTypes.string,
+        quantity: PropTypes.number,
       }),
     ),
     serviceLabel: PropTypes.string,
@@ -768,16 +817,97 @@ export function StaffServiceSessionPage() {
             }
 
             const durationValue = String(item?.duration || "").trim();
+            const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
+            const priceValue = Number(item?.price || item?.finalPrice || 0);
 
             return {
               id: String(item?.bookingItemId || item?.id || `${name}-${index}`).trim(),
               name,
               duration: durationValue ? Number.parseInt(durationValue, 10) || 0 : 0,
               durationLabel: durationValue || "--",
+              quantity,
+              priceLabel: formatCurrency(priceValue),
             };
           })
           .filter(Boolean)
         : [],
+      nailServiceBreakdown: Array.isArray(booking.bookingItems)
+        ? booking.bookingItems
+          .map((item, index) => {
+            const name = String(item?.nailVariantName || item?.customerNailName || "").trim();
+
+            if (!name) {
+              return null;
+            }
+
+            const durationValue = String(item?.duration || "").trim();
+            const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
+            const priceValue = Number(item?.price || item?.finalPrice || 0);
+
+            return {
+              id: String(item?.bookingItemId || item?.id || `${name}-${index}`).trim(),
+              name,
+              duration: durationValue ? Number.parseInt(durationValue, 10) || 0 : 0,
+              durationLabel: durationValue || "--",
+              quantity,
+              priceLabel: formatCurrency(priceValue),
+            };
+          })
+          .filter(Boolean)
+        : [],
+      priceSummary: {
+        serviceRows: Array.isArray(booking.bookingItems)
+          ? booking.bookingItems
+            .map((item, index) => {
+              const name = String(item?.serviceName || "").trim();
+
+              if (!name) {
+                return null;
+              }
+
+              const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
+
+              return {
+                id: `service-${item?.bookingItemId || item?.id || index}`,
+                category: "Service",
+                label: name,
+                meta: `Qty: ${quantity}`,
+                amount: formatCurrency(item?.price || item?.finalPrice || 0),
+              };
+            })
+            .filter(Boolean)
+          : [],
+        nailRows: Array.isArray(booking.bookingItems)
+          ? booking.bookingItems
+            .map((item, index) => {
+              const name = String(item?.nailVariantName || item?.customerNailName || "").trim();
+
+              if (!name) {
+                return null;
+              }
+
+              const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
+
+              return {
+                id: `nail-${item?.bookingItemId || item?.id || index}`,
+                category: "Nail Service",
+                label: name,
+                meta: `Qty: ${quantity}`,
+                amount: formatCurrency(item?.price || item?.finalPrice || 0),
+              };
+            })
+            .filter(Boolean)
+          : [],
+        discountRows: Array.isArray(booking.discounts)
+          ? booking.discounts.map((item, index) => ({
+            id: `discount-${index}`,
+            category: "Discount",
+            label: item?.name || item?.type || `Discount ${index + 1}`,
+            meta: item?.type || null,
+            amount: `-${formatCurrency(Math.abs(Number(item?.amount || 0)))}`,
+          }))
+          : [],
+      },
       staffArtist: booking.staffName,
       chair: "Chair 03",
       appointmentTime: appointmentStartTime,
@@ -820,6 +950,23 @@ export function StaffServiceSessionPage() {
     if (!fallbackData && !payload) {
       return null;
     }
+
+    const resolvedServiceBreakdown =
+      Array.isArray(fallbackData?.serviceBreakdown) && fallbackData.serviceBreakdown.length
+        ? fallbackData.serviceBreakdown
+        : Array.isArray(payload?.serviceBreakdown)
+          ? payload.serviceBreakdown
+          : [];
+    const resolvedNailServiceBreakdown =
+      Array.isArray(fallbackData?.nailServiceBreakdown) && fallbackData.nailServiceBreakdown.length
+        ? fallbackData.nailServiceBreakdown
+        : Array.isArray(payload?.nailServiceBreakdown)
+          ? payload.nailServiceBreakdown
+          : [];
+    const resolvedPriceSummary =
+      fallbackData?.priceSummary ||
+      payload?.priceSummary ||
+      { serviceRows: [], nailRows: [], discountRows: [] };
     const payloadBookingItemId = String(payload?.bookingItemId || "").trim();
     const summaryAppointmentTime = fallbackData?.appointmentTime || payload?.appointmentTime || "--";
     const summaryEstimatedDuration = fallbackData?.estimatedDuration || payload?.estimatedDuration || "--";
@@ -829,6 +976,10 @@ export function StaffServiceSessionPage() {
       fallbackData?.customerAvatar ||
       payload?.customerAvatar ||
       DEFAULT_CUSTOMER_AVATAR;
+    const summaryTotalPrice = fallbackData?.totalPrice || payload?.totalPrice || "--";
+    const summaryTotalAmount = fallbackData?.totalAmount || payload?.totalAmount || summaryTotalPrice;
+    const summaryDiscountValue = fallbackData?.discountValue || payload?.discountValue || "0 VNĐ";
+    const summaryRemainingBalance = fallbackData?.remainingBalance || payload?.remainingBalance || summaryTotalPrice;
 
     return {
       ...fallbackData,
@@ -843,6 +994,13 @@ export function StaffServiceSessionPage() {
       customerName: summaryCustomerName,
       customerPhone: summaryCustomerPhone,
       customerAvatar: summaryCustomerAvatar,
+      totalPrice: summaryTotalPrice,
+      totalAmount: summaryTotalAmount,
+      discountValue: summaryDiscountValue,
+      remainingBalance: summaryRemainingBalance,
+      serviceBreakdown: resolvedServiceBreakdown,
+      nailServiceBreakdown: resolvedNailServiceBreakdown,
+      priceSummary: resolvedPriceSummary,
       confirmations: payload?.confirmations ?? fallbackData?.confirmations ?? [],
       materialsUsed: payload?.materialsUsed ?? fallbackData?.materialsUsed ?? [],
       customerNotes: payload?.customerNotes ?? fallbackData?.customerNotes ?? [],
@@ -2207,38 +2365,16 @@ export function StaffServiceSessionPage() {
                   subtitle="Track what is happening during the active session."
                 />
 
-                <div className="mt-5 grid gap-4 md:grid-cols-2">
-                  <div className={`rounded-[18px] border border-[#f2bfd4] bg-[linear-gradient(180deg,#fff8fb_0%,#fff3f8_100%)] p-4 shadow-[0_12px_24px_rgba(236,72,153,0.06)] ${hasConfirmedDesign ? "" : "md:col-span-2"}`}>
+                <div className="mt-5 flex flex-col gap-4">
+                  <div className={`rounded-[18px] border border-[#f2bfd4] bg-[linear-gradient(180deg,#fff8fb_0%,#fff3f8_100%)] p-4 shadow-[0_12px_24px_rgba(236,72,153,0.06)] ${hasConfirmedDesign ? "" : "xl:col-span-2"}`}>
                     <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
                       Current Process
                     </p>
-                    <div className="mt-3 space-y-3">
-                      {Array.isArray(data.serviceBreakdown) && data.serviceBreakdown.length ? (
-                        data.serviceBreakdown.map((service, index) => (
-                          <div
-                            key={service.id || `${service.name}-${index}`}
-                            className="flex items-start justify-between gap-3 rounded-[16px] border border-[#f7d5e3] bg-white/90 px-3 py-3"
-                          >
-                            <div className="min-w-0">
-                              <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#c694ad]">
-                                Service {index + 1}
-                              </p>
-                              <p className="mt-1 break-words text-sm font-extrabold leading-6 text-[#ea4f93]">
-                                {service.name}
-                              </p>
-                            </div>
-                            <span className="inline-flex shrink-0 rounded-full bg-[#f7efff] px-3 py-1 text-[11px] font-bold text-[#8b5cf6]">
-                              {service.durationLabel || "--"}
-                            </span>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="rounded-[16px] border border-[#f7d5e3] bg-white/90 px-3 py-3">
-                          <p className="break-words text-sm font-extrabold leading-6 text-[#ea4f93]">
-                            {data.serviceLabel}
-                          </p>
-                        </div>
-                      )}
+                    <div className="mt-3">
+                      <ServiceSummaryValue
+                        services={Array.isArray(data.serviceBreakdown) ? data.serviceBreakdown : []}
+                        fallbackValue={data.serviceLabel}
+                      />
                     </div>
                   </div>
                   {hasConfirmedDesign ? (
@@ -2246,8 +2382,11 @@ export function StaffServiceSessionPage() {
                       <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
                         Nail Service
                       </p>
-                      <div className="mt-3 rounded-[16px] border border-[#f7d5e3] bg-white/90 px-3 py-3">
-                        <p className="text-sm font-extrabold leading-6 text-[#ea4f93]">{data.designName}</p>
+                      <div className="mt-3">
+                        <ServiceSummaryValue
+                          services={Array.isArray(data.nailServiceBreakdown) ? data.nailServiceBreakdown : []}
+                          fallbackValue={data.designName}
+                        />
                       </div>
                       <div className="mt-4 border-t border-[#f7dce8] pt-4">
                         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
@@ -2257,7 +2396,7 @@ export function StaffServiceSessionPage() {
                       </div>
                     </div>
                   ) : null}
-                  <div className="rounded-[18px] border border-[#f2bfd4] bg-[#fff6fa] p-4 md:col-span-2">
+                  <div className="rounded-[18px] border border-[#f2bfd4] bg-[#fff6fa] p-4 xl:col-span-2">
                     <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
                       Session Summary
                     </p>
@@ -2485,7 +2624,7 @@ export function StaffServiceSessionPage() {
                   </div>
                 ) : null}
 
-                {hasConfirmedDesign ? (
+                {/* {hasConfirmedDesign ? (
                   <div className="mt-4 rounded-xl border border-[#f2bfd4] bg-white px-4 py-4">
                     <div className="flex items-start gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
@@ -2499,7 +2638,7 @@ export function StaffServiceSessionPage() {
                       </div>
                     </div>
                   </div>
-                ) : null}
+                ) : null} */}
               </article>
 
               <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
@@ -2510,26 +2649,31 @@ export function StaffServiceSessionPage() {
                 />
 
                 <div className="mt-5 space-y-4 text-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-[#a88a9d]">Original Service Price</span>
-                    <span className="font-bold text-[#3f2b3f]">{data.originalServicePrice}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-[#a88a9d]">Extra Service Fee</span>
-                    <span className="font-bold text-[#3f2b3f]">{data.extraServiceFee}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-[#a88a9d]">{data.discountLabel}</span>
-                    <span className="font-bold text-emerald-600">{data.discountValue}</span>
-                  </div>
+                  {[
+                    ...(Array.isArray(data.priceSummary?.serviceRows) ? data.priceSummary.serviceRows : []),
+                    ...(Array.isArray(data.priceSummary?.nailRows) ? data.priceSummary.nailRows : []),
+                    ...(Array.isArray(data.priceSummary?.discountRows) ? data.priceSummary.discountRows : []),
+                  ].map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-start justify-between gap-3 rounded-[16px] border border-[#f4dbe7] bg-[#fffafb] px-4 py-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
+                          {item.category}
+                        </p>
+                        <p className="mt-1 break-words font-bold text-[#3f2b3f]">{item.label}</p>
+                        {item.meta ? <p className="mt-1 text-xs text-[#a88a9d]">{item.meta}</p> : null}
+                      </div>
+                      <span className={`shrink-0 font-bold ${item.category === "Discount" ? "text-emerald-600" : "text-[#3f2b3f]"}`}>
+                        {item.amount}
+                      </span>
+                    </div>
+                  ))}
                   <div className="border-t border-[#f5d9e6]" />
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-sm font-extrabold text-[#3f2b3f]">Total Amount</span>
-                    <span className="text-base font-extrabold text-[#ea4f93]">{data.totalAmount}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-[#a88a9d]">Remaining Balance</span>
-                    <span className="font-extrabold text-[#6b46c1]">{data.remainingBalance}</span>
+                    <span className="text-sm font-extrabold text-[#3f2b3f]">Total Price</span>
+                    <span className="text-base font-extrabold text-[#ea4f93]">{data.totalPrice}</span>
                   </div>
                 </div>
 
@@ -2590,7 +2734,7 @@ export function StaffServiceSessionPage() {
                     </span>
                   </button>
 
-                  <button
+                  {/* <button
                     type="button"
                     onClick={() =>
                       handleSessionAction("Completed design can now be saved to the customer history archive.")
@@ -2604,7 +2748,7 @@ export function StaffServiceSessionPage() {
                       <span className="block text-sm font-extrabold text-[#3f2b3f]">Save Design to History</span>
                       <span className="mt-1 block text-xs text-[#a88a9d]">Archive this final result to the customer profile.</span>
                     </span>
-                  </button>
+                  </button> */}
 
                   <button
                     type="button"

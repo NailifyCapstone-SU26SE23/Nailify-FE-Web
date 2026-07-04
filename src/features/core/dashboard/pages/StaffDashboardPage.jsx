@@ -295,6 +295,8 @@ export function StaffDashboardPage() {
   const getActionItems = (booking) => {
     const detailRoute = getStaffBookingDetailRoute(booking.id);
     const normalizedBookingStatus = String(booking?.status || booking?.uiStatus || "").trim().toLowerCase();
+    const isPendingBooking = ["pending", "approved"].includes(normalizedBookingStatus);
+    const isCheckedInBooking = normalizedBookingStatus === "checkedin";
     const isCompletedBooking = normalizedBookingStatus === "completed";
     const isServiceCompletedBooking = normalizedBookingStatus === "servicecompleted";
     const startService = async () => {
@@ -317,7 +319,7 @@ export function StaffDashboardPage() {
 
     return [
       { key: "view", label: "View Booking", icon: Eye, onSelect: () => navigate(detailRoute) },
-      ...(!isCompletedBooking && !isServiceCompletedBooking
+      ...(!isPendingBooking && !isCompletedBooking && !isServiceCompletedBooking
         ? [{
           key: "start",
           label: "Start Service",
@@ -325,7 +327,7 @@ export function StaffDashboardPage() {
           onSelect: () => void startService(),
         }]
         : []),
-      ...(!isCompletedBooking && !isServiceCompletedBooking
+      ...(!isPendingBooking && !isCheckedInBooking && !isCompletedBooking && !isServiceCompletedBooking
         ? [{
           key: "complete",
           label: "Complete Service",
@@ -461,7 +463,7 @@ export function StaffDashboardPage() {
           ))}
         </div>
 
-        <div className="grid w-full min-w-0 gap-4 xl:grid-cols-[minmax(0,1.62fr)_290px]">
+        <div className="grid w-full min-w-0 gap-4">
           <div className="min-w-0 space-y-4">
             <div>
               <div className="mb-3 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
@@ -657,7 +659,7 @@ export function StaffDashboardPage() {
             </div>
           </div>
 
-          <aside className="min-w-0 space-y-4">
+          {/* <aside className="min-w-0 space-y-4">
             <Panel title="Next Customer" icon={Sparkles}>
               {nextBooking ? (
                 <>
@@ -698,7 +700,7 @@ export function StaffDashboardPage() {
               ) : (
                 <p className="text-sm text-[#8a7082]">No next customer scheduled.</p>
               )}
-            </Panel>
+            </Panel> */}
 
             {/* <Panel title="Session Timer" icon={Clock3}>
               <div className="text-center">
@@ -741,7 +743,7 @@ export function StaffDashboardPage() {
               </div>
             </Panel> */}
 
-            <Panel title="Latest Review" icon={MessageSquareText}>
+            {/* <Panel title="Latest Review" icon={MessageSquareText}>
               <div className="flex items-center gap-1 text-[#f5a623]">
                 {Array.from({ length: 5 }).map((_, index) => (
                   <Star key={index} size={12} fill="currentColor" />
@@ -757,7 +759,7 @@ export function StaffDashboardPage() {
                 <p className="mt-1 text-[11px] text-[#c28ca6]">{currentBooking?.bookingTime || "--"} session</p>
               </div>
             </Panel>
-          </aside>
+          </aside> */}
         </div>
       </div>
       </section>

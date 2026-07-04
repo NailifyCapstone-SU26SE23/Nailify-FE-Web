@@ -724,6 +724,8 @@ export function BookingListPage() {
 
     if (role === ROLES.staff) {
       const normalizedBookingStatus = String(booking?.status || booking?.uiStatus || "").trim().toLowerCase();
+      const isPendingBooking = ["pending", "approved"].includes(normalizedBookingStatus);
+      const isCheckedInBooking = normalizedBookingStatus === "checkedin";
       const isInProgressBooking = normalizedBookingStatus === "inprogress";
       const isCompletedBooking = normalizedBookingStatus === "completed";
       const isServiceCompletedBooking = normalizedBookingStatus === "servicecompleted";
@@ -745,7 +747,7 @@ export function BookingListPage() {
 
       return [
         { key: "view", label: "View Booking", icon: Eye, onSelect: () => navigate(detailRoute) },
-        ...(!isCompletedBooking && !isServiceCompletedBooking
+        ...(!isPendingBooking && !isCompletedBooking && !isServiceCompletedBooking
           ? [{
             key: isInProgressBooking ? "continue" : "start",
             label: isInProgressBooking ? "Continue Service" : "Start Service",
@@ -753,7 +755,7 @@ export function BookingListPage() {
             onSelect: () => void openServiceSession(),
           }]
           : []),
-        ...(!isCompletedBooking && !isServiceCompletedBooking
+        ...(!isPendingBooking && !isCheckedInBooking && !isCompletedBooking && !isServiceCompletedBooking
           ? [{
             key: "complete",
             label: "Complete Service",

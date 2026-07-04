@@ -103,6 +103,17 @@ function normalizeBookingItemDuration(value) {
   return formatDurationMinutes(duration);
 }
 
+function formatSignedCurrency(value) {
+  const amount = Number(value || 0);
+
+  if (!Number.isFinite(amount) || amount === 0) {
+    return "0 VNĐ";
+  }
+
+  const sign = amount < 0 ? "-" : "+";
+  return `${sign}${formatCurrency(Math.abs(amount))}`;
+}
+
 function getUniqueBookingLabels(values) {
   return [...new Set(values.map(normalizeBookingText).filter(Boolean))];
 }
@@ -175,6 +186,12 @@ function buildStaffExperienceFromBooking(
   const startTime = formatTimeValue(booking?.startTime);
   const totalDuration = booking?.totalDuration ? formatDurationMinutes(booking.totalDuration) : "--";
   const timeRange = formatTimeRange(booking?.startTime, booking?.totalDuration);
+  const totalDiscountAmount = Number(booking?.discount || 0);
+  const bookingDiscounts = Array.isArray(booking?.discounts) ? booking.discounts : [];
+  const discountSummary = bookingDiscounts
+    .map((item) => [item?.name, item?.type].filter(Boolean).join(" • "))
+    .filter(Boolean)
+    .join(", ");
   const serviceNames = getUniqueBookingLabels(normalizedItems.map((item) => item.serviceName));
   const variantNames = getUniqueBookingLabels(normalizedItems.map((item) => item.nailVariantName));
   const customerDesignNames = getUniqueBookingLabels(normalizedItems.map((item) => item.customerNailName));
@@ -193,10 +210,22 @@ function buildStaffExperienceFromBooking(
         id: String(item?.bookingItemId || item?.id || `${displayName}-${index}`),
         name: displayName,
         nailServiceName,
+        quantity: Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1,
+        price: formatCurrency(item?.finalPrice ?? item?.price ?? 0),
         duration: normalizeBookingItemDuration(item?.duration || item?.serviceDuration),
       };
     })
     .filter(Boolean);
+  const bookingItemsBasePrice = normalizedItems.reduce((sum, item) => {
+    const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
+    const price = Number(item?.price || 0);
+
+    if (!Number.isFinite(price) || price <= 0) {
+      return sum;
+    }
+
+    return sum + price * quantity;
+  }, 0);
   const selectedItemLabels = bookingServiceEntries.map((item) => item.name);
   const primaryServiceLabel =
     serviceNames[0] ||
@@ -299,9 +328,19 @@ function buildStaffExperienceFromBooking(
       {
         label: "Total Price",
         value: formatCurrency(booking?.totalPrice),
-        // note: `Status: ${booking?.status || "--"}`,
+        note: totalDiscountAmount
+          ? `Original: ${formatCurrency((Number(booking?.totalPrice || 0) - totalDiscountAmount))}`
+          : undefined,
         tone: "success",
       },
+      ...(totalDiscountAmount
+        ? [{
+          label: "Discount",
+          value: formatSignedCurrency(totalDiscountAmount),
+          note: discountSummary || undefined,
+          tone: "success",
+        }]
+        : []),
       {
         label: "Salon",
         value: booking?.salonName || "--",
@@ -323,7 +362,7 @@ function buildStaffExperienceFromBooking(
         { label: "Surface", value: resolvedSurface?.name || "--" },
         { label: "Customer Design", value: customerDesignNames[0] || "--" },
         { label: "Duration", value: timeRange },
-        { label: "Price", value: formatCurrency(booking?.totalPrice) },
+        { label: "Price", value: bookingItemsBasePrice > 0 ? formatCurrency(bookingItemsBasePrice) : formatCurrency(booking?.price) },
         { label: "Components", value: componentSummary },
       ],
       tags: [
@@ -478,6 +517,7 @@ export function BookingDetailPage() {
   }, [isStaffRole, location.state]);
   const deleteRequested = role !== ROLES.staff && Boolean(location.state?.requestDelete);
   const normalizedStaffBookingStatus = normalizeStaffBookingStatus(staffBookingDetail?.status);
+  const isPendingBooking = ["pending", "approved"].includes(normalizedStaffBookingStatus);
   const hasServiceStarted = ["inprogress", "servicecompleted", "completed"].includes(
     normalizedStaffBookingStatus,
   );
@@ -1040,6 +1080,7 @@ export function BookingDetailPage() {
           }
           isCustomerNailConfirmed={isCustomerNailConfirmed || hasServiceStarted}
           requiresCustomerNailConfirmation={requiresCustomerNailConfirmation}
+          isPendingBooking={isPendingBooking}
           isServiceInProgress={isServiceInProgress}
           isServiceCompleted={isServiceCompleted}
           onChooseAnotherDesign={handleChooseAnotherDesign}
