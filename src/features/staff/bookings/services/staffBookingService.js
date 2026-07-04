@@ -655,12 +655,16 @@ function buildServiceSessionBreakdown(items = []) {
       const duration = parseDurationMinutes(
         item?.duration || item?.serviceDuration || item?.estimatedDuration || 0,
       );
+      const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
+      const price = Number(item?.price || item?.finalPrice || 0);
 
       return {
         id: String(item?.bookingItemId || item?.id || `${name}-${index}`).trim(),
         name,
         duration,
         durationLabel: formatDurationMinutes(duration),
+        quantity,
+        priceLabel: formatCurrency(price),
       };
     })
     .filter(Boolean);
@@ -670,6 +674,90 @@ function buildServiceSessionBreakdown(items = []) {
   }
 
   return [];
+}
+
+function buildNailServiceSessionBreakdown(items = []) {
+  const normalizedItems = Array.isArray(items) ? items : [];
+
+  return normalizedItems
+    .map((item, index) => {
+      const name = String(item?.nailVariantName || item?.customerNailName || "").trim();
+
+      if (!name) {
+        return null;
+      }
+
+      const duration = parseDurationMinutes(
+        item?.duration || item?.serviceDuration || item?.estimatedDuration || 0,
+      );
+      const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
+      const price = Number(item?.price || item?.finalPrice || 0);
+
+      return {
+        id: String(item?.bookingItemId || item?.id || `${name}-${index}`).trim(),
+        name,
+        duration,
+        durationLabel: formatDurationMinutes(duration),
+        quantity,
+        priceLabel: formatCurrency(price),
+      };
+    })
+    .filter(Boolean);
+}
+
+function buildPriceSummaryRows(items = [], discounts = []) {
+  const normalizedItems = Array.isArray(items) ? items : [];
+  const normalizedDiscounts = Array.isArray(discounts) ? discounts : [];
+
+  return {
+    serviceRows: normalizedItems
+      .map((item, index) => {
+        const name = String(item?.serviceName || "").trim();
+
+        if (!name) {
+          return null;
+        }
+
+        const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
+
+        return {
+          id: `service-${item?.bookingItemId || item?.id || index}`,
+          category: "Service",
+          label: name,
+          meta: `Qty: ${quantity}`,
+          amount: formatCurrency(item?.price || item?.finalPrice || 0),
+        };
+      })
+      .filter(Boolean),
+    nailRows: normalizedItems
+      .map((item, index) => {
+        const name = String(item?.nailVariantName || item?.customerNailName || "").trim();
+
+        if (!name) {
+          return null;
+        }
+
+        const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
+
+        return {
+          id: `nail-${item?.bookingItemId || item?.id || index}`,
+          category: "Nail Service",
+          label: name,
+          meta: `Qty: ${quantity}`,
+          amount: formatCurrency(item?.price || item?.finalPrice || 0),
+        };
+      })
+      .filter(Boolean),
+    discountRows: normalizedDiscounts
+      .map((item, index) => ({
+        id: `discount-${index}`,
+        category: "Discount",
+        label: String(item?.name || item?.type || `Discount ${index + 1}`).trim(),
+        meta: String(item?.type || "").trim() || null,
+        amount: `-${formatCurrency(Math.abs(Number(item?.amount || 0)))}`,
+      }))
+      .filter(Boolean),
+  };
 }
 
 export function buildStaffServiceSessionPayload(booking, options = {}) {
@@ -700,6 +788,8 @@ export function buildStaffServiceSessionPayload(booking, options = {}) {
     booking?.duration ||
     (booking?.totalDuration ? formatDurationMinutes(booking.totalDuration) : "--");
   const serviceBreakdown = buildServiceSessionBreakdown(items);
+  const nailServiceBreakdown = buildNailServiceSessionBreakdown(items);
+  const priceSummary = buildPriceSummaryRows(items, booking?.discounts);
   const appointmentStartTime = booking?.bookingTime || formatTimeValue(booking?.startTime);
   const estimatedFinishTime = formatAppointmentEndTime(appointmentStartTime, booking?.totalDuration || booking?.duration);
   const totalPriceLabel =
@@ -731,6 +821,8 @@ export function buildStaffServiceSessionPayload(booking, options = {}) {
       "",
     serviceLabel,
     serviceBreakdown,
+    nailServiceBreakdown,
+    priceSummary,
     staffArtist: booking?.artistName || booking?.staffName || "--",
     chair: "--",
     appointmentTime: appointmentStartTime,

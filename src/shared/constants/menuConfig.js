@@ -260,7 +260,7 @@ export const MENU_CONFIG = {
     },
     {
       key: "admin-service-pricing",
-      label: "Services & Pricing",
+      label: "Services",
       to: ROUTES.adminServicePricing,
       icon: "palette",
       section: "Main",
