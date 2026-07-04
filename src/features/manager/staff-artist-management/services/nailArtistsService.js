@@ -139,3 +139,17 @@ export async function deleteNailArtist(artistId) {
 
   return unwrapResponse(response, "Failed to delete nail artist.");
 }
+
+export async function fetchNailArtistSkills(artistId) {
+  const normalizedId = String(artistId || "").trim();
+
+  if (!normalizedId) {
+    throw new Error("Nail artist ID is required.");
+  }
+
+  const response = await axiosClient.get(`/nail-artists/${normalizedId}/skills`, {
+    headers: getAuthHeaders(),
+  });
+
+  return unwrapResponse(response, "Failed to load nail artist skills.");
+}

@@ -1,935 +1,601 @@
+import { Modal, Spin, Alert, Select, Drawer } from "antd";
 import {
-  ArrowRightLeft,
-  BarChart3,
-  BriefcaseBusiness,
-  CalendarClock,
-  Clock3,
-  Download,
-  Plus,
-  Search,
-  ShieldCheck,
-  Sparkles,
-  Star,
-  TriangleAlert,
   Users,
+  Clock3,
+  CheckCircle2,
+  Star,
+  Plus,
+  Download,
+  Search,
+  Building2,
   X,
+  User,
+  Edit3,
 } from "lucide-react";
-import { Modal } from "antd";
-import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
-import { ROUTES, getAdminStaffUpdateRoute } from "../../../../shared/constants/routes";
-import {
-  STAFF_FILTER_OPTIONS,
-  STAFF_LEAVE_LIST,
-  STAFF_LOW_RATING_ALERTS,
-  STAFF_MODAL_STYLES,
-  STAFF_QUICK_ACTIONS,
-  STAFF_SUMMARY,
-  STAFF_TOP_PERFORMERS,
-  getStaffListWithUpdates,
-  getStaffInitials,
-  matchesStaffFilter,
-} from "../services/mockStaff";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { PropTypes } from "../../../../shared/utils/propTypes";
+import { ROUTES, getAdminStaffUpdateRoute } from "../../../../shared/constants/routes";
+import { Pagination } from "../../../../shared/components/common/Pagination";
+import { fetchAdminSalons } from "../../salon-management/services/salonManagementService";
+import { fetchSalonStaff } from "../services/staffManagementService";
+import { fetchUserById } from "../../../manager/bookings/services/bookingsService";
+import { fetchNailArtistSkills } from "../../../manager/staff-artist-management/services/nailArtistsService";
 
-const SUMMARY_ICON_MAP = {
-  briefcase: BriefcaseBusiness,
-  calendarClock: CalendarClock,
-  shieldCheck: ShieldCheck,
-  sparkles: Sparkles,
-  users: Users,
-};
-
-const QUICK_ACTION_ICON_MAP = {
-  arrowRightLeft: ArrowRightLeft,
-  barChart: BarChart3,
-  briefcase: BriefcaseBusiness,
-  calendarClock: CalendarClock,
-  clock: Clock3,
-  plus: Plus,
-};
-
-function StatCard({ item }) {
-  const Icon = SUMMARY_ICON_MAP[item.icon] ?? Users;
-
+function Card({ className = "", children }) {
   return (
-    <div
-      className={`relative overflow-hidden rounded-2xl border border-white/70 bg-gradient-to-br ${item.accent} p-4 shadow-[0_18px_35px_rgba(226,93,143,0.08)]`}
-    >
-      <div className="absolute right-[-12px] top-[-12px] h-12 w-12 rounded-full bg-white/45" />
-      <div className={`mb-4 flex h-8 w-8 items-center justify-center rounded-lg ${item.iconBg}`}>
-        <Icon size={16} strokeWidth={2.2} />
-      </div>
-      <p className="text-[30px] font-bold leading-none text-slate-800">{item.title}</p>
-      <p className="mt-2 text-[12px] font-semibold text-slate-500">{item.label}</p>
-      <p className={`mt-1 text-[11px] font-semibold ${item.noteColor}`}>{item.note}</p>
-    </div>
-  );
-}
-
-StatCard.propTypes = {
-  item: PropTypes.shape({
-    accent: PropTypes.string.isRequired,
-    icon: PropTypes.string.isRequired,
-    iconBg: PropTypes.string.isRequired,
-    label: PropTypes.string.isRequired,
-    note: PropTypes.string.isRequired,
-    noteColor: PropTypes.string.isRequired,
-    title: PropTypes.string.isRequired,
-  }).isRequired,
-};
-
-function AvatarBadge({ member }) {
-  if (member.image) {
-    return (
-      <img
-        src={member.image}
-        alt={member.name}
-        className="h-14 w-14 rounded-full object-cover shadow-sm"
-      />
-    );
-  }
-
-  return (
-    <div
-      className={`flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br ${member.avatarTone} text-[18px] font-black text-white shadow-sm`}
-    >
-      {member.initials}
-    </div>
-  );
-}
-
-AvatarBadge.propTypes = {
-  member: PropTypes.shape({
-    avatarTone: PropTypes.string,
-    image: PropTypes.string,
-    initials: PropTypes.string,
-    name: PropTypes.string.isRequired,
-  }).isRequired,
-};
-
-function StaffProfileCard({ member, onEdit, onTransfer }) {
-  return (
-    <div className="rounded-[20px] border border-rose-100/80 bg-white p-4 shadow-[0_12px_28px_rgba(226,93,143,0.07)]">
-      <div className="flex flex-col items-center text-center">
-        <AvatarBadge member={member} />
-        <h3 className="mt-3 text-[15px] font-black text-slate-800">{member.name}</h3>
-        <p className="text-[10px] font-semibold text-slate-400">
-          {member.role} · #{member.id}
-        </p>
-      </div>
-
-      <div className="mt-3 flex flex-wrap justify-center gap-1.5">
-        {member.tags.map((tag) => (
-          <span
-            key={`${member.id}-${tag.label}`}
-            className={`rounded-full px-2 py-1 text-[9px] font-bold ${tag.tone}`}
-          >
-            {tag.label}
-          </span>
-        ))}
-      </div>
-
-      <div className="mt-4 grid grid-cols-3 gap-2 rounded-2xl bg-[#fff7fa] px-3 py-3 text-center">
-        <div>
-          <p className="text-[16px] font-black text-slate-800">{member.rating}</p>
-          <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Rating
-          </p>
-        </div>
-        <div>
-          <p className="text-[16px] font-black text-slate-800">{member.bookings}</p>
-          <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Bookings
-          </p>
-        </div>
-        <div>
-          <p className="text-[16px] font-black text-slate-800">{member.retention}</p>
-          <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Retention
-          </p>
-        </div>
-      </div>
-
-      <p className="mt-4 text-center text-[10px] font-semibold text-slate-400">
-        Current Salon: <span className="text-rose-400">{member.salon}</span>
-      </p>
-
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          onClick={() => onEdit(member)}
-          className="rounded-xl border border-rose-100 bg-[#fafafa] px-3 py-2.5 text-[10px] font-bold text-slate-600 transition hover:bg-rose-50"
-        >
-          Edit
-        </button>
-        <button
-          type="button"
-          onClick={() => onTransfer(member)}
-          className="rounded-xl border border-rose-100 bg-[#fafafa] px-3 py-2.5 text-[10px] font-bold text-slate-600 transition hover:bg-rose-50"
-        >
-          Transfer
-        </button>
-      </div>
-      <button
-        type="button"
-        className="mt-2 w-full rounded-xl bg-gradient-to-r from-[#b57edc] to-[#9b6fd4] px-3 py-2.5 text-[10px] font-bold text-white shadow-[0_8px_18px_rgba(155,111,212,0.28)] transition hover:opacity-95"
-      >
-        Performance
-      </button>
-    </div>
-  );
-}
-
-StaffProfileCard.propTypes = {
-  member: PropTypes.shape({
-    bookings: PropTypes.string.isRequired,
-    id: PropTypes.string.isRequired,
-    name: PropTypes.string.isRequired,
-    rating: PropTypes.string.isRequired,
-    retention: PropTypes.string.isRequired,
-    role: PropTypes.string.isRequired,
-    salon: PropTypes.string.isRequired,
-    tags: PropTypes.arrayOf(
-      PropTypes.shape({
-        label: PropTypes.string.isRequired,
-        tone: PropTypes.string.isRequired,
-      }),
-    ).isRequired,
-  }).isRequired,
-  onEdit: PropTypes.func.isRequired,
-  onTransfer: PropTypes.func.isRequired,
-};
-
-function QuickActionButton({ item, onClick, to }) {
-  const Icon = QUICK_ACTION_ICON_MAP[item.icon] ?? Plus;
-
-  const content = (
-    <>
-      <div
-        className={`flex h-10 w-10 items-center justify-center rounded-xl ${item.bg} ${item.text} transition group-hover:scale-110`}
-      >
-        <Icon size={16} strokeWidth={2} />
-      </div>
-      <div>
-        <p className="text-[11px] font-bold text-slate-700">{item.label}</p>
-        <p className="text-[9px] font-medium text-slate-400">{item.desc}</p>
-      </div>
-    </>
-  );
-
-  if (to) {
-    return (
-      <Link
-        to={to}
-        className="group flex flex-col items-center gap-2 rounded-2xl border border-rose-50 bg-white px-3 py-4 text-center transition hover:border-rose-100 hover:shadow-[0_8px_20px_rgba(226,93,143,0.10)]"
-      >
-        {content}
-      </Link>
-    );
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group flex flex-col items-center gap-2 rounded-2xl border border-rose-50 bg-white px-3 py-4 text-center transition hover:border-rose-100 hover:shadow-[0_8px_20px_rgba(226,93,143,0.10)]"
-    >
-      {content}
-    </button>
-  );
-}
-
-QuickActionButton.propTypes = {
-  item: PropTypes.shape({
-    bg: PropTypes.string.isRequired,
-    desc: PropTypes.string.isRequired,
-    icon: PropTypes.string.isRequired,
-    label: PropTypes.string.isRequired,
-    text: PropTypes.string.isRequired,
-  }).isRequired,
-  onClick: PropTypes.func,
-  to: PropTypes.string,
-};
-
-function SmallActionButton({ children, className = "", type = "button" }) {
-  return (
-    <button
-      type={type}
-      className={`inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-rose-500 transition hover:bg-rose-50 ${className}`.trim()}
+    <article
+      className={`rounded-2xl border border-[#f0d9e8] bg-white p-6 shadow-[0_4px_16px_rgba(236,72,153,0.08)] transition-shadow duration-200 hover:shadow-[0_6px_24px_rgba(236,72,153,0.12)] md:p-7 ${className}`}
     >
       {children}
-    </button>
+    </article>
   );
 }
 
-SmallActionButton.propTypes = {
-  children: PropTypes.node.isRequired,
+Card.propTypes = {
   className: PropTypes.string,
-  type: PropTypes.string,
+  children: PropTypes.node,
 };
 
-function CloseIconButton({ onClick }) {
+function SectionHeading({ title, subtitle }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="rounded-full bg-white/20 p-1.5 text-white transition hover:bg-white/30"
-      aria-label="Close modal"
-    >
-      <X size={14} />
-    </button>
-  );
-}
-
-CloseIconButton.propTypes = {
-  onClick: PropTypes.func.isRequired,
-};
-
-function PerformerAvatar({ person }) {
-  if (person.image) {
-    return (
-      <img
-        src={person.image}
-        alt={person.name}
-        className="h-8 w-8 shrink-0 rounded-full object-cover"
-      />
-    );
-  }
-
-  return (
-    <div
-      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${person.avatarTone} text-[9px] font-black text-white`}
-    >
-      {person.initials}
+    <div>
+      <h3 className="text-base font-bold text-[#2d1b35]">{title}</h3>
+      {subtitle ? <p className="mt-1.5 text-xs text-[#a88a9f]">{subtitle}</p> : null}
     </div>
   );
 }
 
-PerformerAvatar.propTypes = {
-  person: PropTypes.shape({
-    avatarTone: PropTypes.string,
-    image: PropTypes.string,
-    initials: PropTypes.string,
-    name: PropTypes.string.isRequired,
+SectionHeading.propTypes = {
+  title: PropTypes.string.isRequired,
+  subtitle: PropTypes.string,
+};
+
+function MetricCard({ item }) {
+  const Icon = item.icon || Users;
+
+  return (
+    <Card className="p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div className={`inline-flex h-12 w-12 items-center justify-center rounded-xl ${item.iconClassName} shadow-lg`}>
+          <Icon size={24} />
+        </div>
+      </div>
+      <p className="mt-4 text-2xl font-bold leading-none text-[#2d1b35]">{item.value}</p>
+      <p className="mt-2 text-sm font-medium text-[#8b7382]">{item.label}</p>
+      <p className={`mt-2 text-xs font-medium ${item.noteClassName}`}>{item.note}</p>
+    </Card>
+  );
+}
+
+MetricCard.propTypes = {
+  item: PropTypes.shape({
+    icon: PropTypes.elementType,
+    iconClassName: PropTypes.string.isRequired,
+    label: PropTypes.string.isRequired,
+    note: PropTypes.string.isRequired,
+    noteClassName: PropTypes.string.isRequired,
+    value: PropTypes.string.isRequired,
   }).isRequired,
+};
+
+function InfoItem({ label, children }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-xs font-semibold uppercase tracking-widest text-[#a88a9f]">{label}</p>
+      <div className="mt-2 text-sm font-medium text-[#2d1b35] break-all">{children}</div>
+    </div>
+  );
+}
+
+InfoItem.propTypes = {
+  label: PropTypes.string.isRequired,
+  children: PropTypes.node,
+};
+
+function StaffCard({ staff, onClick }) {
+  return (
+    <div
+      onClick={onClick}
+      className="group cursor-pointer rounded-2xl border border-[#f0d9e8] bg-white p-5 shadow-[0_4px_16px_rgba(236,72,153,0.08)] transition-all duration-200 hover:shadow-[0_6px_24px_rgba(236,72,153,0.12)]"
+    >
+      <div className="flex items-start gap-3">
+        {staff.avatarUrl ? (
+          <img
+            src={staff.avatarUrl.trim()}
+            alt={staff.name}
+            className="h-12 w-12 shrink-0 rounded-full object-cover"
+          />
+        ) : (
+          <div
+            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${staff.avatarTone} text-xs font-bold text-white`}
+          >
+            {staff.initials}
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="font-bold text-[#2d1b35] truncate">{staff.name}</p>
+          <p className="text-xs text-[#a88a9f] truncate">{staff.role}</p>
+          {staff.phone && <p className="mt-1 text-xs text-[#8b7382] truncate">{staff.phone}</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+StaffCard.propTypes = {
+  staff: PropTypes.shape({
+    name: PropTypes.string.isRequired,
+    role: PropTypes.string.isRequired,
+    initials: PropTypes.string.isRequired,
+    avatarTone: PropTypes.string.isRequired,
+    avatarUrl: PropTypes.string,
+    phone: PropTypes.string,
+  }).isRequired,
+  onClick: PropTypes.func,
 };
 
 export function StaffManagementPage() {
-  const location = useLocation();
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [activeFilter, setActiveFilter] = useState("all");
-  const [staffList, setStaffList] = useState(getStaffListWithUpdates);
-  const [flashMessage] = useState(location.state?.flashMessage ?? "");
+  const [loadingSalons, setLoadingSalons] = useState(true);
+  const [loadingStaff, setLoadingStaff] = useState(false);
+  const [salons, setSalons] = useState([]);
+  const [selectedSalonId, setSelectedSalonId] = useState(null);
+  const [staffList, setStaffList] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [error, setError] = useState(null);
+  const [selectedRole, setSelectedRole] = useState(null);
+
+  // Drawer state
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState(null);
-  const [showAssignSalonModal, setShowAssignSalonModal] = useState(false);
-  const [showDeactivateModal, setShowDeactivateModal] = useState(false);
-  const [showPerformanceModal, setShowPerformanceModal] = useState(false);
-  const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [isLoadingDrawer, setIsLoadingDrawer] = useState(false);
+  const [staffSkills, setStaffSkills] = useState([]);
+  const [isLoadingSkills, setIsLoadingSkills] = useState(false);
 
-  const quickActionHandlers = {
-    Transfer: () => setShowTransferModal(true),
-    "Assign Salon": () => setShowAssignSalonModal(true),
-    Performance: () => setShowPerformanceModal(true),
-    Schedule: () => setShowScheduleModal(true),
-  };
+  // Handle opening staff detail drawer
+  const handleOpenDrawer = useCallback(async (userId) => {
+    console.log("🔍 Opening drawer for USER ID:", userId);
+    setIsDrawerOpen(true);
+    setIsLoadingDrawer(true);
+    setIsLoadingSkills(true);
+    setStaffSkills([]);
+    try {
+      const staffData = await fetchUserById(userId);
+      console.log("👤 Selected staff details (full):", staffData);
+      
+      // Fetch skills if staff is a nail artist and has staffId (nail artist ID)
+      if ((staffData.role === 'Staff_Artist' || staffData.role === 'NAIL_ARTIST') && staffData.staffId) {
+        try {
+          console.log("🔍 Using nail artist ID (staffId) to fetch skills:", staffData.staffId);
+          const skillsData = await fetchNailArtistSkills(staffData.staffId);
+          console.log("🛠️ Staff skills loaded (full):", skillsData);
+          setStaffSkills(skillsData || []);
+        } catch (skillErr) {
+          console.warn("Failed to load staff skills:", skillErr);
+          setStaffSkills([]);
+        }
+      } else {
+        console.log("🎯 Staff is not a nail artist or no staffId found, no skills to load");
+        setStaffSkills([]);
+      }
+      
+      setSelectedStaff(staffData);
+    } catch (err) {
+      console.error("Failed to load staff details:", err);
+    } finally {
+      setIsLoadingDrawer(false);
+      setIsLoadingSkills(false);
+    }
+  }, []);
 
-  useEffect(() => {
-    setStaffList(getStaffListWithUpdates());
-  }, [location.pathname]);
+  const itemsPerPage = 6;
 
-  useEffect(() => {
-    if (!location.state?.flashMessage) {
+  const roleOptions = [
+    { value: null, label: "Tất cả" },
+    { value: "Staff_Artist", label: "Staff Artist" },
+    { value: "Manager", label: "Manager" },
+    { value: "Receptionist", label: "Receptionist" },
+  ];
+
+  const loadSalons = useCallback(async () => {
+    try {
+      setLoadingSalons(true);
+      setError(null);
+      const result = await fetchAdminSalons({ pageSize: 100 });
+      setSalons(result.items || []);
+      if (result.items && result.items.length > 0) {
+        setSelectedSalonId(result.items[0].id);
+      }
+    } catch (err) {
+      console.error("Failed to load salons:", err);
+      setError(err.message || "Failed to load salons.");
+    } finally {
+      setLoadingSalons(false);
+    }
+  }, []);
+
+  const loadStaffForSalon = useCallback(async (salonId) => {
+    if (!salonId) {
+      setStaffList([]);
       return;
     }
 
-    navigate(location.pathname, { replace: true, state: null });
-  }, [location.pathname, location.state, navigate]);
+    try {
+      setLoadingStaff(true);
+      const result = await fetchSalonStaff(salonId, {
+        pageIndex: currentPage,
+        pageSize: itemsPerPage,
+        role: selectedRole,
+      });
+      console.log("✅ Loaded staff list:", result.items);
+      console.log("📋 Staff items with skills:", result.items.map(staff => ({
+        id: staff.id,
+        name: staff.name,
+        role: staff.role,
+        skills: staff.skills || 'No skills data',
+        fullStaffData: staff
+      })));
+      setStaffList(result.items || []);
+      setTotalPages(result.metaData?.totalPages || 1);
+    } catch (err) {
+      console.error("Failed to load staff:", err);
+      setStaffList([]);
+    } finally {
+      setLoadingStaff(false);
+    }
+  }, [currentPage, selectedRole]);
+
+  useEffect(() => {
+    Promise.resolve().then(() => loadSalons());
+  }, [loadSalons]);
+
+  useEffect(() => {
+    if (selectedSalonId) {
+      loadStaffForSalon(selectedSalonId);
+    }
+  }, [selectedSalonId, selectedRole, loadStaffForSalon]);
 
   const filteredStaff = useMemo(() => {
-    const normalizedSearch = searchTerm.trim().toLowerCase();
+    if (!searchQuery.trim()) {
+      return staffList;
+    }
+    const lowerQuery = searchQuery.toLowerCase();
+    return staffList.filter(staff =>
+      staff.name.toLowerCase().includes(lowerQuery) ||
+      (staff.role && staff.role.toLowerCase().includes(lowerQuery))
+    );
+  }, [staffList, searchQuery]);
 
-    return staffList.filter((member) => {
-      const matchesSearch =
-        normalizedSearch.length === 0 ||
-        [member.name, member.role, member.salon, member.id]
-          .join(" ")
-          .toLowerCase()
-          .includes(normalizedSearch);
-
-      return matchesSearch && matchesStaffFilter(member, activeFilter);
-    });
-  }, [activeFilter, searchTerm, staffList]);
-
-  const handleEditStaff = (member) => {
-    navigate(getAdminStaffUpdateRoute(member.id));
-  };
-
-  const handleTransferStaff = (member) => {
-    setSelectedStaff(member);
-    setShowTransferModal(true);
-  };
+  const stats = useMemo(() => {
+    const selectedSalon = salons.find(s => s.id === selectedSalonId);
+    return [
+      {
+        label: "Total Staff",
+        value: staffList.length.toString(),
+        icon: Users,
+        iconClassName: "bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93]",
+        note: selectedSalon?.name || "All Salons",
+        noteClassName: "text-[#c08aa4]",
+      },
+      {
+        label: "Available Today",
+        value: "--",
+        icon: CheckCircle2,
+        iconClassName: "bg-[#eaf9ee] text-[#2fa25f]",
+        note: "Current status",
+        noteClassName: "text-[#c08aa4]",
+      },
+      {
+        label: "Average Rating",
+        value: "--",
+        icon: Star,
+        iconClassName: "bg-[#fff8e1] text-[#f59e0b]",
+        note: "Customer satisfaction",
+        noteClassName: "text-[#2fa25f]",
+      },
+      {
+        label: "On Leave",
+        value: "--",
+        icon: Clock3,
+        iconClassName: "bg-[#fff0f8] text-[#ea4f93]",
+        note: "Staff on leave",
+        noteClassName: "text-[#c08aa4]",
+      },
+    ];
+  }, [salons, selectedSalonId, staffList]);
 
   return (
-    <section className="mx-auto w-full min-w-0 max-w-[1300px] text-slate-700">
-      {flashMessage ? (
-        <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[12px] font-semibold text-emerald-700">
-          {flashMessage}
+    <section className="flex min-h-full flex-col gap-4">
+      {error && (
+        <Alert
+          message="Error Loading Data"
+          description={error}
+          type="error"
+          showIcon
+        />
+      )}
+
+      <Card className="overflow-hidden border-none bg-gradient-to-br from-[#fff3f8] via-[#fffafb] to-[#fff5fb] p-0 shadow-lg">
+        <div className="flex flex-col gap-6 p-7 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <div className="flex items-center gap-4">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-white shadow-xl">
+                <Users size={28} />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-[#2d1b35]">Staff Management</h1>
+                <p className="text-sm text-[#a88a9f]">Manage salon staff and team members</p>
+              </div>
+            </div>
+            <p className="mt-4 text-sm leading-relaxed text-[#8b7382]">
+              View and manage staff members for each salon location
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-2xl border border-[#f0d9e8] bg-white px-4 py-2.5 text-xs font-semibold text-[#ea4f93] shadow-md hover:shadow-lg hover:border-[#ea4f93] transition duration-200"
+            >
+              <Download size={16} />
+              Export
+            </button>
+            <Link
+              to={ROUTES.adminStaffCreate}
+              className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#ea4f93] to-[#ff8ebb] px-4 py-2.5 text-xs font-semibold text-white shadow-lg hover:shadow-xl transition duration-200"
+            >
+              <Plus size={16} />
+              Add Staff
+            </Link>
+          </div>
         </div>
-      ) : null}
+      </Card>
 
-      <section className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        {STAFF_SUMMARY.map((item) => (
-          <StatCard key={item.label} item={item} />
-        ))}
-      </section>
+      {!loadingSalons && (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {stats.map((item, index) => (
+            <MetricCard key={index} item={item} />
+          ))}
+        </div>
+      )}
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_290px]">
-        <div className="space-y-4">
-          <section className="rounded-[24px] bg-white/65 p-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <h2 className="text-[16px] font-black text-slate-800">Roster Filters</h2>
-                <p className="text-[11px] font-medium text-slate-400">
-                  Narrow the active team view before reviewing profiles and side panels
-                </p>
+      <div className="grid gap-4">
+        <Card className="p-0">
+          <div className="flex flex-col gap-4 border-b border-[#f0d9e8] bg-gradient-to-b from-[#fff9fb] to-[#fffafb] p-6 lg:flex-row lg:items-center lg:justify-between">
+            <SectionHeading
+              title="Salon Staff"
+              subtitle={`${filteredStaff.length} staff member${filteredStaff.length !== 1 ? "s" : ""}`}
+            />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="flex items-center gap-2">
+                <Building2 size={16} className="text-[#a88a9f]" />
+                <Select
+                  style={{ width: 250 }}
+                  placeholder="Select a salon"
+                  value={selectedSalonId}
+                  onChange={setSelectedSalonId}
+                  options={salons.map(s => ({ label: s.name, value: s.id }))}
+                  disabled={loadingSalons}
+                />
               </div>
-              <span className="text-[11px] font-semibold text-slate-400">
-                {filteredStaff.length} profiles matched
-              </span>
+              <Select
+                style={{ width: 180 }}
+                placeholder="Chọn vai trò"
+                value={selectedRole}
+                onChange={setSelectedRole}
+                options={roleOptions}
+                disabled={loadingStaff}
+              />
+              <label className="relative block min-w-[220px]">
+                <Search
+                  size={14}
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#a88a9f]"
+                />
+                <input
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Search staff..."
+                  className="h-10 w-full rounded-full border border-[#f0d9e8] bg-white pl-9 pr-4 text-xs text-[#5c4158] outline-none transition placeholder:text-[#d198b0] focus:border-[#ea4f93] focus:ring-2 focus:ring-[#ea4f93]/20"
+                />
+              </label>
             </div>
+          </div>
 
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              {STAFF_FILTER_OPTIONS.map((option) => (
-                <button
-                  key={option.key}
-                  type="button"
-                  onClick={() => setActiveFilter(option.key)}
-                  className={`rounded-full px-4 py-2 text-[11px] font-semibold transition ${activeFilter === option.key
-                    ? "bg-rose-500 text-white shadow-[0_6px_14px_rgba(226,93,143,0.28)]"
-                    : "bg-white text-slate-500 hover:bg-rose-50"
-                    }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </section>
-
-          <section className="rounded-[24px] bg-white/65 p-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-[16px] font-black text-slate-800">Featured Staff Profiles</h2>
-                <p className="text-[11px] font-medium text-slate-400">
-                  Top performers, managers, and active team members
-                </p>
+          <div className="p-6">
+            {loadingSalons ? (
+              <div className="flex justify-center py-10">
+                <Spin size="large" />
               </div>
-              <div className="flex flex-col gap-3 items-end">
-                <div className="flex flex-col gap-3 xl:min-w-[620px] xl:flex-row xl:items-center xl:justify-end">
-                  <div className="flex items-center gap-2 rounded-full border border-rose-100 bg-white px-4 py-2 shadow-inner shadow-rose-50 xl:min-w-[260px]">
-                    <Search size={14} className="text-rose-300" />
-                    <input
-                      type="text"
-                      placeholder="Search staff..."
-                      value={searchTerm}
-                      onChange={(event) => setSearchTerm(event.target.value)}
-                      className="w-full bg-transparent text-[12px] text-slate-500 outline-none placeholder:text-rose-200"
-                    />
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Link
-                      to={ROUTES.adminStaffCreate}
-                      className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2 text-[15px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
-                    >
-                      <Plus size={20} />
-                      Add Staff
-                    </Link>
-                  </div>
+            ) : loadingStaff ? (
+              <div className="flex justify-center py-10">
+                <Spin size="large" />
+              </div>
+            ) : filteredStaff.length === 0 ? (
+              <div className="py-10 text-center">
+                <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#fff0f8]">
+                  <Users size={32} className="text-[#ea4f93]" />
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    className="shrink-0 text-[11px] font-bold text-rose-400 transition hover:text-rose-500"
-                  >
-                    View All Profiles
-                  </button>
-
-                  <SmallActionButton>
-                    <Download size={13} />
-                    Export
-                  </SmallActionButton>
-                </div>
-              </div>
-            </div>
-
-            {filteredStaff.length > 0 ? (
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {filteredStaff.map((member) => (
-                  <StaffProfileCard
-                    key={member.id}
-                    member={member}
-                    onEdit={handleEditStaff}
-                    onTransfer={handleTransferStaff}
-                  />
-                ))}
+                <p className="text-sm text-[#8b7382]">
+                  {selectedSalonId ? "No staff found for this salon" : "Select a salon to view staff"}
+                </p>
               </div>
             ) : (
-              <div className="rounded-2xl border border-dashed border-rose-200 bg-white px-6 py-10 text-center">
-                <p className="text-[14px] font-bold text-slate-700">No staff matched your filters</p>
-                <p className="mt-1 text-[11px] font-medium text-slate-400">
-                  Try another keyword or switch the active tab.
-                </p>
-              </div>
+              <>
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {filteredStaff.map((staff) => (
+                    <StaffCard
+                      key={staff.id}
+                      staff={staff}
+                      onClick={() => {
+                        console.log("Opening drawer, staff data:", staff);
+                        // Use userId for fetchUserById
+                        const userIdToUse = staff.userId || staff.id;
+                        console.log("Using userId for fetchUserById:", userIdToUse);
+                        handleOpenDrawer(userIdToUse);
+                      }}
+                    />
+                  ))}
+                </div>
+                {totalPages > 1 && (
+                  <div className="flex justify-end pt-6 border-t border-[#f0d9e8] bg-gradient-to-b from-[#fffafb] to-white">
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={setCurrentPage}
+                    />
+                  </div>
+                )}
+              </>
             )}
-          </section>
-        </div>
-
-        <aside className="space-y-5">
-          <div className="rounded-[28px] border border-rose-100 bg-gradient-to-b from-[#f7e7fb] to-[#fff7fa] p-4 shadow-[0_18px_32px_rgba(226,93,143,0.08)]">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-[13px] font-black text-slate-800">Quick Actions</h3>
-              <span className="rounded-full border border-rose-100 bg-white px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.12em] text-rose-400">
-                6 actions
-              </span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {STAFF_QUICK_ACTIONS.map((item) => (
-                <QuickActionButton
-                  key={item.label}
-                  item={item}
-                  onClick={quickActionHandlers[item.label]}
-                  to={item.label === "Add Staff" ? ROUTES.adminStaffCreate : undefined}
-                />
-              ))}
-            </div>
           </div>
+        </Card>
 
-          <div className="rounded-2xl border border-rose-100 bg-white p-4 shadow-[0_18px_32px_rgba(226,93,143,0.08)]">
-            <div className="mb-4 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-[12px] font-bold text-slate-700">
-                <Sparkles size={14} className="text-rose-500" />
-                <span>Top Performing Staff</span>
-              </div>
-              <span className="rounded-full bg-rose-50 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.12em] text-rose-500">
-                This Month
-              </span>
+        {/* Staff Detail Drawer */}
+        <Drawer
+          title={null}
+          open={isDrawerOpen}
+          onClose={() => {
+            setIsDrawerOpen(false);
+            setSelectedStaff(null);
+          }}
+          width={480}
+          styles={{
+            body: { padding: 0 },
+            content: { background: "#fafafa" }
+          }}
+          placement="right"
+          mask={true}
+          maskClosable={true}
+          destroyOnClose
+          closable={false}
+        >
+          {isLoadingDrawer ? (
+            <div className="flex min-h-[400px] items-center justify-center">
+              <Spin size="large" />
             </div>
-            <div className="space-y-3">
-              {STAFF_TOP_PERFORMERS.map((person) => (
-                <div
-                  key={person.name}
-                  className="flex items-center gap-2.5 rounded-2xl border border-rose-50 px-3 py-2.5"
-                >
-                  <div
-                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-black text-white ${person.color}`}
-                  >
-                    {person.rank}
-                  </div>
-                  <PerformerAvatar person={person} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[11px] font-bold text-slate-700">{person.name}</p>
-                    <p className="truncate text-[10px] font-medium text-slate-400">{person.meta}</p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-1 text-[10px] font-bold text-amber-500">
-                    <Star size={11} fill="currentColor" strokeWidth={0} />
-                    {person.rating}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-rose-100 bg-white p-4 shadow-[0_18px_32px_rgba(226,93,143,0.08)]">
-            <div className="mb-4 flex items-center gap-2 text-[12px] font-bold text-slate-700">
-              <Clock3 size={14} className="text-rose-500" />
-              <span>Staff On Leave</span>
-              <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-bold text-amber-600">
-                12 staff
-              </span>
-            </div>
-            <div className="space-y-3">
-              {STAFF_LEAVE_LIST.map((person) => (
-                <div
-                  key={person.name}
-                  className="flex items-center gap-3 rounded-2xl border border-rose-50 px-3 py-2.5"
-                >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fff3f8] text-[10px] font-black text-rose-500">
-                    {getStaffInitials(person.name)}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[11px] font-bold text-slate-700">{person.name}</p>
-                    <p className="truncate text-[10px] font-medium text-slate-400">{person.note}</p>
-                  </div>
-                  <span className={`rounded-full px-2 py-1 text-[9px] font-bold ${person.tone}`}>
-                    {person.tag}
-                  </span>
-                </div>
-              ))}
-            </div>
-            <button
-              type="button"
-              className="mt-4 w-full rounded-full border border-rose-200 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-rose-500 transition hover:bg-rose-50"
-            >
-              View All On Leave
-            </button>
-          </div>
-
-          <div className="rounded-2xl border border-rose-100 bg-white p-4 shadow-[0_18px_32px_rgba(226,93,143,0.08)]">
-            <div className="mb-4 flex items-center gap-2 text-[12px] font-bold text-slate-700">
-              <TriangleAlert size={14} className="text-rose-500" />
-              <span>Low Rating Alert</span>
-              <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[9px] font-bold text-rose-500">
-                2 staff
-              </span>
-            </div>
-            <div className="space-y-3">
-              {STAFF_LOW_RATING_ALERTS.map((person) => (
-                <div key={person.name} className="rounded-2xl border border-rose-50 px-3 py-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-emerald-300 to-teal-400 text-[10px] font-black text-white">
-                        {getStaffInitials(person.name)}
+          ) : selectedStaff ? (
+            <div className="bg-[#fafafa] h-full flex flex-col">
+              {/* Drawer Header */}
+              <div className="sticky top-0 z-10 bg-gradient-to-r from-[#ea4f93] via-[#ff7ba4] to-[#ffaab6] shadow-md p-6 rounded-b-3xl">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                    {selectedStaff.avatarUrl ? (
+                      <img
+                        src={selectedStaff.avatarUrl}
+                        alt="Avatar"
+                        className="h-14 w-14 rounded-full object-cover border-2 border-white/30 flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-white text-2xl font-bold border-2 border-white/30 flex-shrink-0">
+                        {`${(selectedStaff.firstName || 'S')[0]}${(selectedStaff.lastName || '')[0]}`.toUpperCase()}
                       </div>
-                      <div>
-                        <p className="text-[11px] font-bold text-slate-700">{person.name}</p>
-                        <p className="text-[10px] font-medium text-slate-400">{person.detail}</p>
-                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold uppercase tracking-widest text-white/85">Staff Details</p>
+                      <h2 className="text-xl font-bold text-white mt-1 truncate">
+                        {selectedStaff.firstName || ''} {selectedStaff.lastName || ''}
+                      </h2>
                     </div>
-                    <button
-                      type="button"
-                      className="rounded-full border border-rose-200 px-3 py-1 text-[9px] font-bold uppercase tracking-[0.12em] text-rose-500 transition hover:bg-rose-50"
-                    >
-                      {person.action}
-                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsDrawerOpen(false);
+                      setSelectedStaff(null);
+                    }}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white transition hover:bg-white/30 flex-shrink-0"
+                  >
+                    <X size={20} color="#ffffff" />
+                  </button>
+                </div>
+
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  {selectedStaff.role && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5 text-xs font-semibold text-white">
+                      {selectedStaff.role}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                {/* Personal Information */}
+                <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f0d9e8]">
+                  <h3 className="text-sm font-bold text-[#2d1b35] mb-4">Personal Information</h3>
+                  <div className="space-y-4">
+                    <InfoItem label="First Name">{selectedStaff.firstName || '-'}</InfoItem>
+                    <InfoItem label="Last Name">{selectedStaff.lastName || '-'}</InfoItem>
+                    <InfoItem label="Email">{selectedStaff.email || '-'}</InfoItem>
+                    <InfoItem label="Phone Number">{selectedStaff.phone || '-'}</InfoItem>
                   </div>
                 </div>
-              ))}
+
+                {/* Account Information */}
+                <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f0d9e8]">
+                  <h3 className="text-sm font-bold text-[#2d1b35] mb-4">Account Information</h3>
+                  <div className="space-y-4">
+                    <InfoItem label="Role">{selectedStaff.role || '-'}</InfoItem>
+                    <InfoItem label="Status">
+                      <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold bg-[#eaf9ee] text-[#2fa25f]">
+                        {selectedStaff.status || 'Active'}
+                      </span>
+                    </InfoItem>
+                  </div>
+                </div>
+
+                {/* Skills Section (for Nail Artists) */}
+                {(selectedStaff.role === 'Staff_Artist' || selectedStaff.role === 'NAIL_ARTIST') && (
+                  <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f0d9e8]">
+                    <h3 className="text-sm font-bold text-[#2d1b35] mb-4">Skills & Specialties</h3>
+                    {isLoadingSkills ? (
+                      <div className="flex justify-center py-4">
+                        <Spin size="small" />
+                      </div>
+                    ) : staffSkills.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {staffSkills.map((skill, index) => (
+                          <span
+                            key={skill.id || index}
+                            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#fff0f8] to-[#fff5f9] px-3 py-1.5 text-xs font-semibold text-[#ea4f93] border border-[#f0d9e8]"
+                          >
+                            {skill.skillTypeName || skill.name || 'Skill'}
+                            {skill.level ? (
+                              <span className="text-[10px] text-[#c07f9e]">
+                                (Level {skill.level})
+                              </span>
+                            ) : null}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-[#a88a9f]">No skills assigned yet</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Update Button */}
+                <div className="pt-4 border-t border-[#f0d9e8]">
+                  <Link
+                    to={getAdminStaffUpdateRoute(selectedStaff.id || selectedStaff.userId)}
+                    onClick={(e) => {
+                      console.log("=== Update Profile Link Clicked ===");
+                      console.log("selectedStaff:", selectedStaff);
+                      setIsDrawerOpen(false);
+                    }}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-violet-500 bg-white px-4 py-3 text-xs font-bold text-violet-600 shadow-lg transition-all hover:bg-violet-50 hover:border-violet-600 hover:scale-[1.02]"
+                  >
+                    <Edit3 size={14} />
+                    Update Profile
+                  </Link>
+                </div>
+              </div>
             </div>
-            <button
-              type="button"
-              className="mt-4 w-full rounded-full bg-gradient-to-r from-[#f6a7bf] to-[#eb5b92] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-white shadow-[0_10px_18px_rgba(226,93,143,0.2)] transition hover:opacity-95"
-            >
-              Send Performance Notice
-            </button>
-          </div>
-        </aside>
+          ) : null}
+        </Drawer>
       </div>
-
-      <Modal
-        open={showTransferModal}
-        onCancel={() => setShowTransferModal(false)}
-        footer={null}
-        closable={false}
-        width={420}
-        styles={STAFF_MODAL_STYLES}
-      >
-        <div>
-          <div className="bg-gradient-to-r from-[#b57edc] to-[#9b6fd4] px-6 py-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="rounded-xl bg-white/20 p-2">
-                  <ArrowRightLeft size={16} className="text-white" />
-                </div>
-                <div>
-                  <h3 className="text-[15px] font-black text-white">Transfer Staff</h3>
-                  <p className="text-[11px] text-white/70">Move to another salon branch</p>
-                </div>
-              </div>
-              <CloseIconButton onClick={() => setShowTransferModal(false)} />
-            </div>
-          </div>
-
-          <div className="px-6 py-5 space-y-4">
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Select Staff</label>
-              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-400">
-                <option>Choose a staff member...</option>
-                {staffList.map((staff) => (
-                  <option key={staff.id} value={staff.id}>{staff.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Select Target Salon</label>
-              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-400">
-                <option>Choose a salon...</option>
-              </select>
-            </div>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowTransferModal(false)}
-                className="rounded-full border border-rose-200 bg-white px-4 py-2 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowTransferModal(false)}
-                className="rounded-full bg-gradient-to-r from-[#b57edc] to-[#9b6fd4] px-4 py-2 text-[11px] font-bold text-white shadow-[0_10px_20px_rgba(155,111,212,0.22)] transition hover:opacity-95"
-              >
-                Continue Transfer
-              </button>
-            </div>
-          </div>
-        </div>
-      </Modal>
-
-      {/* ── Assign Salon Modal ── */}
-      <Modal
-        open={showAssignSalonModal}
-        onCancel={() => setShowAssignSalonModal(false)}
-        footer={null}
-        closable={false}
-        width={420}
-        styles={STAFF_MODAL_STYLES}
-      >
-        <div>
-          <div className="bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-6 py-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="rounded-xl bg-white/20 p-2">
-                  <BriefcaseBusiness size={16} className="text-white" />
-                </div>
-                <div>
-                  <h3 className="text-[15px] font-black text-white">Assign Salon</h3>
-                  <p className="text-[11px] text-white/70">Assign staff to a salon branch</p>
-                </div>
-              </div>
-              <CloseIconButton onClick={() => setShowAssignSalonModal(false)} />
-            </div>
-          </div>
-
-          <div className="px-6 py-5 space-y-4">
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Select Staff</label>
-              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400">
-                <option>Choose a staff member...</option>
-                {staffList.map((staff) => (
-                  <option key={staff.id} value={staff.id}>{staff.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Select Salon</label>
-              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400">
-                <option>Choose a salon...</option>
-              </select>
-            </div>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowAssignSalonModal(false)}
-                className="rounded-full border border-rose-200 bg-white px-4 py-2 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowAssignSalonModal(false)}
-                className="rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2 text-[11px] font-bold text-white shadow-[0_10px_20px_rgba(226,93,143,0.22)] transition hover:opacity-95"
-              >
-                Assign Salon
-              </button>
-            </div>
-          </div>
-        </div>
-      </Modal>
-
-      {/* ── Performance Modal ── */}
-      <Modal
-        open={showPerformanceModal}
-        onCancel={() => setShowPerformanceModal(false)}
-        footer={null}
-        closable={false}
-        width={500}
-        styles={STAFF_MODAL_STYLES}
-      >
-        <div>
-          <div className="bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-6 py-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="rounded-xl bg-white/20 p-2">
-                  <BarChart3 size={16} className="text-white" />
-                </div>
-                <div>
-                  <h3 className="text-[15px] font-black text-white">Staff Performance</h3>
-                  <p className="text-[11px] text-white/70">View staff performance metrics</p>
-                </div>
-              </div>
-              <CloseIconButton onClick={() => setShowPerformanceModal(false)} />
-            </div>
-          </div>
-
-          <div className="px-6 py-5 space-y-4">
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Select Staff</label>
-              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400">
-                <option>Choose a staff member...</option>
-                {staffList.map((staff) => (
-                  <option key={staff.id} value={staff.id}>{staff.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              <div className="rounded-xl border border-rose-100 bg-[#fff8fb] p-3 text-center">
-                <p className="text-[22px] font-black text-slate-800">145</p>
-                <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-400">Bookings</p>
-              </div>
-              <div className="rounded-xl border border-rose-100 bg-[#fff8fb] p-3 text-center">
-                <p className="text-[22px] font-black text-slate-800">4.8</p>
-                <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-400">Rating</p>
-              </div>
-              <div className="rounded-xl border border-rose-100 bg-[#fff8fb] p-3 text-center">
-                <p className="text-[22px] font-black text-slate-800">$3.2k</p>
-                <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-400">Revenue</p>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowPerformanceModal(false)}
-                className="rounded-full border border-rose-200 bg-white px-4 py-2 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
-              >
-                Close
-              </button>
-              <button
-                type="button"
-                className="rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2 text-[11px] font-bold text-white shadow-[0_10px_20px_rgba(226,93,143,0.22)] transition hover:opacity-95"
-              >
-                Export Report
-              </button>
-            </div>
-          </div>
-        </div>
-      </Modal>
-
-      {/* ── Schedule Modal ── */}
-      <Modal
-        open={showScheduleModal}
-        onCancel={() => setShowScheduleModal(false)}
-        footer={null}
-        closable={false}
-        width={420}
-        styles={STAFF_MODAL_STYLES}
-      >
-        <div>
-          <div className="bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-6 py-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="rounded-xl bg-white/20 p-2">
-                  <CalendarClock size={16} className="text-white" />
-                </div>
-                <div>
-                  <h3 className="text-[15px] font-black text-white">Manage Schedule</h3>
-                  <p className="text-[11px] text-white/70">Set staff working hours</p>
-                </div>
-              </div>
-              <CloseIconButton onClick={() => setShowScheduleModal(false)} />
-            </div>
-          </div>
-
-          <div className="px-6 py-5 space-y-4">
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Select Staff</label>
-              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400">
-                <option>Choose a staff member...</option>
-                {staffList.map((staff) => (
-                  <option key={staff.id} value={staff.id}>{staff.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Shift Start</label>
-              <input type="time" className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400" />
-            </div>
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Shift End</label>
-              <input type="time" className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400" />
-            </div>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowScheduleModal(false)}
-                className="rounded-full border border-rose-200 bg-white px-4 py-2 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowScheduleModal(false)}
-                className="rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2 text-[11px] font-bold text-white shadow-[0_10px_20px_rgba(226,93,143,0.22)] transition hover:opacity-95"
-              >
-                Save Schedule
-              </button>
-            </div>
-          </div>
-        </div>
-      </Modal>
-
-      {/* ── Deactivate Modal ── */}
-      <Modal
-        open={showDeactivateModal}
-        onCancel={() => setShowDeactivateModal(false)}
-        footer={null}
-        closable={false}
-        width={420}
-        styles={STAFF_MODAL_STYLES}
-      >
-        <div>
-          <div className="bg-gradient-to-r from-rose-500 to-rose-600 px-6 py-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="rounded-xl bg-white/20 p-2">
-                  <ShieldCheck size={16} className="text-white" />
-                </div>
-                <div>
-                  <h3 className="text-[15px] font-black text-white">Deactivate Staff</h3>
-                  <p className="text-[11px] text-white/70">Suspend staff access temporarily</p>
-                </div>
-              </div>
-              <CloseIconButton onClick={() => setShowDeactivateModal(false)} />
-            </div>
-          </div>
-
-          <div className="px-6 py-5 space-y-4">
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Select Staff</label>
-              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400">
-                <option>Choose a staff member...</option>
-                {staffList.map((staff) => (
-                  <option key={staff.id} value={staff.id}>{staff.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Reason</label>
-              <input type="text" placeholder="e.g., Leave of absence" className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400" />
-            </div>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowDeactivateModal(false)}
-                className="rounded-full border border-rose-200 bg-white px-4 py-2 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowDeactivateModal(false)}
-                className="rounded-full bg-gradient-to-r from-rose-500 to-rose-600 px-4 py-2 text-[11px] font-bold text-white shadow-[0_10px_20px_rgba(239,68,68,0.22)] transition hover:opacity-95"
-              >
-                Deactivate
-              </button>
-            </div>
-          </div>
-        </div>
-      </Modal>
     </section>
   );
 }
