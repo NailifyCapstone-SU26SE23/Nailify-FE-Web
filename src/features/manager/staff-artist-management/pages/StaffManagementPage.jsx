@@ -1,4 +1,4 @@
-import { Modal, Spin, Alert } from "antd";
+import { Modal, Spin, Alert, DatePicker } from "antd";
 import {
   ArrowRightLeft,
   Award,
@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   ClipboardList,
   Clock3,
+  Download,
   Eye,
   Mail,
   Phone,
@@ -14,11 +15,14 @@ import {
   TrendingUp,
   UserPlus,
   Users,
+  Search,
+  AlertCircle,
 } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { ROUTES, getManagerStaffUpdateRoute } from "../../../../shared/constants/routes";
+import { Pagination } from "../../../../shared/components/common/Pagination";
 import {
   LOW_RATING_ALERTS,
   PERFORMANCE_OVERVIEW,
@@ -35,7 +39,7 @@ import {
   filterStaffByStatus,
   getStaffInitials,
 } from "../services/mockStaffArtists";
-import { fetchNailArtists } from "../services/nailArtistsService";
+import { fetchNailArtists, fetchNailArtistById } from "../services/nailArtistsService";
 
 const SUMMARY_ICON_MAP = {
   users: Users,
@@ -56,7 +60,7 @@ const ACTION_ICON_MAP = {
 function Card({ className = "", children }) {
   return (
     <article
-      className={`rounded-[18px] border border-[#f8deea] bg-white p-5 shadow-[0_10px_24px_rgba(236,72,153,0.06)] ${className}`}
+      className={`rounded-2xl border border-[#f0d9e8] bg-white p-6 shadow-[0_4px_16px_rgba(236,72,153,0.08)] transition-shadow duration-200 hover:shadow-[0_6px_24px_rgba(236,72,153,0.12)] md:p-7 ${className}`}
     >
       {children}
     </article>
@@ -71,8 +75,8 @@ Card.propTypes = {
 function SectionHeading({ title, subtitle }) {
   return (
     <div>
-      <h3 className="text-sm font-extrabold text-[#3f2240]">{title}</h3>
-      {subtitle ? <p className="mt-1 text-xs text-[#c08aa4]">{subtitle}</p> : null}
+      <h3 className="text-base font-bold text-[#2d1b35]">{title}</h3>
+      {subtitle ? <p className="mt-1.5 text-xs text-[#a88a9f]">{subtitle}</p> : null}
     </div>
   );
 }
@@ -82,25 +86,30 @@ SectionHeading.propTypes = {
   subtitle: PropTypes.string,
 };
 
-function SummaryStatCard({ item }) {
+function MetricCard({ item }) {
   const Icon = SUMMARY_ICON_MAP[item.icon] ?? Users;
 
   return (
-    <Card className="p-4">
-      <div className={`inline-flex h-9 w-9 items-center justify-center rounded-xl ${item.iconClassName}`}>
-        <Icon size={16} />
+    <Card className="p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div className={`inline-flex h-12 w-12 items-center justify-center rounded-xl ${item.iconClassName} shadow-lg`}>
+          <Icon size={24} />
+        </div>
       </div>
-      <p className="mt-3 text-[1.65rem] font-extrabold leading-none text-[#3b2241]">{item.value}</p>
-      <p className="mt-2 text-[13px] font-semibold text-[#7f6478]">{item.label}</p>
+      <p className="mt-4 text-2xl font-bold leading-none text-[#2d1b35]">{item.value}</p>
+      <p className="mt-2 text-sm font-medium text-[#8b7382]">{item.label}</p>
+      <p className={`mt-2 text-xs font-medium ${item.noteClassName}`}>{item.note}</p>
     </Card>
   );
 }
 
-SummaryStatCard.propTypes = {
+MetricCard.propTypes = {
   item: PropTypes.shape({
     icon: PropTypes.string.isRequired,
     iconClassName: PropTypes.string.isRequired,
     label: PropTypes.string.isRequired,
+    note: PropTypes.string.isRequired,
+    noteClassName: PropTypes.string.isRequired,
     value: PropTypes.string.isRequired,
   }).isRequired,
 };
@@ -800,6 +809,10 @@ export function StaffManagementPage() {
   const [staffArtists, setStaffArtists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [query, setQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
 
   // Function to map API data to UI format
   const mapApiArtistToUiFormat = (apiArtist) => {
@@ -863,9 +876,29 @@ export function StaffManagementPage() {
   }, []);
 
   const filteredStaff = useMemo(
-    () => filterStaffByStatus(staffArtists, activeFilter),
-    [staffArtists, activeFilter],
+    () => {
+      let filtered = filterStaffByStatus(staffArtists, activeFilter);
+      
+      // Search filter
+      if (query.trim() !== "") {
+        const lowerQuery = query.toLowerCase();
+        filtered = filtered.filter(staff => 
+          staff.name.toLowerCase().includes(lowerQuery) ||
+          staff.role.toLowerCase().includes(lowerQuery) ||
+          staff.status.toLowerCase().includes(lowerQuery)
+        );
+      }
+      
+      return filtered;
+    },
+    [staffArtists, activeFilter, query],
   );
+
+  // Paginated staff
+  const paginatedStaff = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredStaff.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredStaff, currentPage]);
 
   // Derived stats
   const STAFF_SUMMARY_STATS = [
@@ -873,13 +906,17 @@ export function StaffManagementPage() {
       label: "Total Staff",
       value: staffArtists.length.toString(),
       icon: "users",
-      iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
+      iconClassName: "bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93]",
+      note: "all team members",
+      noteClassName: "text-[#c08aa4]",
     },
     {
       label: "Available Today",
       value: staffArtists.filter(s => s.status === "Available").length.toString(),
       icon: "check",
       iconClassName: "bg-[#eaf9ee] text-[#2fa25f]",
+      note: "ready for bookings",
+      noteClassName: "text-[#c08aa4]",
     },
     {
       label: "Average Rating",
@@ -888,12 +925,16 @@ export function StaffManagementPage() {
         : "0",
       icon: "star",
       iconClassName: "bg-[#fff8e1] text-[#f59e0b]",
+      note: "customer satisfaction",
+      noteClassName: "text-[#2fa25f]",
     },
     {
       label: "Completed Services",
       value: staffArtists.reduce((acc, s) => acc + s.stats.month, 0).toLocaleString(),
       icon: "clipboard",
       iconClassName: "bg-[#f3ebff] text-[#8b5cf6]",
+      note: "this month",
+      noteClassName: "text-[#c08aa4]",
     },
   ];
 
@@ -937,7 +978,7 @@ export function StaffManagementPage() {
         <>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {STAFF_SUMMARY_STATS.map((item) => (
-              <SummaryStatCard key={item.label} item={item} />
+              <MetricCard key={item.label} item={item} />
             ))}
           </div>
 

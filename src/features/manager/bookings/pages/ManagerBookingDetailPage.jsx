@@ -689,18 +689,21 @@ export function ManagerBookingDetailPage() {
         onClose={() => setIsConfirmModalOpen(false)}
         bookingId={normalizedBookingId}
         onSuccess={() => loadBooking({ silent: true })}
+        booking={booking}
       />
       <CancelBookingModal
         open={isCancelModalOpen}
         onClose={() => setIsCancelModalOpen(false)}
         bookingId={normalizedBookingId}
         onSuccess={() => loadBooking({ silent: true })}
+        booking={booking}
       />
       <RejectBookingModal
         open={isRejectModalOpen}
         onClose={() => setIsRejectModalOpen(false)}
         bookingId={normalizedBookingId}
         onSuccess={() => loadBooking({ silent: true })}
+        booking={booking}
       />
 
     </section>
