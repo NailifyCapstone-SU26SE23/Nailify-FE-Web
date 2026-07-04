@@ -326,7 +326,7 @@ export function ReceptionistCheckoutPaymentPage() {
             <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex items-start gap-4">
                 {customerProfile?.avatarUrl ? (
-                  <img
+                  <img crossOrigin="anonymous"
                     src={customerProfile.avatarUrl}
                     alt={customerDisplayName}
                     className="h-16 w-16 rounded-[20px] border-2 border-[#f4d6e2] object-cover"
@@ -432,7 +432,7 @@ export function ReceptionistCheckoutPaymentPage() {
 
                 <div className="mt-5 flex flex-col items-center">
                   {qrImageSrc ? (
-                    <img
+                    <img crossOrigin="anonymous"
                       src={qrImageSrc}
                       alt={`Payment QR for booking ${booking.bookingId || bookingId}`}
                       className="h-40 w-40 rounded-[20px] border-[3px] border-[#f3cade] bg-white p-2 object-contain"
@@ -721,3 +721,4 @@ export function ReceptionistCheckoutPaymentPage() {
     </section>
   );
 }
+

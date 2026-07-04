@@ -1354,7 +1354,7 @@ export function ManagerBookingListPage() {
                                     <Maximize2 size={16} />
                                   </button>
                                 </div>
-                                <img
+                                <img crossOrigin="anonymous"
                                   src={
                                     typeof selectedBookingForDrawer.qrCode === "string" && selectedBookingForDrawer.qrCode.startsWith("data:")
                                       ? selectedBookingForDrawer.qrCode
@@ -1387,7 +1387,7 @@ export function ManagerBookingListPage() {
                       <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f0d9e8]">
                         <h3 className="text-sm font-bold text-[#2d1b35] mb-4">Check-in Photo</h3>
                         <div className="overflow-hidden rounded-xl border border-[#f0d9e8] bg-gradient-to-br from-white to-[#fffafb] p-2">
-                          <img src={selectedBookingForDrawer.checkInImageUrl} alt="Check-in" className="max-w-full rounded-lg w-full object-cover" />
+                          <img crossOrigin="anonymous" src={selectedBookingForDrawer.checkInImageUrl} alt="Check-in" className="max-w-full rounded-lg w-full object-cover" />
                         </div>
                       </div>
                     )}
@@ -1420,7 +1420,7 @@ export function ManagerBookingListPage() {
                   </button>
                 </div>
                 {selectedBookingForDrawer && (
-                  <img
+                  <img crossOrigin="anonymous"
                     src={
                       typeof selectedBookingForDrawer.qrCode === "string" && selectedBookingForDrawer.qrCode.startsWith("data:")
                         ? selectedBookingForDrawer.qrCode
@@ -1708,3 +1708,4 @@ export function ManagerBookingListPage() {
     </section>
   );
 }
+

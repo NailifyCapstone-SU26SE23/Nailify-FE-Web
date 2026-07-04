@@ -456,7 +456,7 @@ export function StaffUpdateBookingDesignPage() {
                     Previous Design
                   </p>
                   <div className="overflow-hidden rounded-[16px]">
-                    <img
+                    <img crossOrigin="anonymous"
                       src={data.previousDesign.image}
                       alt={data.previousDesign.name}
                       className="h-44 w-full object-cover"
@@ -485,7 +485,7 @@ export function StaffUpdateBookingDesignPage() {
                     New Design
                   </p>
                   <div className="overflow-hidden rounded-[16px]">
-                    <img
+                    <img crossOrigin="anonymous"
                       src={data.newDesign.image}
                       alt={data.newDesign.name}
                       className="h-44 w-full object-cover"
@@ -749,3 +749,4 @@ export function StaffUpdateBookingDesignPage() {
     </section>
   );
 }
+

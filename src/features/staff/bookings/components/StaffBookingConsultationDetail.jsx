@@ -227,6 +227,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
           <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
             <div className="space-y-4">
               <img
+                crossOrigin="anonymous"
                 src={variantDetail.imageUrl}
                 alt={variantDetail.name}
                 className="h-72 w-full rounded-[22px] border border-[#f4dbe7] object-cover"
@@ -258,6 +259,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Nail Shape</p>
                   <div className="mt-3 flex items-start gap-3">
                     <img
+                      crossOrigin="anonymous"
                       src={variantDetail.nailShape?.imageUrl || variantDetail.imageUrl}
                       alt={variantDetail.nailShape?.name || "Nail shape"}
                       className="h-20 w-20 rounded-2xl border border-[#f4dbe7] object-cover"
@@ -461,6 +463,7 @@ function SuggestedCard({ item }) {
   return (
     <article className="flex items-center gap-3 rounded-[14px] border border-[#f6dbe7] bg-white p-2.5">
       <img
+        crossOrigin="anonymous"
         src={item.image}
         alt={item.name}
         className="h-11 w-11 rounded-xl object-cover"
@@ -493,6 +496,7 @@ export function StaffBookingConsultationDetail({
   isPendingBooking = false,
   isServiceInProgress = false,
   isServiceCompleted = false,
+  isCancelledBooking = false,
   onDelete,
   onOpenDesignStudio,
   onOpenUpdateBooking,
@@ -540,6 +544,7 @@ export function StaffBookingConsultationDetail({
             <div className="mt-5 flex flex-col gap-5">
               <div className="flex flex-col gap-4 md:flex-row md:items-start">
                 <img
+                  crossOrigin="anonymous"
                   src={data.customer.avatar}
                   alt={data.customer.name}
                   className="h-14 w-14 rounded-full border-[3px] border-[#f4d6e4] object-cover"
@@ -627,6 +632,7 @@ export function StaffBookingConsultationDetail({
 
                   <div className="mt-5 flex flex-col gap-4 lg:flex-row">
                     <img
+                      crossOrigin="anonymous"
                       src={data.design.image}
                       alt={data.design.name}
                       className="h-40 w-full rounded-[18px] object-cover lg:w-44"
@@ -671,7 +677,7 @@ export function StaffBookingConsultationDetail({
                 </article>
               ) : null}
 
-              {!isPendingBooking && !isServiceInProgress && !isServiceCompleted ? (
+              {!isCancelledBooking && !isPendingBooking && !isServiceInProgress && !isServiceCompleted ? (
                 <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
                   <SectionTitle icon={Search} title="Customer Consultation" />
                   <div className="mt-5 flex flex-col items-center gap-6 text-center">
@@ -740,7 +746,7 @@ export function StaffBookingConsultationDetail({
                 </p>
               </article>
 
-              {!isPendingBooking && !isServiceCompleted ? (
+              {!isCancelledBooking && !isPendingBooking && !isServiceCompleted ? (
                 <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
                   <SectionTitle icon={ClipboardCheck} title="Final Confirmation Checklist" />
                   <div className="mt-5 space-y-3">
@@ -859,6 +865,7 @@ export function StaffBookingConsultationDetail({
                     </p>
                     <div className="mt-2 flex items-center gap-3 rounded-[14px] border border-[#f6dbe7] bg-white p-2.5">
                       <img
+                        crossOrigin="anonymous"
                         src={data.customerHistory.lastUpload.image}
                         alt={data.customerHistory.lastUpload.title}
                         className="h-12 w-12 rounded-xl object-cover"
@@ -887,7 +894,7 @@ export function StaffBookingConsultationDetail({
                 </div>
               </article> */}
 
-              {!isPendingBooking && !isServiceCompleted ? (
+              {!isCancelledBooking && !isPendingBooking && !isServiceCompleted ? (
                 <article className="rounded-[18px] border border-[#f3d5e2] bg-white p-4">
                   <SectionTitle
                     icon={CheckCheck}
@@ -943,6 +950,7 @@ export function StaffBookingConsultationDetail({
 }
 
 StaffBookingConsultationDetail.propTypes = {
+  isCancelledBooking: PropTypes.bool,
   data: PropTypes.shape({
     artistInitials: PropTypes.string.isRequired,
     bookingCode: PropTypes.string.isRequired,

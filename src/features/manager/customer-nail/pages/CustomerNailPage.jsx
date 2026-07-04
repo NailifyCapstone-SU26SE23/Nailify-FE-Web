@@ -148,7 +148,7 @@ function CustomerNailCard({ nail }) {
         <div className="flex items-center gap-3">
           <div className="relative h-16 w-12 shrink-0 rounded-t-[14px] rounded-b-[4px] border border-[#f4c1d8] bg-white shadow-[0_6px_14px_rgba(236,72,153,0.05)] overflow-hidden flex items-center justify-center">
             {nail.imageUrl ? (
-              <img
+              <img crossOrigin="anonymous"
                 src={nail.imageUrl}
                 alt={nail.name}
                 className="h-full w-full object-cover pointer-events-none"
@@ -156,7 +156,7 @@ function CustomerNailCard({ nail }) {
             ) : nail.nailShape?.imageUrl ? (
               <>
                 <div className="absolute inset-0 w-full h-full" style={{ ...maskStyle, ...cardColorStyle }} />
-                <img
+                <img crossOrigin="anonymous"
                   src={nail.nailShape.imageUrl}
                   alt={nail.name}
                   className="absolute inset-0 w-full h-full object-cover mix-blend-multiply opacity-80 pointer-events-none"
@@ -592,3 +592,4 @@ export function CustomerNailPage() {
     </ConfigProvider>
   );
 }
+

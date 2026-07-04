@@ -16,31 +16,27 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Navigate, useParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
-import { ROUTES } from "../../../../shared/constants/routes";
+import {
+  getAdminNailVariantCreateRoute,
+  getAdminNailVariantDetailRoute,
+  ROUTES,
+} from "../../../../shared/constants/routes";
 import { formatDurationLabel } from "../../../../shared/utils/formatDuration";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import {
   assignProceduresToVariant,
   deleteAdminNailVariant,
   fetchAdminNailDesignDetail,
-  fetchProceduresByVariant,
   fetchAdminNailVariantDetail,
+  fetchProceduresByVariant,
   updateAdminNailDesign,
   updateAdminNailVariant,
 } from "../services/nailDesignManagementService";
 
 const DESIGN_PREVIEW_IMAGE =
   "https://i0.wp.com/greenweddingshoes.com/wp-content/uploads/2025/12/red-cat-eye-christmas-holiday-nails-with-bow.webp?fit=1024%2C9999";
-const DETAIL_MODAL_STYLES = {
-  body: { padding: 0 },
-  content: { padding: 0, overflow: "hidden", borderRadius: 28 },
-  mask: {
-    backgroundColor: "rgba(47, 13, 33, 0.26)",
-    backdropFilter: "blur(8px)",
-  },
-};
 
 function SectionCard({
   title,
@@ -400,6 +396,7 @@ function NailVariantHandPreview({ variantDetail, compact = false }) {
 
                   {variantDetail?.nailShape?.imageUrl ? (
                     <img
+                      crossOrigin="anonymous"
                       src={variantDetail.nailShape.imageUrl}
                       alt="shape mask"
                       className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-80 mix-blend-multiply"
@@ -423,6 +420,7 @@ function NailVariantHandPreview({ variantDetail, compact = false }) {
                     return (
                       <img
                         key={`${componentItem?.nailComponentId || index}-${finger.fingerIndex}`}
+                        crossOrigin="anonymous"
                         src={component.imageUrl}
                         alt={component.name || "component"}
                         className={componentSizeClassName}
@@ -522,6 +520,10 @@ const SKILL_LEVEL_LABELS = {
   3: "3★ Intermediate",
   4: "4★ Advanced",
   5: "5★ Expert",
+};
+const DETAIL_MODAL_STYLES = {
+  body: { padding: 0 },
+  content: { borderRadius: 24, overflow: "hidden" },
 };
 
 function InputLabel({ children }) {
@@ -625,6 +627,7 @@ SkillLevelSlider.propTypes = {
 
 export function NailDesignManagementDetailPage() {
   const { designId } = useParams();
+  const navigate = useNavigate();
   const heroSectionRef = useRef(null);
   const customerProfileRef = useRef(null);
   const designComponentsRef = useRef(null);
@@ -640,12 +643,12 @@ export function NailDesignManagementDetailPage() {
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [pendingDeleteVariant, setPendingDeleteVariant] = useState(null);
-  const [selectedVariantDetail, setSelectedVariantDetail] = useState(null);
-  const [variantProcedureDraft, setVariantProcedureDraft] = useState([]);
   const [highlightedSection, setHighlightedSection] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingVariants, setIsSavingVariants] = useState(false);
   const [isDeletingVariant, setIsDeletingVariant] = useState(false);
+  const [selectedVariantDetail, setSelectedVariantDetail] = useState(null);
+  const [variantProcedureDraft, setVariantProcedureDraft] = useState([]);
   const [isLoadingVariantDetail, setIsLoadingVariantDetail] = useState(false);
   const [isLoadingVariantProcedures, setIsLoadingVariantProcedures] = useState(false);
   const [isSavingVariantProcedures, setIsSavingVariantProcedures] = useState(false);
@@ -777,9 +780,9 @@ export function NailDesignManagementDetailPage() {
       variants: current.variants.map((variant, variantIndex) =>
         variantIndex === index
           ? {
-            ...variant,
-            [field]: nextValue,
-          }
+              ...variant,
+              [field]: nextValue,
+            }
           : variant,
       ),
     }));
@@ -1195,6 +1198,7 @@ export function NailDesignManagementDetailPage() {
             <div className="grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
               <div className="overflow-hidden rounded-[18px] bg-[#f6edf2]">
                 <img
+                  crossOrigin="anonymous"
                   src={formValues.previewImage || DESIGN_PREVIEW_IMAGE}
                   alt={formValues.heroTitle}
                   className="h-full w-full object-cover"
@@ -1360,6 +1364,10 @@ export function NailDesignManagementDetailPage() {
                                 ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93]"
                                 : `text-[#8c7085] ${index % 3 === 0 ? "border-[#ead8ff] bg-[#f9f4ff]" : index % 3 === 1 ? "border-[#d7f3e0] bg-[#effcf4]" : "border-[#f8e3b3] bg-[#fff8e8]"}`
                                 }`}
+                              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-bold transition ${active
+                                ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93]"
+                                : `text-[#8c7085] ${index % 3 === 0 ? "border-[#ead8ff] bg-[#f9f4ff]" : index % 3 === 1 ? "border-[#d7f3e0] bg-[#effcf4]" : "border-[#f8e3b3] bg-[#fff8e8]"}`
+                                }`}
                             >
                               <span className="text-xs">{active ? "−" : "+"}</span>
                               {option}
@@ -1423,6 +1431,16 @@ export function NailDesignManagementDetailPage() {
             sectionRef={designVariantsRef}
             highlighted={highlightedSection === "design-variants"}
           >
+            <div className="mb-4 flex justify-end">
+              <button
+                type="button"
+                onClick={() => navigate(getAdminNailVariantCreateRoute(designId))}
+                className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
+              >
+                <Plus size={13} className="mr-1.5 inline" />
+                Add Nail Variant
+              </button>
+            </div>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {formValues.variants.map((variant, index) => (
                 <div
@@ -1502,12 +1520,9 @@ export function NailDesignManagementDetailPage() {
                     <button
                       type="button"
                       onClick={() => void handleViewVariant(variant)}
-                      disabled={isLoadingVariantDetail}
                       className="flex-1 rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-2 text-xs font-bold text-[#ea4f93]"
                     >
-                      {isLoadingVariantDetail && selectedVariantDetail?.nailVariantId === variant.nailVariantId
-                        ? "Loading..."
-                        : "View"}
+                      View
                     </button>
                     <button
                       type="button"
@@ -1518,14 +1533,17 @@ export function NailDesignManagementDetailPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() =>
-                        isEditing
-                          ? setPendingDeleteVariant(variant)
-                          : scrollToSection(designVariantsRef, {
-                            startEdit: true,
-                            sectionKey: "design-variants",
-                          })
-                      }
+                      onClick={() => {
+                        if (isEditing) {
+                          setPendingDeleteVariant(variant);
+                          return;
+                        }
+
+                        scrollToSection(designVariantsRef, {
+                          startEdit: true,
+                          sectionKey: "design-variants",
+                        });
+                      }}
                       disabled={isSavingVariants || isDeletingVariant}
                       className={`flex-1 rounded-full border px-3 py-2 text-xs font-bold ${isEditing
                         ? "border-[#f3b1c7] bg-[#fff2f6] text-[#d14c84]"
@@ -1584,6 +1602,8 @@ export function NailDesignManagementDetailPage() {
                       <div key={label} className="flex items-center justify-between gap-3">
                         <span className="text-[#8c7085]">{label}</span>
                         <span
+                          className={`font-semibold ${index >= 3 ? "text-[#ea4f93]" : "text-[#432744]"
+                            }`}
                           className={`font-semibold ${index >= 3 ? "text-[#ea4f93]" : "text-[#432744]"
                             }`}
                         >
@@ -1827,6 +1847,10 @@ export function NailDesignManagementDetailPage() {
                   ? "bg-[image:var(--gradient-accent)] shadow-[0_14px_26px_rgba(236,72,153,0.28)] ring-4 ring-[#ffd8e8]"
                   : "bg-[image:var(--gradient-accent)]"
                   }`}
+                className={`w-full rounded-full px-4 py-2.5 text-left text-xs font-bold text-white transition ${highlightedSection === "hero"
+                  ? "bg-[image:var(--gradient-accent)] shadow-[0_14px_26px_rgba(236,72,153,0.28)] ring-4 ring-[#ffd8e8]"
+                  : "bg-[image:var(--gradient-accent)]"
+                  }`}
               >
                 <PencilLine size={13} className="mr-1.5 inline" />
                 Edit Design
@@ -1834,11 +1858,12 @@ export function NailDesignManagementDetailPage() {
               <button
                 type="button"
                 onClick={() =>
-                  scrollToSection(designVariantsRef, {
-                    startEdit: true,
-                    sectionKey: "design-variants",
-                  })
+                  navigate(getAdminNailVariantCreateRoute(designId))
                 }
+                className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${highlightedSection === "design-variants"
+                  ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
+                  : "border-[#f4c6da] bg-white text-[#7e6075]"
+                  }`}
                 className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${highlightedSection === "design-variants"
                   ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
                   : "border-[#f4c6da] bg-white text-[#7e6075]"
@@ -1854,6 +1879,10 @@ export function NailDesignManagementDetailPage() {
                   ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
                   : "border-[#f4c6da] bg-white text-[#7e6075]"
                   }`}
+                className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${highlightedSection === "pricing"
+                  ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
+                  : "border-[#f4c6da] bg-white text-[#7e6075]"
+                  }`}
               >
                 <CircleDollarSign size={13} className="mr-1.5 inline" />
                 Update Price
@@ -1861,6 +1890,10 @@ export function NailDesignManagementDetailPage() {
               <button
                 type="button"
                 onClick={() => scrollToSection(heroSectionRef, { sectionKey: "hero" })}
+                className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${highlightedSection === "hero"
+                  ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
+                  : "border-[#f4c6da] bg-white text-[#7e6075]"
+                  }`}
                 className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${highlightedSection === "hero"
                   ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
                   : "border-[#f4c6da] bg-white text-[#7e6075]"
@@ -1877,6 +1910,10 @@ export function NailDesignManagementDetailPage() {
                     sectionKey: "quick-summary",
                   })
                 }
+                className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${highlightedSection === "quick-summary"
+                  ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
+                  : "border-[#f4c6da] bg-white text-[#7e6075]"
+                  }`}
                 className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${highlightedSection === "quick-summary"
                   ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
                   : "border-[#f4c6da] bg-white text-[#7e6075]"
@@ -1898,6 +1935,7 @@ export function NailDesignManagementDetailPage() {
           >
             <div className="overflow-hidden rounded-[18px] bg-[#f6edf2]">
               <img
+                crossOrigin="anonymous"
                 src={formValues.previewImage || DESIGN_PREVIEW_IMAGE}
                 alt={formValues.heroTitle}
                 className="h-44 w-full object-cover"
@@ -1977,11 +2015,11 @@ export function NailDesignManagementDetailPage() {
         item={
           pendingDeleteVariant
             ? {
-              title: pendingDeleteVariant.name,
-              image: pendingDeleteVariant.imageUrl || formValues.previewImage || DESIGN_PREVIEW_IMAGE,
-              meta: pendingDeleteVariant.level,
-              note: pendingDeleteVariant.description || "Selected variant will be removed from this design.",
-            }
+                title: pendingDeleteVariant.name,
+                image: pendingDeleteVariant.imageUrl || formValues.previewImage || DESIGN_PREVIEW_IMAGE,
+                meta: pendingDeleteVariant.level,
+                note: pendingDeleteVariant.description || "Selected variant will be removed from this design.",
+              }
             : null
         }
         warnings={["This permanently removes the variant from backend if the API call succeeds."]}
@@ -1995,7 +2033,7 @@ export function NailDesignManagementDetailPage() {
         centered
         width={760}
         styles={DETAIL_MODAL_STYLES}
-        maskClosable={!isLoadingVariantDetail}
+        mask={{ closable: !isLoadingVariantDetail }}
         keyboard={!isLoadingVariantDetail}
       >
         <div className="overflow-hidden">

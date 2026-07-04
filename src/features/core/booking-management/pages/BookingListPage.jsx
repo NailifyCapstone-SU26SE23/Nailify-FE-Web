@@ -196,19 +196,6 @@ const SALON_OPTIONS = ["All salons", "Downtown Luxe", "Westside Glow", "Northpar
 const STATUS_OPTIONS = ["All", "Pending", "Confirmed", "Completed", "Cancelled", "No-show"];
 const PAYMENT_OPTIONS = ["All", "Paid", "Partial", "Pending", "Refunded", "Unpaid"];
 
-const BOOKING_CONFLICTS = [
-  ["#BK-1041", "Mia Nguyen", "2:00 PM overlap", "Downtown Luxe", "Double booked"],
-  ["#BK-1078", "Luna Park", "4:30 PM slot", "Westside Glow", "Overlap"],
-  ["#BK-1091", "Chloe Kim", "11:00 AM slot", "Northpark Studio", "Double booked"],
-];
-
-const NO_SHOW_ALERTS = [
-  ["Mia Russo", "#BK-1278", "Eastview Nails", "No-show"],
-  ["Priya Sharma", "#BK-1261", "Downtown Luxe", "No-show"],
-  ["Tina Brooks", "#BK-1248", "Westside Glow", "No-show"],
-  ["Rachel Yu", "#BK-1235", "Northpark Studio", "No-show"],
-];
-
 const BOOKING_PAGE_SIZE = 10;
 
 function MetricCard({ item }) {
@@ -517,29 +504,6 @@ export function BookingListPage() {
   }, [isStaffRole]);
 
   const activeBookings = isStaffRole ? staffBookings : normalizedBookings;
-  const staffTodayBookingsFromApi = useMemo(
-    () =>
-      isStaffRole
-        ? staffBookings.filter((booking) => booking.bookingDateValue === todayDate)
-        : [],
-    [isStaffRole, staffBookings, todayDate],
-  );
-  const staffYesterdayBookingsFromApi = useMemo(() => {
-    if (!isStaffRole) {
-      return [];
-    }
-
-    const yesterday = new Date(todayDate);
-
-    if (Number.isNaN(yesterday.getTime())) {
-      return [];
-    }
-
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayDate = yesterday.toISOString().slice(0, 10);
-
-    return staffBookings.filter((booking) => booking.bookingDateValue === yesterdayDate);
-  }, [isStaffRole, staffBookings, todayDate]);
 
   const filteredBookings = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -729,6 +693,7 @@ export function BookingListPage() {
       const isInProgressBooking = normalizedBookingStatus === "inprogress";
       const isCompletedBooking = normalizedBookingStatus === "completed";
       const isServiceCompletedBooking = normalizedBookingStatus === "servicecompleted";
+      const isCancelledBooking = ["cancelled", "canceled"].includes(normalizedBookingStatus);
 
       const openServiceSession = () => {
         navigate(getStaffBookingServiceSessionRoute(booking.id), {
@@ -747,7 +712,7 @@ export function BookingListPage() {
 
       return [
         { key: "view", label: "View Booking", icon: Eye, onSelect: () => navigate(detailRoute) },
-        ...(!isPendingBooking && !isCompletedBooking && !isServiceCompletedBooking
+        ...(!isCancelledBooking && !isPendingBooking && !isCompletedBooking && !isServiceCompletedBooking
           ? [{
             key: isInProgressBooking ? "continue" : "start",
             label: isInProgressBooking ? "Continue Service" : "Start Service",
@@ -755,7 +720,7 @@ export function BookingListPage() {
             onSelect: () => void openServiceSession(),
           }]
           : []),
-        ...(!isPendingBooking && !isCheckedInBooking && !isCompletedBooking && !isServiceCompletedBooking
+        ...(!isCancelledBooking && !isPendingBooking && !isCheckedInBooking && !isCompletedBooking && !isServiceCompletedBooking
           ? [{
             key: "complete",
             label: "Complete Service",
@@ -784,50 +749,6 @@ export function BookingListPage() {
       },
     ];
   };
-  const bookingVolume = [
-    ...(isStaffRole
-      ? Array.from({ length: 10 }, (_, index) => {
-        const hour = index + 9;
-        const label = hour < 12 ? `${hour}A` : hour === 12 ? "12P" : `${hour - 12}P`;
-        const value = staffTodayBookingsFromApi.filter(
-          (booking) => Number.parseInt(booking.bookingTime, 10) === hour,
-        ).length;
-
-        return { time: label, value };
-      })
-      : [
-        { time: "9A", value: 4 },
-        { time: "10A", value: 8 },
-        { time: "11A", value: 11 },
-        { time: "12P", value: 14 },
-        { time: "1P", value: 9 },
-        { time: "2P", value: 12 },
-        { time: "3P", value: 10 },
-        { time: "4P", value: 7 },
-        { time: "5P", value: 6 },
-        { time: "6P", value: 3 },
-      ]),
-  ];
-  const staffTodayBookingStats = useMemo(() => {
-    if (!isStaffRole) {
-      return null;
-    }
-
-    const todayCount = staffTodayBookingsFromApi.length;
-    const yesterdayCount = staffYesterdayBookingsFromApi.length;
-    const percentDelta =
-      yesterdayCount > 0
-        ? `${todayCount >= yesterdayCount ? "+" : ""}${Math.round(((todayCount - yesterdayCount) / yesterdayCount) * 100)}%`
-        : todayCount > 0
-          ? "+100%"
-          : "0%";
-
-    return [
-      [String(todayCount), "Today"],
-      [String(yesterdayCount), "Yesterday"],
-      [percentDelta, "vs Yesterday"],
-    ];
-  }, [isStaffRole, staffTodayBookingsFromApi.length, staffYesterdayBookingsFromApi.length]);
 
   const handleExportCsv = () => {
     if (!sortedBookings.length) {

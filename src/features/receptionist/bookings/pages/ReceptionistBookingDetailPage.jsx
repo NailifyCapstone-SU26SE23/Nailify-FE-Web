@@ -753,7 +753,7 @@ export function ReceptionistBookingDetailPage() {
               <div className="flex flex-1 items-start gap-4">
                 <div className="relative">
                   {customerProfile?.avatarUrl ? (
-                    <img
+                    <img crossOrigin="anonymous"
                       src={customerProfile.avatarUrl}
                       alt={customerDisplayName}
                       className="h-20 w-20 rounded-[20px] border-2 border-[#f4d6e2] object-cover"
@@ -1111,7 +1111,7 @@ export function ReceptionistBookingDetailPage() {
                     </p>
                     <div className="mt-4 flex min-h-[220px] items-center justify-center rounded-[18px] border border-dashed border-[#f1d8e4] bg-[#fffafb] p-3">
                       {sanitizeImageUrl(selectedServiceRow.sourceItem?.nailVariantImageUrl) ? (
-                        <img
+                        <img crossOrigin="anonymous"
                           src={sanitizeImageUrl(selectedServiceRow.sourceItem?.nailVariantImageUrl)}
                           alt={selectedServiceRow.sourceItem?.nailVariantName || "Nail variant"}
                           className="max-h-[220px] rounded-2xl object-contain"
@@ -1128,7 +1128,7 @@ export function ReceptionistBookingDetailPage() {
                     </p>
                     <div className="mt-4 flex min-h-[220px] items-center justify-center rounded-[18px] border border-dashed border-[#f1d8e4] bg-[#fffafb] p-3">
                       {sanitizeImageUrl(selectedServiceRow.sourceItem?.customerNailImageUrl) ? (
-                        <img
+                        <img crossOrigin="anonymous"
                           src={sanitizeImageUrl(selectedServiceRow.sourceItem?.customerNailImageUrl)}
                           alt={selectedServiceRow.sourceItem?.customerNailName || "Customer nail"}
                           className="max-h-[220px] rounded-2xl object-contain"
@@ -1192,7 +1192,7 @@ export function ReceptionistBookingDetailPage() {
       >
         <div className="flex flex-col items-center gap-4 py-2">
           {qrImageSrc ? (
-            <img
+            <img crossOrigin="anonymous"
               src={qrImageSrc}
               alt={`QR code for booking ${booking.bookingId}`}
               className="h-72 w-72 rounded-2xl border border-[#f4d6e2] bg-white p-3 object-contain"
@@ -1211,3 +1211,4 @@ export function ReceptionistBookingDetailPage() {
     </section>
   );
 }
+

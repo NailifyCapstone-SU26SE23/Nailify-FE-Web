@@ -49,6 +49,7 @@ function ComponentPreview({ component }) {
   if (component.imageUrl) {
     return (
       <img
+        crossOrigin="anonymous"
         src={component.imageUrl}
         alt={component.name}
         className="h-11 w-11 rounded-xl border border-[#f4dbe7] object-cover"

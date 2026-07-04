@@ -226,14 +226,6 @@ function buildStaffExperienceFromBooking(
 
     return sum + price * quantity;
   }, 0);
-  const selectedItemLabels = bookingServiceEntries.map((item) => item.name);
-  const primaryServiceLabel =
-    serviceNames[0] ||
-    variantNames[0] ||
-    customerDesignNames[0] ||
-    "--";
-  const fullSelectionSummary =
-    selectedItemLabels.length > 0 ? selectedItemLabels.join("\n") : primaryServiceLabel;
   const serviceSummary = serviceNames.length ? serviceNames.join(", ") : "--";
   const resolvedDesignDetail = customerNailDetail || nailVariantDetail;
   const detailType = resolvedDesignDetail?.detailType || (customerNailDetail ? "customerNail" : "variant");
@@ -987,6 +979,8 @@ export function BookingDetailPage() {
       );
     }
 
+    const isCancelledBooking = ["cancelled", "canceled"].includes(String(staffBookingDetail?.status || "").trim().toLowerCase());
+
     const baseStaffExperience = buildStaffExperienceFromBooking(
       staffBookingDetail,
       staffNotesDraft,
@@ -1073,6 +1067,7 @@ export function BookingDetailPage() {
         ) : null}
         <StaffBookingConsultationDetail
           data={resolvedStaffExperience}
+          isCancelledBooking={isCancelledBooking}
           isCurrentDesignConfirmed={
             requiresCustomerNailConfirmation
               ? false

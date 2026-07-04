@@ -23,7 +23,6 @@ function unwrapResponse(response, fallbackMessage) {
 }
 
 export function normalizeStaffMember(staff) {
-  console.log("normalizeStaffMember input (full):", staff);
   const fullName = staff?.firstName && staff?.lastName 
     ? `${staff.firstName} ${staff.lastName}` 
     : staff?.fullName || staff?.name || "Unnamed Staff";
@@ -44,7 +43,6 @@ export function normalizeStaffMember(staff) {
     avatarUrl: staff?.avatarUrl || null,
     initials,
   };
-  console.log("normalizeStaffMember result (full):", result);
   return result;
 }
 
