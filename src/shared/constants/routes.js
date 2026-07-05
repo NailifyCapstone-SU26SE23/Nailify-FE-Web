@@ -22,6 +22,7 @@ export const ROUTES = {
   receptionistBookingsCreate: "/receptionist/bookings/create",
   receptionistBookingDetail: "/receptionist/bookings/:bookingId",
   receptionistBookingCheckout: "/receptionist/bookings/:bookingId/checkout",
+  receptionistCustomersCreate: "/receptionist/customers/create",
 
   // Manager routes
   managerRoot: "/manager",

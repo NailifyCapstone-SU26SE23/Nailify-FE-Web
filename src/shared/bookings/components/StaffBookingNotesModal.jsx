@@ -1,5 +1,5 @@
 import { FileText, Sparkles, UserRound, X } from "lucide-react";
-import { PropTypes } from "../../../../shared/utils/propTypes";
+import { PropTypes } from "../../utils/propTypes";
 
 function normalizeBookingText(value) {
   return String(value || "").replace(/\s+/g, " ").trim();

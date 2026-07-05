@@ -1,1 +1,1 @@
-export { BookingCreatePage as ReceptionistBookingCreatePage } from "../../../core/booking-management/pages/BookingCreatePage";
+export { BookingCreatePage as ReceptionistBookingCreatePage } from "../../../../shared/bookings/pages/BookingCreatePage";

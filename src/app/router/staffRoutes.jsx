@@ -1,9 +1,9 @@
 import { Navigate } from "react-router-dom";
 import { StaffLayout } from "../layouts/StaffLayout";
 import { StaffDashboardPage } from "../../features/core/dashboard/pages/StaffDashboardPage";
-import { BookingListPage } from "../../features/core/booking-management/pages/BookingListPage";
-import { BookingCreatePage } from "../../features/core/booking-management/pages/BookingCreatePage";
-import { BookingDetailPage } from "../../features/core/booking-management/pages/BookingDetailPage";
+import { BookingListPage } from "../../shared/bookings/pages/BookingListPage";
+import { BookingCreatePage } from "../../shared/bookings/pages/BookingCreatePage";
+import { BookingDetailPage } from "../../shared/bookings/pages/BookingDetailPage";
 import { StaffNailDesignStudioPage } from "../../features/staff/bookings/pages/StaffNailDesignStudioPage";
 import { StaffServiceSessionPage } from "../../features/staff/bookings/pages/StaffServiceSessionPage";
 import { StaffUpdateBookingDesignPage } from "../../features/staff/bookings/pages/StaffUpdateBookingDesignPage";

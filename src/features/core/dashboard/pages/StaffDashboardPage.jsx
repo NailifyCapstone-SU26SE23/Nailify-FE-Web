@@ -20,7 +20,7 @@ import { Table } from "antd";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
-import { StaffBookingNotesModal } from "../../../core/booking-management/components/StaffBookingNotesModal";
+import { StaffBookingNotesModal } from "../../../../shared/bookings/components/StaffBookingNotesModal";
 import {
   getStaffBookingDetailRoute,
   getStaffBookingDesignStudioRoute,

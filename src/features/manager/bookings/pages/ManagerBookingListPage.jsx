@@ -42,6 +42,7 @@ const getSalonId = () => {
   return salonId;
 };
 const BOOKING_PAGE_SIZE = 10;
+const API_BOOKING_PAGE_SIZE = 10;
 
 function Card({ className = "", children }) {
   return (
@@ -644,15 +645,33 @@ export function ManagerBookingListPage() {
     setError("");
     try {
       const salonId = getSalonId();
-      // Load ALL bookings with a large page size (1000)
-      const result = await fetchBookingsBySalonId(salonId, { pageNumber: 1, pageSize: 1000 });
-      console.log("loadBookings all bookings result:", result);
+      const firstPageResult = await fetchBookingsBySalonId(salonId, {
+        pageNumber: 1,
+        pageSize: API_BOOKING_PAGE_SIZE,
+      });
+      console.log("loadBookings first page result:", firstPageResult);
 
-      let apiBookings = [];
-      if (result?.items) {
-        apiBookings = result.items;
-      } else if (Array.isArray(result)) {
-        apiBookings = result;
+      let apiBookings = Array.isArray(firstPageResult?.items) ? [...firstPageResult.items] : [];
+      const totalPages = Math.max(1, Number(firstPageResult?.totalPages || 1));
+
+      if (totalPages > 1) {
+        const remainingPageRequests = [];
+
+        for (let pageNumber = 2; pageNumber <= totalPages; pageNumber += 1) {
+          remainingPageRequests.push(
+            fetchBookingsBySalonId(salonId, {
+              pageNumber,
+              pageSize: API_BOOKING_PAGE_SIZE,
+            }),
+          );
+        }
+
+        const remainingResults = await Promise.all(remainingPageRequests);
+        remainingResults.forEach((pageResult) => {
+          if (Array.isArray(pageResult?.items)) {
+            apiBookings = apiBookings.concat(pageResult.items);
+          }
+        });
       }
 
       const uiBookings = apiBookings.map(mapApiBookingToUiFormat);

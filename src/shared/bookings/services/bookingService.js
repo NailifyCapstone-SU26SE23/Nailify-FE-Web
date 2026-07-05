@@ -4,11 +4,11 @@ import {
   BOOKING_SUMMARY_BY_ROLE,
   getMockBookingById,
 } from "./mockBookings";
-import { ROLES } from "../../../../shared/constants/roles";
+import { ROLES } from "../../constants/roles";
 import {
   ROUTES,
   getReceptionistBookingDetailRoute,
-} from "../../../../shared/constants/routes";
+} from "../../constants/routes";
 
 const receptionistRoleConfig = {
   ...BOOKING_ROLE_CONFIG[ROLES.staff],

@@ -6,7 +6,7 @@ import {
   BOOKING_STAFF_OPTIONS,
   BOOKING_STATUS_FILTERS,
 } from "../services/mockBookings";
-import { PropTypes } from "../../../../shared/utils/propTypes";
+import { PropTypes } from "../../utils/propTypes";
 
 function FieldShell({ label, hint, children }) {
   return (

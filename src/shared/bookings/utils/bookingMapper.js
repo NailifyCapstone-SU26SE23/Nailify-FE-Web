@@ -1,4 +1,4 @@
-import { ROLES } from "../../../../shared/constants/roles";
+import { ROLES } from "../../constants/roles";
 
 export function getBookingRoleFromPath(pathname) {
   if (pathname.startsWith("/admin")) {
@@ -17,5 +17,5 @@ export function getBookingRoleFromPath(pathname) {
 }
 
 export function mapRoleToBookingScope(role) {
-  return role === ROLES.receptionist ? ROLES.staff : role;
+  return role;
 }

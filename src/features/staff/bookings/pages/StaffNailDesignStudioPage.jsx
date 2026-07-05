@@ -15,7 +15,7 @@ import { PropTypes } from "../../../../shared/utils/propTypes";
 import {
   getMockBookingById,
   getStaffDesignStudioExperienceById,
-} from "../../../core/booking-management/services/mockBookings";
+} from "../../../../shared/bookings/services/mockBookings";
 import {
   getStaffBookingDetailRoute,
   getStaffBookingDesignUpdateRoute,
@@ -1313,4 +1313,3 @@ export function StaffNailDesignStudioPage() {
     </section>
   );
 }
-

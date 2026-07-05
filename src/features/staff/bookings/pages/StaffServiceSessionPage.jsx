@@ -27,7 +27,7 @@ import {
   ROUTES,
 } from "../../../../shared/constants/routes";
 import { PropTypes } from "../../../../shared/utils/propTypes";
-import { getMockBookingById } from "../../../core/booking-management/services/mockBookings";
+import { getMockBookingById } from "../../../../shared/bookings/services/mockBookings";
 import {
   buildStaffServiceSessionPayload,
   fetchServiceCatalog,

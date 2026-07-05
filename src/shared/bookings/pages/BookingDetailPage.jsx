@@ -3,23 +3,23 @@ import toast from "react-hot-toast";
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
-import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
+import { ActionConfirmModal } from "../../components/ui/ActionConfirmModal";
 import { BookingFormFields } from "../components/BookingFormFields";
 import { BookingHeroCard } from "../components/BookingHeroCard";
 import { BookingSnapshotCard } from "../components/BookingSnapshotCard";
-import { StaffBookingConsultationDetail } from "../../../staff/bookings/components/StaffBookingConsultationDetail";
-import { ExtraServiceModal } from "../../../staff/bookings/components/ExtraServiceModal";
+import { StaffBookingConsultationDetail } from "../../../features/staff/bookings/components/StaffBookingConsultationDetail";
+import { ExtraServiceModal } from "../../../features/staff/bookings/components/ExtraServiceModal";
 import {
   BOOKING_ROLE_CONFIG,
   getMockBookingById,
 } from "../services/mockBookings";
 import { getBookingRoleFromPath } from "../utils/bookingMapper";
-import { ROLES } from "../../../../shared/constants/roles";
+import { ROLES } from "../../constants/roles";
 import {
   getStaffBookingDesignStudioRoute,
   getStaffBookingServiceSessionRoute,
-} from "../../../../shared/constants/routes";
-import { confirmCurrentDesign, confirmCustomerNail, setActiveBooking } from "../../../../store/bookingSlice";
+} from "../../constants/routes";
+import { confirmCurrentDesign, confirmCustomerNail, setActiveBooking } from "../../../store/bookingSlice";
 import {
   buildStaffServiceSessionPayload,
   fetchServiceCatalog,
@@ -31,8 +31,8 @@ import {
   formatCurrency,
   formatTimeValue,
   updateStaffBooking,
-} from "../../../staff/bookings/services/staffBookingService";
-import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
+} from "../../../features/staff/bookings/services/staffBookingService";
+import { formatDurationMinutes } from "../../utils/formatDuration";
 
 const DEFAULT_AVATAR =
   "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=140&q=80";
