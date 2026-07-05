@@ -15,9 +15,9 @@ import { SalonUpdatePage } from "../../features/admin/salon-management/pages/Sal
 import { StaffManagementPage } from "../../features/admin/staff-management/pages/StaffManagementPage";
 import { StaffCreatePage } from "../../features/admin/staff-management/pages/StaffCreatePage";
 import { StaffUpdatePage } from "../../features/admin/staff-management/pages/StaffUpdatePage";
-import { BookingListPage } from "../../features/core/booking-management/pages/BookingListPage";
-import { BookingCreatePage } from "../../features/core/booking-management/pages/BookingCreatePage";
-import { BookingDetailPage } from "../../features/core/booking-management/pages/BookingDetailPage";
+import { BookingListPage } from "../../shared/bookings/pages/BookingListPage";
+import { BookingCreatePage } from "../../shared/bookings/pages/BookingCreatePage";
+import { BookingDetailPage } from "../../shared/bookings/pages/BookingDetailPage";
 import { NailDesignManagementPage } from "../../features/admin/nails-design-management/pages/NailDesignManagementPage";
 import { NailDesignManagementCategoryPage } from "../../features/admin/nails-design-management/pages/NailDesignManagementCategoryPage";
 import { NailDesignManagementCreatePage } from "../../features/admin/nails-design-management/pages/NailDesignManagementCreatePage";

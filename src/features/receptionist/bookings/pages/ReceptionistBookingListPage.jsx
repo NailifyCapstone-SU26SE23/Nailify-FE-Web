@@ -2,7 +2,7 @@ import { CalendarDays, ChevronLeft, ChevronRight, Eye, LoaderCircle, RefreshCcw,
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Table } from "antd";
 import toast from "react-hot-toast";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import { usePagination } from "../../../../shared/hooks/usePagination";
 import {
@@ -103,12 +103,14 @@ function isReadyForCheckout(status) {
 }
 
 const BOOKING_PAGE_SIZE = 10;
-const RECEPTIONIST_BOOKING_FETCH_SIZE = 200;
+const RECEPTIONIST_BOOKING_FETCH_SIZE = 10;
 const STATUS_OPTIONS = ["All", "Pending", "Confirmed", "Approved", "CheckedIn", "Completed", "Cancelled"];
 
 export function ReceptionistBookingListPage() {
+  const location = useLocation();
   const navigate = useNavigate();
   const todayDate = useMemo(() => getTodayDateParam(), []);
+  const [flashMessage] = useState(location.state?.flashMessage ?? "");
   const [draftQuery, setDraftQuery] = useState("");
   const [appliedQuery, setAppliedQuery] = useState("");
   const [dateFrom, setDateFrom] = useState(todayDate);
@@ -132,11 +134,36 @@ export function ReceptionistBookingListPage() {
     setError("");
 
     try {
-      const data = await fetchReceptionistBookings({
+      const firstPageResult = await fetchReceptionistBookings({
         pageNumber: 1,
         pageSize: RECEPTIONIST_BOOKING_FETCH_SIZE,
+        includePagination: true,
       });
-      setBookings(Array.isArray(data) ? data.map(normalizeBooking) : []);
+      let allBookings = Array.isArray(firstPageResult?.items) ? [...firstPageResult.items] : [];
+      const totalPages = Math.max(1, Number(firstPageResult?.pagination?.totalPages || 1));
+
+      if (totalPages > 1) {
+        const remainingPageRequests = [];
+
+        for (let pageNumber = 2; pageNumber <= totalPages; pageNumber += 1) {
+          remainingPageRequests.push(
+            fetchReceptionistBookings({
+              pageNumber,
+              pageSize: RECEPTIONIST_BOOKING_FETCH_SIZE,
+              includePagination: true,
+            }),
+          );
+        }
+
+        const remainingResults = await Promise.all(remainingPageRequests);
+        remainingResults.forEach((pageResult) => {
+          if (Array.isArray(pageResult?.items)) {
+            allBookings = allBookings.concat(pageResult.items);
+          }
+        });
+      }
+
+      setBookings(allBookings.map(normalizeBooking));
     } catch (loadError) {
       const message = loadError instanceof Error ? loadError.message : "Failed to load bookings.";
       setError(message);
@@ -153,6 +180,14 @@ export function ReceptionistBookingListPage() {
 
     return () => window.clearTimeout(timerId);
   }, [loadBookings]);
+
+  useEffect(() => {
+    if (!location.state?.flashMessage) {
+      return;
+    }
+
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, location.state, navigate]);
 
   useEffect(() => {
     const timerId = window.setTimeout(() => {
@@ -551,6 +586,12 @@ export function ReceptionistBookingListPage() {
         {error ? (
           <div className="mt-4 rounded-[16px] border border-[#f7d4df] bg-[#fff3f7] px-4 py-3 text-sm font-medium text-[#d14c84]">
             {error}
+          </div>
+        ) : null}
+
+        {flashMessage ? (
+          <div className="mt-4 rounded-[16px] border border-[#d8f0e0] bg-[#edfdf4] px-4 py-3 text-sm font-medium text-[#16975f]">
+            {flashMessage}
           </div>
         ) : null}
 

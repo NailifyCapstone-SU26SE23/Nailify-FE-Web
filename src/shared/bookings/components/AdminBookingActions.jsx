@@ -1,5 +1,5 @@
 import { Save, Trash2 } from "lucide-react";
-import { PropTypes } from "../../../../shared/utils/propTypes";
+import { PropTypes } from "../../utils/propTypes";
 
 export function AdminBookingActions({ onSave, onDelete }) {
   return (

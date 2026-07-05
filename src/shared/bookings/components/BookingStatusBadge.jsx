@@ -1,4 +1,4 @@
-import { PropTypes } from "../../../../shared/utils/propTypes";
+import { PropTypes } from "../../utils/propTypes";
 import { BOOKING_STATUS_STYLES } from "../services/bookingService";
 
 export function BookingStatusBadge({ status, className = "" }) {

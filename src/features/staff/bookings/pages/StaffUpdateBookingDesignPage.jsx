@@ -15,7 +15,7 @@ import { useMemo, useState } from "react";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { formatDurationLabel } from "../../../../shared/utils/formatDuration";
 import { PropTypes } from "../../../../shared/utils/propTypes";
-import { getMockBookingById } from "../../../core/booking-management/services/mockBookings";
+import { getMockBookingById } from "../../../../shared/bookings/services/mockBookings";
 import { formatAppointmentEndTime, formatTimeValue } from "../services/staffBookingService";
 import {
   getStaffBookingDesignStudioRoute,

@@ -19,14 +19,14 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ROLES } from "../../../../shared/constants/roles";
-import { usePagination } from "../../../../shared/hooks/usePagination";
+import { ROLES } from "../../constants/roles";
+import { usePagination } from "../../hooks/usePagination";
 import {
   getStaffBookingDesignStudioRoute,
   getStaffBookingServiceSessionRoute,
-} from "../../../../shared/constants/routes";
-import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
-import { PropTypes } from "../../../../shared/utils/propTypes";
+} from "../../constants/routes";
+import { ActionDropdown } from "../../components/ui/ActionDropdown";
+import { PropTypes } from "../../utils/propTypes";
 import { StaffBookingNotesModal } from "../components/StaffBookingNotesModal";
 import {
   BOOKING_ROLE_CONFIG,
@@ -38,7 +38,7 @@ import {
   fetchStaffBookings,
   getTodayDateParam,
   normalizeStaffBooking,
-} from "../../../staff/bookings/services/staffBookingService";
+} from "../../../features/staff/bookings/services/staffBookingService";
 import { getBookingRoleFromPath } from "../utils/bookingMapper";
 
 const SUMMARY_BY_ROLE = {
@@ -547,7 +547,7 @@ export function BookingListPage() {
         );
       }
 
-      if (role === ROLES.staff || role === ROLES.receptionist) {
+      if (role === ROLES.staff) {
         return (
           matchesQuery &&
           matchesStatus &&

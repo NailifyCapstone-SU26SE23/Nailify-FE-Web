@@ -1,6 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import { PropTypes } from "../../../../shared/utils/propTypes";
+import { PropTypes } from "../../utils/propTypes";
 import { BookingStatusBadge } from "./BookingStatusBadge";
 
 export function BookingTable({ bookings, getDetailRoute }) {
