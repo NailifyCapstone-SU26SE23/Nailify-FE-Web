@@ -45,13 +45,15 @@ export default defineConfig({
   server: {
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp',
+      // Allow cross-origin CDN images in isolated pages without breaking MediaPipe usage.
+      'Cross-Origin-Embedder-Policy': 'credentialless',
     },
   },
   preview: {
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp',
+      // Match dev-server behavior so preview can load external images consistently.
+      'Cross-Origin-Embedder-Policy': 'credentialless',
     },
   },
 })

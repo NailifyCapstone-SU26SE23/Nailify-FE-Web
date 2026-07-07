@@ -160,6 +160,107 @@ export async function fetchServiceCatalog(filters = {}) {
   };
 }
 
+export async function fetchStaffBuilderNailShapes(filters = {}) {
+  const {
+    pageNumber = 1,
+    pageSize = 100,
+    name,
+  } = filters ?? {};
+
+  const response = await axiosClient.get("/NailShapes", {
+    headers: getAuthHeaders(),
+    params: {
+      pageNumber,
+      pageSize,
+      ...(name ? { name } : {}),
+    },
+  });
+
+  const data = unwrapResponse(response, "Failed to load nail shapes.");
+
+  return Array.isArray(data?.items)
+    ? data.items.map((item) => ({
+      nailShapeId: Number(item?.nailShapeId || 0),
+      name: String(item?.name || "").trim() || "--",
+      imageUrl: String(item?.imageUrl || "").trim(),
+      price: Number(item?.price || 0),
+      duration: Number(item?.duration || 0),
+    }))
+    : [];
+}
+
+export async function fetchStaffBuilderNailSurfaces(filters = {}) {
+  const {
+    pageNumber = 1,
+    pageSize = 100,
+    name,
+  } = filters ?? {};
+
+  const response = await axiosClient.get("/NailSurfaces", {
+    headers: getAuthHeaders(),
+    params: {
+      pageNumber,
+      pageSize,
+      ...(name ? { name } : {}),
+    },
+  });
+
+  const data = unwrapResponse(response, "Failed to load nail surfaces.");
+
+  return Array.isArray(data?.items)
+    ? data.items.map((item) => ({
+      nailSurfaceId: Number(item?.nailSurfaceId || 0),
+      name: String(item?.name || "").trim() || "--",
+      shaderParam: String(item?.shaderParam || "").trim(),
+      lightnessOffset: Number(item?.lightnessOffset || 0),
+      saturationOffset: Number(item?.saturationOffset || 0),
+      hueOffset: Number(item?.hueOffset || 0),
+      price: Number(item?.price || 0),
+      duration: Number(item?.duration || 0),
+    }))
+    : [];
+}
+
+export async function fetchStaffBuilderNailComponents(filters = {}) {
+  const {
+    pageNumber = 1,
+    pageSize = 100,
+  } = filters ?? {};
+
+  const response = await axiosClient.get("/NailComponents", {
+    headers: getAuthHeaders(),
+    params: {
+      pageNumber,
+      pageSize,
+    },
+  });
+
+  const data = unwrapResponse(response, "Failed to load nail components.");
+  const uniqueComponents = new Map();
+
+  if (Array.isArray(data?.items)) {
+    data.items.forEach((item) => {
+      const component = item?.component;
+      const componentId = Number(component?.componentId || item?.componentId || 0);
+
+      if (!componentId || uniqueComponents.has(componentId)) {
+        return;
+      }
+
+      uniqueComponents.set(componentId, {
+        componentId,
+        name: String(component?.name || "").trim() || "--",
+        imageUrl: String(component?.imageUrl || "").trim(),
+        componentType: String(component?.componentType || "").trim() || "--",
+        price: Number(component?.price || 0),
+        duration: Number(component?.duration || 0),
+      });
+    });
+  }
+
+  return [...uniqueComponents.values()];
+}
+
 export async function fetchStaffBookingDetail(bookingId) {
   const normalizedBookingId = String(bookingId || "").trim();
 
@@ -192,6 +293,45 @@ export async function updateStaffBooking(bookingId, payload) {
   });
 
   return unwrapResponse(response, "Failed to update booking.");
+}
+
+export async function createStaffCustomerNail(payload) {
+  const formData = new FormData();
+  const normalizedName = String(payload?.name || "").trim();
+  const nailShapeId = Number(payload?.nailShapeId || 0);
+  const nailSurfaceId = Number(payload?.nailSurfaceId || 0);
+  const customColor = String(payload?.customColor || "").trim();
+  const isPublic = Boolean(payload?.isPublic);
+
+  if (!normalizedName) {
+    throw new Error("Customer nail name is required.");
+  }
+
+  if (!Number.isInteger(nailShapeId) || nailShapeId <= 0) {
+    throw new Error("A valid nail shape is required.");
+  }
+
+  if (!Number.isInteger(nailSurfaceId) || nailSurfaceId <= 0) {
+    throw new Error("A valid nail surface is required.");
+  }
+
+  formData.append("Name", normalizedName);
+  formData.append("NailShapeId", String(nailShapeId));
+  formData.append("NailSurfaceId", String(nailSurfaceId));
+  formData.append("CustomColor", customColor);
+  formData.append("IsPublic", String(isPublic));
+
+  if (payload?.image instanceof File) {
+    formData.append("image", payload.image);
+  }
+
+  const response = await axiosClient.post("/CustomerNails", formData, {
+    headers: {
+      ...getAuthHeaders(),
+    },
+  });
+
+  return unwrapResponse(response, "Failed to create customer nail.");
 }
 
 export async function fetchStaffNailVariantDetail(variantId) {
