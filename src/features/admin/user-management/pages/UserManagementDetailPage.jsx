@@ -1,9 +1,11 @@
-import { LoaderCircle, PencilLine, Save, Trash2, X } from "lucide-react";
+import { Building2, CalendarDays, Clock3, LoaderCircle, MapPin, PencilLine, Phone, Save, Star, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
+import { Table } from "antd";
 import toast from "react-hot-toast";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ROUTES } from "../../../../shared/constants/routes";
+import { fetchSalonById } from "../../salon-management/services/salonsService";
 import { UserManagementFormFields } from "../components/UserManagementFormFields";
 import { UserManagementHeroCard } from "../components/UserManagementHeroCard";
 import { UserManagementSnapshotCard } from "../components/UserManagementSnapshotCard";
@@ -12,6 +14,79 @@ import {
   fetchAdminUserDetail,
   updateAdminUser,
 } from "../services/userManagementService";
+import {
+  fetchArtistSchedules,
+  fetchNailArtistById,
+  fetchNailArtistSkills,
+} from "../../../manager/staff-artist-management/services/nailArtistsService";
+
+function formatWorkDate(value) {
+  if (!value) {
+    return "--";
+  }
+
+  const parsedDate = new Date(value);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "--";
+  }
+
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(parsedDate);
+}
+
+function formatShiftRange(start, end) {
+  if (!start || !end) {
+    return "--";
+  }
+
+  return `${String(start).slice(0, 5)} - ${String(end).slice(0, 5)}`;
+}
+
+function getScheduleStatusClass(status) {
+  switch (String(status || "").trim().toLowerCase()) {
+    case "active":
+      return "bg-[#edfdf4] text-[#16975f]";
+    case "inactive":
+      return "bg-[#f4f1ff] text-[#7157d9]";
+    default:
+      return "bg-[#fff0f5] text-[#d14c84]";
+  }
+}
+
+function InfoSection({ icon: Icon, title, children }) {
+  return (
+    <section className="rounded-[22px] border border-[#f6dbe7] bg-[linear-gradient(180deg,#fffdfd_0%,#fff8fb_100%)] p-5 shadow-[0_14px_30px_rgba(94,76,62,0.04)]">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#fff0f6] text-[#d45b9f]">
+          <Icon size={18} />
+        </div>
+        <h3 className="text-lg font-semibold text-[var(--color-ink)]">{title}</h3>
+      </div>
+      <div className="mt-5">{children}</div>
+    </section>
+  );
+}
+
+function StarRating({ level = 0, max = 5 }) {
+  return (
+    <div className="flex items-center gap-1">
+      {Array.from({ length: max }, (_, index) => {
+        const active = index < Number(level || 0);
+
+        return (
+          <Star
+            key={index}
+            size={14}
+            className={active ? "fill-[#f7b731] text-[#f7b731]" : "text-[#ead6c4]"}
+          />
+        );
+      })}
+    </div>
+  );
+}
 
 export function UserManagementDetailPage() {
   const location = useLocation();
@@ -30,6 +105,10 @@ export function UserManagementDetailPage() {
   );
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [salonDetail, setSalonDetail] = useState(null);
+  const [artistDetail, setArtistDetail] = useState(null);
+  const [artistSkills, setArtistSkills] = useState([]);
+  const [artistSchedules, setArtistSchedules] = useState([]);
 
   useEffect(() => {
     let isMounted = true;
@@ -40,6 +119,18 @@ export function UserManagementDetailPage() {
 
       try {
         const user = await fetchAdminUserDetail(userId);
+
+        const [
+          nextSalonDetail,
+          nextArtistDetail,
+          nextArtistSkills,
+          nextArtistSchedules,
+        ] = await Promise.all([
+          user?.salonId ? fetchSalonById(user.salonId).catch(() => null) : Promise.resolve(null),
+          user?.staffId ? fetchNailArtistById(user.staffId).catch(() => null) : Promise.resolve(null),
+          user?.staffId ? fetchNailArtistSkills(user.staffId).catch(() => []) : Promise.resolve([]),
+          user?.staffId ? fetchArtistSchedules(user.staffId).catch(() => []) : Promise.resolve([]),
+        ]);
 
         if (!isMounted) {
           return;
@@ -56,6 +147,10 @@ export function UserManagementDetailPage() {
 
         setInitialUser(detailValues);
         setFormValues(detailValues);
+        setSalonDetail(nextSalonDetail);
+        setArtistDetail(nextArtistDetail);
+        setArtistSkills(Array.isArray(nextArtistSkills) ? nextArtistSkills : []);
+        setArtistSchedules(Array.isArray(nextArtistSchedules) ? nextArtistSchedules : []);
       } catch (error) {
         if (!isMounted) {
           return;
@@ -121,6 +216,41 @@ export function UserManagementDetailPage() {
     [formValues.firstName, formValues.lastName].filter(Boolean).join(" ").trim() ||
     formValues.name ||
     "User profile";
+  const normalizedRole = String(formValues.rawRole || formValues.role || "").trim().toLowerCase();
+  const shouldShowSalonDetail = ["staff_artist", "manager", "receptionist"].includes(normalizedRole) && Boolean(salonDetail);
+  const shouldShowSkills = normalizedRole === "staff_artist";
+  const shouldShowWorkSchedule = normalizedRole !== "customer";
+  const sortedSchedules = [...artistSchedules].sort(
+    (left, right) => new Date(left?.workDate || 0).getTime() - new Date(right?.workDate || 0).getTime(),
+  );
+  const scheduleColumns = [
+    {
+      title: "Work Date",
+      dataIndex: "workDate",
+      key: "workDate",
+      render: (value) => <span className="font-semibold text-[var(--color-ink)]">{formatWorkDate(value)}</span>,
+    },
+    {
+      title: "Shift",
+      key: "shift",
+      render: (_, schedule) => (
+        <span className="inline-flex items-center gap-2 text-sm text-[var(--color-muted)]">
+          <Clock3 size={14} className="text-[#d45b9f]" />
+          {formatShiftRange(schedule.shiftStart, schedule.shiftEnd)}
+        </span>
+      ),
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      render: (value) => (
+        <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getScheduleStatusClass(value)}`}>
+          {value || "Unknown"}
+        </span>
+      ),
+    },
+  ];
 
   const handleSave = async () => {
     const firstName = String(formValues.firstName || "").trim();
@@ -194,11 +324,33 @@ export function UserManagementDetailPage() {
   return (
     <section className="flex min-h-full flex-col gap-4">
       <UserManagementHeroCard
+        avatarUrl={formValues.avatarUrl}
         backLabel="Back to user list"
         backTo={ROUTES.adminUsers}
         badge="Users"
         title={displayName}
         description="Review the user profile loaded from the backend and manage this account from the admin detail page."
+        headerActions={!isEditing ? (
+          <>
+            <button
+              type="button"
+              onClick={handleStartEdit}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-semibold text-white shadow-[0_14px_26px_rgba(239,93,180,0.24)] transition hover:scale-[1.01]"
+            >
+              <PencilLine size={16} />
+              <span>Edit user</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowDeleteConfirm(true)}
+              disabled={isDeleting}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#fff0f5] px-5 text-sm font-semibold text-[#d14c84] transition hover:bg-[#ffe1ec] disabled:opacity-70"
+            >
+              {isDeleting ? <LoaderCircle size={16} className="animate-spin" /> : <Trash2 size={16} />}
+              <span>{isDeleting ? "Deleting..." : "Delete user"}</span>
+            </button>
+          </>
+        ) : null}
         panelIcon={<PencilLine size={18} className="text-[#d45b9f]" />}
         panelTitle={isEditing ? "Edit mode" : "View mode"}
         panelDescription="Detail data is loaded from API. Save and delete actions now call the backend user management endpoints."
@@ -241,27 +393,111 @@ export function UserManagementDetailPage() {
                 >
                   <span>Cancel</span>
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  disabled={isDeleting}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#fff0f5] px-5 py-3 text-sm font-semibold text-[#d14c84] transition hover:bg-[#ffe1ec] sm:w-auto"
+                >
+                  {isDeleting ? <LoaderCircle size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                  <span>{isDeleting ? "Deleting..." : "Delete user"}</span>
+                </button>
               </>
-            ) : (
-              <button
-                type="button"
-                onClick={handleStartEdit}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_26px_rgba(239,93,180,0.24)] transition hover:scale-[1.01] sm:w-auto"
-              >
-                <PencilLine size={16} />
-                <span>Edit user</span>
-              </button>
-            )}
+            ) : null}
+          </div>
 
-              <button
-                type="button"
-                onClick={() => setShowDeleteConfirm(true)}
-                disabled={isDeleting}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#fff0f5] px-5 py-3 text-sm font-semibold text-[#d14c84] transition hover:bg-[#ffe1ec] sm:w-auto"
-              >
-                {isDeleting ? <LoaderCircle size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                <span>{isDeleting ? "Deleting..." : "Delete user"}</span>
-              </button>
+          <div className="mt-8 space-y-4">
+            {shouldShowSalonDetail ? (
+              <InfoSection icon={Building2} title="Assigned Salon">
+                <div className="grid gap-4 lg:grid-cols-[180px_minmax(0,1fr)]">
+                  {salonDetail?.imageUrl ? (
+                    <img
+                      src={salonDetail.imageUrl}
+                      alt={salonDetail.name || "Salon"}
+                      className="h-40 w-full rounded-[20px] border border-[#f6dbe7] object-cover"
+                      referrerPolicy="no-referrer"
+                      crossOrigin="anonymous"
+                    />
+                  ) : null}
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-2xl bg-white px-4 py-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d39bb5]">Salon Name</p>
+                      <p className="mt-2 font-semibold text-[var(--color-ink)]">{salonDetail?.name || "--"}</p>
+                    </div>
+                    <div className="rounded-2xl bg-white px-4 py-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d39bb5]">Status</p>
+                      <p className="mt-2 font-semibold text-[var(--color-ink)]">{salonDetail?.status || "--"}</p>
+                    </div>
+                    <div className="rounded-2xl bg-white px-4 py-3 sm:col-span-2">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d39bb5]">Address</p>
+                      <p className="mt-2 flex items-start gap-2 text-[var(--color-ink)]"><MapPin size={15} className="mt-0.5 text-[#d45b9f]" />{salonDetail?.address || "--"}</p>
+                    </div>
+                    <div className="rounded-2xl bg-white px-4 py-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d39bb5]">Phone</p>
+                      <p className="mt-2 flex items-center gap-2 text-[var(--color-ink)]"><Phone size={15} className="text-[#d45b9f]" />{salonDetail?.phone || "--"}</p>
+                    </div>
+                    <div className="rounded-2xl bg-white px-4 py-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d39bb5]">Artist Status</p>
+                      <p className="mt-2 font-semibold text-[var(--color-ink)]">{artistDetail?.status || formValues.status || "--"}</p>
+                    </div>
+                  </div>
+                </div>
+              </InfoSection>
+            ) : null}
+
+            {shouldShowSkills ? (
+              <InfoSection icon={Star} title="Skill Ratings">
+                {artistSkills.length ? (
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {artistSkills.map((skill) => (
+                      <div
+                        key={skill.nailArtistSkillId || `${skill.skillTypeId}-${skill.skillTypeName}`}
+                        className="rounded-2xl bg-white px-4 py-4"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="font-semibold text-[var(--color-ink)]">{skill.skillTypeName || "Skill"}</p>
+                            <p className="mt-1 text-xs uppercase tracking-[0.16em] text-[#d39bb5]">Level {skill.level ?? 0}/5</p>
+                          </div>
+                          <StarRating level={skill.level} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl bg-white px-4 py-4 text-sm text-[#8f7c6d]">
+                    No skills assigned for this staff artist yet.
+                  </div>
+                )}
+              </InfoSection>
+            ) : null}
+
+            {shouldShowWorkSchedule ? (
+              <InfoSection icon={CalendarDays} title="Work Schedule">
+                {formValues.staffId ? (
+                  sortedSchedules.length ? (
+                    <div className="overflow-hidden rounded-[20px] border border-[#f6dbe7] bg-white">
+                      <Table
+                        rowKey={(schedule) => schedule.scheduleId || `${schedule.workDate}-${schedule.shiftStart}-${schedule.shiftEnd}`}
+                        columns={scheduleColumns}
+                        dataSource={sortedSchedules}
+                        pagination={false}
+                        locale={{ emptyText: "No work schedule found." }}
+                        scroll={{ x: 640 }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl bg-white px-4 py-4 text-sm text-[#8f7c6d]">
+                      No work schedule entries found for this staff artist.
+                    </div>
+                  )
+                ) : (
+                  <div className="rounded-2xl bg-white px-4 py-4 text-sm text-[#8f7c6d]">
+                    This account is not linked to a nail artist profile, so there is no work schedule to display.
+                  </div>
+                )}
+              </InfoSection>
+            ) : null}
           </div>
         </article>
 
