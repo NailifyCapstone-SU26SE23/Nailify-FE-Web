@@ -421,7 +421,7 @@ export function ComponentDetailPage() {
                   }`}
                 >
                   {imagePreview ? (
-                    <img
+                    <Image
                       crossOrigin="anonymous"
                       src={imagePreview}
                       alt="Component preview"

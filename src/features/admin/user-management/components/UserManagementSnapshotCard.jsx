@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { ShieldAlert } from "lucide-react";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { USER_STATUS_STYLES } from "../services/mockUsers";
@@ -7,6 +8,17 @@ export function UserManagementSnapshotCard({ formValues, notice }) {
     [formValues.firstName, formValues.lastName].filter(Boolean).join(" ").trim() ||
     formValues.name ||
     "New internal account";
+  const normalizedAvatarUrl = String(formValues.avatarUrl || "").trim();
+  const [hasImageError, setHasImageError] = useState(false);
+  const avatarFallback = (displayName || "New User")
+    .split(" ")
+    .slice(0, 2)
+    .map((part) => part[0] ?? "")
+    .join("");
+
+  useEffect(() => {
+    setHasImageError(false);
+  }, [normalizedAvatarUrl]);
 
   return (
     <article className="rounded-[24px] bg-white p-4 shadow-[0_16px_34px_rgba(94,76,62,0.06)] sm:p-5 md:p-6">
@@ -16,13 +28,20 @@ export function UserManagementSnapshotCard({ formValues, notice }) {
 
       <div className="mt-5 rounded-[22px] bg-[linear-gradient(180deg,#fff5f9_0%,#fff8e8_100%)] p-5">
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white font-semibold text-[#c84b91] shadow-[0_12px_24px_rgba(94,76,62,0.08)]">
-            {(displayName || "New User")
-              .split(" ")
-              .slice(0, 2)
-              .map((part) => part[0] ?? "")
-              .join("")}
-          </div>
+          {normalizedAvatarUrl && !hasImageError ? (
+            <img
+              src={normalizedAvatarUrl}
+              alt={`${displayName} avatar`}
+              className="h-16 w-16 rounded-2xl border border-[#f6dbe7] object-cover shadow-[0_12px_24px_rgba(94,76,62,0.08)]"
+              referrerPolicy="no-referrer"
+              crossOrigin="anonymous"
+              onError={() => setHasImageError(true)}
+            />
+          ) : (
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white font-semibold text-[#c84b91] shadow-[0_12px_24px_rgba(94,76,62,0.08)]">
+              {avatarFallback}
+            </div>
+          )}
           <div>
             <p className="font-semibold text-[var(--color-ink)]">
               {displayName}
@@ -49,9 +68,6 @@ export function UserManagementSnapshotCard({ formValues, notice }) {
         <div className="rounded-2xl bg-[#fff7ef] px-4 py-4 text-sm leading-6 text-[var(--color-ink)]">
           <span className="font-semibold">Phone:</span>{" "}
           {formValues.phone || "Not provided"}
-        </div>
-        <div className="rounded-2xl bg-[#fff7ef] px-4 py-4 text-sm leading-6 text-[var(--color-ink)]">
-          <span className="font-semibold">Avatar URL:</span> {formValues.avatarUrl || "Not provided"}
         </div>
       </div>
 

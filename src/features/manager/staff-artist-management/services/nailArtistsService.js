@@ -153,3 +153,23 @@ export async function fetchNailArtistSkills(artistId) {
 
   return unwrapResponse(response, "Failed to load nail artist skills.");
 }
+
+export async function fetchArtistSchedules(artistId, options = {}) {
+  const normalizedId = String(artistId || "").trim();
+
+  if (!normalizedId) {
+    throw new Error("Nail artist ID is required.");
+  }
+
+  const { startDate, endDate } = options;
+
+  const response = await axiosClient.get(`/Schedules/artist/${normalizedId}`, {
+    headers: getAuthHeaders(),
+    params: {
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
+    },
+  });
+
+  return unwrapResponse(response, "Failed to load artist schedules.");
+}
