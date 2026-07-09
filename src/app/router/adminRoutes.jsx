@@ -15,13 +15,15 @@ import { SalonUpdatePage } from "../../features/admin/salon-management/pages/Sal
 import { StaffManagementPage } from "../../features/admin/staff-management/pages/StaffManagementPage";
 import { StaffCreatePage } from "../../features/admin/staff-management/pages/StaffCreatePage";
 import { StaffUpdatePage } from "../../features/admin/staff-management/pages/StaffUpdatePage";
-import { BookingListPage } from "../../features/core/booking-management/pages/BookingListPage";
-import { BookingCreatePage } from "../../features/core/booking-management/pages/BookingCreatePage";
-import { BookingDetailPage } from "../../features/core/booking-management/pages/BookingDetailPage";
+import { BookingListPage } from "../../shared/bookings/pages/BookingListPage";
+import { BookingCreatePage } from "../../shared/bookings/pages/BookingCreatePage";
+import { BookingDetailPage } from "../../shared/bookings/pages/BookingDetailPage";
 import { NailDesignManagementPage } from "../../features/admin/nails-design-management/pages/NailDesignManagementPage";
 import { NailDesignManagementCategoryPage } from "../../features/admin/nails-design-management/pages/NailDesignManagementCategoryPage";
 import { NailDesignManagementCreatePage } from "../../features/admin/nails-design-management/pages/NailDesignManagementCreatePage";
 import { NailDesignManagementDetailPage } from "../../features/admin/nails-design-management/pages/NailDesignManagementDetailPage";
+import { NailVariantCreatePage } from "../../features/admin/nails-design-management/pages/NailVariantCreatePage";
+import { NailVariantDetailPage } from "../../features/admin/nails-design-management/pages/NailVariantDetailPage";
 import { ServicePricingManagementPage } from "../../features/admin/service-pricing-management/pages/ServicePricingManagementPage";
 import { NailShapesManagementPage } from "../../features/admin/nail-shapes-management/pages/NailShapesManagementPage";
 import { NailShapeCreatePage } from "../../features/admin/nail-shapes-management/pages/NailShapeCreatePage";
@@ -38,6 +40,9 @@ import { ProcedureDetailPage } from "../../features/admin/procedures-management/
 import { CategoryTypesManagementPage } from "../../features/admin/category-types-management/pages/CategoryTypesManagementPage";
 import { CategoryTypeCreatePage } from "../../features/admin/category-types-management/pages/CategoryTypeCreatePage";
 import { CategoryTypeDetailPage } from "../../features/admin/category-types-management/pages/CategoryTypeDetailPage";
+import { SkillTypesManagementPage } from "../../features/admin/skill-types-management/pages/SkillTypesManagementPage";
+import { SkillTypeCreatePage } from "../../features/admin/skill-types-management/pages/SkillTypeCreatePage";
+import { SkillTypeDetailPage } from "../../features/admin/skill-types-management/pages/SkillTypeDetailPage";
 import { CategoriesManagementPage } from "../../features/admin/categories-management/pages/CategoriesManagementPage";
 import { CategoryCreatePage } from "../../features/admin/categories-management/pages/CategoryCreatePage";
 import { CategoryDetailPage } from "../../features/admin/categories-management/pages/CategoryDetailPage";
@@ -170,6 +175,18 @@ export const adminRoutes = [
         element: <CategoryTypeDetailPage />,
       },
       {
+        path: ROUTES.adminSkillTypes,
+        element: <SkillTypesManagementPage />,
+      },
+      {
+        path: ROUTES.adminSkillTypesCreate,
+        element: <SkillTypeCreatePage />,
+      },
+      {
+        path: ROUTES.adminSkillTypeDetail,
+        element: <SkillTypeDetailPage />,
+      },
+      {
         path: ROUTES.adminCategories,
         element: <CategoriesManagementPage />,
       },
@@ -196,6 +213,14 @@ export const adminRoutes = [
       {
         path: ROUTES.adminNailDesignDetail,
         element: <NailDesignManagementDetailPage />,
+      },
+      {
+        path: ROUTES.adminNailVariantCreate,
+        element: <NailVariantCreatePage />,
+      },
+      {
+        path: ROUTES.adminNailVariantDetail,
+        element: <NailVariantDetailPage />,
       },
       {
         path: ROUTES.adminUsersCreate,

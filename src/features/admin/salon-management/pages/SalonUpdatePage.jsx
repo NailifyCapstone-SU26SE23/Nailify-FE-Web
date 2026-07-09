@@ -337,9 +337,11 @@ export function SalonUpdatePage() {
                       {imagePreview ? (
                         <div className="relative w-full">
                           <img
+                            crossOrigin="anonymous"
                             src={imagePreview}
                             alt="Preview"
                             className="h-40 w-full object-cover rounded-2xl shadow-lg"
+                            referrerPolicy="no-referrer"
                           />
                           <button
                             type="button"

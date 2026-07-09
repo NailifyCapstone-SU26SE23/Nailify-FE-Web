@@ -96,7 +96,7 @@ function RequestCard({ request }) {
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3.5">
           {nail.imageUrl ? (
-            <img
+            <img crossOrigin="anonymous"
               src={nail.imageUrl}
               alt={nail.name}
               className="h-16 w-16 rounded-[18px] border-4 border-white object-cover shadow-[0_12px_24px_rgba(236,72,153,0.08)] transition group-hover:scale-105"
@@ -423,3 +423,4 @@ export function StaffCustomerNailsListPage() {
     </ConfigProvider>
   );
 }
+

@@ -85,12 +85,42 @@ function formatDuration(duration, status) {
 function getCardColorStyle(customColor) {
   if (!customColor) return { backgroundColor: '#fdf2f8' };
   try {
-    const parsed = typeof customColor === 'string' ? JSON.parse(customColor) : customColor;
+    const parsed = typeof customColor === 'string'
+      ? (() => {
+        const normalized = customColor.trim();
+
+        if (!normalized) {
+          return null;
+        }
+
+        if (normalized.startsWith('{') || normalized.startsWith('[')) {
+          return JSON.parse(normalized);
+        }
+
+        return {
+          mode: 'solid',
+          color: normalized,
+        };
+      })()
+      : customColor;
+
+    if (!parsed) {
+      return { backgroundColor: '#fdf2f8' };
+    }
+
     if (parsed.mode === 'solid' && parsed.color) {
       return { backgroundColor: parsed.color };
     }
-    if (parsed.mode === 'gradient' && Array.isArray(parsed.gradient)) {
-      return { background: `linear-gradient(to bottom, ${parsed.gradient.join(', ')})` };
+    if (parsed.mode === 'gradient') {
+      const gradientStops = Array.isArray(parsed.gradient)
+        ? parsed.gradient
+        : Array.isArray(parsed.gradient?.stops)
+          ? parsed.gradient.stops
+          : [];
+
+      if (gradientStops.length > 0) {
+        return { background: `linear-gradient(to bottom, ${gradientStops.join(', ')})` };
+      }
     }
     if (parsed.mode === 'perFinger' && Array.isArray(parsed.fingers)) {
       const colors = parsed.fingers.map(f => f.color).filter(Boolean);
@@ -99,7 +129,9 @@ function getCardColorStyle(customColor) {
         return { background: `linear-gradient(to right, ${colors.slice(0, 3).join(', ')})` };
       }
     }
-  } catch (e) { }
+  } catch {
+    return { backgroundColor: '#fdf2f8' };
+  }
   return { backgroundColor: '#fdf2f8' };
 }
 
@@ -592,3 +624,4 @@ export function CustomerNailPage() {
     </ConfigProvider>
   );
 }
+

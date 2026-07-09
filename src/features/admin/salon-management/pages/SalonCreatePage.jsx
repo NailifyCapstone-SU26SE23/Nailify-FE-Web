@@ -255,9 +255,11 @@ export function SalonCreatePage() {
                   {imagePreview ? (
                     <div className="relative w-full">
                       <img
+                        crossOrigin="anonymous"
                         src={imagePreview}
                         alt="Preview"
                         className="h-40 w-full object-cover rounded-2xl shadow-lg"
+                        referrerPolicy="no-referrer"
                       />
                       <button
                         type="button"
@@ -297,11 +299,10 @@ export function SalonCreatePage() {
                       key={option.value}
                       type="button"
                       onClick={() => handleInputChange("status", option.value)}
-                      className={`rounded-2xl px-4 py-3.5 text-center text-sm font-bold transition-all duration-300 transform hover:scale-[1.02] ${
-                        formData.status === option.value
+                      className={`rounded-2xl px-4 py-3.5 text-center text-sm font-bold transition-all duration-300 transform hover:scale-[1.02] ${formData.status === option.value
                           ? `${option.color} shadow-lg`
                           : "bg-[#fff5f9] text-slate-400 hover:text-slate-600 hover:bg-[#fff0f5] border border-rose-100"
-                      }`}
+                        }`}
                     >
                       {option.label}
                     </button>
