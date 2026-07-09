@@ -27,21 +27,26 @@ import {
   STAFF_UPDATE_CHECKLIST,
   STAFF_ROLE_OPTIONS,
   STAFF_SALON_OPTIONS,
+  STAFF_SKILL_CATEGORIES,
   createEmptyStaffForm,
-  fetchMockStaffFormById,
   getSpecialtiesFromSkillRatings,
   getStaffCreateStatusOption,
   getStaffInitials,
   getStaffRoleOption,
-  submitMockStaffUpdate,
+  createDefaultStaffSkillRatings,
 } from "../services/mockStaff";
+import { fetchUserById } from "../../../manager/bookings/services/bookingsService";
+import { fetchAdminSalons } from "../../salon-management/services/salonManagementService";
+import { fetchAdminSkillTypes } from "../../skill-types-management/services/skillTypesManagementService";
+import { fetchNailArtistSkills } from "../../../manager/staff-artist-management/services/nailArtistsService";
+import { updateUser, assignNailArtistSkills } from "../services/staffManagementService";
 
 const inputWrapperClassName =
-  "flex items-center gap-2 rounded-xl border border-rose-100 bg-[#fff6f9] px-4 py-3";
+  "flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5 transition-all duration-300 hover:border-rose-200 hover:bg-[#fff5f9] focus-within:border-rose-400 focus-within:bg-white focus-within:shadow-[0_0_0_3px_rgba(234,79,147,0.15)]";
 const inputClassName =
-  "w-full min-w-0 bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-rose-200";
+  "w-full min-w-0 bg-transparent text-[14px] text-slate-800 outline-none placeholder:text-rose-300 font-medium";
 const selectClassName =
-  "w-full rounded-xl border border-rose-100 bg-[#fff6f9] px-4 py-3 text-[13px] text-slate-700 outline-none";
+  "w-full rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5 text-[14px] text-slate-800 outline-none font-medium transition-all duration-300 hover:border-rose-200 hover:bg-[#fff5f9] focus:border-rose-400 focus:bg-white focus:shadow-[0_0_0_3px_rgba(234,79,147,0.15)]";
 
 const readOnlyInputClassName = `${inputClassName} cursor-not-allowed text-slate-500`;
 
@@ -79,6 +84,12 @@ InfoChip.propTypes = {
   value: PropTypes.string.isRequired,
 };
 
+// Define status options with only Active and Inactive
+const UPDATED_STATUS_OPTIONS = [
+  { value: "ACTIVE", label: "Active", color: "bg-emerald-100 text-emerald-600" },
+  { value: "INACTIVE", label: "Inactive", color: "bg-rose-100 text-rose-600" },
+];
+
 export function StaffUpdatePage() {
   const navigate = useNavigate();
   const { staffId } = useParams();
@@ -89,28 +100,133 @@ export function StaffUpdatePage() {
   const [isNotFound, setIsNotFound] = useState(false);
   const [saveResult, setSaveResult] = useState(null);
   const [formData, setFormData] = useState(createEmptyStaffForm);
+  const [skillTypes, setSkillTypes] = useState([]);
+  const [salons, setSalons] = useState([]);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
 
+    const mapApiRoleToForm = (apiRole) => {
+      switch (apiRole) {
+        case "Staff_Artist":
+          return "NAIL_ARTIST";
+        case "Salon_Manager":
+          return "SALON_MANAGER";
+        case "Receptionist":
+          return "RECEPTIONIST";
+        default:
+          return apiRole || "NAIL_ARTIST";
+      }
+    };
+
+    const mapApiStatusToForm = (apiStatus) => {
+      switch (apiStatus) {
+        case "Active":
+          return "ACTIVE";
+        case "Inactive":
+          return "INACTIVE";
+        default:
+          // If it's On Leave, map to Active or Inactive? Let's default to Active
+          return "ACTIVE";
+      }
+    };
+
     const loadStaff = async () => {
+      console.log("=== StaffUpdatePage: Loading staff ===");
+      console.log("staffId:", staffId);
       setIsLoading(true);
       setIsNotFound(false);
 
-      const staffForm = await fetchMockStaffFormById(staffId);
+      try {
+        const [userData, salonsData, skillTypesData] = await Promise.all([
+          fetchUserById(staffId),
+          fetchAdminSalons({ pageSize: 100 }),
+          fetchAdminSkillTypes({ pageNumber: 1, pageSize: 100 }),
+        ]);
 
-      if (!isMounted) {
-        return;
-      }
+        console.log("StaffUpdatePage userData:", userData);
+        console.log("StaffUpdatePage salonsData:", salonsData);
+        console.log("StaffUpdatePage skillTypesData:", skillTypesData);
 
-      if (!staffForm) {
+        if (!isMounted) {
+          return;
+        }
+
+        setSkillTypes(skillTypesData.items || []);
+        setSalons(salonsData.items || []);
+
+        // Find salon
+        const matchingSalon = salonsData?.items?.find(
+          (salon) => salon.salonId === userData.salonId || salon.id === userData.salonId
+        );
+
+        const fullName = userData.firstName && userData.lastName 
+          ? `${userData.firstName} ${userData.lastName}` 
+          : userData.fullName || userData.name || "Unnamed Staff";
+
+        // Start with empty form to get all required fields
+        const baseForm = createEmptyStaffForm();
+
+        // Initialize skill ratings from fetched skill types
+        let skillRatings = {};
+        // Add all skill types with default 0 rating
+        skillTypesData.items?.forEach(skill => {
+          skillRatings[skill.id] = 0;
+        });
+        
+        // If role is nail artist, load existing skills
+        if (mapApiRoleToForm(userData.role) === "NAIL_ARTIST" && userData.staffId) {
+          try {
+            const existingSkills = await fetchNailArtistSkills(userData.staffId);
+            console.log("StaffUpdatePage existingSkills:", existingSkills);
+            // Create a map of skill type id to level
+            existingSkills.forEach(skill => {
+              skillRatings[skill.skillTypeId] = skill.level || 0;
+            });
+          } catch (skillError) {
+            console.warn("Failed to load existing skills:", skillError);
+          }
+        }
+
+        const staffForm = {
+          ...baseForm,
+          staffId: userData.staffId || userData.userId || userData.id || "",
+          id: userData.userId || userData.id || "",
+          userId: userData.userId || userData.id || "",
+          firstName: userData.firstName || "",
+          lastName: userData.lastName || "",
+          fullName,
+          email: userData.email || "",
+          phone: userData.phone || "",
+          avatarUrl: userData.avatarUrl || null,
+          role: mapApiRoleToForm(userData.role),
+          status: mapApiStatusToForm(userData.status),
+          salonId: userData.salonId || "",
+          assignedSalon: matchingSalon?.name || "",
+          skillRatings,
+          specialties: [],
+          notes: "",
+        };
+
+        console.log("StaffUpdatePage mapped staffForm:", staffForm);
+
+        // Set image preview if avatar exists
+        if (userData.avatarUrl) {
+          setImagePreview(userData.avatarUrl);
+        }
+
+        setFormData(staffForm);
+        setIsLoading(false);
+      } catch (error) {
+        console.error("StaffUpdatePage load error:", error);
+        if (!isMounted) {
+          return;
+        }
         setIsNotFound(true);
         setIsLoading(false);
-        return;
       }
-
-      setFormData(staffForm);
-      setIsLoading(false);
     };
 
     loadStaff();
@@ -125,15 +241,56 @@ export function StaffUpdatePage() {
     [formData.role],
   );
   const selectedStatus = useMemo(
-    () => getStaffCreateStatusOption(formData.status),
+    () => UPDATED_STATUS_OPTIONS.find((option) => option.value === formData.status),
     [formData.status],
   );
+  
+  // Get specialties from skill ratings using skill types
+  const specialties = useMemo(() => {
+    return skillTypes
+      .filter(skill => Number(formData.skillRatings[skill.id] ?? 0) >= 3)
+      .map(skill => skill.name || skill.title);
+  }, [skillTypes, formData.skillRatings]);
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target.result);
+        handleInputChange("avatarUrl", e.target.result);
+        handleInputChange("imageFile", file);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    handleInputChange("avatarUrl", "");
+    handleInputChange("imageFile", null);
+  };
 
   const handleInputChange = (field, value) => {
-    setFormData((current) => ({
-      ...current,
-      [field]: value,
-    }));
+    setFormData((current) => {
+      const newFormData = { ...current, [field]: value };
+      
+      // If fullName changed, split into firstName and lastName
+      if (field === "fullName") {
+        const nameParts = value.split(' ');
+        newFormData.firstName = nameParts[0] || "";
+        newFormData.lastName = nameParts.slice(1).join(' ') || "";
+      }
+      
+      // If firstName or lastName changed, update fullName
+      if (field === "firstName" || field === "lastName") {
+        newFormData.fullName = `${newFormData.firstName || ""} ${newFormData.lastName || ""}`.trim();
+      }
+      
+      return newFormData;
+    });
   };
 
   const handleSkillRatingChange = (skillKey, rating) => {
@@ -172,11 +329,77 @@ export function StaffUpdatePage() {
   const handleConfirmSave = async () => {
     setIsSaving(true);
 
-    const result = await submitMockStaffUpdate(staffId, formData);
+    try {
+      // First, map form status to API status
+      const mapFormStatusToApi = (formStatus) => {
+        switch (formStatus) {
+          case "ACTIVE":
+            return "Active";
+          case "INACTIVE":
+            return "Inactive";
+          default:
+            return "Active";
+        }
+      };
 
-    setIsSaving(false);
-    setShowSaveModal(false);
-    setSaveResult(result);
+      // Split fullName into firstName and lastName if needed
+      let firstName = formData.firstName;
+      let lastName = formData.lastName;
+      if (!firstName && !lastName && formData.fullName) {
+        const nameParts = formData.fullName.split(' ');
+        firstName = nameParts[0] || "";
+        lastName = nameParts.slice(1).join(' ') || "";
+      }
+
+      // Find selected salon ID
+      const selectedSalon = salons.find(s => s.name === formData.assignedSalon);
+
+      // Update user
+      const userUpdateData = {
+        email: formData.email,
+        firstName,
+        lastName,
+        phone: formData.phone,
+        avatarUrl: formData.avatarUrl,
+        role: formData.role,
+        salonId: selectedSalon?.salonId || selectedSalon?.id || formData.salonId,
+        status: mapFormStatusToApi(formData.status),
+        imageFile: formData.imageFile,
+      };
+
+      console.log("Updating user with data:", userUpdateData);
+      await updateUser(formData.userId, userUpdateData);
+
+      // If role is nail artist, update skills
+      if (formData.role === "NAIL_ARTIST" && formData.staffId) {
+        const skills = skillTypes
+          .filter(skill => Number(formData.skillRatings[skill.id] ?? 0) > 0)
+          .map(skill => ({
+            skillTypeId: skill.id,
+            level: Math.floor(Number(formData.skillRatings[skill.id] ?? 0)),
+          }));
+
+        console.log("Updating skills for nail artist:", skills);
+        if (skills.length > 0) {
+          await assignNailArtistSkills(formData.staffId, skills);
+        }
+      }
+
+      setIsSaving(false);
+      setShowSaveModal(false);
+      setSaveResult({
+        success: true,
+        message: `${formData.fullName} has been updated successfully.`,
+      });
+    } catch (error) {
+      console.error("Error updating staff:", error);
+      setIsSaving(false);
+      setShowSaveModal(false);
+      setSaveResult({
+        success: false,
+        message: error?.response?.data?.message || error?.message || "Failed to update staff member.",
+      });
+    }
   };
 
   const handleCloseResultModal = () => {
@@ -276,7 +499,7 @@ export function StaffUpdatePage() {
             <h2 className="mb-4 text-[18px] font-bold text-slate-800">Staff Details</h2>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <label className="space-y-2">
+              <label className="space-y-2 md:col-span-2">
                 <span className="text-[12px] font-semibold text-slate-500">
                   Full Name <span className="text-rose-500">*</span>
                 </span>
@@ -288,22 +511,6 @@ export function StaffUpdatePage() {
                     onChange={(event) => handleInputChange("fullName", event.target.value)}
                     placeholder="Enter full name"
                     className={inputClassName}
-                    required
-                  />
-                </div>
-              </label>
-
-              <label className="space-y-2">
-                <span className="text-[12px] font-semibold text-slate-500">
-                  Staff ID <span className="text-rose-500">*</span>
-                </span>
-                <div className={inputWrapperClassName}>
-                  <span className="text-[12px] font-bold text-rose-300">#</span>
-                  <input
-                    type="text"
-                    value={formData.staffId}
-                    readOnly
-                    className={readOnlyInputClassName}
                     required
                   />
                 </div>
@@ -365,24 +572,9 @@ export function StaffUpdatePage() {
                   onChange={(event) => handleInputChange("assignedSalon", event.target.value)}
                   className={selectClassName}
                 >
-                  {STAFF_SALON_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="space-y-2">
-                <span className="text-[12px] font-semibold text-slate-500">Employment Type</span>
-                <select
-                  value={formData.employmentType}
-                  onChange={(event) => handleInputChange("employmentType", event.target.value)}
-                  className={selectClassName}
-                >
-                  {STAFF_EMPLOYMENT_TYPES.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
+                  {salons.map((salon) => (
+                    <option key={salon.salonId || salon.id} value={salon.name}>
+                      {salon.name}
                     </option>
                   ))}
                 </select>
@@ -395,7 +587,7 @@ export function StaffUpdatePage() {
                   onChange={(event) => handleInputChange("status", event.target.value)}
                   className={selectClassName}
                 >
-                  {STAFF_CREATE_STATUS_OPTIONS.map((option) => (
+                  {UPDATED_STATUS_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
@@ -403,56 +595,55 @@ export function StaffUpdatePage() {
                 </select>
               </label>
 
-              <label className="space-y-2">
-                <span className="text-[12px] font-semibold text-slate-500">Experience</span>
-                <div className={inputWrapperClassName}>
-                  <BriefcaseBusiness size={14} className="shrink-0 text-rose-300" />
-                  <input
-                    type="text"
-                    value={formData.experience}
-                    onChange={(event) => handleInputChange("experience", event.target.value)}
-                    placeholder="e.g. 4 years"
-                    className={inputClassName}
-                  />
-                </div>
-              </label>
-
-              <label className="space-y-2">
-                <span className="text-[12px] font-semibold text-slate-500">Emergency Contact</span>
-                <div className={inputWrapperClassName}>
-                  <Phone size={14} className="shrink-0 text-rose-300" />
-                  <input
-                    type="text"
-                    value={formData.emergencyContact}
-                    onChange={(event) => handleInputChange("emergencyContact", event.target.value)}
-                    placeholder="Name and number"
-                    className={inputClassName}
-                  />
-                </div>
-              </label>
-
               <label className="space-y-2 md:col-span-2">
-                <span className="text-[12px] font-semibold text-slate-500">Address</span>
-                <div className={`${inputWrapperClassName} items-start`}>
-                  <MapPin size={14} className="mt-0.5 shrink-0 text-rose-300" />
-                  <textarea
-                    value={formData.address}
-                    onChange={(event) => handleInputChange("address", event.target.value)}
-                    placeholder="Current home address"
-                    className={`${inputClassName} resize-none`}
-                    rows={3}
-                  />
+                <span className="text-[12px] font-semibold text-slate-500">Avatar</span>
+                <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-rose-200 bg-gradient-to-br from-[#fffafc] to-[#fff5f9] px-6 py-8 cursor-pointer transition-all duration-300 hover:border-rose-300 hover:bg-gradient-to-br hover:from-[#fff8fb] hover:to-[#fff1f6] hover:shadow-[0_8px_24px_rgba(226,93,143,0.12)]">
+                  {imagePreview ? (
+                    <div className="relative w-full flex items-center justify-center">
+                      <img crossOrigin="anonymous"
+                        src={imagePreview}
+                        alt="Preview"
+                        className="h-40 w-40 object-cover rounded-full shadow-lg border-4 border-rose-100"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        className="absolute top-0 right-1/4 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] text-white shadow-lg transition-transform duration-200 hover:scale-110"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center gap-3 cursor-pointer">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] text-white shadow-lg transition-transform duration-200 hover:scale-105">
+                        <User size={28} />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-base font-semibold text-slate-700">Click to upload staff avatar</p>
+                        <p className="text-xs text-slate-400 mt-1">PNG, JPG up to 5MB</p>
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
                 </div>
               </label>
             </div>
           </section>
 
           <section className="space-y-5">
-            <StaffSkillAssessmentSection
-              ratings={formData.skillRatings}
-              specialties={formData.specialties}
-              onRatingChange={handleSkillRatingChange}
-            />
+            {formData.role === "NAIL_ARTIST" && (
+              <StaffSkillAssessmentSection
+                ratings={formData.skillRatings}
+                specialties={specialties}
+                skillTypes={skillTypes}
+                onRatingChange={handleSkillRatingChange}
+              />
+            )}
             <label className="mt-5 block space-y-2">
               <span className="text-[12px] font-semibold text-slate-500">Notes</span>
               <textarea
@@ -655,3 +846,4 @@ export function StaffUpdatePage() {
     </section>
   );
 }
+

@@ -423,7 +423,7 @@ export function NailVariantCreatePage() {
             <div className="mt-4 overflow-hidden rounded-[18px] bg-[#f6edf2]">
               {previewImageUrl ? (
                 <img
-                  crossorigin="anonymous"
+                  crossOrigin="anonymous"
                   src={previewImageUrl}
                   alt={formValues.name || "Variant preview"}
                   className="h-64 w-full object-cover"

@@ -67,7 +67,7 @@ export function BuilderControls() {
                 type="button"
               >
                 {shape.imageUrl ? (
-                  <img alt="" className="shape-thumb" crossOrigin="anonymous" src={shape.imageUrl} />
+                  <img alt="" className="shape-thumb" src={shape.imageUrl} />
                 ) : null}
                 {shape.name}
               </button>
@@ -173,7 +173,7 @@ function ComponentPicker({
               type="button"
             >
               {component.imageUrl ? (
-                <img alt="" className="layer-thumb" crossOrigin="anonymous" src={component.imageUrl} />
+                <img alt="" className="layer-thumb" src={component.imageUrl} />
               ) : null}
               <span>{component.name}</span>
             </button>

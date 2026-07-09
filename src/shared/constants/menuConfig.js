@@ -1,6 +1,6 @@
 import { ROUTES } from "./routes";
 import { ROLES } from "./roles";
-import { BOOKING_ROWS } from "../../features/core/booking-management/services/mockBookings";
+import { BOOKING_ROWS } from "../bookings/services/mockBookings";
 import { NAIL_DESIGN_ROWS } from "../../features/admin/nails-design-management/services/mockNailDesigns";
 import { SALON_BRANCHES } from "../../features/admin/salon-management/services/mockSalon";
 import { SERVICE_ROWS } from "../../features/admin/service-pricing-management/services/mockServicePricing";
@@ -11,10 +11,14 @@ const STAFF_BOOKING_NAMES = new Set(["Ariana Vo", "Bao Tran", "Linh Pham"]);
 const MANAGER_BOOKING_BRANCHES = new Set(["District 1 Salon", "District 3 Salon"]);
 
 function getBookingCountByRole(role) {
-  if (role === ROLES.staff || role === ROLES.receptionist) {
+  if (role === ROLES.staff) {
     return BOOKING_ROWS.filter((booking) =>
       STAFF_BOOKING_NAMES.has(booking.staffName),
     ).length;
+  }
+
+  if (role === ROLES.receptionist) {
+    return BOOKING_ROWS.length;
   }
 
   if (role === ROLES.manager) {
@@ -73,6 +77,14 @@ export const MENU_CONFIG = {
       to: ROUTES.staffCustomerNails,
       icon: "palette",
       section: "Main",
+    },
+    {
+      key: "staff-waitting",
+      label: "Waitlist Alerts",
+      to: ROUTES.staffWaitting,
+      icon: "support",
+      section: "Main",
+      badge: "4",
     },
     {
       key: "staff-schedule",
@@ -252,7 +264,7 @@ export const MENU_CONFIG = {
     },
     {
       key: "admin-service-pricing",
-      label: "Services & Pricing",
+      label: "Services",
       to: ROUTES.adminServicePricing,
       icon: "palette",
       section: "Main",

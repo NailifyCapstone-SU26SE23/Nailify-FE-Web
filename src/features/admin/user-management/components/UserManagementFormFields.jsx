@@ -180,15 +180,6 @@ export function UserManagementFormFields({
           />
         </label>
 
-        <label className="space-y-2 md:col-span-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">Avatar URL</span>
-          <input
-            value={formValues.avatarUrl}
-            disabled
-            className={`${INPUT_CLASSNAME} ${DISABLED_INPUT_CLASSNAME}`}
-            placeholder="Avatar URL"
-          />
-        </label>
       </>
     );
   }

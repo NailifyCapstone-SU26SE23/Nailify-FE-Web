@@ -168,7 +168,7 @@ function DesignPreview({ design }) {
     <div className="h-52 overflow-hidden rounded-t-[16px] bg-[#f6edf2]">
       {design.previewImage ? (
         <img
-          crossorigin="anonymous"
+          crossOrigin="anonymous"
           src={design.previewImage}
           alt={design.uiTitle}
           className="h-full w-full object-cover"

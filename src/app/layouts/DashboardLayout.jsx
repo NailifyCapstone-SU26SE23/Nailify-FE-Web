@@ -106,7 +106,7 @@ function getHeaderContent(pathname, menus) {
       };
     case "admin-service-pricing":
       return {
-        title: "Service & Pricing Management",
+        title: "Service Management",
         description: "Manage services, prices, and estimated durations.",
       };
     default:
@@ -158,7 +158,10 @@ export function DashboardLayout() {
             onLogout={logout}
           />
 
-          <section className="flex-1 bg-white p-4 shadow-[0_18px_40px_rgba(94,76,62,0.08)] md:p-5 lg:min-h-0 lg:overflow-auto">
+          <section
+            data-dashboard-scroll="desktop"
+            className="flex-1 bg-white p-4 shadow-[0_18px_40px_rgba(94,76,62,0.08)] md:p-5 lg:min-h-0 lg:overflow-auto"
+          >
             <div className="flex min-h-full flex-col">
               <Outlet />
             </div>

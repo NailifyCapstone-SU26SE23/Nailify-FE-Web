@@ -73,6 +73,23 @@ function extractPaginationMeta(data, fallbackPageSize) {
   };
 }
 
+const MAX_BOOKING_PAGE_SIZE = 10;
+
+function normalizePageNumber(value) {
+  const parsedValue = Number(value);
+  return Number.isFinite(parsedValue) && parsedValue > 0 ? Math.floor(parsedValue) : 1;
+}
+
+function normalizeBookingPageSize(value) {
+  const parsedValue = Number(value);
+
+  if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
+    return MAX_BOOKING_PAGE_SIZE;
+  }
+
+  return Math.min(Math.floor(parsedValue), MAX_BOOKING_PAGE_SIZE);
+}
+
 export async function fetchReceptionistBookings(optionsOrDate) {
   const salonId = getSalonId();
   const isLegacyDateArg = typeof optionsOrDate === "string";
@@ -83,12 +100,14 @@ export async function fetchReceptionistBookings(optionsOrDate) {
     pageNumber,
     pageSize,
   } = options;
+  const normalizedPageNumber = normalizePageNumber(pageNumber ?? 1);
+  const normalizedPageSize = normalizeBookingPageSize(pageSize ?? MAX_BOOKING_PAGE_SIZE);
   const response = await axiosClient.get(`/Bookings/salon/${salonId}`, {
     headers: getAuthHeaders(),
     params: {
       ...(date ? { date } : {}),
-      ...(pageNumber ? { pageNumber } : {}),
-      ...(pageSize ? { pageSize } : {}),
+      pageNumber: normalizedPageNumber,
+      pageSize: normalizedPageSize,
     },
   });
 
@@ -98,7 +117,7 @@ export async function fetchReceptionistBookings(optionsOrDate) {
   if (includePagination) {
     return {
       items,
-      pagination: extractPaginationMeta(data, pageSize),
+      pagination: extractPaginationMeta(data, normalizedPageSize),
     };
   }
 

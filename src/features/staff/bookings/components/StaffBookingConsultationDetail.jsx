@@ -49,45 +49,60 @@ InfoCard.propTypes = {
   value: PropTypes.string.isRequired,
 };
 
-function ServiceInfoCard({ label, value, note, services = [] }) {
+function ServiceInfoCard({services = [] }) {
   return (
-    <article className="rounded-[16px] border border-[#f6dbe7] bg-[#fff9fc] p-4 xl:col-span-3">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{label}</p>
-          <p className="mt-2 text-sm font-extrabold text-[#3f2b3f]">{value}</p>
-          {note ? <p className="mt-1 text-xs text-[#9a7f90]">{note}</p> : null}
-        </div>
-        {services.length > 1 ? (
-          <span className="rounded-full border border-[#f2bfd4] bg-white px-4 py-1.5 text-xs font-bold text-[#ea4f93]">
-            Multi-service
-          </span>
-        ) : null}
-      </div>
+    <article className="rounded-[16px] bg-[#fff9fc] xl:col-span-3">
 
       {services.length ? (
-        <div className="mt-5 space-y-3">
-          {services.map((service, index) => (
-            <div
-              key={service.id || `${service.name}-${index}`}
-              className="flex items-center justify-between gap-3 rounded-[18px] border border-[#f2bfd4] bg-white px-4 py-4"
-            >
-              <div className="min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
-                  Service {index + 1}
-                </p>
-                <p className="mt-2 break-words text-sm font-extrabold text-[#ea4f93]">{service.name || "--"}</p>
-                {service.nailServiceName ? (
-                  <p className="mt-1 text-xs font-semibold text-[#7a6275]">
-                    Nail service: {service.nailServiceName}
+        <div className="overflow-hidden rounded-[20px] border border-[#f2bfd4] bg-white">
+          <div className="hidden grid-cols-[minmax(0,1.8fr)_110px_150px_120px] items-center gap-3 border-b border-[#f8dce8] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f7_100%)] px-5 py-3 md:grid">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Service</p>
+            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Qty</p>
+            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Price</p>
+            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Duration</p>
+          </div>
+
+          <div className="divide-y divide-[#f9dfeb]">
+            {services.map((service, index) => (
+              <div
+                key={service.id || `${service.name}-${index}`}
+                className="px-4 py-4 md:grid md:grid-cols-[minmax(0,1.8fr)_110px_150px_120px] md:items-center md:gap-3 md:px-5"
+              >
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
+                    Service {index + 1}
                   </p>
-                ) : null}
+                  <p className="mt-2 break-words text-sm font-extrabold text-[#ea4f93]">{service.name || "--"}</p>
+                  {service.nailServiceName ? (
+                    <p className="mt-1 text-xs font-semibold text-[#7a6275]">
+                      Nail service: {service.nailServiceName}
+                    </p>
+                  ) : null}
+                </div>
+
+                <div className="mt-4 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Qty</p>
+                  <span className="inline-flex rounded-full border border-[#f6dbe7] bg-[#fff9fc] px-3 py-1 text-[11px] font-bold text-[#6f5c6b]">
+                    {service.quantity || 1}
+                  </span>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Price</p>
+                  <span className="inline-flex rounded-full border border-[#d8f0df] bg-[#f1fcf4] px-3 py-1 text-[11px] font-bold text-[#16975f]">
+                    {service.price || "--"}
+                  </span>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Duration</p>
+                  <span className="inline-flex rounded-full bg-[#f4efff] px-4 py-2 text-sm font-extrabold text-[#8c63ef]">
+                    {service.duration || "--"}
+                  </span>
+                </div>
               </div>
-              <span className="shrink-0 rounded-full bg-[#f4efff] px-4 py-2 text-sm font-extrabold text-[#8c63ef]">
-                {service.duration || "--"}
-              </span>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       ) : null}
     </article>
@@ -95,14 +110,14 @@ function ServiceInfoCard({ label, value, note, services = [] }) {
 }
 
 ServiceInfoCard.propTypes = {
-  label: PropTypes.string.isRequired,
-  note: PropTypes.string,
   services: PropTypes.arrayOf(
     PropTypes.shape({
       duration: PropTypes.string,
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string,
       nailServiceName: PropTypes.string,
+      price: PropTypes.string,
+      quantity: PropTypes.number,
     }),
   ),
   value: PropTypes.string.isRequired,
@@ -195,9 +210,9 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
               Nail Variant Detail
             </p>
             <h3 className="mt-2 text-2xl font-extrabold text-[#ea4f93]">{variantDetail.name}</h3>
-            <p className="mt-1 text-sm text-[#a88a9d]">
+            {/* <p className="mt-1 text-sm text-[#a88a9d]">
               ID #{variantDetail.nailVariantId} • Nail Design #{variantDetail.nailDesignId}
-            </p>
+            </p> */}
           </div>
           <button
             type="button"
@@ -212,6 +227,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
           <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
             <div className="space-y-4">
               <img
+                crossOrigin="anonymous"
                 src={variantDetail.imageUrl}
                 alt={variantDetail.name}
                 className="h-72 w-full rounded-[22px] border border-[#f4dbe7] object-cover"
@@ -229,12 +245,12 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                 <InfoCard
                   label="Variant Name"
                   value={variantDetail.name || "--"}
-                  note={`Variant ID: ${variantDetail.nailVariantId || "--"}`}
+                // note={`Variant ID: ${variantDetail.nailVariantId || "--"}`}
                 />
                 <InfoCard
                   label="Design Reference"
                   value={`Design #${variantDetail.nailDesignId || "--"}`}
-                  note={`Shape ID: ${variantDetail.nailShapeId || "--"} • Surface ID: ${variantDetail.nailSurfaceId || "--"}`}
+                // note={`Shape ID: ${variantDetail.nailShapeId || "--"} • Surface ID: ${variantDetail.nailSurfaceId || "--"}`}
                 />
               </div>
 
@@ -243,6 +259,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Nail Shape</p>
                   <div className="mt-3 flex items-start gap-3">
                     <img
+                      crossOrigin="anonymous"
                       src={variantDetail.nailShape?.imageUrl || variantDetail.imageUrl}
                       alt={variantDetail.nailShape?.name || "Nail shape"}
                       className="h-20 w-20 rounded-2xl border border-[#f4dbe7] object-cover"
@@ -446,6 +463,7 @@ function SuggestedCard({ item }) {
   return (
     <article className="flex items-center gap-3 rounded-[14px] border border-[#f6dbe7] bg-white p-2.5">
       <img
+        crossOrigin="anonymous"
         src={item.image}
         alt={item.name}
         className="h-11 w-11 rounded-xl object-cover"
@@ -475,8 +493,10 @@ export function StaffBookingConsultationDetail({
   isCurrentDesignConfirmed = false,
   isCustomerNailConfirmed = false,
   requiresCustomerNailConfirmation = false,
+  isPendingBooking = false,
   isServiceInProgress = false,
   isServiceCompleted = false,
+  isCancelledBooking = false,
   onDelete,
   onOpenDesignStudio,
   onOpenUpdateBooking,
@@ -524,6 +544,7 @@ export function StaffBookingConsultationDetail({
             <div className="mt-5 flex flex-col gap-5">
               <div className="flex flex-col gap-4 md:flex-row md:items-start">
                 <img
+                  crossOrigin="anonymous"
                   src={data.customer.avatar}
                   alt={data.customer.name}
                   className="h-14 w-14 rounded-full border-[3px] border-[#f4d6e4] object-cover"
@@ -611,6 +632,7 @@ export function StaffBookingConsultationDetail({
 
                   <div className="mt-5 flex flex-col gap-4 lg:flex-row">
                     <img
+                      crossOrigin="anonymous"
                       src={data.design.image}
                       alt={data.design.name}
                       className="h-40 w-full rounded-[18px] object-cover lg:w-44"
@@ -655,7 +677,7 @@ export function StaffBookingConsultationDetail({
                 </article>
               ) : null}
 
-              {!isServiceInProgress && !isServiceCompleted ? (
+              {!isCancelledBooking && !isPendingBooking && !isServiceInProgress && !isServiceCompleted ? (
                 <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
                   <SectionTitle icon={Search} title="Customer Consultation" />
                   <div className="mt-5 flex flex-col items-center gap-6 text-center">
@@ -666,11 +688,10 @@ export function StaffBookingConsultationDetail({
                           type="button"
                           onClick={onConfirmCustomerNail}
                           disabled={isCustomerNailConfirmed || isServiceCompleted}
-                          className={`inline-flex flex-1 items-center justify-center gap-2 rounded-[14px] px-5 py-4 text-sm font-bold ${
-                            isCustomerNailConfirmed || isServiceCompleted
-                              ? "cursor-default bg-[#eef7ff] text-[#327adf]"
-                              : "border border-[#d8cbff] bg-white text-[#7c63d8]"
-                          }`}
+                          className={`inline-flex flex-1 items-center justify-center gap-2 rounded-[14px] px-5 py-4 text-sm font-bold ${isCustomerNailConfirmed || isServiceCompleted
+                            ? "cursor-default bg-[#eef7ff] text-[#327adf]"
+                            : "border border-[#d8cbff] bg-white text-[#7c63d8]"
+                            }`}
                         >
                           <Check size={16} />
                           {confirmCustomerNailButtonLabel}
@@ -725,7 +746,7 @@ export function StaffBookingConsultationDetail({
                 </p>
               </article>
 
-              {!isServiceCompleted ? (
+              {!isCancelledBooking && !isPendingBooking && !isServiceCompleted ? (
                 <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
                   <SectionTitle icon={ClipboardCheck} title="Final Confirmation Checklist" />
                   <div className="mt-5 space-y-3">
@@ -733,14 +754,14 @@ export function StaffBookingConsultationDetail({
                       <div
                         key={item.label}
                         className={`flex items-center gap-3 rounded-[14px] border px-4 py-3 text-sm font-semibold ${item.checked
-                            ? "border-[#f2a9c9] bg-[#fff1f7] text-[#d74f8d]"
-                            : "border-[#f0d8e3] bg-white text-[#6f5c6b]"
+                          ? "border-[#f2a9c9] bg-[#fff1f7] text-[#d74f8d]"
+                          : "border-[#f0d8e3] bg-white text-[#6f5c6b]"
                           }`}
                       >
                         <span
                           className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${item.checked
-                              ? "border-[#df5c96] bg-[#df5c96] text-white"
-                              : "border-[#e4cbd7] bg-[#fff7fb] text-transparent"
+                            ? "border-[#df5c96] bg-[#df5c96] text-white"
+                            : "border-[#e4cbd7] bg-[#fff7fb] text-transparent"
                             }`}
                         >
                           <Check size={12} />
@@ -754,11 +775,10 @@ export function StaffBookingConsultationDetail({
                     type="button"
                     onClick={onStartServiceSession}
                     disabled={!canProceedToService}
-                    className={`mt-5 w-full rounded-[14px] px-5 py-4 text-sm font-bold ${
-                      canProceedToService
-                        ? "bg-[image:var(--gradient-accent)] text-white shadow-[0_16px_28px_rgba(236,72,153,0.2)]"
-                        : "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
-                    }`}
+                    className={`mt-5 w-full rounded-[14px] px-5 py-4 text-sm font-bold ${canProceedToService
+                      ? "bg-[image:var(--gradient-accent)] text-white shadow-[0_16px_28px_rgba(236,72,153,0.2)]"
+                      : "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
+                      }`}
                   >
                     {isServiceInProgress ? "Continue Service" : "Proceed to Service Session"}
                   </button>
@@ -845,6 +865,7 @@ export function StaffBookingConsultationDetail({
                     </p>
                     <div className="mt-2 flex items-center gap-3 rounded-[14px] border border-[#f6dbe7] bg-white p-2.5">
                       <img
+                        crossOrigin="anonymous"
                         src={data.customerHistory.lastUpload.image}
                         alt={data.customerHistory.lastUpload.title}
                         className="h-12 w-12 rounded-xl object-cover"
@@ -873,7 +894,7 @@ export function StaffBookingConsultationDetail({
                 </div>
               </article> */}
 
-              {!isServiceCompleted ? (
+              {!isCancelledBooking && !isPendingBooking && !isServiceCompleted ? (
                 <article className="rounded-[18px] border border-[#f3d5e2] bg-white p-4">
                   <SectionTitle
                     icon={CheckCheck}
@@ -904,11 +925,10 @@ export function StaffBookingConsultationDetail({
                       type="button"
                       onClick={onStartServiceSession}
                       disabled={!canProceedToService}
-                      className={`flex w-full items-center justify-center gap-2 rounded-[12px] px-4 py-2.5 text-xs font-bold ${
-                        canProceedToService
-                          ? "bg-[image:var(--gradient-accent)] text-white"
-                          : "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
-                      }`}
+                      className={`flex w-full items-center justify-center gap-2 rounded-[12px] px-4 py-2.5 text-xs font-bold ${canProceedToService
+                        ? "bg-[image:var(--gradient-accent)] text-white"
+                        : "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
+                        }`}
                     >
                       <ArrowUp size={13} />
                       {isServiceInProgress ? "Continue Service" : "Start Service"}
@@ -930,19 +950,22 @@ export function StaffBookingConsultationDetail({
 }
 
 StaffBookingConsultationDetail.propTypes = {
+  isCancelledBooking: PropTypes.bool,
   data: PropTypes.shape({
     artistInitials: PropTypes.string.isRequired,
     bookingCode: PropTypes.string.isRequired,
     bookingInfo: PropTypes.arrayOf(
       PropTypes.shape({
         label: PropTypes.string.isRequired,
-        note: PropTypes.string.isRequired,
+        note: PropTypes.string,
         services: PropTypes.arrayOf(
           PropTypes.shape({
             duration: PropTypes.string,
             id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
             name: PropTypes.string,
             nailServiceName: PropTypes.string,
+            price: PropTypes.string,
+            quantity: PropTypes.number,
           }),
         ),
         tone: PropTypes.oneOf(["default", "success"]),
@@ -1065,6 +1088,7 @@ StaffBookingConsultationDetail.propTypes = {
   }).isRequired,
   isCustomerNailConfirmed: PropTypes.bool,
   isCurrentDesignConfirmed: PropTypes.bool,
+  isPendingBooking: PropTypes.bool,
   requiresCustomerNailConfirmation: PropTypes.bool,
   isServiceInProgress: PropTypes.bool,
   isServiceCompleted: PropTypes.bool,

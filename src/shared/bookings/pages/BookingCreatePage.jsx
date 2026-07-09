@@ -1,7 +1,7 @@
 import { CalendarPlus, Save } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
+import { ActionConfirmModal } from "../../components/ui/ActionConfirmModal";
 import { BookingFormFields } from "../components/BookingFormFields";
 import { BookingHeroCard } from "../components/BookingHeroCard";
 import { BookingSnapshotCard } from "../components/BookingSnapshotCard";

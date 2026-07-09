@@ -41,13 +41,39 @@ function unwrapResponse(response, fallbackMessage, isDetail = false, includePagi
   return payload.data;
 }
 
+const MAX_BOOKING_PAGE_SIZE = 10;
+
+function normalizePageNumber(value) {
+  const parsedValue = Number(value);
+  return Number.isFinite(parsedValue) && parsedValue > 0 ? Math.floor(parsedValue) : 1;
+}
+
+function normalizeBookingPageSize(value) {
+  const parsedValue = Number(value);
+
+  if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
+    return MAX_BOOKING_PAGE_SIZE;
+  }
+
+  return Math.min(Math.floor(parsedValue), MAX_BOOKING_PAGE_SIZE);
+}
+
 export async function fetchBookingsBySalonId(salonId, options = {}) {
   const { pageNumber = 1, pageSize = 10 } = options;
-  console.log("Fetching bookings for salon:", salonId, { pageNumber, pageSize });
+  const normalizedPageNumber = normalizePageNumber(pageNumber);
+  const normalizedPageSize = normalizeBookingPageSize(pageSize);
+
+  console.log("Fetching bookings for salon:", salonId, {
+    pageNumber: normalizedPageNumber,
+    pageSize: normalizedPageSize,
+  });
   try {
     const response = await axiosClient.get(`/Bookings/salon/${salonId}`, {
       headers: getAuthHeaders(),
-      params: { pageNumber, pageSize }
+      params: {
+        pageNumber: normalizedPageNumber,
+        pageSize: normalizedPageSize,
+      }
     });
 
     return unwrapResponse(response, "Failed to load bookings.", false, true);
@@ -100,16 +126,16 @@ export async function confirmBooking(bookingId) {
   }
 }
 
-export async function rejectBooking(bookingId) {
+export async function rejectBooking(bookingId, reason) {
   const normalizedId = String(bookingId || "").trim();
 
   if (!normalizedId) {
     throw new Error("Booking ID is required.");
   }
 
-  console.log("Rejecting booking:", normalizedId);
+  console.log("Rejecting booking:", normalizedId, "with reason:", reason);
   try {
-    const response = await axiosClient.post(`/Bookings/${normalizedId}/reject`, null, {
+    const response = await axiosClient.post(`/Bookings/${normalizedId}/reject`, { reason }, {
       headers: getAuthHeaders(),
     });
 
@@ -121,16 +147,21 @@ export async function rejectBooking(bookingId) {
   }
 }
 
-export async function cancelBooking(bookingId) {
+export async function cancelBooking(bookingId, reason, holdToken) {
   const normalizedId = String(bookingId || "").trim();
 
   if (!normalizedId) {
     throw new Error("Booking ID is required.");
   }
 
-  console.log("Cancelling booking:", normalizedId);
+  const payload = { reason };
+  if (holdToken) {
+    payload.holdToken = holdToken;
+  }
+
+  console.log("Cancelling booking:", normalizedId, "with payload:", payload);
   try {
-    const response = await axiosClient.post(`/Bookings/${normalizedId}/cancel`, null, {
+    const response = await axiosClient.post(`/Bookings/${normalizedId}/cancel`, payload, {
       headers: getAuthHeaders(),
     });
 

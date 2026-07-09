@@ -15,7 +15,7 @@ export function UploadView() {
             <p>Drag & Drop or Click to Upload your Hand Photo</p>
           </div>
           <div className="hand-preview-container" style={{ display: 'none' }}>
-            <img id="hand-preview-img" alt="" />
+            <img crossOrigin="anonymous" id="hand-preview-img" alt="" />
           </div>
         </div>
         <button
@@ -29,3 +29,4 @@ export function UploadView() {
     </div>
   );
 }
+

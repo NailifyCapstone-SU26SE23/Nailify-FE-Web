@@ -20,6 +20,7 @@ import {
   formatComponentCurrency,
   formatComponentDuration,
 } from "../services/componentsManagementService";
+import { Image } from "antd";
 
 function createEmptyForm() {
   return {
@@ -249,8 +250,8 @@ export function ComponentCreatePage() {
               <span className="text-[13px] font-semibold text-slate-600">Preview Image</span>
               <label className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-rose-200 bg-gradient-to-br from-[#fffafc] to-[#fff5f9] px-6 py-8 transition hover:border-rose-300 hover:shadow-[0_8px_24px_rgba(226,93,143,0.12)]">
                 {imagePreview ? (
-                  <img
-                    crossorigin="anonymous"
+                  <Image
+                    crossOrigin="anonymous"
                     src={imagePreview}
                     alt="Component preview"
                     className="h-48 w-full rounded-2xl object-cover shadow-lg"
@@ -287,7 +288,7 @@ export function ComponentCreatePage() {
             <div className="space-y-4">
               <div className="flex h-48 items-center justify-center overflow-hidden rounded-2xl border border-rose-100 bg-[#fff8fb]">
                 {imagePreview ? (
-                  <img crossorigin="anonymous" src={imagePreview} alt="Preview" className="h-full w-full object-cover" />
+                  <img crossOrigin="anonymous" src={imagePreview} alt="Preview" className="h-full w-full object-cover" />
                 ) : (
                   <div className="text-center text-sm font-medium text-slate-400">
                     <ImageIcon size={24} className="mx-auto mb-3 text-rose-300" />

@@ -42,6 +42,7 @@ const getSalonId = () => {
   return salonId;
 };
 const BOOKING_PAGE_SIZE = 10;
+const API_BOOKING_PAGE_SIZE = 10;
 
 function Card({ className = "", children }) {
   return (
@@ -644,15 +645,33 @@ export function ManagerBookingListPage() {
     setError("");
     try {
       const salonId = getSalonId();
-      // Load ALL bookings with a large page size (1000)
-      const result = await fetchBookingsBySalonId(salonId, { pageNumber: 1, pageSize: 1000 });
-      console.log("loadBookings all bookings result:", result);
+      const firstPageResult = await fetchBookingsBySalonId(salonId, {
+        pageNumber: 1,
+        pageSize: API_BOOKING_PAGE_SIZE,
+      });
+      console.log("loadBookings first page result:", firstPageResult);
 
-      let apiBookings = [];
-      if (result?.items) {
-        apiBookings = result.items;
-      } else if (Array.isArray(result)) {
-        apiBookings = result;
+      let apiBookings = Array.isArray(firstPageResult?.items) ? [...firstPageResult.items] : [];
+      const totalPages = Math.max(1, Number(firstPageResult?.totalPages || 1));
+
+      if (totalPages > 1) {
+        const remainingPageRequests = [];
+
+        for (let pageNumber = 2; pageNumber <= totalPages; pageNumber += 1) {
+          remainingPageRequests.push(
+            fetchBookingsBySalonId(salonId, {
+              pageNumber,
+              pageSize: API_BOOKING_PAGE_SIZE,
+            }),
+          );
+        }
+
+        const remainingResults = await Promise.all(remainingPageRequests);
+        remainingResults.forEach((pageResult) => {
+          if (Array.isArray(pageResult?.items)) {
+            apiBookings = apiBookings.concat(pageResult.items);
+          }
+        });
       }
 
       const uiBookings = apiBookings.map(mapApiBookingToUiFormat);
@@ -1354,7 +1373,7 @@ export function ManagerBookingListPage() {
                                     <Maximize2 size={16} />
                                   </button>
                                 </div>
-                                <img
+                                <img crossOrigin="anonymous"
                                   src={
                                     typeof selectedBookingForDrawer.qrCode === "string" && selectedBookingForDrawer.qrCode.startsWith("data:")
                                       ? selectedBookingForDrawer.qrCode
@@ -1387,7 +1406,7 @@ export function ManagerBookingListPage() {
                       <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f0d9e8]">
                         <h3 className="text-sm font-bold text-[#2d1b35] mb-4">Check-in Photo</h3>
                         <div className="overflow-hidden rounded-xl border border-[#f0d9e8] bg-gradient-to-br from-white to-[#fffafb] p-2">
-                          <img src={selectedBookingForDrawer.checkInImageUrl} alt="Check-in" className="max-w-full rounded-lg w-full object-cover" />
+                          <img crossOrigin="anonymous" src={selectedBookingForDrawer.checkInImageUrl} alt="Check-in" className="max-w-full rounded-lg w-full object-cover" />
                         </div>
                       </div>
                     )}
@@ -1420,7 +1439,7 @@ export function ManagerBookingListPage() {
                   </button>
                 </div>
                 {selectedBookingForDrawer && (
-                  <img
+                  <img crossOrigin="anonymous"
                     src={
                       typeof selectedBookingForDrawer.qrCode === "string" && selectedBookingForDrawer.qrCode.startsWith("data:")
                         ? selectedBookingForDrawer.qrCode
@@ -1708,3 +1727,4 @@ export function ManagerBookingListPage() {
     </section>
   );
 }
+

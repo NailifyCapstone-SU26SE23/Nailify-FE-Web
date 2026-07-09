@@ -17,10 +17,12 @@ export const ROUTES = {
   staffBookingServiceSession: "/staff/bookings/:bookingId/service-session",
   staffCustomerNails: "/staff/customer-nails",
   staffCustomerNailDetail: "/staff/customer-nails/:customerNailId",
+  staffWaitting: "/staff/waitting",
   receptionistBookings: "/receptionist/bookings",
   receptionistBookingsCreate: "/receptionist/bookings/create",
   receptionistBookingDetail: "/receptionist/bookings/:bookingId",
   receptionistBookingCheckout: "/receptionist/bookings/:bookingId/checkout",
+  receptionistCustomersCreate: "/receptionist/customers/create",
 
   // Manager routes
   managerRoot: "/manager",

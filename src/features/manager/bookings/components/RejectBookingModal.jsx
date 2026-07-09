@@ -39,7 +39,8 @@ export function RejectBookingModal({
 
     try {
       setIsLoading(true);
-      await rejectBooking(bookingId);
+      const fullReason = details ? `${reason} - ${details}` : reason;
+      await rejectBooking(bookingId, fullReason);
       toast.success("Booking rejected successfully!");
       onSuccess?.();
       onClose();
