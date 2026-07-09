@@ -1,6 +1,5 @@
 import {
   Calendar,
-  ChevronLeft,
   Clock3,
   CreditCard,
   ScanQrCode,
@@ -10,7 +9,7 @@ import {
   Search,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { ROUTES } from "../../../../shared/constants/routes";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { ROLES } from "../../../../shared/constants/roles";
@@ -221,7 +220,6 @@ function getArtistDisplayName(booking) {
 
 export function ManagerBookingDetailPage() {
   const { bookingId } = useParams();
-  const navigate = useNavigate();
   const [booking, setBooking] = useState(null);
   const [customer, setCustomer] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -319,13 +317,7 @@ export function ManagerBookingDetailPage() {
           type="error"
           showIcon
         />
-        <Link
-          to={roleConfig.listRoute}
-          className="inline-flex items-center gap-1.5 rounded-full bg-[#ea4f93] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#df4588] w-fit"
-        >
-          <ChevronLeft size={14} />
-          Back to Bookings
-        </Link>
+
       </section>
     );
   }
@@ -388,14 +380,6 @@ export function ManagerBookingDetailPage() {
             
             {/* Action Buttons Container - Responsive Layout */}
             <div className="flex w-full flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end lg:w-auto">
-              <button
-                type="button"
-                onClick={() => navigate(roleConfig.listRoute)}
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-[#f0d9e8] bg-white px-4 py-2.5 text-xs font-semibold text-[#ea4f93] transition hover:border-[#ea4f93] hover:bg-[#fff7fb] disabled:opacity-50 whitespace-nowrap"
-              >
-                <ChevronLeft size={16} />
-                Back
-              </button>
 
               {/* Only show action buttons if not final, not checked in, and not in progress */}
               {!isFinalStatus && 
@@ -490,7 +474,7 @@ export function ManagerBookingDetailPage() {
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-widest text-[#a88a9f] mb-3">Check-in Photo</p>
                     <div className="overflow-hidden rounded-xl border border-[#f0d9e8] bg-gradient-to-br from-white to-[#fffafb] p-2">
-                      <img src={booking.checkInImageUrl} alt="Check-in" className="max-w-full rounded-lg w-full object-cover" />
+                      <img crossOrigin="anonymous" src={booking.checkInImageUrl} alt="Check-in" className="max-w-full rounded-lg w-full object-cover" />
                     </div>
                   </div>
                 )}
@@ -501,11 +485,11 @@ export function ManagerBookingDetailPage() {
                       {Array.isArray(booking.checkOutImagesUrl) ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           {booking.checkOutImagesUrl.map((url, idx) => (
-                            <img key={idx} src={url} alt={`Check-out ${idx + 1}`} className="rounded-lg w-full h-40 object-cover" />
+                            <img crossOrigin="anonymous" key={idx} src={url} alt={`Check-out ${idx + 1}`} className="rounded-lg w-full h-40 object-cover" />
                           ))}
                         </div>
                       ) : (
-                        <img src={booking.checkOutImagesUrl} alt="Check-out" className="max-w-full rounded-lg w-full object-cover" />
+                        <img crossOrigin="anonymous" src={booking.checkOutImagesUrl} alt="Check-out" className="max-w-full rounded-lg w-full object-cover" />
                       )}
                     </div>
                   </div>
@@ -558,7 +542,7 @@ export function ManagerBookingDetailPage() {
                               <div>
                                 <p className="text-xs font-semibold uppercase tracking-widest text-[#a88a9f] mb-2">Nail Variant</p>
                                 <div className="rounded-lg border border-[#f0d9e8] overflow-hidden">
-                                  <img 
+                                  <img crossOrigin="anonymous" 
                                     src={item.nailVariantImageUrl.replace(/`/g, '')} 
                                     alt={item.nailVariantName} 
                                     className="w-full h-40 object-cover"
@@ -571,7 +555,7 @@ export function ManagerBookingDetailPage() {
                               <div>
                                 <p className="text-xs font-semibold uppercase tracking-widest text-[#a88a9f] mb-2">Customer Nail</p>
                                 <div className="rounded-lg border border-[#f0d9e8] overflow-hidden">
-                                  <img 
+                                  <img crossOrigin="anonymous" 
                                     src={item.customerNailImageUrl.replace(/`/g, '')} 
                                     alt={item.customerNailName} 
                                     className="w-full h-40 object-cover"
@@ -632,7 +616,7 @@ export function ManagerBookingDetailPage() {
                             <Maximize2 size={16} />
                           </button>
                         </div>
-                        <img
+                        <img crossOrigin="anonymous"
                           src={
                             typeof booking.qrCode === "string" && booking.qrCode.startsWith("data:")
                               ? booking.qrCode
@@ -686,7 +670,7 @@ export function ManagerBookingDetailPage() {
               <X size={20} />
             </button>
           </div>
-          <img
+          <img crossOrigin="anonymous"
             src={
               typeof booking?.qrCode === "string" && booking.qrCode.startsWith("data:")
                 ? booking.qrCode
@@ -705,20 +689,24 @@ export function ManagerBookingDetailPage() {
         onClose={() => setIsConfirmModalOpen(false)}
         bookingId={normalizedBookingId}
         onSuccess={() => loadBooking({ silent: true })}
+        booking={booking}
       />
       <CancelBookingModal
         open={isCancelModalOpen}
         onClose={() => setIsCancelModalOpen(false)}
         bookingId={normalizedBookingId}
         onSuccess={() => loadBooking({ silent: true })}
+        booking={booking}
       />
       <RejectBookingModal
         open={isRejectModalOpen}
         onClose={() => setIsRejectModalOpen(false)}
         bookingId={normalizedBookingId}
         onSuccess={() => loadBooking({ silent: true })}
+        booking={booking}
       />
 
     </section>
   );
 }
+

@@ -1,9 +1,10 @@
-import { ArrowLeft, FolderTree, Pencil, Save, ShieldCheck, Trash2, X } from "lucide-react";
+import { ArrowLeft, FolderTree, Pencil, Plus, Save, ShieldCheck, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ROUTES } from "../../../../shared/constants/routes";
+import { createAdminCategory } from "../../categories-management/services/categoriesManagementService";
 import {
   CATEGORY_TYPE_STATUS_OPTIONS,
   deleteAdminCategoryType,
@@ -37,6 +38,19 @@ export function CategoryTypeDetailPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
+  const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [createCategoryError, setCreateCategoryError] = useState("");
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+
+  const loadCategoryTypeDetail = async (targetCategoryTypeId) => {
+    const response = await fetchAdminCategoryTypeDetail(targetCategoryTypeId);
+    setCategoryType(response);
+    setDraft({
+      name: response.name,
+      status: response.status,
+    });
+  };
 
   useEffect(() => {
     if (!location.state?.flashMessage && !location.state?.startInEdit) {
@@ -54,17 +68,10 @@ export function CategoryTypeDetailPage() {
       setError("");
 
       try {
-        const response = await fetchAdminCategoryTypeDetail(categoryTypeId);
-
         if (!isMounted) {
           return;
         }
-
-        setCategoryType(response);
-        setDraft({
-          name: response.name,
-          status: response.status,
-        });
+        await loadCategoryTypeDetail(categoryTypeId);
       } catch (loadError) {
         if (!isMounted) {
           return;
@@ -196,6 +203,46 @@ export function CategoryTypeDetailPage() {
     }
   };
 
+  const handleOpenCreateCategoryModal = () => {
+    setNewCategoryName("");
+    setCreateCategoryError("");
+    setShowCreateCategoryModal(true);
+  };
+
+  const handleCreateCategory = async () => {
+    if (!categoryType) {
+      return;
+    }
+
+    const normalizedName = String(newCategoryName || "").trim();
+
+    if (!normalizedName) {
+      setCreateCategoryError("Category name is required.");
+      return;
+    }
+
+    setIsCreatingCategory(true);
+
+    try {
+      const createdCategory = await createAdminCategory({
+        name: normalizedName,
+        categoryTypeId: categoryType.categoryTypeId,
+      });
+
+      await loadCategoryTypeDetail(categoryType.categoryTypeId);
+      setShowCreateCategoryModal(false);
+      setNewCategoryName("");
+      setCreateCategoryError("");
+      toast.success(`${createdCategory.name} created successfully.`);
+    } catch (createError) {
+      const message = createError instanceof Error ? createError.message : "Failed to create category.";
+      setCreateCategoryError(message);
+      toast.error(message);
+    } finally {
+      setIsCreatingCategory(false);
+    }
+  };
+
   if (!isLoading && !categoryType) {
     return <Navigate to={ROUTES.adminCategoryTypes} replace />;
   }
@@ -276,7 +323,7 @@ export function CategoryTypeDetailPage() {
           <div className="text-center text-sm text-slate-600">Loading category type details...</div>
         </div>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_360px]">
+        <div className="grid gap-4 ">
           <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
             <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
               <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
@@ -318,7 +365,17 @@ export function CategoryTypeDetailPage() {
               </label>
 
               <div className="rounded-2xl border border-rose-100 bg-[#fff8fb] p-4">
-                <p className="text-[13px] font-semibold text-slate-600">Nested Categories</p>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-[13px] font-semibold text-slate-600">Nested Categories</p>
+                  <button
+                    type="button"
+                    onClick={handleOpenCreateCategoryModal}
+                    className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.22)] transition hover:opacity-95"
+                  >
+                    <Plus size={13} />
+                    Add Category
+                  </button>
+                </div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {categoryType?.categories?.length ? (
                     categoryType.categories.map((category) => (
@@ -337,23 +394,6 @@ export function CategoryTypeDetailPage() {
             </div>
           </section>
 
-          <aside className="space-y-4">
-            <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
-              <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
-                <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
-                Summary
-              </h2>
-
-              <div className="space-y-3 rounded-2xl border border-rose-100 bg-[#fff8fb] p-4">
-                {summaryItems.map(([label, value]) => (
-                  <div key={label} className="flex items-start justify-between gap-3 text-sm">
-                    <span className="font-semibold text-slate-500">{label}</span>
-                    <span className="text-right font-bold text-slate-800">{value}</span>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </aside>
         </div>
       )}
 
@@ -396,6 +436,87 @@ export function CategoryTypeDetailPage() {
         }
         warnings={["Backend delete for this resource changes the status to inactive."]}
       />
+
+      {showCreateCategoryModal ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#311422]/35 p-4 backdrop-blur-[2px]">
+          <div className="w-full max-w-lg rounded-[24px] border border-[#f6d8e6] bg-white shadow-[0_28px_80px_rgba(93,28,63,0.18)]">
+            <div className="flex items-start justify-between gap-3 border-b border-[#f6dbe7] px-6 py-5">
+              <div>
+                <h3 className="text-lg font-extrabold text-[#432744]">Add Nested Category</h3>
+                <p className="mt-1 text-sm text-[#b1859d]">
+                  Create a new category under {categoryType?.name || "this category type"}.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (isCreatingCategory) {
+                    return;
+                  }
+
+                  setShowCreateCategoryModal(false);
+                  setCreateCategoryError("");
+                }}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#f4d5e3] text-[#a17a91]"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="space-y-4 px-6 py-5">
+              <label className="space-y-2.5">
+                <span className="text-[13px] font-semibold text-slate-600">Category Name</span>
+                <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
+                  <FolderTree size={14} className="shrink-0 text-rose-300" />
+                  <input
+                    type="text"
+                    value={newCategoryName}
+                    onChange={(event) => {
+                      setNewCategoryName(event.target.value);
+                      if (createCategoryError) {
+                        setCreateCategoryError("");
+                      }
+                    }}
+                    placeholder="Enter category name"
+                    className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none placeholder:text-rose-300"
+                  />
+                </div>
+              </label>
+
+              {createCategoryError ? (
+                <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-600">
+                  {createCategoryError}
+                </div>
+              ) : null}
+
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isCreatingCategory) {
+                      return;
+                    }
+
+                    setShowCreateCategoryModal(false);
+                    setCreateCategoryError("");
+                  }}
+                  className="rounded-full border border-[#f4d5e3] px-4 py-2 text-sm font-bold text-[#8a7082]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreateCategory}
+                  disabled={isCreatingCategory}
+                  className="rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-5 py-2 text-sm font-bold text-white disabled:opacity-70"
+                >
+                  {isCreatingCategory ? "Creating..." : "Create Category"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

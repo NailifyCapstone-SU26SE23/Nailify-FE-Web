@@ -1,21 +1,21 @@
-import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Eye, LoaderCircle, RefreshCcw, Search, SquareCheckBig, UserPlus, XCircle } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Eye, LoaderCircle, RefreshCcw, Search, SquareCheckBig, UserPlus, UserRound } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Table } from "antd";
 import toast from "react-hot-toast";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import { usePagination } from "../../../../shared/hooks/usePagination";
 import {
   ROUTES,
   getReceptionistBookingDetailRoute,
 } from "../../../../shared/constants/routes";
+import { AssignReceptionistArtistModal } from "../components/AssignReceptionistArtistModal";
 import {
-  confirmReceptionistBooking,
+  checkoutReceptionistBooking,
   fetchReceptionistBookings,
   fetchReceptionistSalonDetail,
   getReceptionistSalonId,
   manualCheckInReceptionistBooking,
-  rejectReceptionistBooking,
 } from "../services/receptionistBookingService";
 
 function formatCurrency(value) {
@@ -95,16 +95,22 @@ function normalizeBooking(booking) {
 }
 
 function canManualCheckIn(status) {
-  return !["CheckedIn", "Completed", "Cancelled"].includes(status);
+  return !["CheckedIn", "Completed", "ServiceCompleted", "Cancelled"].includes(status);
+}
+
+function isReadyForCheckout(status) {
+  return String(status || "").trim() === "ServiceCompleted";
 }
 
 const BOOKING_PAGE_SIZE = 10;
-const RECEPTIONIST_BOOKING_FETCH_SIZE = 200;
-const STATUS_OPTIONS = ["All", "Pending", "Confirmed", "CheckedIn", "Completed", "Cancelled"];
+const RECEPTIONIST_BOOKING_FETCH_SIZE = 10;
+const STATUS_OPTIONS = ["All", "Pending", "Confirmed", "Approved", "CheckedIn", "Completed", "Cancelled"];
 
 export function ReceptionistBookingListPage() {
+  const location = useLocation();
   const navigate = useNavigate();
   const todayDate = useMemo(() => getTodayDateParam(), []);
+  const [flashMessage] = useState(location.state?.flashMessage ?? "");
   const [draftQuery, setDraftQuery] = useState("");
   const [appliedQuery, setAppliedQuery] = useState("");
   const [dateFrom, setDateFrom] = useState(todayDate);
@@ -122,16 +128,42 @@ export function ReceptionistBookingListPage() {
   const [bookings, setBookings] = useState([]);
   const [salonName, setSalonName] = useState("Receptionist Booking Management");
   const [salonMeta, setSalonMeta] = useState("Bookings are loaded from salon API.");
+  const [assignArtistBooking, setAssignArtistBooking] = useState(null);
   const loadBookings = useCallback(async () => {
     setIsLoading(true);
     setError("");
 
     try {
-      const data = await fetchReceptionistBookings({
+      const firstPageResult = await fetchReceptionistBookings({
         pageNumber: 1,
         pageSize: RECEPTIONIST_BOOKING_FETCH_SIZE,
+        includePagination: true,
       });
-      setBookings(Array.isArray(data) ? data.map(normalizeBooking) : []);
+      let allBookings = Array.isArray(firstPageResult?.items) ? [...firstPageResult.items] : [];
+      const totalPages = Math.max(1, Number(firstPageResult?.pagination?.totalPages || 1));
+
+      if (totalPages > 1) {
+        const remainingPageRequests = [];
+
+        for (let pageNumber = 2; pageNumber <= totalPages; pageNumber += 1) {
+          remainingPageRequests.push(
+            fetchReceptionistBookings({
+              pageNumber,
+              pageSize: RECEPTIONIST_BOOKING_FETCH_SIZE,
+              includePagination: true,
+            }),
+          );
+        }
+
+        const remainingResults = await Promise.all(remainingPageRequests);
+        remainingResults.forEach((pageResult) => {
+          if (Array.isArray(pageResult?.items)) {
+            allBookings = allBookings.concat(pageResult.items);
+          }
+        });
+      }
+
+      setBookings(allBookings.map(normalizeBooking));
     } catch (loadError) {
       const message = loadError instanceof Error ? loadError.message : "Failed to load bookings.";
       setError(message);
@@ -148,6 +180,14 @@ export function ReceptionistBookingListPage() {
 
     return () => window.clearTimeout(timerId);
   }, [loadBookings]);
+
+  useEffect(() => {
+    if (!location.state?.flashMessage) {
+      return;
+    }
+
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, location.state, navigate]);
 
   useEffect(() => {
     const timerId = window.setTimeout(() => {
@@ -243,6 +283,42 @@ export function ReceptionistBookingListPage() {
     };
   }, [bookings, filteredBookings.length]);
 
+  function updateBookingRow(updatedBooking) {
+    if (!updatedBooking?.bookingId) {
+      return;
+    }
+
+    setBookings((currentBookings) =>
+      currentBookings.map((booking) =>
+        booking.bookingId === updatedBooking.bookingId ? normalizeBooking(updatedBooking) : booking,
+      ),
+    );
+  }
+
+  const handleManualCheckIn = useCallback(async (bookingId) => {
+    try {
+      const updatedBooking = await manualCheckInReceptionistBooking(bookingId);
+      updateBookingRow(updatedBooking);
+      toast.success("Customer checked in successfully.");
+    } catch (actionError) {
+      const message =
+        actionError instanceof Error ? actionError.message : "Failed to check in booking.";
+      toast.error(message);
+    }
+  }, []);
+
+  const handleCheckout = useCallback(async (bookingId) => {
+    try {
+      const updatedBooking = await checkoutReceptionistBooking(bookingId);
+      updateBookingRow(updatedBooking);
+      toast.success("Checkout completed successfully.");
+    } catch (actionError) {
+      const message =
+        actionError instanceof Error ? actionError.message : "Failed to check out booking.";
+      toast.error(message);
+    }
+  }, []);
+
   const bookingColumns = useMemo(() => ([
     {
       title: "Customer",
@@ -300,15 +376,15 @@ export function ReceptionistBookingListPage() {
               icon: Eye,
               onSelect: () => navigate(getReceptionistBookingDetailRoute(booking.bookingId)),
             },
-            // {
-            //   key: "confirm",
-            //   label: "Confirm Booking",
-            //   icon: CheckCircle2,
-            //   className: "text-[#1f9d61]",
-            //   onSelect: () => void handleConfirmBooking(booking.bookingId),
-            // },
             ...(canManualCheckIn(booking.status)
               ? [
+                {
+                  key: "assign-artist",
+                  label: booking.artistName && booking.artistName !== "Unassigned" ? "Change Nail Artist" : "Assign Nail Artist",
+                  icon: UserRound,
+                  className: "text-[#7c63d8]",
+                  onSelect: () => setAssignArtistBooking(booking),
+                },
                 {
                   key: "check-in",
                   label: "Check In",
@@ -318,66 +394,22 @@ export function ReceptionistBookingListPage() {
                 },
               ]
               : []),
-            // {
-            //   key: "reject",
-            //   label: "Reject Booking",
-            //   icon: XCircle,
-            //   className: "text-[#df4e86]",
-            //   onSelect: () => void handleRejectBooking(booking.bookingId),
-            // },
+            ...(isReadyForCheckout(booking.status)
+              ? [
+                {
+                  key: "checkout",
+                  label: "Checkout",
+                  icon: SquareCheckBig,
+                  className: "text-[#4c71d9]",
+                  onSelect: () => void handleCheckout(booking.bookingId),
+                },
+              ]
+              : []),
           ]}
         />
       ),
     },
-  ]), [handleConfirmBooking, handleManualCheckIn, handleRejectBooking, navigate]);
-
-  function updateBookingRow(updatedBooking) {
-    if (!updatedBooking?.bookingId) {
-      return;
-    }
-
-    setBookings((currentBookings) =>
-      currentBookings.map((booking) =>
-        booking.bookingId === updatedBooking.bookingId ? normalizeBooking(updatedBooking) : booking,
-      ),
-    );
-  }
-
-  async function handleConfirmBooking(bookingId) {
-    try {
-      const updatedBooking = await confirmReceptionistBooking(bookingId);
-      updateBookingRow(updatedBooking);
-      toast.success("Booking confirmed successfully.");
-    } catch (actionError) {
-      const message =
-        actionError instanceof Error ? actionError.message : "Failed to confirm booking.";
-      toast.error(message);
-    }
-  }
-
-  async function handleRejectBooking(bookingId) {
-    try {
-      const updatedBooking = await rejectReceptionistBooking(bookingId);
-      updateBookingRow(updatedBooking);
-      toast.success("Booking rejected successfully.");
-    } catch (actionError) {
-      const message =
-        actionError instanceof Error ? actionError.message : "Failed to reject booking.";
-      toast.error(message);
-    }
-  }
-
-  async function handleManualCheckIn(bookingId) {
-    try {
-      const updatedBooking = await manualCheckInReceptionistBooking(bookingId);
-      updateBookingRow(updatedBooking);
-      toast.success("Customer checked in successfully.");
-    } catch (actionError) {
-      const message =
-        actionError instanceof Error ? actionError.message : "Failed to check in booking.";
-      toast.error(message);
-    }
-  }
+  ]), [handleCheckout, handleManualCheckIn, navigate]);
 
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
@@ -557,6 +589,12 @@ export function ReceptionistBookingListPage() {
           </div>
         ) : null}
 
+        {flashMessage ? (
+          <div className="mt-4 rounded-[16px] border border-[#d8f0e0] bg-[#edfdf4] px-4 py-3 text-sm font-medium text-[#16975f]">
+            {flashMessage}
+          </div>
+        ) : null}
+
         {isLoading ? (
           <div className="mt-6 flex min-h-56 items-center justify-center rounded-[20px] border border-[#f7dce8] bg-[#fffafd]">
             <div className="flex items-center gap-3 text-sm font-medium text-[#b38a9f]">
@@ -614,11 +652,29 @@ export function ReceptionistBookingListPage() {
                         ...(canManualCheckIn(booking.status)
                           ? [
                             {
+                              key: "assign-artist",
+                              label: booking.artistName && booking.artistName !== "Unassigned" ? "Change Nail Artist" : "Assign Nail Artist",
+                              icon: UserRound,
+                              className: "text-[#7c63d8]",
+                              onSelect: () => setAssignArtistBooking(booking),
+                            },
+                            {
                               key: "check-in",
                               label: "Check In",
                               icon: SquareCheckBig,
                               className: "text-[#4c71d9]",
                               onSelect: () => void handleManualCheckIn(booking.bookingId),
+                            },
+                          ]
+                          : []),
+                        ...(isReadyForCheckout(booking.status)
+                          ? [
+                            {
+                              key: "checkout",
+                              label: "Checkout",
+                              icon: SquareCheckBig,
+                              className: "text-[#4c71d9]",
+                              onSelect: () => void handleCheckout(booking.bookingId),
                             },
                           ]
                           : []),
@@ -675,6 +731,17 @@ export function ReceptionistBookingListPage() {
           </div>
         )}
       </article>
+
+      <AssignReceptionistArtistModal
+        open={Boolean(assignArtistBooking)}
+        bookingId={assignArtistBooking?.bookingId || ""}
+        currentArtistName={assignArtistBooking?.artistName || ""}
+        onClose={() => setAssignArtistBooking(null)}
+        onAssigned={(updatedBooking) => {
+          updateBookingRow(updatedBooking);
+          setAssignArtistBooking(null);
+        }}
+      />
     </section>
   );
 }

@@ -19,6 +19,26 @@ function sanitizePersistedPhoto(photo) {
   };
 }
 
+function sanitizeSessionPhoto(photo) {
+  if (!photo || typeof photo !== "object") {
+    return null;
+  }
+
+  const previewUrl = String(photo.previewUrl || "").trim();
+
+  if (!previewUrl) {
+    return null;
+  }
+
+  return {
+    fileName: photo.fileName || "Uploaded photo",
+    previewUrl,
+    uploadedAt: photo.uploadedAt || "Uploaded",
+    fileSizeLabel: photo.fileSizeLabel ?? null,
+    uploadedToServer: Boolean(photo.uploadedToServer),
+  };
+}
+
 function normalizeLoadedSessions(sessions) {
   if (!sessions || typeof sessions !== "object") {
     return {};
@@ -61,6 +81,8 @@ const serviceSessionSlice = createSlice({
       state.sessions[bookingId] = {
         ...(state.sessions[bookingId] ?? {}),
         ...session,
+        beforePhoto: sanitizeSessionPhoto(session.beforePhoto),
+        afterPhoto: sanitizeSessionPhoto(session.afterPhoto),
       };
     },
   },

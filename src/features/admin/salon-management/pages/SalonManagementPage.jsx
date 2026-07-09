@@ -38,6 +38,10 @@ import {
 } from "../services/mockSalon";
 import { fetchSalons, deleteSalon } from "../services/salonsService";
 
+const SALON_PLACEHOLDER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"><rect width="400" height="200" rx="24" fill="#fde7ef"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#8f365c" font-family="Arial, sans-serif" font-size="30" font-weight="700">Salon</text></svg>',
+)}`;
+
 const SUMMARY_ICON_MAP = {
   briefcase: BriefcaseBusiness,
   check: Check,
@@ -105,7 +109,13 @@ function RightMetricCard({ title, branch, city, concern, values, buttonLabel }) 
         <span>{title}</span>
       </div>
       <div className="mb-4 flex gap-3">
-        <img src={values.image} alt={branch} className="h-12 w-14 rounded-xl object-cover" />
+        <img
+          crossOrigin="anonymous"
+          src={values.image}
+          alt={branch}
+          className="h-12 w-14 rounded-xl object-cover"
+          referrerPolicy="no-referrer"
+        />
         <div className="space-y-0.5">
           <p className="text-[12px] font-bold text-slate-800">{branch}</p>
           <p className="text-[11px] font-semibold text-slate-400">{city}</p>
@@ -153,7 +163,13 @@ function BranchCard({ branch, onClick }) {
       onClick={onClick}
       className="overflow-hidden rounded-2xl border border-rose-100 bg-white text-left shadow-[0_18px_32px_rgba(226,93,143,0.08)] transition hover:-translate-y-1 hover:border-rose-200 hover:shadow-[0_24px_40px_rgba(226,93,143,0.14)]"
     >
-      <img src={branch.image} alt={branch.name} className="h-36 w-full object-cover" />
+      <img
+        crossOrigin="anonymous"
+        src={branch.image}
+        alt={branch.name}
+        className="h-36 w-full object-cover"
+        referrerPolicy="no-referrer"
+      />
       <div className="space-y-3 p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -254,7 +270,6 @@ CloseIconButton.propTypes = {
 };
 
 function mapApiSalonToUiFormat(apiSalon) {
-  console.log("Mapping API salon:", apiSalon);
   const status = apiSalon.status || "Active";
   
   return {
@@ -264,7 +279,7 @@ function mapApiSalonToUiFormat(apiSalon) {
     address: apiSalon.address || "No address",
     manager: apiSalon.managerName || apiSalon.manager || "Unassigned",
     phone: apiSalon.phone || "No phone",
-    image: apiSalon.imageUrl || apiSalon.image || "https://placehold.co/400x200/eb5b92/ffffff?text=Salon",
+    image: apiSalon.imageUrl || apiSalon.image || SALON_PLACEHOLDER_IMAGE,
     status: status,
     statusColor: "bg-[#e6fdf0] text-[#16975f]",
     statusTone: "bg-[#e6fdf0] text-[#16975f]",
@@ -640,9 +655,11 @@ export function SalonManagementPage() {
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
                               <img
+                                crossOrigin="anonymous"
                                 src={salon.image}
                                 alt={salon.name}
                                 className="h-10 w-10 rounded-xl object-cover"
+                                referrerPolicy="no-referrer"
                               />
                               <div>
                                 <p className="font-bold text-slate-700">{salon.name}</p>

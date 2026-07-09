@@ -1,7 +1,7 @@
 import { Navigate } from "react-router-dom";
 import { ManagerLayout } from "../layouts/ManagerLayout";
 import { ManagerDashboardPage } from "../../features/core/dashboard/pages/ManagerDashboardPage";
-import { BookingCreatePage } from "../../features/core/booking-management/pages/BookingCreatePage";
+import { BookingCreatePage } from "../../shared/bookings/pages/BookingCreatePage";
 import { ManagerBookingDetailPage } from "../../features/manager/bookings/pages/ManagerBookingDetailPage";
 import { ManagerBookingListPage } from "../../features/manager/bookings/pages/ManagerBookingListPage";
 import { StaffCreatePage } from "../../features/manager/staff-artist-management/pages/StaffCreatePage";

@@ -2,8 +2,10 @@ import { Navigate } from "react-router-dom";
 import { DashboardLayout } from "../layouts/DashboardLayout";
 import { ReceptionistDashboardPage } from "../../features/core/dashboard/pages/ReceptionistDashboardPage";
 import { ReceptionistBookingListPage } from "../../features/receptionist/bookings/pages/ReceptionistBookingListPage";
-import { ReceptionistBookingCreatePage } from "../../features/receptionist/bookings/pages/ReceptionistBookingCreatePage";
 import { ReceptionistBookingDetailPage } from "../../features/receptionist/bookings/pages/ReceptionistBookingDetailPage";
+import { ReceptionistCheckoutPaymentPage } from "../../features/receptionist/payments";
+import { ReceptionistCustomerCreatePage } from "../../features/receptionist/customers";
+import { ReceptionistWalkInBookingCreatePage } from "../../features/receptionist/walk-in-bookings";
 import { AuthGuard } from "../../shared/components/guards/AuthGuard";
 import { RoleGuard } from "../../shared/components/guards/RoleGuard";
 import { ROLES } from "../../shared/constants/roles";
@@ -34,11 +36,19 @@ export const receptionistRoutes = [
       },
       {
         path: ROUTES.receptionistBookingsCreate,
-        element: <ReceptionistBookingCreatePage />,
+        element: <ReceptionistWalkInBookingCreatePage />,
+      },
+      {
+        path: ROUTES.receptionistCustomersCreate,
+        element: <ReceptionistCustomerCreatePage />,
       },
       {
         path: ROUTES.receptionistBookingDetail,
         element: <ReceptionistBookingDetailPage />,
+      },
+      {
+        path: ROUTES.receptionistBookingCheckout,
+        element: <ReceptionistCheckoutPaymentPage />,
       },
     ],
   },

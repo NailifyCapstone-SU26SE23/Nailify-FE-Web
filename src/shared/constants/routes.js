@@ -17,9 +17,12 @@ export const ROUTES = {
   staffBookingServiceSession: "/staff/bookings/:bookingId/service-session",
   staffCustomerNails: "/staff/customer-nails",
   staffCustomerNailDetail: "/staff/customer-nails/:customerNailId",
+  staffWaitting: "/staff/waitting",
   receptionistBookings: "/receptionist/bookings",
   receptionistBookingsCreate: "/receptionist/bookings/create",
   receptionistBookingDetail: "/receptionist/bookings/:bookingId",
+  receptionistBookingCheckout: "/receptionist/bookings/:bookingId/checkout",
+  receptionistCustomersCreate: "/receptionist/customers/create",
 
   // Manager routes
   managerRoot: "/manager",
@@ -65,6 +68,9 @@ export const ROUTES = {
   adminCategoryTypes: "/admin/category-types",
   adminCategoryTypesCreate: "/admin/category-types/create",
   adminCategoryTypeDetail: "/admin/category-types/:categoryTypeId",
+  adminSkillTypes: "/admin/skill-types",
+  adminSkillTypesCreate: "/admin/skill-types/create",
+  adminSkillTypeDetail: "/admin/skill-types/:skillTypeId",
   adminCategories: "/admin/categories",
   adminCategoriesCreate: "/admin/categories/create",
   adminCategoryDetail: "/admin/categories/:categoryId",
@@ -72,6 +78,10 @@ export const ROUTES = {
   adminNailDesignCategories: "/admin/nail-designs/categories",
   adminNailDesignsCreate: "/admin/nail-designs/create",
   adminNailDesignDetail: "/admin/nail-designs/:designId",
+  adminNailVariantCreate: "/admin/nail-designs/:designId/variants/create",
+  adminNailVariantCreateTryOn: "/admin/nail-designs/:designId/variants/create/try-on",
+  adminNailVariantDetail: "/admin/nail-designs/:designId/variants/:variantId",
+  adminNailVariantTryOn: "/admin/nail-designs/:designId/variants/:variantId/try-on",
 };
 
 export const getStaffBookingDetailRoute = (bookingId) =>
@@ -84,6 +94,8 @@ export const getStaffBookingServiceSessionRoute = (bookingId) =>
   `/staff/bookings/${bookingId}/service-session`;
 export const getReceptionistBookingDetailRoute = (bookingId) =>
   `/receptionist/bookings/${bookingId}`;
+export const getReceptionistBookingCheckoutRoute = (bookingId) =>
+  `/receptionist/bookings/${bookingId}/checkout`;
 export const getManagerBookingDetailRoute = (bookingId) =>
   `/manager/bookings/${bookingId}`;
 export const getManagerStaffUpdateRoute = (staffId) =>
@@ -100,7 +112,19 @@ export const getAdminNailSurfaceDetailRoute = (surfaceId) => `/admin/nail-surfac
 export const getAdminComponentDetailRoute = (componentId) => `/admin/components/${componentId}`;
 export const getAdminProcedureDetailRoute = (procedureId) => `/admin/procedures/${procedureId}`;
 export const getAdminCategoryTypeDetailRoute = (categoryTypeId) => `/admin/category-types/${categoryTypeId}`;
+export const getAdminSkillTypeDetailRoute = (skillTypeId) => `/admin/skill-types/${skillTypeId}`;
 export const getAdminCategoryDetailRoute = (categoryId) => `/admin/categories/${categoryId}`;
 export const getAdminNailDesignCategoriesRoute = () => "/admin/nail-designs/categories";
 export const getAdminNailDesignDetailRoute = (designId) =>
   `/admin/nail-designs/${designId}`;
+export const getAdminNailVariantDetailRoute = (designId, variantId) =>
+  `/admin/nail-designs/${designId}/variants/${variantId}`;
+export const getAdminNailVariantCreateRoute = (designId) =>
+  `/admin/nail-designs/${designId}/variants/create`;
+export const getAdminNailVariantCreateTryOnRoute = (designId) =>
+  `/admin/nail-designs/${designId}/variants/create/try-on`;
+export const getAdminNailVariantTryOnRoute = (designId, variantId, mode) => {
+  const basePath = `/admin/nail-designs/${designId}/variants/${variantId}/try-on`;
+
+  return mode ? `${basePath}?mode=${mode}&nailVariantId=${variantId}` : `${basePath}?nailVariantId=${variantId}`;
+};

@@ -1,4 +1,5 @@
 import {
+  ArrowUpDown,
   ChevronLeft,
   ChevronRight,
   CircleAlert,
@@ -334,11 +335,61 @@ function getAlertTone(tone) {
   }
 }
 
+function SortableHeader({ label, sortKey, selectedSort, onToggle }) {
+  const isActive = selectedSort.startsWith(`${sortKey}-`);
+  const isDesc = selectedSort === `${sortKey}-desc`;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onToggle(sortKey)}
+      className={`inline-flex items-center gap-1.5 font-semibold transition ${isActive ? "text-[#ea4f93]" : "text-[#5f4a5c] hover:text-[#ea4f93]"}`}
+    >
+      <span>{label}</span>
+      <ArrowUpDown size={13} className={isActive ? "text-[#ea4f93]" : "text-[#d39bb5]"} />
+      {isActive ? <span className="text-[10px] font-bold">{isDesc ? "DESC" : "ASC"}</span> : null}
+    </button>
+  );
+}
+
+function sortServices(items, sortValue) {
+  const [sortKey = "service", sortDirection = "asc"] = String(sortValue || "service-asc").split("-");
+  const directionMultiplier = sortDirection === "desc" ? -1 : 1;
+
+  return [...items].sort((left, right) => {
+    const getSortValue = (item) => {
+      switch (sortKey) {
+        case "category":
+          return item.category || "";
+        case "price":
+          return Number(item.price || 0);
+        case "duration":
+          return Number(item.duration || 0);
+        case "status":
+          return item.status || "";
+        case "service":
+        default:
+          return item.name || "";
+      }
+    };
+
+    const leftValue = getSortValue(left);
+    const rightValue = getSortValue(right);
+
+    if (typeof leftValue === "number" && typeof rightValue === "number") {
+      return (leftValue - rightValue) * directionMultiplier;
+    }
+
+    return String(leftValue).localeCompare(String(rightValue)) * directionMultiplier;
+  });
+}
+
 export function ServicePricingManagementPage() {
   const [services, setServices] = useState([]);
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
+  const [selectedSort, setSelectedSort] = useState("service-asc");
   const [flashMessage, setFlashMessage] = useState("");
   const [serviceModal, setServiceModal] = useState({ open: false, mode: "create", recordId: null });
   const [deleteState, setDeleteState] = useState(null);
@@ -421,6 +472,11 @@ export function ServicePricingManagementPage() {
     });
   }, [activeCategory, services]);
 
+  const sortedServices = useMemo(
+    () => sortServices(filteredServices, selectedSort),
+    [filteredServices, selectedSort],
+  );
+
   const summaryCards = useMemo(
     () => buildServicePricingSummary(services, []).filter((item) => item.label !== "Add-ons Available"),
     [services],
@@ -488,12 +544,6 @@ export function ServicePricingManagementPage() {
       onSelect: () => openEditService(service),
     },
     {
-      key: "edit-duration",
-      label: "Edit Duration",
-      icon: CircleAlert,
-      onSelect: () => openEditService(service),
-    },
-    {
       key: "delete-service",
       label: "Delete Service",
       icon: Trash2,
@@ -511,15 +561,39 @@ export function ServicePricingManagementPage() {
     setServiceError("Service create/update API is not connected yet.");
   };
 
+  const handleSortToggle = (sortKey) => {
+    setSelectedSort((current) => {
+      if (current.startsWith(`${sortKey}-`)) {
+        return current.endsWith("-asc") ? `${sortKey}-desc` : `${sortKey}-asc`;
+      }
+
+      return `${sortKey}-asc`;
+    });
+  };
+
   const serviceColumns = useMemo(() => ([
     {
-      title: "Service Name",
+      title: (
+        <SortableHeader
+          label="Service Name"
+          sortKey="service"
+          selectedSort={selectedSort}
+          onToggle={handleSortToggle}
+        />
+      ),
       dataIndex: "name",
       key: "name",
       render: (value) => <span className="text-sm font-bold text-[#432744]">{value}</span>,
     },
     {
-      title: "Category",
+      title: (
+        <SortableHeader
+          label="Category"
+          sortKey="category"
+          selectedSort={selectedSort}
+          onToggle={handleSortToggle}
+        />
+      ),
       dataIndex: "category",
       key: "category",
       render: (value) => (
@@ -531,19 +605,40 @@ export function ServicePricingManagementPage() {
       ),
     },
     {
-      title: "Base Price",
+      title: (
+        <SortableHeader
+          label="Base Price"
+          sortKey="price"
+          selectedSort={selectedSort}
+          onToggle={handleSortToggle}
+        />
+      ),
       dataIndex: "price",
       key: "price",
       render: (value) => <span className="text-sm text-[#5f4b5d]">{formatVndCurrency(value)}</span>,
     },
     {
-      title: "Est. Duration",
+      title: (
+        <SortableHeader
+          label="Est. Duration"
+          sortKey="duration"
+          selectedSort={selectedSort}
+          onToggle={handleSortToggle}
+        />
+      ),
       dataIndex: "duration",
       key: "duration",
       render: (value) => <span className="text-sm text-[#5f4b5d]">{formatDurationMinutes(value)}</span>,
     },
     {
-      title: "Status",
+      title: (
+        <SortableHeader
+          label="Status"
+          sortKey="status"
+          selectedSort={selectedSort}
+          onToggle={handleSortToggle}
+        />
+      ),
       dataIndex: "status",
       key: "status",
       render: (value) => <StatusBadge status={value} />,
@@ -553,37 +648,11 @@ export function ServicePricingManagementPage() {
       key: "actions",
       render: (_, service) => <ActionDropdown items={getServiceActionItems(service)} />,
     },
-  ]), [getServiceActionItems]);
+  ]), [getServiceActionItems, selectedSort]);
 
   return (
     <>
       <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4fa_100%)]">
-        <div className="flex flex-col gap-3 rounded-[20px] border border-[#f8deea] bg-white/70 p-4 shadow-[0_12px_26px_rgba(236,72,153,0.05)] lg:flex-row lg:items-center lg:justify-between">
-          <label className="relative w-full max-w-md">
-            <Search
-              size={15}
-              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#dd8eb0]"
-            />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search services or pricing..."
-              className="h-10 w-full rounded-full border border-[#f4d7e5] bg-[#fffafc] pl-11 pr-4 text-sm text-[#5b4658] outline-none placeholder:text-[#d4a1b8] focus:border-[#ea4f93]"
-            />
-          </label>
-
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={openCreateService}
-              className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
-            >
-              <Plus size={13} className="mr-1.5 inline" />
-              Add Service
-            </button>
-          </div>
-        </div>
-
         {flashMessage ? (
           <div className="rounded-[18px] border border-[#d8f5e7] bg-[#eefcf5] px-4 py-3 text-sm font-medium text-[#16975f]">
             {flashMessage}
@@ -596,12 +665,60 @@ export function ServicePricingManagementPage() {
           ))}
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {serviceCategories.map((category) => (
-            <button key={category} type="button" onClick={() => setActiveCategory(category)}>
-              <Pill active={category === activeCategory}>{category}</Pill>
+        <div className="flex flex-col gap-3 rounded-[20px] border border-[#f8deea] bg-white/70 p-4 shadow-[0_12px_26px_rgba(236,72,153,0.05)] xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex w-full flex-col gap-3 xl:max-w-6xl xl:flex-row xl:items-center">
+            <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+              <label className="relative flex-1">
+                <Search
+                  size={15}
+                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#dd8eb0]"
+                />
+                <input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Search services or pricing..."
+                  className="h-10 w-full rounded-full border border-[#f4d7e5] bg-[#fffafc] pl-11 pr-4 text-sm text-[#5b4658] outline-none placeholder:text-[#d4a1b8] focus:border-[#ea4f93]"
+                />
+              </label>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setServiceMetaData((current) => ({
+                    ...current,
+                    currentPage: 1,
+                  }))
+                }
+                className="inline-flex h-10 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
+              >
+                <Search size={14} className="mr-2 shrink-0" />
+                Search
+              </button>
+            </div>
+
+            <select
+              value={activeCategory}
+              onChange={(event) => setActiveCategory(event.target.value)}
+              className="h-10 rounded-full border border-[#f4d7e5] bg-[#fffafc] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
+            >
+              {serviceCategories.map((category) => (
+                <option key={category} value={category}>
+                  {category === "All" ? "All categories" : category}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={openCreateService}
+              className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)] w-35"
+            >
+              <Plus size={13} className="mr-1.5 inline" />
+              Add Service
             </button>
-          ))}
+          </div>
         </div>
 
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_310px]">
@@ -618,7 +735,7 @@ export function ServicePricingManagementPage() {
               <Table
                 rowKey="id"
                 columns={serviceColumns}
-                dataSource={filteredServices}
+                dataSource={sortedServices}
                 loading={isLoadingServices}
                 pagination={false}
                 scroll={{ x: 1080 }}

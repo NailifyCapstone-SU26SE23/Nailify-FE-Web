@@ -4,7 +4,6 @@ import {
   Check,
   CheckCheck,
   ClipboardCheck,
-  Clock3,
   Eye,
   Palette,
   PencilLine,
@@ -16,24 +15,6 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { PropTypes } from "../../../../shared/utils/propTypes";
-
-const STEP_STYLES = {
-  complete: {
-    bullet: "bg-[image:var(--gradient-accent)] text-white shadow-[0_10px_20px_rgba(236,72,153,0.18)]",
-    label: "text-[#ea4f93]",
-    line: "bg-[#f3bfd4]",
-  },
-  current: {
-    bullet: "bg-[image:var(--gradient-accent)] text-white shadow-[0_10px_20px_rgba(236,72,153,0.18)]",
-    label: "text-[#ea4f93]",
-    line: "bg-[#f3bfd4]",
-  },
-  upcoming: {
-    bullet: "border border-[#f2cade] bg-[#fff7fb] text-[#d45b9f]",
-    label: "text-[#9f8a9a]",
-    line: "bg-[#f6dce8]",
-  },
-};
 
 function SectionTitle({ icon: Icon, title }) {
   return (
@@ -68,45 +49,60 @@ InfoCard.propTypes = {
   value: PropTypes.string.isRequired,
 };
 
-function ServiceInfoCard({ label, value, note, services = [] }) {
+function ServiceInfoCard({services = [] }) {
   return (
-    <article className="rounded-[16px] border border-[#f6dbe7] bg-[#fff9fc] p-4 xl:col-span-3">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{label}</p>
-          <p className="mt-2 text-sm font-extrabold text-[#3f2b3f]">{value}</p>
-          {note ? <p className="mt-1 text-xs text-[#9a7f90]">{note}</p> : null}
-        </div>
-        {services.length > 1 ? (
-          <span className="rounded-full border border-[#f2bfd4] bg-white px-4 py-1.5 text-xs font-bold text-[#ea4f93]">
-            Multi-service
-          </span>
-        ) : null}
-      </div>
+    <article className="rounded-[16px] bg-[#fff9fc] xl:col-span-3">
 
       {services.length ? (
-        <div className="mt-5 space-y-3">
-          {services.map((service, index) => (
-            <div
-              key={service.id || `${service.name}-${index}`}
-              className="flex items-center justify-between gap-3 rounded-[18px] border border-[#f2bfd4] bg-white px-4 py-4"
-            >
-              <div className="min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
-                  Service {index + 1}
-                </p>
-                <p className="mt-2 break-words text-sm font-extrabold text-[#ea4f93]">{service.name || "--"}</p>
-                {service.nailServiceName ? (
-                  <p className="mt-1 text-xs font-semibold text-[#7a6275]">
-                    Nail service: {service.nailServiceName}
+        <div className="overflow-hidden rounded-[20px] border border-[#f2bfd4] bg-white">
+          <div className="hidden grid-cols-[minmax(0,1.8fr)_110px_150px_120px] items-center gap-3 border-b border-[#f8dce8] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f7_100%)] px-5 py-3 md:grid">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Service</p>
+            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Qty</p>
+            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Price</p>
+            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Duration</p>
+          </div>
+
+          <div className="divide-y divide-[#f9dfeb]">
+            {services.map((service, index) => (
+              <div
+                key={service.id || `${service.name}-${index}`}
+                className="px-4 py-4 md:grid md:grid-cols-[minmax(0,1.8fr)_110px_150px_120px] md:items-center md:gap-3 md:px-5"
+              >
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
+                    Service {index + 1}
                   </p>
-                ) : null}
+                  <p className="mt-2 break-words text-sm font-extrabold text-[#ea4f93]">{service.name || "--"}</p>
+                  {service.nailServiceName ? (
+                    <p className="mt-1 text-xs font-semibold text-[#7a6275]">
+                      Nail service: {service.nailServiceName}
+                    </p>
+                  ) : null}
+                </div>
+
+                <div className="mt-4 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Qty</p>
+                  <span className="inline-flex rounded-full border border-[#f6dbe7] bg-[#fff9fc] px-3 py-1 text-[11px] font-bold text-[#6f5c6b]">
+                    {service.quantity || 1}
+                  </span>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Price</p>
+                  <span className="inline-flex rounded-full border border-[#d8f0df] bg-[#f1fcf4] px-3 py-1 text-[11px] font-bold text-[#16975f]">
+                    {service.price || "--"}
+                  </span>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Duration</p>
+                  <span className="inline-flex rounded-full bg-[#f4efff] px-4 py-2 text-sm font-extrabold text-[#8c63ef]">
+                    {service.duration || "--"}
+                  </span>
+                </div>
               </div>
-              <span className="shrink-0 rounded-full bg-[#f4efff] px-4 py-2 text-sm font-extrabold text-[#8c63ef]">
-                {service.duration || "--"}
-              </span>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       ) : null}
     </article>
@@ -114,14 +110,14 @@ function ServiceInfoCard({ label, value, note, services = [] }) {
 }
 
 ServiceInfoCard.propTypes = {
-  label: PropTypes.string.isRequired,
-  note: PropTypes.string,
   services: PropTypes.arrayOf(
     PropTypes.shape({
       duration: PropTypes.string,
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string,
       nailServiceName: PropTypes.string,
+      price: PropTypes.string,
+      quantity: PropTypes.number,
     }),
   ),
   value: PropTypes.string.isRequired,
@@ -191,7 +187,6 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
     () => parseVariantColorJson(variantDetail?.colorJson),
     [variantDetail?.colorJson],
   );
-
   if (!open || !variantDetail) {
     return null;
   }
@@ -215,9 +210,9 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
               Nail Variant Detail
             </p>
             <h3 className="mt-2 text-2xl font-extrabold text-[#ea4f93]">{variantDetail.name}</h3>
-            <p className="mt-1 text-sm text-[#a88a9d]">
+            {/* <p className="mt-1 text-sm text-[#a88a9d]">
               ID #{variantDetail.nailVariantId} • Nail Design #{variantDetail.nailDesignId}
-            </p>
+            </p> */}
           </div>
           <button
             type="button"
@@ -232,6 +227,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
           <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
             <div className="space-y-4">
               <img
+                crossOrigin="anonymous"
                 src={variantDetail.imageUrl}
                 alt={variantDetail.name}
                 className="h-72 w-full rounded-[22px] border border-[#f4dbe7] object-cover"
@@ -249,12 +245,12 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                 <InfoCard
                   label="Variant Name"
                   value={variantDetail.name || "--"}
-                  note={`Variant ID: ${variantDetail.nailVariantId || "--"}`}
+                // note={`Variant ID: ${variantDetail.nailVariantId || "--"}`}
                 />
                 <InfoCard
                   label="Design Reference"
                   value={`Design #${variantDetail.nailDesignId || "--"}`}
-                  note={`Shape ID: ${variantDetail.nailShapeId || "--"} • Surface ID: ${variantDetail.nailSurfaceId || "--"}`}
+                // note={`Shape ID: ${variantDetail.nailShapeId || "--"} • Surface ID: ${variantDetail.nailSurfaceId || "--"}`}
                 />
               </div>
 
@@ -263,6 +259,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Nail Shape</p>
                   <div className="mt-3 flex items-start gap-3">
                     <img
+                      crossOrigin="anonymous"
                       src={variantDetail.nailShape?.imageUrl || variantDetail.imageUrl}
                       alt={variantDetail.nailShape?.name || "Nail shape"}
                       className="h-20 w-20 rounded-2xl border border-[#f4dbe7] object-cover"
@@ -303,7 +300,9 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
               </div>
 
               <article className="rounded-[20px] border border-[#f3d5e2] bg-[#fff9fc] p-4">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Color Configuration</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
+                  Color Configuration
+                </p>
                 <div className="mt-3 rounded-[18px] border border-[#f4dbe7] bg-white p-3">
                   <div
                     className="h-28 w-full rounded-[14px] border border-white/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]"
@@ -403,7 +402,10 @@ VariantDetailModal.propTypes = {
   onClose: PropTypes.func.isRequired,
   open: PropTypes.bool.isRequired,
   variantDetail: PropTypes.shape({
+    basedOnNailVariantId: PropTypes.number,
     colorJson: PropTypes.string,
+    customerNailId: PropTypes.number,
+    detailType: PropTypes.string,
     duration: PropTypes.number,
     imageUrl: PropTypes.string,
     name: PropTypes.string,
@@ -461,6 +463,7 @@ function SuggestedCard({ item }) {
   return (
     <article className="flex items-center gap-3 rounded-[14px] border border-[#f6dbe7] bg-white p-2.5">
       <img
+        crossOrigin="anonymous"
         src={item.image}
         alt={item.name}
         className="h-11 w-11 rounded-xl object-cover"
@@ -488,46 +491,52 @@ export function StaffBookingConsultationDetail({
   onChooseAnotherDesign,
   onConfirmCurrentDesign,
   isCurrentDesignConfirmed = false,
+  isCustomerNailConfirmed = false,
+  requiresCustomerNailConfirmation = false,
+  isPendingBooking = false,
+  isServiceInProgress = false,
+  isServiceCompleted = false,
+  isCancelledBooking = false,
   onDelete,
   onOpenDesignStudio,
   onOpenUpdateBooking,
   onStaffNoteChange,
   onStartServiceSession,
+  onConfirmCustomerNail,
 }) {
-  const canProceedToService = isCurrentDesignConfirmed;
+  const canProceedToService =
+    (requiresCustomerNailConfirmation ? isCustomerNailConfirmed : isCurrentDesignConfirmed) &&
+    !isServiceCompleted;
   const [isVariantModalOpen, setIsVariantModalOpen] = useState(false);
-  const canViewVariantDetail = Boolean(data.design.variantDetail?.nailVariantId);
-  const consultationQuestion = canViewVariantDetail
+  const hasSelectedNailDesign = Boolean(
+    data.design.variantDetail ||
+    (String(data.design.name || "").trim() && String(data.design.name || "").trim() !== "--"),
+  );
+  const canViewVariantDetail = Boolean(
+    data.design.variantDetail &&
+    (
+      data.design.variantDetail?.nailVariantId ||
+      data.design.variantDetail?.customerNailId ||
+      String(data.design.variantDetail?.name || "").trim()
+    ),
+  );
+  const consultationQuestion = hasSelectedNailDesign
     ? `Does the customer want to continue with the selected nail design - ${data.design.name}?`
     : "Does the customer want to continue with no nail design ?";
-  const confirmButtonLabel = canViewVariantDetail ? "Confirm Current Design" : "Confirm booking";
-  const confirmedButtonLabel = canViewVariantDetail ? "Current Design Confirmed" : "Booking Confirmed";
-  const chooseAnotherDesignButtonLabel = canViewVariantDetail ? "Choose Another Design" : "Choose Design";
+  const confirmButtonLabel = hasSelectedNailDesign ? "Confirm Current Design" : "Confirm booking";
+  const confirmCustomerNailButtonLabel = isCustomerNailConfirmed
+    ? "Customer Nail Confirmed"
+    : "Confirm Customer Nail";
+  const confirmedButtonLabel = isServiceCompleted
+    ? "Service Completed"
+    : hasSelectedNailDesign
+      ? "Current Design Confirmed"
+      : "Booking Confirmed";
+  const chooseAnotherDesignButtonLabel = hasSelectedNailDesign ? "Choose Another Design" : "Choose Design";
 
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff5fa_100%)]">
       <div className="rounded-[24px] border border-[#f6dbe8] bg-[#fff7fb] p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
-
-        <div className="mt-4 rounded-[22px] border border-[#f3d5e2] bg-white p-4">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center">
-            {data.steps.map((step, index) => {
-              const tone = STEP_STYLES[step.state];
-
-              return (
-                <div key={step.key} className="flex flex-1 items-center gap-3">
-                  <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-extrabold ${tone.bullet}`}>
-                    {index + 1}
-                  </div>
-                  <p className={`whitespace-nowrap text-xs font-bold ${tone.label}`}>{step.label}</p>
-                  {index < data.steps.length - 1 ? (
-                    <div className={`hidden h-px flex-1 md:block ${tone.line}`} />
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
         <div className="mt-4 space-y-4">
           <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
             <SectionTitle icon={UserRound} title="Customer Information" />
@@ -535,6 +544,7 @@ export function StaffBookingConsultationDetail({
             <div className="mt-5 flex flex-col gap-5">
               <div className="flex flex-col gap-4 md:flex-row md:items-start">
                 <img
+                  crossOrigin="anonymous"
                   src={data.customer.avatar}
                   alt={data.customer.name}
                   className="h-14 w-14 rounded-full border-[3px] border-[#f4d6e4] object-cover"
@@ -604,22 +614,25 @@ export function StaffBookingConsultationDetail({
 
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
             <div className="space-y-4">
-              {canViewVariantDetail ? (
+              {hasSelectedNailDesign ? (
                 <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
                   <div className="flex items-center justify-between gap-3">
                     <SectionTitle icon={Sparkles} title="Current Selected Nail Design" />
-                    <button
-                      type="button"
-                      onClick={() => setIsVariantModalOpen(true)}
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#f2bfd4] bg-[#fff5f9] text-[#ea4f93] hover:bg-[#fff0f6]"
-                      title="View nail variant detail"
-                    >
-                      <Eye size={16} />
-                    </button>
+                    {canViewVariantDetail ? (
+                      <button
+                        type="button"
+                        onClick={() => setIsVariantModalOpen(true)}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#f2bfd4] bg-[#fff5f9] text-[#ea4f93] hover:bg-[#fff0f6]"
+                        title="View nail detail"
+                      >
+                        <Eye size={16} />
+                      </button>
+                    ) : null}
                   </div>
 
                   <div className="mt-5 flex flex-col gap-4 lg:flex-row">
                     <img
+                      crossOrigin="anonymous"
                       src={data.design.image}
                       alt={data.design.name}
                       className="h-40 w-full rounded-[18px] object-cover lg:w-44"
@@ -664,35 +677,52 @@ export function StaffBookingConsultationDetail({
                 </article>
               ) : null}
 
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
-                <SectionTitle icon={Search} title="Customer Consultation" />
-                <div className="mt-5 flex flex-col items-center gap-6 text-center">
-                  <p className="text-lg font-bold text-[#3f2b3f]">{consultationQuestion}</p>
-                  <div className="flex w-full flex-col gap-3 sm:flex-row">
-                    <button
-                      type="button"
-                      onClick={onConfirmCurrentDesign}
-                      disabled={isCurrentDesignConfirmed}
-                      className={`inline-flex flex-1 items-center justify-center gap-2 rounded-[14px] px-5 py-4 text-sm font-bold shadow-[0_16px_28px_rgba(236,72,153,0.2)] ${isCurrentDesignConfirmed
-                        ? "cursor-default bg-[#e9f9ef] text-[#16975f] shadow-none"
-                        : "bg-[image:var(--gradient-accent)] text-white"
-                        }`}
-                    >
-                      <Check size={16} />
-                      {isCurrentDesignConfirmed ? confirmedButtonLabel : confirmButtonLabel}
-                    </button>
-                    
-                    <button
-                      type="button"
-                      onClick={onChooseAnotherDesign}
-                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-[14px] border border-[#f4cada] bg-white px-5 py-4 text-sm font-bold text-[#ea4f93]"
-                    >
-                      <Palette size={16} />
-                      {chooseAnotherDesignButtonLabel}
-                    </button>
+              {!isCancelledBooking && !isPendingBooking && !isServiceInProgress && !isServiceCompleted ? (
+                <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
+                  <SectionTitle icon={Search} title="Customer Consultation" />
+                  <div className="mt-5 flex flex-col items-center gap-6 text-center">
+                    <p className="text-lg font-bold text-[#3f2b3f]">{consultationQuestion}</p>
+                    <div className="flex w-full flex-col gap-3 sm:flex-row">
+                      {requiresCustomerNailConfirmation ? (
+                        <button
+                          type="button"
+                          onClick={onConfirmCustomerNail}
+                          disabled={isCustomerNailConfirmed || isServiceCompleted}
+                          className={`inline-flex flex-1 items-center justify-center gap-2 rounded-[14px] px-5 py-4 text-sm font-bold ${isCustomerNailConfirmed || isServiceCompleted
+                            ? "cursor-default bg-[#eef7ff] text-[#327adf]"
+                            : "border border-[#d8cbff] bg-white text-[#7c63d8]"
+                            }`}
+                        >
+                          <Check size={16} />
+                          {confirmCustomerNailButtonLabel}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={onConfirmCurrentDesign}
+                          disabled={isCurrentDesignConfirmed || isServiceCompleted}
+                          className={`inline-flex flex-1 items-center justify-center gap-2 rounded-[14px] px-5 py-4 text-sm font-bold shadow-[0_16px_28px_rgba(236,72,153,0.2)] ${isCurrentDesignConfirmed || isServiceCompleted
+                            ? "cursor-default bg-[#e9f9ef] text-[#16975f] shadow-none"
+                            : "bg-[image:var(--gradient-accent)] text-white"
+                            }`}
+                        >
+                          <Check size={16} />
+                          {isCurrentDesignConfirmed || isServiceCompleted ? confirmedButtonLabel : confirmButtonLabel}
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={onChooseAnotherDesign}
+                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-[14px] border border-[#f4cada] bg-white px-5 py-4 text-sm font-bold text-[#ea4f93]"
+                      >
+                        <Palette size={16} />
+                        {chooseAnotherDesignButtonLabel}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </article>
+                </article>
+              ) : null}
 
               <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
                 <SectionTitle icon={PencilLine} title="Staff Notes" />
@@ -716,72 +746,77 @@ export function StaffBookingConsultationDetail({
                 </p>
               </article>
 
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
-                <SectionTitle icon={ClipboardCheck} title="Final Confirmation Checklist" />
-                <div className="mt-5 space-y-3">
-                  {data.checklist.map((item) => (
-                    <div
-                      key={item.label}
-                      className={`flex items-center gap-3 rounded-[14px] border px-4 py-3 text-sm font-semibold ${item.checked
+              {!isCancelledBooking && !isPendingBooking && !isServiceCompleted ? (
+                <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
+                  <SectionTitle icon={ClipboardCheck} title="Final Confirmation Checklist" />
+                  <div className="mt-5 space-y-3">
+                    {data.checklist.map((item) => (
+                      <div
+                        key={item.label}
+                        className={`flex items-center gap-3 rounded-[14px] border px-4 py-3 text-sm font-semibold ${item.checked
                           ? "border-[#f2a9c9] bg-[#fff1f7] text-[#d74f8d]"
                           : "border-[#f0d8e3] bg-white text-[#6f5c6b]"
-                        }`}
-                    >
-                      <span
-                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${item.checked
-                            ? "border-[#df5c96] bg-[#df5c96] text-white"
-                            : "border-[#e4cbd7] bg-[#fff7fb] text-transparent"
                           }`}
                       >
-                        <Check size={12} />
-                      </span>
-                      <span>{item.label}</span>
-                    </div>
-                  ))}
-                </div>
+                        <span
+                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${item.checked
+                            ? "border-[#df5c96] bg-[#df5c96] text-white"
+                            : "border-[#e4cbd7] bg-[#fff7fb] text-transparent"
+                            }`}
+                        >
+                          <Check size={12} />
+                        </span>
+                        <span>{item.label}</span>
+                      </div>
+                    ))}
+                  </div>
 
-                <button
-                  type="button"
-                  onClick={onStartServiceSession}
-                  disabled={!canProceedToService}
-                  className={`mt-5 w-full rounded-[14px] px-5 py-4 text-sm font-bold ${
-                    canProceedToService
+                  <button
+                    type="button"
+                    onClick={onStartServiceSession}
+                    disabled={!canProceedToService}
+                    className={`mt-5 w-full rounded-[14px] px-5 py-4 text-sm font-bold ${canProceedToService
                       ? "bg-[image:var(--gradient-accent)] text-white shadow-[0_16px_28px_rgba(236,72,153,0.2)]"
                       : "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
-                  }`}
-                >
-                  Proceed to Service Session
-                </button>
-                {!canProceedToService ? (
-                  <p className="mt-3 text-xs font-medium text-[#b1859d]">
-                    Confirm Current Design before proceeding to the service session.
-                  </p>
-                ) : null}
+                      }`}
+                  >
+                    {isServiceInProgress ? "Continue Service" : "Proceed to Service Session"}
+                  </button>
+                  {!canProceedToService ? (
+                    <p className="mt-3 text-xs font-medium text-[#b1859d]">
+                      {requiresCustomerNailConfirmation
+                        ? "Confirm current nail before proceeding to the service session."
+                        : "Confirm Current Design before proceeding to the service session."}
+                    </p>
+                  ) : null}
 
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    onClick={onOpenDesignStudio}
-                    className="rounded-[12px] border border-[#f4cada] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
-                  >
-                    Open Design Studio
-                  </button>
-                  <button
-                    type="button"
-                    onClick={onOpenUpdateBooking}
-                    className="rounded-[12px] border border-[#f4cada] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
-                  >
-                    Update Booking
-                  </button>
-                  <button
-                    type="button"
-                    onClick={onDelete}
-                    className="rounded-[12px] border border-[#ddd0d8] bg-white px-4 py-2.5 text-xs font-bold text-[#8e7786]"
-                  >
-                    Back to Queue
-                  </button>
-                </div>
-              </article>
+                  {!isServiceInProgress ? (
+                    <div className="mt-4 flex flex-wrap gap-3">
+                      <button
+                        type="button"
+                        onClick={onOpenDesignStudio}
+                        className="rounded-[12px] border border-[#f4cada] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
+                      >
+                        Open Design Studio
+                      </button>
+                      <button
+                        type="button"
+                        onClick={onOpenUpdateBooking}
+                        className="rounded-[12px] border border-[#f4cada] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
+                      >
+                        Update Booking
+                      </button>
+                      <button
+                        type="button"
+                        onClick={onDelete}
+                        className="rounded-[12px] border border-[#ddd0d8] bg-white px-4 py-2.5 text-xs font-bold text-[#8e7786]"
+                      >
+                        Back to Queue
+                      </button>
+                    </div>
+                  ) : null}
+                </article>
+              ) : null}
             </div>
 
             <aside className="space-y-4 border-t border-[#f3d5e2] pt-4 xl:border-l xl:border-t-0 xl:pl-4 xl:pt-0">
@@ -830,6 +865,7 @@ export function StaffBookingConsultationDetail({
                     </p>
                     <div className="mt-2 flex items-center gap-3 rounded-[14px] border border-[#f6dbe7] bg-white p-2.5">
                       <img
+                        crossOrigin="anonymous"
                         src={data.customerHistory.lastUpload.image}
                         alt={data.customerHistory.lastUpload.title}
                         className="h-12 w-12 rounded-xl object-cover"
@@ -858,40 +894,48 @@ export function StaffBookingConsultationDetail({
                 </div>
               </article> */}
 
-              <article className="rounded-[18px] border border-[#f3d5e2] bg-white p-4">
-                <SectionTitle icon={CheckCheck} title="Next Actions" />
-                <div className="mt-4 space-y-3">
-                  <button
-                    type="button"
-                    onClick={onOpenUpdateBooking}
-                    className="flex w-full items-center justify-center gap-2 rounded-[12px] border border-[#f4cada] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
-                  >
-                    <PencilLine size={13} />
-                    Update Booking
-                  </button>
-                  <button
-                    type="button"
-                    onClick={onOpenDesignStudio}
-                    className="flex w-full items-center justify-center gap-2 rounded-[12px] border border-[#f4cada] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
-                  >
-                    <Search size={13} />
-                    Open Design Studio
-                  </button>
-                  <button
-                    type="button"
-                    onClick={onStartServiceSession}
-                    disabled={!canProceedToService}
-                    className={`flex w-full items-center justify-center gap-2 rounded-[12px] px-4 py-2.5 text-xs font-bold ${
-                      canProceedToService
+              {!isCancelledBooking && !isPendingBooking && !isServiceCompleted ? (
+                <article className="rounded-[18px] border border-[#f3d5e2] bg-white p-4">
+                  <SectionTitle
+                    icon={CheckCheck}
+                    title={isServiceInProgress ? "Continue Service" : "Next Actions"}
+                  />
+                  <div className="mt-4 space-y-3">
+                    {!isServiceInProgress ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={onOpenUpdateBooking}
+                          className="flex w-full items-center justify-center gap-2 rounded-[12px] border border-[#f4cada] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
+                        >
+                          <PencilLine size={13} />
+                          Update Booking
+                        </button>
+                        <button
+                          type="button"
+                          onClick={onOpenDesignStudio}
+                          className="flex w-full items-center justify-center gap-2 rounded-[12px] border border-[#f4cada] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
+                        >
+                          <Search size={13} />
+                          Open Design Studio
+                        </button>
+                      </>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={onStartServiceSession}
+                      disabled={!canProceedToService}
+                      className={`flex w-full items-center justify-center gap-2 rounded-[12px] px-4 py-2.5 text-xs font-bold ${canProceedToService
                         ? "bg-[image:var(--gradient-accent)] text-white"
                         : "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
-                    }`}
-                  >
-                    <ArrowUp size={13} />
-                    Start Service
-                  </button>
-                </div>
-              </article>
+                        }`}
+                    >
+                      <ArrowUp size={13} />
+                      {isServiceInProgress ? "Continue Service" : "Start Service"}
+                    </button>
+                  </div>
+                </article>
+              ) : null}
             </aside>
           </div>
         </div>
@@ -906,19 +950,22 @@ export function StaffBookingConsultationDetail({
 }
 
 StaffBookingConsultationDetail.propTypes = {
+  isCancelledBooking: PropTypes.bool,
   data: PropTypes.shape({
     artistInitials: PropTypes.string.isRequired,
     bookingCode: PropTypes.string.isRequired,
     bookingInfo: PropTypes.arrayOf(
       PropTypes.shape({
         label: PropTypes.string.isRequired,
-        note: PropTypes.string.isRequired,
+        note: PropTypes.string,
         services: PropTypes.arrayOf(
           PropTypes.shape({
             duration: PropTypes.string,
             id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
             name: PropTypes.string,
             nailServiceName: PropTypes.string,
+            price: PropTypes.string,
+            quantity: PropTypes.number,
           }),
         ),
         tone: PropTypes.oneOf(["default", "success"]),
@@ -975,7 +1022,10 @@ StaffBookingConsultationDetail.propTypes = {
         }),
       ).isRequired,
       variantDetail: PropTypes.shape({
+        basedOnNailVariantId: PropTypes.number,
         colorJson: PropTypes.string,
+        customerNailId: PropTypes.number,
+        detailType: PropTypes.string,
         duration: PropTypes.number,
         imageUrl: PropTypes.string,
         name: PropTypes.string,
@@ -1028,13 +1078,6 @@ StaffBookingConsultationDetail.propTypes = {
       }),
     ).isRequired,
     statusLabel: PropTypes.string.isRequired,
-    steps: PropTypes.arrayOf(
-      PropTypes.shape({
-        key: PropTypes.string.isRequired,
-        label: PropTypes.string.isRequired,
-        state: PropTypes.oneOf(["complete", "current", "upcoming"]).isRequired,
-      }),
-    ).isRequired,
     suggestedDesigns: PropTypes.arrayOf(
       PropTypes.shape({
         image: PropTypes.string.isRequired,
@@ -1043,8 +1086,14 @@ StaffBookingConsultationDetail.propTypes = {
       }),
     ).isRequired,
   }).isRequired,
+  isCustomerNailConfirmed: PropTypes.bool,
   isCurrentDesignConfirmed: PropTypes.bool,
+  isPendingBooking: PropTypes.bool,
+  requiresCustomerNailConfirmation: PropTypes.bool,
+  isServiceInProgress: PropTypes.bool,
+  isServiceCompleted: PropTypes.bool,
   onChooseAnotherDesign: PropTypes.func.isRequired,
+  onConfirmCustomerNail: PropTypes.func,
   onConfirmCurrentDesign: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
   onOpenDesignStudio: PropTypes.func.isRequired,

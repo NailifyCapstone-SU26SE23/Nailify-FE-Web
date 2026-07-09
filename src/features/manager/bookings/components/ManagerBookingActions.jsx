@@ -1,1 +1,1 @@
-export { AdminBookingActions as ManagerBookingActions } from "../../../core/booking-management/components/AdminBookingActions";
+export { AdminBookingActions as ManagerBookingActions } from "../../../../shared/bookings/components/AdminBookingActions";
