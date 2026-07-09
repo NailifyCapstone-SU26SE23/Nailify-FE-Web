@@ -7,20 +7,20 @@ import {
   FileText,
   LoaderCircle,
   MessageSquareText,
-  PencilLine,
   Play,
   RefreshCcw,
   Sparkles,
   SquareCheckBig,
   Star,
-  Trash2,
   Trophy,
 } from "lucide-react";
+import { buildAvatarDataUrl } from "../../../../shared/utils/avatar";
 import { useEffect, useMemo, useState } from "react";
 import { Table } from "antd";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
+import { StaffBookingNotesModal } from "../../../../shared/bookings/components/StaffBookingNotesModal";
 import {
   getStaffBookingDetailRoute,
   getStaffBookingDesignStudioRoute,
@@ -140,7 +140,7 @@ function MobileBookingCard({ booking, actions }) {
 
       <div className="mt-4 flex min-w-0 items-center gap-3">
         {booking.previewImage ? (
-          <img
+          <img crossOrigin="anonymous"
             src={booking.previewImage}
             alt={booking.service}
             className="h-12 w-12 rounded-2xl object-cover shadow-sm"
@@ -171,6 +171,7 @@ export function StaffDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [bookings, setBookings] = useState([]);
+  const [selectedStaffNotesBooking, setSelectedStaffNotesBooking] = useState(null);
   const [bookingPagination, setBookingPagination] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -294,6 +295,12 @@ export function StaffDashboardPage() {
 
   const getActionItems = (booking) => {
     const detailRoute = getStaffBookingDetailRoute(booking.id);
+    const normalizedBookingStatus = String(booking?.status || booking?.uiStatus || "").trim().toLowerCase();
+    const isPendingBooking = ["pending", "approved"].includes(normalizedBookingStatus);
+    const isCheckedInBooking = normalizedBookingStatus === "checkedin";
+    const isCompletedBooking = normalizedBookingStatus === "completed";
+    const isServiceCompletedBooking = normalizedBookingStatus === "servicecompleted";
+    const isCancelledBooking = ["cancelled", "canceled"].includes(normalizedBookingStatus);
     const startService = async () => {
       try {
         const updatedBooking = await startStaffBookingService(booking.id);
@@ -314,31 +321,27 @@ export function StaffDashboardPage() {
 
     return [
       { key: "view", label: "View Booking", icon: Eye, onSelect: () => navigate(detailRoute) },
-      { key: "edit", label: "Edit Booking", icon: PencilLine, onSelect: () => navigate(detailRoute) },
-      {
-        key: "start",
-        label: "Start Service",
-        icon: Play,
-        onSelect: () => void startService(),
-      },
-      {
-        key: "complete",
-        label: "Complete Service",
-        icon: SquareCheckBig,
-        onSelect: () => navigate(detailRoute, { state: { staffAction: "complete" } }),
-      },
+      ...(!isCancelledBooking && !isPendingBooking && !isCompletedBooking && !isServiceCompletedBooking
+        ? [{
+          key: "start",
+          label: "Start Service",
+          icon: Play,
+          onSelect: () => void startService(),
+        }]
+        : []),
+      ...(!isCancelledBooking && !isPendingBooking && !isCheckedInBooking && !isCompletedBooking && !isServiceCompletedBooking
+        ? [{
+          key: "complete",
+          label: "Complete Service",
+          icon: SquareCheckBig,
+          onSelect: () => navigate(detailRoute, { state: { staffAction: "complete" } }),
+        }]
+        : []),
       {
         key: "notes",
         label: "View Notes",
         icon: FileText,
-        onSelect: () => navigate(detailRoute, { state: { staffAction: "notes" } }),
-      },
-      {
-        key: "delete",
-        label: "Delete Booking",
-        icon: Trash2,
-        className: "text-[#d14c84]",
-        onSelect: () => navigate(detailRoute, { state: { staffAction: "delete" } }),
+        onSelect: () => setSelectedStaffNotesBooking(booking),
       },
     ];
   };
@@ -380,11 +383,10 @@ export function StaffDashboardPage() {
       render: (_, booking) => (
         <div className="flex items-center gap-3">
           <img
-            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(booking.customerName)}&background=fde7ef&color=8f365c&bold=true`}
+            src={buildAvatarDataUrl(booking.customerName)}
             alt={booking.customerName}
             className="h-9 w-9 rounded-full border border-[#f6d3e3]"
             loading="lazy"
-            referrerPolicy="no-referrer"
           />
           <p className="text-sm font-bold text-[#432744]">{booking.customerName}</p>
         </div>
@@ -400,7 +402,7 @@ export function StaffDashboardPage() {
     //   key: "design",
     //   render: (_, booking) => (
     //     booking.previewImage ? (
-    //       <img
+    //       <img crossOrigin="anonymous"
     //         src={booking.previewImage}
     //         alt={booking.service}
     //         className="h-9 w-9 rounded-xl object-cover shadow-sm"
@@ -428,7 +430,8 @@ export function StaffDashboardPage() {
   ]), [getActionItems]);
 
   return (
-    <section className="flex min-h-full w-full min-w-0 flex-col gap-4 overflow-x-hidden bg-[linear-gradient(180deg,#fff9fc_0%,#fff5fa_100%)]">
+    <>
+      <section className="flex min-h-full w-full min-w-0 flex-col gap-4 overflow-x-hidden bg-[linear-gradient(180deg,#fff9fc_0%,#fff5fa_100%)]">
       <div className="flex w-full min-w-0 flex-col gap-4 rounded-[24px] border border-[#f6dbe8] bg-[#fff7fb] p-3 shadow-[0_14px_30px_rgba(236,72,153,0.05)] sm:p-4">
         <div className="flex min-w-0 flex-col gap-3 rounded-[20px] border border-[#f4d5e3] bg-[linear-gradient(90deg,#ffe8f1_0%,#ffdce8_100%)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
           <div className="min-w-0">
@@ -461,7 +464,7 @@ export function StaffDashboardPage() {
           ))}
         </div>
 
-        <div className="grid w-full min-w-0 gap-4 xl:grid-cols-[minmax(0,1.62fr)_290px]">
+        <div className="grid w-full min-w-0 gap-4">
           <div className="min-w-0 space-y-4">
             <div>
               <div className="mb-3 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
@@ -550,11 +553,10 @@ export function StaffDashboardPage() {
                   <>
                     <div className="flex items-start gap-3">
                       <img
-                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(currentBooking.customerName)}&background=fde7ef&color=8f365c&bold=true`}
+                        src={buildAvatarDataUrl(currentBooking.customerName)}
                         alt={currentBooking.customerName}
                         className="h-12 w-12 rounded-full border border-[#f6d3e3]"
                         loading="lazy"
-                        referrerPolicy="no-referrer"
                       />
                       <div className="min-w-0">
                         <p className="text-sm font-extrabold text-[#432744]">{currentBooking.customerName}</p>
@@ -571,7 +573,7 @@ export function StaffDashboardPage() {
 
                     <div className="mt-4 overflow-hidden rounded-[18px] bg-[#f7eef4]">
                       {currentBooking.previewImage ? (
-                        <img
+                        <img crossOrigin="anonymous"
                           src={currentBooking.previewImage}
                           alt={currentBooking.service}
                           className="h-40 w-full object-cover"
@@ -657,12 +659,12 @@ export function StaffDashboardPage() {
             </div>
           </div>
 
-          <aside className="min-w-0 space-y-4">
+          {/* <aside className="min-w-0 space-y-4">
             <Panel title="Next Customer" icon={Sparkles}>
               {nextBooking ? (
                 <>
                   <div className="flex items-start gap-3">
-                    <img
+                    <img crossOrigin="anonymous"
                       src={`https://ui-avatars.com/api/?name=${encodeURIComponent(nextBooking.customerName)}&background=fde7ef&color=8f365c&bold=true`}
                       alt={nextBooking.customerName}
                       className="h-11 w-11 rounded-full border border-[#f6d3e3]"
@@ -698,7 +700,7 @@ export function StaffDashboardPage() {
               ) : (
                 <p className="text-sm text-[#8a7082]">No next customer scheduled.</p>
               )}
-            </Panel>
+            </Panel> */}
 
             {/* <Panel title="Session Timer" icon={Clock3}>
               <div className="text-center">
@@ -741,7 +743,7 @@ export function StaffDashboardPage() {
               </div>
             </Panel> */}
 
-            <Panel title="Latest Review" icon={MessageSquareText}>
+            {/* <Panel title="Latest Review" icon={MessageSquareText}>
               <div className="flex items-center gap-1 text-[#f5a623]">
                 {Array.from({ length: 5 }).map((_, index) => (
                   <Star key={index} size={12} fill="currentColor" />
@@ -757,9 +759,16 @@ export function StaffDashboardPage() {
                 <p className="mt-1 text-[11px] text-[#c28ca6]">{currentBooking?.bookingTime || "--"} session</p>
               </div>
             </Panel>
-          </aside>
+          </aside> */}
         </div>
       </div>
-    </section>
+      </section>
+      <StaffBookingNotesModal
+        open={Boolean(selectedStaffNotesBooking)}
+        booking={selectedStaffNotesBooking}
+        onClose={() => setSelectedStaffNotesBooking(null)}
+      />
+    </>
   );
 }
+

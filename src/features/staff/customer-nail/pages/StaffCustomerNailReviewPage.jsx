@@ -352,7 +352,7 @@ export function StaffCustomerNailReviewPage() {
             <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex items-center gap-4">
                 {nail.imageUrl ? (
-                  <img
+                  <img crossOrigin="anonymous"
                     src={nail.imageUrl}
                     alt={nail.name}
                     className="h-24 w-24 rounded-[24px] border-4 border-white object-cover shadow-[0_16px_32px_rgba(236,72,153,0.18)] transition duration-300 hover:scale-105"
@@ -408,7 +408,7 @@ export function StaffCustomerNailReviewPage() {
                     value={
                       <div className="flex items-center gap-3">
                         {nail.nailShape?.imageUrl && (
-                          <img src={nail.nailShape.imageUrl} alt="" className="h-8 w-8 rounded-lg object-cover" />
+                          <img crossOrigin="anonymous" src={nail.nailShape.imageUrl} alt="" className="h-8 w-8 rounded-lg object-cover" />
                         )}
                         <div>
                           <p className="font-bold text-[#3f2240]">{nail.nailShape?.name || "Custom Shape"}</p>
@@ -656,3 +656,4 @@ export function StaffCustomerNailReviewPage() {
     </ConfigProvider>
   );
 }
+

@@ -1,22 +1,16 @@
 import {
-  ArrowLeft,
-  ArrowRight,
   Camera,
   Check,
   CheckCircle2,
   ClipboardCheck,
   Clock3,
-  CreditCard,
   FilePenLine,
-  Heart,
   // Image,
   ImageUp,
   Play,
   Plus,
-  Printer,
   Receipt,
   Search,
-  Send,
   ShieldCheck,
   Sparkles,
   Upload,
@@ -33,7 +27,7 @@ import {
   ROUTES,
 } from "../../../../shared/constants/routes";
 import { PropTypes } from "../../../../shared/utils/propTypes";
-import { getMockBookingById } from "../../../core/booking-management/services/mockBookings";
+import { getMockBookingById } from "../../../../shared/bookings/services/mockBookings";
 import {
   buildStaffServiceSessionPayload,
   fetchServiceCatalog,
@@ -55,6 +49,8 @@ import { Image } from "antd";
 const DEFAULT_CUSTOMER_AVATAR =
   "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=140&q=80";
 
+const STICKY_HEADER_OFFSET_PX = -20;
+
 function SectionTitle({ icon: Icon, title, subtitle }) {
   return (
     <div className="flex items-start gap-3">
@@ -75,7 +71,7 @@ SectionTitle.propTypes = {
   title: PropTypes.string.isRequired,
 };
 
-function ProgressStep({ step, index, isLast }) {
+function ProgressStep({ step, index, isLast, compact = false }) {
   const stateClasses = {
     active: {
       dot: "border-transparent bg-[image:var(--gradient-accent)] text-white shadow-[0_14px_28px_rgba(236,72,153,0.24)]",
@@ -103,30 +99,33 @@ function ProgressStep({ step, index, isLast }) {
   return (
     <div className="relative flex flex-1 flex-col items-center text-center">
       {!isLast ? (
-        <div className="absolute left-[calc(50%+2rem)] top-5 hidden h-[2px] w-[calc(100%-4rem)] xl:block">
+        <div className={`absolute left-[calc(50%+2rem)] hidden h-[2px] w-[calc(100%-4rem)] xl:block ${compact ? "top-4" : "top-5"}`}>
           <div className={`h-full w-full rounded-full ${lineClassName}`} />
         </div>
       ) : null}
 
       <div
-        className={`relative z-[1] flex h-10 w-10 items-center justify-center rounded-full border text-sm font-extrabold ${tone.dot}`}
+        className={`relative z-[1] flex items-center justify-center rounded-full border text-sm font-extrabold ${compact ? "h-9 w-9" : "h-10 w-10"} ${tone.dot}`}
       >
         {step.state === "complete" ? <Check size={18} strokeWidth={3} /> : index + 1}
       </div>
 
-      <div className="mt-4">
-        <p className={`text-base font-extrabold ${tone.label}`}>{step.label}</p>
-        <span
-          className={`mt-2 inline-flex rounded-full px-3 py-1 text-[10px] font-bold ${tone.pill}`}
-        >
-          {step.statusLabel}
-        </span>
+      <div className={compact ? "mt-3" : "mt-4"}>
+        <p className={`${compact ? "text-[0.95rem]" : "text-base"} font-extrabold ${tone.label}`}>{step.label}</p>
+        {!compact ? (
+          <span
+            className={`mt-2 inline-flex rounded-full px-3 py-1 text-[10px] font-bold ${tone.pill}`}
+          >
+            {step.statusLabel}
+          </span>
+        ) : null}
       </div>
     </div>
   );
 }
 
 ProgressStep.propTypes = {
+  compact: PropTypes.bool,
   index: PropTypes.number.isRequired,
   isLast: PropTypes.bool.isRequired,
   step: PropTypes.shape({
@@ -203,28 +202,57 @@ function ServiceSummaryValue({ services = [], fallbackValue = "" }) {
   }
 
   return (
-    <div className="space-y-3">
-      {services.map((service, index) => (
-        <div
-          key={service.id || `${service.name}-${index}`}
-          className="flex items-center justify-between gap-3 rounded-[18px] border border-[#f2bfd4] bg-white px-4 py-4 shadow-[0_10px_22px_rgba(236,72,153,0.05)]"
-        >
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
-              Service {index + 1}
-            </p>
-            <p className="mt-2 break-words text-sm font-extrabold text-[#ea4f93]">{service.name || "--"}</p>
-            {service.nailServiceName ? (
-              <p className="mt-1 text-xs font-semibold text-[#7a6275]">
-                Nail service: {service.nailServiceName}
-              </p>
-            ) : null}
-          </div>
-          <span className="shrink-0 rounded-full bg-[#f4efff] px-4 py-2 text-sm font-extrabold text-[#8c63ef]">
-            {service.durationLabel || "--"}
-          </span>
+    <div className="overflow-hidden rounded-[20px] border border-[#f2bfd4] bg-white shadow-[0_10px_22px_rgba(236,72,153,0.05)]">
+      <div className="overflow-x-auto">
+        <div className="hidden min-w-[620px] grid-cols-[minmax(220px,1.8fr)_90px_140px_110px] items-center gap-3 border-b border-[#f8dce8] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f7_100%)] px-5 py-3 md:grid">
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Service</p>
+          <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Qty</p>
+          <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Price</p>
+          <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Duration</p>
         </div>
-      ))}
+
+        <div className="divide-y divide-[#f9dfeb]">
+          {services.map((service, index) => (
+            <div
+              key={service.id || `${service.name}-${index}`}
+              className="px-4 py-4 md:grid md:min-w-[620px] md:grid-cols-[minmax(220px,1.8fr)_90px_140px_110px] md:items-center md:gap-3 md:px-5"
+            >
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
+                  Service {index + 1}
+                </p>
+                <p className="mt-2 text-sm font-extrabold text-[#ea4f93] md:break-words">{service.name || "--"}</p>
+                {service.nailServiceName ? (
+                  <p className="mt-1 text-xs font-semibold text-[#7a6275] md:break-words">
+                    Nail service: {service.nailServiceName}
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="mt-4 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Qty</p>
+                <span className="inline-flex rounded-full border border-[#f6dbe7] bg-[#fff9fc] px-3 py-1 text-[11px] font-bold text-[#6f5c6b]">
+                  {service.quantity || 1}
+                </span>
+              </div>
+
+              <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Price</p>
+                <span className="inline-flex rounded-full border border-[#d8f0df] bg-[#f1fcf4] px-3 py-1 text-[11px] font-bold text-[#16975f]">
+                  {service.priceLabel || "--"}
+                </span>
+              </div>
+
+              <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Duration</p>
+                <span className="inline-flex rounded-full bg-[#f4efff] px-4 py-2 text-sm font-extrabold text-[#8c63ef]">
+                  {service.durationLabel || "--"}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -237,8 +265,124 @@ ServiceSummaryValue.propTypes = {
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string,
       nailServiceName: PropTypes.string,
+      priceLabel: PropTypes.string,
+      quantity: PropTypes.number,
     }),
   ),
+};
+
+function SessionSummaryPanel({
+  phase,
+  title,
+  subtitle,
+  data,
+  hasConfirmedDesign,
+  serviceStatusLabel,
+}) {
+  const summaryToneByPhase = {
+    start: "bg-[linear-gradient(180deg,#fffafc_0%,#fff5f9_100%)]",
+    progress: "bg-[linear-gradient(180deg,#fffafc_0%,#fff4f8_100%)]",
+    done: "bg-[linear-gradient(180deg,#fffafc_0%,#fff6fb_100%)]",
+  };
+  const serviceStatusToneByPhase = {
+    start: "border-[#cfead8] bg-[#f2fcf5] text-[#1f9d57] shadow-[0_8px_18px_rgba(31,157,87,0.12)]",
+    progress: "border-[#f6d6b8] bg-[#fff7ed] text-[#dd8a12] shadow-[0_8px_18px_rgba(221,138,18,0.12)]",
+    done: "border-[#cde3ff] bg-[#eef6ff] text-[#327adf] shadow-[0_8px_18px_rgba(50,122,223,0.12)]",
+  };
+
+  return (
+    <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+      <SectionTitle
+        icon={UserRound}
+        title={title}
+        subtitle={subtitle}
+      />
+
+      <div className={`mt-5 rounded-[22px] border border-[#f5d9e6] p-5 ${summaryToneByPhase[phase] || summaryToneByPhase.start}`}>
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex min-w-0 items-center gap-4">
+            <img crossOrigin="anonymous"
+              src={data.customerAvatar}
+              alt={data.customerName}
+              className="h-16 w-16 rounded-2xl border border-[#f2bfd4] object-cover"
+              loading="lazy"
+              referrerPolicy="no-referrer"
+            />
+            <div className="min-w-0">
+              <p className="truncate text-xl font-extrabold text-[#3f2b3f]">{data.customerName}</p>
+              <p className="mt-1 text-sm text-[#a88a9d]">{data.customerPhone || "--"}</p>
+            </div>
+          </div>
+
+          <span
+            className={`inline-flex w-fit items-center rounded-full border px-4 py-2 text-xs font-bold ${serviceStatusToneByPhase[phase] || serviceStatusToneByPhase.start}`}
+          >
+            {serviceStatusLabel}
+          </span>
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          <SessionChip icon={UserRound} label={data.staffArtist || "--"} />
+          <SessionChip icon={Clock3} label={`Start: ${data.appointmentTime || "--"}`} />
+          <SessionChip icon={Clock3} label={`Est. Finish: ${data.estimatedFinishTime || "--"}`} />
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-5 md:grid-cols-2">
+        <div className="md:col-span-2">
+          {/* <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">Service</p>
+          <div className="mt-3"> */}
+            <ServiceSummaryValue
+              services={Array.isArray(data.serviceBreakdown) ? data.serviceBreakdown : []}
+              fallbackValue={data.serviceLabel}
+            />
+          {/* </div> */}
+        </div>
+        <SummaryValue label="Staff Artist" value={data.staffArtist || "--"} />
+        <SummaryValue label="Appointment Time" value={data.appointmentTime || "--"} />
+        <SummaryValue label="Estimated Finish" value={data.estimatedFinishTime || "--"} />
+        <SummaryValue label="Estimated Duration" value={data.estimatedDuration || "--"} accent={phase === "done"} />
+        {hasConfirmedDesign ? <SummaryValue label="Confirmed Design" value={data.designName} /> : null}
+      </div>
+    </article>
+  );
+}
+
+SessionSummaryPanel.propTypes = {
+  data: PropTypes.shape({
+    appointmentTime: PropTypes.string,
+    customerAvatar: PropTypes.string,
+    customerName: PropTypes.string,
+    customerPhone: PropTypes.string,
+    designName: PropTypes.string,
+    estimatedDuration: PropTypes.string,
+    estimatedFinishTime: PropTypes.string,
+    serviceBreakdown: PropTypes.arrayOf(
+      PropTypes.shape({
+        durationLabel: PropTypes.string,
+        id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        name: PropTypes.string,
+        priceLabel: PropTypes.string,
+        quantity: PropTypes.number,
+      }),
+    ),
+    nailServiceBreakdown: PropTypes.arrayOf(
+      PropTypes.shape({
+        durationLabel: PropTypes.string,
+        id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        name: PropTypes.string,
+        priceLabel: PropTypes.string,
+        quantity: PropTypes.number,
+      }),
+    ),
+    serviceLabel: PropTypes.string,
+    staffArtist: PropTypes.string,
+  }).isRequired,
+  hasConfirmedDesign: PropTypes.bool.isRequired,
+  phase: PropTypes.oneOf(["start", "progress", "done"]).isRequired,
+  serviceStatusLabel: PropTypes.string.isRequired,
+  subtitle: PropTypes.string.isRequired,
+  title: PropTypes.string.isRequired,
 };
 
 function ConfirmationItem({ checked, disabled = false, label, onToggle, trailing = null }) {
@@ -506,63 +650,6 @@ ExtraServiceModal.propTypes = {
   ).isRequired,
 };
 
-function CompareSummaryCard({ label, value, note, accent = false }) {
-  return (
-    <div className="rounded-[18px] border border-[#f2d3e1] bg-white p-4 shadow-[0_6px_18px_rgba(236,72,153,0.05)]">
-      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c197ad]">{label}</p>
-      <p className={`mt-2 text-sm font-extrabold ${accent ? "text-[#ea4f93]" : "text-[#3f2b3f]"}`}>
-        {value}
-      </p>
-      <p className="mt-1 text-[11px] text-[#a88a9d]">{note}</p>
-    </div>
-  );
-}
-
-CompareSummaryCard.propTypes = {
-  accent: PropTypes.bool,
-  label: PropTypes.string.isRequired,
-  note: PropTypes.string.isRequired,
-  value: PropTypes.string.isRequired,
-};
-
-function CompareActionButton({
-  icon: Icon,
-  label,
-  onClick,
-  tone = "primary",
-  disabled = false,
-}) {
-  const toneClassName = {
-    primary:
-      "border-transparent bg-[image:var(--gradient-accent)] text-white shadow-[0_14px_24px_rgba(236,72,153,0.2)]",
-    secondary: "border-[#eadcf4] bg-[#f8f0ff] text-[#8b5cf6]",
-    success: "border-[#ccefdc] bg-[#ecfbf2] text-[#16a365]",
-    outline: "border-[#f2bfd4] bg-white text-[#ea4f93]",
-    muted: "border-[#ece4ea] bg-[#f7f4f6] text-[#9b8c97]",
-  }[tone];
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-bold transition ${disabled ? "cursor-not-allowed opacity-60" : "hover:-translate-y-0.5"
-        } ${toneClassName}`}
-    >
-      <Icon size={15} />
-      {label}
-    </button>
-  );
-}
-
-CompareActionButton.propTypes = {
-  disabled: PropTypes.bool,
-  icon: PropTypes.elementType.isRequired,
-  label: PropTypes.string.isRequired,
-  onClick: PropTypes.func.isRequired,
-  tone: PropTypes.oneOf(["muted", "outline", "primary", "secondary", "success"]),
-};
-
 function resolvePhotoUrl(value) {
   if (Array.isArray(value)) {
     return String(value[0] || "").trim();
@@ -730,16 +817,97 @@ export function StaffServiceSessionPage() {
             }
 
             const durationValue = String(item?.duration || "").trim();
+            const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
+            const priceValue = Number(item?.price || item?.finalPrice || 0);
 
             return {
               id: String(item?.bookingItemId || item?.id || `${name}-${index}`).trim(),
               name,
               duration: durationValue ? Number.parseInt(durationValue, 10) || 0 : 0,
               durationLabel: durationValue || "--",
+              quantity,
+              priceLabel: formatCurrency(priceValue),
             };
           })
           .filter(Boolean)
         : [],
+      nailServiceBreakdown: Array.isArray(booking.bookingItems)
+        ? booking.bookingItems
+          .map((item, index) => {
+            const name = String(item?.nailVariantName || item?.customerNailName || "").trim();
+
+            if (!name) {
+              return null;
+            }
+
+            const durationValue = String(item?.duration || "").trim();
+            const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
+            const priceValue = Number(item?.price || item?.finalPrice || 0);
+
+            return {
+              id: String(item?.bookingItemId || item?.id || `${name}-${index}`).trim(),
+              name,
+              duration: durationValue ? Number.parseInt(durationValue, 10) || 0 : 0,
+              durationLabel: durationValue || "--",
+              quantity,
+              priceLabel: formatCurrency(priceValue),
+            };
+          })
+          .filter(Boolean)
+        : [],
+      priceSummary: {
+        serviceRows: Array.isArray(booking.bookingItems)
+          ? booking.bookingItems
+            .map((item, index) => {
+              const name = String(item?.serviceName || "").trim();
+
+              if (!name) {
+                return null;
+              }
+
+              const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
+
+              return {
+                id: `service-${item?.bookingItemId || item?.id || index}`,
+                category: "Service",
+                label: name,
+                meta: `Qty: ${quantity}`,
+                amount: formatCurrency(item?.price || item?.finalPrice || 0),
+              };
+            })
+            .filter(Boolean)
+          : [],
+        nailRows: Array.isArray(booking.bookingItems)
+          ? booking.bookingItems
+            .map((item, index) => {
+              const name = String(item?.nailVariantName || item?.customerNailName || "").trim();
+
+              if (!name) {
+                return null;
+              }
+
+              const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
+
+              return {
+                id: `nail-${item?.bookingItemId || item?.id || index}`,
+                category: "Nail Service",
+                label: name,
+                meta: `Qty: ${quantity}`,
+                amount: formatCurrency(item?.price || item?.finalPrice || 0),
+              };
+            })
+            .filter(Boolean)
+          : [],
+        discountRows: Array.isArray(booking.discounts)
+          ? booking.discounts.map((item, index) => ({
+            id: `discount-${index}`,
+            category: "Discount",
+            label: item?.name || item?.type || `Discount ${index + 1}`,
+            meta: item?.type || null,
+            amount: `-${formatCurrency(Math.abs(Number(item?.amount || 0)))}`,
+          }))
+          : [],
+      },
       staffArtist: booking.staffName,
       chair: "Chair 03",
       appointmentTime: appointmentStartTime,
@@ -782,6 +950,23 @@ export function StaffServiceSessionPage() {
     if (!fallbackData && !payload) {
       return null;
     }
+
+    const resolvedServiceBreakdown =
+      Array.isArray(fallbackData?.serviceBreakdown) && fallbackData.serviceBreakdown.length
+        ? fallbackData.serviceBreakdown
+        : Array.isArray(payload?.serviceBreakdown)
+          ? payload.serviceBreakdown
+          : [];
+    const resolvedNailServiceBreakdown =
+      Array.isArray(fallbackData?.nailServiceBreakdown) && fallbackData.nailServiceBreakdown.length
+        ? fallbackData.nailServiceBreakdown
+        : Array.isArray(payload?.nailServiceBreakdown)
+          ? payload.nailServiceBreakdown
+          : [];
+    const resolvedPriceSummary =
+      fallbackData?.priceSummary ||
+      payload?.priceSummary ||
+      { serviceRows: [], nailRows: [], discountRows: [] };
     const payloadBookingItemId = String(payload?.bookingItemId || "").trim();
     const summaryAppointmentTime = fallbackData?.appointmentTime || payload?.appointmentTime || "--";
     const summaryEstimatedDuration = fallbackData?.estimatedDuration || payload?.estimatedDuration || "--";
@@ -791,6 +976,10 @@ export function StaffServiceSessionPage() {
       fallbackData?.customerAvatar ||
       payload?.customerAvatar ||
       DEFAULT_CUSTOMER_AVATAR;
+    const summaryTotalPrice = fallbackData?.totalPrice || payload?.totalPrice || "--";
+    const summaryTotalAmount = fallbackData?.totalAmount || payload?.totalAmount || summaryTotalPrice;
+    const summaryDiscountValue = fallbackData?.discountValue || payload?.discountValue || "0 VNĐ";
+    const summaryRemainingBalance = fallbackData?.remainingBalance || payload?.remainingBalance || summaryTotalPrice;
 
     return {
       ...fallbackData,
@@ -805,6 +994,13 @@ export function StaffServiceSessionPage() {
       customerName: summaryCustomerName,
       customerPhone: summaryCustomerPhone,
       customerAvatar: summaryCustomerAvatar,
+      totalPrice: summaryTotalPrice,
+      totalAmount: summaryTotalAmount,
+      discountValue: summaryDiscountValue,
+      remainingBalance: summaryRemainingBalance,
+      serviceBreakdown: resolvedServiceBreakdown,
+      nailServiceBreakdown: resolvedNailServiceBreakdown,
+      priceSummary: resolvedPriceSummary,
       confirmations: payload?.confirmations ?? fallbackData?.confirmations ?? [],
       materialsUsed: payload?.materialsUsed ?? fallbackData?.materialsUsed ?? [],
       customerNotes: payload?.customerNotes ?? fallbackData?.customerNotes ?? [],
@@ -900,7 +1096,9 @@ export function StaffServiceSessionPage() {
   const [procedureLoadError, setProcedureLoadError] = useState("");
   const [procedureStatusUpdates, setProcedureStatusUpdates] = useState({});
   const loadedBookingItemIdRef = useRef("");
+  const progressSentinelRef = useRef(null);
   const [showComparisonView, setShowComparisonView] = useState(false);
+  const [isProgressPinned, setIsProgressPinned] = useState(false);
   const [confirmations, setConfirmations] = useState(initialConfirmations);
   const [completionChecks, setCompletionChecks] = useState(initialCompletionChecks);
   const initializedBookingIdRef = useRef(bookingId);
@@ -953,6 +1151,52 @@ export function StaffServiceSessionPage() {
     () => sessionBookingItemIds.join("|"),
     [sessionBookingItemIds],
   );
+
+  /**
+   * FIXED: Sticky-pin detection for the "Session Progress" card.
+   *
+   * Previously this used a scroll listener + requestAnimationFrame that
+   * read scrollTop on every scroll event. Combined with the header's
+   * padding change (p-5 -> px-4 py-3), each scroll tick could trigger a
+   * layout recalculation, which is what caused the jank/stutter.
+   *
+   * IntersectionObserver does not run on every scroll frame - the
+   * browser notifies us only when the sentinel crosses the observed
+   * boundary, so there's no per-frame layout thrashing.
+   *
+   * `rootMargin` top value must be the NEGATIVE of the height of the
+   * fixed header that sits above this page (see STICKY_HEADER_OFFSET_PX).
+   * That's what keeps the sticky card flush against that outer header
+   * instead of floating with a gap or sitting underneath it.
+   */
+  useEffect(() => {
+    const sentinel = progressSentinelRef.current;
+
+    if (!sentinel) {
+      return undefined;
+    }
+
+    const rootMarginTop =
+      STICKY_HEADER_OFFSET_PX >= 0
+        ? `-${STICKY_HEADER_OFFSET_PX}px`
+        : `${Math.abs(STICKY_HEADER_OFFSET_PX)}px`;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsProgressPinned(!entry.isIntersecting);
+      },
+      {
+        rootMargin: `${rootMarginTop} 0px 0px 0px`,
+        threshold: 0,
+      },
+    );
+
+    observer.observe(sentinel);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -1253,6 +1497,23 @@ export function StaffServiceSessionPage() {
   const canOpenComparison = Boolean(effectiveBeforePhoto) && Boolean(effectiveAfterPhoto);
   const shouldShowProcedureChecklist =
     phase === "progress" || procedureChecklist.length > 0 || Boolean(resolvedProcedureLoadError);
+  const summarySectionConfig = {
+    start: {
+      title: "Customer & Booking Summary",
+      subtitle: "Final service context before the session starts.",
+      statusLabel: "Ready To Start",
+    },
+    progress: {
+      title: "Current Session Overview",
+      subtitle: "Live customer context while the service is running.",
+      statusLabel: "Session In Progress",
+    },
+    done: {
+      title: "Customer & Service Summary",
+      subtitle: "Final service context before closing this session.",
+      statusLabel: "Final Review",
+    },
+  };
 
   const handleToggleConfirmation = (label) => {
     setConfirmations((current) =>
@@ -1630,6 +1891,147 @@ export function StaffServiceSessionPage() {
     setFlashMessage("");
   };
 
+  const handleRequestCustomerReview = () => {
+    toast.success("Customer review request sent successfully.");
+    setFlashMessage("");
+  };
+
+  const comparisonModal = showComparisonView ? (
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[#2b1323]/55 px-4 py-6 backdrop-blur-sm">
+      <div className="relative max-h-[92vh] w-full max-w-6xl overflow-hidden rounded-[32px] border border-[#f3d5e2] bg-[linear-gradient(180deg,#fffdfd_0%,#fff5f9_100%)] shadow-[0_30px_80px_rgba(43,19,35,0.24)]">
+        <button
+          type="button"
+          onClick={() => setShowComparisonView(false)}
+          className="absolute right-5 top-5 z-10 inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#f2bfd4] bg-white/90 text-[#8a6179] transition hover:bg-[#fff6fa]"
+          aria-label="Close comparison modal"
+        >
+          <X size={18} />
+        </button>
+
+        <div className="max-h-[92vh] overflow-y-auto px-5 py-5 sm:px-7 sm:py-7">
+          <div className="pr-14">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#c990ab]">
+              Final Result Review
+            </p>
+            <h2 className="mt-2 text-2xl font-black tracking-tight text-[#3f2b3f]">
+              Before & After Comparison
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm text-[#8f7286]">
+              Review the service transformation in one place before checkout handoff.
+            </p>
+          </div>
+
+          <div className="mt-6 grid gap-5 xl:grid-cols-2">
+            <div className="overflow-hidden rounded-[26px] border border-[#f3d5e2] bg-white shadow-[0_18px_40px_rgba(236,72,153,0.06)]">
+              <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] px-5 py-4">
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#b68aa2]">
+                    Before
+                  </p>
+                  <p className="mt-1 text-base font-extrabold text-[#3f2b3f]">
+                    Before Service Photo
+                  </p>
+                </div>
+                <span className="rounded-full bg-[#fff1f7] px-3 py-1 text-[10px] font-bold text-[#ea4f93]">
+                  {effectiveBeforePhoto?.uploadedAt ?? data.beforePhotoTimestamp ?? "N/A"}
+                </span>
+              </div>
+              <div className="bg-[#fff7fb] p-4">
+                {effectiveBeforePhoto ? (
+                  <Image crossOrigin="anonymous"
+                    src={effectiveBeforePhoto.previewUrl}
+                    alt={effectiveBeforePhoto.fileName}
+                    className="h-[280px] w-full rounded-[22px] object-cover sm:h-[360px]"
+                  />
+                ) : (
+                  <div className="flex h-[280px] items-center justify-center rounded-[22px] border border-dashed border-[#f2bfd4] bg-white px-6 text-center text-sm text-[#a88a9d] sm:h-[360px]">
+                    Before-service photo is not available.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-[26px] border border-[#f3d5e2] bg-white shadow-[0_18px_40px_rgba(236,72,153,0.06)]">
+              <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] px-5 py-4">
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#b68aa2]">
+                    After
+                  </p>
+                  <p className="mt-1 text-base font-extrabold text-[#3f2b3f]">
+                    After Service Photo
+                  </p>
+                </div>
+                <span className="rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold text-emerald-600">
+                  {effectiveAfterPhoto?.uploadedAt ?? data.afterPhotoTimestamp ?? "N/A"}
+                </span>
+              </div>
+              <div className="bg-[#fff7fb] p-4">
+                {effectiveAfterPhoto ? (
+                  <Image crossOrigin="anonymous"
+                    src={effectiveAfterPhoto.previewUrl}
+                    alt={effectiveAfterPhoto.fileName}
+                    className="h-[280px] w-full rounded-[22px] object-cover sm:h-[360px]"
+                  />
+                ) : (
+                  <div className="flex h-[280px] items-center justify-center rounded-[22px] border border-dashed border-[#f2bfd4] bg-white px-6 text-center text-sm text-[#a88a9d] sm:h-[360px]">
+                    After-service photo is not available.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
+            <div className="rounded-[22px] border border-[#f3d5e2] bg-white px-5 py-4">
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#b68aa2]">
+                Customer
+              </p>
+              <p className="mt-2 text-base font-extrabold text-[#3f2b3f]">{data.customerName}</p>
+            </div>
+            <div className="rounded-[22px] border border-[#f3d5e2] bg-white px-5 py-4">
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#b68aa2]">
+                Service
+              </p>
+              <p className="mt-2 text-base font-extrabold text-[#3f2b3f]">{data.serviceLabel}</p>
+            </div>
+            <div className="rounded-[22px] border border-[#f3d5e2] bg-white px-5 py-4">
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#b68aa2]">
+                Design
+              </p>
+              <p className="mt-2 text-base font-extrabold text-[#3f2b3f]">
+                {hasConfirmedDesign ? data.designName : "N/A"}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={() => setShowComparisonView(false)}
+              className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-[#f2bfd4] bg-white px-5 py-3 text-sm font-bold text-[#8a6179] transition hover:bg-[#fff7fb]"
+            >
+              Close
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                navigate(data.backRoute, {
+                  state: {
+                    fromServiceSession: true,
+                    readyForCheckout: true,
+                  },
+                })
+              }
+              className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-[image:var(--gradient-accent)] px-5 py-3 text-sm font-bold text-white shadow-[0_16px_28px_rgba(236,72,153,0.24)]"
+            >
+              Go to Checkout
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
   const progressSteps = [
     {
       label: "Start",
@@ -1647,354 +2049,6 @@ export function StaffServiceSessionPage() {
       state: completed ? "active" : "upcoming",
     },
   ];
-
-  const qualityChecks = [
-    "Shape matches selected design",
-    "Color matches selected design",
-    "Decoration completed",
-    "Final photo uploaded",
-    "Customer approved result",
-  ];
-
-  if (showComparisonView) {
-    return (
-      <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff3f8_100%)]">
-        <header className="rounded-[24px] border border-[#f3d5e2] bg-white/90 p-5 shadow-[0_14px_30px_rgba(236,72,153,0.06)]">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="flex items-start gap-3">
-              <button
-                type="button"
-                onClick={() => setShowComparisonView(false)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[#f2bfd4] bg-white text-[#ea4f93] transition hover:bg-[#fff4f8]"
-              >
-                <ArrowLeft size={16} />
-              </button>
-              <div>
-                <h1 className="text-[1.65rem] font-black tracking-tight text-[#3f2b3f]">
-                  Before & After Comparison
-                </h1>
-                <p className="mt-1 text-sm text-[#a88a9d]">
-                  Compare customer hand photos before and after the nail service.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="rounded-xl border border-[#f2bfd4] bg-[#fff1f7] px-4 py-2 text-xs font-extrabold text-[#ea4f93]">
-                #{data.bookingCode}
-              </span>
-              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-bold text-emerald-600">
-                <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                Completed
-              </span>
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] text-xs font-extrabold text-white">
-                {data.staffArtist
-                  .split(" ")
-                  .map((part) => part[0])
-                  .join("")
-                  .slice(0, 2)}
-              </div>
-            </div>
-          </div>
-        </header>
-
-        <article className="rounded-[24px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
-          <SectionTitle
-            icon={Clock3}
-            title="Session Progress"
-            subtitle="Completed proof of the service workflow."
-          />
-          <div className="mt-6 flex flex-col gap-5 xl:flex-row">
-            {[
-              { label: "Start", statusLabel: "Completed", state: "complete" },
-              { label: "In Progress", statusLabel: "Completed", state: "complete" },
-              { label: "Done", statusLabel: "Completed", state: "complete" },
-            ].map((step, index, list) => (
-              <ProgressStep
-                key={step.label}
-                step={step}
-                index={index}
-                isLast={index === list.length - 1}
-              />
-            ))}
-          </div>
-        </article>
-
-        <article className="rounded-[24px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
-          <SectionTitle
-            icon={Camera}
-            title="Photo Comparison"
-            subtitle="Side-by-side view of the nail transformation."
-          />
-
-          <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1fr)_84px_minmax(0,1fr)] xl:items-center">
-            <div className="overflow-hidden rounded-[22px] border border-[#f3d5e2] bg-[#fff8fb]">
-              <div className="flex items-center justify-between border-b border-[#f8e3ec] px-4 py-3">
-                <p className="text-sm font-extrabold text-[#3f2b3f]">Before Service</p>
-                <span className="rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-[10px] font-bold text-amber-600">
-                  Before Photo
-                </span>
-              </div>
-              <div className="p-4">
-                <div className="overflow-hidden rounded-[18px] border border-[#f0d5e2] bg-white">
-                  <img
-                    src={effectiveBeforePhoto.previewUrl}
-                    alt={effectiveBeforePhoto.fileName}
-                    className="h-[320px] w-full object-cover"
-                  />
-                </div>
-                <div className="mt-4 flex items-center gap-3 rounded-[16px] border border-[#f3dbe6] bg-white px-4 py-3">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fff1f7] text-[#ea4f93]">
-                    <Clock3 size={14} />
-                  </span>
-                  <div>
-                    <p className="text-[10px] uppercase tracking-[0.14em] text-[#b59aab]">Uploaded at</p>
-                    <p className="text-sm font-bold text-[#3f2b3f]">{effectiveBeforePhoto.uploadedAt}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col items-center justify-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] text-white shadow-[0_12px_20px_rgba(236,72,153,0.24)]">
-                <ArrowRight size={18} />
-              </div>
-              <div className="rounded-xl border border-[#f2bfd4] bg-[#fff5fa] px-3 py-2 text-center text-[10px] font-bold uppercase tracking-[0.12em] text-[#ea4f93]">
-                Transformation
-                <br />
-                Result
-              </div>
-            </div>
-
-            <div className="overflow-hidden rounded-[22px] border border-[#f3d5e2] bg-[#fff8fb]">
-              <div className="flex items-center justify-between border-b border-[#f8e3ec] px-4 py-3">
-                <p className="text-sm font-extrabold text-[#3f2b3f]">After Service</p>
-                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-bold text-emerald-600">
-                  After Photo
-                </span>
-              </div>
-              <div className="p-4">
-                <div className="overflow-hidden rounded-[18px] border border-[#f0d5e2] bg-white">
-                  <img
-                    src={effectiveAfterPhoto.previewUrl}
-                    alt={effectiveAfterPhoto.fileName}
-                    className="h-[320px] w-full object-cover"
-                  />
-                </div>
-                <div className="mt-4 flex items-center gap-3 rounded-[16px] border border-[#f3dbe6] bg-white px-4 py-3">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fff1f7] text-[#ea4f93]">
-                    <Clock3 size={14} />
-                  </span>
-                  <div>
-                    <p className="text-[10px] uppercase tracking-[0.14em] text-[#b59aab]">Uploaded at</p>
-                    <p className="text-sm font-bold text-[#3f2b3f]">{effectiveAfterPhoto.uploadedAt}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </article>
-
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          <CompareSummaryCard label="Service" value={data.serviceLabel} note={data.designName} />
-          <CompareSummaryCard label="Staff Artist" value={data.staffArtist} note="Senior Artist" />
-          <CompareSummaryCard label="Duration" value={data.estimatedDuration} note="On schedule" />
-          <CompareSummaryCard label="Design Match" value="96%" note="Excellent" accent />
-          <CompareSummaryCard label="Satisfaction" value="Pending" note="Awaiting review" />
-        </section>
-
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
-          <article className="rounded-[24px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
-            <div className="flex items-center gap-3">
-              <div className="h-4 w-1 rounded-full bg-[image:var(--gradient-accent)]" />
-              <h2 className="text-sm font-extrabold text-[#3f2b3f]">Quality Check</h2>
-            </div>
-
-            <div className="mt-5 flex flex-wrap gap-3">
-              {qualityChecks.map((item) => (
-                <div
-                  key={item}
-                  className="inline-flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900"
-                >
-                  <span className="flex h-5 w-5 items-center justify-center rounded-md bg-emerald-600 text-white">
-                    <Check size={12} />
-                  </span>
-                  <span>{item}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-8 flex flex-wrap gap-3">
-              <CompareActionButton
-                icon={Receipt}
-                label="Save to Customer History"
-                tone="primary"
-                onClick={() =>
-                  handleSessionAction("Completed comparison can now be saved to the customer history.")
-                }
-              />
-              <CompareActionButton
-                icon={Heart}
-                label="Add to Staff Portfolio"
-                tone="secondary"
-                onClick={() =>
-                  handleSessionAction("This completed nail set can be added to the staff portfolio.")
-                }
-              />
-              <CompareActionButton
-                icon={Send}
-                label="Send to Customer"
-                tone="success"
-                onClick={() =>
-                  handleSessionAction("Comparison proof has been prepared to send to the customer.")
-                }
-              />
-              <CompareActionButton
-                icon={CreditCard}
-                label="Go to Payment"
-                tone="outline"
-                onClick={() =>
-                  navigate(data.backRoute, {
-                    state: {
-                      fromServiceSession: true,
-                      readyForCheckout: true,
-                    },
-                  })
-                }
-              />
-              <CompareActionButton
-                icon={ArrowLeft}
-                label="Back to Service Session"
-                tone="muted"
-                onClick={() => setShowComparisonView(false)}
-              />
-            </div>
-          </article>
-
-          <aside className="space-y-4">
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#d75d93]">
-                Customer
-              </p>
-              <div className="mt-4 flex items-center gap-3">
-                <img
-                  src={data.customerAvatar}
-                  alt={data.customerName}
-                  className="h-14 w-14 rounded-full border border-[#f2bfd4] object-cover"
-                  loading="lazy"
-                  referrerPolicy="no-referrer"
-                />
-                <div>
-                  <p className="text-sm font-extrabold text-[#3f2b3f]">{data.customerName}</p>
-                  <span className="mt-1 inline-flex rounded-full bg-[#ffd771] px-2.5 py-1 text-[10px] font-bold text-[#9a5b00]">
-                    Gold Member
-                  </span>
-                  <p className="mt-2 text-xs text-[#a88a9d]">#{data.bookingCode}</p>
-                </div>
-              </div>
-            </article>
-
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#d75d93]">
-                Selected Design
-              </p>
-              <div className="mt-4 overflow-hidden rounded-[16px] border border-[#f1d4e1]">
-                <img
-                  src={effectiveAfterPhoto.previewUrl}
-                  alt={data.designName}
-                  className="h-32 w-full object-cover"
-                />
-              </div>
-              <div className="mt-4 space-y-3 text-sm">
-                {[
-                  ["Shape", "Almond"],
-                  ["Length", "Medium"],
-                  ["Color", "Pearl Chrome"],
-                  ["Finish", "Glossy"],
-                ].map(([label, value]) => (
-                  <div key={label} className="flex items-center justify-between gap-3">
-                    <span className="text-[#b08ea2]">{label}</span>
-                    <span className="font-bold text-[#3f2b3f]">{value}</span>
-                  </div>
-                ))}
-              </div>
-            </article>
-
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#d75d93]">
-                Proof Record
-              </p>
-              <div className="mt-4 space-y-3 text-sm text-[#866f80]">
-                <div className="flex items-start gap-3">
-                  <span className="mt-1 h-2 w-2 rounded-full bg-[#ea4f93]" />
-                  <div>
-                    <p>Before photo uploaded</p>
-                    <p className="font-bold text-[#3f2b3f]">{effectiveBeforePhoto.uploadedAt}</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="mt-1 h-2 w-2 rounded-full bg-[#ea4f93]" />
-                  <div>
-                    <p>After photo uploaded</p>
-                    <p className="font-bold text-[#3f2b3f]">{effectiveAfterPhoto.uploadedAt}</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="mt-1 h-2 w-2 rounded-full bg-[#ea4f93]" />
-                  <div>
-                    <p>Verified by</p>
-                    <p className="font-bold text-[#3f2b3f]">{data.staffArtist}</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="mt-1 h-2 w-2 rounded-full bg-emerald-500" />
-                  <div>
-                    <p>Session status</p>
-                    <p className="font-bold text-emerald-600">Completed</p>
-                  </div>
-                </div>
-              </div>
-            </article>
-
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#d75d93]">
-                Next Step
-              </p>
-              <div className="mt-4 space-y-3">
-                <CompareActionButton
-                  icon={Receipt}
-                  label="Checkout"
-                  tone="primary"
-                  onClick={() =>
-                    navigate(data.backRoute, {
-                      state: {
-                        fromServiceSession: true,
-                        readyForCheckout: true,
-                      },
-                    })
-                  }
-                />
-                <CompareActionButton
-                  icon={ClipboardCheck}
-                  label="Request Review"
-                  tone="outline"
-                  onClick={() =>
-                    handleSessionAction("Customer review request can be sent after comparison is confirmed.")
-                  }
-                />
-                <CompareActionButton
-                  icon={Printer}
-                  label="Print Receipt"
-                  tone="secondary"
-                  onClick={() => handleSessionAction("Receipt printing can be prepared from the final payment flow.")}
-                />
-              </div>
-            </article>
-          </aside>
-        </div>
-      </section>
-    );
-  }
 
   if (isSessionFinalized) {
     return (
@@ -2054,9 +2108,7 @@ export function StaffServiceSessionPage() {
 
             <button
               type="button"
-              onClick={() =>
-                handleSessionAction("Customer review request can be sent after the final session handoff.")
-              }
+              onClick={handleRequestCustomerReview}
               className="flex min-h-24 items-start gap-4 rounded-[24px] border border-[#f2bfd4] bg-[#fff7fb] px-5 py-5 text-left transition hover:bg-[#fff2f8]"
             >
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#f4eaff] text-[#8b5cf6]">
@@ -2068,7 +2120,7 @@ export function StaffServiceSessionPage() {
               </span>
             </button>
 
-            <button
+            {/* <button
               type="button"
               onClick={() =>
                 handleSessionAction("Completed design can now be saved to the customer history archive.")
@@ -2082,7 +2134,7 @@ export function StaffServiceSessionPage() {
                 <span className="block text-base font-extrabold text-[#3f2b3f]">Save Design to History</span>
                 <span className="mt-1 block text-sm text-[#a88a9d]">Archive this final result to the customer profile.</span>
               </span>
-            </button>
+            </button> */}
 
             <button
               type="button"
@@ -2104,6 +2156,7 @@ export function StaffServiceSessionPage() {
             </button>
           </div>
         </article>
+        {comparisonModal}
       </section>
     );
   }
@@ -2117,19 +2170,28 @@ export function StaffServiceSessionPage() {
         </div>
       ) : null}
 
-      <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
-        <SectionTitle
-          icon={Sparkles}
-          title="Session Progress"
-          subtitle="Track the start and completion of the service workflow."
-        />
-        <div className="mt-6 flex flex-col gap-5 xl:flex-row">
+      <div ref={progressSentinelRef} className="h-px w-full" />
+      <article
+        style={{ top: `${STICKY_HEADER_OFFSET_PX}px` }}
+        className={`z-30 rounded-[22px] border border-[#f3d5e2] bg-white shadow-[0_14px_30px_rgba(236,72,153,0.05)] transition-[padding] duration-200 xl:sticky ${
+          isProgressPinned ? "px-4 py-3 backdrop-blur-sm xl:bg-white/95" : "p-5"
+        }`}
+      >
+        {!isProgressPinned ? (
+          <SectionTitle
+            icon={Sparkles}
+            title="Session Progress"
+            subtitle="Track the start and completion of the service workflow."
+          />
+        ) : null}
+        <div className={`${isProgressPinned ? "mt-0" : "mt-6"} flex flex-col gap-5 xl:flex-row`}>
           {progressSteps.map((step, index) => (
             <ProgressStep
               key={step.label}
               step={step}
               index={index}
               isLast={index === progressSteps.length - 1}
+              compact={isProgressPinned}
             />
           ))}
         </div>
@@ -2142,38 +2204,14 @@ export function StaffServiceSessionPage() {
         <div className="space-y-4">
           {phase === "start" ? (
             <>
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
-                <SectionTitle
-                  icon={UserRound}
-                  title="Customer & Booking Summary"
-                  subtitle="Final service context before the session starts."
-                />
-
-                <div className="mt-5 border-b border-[#f8e6ef] pb-4">
-                  <div className="flex items-center gap-4">
-                    <img
-                      src={data.customerAvatar}
-                      alt={data.customerName}
-                      className="h-14 w-14 rounded-2xl border border-[#f2bfd4] object-cover"
-                      loading="lazy"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div>
-                      <p className="text-lg font-extrabold text-[#3f2b3f]">{data.customerName}</p>
-                      <p className="mt-1 text-sm text-[#a88a9d]">{data.customerPhone}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-5 grid gap-5 md:grid-cols-2">
-                  <SummaryValue label="Service" value={data.serviceLabel} accent />
-                  <SummaryValue label="Staff Artist" value={data.staffArtist} />
-                  {/* <SummaryValue label="Chair" value={data.chair} /> */}
-                  <SummaryValue label="Appointment Time" value={data.appointmentTime} />
-                  <SummaryValue label="Estimated Duration" value={data.estimatedDuration} />
-                  {hasConfirmedDesign ? <SummaryValue label="Confirmed Design" value={data.designName} /> : null}
-                </div>
-              </article>
+              <SessionSummaryPanel
+                phase={phase}
+                title={summarySectionConfig.start.title}
+                subtitle={summarySectionConfig.start.subtitle}
+                data={data}
+                hasConfirmedDesign={hasConfirmedDesign}
+                serviceStatusLabel={summarySectionConfig.start.statusLabel}
+              />
 
               <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
@@ -2220,7 +2258,7 @@ export function StaffServiceSessionPage() {
                   </p>
                   {effectiveBeforePhoto ? (
                     <div className="mt-4 flex items-center gap-4 rounded-[20px] border border-[#f2bfd4] bg-[#fff8fb] p-4">
-                      <Image
+                      <Image crossOrigin="anonymous"
                         src={effectiveBeforePhoto.previewUrl}
                         alt={effectiveBeforePhoto.fileName}
                         // className="h-20 w-20 rounded-2xl border border-[#f2bfd4] object-cover"
@@ -2280,35 +2318,14 @@ export function StaffServiceSessionPage() {
             </>
           ) : phase === "progress" ? (
             <>
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
-                <SectionTitle
-                  icon={UserRound}
-                  title="Current Session Overview"
-                  subtitle="Live customer context while the service is running."
-                />
-
-                <div className="mt-5 flex flex-col gap-5 rounded-[22px] border border-[#f5d9e6] bg-[linear-gradient(180deg,#fffafc_0%,#fff5f9_100%)] p-5">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                    <img
-                      src={data.customerAvatar}
-                      alt={data.customerName}
-                      className="h-16 w-16 rounded-2xl border border-[#f2bfd4] object-cover"
-                      loading="lazy"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-lg font-extrabold text-[#3f2b3f]">{data.customerName}</p>
-                      {/* <p className="mt-1 text-sm font-medium text-[#ea4f93]">{overviewServiceLabel}</p> */}
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <SessionChip icon={UserRound} label={data.staffArtist} />
-                        {/* <SessionChip icon={Sparkles} label={overviewServiceLabel} /> */}
-                        <SessionChip icon={Clock3} label={`Start: ${data.appointmentTime ?? "--"}`} />
-                        <SessionChip icon={Clock3} label={`Est. Finish: ${data.estimatedFinishTime}`} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </article>
+              <SessionSummaryPanel
+                phase={phase}
+                title={summarySectionConfig.progress.title}
+                subtitle={summarySectionConfig.progress.subtitle}
+                data={data}
+                hasConfirmedDesign={hasConfirmedDesign}
+                serviceStatusLabel={summarySectionConfig.progress.statusLabel}
+              />
 
               <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
@@ -2320,7 +2337,7 @@ export function StaffServiceSessionPage() {
                 <div className="mt-5 overflow-hidden rounded-[22px] border border-[#f2bfd4] bg-[#fff7fb]">
                   {effectiveBeforePhoto ? (
                     <div className="relative">
-                      <img
+                      <img crossOrigin="anonymous"
                         src={effectiveBeforePhoto.previewUrl}
                         alt={effectiveBeforePhoto.fileName}
                         className="h-[260px] w-full object-cover"
@@ -2348,38 +2365,16 @@ export function StaffServiceSessionPage() {
                   subtitle="Track what is happening during the active session."
                 />
 
-                <div className="mt-5 grid gap-4 md:grid-cols-2">
-                  <div className={`rounded-[18px] border border-[#f2bfd4] bg-[linear-gradient(180deg,#fff8fb_0%,#fff3f8_100%)] p-4 shadow-[0_12px_24px_rgba(236,72,153,0.06)] ${hasConfirmedDesign ? "" : "md:col-span-2"}`}>
+                <div className="mt-5 flex flex-col gap-4">
+                  <div className={`rounded-[18px] border border-[#f2bfd4] bg-[linear-gradient(180deg,#fff8fb_0%,#fff3f8_100%)] p-4 shadow-[0_12px_24px_rgba(236,72,153,0.06)] ${hasConfirmedDesign ? "" : "xl:col-span-2"}`}>
                     <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
                       Current Process
                     </p>
-                    <div className="mt-3 space-y-3">
-                      {Array.isArray(data.serviceBreakdown) && data.serviceBreakdown.length ? (
-                        data.serviceBreakdown.map((service, index) => (
-                          <div
-                            key={service.id || `${service.name}-${index}`}
-                            className="flex items-start justify-between gap-3 rounded-[16px] border border-[#f7d5e3] bg-white/90 px-3 py-3"
-                          >
-                            <div className="min-w-0">
-                              <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#c694ad]">
-                                Service {index + 1}
-                              </p>
-                              <p className="mt-1 break-words text-sm font-extrabold leading-6 text-[#ea4f93]">
-                                {service.name}
-                              </p>
-                            </div>
-                            <span className="inline-flex shrink-0 rounded-full bg-[#f7efff] px-3 py-1 text-[11px] font-bold text-[#8b5cf6]">
-                              {service.durationLabel || "--"}
-                            </span>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="rounded-[16px] border border-[#f7d5e3] bg-white/90 px-3 py-3">
-                          <p className="break-words text-sm font-extrabold leading-6 text-[#ea4f93]">
-                            {data.serviceLabel}
-                          </p>
-                        </div>
-                      )}
+                    <div className="mt-3">
+                      <ServiceSummaryValue
+                        services={Array.isArray(data.serviceBreakdown) ? data.serviceBreakdown : []}
+                        fallbackValue={data.serviceLabel}
+                      />
                     </div>
                   </div>
                   {hasConfirmedDesign ? (
@@ -2387,8 +2382,11 @@ export function StaffServiceSessionPage() {
                       <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
                         Nail Service
                       </p>
-                      <div className="mt-3 rounded-[16px] border border-[#f7d5e3] bg-white/90 px-3 py-3">
-                        <p className="text-sm font-extrabold leading-6 text-[#ea4f93]">{data.designName}</p>
+                      <div className="mt-3">
+                        <ServiceSummaryValue
+                          services={Array.isArray(data.nailServiceBreakdown) ? data.nailServiceBreakdown : []}
+                          fallbackValue={data.designName}
+                        />
                       </div>
                       <div className="mt-4 border-t border-[#f7dce8] pt-4">
                         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
@@ -2398,7 +2396,7 @@ export function StaffServiceSessionPage() {
                       </div>
                     </div>
                   ) : null}
-                  <div className="rounded-[18px] border border-[#f2bfd4] bg-[#fff6fa] p-4 md:col-span-2">
+                  <div className="rounded-[18px] border border-[#f2bfd4] bg-[#fff6fa] p-4 xl:col-span-2">
                     <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
                       Session Summary
                     </p>
@@ -2489,47 +2487,14 @@ export function StaffServiceSessionPage() {
             </>
           ) : (
             <>
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
-                <SectionTitle
-                  icon={UserRound}
-                  title="Customer & Service Summary"
-                  subtitle="Final service context before closing this session."
-                />
-
-                <div className="mt-5 border-b border-[#f8e6ef] pb-4">
-                  <div className="flex items-center gap-4">
-                    <img
-                      src={data.customerAvatar}
-                      alt={data.customerName}
-                      className="h-14 w-14 rounded-full border border-[#f2bfd4] object-cover"
-                      loading="lazy"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div>
-                      <p className="text-lg font-extrabold text-[#3f2b3f]">{data.customerName}</p>
-                      <p className="mt-1 text-sm text-[#ea4f93]">{data.serviceLabel}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-5 grid gap-5 md:grid-cols-3">
-                  <SummaryValue label="Staff Artist" value={data.staffArtist} />
-                  {/* <SummaryValue label="Chair" value={data.chair} /> */}
-                  <SummaryValue label="Start Time" value={data.appointmentTime} />
-                  <SummaryValue label="Duration" value={data.estimatedDuration} accent />
-                  {/* <SummaryValue label="Completed" value={data.completedAt} /> */}
-                  <div className="md:col-span-3">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">Service</p>
-                    <div className="mt-3">
-                      <ServiceSummaryValue
-                        services={Array.isArray(data.serviceBreakdown) ? data.serviceBreakdown : []}
-                        fallbackValue={data.serviceLabel}
-                      />
-                    </div>
-                  </div>
-                  {hasConfirmedDesign ? <SummaryValue label="Nail Design" value={data.designName} /> : null}
-                </div>
-              </article>
+              <SessionSummaryPanel
+                phase={phase}
+                title={summarySectionConfig.done.title}
+                subtitle={summarySectionConfig.done.subtitle}
+                data={data}
+                hasConfirmedDesign={hasConfirmedDesign}
+                serviceStatusLabel={summarySectionConfig.done.statusLabel}
+              />
 
               <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
@@ -2576,7 +2541,7 @@ export function StaffServiceSessionPage() {
                   </p>
                   {effectiveAfterPhoto ? (
                     <div className="mt-4 flex items-center gap-4 rounded-[20px] border border-[#f2bfd4] bg-[#fff8fb] p-4">
-                      <Image
+                      <Image crossOrigin="anonymous"
                         src={effectiveAfterPhoto.previewUrl}
                         alt={effectiveAfterPhoto.fileName}
                         // className="h-20 w-20 rounded-2xl border border-[#f2bfd4] object-cover"
@@ -2659,7 +2624,7 @@ export function StaffServiceSessionPage() {
                   </div>
                 ) : null}
 
-                {hasConfirmedDesign ? (
+                {/* {hasConfirmedDesign ? (
                   <div className="mt-4 rounded-xl border border-[#f2bfd4] bg-white px-4 py-4">
                     <div className="flex items-start gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
@@ -2673,7 +2638,7 @@ export function StaffServiceSessionPage() {
                       </div>
                     </div>
                   </div>
-                ) : null}
+                ) : null} */}
               </article>
 
               <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
@@ -2684,26 +2649,31 @@ export function StaffServiceSessionPage() {
                 />
 
                 <div className="mt-5 space-y-4 text-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-[#a88a9d]">Original Service Price</span>
-                    <span className="font-bold text-[#3f2b3f]">{data.originalServicePrice}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-[#a88a9d]">Extra Service Fee</span>
-                    <span className="font-bold text-[#3f2b3f]">{data.extraServiceFee}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-[#a88a9d]">{data.discountLabel}</span>
-                    <span className="font-bold text-emerald-600">{data.discountValue}</span>
-                  </div>
+                  {[
+                    ...(Array.isArray(data.priceSummary?.serviceRows) ? data.priceSummary.serviceRows : []),
+                    ...(Array.isArray(data.priceSummary?.nailRows) ? data.priceSummary.nailRows : []),
+                    ...(Array.isArray(data.priceSummary?.discountRows) ? data.priceSummary.discountRows : []),
+                  ].map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-start justify-between gap-3 rounded-[16px] border border-[#f4dbe7] bg-[#fffafb] px-4 py-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
+                          {item.category}
+                        </p>
+                        <p className="mt-1 break-words font-bold text-[#3f2b3f]">{item.label}</p>
+                        {item.meta ? <p className="mt-1 text-xs text-[#a88a9d]">{item.meta}</p> : null}
+                      </div>
+                      <span className={`shrink-0 font-bold ${item.category === "Discount" ? "text-emerald-600" : "text-[#3f2b3f]"}`}>
+                        {item.amount}
+                      </span>
+                    </div>
+                  ))}
                   <div className="border-t border-[#f5d9e6]" />
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-sm font-extrabold text-[#3f2b3f]">Total Amount</span>
-                    <span className="text-base font-extrabold text-[#ea4f93]">{data.totalAmount}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-[#a88a9d]">Remaining Balance</span>
-                    <span className="font-extrabold text-[#6b46c1]">{data.remainingBalance}</span>
+                    <span className="text-sm font-extrabold text-[#3f2b3f]">Total Price</span>
+                    <span className="text-base font-extrabold text-[#ea4f93]">{data.totalPrice}</span>
                   </div>
                 </div>
 
@@ -2752,9 +2722,7 @@ export function StaffServiceSessionPage() {
 
                   <button
                     type="button"
-                    onClick={() =>
-                      handleSessionAction("Customer review request can be sent after the final session handoff.")
-                    }
+                    onClick={handleRequestCustomerReview}
                     className="flex min-h-20 items-start gap-3 rounded-2xl border border-[#f2bfd4] bg-[#fff7fb] px-4 py-4 text-left transition hover:bg-[#fff2f8]"
                   >
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f4eaff] text-[#8b5cf6]">
@@ -2766,7 +2734,7 @@ export function StaffServiceSessionPage() {
                     </span>
                   </button>
 
-                  <button
+                  {/* <button
                     type="button"
                     onClick={() =>
                       handleSessionAction("Completed design can now be saved to the customer history archive.")
@@ -2780,7 +2748,7 @@ export function StaffServiceSessionPage() {
                       <span className="block text-sm font-extrabold text-[#3f2b3f]">Save Design to History</span>
                       <span className="mt-1 block text-xs text-[#a88a9d]">Archive this final result to the customer profile.</span>
                     </span>
-                  </button>
+                  </button> */}
 
                   <button
                     type="button"
@@ -2966,6 +2934,8 @@ export function StaffServiceSessionPage() {
         ]}
       />
 
+      {comparisonModal}
+
       <ExtraServiceModal
         open={showExtraServiceModal}
         services={serviceCatalog}
@@ -2997,3 +2967,4 @@ export function StaffServiceSessionPage() {
     </section>
   );
 }
+

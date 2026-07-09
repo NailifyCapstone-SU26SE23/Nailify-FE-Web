@@ -38,7 +38,8 @@ export function CancelBookingModal({
 
     try {
       setIsLoading(true);
-      await cancelBooking(bookingId);
+      const fullReason = details ? `${reason} - ${details}` : reason;
+      await cancelBooking(bookingId, fullReason, booking?.holdToken);
       toast.success("Booking cancelled successfully!");
       onSuccess?.();
       onClose();

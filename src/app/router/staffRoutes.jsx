@@ -1,14 +1,15 @@
 import { Navigate } from "react-router-dom";
 import { StaffLayout } from "../layouts/StaffLayout";
 import { StaffDashboardPage } from "../../features/core/dashboard/pages/StaffDashboardPage";
-import { BookingListPage } from "../../features/core/booking-management/pages/BookingListPage";
-import { BookingCreatePage } from "../../features/core/booking-management/pages/BookingCreatePage";
-import { BookingDetailPage } from "../../features/core/booking-management/pages/BookingDetailPage";
+import { BookingListPage } from "../../shared/bookings/pages/BookingListPage";
+import { BookingCreatePage } from "../../shared/bookings/pages/BookingCreatePage";
+import { BookingDetailPage } from "../../shared/bookings/pages/BookingDetailPage";
 import { StaffNailDesignStudioPage } from "../../features/staff/bookings/pages/StaffNailDesignStudioPage";
 import { StaffServiceSessionPage } from "../../features/staff/bookings/pages/StaffServiceSessionPage";
 import { StaffUpdateBookingDesignPage } from "../../features/staff/bookings/pages/StaffUpdateBookingDesignPage";
 import { StaffCustomerNailsListPage } from "../../features/staff/customer-nail/pages/StaffCustomerNailsListPage";
 import { StaffCustomerNailReviewPage } from "../../features/staff/customer-nail/pages/StaffCustomerNailReviewPage";
+import { StaffWaittingPage } from "../../features/staff/waitting/pages/StaffWaittingPage";
 import { AuthGuard } from "../../shared/components/guards/AuthGuard";
 import { RoleGuard } from "../../shared/components/guards/RoleGuard";
 import { ROLES } from "../../shared/constants/roles";
@@ -64,6 +65,10 @@ export const staffRoutes = [
       {
         path: ROUTES.staffCustomerNailDetail,
         element: <StaffCustomerNailReviewPage />,
+      },
+      {
+        path: ROUTES.staffWaitting,
+        element: <StaffWaittingPage />,
       },
     ],
   },

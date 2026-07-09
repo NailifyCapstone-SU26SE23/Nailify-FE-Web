@@ -1,5 +1,6 @@
 import { axiosClient } from "../../../../lib/axiosClient";
 import { loadAuthSession } from "../../../core/auth/model/authStorage";
+import { buildAvatarDataUrl } from "../../../../shared/utils/avatar";
 
 function getAuthHeaders() {
   const session = loadAuthSession();
@@ -122,7 +123,7 @@ function getSalonImage(imageUrl, salonId) {
     return imageUrl;
   }
 
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(salonId || "Salon")}&background=fde7ef&color=8f365c&bold=true`;
+  return buildAvatarDataUrl(salonId || "Salon");
 }
 
 export function normalizeAdminSalon(salon) {

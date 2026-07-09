@@ -157,7 +157,7 @@ export function NailDesignManagementFormFields({
 
       <label className="space-y-2 md:col-span-2">
         <span className="text-sm font-medium text-[var(--color-ink)]">
-          Color palette
+          Category
         </span>
         <input
           value={formValues.palette}

@@ -11,19 +11,23 @@ import {
   Wrench,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import toast from "react-hot-toast";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import {
   ROUTES,
   getAdminSalonUpdateRoute,
 } from "../../../../shared/constants/routes";
+import { mapSalonOperatingHours } from "../services/salonManagementService";
 import {
   SALON_DAYS_OF_WEEK,
   fetchMockSalonFormById,
   getSalonsWithUpdates,
   removeMockSalonById,
 } from "../services/mockSalon";
+
+const SALON_PLACEHOLDER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"><rect width="400" height="200" rx="24" fill="#fde7ef"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#8f365c" font-family="Arial, sans-serif" font-size="30" font-weight="700">Salon</text></svg>',
+)}`;
 
 function SalonDetailLoadingState() {
   return (
@@ -36,46 +40,6 @@ function SalonDetailLoadingState() {
   );
 }
 
-function mapApiSalonToFormAndRow(apiSalon) {
-  console.log("Mapping API salon to form/row:", apiSalon);
-  const salonForm = {
-    salonId: (apiSalon.salonId || apiSalon.id || "").toString().trim(),
-    salonName: apiSalon.salonName || apiSalon.name || "Unknown Salon",
-    manager: apiSalon.managerName || apiSalon.manager || "Unassigned",
-    staffAmount: apiSalon.staffAmount || 0,
-    status: apiSalon.status || "Active",
-    description: apiSalon.description || "",
-    operatingHours: {
-      monday: { open: "09:00", close: "21:00" },
-      tuesday: { open: "09:00", close: "21:00" },
-      wednesday: { open: "09:00", close: "21:00" },
-      thursday: { open: "09:00", close: "21:00" },
-      friday: { open: "09:00", close: "21:00" },
-      saturday: { open: "10:00", close: "20:00" },
-      sunday: { open: "10:00", close: "20:00" },
-    },
-    phone: apiSalon.phone || "No phone",
-  };
-
-  const salonRow = {
-    id: (apiSalon.salonId || apiSalon.id || "").toString().trim(),
-    salonId: (apiSalon.salonId || apiSalon.id || "").toString().trim(),
-    name: apiSalon.salonName || apiSalon.name || "Unknown Salon",
-    address: apiSalon.address || "No address",
-    manager: apiSalon.managerName || apiSalon.manager || "Unassigned",
-    phone: apiSalon.phone || "No phone",
-    image: apiSalon.imageUrl || apiSalon.image || "https://placehold.co/400x200/eb5b92/ffffff?text=Salon",
-    status: apiSalon.status || "Active",
-    statusColor: "bg-[#e6fdf0] text-[#16975f]",
-    staff: apiSalon.staffAmount || 0,
-    hours: "9AM - 9PM",
-    rating: "4.8",
-    reviews: "128",
-  };
-
-  return { salonForm, salonRow };
-}
-
 export function SalonDetailPage() {
   const navigate = useNavigate();
   const { salonId } = useParams();
@@ -84,6 +48,28 @@ export function SalonDetailPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [salonForm, setSalonForm] = useState(null);
   const [salonRow, setSalonRow] = useState(null);
+
+  const salonDetail = useMemo(() => {
+    if (!salonForm && !salonRow) {
+      return null;
+    }
+
+    return {
+      name: salonForm?.salonName || salonRow?.name || "Unknown Salon",
+      address: salonForm?.address || salonRow?.address || "No address",
+      manager: salonForm?.manager || salonRow?.manager || "Unassigned",
+      phone: salonForm?.phone || salonRow?.phone || "Not set",
+      staff: salonForm?.staffAmount ?? salonRow?.staff ?? "--",
+      status: salonForm?.status || salonRow?.status || "Active",
+      statusColor: salonRow?.statusColor || "bg-[#e6fdf0] text-[#16975f]",
+      image: salonRow?.image || SALON_PLACEHOLDER_IMAGE,
+      hours: salonRow?.hours || "Operating hours unavailable",
+      rating: salonRow?.rating || "-",
+      reviews: salonRow?.reviews || "0",
+      operatingHours: salonForm?.operatingHours || {},
+      description: salonForm?.description || "",
+    };
+  }, [salonForm, salonRow]);
 
   useEffect(() => {
     let isMounted = true;
@@ -140,7 +126,17 @@ export function SalonDetailPage() {
   }, [salonDetail]);
 
   const operatingHoursMap = useMemo(
-    () => mapSalonOperatingHours(salonDetail?.operatingHours),
+    () => {
+      if (!salonDetail?.operatingHours) {
+        return mapSalonOperatingHours([]);
+      }
+
+      if (Array.isArray(salonDetail.operatingHours)) {
+        return mapSalonOperatingHours(salonDetail.operatingHours);
+      }
+
+      return salonDetail.operatingHours;
+    },
     [salonDetail?.operatingHours],
   );
 
@@ -163,16 +159,6 @@ export function SalonDetailPage() {
 
   return (
     <section className="mx-auto w-full min-w-0 max-w-[1300px] text-slate-700">
-      {error ? (
-        <div className="mb-4">
-          <Alert
-            message="Error Loading Salon"
-            description={error}
-            type="error"
-            showIcon
-          />
-        </div>
-      ) : null}
       <header className="mb-4 flex flex-col gap-4 rounded-[20px] bg-white/70 px-4 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur sm:mb-5 sm:rounded-[24px] sm:px-5 lg:rounded-[28px] lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-start gap-3">
           <Link
@@ -221,9 +207,11 @@ export function SalonDetailPage() {
             <div className="bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-5 py-5 text-white">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                 <img
+                  crossOrigin="anonymous"
                   src={salonDetail.image}
                   alt={salonDetail.name}
                   className="h-24 w-24 rounded-2xl object-cover shadow-lg"
+                  referrerPolicy="no-referrer"
                 />
                 <div className="min-w-0">
                   <h2 className="text-[22px] font-black tracking-tight">{salonDetail.name}</h2>
@@ -301,7 +289,7 @@ export function SalonDetailPage() {
             <section className="rounded-[20px] bg-white/70 p-5 shadow-[0_20px_45px_rgba(226,93,143,0.06)] sm:rounded-[24px] lg:rounded-[28px]">
               <h2 className="text-[16px] font-bold text-slate-800">Description</h2>
               <p className="mt-3 whitespace-pre-line text-[13px] leading-6 text-slate-500">
-                Salon detail API does not return description yet.
+                {salonDetail?.description || "Salon detail API does not return description yet."}
               </p>
             </section>
           </aside>
@@ -322,11 +310,11 @@ export function SalonDetailPage() {
         item={
           salonDetail
             ? {
-                image: salonDetail.image,
-                title: salonDetail.name,
-                meta: salonDetail.address,
-                note: `Manager: ${salonDetail.manager || "Unassigned"}`,
-              }
+              image: salonDetail.image,
+              title: salonDetail.name,
+              meta: salonDetail.address,
+              note: `Manager: ${salonDetail.manager || "Unassigned"}`,
+            }
             : null
         }
         warnings={[

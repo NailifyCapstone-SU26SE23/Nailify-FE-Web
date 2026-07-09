@@ -4,8 +4,8 @@ import {
   getManagerBookingDetailRoute,
   getReceptionistBookingDetailRoute,
   getStaffBookingDetailRoute,
-} from "../../../../shared/constants/routes";
-import { ROLES } from "../../../../shared/constants/roles";
+} from "../../constants/routes";
+import { ROLES } from "../../constants/roles";
 
 export const BOOKING_STATUS_FILTERS = [
   "All",

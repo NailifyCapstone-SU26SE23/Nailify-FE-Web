@@ -304,7 +304,6 @@ export const STAFF_FORM_MODAL_STYLES = {
 
 export const STAFF_ROLE_OPTIONS = [
   { value: "NAIL_ARTIST", label: "Nail Artist", color: "bg-rose-100 text-rose-600" },
-  { value: "SENIOR_ARTIST", label: "Senior Artist", color: "bg-violet-100 text-violet-600" },
   { value: "SALON_MANAGER", label: "Salon Manager", color: "bg-sky-100 text-sky-600" },
   { value: "RECEPTIONIST", label: "Receptionist", color: "bg-amber-100 text-amber-600" },
 ];

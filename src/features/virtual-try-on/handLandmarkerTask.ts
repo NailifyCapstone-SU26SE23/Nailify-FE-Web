@@ -1229,7 +1229,7 @@ class HandLandmarkerTask extends BaseVisionTask {
       const item = document.createElement('div');
       item.className = `layer-item ${idx === this.selectedLayerIndex ? 'active' : ''}`;
       item.innerHTML = `
-        <img class="layer-thumb" crossorigin="anonymous" src="${dec.image.src}">
+        <img class="layer-thumb" crossOrigin="anonymous" src="${dec.image.src}">
         <div class="layer-info">${dec.type.toUpperCase()} ${idx + 1}</div>
         <span class="material-icons layer-delete" data-idx="${idx}">delete</span>
       `;

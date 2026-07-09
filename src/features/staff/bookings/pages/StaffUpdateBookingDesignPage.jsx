@@ -15,7 +15,7 @@ import { useMemo, useState } from "react";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { formatDurationLabel } from "../../../../shared/utils/formatDuration";
 import { PropTypes } from "../../../../shared/utils/propTypes";
-import { getMockBookingById } from "../../../core/booking-management/services/mockBookings";
+import { getMockBookingById } from "../../../../shared/bookings/services/mockBookings";
 import { formatAppointmentEndTime, formatTimeValue } from "../services/staffBookingService";
 import {
   getStaffBookingDesignStudioRoute,
@@ -456,7 +456,7 @@ export function StaffUpdateBookingDesignPage() {
                     Previous Design
                   </p>
                   <div className="overflow-hidden rounded-[16px]">
-                    <img
+                    <img crossOrigin="anonymous"
                       src={data.previousDesign.image}
                       alt={data.previousDesign.name}
                       className="h-44 w-full object-cover"
@@ -485,7 +485,7 @@ export function StaffUpdateBookingDesignPage() {
                     New Design
                   </p>
                   <div className="overflow-hidden rounded-[16px]">
-                    <img
+                    <img crossOrigin="anonymous"
                       src={data.newDesign.image}
                       alt={data.newDesign.name}
                       className="h-44 w-full object-cover"
@@ -749,3 +749,4 @@ export function StaffUpdateBookingDesignPage() {
     </section>
   );
 }
+

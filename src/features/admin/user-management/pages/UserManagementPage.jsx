@@ -1,9 +1,11 @@
 import {
   AlertTriangle,
+  ArrowUpDown,
   ChevronLeft,
   ChevronRight,
   Eye,
   LoaderCircle,
+  MapPin,
   PencilLine,
   Search,
   Shield,
@@ -13,7 +15,7 @@ import {
   Users,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Table } from "antd";
+import { Select, Table } from "antd";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import {
@@ -25,6 +27,17 @@ import {
   USER_STATUS_STYLES,
 } from "../services/mockUsers";
 import { fetchAdminUsers } from "../services/userManagementService";
+import { fetchAdminSalons } from "../../salon-management/services/salonManagementService";
+
+const ALL_FILTER_VALUE = "__all__";
+const ROLE_FILTER_OPTIONS = [
+  { value: ALL_FILTER_VALUE, label: "All roles" },
+  { value: "Admin", label: "Admin" },
+  { value: "Manager", label: "Manager" },
+  { value: "Receptionist", label: "Receptionist" },
+  { value: "Staff_Artist", label: "Staff Artist" },
+  { value: "Customer", label: "Customer" },
+];
 
 function getRoleTone(role) {
   switch (role) {
@@ -39,6 +52,36 @@ function getRoleTone(role) {
     default:
       return "bg-[#ffe7ef] text-[#ea4f93]";
   }
+}
+
+function sortUsers(items, sortValue) {
+  const [sortKey = "user", sortDirection = "asc"] = String(sortValue || "user-asc").split("-");
+  const sortedItems = [...items];
+  const directionMultiplier = sortDirection === "desc" ? -1 : 1;
+
+  const getSortValue = (user) => {
+    switch (sortKey) {
+      case "role":
+        return user.displayRole || "";
+      case "email":
+        return user.email || "";
+      case "phone":
+        return user.phone || "";
+      case "salon":
+        return user.salon || "";
+      case "status":
+        return user.statusLabel || "";
+      case "lastActive":
+        return user.lastActive || "";
+      case "user":
+      default:
+        return user.name || "";
+    }
+  };
+
+  return sortedItems.sort((left, right) =>
+    getSortValue(left).localeCompare(getSortValue(right)) * directionMultiplier,
+  );
 }
 
 function MetricCard({ item }) {
@@ -83,12 +126,88 @@ SmallTag.propTypes = {
   className: PropTypes.string,
 };
 
+function ChevronDownIcon() {
+  return <ChevronRight size={14} className="rotate-90 text-current" />;
+}
+
+function SortableHeader({ label, sortKey, selectedSort, onToggle }) {
+  const isActive = selectedSort.startsWith(`${sortKey}-`);
+  const isDesc = selectedSort === `${sortKey}-desc`;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onToggle(sortKey)}
+      className={`inline-flex items-center gap-1.5 font-semibold transition ${isActive ? "text-[#ea4f93]" : "text-[#5f4a5c] hover:text-[#ea4f93]"}`}
+    >
+      <span>{label}</span>
+      <ArrowUpDown size={13} className={isActive ? "text-[#ea4f93]" : "text-[#d39bb5]"} />
+      {isActive ? <span className="text-[10px] font-bold">{isDesc ? "DESC" : "ASC"}</span> : null}
+    </button>
+  );
+}
+
+SortableHeader.propTypes = {
+  label: PropTypes.string.isRequired,
+  onToggle: PropTypes.func.isRequired,
+  selectedSort: PropTypes.string.isRequired,
+  sortKey: PropTypes.string.isRequired,
+};
+
+function FilterSelect({
+  icon: Icon,
+  value,
+  onChange,
+  options,
+  placeholder,
+  disabled = false,
+  className = "",
+}) {
+  return (
+    <div className={`group flex h-11 items-center gap-2 rounded-[16px] border border-[#f1d8e5] bg-[linear-gradient(180deg,#fffefe_0%,#fff8fc_100%)] px-3 shadow-[0_10px_18px_rgba(236,72,153,0.05)] transition hover:border-[#efbad3] ${className}`}>
+      <div className="pointer-events-none flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#fff0f6] text-[#ea4f93]">
+        <Icon size={13} />
+      </div>
+      <Select
+        value={value}
+        onChange={onChange}
+        options={options}
+        placeholder={placeholder}
+        disabled={disabled}
+        bordered={false}
+        suffixIcon={<ChevronDownIcon />}
+        popupMatchSelectWidth
+        className="h-full min-w-0 flex-1 [&_.ant-select-arrow]:!right-0 [&_.ant-select-arrow]:!text-[#d3a0b8] [&_.ant-select-selection-item]:!leading-[42px] [&_.ant-select-selection-item]:!text-[15px] [&_.ant-select-selection-item]:!font-semibold [&_.ant-select-selection-item]:!text-[#4b3148] [&_.ant-select-selection-placeholder]:!leading-[42px] [&_.ant-select-selection-placeholder]:!text-[#cf9ab3] [&_.ant-select-selector]:!h-full [&_.ant-select-selector]:!rounded-[16px] [&_.ant-select-selector]:!bg-transparent [&_.ant-select-selector]:!px-0 [&_.ant-select-selector]:!shadow-none"
+      />
+    </div>
+  );
+}
+
+FilterSelect.propTypes = {
+  className: PropTypes.string,
+  disabled: PropTypes.bool,
+  icon: PropTypes.elementType.isRequired,
+  onChange: PropTypes.func.isRequired,
+  options: PropTypes.arrayOf(
+    PropTypes.shape({
+      label: PropTypes.oneOfType([PropTypes.string, PropTypes.node]).isRequired,
+      value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    }),
+  ).isRequired,
+  placeholder: PropTypes.string,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+};
+
 export function UserManagementPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [users, setUsers] = useState([]);
+  const [salons, setSalons] = useState([]);
+  const [selectedRole, setSelectedRole] = useState(ALL_FILTER_VALUE);
+  const [selectedSalonId, setSelectedSalonId] = useState(ALL_FILTER_VALUE);
+  const [selectedSort, setSelectedSort] = useState("user-asc");
   const [metaData, setMetaData] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -112,6 +231,35 @@ export function UserManagementPage() {
   }, [location.pathname, location.state, navigate]);
 
   useEffect(() => {
+    let isMounted = true;
+
+    const loadSalons = async () => {
+      try {
+        const response = await fetchAdminSalons({ pageSize: 100 });
+
+        if (!isMounted) {
+          return;
+        }
+
+        setSalons(response.items ?? []);
+      } catch (loadError) {
+        if (!isMounted) {
+          return;
+        }
+
+        setSalons([]);
+        console.error("Failed to load salons for user filters:", loadError);
+      }
+    };
+
+    void loadSalons();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
     const timerId = window.setTimeout(() => {
       setDebouncedQuery(query.trim());
       setMetaData((current) => ({ ...current, currentPage: 1 }));
@@ -132,6 +280,8 @@ export function UserManagementPage() {
           pageNumber: metaData.currentPage,
           pageSize: metaData.pageSize,
           searchTerm: debouncedQuery,
+          role: selectedRole === ALL_FILTER_VALUE ? "" : selectedRole,
+          salonId: selectedSalonId === ALL_FILTER_VALUE ? "" : selectedSalonId,
         });
 
         if (!isMounted) {
@@ -159,13 +309,31 @@ export function UserManagementPage() {
     return () => {
       isMounted = false;
     };
-  }, [debouncedQuery, metaData.currentPage, metaData.pageSize]);
+  }, [debouncedQuery, metaData.currentPage, metaData.pageSize, selectedRole, selectedSalonId]);
+
+  const salonNameById = useMemo(
+    () =>
+      salons.reduce((result, salon) => {
+        result[salon.id] = salon.name;
+        return result;
+      }, {}),
+    [salons],
+  );
+
+  const displayedUsers = useMemo(() => {
+    const mappedUsers = users.map((user) => ({
+      ...user,
+      salon: user.salonId ? salonNameById[user.salonId] || "Assigned salon" : "No salon",
+    }));
+
+    return sortUsers(mappedUsers, selectedSort);
+  }, [salonNameById, selectedSort, users]);
 
   const summaryCards = useMemo(() => {
-    const customers = users.filter((user) => user.role === "Customer").length;
-    const staffArtists = users.filter((user) => user.role === "Staff").length;
-    const managers = users.filter((user) => user.role === "Manager").length;
-    const suspendedUsers = users.filter((user) => user.statusLabel === "Suspended").length;
+    const customers = displayedUsers.filter((user) => user.role === "Customer").length;
+    const staffArtists = displayedUsers.filter((user) => user.role === "Staff").length;
+    const managers = displayedUsers.filter((user) => user.role === "Manager").length;
+    const suspendedUsers = displayedUsers.filter((user) => user.statusLabel === "Suspended").length;
 
     return [
       {
@@ -204,7 +372,7 @@ export function UserManagementPage() {
         iconClassName: "bg-[#fff4ef] text-[#ff7a59]",
       },
     ];
-  }, [metaData.totalItems, metaData.totalPages, users]);
+  }, [displayedUsers, metaData.totalItems, metaData.totalPages]);
 
   const paginationItems = useMemo(() => {
     const currentPage = metaData.currentPage;
@@ -254,9 +422,15 @@ export function UserManagementPage() {
     ];
   };
 
+  const handleHeaderSort = (sortKey) => {
+    setSelectedSort((current) =>
+      current === `${sortKey}-asc` ? `${sortKey}-desc` : `${sortKey}-asc`,
+    );
+  };
+
   const userColumns = useMemo(() => ([
     {
-      title: "User",
+      title: <SortableHeader label="User" sortKey="user" selectedSort={selectedSort} onToggle={handleHeaderSort} />,
       key: "user",
       render: (_, user) => (
         <div className="flex items-start gap-3">
@@ -268,29 +442,37 @@ export function UserManagementPage() {
       ),
     },
     {
-      title: "Role",
+      title: <SortableHeader label="Role" sortKey="role" selectedSort={selectedSort} onToggle={handleHeaderSort} />,
       dataIndex: "displayRole",
       key: "displayRole",
       render: (value, user) => <SmallTag className={getRoleTone(user.role)}>{value}</SmallTag>,
     },
     {
-      title: "Email / Phone",
+      title: <SortableHeader label="Email" sortKey="email" selectedSort={selectedSort} onToggle={handleHeaderSort} />,
       key: "contact",
       render: (_, user) => (
         <div>
           <p className="text-sm text-[#6b5668]">{user.email}</p>
-          <p className="mt-1 text-[11px] text-[#d197b0]">{user.phone}</p>
+        </div>
+      ),
+    },
+     {
+      title: <SortableHeader label="Phone" sortKey="phone" selectedSort={selectedSort} onToggle={handleHeaderSort} />,
+      key: "contact",
+      render: (_, user) => (
+        <div>
+          <p className="text-sm text-[#6b5668]">{user.phone}</p>
         </div>
       ),
     },
     {
-      title: "Salon",
+      title: <SortableHeader label="Salon" sortKey="salon" selectedSort={selectedSort} onToggle={handleHeaderSort} />,
       dataIndex: "salon",
       key: "salon",
       render: (value) => <span className="text-sm text-[#8a7082]">{value}</span>,
     },
     {
-      title: "Status",
+      title: <SortableHeader label="Status" sortKey="status" selectedSort={selectedSort} onToggle={handleHeaderSort} />,
       dataIndex: "statusLabel",
       key: "statusLabel",
       render: (value) => (
@@ -300,7 +482,7 @@ export function UserManagementPage() {
       ),
     },
     {
-      title: "Last Active",
+      title: <SortableHeader label="Last Active" sortKey="lastActive" selectedSort={selectedSort} onToggle={handleHeaderSort} />,
       dataIndex: "lastActive",
       key: "lastActive",
       render: (value) => <span className="text-sm text-[#8a7082]">{value}</span>,
@@ -310,7 +492,7 @@ export function UserManagementPage() {
       key: "action",
       render: (_, user) => <ActionDropdown items={getActionItems(user)} />,
     },
-  ]), [getActionItems]);
+  ]), [getActionItems, selectedSort]);
 
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)]">
@@ -323,37 +505,74 @@ export function UserManagementPage() {
       {/* <div className="grid gap-4 xl:grid-cols-[minmax(0,1.65fr)_290px]"> */}
       <div>
         <article className="rounded-[20px] border border-[#f7d8e6] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] md:p-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <label className="relative block w-full sm:max-w-[420px]">
-              <Search
-                size={16}
-                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#df7baa]"
-              />
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search by email, first name, last name..."
-                className="h-11 w-full rounded-full border border-[#f5d7e4] bg-[#fff9fc] pl-11 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
-              />
-            </label>
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex w-full flex-col gap-3 lg:flex-row lg:items-center">
+              <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center lg:max-w-[520px] xl:max-w-[560px]">
+                <label className="relative block min-w-0 flex-1">
+                  <Search
+                    size={16}
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#df7baa]"
+                  />
+                  <input
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder="Search by email, first name, last name..."
+                    className="h-11 w-full rounded-full border border-[#f5d7e4] bg-[#fff9fc] pl-11 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDebouncedQuery(query.trim());
+                    setMetaData((current) => ({ ...current, currentPage: 1 }));
+                  }}
+                  className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
+                >
+                  <Search size={15} className="mr-2" />
+                  Search
+                </button>
+              </div>
 
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setDebouncedQuery(query.trim());
-                  setMetaData((current) => ({ ...current, currentPage: 1 }));
-                }}
-                className="inline-flex items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2.5 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
-              >
-                <Search size={14} className="mr-1.5" />
-                Search User
-              </button>
+              <div className="flex flex-wrap gap-2.5 xl:flex-nowrap">
+                <FilterSelect
+                  icon={Users}
+                  value={selectedRole}
+                  onChange={(value) => {
+                    setSelectedRole(value);
+                    setMetaData((current) => ({ ...current, currentPage: 1 }));
+                  }}
+                  options={ROLE_FILTER_OPTIONS}
+                  className="min-w-[200px]"
+                  placeholder="All roles"
+                  disabled={isLoading}
+                />
+                <FilterSelect
+                  icon={MapPin}
+                  value={selectedSalonId}
+                  onChange={(value) => {
+                    setSelectedSalonId(value);
+                    setMetaData((current) => ({ ...current, currentPage: 1 }));
+                  }}
+                  options={[
+                    { value: ALL_FILTER_VALUE, label: "All salons" },
+                    ...salons.map((salon) => ({
+                      value: salon.id,
+                      label: salon.name,
+                    })),
+                  ]}
+                  className="min-w-[250px]"
+                  placeholder="All salons"
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2 xl:justify-end">
               <Link
                 to={ROUTES.adminUsersCreate}
-                className="inline-flex items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2.5 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
+                className="inline-flex h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
               >
-                <UserPlus size={14} className="mr-1.5" />
+                <UserPlus size={15} className="mr-2" />
                 Add User
               </Link>
             </div>
@@ -383,7 +602,7 @@ export function UserManagementPage() {
               <Table
                 rowKey="id"
                 columns={userColumns}
-                dataSource={users}
+                dataSource={displayedUsers}
                 loading={isLoading}
                 pagination={false}
                 scroll={{ x: 1100 }}
@@ -397,8 +616,8 @@ export function UserManagementPage() {
                   <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
                   Loading users...
                 </div>
-              ) : users.length ? (
-                users.map((user) => (
+              ) : displayedUsers.length ? (
+                displayedUsers.map((user) => (
                 <article
                   key={user.id}
                   className="rounded-[16px] border border-[#f8dce8] bg-[#fffafb] p-4"

@@ -1,5 +1,5 @@
 import { CalendarClock } from "lucide-react";
-import { PropTypes } from "../../../../shared/utils/propTypes";
+import { PropTypes } from "../../utils/propTypes";
 import { BookingStatusBadge } from "./BookingStatusBadge";
 
 export function BookingInfoCard({ booking }) {

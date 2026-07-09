@@ -421,8 +421,8 @@ export function ComponentDetailPage() {
                   }`}
                 >
                   {imagePreview ? (
-                    <img
-                      crossorigin="anonymous"
+                    <Image
+                      crossOrigin="anonymous"
                       src={imagePreview}
                       alt="Component preview"
                       className="h-48 w-full rounded-2xl object-cover shadow-lg"
@@ -464,7 +464,7 @@ export function ComponentDetailPage() {
               <div className="space-y-4">
                 <div className="flex h-48 items-center justify-center overflow-hidden rounded-2xl border border-rose-100 bg-[#fff8fb]">
                   {imagePreview ? (
-                    <img crossorigin="anonymous" src={imagePreview} alt="Preview" className="h-full w-full object-cover" />
+                    <img crossOrigin="anonymous" src={imagePreview} alt="Preview" className="h-full w-full object-cover" />
                   ) : (
                     <div className="text-center text-sm font-medium text-slate-400">
                       <ImageIcon size={24} className="mx-auto mb-3 text-rose-300" />
