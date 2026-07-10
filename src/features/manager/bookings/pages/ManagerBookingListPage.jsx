@@ -20,6 +20,7 @@ import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Spin, Alert, DatePicker, Dropdown, Drawer, Modal } from "antd";
 import dayjs from "dayjs";
+import toast from "react-hot-toast";
 import { ROLES } from "../../../../shared/constants/roles";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { formatDurationLabel } from "../../../../shared/utils/formatDuration";
@@ -407,6 +408,95 @@ function formatHourLabel(hour) {
   if (hour === 12) return "12 PM";
   if (hour > 12) return `${hour - 12} PM`;
   return `${hour} AM`;
+}
+
+function escapeExcelCell(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function buildBookingExcelTableRows(bookings) {
+  const headers = [
+    "Booking ID",
+    "Date",
+    "Time",
+    "Customer",
+    "Phone",
+    "Artist",
+    "Service",
+    "Duration",
+    "Deposit",
+    "Total Price",
+    "Status",
+  ];
+
+  const headerRow = `<tr>${headers
+    .map((header) => `<th style="background:#fce7f3;font-weight:700;border:1px solid #f3c4d8;padding:8px;">${escapeExcelCell(header)}</th>`)
+    .join("")}</tr>`;
+
+  const bodyRows = bookings
+    .map((booking) => {
+      const cells = [
+        booking.bookingId || booking.id || "",
+        booking.date || "",
+        booking.time || "",
+        booking.customer || booking.customerName || "",
+        booking.phone || "",
+        booking.artist || booking.nailArtistName || "",
+        booking.service || booking.serviceName || "",
+        booking.duration || formatDuration(booking.totalDuration || 0),
+        booking.depositAmount ?? booking.deposit ?? "",
+        booking.totalPrice ?? "",
+        formatStatusDisplay(booking.status),
+      ];
+
+      return `<tr>${cells
+        .map((cell) => `<td style="border:1px solid #f5d7e4;padding:8px;">${escapeExcelCell(cell)}</td>`)
+        .join("")}</tr>`;
+    })
+    .join("");
+
+  return `${headerRow}${bodyRows}`;
+}
+
+function downloadBookingsExcel(bookings, options = {}) {
+  const title = options.title || "Branch Bookings";
+  const worksheetName = options.worksheetName || "Bookings";
+  const rows = buildBookingExcelTableRows(bookings);
+  const html = `<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="ProgId" content="Excel.Sheet" />
+  <meta name="Generator" content="Microsoft Excel 11" />
+  <title>${escapeExcelCell(title)}</title>
+</head>
+<body>
+  <table>
+    <tr><td colspan="11" style="font-size:20px;font-weight:700;padding:12px 8px;">${escapeExcelCell(title)}</td></tr>
+    <tr><td colspan="11" style="padding:0 8px 12px;color:#6b7280;">Exported at ${escapeExcelCell(new Date().toLocaleString("en-US"))}</td></tr>
+  </table>
+  <table border="1">
+    ${rows}
+  </table>
+</body>
+</html>`;
+
+  const blob = new Blob([`\uFEFF${html}`], {
+    type: "application/vnd.ms-excel;charset=utf-8;",
+  });
+  const downloadUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = downloadUrl;
+  link.download = `${worksheetName}-${new Date().toISOString().slice(0, 10)}.xls`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(downloadUrl);
 }
 
 function parseDatePart(dateString) {
@@ -892,6 +982,19 @@ export function ManagerBookingListPage() {
     ];
   }, [bookings]);
 
+  const handleExportExcel = useCallback(() => {
+    if (!filteredAppointments.length) {
+      toast.error("No bookings available to export.");
+      return;
+    }
+
+    downloadBookingsExcel(filteredAppointments, {
+      title: "Manager Booking Management",
+      worksheetName: "manager-bookings",
+    });
+    toast.success("Excel file exported successfully.");
+  }, [filteredAppointments]);
+
   return (
     <section className="flex min-h-full flex-col gap-5">
       <Card className="overflow-hidden border-none bg-gradient-to-br from-[#fff3f8] via-[#fffafb] to-[#fff5fb] p-0 shadow-lg">
@@ -913,18 +1016,19 @@ export function ManagerBookingListPage() {
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
+              onClick={handleExportExcel}
               className="inline-flex items-center gap-2 rounded-2xl border border-[#f0d9e8] bg-white px-4 py-2.5 text-xs font-semibold text-[#ea4f93] shadow-md hover:shadow-lg hover:border-[#ea4f93] transition duration-200"
             >
               <Download size={16} />
-              Export
+              Export Excel
             </button>
-            <Link
+            {/* <Link
               to={roleConfig.createRoute}
               className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#ea4f93] to-[#ff8ebb] px-4 py-2.5 text-xs font-semibold text-white shadow-lg hover:shadow-xl transition duration-200"
             >
               <UserPlus size={16} />
               New Booking
-            </Link>
+            </Link> */}
           </div>
         </div>
       </Card>
