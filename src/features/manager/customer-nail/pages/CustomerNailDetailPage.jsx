@@ -545,7 +545,6 @@ export function CustomerNailDetailPage() {
       maskRepeat: 'no-repeat',
       WebkitMaskRepeat: 'no-repeat',
     } : {};
-
     // Hand posture alignment styling based on finger type
     let alignmentClass = "";
     switch (fingerName) {
