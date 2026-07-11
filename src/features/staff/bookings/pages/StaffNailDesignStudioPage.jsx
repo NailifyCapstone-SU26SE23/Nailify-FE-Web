@@ -59,7 +59,7 @@ function unwrapApiResponse(response, fallbackMessage) {
 }
 
 function formatCurrencyValue(value) {
-  return `${Number(value || 0).toLocaleString("vi-VN")} VND`;
+  return `${Number(value || 0).toLocaleString("vi-VN")} VNĐ`;
 }
 
 function rgbToHex(rgbValue) {

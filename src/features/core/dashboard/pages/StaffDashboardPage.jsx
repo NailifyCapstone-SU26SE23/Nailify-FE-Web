@@ -298,26 +298,52 @@ export function StaffDashboardPage() {
     const normalizedBookingStatus = String(booking?.status || booking?.uiStatus || "").trim().toLowerCase();
     const isPendingBooking = ["pending", "approved"].includes(normalizedBookingStatus);
     const isCheckedInBooking = normalizedBookingStatus === "checkedin";
+    const isInProgressBooking = normalizedBookingStatus === "inprogress";
     const isCompletedBooking = normalizedBookingStatus === "completed";
     const isServiceCompletedBooking = normalizedBookingStatus === "servicecompleted";
     const isCancelledBooking = ["cancelled", "canceled"].includes(normalizedBookingStatus);
+    const openServiceSession = (bookingDetail = booking) => {
+      navigate(getStaffBookingServiceSessionRoute(booking.id), {
+        state: {
+          serviceSession: {
+            ...buildStaffServiceSessionPayload(bookingDetail, {
+              backRoute: detailRoute,
+              designUpdateRoute: getStaffBookingDesignStudioRoute(booking.id),
+            }),
+            started: isInProgressBooking,
+            completed: false,
+          },
+        },
+      });
+    };
     const startService = async () => {
       try {
         const updatedBooking = await startStaffBookingService(booking.id);
         toast.success("Service started successfully.");
-        navigate(getStaffBookingServiceSessionRoute(booking.id), {
-          state: {
-            serviceSession: buildStaffServiceSessionPayload(updatedBooking, {
-              backRoute: detailRoute,
-              designUpdateRoute: getStaffBookingDesignStudioRoute(booking.id),
-            }),
-          },
-        });
+        openServiceSession(updatedBooking);
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to start service.";
         toast.error(message);
       }
     };
+
+    if (isInProgressBooking) {
+      return [
+        { key: "view", label: "View Booking", icon: Eye, onSelect: () => navigate(detailRoute) },
+        {
+          key: "continue",
+          label: "Continue Service",
+          icon: Play,
+          onSelect: () => void openServiceSession(),
+        },
+        {
+          key: "notes",
+          label: "View Notes",
+          icon: FileText,
+          onSelect: () => setSelectedStaffNotesBooking(booking),
+        },
+      ];
+    }
 
     return [
       { key: "view", label: "View Booking", icon: Eye, onSelect: () => navigate(detailRoute) },

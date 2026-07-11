@@ -87,7 +87,7 @@ function formatVND(amount, status) {
   }
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
-    currency: "VND",
+    currency: "VNĐ",
   }).format(amount);
 }
 
@@ -833,7 +833,7 @@ export function CustomerNailDetailPage() {
                 </div>
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">Total Price</p>
-                  <p className="mt-1 text-sm font-extrabold text-[#ea4f93]">{formatVND(nail?.price, nail?.status)}</p>
+                  <p className="mt-1 text-sm font-extrabold text-green-700">{formatVND(nail?.price, nail?.status)}</p>
                 </div>
               </div>
 
