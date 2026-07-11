@@ -42,26 +42,28 @@ function unwrapResponse(response, fallbackMessage, isDetail = false, includePagi
 }
 
 const MAX_BOOKING_PAGE_SIZE = 10;
+const MAX_ADMIN_BOOKING_PAGE_SIZE = 1000;
 
 function normalizePageNumber(value) {
   const parsedValue = Number(value);
   return Number.isFinite(parsedValue) && parsedValue > 0 ? Math.floor(parsedValue) : 1;
 }
 
-function normalizeBookingPageSize(value) {
+function normalizeBookingPageSize(value, isAdmin = false) {
   const parsedValue = Number(value);
+  const maxSize = isAdmin ? MAX_ADMIN_BOOKING_PAGE_SIZE : MAX_BOOKING_PAGE_SIZE;
 
   if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
-    return MAX_BOOKING_PAGE_SIZE;
+    return maxSize;
   }
 
-  return Math.min(Math.floor(parsedValue), MAX_BOOKING_PAGE_SIZE);
+  return Math.min(Math.floor(parsedValue), maxSize);
 }
 
 export async function fetchBookingsBySalonId(salonId, options = {}) {
-  const { pageNumber = 1, pageSize = 10 } = options;
+  const { pageNumber = 1, pageSize = 10, isAdmin = false } = options;
   const normalizedPageNumber = normalizePageNumber(pageNumber);
-  const normalizedPageSize = normalizeBookingPageSize(pageSize);
+  const normalizedPageSize = normalizeBookingPageSize(pageSize, isAdmin);
 
   console.log("Fetching bookings for salon:", salonId, {
     pageNumber: normalizedPageNumber,

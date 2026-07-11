@@ -1,23 +1,22 @@
 import {
-  ArrowLeft,
   Calendar,
-  Clock,
+  Clock3,
   Eye,
   MapPin,
   Phone,
   Save,
-  User,
+  UserRound,
   Users,
   X,
   Upload,
-  Image as ImageIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { motion } from "framer-motion";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { TimePicker } from "../../../../shared/components/ui/TimePicker";
 import { SalonSaveResultModal } from "../components/SalonSaveResultModal";
-import { ROUTES } from "../../../../shared/constants/routes";
+import { ROUTES, getAdminSalonDetailRoute } from "../../../../shared/constants/routes";
 import {
   SALON_DAYS_OF_WEEK,
   SALON_STATUS_OPTIONS,
@@ -25,20 +24,59 @@ import {
   getSalonStatusStyle,
   validateSalonForm,
 } from "../services/mockSalon";
-import { fetchSalonById, updateSalon, uploadSalonImage } from "../services/salonsService";
+import { updateSalon, uploadSalonImage } from "../services/salonsService";
+import { fetchAdminSalonDetail, mapSalonOperatingHours } from "../services/salonManagementService";
 
 const inputWrapperClassName =
-  "flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5 transition-all duration-300 hover:border-rose-200 hover:bg-[#fff5f9] focus-within:border-rose-400 focus-within:bg-white focus-within:shadow-[0_0_0_3px_rgba(234,79,147,0.15)]";
+  "flex items-center gap-2 rounded-[16px] border border-[#f1e7ed] bg-[#fff8fb] px-4 py-3.5 transition-all duration-300 hover:border-[#f0b7cf] hover:bg-[#fff5f9] focus-within:border-[#ea4f93] focus-within:bg-white focus-within:shadow-[0_0_0_3px_rgba(234,79,147,0.15)]";
 const inputClassName =
-  "w-full min-w-0 bg-transparent text-[14px] text-slate-800 outline-none placeholder:text-rose-300 font-medium";
-const readOnlyInputClassName = `${inputClassName} cursor-not-allowed text-slate-500 bg-[#fff5f9]`;
+  "w-full min-w-0 bg-transparent text-[14px] text-[#2d1b35] outline-none placeholder:text-[#a88a9f] font-medium";
+const readOnlyInputClassName = `${inputClassName} cursor-not-allowed text-[#a88a9f] bg-[#fff5f9]`;
+
+const fadeInUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+function PremiumCard({ className = "", children, noHover = false, padded = true }) {
+  return (
+    <motion.article
+      initial="hidden"
+      animate="visible"
+      variants={fadeInUp}
+      className={`relative overflow-hidden rounded-[28px] border border-[#f1e7ed] bg-white shadow-[0_20px_40px_-15px_rgba(0,0,0,0.04)] transition-all duration-500 ease-out ${padded ? "p-6" : ""} ${!noHover ? "hover:-translate-y-1 hover:shadow-[0_30px_50px_-15px_rgba(0,0,0,0.06)]" : ""} ${className}`}
+    >
+      {children}
+    </motion.article>
+  );
+}
+
+function SectionHeading({ title, subtitle }) {
+  return (
+    <div>
+      <h2 className="text-[16px] font-black text-[#2d1b35]">{title}</h2>
+      {subtitle ? <p className="mt-1.5 text-[11px] text-[#a88a9f] leading-relaxed">{subtitle}</p> : null}
+    </div>
+  );
+}
 
 function SalonUpdateLoadingState() {
   return (
-    <div className="flex min-h-[320px] items-center justify-center rounded-[20px] bg-white/65 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
+    <div className="flex min-h-[320px] items-center justify-center">
       <div className="text-center">
-        <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-rose-500" />
-        <p className="mt-4 text-sm text-slate-600">Loading salon data...</p>
+        <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-[#ea4f93]" />
+        <p className="mt-4 text-[14px] font-medium text-[#a88a9f]">Loading salon data...</p>
       </div>
     </div>
   );
@@ -65,7 +103,7 @@ export function SalonUpdatePage() {
       setIsLoading(true);
       setIsNotFound(false);
       try {
-        const salon = await fetchSalonById(salonId);
+        const salon = await fetchAdminSalonDetail(salonId);
         
         if (!isMounted) {
           return;
@@ -73,17 +111,18 @@ export function SalonUpdatePage() {
 
         setFormData({
           ...createEmptySalonForm(),
-          salonName: salon.salonName || salon.name || "",
-          salonId: (salon.salonId || salon.id || salonId || "").toString().trim(),
+          salonName: salon.name || "",
+          salonId: (salon.id || salon.salonId || salonId || "").toString().trim(),
           address: salon.address || "",
           manager: "",
           phone: salon.phone || "",
           staffAmount: "",
           status: salon.status || "ACTIVE",
+          operatingHours: mapSalonOperatingHours(salon.operatingHours),
         });
         // Set image preview if available
-        if (salon.imageUrl || salon.image) {
-          setImagePreview(salon.imageUrl || salon.image);
+        if (salon.image) {
+          setImagePreview(salon.image);
         }
       } catch (error) {
         console.error("Failed to load salon:", error);
@@ -196,7 +235,7 @@ export function SalonUpdatePage() {
 
   const handleConfirmCancel = () => {
     setShowCancelModal(false);
-    navigate(ROUTES.adminSalons);
+    navigate(getAdminSalonDetailRoute(salonId), { replace: true });
   };
 
   if (isNotFound) {
@@ -204,70 +243,84 @@ export function SalonUpdatePage() {
   }
 
   return (
-    <section className="mx-auto w-full min-w-0 max-w-[1300px] text-slate-700">
-      <header className="mb-4 flex flex-col gap-4 rounded-[20px] bg-white/70 px-4 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur sm:mb-5 sm:rounded-[24px] sm:px-5 lg:rounded-[28px] lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-start gap-3">
-          <Link
-            to={ROUTES.adminSalons}
-            className="inline-flex shrink-0 rounded-xl border border-rose-100 bg-white p-2 text-rose-500 transition hover:bg-rose-50"
-          >
-            <ArrowLeft size={18} />
-          </Link>
+    <motion.section
+      initial="hidden"
+      animate="visible"
+      variants={staggerContainer}
+      className="mx-auto w-full min-w-0 max-w-[1300px]"
+    >
+      <header className="mb-6 flex flex-col gap-5">
+        <motion.div variants={fadeInUp} className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
-            <h1 className="text-xl font-black tracking-tight text-[#cf3d74] sm:text-2xl lg:text-[28px]">
+            <h1 className="text-[28px] font-black tracking-tight text-[#2d1b35]">
               Update Salon
             </h1>
-            <p className="text-[11px] font-medium text-slate-400 sm:text-[12px]">
-              Update salon information for #{formData.salonId || salonId}
+            <p className="mt-2 text-[13px] font-medium text-[#a88a9f]">
+              Update salon information for {formData.salonName || "Salon"}
             </p>
           </div>
-        </div>
 
-        <div className="grid grid-cols-2 gap-3 lg:flex lg:items-center">
-          <button
-            type="button"
-            onClick={handleCancel}
-            className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
-          >
-            <X size={14} />
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={isLoading}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <Save size={14} />
-            Update Salon
-          </button>
-        </div>
+          <div className="flex gap-3">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.98 }}
+              type="button"
+              onClick={handleCancel}
+              disabled={isLoading}
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-[#f1e7ed] bg-white px-5 py-2.5 text-[12px] font-bold text-[#ea4f93] transition-all duration-300 hover:bg-[#fff8fb] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <X size={16} />
+              Cancel
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.98 }}
+              type="button"
+              onClick={handleSubmit}
+              disabled={isLoading}
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#ea4f93] to-[#cf3d74] px-6 py-2.5 text-[12px] font-bold text-white shadow-[0_12px_24px_rgba(234,79,147,0.32)] transition-all duration-300 hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Save size={16} />
+              Update Salon
+            </motion.button>
+          </div>
+        </motion.div>
       </header>
 
       {isLoading ? (
         <SalonUpdateLoadingState />
       ) : (
         <>
-          <form onSubmit={handleSubmit} className="grid gap-4 lg:grid-cols-3 lg:gap-5">
+          <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-3">
             {formError && (
-              <div className="lg:col-span-3 mb-2 rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-rose-600 text-[13px] font-semibold">
+              <motion.div
+                variants={fadeInUp}
+                className="lg:col-span-3 mb-2 rounded-[16px] bg-[#fff0f0] border border-[#fecdd3] px-4 py-3 text-[#d14c84] text-[13px] font-semibold"
+              >
                 {formError}
-              </div>
+              </motion.div>
             )}
-            <div className="space-y-4 lg:col-span-2 lg:space-y-5">
-              <div className="rounded-[24px] bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
-                <h2 className="mb-5 text-[18px] font-bold text-slate-800 sm:text-[20px] flex items-center gap-2">
-                  <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]"></div>
-                  Salon Details
-                </h2>
+            <div className="space-y-6 lg:col-span-2">
+              <PremiumCard>
+                <div className="mb-6">
+                  <SectionHeading
+                    title="Salon Details"
+                    subtitle="Update the basic information for this salon"
+                  />
+                </div>
 
-                <div className="grid gap-5 md:grid-cols-2">
+                <motion.div
+                  variants={staggerContainer}
+                  initial="hidden"
+                  animate="visible"
+                  className="grid gap-5 md:grid-cols-2"
+                >
                   <label className="space-y-2.5">
-                    <span className="text-[13px] font-semibold text-slate-600">
-                      Salon Name <span className="text-rose-500">*</span>
+                    <span className="text-[13px] font-semibold text-[#2d1b35]">
+                      Salon Name <span className="text-[#ea4f93]">*</span>
                     </span>
                     <div className={inputWrapperClassName}>
-                      <User size={14} className="shrink-0 text-rose-300" />
+                      <UserRound size={14} className="shrink-0 text-[#ea4f93]" />
                       <input
                         type="text"
                         value={formData.salonName}
@@ -280,16 +333,16 @@ export function SalonUpdatePage() {
                   </label>
 
                   <label className="space-y-2.5">
-                    <span className="text-[13px] font-semibold text-slate-600">
-                      Phone Number <span className="text-rose-500">*</span>
+                    <span className="text-[13px] font-semibold text-[#2d1b35]">
+                      Phone Number <span className="text-[#ea4f93]">*</span>
                     </span>
                     <div className={inputWrapperClassName}>
-                      <Phone size={14} className="shrink-0 text-rose-300" />
+                      <Phone size={14} className="shrink-0 text-[#ea4f93]" />
                       <input
                         type="tel"
                         value={formData.phone}
                         onChange={(event) => handleInputChange("phone", event.target.value)}
-                        placeholder="+1 (XXX) XXX-XXXX"
+                        placeholder="Enter phone number"
                         className={inputClassName}
                         required
                       />
@@ -297,27 +350,11 @@ export function SalonUpdatePage() {
                   </label>
 
                   <label className="space-y-2.5 md:col-span-2">
-                    <span className="text-[13px] font-semibold text-slate-600">
-                      Salon ID <span className="text-rose-500">*</span>
-                    </span>
-                    <div className={inputWrapperClassName}>
-                      <span className="text-[12px] font-bold text-rose-300">#</span>
-                      <input
-                        type="text"
-                        value={formData.salonId}
-                        readOnly
-                        className={readOnlyInputClassName}
-                        required
-                      />
-                    </div>
-                  </label>
-
-                  <label className="space-y-2.5 md:col-span-2">
-                    <span className="text-[13px] font-semibold text-slate-600">
-                      Address <span className="text-rose-500">*</span>
+                    <span className="text-[13px] font-semibold text-[#2d1b35]">
+                      Address <span className="text-[#ea4f93]">*</span>
                     </span>
                     <div className={`${inputWrapperClassName} items-start`}>
-                      <MapPin size={14} className="mt-0.5 shrink-0 text-rose-300" />
+                      <MapPin size={14} className="mt-0.5 shrink-0 text-[#ea4f93]" />
                       <textarea
                         value={formData.address}
                         onChange={(event) => handleInputChange("address", event.target.value)}
@@ -330,35 +367,37 @@ export function SalonUpdatePage() {
                   </label>
 
                   <label className="space-y-2 md:col-span-2">
-                    <span className="text-[13px] font-semibold text-slate-600">
+                    <span className="text-[13px] font-semibold text-[#2d1b35]">
                       Salon Image
                     </span>
-                    <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-rose-200 bg-gradient-to-br from-[#fffafc] to-[#fff5f9] px-6 py-8 cursor-pointer transition-all duration-300 hover:border-rose-300 hover:bg-gradient-to-br hover:from-[#fff8fb] hover:to-[#fff1f6] hover:shadow-[0_8px_24px_rgba(226,93,143,0.12)]">
+                    <div className="flex flex-col items-center justify-center gap-3 rounded-[16px] border border-dashed border-[#f0b7cf] bg-[#fff8fb] px-6 py-8 cursor-pointer transition-all duration-300 hover:border-[#ea4f93] hover:bg-[#fff5fb] hover:shadow-[0_8px_24px_rgba(234,79,147,0.12)]">
                       {imagePreview ? (
                         <div className="relative w-full">
                           <img
                             crossOrigin="anonymous"
                             src={imagePreview}
                             alt="Preview"
-                            className="h-40 w-full object-cover rounded-2xl shadow-lg"
+                            className="h-40 w-full object-cover rounded-[16px] shadow-lg"
                             referrerPolicy="no-referrer"
                           />
-                          <button
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.95 }}
                             type="button"
                             onClick={handleRemoveImage}
-                            className="absolute -top-3 -right-3 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] text-white shadow-lg transition-transform duration-200 hover:scale-110"
+                            className="absolute -top-3 -right-3 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-[#ea4f93] to-[#cf3d74] text-white shadow-lg"
                           >
                             <X size={16} />
-                          </button>
+                          </motion.button>
                         </div>
                       ) : (
                         <label className="flex flex-col items-center gap-3 cursor-pointer">
-                          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] text-white shadow-lg transition-transform duration-200 hover:scale-105">
+                          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-[#ea4f93] to-[#cf3d74] text-white shadow-lg">
                             <Upload size={28} />
                           </div>
                           <div className="text-center">
-                            <p className="text-base font-semibold text-slate-700">Click to upload salon image</p>
-                            <p className="text-xs text-slate-400 mt-1">PNG, JPG up to 5MB</p>
+                            <p className="text-base font-semibold text-[#2d1b35]">Click to upload salon image</p>
+                            <p className="text-xs text-[#a88a9f] mt-1">PNG, JPG up to 5MB</p>
                           </div>
                           <input
                             type="file"
@@ -372,53 +411,58 @@ export function SalonUpdatePage() {
                   </label>
 
                   <div className="space-y-2 md:col-span-2">
-                    <span className="text-[13px] font-semibold text-slate-600">
-                      Status <span className="text-rose-500">*</span>
+                    <span className="text-[13px] font-semibold text-[#2d1b35]">
+                      Status <span className="text-[#ea4f93]">*</span>
                     </span>
                     <div className="grid grid-cols-2 gap-2.5">
                       {SALON_STATUS_OPTIONS.map((option) => (
-                        <button
+                        <motion.button
                           key={option.value}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
                           type="button"
                           onClick={() => handleInputChange("status", option.value)}
-                          className={`rounded-2xl px-4 py-3.5 text-center text-sm font-bold transition-all duration-300 transform hover:scale-[1.02] ${
+                          className={`rounded-[16px] px-4 py-3.5 text-center text-sm font-bold transition-all duration-300 ${
                             formData.status === option.value
                               ? `${option.color} shadow-lg`
-                              : "bg-[#fff5f9] text-slate-400 hover:text-slate-600 hover:bg-[#fff0f5] border border-rose-100"
+                              : "bg-[#fff8fb] text-[#a88a9f] hover:text-[#2d1b35] hover:bg-[#fff5fb] border border-[#f1e7ed]"
                           }`}
                         >
                           {option.label}
-                        </button>
+                        </motion.button>
                       ))}
                     </div>
                   </div>
+                </motion.div>
+              </PremiumCard>
+
+              <PremiumCard>
+                <div className="mb-6">
+                  <SectionHeading
+                    title="Operating Hours"
+                    subtitle="Set the opening and closing hours for each day"
+                  />
                 </div>
-              </div>
 
-              <div className="rounded-[24px] bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
-                <h2 className="mb-5 text-[18px] font-bold text-slate-800 sm:text-[20px] flex items-center gap-2">
-                  <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]"></div>
-                  Operating Hours
-                </h2>
-
-                <div className="space-y-3.5">
+                <div className="space-y-3">
                   {SALON_DAYS_OF_WEEK.map((day) => (
-                    <div
+                    <motion.div
                       key={day.key}
-                      className="flex flex-col gap-3 rounded-2xl border border-rose-100 bg-gradient-to-r from-[#fffafc] to-[#fff8fb] px-5 py-4 sm:flex-row sm:items-center transition-all duration-300 hover:border-rose-200 hover:shadow-[0_4px_16px_rgba(226,93,143,0.08)]"
+                      variants={fadeInUp}
+                      className="flex flex-col gap-3 rounded-[16px] border border-[#f1e7ed] bg-[#fff8fb] px-5 py-4 sm:flex-row sm:items-center transition-all duration-300 hover:border-[#f0b7cf] hover:shadow-[0_4px_16px_rgba(234,79,147,0.08)]"
                     >
                       <div className="w-full sm:w-28">
-                        <span className="text-[13px] font-bold text-slate-700">{day.label}</span>
+                        <span className="text-[13px] font-bold text-[#2d1b35]">{day.label}</span>
                       </div>
                       <div className="flex flex-wrap items-center gap-3">
-                        <Clock size={14} className="shrink-0 text-rose-400" />
+                        <Clock3 size={14} className="shrink-0 text-[#ea4f93]" />
                         <TimePicker
                           value={formData.operatingHours[day.key].open}
                           onChange={(value) => handleHoursChange(day.key, "open", value)}
                           placeholder="Open time"
                           className="w-full min-w-[7rem] sm:w-28"
                         />
-                        <span className="text-sm text-slate-400 font-semibold">to</span>
+                        <span className="text-sm text-[#a88a9f] font-semibold">to</span>
                         <TimePicker
                           value={formData.operatingHours[day.key].close}
                           onChange={(value) => handleHoursChange(day.key, "close", value)}
@@ -426,65 +470,78 @@ export function SalonUpdatePage() {
                           className="w-full min-w-[7rem] sm:w-28"
                         />
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
-              </div>
+              </PremiumCard>
             </div>
 
-            <aside className="space-y-4 lg:space-y-5">
-              <div className="rounded-[24px] bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
-                <h2 className="mb-5 text-[18px] font-bold text-slate-800 sm:text-[20px] flex items-center gap-2">
-                  <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]"></div>
-                  Actions
-                </h2>
+            <aside className="space-y-6">
+              <PremiumCard>
+                <div className="mb-6">
+                  <SectionHeading
+                    title="Quick Actions"
+                    subtitle="Additional actions for salon management"
+                  />
+                </div>
 
-                <div className="space-y-3.5">
-                  <button
+                <div className="space-y-3">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     type="button"
-                    className="flex w-full items-center justify-center gap-2.5 rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 to-blue-100 px-4 py-3.5 text-[13px] font-bold text-blue-700 transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-100 hover:to-blue-200 hover:shadow-[0_4px_16px_rgba(59,130,246,0.15)] hover:scale-[1.02]"
+                    onClick={() => navigate(getAdminSalonDetailRoute(salonId))}
+                    className="flex w-full items-center justify-center gap-2.5 rounded-full border border-[#f1e7ed] bg-[#fff8fb] px-4 py-3 text-[13px] font-bold text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb] hover:shadow-[0_4px_16px_rgba(234,79,147,0.08)]"
                   >
                     <Eye size={16} />
                     View Salon Details
-                  </button>
+                  </motion.button>
 
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     type="button"
-                    className="flex w-full items-center justify-center gap-2.5 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-amber-100 px-4 py-3.5 text-[13px] font-bold text-amber-700 transition-all duration-300 hover:bg-gradient-to-r hover:from-amber-100 hover:to-amber-200 hover:shadow-[0_4px_16px_rgba(245,158,11,0.15)] hover:scale-[1.02]"
+                    className="flex w-full items-center justify-center gap-2.5 rounded-full border border-[#f1e7ed] bg-[#fff8fb] px-4 py-3 text-[13px] font-bold text-[#2d1b35] transition-all duration-300 hover:bg-[#fff5fb] hover:shadow-[0_4px_16px_rgba(234,79,147,0.08)]"
                   >
                     <Calendar size={16} />
                     Set Holiday Schedule
-                  </button>
+                  </motion.button>
 
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     type="button"
-                    className="flex w-full items-center justify-center gap-2.5 rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-100 px-4 py-3.5 text-[13px] font-bold text-emerald-700 transition-all duration-300 hover:bg-gradient-to-r hover:from-emerald-100 hover:to-emerald-200 hover:shadow-[0_4px_16px_rgba(16,185,129,0.15)] hover:scale-[1.02]"
+                    className="flex w-full items-center justify-center gap-2.5 rounded-full border border-[#f1e7ed] bg-[#fff8fb] px-4 py-3 text-[13px] font-bold text-[#2d1b35] transition-all duration-300 hover:bg-[#fff5fb] hover:shadow-[0_4px_16px_rgba(234,79,147,0.08)]"
                   >
                     <Users size={16} />
                     Manage Staff
-                  </button>
+                  </motion.button>
 
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     type="button"
                     onClick={handleCancel}
-                    className="flex w-full items-center justify-center gap-2.5 rounded-2xl border border-rose-200 bg-gradient-to-r from-rose-50 to-rose-100 px-4 py-3.5 text-[13px] font-bold text-rose-700 transition-all duration-300 hover:bg-gradient-to-r hover:from-rose-100 hover:to-rose-200 hover:shadow-[0_4px_16px_rgba(244,63,94,0.15)] hover:scale-[1.02]"
+                    className="flex w-full items-center justify-center gap-2.5 rounded-full border border-[#fecdd3] bg-[#fff0f0] px-4 py-3 text-[13px] font-bold text-[#d14c84] transition-all duration-300 hover:shadow-[0_4px_16px_rgba(209,76,132,0.15)]"
                   >
                     <X size={16} />
                     Discard Changes
-                  </button>
+                  </motion.button>
                 </div>
-              </div>
+              </PremiumCard>
 
-              <div className="rounded-[24px] bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
-                <h2 className="mb-5 text-[18px] font-bold text-slate-800 sm:text-[20px] flex items-center gap-2">
-                  <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]"></div>
-                  Preview
-                </h2>
+              <PremiumCard>
+                <div className="mb-6">
+                  <SectionHeading
+                    title="Preview"
+                    subtitle="Summary of the salon information"
+                  />
+                </div>
 
                 <div className="space-y-4">
-                  <div className="rounded-2xl border border-rose-100 bg-gradient-to-br from-[#fffafc] to-[#fff8fb] p-5 shadow-[0_2px_12px_rgba(226,93,143,0.05)]">
+                  <div className="rounded-[16px] border border-[#f1e7ed] bg-[#fff8fb] p-5">
                     <div className="mb-4 flex items-center justify-between gap-2">
-                      <h3 className="text-[15px] font-bold text-slate-700">Salon Summary</h3>
+                      <h3 className="text-[15px] font-bold text-[#2d1b35]">Salon Summary</h3>
                       <span
                         className={`shrink-0 rounded-full px-3.5 py-1.5 text-[11px] font-bold ${getSalonStatusStyle(formData.status)}`}
                       >
@@ -492,53 +549,37 @@ export function SalonUpdatePage() {
                       </span>
                     </div>
 
-                    <div className="space-y-3 text-[13px] text-slate-600">
+                    <div className="space-y-3 text-[13px] text-[#5b4256]">
                       <div className="flex justify-between gap-3">
-                        <span className="font-semibold text-slate-700">Name:</span>
-                        <span className="text-right font-medium text-slate-800">{formData.salonName || "Not set"}</span>
-                      </div>
-                      <div className="flex justify-between gap-3">
-                        <span className="font-semibold text-slate-700">ID:</span>
-                        <span className="text-right font-medium text-slate-800">{formData.salonId || "Not set"}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-rose-100 bg-gradient-to-br from-[#fffafc] to-[#fff8fb] p-5 shadow-[0_2px_12px_rgba(226,93,143,0.05)]">
-                    <h3 className="mb-3 text-[15px] font-bold text-slate-700">Quick Stats</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="rounded-xl bg-white p-4 text-center shadow-sm">
-                        <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Capacity</div>
-                        <div className="text-[18px] font-bold text-slate-800 mt-1">85%</div>
-                      </div>
-                      <div className="rounded-xl bg-white p-4 text-center shadow-sm">
-                        <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Revenue</div>
-                        <div className="text-[18px] font-bold text-slate-800 mt-1">$12.5K</div>
+                        <span className="font-semibold text-[#2d1b35]">Name:</span>
+                        <span className="text-right font-medium text-[#2d1b35]">{formData.salonName || "Not set"}</span>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              </PremiumCard>
             </aside>
           </form>
 
-          <div className="mt-4 rounded-[24px] bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:mt-5 sm:p-6 lg:p-7 border border-rose-50">
-            <h2 className="mb-5 text-[18px] font-bold text-slate-800 sm:text-[20px] flex items-center gap-2">
-              <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]"></div>
-              Additional Information
-            </h2>
+          <PremiumCard className="mt-6">
+            <div className="mb-6">
+              <SectionHeading
+                title="Additional Information"
+                subtitle="Add any extra details about the salon"
+              />
+            </div>
 
             <label className="block space-y-2.5">
-              <span className="text-[13px] font-semibold text-slate-600">Description</span>
+              <span className="text-[13px] font-semibold text-[#2d1b35]">Description</span>
               <textarea
                 value={formData.description}
                 onChange={(event) => handleInputChange("description", event.target.value)}
                 placeholder="Add any additional notes or description about this salon..."
-                className="w-full rounded-2xl border border-rose-100 bg-gradient-to-r from-[#fffafc] to-[#fff8fb] px-4 py-3.5 text-[14px] text-slate-800 outline-none placeholder:text-rose-300 font-medium transition-all duration-300 focus:border-rose-400 focus:bg-white focus:shadow-[0_0_0_3px_rgba(234,79,147,0.15)]"
+                className="w-full rounded-[16px] border border-[#f1e7ed] bg-[#fff8fb] px-4 py-3.5 text-[14px] text-[#2d1b35] outline-none placeholder:text-[#a88a9f] font-medium transition-all duration-300 focus:border-[#ea4f93] focus:bg-white focus:shadow-[0_0_0_3px_rgba(234,79,147,0.15)]"
                 rows={4}
               />
             </label>
-          </div>
+          </PremiumCard>
         </>
       )}
 
@@ -555,7 +596,7 @@ export function SalonUpdatePage() {
         onCancel={() => setShowCancelModal(false)}
         details={[
           { label: "Editing Mode", value: "Update existing salon" },
-          { label: "Next Step", value: "Return to salon list" },
+          { label: "Next Step", value: "Return to salon details" },
         ]}
         warnings={[
           "Recent edits to branch info and operating hours will be lost.",
@@ -590,6 +631,6 @@ export function SalonUpdatePage() {
         onFailureClose={handleCloseResultModal}
         onSuccessComplete={handleSuccessComplete}
       />
-    </section>
+    </motion.section>
   );
 }

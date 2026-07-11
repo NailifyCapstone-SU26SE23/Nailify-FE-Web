@@ -117,6 +117,7 @@ export function normalizeAdminUser(user) {
     phone: String(user?.phone || "--").trim() || "--",
     role,
     displayRole: getDisplayRole(role),
+    salonId: user?.salonId || "",
     salon: user?.salonId ? "Assigned salon" : "No salon",
     avatar: getAvatar(fullName),
     avatarUrl: user?.avatarUrl || "",
@@ -128,13 +129,14 @@ export function normalizeAdminUser(user) {
   };
 }
 
-export async function fetchAdminUsers({ pageNumber = 1, pageSize = 10, searchTerm = "" } = {}) {
+export async function fetchAdminUsers({ pageNumber = 1, pageSize = 10, searchTerm = "", role = "" } = {}) {
   const response = await axiosClient.get("/Users", {
     headers: getAuthHeaders(),
     params: {
       pageNumber,
       pageSize,
       searchTerm: searchTerm || undefined,
+      role: role || undefined,
     },
   });
 
@@ -171,6 +173,21 @@ export async function fetchAdminUserDetail(userId) {
   const data = unwrapResponse(response, "Failed to load user detail.");
 
   return normalizeAdminUser(data);
+}
+
+// New function to fetch raw user data without normalization
+export async function fetchRawAdminUserDetail(userId) {
+  const normalizedUserId = String(userId || "").trim();
+
+  if (!normalizedUserId) {
+    throw new Error("User ID is required.");
+  }
+
+  const response = await axiosClient.get(`/Users/${normalizedUserId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  return unwrapResponse(response, "Failed to load user detail.");
 }
 
 function mapRoleToApi(role) {
@@ -211,23 +228,34 @@ export async function updateAdminUser(userId, formValues) {
     throw new Error("User ID is required.");
   }
 
-  const response = await axiosClient.put(
-    `/Users/${normalizedUserId}`,
-    {
-      email: String(formValues?.email || "").trim(),
-      firstName: String(formValues?.firstName || "").trim(),
-      lastName: String(formValues?.lastName || "").trim(),
-      phone: String(formValues?.phone || "").trim(),
-      status: String(formValues?.status || "").trim(),
-    },
-    {
-      headers: getAuthHeaders(),
-    },
-  );
+  // Only include fields that are expected by the API
+  const payload = {};
+  if (formValues?.email !== undefined) payload.email = String(formValues.email || "").trim();
+  if (formValues?.firstName !== undefined) payload.firstName = String(formValues.firstName || "").trim();
+  if (formValues?.lastName !== undefined) payload.lastName = String(formValues.lastName || "").trim();
+  if (formValues?.phone !== undefined) payload.phone = String(formValues.phone || "").trim();
+  if (formValues?.status !== undefined) payload.status = String(formValues.status || "").trim();
+  if (formValues?.salonId !== undefined) payload.salonId = formValues.salonId;
 
-  const data = unwrapResponse(response, "Failed to update user.");
+  console.log("updateAdminUser - userId:", normalizedUserId);
+  console.log("updateAdminUser - payload:", payload);
 
-  return normalizeAdminUser(data);
+  try {
+    const response = await axiosClient.put(
+      `/Users/${normalizedUserId}`,
+      payload,
+      {
+        headers: getAuthHeaders(),
+      },
+    );
+
+    const data = unwrapResponse(response, "Failed to update user.");
+
+    return normalizeAdminUser(data);
+  } catch (error) {
+    console.error("updateAdminUser error response:", error.response?.data);
+    throw error;
+  }
 }
 
 export async function deleteAdminUser(userId) {

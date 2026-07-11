@@ -15,9 +15,7 @@ import { SalonUpdatePage } from "../../features/admin/salon-management/pages/Sal
 import { StaffManagementPage } from "../../features/admin/staff-management/pages/StaffManagementPage";
 import { StaffCreatePage } from "../../features/admin/staff-management/pages/StaffCreatePage";
 import { StaffUpdatePage } from "../../features/admin/staff-management/pages/StaffUpdatePage";
-import { BookingListPage } from "../../shared/bookings/pages/BookingListPage";
-import { BookingCreatePage } from "../../shared/bookings/pages/BookingCreatePage";
-import { BookingDetailPage } from "../../shared/bookings/pages/BookingDetailPage";
+
 import { NailDesignManagementPage } from "../../features/admin/nails-design-management/pages/NailDesignManagementPage";
 import { NailDesignManagementCategoryPage } from "../../features/admin/nails-design-management/pages/NailDesignManagementCategoryPage";
 import { NailDesignManagementCreatePage } from "../../features/admin/nails-design-management/pages/NailDesignManagementCreatePage";
@@ -46,6 +44,8 @@ import { SkillTypeDetailPage } from "../../features/admin/skill-types-management
 import { CategoriesManagementPage } from "../../features/admin/categories-management/pages/CategoriesManagementPage";
 import { CategoryCreatePage } from "../../features/admin/categories-management/pages/CategoryCreatePage";
 import { CategoryDetailPage } from "../../features/admin/categories-management/pages/CategoryDetailPage";
+import { AdminSalonBookingsPage } from "../../features/admin/salon-bookings/pages/AdminSalonBookingsPage";
+import { AdminSalonBookingDetailPage } from "../../features/admin/salon-bookings/pages/AdminSalonBookingDetailPage";
 
 export const adminRoutes = [
   {
@@ -68,15 +68,7 @@ export const adminRoutes = [
       },
       {
         path: ROUTES.adminBookings,
-        element: <BookingListPage />,
-      },
-      {
-        path: ROUTES.adminBookingsCreate,
-        element: <BookingCreatePage />,
-      },
-      {
-        path: ROUTES.adminBookingDetail,
-        element: <BookingDetailPage />,
+        element: <AdminSalonBookingsPage />,
       },
       {
         path: ROUTES.adminSalons,
@@ -229,6 +221,10 @@ export const adminRoutes = [
       {
         path: ROUTES.adminUserDetail,
         element: <UserManagementDetailPage />,
+      },
+      {
+        path: ROUTES.adminSalonBookingDetail,
+        element: <AdminSalonBookingDetailPage />,
       },
       {
         path: "*",
