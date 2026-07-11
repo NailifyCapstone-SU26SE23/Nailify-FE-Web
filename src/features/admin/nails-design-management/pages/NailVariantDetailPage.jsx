@@ -8,7 +8,7 @@ import {
   Save,
   Sparkles,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import {
   getAdminNailDesignDetailRoute,
@@ -21,9 +21,6 @@ import {
   fetchAdminNailVariantDetail,
   fetchProceduresByVariant,
 } from "../services/nailDesignManagementService";
-
-const DESIGN_PREVIEW_IMAGE =
-  "https://i0.wp.com/greenweddingshoes.com/wp-content/uploads/2025/12/red-cat-eye-christmas-holiday-nails-with-bow.webp?fit=1024%2C9999";
 
 function isHexColor(value) {
   return /^#(?:[0-9a-f]{3}){1,2}$/i.test(String(value || "").trim());
@@ -83,6 +80,165 @@ function DetailCard({ title, children }) {
       <h2 className="font-extrabold text-[#432744]">{title}</h2>
       <div className="mt-4">{children}</div>
     </article>
+  );
+}
+
+function parseVariantColorConfig(colorJson) {
+  const rawValue = String(colorJson || "").trim();
+
+  if (!rawValue) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(rawValue);
+  } catch {
+    return null;
+  }
+}
+
+function buildFingerColorStyle(colorConfig, fingerIndex) {
+  if (!colorConfig) {
+    return { backgroundColor: "#f9c2d8" };
+  }
+
+  if (colorConfig.mode === "solid" && colorConfig.color) {
+    return { backgroundColor: colorConfig.color };
+  }
+
+  if (
+    colorConfig.mode === "gradient" &&
+    colorConfig.gradient?.enabled &&
+    Array.isArray(colorConfig.gradient.stops) &&
+    colorConfig.gradient.stops.length > 1
+  ) {
+    return { background: `linear-gradient(to bottom, ${colorConfig.gradient.stops.join(", ")})` };
+  }
+
+  if (colorConfig.mode === "perFinger" && Array.isArray(colorConfig.fingers)) {
+    const finger = colorConfig.fingers.find((item) => Number(item?.fingerIndex) === Number(fingerIndex));
+
+    if (finger?.gradient?.enabled && Array.isArray(finger.gradient.stops) && finger.gradient.stops.length > 1) {
+      return { background: `linear-gradient(to bottom, ${finger.gradient.stops.join(", ")})` };
+    }
+
+    if (finger?.color) {
+      return { backgroundColor: finger.color };
+    }
+  }
+
+  if (colorConfig.color) {
+    return { backgroundColor: colorConfig.color };
+  }
+
+  return { backgroundColor: "#f9c2d8" };
+}
+
+function getFingerAlignmentClass(fingerName) {
+  switch (fingerName) {
+    case "Thumb":
+      return "translate-y-8 -rotate-[14deg] md:translate-y-10";
+    case "Index":
+      return "translate-y-2 -rotate-[4deg]";
+    case "Middle":
+      return "-translate-y-3";
+    case "Ring":
+      return "rotate-[2deg]";
+    case "Pinky":
+      return "translate-y-6 rotate-[10deg] md:translate-y-8";
+    default:
+      return "";
+  }
+}
+
+function NailVariantHandPreview({ variantDetail }) {
+  const colorConfig = useMemo(
+    () => parseVariantColorConfig(variantDetail?.colorJson),
+    [variantDetail?.colorJson],
+  );
+
+  const fingerDefinitions = [
+    { fingerIndex: 1, label: "Thumb" },
+    { fingerIndex: 2, label: "Index" },
+    { fingerIndex: 3, label: "Middle" },
+    { fingerIndex: 4, label: "Ring" },
+    { fingerIndex: 5, label: "Pinky" },
+  ];
+
+  const shapeMaskStyle = variantDetail?.nailShape?.imageUrl
+    ? {
+        maskImage: `url(${variantDetail.nailShape.imageUrl})`,
+        WebkitMaskImage: `url(${variantDetail.nailShape.imageUrl})`,
+        maskSize: "100% 100%",
+        WebkitMaskSize: "100% 100%",
+        maskRepeat: "no-repeat",
+        WebkitMaskRepeat: "no-repeat",
+        maskPosition: "center",
+        WebkitMaskPosition: "center",
+      }
+    : {};
+
+  return (
+    <div className="rounded-[24px] border border-[#f7d7e5] bg-[radial-gradient(circle_at_top,#fffdfd_0%,#fff6fb_58%,#fff2f8_100%)] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+      <div className="flex min-h-[300px] flex-wrap items-center justify-center gap-5 lg:gap-6">
+        {fingerDefinitions.map((finger) => {
+          const colorStyle = buildFingerColorStyle(colorConfig, finger.fingerIndex);
+
+          return (
+            <div
+              key={finger.label}
+              className={`flex flex-col items-center gap-3.5 transition-all duration-500 ease-out ${getFingerAlignmentClass(finger.label)}`}
+            >
+              <div className="relative">
+                <div className="absolute -inset-1 rounded-t-[36px] rounded-b-[18px] bg-gradient-to-t from-[#ea4f93]/15 to-[#ffb8d9]/5 opacity-30 blur-md" />
+                <div className="relative h-48 w-24 overflow-hidden rounded-t-[32px] rounded-b-[14px] border-2 border-[#fcd5e6] bg-gradient-to-b from-[#fff6f9] to-[#ffeef5] shadow-[0_12px_28px_rgba(236,72,153,0.06)]">
+                  <div className="absolute inset-0 h-full w-full" style={shapeMaskStyle}>
+                    <div className="absolute inset-0 h-full w-full" style={colorStyle} />
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/25 via-transparent to-black/10 mix-blend-overlay" />
+                    <div className="pointer-events-none absolute left-2.5 top-1.5 h-20 w-1.5 rounded-full bg-white/45 blur-[0.7px]" />
+
+                    {variantDetail?.nailSurface?.name && (() => {
+                      const surfaceName = String(variantDetail.nailSurface.name || "").toLowerCase();
+
+                      if (surfaceName.includes("matte")) {
+                        return <div className="pointer-events-none absolute inset-0 h-full w-full bg-white/12 backdrop-blur-[0.5px]" />;
+                      }
+
+                      if (
+                        surfaceName.includes("chrome") ||
+                        surfaceName.includes("metallic") ||
+                        surfaceName.includes("mirror") ||
+                        surfaceName.includes("cat eye")
+                      ) {
+                        return (
+                          <div className="pointer-events-none absolute inset-0 h-full w-full bg-[linear-gradient(135deg,rgba(255,255,255,0.45)_0%,rgba(255,255,255,0)_50%,rgba(0,0,0,0.15)_100%)] mix-blend-overlay" />
+                        );
+                      }
+
+                      return <div className="pointer-events-none absolute inset-0 h-full w-full bg-[linear-gradient(135deg,rgba(255,255,255,0.3)_0%,rgba(255,255,255,0)_100%)]" />;
+                    })()}
+                  </div>
+
+                  {variantDetail?.nailShape?.imageUrl ? (
+                    <img
+                      crossOrigin="anonymous"
+                      src={variantDetail.nailShape.imageUrl}
+                      alt="shape mask"
+                      className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-80 mix-blend-multiply"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : null}
+                </div>
+              </div>
+
+              <span className="rounded-full border border-[#fce6f3] bg-white/90 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)]">
+                {finger.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -278,22 +434,13 @@ export function NailVariantDetailPage() {
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="space-y-4">
           <DetailCard title="Variant Overview">
-            <div className="grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)]">
-              <div className="overflow-hidden rounded-[20px] bg-[#f6edf2]">
-                <img
-                  crossOrigin="anonymous"
-                  src={variant.imageUrl || DESIGN_PREVIEW_IMAGE}
-                  alt={variant.name}
-                  className="h-72 w-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
-              </div>
+            <div className="space-y-5">
+              <NailVariantHandPreview variantDetail={variant} />
+
               <div className="grid gap-3 sm:grid-cols-2">
                 {[
                   ["Price", variant.priceLabel || "--"],
                   ["Duration", variant.durationLabel || "--"],
-                  ["Shape", variant.nailShape?.name || "--"],
-                  ["Surface", variant.nailSurface?.name || "--"],
                 ].map(([label, value]) => (
                   <div key={label} className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">{label}</p>
@@ -301,10 +448,44 @@ export function NailVariantDetailPage() {
                   </div>
                 ))}
               </div>
+
+              <div className="grid gap-4 lg:grid-cols-2">
+                <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-5">
+                  <h3 className="text-sm font-extrabold uppercase tracking-[0.08em] text-[#c694ad]">Nail Shape</h3>
+                  <div className="mt-4 space-y-3">
+                    {[
+                      ["Name", variant.nailShape?.name || "--"],
+                      ["Price", variant.nailShape?.priceLabel || "--"],
+                      ["Duration", variant.nailShape?.durationLabel || "--"],
+                    ].map(([label, value]) => (
+                      <div key={label} className="rounded-[16px] border border-[#f3dce7] bg-white px-4 py-3">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">{label}</p>
+                        <p className="mt-1 text-sm font-bold text-[#432744]">{value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-5">
+                  <h3 className="text-sm font-extrabold uppercase tracking-[0.08em] text-[#c694ad]">Nail Surface</h3>
+                  <div className="mt-4 space-y-3">
+                    {[
+                      ["Name", variant.nailSurface?.name || "--"],
+                      ["Price", variant.nailSurface?.priceLabel || "--"],
+                      ["Duration", variant.nailSurface?.durationLabel || "--"],
+                    ].map(([label, value]) => (
+                      <div key={label} className="rounded-[16px] border border-[#f3dce7] bg-white px-4 py-3">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">{label}</p>
+                        <p className="mt-1 text-sm font-bold text-[#432744]">{value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           </DetailCard>
 
-          <DetailCard title="Accessories / Components">
+          {/* <DetailCard title="Accessories / Components">
             {variant.nailComponents?.length ? (
               <div className="space-y-3">
                 {variant.nailComponents.map((item) => (
@@ -326,7 +507,7 @@ export function NailVariantDetailPage() {
             ) : (
               <p className="text-sm text-[#8c7085]">This variant has no accessory components.</p>
             )}
-          </DetailCard>
+          </DetailCard> */}
 
           <DetailCard title="Procedure Steps">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

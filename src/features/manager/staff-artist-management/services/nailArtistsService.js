@@ -155,198 +155,22 @@ export async function fetchNailArtistSkills(artistId) {
   return unwrapResponse(response, "Failed to load nail artist skills.");
 }
 
-export async function fetchSchedules({ pageNumber = 1, pageSize = 200, artistId, startDate, endDate } = {}) {
-  const params = { pageNumber, pageSize };
-  if (artistId) params.artistId = artistId;
-  if (startDate) params.startDate = startDate;
-  if (endDate) params.endDate = endDate;
+export async function fetchArtistSchedules(artistId, options = {}) {
+  const normalizedId = String(artistId || "").trim();
 
-  const response = await axiosClient.get(`/Schedules`, {
+  if (!normalizedId) {
+    throw new Error("Nail artist ID is required.");
+  }
+
+  const { startDate, endDate } = options;
+
+  const response = await axiosClient.get(`/Schedules/artist/${normalizedId}`, {
     headers: getAuthHeaders(),
-    params,
+    params: {
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
+    },
   });
 
-  return unwrapResponse(response, "Failed to load schedules.");
+  return unwrapResponse(response, "Failed to load artist schedules.");
 }
-
-// ── Normalise a staff/user payload ────────────────────────────────────────────
-export function normalizeStaffMember(staff) {
-  const fullName =
-    staff?.firstName && staff?.lastName
-      ? `${staff.firstName} ${staff.lastName}`
-      : staff?.fullName || staff?.name || "Unnamed Staff";
-
-  const initials = fullName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() || "S";
-
-  return {
-    ...staff,
-    id: staff?.staffId || staff?.userId || staff?.id || "",
-    userId: staff?.userId || staff?.id || "",
-    staffId: staff?.staffId || "",
-    name: fullName,
-    role: staff?.role || "Staff",
-    email: staff?.email || "",
-    phone: staff?.phone || "",
-    salonId: staff?.salonId || "",
-    avatarTone: "from-[#ff8ebb] to-[#ea4f93]",
-    avatarUrl: staff?.avatarUrl || null,
-    initials,
-  };
-}
-
-// ── Fetch all skill types ─────────────────────────────────────────────────────
-export async function fetchSkillTypes({ pageNumber = 1, pageSize = 100 } = {}) {
-  const response = await axiosClient.get("/SkillTypes", {
-    headers: getAuthHeaders(),
-    params: { pageNumber, pageSize },
-  });
-  return unwrapResponse(response, "Failed to load skill types.");
-}
-
-// ── Assign / update nail artist skills ───────────────────────────────────────
-// POST /nail-artists/{id}/skills  — for brand-new skill assignments
-// PUT  /nail-artists/{id}/skills/{skillTypeId} — for updating existing levels
-export async function assignNailArtistSkills(artistId, skills) {
-  // Fetch currently assigned skills to diff new vs existing
-  let currentSkills = [];
-  try {
-    const res = await axiosClient.get(`/nail-artists/${artistId}/skills`, {
-      headers: getAuthHeaders(),
-    });
-    const payload = res?.data;
-    if (payload?.isSucceeded) {
-      const raw = payload.data?.items ?? payload.data ?? [];
-      currentSkills = Array.isArray(raw) ? raw : [];
-    }
-  } catch (err) {
-    console.warn("assignNailArtistSkills: could not fetch existing skills:", err);
-  }
-
-  const currentLevelById = new Map();
-  currentSkills.forEach((s) => {
-    const id = s.skillTypeId || s.SkillTypeId || s.id;
-    if (id) currentLevelById.set(id, s.level ?? 0);
-  });
-
-  const toAdd = [];
-  const toUpdate = [];
-
-  skills.forEach((s) => {
-    const level = s.level ?? 0;
-    if (currentLevelById.has(s.skillTypeId)) {
-      if (currentLevelById.get(s.skillTypeId) !== level) {
-        toUpdate.push({ skillTypeId: s.skillTypeId, level });
-      }
-    } else {
-      toAdd.push({ skillTypeId: s.skillTypeId, level });
-    }
-  });
-
-  const errors = [];
-
-  if (toAdd.length > 0) {
-    try {
-      const res = await axiosClient.post(`/nail-artists/${artistId}/skills`, toAdd, {
-        headers: getAuthHeaders(),
-      });
-      unwrapResponse(res, "Failed to assign new skills.");
-    } catch (err) {
-      console.warn("assignNailArtistSkills POST error:", err);
-      errors.push(`Failed to assign ${toAdd.length} new skill(s).`);
-    }
-  }
-
-  for (const s of toUpdate) {
-    try {
-      const res = await axiosClient.put(
-        `/nail-artists/${artistId}/skills/${s.skillTypeId}`,
-        { requiredLevel: s.level },
-        { headers: getAuthHeaders() }
-      );
-      unwrapResponse(res, `Failed to update skill ${s.skillTypeId}.`);
-    } catch (err) {
-      console.warn(`assignNailArtistSkills PUT error (${s.skillTypeId}):`, err);
-      errors.push(`Failed to update skill level for ${s.skillTypeId}.`);
-    }
-  }
-
-  return errors.length > 0
-    ? { success: false, error: errors.join("; ") }
-    : { success: true };
-}
-
-// ── Role mapping ──────────────────────────────────────────────────────────────
-function mapRoleToApi(role) {
-  switch (role) {
-    case "NAIL_ARTIST": return "Staff_Artist";
-    case "SALON_MANAGER": return "Salon_Manager";
-    case "RECEPTIONIST": return "Receptionist";
-    default: return role;
-  }
-}
-
-// ── Create a new user account ─────────────────────────────────────────────────
-export async function createUser(userData) {
-  const fd = new FormData();
-  fd.append("email", String(userData?.email || "").trim());
-  fd.append("password", String(userData?.password || ""));
-  fd.append("firstName", String(userData?.firstName || "").trim());
-  fd.append("lastName", String(userData?.lastName || "").trim());
-  fd.append("phone", String(userData?.phone || "").trim());
-  fd.append("avatarUrl", String(userData?.avatarUrl || "").trim());
-  fd.append("role", mapRoleToApi(userData?.role));
-  fd.append("salonId", String(userData?.salonId || "").trim());
-
-  if (userData?.imageFile) {
-    fd.append("image", userData.imageFile);
-  }
-
-  const response = await axiosClient.post("/Users", fd, {
-    headers: getAuthHeaders(),
-  });
-
-  const data = unwrapResponse(response, "Failed to create user.");
-  return normalizeStaffMember(data);
-}
-
-// ── Update an existing user ───────────────────────────────────────────────────
-export async function updateUser(userId, userData) {
-  let response;
-
-  if (userData?.imageFile) {
-    const fd = new FormData();
-    if (userData.firstName !== undefined) fd.append("firstName", String(userData.firstName).trim());
-    if (userData.lastName !== undefined) fd.append("lastName", String(userData.lastName).trim());
-    if (userData.phone !== undefined) fd.append("phone", String(userData.phone).trim());
-    if (userData.email !== undefined) fd.append("email", String(userData.email).trim());
-    if (userData.role !== undefined) fd.append("role", mapRoleToApi(userData.role));
-    if (userData.salonId !== undefined) fd.append("salonId", String(userData.salonId).trim());
-    if (userData.status !== undefined) fd.append("status", String(userData.status).trim());
-    fd.append("image", userData.imageFile);
-
-    response = await axiosClient.put(`/Users/${userId}`, fd, {
-      headers: getAuthHeaders(),
-    });
-  } else {
-    const json = {};
-    if (userData.firstName !== undefined) json.firstName = String(userData.firstName).trim();
-    if (userData.lastName !== undefined) json.lastName = String(userData.lastName).trim();
-    if (userData.phone !== undefined) json.phone = String(userData.phone).trim();
-    if (userData.email !== undefined) json.email = String(userData.email).trim();
-    if (userData.role !== undefined) json.role = mapRoleToApi(userData.role);
-    if (userData.salonId !== undefined) json.salonId = String(userData.salonId).trim();
-    if (userData.status !== undefined) json.status = String(userData.status).trim();
-
-    response = await axiosClient.put(`/Users/${userId}`, json, {
-      headers: {
-        ...getAuthHeaders(),
-        "Content-Type": "application/json",
-      },
-    });
-  }
-
-  const data = unwrapResponse(response, "Failed to update user.");
-  return normalizeStaffMember(data);
-}
-
-

@@ -1,7 +1,7 @@
 import { ArrowLeft, FileText, FolderTree, Pencil, Save, ShieldCheck, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ROUTES } from "../../../../shared/constants/routes";
 import {
@@ -36,6 +36,12 @@ export function SkillTypeDetailPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
+
+  useEffect(() => {
+    if (!skillTypeId) {
+      navigate(ROUTES.adminSkillTypes, { replace: true });
+    }
+  }, [navigate, skillTypeId]);
 
   useEffect(() => {
     if (!location.state?.flashMessage && !location.state?.startInEdit) {
@@ -194,10 +200,6 @@ export function SkillTypeDetailPage() {
     }
   };
 
-  if (!isLoading && !skillType) {
-    return <Navigate to={ROUTES.adminSkillTypes} replace />;
-  }
-
   return (
     <section className="mx-auto flex w-full max-w-[1300px] flex-col gap-4 text-slate-700">
       <header className="flex flex-col gap-4 rounded-[24px] bg-white/70 px-5 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur lg:flex-row lg:items-center lg:justify-between">
@@ -272,6 +274,30 @@ export function SkillTypeDetailPage() {
       {isLoading ? (
         <div className="flex min-h-[320px] items-center justify-center rounded-[24px] bg-white/80 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
           <div className="text-center text-sm text-slate-600">Loading skill type details...</div>
+        </div>
+      ) : !skillType ? (
+        <div className="rounded-[24px] border border-rose-100 bg-white/85 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
+          <div className="mx-auto max-w-xl text-center">
+            <h2 className="text-lg font-bold text-slate-800">Unable to load skill type detail</h2>
+            <p className="mt-2 text-sm text-slate-500">
+              {error || "This skill type could not be loaded from the backend."}
+            </p>
+            <div className="mt-5 flex justify-center gap-3">
+              <Link
+                to={ROUTES.adminSkillTypes}
+                className="inline-flex items-center justify-center rounded-full border border-rose-200 bg-white px-4 py-2 text-sm font-semibold text-rose-500 transition hover:bg-rose-50"
+              >
+                Back to skill types
+              </Link>
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(226,93,143,0.24)]"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_360px]">

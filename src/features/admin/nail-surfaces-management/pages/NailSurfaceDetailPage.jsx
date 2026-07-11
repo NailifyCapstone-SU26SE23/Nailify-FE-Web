@@ -4,13 +4,11 @@ import {
   Layers3,
   Pencil,
   Save,
-  Sparkles,
   Trash2,
-  Upload,
   Wallet,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
@@ -22,14 +20,17 @@ import {
   formatNailSurfaceDuration,
   updateAdminNailSurface,
 } from "../services/nailSurfacesManagementService";
+import { NailSurfacePreview } from "../components/NailSurfacePreview";
+import { NailSurfaceShaderBuilder } from "../components/NailSurfaceShaderBuilder";
+import {
+  buildSurfacePayload,
+  parseShaderParamToControls,
+  syncSurfaceForm,
+} from "../utils/surfaceShaderConfig";
 
 function validateForm(formValues) {
   if (!String(formValues.name || "").trim()) {
     return "Nail surface name is required.";
-  }
-
-  if (!String(formValues.shaderParam || "").trim()) {
-    return "Shader param is required.";
   }
 
   if (Number(formValues.price) < 0 || Number.isNaN(Number(formValues.price))) {
@@ -81,12 +82,7 @@ export function NailSurfaceDetailPage() {
         }
 
         setSurface(response);
-        setDraft({
-          name: response.name,
-          shaderParam: response.shaderParam,
-          price: String(response.price),
-          duration: String(response.duration),
-        });
+        setDraft(syncSurfaceForm(parseShaderParamToControls(response.shaderParam, response)));
       } catch (loadError) {
         if (!isMounted) {
           return;
@@ -107,25 +103,13 @@ export function NailSurfaceDetailPage() {
     };
   }, [surfaceId]);
 
-  const summaryItems = useMemo(() => {
-    if (!surface || !draft) {
-      return [];
-    }
-
-    return [
-      ["Surface ID", String(surface.nailSurfaceId)],
-      ["Surface Name", draft.name || "--"],
-      ["Shader Param", draft.shaderParam || "--"],
-      ["Price", draft.price ? formatNailSurfaceCurrency(draft.price) : "--"],
-      ["Duration", draft.duration ? formatNailSurfaceDuration(draft.duration) : "--"],
-    ];
-  }, [draft, surface]);
-
   const handleFieldChange = (field, value) => {
-    setDraft((current) => ({
-      ...current,
-      [field]: value,
-    }));
+    setDraft((current) =>
+      syncSurfaceForm({
+        ...current,
+        [field]: value,
+      }),
+    );
 
     if (error) {
       setError("");
@@ -137,12 +121,7 @@ export function NailSurfaceDetailPage() {
       return;
     }
 
-    setDraft({
-      name: surface.name,
-      shaderParam: surface.shaderParam,
-      price: String(surface.price),
-      duration: String(surface.duration),
-    });
+    setDraft(syncSurfaceForm(parseShaderParamToControls(surface.shaderParam, surface)));
     setError("");
     setIsEditing(true);
   };
@@ -152,12 +131,7 @@ export function NailSurfaceDetailPage() {
       return;
     }
 
-    setDraft({
-      name: surface.name,
-      shaderParam: surface.shaderParam,
-      price: String(surface.price),
-      duration: String(surface.duration),
-    });
+    setDraft(syncSurfaceForm(parseShaderParamToControls(surface.shaderParam, surface)));
     setError("");
     setIsEditing(false);
   };
@@ -181,19 +155,13 @@ export function NailSurfaceDetailPage() {
     setIsSaving(true);
 
     try {
-      const updatedSurface = await updateAdminNailSurface(surface.nailSurfaceId, {
-        ...draft,
-        price: Number(draft.price),
-        duration: Number(draft.duration),
-      });
+      const updatedSurface = await updateAdminNailSurface(
+        surface.nailSurfaceId,
+        buildSurfacePayload(draft),
+      );
 
       setSurface(updatedSurface);
-      setDraft({
-        name: updatedSurface.name,
-        shaderParam: updatedSurface.shaderParam,
-        price: String(updatedSurface.price),
-        duration: String(updatedSurface.duration),
-      });
+      setDraft(syncSurfaceForm(parseShaderParamToControls(updatedSurface.shaderParam, updatedSurface)));
       setIsEditing(false);
       toast.success(`${updatedSurface.name} updated successfully.`);
     } catch (saveError) {
@@ -335,20 +303,6 @@ export function NailSurfaceDetailPage() {
               </label>
 
               <label className="space-y-2.5">
-                <span className="text-[13px] font-semibold text-slate-600">Shader Param</span>
-                <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
-                  <Sparkles size={14} className="shrink-0 text-rose-300" />
-                  <input
-                    type="text"
-                    value={draft?.shaderParam || ""}
-                    onChange={(event) => handleFieldChange("shaderParam", event.target.value)}
-                    disabled={!isEditing}
-                    className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
-                  />
-                </div>
-              </label>
-
-              <label className="space-y-2.5">
                 <span className="text-[13px] font-semibold text-slate-600">Price</span>
                 <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                   <Wallet size={14} className="shrink-0 text-rose-300" />
@@ -381,6 +335,80 @@ export function NailSurfaceDetailPage() {
               </label>
             </div>
           </section>
+
+          {draft ? (
+            <NailSurfaceShaderBuilder
+              formValues={draft}
+              onFieldChange={handleFieldChange}
+              disabled={!isEditing}
+            />
+          ) : null}
+
+          <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
+            <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
+              <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
+              Surface Preview
+            </h2>
+
+            <div className="grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
+              <NailSurfacePreview
+                surface={{
+                  ...surface,
+                  ...draft,
+                  price: Number(draft?.price || 0),
+                  duration: Number(draft?.duration || 0),
+                }}
+              />
+
+              <div className="rounded-[20px] border border-rose-100 bg-[#fff8fb] p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
+                  Surface Summary
+                </p>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-[16px] border border-rose-100 bg-white p-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
+                      Surface Type
+                    </p>
+                    <p className="mt-2 text-sm font-bold capitalize text-[#432744]">
+                      {draft?.surfacePreset || "--"}
+                    </p>
+                  </div>
+                  <div className="rounded-[16px] border border-rose-100 bg-white p-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
+                      Price
+                    </p>
+                    <p className="mt-2 text-sm font-bold text-[#432744]">
+                      {draft?.price ? formatNailSurfaceCurrency(draft.price) : "--"}
+                    </p>
+                  </div>
+                  <div className="rounded-[16px] border border-rose-100 bg-white p-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
+                      Duration
+                    </p>
+                    <p className="mt-2 text-sm font-bold text-[#432744]">
+                      {draft?.duration ? formatNailSurfaceDuration(draft.duration) : "--"}
+                    </p>
+                  </div>
+                  <div className="rounded-[16px] border border-rose-100 bg-white p-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
+                      Lightness Offset
+                    </p>
+                    <p className="mt-2 text-sm font-bold text-[#432744]">
+                      {draft?.lightnessOffset || "0"}
+                    </p>
+                  </div>
+                  <div className="rounded-[16px] border border-rose-100 bg-white p-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
+                      Saturation Offset
+                    </p>
+                    <p className="mt-2 text-sm font-bold text-[#432744]">
+                      {draft?.saturationOffset || "0"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       )}
 
@@ -398,7 +426,7 @@ export function NailSurfaceDetailPage() {
         onCancel={() => !isSaving && setShowSaveConfirm(false)}
         highlights={[draft?.name || surface?.name || "Nail surface"]}
         details={[
-          { label: "Shader Param", value: draft?.shaderParam || "--" },
+          { label: "Surface Type", value: draft?.surfacePreset || "--" },
           { label: "Price", value: draft?.price ? formatNailSurfaceCurrency(draft.price) : "--" },
         ]}
       />

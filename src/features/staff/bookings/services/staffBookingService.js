@@ -160,6 +160,107 @@ export async function fetchServiceCatalog(filters = {}) {
   };
 }
 
+export async function fetchStaffBuilderNailShapes(filters = {}) {
+  const {
+    pageNumber = 1,
+    pageSize = 100,
+    name,
+  } = filters ?? {};
+
+  const response = await axiosClient.get("/NailShapes", {
+    headers: getAuthHeaders(),
+    params: {
+      pageNumber,
+      pageSize,
+      ...(name ? { name } : {}),
+    },
+  });
+
+  const data = unwrapResponse(response, "Failed to load nail shapes.");
+
+  return Array.isArray(data?.items)
+    ? data.items.map((item) => ({
+      nailShapeId: Number(item?.nailShapeId || 0),
+      name: String(item?.name || "").trim() || "--",
+      imageUrl: String(item?.imageUrl || "").trim(),
+      price: Number(item?.price || 0),
+      duration: Number(item?.duration || 0),
+    }))
+    : [];
+}
+
+export async function fetchStaffBuilderNailSurfaces(filters = {}) {
+  const {
+    pageNumber = 1,
+    pageSize = 100,
+    name,
+  } = filters ?? {};
+
+  const response = await axiosClient.get("/NailSurfaces", {
+    headers: getAuthHeaders(),
+    params: {
+      pageNumber,
+      pageSize,
+      ...(name ? { name } : {}),
+    },
+  });
+
+  const data = unwrapResponse(response, "Failed to load nail surfaces.");
+
+  return Array.isArray(data?.items)
+    ? data.items.map((item) => ({
+      nailSurfaceId: Number(item?.nailSurfaceId || 0),
+      name: String(item?.name || "").trim() || "--",
+      shaderParam: String(item?.shaderParam || "").trim(),
+      lightnessOffset: Number(item?.lightnessOffset || 0),
+      saturationOffset: Number(item?.saturationOffset || 0),
+      hueOffset: Number(item?.hueOffset || 0),
+      price: Number(item?.price || 0),
+      duration: Number(item?.duration || 0),
+    }))
+    : [];
+}
+
+export async function fetchStaffBuilderNailComponents(filters = {}) {
+  const {
+    pageNumber = 1,
+    pageSize = 100,
+  } = filters ?? {};
+
+  const response = await axiosClient.get("/NailComponents", {
+    headers: getAuthHeaders(),
+    params: {
+      pageNumber,
+      pageSize,
+    },
+  });
+
+  const data = unwrapResponse(response, "Failed to load nail components.");
+  const uniqueComponents = new Map();
+
+  if (Array.isArray(data?.items)) {
+    data.items.forEach((item) => {
+      const component = item?.component;
+      const componentId = Number(component?.componentId || item?.componentId || 0);
+
+      if (!componentId || uniqueComponents.has(componentId)) {
+        return;
+      }
+
+      uniqueComponents.set(componentId, {
+        componentId,
+        name: String(component?.name || "").trim() || "--",
+        imageUrl: String(component?.imageUrl || "").trim(),
+        componentType: String(component?.componentType || "").trim() || "--",
+        price: Number(component?.price || 0),
+        duration: Number(component?.duration || 0),
+      });
+    });
+  }
+
+  return [...uniqueComponents.values()];
+}
+
 export async function fetchStaffBookingDetail(bookingId) {
   const normalizedBookingId = String(bookingId || "").trim();
 
@@ -192,6 +293,111 @@ export async function updateStaffBooking(bookingId, payload) {
   });
 
   return unwrapResponse(response, "Failed to update booking.");
+}
+
+export async function createStaffCustomerNail(payload) {
+  const formData = new FormData();
+  const normalizedName = String(payload?.name || "").trim();
+  const nailShapeId = Number(payload?.nailShapeId || 0);
+  const nailSurfaceId = Number(payload?.nailSurfaceId || 0);
+  const customColor = String(payload?.customColor || "").trim();
+  const isPublic = Boolean(payload?.isPublic);
+
+  if (!normalizedName) {
+    throw new Error("Customer nail name is required.");
+  }
+
+  if (!Number.isInteger(nailShapeId) || nailShapeId <= 0) {
+    throw new Error("A valid nail shape is required.");
+  }
+
+  if (!Number.isInteger(nailSurfaceId) || nailSurfaceId <= 0) {
+    throw new Error("A valid nail surface is required.");
+  }
+
+  formData.append("Name", normalizedName);
+  formData.append("NailShapeId", String(nailShapeId));
+  formData.append("NailSurfaceId", String(nailSurfaceId));
+  formData.append("CustomColor", customColor);
+  formData.append("IsPublic", String(isPublic));
+
+  if (payload?.image instanceof File) {
+    formData.append("image", payload.image);
+  }
+
+  const response = await axiosClient.post("/CustomerNails", formData, {
+    headers: {
+      ...getAuthHeaders(),
+    },
+  });
+
+  return unwrapResponse(response, "Failed to create customer nail.");
+}
+
+export async function createStaffCustomerNailComponent(payload) {
+  const customerNailId = Number(payload?.customerNailId || 0);
+  const componentId = payload?.componentId == null ? null : Number(payload.componentId || 0);
+  const customerComponentId = payload?.customerComponentId == null
+    ? null
+    : Number(payload.customerComponentId || 0);
+  const posX = Number(payload?.posX ?? 0);
+  const posY = Number(payload?.posY ?? 0);
+  const fingerIndex = Number(payload?.fingerIndex ?? 0);
+  const configJson = String(payload?.configJson || "").trim();
+
+  if (!Number.isInteger(customerNailId) || customerNailId <= 0) {
+    throw new Error("A valid customer nail ID is required.");
+  }
+
+  if (componentId !== null && (!Number.isInteger(componentId) || componentId <= 0)) {
+    throw new Error("Component ID must be null or a positive integer.");
+  }
+
+  if (customerComponentId !== null && (!Number.isInteger(customerComponentId) || customerComponentId <= 0)) {
+    throw new Error("Customer component ID must be null or a positive integer.");
+  }
+
+  if (componentId === null && customerComponentId === null) {
+    throw new Error("A component ID or customer component ID is required.");
+  }
+
+  const response = await axiosClient.post("/CustomerNailComponents", {
+    customerNailId,
+    componentId,
+    customerComponentId,
+    posX: Number.isFinite(posX) ? posX : 0,
+    posY: Number.isFinite(posY) ? posY : 0,
+    fingerIndex: Number.isFinite(fingerIndex) ? fingerIndex : 0,
+    configJson,
+  }, {
+    headers: getAuthHeaders(),
+  });
+
+  return unwrapResponse(response, "Failed to create customer nail component.");
+}
+
+export async function fetchStaffCustomerComponentDetail(customerComponentId) {
+  const normalizedCustomerComponentId = Number(customerComponentId || 0);
+
+  if (!Number.isInteger(normalizedCustomerComponentId) || normalizedCustomerComponentId <= 0) {
+    throw new Error("Customer component ID is required.");
+  }
+
+  const response = await axiosClient.get(`/CustomerComponents/${normalizedCustomerComponentId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  const data = unwrapResponse(response, "Failed to load customer component detail.");
+
+  return {
+    customerComponentId: Number(data?.customerComponentId || 0),
+    userId: String(data?.userId || "").trim(),
+    name: String(data?.name || "").trim() || "--",
+    imageUrl: String(data?.imageUrl || "").trim(),
+    componentType: String(data?.componentType || "").trim() || "--",
+    createdAt: String(data?.createdAt || "").trim(),
+    isPublic: Boolean(data?.isPublic),
+  };
 }
 
 export async function fetchStaffNailVariantDetail(variantId) {
@@ -273,36 +479,9 @@ export async function fetchStaffCustomerNailDetail(customerNailId) {
 
   const data = unwrapResponse(response, "Failed to load customer nail detail.");
   const normalizedCustomerNailComponents = Array.isArray(data?.customerNailComponents)
-    ? data.customerNailComponents.map((item) => ({
-      nailComponentId: Number(item?.customerNailComponentId || 0),
-      customerNailComponentId: Number(item?.customerNailComponentId || 0),
-      customerNailId: Number(item?.customerNailId || 0),
-      componentId: Number(item?.componentId || 0),
-      customerComponentId: Number(item?.customerComponentId || 0),
-      fingerIndex: Number(item?.fingerIndex || 0),
-      posX: Number(item?.posX || 0),
-      posY: Number(item?.posY || 0),
-      configJson: String(item?.configJson || "").trim(),
-      component: item?.component
-        ? {
-          componentId: Number(item.component.componentId || 0),
-          name: String(item.component.name || "").trim() || "--",
-          imageUrl: String(item.component.imageUrl || "").trim(),
-          componentType: String(item.component.componentType || "").trim() || "--",
-          price: Number(item.component.price || 0),
-          duration: Number(item.component.duration || 0),
-        }
-        : item?.customerComponent
-          ? {
-            componentId: Number(item.customerComponent.customerComponentId || 0),
-            name: String(item.customerComponent.name || "").trim() || "--",
-            imageUrl: String(item.customerComponent.imageUrl || "").trim(),
-            componentType: String(item.customerComponent.componentType || "").trim() || "--",
-            price: 0,
-            duration: 0,
-          }
-          : null,
-      customerComponent: item?.customerComponent
+    ? await Promise.all(data.customerNailComponents.map(async (item) => {
+      const customerComponentId = Number(item?.customerComponentId || 0);
+      const resolvedCustomerComponent = item?.customerComponent
         ? {
           customerComponentId: Number(item.customerComponent.customerComponentId || 0),
           userId: String(item.customerComponent.userId || "").trim(),
@@ -312,7 +491,41 @@ export async function fetchStaffCustomerNailDetail(customerNailId) {
           createdAt: String(item.customerComponent.createdAt || "").trim(),
           isPublic: Boolean(item.customerComponent.isPublic),
         }
-        : null,
+        : customerComponentId > 0
+          ? await fetchStaffCustomerComponentDetail(customerComponentId)
+          : null;
+
+      return {
+        nailComponentId: Number(item?.customerNailComponentId || 0),
+        customerNailComponentId: Number(item?.customerNailComponentId || 0),
+        customerNailId: Number(item?.customerNailId || 0),
+        componentId: Number(item?.componentId || 0),
+        customerComponentId,
+        fingerIndex: Number(item?.fingerIndex || 0),
+        posX: Number(item?.posX || 0),
+        posY: Number(item?.posY || 0),
+        configJson: String(item?.configJson || "").trim(),
+        component: item?.component
+          ? {
+            componentId: Number(item.component.componentId || 0),
+            name: String(item.component.name || "").trim() || "--",
+            imageUrl: String(item.component.imageUrl || "").trim(),
+            componentType: String(item.component.componentType || "").trim() || "--",
+            price: Number(item.component.price || 0),
+            duration: Number(item.component.duration || 0),
+          }
+          : resolvedCustomerComponent
+            ? {
+              componentId: 0,
+              name: resolvedCustomerComponent.name,
+              imageUrl: resolvedCustomerComponent.imageUrl,
+              componentType: resolvedCustomerComponent.componentType,
+              price: 0,
+              duration: 0,
+            }
+            : null,
+        customerComponent: resolvedCustomerComponent,
+      };
     }))
     : [];
 
