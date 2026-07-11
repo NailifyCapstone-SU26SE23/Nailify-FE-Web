@@ -4,6 +4,7 @@ import { Modal, Spin, Input, Checkbox, Select } from "antd";
 import toast from "react-hot-toast";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { cancelBooking } from "../services/bookingsService";
+import { motion } from "framer-motion";
 
 const CANCEL_REASONS = [
   { label: "Customer requested", value: "customer_request" },
@@ -70,27 +71,41 @@ export function CancelBookingModal({
       footer={null}
       centered
       destroyOnClose
-      width={520}
+      width={560}
       styles={{
-        content: { padding: 0, borderRadius: 24, overflow: "hidden" },
-        mask: { backdropFilter: "blur(4px)" },
+        content: { padding: 0, borderRadius: 32, overflow: "hidden" },
+        mask: { backdropFilter: "blur(8px)" },
       }}
     >
       {/* Header */}
-      <div className="bg-gradient-to-r from-[#fff0dd] via-[#fae8d0] to-[#f5d0a0] px-6 pt-6 pb-8">
-        <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#db8520] text-white shadow-lg">
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="bg-gradient-to-br from-[#fff0dd] via-[#fae8d0] to-[#f7dcb7] px-7 pt-7 pb-11"
+      >
+        <div className="flex items-center gap-5">
+          <motion.div 
+            whileHover={{ scale: 1.1, rotate: 3 }}
+            transition={{ type: "spring", stiffness: 500, damping: 15 }}
+            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f49b2b] to-[#db8520] text-white shadow-[0_15px_30px_rgba(219,133,32,0.25)]"
+          >
             <XCircle size={24} />
-          </div>
+          </motion.div>
           <div>
-            <h2 className="text-2xl font-extrabold text-[#402542]">Cancel Booking</h2>
-            <p className="mt-1 text-xs text-[#a8825e]">This action cannot be undone</p>
+            <h2 className="text-2xl font-extrabold text-[#3d2b1a] tracking-tight">Cancel Booking</h2>
+            <p className="mt-2 text-sm text-[#a67f5a]">This action cannot be undone</p>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Body */}
-      <div className="-mt-6 rounded-t-[24px] bg-white px-6 pt-8 pb-6 space-y-5">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut", delay: 0.15 }}
+        className="-mt-8 rounded-[32px] bg-white px-7 pt-9 pb-7 space-y-6"
+      >
         {/* Warning Alert */}
         <div className="flex gap-3 rounded-xl border border-[#ffe6cc] bg-[#fffaf2] p-4">
           <AlertCircle size={18} className="mt-0.5 shrink-0 text-[#db8520]" />
@@ -203,32 +218,36 @@ export function CancelBookingModal({
         </Checkbox>
 
         {/* Action Buttons */}
-        <div className="flex gap-3 pt-4">
-          <button
+        <div className="flex gap-4 pt-3">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             type="button"
             onClick={handleClose}
-            className="flex-1 rounded-full border border-[#e3e3e3] bg-white px-4 py-2.5 text-xs font-bold text-[#6b6b6b] transition hover:bg-[#f9f9f9] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 rounded-full border border-[#e2c5d4] bg-white px-5 py-3 text-xs font-extrabold text-[#7a6176] transition-all duration-300 hover:bg-[#fffafd] hover:border-[#d9b0c7] disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isLoading}
           >
-            <X size={14} className="inline mr-2" />
+            <X size={16} className="inline mr-2" />
             Keep booking
-          </button>
-          <button
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             type="button"
             onClick={handleCancelBooking}
-            className="flex-1 rounded-full bg-[#db8520] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#c8781d] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="flex-1 rounded-full bg-gradient-to-r from-[#f49b2b] to-[#e38a1a] px-5 py-3 text-xs font-extrabold text-white transition-all duration-300 hover:from-[#e38a1a] hover:to-[#d17908] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-[0_6px_18px_rgba(244,155,43,0.3)]"
             disabled={isLoading || !reason || !isConfirmed}
           >
             {isLoading && <Spin size="small" />}
             {isLoading ? "Cancelling..." : (
               <>
-                <XCircle size={14} />
+                <XCircle size={16} />
                 Cancel booking
               </>
             )}
-          </button>
+          </motion.button>
         </div>
-      </div>
+      </motion.div>
     </Modal>
   );
 }
