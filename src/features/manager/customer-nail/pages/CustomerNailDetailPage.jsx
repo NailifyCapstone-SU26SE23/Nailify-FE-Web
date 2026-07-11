@@ -12,14 +12,13 @@ import {
   Mail,
   Phone,
   UserRound,
-  BriefcaseBusiness,
   Sparkles,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { ROUTES } from "../../../../shared/constants/routes";
-import { fetchCustomerNailById, approveCustomerNail, fetchSalonStaff, assignReviewer, managerApproveQuote, managerReject, getManagerSalonId } from "../services/customerNailsService";
+import { fetchCustomerNailById, fetchSalonStaff, assignReviewer, managerApproveQuote, managerReject, getManagerSalonId } from "../services/customerNailsService";
 
 function Card({ className = "", children }) {
   return (
@@ -137,12 +136,42 @@ InfoTile.propTypes = {
 function getFingerColorStyle(customColor, fingerIndex) {
   if (!customColor) return { backgroundColor: '#f3f4f6' };
   try {
-    const parsed = typeof customColor === 'string' ? JSON.parse(customColor) : customColor;
+    const parsed = typeof customColor === 'string'
+      ? (() => {
+        const normalized = customColor.trim();
+
+        if (!normalized) {
+          return null;
+        }
+
+        if (normalized.startsWith('{') || normalized.startsWith('[')) {
+          return JSON.parse(normalized);
+        }
+
+        return {
+          mode: 'solid',
+          color: normalized,
+        };
+      })()
+      : customColor;
+
+    if (!parsed) {
+      return { backgroundColor: '#f3f4f6' };
+    }
+
     if (parsed.mode === 'solid' && parsed.color) {
       return { backgroundColor: parsed.color };
     }
-    if (parsed.mode === 'gradient' && Array.isArray(parsed.gradient)) {
-      return { background: `linear-gradient(to bottom, ${parsed.gradient.join(', ')})` };
+    if (parsed.mode === 'gradient') {
+      const gradientStops = Array.isArray(parsed.gradient)
+        ? parsed.gradient
+        : Array.isArray(parsed.gradient?.stops)
+          ? parsed.gradient.stops
+          : [];
+
+      if (gradientStops.length > 0) {
+        return { background: `linear-gradient(to bottom, ${gradientStops.join(', ')})` };
+      }
     }
     if (parsed.mode === 'perFinger' && Array.isArray(parsed.fingers)) {
       const finger = parsed.fingers.find(f => Number(f.fingerIndex) === Number(fingerIndex));
@@ -317,25 +346,6 @@ export function CustomerNailDetailPage() {
 
     return () => window.clearInterval(intervalId);
   }, [customerNailId, loadCustomerNailDetail]);
-
-  const handleApprove = async () => {
-    if (!nail?.assignedStaff && !nail?.approvedArtistId) {
-      setIsAssignRequiredModalOpen(true);
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-      await approveCustomerNail(nail?.customerNailRequestId || customerNailId);
-      message.success("Customer nail approved successfully!");
-      await loadCustomerNailDetail();
-    } catch (err) {
-      console.error("[Page] Error approving nail:", err);
-      message.error(err.message || "Failed to approve customer nail.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const handleOpenAssignModal = async () => {
     try {
@@ -535,7 +545,6 @@ export function CustomerNailDetailPage() {
       maskRepeat: 'no-repeat',
       WebkitMaskRepeat: 'no-repeat',
     } : {};
-
     // Hand posture alignment styling based on finger type
     let alignmentClass = "";
     switch (fingerName) {
@@ -591,7 +600,7 @@ export function CustomerNailDetailPage() {
 
             {/* Layer 2: Shape Mask/Overlay (Highlights and shading details) */}
             {nail?.nailShape?.imageUrl && (
-              <img crossOrigin="anonymous"
+              <img
                 src={nail.nailShape.imageUrl}
                 alt="shape mask"
                 className="absolute inset-0 w-full h-full object-cover mix-blend-multiply opacity-80 pointer-events-none"
@@ -611,7 +620,7 @@ export function CustomerNailDetailPage() {
                   scale = config.scale !== undefined ? config.scale : 1;
                   rotation = config.rotation !== undefined ? config.rotation : 0;
                 }
-              } catch (e) {
+              } catch {
                 // ignore
               }
 
@@ -619,7 +628,7 @@ export function CustomerNailDetailPage() {
               const posY = comp.posY !== undefined && comp.posY !== null ? comp.posY : 50;
 
               return (
-                <img crossOrigin="anonymous"
+                <img
                   key={comp.customerNailComponentId || idx}
                   src={item.imageUrl}
                   alt={item.name}
@@ -667,7 +676,7 @@ export function CustomerNailDetailPage() {
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-4">
               {nail?.imageUrl ? (
-                <img crossOrigin="anonymous"
+                <img
                   src={nail.imageUrl}
                   alt={nail.name}
                   className="h-24 w-24 rounded-[24px] border-4 border-white object-cover shadow-[0_16px_32px_rgba(236,72,153,0.18)]"
@@ -759,7 +768,6 @@ export function CustomerNailDetailPage() {
               subtitle="Interactive overlay preview showing layers of the nail shape, color blend, surface texture, and accessories."
             />
             <div className="rounded-[28px] border border-[#fbcbe2] bg-gradient-to-tr from-[#fff7f9] via-[#ffffff] to-[#fff4f8] p-8 shadow-[0_16px_36px_rgba(236,72,153,0.06),inset_0_2px_10px_rgba(236,72,153,0.02)] min-h-[360px] flex items-center justify-center relative overflow-hidden">
-              {/* Luxury neon backlights overlay */}
               <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#ea4f93]/5 rounded-full blur-[120px] pointer-events-none" />
               <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[#c63d79]/5 rounded-full blur-[120px] pointer-events-none" />
 
@@ -783,7 +791,7 @@ export function CustomerNailDetailPage() {
               {/* Nail Shape Visual Tile */}
               <div className="rounded-2xl border border-[#f6d4e3] bg-gradient-to-br from-white to-[#fff9fb] p-5 shadow-[0_10px_24px_rgba(236,72,153,0.04)] flex items-center gap-4">
                 {nail?.nailShape?.imageUrl ? (
-                  <img crossOrigin="anonymous"
+                  <img
                     src={nail.nailShape.imageUrl}
                     alt={nail.nailShape.name}
                     className="h-16 w-16 rounded-xl border border-[#f4c1d8] object-cover bg-[#fff9fa] shrink-0"
@@ -802,7 +810,7 @@ export function CustomerNailDetailPage() {
               {/* Nail Surface Visual Tile */}
               <div className="rounded-2xl border border-[#f6d4e3] bg-gradient-to-br from-white to-[#fff9fb] p-5 shadow-[0_10px_24px_rgba(236,72,153,0.04)] flex items-center gap-4">
                 {nail?.nailSurface?.imageUrl ? (
-                  <img crossOrigin="anonymous"
+                  <img
                     src={nail.nailSurface.imageUrl}
                     alt={nail.nailSurface.name}
                     className="h-16 w-16 rounded-xl border border-[#f4c1d8] object-cover bg-[#fff9fa] shrink-0"
@@ -860,7 +868,7 @@ export function CustomerNailDetailPage() {
                       className="rounded-2xl border border-[#f6d4e3] bg-gradient-to-br from-white to-[#fffbfd] p-4 shadow-[0_8px_20px_rgba(236,72,153,0.03)] flex items-center gap-3.5"
                     >
                       {comp.imageUrl ? (
-                        <img crossOrigin="anonymous"
+                        <img
                           src={comp.imageUrl}
                           alt={comp.name}
                           className="h-14 w-14 rounded-xl border border-[#f5c6db] bg-[#fffafc] object-contain p-1 shrink-0"
@@ -899,7 +907,22 @@ export function CustomerNailDetailPage() {
                     try {
                       const colorData =
                         typeof nail.customColor === "string"
-                          ? JSON.parse(nail.customColor)
+                          ? (() => {
+                            const normalized = nail.customColor.trim();
+
+                            if (!normalized) {
+                              return null;
+                            }
+
+                            if (normalized.startsWith("{") || normalized.startsWith("[")) {
+                              return JSON.parse(normalized);
+                            }
+
+                            return {
+                              mode: "solid",
+                              color: normalized,
+                            };
+                          })()
                           : nail.customColor;
 
                       if (colorData?.mode === "solid" && colorData?.color) {
@@ -919,16 +942,23 @@ export function CustomerNailDetailPage() {
                             </div>
                           </>
                         );
-                      } else if (
-                        colorData?.mode === "gradient" &&
-                        colorData?.gradient
-                      ) {
+                      } else if (colorData?.mode === "gradient") {
+                        const gradientStops = Array.isArray(colorData?.gradient)
+                          ? colorData.gradient
+                          : Array.isArray(colorData?.gradient?.stops)
+                            ? colorData.gradient.stops
+                            : [];
+
+                        if (!gradientStops.length) {
+                          return null;
+                        }
+
                         return (
                           <>
                             <div
                               className="h-16 w-16 rounded-[18px] border-4 border-white shadow-[0_10px_24px_rgba(0,0,0,0.08)]"
                               style={{
-                                background: `linear-gradient(to right, ${colorData.gradient.join(
+                                background: `linear-gradient(to right, ${gradientStops.join(
                                   ", "
                                 )})`,
                               }}
@@ -938,7 +968,7 @@ export function CustomerNailDetailPage() {
                                 Gradient Color
                               </p>
                               <p className="mt-1 text-xs text-[#c08aa4]">
-                                {colorData.gradient.join(" → ")}
+                                {gradientStops.join(" -> ")}
                               </p>
                             </div>
                           </>

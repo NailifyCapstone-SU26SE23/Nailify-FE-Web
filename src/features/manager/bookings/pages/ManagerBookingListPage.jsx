@@ -1360,9 +1360,11 @@ export function ManagerBookingListPage() {
                             </button>
                           </div>
                           <img
+                            crossOrigin="anonymous"
                             src={getQrCodeSrc(selectedBookingForDrawer.qrCode)}
                             alt="QR Code"
                             className="max-w-[120px] mx-auto rounded-xl"
+                            referrerPolicy="no-referrer"
                             onError={(e) => { console.error("QR Code failed to load"); e.target.style.display = "none"; }}
                           />
                         </div>
@@ -1383,7 +1385,13 @@ export function ManagerBookingListPage() {
                 <PremiumCard className="p-5">
                   <h3 className="text-sm font-bold text-[#2d1b35] mb-4">Check-in photo</h3>
                   <div className="overflow-hidden rounded-[16px] border border-[#f5d6e4] bg-white p-2">
-                    <img src={selectedBookingForDrawer.checkInImageUrl} alt="Check-in" className="max-w-full rounded-lg w-full object-cover" />
+                    <img
+                      crossOrigin="anonymous"
+                      src={selectedBookingForDrawer.checkInImageUrl}
+                      alt="Check-in"
+                      className="max-w-full rounded-lg w-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
                   </div>
                 </PremiumCard>
               )}
@@ -1410,9 +1418,11 @@ export function ManagerBookingListPage() {
           </div>
           {selectedBookingForDrawer && (
             <img
+              crossOrigin="anonymous"
               src={getQrCodeSrc(selectedBookingForDrawer.qrCode)}
               alt="QR Code"
               className="max-w-[280px] mx-auto rounded-xl"
+              referrerPolicy="no-referrer"
               onError={(e) => { console.error("QR Code failed to load"); e.target.style.display = "none"; }}
             />
           )}

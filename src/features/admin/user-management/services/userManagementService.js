@@ -116,9 +116,12 @@ export function normalizeAdminUser(user) {
     email: user?.email || "--",
     phone: String(user?.phone || "--").trim() || "--",
     role,
+    rawRole: String(user?.role || "").trim() || "--",
     displayRole: getDisplayRole(role),
     salonId: user?.salonId || "",
     salon: user?.salonId ? "Assigned salon" : "No salon",
+    salonId: user?.salonId || "",
+    staffId: user?.staffId || "",
     avatar: getAvatar(fullName),
     avatarUrl: user?.avatarUrl || "",
     status: statusLabel,
@@ -129,7 +132,13 @@ export function normalizeAdminUser(user) {
   };
 }
 
-export async function fetchAdminUsers({ pageNumber = 1, pageSize = 10, searchTerm = "", role = "" } = {}) {
+export async function fetchAdminUsers({
+  pageNumber = 1,
+  pageSize = 10,
+  searchTerm = "",
+  role = "",
+  salonId = "",
+} = {}) {
   const response = await axiosClient.get("/Users", {
     headers: getAuthHeaders(),
     params: {
@@ -137,6 +146,7 @@ export async function fetchAdminUsers({ pageNumber = 1, pageSize = 10, searchTer
       pageSize,
       searchTerm: searchTerm || undefined,
       role: role || undefined,
+      salonId: salonId || undefined,
     },
   });
 

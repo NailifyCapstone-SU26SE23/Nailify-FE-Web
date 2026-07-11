@@ -300,7 +300,7 @@ function parseComponentConfig(configJson) {
   }
 }
 
-function NailVariantHandPreview({ variantDetail, compact = false }) {
+function NailVariantHandPreview({ variantDetail, compact = false, showShapeOverlay = true }) {
   const colorConfig = useMemo(
     () => parseVariantColorConfig(variantDetail?.colorJson),
     [variantDetail?.colorJson],
@@ -394,7 +394,7 @@ function NailVariantHandPreview({ variantDetail, compact = false }) {
                     })()}
                   </div>
 
-                  {variantDetail?.nailShape?.imageUrl ? (
+                  {showShapeOverlay && variantDetail?.nailShape?.imageUrl ? (
                     <img
                       crossOrigin="anonymous"
                       src={variantDetail.nailShape.imageUrl}
@@ -447,6 +447,7 @@ function NailVariantHandPreview({ variantDetail, compact = false }) {
 
 NailVariantHandPreview.propTypes = {
   compact: PropTypes.bool,
+  showShapeOverlay: PropTypes.bool,
   variantDetail: PropTypes.shape({
     colorJson: PropTypes.string,
     nailComponents: PropTypes.arrayOf(
@@ -2078,6 +2079,7 @@ export function NailDesignManagementDetailPage() {
                 <div className="overflow-hidden rounded-[20px] bg-[#f6edf2] lg:col-span-2">
                   <NailVariantHandPreview
                     variantDetail={selectedVariantDetail}
+                    showShapeOverlay={false}
                   />
                 </div>
               </div>
@@ -2144,12 +2146,6 @@ export function NailDesignManagementDetailPage() {
                     </div>
 
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-[#8c7085]">Shader</span>
-                      <span className="font-semibold text-[#432744]">
-                        {selectedVariantDetail?.nailSurface?.shaderParam || "N/A"}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-3">
                       <span className="text-[#8c7085]">Price</span>
                       <span className="font-semibold text-[#432744]">
                         {selectedVariantDetail?.nailSurface?.priceLabel || "N/A"}
@@ -2161,29 +2157,11 @@ export function NailDesignManagementDetailPage() {
                         {selectedVariantDetail?.nailSurface?.durationLabel || "N/A"}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-[#8c7085]">Lightness Offset</span>
-                      <span className="font-semibold text-[#432744]">
-                        {formatApiValue(selectedVariantDetail?.nailSurface?.lightnessOffset)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-[#8c7085]">Saturation Offset</span>
-                      <span className="font-semibold text-[#432744]">
-                        {formatApiValue(selectedVariantDetail?.nailSurface?.saturationOffset)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-[#8c7085]">Hue Offset</span>
-                      <span className="font-semibold text-[#432744]">
-                        {formatApiValue(selectedVariantDetail?.nailSurface?.hueOffset)}
-                      </span>
-                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
+              {/* <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="font-bold text-[#432744]">Accessories / Components</p>
                   <Pill tone="purple">
@@ -2230,7 +2208,7 @@ export function NailDesignManagementDetailPage() {
                 ) : (
                   <p className="mt-4 text-sm text-[#8c7085]">N/A</p>
                 )}
-              </div>
+              </div> */}
 
               <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
                 <p className="font-bold text-[#432744]">Color Preview</p>
@@ -2271,9 +2249,7 @@ export function NailDesignManagementDetailPage() {
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="font-bold text-[#432744]">Procedure Steps</p>
-                    <p className="mt-1 text-xs text-[#b2879f]">
-                      Loaded from `GET /api/Procedures/variant/{'{nailVariantId}'}`. Step order is initialized from response order because the GET schema does not include `stepOrder`.
-                    </p>
+                    
                   </div>
                   <div className="flex gap-2">
                     <button
