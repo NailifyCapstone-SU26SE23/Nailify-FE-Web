@@ -195,7 +195,7 @@ function formatVND(amount) {
   if (amount === null || amount === undefined) return "N/A";
   return new Intl.NumberFormat('vi-VN', {
     style: 'currency',
-    currency: 'VND'
+    currency: 'VNĐ'
   }).format(amount);
 }
 
@@ -435,7 +435,7 @@ export function ManagerBookingDetailPage() {
             <span className="font-medium">{booking?.totalDuration ? formatDuration(booking.totalDuration) : "N/A"}</span>
           </InfoTile>
           <InfoTile label="Total Price" className="bg-gradient-to-br from-[#fff7fb] to-white">
-            <div className="flex items-center gap-2 text-[#ea4f93] font-semibold">
+            <div className="flex items-center gap-2 text-green-700 font-semibold">
               <CreditCard size={16} />
               <span className="truncate">{formatVND(booking?.totalPrice)}</span>
             </div>

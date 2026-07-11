@@ -2,11 +2,11 @@ import { Button, Modal, Table } from "antd";
 import {
   CalendarClock,
   CheckCircle2,
+  ClipboardList,
   CreditCard,
   Eye,
   LoaderCircle,
   MessageCircleMore,
-  PencilLine,
   Phone,
   Printer,
   QrCode,
@@ -27,8 +27,11 @@ import { AssignReceptionistArtistModal } from "../components/AssignReceptionistA
 import {
   checkoutReceptionistBooking,
   fetchReceptionistBookingDetail,
+  fetchReceptionistBookingProcedures,
+  fetchReceptionistProcedureAvailableArtists,
   fetchReceptionistCustomerDetail,
   manualCheckInReceptionistBooking,
+  updateReceptionistProcedureArtist,
 } from "../services/receptionistBookingService";
 
 function formatCurrency(value) {
@@ -110,6 +113,39 @@ function getActionTone(label) {
   }
 }
 
+function getProcedureStatusTone(status) {
+  switch (String(status || "").trim().toLowerCase()) {
+    case "completed":
+      return "bg-[#e7f8ee] text-[#309e63]";
+    case "inprogress":
+    case "in progress":
+      return "bg-[#efeafd] text-[#7c63d8]";
+    case "pending":
+    case "waiting":
+      return "bg-[#fff4e3] text-[#e09a27]";
+    case "cancelled":
+      return "bg-[#ffe7ef] text-[#e04d86]";
+    default:
+      return "bg-[#fff1f6] text-[#eb5b92]";
+  }
+}
+
+function getProcedureArtistTone(isFree, isQualified) {
+  if (isFree && isQualified) {
+    return "border-[#cfead9] bg-[#f3fcf6] text-[#249a5c]";
+  }
+
+  if (isQualified) {
+    return "border-[#e3dbff] bg-[#f7f4ff] text-[#7c63d8]";
+  }
+
+  if (isFree) {
+    return "border-[#ffe2b5] bg-[#fff8ea] text-[#d59218]";
+  }
+
+  return "border-[#f3d7e2] bg-[#fff7fb] text-[#8f7b88]";
+}
+
 function getServiceStatus(index, bookingStatus) {
   if (index === 0 && bookingStatus === "Completed") {
     return "Completed";
@@ -138,10 +174,7 @@ function getServiceAction(status) {
   return "View";
 }
 
-function getServiceActionItems(row, handleViewService, handleMockAction) {
-  const secondaryActionIcon =
-    row.actionLabel === "Edit" ? PencilLine : row.actionLabel === "Manage" ? Sparkles : Eye;
-
+function getServiceActionItems(row, handleViewService, handleViewProcedures) {
   return [
     {
       key: `view-${row.id}`,
@@ -150,16 +183,11 @@ function getServiceActionItems(row, handleViewService, handleMockAction) {
       onSelect: () => handleViewService(row),
     },
     {
-      key: `${String(row.actionLabel || "view").toLowerCase()}-${row.id}`,
-      label: row.actionLabel,
-      icon: secondaryActionIcon,
-      className:
-        row.actionLabel === "Manage"
-          ? "text-[#7c63d8]"
-          : row.actionLabel === "Edit"
-            ? "text-[#656565]"
-            : "text-[#eb5b92]",
-      onSelect: () => handleMockAction(`${row.actionLabel} ${row.service}`),
+      key: `view-procedures-${row.id}`,
+      label: "View Procedures",
+      icon: ClipboardList,
+      className: "text-[#7c63d8]",
+      onSelect: () => handleViewProcedures(row),
     },
   ];
 }
@@ -318,6 +346,15 @@ export function ReceptionistBookingDetailPage() {
   const [isQrOpen, setIsQrOpen] = useState(false);
   const [isAssignArtistOpen, setIsAssignArtistOpen] = useState(false);
   const [selectedServiceRow, setSelectedServiceRow] = useState(null);
+  const [selectedProcedureRow, setSelectedProcedureRow] = useState(null);
+  const [bookingProcedures, setBookingProcedures] = useState([]);
+  const [isProceduresLoading, setIsProceduresLoading] = useState(false);
+  const [proceduresError, setProceduresError] = useState("");
+  const [artistPickerProcedure, setArtistPickerProcedure] = useState(null);
+  const [procedureArtists, setProcedureArtists] = useState([]);
+  const [isProcedureArtistsLoading, setIsProcedureArtistsLoading] = useState(false);
+  const [procedureArtistsError, setProcedureArtistsError] = useState("");
+  const [assigningProcedureArtistId, setAssigningProcedureArtistId] = useState("");
   const [isManualCheckInSubmitting, setIsManualCheckInSubmitting] = useState(false);
   const [isCheckoutSubmitting, setIsCheckoutSubmitting] = useState(false);
   const [notes, setNotes] = useState(
@@ -424,70 +461,6 @@ export function ReceptionistBookingDetailPage() {
       ? isCheckoutSubmitting
       : !isManualCheckInAllowed || isManualCheckInSubmitting;
 
-  const serviceColumns = useMemo(() => ([
-    {
-      title: "Time",
-      dataIndex: "time",
-      key: "time",
-      render: (value) => <span className="text-xs font-bold text-[#eb5b92]">{value}</span>,
-    },
-    {
-      title: "Service",
-      key: "service",
-      render: (_, row) => (
-        <div>
-          <p className="text-xs font-bold text-[#4a3741]">{row.service ? row.service : `Nail service: ${row.serviceType}`}</p>
-
-        </div>
-      ),
-    },
-    {
-      title: "Nail Artist",
-      key: "artist",
-      render: (_, row) => (
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#ef5b94] text-[10px] font-extrabold text-white">
-            {(row.artist || "--")
-              .split(" ")
-              .filter(Boolean)
-              .slice(0, 2)
-              .map((part) => part[0])
-              .join("")
-              .toUpperCase() || "--"}
-          </div>
-          <span className="text-xs font-medium text-[#4a3741]">{row.artist}</span>
-        </div>
-      ),
-    },
-    {
-      title: "Duration",
-      dataIndex: "duration",
-      key: "duration",
-      render: (value) => <span className="text-xs text-[#4a3741]">{value}</span>,
-    },
-    // {
-    //   title: "Status",
-    //   dataIndex: "status",
-    //   key: "status",
-    //   render: (status) => (
-    //     <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-extrabold ${getStatusTone(status)}`}>
-    //       {status}
-    //     </span>
-    //   ),
-    // },
-    {
-      title: "Action",
-      key: "action",
-      render: (_, row) => (
-        <ActionDropdown
-          items={getServiceActionItems(row, handleViewService, handleMockAction)}
-          buttonClassName={getActionTone(row.actionLabel)}
-          label={row.actionLabel}
-        />
-      ),
-    },
-  ]), []);
-
   const handleRefresh = async () => {
     if (!bookingId) {
       return;
@@ -524,13 +497,153 @@ export function ReceptionistBookingDetailPage() {
     }
   };
 
-  const handleMockAction = (label) => {
+  const handleMockAction = useCallback((label) => {
     toast.success(`${label} is ready for receptionist flow.`);
-  };
+  }, []);
 
-  const handleViewService = (row) => {
+  const handleViewService = useCallback((row) => {
     setSelectedServiceRow(row);
-  };
+  }, []);
+
+  const handleViewProcedures = useCallback(async (row) => {
+    const bookingItemId = String(row?.sourceItem?.bookingItemId || "").trim();
+
+    if (!bookingItemId) {
+      toast.error("Booking item ID is not available for this service.");
+      return;
+    }
+
+    setSelectedProcedureRow(row);
+    setBookingProcedures([]);
+    setProceduresError("");
+    setIsProceduresLoading(true);
+
+    try {
+      const procedures = await fetchReceptionistBookingProcedures(bookingItemId);
+      setBookingProcedures(Array.isArray(procedures) ? procedures : []);
+    } catch (loadError) {
+      const message =
+        loadError instanceof Error ? loadError.message : "Failed to load booking procedures.";
+      setProceduresError(message);
+      toast.error(message);
+    } finally {
+      setIsProceduresLoading(false);
+    }
+  }, []);
+
+  const handleOpenProcedureArtistPicker = useCallback(async (procedure) => {
+    const bookingProcedureId = String(procedure?.bookingProcedureId || "").trim();
+
+    if (!bookingProcedureId) {
+      toast.error("Booking procedure ID is not available.");
+      return;
+    }
+
+    setArtistPickerProcedure(procedure);
+    setProcedureArtists([]);
+    setProcedureArtistsError("");
+    setIsProcedureArtistsLoading(true);
+
+    try {
+      const artists = await fetchReceptionistProcedureAvailableArtists(bookingProcedureId);
+      setProcedureArtists(Array.isArray(artists) ? artists : []);
+    } catch (loadError) {
+      const message =
+        loadError instanceof Error ? loadError.message : "Failed to load available artists.";
+      setProcedureArtistsError(message);
+      toast.error(message);
+    } finally {
+      setIsProcedureArtistsLoading(false);
+    }
+  }, []);
+
+  const handleAssignProcedureArtist = useCallback(async (procedure, artist) => {
+    const bookingProcedureId = String(procedure?.bookingProcedureId || "").trim();
+    const artistId = String(artist?.nailArtistId || "").trim();
+
+    if (!bookingProcedureId || !artistId) {
+      toast.error("Artist assignment data is incomplete.");
+      return;
+    }
+
+    setAssigningProcedureArtistId(artistId);
+
+    try {
+      const updatedProcedure = await updateReceptionistProcedureArtist(bookingProcedureId, artistId);
+
+      setBookingProcedures((currentProcedures) => currentProcedures.map((item) => (
+        item?.bookingProcedureId === updatedProcedure?.bookingProcedureId ? updatedProcedure : item
+      )));
+
+      setArtistPickerProcedure(null);
+      setProcedureArtists([]);
+      setProcedureArtistsError("");
+      toast.success(
+        procedure?.assignedArtistName
+          ? "Procedure artist reassigned successfully."
+          : "Procedure artist assigned successfully.",
+      );
+    } catch (assignError) {
+      const message =
+        assignError instanceof Error ? assignError.message : "Failed to assign artist to procedure.";
+      toast.error(message);
+    } finally {
+      setAssigningProcedureArtistId("");
+    }
+  }, []);
+
+  const serviceColumns = useMemo(() => ([
+    {
+      title: "Time",
+      dataIndex: "time",
+      key: "time",
+      render: (value) => <span className="text-xs font-bold text-[#eb5b92]">{value}</span>,
+    },
+    {
+      title: "Service",
+      key: "service",
+      render: (_, row) => (
+        <div>
+          <p className="text-xs font-bold text-[#4a3741]">{row.service ? row.service : `Nail service: ${row.serviceType}`}</p>
+        </div>
+      ),
+    },
+    {
+      title: "Nail Artist",
+      key: "artist",
+      render: (_, row) => (
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#ef5b94] text-[10px] font-extrabold text-white">
+            {(row.artist || "--")
+              .split(" ")
+              .filter(Boolean)
+              .slice(0, 2)
+              .map((part) => part[0])
+              .join("")
+              .toUpperCase() || "--"}
+          </div>
+          <span className="text-xs font-medium text-[#4a3741]">{row.artist}</span>
+        </div>
+      ),
+    },
+    {
+      title: "Duration",
+      dataIndex: "duration",
+      key: "duration",
+      render: (value) => <span className="text-xs text-[#4a3741]">{value}</span>,
+    },
+    {
+      title: "Action",
+      key: "action",
+      render: (_, row) => (
+        <ActionDropdown
+          items={getServiceActionItems(row, handleViewService, handleViewProcedures)}
+          buttonClassName={getActionTone("View")}
+          label="Actions"
+        />
+      ),
+    },
+  ]), [handleViewProcedures, handleViewService]);
 
   const handleManualCheckIn = useCallback(async () => {
     if (!bookingId || !isManualCheckInAllowed || isManualCheckInSubmitting) {
@@ -1168,6 +1281,268 @@ export function ReceptionistBookingDetailPage() {
         ) : null}
       </Modal>
 
+      <Modal
+        open={Boolean(selectedProcedureRow)}
+        onCancel={() => {
+          setSelectedProcedureRow(null);
+          setBookingProcedures([]);
+          setProceduresError("");
+          setArtistPickerProcedure(null);
+          setProcedureArtists([]);
+          setProcedureArtistsError("");
+        }}
+        footer={[
+          <Button
+            key="close-procedure-view"
+            onClick={() => {
+              setSelectedProcedureRow(null);
+              setBookingProcedures([]);
+              setProceduresError("");
+              setArtistPickerProcedure(null);
+              setProcedureArtists([]);
+              setProcedureArtistsError("");
+            }}
+          >
+            Close
+          </Button>,
+        ]}
+        centered
+        width={920}
+        title="Booking Procedures"
+      >
+        {selectedProcedureRow ? (
+          <div className="space-y-5 py-1">
+            <div className="rounded-[18px] border border-[#f4d6e2] bg-[#fffafb] p-4">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#c38ea8]">
+                    Service
+                  </p>
+                  <p className="mt-2 text-lg font-extrabold text-[#4a3741]">
+                    {selectedProcedureRow.sourceItem?.serviceName || selectedProcedureRow.service || selectedProcedureRow.sourceItem?.nailVariantName || selectedProcedureRow.serviceType || selectedProcedureRow.sourceItem?.customerNailName || "--"}
+                  </p>
+                
+                </div>
+                <div className="grid gap-2 text-right text-sm">
+                  <div>
+                    <span className="text-[#8f7b88]">Duration: </span>
+                    <span className="font-bold text-[#4a3741]">{selectedProcedureRow.duration || "--"}</span>
+                  </div>
+                  <div>
+                    <span className="text-[#8f7b88]">Quantity: </span>
+                    <span className="font-bold text-[#4a3741]">{selectedProcedureRow.sourceItem?.quantity ?? "--"}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {isProceduresLoading ? (
+              <div className="flex min-h-[220px] items-center justify-center rounded-[18px] border border-dashed border-[#f1d8e4] bg-[#fffafb]">
+                <div className="flex items-center gap-3 text-sm font-bold text-[#eb5b92]">
+                  <LoaderCircle size={18} className="animate-spin" />
+                  Loading procedures...
+                </div>
+              </div>
+            ) : proceduresError ? (
+              <div className="rounded-[18px] border border-[#f8d3dc] bg-[#fff5f7] px-4 py-5 text-sm text-[#c9587e]">
+                {proceduresError}
+              </div>
+            ) : bookingProcedures.length ? (
+              <div className="space-y-3">
+                {bookingProcedures
+                  .slice()
+                  .sort((left, right) => (left?.stepOrder ?? 0) - (right?.stepOrder ?? 0))
+                  .map((procedure) => (
+                    <div
+                      key={procedure.bookingProcedureId || `${procedure.procedureId}-${procedure.stepOrder}`}
+                      className="rounded-[18px] border border-[#f4d6e2] bg-white p-4 shadow-[0_10px_22px_rgba(236,72,153,0.04)]"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="rounded-full bg-[#fff1f6] px-2.5 py-1 text-[10px] font-extrabold text-[#eb5b92]">
+                              Step {procedure.stepOrder ?? "--"}
+                            </span>
+                            <span className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold ${getProcedureStatusTone(procedure.status)}`}>
+                              {procedure.status || "--"}
+                            </span>
+                            {procedure.isMainStep ? (
+                              <span className="rounded-full bg-[#efeafd] px-2.5 py-1 text-[10px] font-extrabold text-[#7c63d8]">
+                                Main Step
+                              </span>
+                            ) : null}
+                            {procedure.isRequired ? (
+                              <span className="rounded-full bg-[#fff4cf] px-2.5 py-1 text-[10px] font-extrabold text-[#c89516]">
+                                Required
+                              </span>
+                            ) : null}
+                          </div>
+                          <p className="mt-3 text-base font-extrabold text-[#4a3741]">
+                            {procedure.procedureName || "--"}
+                          </p>
+                          <p className="mt-1 text-sm leading-6 text-[#8f7b88]">
+                            {procedure.description || "No procedure description available."}
+                          </p>
+                        </div>
+                        <div className="grid gap-2 text-right text-xs text-[#8f7b88]">
+                          <span>
+                            {String(procedure.estimatedStartTime || "--").slice(0, 5)} - {String(procedure.estimatedEndTime || "--").slice(0, 5)}
+                          </span>
+                          <span className="font-bold text-[#4a3741]">
+                            {formatDurationMinutes(procedure.duration || 0)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="rounded-2xl bg-[#fff7fb] px-3 py-3">
+                          <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
+                            Assigned Artist
+                          </p>
+                          <div className="mt-1 flex items-start justify-between gap-3">
+                            <p className="text-sm font-bold text-[#4a3741]">
+                               {procedure.assignedArtistId ? (procedure.assignedArtistName || "Assigned") : "Unassigned"}
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => void handleOpenProcedureArtistPicker(procedure)}
+                              className="shrink-0 rounded-full border border-[#f1d8e4] bg-white px-3 py-1 text-[10px] font-extrabold text-[#eb5b92] transition hover:border-[#eb5b92]"
+                            >
+                              {procedure.assignedArtistName ? "Reassign" : "Assign"}
+                            </button>
+                          </div>
+                        </div>
+                        <div className="rounded-2xl bg-[#fff7fb] px-3 py-3">
+                          <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
+                            Completed By
+                          </p>
+                          <p className="mt-1 text-sm font-bold text-[#4a3741]">
+                            {procedure.completedByName || "--"}
+                          </p>
+                        </div>
+                        <div className="rounded-2xl bg-[#fff7fb] px-3 py-3">
+                          <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
+                            Active / Passive
+                          </p>
+                          <p className="mt-1 text-sm font-bold text-[#4a3741]">
+                            {procedure.activeDuration ?? 0}m / {procedure.passiveDuration ?? 0}m
+                          </p>
+                        </div>
+                        <div className="rounded-2xl bg-[#fff7fb] px-3 py-3">
+                          <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
+                            Overlap
+                          </p>
+                          <p className="mt-1 text-sm font-bold text-[#4a3741]">
+                            {procedure.canOverlap ? "Allowed" : "No"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <div className="rounded-[18px] border border-dashed border-[#f1d8e4] bg-[#fffafb] px-4 py-8 text-center text-sm text-[#8f7b88]">
+                No procedures found for this booking item.
+              </div>
+            )}
+          </div>
+        ) : null}
+      </Modal>
+
+      <Modal
+        open={Boolean(artistPickerProcedure)}
+        onCancel={() => {
+          setArtistPickerProcedure(null);
+          setProcedureArtists([]);
+          setProcedureArtistsError("");
+          setAssigningProcedureArtistId("");
+        }}
+        footer={[
+          <Button
+            key="close-procedure-artist-picker"
+            onClick={() => {
+              setArtistPickerProcedure(null);
+              setProcedureArtists([]);
+              setProcedureArtistsError("");
+              setAssigningProcedureArtistId("");
+            }}
+          >
+            Close
+          </Button>,
+        ]}
+        centered
+        width={760}
+        title={artistPickerProcedure?.assignedArtistName ? "Reassign Procedure Artist" : "Assign Procedure Artist"}
+      >
+        {artistPickerProcedure ? (
+          <div className="space-y-4 py-1">
+            <div className="rounded-[18px] border border-[#f4d6e2] bg-[#fffafb] p-4">
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#c38ea8]">
+                Procedure
+              </p>
+              <p className="mt-2 text-lg font-extrabold text-[#4a3741]">
+                {artistPickerProcedure.procedureName || "--"}
+              </p>
+              <p className="mt-1 text-sm text-[#8f7b88]">
+                Current artist: {artistPickerProcedure.assignedArtistName || "Not assigned yet"}
+              </p>
+            </div>
+
+            {isProcedureArtistsLoading ? (
+              <div className="flex min-h-[220px] items-center justify-center rounded-[18px] border border-dashed border-[#f1d8e4] bg-[#fffafb]">
+                <div className="flex items-center gap-3 text-sm font-bold text-[#eb5b92]">
+                  <LoaderCircle size={18} className="animate-spin" />
+                  Loading available artists...
+                </div>
+              </div>
+            ) : procedureArtistsError ? (
+              <div className="rounded-[18px] border border-[#f8d3dc] bg-[#fff5f7] px-4 py-5 text-sm text-[#c9587e]">
+                {procedureArtistsError}
+              </div>
+            ) : procedureArtists.length ? (
+              <div className="space-y-3">
+                {procedureArtists.map((artist) => {
+                  const isSubmitting = assigningProcedureArtistId === artist.nailArtistId;
+
+                  return (
+                    <div
+                      key={artist.nailArtistId || artist.name}
+                      className="flex flex-col gap-3 rounded-[18px] border border-[#f4d6e2] bg-white p-4 shadow-[0_10px_22px_rgba(236,72,153,0.04)] sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-extrabold text-[#4a3741]">{artist.name || "--"}</p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          <span className={`rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${getProcedureArtistTone(artist.isFree, artist.isQualified)}`}>
+                            {artist.isFree ? "Free" : "Busy"}
+                          </span>
+                          <span className={`rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${artist.isQualified ? "border-[#cfead9] bg-[#f3fcf6] text-[#249a5c]" : "border-[#ffe2b5] bg-[#fff8ea] text-[#d59218]"}`}>
+                            {artist.isQualified ? "Qualified" : "Not Qualified"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => void handleAssignProcedureArtist(artistPickerProcedure, artist)}
+                        disabled={isSubmitting}
+                        className="inline-flex items-center justify-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-extrabold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)] disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isSubmitting ? <LoaderCircle size={14} className="animate-spin" /> : null}
+                        {artistPickerProcedure.assignedArtistName ? "Reassign" : "Assign"}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="rounded-[18px] border border-dashed border-[#f1d8e4] bg-[#fffafb] px-4 py-8 text-center text-sm text-[#8f7b88]">
+                No available artists found for this procedure.
+              </div>
+            )}
+          </div>
+        ) : null}
+      </Modal>
+
       <AssignReceptionistArtistModal
         open={isAssignArtistOpen}
         bookingId={booking?.bookingId || bookingId || ""}
@@ -1211,4 +1586,3 @@ export function ReceptionistBookingDetailPage() {
     </section>
   );
 }
-

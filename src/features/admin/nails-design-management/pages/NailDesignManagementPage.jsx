@@ -25,7 +25,7 @@ const DESIGN_CARD_PRESETS = [
     title: "Nude Minimalist",
     tags: ["Minimalist", "Everyday", "Clean"],
     tones: ["Nude"],
-    price: "28,000 VND",
+    price: "28,000 VNĐ",
     status: "No Try-On",
     accent: "bg-[#fff0f5] text-[#eb5a99]",
   },
@@ -33,7 +33,7 @@ const DESIGN_CARD_PRESETS = [
     title: "French Ombré Bliss",
     tags: ["Ombré", "Bridal", "Elegant"],
     tones: ["Pastel"],
-    price: "48,000 VND",
+    price: "48,000 VNĐ",
     status: "Try-On Ready",
     accent: "bg-[#e7fbf4] text-[#23b68b]",
   },
@@ -41,7 +41,7 @@ const DESIGN_CARD_PRESETS = [
     title: "Chrome Glitter Storm",
     tags: ["Glitter", "Party", "Bold"],
     tones: ["Chrome"],
-    price: "65,000 VND",
+    price: "65,000 VNĐ",
     status: "Try-On Ready",
     accent: "bg-[#e7fbf4] text-[#23b68b]",
   },
@@ -89,8 +89,8 @@ function getPreviewMeta(index) {
   return DESIGN_CARD_PRESETS[index % DESIGN_CARD_PRESETS.length];
 }
 
-function formatPriceVnd(value) {
-  return `${Number(value || 0).toLocaleString("vi-VN")} VND`;
+function formatPriceVNĐ(value) {
+  return `${Number(value || 0).toLocaleString("vi-VN")} VNĐ`;
 }
 
 function normalizeDesign(design, index) {
@@ -99,8 +99,8 @@ function normalizeDesign(design, index) {
   const hasTryOnAsset = Boolean(design.previewImage);
   const price =
     design.minPrice && design.maxPrice && design.minPrice !== design.maxPrice
-      ? `${formatPriceVnd(design.minPrice)} - ${formatPriceVnd(design.maxPrice)}`
-      : formatPriceVnd(design.maxPrice || design.minPrice || 0);
+      ? `${formatPriceVNĐ(design.minPrice)} - ${formatPriceVNĐ(design.maxPrice)}`
+      : formatPriceVNĐ(design.maxPrice || design.minPrice || 0);
 
   return {
     ...design,
