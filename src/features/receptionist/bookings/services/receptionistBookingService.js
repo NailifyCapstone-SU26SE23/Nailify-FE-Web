@@ -182,7 +182,8 @@ export async function updateReceptionistProcedureArtist(bookingProcedureId, arti
       headers: getAuthHeaders(),
       params: {
         artistId: normalizedArtistId,
-        status: "InProgress", //Pendding
+        // status: "InProgress", //Pending
+        status: "Pending",
       },
     },
   );
