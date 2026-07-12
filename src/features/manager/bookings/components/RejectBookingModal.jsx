@@ -4,6 +4,7 @@ import { Modal, Spin, Input, Checkbox, Select } from "antd";
 import toast from "react-hot-toast";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { rejectBooking } from "../services/bookingsService";
+import { motion } from "framer-motion";
 
 const REJECT_REASONS = [
   { label: "Customer not responding", value: "no_response" },
@@ -71,27 +72,41 @@ export function RejectBookingModal({
       footer={null}
       centered
       destroyOnClose
-      width={520}
+      width={560}
       styles={{
-        content: { padding: 0, borderRadius: 24, overflow: "hidden" },
-        mask: { backdropFilter: "blur(4px)" },
+        content: { padding: 0, borderRadius: 32, overflow: "hidden" },
+        mask: { backdropFilter: "blur(8px)" },
       }}
     >
       {/* Header */}
-      <div className="bg-gradient-to-r from-[#ffe6ec] via-[#fad5e5] to-[#f8c4d8] px-6 pt-6 pb-8">
-        <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#e1447f] text-white shadow-lg">
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="bg-gradient-to-br from-[#ffe6ec] via-[#fad5e5] to-[#f8c4d8] px-7 pt-7 pb-11"
+      >
+        <div className="flex items-center gap-5">
+          <motion.div 
+            whileHover={{ scale: 1.1, rotate: 3 }}
+            transition={{ type: "spring", stiffness: 500, damping: 15 }}
+            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ff5a8e] to-[#e1447f] text-white shadow-[0_15px_30px_rgba(225,68,127,0.25)]"
+          >
             <XCircle size={24} />
-          </div>
+          </motion.div>
           <div>
-            <h2 className="text-2xl font-extrabold text-[#402542]">Reject Booking</h2>
-            <p className="mt-1 text-xs text-[#b5849a]">This will decline the booking request</p>
+            <h2 className="text-2xl font-extrabold text-[#3d2434] tracking-tight">Reject Booking</h2>
+            <p className="mt-2 text-sm text-[#a65f84]">This will decline the booking request</p>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Body */}
-      <div className="-mt-6 rounded-t-[24px] bg-white px-6 pt-8 pb-6 space-y-5">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut", delay: 0.15 }}
+        className="-mt-8 rounded-[32px] bg-white px-7 pt-9 pb-7 space-y-6"
+      >
         {/* Alert Banner */}
         <div className="flex gap-3 rounded-xl border border-[#ffd4e5] bg-[#fffaf8] p-4">
           <AlertTriangle size={18} className="mt-0.5 shrink-0 text-[#e1447f]" />
@@ -213,33 +228,37 @@ export function RejectBookingModal({
         </Checkbox>
 
         {/* Action Buttons */}
-        <div className="flex gap-3 pt-4">
-          <button
+        <div className="flex gap-4 pt-3">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             type="button"
             onClick={handleClose}
-            className="flex-1 rounded-full border border-[#e3e3e3] bg-white px-4 py-2.5 text-xs font-bold text-[#6b6b6b] transition hover:bg-[#f9f9f9] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 rounded-full border border-[#e2c5d4] bg-white px-5 py-3 text-xs font-extrabold text-[#7a6176] transition-all duration-300 hover:bg-[#fffafd] hover:border-[#d9b0c7] disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isLoading}
           >
-            <X size={14} className="inline mr-2" />
+            <X size={16} className="inline mr-2" />
             Cancel
-          </button>
+          </motion.button>
           <div className="w-2"></div>
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             type="button"
             onClick={handleReject}
-            className="flex-1 rounded-full border border-[#e1447f] bg-white px-4 py-2.5 text-xs font-bold text-[#e1447f] transition hover:bg-[#fff4f8] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="flex-1 rounded-full bg-gradient-to-r from-[#ff5a8e] to-[#e1447f] px-5 py-3 text-xs font-extrabold text-white transition-all duration-300 hover:from-[#e1447f] hover:to-[#c43a6c] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-[0_6px_18px_rgba(225,68,127,0.3)]"
             disabled={isLoading || !reason || !details || !isConfirmed}
           >
             {isLoading && <Spin size="small" />}
             {isLoading ? "Rejecting..." : (
               <>
-                <XCircle size={14} />
+                <XCircle size={16} />
                 Reject booking
               </>
             )}
-          </button>
+          </motion.button>
         </div>
-      </div>
+      </motion.div>
     </Modal>
   );
 }

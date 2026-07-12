@@ -6,7 +6,6 @@ import {
   UserRound,
   Maximize2,
   X,
-  Search,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -19,16 +18,36 @@ import { Spin, Alert, Modal } from "antd";
 import { ConfirmBookingModal } from "../components/ConfirmBookingModal";
 import { RejectBookingModal } from "../components/RejectBookingModal";
 import { CancelBookingModal } from "../components/CancelBookingModal";
+import { motion, AnimatePresence } from "framer-motion";
 
 const roleConfig = BOOKING_ROLE_CONFIG[ROLES.manager];
 
+const fadeInUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.1,
+    },
+  },
+};
+
 function Card({ className = "", children }) {
   return (
-    <article
-      className={`rounded-2xl border border-[#f0d9e8] bg-white p-6 shadow-[0_4px_16px_rgba(236,72,153,0.08)] transition-shadow duration-200 hover:shadow-[0_6px_24px_rgba(236,72,153,0.12)] md:p-7 ${className}`}
+    <motion.article
+      initial="hidden"
+      animate="visible"
+      variants={fadeInUp}
+      className={`rounded-[28px] border border-[#f1e7ed] bg-white p-6 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.04)] transition-all duration-300 hover:shadow-[0_30px_50px_-15px_rgba(0,0,0,0.06)] md:p-7 ${className}`}
     >
       {children}
-    </article>
+    </motion.article>
   );
 }
 
@@ -40,8 +59,8 @@ Card.propTypes = {
 function SectionTitle({ children, subtitle }) {
   return (
     <div className="mb-6">
-      <h2 className="text-xl font-bold text-[#2d1b35]">{children}</h2>
-      {subtitle ? <p className="mt-2 text-sm text-[#a88a9f]">{subtitle}</p> : null}
+      <h2 className="text-xl font-bold tracking-tight text-[#2d1b35]">{children}</h2>
+      {subtitle ? <p className="mt-2 text-sm leading-relaxed text-[#a88a9f]">{subtitle}</p> : null}
     </div>
   );
 }
@@ -67,9 +86,9 @@ InfoItem.propTypes = {
 
 function InfoTile({ label, children, className = "" }) {
   return (
-    <div className={`rounded-xl border border-[#f0d9e8] bg-gradient-to-br from-white to-[#fffafb] p-4 shadow-sm hover:shadow-md transition-shadow min-w-0 ${className}`}>
+    <div className={`rounded-[18px] border border-[#f1e7ed] bg-gradient-to-br from-white to-[#fffafb] p-5 shadow-sm hover:shadow-md transition-shadow duration-300 min-w-0 ${className}`}>
       <p className="text-xs font-semibold uppercase tracking-widest text-[#a88a9f] truncate">{label}</p>
-      <div className="mt-2.5 text-sm font-semibold text-[#2d1b35] truncate break-all">{children}</div>
+      <div className="mt-3 text-sm font-semibold text-[#2d1b35] truncate break-all">{children}</div>
     </div>
   );
 }
@@ -218,6 +237,29 @@ function getArtistDisplayName(booking) {
   return name === "Chưa chỉ định" ? "Unassigned" : name || "Unassigned";
 }
 
+// Helper to properly format QR code src
+function getQrCodeSrc(qrCode) {
+  if (!qrCode) return null;
+  const trimmed = String(qrCode).trim();
+  
+  // If it's already a data URL, use as-is
+  if (trimmed.startsWith("data:")) {
+    return trimmed;
+  }
+  
+  // If it's a URL (starts with http/https), use as-is
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+  
+  // If it's a valid base64 string (without prefix), add data URL prefix
+  if (/^[A-Za-z0-9+/=]+$/.test(trimmed) && trimmed.length > 50) {
+    return `data:image/png;base64,${trimmed}`;
+  }
+  
+  return trimmed;
+}
+
 export function ManagerBookingDetailPage() {
   const { bookingId } = useParams();
   const [booking, setBooking] = useState(null);
@@ -239,6 +281,13 @@ export function ManagerBookingDetailPage() {
       rawBooking.artistId ||
       null;
 
+    // Discount calculation
+    let totalDiscount = rawBooking?.discountAmount || 0;
+    if (rawBooking?.discounts && Array.isArray(rawBooking.discounts)) {
+      totalDiscount = rawBooking.discounts.reduce((sum, discount) => sum + (discount?.amount || 0), 0);
+    }
+    const finalPrice = rawBooking?.totalPrice ? (rawBooking.totalPrice - totalDiscount) : 0;
+
     return {
       ...rawBooking,
       id: rawBooking.bookingId || rawBooking.id,
@@ -258,6 +307,11 @@ export function ManagerBookingDetailPage() {
       depositTone: rawBooking.depositAmount ? "text-[#2fa25f]" : "text-[#db8520]",
       status: rawBooking.status || "Pending",
       totalPrice: rawBooking.totalPrice,
+      discounts: rawBooking?.discounts,
+      discountAmount: totalDiscount,
+      discountPercentage: rawBooking?.discountPercentage,
+      discountCode: rawBooking?.discountCode,
+      finalPrice,
       qrCode: rawBooking.qrCode,
       qtCode: rawBooking.qtCode,
       checkInImageUrl: rawBooking.checkInImageUrl,
@@ -340,108 +394,129 @@ export function ManagerBookingDetailPage() {
     normalizedStatus.includes("approved");
 
   return (
-    <section className="flex min-h-full flex-col gap-5">
-      <nav className="flex flex-wrap items-center gap-2 text-sm">
-        <Link to={ROUTES.managerDashboard} className="text-[#a88a9f] font-medium transition hover:text-[#ea4f93]">
-          Dashboard
-        </Link>
-        <span className="text-[#d9bfd0]">/</span>
-        <Link to={roleConfig.listRoute} className="text-[#a88a9f] font-medium transition hover:text-[#ea4f93]">
-          Bookings
-        </Link>
-        <span className="text-[#d9bfd0]">/</span>
-        <span className="font-semibold text-[#2d1b35]">Booking Detail</span>
-      </nav>
-
-      <Card className="overflow-hidden border-none bg-gradient-to-br from-[#fff3f8] via-[#fffafb] to-[#fff5fb] p-0 shadow-lg">
-        <div className="flex flex-col gap-6 p-7 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex items-start gap-4">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-white shadow-xl">
-              <Clock3 size={28} />
-            </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-3xl font-bold text-[#2d1b35]">Booking Detail</h1>
-                <span className={`inline-flex rounded-full px-3 py-1.5 text-xs font-semibold ${getStatusTone(booking?.status)}`}>
-                  {formatStatusDisplay(booking?.status)}
-                </span>
+    <motion.section 
+      initial="hidden" 
+      animate="visible" 
+      variants={staggerContainer}
+      className="flex min-h-[100dvh] flex-col gap-6 p-4 lg:p-8"
+    >
+      <motion.div variants={fadeInUp}>
+        <Card className="overflow-hidden border-none bg-gradient-to-br from-[#fff3f8] via-[#fffafb] to-[#fff5fb] p-0 shadow-[0_20px_40px_-15px_rgba(234,79,147,0.12)]">
+          <div className="flex flex-col gap-6 p-7 lg:flex-row lg:items-start lg:justify-between">
+            <div className="flex items-start gap-4">
+              <motion.div 
+                whileHover={{ scale: 1.05, rotate: 2 }}
+                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[24px] bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-white shadow-[0_10px_24px_rgba(234,79,147,0.35)]"
+              >
+                <Clock3 size={28} />
+              </motion.div>
+              <div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <h1 className="text-3xl font-bold tracking-tight text-[#2d1b35]">Booking Detail</h1>
+                  <span className={`inline-flex items-center gap-1.5 rounded-full border border-transparent px-3 py-1.5 text-xs font-semibold ${getStatusTone(booking?.status)}`}>
+                    {booking?.status === "InProgress" || booking?.status === "In Progress" ? (
+                      <motion.span 
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                        className="h-2 w-2 rounded-full bg-current"
+                      />
+                    ) : null}
+                    {formatStatusDisplay(booking?.status)}
+                  </span>
+                </div>
+                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#8b7382]">
+                  Manage booking information, customer details, assigned staff, payment summary, and confirmation codes.
+                </p>
               </div>
-              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#8b7382]">
-                Manage booking information, customer details, assigned staff, payment summary, and confirmation codes.
-              </p>
+            </div>
+
+            <div className="flex flex-col items-start gap-3 lg:items-end">
+              <motion.div 
+                className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold ${isRefreshing ? "bg-white text-[#ea4f93] shadow-md" : "bg-white text-[#8b7382]"}`}
+              >
+                <span className={`h-2 w-2 rounded-full ${isRefreshing ? "bg-[#ea4f93] animate-pulse" : "bg-[#d9bfd0]"}`} />
+                {isRefreshing ? "Refreshing..." : "Live"}
+              </motion.div>
+              
+              {/* Action Buttons Container - Responsive Layout */}
+              <div className="flex w-full flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end lg:w-auto">
+
+                {/* Only show action buttons if not final, not checked in, and not in progress */}
+                {!isFinalStatus && 
+                 booking?.status !== "CheckedIn" && 
+                 booking?.status !== "Checked In" &&
+                 booking?.status !== "InProgress" && 
+                 booking?.status !== "In Progress" ? (
+                  <>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      type="button"
+                      onClick={() => setIsConfirmModalOpen(true)}
+                      disabled={!normalizedBookingId || isRefreshing}
+                      className="inline-flex items-center justify-center rounded-full bg-[#2fa25f] px-5 py-2.5 text-xs font-semibold text-white shadow-md hover:shadow-lg transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50 whitespace-nowrap flex-1 sm:flex-none"
+                    >
+                      Confirm
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      type="button"
+                      onClick={() => setIsCancelModalOpen(true)}
+                      disabled={!normalizedBookingId || isRefreshing}
+                      className="inline-flex items-center justify-center rounded-full border border-[#f1e7ed] bg-white px-5 py-2.5 text-xs font-semibold text-[#8b7382] transition-all duration-300 hover:border-[#ea4f93] hover:bg-[#fff7fb] disabled:cursor-not-allowed disabled:opacity-50 whitespace-nowrap flex-1 sm:flex-none"
+                    >
+                      Cancel
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      type="button"
+                      onClick={() => setIsRejectModalOpen(true)}
+                      disabled={!normalizedBookingId || isRefreshing}
+                      className="inline-flex items-center justify-center rounded-full border border-[#f1e7ed] bg-white px-5 py-2.5 text-xs font-semibold text-[#e1447f] transition-all duration-300 hover:border-[#e1447f] hover:bg-[#fff4f8] disabled:cursor-not-allowed disabled:opacity-50 whitespace-nowrap flex-1 sm:flex-none"
+                    >
+                      Reject
+                    </motion.button>
+                  </>
+                ) : null}
+              </div>
             </div>
           </div>
 
-          <div className="flex flex-col items-start gap-3 lg:items-end">
-            <div className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold ${isRefreshing ? "bg-white text-[#ea4f93] shadow-md" : "bg-white text-[#8b7382]"}`}>
-              <span className={`h-2 w-2 rounded-full ${isRefreshing ? "bg-[#ea4f93] animate-pulse" : "bg-[#d9bfd0]"}`} />
-              {isRefreshing ? "Refreshing..." : "Live"}
-            </div>
-            
-            {/* Action Buttons Container - Responsive Layout */}
-            <div className="flex w-full flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end lg:w-auto">
-
-              {/* Only show action buttons if not final, not checked in, and not in progress */}
-              {!isFinalStatus && 
-               booking?.status !== "CheckedIn" && 
-               booking?.status !== "Checked In" &&
-               booking?.status !== "InProgress" && 
-               booking?.status !== "In Progress" ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setIsConfirmModalOpen(true)}
-                    disabled={!normalizedBookingId || isRefreshing}
-                    className="inline-flex items-center justify-center rounded-full bg-[#2fa25f] px-5 py-2.5 text-xs font-semibold text-white shadow-md hover:shadow-lg transition disabled:cursor-not-allowed disabled:opacity-50 whitespace-nowrap flex-1 sm:flex-none"
-                  >
-                    Confirm
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsCancelModalOpen(true)}
-                    disabled={!normalizedBookingId || isRefreshing}
-                    className="inline-flex items-center justify-center rounded-full border border-[#f0d9e8] bg-white px-5 py-2.5 text-xs font-semibold text-[#8b7382] transition hover:border-[#ea4f93] hover:bg-[#fff7fb] disabled:cursor-not-allowed disabled:opacity-50 whitespace-nowrap flex-1 sm:flex-none"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsRejectModalOpen(true)}
-                    disabled={!normalizedBookingId || isRefreshing}
-                    className="inline-flex items-center justify-center rounded-full border border-[#f0d9e8] bg-white px-5 py-2.5 text-xs font-semibold text-[#e1447f] transition hover:border-[#e1447f] hover:bg-[#fff4f8] disabled:cursor-not-allowed disabled:opacity-50 whitespace-nowrap flex-1 sm:flex-none"
-                  >
-                    Reject
-                  </button>
-                </>
-              ) : null}
-            </div>
+          <div className="grid gap-4 border-t border-[#f1e7ed] bg-gradient-to-b from-[#fff9fb] to-white p-6 md:grid-cols-2 xl:grid-cols-4">
+            <InfoTile label="Customer">
+              <div className="flex items-center gap-2">
+                <UserRound size={16} className="text-[#ea4f93]" />
+                <span className="truncate font-medium">{booking?.customerName}</span>
+              </div>
+            </InfoTile>
+            <InfoTile label="Schedule">
+              <div className="flex items-center gap-2">
+                <Calendar size={16} className="text-[#ea4f93]" />
+                <span className="truncate font-medium">{booking?.date} · {booking?.time}</span>
+              </div>
+            </InfoTile>
+            <InfoTile label="Duration">
+              <span className="font-medium">{booking?.totalDuration ? formatDuration(booking.totalDuration) : "N/A"}</span>
+            </InfoTile>
+            <InfoTile label="Total Price" className="bg-gradient-to-br from-[#fff7fb] to-white">
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2 text-[#ea4f93] font-semibold">
+                  <CreditCard size={16} />
+                  <span className="truncate">{formatVND(booking?.discountAmount > 0 ? booking.finalPrice : booking.totalPrice)}</span>
+                </div>
+                {booking?.discountAmount > 0 && (
+                  <span className="text-xs text-[#a88a9f] line-through mt-1">
+                    {formatVND(booking?.totalPrice)}
+                  </span>
+                )}
+              </div>
+            </InfoTile>
           </div>
-        </div>
-
-        <div className="grid gap-4 border-t border-[#f0d9e8] bg-gradient-to-b from-[#fff9fb] to-white p-6 md:grid-cols-2 xl:grid-cols-4">
-          <InfoTile label="Customer">
-            <div className="flex items-center gap-2">
-              <UserRound size={16} className="text-[#ea4f93]" />
-              <span className="truncate font-medium">{booking?.customerName}</span>
-            </div>
-          </InfoTile>
-          <InfoTile label="Schedule">
-            <div className="flex items-center gap-2">
-              <Calendar size={16} className="text-[#ea4f93]" />
-              <span className="truncate font-medium">{booking?.date} · {booking?.time}</span>
-            </div>
-          </InfoTile>
-          <InfoTile label="Duration">
-            <span className="font-medium">{booking?.totalDuration ? formatDuration(booking.totalDuration) : "N/A"}</span>
-          </InfoTile>
-          <InfoTile label="Total Price" className="bg-gradient-to-br from-[#fff7fb] to-white">
-            <div className="flex items-center gap-2 text-green-700 font-semibold">
-              <CreditCard size={16} />
-              <span className="truncate">{formatVND(booking?.totalPrice)}</span>
-            </div>
-          </InfoTile>
-        </div>
-      </Card>
+        </Card>
+      </motion.div>
 
       {/* Main Content Grid with Sticky Sidebar */}
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] items-start">
@@ -469,27 +544,27 @@ export function ManagerBookingDetailPage() {
               )}
             </div>
             {(booking?.checkInImageUrl || booking?.checkOutImagesUrl) && (
-              <div className="mt-6 pt-6 border-t border-[#f0d9e8] space-y-6">
+              <div className="mt-6 pt-6 border-t border-[#f1e7ed] space-y-6">
                 {booking?.checkInImageUrl && (
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-widest text-[#a88a9f] mb-3">Check-in Photo</p>
-                    <div className="overflow-hidden rounded-xl border border-[#f0d9e8] bg-gradient-to-br from-white to-[#fffafb] p-2">
-                      <img crossOrigin="anonymous" src={booking.checkInImageUrl} alt="Check-in" className="max-w-full rounded-lg w-full object-cover" />
+                    <div className="overflow-hidden rounded-[18px] border border-[#f1e7ed] bg-gradient-to-br from-white to-[#fffafb] p-2">
+                      <img src={booking.checkInImageUrl} alt="Check-in" className="max-w-full rounded-lg w-full object-cover" />
                     </div>
                   </div>
                 )}
                 {booking?.checkOutImagesUrl && (
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-widest text-[#a88a9f] mb-3">Check-out Photos</p>
-                    <div className="overflow-hidden rounded-xl border border-[#f0d9e8] bg-gradient-to-br from-white to-[#fffafb] p-2">
+                    <div className="overflow-hidden rounded-[18px] border border-[#f1e7ed] bg-gradient-to-br from-white to-[#fffafb] p-2">
                       {Array.isArray(booking.checkOutImagesUrl) ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           {booking.checkOutImagesUrl.map((url, idx) => (
-                            <img crossOrigin="anonymous" key={idx} src={url} alt={`Check-out ${idx + 1}`} className="rounded-lg w-full h-40 object-cover" />
+                            <img key={idx} src={url} alt={`Check-out ${idx + 1}`} className="rounded-lg w-full h-40 object-cover" />
                           ))}
                         </div>
                       ) : (
-                        <img crossOrigin="anonymous" src={booking.checkOutImagesUrl} alt="Check-out" className="max-w-full rounded-lg w-full object-cover" />
+                        <img src={booking.checkOutImagesUrl} alt="Check-out" className="max-w-full rounded-lg w-full object-cover" />
                       )}
                     </div>
                   </div>
@@ -509,7 +584,14 @@ export function ManagerBookingDetailPage() {
               <InfoItem label="Nail Artist">{booking?.artistName}</InfoItem>
               <div className="md:col-span-2">
                 <InfoItem label="Status">
-                  <span className={`inline-flex rounded-full px-3 py-1 text-[11px] font-bold ${getStatusTone(booking?.status)}`}>
+                  <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold ${getStatusTone(booking?.status)}`}>
+                    {(booking?.status === "InProgress" || booking?.status === "In Progress") && (
+                      <motion.span 
+                        animate={{ opacity: [1, 0.5, 1] }}
+                        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                        className="h-2 w-2 rounded-full bg-white"
+                      />
+                    )}
                     {formatStatusDisplay(booking?.status)}
                   </span>
                 </InfoItem>
@@ -524,7 +606,13 @@ export function ManagerBookingDetailPage() {
               </SectionTitle>
               <div className="space-y-4">
                 {booking.bookingItems.map((item, idx) => (
-                  <div key={idx} className="rounded-xl border border-[#f0d9e8] bg-gradient-to-br from-white to-[#fffafb] p-5 hover:shadow-md transition-shadow">
+                  <motion.div 
+                    key={idx}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: idx * 0.05, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                    className="rounded-[18px] border border-[#f1e7ed] bg-gradient-to-br from-white to-[#fffafb] p-5 hover:shadow-[0_10px_24px_rgba(234,79,147,0.08)] transition-all duration-300"
+                  >
                     <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                       <div className="flex-1 min-w-0">
                         <p className="text-base font-semibold text-[#2d1b35]">{item.serviceName || "Nail Service"}</p>
@@ -541,8 +629,8 @@ export function ManagerBookingDetailPage() {
                             {item.nailVariantImageUrl && (
                               <div>
                                 <p className="text-xs font-semibold uppercase tracking-widest text-[#a88a9f] mb-2">Nail Variant</p>
-                                <div className="rounded-lg border border-[#f0d9e8] overflow-hidden">
-                                  <img crossOrigin="anonymous" 
+                                <div className="rounded-lg border border-[#f1e7ed] overflow-hidden">
+                                  <img 
                                     src={item.nailVariantImageUrl.replace(/`/g, '')} 
                                     alt={item.nailVariantName} 
                                     className="w-full h-40 object-cover"
@@ -554,8 +642,8 @@ export function ManagerBookingDetailPage() {
                             {item.customerNailImageUrl && (
                               <div>
                                 <p className="text-xs font-semibold uppercase tracking-widest text-[#a88a9f] mb-2">Customer Nail</p>
-                                <div className="rounded-lg border border-[#f0d9e8] overflow-hidden">
-                                  <img crossOrigin="anonymous" 
+                                <div className="rounded-lg border border-[#f1e7ed] overflow-hidden">
+                                  <img 
                                     src={item.customerNailImageUrl.replace(/`/g, '')} 
                                     alt={item.customerNailName} 
                                     className="w-full h-40 object-cover"
@@ -570,10 +658,25 @@ export function ManagerBookingDetailPage() {
                       <div className="grid min-w-[260px] gap-4 sm:grid-cols-3">
                         <InfoItem label="Quantity">{item.quantity !== undefined ? item.quantity : "-"}</InfoItem>
                         <InfoItem label="Duration">{item.duration !== undefined ? formatDuration(item.duration) : "-"}</InfoItem>
-                        <InfoItem label="Price">{item.price !== undefined ? formatVND(item.price) : "-"}</InfoItem>
+                        <InfoItem label="Price">
+                          <div className="flex flex-col">
+                            <span className={item?.discountAmount > 0 ? "text-[#a88a9f] line-through text-xs" : ""}>
+                              {item.price !== undefined ? formatVND(item.price) : "-"}
+                            </span>
+                            {item?.discountAmount > 0 && (
+                              <>
+                                <span className="text-[#2fa25f] text-xs">-{formatVND(item.discountAmount)}</span>
+                                <span className="font-semibold text-[#2d1b35]">{formatVND(item.finalPrice)}</span>
+                              </>
+                            )}
+                            {item?.discountAmount === 0 && (
+                              <span className="font-semibold text-[#2d1b35]">{formatVND(item.price)}</span>
+                            )}
+                          </div>
+                        </InfoItem>
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             </Card>
@@ -591,39 +694,72 @@ export function ManagerBookingDetailPage() {
                 <InfoItem label="Deposit Status">
                   <span className={booking?.depositTone}>{booking?.deposit}</span>
                 </InfoItem>
-                <InfoItem label="Total Amount">{formatVND(booking?.totalPrice)}</InfoItem>
+                <InfoItem label="Original Total">{formatVND(booking?.totalPrice)}</InfoItem>
+                {booking?.discountAmount > 0 && (
+                  <>
+                    {booking?.discounts && booking.discounts.length > 0 ? (
+                      booking.discounts.map((discount, index) => (
+                        <InfoItem key={index} label={`Discount · ${discount.type || 'Discount'}`}>
+                          <div className="flex flex-col">
+                            <span className="text-[#2fa25f] font-semibold">
+                              {discount.name} · -{formatVND(discount.amount)}
+                            </span>
+                            {discount.amountDisplay && (
+                              <span className="text-xs text-[#a88a9f]">
+                                {discount.amountDisplay}
+                              </span>
+                            )}
+                          </div>
+                        </InfoItem>
+                      ))
+                    ) : (
+                      <InfoItem label="Discount">
+                        <span className="text-[#2fa25f] font-semibold">
+                          -{formatVND(booking?.discountAmount)}
+                          {booking?.discountPercentage ? ` (${booking.discountPercentage}%)` : ''}
+                          {booking?.discountCode ? ` · Code: ${booking.discountCode}` : ''}
+                        </span>
+                      </InfoItem>
+                    )}
+                    <InfoItem label="Final Amount">
+                      <span className="text-[#ea4f93] font-bold text-lg">
+                        {formatVND(booking?.finalPrice)}
+                      </span>
+                    </InfoItem>
+                  </>
+                )}
+                {!(booking?.discountAmount > 0) && (
+                  <InfoItem label="Final Amount">{formatVND(booking?.totalPrice)}</InfoItem>
+                )}
               </div>
               
               {(booking?.qrCode || booking?.qtCode) && (
-                <div className="pt-4 border-t border-[#f0d9e8]">
+                <div className="pt-4 border-t border-[#f1e7ed]">
                   <div className="flex items-center gap-2 mb-4">
                     <ScanQrCode size={16} className="text-[#ea4f93]" />
                     <p className="text-sm font-semibold text-[#2d1b35]">Confirmation Codes</p>
                   </div>
                   <div className="space-y-4">
                     {booking.qrCode && (
-                      <div 
-                        className="rounded-xl border border-[#f0d9e8] bg-gradient-to-br from-white to-[#fffafb] p-4 cursor-pointer hover:border-[#ea4f93] hover:shadow-md transition-all"
+                      <motion.div 
+                        whileHover={{ scale: 1.01 }}
+                        className="rounded-[18px] border border-[#f1e7ed] bg-gradient-to-br from-white to-[#fffafb] p-4 cursor-pointer hover:border-[#ea4f93] hover:shadow-md transition-all duration-300"
                         onClick={() => setIsQrExpanded(true)}
                       >
                         <div className="flex items-center justify-between mb-3">
                           <p className="text-xs font-semibold uppercase tracking-widest text-[#a88a9f]">QR Code</p>
-                          <button 
+                          <motion.button 
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
                             type="button" 
                             onClick={(e) => { e.stopPropagation(); setIsQrExpanded(true); }}
-                            className="text-[#ea4f93] hover:text-[#c9366b] transition"
+                            className="text-[#ea4f93] hover:text-[#c9366b] transition-colors"
                           >
                             <Maximize2 size={16} />
-                          </button>
+                          </motion.button>
                         </div>
-                        <img crossOrigin="anonymous"
-                          src={
-                            typeof booking.qrCode === "string" && booking.qrCode.startsWith("data:")
-                              ? booking.qrCode
-                              : typeof booking.qrCode === "string" && booking.qrCode.length > 100
-                                ? `data:image/png;base64,${booking.qrCode}`
-                                : booking.qrCode
-                          }
+                        <img
+                          src={getQrCodeSrc(booking.qrCode)}
                           alt="QR Code"
                           className="max-w-[120px] mx-auto rounded-xl"
                           onError={(e) => {
@@ -631,10 +767,10 @@ export function ManagerBookingDetailPage() {
                             e.target.style.display = "none";
                           }}
                         />
-                      </div>
+                      </motion.div>
                     )}
                     {booking.qtCode && (
-                      <div className="rounded-xl border border-[#f0d9e8] bg-gradient-to-br from-white to-[#fffafb] p-4">
+                      <div className="rounded-[18px] border border-[#f1e7ed] bg-gradient-to-br from-white to-[#fffafb] p-4">
                         <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-[#a88a9f]">QT Code</p>
                         <p className="break-all text-sm font-medium text-[#2d1b35]">{booking.qtCode}</p>
                       </div>
@@ -652,34 +788,35 @@ export function ManagerBookingDetailPage() {
         open={isQrExpanded}
         onCancel={() => setIsQrExpanded(false)}
         footer={null}
+        closable={false} 
         centered
         width={420}
         styles={{
-          content: { padding: 0, borderRadius: 20, overflow: "hidden", boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)" },
-          mask: { backdropFilter: "blur(6px)" },
+          content: { padding: 0, borderRadius: 28, overflow: "hidden", boxShadow: "0_30px_60px_-15px_rgba(0,0,0,0.25)" },
+          mask: { backdropFilter: "blur(8px)" },
         }}
       >
         <div className="bg-white p-6 text-center">
           <div className="flex justify-between items-center mb-4">
             <p className="text-sm font-semibold text-[#2d1b35]">QR Code</p>
-            <button 
+            <motion.button 
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
               type="button" 
               onClick={() => setIsQrExpanded(false)}
-              className="text-[#a88a9f] hover:text-[#ea4f93] transition"
+              className="text-[#a88a9f] hover:text-[#ea4f93] transition-colors"
             >
               <X size={20} />
-            </button>
+            </motion.button>
           </div>
-          <img crossOrigin="anonymous"
-            src={
-              typeof booking?.qrCode === "string" && booking.qrCode.startsWith("data:")
-                ? booking.qrCode
-                : typeof booking?.qrCode === "string" && booking.qrCode.length > 100
-                  ? `data:image/png;base64,${booking.qrCode}`
-                  : booking?.qrCode
-            }
+          <img
+            src={getQrCodeSrc(booking?.qrCode)}
             alt="QR Code"
-            className="max-w-[280px] mx-auto rounded-xl"
+            className="max-w-[280px] mx-auto rounded-[18px]"
+            onError={(e) => {
+              console.error("QR Code image failed to load:", booking?.qrCode);
+              e.target.style.display = "none";
+            }}
           />
         </div>
       </Modal>
@@ -706,7 +843,6 @@ export function ManagerBookingDetailPage() {
         booking={booking}
       />
 
-    </section>
+    </motion.section>
   );
 }
-

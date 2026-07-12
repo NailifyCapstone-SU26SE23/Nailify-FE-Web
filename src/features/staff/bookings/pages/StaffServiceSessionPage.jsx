@@ -3324,9 +3324,7 @@ export function StaffServiceSessionPage() {
                   <p className="mt-2 text-lg font-extrabold text-[#4a3741]">
                     {selectedProcedureService.name || "--"}
                   </p>
-                  <p className="mt-1 text-xs text-[#8f7b88]">
-                    Booking item ID: {selectedProcedureService.bookingItemId || selectedProcedureService.id || "--"}
-                  </p>
+                 
                 </div>
                 <div className="grid gap-2 text-right text-sm">
                   <div>
@@ -3382,7 +3380,7 @@ export function StaffServiceSessionPage() {
                       </div>
 
                       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                        <div className="rounded-2xl bg-[#fff7fb] px-3 py-3">
+                        <div className="rounded-2xl bg-[#fff7fb] px-3 py-3 flex flex-col items-center justify-between gap-2">
                           <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
                             Assigned Artist
                           </p>
@@ -3418,30 +3416,30 @@ export function StaffServiceSessionPage() {
                             ) : null}
                           </div>
                         </div>
-                        <div className="rounded-2xl bg-[#fff7fb] px-3 py-3">
-                          <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
-                            Completed By
-                          </p>
-                          <p className="mt-1 text-sm font-bold text-[#4a3741]">
-                            {procedure.completedByName || "--"}
-                          </p>
-                        </div>
-                        <div className="rounded-2xl bg-[#fff7fb] px-3 py-3">
-                          <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
-                            Active / Passive
-                          </p>
-                          <p className="mt-1 text-sm font-bold text-[#4a3741]">
-                            {procedure.activeDuration ?? 0}m / {procedure.passiveDuration ?? 0}m
-                          </p>
-                        </div>
-                        <div className="rounded-2xl bg-[#fff7fb] px-3 py-3">
-                          <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
-                            Overlap
-                          </p>
-                          <p className="mt-1 text-sm font-bold text-[#4a3741]">
-                            {procedure.canOverlap ? "Allowed" : "No"}
-                          </p>
-                        </div>
+                        <div className="rounded-2xl bg-[#fff7fb] px-3 py-3 flex flex-col items-center justify-between gap-2">
+                            <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
+                              Completed By
+                            </p>
+                            <p className="mt-1 text-[13px] font-bold text-[#4a3741]">
+                              {procedure.completedByName || <span className="text-[#6c6c6c] px-3 py-1 border border-[#0a0909] rounded-2xl bg-gray-100 text-[13px] text-center">Not yet</span>}
+                            </p>
+                          </div>
+                          <div className="rounded-2xl bg-[#fff7fb] px-3 py-3 flex flex-col items-center justify-between gap-2">
+                            <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
+                              Active / Passive
+                            </p>
+                            <p className="mt-1 text-[13px] font-bold text-[#4a3741]">
+                              {procedure.activeDuration ?? 0}m / {procedure.passiveDuration ?? 0}m
+                            </p>
+                          </div>
+                          <div className="rounded-2xl bg-[#fff7fb] px-3 py-3 flex flex-col items-center justify-between gap-2">
+                            <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
+                              Overlap
+                            </p>
+                            <p className="mt-1 text-[13px] font-bold text-[#4a3741]">
+                               {procedure.canOverlap ? <span className="text-[#28a745] px-3 py-1 border border-[#28a745] rounded-2xl bg-green-100 text-[13px] text-center">Allowed</span> : <span className="text-[#6c6c6c] px-3 py-1 border border-[#0a0909] rounded-2xl bg-gray-100 text-[13px] text-center">Not Allowed</span>}
+                            </p>
+                          </div>
                       </div>
                     </div>
                   ))}

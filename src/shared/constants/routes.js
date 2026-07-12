@@ -82,6 +82,8 @@ export const ROUTES = {
   adminNailVariantCreateTryOn: "/admin/nail-designs/:designId/variants/create/try-on",
   adminNailVariantDetail: "/admin/nail-designs/:designId/variants/:variantId",
   adminNailVariantTryOn: "/admin/nail-designs/:designId/variants/:variantId/try-on",
+  adminSalonBookings: "/admin/bookings",
+  adminSalonBookingDetail: "/admin/bookings/:salonId",
 };
 
 export const getStaffBookingDetailRoute = (bookingId) =>
@@ -128,3 +130,5 @@ export const getAdminNailVariantTryOnRoute = (designId, variantId, mode) => {
 
   return mode ? `${basePath}?mode=${mode}&nailVariantId=${variantId}` : `${basePath}?nailVariantId=${variantId}`;
 };
+export const getAdminSalonBookingDetailRoute = (salonId) =>
+  `/admin/bookings/${salonId}`;
