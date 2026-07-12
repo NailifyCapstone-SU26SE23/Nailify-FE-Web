@@ -36,10 +36,17 @@ import {
 import {
   buildStaffServiceSessionPayload,
   fetchStaffBookings,
+  fetchStaffSalonBookings,
+  getStaffArtistId,
   getTodayDateParam,
   normalizeStaffBooking,
 } from "../../../features/staff/bookings/services/staffBookingService";
 import { getBookingRoleFromPath } from "../utils/bookingMapper";
+
+const STAFF_BOOKING_SCOPES = {
+  mine: "mine",
+  salon: "salon",
+};
 
 const SUMMARY_BY_ROLE = {
   [ROLES.admin]: [
@@ -449,10 +456,23 @@ export function BookingListPage() {
   const [paymentFilter, setPaymentFilter] = useState(PAYMENT_OPTIONS[0]);
   const [staffFilter, setStaffFilter] = useState("All staff");
   const [staffTimeSortDirection, setStaffTimeSortDirection] = useState("asc");
+  const [staffBookingScope, setStaffBookingScope] = useState(STAFF_BOOKING_SCOPES.mine);
   const [isLoading, setIsLoading] = useState(isStaffRole);
   const [loadError, setLoadError] = useState("");
   const [staffBookings, setStaffBookings] = useState([]);
+  const [staffSalonBookings, setStaffSalonBookings] = useState([]);
   const [selectedStaffNotesBooking, setSelectedStaffNotesBooking] = useState(null);
+  const currentStaffArtistId = useMemo(() => {
+    if (!isStaffRole) {
+      return "";
+    }
+
+    try {
+      return getStaffArtistId();
+    } catch {
+      return "";
+    }
+  }, [isStaffRole]);
 
   useEffect(() => {
     if (!location.state?.flashMessage) {
@@ -474,19 +494,31 @@ export function BookingListPage() {
       setLoadError("");
 
       try {
-        const data = await fetchStaffBookings();
+        const data = staffBookingScope === STAFF_BOOKING_SCOPES.salon
+          ? await fetchStaffSalonBookings()
+          : await fetchStaffBookings();
 
         if (!isMounted) {
           return;
         }
 
-        setStaffBookings(Array.isArray(data) ? data.map(normalizeStaffBooking) : []);
+        const normalizedData = Array.isArray(data) ? data.map(normalizeStaffBooking) : [];
+
+        if (staffBookingScope === STAFF_BOOKING_SCOPES.salon) {
+          setStaffSalonBookings(normalizedData);
+        } else {
+          setStaffBookings(normalizedData);
+        }
       } catch (error) {
         if (!isMounted) {
           return;
         }
 
-        const message = error instanceof Error ? error.message : "Failed to load assigned bookings.";
+        const message = error instanceof Error
+          ? error.message
+          : staffBookingScope === STAFF_BOOKING_SCOPES.salon
+            ? "Failed to load salon bookings."
+            : "Failed to load assigned bookings.";
         setLoadError(message);
         toast.error(message);
       } finally {
@@ -501,9 +533,21 @@ export function BookingListPage() {
     return () => {
       isMounted = false;
     };
-  }, [isStaffRole]);
+  }, [isStaffRole, staffBookingScope]);
 
-  const activeBookings = isStaffRole ? staffBookings : normalizedBookings;
+  useEffect(() => {
+    if (!isStaffRole) {
+      return;
+    }
+
+    setDateFrom(todayDate);
+    setDateTo(todayDate);
+  }, [isStaffRole, staffBookingScope, todayDate]);
+
+  const isSalonScopeForStaff = isStaffRole && staffBookingScope === STAFF_BOOKING_SCOPES.salon;
+  const activeBookings = isStaffRole
+    ? (isSalonScopeForStaff ? staffSalonBookings : staffBookings)
+    : normalizedBookings;
 
   const filteredBookings = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -643,9 +687,9 @@ export function BookingListPage() {
 
     return [
       {
-        label: "Assigned Today",
+        label: isSalonScopeForStaff ? "Salon Bookings" : "Assigned Today",
         value: String(activeBookings.length),
-        note: "Loaded from artist schedule",
+        note: isSalonScopeForStaff ? "Loaded from salon booking API" : "Loaded from artist schedule",
         icon: CalendarDays,
         iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
       },
@@ -682,11 +726,14 @@ export function BookingListPage() {
         iconClassName: "bg-[#f5ecff] text-[#8b5cf6]",
       },
     ];
-  }, [activeBookings, isStaffRole, role]);
+  }, [activeBookings, isSalonScopeForStaff, isStaffRole, role]);
   const getActionItems = (booking) => {
     const detailRoute = roleConfig.getDetailRoute(booking.id);
 
     if (role === ROLES.staff) {
+      const isOwnBooking = !isSalonScopeForStaff
+        || !currentStaffArtistId
+        || String(booking?.nailArtistId || "").trim() === String(currentStaffArtistId).trim();
       const normalizedBookingStatus = String(booking?.status || booking?.uiStatus || "").trim().toLowerCase();
       const isPendingBooking = ["pending", "approved"].includes(normalizedBookingStatus);
       const isCheckedInBooking = normalizedBookingStatus === "checkedin";
@@ -710,17 +757,35 @@ export function BookingListPage() {
         });
       };
 
+      if (isInProgressBooking) {
+        return [
+          { key: "view", label: "View Booking", icon: Eye, onSelect: () => navigate(detailRoute) },
+          ...(isOwnBooking ? [{
+            key: "continue",
+            label: "Continue Service",
+            icon: Play,
+            onSelect: () => void openServiceSession(),
+          }] : []),
+          {
+            key: "notes",
+            label: "View Notes",
+            icon: FileText,
+            onSelect: () => setSelectedStaffNotesBooking(booking),
+          },
+        ];
+      }
+
       return [
         { key: "view", label: "View Booking", icon: Eye, onSelect: () => navigate(detailRoute) },
-        ...(!isCancelledBooking && !isPendingBooking && !isCompletedBooking && !isServiceCompletedBooking
+        ...(isOwnBooking && !isCancelledBooking && !isPendingBooking && !isCompletedBooking && !isServiceCompletedBooking
           ? [{
-            key: isInProgressBooking ? "continue" : "start",
-            label: isInProgressBooking ? "Continue Service" : "Start Service",
+            key: "start",
+            label: "Start Service",
             icon: Play,
             onSelect: () => void openServiceSession(),
           }]
           : []),
-        ...(!isCancelledBooking && !isPendingBooking && !isCheckedInBooking && !isCompletedBooking && !isServiceCompletedBooking
+        ...(isOwnBooking && !isCancelledBooking && !isPendingBooking && !isCheckedInBooking && !isCompletedBooking && !isServiceCompletedBooking
           ? [{
             key: "complete",
             label: "Complete Service",
@@ -872,8 +937,8 @@ export function BookingListPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    setDateFrom(defaultDateRange.from);
-                    setDateTo(defaultDateRange.to);
+                    setDateFrom(isStaffRole ? todayDate : defaultDateRange.from);
+                    setDateTo(isStaffRole ? todayDate : defaultDateRange.to);
                     setSalonFilter(SALON_OPTIONS[0]);
                     setStatusFilter(STATUS_OPTIONS[0]);
                     setPaymentFilter(PAYMENT_OPTIONS[0]);
@@ -891,12 +956,43 @@ export function BookingListPage() {
           <article className="rounded-[20px] border border-[#f7d8e6] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] md:p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm font-extrabold text-[#462a45]">All Bookings</p>
+                <p className="text-sm font-extrabold text-[#462a45]">
+                  {isStaffRole
+                    ? (isSalonScopeForStaff ? "Salon Bookings" : "My Bookings")
+                    : "All Bookings"}
+                </p>
                 <p className="mt-1 text-[11px] text-[#d197b0]">
-                  {isStaffRole ? `${paginationLabel} for today` : paginationLabel}
+                  {isStaffRole
+                    ? (isSalonScopeForStaff ? paginationLabel : `${paginationLabel} for today`)
+                    : paginationLabel}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
+                {isStaffRole ? (
+                  <div className="inline-flex rounded-full border border-[#f4c6da] bg-[#fff7fb] p-1">
+                    {[
+                      { key: STAFF_BOOKING_SCOPES.mine, label: "My Bookings" },
+                      { key: STAFF_BOOKING_SCOPES.salon, label: "Salon Bookings" },
+                    ].map((scopeOption) => {
+                      const isActive = staffBookingScope === scopeOption.key;
+
+                      return (
+                        <button
+                          key={scopeOption.key}
+                          type="button"
+                          onClick={() => setStaffBookingScope(scopeOption.key)}
+                          className={`rounded-full px-4 py-2 text-xs font-bold transition ${
+                            isActive
+                              ? "bg-[image:var(--gradient-accent)] text-white shadow-[0_10px_20px_rgba(236,72,153,0.18)]"
+                              : "text-[#ea4f93]"
+                          }`}
+                        >
+                          {scopeOption.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
                 <button
                   type="button"
                   onClick={handleExportCsv}
@@ -930,7 +1026,11 @@ export function BookingListPage() {
 
             <div className="mt-4 overflow-hidden rounded-[18px] border border-[#f6dbe7]">
               <div className="flex items-center justify-between gap-3 border-b border-[#f7dce8] bg-[#fffafd] px-4 py-3">
-                <p className="text-sm font-extrabold text-[#462a45]">All Bookings</p>
+                <p className="text-sm font-extrabold text-[#462a45]">
+                  {isStaffRole
+                    ? (isSalonScopeForStaff ? "Salon Bookings" : "My Bookings")
+                    : "All Bookings"}
+                </p>
                 {!isStaffRole ? (
                   <button
                     type="button"
@@ -943,7 +1043,9 @@ export function BookingListPage() {
 
               {isLoading ? (
                 <div className="px-5 py-10 text-center text-sm text-[#8a7082]">
-                  Loading assigned bookings...
+                  {isStaffRole
+                    ? (isSalonScopeForStaff ? "Loading salon bookings..." : "Loading assigned bookings...")
+                    : "Loading bookings..."}
                 </div>
               ) : (
                 <>

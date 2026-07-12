@@ -1,0 +1,242 @@
+import { Sparkles } from "lucide-react";
+import { PropTypes } from "../../../../shared/utils/propTypes";
+import { SURFACE_PRESET_OPTIONS } from "../utils/surfaceShaderConfig";
+
+function SliderField({ label, min, max, step, value, onChange, helper }) {
+  return (
+    <label className="space-y-2.5">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[13px] font-semibold text-slate-600">{label}</span>
+        <span className="text-xs font-bold text-[#cf3d74]">{value}</span>
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={onChange}
+        className="h-2 w-full cursor-pointer appearance-none rounded-full bg-[#f8dce8] accent-[#ea4f93]"
+      />
+      {helper ? <p className="text-xs text-slate-400">{helper}</p> : null}
+    </label>
+  );
+}
+
+SliderField.propTypes = {
+  helper: PropTypes.string,
+  label: PropTypes.string.isRequired,
+  max: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+  min: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+  onChange: PropTypes.func.isRequired,
+  step: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+  value: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+};
+
+function ToggleField({ label, checked, onChange }) {
+  return (
+    <label className="flex items-center justify-between gap-3 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3">
+      <span className="text-[13px] font-semibold text-slate-600">{label}</span>
+      <input type="checkbox" checked={checked} onChange={onChange} className="h-4 w-4 accent-[#ea4f93]" />
+    </label>
+  );
+}
+
+ToggleField.propTypes = {
+  checked: PropTypes.bool.isRequired,
+  label: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
+};
+
+export function NailSurfaceShaderBuilder({ formValues, onFieldChange, disabled = false }) {
+  const preset = formValues.surfacePreset;
+  const showMetalness = preset === "chrome" || formValues.metalnessEnabled;
+  const showStripe = preset === "cat-eye" || formValues.stripeEnabled;
+  const showRainbow = preset === "holographic" || formValues.rainbowEnabled;
+
+  return (
+    <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
+      <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
+        <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
+        Surface Effect Builder
+      </h2>
+
+      <div className={`space-y-5 ${disabled ? "pointer-events-none opacity-75" : ""}`}>
+        <label className="space-y-2.5">
+          <span className="text-[13px] font-semibold text-slate-600">Surface Type</span>
+          <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
+            <Sparkles size={14} className="shrink-0 text-rose-300" />
+            <select
+              value={formValues.surfacePreset}
+              onChange={(event) => onFieldChange("surfacePreset", event.target.value)}
+              disabled={disabled}
+              className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none"
+            >
+              {SURFACE_PRESET_OPTIONS.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </label>
+
+        <div className="grid gap-3 md:grid-cols-2">
+          <ToggleField
+            label="Shine highlight"
+            checked={Boolean(formValues.shineEnabled)}
+            onChange={(event) => onFieldChange("shineEnabled", event.target.checked)}
+          />
+          <ToggleField
+            label="Reflection"
+            checked={Boolean(formValues.reflectionEnabled)}
+            onChange={(event) => onFieldChange("reflectionEnabled", event.target.checked)}
+          />
+          <ToggleField
+            label="Specular"
+            checked={Boolean(formValues.specularEnabled)}
+            onChange={(event) => onFieldChange("specularEnabled", event.target.checked)}
+          />
+          <ToggleField
+            label="Metallic"
+            checked={Boolean(formValues.metalnessEnabled)}
+            onChange={(event) => onFieldChange("metalnessEnabled", event.target.checked)}
+          />
+          <ToggleField
+            label="Magnetic stripe"
+            checked={Boolean(formValues.stripeEnabled)}
+            onChange={(event) => onFieldChange("stripeEnabled", event.target.checked)}
+          />
+          <ToggleField
+            label="Rainbow / iridescence"
+            checked={Boolean(formValues.rainbowEnabled)}
+            onChange={(event) => onFieldChange("rainbowEnabled", event.target.checked)}
+          />
+        </div>
+
+        <div className="grid gap-5 md:grid-cols-2">
+          <SliderField
+            label="Shine opacity"
+            min="0"
+            max="1"
+            step="0.05"
+            value={formValues.shineOpacity}
+            onChange={(event) => onFieldChange("shineOpacity", event.target.value)}
+          />
+          <SliderField
+            label="Reflection intensity"
+            min="0"
+            max="1"
+            step="0.05"
+            value={formValues.reflectionIntensity}
+            onChange={(event) => onFieldChange("reflectionIntensity", event.target.value)}
+          />
+          <SliderField
+            label="Specular intensity"
+            min="0"
+            max="1"
+            step="0.05"
+            value={formValues.specularIntensity}
+            onChange={(event) => onFieldChange("specularIntensity", event.target.value)}
+          />
+          <SliderField
+            label="Texture roughness"
+            min="0"
+            max="1"
+            step="0.05"
+            value={formValues.roughness}
+            onChange={(event) => onFieldChange("roughness", event.target.value)}
+            helper="Lower is glossier, higher is more matte."
+          />
+          {showMetalness ? (
+            <SliderField
+              label="Metalness intensity"
+              min="0"
+              max="1"
+              step="0.05"
+              value={formValues.metalnessIntensity}
+              onChange={(event) => onFieldChange("metalnessIntensity", event.target.value)}
+            />
+          ) : null}
+          {showStripe ? (
+            <SliderField
+              label="Stripe opacity"
+              min="0"
+              max="1"
+              step="0.05"
+              value={formValues.stripeOpacity}
+              onChange={(event) => onFieldChange("stripeOpacity", event.target.value)}
+            />
+          ) : null}
+          {showRainbow ? (
+            <SliderField
+              label="Rainbow intensity"
+              min="0"
+              max="1"
+              step="0.05"
+              value={formValues.rainbowIntensity}
+              onChange={(event) => onFieldChange("rainbowIntensity", event.target.value)}
+            />
+          ) : null}
+        </div>
+
+        <div className="rounded-[20px] border border-rose-100 bg-[#fff8fb] p-4">
+          <p className="text-[13px] font-semibold text-slate-600">Color Offsets</p>
+          <p className="mt-1 text-xs text-slate-400">
+            These sliders adjust preview brightness, saturation, and hue without exposing JSON.
+          </p>
+          <div className="mt-4 grid gap-5 md:grid-cols-3">
+            <SliderField
+              label="Lightness"
+              min="-1"
+              max="1"
+              step="0.05"
+              value={formValues.lightnessOffset}
+              onChange={(event) => onFieldChange("lightnessOffset", event.target.value)}
+            />
+            <SliderField
+              label="Saturation"
+              min="-1"
+              max="1"
+              step="0.05"
+              value={formValues.saturationOffset}
+              onChange={(event) => onFieldChange("saturationOffset", event.target.value)}
+            />
+            <SliderField
+              label="Hue"
+              min="-30"
+              max="30"
+              step="1"
+              value={formValues.hueOffset}
+              onChange={(event) => onFieldChange("hueOffset", event.target.value)}
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+NailSurfaceShaderBuilder.propTypes = {
+  disabled: PropTypes.bool,
+  formValues: PropTypes.shape({
+    hueOffset: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    lightnessOffset: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    metalnessEnabled: PropTypes.bool,
+    metalnessIntensity: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    rainbowEnabled: PropTypes.bool,
+    rainbowIntensity: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    reflectionEnabled: PropTypes.bool,
+    reflectionIntensity: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    roughness: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    saturationOffset: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    shineEnabled: PropTypes.bool,
+    shineOpacity: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    specularEnabled: PropTypes.bool,
+    specularIntensity: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    stripeEnabled: PropTypes.bool,
+    stripeOpacity: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    surfacePreset: PropTypes.string,
+  }).isRequired,
+  onFieldChange: PropTypes.func.isRequired,
+};

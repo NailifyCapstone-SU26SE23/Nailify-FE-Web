@@ -1,565 +1,689 @@
-import { Modal } from "antd";
 import {
   ArrowLeft,
-  BriefcaseBusiness,
+  Lock,
   Mail,
   Phone,
   Save,
-  ShieldCheck,
   Sparkles,
+  Upload,
   User,
-  Users,
   X,
-  Star,
 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { StaffSaveResultModal } from "../components/StaffSaveResultModal";
 import { ROUTES } from "../../../../shared/constants/routes";
 import {
-  STAFF_ROLE_OPTIONS,
-  STAFF_SPECIALTIES,
-  createEmptyStaffForm,
-  getStaffInitials,
-  submitMockStaffCreate,
-  STAFF_STATUS_STYLES,
-} from "../services/mockStaffArtists";
+  createNailArtist,
+  fetchSkillTypes,
+  createUser,
+  assignNailArtistSkills,
+} from "../services/nailArtistsService";
+import { loadAuthSession } from "../../../core/auth/model/authStorage";
 
-const inputWrapperClassName =
-  "flex items-center gap-2 rounded-xl border border-pink-100 bg-[#fff6f9] px-4 py-3";
-const inputClassName =
-  "w-full min-w-0 bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-pink-200";
-const selectClassName =
-  "w-full rounded-xl border border-pink-100 bg-[#fff6f9] px-4 py-3 text-[13px] text-slate-700 outline-none";
+// ── Design tokens ─────────────────────────────────────────────────────────────
+const inputWrapper =
+  "flex items-center gap-2.5 rounded-[14px] border border-[#f0e6ed] bg-[#fdf8fb] px-4 py-3 transition-all duration-200 hover:border-[#dda0c4] focus-within:border-[#ea4f93] focus-within:bg-white focus-within:shadow-[0_0_0_3px_rgba(234,79,147,0.1)]";
+const inputClass =
+  "w-full min-w-0 bg-transparent text-[13.5px] font-medium text-slate-700 outline-none placeholder:text-[#c0a0b4]";
+const labelClass =
+  "block text-[10.5px] font-bold uppercase tracking-[0.13em] text-slate-400 mb-1.5";
+const sectionCard =
+  "rounded-[24px] bg-white p-5 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-[#f5edf2]";
 
-// ── Skill categories (Artist-specific) ───────────────────────────────────────
-const SKILL_CATEGORIES = [
-  {
-    key: "precision",
-    label: "Precision",
-    sublabel: "Độ chính xác",
-    levels: [
-      "Sơn lem, viền không đều",
-      "Ít lem nhưng vẫn sai form nhỏ",
-      "Sơn khá gọn, viền tương đối chuẩn",
-      "Gần như không lỗi, đường nét sắc",
-      "Hoàn hảo, chi tiết cực nhỏ vẫn chuẩn",
-    ],
-  },
-  {
-    key: "color",
-    label: "Color",
-    sublabel: "Màu sắc",
-    levels: [
-      "Chọn màu chưa hợp, dễ lệch tone",
-      "Biết phối màu cơ bản",
-      "Phối màu ổn, làm được ombre đơn giản",
-      "Blend màu mượt, hiểu tone da",
-      "Master phối màu, tạo style riêng",
-    ],
-  },
-  {
-    key: "form",
-    label: "Form",
-    sublabel: "Form móng",
-    levels: [
-      "Form lệch, không cân đối",
-      "Form lệch, không cân đối (cải thiện)",
-      "Form ổn (square, oval…)",
-      "Form đẹp, có apex, C-curve",
-      "Form chuẩn salon cao cấp",
-    ],
-  },
-  {
-    key: "material",
-    label: "Material",
-    sublabel: "Vật liệu",
-    levels: [
-      "Không kiểm soát được gel/bột",
-      "Làm được nhưng hay lỗi (bong, bọt khí)",
-      "Kiểm soát vật liệu ổn",
-      "Xử lý tốt nhiều loại vật liệu",
-      "Master vật liệu, xử lý mọi tình huống",
-    ],
-  },
-  {
-    key: "design",
-    label: "Design",
-    sublabel: "Thẩm mỹ",
-    levels: [
-      "Làm theo mẫu, không sáng tạo",
-      "Copy mẫu đơn giản",
-      "Có gu thẩm mỹ cơ bản",
-      "Thiết kế đẹp, hợp trend",
-      "Sáng tạo cao, có style riêng",
-    ],
-  },
-  {
-    key: "speed",
-    label: "Speed",
-    sublabel: "Tốc độ",
-    levels: [
-      ">120 phút – Rất chậm",
-      "90–120 phút – Chậm",
-      "60–90 phút – Trung bình",
-      "40–60 phút – Nhanh",
-      "<40 phút – Rất nhanh",
-    ],
-  },
-];
-
-// Pink-themed level colors (replaces rose from file 2)
-const LEVEL_COLORS = [
-  { bar: "bg-pink-200", text: "text-pink-400", badge: "bg-pink-50 text-pink-400" },
-  { bar: "bg-pink-300", text: "text-pink-400", badge: "bg-pink-100 text-pink-500" },
-  { bar: "bg-pink-400", text: "text-pink-500", badge: "bg-pink-100 text-pink-600" },
-  { bar: "bg-[#ea4f93]", text: "text-[#ea4f93]", badge: "bg-pink-100 text-[#ea4f93]" },
-  { bar: "bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93]", text: "text-[#ea4f93]", badge: "bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] text-white" },
-];
-
+// ── Rank calculation from average skill ratings ────────────────────────────────
 const RANK_THRESHOLDS = [
-  { label: "Beginner", minAvg: 0, color: "bg-slate-100 text-slate-500 border-slate-200" },
-  { label: "Intermediate", minAvg: 2, color: "bg-amber-50 text-amber-600 border-amber-200" },
-  { label: "Advanced", minAvg: 3, color: "bg-pink-50 text-pink-600 border-pink-200" },
-  { label: "Pro Artist", minAvg: 4, color: "bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] text-white border-0" },
+  { label: "Beginner",     minAvg: 0, bg: "bg-slate-100 text-slate-500 border-slate-200" },
+  { label: "Intermediate", minAvg: 2, bg: "bg-amber-50 text-amber-600 border-amber-200" },
+  { label: "Advanced",     minAvg: 3, bg: "bg-pink-50 text-[#ea4f93] border-pink-200" },
+  { label: "Pro Artist",   minAvg: 4, bg: "bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] text-white border-0" },
 ];
 
-function getRank(skills) {
-  const values = Object.values(skills);
-  if (values.length === 0) return RANK_THRESHOLDS[0];
-  const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
-  return [...RANK_THRESHOLDS].reverse().find((r) => avg >= r.minAvg) ?? RANK_THRESHOLDS[0];
+function getRank(ratings) {
+  const vals = Object.values(ratings).map(Number).filter(v => !isNaN(v));
+  if (!vals.length) return RANK_THRESHOLDS[0];
+  const avg = vals.reduce((s, v) => s + v, 0) / vals.length;
+  return [...RANK_THRESHOLDS].reverse().find(r => avg >= r.minAvg) ?? RANK_THRESHOLDS[0];
 }
 
-// ── SkillRatingRow component ──────────────────────────────────────────────────
-function SkillRatingRow({ category, value, onChange }) {
-  const color = LEVEL_COLORS[(value ?? 1) - 1];
-  const description = category.levels[(value ?? 1) - 1];
+const LEVEL_COLORS = [
+  "bg-pink-100",
+  "bg-pink-200",
+  "bg-pink-300",
+  "bg-pink-400",
+  "bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93]",
+];
+
+// ── Skill rating slider ────────────────────────────────────────────────────────
+function SkillRatingCard({ skill, value, onChange }) {
+  const normalized = Math.max(0, Math.min(5, Number(value) || 0));
+  const LEVEL_LABELS = { 0: "Not rated", 1: "Beginner", 2: "Foundation", 3: "Intermediate", 4: "Advanced", 5: "Expert" };
 
   return (
-    <div className="rounded-2xl border border-pink-100 bg-white px-4 py-3 shadow-[0_4px_12px_rgba(236,72,153,0.05)]">
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <div>
-          <span className="text-[12px] font-black text-slate-700">{category.label}</span>
-          <span className="ml-1.5 text-[10px] font-semibold text-slate-400">{category.sublabel}</span>
+    <div className="rounded-[18px] border border-[#f0e6ed] bg-[#fdf8fb] p-4 transition-all duration-200 hover:border-[#dda0c4] hover:shadow-[0_4px_16px_rgba(234,79,147,0.08)]">
+      <div className="mb-3 flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="truncate text-[12px] font-black text-slate-700">{skill.name || skill.title}</p>
+          {skill.description && (
+            <p className="mt-0.5 truncate text-[10px] text-slate-400">{skill.description}</p>
+          )}
         </div>
-        <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${color.badge}`}>
-          Level {value ?? 1}
+        <span className="shrink-0 rounded-full bg-[#fff0f7] px-2 py-0.5 text-[10px] font-bold text-[#ea4f93]">
+          {LEVEL_LABELS[normalized]}
         </span>
       </div>
 
-      {/* Level bars */}
-      <div className="mb-2 flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
         {[1, 2, 3, 4, 5].map((level) => {
-          const active = (value ?? 1) >= level;
-          const levelColor = LEVEL_COLORS[level - 1];
+          const active = normalized >= level;
           return (
             <button
               key={level}
               type="button"
-              onClick={() => onChange(level)}
-              className="group flex flex-1 flex-col items-center gap-1 transition"
+              onClick={() => onChange(skill.id, level === normalized ? 0 : level)}
+              className="group flex flex-1 flex-col items-center gap-1 transition-transform active:scale-95"
             >
               <div
-                className={`h-2 w-full rounded-full transition-all ${
-                  active ? levelColor.bar : "bg-pink-100"
+                className={`h-2 w-full rounded-full transition-all duration-200 ${
+                  active ? LEVEL_COLORS[level - 1] : "bg-pink-100"
                 }`}
               />
-              <span
-                className={`text-[9px] font-bold transition ${
-                  active ? levelColor.text : "text-slate-300"
-                }`}
-              >
+              <span className={`text-[8.5px] font-bold transition ${active ? "text-[#ea4f93]" : "text-slate-300"}`}>
                 {level}
               </span>
             </button>
           );
         })}
       </div>
-
-      {/* Description */}
-      <p className={`text-[11px] font-semibold ${color.text}`}>{description}</p>
     </div>
   );
 }
 
-SkillRatingRow.propTypes = {
-  category: PropTypes.shape({
-    key: PropTypes.string.isRequired,
-    label: PropTypes.string.isRequired,
-    sublabel: PropTypes.string.isRequired,
-    levels: PropTypes.arrayOf(PropTypes.string).isRequired,
+SkillRatingCard.propTypes = {
+  skill: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    name: PropTypes.string,
+    title: PropTypes.string,
+    description: PropTypes.string,
   }).isRequired,
   value: PropTypes.number,
   onChange: PropTypes.func.isRequired,
 };
 
-// ── InfoChip ──────────────────────────────────────────────────────────────────
-function InfoChip({ icon: Icon, title, value, tone = "text-pink-500" }) {
+// ── Skeleton loader ────────────────────────────────────────────────────────────
+function SkillSkeleton() {
   return (
-    <div className="rounded-2xl border border-pink-100 bg-white px-4 py-3 shadow-[0_10px_20px_rgba(236,72,153,0.06)]">
-      <div className="flex items-center gap-3">
-        <div className={`rounded-xl bg-[#fff3f8] p-2 ${tone}`}>
-          <Icon size={14} />
+    <div className="grid gap-3 sm:grid-cols-2">
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} className="animate-pulse rounded-[18px] border border-[#f0e6ed] bg-[#fdf8fb] p-4">
+          <div className="mb-3 h-3 w-24 rounded-full bg-pink-100" />
+          <div className="flex gap-1.5">
+            {[1, 2, 3, 4, 5].map((j) => (
+              <div key={j} className="h-2 flex-1 rounded-full bg-pink-100" />
+            ))}
+          </div>
         </div>
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">{title}</p>
-          <p className="text-[12px] font-bold text-slate-700">{value}</p>
+      ))}
+    </div>
+  );
+}
+
+// ── Sidebar preview ────────────────────────────────────────────────────────────
+function ProfilePreview({ firstName, lastName, role, skillRatings, skillTypes }) {
+  const initials = [firstName?.[0], lastName?.[0]].filter(Boolean).join("").toUpperCase() || "?";
+  const rank = getRank(skillRatings);
+
+  return (
+    <div className={sectionCard}>
+      <h3 className="mb-4 text-[13px] font-bold text-slate-700">Profile Preview</h3>
+      <div className="flex flex-col items-center py-3 text-center">
+        <div className="mb-3 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-pink-100 to-pink-200 text-xl font-black text-[#ea4f93]">
+          {initials}
         </div>
+        <p className="text-[15px] font-bold text-slate-800">
+          {[firstName, lastName].filter(Boolean).join(" ") || "New Artist"}
+        </p>
+        <p className="mt-0.5 text-[11px] font-medium text-slate-400">{role || "Staff Artist"}</p>
+        <span className={`mt-2 rounded-full border px-2.5 py-0.5 text-[10px] font-black ${rank.bg}`}>
+          {rank.label}
+        </span>
+
+        {skillTypes.length > 0 && (
+          <div className="mt-4 w-full space-y-1.5">
+            {skillTypes.slice(0, 4).map((s) => {
+              const level = Number(skillRatings[s.id] ?? 0);
+              return (
+                <div key={s.id} className="flex items-center gap-2">
+                  <span className="w-16 text-left text-[9px] font-bold text-slate-400 truncate">
+                    {s.name || s.title}
+                  </span>
+                  <div className="flex flex-1 gap-0.5">
+                    {[1, 2, 3, 4, 5].map((l) => (
+                      <div
+                        key={l}
+                        className={`h-1.5 flex-1 rounded-full ${
+                          level >= l
+                            ? "bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93]"
+                            : "bg-pink-100"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className="w-4 text-right text-[9px] font-bold text-pink-400">{level}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-InfoChip.propTypes = {
-  icon: PropTypes.func.isRequired,
-  title: PropTypes.string.isRequired,
-  tone: PropTypes.string,
-  value: PropTypes.string.isRequired,
+ProfilePreview.propTypes = {
+  firstName: PropTypes.string,
+  lastName: PropTypes.string,
+  role: PropTypes.string,
+  skillRatings: PropTypes.objectOf(PropTypes.number).isRequired,
+  skillTypes: PropTypes.arrayOf(PropTypes.object).isRequired,
 };
 
-// ── Main page ─────────────────────────────────────────────────────────────────
+// ── Main page ──────────────────────────────────────────────────────────────────
 export function StaffCreatePage() {
   const navigate = useNavigate();
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveResult, setSaveResult] = useState(null);
-  const [formData, setFormData] = useState(() => ({
-    ...createEmptyStaffForm(),
-    skillRatings: { precision: 1, color: 1, form: 1, material: 1, design: 1, speed: 1 },
-  }));
 
-  const rank = useMemo(() => getRank(formData.skillRatings ?? {}), [formData.skillRatings]);
+  const [skillTypes, setSkillTypes] = useState([]);
+  const [loadingSkills, setLoadingSkills] = useState(true);
+
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    password: "",
+    role: "Nail Artist",
+    avatarUrl: "",
+    imageFile: null,
+    skillRatings: {},
+  });
+
+  const [imagePreview, setImagePreview] = useState(null);
+  const [formError, setFormError] = useState("");
+
+  // Load skill types from API
+  useEffect(() => {
+    let mounted = true;
+    setLoadingSkills(true);
+    fetchSkillTypes({ pageNumber: 1, pageSize: 100 })
+      .then((data) => {
+        if (!mounted) return;
+        const items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
+        setSkillTypes(items);
+        const defaultRatings = {};
+        items.forEach((s) => { defaultRatings[s.id] = 0; });
+        setFormData((prev) => ({ ...prev, skillRatings: defaultRatings }));
+      })
+      .catch(() => {
+        if (mounted) setSkillTypes([]);
+      })
+      .finally(() => {
+        if (mounted) setLoadingSkills(false);
+      });
+    return () => { mounted = false; };
+  }, []);
+
+  const rank = useMemo(() => getRank(formData.skillRatings), [formData.skillRatings]);
 
   const handleInputChange = (field, value) => {
-    setFormData((current) => ({
-      ...current,
-      [field]: value,
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (formError) setFormError("");
+  };
+
+  const handleSkillChange = (skillId, level) => {
+    setFormData((prev) => ({
+      ...prev,
+      skillRatings: { ...prev.skillRatings, [skillId]: level },
     }));
   };
 
-  const handleSkillChange = (key, level) => {
-    setFormData((current) => ({
-      ...current,
-      skillRatings: { ...current.skillRatings, [key]: level },
-    }));
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setFormData((prev) => ({ ...prev, imageFile: file }));
+    const reader = new FileReader();
+    reader.onload = (ev) => setImagePreview(ev.target.result);
+    reader.readAsDataURL(file);
   };
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
+  const handleRemoveImage = () => {
+    setFormData((prev) => ({ ...prev, imageFile: null, avatarUrl: "" }));
+    setImagePreview(null);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setFormError("");
+    if (!formData.firstName.trim()) return setFormError("First name is required.");
+    if (!formData.email.trim()) return setFormError("Email is required.");
+    if (!formData.password.trim()) return setFormError("Password is required.");
+    if (formData.password.length < 6) return setFormError("Password must be at least 6 characters.");
     setShowSaveModal(true);
   };
 
   const handleConfirmSave = async () => {
     setIsSaving(true);
-    const result = await submitMockStaffCreate(formData);
-    setIsSaving(false);
-    setShowSaveModal(false);
-    setSaveResult(result);
-  };
+    try {
+      const session = loadAuthSession();
+      const salonId = session?.user?.salonId || session?.salonId || "";
 
-  const handleCloseResultModal = () => {
-    setSaveResult(null);
+      // 1. Create user account
+      const createdUser = await createUser({
+        email: formData.email,
+        password: formData.password,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phone: formData.phone,
+        avatarUrl: formData.avatarUrl,
+        role: "NAIL_ARTIST",
+        salonId,
+        imageFile: formData.imageFile,
+      });
+
+      // 2. Create nail artist profile
+      let nailArtistId = createdUser?.staffId;
+      if (!nailArtistId) {
+        const nailArtist = await createNailArtist({
+          userId: createdUser?.userId || createdUser?.id,
+          salonId,
+        });
+        nailArtistId = nailArtist?.staffId || nailArtist?.nailArtistId || nailArtist?.id;
+      }
+
+      // 3. Assign skills
+      if (nailArtistId) {
+        const skills = skillTypes
+          .filter((s) => Number(formData.skillRatings[s.id] ?? 0) > 0)
+          .map((s) => ({
+            skillTypeId: s.id,
+            level: Math.floor(Number(formData.skillRatings[s.id])),
+          }));
+        if (skills.length > 0) {
+          await assignNailArtistSkills(nailArtistId, skills);
+        }
+      }
+
+      setSaveResult({
+        success: true,
+        message: `${formData.firstName} ${formData.lastName} has been added successfully.`,
+      });
+    } catch (err) {
+      setSaveResult({
+        success: false,
+        message: err?.response?.data?.message || err?.message || "Failed to create staff artist.",
+      });
+    } finally {
+      setIsSaving(false);
+      setShowSaveModal(false);
+    }
   };
 
   const handleSuccessComplete = useCallback(() => {
-    navigate(ROUTES.managerStaffArtists, {
-      state: {
-        flashMessage: saveResult?.message,
-      },
-    });
+    navigate(ROUTES.managerStaffArtists, { state: { flashMessage: saveResult?.message } });
   }, [navigate, saveResult?.message]);
-
-  const handleCancel = () => {
-    setShowCancelModal(true);
-  };
-
-  const handleConfirmCancel = () => {
-    setShowCancelModal(false);
-    navigate(ROUTES.managerStaffArtists);
-  };
 
   return (
     <section className="mx-auto w-full min-w-0 max-w-[1300px] text-slate-700">
       {/* Header */}
-      <header className="mb-5 flex flex-col gap-4 rounded-[28px] bg-white/70 px-5 py-4 shadow-[0_20px_45px_rgba(236,72,153,0.06)] backdrop-blur md:flex-row md:items-center md:justify-between">
-        <div className="flex items-start gap-3">
+      <header className="mb-5 flex flex-col gap-4 rounded-[24px] bg-white/80 px-5 py-4 shadow-[0_4px_24px_rgba(0,0,0,0.05)] border border-[#f5edf2] backdrop-blur md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center gap-3">
           <Link
             to={ROUTES.managerStaffArtists}
-            className="inline-flex shrink-0 rounded-xl border border-pink-100 bg-white p-2 text-pink-500 transition hover:bg-pink-50"
+            className="inline-flex shrink-0 items-center justify-center rounded-[12px] border border-[#f0e6ed] bg-white p-2 text-[#ea4f93] transition hover:bg-[#fff0f7] active:scale-95"
           >
-            <ArrowLeft size={18} />
+            <ArrowLeft size={17} />
           </Link>
           <div>
-            <h1 className="text-[28px] font-black tracking-tight text-[#ea4f93]">Add New Artist</h1>
-            <p className="text-[12px] font-medium text-slate-400">
-              Create a new staff artist profile, assign role, and skills
+            <h1 className="text-[22px] font-black tracking-tight text-slate-800">Add New Artist</h1>
+            <p className="text-[11.5px] font-medium text-slate-400">
+              Create a new nail artist profile and assign skill ratings
             </p>
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex items-center gap-2.5">
           <button
             type="button"
-            onClick={handleCancel}
-            className="inline-flex items-center justify-center gap-2 rounded-full border border-pink-200 bg-white px-4 py-2 text-[11px] font-bold text-pink-500 transition hover:bg-pink-50"
+            onClick={() => setShowCancelModal(true)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-[#f0e6ed] bg-white px-4 py-2 text-[11.5px] font-bold text-slate-500 transition hover:bg-[#fdf8fb] active:scale-95"
           >
-            <X size={14} />
+            <X size={13} />
             Cancel
           </button>
           <button
             type="button"
             onClick={handleSubmit}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] px-4 py-2 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.32)] transition hover:opacity-95"
+            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] px-4 py-2 text-[11.5px] font-bold text-white shadow-[0_6px_20px_rgba(234,79,147,0.3)] transition hover:opacity-90 active:scale-95"
           >
-            <Save size={14} />
+            <Save size={13} />
             Save Artist
           </button>
         </div>
       </header>
 
-      {/* Info chips */}
-      <div className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <InfoChip icon={Users} title="Total Artists" value="18 Active" />
-        <InfoChip
-          icon={BriefcaseBusiness}
-          title="Role"
-          value={formData.role}
-          tone="text-sky-500"
-        />
-        <InfoChip
-          icon={ShieldCheck}
-          title="Status"
-          value={formData.status}
-          tone="text-violet-500"
-        />
-        <InfoChip
-          icon={Star}
-          title="Rating"
-          value="New Artist"
-          tone="text-amber-500"
-        />
-      </div>
+      {/* Error Banner */}
+      {formError && (
+        <div className="mb-4 rounded-[14px] border border-red-200 bg-red-50 px-4 py-3 text-[12.5px] font-semibold text-red-600">
+          {formError}
+        </div>
+      )}
 
       {/* Body */}
-      <div className="grid gap-5 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-            {/* Basic Information */}
-            <div className="rounded-[32px] bg-white p-6 shadow-[0_20px_45px_rgba(236,72,153,0.04)]">
-              <div className="mb-6 flex items-center gap-3">
-                <div className="rounded-xl bg-[#fff3f8] p-2 text-pink-500">
-                  <User size={18} />
+      <form onSubmit={handleSubmit} className="grid gap-5 lg:grid-cols-3">
+        {/* Left column — main form */}
+        <div className="flex flex-col gap-5 lg:col-span-2">
+          {/* Basic Info */}
+          <div className={sectionCard}>
+            <div className="mb-4 flex items-center gap-2.5">
+              <div className="rounded-[10px] bg-[#fff0f7] p-2 text-[#ea4f93]">
+                <User size={16} />
+              </div>
+              <h2 className="text-[15px] font-bold text-slate-800">Basic Information</h2>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className={labelClass}>First Name <span className="text-[#ea4f93]">*</span></label>
+                <div className={inputWrapper}>
+                  <input
+                    type="text"
+                    placeholder="Minh"
+                    className={inputClass}
+                    value={formData.firstName}
+                    onChange={(e) => handleInputChange("firstName", e.target.value)}
+                    required
+                  />
                 </div>
-                <h2 className="text-lg font-bold text-slate-800">Basic Information</h2>
               </div>
 
-              <div className="grid gap-5 md:grid-cols-2">
-                <div className="flex flex-col gap-2">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                    Full Name
-                  </label>
-                  <div className={inputWrapperClassName}>
-                    <input
-                      type="text"
-                      placeholder="e.g. Mia Chen"
-                      className={inputClassName}
-                      value={formData.name}
-                      onChange={(e) => handleInputChange("name", e.target.value)}
-                      required
-                    />
-                  </div>
+              <div>
+                <label className={labelClass}>Last Name</label>
+                <div className={inputWrapper}>
+                  <input
+                    type="text"
+                    placeholder="Nguyen"
+                    className={inputClass}
+                    value={formData.lastName}
+                    onChange={(e) => handleInputChange("lastName", e.target.value)}
+                  />
                 </div>
+              </div>
 
-                <div className="flex flex-col gap-2">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                    Professional Role
-                  </label>
-                  <select
-                    className={selectClassName}
+              <div>
+                <label className={labelClass}>Email Address <span className="text-[#ea4f93]">*</span></label>
+                <div className={inputWrapper}>
+                  <Mail size={13} className="shrink-0 text-[#dda0c4]" />
+                  <input
+                    type="email"
+                    placeholder="artist@nailify.com"
+                    className={inputClass}
+                    value={formData.email}
+                    onChange={(e) => handleInputChange("email", e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className={labelClass}>Phone Number</label>
+                <div className={inputWrapper}>
+                  <Phone size={13} className="shrink-0 text-[#dda0c4]" />
+                  <input
+                    type="tel"
+                    placeholder="+84 912 345 678"
+                    className={inputClass}
+                    value={formData.phone}
+                    onChange={(e) => handleInputChange("phone", e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className={labelClass}>Password <span className="text-[#ea4f93]">*</span></label>
+                <div className={inputWrapper}>
+                  <Lock size={13} className="shrink-0 text-[#dda0c4]" />
+                  <input
+                    type="password"
+                    placeholder="Min. 6 characters"
+                    className={inputClass}
+                    value={formData.password}
+                    onChange={(e) => handleInputChange("password", e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className={labelClass}>Job Title / Role</label>
+                <div className={inputWrapper}>
+                  <input
+                    type="text"
+                    placeholder="e.g. Senior Nail Artist"
+                    className={inputClass}
                     value={formData.role}
                     onChange={(e) => handleInputChange("role", e.target.value)}
-                  >
-                    {STAFF_ROLE_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                    Email Address
-                  </label>
-                  <div className={inputWrapperClassName}>
-                    <Mail size={14} className="text-pink-300" />
-                    <input
-                      type="email"
-                      placeholder="email@example.com"
-                      className={inputClassName}
-                      value={formData.email}
-                      onChange={(e) => handleInputChange("email", e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                    Phone Number
-                  </label>
-                  <div className={inputWrapperClassName}>
-                    <Phone size={14} className="text-pink-300" />
-                    <input
-                      type="tel"
-                      placeholder="+1 (555) 000-0000"
-                      className={inputClassName}
-                      value={formData.phone}
-                      onChange={(e) => handleInputChange("phone", e.target.value)}
-                      required
-                    />
-                  </div>
+                  />
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Skills & Specialties — skill rating Level 1–5 */}
-            <div className="rounded-[32px] bg-white p-6 shadow-[0_20px_45px_rgba(236,72,153,0.04)]">
-              <div className="mb-5 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-xl bg-[#fff3f8] p-2 text-pink-500">
-                    <Sparkles size={18} />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-slate-800">Skills & Specialties</h2>
-                    <p className="text-[11px] font-medium text-slate-400">
-                      Đánh giá kỹ năng theo từng hạng mục (Level 1–5)
-                    </p>
-                  </div>
-                </div>
-                {/* Rank badge */}
-                <span className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-black ${rank.color}`}>
-                  {rank.label}
-                </span>
+          {/* Avatar Upload */}
+          <div className={sectionCard}>
+            <div className="mb-4 flex items-center gap-2.5">
+              <div className="rounded-[10px] bg-[#fff0f7] p-2 text-[#ea4f93]">
+                <Upload size={16} />
               </div>
+              <h2 className="text-[15px] font-bold text-slate-800">Profile Photo</h2>
+            </div>
 
+            {imagePreview ? (
+              <div className="relative w-fit">
+                <img
+                  src={imagePreview}
+                  alt="Avatar preview"
+                  crossOrigin="anonymous"
+                  referrerPolicy="no-referrer"
+                  className="h-36 w-36 rounded-[20px] object-cover shadow-lg"
+                />
+                <button
+                  type="button"
+                  onClick={handleRemoveImage}
+                  className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-r from-[#ea4f93] to-[#cf3d74] text-white shadow-md transition hover:scale-110 active:scale-95"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ) : (
+              <label className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-[18px] border-2 border-dashed border-[#f0b7cf] bg-[#fdf8fb] py-8 transition-all duration-200 hover:border-[#ea4f93] hover:bg-[#fff5f9]">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-[#ea4f93] to-[#cf3d74] text-white">
+                  <Upload size={22} />
+                </div>
+                <div className="text-center">
+                  <p className="text-[13px] font-semibold text-slate-700">Click to upload photo</p>
+                  <p className="text-[11px] text-slate-400">PNG, JPG up to 5MB</p>
+                </div>
+                <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+              </label>
+            )}
+          </div>
+
+          {/* Skills & Specialties */}
+          <div className={sectionCard}>
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="rounded-[10px] bg-[#fff0f7] p-2 text-[#ea4f93]">
+                  <Sparkles size={16} />
+                </div>
+                <div>
+                  <h2 className="text-[15px] font-bold text-slate-800">Skills &amp; Specialties</h2>
+                  <p className="text-[10.5px] text-slate-400">Rate each skill from 1 (Beginner) to 5 (Expert)</p>
+                </div>
+              </div>
+              <span className={`shrink-0 rounded-full border px-3 py-1 text-[10.5px] font-black ${rank.bg}`}>
+                {rank.label}
+              </span>
+            </div>
+
+            {loadingSkills ? (
+              <SkillSkeleton />
+            ) : skillTypes.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 py-8 text-center">
+                <Sparkles size={28} className="text-pink-200" />
+                <p className="text-[12px] font-semibold text-slate-400">No skill types found.</p>
+                <p className="text-[11px] text-slate-300">Ask admin to create skill types first.</p>
+              </div>
+            ) : (
               <div className="grid gap-3 sm:grid-cols-2">
-                {SKILL_CATEGORIES.map((cat) => (
-                  <SkillRatingRow
-                    key={cat.key}
-                    category={cat}
-                    value={formData.skillRatings?.[cat.key] ?? 1}
-                    onChange={(level) => handleSkillChange(cat.key, level)}
+                {skillTypes.map((skill) => (
+                  <SkillRatingCard
+                    key={skill.id}
+                    skill={skill}
+                    value={Number(formData.skillRatings[skill.id] ?? 0)}
+                    onChange={handleSkillChange}
                   />
                 ))}
               </div>
-            </div>
-          </form>
+            )}
+          </div>
         </div>
 
-        {/* Sidebar */}
+        {/* Right sidebar */}
         <div className="flex flex-col gap-5">
-          {/* Profile Preview */}
-          <div className="rounded-[32px] bg-white p-6 shadow-[0_20px_45px_rgba(236,72,153,0.04)]">
-            <h2 className="mb-5 text-lg font-bold text-slate-800">Profile Preview</h2>
-            <div className="flex flex-col items-center py-4 text-center">
-              <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-pink-100 to-pink-200 text-2xl font-black text-pink-500">
-                {getStaffInitials(formData.name) || "?"}
-              </div>
-              <h3 className="text-xl font-bold text-slate-800">{formData.name || "Artist Name"}</h3>
-              <p className="text-sm font-medium text-slate-400">{formData.role}</p>
+          <ProfilePreview
+            firstName={formData.firstName}
+            lastName={formData.lastName}
+            role={formData.role}
+            skillRatings={formData.skillRatings}
+            skillTypes={skillTypes}
+          />
 
-              {/* Rank badge */}
-              <span className={`mt-2 inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-black ${rank.color}`}>
-                {rank.label}
-              </span>
-
-              {/* Skill mini bars */}
-              <div className="mt-4 w-full space-y-1.5">
-                {SKILL_CATEGORIES.map((cat) => {
-                  const level = formData.skillRatings?.[cat.key] ?? 1;
-                  return (
-                    <div key={cat.key} className="flex items-center gap-2">
-                      <span className="w-16 text-left text-[9px] font-bold text-slate-400">
-                        {cat.label}
-                      </span>
-                      <div className="flex flex-1 gap-0.5">
-                        {[1, 2, 3, 4, 5].map((l) => (
-                          <div
-                            key={l}
-                            className={`h-1.5 flex-1 rounded-full ${
-                              level >= l
-                                ? "bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93]"
-                                : "bg-pink-100"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <span className="w-4 text-right text-[9px] font-bold text-pink-400">
-                        {level}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+          {/* Summary card */}
+          <div className={sectionCard}>
+            <h3 className="mb-3 text-[13px] font-bold text-slate-700">Summary</h3>
+            <dl className="space-y-2.5 text-[12px]">
+              {[
+                { label: "Name", value: [formData.firstName, formData.lastName].filter(Boolean).join(" ") || "—" },
+                { label: "Email", value: formData.email || "—" },
+                { label: "Role", value: formData.role || "—" },
+                { label: "Skills rated", value: `${Object.values(formData.skillRatings).filter(v => v > 0).length} / ${skillTypes.length}` },
+              ].map((item) => (
+                <div key={item.label} className="flex items-start justify-between gap-3">
+                  <dt className="font-semibold text-slate-400">{item.label}</dt>
+                  <dd className="text-right font-semibold text-slate-700 max-w-[140px] truncate">{item.value}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
 
-          {/* Status */}
-          <div className="rounded-[32px] bg-white p-6 shadow-[0_20px_45px_rgba(236,72,153,0.04)]">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-slate-800">Status</h2>
-              <span className={`rounded-full px-3 py-1 text-[10px] font-bold ${STAFF_STATUS_STYLES[formData.status]}`}>
-                {formData.status}
-              </span>
+          {/* Actions */}
+          <div className={sectionCard}>
+            <h3 className="mb-3 text-[13px] font-bold text-slate-700">Actions</h3>
+            <div className="flex flex-col gap-2.5">
+              <button
+                type="button"
+                onClick={handleSubmit}
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] py-2.5 text-[12px] font-bold text-white shadow-[0_6px_20px_rgba(234,79,147,0.28)] transition hover:opacity-90 active:scale-[0.98]"
+              >
+                <Save size={13} />
+                Save Artist
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowCancelModal(true)}
+                className="flex w-full items-center justify-center gap-2 rounded-full border border-[#f0e6ed] py-2.5 text-[12px] font-bold text-slate-500 transition hover:bg-[#fdf8fb] active:scale-[0.98]"
+              >
+                <X size={13} />
+                Discard
+              </button>
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Set the initial availability for the artist. This can be changed later from the dashboard.
-            </p>
           </div>
         </div>
-      </div>
+      </form>
 
-      {/* Cancel Modal */}
-      <Modal
-        title="Cancel Changes?"
-        open={showCancelModal}
-        onOk={handleConfirmCancel}
-        onCancel={() => setShowCancelModal(false)}
-        okText="Yes, Cancel"
-        cancelText="Keep Editing"
-        okButtonProps={{ className: "bg-pink-500 hover:bg-pink-600 text-white border-pink-500" }}
-      >
-        <p className="py-4 text-slate-600">
-          Are you sure you want to cancel? All unsaved information will be lost.
-        </p>
-      </Modal>
+      {/* Cancel confirm modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-[24px] bg-white p-6 shadow-2xl">
+            <h2 className="text-[16px] font-bold text-slate-800">Discard changes?</h2>
+            <p className="mt-1.5 text-[12.5px] text-slate-500">
+              All unsaved information for this artist will be lost.
+            </p>
+            <div className="mt-5 flex gap-2.5">
+              <button
+                type="button"
+                onClick={() => setShowCancelModal(false)}
+                className="flex-1 rounded-full border border-[#f0e6ed] py-2 text-[12px] font-bold text-slate-600 transition hover:bg-[#fdf8fb]"
+              >
+                Keep editing
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowCancelModal(false); navigate(ROUTES.managerStaffArtists); }}
+                className="flex-1 rounded-full bg-gradient-to-r from-[#ea4f93] to-[#cf3d74] py-2 text-[12px] font-bold text-white transition hover:opacity-90"
+              >
+                Discard
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-      {/* Save Modal */}
-      <Modal
-        title="Save New Artist?"
-        open={showSaveModal}
-        onOk={handleConfirmSave}
-        onCancel={() => setShowSaveModal(false)}
-        confirmLoading={isSaving}
-        okText="Save Artist"
-        okButtonProps={{ className: "bg-pink-500 hover:bg-pink-600 text-white border-pink-500" }}
-      >
-        <p className="py-4 text-slate-600">
-          Ready to add <span className="font-bold text-pink-500">{formData.name}</span> to the team?
-        </p>
-      </Modal>
+      {/* Save confirm modal */}
+      {showSaveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-[24px] bg-white p-6 shadow-2xl">
+            <h2 className="text-[16px] font-bold text-slate-800">Save new artist?</h2>
+            <p className="mt-1.5 text-[12.5px] text-slate-500">
+              Ready to add{" "}
+              <span className="font-bold text-[#ea4f93]">
+                {[formData.firstName, formData.lastName].filter(Boolean).join(" ")}
+              </span>{" "}
+              to your team?
+            </p>
+            <div className="mt-5 flex gap-2.5">
+              <button
+                type="button"
+                onClick={() => !isSaving && setShowSaveModal(false)}
+                disabled={isSaving}
+                className="flex-1 rounded-full border border-[#f0e6ed] py-2 text-[12px] font-bold text-slate-600 transition hover:bg-[#fdf8fb] disabled:opacity-50"
+              >
+                Review
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmSave}
+                disabled={isSaving}
+                className="flex-1 rounded-full bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] py-2 text-[12px] font-bold text-white transition hover:opacity-90 disabled:opacity-60"
+              >
+                {isSaving ? "Saving..." : "Confirm"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <StaffSaveResultModal
         result={saveResult}
-        successTitle="Artist Created!"
+        successTitle="Artist Created"
         failureTitle="Creation Failed"
-        successDescription="New artist profile has been successfully added."
-        failureDescription="There was an error creating the artist profile."
-        onFailureClose={handleCloseResultModal}
+        successDescription="The new artist profile has been added successfully."
+        failureDescription="An error occurred while creating the artist profile."
+        onFailureClose={() => setSaveResult(null)}
         onSuccessComplete={handleSuccessComplete}
       />
     </section>

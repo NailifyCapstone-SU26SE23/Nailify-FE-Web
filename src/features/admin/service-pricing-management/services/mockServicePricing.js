@@ -4,7 +4,7 @@ export const formatVndCurrency = (value) =>
   `${new Intl.NumberFormat("vi-VN", {
     style: "decimal",
     maximumFractionDigits: 0,
-  }).format(Number(value) || 0)} VND`;
+  }).format(Number(value) || 0)} VNĐ`;
 
 export const SERVICE_CATEGORY_TONES = {
   "Basic Nail": "bg-[#ffe7ef] text-[#ea4f93]",

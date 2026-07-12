@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Modal, Spin } from "antd";
-import { BriefcaseBusiness, Clock, Mail, Phone, UserRound } from "lucide-react";
+import { BriefcaseBusiness, Check, Clock, Mail, Phone, UserRound } from "lucide-react";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { assignArtistToBooking, assignArtistToBookingOld, fetchSalonStaff, fetchArtistBusySlots } from "../services/bookingsService";
+import { motion, AnimatePresence } from "framer-motion";
 
 function getStaffDisplayName(staff) {
   const rawName = [staff?.firstName, staff?.lastName].filter(Boolean).join(" ").trim();
@@ -206,208 +207,268 @@ export function AssignArtistModal({
       okText="Confirm"
       cancelText="Cancel"
       okButtonProps={{
-        style: { backgroundColor: "#ea4f93", color: "#fff", borderRadius: 9999, fontWeight: 700 },
+        style: { 
+          backgroundColor: "#ea4f93", 
+          color: "#fff", 
+          borderRadius: 9999, 
+          fontWeight: 700,
+          padding: "8px 20px"
+        },
         disabled: !canConfirm,
       }}
-      cancelButtonProps={{ style: { borderRadius: 9999, fontWeight: 700 } }}
-      width={760}
+      cancelButtonProps={{ 
+        style: { 
+          borderRadius: 9999, 
+          fontWeight: 700,
+          padding: "8px 20px"
+        } 
+      }}
+      width={800}
       centered
       destroyOnClose
       styles={{
-        content: { padding: 0, borderRadius: 28, overflow: "hidden" },
+        content: { 
+          padding: 0, 
+          borderRadius: 32, 
+          overflow: "hidden" 
+        },
         body: { padding: 0 },
-        mask: { backdropFilter: "blur(6px)" },
+        mask: { backdropFilter: "blur(8px)" },
       }}
     >
-      <div className="bg-[linear-gradient(135deg,#fff0f8_0%,#fff5fb_100%)] px-6 pb-10 pt-6">
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#ea4f93] text-white">
-            <UserRound size={20} />
-          </div>
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="bg-gradient-to-br from-[#fff0f8] via-[#fff5fb] to-[#fff9ff] px-7 pb-12 pt-7"
+      >
+        <div className="flex items-center gap-5">
+          <motion.div 
+            whileHover={{ scale: 1.1, rotate: 3 }}
+            transition={{ type: "spring", stiffness: 500, damping: 15 }}
+            className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-white shadow-[0_15px_30px_rgba(234,79,147,0.25)]"
+          >
+            <UserRound size={24} />
+          </motion.div>
           <div>
-            <h3 className="text-xl font-extrabold text-[#402542]">Assign Staff Artist</h3>
-            <p className="mt-1 text-sm text-[#b06484]">
-              Choose the best staff artist and available time slot for this booking.
+            <h3 className="text-2xl font-extrabold text-[#3d1f3f] tracking-tight">Assign Staff Artist</h3>
+            <p className="mt-2 text-sm text-[#9a5f7f]">
+              Select an artist and time slot to assign to this booking.
             </p>
           </div>
         </div>
-      </div>
-      <div className="-mt-6 rounded-[28px] bg-white px-6 pb-6 pt-6">
-        <div className="mb-4 rounded-2xl border border-[#f6d8e6] bg-[#fffafb] p-4">
+      </motion.div>
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut", delay: 0.15 }}
+        className="-mt-8 rounded-[32px] bg-white px-7 pb-7 pt-7"
+      >
+        <AnimatePresence mode="wait">
           {!selectedStaff ? (
-            <p className="text-sm text-[#6f5568]">
-              Browse the available staff below. Select a staff member to view their available time slots.
-            </p>
-          ) : (
-            <>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-sm font-bold text-white">
-                    {getStaffInitials(selectedStaff)}
-                  </div>
-                  <div>
-                    <p className="text-sm font-extrabold text-[#3f2240]">{selectedStaffName}</p>
-                    {selectedStaff?.role ? (
-                      <span className="inline-flex rounded-full bg-[#fce7f3] px-2.5 py-0.5 text-[10px] font-bold text-[#ea4f93]">
-                        {selectedStaff.role}
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedStaff(null);
-                    setSelectedSlot(null);
-                    setSelectedSlotData(null);
-                  }}
-                  className="text-xs font-semibold text-[#b06484] hover:text-[#ea4f93]"
-                >
-                  Change staff
-                </button>
-              </div>
-
-              {selectedSlotData ? (
-                <p className="text-sm font-semibold text-[#2fa25f] mb-4">
-                  ✓ Selected Slot: {selectedSlotData.startTime} - {selectedSlotData.endTime}
+            <motion.div 
+              key="staff-list"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="mb-6 rounded-2xl border border-[#f3d7e7] bg-[#fffafd] p-5">
+                <p className="text-sm text-[#6a5064] leading-relaxed">
+                  Browse the available staff below. Select a staff member to view their available time slots.
                 </p>
-              ) : null}
-
-              <div className="space-y-4">
-                {/* Available slots */}
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-[#2fa25f] mb-3 flex items-center gap-1.5">
-                    <Clock size={14} />
-                    Available slots
-                  </p>
-                  {isLoadingBusySlots ? (
-                    <div className="flex items-center justify-center py-3">
-                      <Spin size="small" />
-                    </div>
-                  ) : availableSlots.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {availableSlots.map((slot, index) => {
-                        const slotKey = `${slot.startTime || "s"}-${slot.endTime || "e"}-${index}`;
-                        const isSelected = selectedSlot === slotKey;
-                        return (
-                          <button
-                            key={slotKey}
-                            type="button"
-                            onClick={() => {
-                              setSelectedSlot(isSelected ? null : slotKey);
-                              setSelectedSlotData(isSelected ? null : {
-                                startTime: slot.startTime,
-                                endTime: slot.endTime
-                              });
-                            }}
-                            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold transition-all ${isSelected
-                              ? "bg-[#2fa25f] text-white shadow-[0_4px_12px_rgba(47,162,95,0.3)]"
-                              : "bg-[#eaf9ee] text-[#2fa25f] hover:bg-[#2fa25f] hover:text-white hover:shadow-[0_4px_12px_rgba(47,162,95,0.25)]"
-                              }`}
-                          >
-                            <Clock size={10} />
-                            {`${slot.startTime} - ${slot.endTime}`}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-[#c08aa4]">No available slots found for this date.</p>
-                  )}
-                </div>
-
-                {/* Busy slots */}
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-[#b06484] mb-3 flex items-center gap-1.5">
-                    <Clock size={14} />
-                    Busy slots (not available)
-                  </p>
-                  {isLoadingBusySlots ? (
-                    <div className="flex items-center justify-center py-3">
-                      <Spin size="small" />
-                    </div>
-                  ) : busySlots.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {busySlots.map((slot, index) => (
-                        <span
-                          key={`${slot.startTime || "s"}-${slot.endTime || "e"}-${index}`}
-                          className="inline-flex items-center gap-1.5 rounded-full bg-[#ffe6ec] px-2.5 py-1 text-[10px] font-bold text-[#e1447f] cursor-not-allowed opacity-70"
-                        >
-                          <Clock size={10} />
-                          {`${slot.startTime} - ${slot.endTime}`}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-[#c08aa4]">No busy slots for this date.</p>
-                  )}
-                </div>
               </div>
-            </>
-          )}
-        </div>
-
-        {!selectedStaff && (
-          isLoadingStaff ? (
-            <div className="flex items-center justify-center py-8">
-              <Spin tip="Loading staff..." />
-            </div>
-          ) : (
-            <div className="grid gap-3 md:grid-cols-2">
-              {staffList.length === 0 ? (
-                <p className="text-sm text-[#c08aa4]">No staff available.</p>
+              {isLoadingStaff ? (
+                <div className="flex items-center justify-center py-12">
+                  <Spin tip="Loading salon staff..." size="large" />
+                </div>
               ) : (
-                staffList.map((staff) => {
-                  const key = getStaffKey(staff);
-                  const name = getStaffDisplayName(staff);
+                <div className="grid gap-4 md:grid-cols-2">
+                  {staffList.length === 0 ? (
+                    <div className="col-span-full text-center py-12 text-[#a67f98]">
+                      <UserRound size={48} className="mx-auto mb-3 opacity-50" />
+                      <p className="text-base">No staff available right now.</p>
+                    </div>
+                  ) : (
+                    staffList.map((staff) => {
+                      const key = getStaffKey(staff);
+                      const name = getStaffDisplayName(staff);
 
-                  return (
-                    <div
-                      key={key || `${name}-${staff?.email || ""}`}
-                      onClick={() => {
-                        setSelectedStaff(staff);
-                        setSelectedSlot(null);
-                        setSelectedSlotData(null);
-                      }}
-                      className="cursor-pointer rounded-[24px] border border-[#f4c7da] bg-white p-4 transition hover:border-[#ea4f93] hover:shadow-[0_12px_24px_rgba(236,72,153,0.08)]"
+                      return (
+                        <motion.div
+                          key={key || `${name}-${staff?.email || ""}`}
+                          whileHover={{ scale: 1.02, y: -4 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => {
+                            setSelectedStaff(staff);
+                            setSelectedSlot(null);
+                            setSelectedSlotData(null);
+                          }}
+                          className="cursor-pointer rounded-[28px] border border-[#f0cfe1] bg-gradient-to-br from-white to-[#fffafd] p-5 transition-all duration-300 hover:border-[#ea4f93] hover:shadow-[0_15px_35px_rgba(236,72,153,0.12)]"
+                        >
+                          <div className="flex items-start gap-4">
+                            <motion.div 
+                              whileHover={{ scale: 1.08 }}
+                              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#d6c1ff] to-[#8b5cf6] text-base font-extrabold text-white shadow-[0_4px_12px_rgba(139,92,246,0.2)]"
+                            >
+                              {getStaffInitials(staff)}
+                            </motion.div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="text-base font-extrabold text-[#3d1f3f] truncate">{name}</p>
+                                {staff?.role ? (
+                                  <span className="inline-flex items-center rounded-full bg-[#fde7f3] px-3 py-1 text-[10px] font-extrabold text-[#e1447f]">
+                                    {staff.role}
+                                  </span>
+                                ) : null}
+                              </div>
+                              <div className="mt-4 space-y-2">
+                                <div className="flex items-center gap-2 text-xs text-[#7f6478]">
+                                  <Mail size={14} className="text-[#b88ca8]" />
+                                  <span className="truncate">{staff.email || "No email provided"}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-[#7f6478]">
+                                  <Phone size={14} className="text-[#b88ca8]" />
+                                  <span className="truncate">{staff.phone || staff.phoneNumber || "No phone number"}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-[#7f6478]">
+                                  <BriefcaseBusiness size={14} className="text-[#b88ca8]" />
+                                  <span className="truncate">{staff.specialty || staff.role || "Nail Artist"}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </motion.div>
+          ) : (
+            <motion.div 
+              key="slots-list"
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="mb-6 rounded-2xl border border-[#f3d7e7] bg-[#fffafd] p-5">
+                <div className="flex items-center justify-between mb-5">
+                  <div className="flex items-center gap-4">
+                    <motion.div 
+                      whileHover={{ scale: 1.08 }}
+                      className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-base font-extrabold text-white shadow-[0_4px_12px_rgba(234,79,147,0.2)]"
                     >
-                      <div className="flex items-start gap-3">
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#d8c4ff] to-[#8b5cf6] text-sm font-bold text-white">
-                          {getStaffInitials(staff)}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="text-sm font-extrabold text-[#3f2240]">{name}</p>
-                            {staff?.role ? (
-                              <span className="inline-flex rounded-full bg-[#fce7f3] px-2.5 py-1 text-[10px] font-bold text-[#ea4f93]">
-                                {staff.role}
-                              </span>
-                            ) : null}
-                          </div>
-                          <div className="mt-3 space-y-2">
-                            <div className="flex items-center gap-2 text-xs text-[#7f6478]">
-                              <Mail size={12} className="text-[#c08aa4]" />
-                              <span>{staff.email || "No email"}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs text-[#7f6478]">
-                              <Phone size={12} className="text-[#c08aa4]" />
-                              <span>{staff.phone || staff.phoneNumber || "No phone"}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs text-[#7f6478]">
-                              <BriefcaseBusiness size={12} className="text-[#c08aa4]" />
-                              <span>{staff.specialty || staff.role || "Staff Artist"}</span>
-                            </div>
-                          </div>
-                        </div>
+                      {getStaffInitials(selectedStaff)}
+                    </motion.div>
+                    <div>
+                      <p className="text-base font-extrabold text-[#3d1f3f]">{selectedStaffName}</p>
+                      {selectedStaff?.role ? (
+                        <span className="inline-flex items-center rounded-full bg-[#fde7f3] px-3 py-1 text-[10px] font-extrabold text-[#e1447f]">
+                          {selectedStaff.role}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    type="button"
+                    onClick={() => {
+                      setSelectedStaff(null);
+                      setSelectedSlot(null);
+                      setSelectedSlotData(null);
+                    }}
+                    className="px-4 py-2 text-xs font-extrabold text-[#9a5f7f] hover:text-[#ea4f93] bg-[#fff0f8] rounded-full transition-all duration-200 hover:bg-[#fde7f3]"
+                  >
+                    ← Change staff
+                  </motion.button>
+                </div>
+
+                {selectedSlotData && (
+                  <div className="mb-5 rounded-xl border border-[#d1f0de] bg-gradient-to-r from-[#eaf9ee] to-[#e6fff3] px-4 py-3">
+                    <p className="flex items-center gap-2 text-sm font-semibold text-[#2fa25f]">
+                      <Check size={16} />
+                      Selected Slot: {selectedSlotData.startTime} - {selectedSlotData.endTime}
+                    </p>
+                  </div>
+                )}
+
+                <div className="space-y-6">
+                  {/* Available slots */}
+                  <div>
+                    <p className="text-xs font-extrabold uppercase tracking-widest text-[#2fa25f] mb-4 flex items-center gap-2">
+                      <Clock size={16} />
+                      Available slots
+                    </p>
+                    {isLoadingBusySlots ? (
+                      <div className="flex items-center justify-center py-5">
+                        <Spin size="default" />
+                      </div>
+                    ) : availableSlots.length > 0 ? (
+                      <div className="flex flex-wrap gap-3">
+                        {availableSlots.map((slot, index) => {
+                          const slotKey = `${slot.startTime || "s"}-${slot.endTime || "e"}-${index}`;
+                          const isSelected = selectedSlot === slotKey;
+                          return (
+                            <motion.button
+                              key={slotKey}
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              type="button"
+                              onClick={() => {
+                                setSelectedSlot(isSelected ? null : slotKey);
+                                setSelectedSlotData(isSelected ? null : {
+                                  startTime: slot.startTime,
+                                  endTime: slot.endTime
+                                });
+                              }}
+                              className={`inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-extrabold transition-all duration-200 ${isSelected
+                                ? "bg-gradient-to-r from-[#2fa25f] to-[#4fc07a] text-white shadow-[0_5px_15px_rgba(47,162,95,0.35)]"
+                                : "bg-[#eaf9ee] text-[#2fa25f] hover:bg-gradient-to-r hover:from-[#2fa25f] hover:to-[#4fc07a] hover:text-white hover:shadow-[0_5px_15px_rgba(47,162,95,0.25)]"
+                                }`}
+                            >
+                              <Clock size={14} />
+                              {`${slot.startTime} - ${slot.endTime}`}
+                            </motion.button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3 rounded-xl border border-dashed border-[#b8d9c7] bg-[#f7fffa] px-4 py-4 text-xs text-[#759984]">
+                        <Clock size={16} className="opacity-60" />
+                        <span>No available slots found for this date.</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Busy slots */}
+                  {busySlots.length > 0 && (
+                    <div>
+                      <p className="text-xs font-extrabold uppercase tracking-widest text-[#a65a7d] mb-4 flex items-center gap-2">
+                        <Clock size={16} />
+                        Busy slots
+                      </p>
+                      <div className="flex flex-wrap gap-3">
+                        {busySlots.map((slot, index) => (
+                          <span
+                            key={`${slot.startTime || "s"}-${slot.endTime || "e"}-${index}`}
+                            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#ffe6ec] to-[#ffd7e1] px-4 py-2.5 text-xs font-extrabold text-[#e1447f] cursor-not-allowed opacity-75"
+                          >
+                            <Clock size={14} />
+                            {`${slot.startTime} - ${slot.endTime}`}
+                          </span>
+                        ))}
                       </div>
                     </div>
-                  );
-                })
-              )}
-            </div>
-          )
-        )}
-      </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
     </Modal>
   );
 }

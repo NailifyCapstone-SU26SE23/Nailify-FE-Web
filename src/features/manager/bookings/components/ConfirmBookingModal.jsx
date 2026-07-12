@@ -4,6 +4,7 @@ import { Modal, Spin, Input } from "antd";
 import toast from "react-hot-toast";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { confirmBooking } from "../services/bookingsService";
+import { motion } from "framer-motion";
 
 export function ConfirmBookingModal({
   open,
@@ -43,27 +44,41 @@ export function ConfirmBookingModal({
       footer={null}
       centered
       destroyOnClose
-      width={500}
+      width={540}
       styles={{
-        content: { padding: 0, borderRadius: 24, overflow: "hidden" },
-        mask: { backdropFilter: "blur(4px)" },
+        content: { padding: 0, borderRadius: 32, overflow: "hidden" },
+        mask: { backdropFilter: "blur(8px)" },
       }}
     >
       {/* Header */}
-      <div className="bg-gradient-to-r from-[#eaf9ee] via-[#e0f5eb] to-[#d8f0e4] px-6 pt-6 pb-8">
-        <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#2fa25f] text-white">
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="bg-gradient-to-br from-[#eaf9ee] via-[#e0f5eb] to-[#d7f0e3] px-7 pt-7 pb-11"
+      >
+        <div className="flex items-center gap-5">
+          <motion.div 
+            whileHover={{ scale: 1.1, rotate: 3 }}
+            transition={{ type: "spring", stiffness: 500, damping: 15 }}
+            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#36b969] to-[#2fa25f] text-white shadow-[0_15px_30px_rgba(47,162,95,0.25)]"
+          >
             <Check size={24} />
-          </div>
+          </motion.div>
           <div>
-            <h2 className="text-2xl font-extrabold text-[#402542]">Confirm Booking</h2>
-            <p className="mt-1 text-xs text-[#7a9a7e]">Review and confirm this booking</p>
+            <h2 className="text-2xl font-extrabold text-[#244933] tracking-tight">Confirm Booking</h2>
+            <p className="mt-2 text-sm text-[#6a997c]">Review and confirm this booking</p>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Body */}
-      <div className="-mt-6 rounded-t-[24px] bg-white px-6 pt-8 pb-6 space-y-5">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut", delay: 0.15 }}
+        className="-mt-8 rounded-[32px] bg-white px-7 pt-9 pb-7 space-y-6"
+      >
         {/* Booking Details */}
         {Object.keys(booking).length > 0 && (
           <div className="space-y-3 rounded-2xl border border-[#e8f5f0] bg-[#f8fffe] p-4">
@@ -136,32 +151,36 @@ export function ConfirmBookingModal({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-3 pt-4">
-          <button
+        <div className="flex gap-4 pt-3">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             type="button"
             onClick={handleClose}
-            className="flex-1 rounded-full border border-[#e3e3e3] bg-white px-4 py-2.5 text-xs font-bold text-[#6b6b6b] transition hover:bg-[#f9f9f9] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 rounded-full border border-[#e2c5d4] bg-white px-5 py-3 text-xs font-extrabold text-[#7a6176] transition-all duration-300 hover:bg-[#fffafd] hover:border-[#d9b0c7] disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isLoading}
           >
-            <X size={14} className="inline mr-2" />
+            <X size={16} className="inline mr-2" />
             Cancel
-          </button>
-          <button
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             type="button"
             onClick={handleConfirm}
-            className="flex-1 rounded-full bg-[#ea4f93] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#c9366b] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="flex-1 rounded-full bg-gradient-to-r from-[#ff6aa0] to-[#ea4f93] px-5 py-3 text-xs font-extrabold text-white transition-all duration-300 hover:from-[#ea4f93] hover:to-[#c9366b] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-[0_6px_18px_rgba(234,79,147,0.3)]"
             disabled={isLoading}
           >
             {isLoading && <Spin size="small" />}
             {isLoading ? "Processing..." : (
               <>
-                <Check size={14} />
+                <Check size={16} />
                 Confirm booking
               </>
             )}
-          </button>
+          </motion.button>
         </div>
-      </div>
+      </motion.div>
     </Modal>
   );
 }

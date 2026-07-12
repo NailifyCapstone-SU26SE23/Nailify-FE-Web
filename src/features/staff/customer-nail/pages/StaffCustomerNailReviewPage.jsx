@@ -36,7 +36,7 @@ function formatVND(amount) {
   if (amount === null || amount === undefined) return "N/A";
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
-    currency: "VND",
+    currency: "VNĐ",
   }).format(amount);
 }
 
@@ -560,7 +560,7 @@ export function StaffCustomerNailReviewPage() {
                       {/* Quoted Price */}
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-[0.08em] text-[#c08aa4] mb-1.5">
-                          Quoted Price (VND)
+                          Quoted Price (VNĐ)
                         </label>
                         <Input
                           type="number"

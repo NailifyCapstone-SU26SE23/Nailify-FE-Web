@@ -1,5 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { ManagerLayout } from "../layouts/ManagerLayout";
+import { ProfilePage } from "../../features/core/auth/pages/profilePage";
 import { ManagerDashboardPage } from "../../features/core/dashboard/pages/ManagerDashboardPage";
 import { BookingCreatePage } from "../../shared/bookings/pages/BookingCreatePage";
 import { ManagerBookingDetailPage } from "../../features/manager/bookings/pages/ManagerBookingDetailPage";
@@ -32,6 +33,10 @@ export const managerRoutes = [
       {
         path: ROUTES.managerDashboard,
         element: <ManagerDashboardPage />,
+      },
+      {
+        path: ROUTES.managerProfile,
+        element: <ProfilePage />,
       },
       {
         path: ROUTES.managerBookings,
