@@ -1,5 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { AdminLayout } from "../layouts/AdminLayout";
+import { ProfilePage } from "../../features/core/auth/pages/profilePage";
 import { AdminDashboardPage } from "../../features/core/dashboard/pages/AdminDashboardPage";
 import { AuthGuard } from "../../shared/components/guards/AuthGuard";
 import { RoleGuard } from "../../shared/components/guards/RoleGuard";
@@ -15,9 +16,7 @@ import { SalonUpdatePage } from "../../features/admin/salon-management/pages/Sal
 import { StaffManagementPage } from "../../features/admin/staff-management/pages/StaffManagementPage";
 import { StaffCreatePage } from "../../features/admin/staff-management/pages/StaffCreatePage";
 import { StaffUpdatePage } from "../../features/admin/staff-management/pages/StaffUpdatePage";
-import { BookingListPage } from "../../shared/bookings/pages/BookingListPage";
-import { BookingCreatePage } from "../../shared/bookings/pages/BookingCreatePage";
-import { BookingDetailPage } from "../../shared/bookings/pages/BookingDetailPage";
+
 import { NailDesignManagementPage } from "../../features/admin/nails-design-management/pages/NailDesignManagementPage";
 import { NailDesignManagementCategoryPage } from "../../features/admin/nails-design-management/pages/NailDesignManagementCategoryPage";
 import { NailDesignManagementCreatePage } from "../../features/admin/nails-design-management/pages/NailDesignManagementCreatePage";
@@ -46,6 +45,11 @@ import { SkillTypeDetailPage } from "../../features/admin/skill-types-management
 import { CategoriesManagementPage } from "../../features/admin/categories-management/pages/CategoriesManagementPage";
 import { CategoryCreatePage } from "../../features/admin/categories-management/pages/CategoryCreatePage";
 import { CategoryDetailPage } from "../../features/admin/categories-management/pages/CategoryDetailPage";
+import { PromotionsManagementPage } from "../../features/admin/promotion-management/pages/PromotionsManagementPage";
+import { PromotionCreatePage } from "../../features/admin/promotion-management/pages/PromotionCreatePage";
+import { PromotionDetailPage } from "../../features/admin/promotion-management/pages/PromotionDetailPage";
+import { AdminSalonBookingsPage } from "../../features/admin/salon-bookings/pages/AdminSalonBookingsPage";
+import { AdminSalonBookingDetailPage } from "../../features/admin/salon-bookings/pages/AdminSalonBookingDetailPage";
 
 export const adminRoutes = [
   {
@@ -67,16 +71,12 @@ export const adminRoutes = [
         element: <AdminDashboardPage />,
       },
       {
+        path: ROUTES.adminProfile,
+        element: <ProfilePage />,
+      },
+      {
         path: ROUTES.adminBookings,
-        element: <BookingListPage />,
-      },
-      {
-        path: ROUTES.adminBookingsCreate,
-        element: <BookingCreatePage />,
-      },
-      {
-        path: ROUTES.adminBookingDetail,
-        element: <BookingDetailPage />,
+        element: <AdminSalonBookingsPage />,
       },
       {
         path: ROUTES.adminSalons,
@@ -199,6 +199,18 @@ export const adminRoutes = [
         element: <CategoryDetailPage />,
       },
       {
+        path: ROUTES.adminPromotions,
+        element: <PromotionsManagementPage />,
+      },
+      {
+        path: ROUTES.adminPromotionsCreate,
+        element: <PromotionCreatePage />,
+      },
+      {
+        path: ROUTES.adminPromotionDetail,
+        element: <PromotionDetailPage />,
+      },
+      {
         path: ROUTES.adminNailDesigns,
         element: <NailDesignManagementPage />,
       },
@@ -229,6 +241,10 @@ export const adminRoutes = [
       {
         path: ROUTES.adminUserDetail,
         element: <UserManagementDetailPage />,
+      },
+      {
+        path: ROUTES.adminSalonBookingDetail,
+        element: <AdminSalonBookingDetailPage />,
       },
       {
         path: "*",

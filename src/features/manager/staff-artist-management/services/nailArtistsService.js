@@ -1,4 +1,3 @@
-
 import { axiosClient } from "../../../../lib/axiosClient";
 import { loadAuthSession } from "../../../core/auth/model/authStorage";
 
@@ -31,32 +30,74 @@ function unwrapResponse(response, fallbackMessage) {
     throw new Error(payload?.message || fallbackMessage);
   }
 
-  // Handle both formats: data.items (for lists) or just data (for single items)
-  if (payload.data && payload.data.items) {
-    return payload.data.items;
-  }
   return payload.data;
+}
+
+function normalizeMetaData(metaData, defaults = {}) {
+  return {
+    currentPage: Number(metaData?.currentPage || defaults.pageNumber || 1),
+    totalPages: Number(metaData?.totalPages || 1),
+    pageSize: Number(metaData?.pageSize || defaults.pageSize || 10),
+    totalItems: Number(metaData?.totalItems || 0),
+    hasPrevious: Boolean(metaData?.hasPrevious),
+    hasNext: Boolean(metaData?.hasNext),
+    firstRowOnPage: Number(metaData?.firstRowOnPage || 0),
+    lastRowOnPage: Number(metaData?.lastRowOnPage || 0),
+  };
+}
+
+function mapRoleToApi(role) {
+  switch (role) {
+    case "NAIL_ARTIST":
+      return "Staff_Artist";
+    case "SALON_MANAGER":
+      return "Salon_Manager";
+    case "RECEPTIONIST":
+      return "Receptionist";
+    default:
+      return role;
+  }
+}
+
+function normalizeStaffMember(staff) {
+  return {
+    ...staff,
+    id: staff?.staffId || staff?.userId || staff?.id || "",
+    userId: staff?.userId || staff?.id || "",
+    staffId: staff?.staffId || "",
+    name:
+      staff?.firstName && staff?.lastName
+        ? `${staff.firstName} ${staff.lastName}`.trim()
+        : staff?.fullName || staff?.name || "Unnamed Staff",
+    role: staff?.role || "Staff_Artist",
+    email: staff?.email || "",
+    phone: staff?.phone || "",
+    salonId: staff?.salonId || "",
+    avatarUrl: staff?.avatarUrl || "",
+  };
 }
 
 export async function fetchNailArtists(salonId) {
   try {
-    // Try with salonId first
     const id = salonId || getSalonId();
-    console.log("Fetching nail artists with salonId:", id);
-    
-    const response = await axiosClient.get(`/NailArtists`, {
+    const response = await axiosClient.get(`/Users/salon/${id}/staff`, {
       headers: getAuthHeaders(),
-      params: { salonId: id },
+      params: { role: "Staff_Artist" },
     });
 
-    return unwrapResponse(response, "Failed to load nail artists.");
+    const data = unwrapResponse(response, "Failed to load nail artists.");
+    const items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
+    return items.map(normalizeStaffMember);
   } catch (error) {
-    console.warn("Failed with salonId, trying without...", error);
-    // Fallback: try without salonId
-    const response = await axiosClient.get(`/NailArtists`, {
+    console.warn("Failed to load nail artists with current salon.", error);
+    const response = await axiosClient.get(`/Users/salon/484c3aef-3ae1-4ad6-8aba-6b0bc6df586d/staff`, {
       headers: getAuthHeaders(),
+      params: { role: "Staff_Artist" },
     });
-    return unwrapResponse(response, "Failed to load nail artists.");
+
+    const data = unwrapResponse(response, "Failed to load nail artists.");
+    const items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
+    return items.map(normalizeStaffMember);
   }
 }
 
@@ -74,38 +115,128 @@ export async function fetchNailArtistById(artistId) {
   return unwrapResponse(response, "Failed to load nail artist detail.");
 }
 
+export async function createUser(userData) {
+  const formData = new FormData();
+  formData.append("email", String(userData?.email || "").trim());
+  formData.append("password", String(userData?.password || ""));
+  formData.append("firstName", String(userData?.firstName || "").trim());
+  formData.append("lastName", String(userData?.lastName || "").trim());
+  formData.append("phone", String(userData?.phone || "").trim());
+  formData.append("avatarUrl", String(userData?.avatarUrl || "").trim());
+  formData.append("role", mapRoleToApi(userData?.role));
+  formData.append("salonId", String(userData?.salonId || "").trim());
+
+  if (userData?.imageFile) {
+    formData.append("image", userData.imageFile);
+  }
+
+  const response = await axiosClient.post("/Users", formData, {
+    headers: getAuthHeaders(),
+  });
+
+  return normalizeStaffMember(unwrapResponse(response, "Failed to create user."));
+}
+
+export async function updateUser(userId, userData) {
+  const normalizedUserId = String(userId || "").trim();
+
+  if (!normalizedUserId) {
+    throw new Error("User ID is required.");
+  }
+
+  let response;
+
+  if (userData?.imageFile) {
+    const formData = new FormData();
+
+    if (userData?.email !== undefined) {
+      formData.append("email", String(userData.email || "").trim());
+    }
+    if (userData?.firstName !== undefined) {
+      formData.append("firstName", String(userData.firstName || "").trim());
+    }
+    if (userData?.lastName !== undefined) {
+      formData.append("lastName", String(userData.lastName || "").trim());
+    }
+    if (userData?.phone !== undefined) {
+      formData.append("phone", String(userData.phone || "").trim());
+    }
+    if (userData?.avatarUrl !== undefined) {
+      formData.append("avatarUrl", String(userData.avatarUrl || "").trim());
+    }
+    if (userData?.role !== undefined) {
+      formData.append("role", mapRoleToApi(userData.role));
+    }
+    if (userData?.salonId !== undefined) {
+      formData.append("salonId", String(userData.salonId || "").trim());
+    }
+    if (userData?.status !== undefined) {
+      formData.append("status", String(userData.status || "").trim());
+    }
+
+    formData.append("image", userData.imageFile);
+
+    response = await axiosClient.put(`/Users/${normalizedUserId}`, formData, {
+      headers: getAuthHeaders(),
+    });
+  } else {
+    const jsonData = {};
+
+    if (userData?.email !== undefined) {
+      jsonData.email = String(userData.email || "").trim();
+    }
+    if (userData?.firstName !== undefined) {
+      jsonData.firstName = String(userData.firstName || "").trim();
+    }
+    if (userData?.lastName !== undefined) {
+      jsonData.lastName = String(userData.lastName || "").trim();
+    }
+    if (userData?.phone !== undefined) {
+      jsonData.phone = String(userData.phone || "").trim();
+    }
+    if (userData?.avatarUrl !== undefined) {
+      jsonData.avatarUrl = String(userData.avatarUrl || "").trim();
+    }
+    if (userData?.role !== undefined) {
+      jsonData.role = mapRoleToApi(userData.role);
+    }
+    if (userData?.salonId !== undefined) {
+      jsonData.salonId = String(userData.salonId || "").trim();
+    }
+    if (userData?.status !== undefined) {
+      jsonData.status = String(userData.status || "").trim();
+    }
+
+    response = await axiosClient.put(`/Users/${normalizedUserId}`, jsonData, {
+      headers: getAuthHeaders(),
+    });
+  }
+
+  return normalizeStaffMember(unwrapResponse(response, "Failed to update user."));
+}
+
 export async function createNailArtist(data) {
-  console.log("Sending createNailArtist request with data:", data);
-  console.log("Headers:", getAuthHeaders());
-  
-  // Try wrapping data in request object first (common API pattern)
   const requestPayload = { request: data };
-  
+
   try {
-    const response = await axiosClient.post(`/NailArtists`, requestPayload, {
+    const response = await axiosClient.post("/NailArtists", requestPayload, {
       headers: getAuthHeaders(),
     });
 
     return unwrapResponse(response, "Failed to create nail artist.");
   } catch (error) {
-    console.error("Error creating nail artist full response:", error.response?.data || error);
-    console.error("Validation errors:", error.response?.data?.errors);
-    
-    // If wrapped request failed, try sending without wrapping as fallback
     if (error.response?.data?.errors?.request) {
-      console.log("Trying without request wrapper...");
-      const response = await axiosClient.post(`/NailArtists`, data, {
+      const response = await axiosClient.post("/NailArtists", data, {
         headers: getAuthHeaders(),
       });
       return unwrapResponse(response, "Failed to create nail artist.");
     }
-    
-    // Build a more descriptive error message from validation errors
+
     let errorMessage = error.response?.data?.message || error.message || "Failed to create nail artist.";
     if (error.response?.data?.errors) {
       const validationErrors = Object.entries(error.response.data.errors)
-        .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
-        .join('; ');
+        .map(([field, messages]) => `${field}: ${messages.join(", ")}`)
+        .join("; ");
       errorMessage += ` (${validationErrors})`;
     }
     throw new Error(errorMessage);
@@ -140,6 +271,29 @@ export async function deleteNailArtist(artistId) {
   return unwrapResponse(response, "Failed to delete nail artist.");
 }
 
+export async function fetchSkillTypes({
+  pageNumber = 1,
+  pageSize = 100,
+  name = "",
+} = {}) {
+  const response = await axiosClient.get("/SkillTypes", {
+    headers: getAuthHeaders(),
+    params: {
+      pageNumber,
+      pageSize,
+      name: name || undefined,
+    },
+  });
+
+  const data = unwrapResponse(response, "Failed to load skill types.");
+  const items = Array.isArray(data?.items) ? data.items : [];
+
+  return {
+    items,
+    metaData: normalizeMetaData(data?.metaData, { pageNumber, pageSize }),
+  };
+}
+
 export async function fetchNailArtistSkills(artistId) {
   const normalizedId = String(artistId || "").trim();
 
@@ -151,7 +305,84 @@ export async function fetchNailArtistSkills(artistId) {
     headers: getAuthHeaders(),
   });
 
-  return unwrapResponse(response, "Failed to load nail artist skills.");
+  const data = unwrapResponse(response, "Failed to load nail artist skills.");
+  return Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
+}
+
+export async function assignNailArtistSkills(artistId, skills) {
+  const normalizedId = String(artistId || "").trim();
+
+  if (!normalizedId) {
+    throw new Error("Nail artist ID is required.");
+  }
+
+  let currentSkills = [];
+  try {
+    currentSkills = await fetchNailArtistSkills(normalizedId);
+  } catch (error) {
+    console.warn("Failed to fetch current skills.", error);
+  }
+
+  const currentLevelBySkillId = new Map();
+  currentSkills.forEach((skill) => {
+    const skillTypeId = skill.skillTypeId || skill.SkillTypeId;
+    if (skillTypeId) {
+      currentLevelBySkillId.set(skillTypeId, skill.level ?? skill.Level ?? 0);
+    }
+  });
+
+  const newSkills = [];
+  const skillsToUpdate = [];
+
+  skills.forEach((skill) => {
+    const skillTypeId = skill.skillTypeId || skill.SkillTypeId;
+    const level = skill.level ?? skill.Level ?? 0;
+
+    if (!skillTypeId) {
+      return;
+    }
+
+    if (currentLevelBySkillId.has(skillTypeId)) {
+      if (currentLevelBySkillId.get(skillTypeId) !== level) {
+        skillsToUpdate.push({ skillTypeId, level });
+      }
+    } else {
+      newSkills.push({ skillTypeId, level });
+    }
+  });
+
+  const errors = [];
+
+  if (newSkills.length > 0) {
+    try {
+      const response = await axiosClient.post(`/nail-artists/${normalizedId}/skills`, newSkills, {
+        headers: getAuthHeaders(),
+      });
+      unwrapResponse(response, "Failed to assign new skills to nail artist.");
+    } catch (error) {
+      console.warn("Failed to assign new skills.", error);
+      errors.push(`Khong the assign ${newSkills.length} skill moi`);
+    }
+  }
+
+  for (const skill of skillsToUpdate) {
+    try {
+      await axiosClient.put(
+        `/nail-artists/${normalizedId}/skills/${skill.skillTypeId}`,
+        { requiredLevel: skill.level },
+        { headers: getAuthHeaders() },
+      );
+    } catch (error) {
+      console.warn(`Failed to update skill ${skill.skillTypeId}.`, error);
+      errors.push(`Khong the update level skill ${skill.skillTypeId}`);
+    }
+  }
+
+  if (errors.length > 0) {
+    return { success: false, error: errors.join("; ") };
+  }
+
+  return { success: true };
 }
 
 export async function fetchArtistSchedules(artistId, options = {}) {
@@ -161,15 +392,38 @@ export async function fetchArtistSchedules(artistId, options = {}) {
     throw new Error("Nail artist ID is required.");
   }
 
-  const { startDate, endDate } = options;
+  const { startDate, endDate, fromDate, toDate } = options;
 
   const response = await axiosClient.get(`/Schedules/artist/${normalizedId}`, {
     headers: getAuthHeaders(),
     params: {
+      startDate: startDate || fromDate || undefined,
+      endDate: endDate || toDate || undefined,
+    },
+  });
+
+  const data = unwrapResponse(response, "Failed to load artist schedules.");
+  return Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
+}
+
+export async function fetchSchedules({
+  pageNumber = 1,
+  pageSize = 100,
+  startDate,
+  endDate,
+} = {}) {
+  const salonId = getSalonId();
+  const response = await axiosClient.get("/Schedules", {
+    headers: getAuthHeaders(),
+    params: {
+      salonId,
+      pageNumber,
+      pageSize,
       startDate: startDate || undefined,
       endDate: endDate || undefined,
     },
   });
 
-  return unwrapResponse(response, "Failed to load artist schedules.");
+  const data = unwrapResponse(response, "Failed to load schedules.");
+  return Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
 }

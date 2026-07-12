@@ -454,36 +454,6 @@ export function ComponentDetailPage() {
             </div>
           </section>
 
-          {/* <aside className="space-y-4">
-            <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
-              <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
-                <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
-                Summary
-              </h2>
-
-              <div className="space-y-4">
-                <div className="flex h-48 items-center justify-center overflow-hidden rounded-2xl border border-rose-100 bg-[#fff8fb]">
-                  {imagePreview ? (
-                    <img crossOrigin="anonymous" src={imagePreview} alt="Preview" className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="text-center text-sm font-medium text-slate-400">
-                      <ImageIcon size={24} className="mx-auto mb-3 text-rose-300" />
-                      No image available
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-3 rounded-2xl border border-rose-100 bg-[#fff8fb] p-4">
-                  {summaryItems.map(([label, value]) => (
-                    <div key={label} className="flex items-start justify-between gap-3 text-sm">
-                      <span className="font-semibold text-slate-500">{label}</span>
-                      <span className="text-right font-bold text-slate-800">{value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
-          </aside> */}
         </div>
       )}
 

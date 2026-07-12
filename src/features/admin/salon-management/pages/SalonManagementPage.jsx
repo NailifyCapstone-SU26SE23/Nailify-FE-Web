@@ -1,26 +1,34 @@
 import {
   BriefcaseBusiness,
-  CalendarClock,
+  Calendar,
   Check,
   ChevronLeft,
   ChevronRight,
   Clock3,
   Eye,
   MapPin,
+  Moon,
   Pencil,
   Phone,
   Plus,
   Search,
   Sparkles,
   Star,
+  Sun,
+  Sunrise,
   Trash2,
   TrendingUp,
   UserRound,
   X,
+  AlertTriangle,
 } from "lucide-react";
-import { Modal, Spin, Alert } from "antd";
+import AssignManagerModal from "../components/AssignManagerModal";
+import HolidayClosureModal from "../components/HolidayClosureModal";
+import SetOperatingHoursModal from "../components/SetOperatingHoursModal";
+import { Modal, Spin, Alert, Form, Select, DatePicker, TimePicker, Input, Tooltip } from "antd";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import {
@@ -30,17 +38,18 @@ import {
 } from "../../../../shared/constants/routes";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import {
-  LOW_OCCUPANCY_SALON,
-  SALON_MODAL_STYLES,
   SALON_STATUS_FILTERS,
-  TOP_PERFORMING_SALON,
   matchesSalonStatusFilter,
 } from "../services/mockSalon";
 import { fetchSalons, deleteSalon } from "../services/salonsService";
+import { fetchAdminSalons, normalizeAdminSalon } from "../services/salonManagementService";
+import { fetchAdminUsers, updateAdminUser, fetchRawAdminUserDetail } from "../../user-management/services/userManagementService";
 
 const SALON_PLACEHOLDER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
-  '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"><rect width="400" height="200" rx="24" fill="#fde7ef"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#8f365c" font-family="Arial, sans-serif" font-size="30" font-weight="700">Salon</text></svg>',
+  '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"><rect width="400" height="200" rx="28" fill="#fde7ef"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#8f365c" font-family="Arial, sans-serif" font-size="30" font-weight="700">Salon</text></svg>',
 )}`;
+
+const PINK_BUTTON_STYLE = { backgroundColor: "#ea4f93", borderColor: "#ea4f93" };
 
 const SUMMARY_ICON_MAP = {
   briefcase: BriefcaseBusiness,
@@ -49,23 +58,55 @@ const SUMMARY_ICON_MAP = {
   trendingUp: TrendingUp,
 };
 
-function StatCard({ item }) {
+function PremiumCard({ className = "", children, noHover = false }) {
+  return (
+    <article
+      className={`relative overflow-hidden rounded-[28px] border border-[#f5e2ec] bg-white p-6 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.04)] transition-all duration-500 ease-out ${!noHover ? "hover:-translate-y-1 hover:shadow-[0_20px_45px_rgba(226,93,143,0.06)]" : ""} ${className}`}
+    >
+      {children}
+    </article>
+  );
+}
+
+PremiumCard.propTypes = {
+  className: PropTypes.string,
+  children: PropTypes.node,
+  noHover: PropTypes.bool,
+};
+
+function SectionHeading({ title, subtitle }) {
+  return (
+    <div>
+      <h2 className="text-[16px] font-black text-[#2d1b35]">{title}</h2>
+      {subtitle ? <p className="mt-1.5 text-[11px] text-[#a88a9f] leading-relaxed">{subtitle}</p> : null}
+    </div>
+  );
+}
+
+SectionHeading.propTypes = {
+  title: PropTypes.string.isRequired,
+  subtitle: PropTypes.string,
+};
+
+function StatCard({ item, index }) {
   const Icon = SUMMARY_ICON_MAP[item.icon] ?? BriefcaseBusiness;
 
   return (
-    <div
-      className={`relative overflow-hidden rounded-2xl border border-white/70 bg-gradient-to-br ${item.accent} p-4 shadow-[0_18px_35px_rgba(226,93,143,0.08)]`}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.1, type: "spring", stiffness: 300, damping: 20 }}
+      whileHover={{ y: -4, scale: 1.02 }}
+      className={`relative overflow-hidden rounded-[28px] border border-white/70 bg-gradient-to-br ${item.accent} p-6 shadow-[0_20px_40px_-15px_rgba(226,93,143,0.06)]`}
     >
       <div className="absolute right-[-12px] top-[-12px] h-12 w-12 rounded-full bg-white/45" />
-      <div
-        className={`mb-4 flex h-8 w-8 items-center justify-center rounded-lg ${item.iconBg}`}
-      >
-        <Icon size={16} strokeWidth={2.2} />
+      <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-xl ${item.iconBg}`}>
+        <Icon size={20} strokeWidth={2.2} />
       </div>
-      <p className="text-[30px] font-bold leading-none text-slate-800">{item.title}</p>
-      <p className="mt-2 text-[12px] font-semibold text-slate-500">{item.label}</p>
-      <p className={`mt-1 text-[11px] font-semibold ${item.noteColor}`}>{item.note}</p>
-    </div>
+      <p className="text-[32px] font-bold leading-none text-slate-800">{item.title}</p>
+      <p className="mt-2 text-[13px] font-semibold text-slate-500">{item.label}</p>
+      <p className={`mt-1 text-[12px] font-semibold ${item.noteColor}`}>{item.note}</p>
+    </motion.div>
   );
 }
 
@@ -79,17 +120,23 @@ StatCard.propTypes = {
     noteColor: PropTypes.string.isRequired,
     title: PropTypes.string.isRequired,
   }).isRequired,
+  index: PropTypes.number,
 };
 
-function ProgressRow({ label, value, tone = "bg-rose-500" }) {
+function ProgressRow({ label, value, tone = "bg-[#ea4f93]" }) {
   return (
     <div className="space-y-1.5">
-      <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+      <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
         <span>{label}</span>
         <span className="text-[11px] text-slate-500">{value}</span>
       </div>
-      <div className="h-1.5 rounded-full bg-rose-100">
-        <div className={`h-1.5 rounded-full ${tone}`} style={{ width: value }} />
+      <div className="h-2 w-full rounded-full bg-[#f5e2ec]">
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: value }}
+          transition={{ delay: 0.3, duration: 1, ease: "easeOut" }}
+          className={`h-full rounded-full ${tone}`}
+        />
       </div>
     </div>
   );
@@ -101,41 +148,48 @@ ProgressRow.propTypes = {
   value: PropTypes.string.isRequired,
 };
 
-function RightMetricCard({ title, branch, city, concern, values, buttonLabel }) {
+function RightMetricCard({ title, branch, city, concern, values, buttonLabel, index }) {
   return (
-    <div className="rounded-2xl border border-rose-100 bg-white p-4 shadow-[0_18px_32px_rgba(226,93,143,0.08)]">
-      <div className="mb-3 flex items-center gap-2 text-[12px] font-bold text-slate-700">
-        <Sparkles size={14} className="text-rose-500" />
-        <span>{title}</span>
-      </div>
-      <div className="mb-4 flex gap-3">
-        <img
-          crossOrigin="anonymous"
-          src={values.image}
-          alt={branch}
-          className="h-12 w-14 rounded-xl object-cover"
-          referrerPolicy="no-referrer"
-        />
-        <div className="space-y-0.5">
-          <p className="text-[12px] font-bold text-slate-800">{branch}</p>
-          <p className="text-[11px] font-semibold text-slate-400">{city}</p>
-          <p className={`text-[11px] font-bold ${concern.color}`}>{concern.text}</p>
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: (index || 0) * 0.15, type: "spring", stiffness: 300, damping: 20 }}
+      whileHover={{ scale: 1.02, y: -2 }}
+    >
+      <PremiumCard className="p-4">
+        <div className="mb-3 flex items-center gap-2 text-[11px] font-bold text-[#2d1b35]">
+          <Sparkles size={14} className="text-[#ea4f93]" />
+          <span>{title}</span>
         </div>
-      </div>
-      <div className="space-y-3">
-        <ProgressRow label="Occupancy Rate" value={values.occupancy} tone="bg-rose-500" />
-        <ProgressRow label="Monthly Revenue" value={values.revenue} tone="bg-rose-500" />
-        <ProgressRow label="Staff Utilization" value={values.utilization} tone="bg-rose-500" />
-      </div>
-      {buttonLabel ? (
-        <button
-          type="button"
-          className="mt-4 w-full rounded-full border border-rose-200 px-4 py-2 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
-        >
-          {buttonLabel}
-        </button>
-      ) : null}
-    </div>
+        <div className="mb-4 flex gap-3">
+          <img
+            crossOrigin="anonymous"
+            src={values.image}
+            alt={branch}
+            className="h-12 w-14 shrink-0 rounded-[12px] object-cover"
+            referrerPolicy="no-referrer"
+          />
+          <div className="min-w-0 space-y-0.5">
+            <p className="truncate text-[13px] font-bold text-[#2d1b35]">{branch}</p>
+            <p className="truncate text-[11px] font-semibold text-[#a88a9f]">{city}</p>
+            <p className={`truncate text-[11px] font-bold ${concern.color}`}>{concern.text}</p>
+          </div>
+        </div>
+        <div className="space-y-3">
+          <ProgressRow label="Occupancy Rate" value={values.occupancy} tone="bg-[#ea4f93]" />
+          <ProgressRow label="Monthly Revenue" value={values.revenue} tone="bg-[#ea4f93]" />
+          <ProgressRow label="Staff Utilization" value={values.utilization} tone="bg-[#ea4f93]" />
+        </div>
+        {buttonLabel ? (
+          <button
+            type="button"
+            className="mt-4 w-full rounded-full border border-[#f0b7cf] bg-white px-3 py-1.5 text-[11px] font-bold text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
+          >
+            {buttonLabel}
+          </button>
+        ) : null}
+      </PremiumCard>
+    </motion.div>
   );
 }
 
@@ -154,65 +208,71 @@ RightMetricCard.propTypes = {
     revenue: PropTypes.string.isRequired,
     utilization: PropTypes.string.isRequired,
   }).isRequired,
+  index: PropTypes.number,
 };
 
+/**
+ * FIX: card now stretches full height (h-full) inside its fixed-width wrapper,
+ * uses `truncate` + `min-w-0` on text so long content never pushes the card
+ * wider, and pins the rating row to the bottom with `mt-auto` so every card
+ * in the row ends up the same height regardless of how much text it holds.
+ */
 function BranchCard({ branch, onClick }) {
   return (
-    <button
+    <motion.button
       type="button"
       onClick={onClick}
-      className="overflow-hidden rounded-2xl border border-rose-100 bg-white text-left shadow-[0_18px_32px_rgba(226,93,143,0.08)] transition hover:-translate-y-1 hover:border-rose-200 hover:shadow-[0_24px_40px_rgba(226,93,143,0.14)]"
+      whileHover={{ y: -4, scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      className="flex h-full w-full flex-col overflow-hidden rounded-[28px] border border-[#f5e2ec] bg-white text-left shadow-[0_20px_40px_-15px_rgba(0,0,0,0.04)] transition-all"
     >
       <img
         crossOrigin="anonymous"
         src={branch.image}
         alt={branch.name}
-        className="h-36 w-full object-cover"
+        className="h-44 w-full shrink-0 object-cover"
         referrerPolicy="no-referrer"
       />
-      <div className="space-y-3 p-4">
+      <div className="flex flex-1 flex-col space-y-4 p-6">
         <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[15px] font-bold text-slate-800">{branch.name}</p>
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-300">
-              #{branch.id}
-            </p>
+          <div className="min-w-0">
+            <p className="truncate text-[16px] font-black text-[#2d1b35]">{branch.name}</p>
           </div>
-          <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${branch.statusTone}`}>
+          <span className={`shrink-0 rounded-full px-4 py-2 text-[11px] font-bold ${branch.statusColor}`}>
             {branch.status}
           </span>
         </div>
-        <div className="space-y-1.5 text-[11px] text-slate-500">
+        <div className="space-y-3 text-[13px] text-[#5b4256]">
           <div className="flex items-center gap-2">
-            <MapPin size={12} className="text-rose-400" />
-            <span>{branch.address}</span>
+            <MapPin size={16} className="shrink-0 text-[#ea4f93]" />
+            <span className="truncate">{branch.address}</span>
           </div>
           <div className="flex items-center gap-2">
-            <UserRound size={12} className="text-rose-400" />
-            <span>Manager: {branch.manager}</span>
+            <UserRound size={16} className="shrink-0 text-[#ea4f93]" />
+            <span className="truncate">Manager: {branch.manager}</span>
           </div>
           <div className="flex items-center gap-2">
-            <Phone size={12} className="text-rose-400" />
-            <span>{branch.phone}</span>
+            <Phone size={16} className="shrink-0 text-[#ea4f93]" />
+            <span className="truncate">{branch.phone}</span>
           </div>
           <div className="flex items-center gap-2">
-            <Clock3 size={12} className="text-rose-400" />
-            <span>{branch.schedule}</span>
+            <Clock3 size={16} className="shrink-0 text-[#ea4f93]" />
+            <span className="truncate">{branch.hours}</span>
           </div>
         </div>
-        <div className="flex items-center justify-between border-t border-rose-50 pt-3">
-          <div className="flex items-center gap-1 text-amber-400">
-            {Array.from({ length: 5 }).map((_, index) => (
-              <Star key={`${branch.id}-${index}`} size={12} fill="currentColor" strokeWidth={0} />
+        <div className="mt-auto flex items-center justify-between border-t border-[#f5e2ec] pt-4">
+          <div className="flex items-center gap-1 text-[#f59e0b]">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Star key={`${branch.id}-${i}`} size={16} fill="currentColor" strokeWidth={0} />
             ))}
           </div>
-          <p className="text-[11px] font-semibold text-slate-400">
-            <span className="font-bold text-slate-700">{branch.rating}</span> ({branch.reviews}{" "}
-            reviews)
+          <p className="text-[12px] font-semibold text-[#a88a9f]">
+            <span className="font-bold text-[#2d1b35]">{branch.rating}</span> ({branch.reviews} reviews)
           </p>
         </div>
       </div>
-    </button>
+    </motion.button>
   );
 }
 
@@ -226,22 +286,24 @@ BranchCard.propTypes = {
     phone: PropTypes.string.isRequired,
     rating: PropTypes.string.isRequired,
     reviews: PropTypes.string.isRequired,
-    schedule: PropTypes.string.isRequired,
+    hours: PropTypes.string.isRequired,
     status: PropTypes.string.isRequired,
-    statusTone: PropTypes.string.isRequired,
+    statusColor: PropTypes.string.isRequired,
   }).isRequired,
   onClick: PropTypes.func.isRequired,
 };
 
 function SmallActionButton({ children, className = "", onClick, type = "button" }) {
   return (
-    <button
+    <motion.button
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
       type={type}
       onClick={onClick}
-      className={`inline-flex items-center justify-center rounded-full border border-rose-200 bg-white px-3 py-2 text-[9px] font-bold uppercase tracking-[0.08em] text-rose-500 transition hover:bg-rose-50 ${className}`.trim()}
+      className={`inline-flex items-center justify-center rounded-full border border-[#f0b7cf] bg-white px-4 py-2 text-[11px] font-bold text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb] ${className}`.trim()}
     >
       {children}
-    </button>
+    </motion.button>
   );
 }
 
@@ -252,26 +314,26 @@ SmallActionButton.propTypes = {
   type: PropTypes.string,
 };
 
-function CloseIconButton({ onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="rounded-full bg-white/20 p-1.5 text-white transition hover:bg-white/30"
-      aria-label="Close modal"
-    >
-      <X size={14} />
-    </button>
-  );
-}
-
-CloseIconButton.propTypes = {
-  onClick: PropTypes.func.isRequired,
-};
-
 function mapApiSalonToUiFormat(apiSalon) {
-  const status = apiSalon.status || "Active";
-  
+  // Map API status values to our internal statuses
+  const apiStatus = (apiSalon.status || "Open").toLowerCase();
+
+  let internalStatus = "ACTIVE"; // Default to Open/Active
+  let statusColor = "bg-[#e6fdf0] text-[#16975f]";
+  let statusTone = "bg-[#e6fdf0] text-[#16975f]";
+
+  if (apiStatus === "closed") {
+    internalStatus = "CLOSED";
+    statusColor = "bg-[#fff0f0] text-[#e53e3e]";
+    statusTone = "bg-[#fff0f0] text-[#e53e3e]";
+  } else if (apiStatus === "busy") {
+    internalStatus = "BUSY";
+    statusColor = "bg-[#fffbeb] text-[#d69e2e]";
+    statusTone = "bg-[#fffbeb] text-[#d69e2e]";
+  } else if (apiStatus === "open") {
+    internalStatus = "ACTIVE";
+  }
+
   return {
     id: (apiSalon.salonId || apiSalon.id || "").toString().trim(),
     salonId: (apiSalon.salonId || apiSalon.id || "").toString().trim(),
@@ -279,10 +341,11 @@ function mapApiSalonToUiFormat(apiSalon) {
     address: apiSalon.address || "No address",
     manager: apiSalon.managerName || apiSalon.manager || "Unassigned",
     phone: apiSalon.phone || "No phone",
+    imageUrl: apiSalon.imageUrl || apiSalon.image || "",
     image: apiSalon.imageUrl || apiSalon.image || SALON_PLACEHOLDER_IMAGE,
-    status: status,
-    statusColor: "bg-[#e6fdf0] text-[#16975f]",
-    statusTone: "bg-[#e6fdf0] text-[#16975f]",
+    status: internalStatus,
+    statusColor: statusColor,
+    statusTone: statusTone,
     staff: apiSalon.staffAmount || 0,
     hours: "9AM - 9PM",
     schedule: "9AM - 9PM",
@@ -290,6 +353,36 @@ function mapApiSalonToUiFormat(apiSalon) {
     reviews: "128",
   };
 }
+
+// Time slot configuration
+const TIME_SLOTS = {
+  morning: {
+    label: "Morning",
+    icon: Sunrise,
+    slots: [
+      "07:00 - 07:30", "07:30 - 08:00", "08:00 - 08:30", "08:30 - 09:00",
+      "09:00 - 09:30", "09:30 - 10:00", "10:00 - 10:30", "10:30 - 11:00",
+      "11:00 - 11:30", "11:30 - 12:00"
+    ]
+  },
+  afternoon: {
+    label: "Afternoon",
+    icon: Sun,
+    slots: [
+      "12:00 - 12:30", "12:30 - 13:00", "13:00 - 13:30", "13:30 - 14:00",
+      "14:00 - 14:30", "14:30 - 15:00", "15:00 - 15:30", "15:30 - 16:00",
+      "16:00 - 16:30", "16:30 - 17:00"
+    ]
+  },
+  evening: {
+    label: "Evening",
+    icon: Moon,
+    slots: [
+      "17:00 - 17:30", "17:30 - 18:00", "18:00 - 18:30", "18:30 - 19:00",
+      "19:00 - 19:30", "19:30 - 20:00", "20:00 - 20:30", "20:30 - 21:00"
+    ]
+  }
+};
 
 export function SalonManagementPage() {
   const location = useLocation();
@@ -302,29 +395,61 @@ export function SalonManagementPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [branchOverviewStart, setBranchOverviewStart] = useState(0);
+  const [branchControlsPage, setBranchControlsPage] = useState(1);
   const [salonsRefreshKey, setSalonsRefreshKey] = useState(0);
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
   const [salons, setSalons] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [selectedSlots, setSelectedSlots] = useState({
+    morning: TIME_SLOTS.morning.slots,
+    afternoon: TIME_SLOTS.afternoon.slots,
+    evening: TIME_SLOTS.evening.slots,
+  });
+  const [activePeriod, setActivePeriod] = useState(null);
+  const [selectedSalonId, setSelectedSalonId] = useState(null);
+  // Assign Manager Modal state
+  const [assignManagerForm, setAssignManagerForm] = useState({ salonId: "", managerId: "" });
+  const [managers, setManagers] = useState([]);
+  const [isManagersLoading, setIsManagersLoading] = useState(false);
+  const [isAssigning, setIsAssigning] = useState(false);
+  // Notification Modal state
+  const [notificationModal, setNotificationModal] = useState({ open: false, success: false, title: "", message: "" });
+  const CARD_WIDTH = 340;
+  const GAP = 24;
+  const SALONS_PER_PAGE = 2;
+  const BRANCH_CONTROLS_PER_PAGE = 5;
 
   useEffect(() => {
-    const loadSalons = async () => {
+    const loadData = async () => {
       setIsLoading(true);
       setError("");
       try {
-        const apiSalons = await fetchSalons();
-        const uiSalons = apiSalons.map(mapApiSalonToUiFormat);
-        setSalons(uiSalons);
+        // Fetch all salons with large page size
+        const salonsData = await fetchAdminSalons({ pageSize: 1000 });
+        // Fetch all managers to match with salons
+        const managersData = await fetchAdminUsers({ role: "Manager", pageSize: 1000 });
+        setManagers(managersData.items);
+        
+        // Match managers to salons using the new salonId field
+        const enrichedSalons = salonsData.items.map(salon => {
+          const matchedManager = managersData.items.find(m => m.salonId === salon.id);
+          return {
+            ...salon,
+            manager: matchedManager ? matchedManager.name : "Unassigned"
+          };
+        });
+        
+        setSalons(enrichedSalons);
       } catch (err) {
-        console.error("Failed to load salons:", err);
+        console.error("Failed to load salons/managers:", err);
         setError(err.message || "Failed to load salons. Please try again.");
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadSalons();
+    loadData();
   }, [salonsRefreshKey]);
 
   useEffect(() => {
@@ -334,6 +459,73 @@ export function SalonManagementPage() {
 
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
+
+  // Load managers when assign manager modal opens
+  useEffect(() => {
+    if (showAssignManagerModal) {
+      const loadManagers = async () => {
+        setIsManagersLoading(true);
+        try {
+          const result = await fetchAdminUsers({ role: "Manager", pageSize: 1000 });
+          setManagers(result.items);
+        } catch (err) {
+          console.error("Failed to load managers:", err);
+        } finally {
+          setIsManagersLoading(false);
+        }
+      };
+      loadManagers();
+    }
+  }, [showAssignManagerModal]);
+
+  // Handle opening assign manager
+  const handleAssignManager = async (formData) => {
+    const { managerId, salonId } = formData || assignManagerForm;
+    console.log("handleAssignManager called with:", { managerId, salonId });
+    
+    // Find the selected salon and manager names for the notification
+    const selectedSalon = filteredSalons.find(s => s.id === salonId);
+    const selectedManager = managers.find(m => m.id === managerId);
+    
+    setIsAssigning(true);
+    try {
+      // First fetch the current raw user data
+      const rawUser = await fetchRawAdminUserDetail(managerId);
+      console.log("Raw user data:", rawUser);
+      
+      // Send all user data plus updated salonId
+      await updateAdminUser(managerId, {
+        ...rawUser,
+        salonId: salonId
+      });
+      
+      // Show success notification
+      setNotificationModal({
+        open: true,
+        success: true,
+        title: "Manager Assigned Successfully",
+        message: `${selectedManager?.name || "Manager"} has been assigned to ${selectedSalon?.name || "Salon"} successfully!`
+      });
+      
+      setSalonsRefreshKey(current => current + 1);
+      setShowAssignManagerModal(false);
+      setAssignManagerForm({ salonId: "", managerId: "" });
+    } catch (err) {
+      console.error("Failed to assign manager:", err);
+      // Try to get the actual error message from the API response
+      const apiErrorMessage = err?.response?.data?.message || err.message;
+      
+      // Show error notification instead of just setting error state
+      setNotificationModal({
+        open: true,
+        success: false,
+        title: "Failed to Assign Manager",
+        message: apiErrorMessage
+      });
+    } finally {
+      setIsAssigning(false);
+    }
+  };
 
   const filteredSalons = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -352,15 +544,56 @@ export function SalonManagementPage() {
   }, [salons, searchTerm, statusFilter]);
 
   const visibleBranchSalons = useMemo(
-    () => filteredSalons.slice(branchOverviewStart, branchOverviewStart + 3),
-    [branchOverviewStart, filteredSalons],
+    () => filteredSalons.slice(branchOverviewStart, branchOverviewStart + SALONS_PER_PAGE),
+    [filteredSalons, branchOverviewStart],
   );
 
   const canGoToPreviousBranchSet = branchOverviewStart > 0;
-  const canGoToNextBranchSet = branchOverviewStart + 3 < filteredSalons.length;
+  const canGoToNextBranchSet = branchOverviewStart + SALONS_PER_PAGE < filteredSalons.length;
+
+  // Branch Controls pagination
+  const totalBranchControlsPages = useMemo(
+    () => Math.ceil(filteredSalons.length / BRANCH_CONTROLS_PER_PAGE),
+    [filteredSalons],
+  );
+
+  const visibleBranchControlsSalons = useMemo(() => {
+    const start = (branchControlsPage - 1) * BRANCH_CONTROLS_PER_PAGE;
+    const end = start + BRANCH_CONTROLS_PER_PAGE;
+    return filteredSalons.slice(start, end);
+  }, [filteredSalons, branchControlsPage]);
+
+  const canGoToPreviousBranchControls = branchControlsPage > 1;
+  const canGoToNextBranchControls = branchControlsPage < totalBranchControlsPages;
+
+  const handleNext = () => {
+    if (canGoToNextBranchSet) {
+      setBranchOverviewStart((prev) => prev + SALONS_PER_PAGE);
+    }
+  };
+
+  const handlePrev = () => {
+    if (canGoToPreviousBranchSet) {
+      setBranchOverviewStart((prev) => Math.max(0, prev - SALONS_PER_PAGE));
+    }
+  };
+
+  // Branch Controls handlers
+  const handleBranchControlsNext = () => {
+    if (canGoToNextBranchControls) {
+      setBranchControlsPage((prev) => prev + 1);
+    }
+  };
+
+  const handleBranchControlsPrev = () => {
+    if (canGoToPreviousBranchControls) {
+      setBranchControlsPage((prev) => prev - 1);
+    }
+  };
 
   useEffect(() => {
     setBranchOverviewStart(0);
+    setBranchControlsPage(1);
   }, [searchTerm, statusFilter]);
 
   const handleViewSalon = (salon) => {
@@ -374,6 +607,20 @@ export function SalonManagementPage() {
   const handleDeleteSalon = (salon) => {
     setSelectedSalon(salon);
     setShowDeleteModal(true);
+  };
+
+  const handleToggleSlot = (period, slot) => {
+    setSelectedSlots(prev => {
+      const currentSlots = prev[period];
+      const isSelected = currentSlots.includes(slot);
+      
+      return {
+        ...prev,
+        [period]: isSelected 
+          ? currentSlots.filter(s => s !== slot)
+          : [...currentSlots, slot]
+      };
+    });
   };
 
   const handleConfirmDelete = async () => {
@@ -420,21 +667,31 @@ export function SalonManagementPage() {
     },
   ];
 
+  const salonOptions = useMemo(
+    () => salons.map((salon) => ({ value: salon.id, label: salon.name })),
+    [salons],
+  );
+
+  const salonOptionsWithAddress = useMemo(
+    () => salons.map((salon) => ({ value: salon.id, label: `${salon.name} - ${salon.address}` })),
+    [salons],
+  );
+
   const salonSummary = useMemo(() => {
     return [
       {
-        accent: "from-[#fdf2f7] to-[#fff]",
+        accent: "from-[#fff5fb] to-[#fff]",
         icon: "briefcase",
-        iconBg: "bg-rose-100",
+        iconBg: "bg-[#fde7ef]",
         label: "Total Branches",
         note: "+2 this quarter",
         noteColor: "text-emerald-500",
         title: salons.length.toString(),
       },
       {
-        accent: "from-[#fdf7f2] to-[#fff]",
+        accent: "from-[#fff9f2] to-[#fff]",
         icon: "check",
-        iconBg: "bg-amber-100",
+        iconBg: "bg-[#ffedd5]",
         label: "Active Salons",
         note: "98% uptime",
         noteColor: "text-emerald-500",
@@ -443,7 +700,7 @@ export function SalonManagementPage() {
       {
         accent: "from-[#f2fdf6] to-[#fff]",
         icon: "sparkles",
-        iconBg: "bg-emerald-100",
+        iconBg: "bg-[#e6fdf0]",
         label: "Avg. Rating",
         note: "+0.2 vs last month",
         noteColor: "text-emerald-500",
@@ -452,7 +709,7 @@ export function SalonManagementPage() {
       {
         accent: "from-[#f5f2fd] to-[#fff]",
         icon: "trendingUp",
-        iconBg: "bg-violet-100",
+        iconBg: "bg-[#e0e7ff]",
         label: "Total Staff",
         note: "+12 new hires",
         noteColor: "text-emerald-500",
@@ -461,16 +718,32 @@ export function SalonManagementPage() {
     ];
   }, [salons]);
 
+  const fadeInUp = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+  };
+
+  const staggerContainer = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.1,
+      },
+    },
+  };
+
   return (
-    <section className="mx-auto max-w-[1300px] text-slate-700">
+    <section className="mx-auto max-w-[1400px] px-4 py-8 text-slate-700">
       {flashMessage ? (
-        <div className="mb-4 rounded-[20px] bg-[#edfdf4] px-4 py-3 text-sm font-medium text-[#16975f] sm:mb-5 sm:px-5 sm:py-4">
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 rounded-[20px] bg-[#edfdf4] px-6 py-4 text-sm font-medium text-[#16975f]">
           {flashMessage}
-        </div>
+        </motion.div>
       ) : null}
 
       {error ? (
-        <div className="mb-4">
+        <div className="mb-6">
           <Alert
             message="Error Loading Salons"
             description={error}
@@ -481,227 +754,375 @@ export function SalonManagementPage() {
       ) : null}
 
       {isLoading ? (
-        <div className="mb-5 flex min-h-[200px] items-center justify-center">
+        <div className="mb-8 flex min-h-[200px] items-center justify-center">
           <Spin size="large" />
         </div>
       ) : (
-        <section className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {salonSummary.map((item) => (
-            <StatCard key={item.label} item={item} />
+        <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="mb-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {salonSummary.map((item, index) => (
+            <StatCard key={item.label} item={item} index={index} />
           ))}
-        </section>
+        </motion.div>
       )}
 
       {!isLoading ? (
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_290px]">
-
-          {/* ── Left column ── */}
-          <div className="space-y-5">
-
+        <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_260px]">
+          {/* Left Column */}
+          <div className="space-y-6">
             {/* Branch Overview */}
-            <section className="rounded-[28px] bg-white/65 p-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
-              <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <h2 className="text-[16px] font-black text-slate-800">Branch Overview</h2>
-                  <p className="text-[11px] font-medium text-slate-400">
-                    Snapshot cards for the branches matching your current filters
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center justify-end gap-2">
-                  <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em]">
-                    {SALON_STATUS_FILTERS.map((tab) => (
-                      <button
-                        key={tab}
-                        type="button"
-                        onClick={() => setStatusFilter(tab)}
-                        className={`rounded-full px-3 py-1.5 ${
-                          statusFilter === tab
-                            ? "bg-rose-500 text-white"
-                            : "bg-[#fff2f6] text-slate-400 hover:bg-rose-100"
-                        }`}
-                      >
-                        {tab}
-                      </button>
-                    ))}
-                  </div>
-                  {filteredSalons.length > 3 ? (
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setBranchOverviewStart((current) => Math.max(current - 3, 0))
-                        }
-                        disabled={!canGoToPreviousBranchSet}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-rose-200 bg-white text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40"
-                        aria-label="Previous salons"
-                      >
-                        <ChevronLeft size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setBranchOverviewStart((current) =>
-                            Math.min(current + 3, Math.max(filteredSalons.length - 3, 0)),
-                          )
-                        }
-                        disabled={!canGoToNextBranchSet}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-rose-200 bg-white text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40"
-                        aria-label="Next salons"
-                      >
-                        <ChevronRight size={16} />
-                      </button>
-                    </div>
-                  ) : null}
+            <PremiumCard className="p-6">
+              <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <SectionHeading
+                  title="Branch Overview"
+                  subtitle="Snapshot cards for the branches matching your current filters"
+                />
+                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em]">
+                  {SALON_STATUS_FILTERS.map((tab) => (
+                    <motion.button
+                      key={tab}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      type="button"
+                      onClick={() => setStatusFilter(tab)}
+                      className={`rounded-full px-4 py-2 text-[12px] font-semibold transition-all duration-300 ${
+                        statusFilter === tab
+                          ? "bg-[#ea4f93] text-white shadow-[0_10px_20px_rgba(226,93,143,0.22)]"
+                          : "bg-[#fff5fb] text-[#a88a9f] hover:bg-[#fde7ef] hover:text-[#ea4f93]"
+                      }`}
+                    >
+                      {tab}
+                    </motion.button>
+                  ))}
                 </div>
               </div>
               {filteredSalons.length > 0 ? (
-                <div className="grid gap-4 lg:grid-cols-3">
-                  {visibleBranchSalons.map((branch) => (
-                    <BranchCard
-                      key={branch.id}
-                      branch={branch}
-                      onClick={() => handleViewSalon(branch)}
-                    />
-                  ))}
+                <div className="flex items-center gap-3">
+                  {(filteredSalons.length > SALONS_PER_PAGE) && (
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      type="button"
+                      onClick={handlePrev}
+                      disabled={!canGoToPreviousBranchSet}
+                      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] shadow-[0_10px_20px_rgba(0,0,0,0.06)] transition-all duration-300 hover:bg-[#fff5fb] disabled:cursor-not-allowed disabled:opacity-40"
+                      aria-label="Previous salons"
+                    >
+                      <ChevronLeft size={18} />
+                    </motion.button>
+                  )}
+                  <div className="min-w-0 flex-1 overflow-hidden flex justify-center">
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={branchOverviewStart}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                        className="flex gap-6"
+                      >
+                        {visibleBranchSalons.map((branch) => (
+                          <div
+                            key={branch.id}
+                            className="w-[340px] shrink-0"
+                          >
+                            <BranchCard
+                              branch={branch}
+                              onClick={() => handleViewSalon(branch)}
+                            />
+                          </div>
+                        ))}
+                      </motion.div>
+                    </AnimatePresence>
+                  </div>
+                  {(filteredSalons.length > SALONS_PER_PAGE) && (
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      type="button"
+                      onClick={handleNext}
+                      disabled={!canGoToNextBranchSet}
+                      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] shadow-[0_10px_20px_rgba(0,0,0,0.06)] transition-all duration-300 hover:bg-[#fff5fb] disabled:cursor-not-allowed disabled:opacity-40"
+                      aria-label="Next salons"
+                    >
+                      <ChevronRight size={18} />
+                    </motion.button>
+                  )}
                 </div>
               ) : (
-                <div className="rounded-2xl border border-dashed border-rose-200 bg-white px-6 py-10 text-center">
-                  <p className="text-[14px] font-bold text-slate-700">No branches matched your filters</p>
-                  <p className="mt-1 text-[11px] font-medium text-slate-400">
+                <div className="rounded-[28px] border border-dashed border-[#f0b7cf] bg-white px-8 py-12 text-center">
+                  <p className="text-[16px] font-bold text-[#2d1b35]">No branches matched your filters</p>
+                  <p className="mt-2 text-[13px] font-medium text-[#a88a9f]">
                     Try a different keyword or switch the status tab.
                   </p>
                 </div>
               )}
-            </section>
+            </PremiumCard>
 
             {/* Branch Controls */}
-            <section className="rounded-[28px] bg-white/65 p-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
-              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <PremiumCard className="p-6">
+              <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <h2 className="text-[16px] font-black text-slate-800">Branch Controls</h2>
-                  <p className="text-[11px] font-medium text-slate-400">
-                    Showing {filteredSalons.length} of {salons.length} salons
-                    {searchTerm ? ` • Search: "${searchTerm}"` : ""}
-                    {statusFilter !== "All" ? ` • Status: ${statusFilter}` : ""}
-                  </p>
+                  <SectionHeading
+                    title="Branch Controls"
+                    subtitle={`Showing ${filteredSalons.length} of ${salons.length} salons${searchTerm ? ` • Search: "${searchTerm}"` : ""}${statusFilter !== "All" ? ` • Status: ${statusFilter}` : ""}`}
+                  />
                 </div>
-                <div className="flex flex-col gap-3 xl:ml-auto xl:min-w-[620px] xl:items-end">
-                  <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
-                    <div className="flex items-center gap-2 rounded-full border border-rose-100 bg-white px-4 py-2 shadow-inner shadow-rose-50 sm:w-full sm:max-w-[300px]">
-                      <Search size={14} className="text-rose-300" />
+                <div className="flex flex-col gap-4 xl:ml-auto xl:min-w-[640px] xl:items-end">
+                  <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+                    <div className="flex w-full items-center gap-3 rounded-full border border-[#f0b7cf] bg-white px-5 py-3 shadow-inner shadow-[#fff0f8] sm:max-w-[340px]">
+                      <Search size={18} className="text-[#ea4f93]" />
                       <input
                         type="text"
                         placeholder="Search salons..."
                         value={searchTerm}
                         onChange={(event) => setSearchTerm(event.target.value)}
-                        className="w-full bg-transparent text-[12px] text-slate-500 outline-none placeholder:text-rose-200"
+                        className="w-full bg-transparent text-[13px] text-[#2d1b35] outline-none placeholder:text-[#c8b0bf]"
                       />
                       {searchTerm || statusFilter !== "All" ? (
-                        <button
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
                           type="button"
                           onClick={clearFilters}
-                          className="rounded-full bg-rose-100 p-1 text-rose-500 hover:bg-rose-200"
+                          className="rounded-full bg-[#fde7ef] p-2 text-[#ea4f93] transition-all duration-300 hover:bg-[#f0b7cf]"
                         >
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <line x1="18" y1="6" x2="6" y2="18" />
-                            <line x1="6" y1="6" x2="18" y2="18" />
-                          </svg>
-                        </button>
+                          <X size={14} />
+                        </motion.button>
                       ) : null}
                     </div>
-                    <div className="flex flex-wrap items-center justify-end gap-2">
+                    <div className="flex flex-wrap items-center justify-end gap-3">
                       <Link
                         to={ROUTES.adminSalonsCreate}
-                        className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2 text-[15px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
+                        className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#ea4f93] to-[#cf3d74] px-6 py-3 text-[15px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition-all duration-300 hover:opacity-90"
                       >
                         <Plus size={20} />
                         Add Salon
                       </Link>
                     </div>
                   </div>
-                  <div className="flex flex-wrap items-center justify-end gap-2">
+                  <div className="flex flex-wrap items-center justify-end gap-3">
                     <SmallActionButton onClick={() => setShowAssignManagerModal(true)}>
                       Assign Manager
                     </SmallActionButton>
                     <SmallActionButton onClick={() => setShowHolidayClosureModal(true)}>
                       Holiday Closure
                     </SmallActionButton>
-                    <SmallActionButton onClick={() => setShowSetHoursModal(true)}>
+                    <SmallActionButton onClick={() => {
+                      setActivePeriod(null);
+                      setSelectedSlots({
+                        morning: TIME_SLOTS.morning.slots,
+                        afternoon: TIME_SLOTS.afternoon.slots,
+                        evening: TIME_SLOTS.evening.slots
+                      });
+                      setSelectedSalonId(null);
+                      setShowSetHoursModal(true);
+                    }}>
                       Set Hours
                     </SmallActionButton>
                   </div>
                 </div>
               </div>
-              <div className="overflow-hidden rounded-2xl border border-rose-100">
-                <div className="overflow-x-auto bg-white">
-                  <table className="min-w-full text-left">
-                    <thead className="bg-[#fff5f8]">
-                      <tr className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                        <th className="px-4 py-3">Salon Name</th>
-                        <th className="px-4 py-3">Address</th>
-                        <th className="px-4 py-3">Manager</th>
-                        <th className="px-4 py-3">Staff</th>
-                        <th className="px-4 py-3">Operating Hours</th>
-                        <th className="px-4 py-3">Status</th>
-                        <th className="px-4 py-3">Actions</th>
+              <div className="overflow-hidden rounded-[28px] border border-[#f5e2ec]">
+                <div className="bg-white">
+                  <table className="w-full text-left">
+                    <thead className="bg-[#fff9fb]">
+                      <tr className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#a88a9f]">
+                        <th className="px-4 py-4 w-16">Avatar</th>
+                        <th className="px-4 py-4">Salon</th>
+                        <th className="px-4 py-4">Address</th>
+                        <th className="px-4 py-4">Manager</th>
+                        <th className="px-4 py-4">Staff</th>
+                        <th className="px-4 py-4">Hours</th>
+                        <th className="px-4 py-4">Status</th>
+                        <th className="px-4 py-4 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredSalons.map((salon) => (
-                        <tr
-                          key={`${salon.name}-${salon.id}`}
-                          className="border-t border-rose-50 text-[12px] text-slate-500"
-                        >
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-3">
+                      <AnimatePresence>
+                        {visibleBranchControlsSalons.map((salon, index) => (
+                          <motion.tr
+                            key={`${salon.name}-${salon.id}`}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.05, type: "spring", stiffness: 300, damping: 20 }}
+                            className="border-t border-[#f5e2ec] text-[12px] text-[#5b4256] hover:bg-[#fff9fb] transition-colors"
+                          >
+                            <td className="px-4 py-4">
                               <img
                                 crossOrigin="anonymous"
                                 src={salon.image}
                                 alt={salon.name}
-                                className="h-10 w-10 rounded-xl object-cover"
+                                className="h-10 w-10 rounded-[14px] object-cover shadow-sm"
                                 referrerPolicy="no-referrer"
                               />
-                              <div>
-                                <p className="font-bold text-slate-700">{salon.name}</p>
+                            </td>
+                            <td className="px-4 py-4">
+                              <div className="min-w-0">
+                                <p className="font-bold text-[#2d1b35] truncate">{salon.name}</p>
+                                <p className="text-[11px] text-[#a88a9f] truncate">{salon.phone}</p>
                               </div>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">{salon.address}</td>
-                          <td className="px-4 py-3">{salon.manager}</td>
-                          <td className="px-4 py-3">{salon.staff}</td>
-                          <td className="px-4 py-3">{salon.hours}</td>
-                          <td className="px-4 py-3">
-                            <span
-                              className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${salon.statusColor}`}
-                            >
-                              {salon.status}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <ActionDropdown
-                              label="Action"
-                              items={getSalonActionItems(salon)}
-                              buttonClassName="min-w-[108px] justify-between border-[#f1bfd5] bg-white px-4 text-[11px] shadow-sm"
-                            />
-                          </td>
-                        </tr>
-                      ))}
+                            </td>
+                            <td className="px-4 py-4">
+                              <p className="truncate max-w-[150px]">{salon.address}</p>
+                            </td>
+                            <td className="px-4 py-4">
+                              <div className="flex items-center gap-2">
+                                <div className="h-7 w-7 rounded-full bg-[#fde7ef] flex items-center justify-center text-[#ea4f93]">
+                                  <UserRound size={12} />
+                                </div>
+                                <span className="truncate max-w-[100px]">{salon.manager}</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-4">
+                              <div className="inline-flex items-center gap-1.5 rounded-full bg-[#fff9fb] px-2.5 py-1 text-[11px] font-semibold">
+                                <UserRound size={12} className="text-[#ea4f93]" />
+                                {salon.staff}
+                              </div>
+                            </td>
+                            <td className="px-4 py-4">
+                              <p className="truncate max-w-[140px]">{salon.hours}</p>
+                            </td>
+                            <td className="px-4 py-4">
+                              <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold ${salon.statusColor}`}>
+                                {salon.status}
+                              </span>
+                            </td>
+                            <td className="px-4 py-4">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <Tooltip title="View Salon">
+                                  <motion.button
+                                    whileHover={{ scale: 1.08 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    type="button"
+                                    onClick={() => handleViewSalon(salon)}
+                                    aria-label="View Salon"
+                                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
+                                  >
+                                    <Eye size={14} />
+                                  </motion.button>
+                                </Tooltip>
+                                <Tooltip title="Edit Salon">
+                                  <motion.button
+                                    whileHover={{ scale: 1.08 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    type="button"
+                                    onClick={() => handleUpdateSalon(salon)}
+                                    aria-label="Edit Salon"
+                                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
+                                  >
+                                    <Pencil size={14} />
+                                  </motion.button>
+                                </Tooltip>
+                                <motion.button
+                                  whileHover={{ scale: 1.08 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  type="button"
+                                  onClick={() => handleDeleteSalon(salon)}
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#f0b7cf] bg-[#fff0f0] border border-[#fecdd3] text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
+                                >
+                                  <Trash2 size={14} />
+                                </motion.button>
+                              </div>
+                            </td>
+                          </motion.tr>
+                        ))}
+                      </AnimatePresence>
                     </tbody>
                   </table>
                 </div>
+                {/* Pagination Controls */}
+                {totalBranchControlsPages > 1 && (
+                  <div className="flex items-center justify-between px-6 py-4 border-t border-[#f5e2ec] bg-[#fff9fb]">
+                    <div className="text-[12px] font-semibold text-[#a88a9f]">
+                      Page {branchControlsPage} of {totalBranchControlsPages}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        type="button"
+                        onClick={handleBranchControlsPrev}
+                        disabled={!canGoToPreviousBranchControls}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb] disabled:cursor-not-allowed disabled:opacity-40"
+                        aria-label="Previous page"
+                      >
+                        <ChevronLeft size={16} />
+                      </motion.button>
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: totalBranchControlsPages }, (_, i) => i + 1).map((page) => (
+                          <motion.button
+                            key={page}
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.95 }}
+                            type="button"
+                            onClick={() => setBranchControlsPage(page)}
+                            className={`inline-flex h-9 w-9 items-center justify-center rounded-full text-[12px] font-bold transition-all duration-300 ${
+                              branchControlsPage === page
+                                ? "bg-[#ea4f93] text-white shadow-[0_8px_16px_rgba(234,79,147,0.25)]"
+                                : "bg-white text-[#ea4f93] hover:bg-[#fff5fb]"
+                            }`}
+                          >
+                            {page}
+                          </motion.button>
+                        ))}
+                      </div>
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        type="button"
+                        onClick={handleBranchControlsNext}
+                        disabled={!canGoToNextBranchControls}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb] disabled:cursor-not-allowed disabled:opacity-40"
+                        aria-label="Next page"
+                      >
+                        <ChevronRight size={16} />
+                      </motion.button>
+                    </div>
+                  </div>
+                )}
               </div>
-            </section>
-
+            </PremiumCard>
           </div>
-          {/* ── End left column ── */}
+          {/* End Left Column */}
 
-          {/* ── Right column aside ── */}
-          <aside className="space-y-5">
-            <RightMetricCard {...TOP_PERFORMING_SALON} />
-            <RightMetricCard {...LOW_OCCUPANCY_SALON} />
+          {/* Right Column Aside */}
+          <aside className="space-y-6">
+            {salons.length > 0 && (
+              <>
+                <RightMetricCard
+                  title="Top Performing Salon"
+                  branch={salons[0].name}
+                  city={salons[0].address}
+                  concern={{ text: "Great performance!", color: "text-emerald-600" }}
+                  values={{
+                    image: salons[0].image,
+                    occupancy: "92%",
+                    revenue: "88%",
+                    utilization: "95%"
+                  }}
+                  buttonLabel="View Details"
+                  index={0}
+                />
+                {salons.length > 1 && (
+                  <RightMetricCard
+                    title="Low Occupancy Salon"
+                    branch={salons[salons.length - 1].name}
+                    city={salons[salons.length - 1].address}
+                    concern={{ text: "Needs attention", color: "text-amber-600" }}
+                    values={{
+                      image: salons[salons.length - 1].image,
+                      occupancy: "35%",
+                      revenue: "42%",
+                      utilization: "38%"
+                    }}
+                    buttonLabel="View Details"
+                    index={1}
+                  />
+                )}
+              </>
+            )}
           </aside>
-
-        </div>
+        </motion.div>
       ) : null}
 
       <ActionConfirmModal
@@ -733,224 +1154,43 @@ export function SalonManagementPage() {
         ]}
       />
 
-      {/* ── Assign Manager Modal ── */}
-      <Modal
+      <AssignManagerModal
         open={showAssignManagerModal}
-        onCancel={() => setShowAssignManagerModal(false)}
-        footer={null}
-        closable={false}
-        width={440}
-        styles={SALON_MODAL_STYLES}
-      >
-        <div>
-          <div className="bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-6 py-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="rounded-xl bg-white/20 p-2">
-                  <UserRound size={16} className="text-white" />
-                </div>
-                <div>
-                  <h3 className="text-[15px] font-black text-white">Assign Manager</h3>
-                  <p className="text-[11px] text-white/70">Assign a new manager to a salon</p>
-                </div>
-              </div>
-              <CloseIconButton onClick={() => setShowAssignManagerModal(false)} />
-            </div>
-          </div>
-          <div className="space-y-4 px-6 py-5">
-            <div>
-              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                Select Salon
-              </label>
-              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400">
-                <option>Choose a salon...</option>
-                {salons.map((salon) => (
-                  <option key={salon.id} value={salon.id}>
-                    {salon.name} - {salon.address}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                Select New Manager
-              </label>
-              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400">
-                <option>Choose a staff member...</option>
-              </select>
-            </div>
-          </div>
-          <div className="flex items-center justify-end gap-2 border-t border-rose-50 px-6 py-4">
-            <button
-              type="button"
-              onClick={() => setShowAssignManagerModal(false)}
-              className="rounded-full border border-rose-200 bg-white px-5 py-2 text-[11px] font-bold text-rose-400 transition hover:bg-rose-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowAssignManagerModal(false)}
-              className="rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-5 py-2 text-[11px] font-bold text-white shadow-[0_10px_20px_rgba(226,93,143,0.25)] transition hover:opacity-95"
-            >
-              Assign Manager
-            </button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* ── Holiday Closure Modal ── */}
-      <Modal
+        onCancel={() => {
+          setShowAssignManagerModal(false);
+          setAssignManagerForm({ salonId: "", managerId: "" });
+        }}
+        onConfirm={handleAssignManager}
+        confirmLoading={isAssigning}
+        filteredSalons={filteredSalons}
+        isLoading={isLoading}
+        assignManagerForm={assignManagerForm}
+        setAssignManagerForm={setAssignManagerForm}
+      />
+      <HolidayClosureModal
         open={showHolidayClosureModal}
         onCancel={() => setShowHolidayClosureModal(false)}
-        footer={null}
-        closable={false}
-        width={440}
-        styles={SALON_MODAL_STYLES}
-      >
-        <div>
-          <div className="bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-6 py-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="rounded-xl bg-white/20 p-2">
-                  <CalendarClock size={16} className="text-white" />
-                </div>
-                <div>
-                  <h3 className="text-[15px] font-black text-white">Holiday Closure</h3>
-                  <p className="text-[11px] text-white/70">Schedule salon closure for holidays</p>
-                </div>
-              </div>
-              <CloseIconButton onClick={() => setShowHolidayClosureModal(false)} />
-            </div>
-          </div>
-          <div className="space-y-4 px-6 py-5">
-            <div>
-              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                Select Salon
-              </label>
-              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400">
-                <option>Choose a salon...</option>
-                {salons.map((salon) => (
-                  <option key={salon.id} value={salon.id}>
-                    {salon.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                Closure Date
-              </label>
-              <input
-                type="date"
-                className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400"
-              />
-            </div>
-            <div>
-              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                Reason
-              </label>
-              <input
-                type="text"
-                placeholder="e.g., Christmas Holiday"
-                className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400"
-              />
-            </div>
-          </div>
-          <div className="flex items-center justify-end gap-2 border-t border-rose-50 px-6 py-4">
-            <button
-              type="button"
-              onClick={() => setShowHolidayClosureModal(false)}
-              className="rounded-full border border-rose-200 bg-white px-5 py-2 text-[11px] font-bold text-rose-400 transition hover:bg-rose-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowHolidayClosureModal(false)}
-              className="rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-5 py-2 text-[11px] font-bold text-white shadow-[0_10px_20px_rgba(226,93,143,0.25)] transition hover:opacity-95"
-            >
-              Schedule Closure
-            </button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* ── Set Hours Modal ── */}
-      <Modal
+        salonOptions={salonOptions}
+      />
+      <SetOperatingHoursModal
         open={showSetHoursModal}
         onCancel={() => setShowSetHoursModal(false)}
-        footer={null}
-        closable={false}
-        width={440}
-        styles={SALON_MODAL_STYLES}
-      >
-        <div>
-          <div className="bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-6 py-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="rounded-xl bg-white/20 p-2">
-                  <Clock3 size={16} className="text-white" />
-                </div>
-                <div>
-                  <h3 className="text-[15px] font-black text-white">Set Operating Hours</h3>
-                  <p className="text-[11px] text-white/70">Update salon opening and closing hours</p>
-                </div>
-              </div>
-              <CloseIconButton onClick={() => setShowSetHoursModal(false)} />
-            </div>
-          </div>
-          <div className="space-y-4 px-6 py-5">
-            <div>
-              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                Select Salon
-              </label>
-              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400">
-                <option>Choose a salon...</option>
-                {salons.map((salon) => (
-                  <option key={salon.id} value={salon.id}>
-                    {salon.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                Opening Time
-              </label>
-              <input
-                type="time"
-                className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400"
-              />
-            </div>
-            <div>
-              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                Closing Time
-              </label>
-              <input
-                type="time"
-                className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400"
-              />
-            </div>
-          </div>
-          <div className="flex items-center justify-end gap-2 border-t border-rose-50 px-6 py-4">
-            <button
-              type="button"
-              onClick={() => setShowSetHoursModal(false)}
-              className="rounded-full border border-rose-200 bg-white px-5 py-2 text-[11px] font-bold text-rose-400 transition hover:bg-rose-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowSetHoursModal(false)}
-              className="rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-5 py-2 text-[11px] font-bold text-white shadow-[0_10px_20px_rgba(226,93,143,0.25)] transition hover:opacity-95"
-            >
-              Update Hours
-            </button>
-          </div>
-        </div>
-      </Modal>
+        salonOptions={salonOptions}
+      />
+      
+      <ActionConfirmModal
+        open={notificationModal.open}
+        intent={notificationModal.success ? "success" : "danger"}
+        title={notificationModal.title}
+        subtitle=""
+        description={notificationModal.message}
+        confirmText={notificationModal.success ? "Okay" : "Close"}
+        cancelText={notificationModal.success ? "" : "Cancel"}
+        onConfirm={() => setNotificationModal({ ...notificationModal, open: false })}
+        onCancel={() => setNotificationModal({ ...notificationModal, open: false })}
+        confirmIcon={notificationModal.success ? Check : AlertTriangle}
+        width={480}
+      />
     </section>
   );
 }

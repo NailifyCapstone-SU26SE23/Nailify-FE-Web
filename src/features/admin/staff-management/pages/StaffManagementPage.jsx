@@ -11,6 +11,11 @@ import {
   X,
   User,
   Edit3,
+  CalendarDays,
+  Calendar,
+  Clock,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -18,7 +23,7 @@ import { PropTypes } from "../../../../shared/utils/propTypes";
 import { ROUTES, getAdminStaffUpdateRoute } from "../../../../shared/constants/routes";
 import { Pagination } from "../../../../shared/components/common/Pagination";
 import { fetchAdminSalons } from "../../salon-management/services/salonManagementService";
-import { fetchSalonStaff } from "../services/staffManagementService";
+import { fetchSalonStaff, fetchArtistSchedule } from "../services/staffManagementService";
 import { fetchUserById } from "../../../manager/bookings/services/bookingsService";
 import { fetchNailArtistSkills } from "../../../manager/staff-artist-management/services/nailArtistsService";
 
@@ -159,6 +164,97 @@ StaffCard.propTypes = {
   onClick: PropTypes.func,
 };
 
+// Helper: đọc field theo nhiều tên có thể có (giống style normalizeStaffMember
+// bên service) vì chưa biết chính xác field name BE trả về cho lịch làm việc.
+function pickField(entry, keys) {
+  for (const key of keys) {
+    if (entry?.[key] !== undefined && entry[key] !== null && entry[key] !== "") {
+      return entry[key];
+    }
+  }
+  return null;
+}
+
+function ScheduleEntryRow({ entry }) {
+  const date = pickField(entry, ["date", "workDate", "scheduleDate", "day"]);
+  const start = pickField(entry, ["startTime", "start", "from", "checkIn"]);
+  const end = pickField(entry, ["endTime", "end", "to", "checkOut"]);
+  const status = pickField(entry, ["status", "scheduleStatus"]);
+
+  // Format date nicely
+  const formattedDate = useMemo(() => {
+    if (!date) return "—";
+    try {
+      const d = new Date(date);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          year: "numeric"
+        });
+      }
+    } catch (e) {
+      // Ignore
+    }
+    return date;
+  }, [date]);
+
+  const getStatusColor = () => {
+    const lowerStatus = status?.toLowerCase() || "";
+    if (lowerStatus.includes("active") || lowerStatus.includes("working")) {
+      return "bg-[#eaf9ee] text-[#2fa25f] border-[#b8e6c7]";
+    }
+    if (lowerStatus.includes("leave") || lowerStatus.includes("off")) {
+      return "bg-[#fff0f8] text-[#ea4f93] border-[#f0d9e8]";
+    }
+    return "bg-[#fff0f8] text-[#8b7382] border-[#f0d9e8]";
+  };
+
+  const getStatusIcon = () => {
+    const lowerStatus = status?.toLowerCase() || "";
+    if (lowerStatus.includes("active") || lowerStatus.includes("working")) {
+      return <CheckCircle size={12} />;
+    }
+    if (lowerStatus.includes("leave") || lowerStatus.includes("off")) {
+      return <XCircle size={12} />;
+    }
+    return <Clock size={12} />;
+  };
+
+  return (
+    <div className="group relative overflow-hidden rounded-2xl border border-[#f0d9e8] bg-white p-4 shadow-sm transition-all duration-200 hover:border-[#ea4f93] hover:shadow-md">
+      <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-[#ff8ebb] to-[#ea4f93]"></div>
+      <div className="ml-2 flex items-start justify-between gap-4">
+        <div className="flex items-start gap-3 min-w-0 flex-1">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#fff0f8] to-[#fff5f9] text-[#ea4f93]">
+            <Calendar size={18} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-[#2d1b35] truncate">{formattedDate}</p>
+            {(start || end) && (
+              <div className="mt-1 flex items-center gap-1.5 text-[11px] text-[#a88a9f]">
+                <Clock size={12} />
+                <span>{start || "?"} - {end || "?"}</span>
+              </div>
+            )}
+          </div>
+        </div>
+        {status && (
+          <span className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-3 py-1 text-[11px] font-semibold ${getStatusColor()}`}>
+            {getStatusIcon()}
+            {status}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+ScheduleEntryRow.propTypes = {
+  entry: PropTypes.object.isRequired,
+};
+
 export function StaffManagementPage() {
   const navigate = useNavigate();
   const [loadingSalons, setLoadingSalons] = useState(true);
@@ -178,35 +274,55 @@ export function StaffManagementPage() {
   const [isLoadingDrawer, setIsLoadingDrawer] = useState(false);
   const [staffSkills, setStaffSkills] = useState([]);
   const [isLoadingSkills, setIsLoadingSkills] = useState(false);
+  const [staffSchedule, setStaffSchedule] = useState([]);
+  const [isLoadingSchedule, setIsLoadingSchedule] = useState(false);
 
   // Handle opening staff detail drawer
   const handleOpenDrawer = useCallback(async (userId) => {
     setIsDrawerOpen(true);
     setIsLoadingDrawer(true);
     setIsLoadingSkills(true);
+    setIsLoadingSchedule(true);
     setStaffSkills([]);
+    setStaffSchedule([]);
     try {
       const staffData = await fetchUserById(userId);
-      
-      // Fetch skills if staff is a nail artist and has staffId (nail artist ID)
-      if ((staffData.role === 'Staff_Artist' || staffData.role === 'NAIL_ARTIST') && staffData.staffId) {
-        try {
-          const skillsData = await fetchNailArtistSkills(staffData.staffId);
-          setStaffSkills(skillsData || []);
-        } catch (skillErr) {
-          console.warn("Failed to load staff skills:", skillErr);
+
+      const isNailArtist = staffData.role === 'Staff_Artist' || staffData.role === 'NAIL_ARTIST';
+
+      // Fetch skills + schedule song song nếu staff là nail artist và có staffId
+      // (staffId ở đây là nailArtistId, không phải userId)
+      if (isNailArtist && staffData.staffId) {
+        const [skillsResult, scheduleResult] = await Promise.allSettled([
+          fetchNailArtistSkills(staffData.staffId),
+          fetchArtistSchedule(staffData.staffId),
+        ]);
+
+        if (skillsResult.status === "fulfilled") {
+          setStaffSkills(skillsResult.value || []);
+        } else {
+          console.warn("Failed to load staff skills:", skillsResult.reason);
           setStaffSkills([]);
+        }
+
+        if (scheduleResult.status === "fulfilled") {
+          setStaffSchedule(scheduleResult.value || []);
+        } else {
+          console.warn("Failed to load staff schedule:", scheduleResult.reason);
+          setStaffSchedule([]);
         }
       } else {
         setStaffSkills([]);
+        setStaffSchedule([]);
       }
-      
+
       setSelectedStaff(staffData);
     } catch (err) {
       console.error("Failed to load staff details:", err);
     } finally {
       setIsLoadingDrawer(false);
       setIsLoadingSkills(false);
+      setIsLoadingSchedule(false);
     }
   }, []);
 
@@ -475,7 +591,7 @@ export function StaffManagementPage() {
           }}
           placement="right"
           mask={true}
-          mask={{ closable: true }}
+          maskClosable={true}
           destroyOnClose
           closable={false}
         >
@@ -578,6 +694,29 @@ export function StaffManagementPage() {
                       </div>
                     ) : (
                       <p className="text-xs text-[#a88a9f]">No skills assigned yet</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Working Schedule Section (for Nail Artists) */}
+                {(selectedStaff.role === 'Staff_Artist' || selectedStaff.role === 'NAIL_ARTIST') && (
+                  <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f0d9e8]">
+                    <div className="mb-4 flex items-center gap-2">
+                      <CalendarDays size={16} className="text-[#ea4f93]" />
+                      <h3 className="text-sm font-bold text-[#2d1b35]">Working Schedule</h3>
+                    </div>
+                    {isLoadingSchedule ? (
+                      <div className="flex justify-center py-4">
+                        <Spin size="small" />
+                      </div>
+                    ) : staffSchedule.length > 0 ? (
+                      <div className="space-y-2">
+                        {staffSchedule.map((entry, index) => (
+                          <ScheduleEntryRow key={entry.id || index} entry={entry} />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-[#a88a9f]">No schedule available</p>
                     )}
                   </div>
                 )}

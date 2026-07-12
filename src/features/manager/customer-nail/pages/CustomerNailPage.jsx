@@ -68,7 +68,7 @@ function formatVND(amount, status) {
   }
   return new Intl.NumberFormat('vi-VN', {
     style: 'currency',
-    currency: 'VND'
+    currency: 'VNĐ'
   }).format(amount);
 }
 

@@ -1,4 +1,5 @@
 import {
+  ClipboardList,
   Camera,
   Check,
   CheckCircle2,
@@ -17,10 +18,12 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
+import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
+import { ExtraServiceModal } from "../components/ExtraServiceModal";
 import {
   getStaffBookingDesignUpdateRoute,
   getStaffBookingDetailRoute,
@@ -29,13 +32,20 @@ import {
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { getMockBookingById } from "../../../../shared/bookings/services/mockBookings";
 import {
+  buildStaffBookingItemsForUpdate,
   buildStaffServiceSessionPayload,
+  claimBookingProcedure,
   fetchServiceCatalog,
   formatAppointmentEndTime,
   fetchStaffBookingDetail,
   fetchBookingProceduresByBookingItem,
+  fetchStaffCustomerNailDetail,
   fetchStaffCustomerDetail,
+  fetchStaffNailVariantDetail,
+  fetchStaffServiceDetail,
   formatTimeValue,
+  getStaffArtistId,
+  toNullableBookingUuid,
   uploadImageBeforeService,
   startStaffBookingService,
   uploadImageAfterService,
@@ -44,7 +54,7 @@ import {
 } from "../services/staffBookingService";
 import { useDispatch, useSelector } from "react-redux";
 import { setServiceSession } from "../../../../store/serviceSessionSlice";
-import { Image } from "antd";
+import { Button, Image, Modal } from "antd";
 
 const DEFAULT_CUSTOMER_AVATAR =
   "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=140&q=80";
@@ -190,8 +200,9 @@ SummaryValue.propTypes = {
   value: PropTypes.string.isRequired,
 };
 
-function ServiceSummaryValue({ services = [], fallbackValue = "" }) {
+function ServiceSummaryValue({ services = [], fallbackValue = "", onOpenProcedures = null }) {
   const hasServices = Array.isArray(services) && services.length > 0;
+  const hasProcedureAction = typeof onOpenProcedures === "function";
 
   if (!hasServices) {
     return (
@@ -204,22 +215,25 @@ function ServiceSummaryValue({ services = [], fallbackValue = "" }) {
   return (
     <div className="overflow-hidden rounded-[20px] border border-[#f2bfd4] bg-white shadow-[0_10px_22px_rgba(236,72,153,0.05)]">
       <div className="overflow-x-auto">
-        <div className="hidden min-w-[620px] grid-cols-[minmax(220px,1.8fr)_90px_140px_110px] items-center gap-3 border-b border-[#f8dce8] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f7_100%)] px-5 py-3 md:grid">
+        <div className={`hidden min-w-[620px] items-center gap-3 border-b border-[#f8dce8] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f7_100%)] px-5 py-3 md:grid ${hasProcedureAction ? "grid-cols-[minmax(220px,1.6fr)_90px_140px_110px_120px]" : "grid-cols-[minmax(220px,1.8fr)_90px_140px_110px]"}`}>
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Service</p>
           <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Qty</p>
           <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Price</p>
           <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Duration</p>
+          {hasProcedureAction ? (
+            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Action</p>
+          ) : null}
         </div>
 
         <div className="divide-y divide-[#f9dfeb]">
           {services.map((service, index) => (
             <div
               key={service.id || `${service.name}-${index}`}
-              className="px-4 py-4 md:grid md:min-w-[620px] md:grid-cols-[minmax(220px,1.8fr)_90px_140px_110px] md:items-center md:gap-3 md:px-5"
+              className={`px-4 py-4 md:grid md:min-w-[620px] md:items-center md:gap-3 md:px-5 ${hasProcedureAction ? "md:grid-cols-[minmax(220px,1.6fr)_90px_140px_110px_120px]" : "md:grid-cols-[minmax(220px,1.8fr)_90px_140px_110px]"}`}
             >
               <div className="min-w-0">
                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
-                  Service {index + 1}
+                  {service.detailLabel || `Service ${index + 1}`}
                 </p>
                 <p className="mt-2 text-sm font-extrabold text-[#ea4f93] md:break-words">{service.name || "--"}</p>
                 {service.nailServiceName ? (
@@ -249,6 +263,29 @@ function ServiceSummaryValue({ services = [], fallbackValue = "" }) {
                   {service.durationLabel || "--"}
                 </span>
               </div>
+
+              {hasProcedureAction ? (
+                <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Action</p>
+                  {service.canViewProcedures ? (
+                    <ActionDropdown
+                      label="Actions"
+                      items={[
+                        {
+                          key: `view-procedures-${service.id || index}`,
+                          label: "View Procedures",
+                          icon: ClipboardList,
+                          onSelect: () => onOpenProcedures(service),
+                        },
+                      ]}
+                    />
+                  ) : (
+                    <span className="inline-flex rounded-full border border-[#f6dbe7] bg-[#fff9fc] px-3 py-1 text-[11px] font-bold text-[#bca0ae]">
+                      --
+                    </span>
+                  )}
+                </div>
+              ) : null}
             </div>
           ))}
         </div>
@@ -259,8 +296,12 @@ function ServiceSummaryValue({ services = [], fallbackValue = "" }) {
 
 ServiceSummaryValue.propTypes = {
   fallbackValue: PropTypes.string,
+  onOpenProcedures: PropTypes.func,
   services: PropTypes.arrayOf(
     PropTypes.shape({
+      bookingItemId: PropTypes.string,
+      canViewProcedures: PropTypes.bool,
+      detailLabel: PropTypes.string,
       durationLabel: PropTypes.string,
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string,
@@ -271,6 +312,22 @@ ServiceSummaryValue.propTypes = {
   ),
 };
 
+function getProcedureStatusTone(status) {
+  switch (String(status || "").trim().toLowerCase()) {
+    case "completed":
+      return "bg-[#e7f8ee] text-[#309e63]";
+    case "inprogress":
+    case "in progress":
+      return "bg-[#efeafd] text-[#7c63d8]";
+    case "pending":
+      return "bg-[#fff4e3] text-[#e09a27]";
+    case "skipped":
+      return "bg-[#f2f2f2] text-[#656565]";
+    default:
+      return "bg-[#fff1f6] text-[#eb5b92]";
+  }
+}
+
 function SessionSummaryPanel({
   phase,
   title,
@@ -278,6 +335,7 @@ function SessionSummaryPanel({
   data,
   hasConfirmedDesign,
   serviceStatusLabel,
+  onOpenProcedures,
 }) {
   const summaryToneByPhase = {
     start: "bg-[linear-gradient(180deg,#fffafc_0%,#fff5f9_100%)]",
@@ -335,6 +393,7 @@ function SessionSummaryPanel({
             <ServiceSummaryValue
               services={Array.isArray(data.serviceBreakdown) ? data.serviceBreakdown : []}
               fallbackValue={data.serviceLabel}
+              onOpenProcedures={onOpenProcedures}
             />
           {/* </div> */}
         </div>
@@ -359,6 +418,8 @@ SessionSummaryPanel.propTypes = {
     estimatedFinishTime: PropTypes.string,
     serviceBreakdown: PropTypes.arrayOf(
       PropTypes.shape({
+        canViewProcedures: PropTypes.bool,
+        detailLabel: PropTypes.string,
         durationLabel: PropTypes.string,
         id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         name: PropTypes.string,
@@ -379,6 +440,7 @@ SessionSummaryPanel.propTypes = {
     staffArtist: PropTypes.string,
   }).isRequired,
   hasConfirmedDesign: PropTypes.bool.isRequired,
+  onOpenProcedures: PropTypes.func,
   phase: PropTypes.oneOf(["start", "progress", "done"]).isRequired,
   serviceStatusLabel: PropTypes.string.isRequired,
   subtitle: PropTypes.string.isRequired,
@@ -460,195 +522,40 @@ ActionGhostButton.propTypes = {
   onClick: PropTypes.func.isRequired,
 };
 
-function ExtraServiceModal({
-  open,
-  services,
-  selectedServiceIds,
-  searchValue,
-  isLoading,
-  isSaving,
-  meta,
-  onClose,
-  onSearchChange,
-  onSearchSubmit,
-  onSelect,
-  onPageChange,
-  onConfirm,
-}) {
-  if (!open) {
-    return null;
+function parseSummaryQuantity(meta) {
+  const matched = String(meta || "").match(/qty:\s*(\d+)/i);
+
+  if (!matched) {
+    return 1;
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2f1c2e]/45 px-4 py-6 backdrop-blur-sm">
-      <div className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-[28px] border border-[#f1cddd] bg-white shadow-[0_24px_60px_rgba(63,43,63,0.24)]">
-        <div className="flex items-start justify-between gap-4 border-b border-[#f7dfeb] px-6 py-5">
-          <div>
-            <h3 className="text-lg font-extrabold text-[#3f2b3f]">Add Extra Service</h3>
-            <p className="mt-1 text-sm text-[#a88a9d]">Select one or more active services and append them to this booking.</p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#f2bfd4] bg-white text-[#ea4f93] transition hover:bg-[#fff5f8]"
-          >
-            <X size={16} />
-          </button>
-        </div>
-
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
-          <form onSubmit={onSearchSubmit} className="flex flex-col gap-3 sm:flex-row">
-            <label className="flex flex-1 items-center gap-3 rounded-2xl border border-[#f2bfd4] bg-[#fff9fc] px-4 py-3">
-              <Search size={16} className="text-[#ea4f93]" />
-              <input
-                value={searchValue}
-                onChange={onSearchChange}
-                placeholder="Search service name..."
-                className="w-full bg-transparent text-sm text-[#3f2b3f] outline-none placeholder:text-[#c59ab0]"
-              />
-            </label>
-            <button
-              type="submit"
-              className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-[image:var(--gradient-accent)] px-5 py-3 text-sm font-bold text-white"
-            >
-              Search
-            </button>
-          </form>
-
-          <div className="mt-5 space-y-3 pr-1">
-            {isLoading ? (
-              <div className="rounded-[20px] border border-dashed border-[#f1cade] bg-[#fff8fb] px-4 py-10 text-center text-sm font-medium text-[#a88a9d]">
-                Loading services...
-              </div>
-            ) : services.length ? (
-              services.map((service) => {
-                const isSelected = selectedServiceIds.includes(service.serviceId);
-
-                return (
-                  <button
-                    key={service.serviceId}
-                    type="button"
-                    onClick={() => onSelect(service.serviceId)}
-                    className={`w-full rounded-[22px] border px-4 py-4 text-left transition ${isSelected
-                      ? "border-[#ea4f93] bg-[#fff1f7] shadow-[0_14px_28px_rgba(236,72,153,0.12)]"
-                      : "border-[#f3d5e2] bg-white hover:bg-[#fff8fb]"
-                      }`}
-                  >
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="min-w-0">
-                        <p className="text-sm font-extrabold text-[#3f2b3f]">{service.name}</p>
-                        <p className="mt-1 text-xs text-[#a88a9d]">{service.description || "No description provided."}</p>
-                      </div>
-                      <span className="inline-flex shrink-0 rounded-full border border-[#cdeed7] bg-[#effcf3] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#1f9e5b]">
-                        {service.status}
-                      </span>
-                    </div>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <span className="rounded-full bg-[#fff4da] px-3 py-1 text-[11px] font-bold text-[#bd8517]">
-                        {new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(service.price)} VND
-                      </span>
-                      <span className="rounded-full bg-[#f7efff] px-3 py-1 text-[11px] font-bold text-[#8b5cf6]">
-                        {service.duration} min
-                      </span>
-                    </div>
-                  </button>
-                );
-              })
-            ) : (
-              <div className="rounded-[20px] border border-dashed border-[#f1cade] bg-[#fff8fb] px-4 py-10 text-center text-sm font-medium text-[#a88a9d]">
-                No services found.
-              </div>
-            )}
-          </div>
-
-        </div>
-
-        <div className="shrink-0 bg-white">
-          <div className="flex flex-col gap-3 border-t border-[#f7dfeb] px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-[#a88a9d]">
-              Showing {meta?.firstRowOnPage ?? 0}-{meta?.lastRowOnPage ?? 0} of {meta?.totalItems ?? 0} services
-            </p>
-            <p className="text-xs font-bold text-[#ea4f93]">
-              Selected: {selectedServiceIds.length}
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => onPageChange((meta?.currentPage ?? 1) - 1)}
-                disabled={!meta?.hasPrevious || isLoading}
-                className="rounded-xl border border-[#f2bfd4] bg-white px-3 py-2 text-xs font-bold text-[#ea4f93] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Previous
-              </button>
-              <span className="text-xs font-bold text-[#866f80]">
-                Page {meta?.currentPage ?? 1}/{meta?.totalPages ?? 1}
-              </span>
-              <button
-                type="button"
-                onClick={() => onPageChange((meta?.currentPage ?? 1) + 1)}
-                disabled={!meta?.hasNext || isLoading}
-                className="rounded-xl border border-[#f2bfd4] bg-white px-3 py-2 text-xs font-bold text-[#ea4f93] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-
-          <div className="flex flex-col-reverse gap-3 border-t border-[#f7dfeb] px-6 py-5 sm:flex-row sm:justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-2xl border border-[#f2bfd4] bg-white px-5 py-3 text-sm font-bold text-[#ea4f93]"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={onConfirm}
-              disabled={!selectedServiceIds.length || isSaving || isLoading}
-              className="rounded-2xl bg-[image:var(--gradient-accent)] px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isSaving ? "Adding Services..." : "Add Selected Services"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  const quantity = Number(matched[1]);
+  return Number.isFinite(quantity) && quantity > 0 ? quantity : 1;
 }
 
-ExtraServiceModal.propTypes = {
-  isLoading: PropTypes.bool.isRequired,
-  isSaving: PropTypes.bool.isRequired,
-  meta: PropTypes.shape({
-    currentPage: PropTypes.number,
-    firstRowOnPage: PropTypes.number,
-    hasNext: PropTypes.bool,
-    hasPrevious: PropTypes.bool,
-    lastRowOnPage: PropTypes.number,
-    totalItems: PropTypes.number,
-    totalPages: PropTypes.number,
-  }),
-  onClose: PropTypes.func.isRequired,
-  onConfirm: PropTypes.func.isRequired,
-  onPageChange: PropTypes.func.isRequired,
-  onSearchChange: PropTypes.func.isRequired,
-  onSearchSubmit: PropTypes.func.isRequired,
-  onSelect: PropTypes.func.isRequired,
-  open: PropTypes.bool.isRequired,
-  searchValue: PropTypes.string.isRequired,
-  selectedServiceIds: PropTypes.arrayOf(PropTypes.string).isRequired,
-  services: PropTypes.arrayOf(
-    PropTypes.shape({
-      description: PropTypes.string,
-      duration: PropTypes.number,
-      name: PropTypes.string.isRequired,
-      price: PropTypes.number,
-      serviceId: PropTypes.string.isRequired,
-      status: PropTypes.string,
-    }),
-  ).isRequired,
-};
+function buildFinalSummaryTableRows(priceSummary) {
+  const serviceRows = Array.isArray(priceSummary?.serviceRows) ? priceSummary.serviceRows : [];
+  const nailRows = Array.isArray(priceSummary?.nailRows) ? priceSummary.nailRows : [];
+  const discountRows = Array.isArray(priceSummary?.discountRows) ? priceSummary.discountRows : [];
+
+  return [
+    ...serviceRows.map((item) => ({
+      ...item,
+      qty: parseSummaryQuantity(item?.meta),
+      type: item?.category || "Service",
+    })),
+    ...nailRows.map((item) => ({
+      ...item,
+      qty: parseSummaryQuantity(item?.meta),
+      type: item?.category || "Nail Service",
+    })),
+    ...discountRows.map((item) => ({
+      ...item,
+      qty: "-",
+      type: item?.category || "Discount",
+    })),
+  ];
+}
 
 function resolvePhotoUrl(value) {
   if (Array.isArray(value)) {
@@ -720,6 +627,16 @@ export function StaffServiceSessionPage() {
   );
   const [bookingDetail, setBookingDetail] = useState(null);
   const [customerDetail, setCustomerDetail] = useState(null);
+  const [serviceDetailMap, setServiceDetailMap] = useState({});
+  const [bookingNailVariantDetailMap, setBookingNailVariantDetailMap] = useState({});
+  const [bookingCustomerNailDetailMap, setBookingCustomerNailDetailMap] = useState({});
+  const currentStaffArtistId = useMemo(() => {
+    try {
+      return String(getStaffArtistId() || "").trim();
+    } catch {
+      return "";
+    }
+  }, []);
 
   useEffect(() => {
     if (!bookingId) {
@@ -781,12 +698,86 @@ export function StaffServiceSessionPage() {
     };
   }, [bookingDetail?.customerId]);
 
+  useEffect(() => {
+    const bookingItems = Array.isArray(bookingDetail?.bookingItems) ? bookingDetail.bookingItems : [];
+    const serviceIds = [...new Set(
+      bookingItems.map((item) => String(item?.serviceId || "").trim()).filter(Boolean),
+    )];
+    const nailVariantIds = [...new Set(
+      bookingItems
+        .map((item) => Number(item?.nailVariantId || 0))
+        .filter((value) => Number.isInteger(value) && value > 0),
+    )];
+    const customerNailIds = [...new Set(
+      bookingItems
+        .map((item) => Number(item?.customerNailId || 0))
+        .filter((value) => Number.isInteger(value) && value > 0),
+    )];
+    let isMounted = true;
+
+    if (!serviceIds.length && !nailVariantIds.length && !customerNailIds.length) {
+      setServiceDetailMap({});
+      setBookingNailVariantDetailMap({});
+      setBookingCustomerNailDetailMap({});
+      return undefined;
+    }
+
+    const loadBookingItemDetails = async () => {
+      const [serviceResults, nailVariantResults, customerNailResults] = await Promise.all([
+        Promise.allSettled(serviceIds.map(async (serviceId) => [serviceId, await fetchStaffServiceDetail(serviceId)])),
+        Promise.allSettled(nailVariantIds.map(async (variantId) => [variantId, await fetchStaffNailVariantDetail(variantId)])),
+        Promise.allSettled(customerNailIds.map(async (customerNailId) => [customerNailId, await fetchStaffCustomerNailDetail(customerNailId)])),
+      ]);
+
+      if (!isMounted) {
+        return;
+      }
+
+      setServiceDetailMap(
+        serviceResults.reduce((accumulator, result) => {
+          if (result.status === "fulfilled") {
+            const [serviceId, detail] = result.value;
+            accumulator[serviceId] = detail;
+          }
+          return accumulator;
+        }, {}),
+      );
+      setBookingNailVariantDetailMap(
+        nailVariantResults.reduce((accumulator, result) => {
+          if (result.status === "fulfilled") {
+            const [variantId, detail] = result.value;
+            accumulator[variantId] = detail;
+          }
+          return accumulator;
+        }, {}),
+      );
+      setBookingCustomerNailDetailMap(
+        customerNailResults.reduce((accumulator, result) => {
+          if (result.status === "fulfilled") {
+            const [customerNailId, detail] = result.value;
+            accumulator[customerNailId] = detail;
+          }
+          return accumulator;
+        }, {}),
+      );
+    };
+
+    void loadBookingItemDetails();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [bookingDetail?.bookingItems]);
+
   const fallbackData = useMemo(() => {
     if (bookingDetail) {
       return buildStaffServiceSessionPayload(bookingDetail, {
         backRoute: getStaffBookingDetailRoute(bookingId),
         customerDetail,
         designUpdateRoute: getStaffBookingDesignUpdateRoute(bookingId),
+        serviceDetailMap,
+        nailVariantDetailMap: bookingNailVariantDetailMap,
+        customerNailDetailMap: bookingCustomerNailDetailMap,
       });
     }
 
@@ -871,7 +862,6 @@ export function StaffServiceSessionPage() {
                 id: `service-${item?.bookingItemId || item?.id || index}`,
                 category: "Service",
                 label: name,
-                meta: `Qty: ${quantity}`,
                 amount: formatCurrency(item?.price || item?.finalPrice || 0),
               };
             })
@@ -892,7 +882,6 @@ export function StaffServiceSessionPage() {
                 id: `nail-${item?.bookingItemId || item?.id || index}`,
                 category: "Nail Service",
                 label: name,
-                meta: `Qty: ${quantity}`,
                 amount: formatCurrency(item?.price || item?.finalPrice || 0),
               };
             })
@@ -944,7 +933,7 @@ export function StaffServiceSessionPage() {
         "Before photo uploaded",
       ],
     };
-  }, [booking, bookingDetail, bookingId, customerDetail]);
+  }, [booking, bookingDetail, bookingId, customerDetail, serviceDetailMap, bookingNailVariantDetailMap, bookingCustomerNailDetailMap]);
 
   const data = useMemo(() => {
     if (!fallbackData && !payload) {
@@ -1070,7 +1059,7 @@ export function StaffServiceSessionPage() {
   const [serviceSearchInput, setServiceSearchInput] = useState("");
   const [serviceSearchKeyword, setServiceSearchKeyword] = useState("");
   const [serviceCatalogPage, setServiceCatalogPage] = useState(1);
-  const [selectedExtraServiceIds, setSelectedExtraServiceIds] = useState([]);
+  const [selectedExtraServiceQuantities, setSelectedExtraServiceQuantities] = useState({});
   const [isLoadingServiceCatalog, setIsLoadingServiceCatalog] = useState(false);
   const [isSavingExtraService, setIsSavingExtraService] = useState(false);
   const [started, setStarted] = useState(() => persistedSession?.started ?? Boolean(payload?.started));
@@ -1095,6 +1084,11 @@ export function StaffServiceSessionPage() {
   const [isLoadingProcedures, setIsLoadingProcedures] = useState(false);
   const [procedureLoadError, setProcedureLoadError] = useState("");
   const [procedureStatusUpdates, setProcedureStatusUpdates] = useState({});
+  const [claimingProcedureId, setClaimingProcedureId] = useState("");
+  const [selectedProcedureService, setSelectedProcedureService] = useState(null);
+  const [serviceProcedureList, setServiceProcedureList] = useState([]);
+  const [isServiceProcedureModalLoading, setIsServiceProcedureModalLoading] = useState(false);
+  const [serviceProcedureModalError, setServiceProcedureModalError] = useState("");
   const loadedBookingItemIdRef = useRef("");
   const progressSentinelRef = useRef(null);
   const [showComparisonView, setShowComparisonView] = useState(false);
@@ -1128,21 +1122,98 @@ export function StaffServiceSessionPage() {
       return [];
     }
 
-    return [...bookingProcedures]
-      .sort((left, right) => (left.stepOrder ?? 0) - (right.stepOrder ?? 0))
+    const sortedProcedures = [...bookingProcedures]
+      .sort((left, right) => (left.stepOrder ?? 0) - (right.stepOrder ?? 0));
+
+    return sortedProcedures
       .map((procedure) => {
         const normalizedStatus = String(procedure.status || "").trim().toLowerCase();
         const procedureName = String(procedure.procedureName || "").trim() || "--";
         const hasStepOrder = Number.isFinite(procedure.stepOrder);
+        const assignedArtistId = String(procedure.assignedArtistId || "").trim();
+        const isTerminalStatus = ["completed", "done", "skipped"].includes(normalizedStatus);
+        const isInProgressStatus = ["inprogress", "in progress"].includes(normalizedStatus);
+        const isPendingStatus = ["pending", "waiting"].includes(normalizedStatus);
+        const isAssignedToCurrentArtist =
+          !assignedArtistId || !currentStaffArtistId || assignedArtistId === currentStaffArtistId;
+        const isBlocked = sortedProcedures.some((item) => {
+          const itemStepOrder = Number(item?.stepOrder ?? 0);
+          const procedureStepOrder = Number(procedure?.stepOrder ?? 0);
+          const itemStatus = String(item?.status || "").trim().toLowerCase();
+
+          if (!Number.isFinite(itemStepOrder) || !Number.isFinite(procedureStepOrder)) {
+            return false;
+          }
+
+          if (itemStepOrder >= procedureStepOrder) {
+            return false;
+          }
+
+          if (!item?.isRequired || item?.canOverlap) {
+            return false;
+          }
+
+          return !["completed", "done", "skipped"].includes(itemStatus);
+        });
 
         return {
           ...procedure,
           checked: ["completed", "done"].includes(normalizedStatus),
           label: hasStepOrder ? `Step ${procedure.stepOrder}: ${procedureName}` : procedureName,
           statusLabel: String(procedure.status || "").trim() || "--",
+          canClaim: isPendingStatus && !isBlocked && isAssignedToCurrentArtist,
+          canComplete: isInProgressStatus && isAssignedToCurrentArtist,
+          canSkip: !isTerminalStatus && isAssignedToCurrentArtist,
+          isBlocked,
+          isAssignedToCurrentArtist,
         };
       });
-  }, [bookingProcedures]);
+  }, [bookingProcedures, currentStaffArtistId]);
+  const modalProcedureList = useMemo(() => {
+    if (serviceProcedureList.length === 0) {
+      return [];
+    }
+
+    const sortedProcedures = [...serviceProcedureList]
+      .sort((left, right) => (left.stepOrder ?? 0) - (right.stepOrder ?? 0));
+
+    return sortedProcedures.map((procedure) => {
+      const normalizedStatus = String(procedure.status || "").trim().toLowerCase();
+      const assignedArtistId = String(procedure.assignedArtistId || "").trim();
+      const isTerminalStatus = ["completed", "done", "skipped"].includes(normalizedStatus);
+      const isPendingStatus = ["pending", "waiting"].includes(normalizedStatus);
+      const isInProgressStatus = ["inprogress", "in progress"].includes(normalizedStatus);
+      const isAssignedToCurrentArtist =
+        !assignedArtistId || !currentStaffArtistId || assignedArtistId === currentStaffArtistId;
+      const isBlocked = sortedProcedures.some((item) => {
+        const itemStepOrder = Number(item?.stepOrder ?? 0);
+        const procedureStepOrder = Number(procedure?.stepOrder ?? 0);
+        const itemStatus = String(item?.status || "").trim().toLowerCase();
+
+        if (!Number.isFinite(itemStepOrder) || !Number.isFinite(procedureStepOrder)) {
+          return false;
+        }
+
+        if (itemStepOrder >= procedureStepOrder) {
+          return false;
+        }
+
+        if (!item?.isRequired || item?.canOverlap) {
+          return false;
+        }
+
+        return !["completed", "done", "skipped"].includes(itemStatus);
+      });
+
+      return {
+        ...procedure,
+        canClaim: isPendingStatus && !isBlocked && isAssignedToCurrentArtist,
+        canComplete: isInProgressStatus && isAssignedToCurrentArtist,
+        canSkip: !isTerminalStatus && isAssignedToCurrentArtist,
+        isBlocked,
+      };
+    });
+  }, [currentStaffArtistId, serviceProcedureList]);
   const sessionBookingItemIds = useMemo(
     () => getSessionBookingItemIds(data?.bookingItemIds),
     [data?.bookingItemIds],
@@ -1151,6 +1222,7 @@ export function StaffServiceSessionPage() {
     () => sessionBookingItemIds.join("|"),
     [sessionBookingItemIds],
   );
+  const phase = !started ? "start" : completed ? "done" : "progress";
 
   /**
    * FIXED: Sticky-pin detection for the "Session Progress" card.
@@ -1333,21 +1405,26 @@ export function StaffServiceSessionPage() {
     };
   }, [serviceCatalogPage, serviceSearchKeyword, showExtraServiceModal]);
 
-  const reloadBookingProcedures = async (bookingItemIds, options = {}) => {
+  const reloadBookingProcedures = useCallback(async (bookingItemIds, options = {}) => {
     const normalizedBookingItemIds = getSessionBookingItemIds(
       Array.isArray(bookingItemIds) ? bookingItemIds : [bookingItemIds],
     );
     const canApplyState = options.shouldApplyState ?? (() => true);
+    const shouldShowLoading = options.silent !== true;
 
     if (normalizedBookingItemIds.length === 0) {
       if (canApplyState()) {
-        setIsLoadingProcedures(false);
+        if (shouldShowLoading) {
+          setIsLoadingProcedures(false);
+        }
       }
       return;
     }
 
     if (canApplyState()) {
-      setIsLoadingProcedures(true);
+      if (shouldShowLoading) {
+        setIsLoadingProcedures(true);
+      }
       setProcedureLoadError("");
     }
 
@@ -1395,10 +1472,12 @@ export function StaffServiceSessionPage() {
       }
     } finally {
       if (canApplyState()) {
-        setIsLoadingProcedures(false);
+        if (shouldShowLoading) {
+          setIsLoadingProcedures(false);
+        }
       }
     }
-  };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -1432,6 +1511,85 @@ export function StaffServiceSessionPage() {
       isMounted = false;
     };
   }, [sessionBookingItemIds, sessionBookingItemKey]);
+
+  const loadServiceProcedureList = useCallback(async (bookingItemId, options = {}) => {
+    const normalizedBookingItemId = String(bookingItemId || "").trim();
+
+    if (!normalizedBookingItemId) {
+      return;
+    }
+
+    if (options.silent !== true) {
+      setIsServiceProcedureModalLoading(true);
+      setServiceProcedureModalError("");
+    }
+
+    try {
+      const procedures = await fetchBookingProceduresByBookingItem(normalizedBookingItemId);
+      setServiceProcedureList(Array.isArray(procedures) ? procedures : []);
+      setServiceProcedureModalError("");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to load service procedures.";
+      setServiceProcedureModalError(message);
+
+      if (options.showToast !== false) {
+        toast.error(message);
+      }
+    } finally {
+      if (options.silent !== true) {
+        setIsServiceProcedureModalLoading(false);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (phase !== "progress" || sessionBookingItemIds.length === 0) {
+      return undefined;
+    }
+
+    let isMounted = true;
+    let isRefreshing = false;
+
+    const refreshProcedures = async () => {
+      if (document.hidden || isRefreshing || !isMounted) {
+        return;
+      }
+
+      isRefreshing = true;
+
+      try {
+        await reloadBookingProcedures(sessionBookingItemIds, {
+          shouldApplyState: () => isMounted,
+          showToast: false,
+          silent: true,
+        });
+
+        const selectedBookingItemId = String(
+          selectedProcedureService?.bookingItemId || selectedProcedureService?.id || "",
+        ).trim();
+
+        if (selectedBookingItemId && isMounted) {
+          await loadServiceProcedureList(selectedBookingItemId, {
+            showToast: false,
+            silent: true,
+          });
+        }
+      } catch {
+        // Keep background refresh silent.
+      } finally {
+        isRefreshing = false;
+      }
+    };
+
+    const intervalId = window.setInterval(() => {
+      void refreshProcedures();
+    }, 15000);
+
+    return () => {
+      isMounted = false;
+      window.clearInterval(intervalId);
+    };
+  }, [loadServiceProcedureList, phase, reloadBookingProcedures, selectedProcedureService?.bookingItemId, selectedProcedureService?.id, sessionBookingItemIds]);
 
   // eslint-disable-next-line no-unused-vars
   const currentProcedureNote = useMemo(() => {
@@ -1490,7 +1648,6 @@ export function StaffServiceSessionPage() {
     return <Navigate to={ROUTES.staffBookings} replace />;
   }
 
-  const phase = !started ? "start" : completed ? "done" : "progress";
   const allConfirmed = displayConfirmations.every((item) => item.checked);
   const canStartService = allConfirmed && Boolean(effectiveBeforePhoto);
   const canCompleteSession = displayCompletionChecks.every((item) => item.checked) && Boolean(effectiveAfterPhoto);
@@ -1527,6 +1684,79 @@ export function StaffServiceSessionPage() {
     );
   };
 
+  const handleClaimProcedure = async (procedure) => {
+    const procedureId = String(procedure?.bookingProcedureId || "").trim();
+
+    if (!procedureId) {
+      return;
+    }
+
+    setProcedureStatusUpdates((current) => ({
+      ...current,
+      [procedureId]: true,
+    }));
+
+    try {
+      const updatedProcedure = await claimBookingProcedure(procedureId);
+
+      setBookingProcedures((current) =>
+        current.map((item) =>
+          item.bookingProcedureId === procedureId
+            ? {
+              ...item,
+              ...updatedProcedure,
+            }
+            : item,
+        ),
+      );
+      await reloadBookingProcedures(sessionBookingItemIds, { showToast: false });
+      toast.success("Procedure claimed successfully.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to claim procedure.";
+      toast.error(message);
+    } finally {
+      setProcedureStatusUpdates((current) => ({
+        ...current,
+        [procedureId]: false,
+      }));
+    }
+  };
+
+  const handleClaimProcedureFromModal = async (procedure) => {
+    const procedureId = String(procedure?.bookingProcedureId || "").trim();
+    const bookingItemId = String(
+      selectedProcedureService?.bookingItemId || selectedProcedureService?.id || "",
+    ).trim();
+
+    if (!procedureId || !bookingItemId || claimingProcedureId) {
+      return;
+    }
+
+    setClaimingProcedureId(procedureId);
+    setProcedureStatusUpdates((current) => ({
+      ...current,
+      [procedureId]: true,
+    }));
+
+    try {
+      await claimBookingProcedure(procedureId);
+      await Promise.all([
+        reloadBookingProcedures(sessionBookingItemIds, { showToast: false, silent: true }),
+        loadServiceProcedureList(bookingItemId, { showToast: false, silent: true }),
+      ]);
+      toast.success("Procedure claimed successfully.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to claim procedure.";
+      toast.error(message);
+    } finally {
+      setClaimingProcedureId("");
+      setProcedureStatusUpdates((current) => ({
+        ...current,
+        [procedureId]: false,
+      }));
+    }
+  };
+
   const handleUpdateProcedureStatus = async (procedure, nextStatus) => {
     const procedureId = String(procedure?.bookingProcedureId || "").trim();
     const normalizedNextStatus = String(nextStatus || "").trim();
@@ -1553,6 +1783,7 @@ export function StaffServiceSessionPage() {
             : item,
         ),
       );
+      await reloadBookingProcedures(sessionBookingItemIds, { showToast: false });
       toast.success(`Procedure marked as ${normalizedNextStatus}.`);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to update procedure status.";
@@ -1789,12 +2020,33 @@ export function StaffServiceSessionPage() {
   };
 
   const handleOpenExtraServiceModal = () => {
-    setSelectedExtraServiceIds([]);
+    setSelectedExtraServiceQuantities({});
     setServiceSearchInput("");
     setServiceSearchKeyword("");
     setServiceCatalogPage(1);
     setShowExtraServiceModal(true);
     setFlashMessage("");
+  };
+
+  const handleOpenServiceProcedureModal = async (service) => {
+    const bookingItemId = String(service?.bookingItemId || service?.id || "").trim();
+
+    if (!bookingItemId) {
+      toast.error("Booking item ID is not available for this service.");
+      return;
+    }
+
+    setSelectedProcedureService(service);
+    setServiceProcedureList([]);
+    await loadServiceProcedureList(bookingItemId);
+  };
+
+  const handleCloseServiceProcedureModal = () => {
+    setSelectedProcedureService(null);
+    setServiceProcedureList([]);
+    setServiceProcedureModalError("");
+    setIsServiceProcedureModalLoading(false);
+    setClaimingProcedureId("");
   };
 
   const handleCloseExtraServiceModal = () => {
@@ -1808,17 +2060,17 @@ export function StaffServiceSessionPage() {
   const handleSearchExtraServices = (event) => {
     event.preventDefault();
     setServiceCatalogPage(1);
-    setSelectedExtraServiceIds([]);
+    setSelectedExtraServiceQuantities({});
     setServiceSearchKeyword(serviceSearchInput.trim());
   };
 
   const handleAddExtraService = async () => {
     const normalizedBookingId = String(bookingId || "").trim();
-    const normalizedServiceIds = selectedExtraServiceIds
-      .map((serviceId) => String(serviceId || "").trim())
-      .filter(Boolean);
+    const normalizedSelectedServices = Object.entries(selectedExtraServiceQuantities).filter(([, quantity]) => (
+      Number(quantity || 0) > 0
+    ));
 
-    if (!normalizedBookingId || normalizedServiceIds.length === 0 || !bookingDetail || isSavingExtraService) {
+    if (!normalizedBookingId || normalizedSelectedServices.length === 0 || !bookingDetail || isSavingExtraService) {
       return;
     }
 
@@ -1826,51 +2078,43 @@ export function StaffServiceSessionPage() {
 
     try {
       const bookingItems = Array.isArray(bookingDetail.bookingItems) ? bookingDetail.bookingItems : [];
-      const toNullableNumber = (value) => {
-        if (value === null || value === undefined || value === "") {
-          return null;
-        }
-
-        const normalizedValue = Number(value);
-
-        return Number.isFinite(normalizedValue) && normalizedValue > 0 ? normalizedValue : null;
-      };
-      const payloadBookingItems = [
-        ...bookingItems.map((item) => ({
-          nailVariantId: toNullableNumber(item?.nailVariantId),
-          serviceId: String(item?.serviceId || "").trim() || null,
-          customerNailId: toNullableNumber(item?.customerNailId),
-          quantity: Number(item?.quantity || 1) || 1,
-        })),
-        ...normalizedServiceIds.map((serviceId) => ({
-          nailVariantId: null,
-          serviceId,
-          customerNailId: null,
-          quantity: 1,
-        })),
-      ];
+      const payloadBookingItems = buildStaffBookingItemsForUpdate(
+        bookingItems,
+        selectedExtraServiceQuantities,
+      );
 
       const updatedBooking = await updateStaffBooking(normalizedBookingId, {
         bookingDate: bookingDetail.bookingDate,
         startTime: bookingDetail.startTime,
-        nailArtistId: bookingDetail.nailArtistId || bookingDetail.artistId || null,
+        nailArtistId: toNullableBookingUuid(
+          bookingDetail.nailArtistId || bookingDetail.artistId,
+        ),
         bookingItems: payloadBookingItems,
       });
 
       setBookingDetail(updatedBooking);
       setShowExtraServiceModal(false);
-      setSelectedExtraServiceIds([]);
+      setSelectedExtraServiceQuantities({});
 
-      const addedServices = serviceCatalog.filter((item) => normalizedServiceIds.includes(item.serviceId));
-      const addedServiceNames = addedServices.map((item) => item.name).filter(Boolean);
+      const selectedServiceNames = normalizedSelectedServices
+        .map(([serviceId, quantity]) => {
+          const matchedService = serviceCatalog.find((item) => item.serviceId === serviceId);
+
+          if (!matchedService?.name) {
+            return "";
+          }
+
+          return quantity > 1 ? `${matchedService.name} x${quantity}` : matchedService.name;
+        })
+        .filter(Boolean);
       setFlashMessage(
-        addedServiceNames.length
-          ? `${addedServiceNames.join(", ")} ${addedServiceNames.length > 1 ? "have" : "has"} been added to this booking.`
+        selectedServiceNames.length
+          ? `${selectedServiceNames.join(", ")} ${selectedServiceNames.length > 1 ? "have" : "has"} been added to this booking.`
           : "Extra services have been added to this booking.",
       );
       toast.success(
-        addedServiceNames.length
-          ? `Added ${addedServiceNames.length} service${addedServiceNames.length > 1 ? "s" : ""} to the booking.`
+        normalizedSelectedServices.length
+          ? `Added ${normalizedSelectedServices.length} service type${normalizedSelectedServices.length > 1 ? "s" : ""} to the booking.`
           : "Extra services added successfully.",
       );
     } catch (error) {
@@ -2211,6 +2455,7 @@ export function StaffServiceSessionPage() {
                 data={data}
                 hasConfirmedDesign={hasConfirmedDesign}
                 serviceStatusLabel={summarySectionConfig.start.statusLabel}
+                onOpenProcedures={handleOpenServiceProcedureModal}
               />
 
               <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
@@ -2325,6 +2570,7 @@ export function StaffServiceSessionPage() {
                 data={data}
                 hasConfirmedDesign={hasConfirmedDesign}
                 serviceStatusLabel={summarySectionConfig.progress.statusLabel}
+                onOpenProcedures={handleOpenServiceProcedureModal}
               />
 
               <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
@@ -2494,6 +2740,7 @@ export function StaffServiceSessionPage() {
                 data={data}
                 hasConfirmedDesign={hasConfirmedDesign}
                 serviceStatusLabel={summarySectionConfig.done.statusLabel}
+                onOpenProcedures={handleOpenServiceProcedureModal}
               />
 
               <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
@@ -2597,21 +2844,63 @@ export function StaffServiceSessionPage() {
                           <ConfirmationItem
                             key={procedure.bookingProcedureId}
                             checked={procedure.checked}
-                            disabled={Boolean(procedureStatusUpdates[procedure.bookingProcedureId])}
+                            disabled={
+                              Boolean(procedureStatusUpdates[procedure.bookingProcedureId]) ||
+                              (!procedure.checked && !procedure.canComplete)
+                            }
                             label={procedure.label}
-                            onToggle={() => handleUpdateProcedureStatus(procedure, "Completed")}
+                            onToggle={() => {
+                              if (procedure.canComplete) {
+                                void handleUpdateProcedureStatus(procedure, "Completed");
+                              }
+                            }}
                             trailing={
-                              <button
-                                type="button"
-                                disabled={Boolean(procedureStatusUpdates[procedure.bookingProcedureId])}
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  handleUpdateProcedureStatus(procedure, "Skipped");
-                                }}
-                                className="inline-flex min-h-8 items-center justify-center rounded-full border border-[#f4c7d9] bg-[#fff4f8] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#d95a95] transition hover:bg-[#ffe8f2] disabled:cursor-not-allowed disabled:opacity-60"
-                              >
-                                Skip
-                              </button>
+                              <div className="flex items-center gap-2">
+                                {procedure.canClaim ? (
+                                  <button
+                                    type="button"
+                                    disabled={Boolean(procedureStatusUpdates[procedure.bookingProcedureId])}
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      void handleClaimProcedure(procedure);
+                                    }}
+                                    className="inline-flex min-h-8 items-center justify-center rounded-full border border-[#d9c8ff] bg-[#f4efff] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#7c63d8] transition hover:bg-[#eee6ff] disabled:cursor-not-allowed disabled:opacity-60"
+                                  >
+                                    Claim
+                                  </button>
+                                ) : null}
+                                {procedure.canComplete ? (
+                                  <button
+                                    type="button"
+                                    disabled={Boolean(procedureStatusUpdates[procedure.bookingProcedureId])}
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      void handleUpdateProcedureStatus(procedure, "Completed");
+                                    }}
+                                    className="inline-flex min-h-8 items-center justify-center rounded-full border border-[#cfead9] bg-[#f3fcf6] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#249a5c] transition hover:bg-[#eaf9ef] disabled:cursor-not-allowed disabled:opacity-60"
+                                  >
+                                    Complete
+                                  </button>
+                                ) : null}
+                                {procedure.isBlocked ? (
+                                  <span className="inline-flex min-h-8 items-center justify-center rounded-full border border-[#f6d9b8] bg-[#fff7ed] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#dd8a12]">
+                                    Blocked
+                                  </span>
+                                ) : null}
+                                {procedure.canSkip ? (
+                                  <button
+                                    type="button"
+                                    disabled={Boolean(procedureStatusUpdates[procedure.bookingProcedureId])}
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      void handleUpdateProcedureStatus(procedure, "Skipped");
+                                    }}
+                                    className="inline-flex min-h-8 items-center justify-center rounded-full border border-[#f4c7d9] bg-[#fff4f8] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#d95a95] transition hover:bg-[#ffe8f2] disabled:cursor-not-allowed disabled:opacity-60"
+                                  >
+                                    Skip
+                                  </button>
+                                ) : null}
+                              </div>
                             }
                           />
                         ))
@@ -2648,33 +2937,63 @@ export function StaffServiceSessionPage() {
                   subtitle="Review the amount before handing over to payment flow."
                 />
 
-                <div className="mt-5 space-y-4 text-sm">
-                  {[
-                    ...(Array.isArray(data.priceSummary?.serviceRows) ? data.priceSummary.serviceRows : []),
-                    ...(Array.isArray(data.priceSummary?.nailRows) ? data.priceSummary.nailRows : []),
-                    ...(Array.isArray(data.priceSummary?.discountRows) ? data.priceSummary.discountRows : []),
-                  ].map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-start justify-between gap-3 rounded-[16px] border border-[#f4dbe7] bg-[#fffafb] px-4 py-3"
-                    >
-                      <div className="min-w-0">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
-                          {item.category}
-                        </p>
-                        <p className="mt-1 break-words font-bold text-[#3f2b3f]">{item.label}</p>
-                        {item.meta ? <p className="mt-1 text-xs text-[#a88a9d]">{item.meta}</p> : null}
-                      </div>
-                      <span className={`shrink-0 font-bold ${item.category === "Discount" ? "text-emerald-600" : "text-[#3f2b3f]"}`}>
-                        {item.amount}
-                      </span>
-                    </div>
-                  ))}
-                  <div className="border-t border-[#f5d9e6]" />
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-sm font-extrabold text-[#3f2b3f]">Total Price</span>
-                    <span className="text-base font-extrabold text-[#ea4f93]">{data.totalPrice}</span>
+                <div className="mt-5 overflow-hidden rounded-[18px] border border-[#f4dbe7] bg-[#fffafb]">
+                  <div className="hidden grid-cols-[120px_minmax(0,1fr)_88px_140px] items-center gap-3 border-b border-[#f8dce8] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f7_100%)] px-5 py-3 md:grid">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">Type</p>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">Item</p>
+                    <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">Qty</p>
+                    <p className="text-right text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">Amount</p>
                   </div>
+
+                  <div className="divide-y divide-[#f9dfeb] text-sm">
+                    {buildFinalSummaryTableRows(data.priceSummary).map((item) => (
+                      <div
+                        key={item.id}
+                        className="px-4 py-4 md:grid md:grid-cols-[120px_minmax(0,1fr)_88px_140px] md:items-center md:gap-3 md:px-5"
+                      >
+                        <div className="flex items-center justify-between gap-3 md:block">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab] md:hidden">Type</p>
+                          <span className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-bold 
+                          ${item.type === "Discount"
+                            ? "border-emerald-200 bg-emerald-50 text-emerald-600"
+                            : "border-[#f2bfd4] bg-white text-[#ea4f93]"
+                            }
+                             ${item.type === "Nail Service"
+                            ? "border-yellow-200 bg-yellow-50 text-yellow-600"
+                            : "border-[#f2bfd4] bg-white text-[#ea4f93]"
+                            }`}>
+                            {item.type}
+                          </span>
+                        </div>
+
+                        <div className="mt-3 min-w-0 md:mt-0">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab] md:hidden">Item</p>
+                          <p className="mt-1 break-words font-bold text-[#3f2b3f] md:mt-0">{item.label}</p>
+                          {item.meta ? <p className="mt-1 text-xs text-[#a88a9d]">{item.meta}</p> : null}
+                        </div>
+
+                        <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab] md:hidden">Qty</p>
+                          <span className="inline-flex rounded-full border border-[#f6dbe7] bg-white px-3 py-1 text-[11px] font-bold text-[#6f5c6b]">
+                            {item.qty}
+                          </span>
+                        </div>
+
+                        <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-right">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab] md:hidden">Amount</p>
+                          <span className={`font-bold ${item.type === "Discount" ? "text-red-600" : "text-green-700"}`}>
+                            {item.amount}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-4 border-t border-[#f5d9e6]" />
+                <div className="mt-4 flex items-center justify-between gap-3">
+                  <span className="text-sm font-extrabold text-[#3f2b3f]">Total Price</span>
+                  <span className="text-base font-extrabold text-green-700">{data.totalPrice}</span>
                 </div>
 
                 <button
@@ -2939,7 +3258,7 @@ export function StaffServiceSessionPage() {
       <ExtraServiceModal
         open={showExtraServiceModal}
         services={serviceCatalog}
-        selectedServiceIds={selectedExtraServiceIds}
+        selectedServiceQuantities={selectedExtraServiceQuantities}
         searchValue={serviceSearchInput}
         isLoading={isLoadingServiceCatalog}
         isSaving={isSavingExtraService}
@@ -2947,24 +3266,192 @@ export function StaffServiceSessionPage() {
         onClose={handleCloseExtraServiceModal}
         onSearchChange={(event) => setServiceSearchInput(event.target.value)}
         onSearchSubmit={handleSearchExtraServices}
-        onSelect={(serviceId) =>
-          setSelectedExtraServiceIds((current) =>
-            current.includes(serviceId)
-              ? current.filter((item) => item !== serviceId)
-              : [...current, serviceId],
-          )
+        onDecreaseQuantity={(serviceId) =>
+          setSelectedExtraServiceQuantities((current) => {
+            const nextQuantity = Math.max(0, Number(current?.[serviceId] || 0) - 1);
+
+            if (nextQuantity <= 0) {
+              const nextState = { ...current };
+              delete nextState[serviceId];
+              return nextState;
+            }
+
+            return {
+              ...current,
+              [serviceId]: nextQuantity,
+            };
+          })
+        }
+        onIncreaseQuantity={(serviceId) =>
+          setSelectedExtraServiceQuantities((current) => ({
+            ...current,
+            [serviceId]: Number(current?.[serviceId] || 0) + 1,
+          }))
         }
         onPageChange={(page) => {
           if (page < 1 || page > (serviceCatalogMeta?.totalPages ?? 1)) {
             return;
           }
 
-          setSelectedExtraServiceIds([]);
+          setSelectedExtraServiceQuantities({});
           setServiceCatalogPage(page);
         }}
         onConfirm={handleAddExtraService}
+        title="Update Booking Services"
+        description="Select extra services to add into the current booking before starting the service session."
       />
+
+      <Modal
+        open={Boolean(selectedProcedureService)}
+        onCancel={handleCloseServiceProcedureModal}
+        footer={[
+          <Button key="close-service-procedure-modal" onClick={handleCloseServiceProcedureModal}>
+            Close
+          </Button>,
+        ]}
+        centered
+        width={900}
+        title="Service Procedures"
+      >
+        {selectedProcedureService ? (
+          <div className="space-y-5 py-1">
+            <div className="rounded-[18px] border border-[#f4d6e2] bg-[#fffafb] p-4">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#c38ea8]">
+                    Service
+                  </p>
+                  <p className="mt-2 text-lg font-extrabold text-[#4a3741]">
+                    {selectedProcedureService.name || "--"}
+                  </p>
+                 
+                </div>
+                <div className="grid gap-2 text-right text-sm">
+                  <div>
+                    <span className="text-[#8f7b88]">Quantity: </span>
+                    <span className="font-bold text-[#4a3741]">{selectedProcedureService.quantity || 1}</span>
+                  </div>
+                  <div>
+                    <span className="text-[#8f7b88]">Duration: </span>
+                    <span className="font-bold text-[#4a3741]">{selectedProcedureService.durationLabel || "--"}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {isServiceProcedureModalLoading ? (
+              <div className="rounded-[18px] border border-[#f4dbe7] bg-white px-4 py-6 text-sm text-[#a88a9d]">
+                Loading procedure steps...
+              </div>
+            ) : serviceProcedureModalError ? (
+              <div className="rounded-[18px] border border-[#f8d3dc] bg-[#fff5f7] px-4 py-5 text-sm text-[#c9587e]">
+                {serviceProcedureModalError}
+              </div>
+            ) : modalProcedureList.length ? (
+              <div className="space-y-3">
+                {modalProcedureList.map((procedure) => (
+                    <div
+                      key={procedure.bookingProcedureId || `${procedure.procedureId}-${procedure.stepOrder}`}
+                      className="rounded-[18px] border border-[#f4d6e2] bg-white p-4 shadow-[0_10px_22px_rgba(236,72,153,0.04)]"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="rounded-full bg-[#fff1f6] px-2.5 py-1 text-[10px] font-extrabold text-[#eb5b92]">
+                              Step {procedure.stepOrder ?? "--"}
+                            </span>
+                            <span className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold ${getProcedureStatusTone(procedure.status)}`}>
+                              {procedure.status || "--"}
+                            </span>
+                          </div>
+                          <p className="mt-3 text-base font-extrabold text-[#4a3741]">
+                            {procedure.procedureName || "--"}
+                          </p>
+                          <p className="mt-1 text-sm leading-6 text-[#8f7b88]">
+                            {procedure.description || "No procedure description available."}
+                          </p>
+                        </div>
+                        <div className="grid gap-2 text-right text-xs text-[#8f7b88]">
+                          <span>
+                            {String(procedure.estimatedStartTime || "--").slice(0, 5)} - {String(procedure.estimatedEndTime || "--").slice(0, 5)}
+                          </span>
+                          <span className="font-bold text-[#4a3741]">{procedure.duration ?? 0} min</span>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="rounded-2xl bg-[#fff7fb] px-3 py-3 flex flex-col items-center justify-between gap-2">
+                          <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
+                            Assigned Artist
+                          </p>
+                          <div className="mt-1 flex items-start justify-between gap-3">
+                            <p className="text-sm font-bold text-[#4a3741]">
+                               {procedure.assignedArtistId ? (procedure.assignedArtistName || "Assigned") : "Unassigned"}
+                            </p>
+                            {procedure.canClaim ? (
+                              <button
+                                type="button"
+                                onClick={() => void handleClaimProcedureFromModal(procedure)}
+                                disabled={claimingProcedureId === procedure.bookingProcedureId}
+                                className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-3 py-1 text-[10px] font-extrabold text-white shadow-[0_10px_20px_rgba(236,72,153,0.18)] disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                {claimingProcedureId === procedure.bookingProcedureId ? (
+                                  <span className="inline-flex h-3 w-3 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                                ) : null}
+                                Claim
+                              </button>
+                            ) : procedure.canComplete ? (
+                              <button
+                                type="button"
+                                onClick={() => void handleUpdateProcedureStatus(procedure, "Completed")}
+                                disabled={Boolean(procedureStatusUpdates[procedure.bookingProcedureId])}
+                                className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[#cfead9] bg-[#f3fcf6] px-3 py-1 text-[10px] font-extrabold text-[#249a5c] shadow-[0_10px_20px_rgba(36,154,92,0.12)] disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Complete
+                              </button>
+                            ) : procedure.isBlocked ? (
+                              <span className="inline-flex shrink-0 rounded-full border border-[#f6d9b8] bg-[#fff7ed] px-3 py-1 text-[10px] font-extrabold text-[#dd8a12]">
+                                Blocked
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+                        <div className="rounded-2xl bg-[#fff7fb] px-3 py-3 flex flex-col items-center justify-between gap-2">
+                            <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
+                              Completed By
+                            </p>
+                            <p className="mt-1 text-[13px] font-bold text-[#4a3741]">
+                              {procedure.completedByName || <span className="text-[#6c6c6c] px-3 py-1 border border-[#0a0909] rounded-2xl bg-gray-100 text-[13px] text-center">Not yet</span>}
+                            </p>
+                          </div>
+                          <div className="rounded-2xl bg-[#fff7fb] px-3 py-3 flex flex-col items-center justify-between gap-2">
+                            <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
+                              Active / Passive
+                            </p>
+                            <p className="mt-1 text-[13px] font-bold text-[#4a3741]">
+                              {procedure.activeDuration ?? 0}m / {procedure.passiveDuration ?? 0}m
+                            </p>
+                          </div>
+                          <div className="rounded-2xl bg-[#fff7fb] px-3 py-3 flex flex-col items-center justify-between gap-2">
+                            <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
+                              Overlap
+                            </p>
+                            <p className="mt-1 text-[13px] font-bold text-[#4a3741]">
+                               {procedure.canOverlap ? <span className="text-[#28a745] px-3 py-1 border border-[#28a745] rounded-2xl bg-green-100 text-[13px] text-center">Allowed</span> : <span className="text-[#6c6c6c] px-3 py-1 border border-[#0a0909] rounded-2xl bg-gray-100 text-[13px] text-center">Not Allowed</span>}
+                            </p>
+                          </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <div className="rounded-[18px] border border-dashed border-[#f1d8e4] bg-[#fffafb] px-4 py-8 text-center text-sm text-[#8f7b88]">
+                No procedure steps found for this booking item.
+              </div>
+            )}
+          </div>
+        ) : null}
+      </Modal>
     </section>
   );
 }
-
