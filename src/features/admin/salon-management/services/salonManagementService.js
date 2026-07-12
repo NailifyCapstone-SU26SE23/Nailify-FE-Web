@@ -129,9 +129,20 @@ function getSalonImage(imageUrl, salonId) {
 export function normalizeAdminSalon(salon) {
   const status = normalizeSalonStatus(salon?.status);
 
+  // Try all common image field names from API
+  const imageUrl =
+    salon?.imageUrl ||
+    salon?.image ||
+    salon?.avatarUrl ||
+    salon?.avatar ||
+    salon?.logoUrl ||
+    "";
+
+  const realId = salon?.id || salon?.salonId || "";
+
   return {
-    id: salon?.salonId || "",
-    salonId: salon?.salonId || "",
+    id: realId,
+    salonId: realId,
     name: String(salon?.name || "").trim() || "--",
     address: String(salon?.address || "").trim() || "--",
     manager: "Unassigned",
@@ -139,7 +150,7 @@ export function normalizeAdminSalon(salon) {
     hours: formatOperatingHours(salon?.operatingHours),
     status,
     statusColor: getSalonStatusColor(status),
-    image: getSalonImage(salon?.imageUrl, salon?.name || salon?.salonId),
+    image: getSalonImage(imageUrl, salon?.name || realId),
     phone: String(salon?.phone || "").trim() || "--",
     rating: "—",
     reviews: "0",

@@ -58,11 +58,11 @@ export async function fetchSalonStaff(salonId, { pageIndex = 1, pageSize = 20, r
       pageNumber: pageIndex,
       pageSize,
     };
-    
+
     if (role) {
       params.role = role;
     }
-    
+
     const response = await axiosClient.get(`/Users/salon/${normalizedSalonId}/staff`, {
       headers: getAuthHeaders(),
       params,
@@ -91,8 +91,6 @@ export async function fetchSalonStaff(salonId, { pageIndex = 1, pageSize = 20, r
   }
 }
 
-
-
 function mapRoleToApi(role) {
   switch (role) {
     case "NAIL_ARTIST":
@@ -109,8 +107,6 @@ function mapRoleToApi(role) {
 // Create new user
 export async function createUser(userData) {
   try {
-    console.log("Creating user with data:", userData);
-    
     const formData = new FormData();
     formData.append("email", String(userData?.email || "").trim());
     formData.append("password", String(userData?.password || ""));
@@ -120,26 +116,19 @@ export async function createUser(userData) {
     formData.append("avatarUrl", String(userData?.avatarUrl || "").trim());
     formData.append("role", mapRoleToApi(userData?.role));
     formData.append("salonId", String(userData?.salonId || "").trim());
-    
+
     if (userData?.imageFile) {
       formData.append("image", userData.imageFile);
-    }
-
-    // Log form data entries
-    console.log("Form data entries:");
-    for (let [key, value] of formData.entries()) {
-      console.log(`  ${key}:`, value);
     }
 
     const response = await axiosClient.post("/Users", formData, {
       headers: getAuthHeaders(),
     });
 
-    console.log("Create user response:", response);
     const data = unwrapResponse(response, "Failed to create user.");
     return normalizeStaffMember(data);
   } catch (error) {
-    console.error("Error creating user full details:", {
+    console.error("Error creating user:", {
       message: error.message,
       response: error.response?.data,
       status: error.response?.status,
@@ -149,88 +138,87 @@ export async function createUser(userData) {
 }
 
 // Update user
+// NOTE: mọi field đều là optional/partial-update — chỉ field nào có mặt trong
+// userData mới được gửi lên BE. Trước đây "email" bị gửi cứng ngay cả khi
+// không truyền vào, có nguy cơ ghi đè email hiện tại của user thành chuỗi
+// rỗng. Đã sửa để email theo cùng quy tắc "chỉ gửi nếu !== undefined" như
+// các field khác.
 export async function updateUser(userId, userData) {
   try {
-    console.log("Updating user with data:", userData);
-    
     let response;
-    // If there's an image file to upload, use FormData
+
+    // Có ảnh mới -> dùng FormData (multipart)
     if (userData?.imageFile) {
       const formData = new FormData();
-      formData.append("email", String(userData?.email || "").trim());
+
+      if (userData?.email !== undefined) {
+        formData.append("email", String(userData.email || "").trim());
+      }
       if (userData?.firstName !== undefined) {
-        formData.append("firstName", String(userData?.firstName || "").trim());
+        formData.append("firstName", String(userData.firstName || "").trim());
       }
       if (userData?.lastName !== undefined) {
-        formData.append("lastName", String(userData?.lastName || "").trim());
+        formData.append("lastName", String(userData.lastName || "").trim());
       }
       if (userData?.phone !== undefined) {
-        formData.append("phone", String(userData?.phone || "").trim());
+        formData.append("phone", String(userData.phone || "").trim());
       }
       if (userData?.avatarUrl !== undefined) {
-        formData.append("avatarUrl", String(userData?.avatarUrl || "").trim());
+        formData.append("avatarUrl", String(userData.avatarUrl || "").trim());
       }
       if (userData?.role !== undefined) {
-        formData.append("role", mapRoleToApi(userData?.role));
+        formData.append("role", mapRoleToApi(userData.role));
       }
       if (userData?.salonId !== undefined) {
-        formData.append("salonId", String(userData?.salonId || "").trim());
+        formData.append("salonId", String(userData.salonId || "").trim());
       }
       if (userData?.status !== undefined) {
-        formData.append("status", String(userData?.status || "").trim());
+        formData.append("status", String(userData.status || "").trim());
       }
-      
-      formData.append("image", userData.imageFile);
 
-      // Log form data entries
-      console.log("Update user form data entries:");
-      for (let [key, value] of formData.entries()) {
-        console.log(`  ${key}:`, value);
-      }
+      formData.append("image", userData.imageFile);
 
       response = await axiosClient.put(`/Users/${userId}`, formData, {
         headers: getAuthHeaders(),
       });
     } else {
-      // No image, send JSON
-      const jsonData = {
-        email: String(userData?.email || "").trim(),
-      };
-      
+      // Không có ảnh -> gửi JSON, chỉ include field nào thực sự được truyền vào
+      const jsonData = {};
+
+      if (userData?.email !== undefined) {
+        jsonData.email = String(userData.email || "").trim();
+      }
       if (userData?.firstName !== undefined) {
-        jsonData.firstName = String(userData?.firstName || "").trim();
+        jsonData.firstName = String(userData.firstName || "").trim();
       }
       if (userData?.lastName !== undefined) {
-        jsonData.lastName = String(userData?.lastName || "").trim();
+        jsonData.lastName = String(userData.lastName || "").trim();
       }
       if (userData?.phone !== undefined) {
-        jsonData.phone = String(userData?.phone || "").trim();
+        jsonData.phone = String(userData.phone || "").trim();
       }
       if (userData?.avatarUrl !== undefined) {
-        jsonData.avatarUrl = String(userData?.avatarUrl || "").trim();
+        jsonData.avatarUrl = String(userData.avatarUrl || "").trim();
       }
       if (userData?.role !== undefined) {
-        jsonData.role = mapRoleToApi(userData?.role);
+        jsonData.role = mapRoleToApi(userData.role);
       }
       if (userData?.salonId !== undefined) {
-        jsonData.salonId = String(userData?.salonId || "").trim();
+        jsonData.salonId = String(userData.salonId || "").trim();
       }
       if (userData?.status !== undefined) {
-        jsonData.status = String(userData?.status || "").trim();
+        jsonData.status = String(userData.status || "").trim();
       }
-
-      console.log("Update user JSON data:", jsonData);
 
       response = await axiosClient.put(`/Users/${userId}`, jsonData, {
         headers: getAuthHeaders(),
       });
     }
 
-    console.log("Update user response:", response);
     const data = unwrapResponse(response, "Failed to update user.");
     return normalizeStaffMember(data);
   } catch (error) {
-    console.error("Error updating user full details:", {
+    console.error("Error updating user:", {
       message: error.message,
       response: error.response?.data,
       status: error.response?.status,
@@ -240,44 +228,138 @@ export async function updateUser(userId, userData) {
 }
 
 // Assign skills to nail artist
+// NOTE QUAN TRỌNG: KHÔNG được gộp skill cũ (đã gán) và skill mới vào chung
+// một mảng rồi POST hết một lượt. Endpoint POST /nail-artists/{id}/skills
+// là endpoint "assign mới" (insert) — nếu gửi kèm skill đã được gán trước
+// đó, BE sẽ báo lỗi trùng bản ghi và toàn bộ request thất bại, kể cả các
+// skill mới thật sự cần assign. Đây chính là lý do "update level thì được,
+// nhưng assign thêm skill mới thì không": PUT (update level) chỉ hoạt động
+// trên skill ĐÃ tồn tại, nên fallback PUT vẫn "cứu" được phần update, còn
+// skill hoàn toàn mới thì PUT tới một bản ghi chưa tồn tại sẽ luôn fail.
+//
+// Cách xử lý đúng: tách skill thành 2 nhóm dựa trên danh sách skill hiện có
+// của artist, rồi gọi đúng API cho từng nhóm:
+//   - Skill CHƯA từng được gán  -> POST (chỉ gửi phần mới này thôi)
+//   - Skill ĐÃ được gán, đổi level -> PUT từng skill một
 export async function assignNailArtistSkills(artistId, skills) {
+  let currentSkills = [];
   try {
-    console.log("Assigning skills to artist:", artistId, "with skills:", skills);
-    
-    // Try wrapping in { skills } first
-    let response;
-    try {
-      response = await axiosClient.post(`/nail-artists/${artistId}/skills`, { skills }, {
-        headers: getAuthHeaders(),
-      });
-      console.log("Assign skills response (wrapped in { skills }):", response);
-    } catch (wrapperError) {
-      // If that fails, try wrapping in { request: skills }
-      try {
-        console.log("Trying { request: skills } wrapper...");
-        response = await axiosClient.post(`/nail-artists/${artistId}/skills`, { request: skills }, {
-          headers: getAuthHeaders(),
-        });
-        console.log("Assign skills response (wrapped in { request }):", response);
-      } catch (requestError) {
-        // If that also fails, try sending directly
-        console.log("Trying direct skills array...");
-        response = await axiosClient.post(`/nail-artists/${artistId}/skills`, skills, {
-          headers: getAuthHeaders(),
-        });
-        console.log("Assign skills response (direct):", response);
-      }
+    const currentSkillsResponse = await axiosClient.get(
+      `/nail-artists/${artistId}/skills`,
+      { headers: getAuthHeaders() }
+    );
+    const payload = currentSkillsResponse?.data;
+    if (payload?.isSucceeded) {
+      currentSkills = payload.data?.items ?? payload.data ?? [];
     }
+  } catch (err) {
+    console.warn("Failed to fetch current skills:", err);
+  }
 
-    return unwrapResponse(response, "Failed to assign skills to nail artist.");
-  } catch (error) {
-    console.error("Error assigning skills full details:", {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status,
+  const currentLevelBySkillId = new Map();
+  currentSkills.forEach((skill) => {
+    const id = skill.skillTypeId || skill.SkillTypeId;
+    if (id) currentLevelBySkillId.set(id, skill.level ?? skill.Level ?? 0);
+  });
+
+  const newSkills = [];
+  const skillsToUpdate = [];
+
+  skills.forEach((skill) => {
+    const level = skill.level ?? skill.Level ?? 0;
+    if (currentLevelBySkillId.has(skill.skillTypeId)) {
+      // Đã gán rồi -> chỉ cần update nếu level thực sự thay đổi
+      if (currentLevelBySkillId.get(skill.skillTypeId) !== level) {
+        skillsToUpdate.push({ skillTypeId: skill.skillTypeId, level });
+      }
+    } else {
+      // Chưa từng gán -> cần assign mới
+      newSkills.push({ skillTypeId: skill.skillTypeId, level });
+    }
+  });
+
+  const errors = [];
+
+  // 1. Assign các skill hoàn toàn mới qua POST
+  if (newSkills.length > 0) {
+    try {
+      const response = await axiosClient.post(
+        `/nail-artists/${artistId}/skills`,
+        newSkills,
+        { headers: getAuthHeaders() }
+      );
+      unwrapResponse(response, "Failed to assign new skills to nail artist.");
+    } catch (err) {
+      console.warn("Failed to assign new skills:", {
+        message: err.message,
+        status: err.response?.status,
+        data: err.response?.data,
+      });
+      errors.push(`Không thể assign ${newSkills.length} skill mới`);
+    }
+  }
+
+  // 2. Update level cho các skill đã tồn tại qua PUT từng skill một
+  for (const skill of skillsToUpdate) {
+    try {
+      await axiosClient.put(
+        `/nail-artists/${artistId}/skills/${skill.skillTypeId}`,
+        { requiredLevel: skill.level },
+        { headers: getAuthHeaders() }
+      );
+    } catch (err) {
+      console.warn(`Failed to update skill ${skill.skillTypeId}:`, err.response?.data || err);
+      errors.push(`Không thể update level skill ${skill.skillTypeId}`);
+    }
+  }
+
+  if (errors.length > 0) {
+    return { success: false, error: errors.join("; ") };
+  }
+
+  return { success: true };
+}
+
+// Lấy lịch làm việc của 1 thợ làm móng (nail artist) trong 1 khoảng thời gian
+// GET /api/Schedules/artist/{artistId}
+//
+// LƯU Ý: Swagger chỉ show rõ path param bắt buộc "artistId". Mô tả endpoint
+// có nhắc "trong một khoảng thời gian" nên nhiều khả năng còn query params
+// (ví dụ fromDate/toDate hoặc startDate/endDate) chưa xác nhận được tên
+// chính xác. Hàm này viết linh hoạt:
+//   - Không truyền range -> gọi endpoint không kèm query (BE tự quyết định
+//     khoảng mặc định).
+//   - Có truyền { fromDate, toDate } -> tự thêm vào query string.
+// Nếu BE trả lỗi thiếu param hoặc field không khớp, kiểm tra lại tên param
+// đúng trong Swagger rồi chỉnh lại object `params` bên dưới.
+export async function fetchArtistSchedule(artistId, { fromDate, toDate } = {}) {
+  const normalizedArtistId = String(artistId || "").trim();
+
+  if (!normalizedArtistId) {
+    return [];
+  }
+
+  try {
+    const params = {};
+    if (fromDate) params.fromDate = fromDate;
+    if (toDate) params.toDate = toDate;
+
+    const response = await axiosClient.get(`/Schedules/artist/${normalizedArtistId}`, {
+      headers: getAuthHeaders(),
+      params,
     });
-    // Don't throw, just log, so user update still completes
-    console.warn("Skills assignment failed, but user update will continue");
-    return null;
+
+    const data = unwrapResponse(response, "Failed to load artist schedule.");
+
+    if (Array.isArray(data)) {
+      return data;
+    }
+    if (Array.isArray(data?.items)) {
+      return data.items;
+    }
+    return [];
+  } catch (error) {
+    console.error("Error fetching artist schedule:", error);
+    return [];
   }
 }

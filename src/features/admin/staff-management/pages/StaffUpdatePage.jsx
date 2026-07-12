@@ -135,7 +135,7 @@ export function StaffUpdatePage() {
 
     const loadStaff = async () => {
       console.log("=== StaffUpdatePage: Loading staff ===");
-      console.log("staffId:", staffId);
+      console.log("staffId from params:", staffId);
       setIsLoading(true);
       setIsNotFound(false);
 
@@ -146,7 +146,8 @@ export function StaffUpdatePage() {
           fetchAdminSkillTypes({ pageNumber: 1, pageSize: 100 }),
         ]);
 
-        console.log("StaffUpdatePage userData:", userData);
+        console.log("StaffUpdatePage userData (full):", userData);
+        console.log("StaffUpdatePage userData keys:", Object.keys(userData));
         console.log("StaffUpdatePage salonsData:", salonsData);
         console.log("StaffUpdatePage skillTypesData:", skillTypesData);
 
@@ -176,10 +177,14 @@ export function StaffUpdatePage() {
           skillRatings[skill.id] = 0;
         });
         
+        // Determine the correct nail artist ID
+        let nailArtistId = userData.staffId || userData.nailArtistId || userData.id;
+        console.log("StaffUpdatePage: Determined nailArtistId:", nailArtistId, "(from staffId/nailArtistId/id)");
+        
         // If role is nail artist, load existing skills
-        if (mapApiRoleToForm(userData.role) === "NAIL_ARTIST" && userData.staffId) {
+        if (mapApiRoleToForm(userData.role) === "NAIL_ARTIST" && nailArtistId) {
           try {
-            const existingSkills = await fetchNailArtistSkills(userData.staffId);
+            const existingSkills = await fetchNailArtistSkills(nailArtistId);
             console.log("StaffUpdatePage existingSkills:", existingSkills);
             // Create a map of skill type id to level
             existingSkills.forEach(skill => {
@@ -192,7 +197,7 @@ export function StaffUpdatePage() {
 
         const staffForm = {
           ...baseForm,
-          staffId: userData.staffId || userData.userId || userData.id || "",
+          staffId: nailArtistId,
           id: userData.userId || userData.id || "",
           userId: userData.userId || userData.id || "",
           firstName: userData.firstName || "",
@@ -211,6 +216,7 @@ export function StaffUpdatePage() {
         };
 
         console.log("StaffUpdatePage mapped staffForm:", staffForm);
+        console.log("StaffUpdatePage staffForm.staffId (nailArtistId):", staffForm.staffId);
 
         // Set image preview if avatar exists
         if (userData.avatarUrl) {
@@ -379,9 +385,19 @@ export function StaffUpdatePage() {
             level: Math.floor(Number(formData.skillRatings[skill.id] ?? 0)),
           }));
 
-        console.log("Updating skills for nail artist:", skills);
+        console.log("Updating skills for nail artist (staffId):", formData.staffId);
+        console.log("Skills payload:", skills);
+
         if (skills.length > 0) {
-          await assignNailArtistSkills(formData.staffId, skills);
+          const skillResult = await assignNailArtistSkills(formData.staffId, skills);
+          if (!skillResult.success) {
+            // assignNailArtistSkills không throw nữa mà trả về { success, error }
+            // nên phải tự kiểm tra ở đây, nếu không UI sẽ báo "Update Successful"
+            // ngay cả khi assign/update skill thất bại.
+            throw new Error(skillResult.error || "Failed to update staff skills.");
+          }
+        } else {
+          console.log("No skills to update (all ratings are 0)");
         }
       }
 
@@ -846,4 +862,3 @@ export function StaffUpdatePage() {
     </section>
   );
 }
-

@@ -123,7 +123,7 @@ export const SALON_ALERTS = [
   },
 ];
 
-export const SALON_STATUS_FILTERS = ["All", "Active", "Closed", "Busy"];
+export const SALON_STATUS_FILTERS = ["All", "Open", "Closed"];
 
 export const TOP_PERFORMING_SALON = {
   title: "Top Performing Salon",
@@ -184,11 +184,20 @@ export const createInitialSalons = () =>
   );
 
 export const matchesSalonStatusFilter = (salonStatus, statusFilter) => {
-  if (statusFilter === "All") {
+  const normalizedSalonStatus = (salonStatus || "").toLowerCase();
+  const normalizedFilter = (statusFilter || "").toLowerCase();
+  
+  if (normalizedFilter === "all") {
     return true;
   }
+  if (normalizedFilter === "open") {
+    return normalizedSalonStatus === "active" || normalizedSalonStatus === "busy" || normalizedSalonStatus === "open";
+  }
+  if (normalizedFilter === "closed") {
+    return normalizedSalonStatus === "closed" || normalizedSalonStatus === "inactive";
+  }
 
-  return salonStatus === statusFilter.toUpperCase();
+  return false;
 };
 
 export const SALON_STATUS_OPTIONS = [
