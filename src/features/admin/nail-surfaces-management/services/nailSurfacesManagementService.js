@@ -38,7 +38,7 @@ function normalizeMetaData(metaData, defaults) {
 export function formatNailSurfaceCurrency(value) {
   return `${new Intl.NumberFormat("vi-VN", {
     maximumFractionDigits: 0,
-  }).format(Number(value || 0))} VND`;
+  }).format(Number(value || 0))} VNĐ`;
 }
 
 export function formatNailSurfaceDuration(value) {
@@ -57,6 +57,9 @@ export function normalizeAdminNailSurface(surface) {
     nailSurfaceId: Number(surface?.nailSurfaceId || 0),
     name: String(surface?.name || "").trim() || "--",
     shaderParam: String(surface?.shaderParam || "").trim() || "--",
+    lightnessOffset: Number(surface?.lightnessOffset || 0),
+    saturationOffset: Number(surface?.saturationOffset || 0),
+    hueOffset: Number(surface?.hueOffset || 0),
     price: Number(surface?.price || 0),
     duration: Number(surface?.duration || 0),
     priceLabel: formatNailSurfaceCurrency(surface?.price || 0),
@@ -114,6 +117,9 @@ function buildNailSurfacePayload(formValues) {
   return {
     name: String(formValues?.name || "").trim(),
     shaderParam: String(formValues?.shaderParam || "").trim(),
+    lightnessOffset: Number(formValues?.lightnessOffset || 0),
+    saturationOffset: Number(formValues?.saturationOffset || 0),
+    hueOffset: Number(formValues?.hueOffset || 0),
     price: Number(formValues?.price || 0),
     duration: Number(formValues?.duration || 0),
   };

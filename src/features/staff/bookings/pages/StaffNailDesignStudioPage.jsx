@@ -5,7 +5,9 @@ import {
   Search,
   Star,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { toBlob } from "html-to-image";
+import toast from "react-hot-toast";
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { axiosClient } from "../../../../lib/axiosClient";
 import { loadAuthSession } from "../../../../features/core/auth/model/authStorage";
@@ -16,7 +18,9 @@ import {
   getStaffDesignStudioExperienceById,
 } from "../../../../shared/bookings/services/mockBookings";
 import {
+  createStaffCustomerNailComponent,
   createStaffCustomerNail,
+  fetchStaffCustomerNailDetail,
   fetchStaffBookingDetail,
   fetchServiceCatalog,
   fetchStaffBuilderNailComponents,
@@ -55,7 +59,7 @@ function unwrapApiResponse(response, fallbackMessage) {
 }
 
 function formatCurrencyValue(value) {
-  return `${Number(value || 0).toLocaleString("vi-VN")} VND`;
+  return `${Number(value || 0).toLocaleString("vi-VN")} VNĐ`;
 }
 
 function rgbToHex(rgbValue) {
@@ -143,8 +147,14 @@ function parseVariantColorJson(colorJson, fallbackPrimaryColor, fallbackSecondar
         const gradientStops = Array.isArray(finger?.gradient?.stops) ? finger.gradient.stops.filter(Boolean) : [];
         defaultFingerColors[fingerIndex] = {
           mode: gradientStops.length >= 2 ? "gradient" : "solid",
-          primaryColor: String(finger?.color || gradientStops[0] || fallbackPrimaryColor),
-          secondaryColor: String(gradientStops[1] || gradientStops[0] || fallbackSecondaryColor),
+          primaryColor: String(finger?.primaryColor || finger?.color || gradientStops[0] || fallbackPrimaryColor),
+          secondaryColor: String(
+            finger?.secondaryColor
+            || gradientStops[1]
+            || gradientStops[0]
+            || finger?.primaryColor
+            || fallbackSecondaryColor,
+          ),
         };
       });
 
@@ -154,8 +164,14 @@ function parseVariantColorJson(colorJson, fallbackPrimaryColor, fallbackSecondar
     const gradientStops = Array.isArray(parsed?.gradient?.stops) ? parsed.gradient.stops.filter(Boolean) : [];
     const sharedColor = {
       mode: parsed?.mode === "gradient" && gradientStops.length >= 2 ? "gradient" : "solid",
-      primaryColor: String(parsed?.color || gradientStops[0] || fallbackPrimaryColor),
-      secondaryColor: String(gradientStops[1] || gradientStops[0] || fallbackSecondaryColor),
+      primaryColor: String(parsed?.primaryColor || parsed?.color || gradientStops[0] || fallbackPrimaryColor),
+      secondaryColor: String(
+        parsed?.secondaryColor
+        || gradientStops[1]
+        || gradientStops[0]
+        || parsed?.primaryColor
+        || fallbackSecondaryColor,
+      ),
     };
 
     return Array.from({ length: NAIL_LABELS.length }, () => ({ ...sharedColor }));
@@ -253,6 +269,19 @@ function buildDecorationOption(item) {
   };
 }
 
+function buildCustomerDecorationOption(item) {
+  return {
+    id: `customer-component-${item?.customerComponentId || item?.id || item?.name || ""}`,
+    label: String(item?.name || "--").trim(),
+    imageUrl: String(item?.imageUrl || "").trim(),
+    componentType: String(item?.componentType || "").trim(),
+    price: Number(item?.price || 0),
+    duration: Number(item?.duration || 0),
+    componentId: null,
+    customerComponentId: Number(item?.customerComponentId || 0),
+  };
+}
+
 function buildExtraServiceOption(item) {
   return {
     id: String(item?.serviceId || item?.id || item?.name || ""),
@@ -290,15 +319,32 @@ function toNullableNumber(value) {
   return Number.isFinite(normalizedValue) && normalizedValue > 0 ? normalizedValue : null;
 }
 
+function toNullableUuid(value) {
+  const normalizedValue = String(value || "").trim();
+
+  return isUuidLike(normalizedValue) ? normalizedValue : null;
+}
+
 function isNailLinkedBookingItem(item) {
   return Boolean(
     toNullableNumber(item?.nailVariantId)
-    || toNullableNumber(item?.customerNailRequestId)
+    || toNullableUuid(item?.customerNailRequestId)
     || toNullableNumber(item?.customerNailId)
     || toNullableNumber(item?.shapeMethodConfigId)
     || String(item?.nailVariantName || "").trim()
     || String(item?.customerNailName || "").trim(),
   );
+}
+
+function buildServiceOnlyBookingItem(item, fallbackQuantity = 1) {
+  return {
+    nailVariantId: null,
+    serviceId: toNullableUuid(item?.serviceId),
+    shapeMethodConfigId: null,
+    customerNailRequestId: null,
+    customerNailId: null,
+    quantity: Number(item?.quantity || fallbackQuantity) || fallbackQuantity,
+  };
 }
 
 function getShapeLengthVariant(shapeName) {
@@ -554,7 +600,8 @@ function buildDefaultPlacement(option, fingerIndex) {
     key: buildPlacementKey(fingerIndex, option.label),
     fingerIndex,
     label: option.label,
-    componentId: Number(option.componentId || option.id || 0),
+    componentId: toNullableNumber(option.componentId || option.id),
+    customerComponentId: toNullableNumber(option.customerComponentId),
     imageUrl: String(option.imageUrl || "").trim(),
     componentType: String(option.componentType || "").trim(),
     posX: 50,
@@ -918,6 +965,8 @@ export function StaffNailDesignStudioPage() {
 
   const [selectedTemplateId, setSelectedTemplateId] = useState(studio?.selectedDesign.id ?? "");
   const [selectedVariantId, setSelectedVariantId] = useState("");
+  const previewContainerRef = useRef(null);
+  const hasHydratedInitialNailRef = useRef(false);
   const [selectedShape, setSelectedShape] = useState(
     getShapeFamilyLabel(studio?.builder.initialSelection.shape ?? ""),
   );
@@ -966,6 +1015,7 @@ export function StaffNailDesignStudioPage() {
   const [isUpdatingBookingDesign, setIsUpdatingBookingDesign] = useState(false);
   const [designActionError, setDesignActionError] = useState("");
   const [designActionSuccess, setDesignActionSuccess] = useState("");
+  const [customerNailNameDraft, setCustomerNailNameDraft] = useState("");
   const templateWindowSize = 3;
   const resolvedBookingApiId = useMemo(
     () => String(studioState?.booking?.bookingId || bookingId || "").trim(),
@@ -1335,7 +1385,7 @@ export function StaffNailDesignStudioPage() {
       .filter(Boolean),
     [extraServiceOptionMap, selectedExtras],
   );
-  const customerNailName = useMemo(() => {
+  const suggestedCustomerNailName = useMemo(() => {
     const parts = [
       selectedVariant?.name || selectedDesign?.name || studio?.selectedDesign?.name || "Custom design",
       selectedShape,
@@ -1344,6 +1394,10 @@ export function StaffNailDesignStudioPage() {
 
     return parts.join(" • ").trim() || "Custom Nail Design";
   }, [selectedDesign?.name, selectedFinish, selectedShape, selectedVariant?.name, studio?.selectedDesign?.name]);
+  const customerNailName = useMemo(
+    () => String(customerNailNameDraft || "").trim() || suggestedCustomerNailName,
+    [customerNailNameDraft, suggestedCustomerNailName],
+  );
   const customerNailCustomColor = useMemo(
     () => JSON.stringify({
       mode: "perFinger",
@@ -1356,6 +1410,11 @@ export function StaffNailDesignStudioPage() {
     }),
     [fingerColorConfigs],
   );
+  const resolvedSelectedVariantId = useMemo(
+    () => toNullableNumber(selectedVariant?.raw?.nailVariantId || selectedVariantId),
+    [selectedVariant?.raw?.nailVariantId, selectedVariantId],
+  );
+  const isVariantSelectionMode = Boolean(resolvedSelectedVariantId);
   const activeFingerPlacements = useMemo(
     () => componentPlacements.filter((item) => (
       activeNailIndex === -1 ? true : item.fingerIndex === activeNailIndex
@@ -1526,11 +1585,15 @@ export function StaffNailDesignStudioPage() {
     setSelectedVariant(null);
   };
 
-  const markAsCustomized = () => {
+  const resetConfirmedDesignState = () => {
     setIsDesignConfirmed(false);
     setConfirmedCustomerNail(null);
     setDesignActionError("");
     setDesignActionSuccess("");
+  };
+
+  const markAsCustomized = () => {
+    resetConfirmedDesignState();
 
     if (!selectedVariantId) {
       return;
@@ -1561,6 +1624,177 @@ export function StaffNailDesignStudioPage() {
       nextPlacements.some((item) => item.key === current) ? current : nextPlacements[0]?.key || ""
     ));
   };
+
+  const capturePreviewImageFile = async () => {
+    if (!previewContainerRef.current) {
+      return null;
+    }
+
+    try {
+      const blob = await toBlob(previewContainerRef.current, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: "#fff5fb",
+      });
+
+      if (!blob) {
+        return null;
+      }
+
+      return new File([blob], `customer-nail-preview-${Date.now()}.png`, {
+        type: "image/png",
+      });
+    } catch (error) {
+      console.error("Failed to capture live nail preview image.", error);
+      return null;
+    }
+  };
+
+  const applyCustomerNailDetailToBuilder = useEffectEvent((customerNailDetail) => {
+    if (!customerNailDetail) {
+      return;
+    }
+
+    if (customerNailDetail?.name) {
+      setCustomerNailNameDraft(String(customerNailDetail.name).trim());
+    }
+
+    const nextShapeLabel = String(customerNailDetail?.nailShape?.name || "").trim();
+    const nextSurfaceLabel = String(customerNailDetail?.nailSurface?.name || "").trim();
+
+    if (nextShapeLabel) {
+      setSelectedShape(getShapeFamilyLabel(nextShapeLabel));
+      setSelectedLength(getShapeLengthVariant(nextShapeLabel));
+    }
+
+    if (nextSurfaceLabel) {
+      setSelectedFinish(nextSurfaceLabel);
+    }
+
+    setFingerColorConfigs(
+      parseVariantColorJson(
+        customerNailDetail?.customColor || customerNailDetail?.colorJson,
+        rgbToHex(studio?.builder.colors?.[0]?.swatch || "#f8b4d9"),
+        rgbToHex(studio?.builder.colors?.[1]?.swatch || "#f3e8ff"),
+      ),
+    );
+    setSelectedColorFingerIndices([3]);
+
+    const rawComponents = Array.isArray(customerNailDetail?.customerNailComponents)
+      ? customerNailDetail.customerNailComponents
+      : Array.isArray(customerNailDetail?.nailComponents)
+        ? customerNailDetail.nailComponents
+        : [];
+    const dynamicDecorationOptions = [];
+    const dynamicDecorationMap = new Map();
+    const nextDecorations = Array.from({ length: NAIL_LABELS.length }, () => []);
+    const nextPlacements = [];
+
+    rawComponents.forEach((item) => {
+      const sourceComponent = item?.customerComponent || item?.component;
+      const label = String(sourceComponent?.name || "").trim();
+      const fingerIndex = normalizeFingerIndex(item?.fingerIndex);
+
+      if (!label || fingerIndex < 0) {
+        return;
+      }
+
+      const option = item?.customerComponent
+        ? buildCustomerDecorationOption(item.customerComponent)
+        : buildDecorationOption(item.component || {
+          componentId: item?.componentId,
+          name: label,
+          imageUrl: sourceComponent?.imageUrl,
+          componentType: sourceComponent?.componentType,
+        });
+
+      if (!dynamicDecorationMap.has(option.id)) {
+        dynamicDecorationMap.set(option.id, option);
+        dynamicDecorationOptions.push(option);
+      }
+
+      if (!nextDecorations[fingerIndex].includes(label)) {
+        nextDecorations[fingerIndex].push(label);
+      }
+
+      nextPlacements.push({
+        key: buildPlacementKey(fingerIndex, label),
+        fingerIndex,
+        label,
+        componentId: toNullableNumber(item?.componentId),
+        customerComponentId: toNullableNumber(item?.customerComponentId),
+        imageUrl: String(sourceComponent?.imageUrl || "").trim(),
+        componentType: String(sourceComponent?.componentType || "").trim(),
+        posX: Number(item?.posX ?? 50),
+        posY: Number(item?.posY ?? 50),
+        ...parsePlacementConfig(item?.configJson),
+        configJson: String(item?.configJson || ""),
+      });
+    });
+
+    if (dynamicDecorationOptions.length > 0) {
+      setDecorationOptions((current) => {
+        const currentMap = new Map(current.map((item) => [String(item.id), item]));
+        dynamicDecorationOptions.forEach((item) => {
+          if (!currentMap.has(String(item.id))) {
+            currentMap.set(String(item.id), item);
+          }
+        });
+        return [...currentMap.values()];
+      });
+    }
+
+    setNailDecorations(nextDecorations);
+    setComponentPlacements(nextPlacements);
+    setSelectedPlacementKey(nextPlacements[0]?.key || "");
+  });
+
+  useEffect(() => {
+    if (hasHydratedInitialNailRef.current || isBuilderCatalogLoading || !bookingDetail) {
+      return;
+    }
+
+    const baseNailItem = Array.isArray(bookingDetail?.bookingItems)
+      ? bookingDetail.bookingItems.find(isNailLinkedBookingItem)
+      : null;
+    const customerNailId = toNullableNumber(baseNailItem?.customerNailId);
+
+    if (!customerNailId) {
+      hasHydratedInitialNailRef.current = true;
+      return;
+    }
+
+    let isMounted = true;
+
+    const hydrateCustomerNail = async () => {
+      try {
+        const customerNailDetail = await fetchStaffCustomerNailDetail(customerNailId);
+
+        if (!isMounted) {
+          return;
+        }
+
+        applyCustomerNailDetailToBuilder(customerNailDetail);
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        const message = error instanceof Error ? error.message : "Failed to load existing customer nail detail.";
+        setBookingDetailError(message);
+      } finally {
+        if (isMounted) {
+          hasHydratedInitialNailRef.current = true;
+        }
+      }
+    };
+
+    void hydrateCustomerNail();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [bookingDetail, isBuilderCatalogLoading]);
 
   const applyVariantToBuilder = (variantDetail) => {
     if (!variantDetail) {
@@ -1667,6 +1901,7 @@ export function StaffNailDesignStudioPage() {
       return;
     }
 
+    resetConfirmedDesignState();
     setSelectedVariantId(String(normalizedVariantId));
 
     try {
@@ -1679,6 +1914,7 @@ export function StaffNailDesignStudioPage() {
   };
 
   const applyTemplatePreset = async (templateId) => {
+    resetConfirmedDesignState();
     setSelectedTemplateId(templateId);
     setSelectedVariantId("");
     setSelectedVariant(null);
@@ -1837,34 +2073,65 @@ export function StaffNailDesignStudioPage() {
       return;
     }
 
+    if (isVariantSelectionMode) {
+      setConfirmedCustomerNail(null);
+      setIsDesignConfirmed(true);
+      setDesignActionError("");
+      setDesignActionSuccess("Variant confirmed successfully. You can update this booking now.");
+      toast.success("Variant confirmed successfully.");
+      return;
+    }
+
     setIsConfirmingDesign(true);
     setDesignActionError("");
     setDesignActionSuccess("");
 
     try {
+      const previewImageFile = await capturePreviewImageFile();
       const createdCustomerNail = await createStaffCustomerNail({
         name: customerNailName,
         nailShapeId: Number(selectedShapeOption.nailShapeId || selectedShapeOption.id || 0),
         nailSurfaceId: Number(selectedSurfaceOption.nailSurfaceId || selectedSurfaceOption.id || 0),
         customColor: customerNailCustomColor,
-        isPublic: false,
+        isPublic: true,
+        image: previewImageFile,
       });
+
+      const componentPayloads = componentPlacements
+        .map((item) => ({
+          customerNailId: Number(createdCustomerNail?.customerNailId || 0),
+          componentId: toNullableNumber(item?.componentId),
+          customerComponentId: toNullableNumber(item?.customerComponentId),
+          posX: Number(item?.posX ?? 0),
+          posY: Number(item?.posY ?? 0),
+          fingerIndex: Number(item?.fingerIndex ?? 0),
+          configJson: String(item?.configJson || "").trim(),
+        }))
+        .filter((item) => item.componentId || item.customerComponentId);
+
+      if (componentPayloads.length > 0) {
+        await Promise.all(
+          componentPayloads.map((item) => createStaffCustomerNailComponent(item)),
+        );
+      }
 
       setConfirmedCustomerNail(createdCustomerNail);
       setIsDesignConfirmed(true);
       setDesignActionSuccess("Custom nail created successfully. You can update this booking now.");
+      toast.success("Custom nail created successfully.");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to create customer nail.";
       setIsDesignConfirmed(false);
       setConfirmedCustomerNail(null);
       setDesignActionError(message);
+      toast.error(message);
     } finally {
       setIsConfirmingDesign(false);
     }
   };
 
   const handleOpenUpdateBookingDesign = async () => {
-    if (!isDesignConfirmed || !confirmedCustomerNail?.customerNailId || isUpdatingBookingDesign) {
+    if (!isDesignConfirmed || isUpdatingBookingDesign) {
       return;
     }
 
@@ -1884,52 +2151,86 @@ export function StaffNailDesignStudioPage() {
         throw new Error("Booking detail is not available for update.");
       }
 
+      const nextCustomerNailId = isVariantSelectionMode
+        ? null
+        : toNullableNumber(confirmedCustomerNail?.customerNailId);
+      const nextNailVariantId = isVariantSelectionMode ? resolvedSelectedVariantId : null;
+
+      if (!nextNailVariantId && !nextCustomerNailId) {
+        throw new Error("Please confirm a nail variant or create a custom nail before updating the booking.");
+      }
+
       const existingBookingItems = Array.isArray(nextBookingDetail?.bookingItems) ? nextBookingDetail.bookingItems : [];
       const baseNailItems = existingBookingItems.filter(isNailLinkedBookingItem);
+      const existingServiceItems = existingBookingItems.filter((item) => !isNailLinkedBookingItem(item));
       const fallbackNailItem = baseNailItems[0] || existingBookingItems[0] || null;
       const payloadNailItemsSource = baseNailItems.length > 0 ? baseNailItems : [fallbackNailItem].filter(Boolean);
-      const payloadBookingItems = [
-        ...(payloadNailItemsSource.length > 0
-          ? payloadNailItemsSource
-          : [{
-            quantity: 1,
-            serviceId: null,
-            shapeMethodConfigId: null,
-          }]).map((item) => ({
-            nailVariantId: null,
-            serviceId: String(item?.serviceId || "").trim() || null,
-            shapeMethodConfigId: toNullableNumber(item?.shapeMethodConfigId),
-            customerNailRequestId: null,
-            customerNailId: Number(confirmedCustomerNail.customerNailId),
-            quantity: Number(item?.quantity || 1) || 1,
-          })),
-        ...selectedExtraOptions.map((item) => ({
-          nailVariantId: null,
-          serviceId: String(item.id || "").trim() || null,
+      const replacementNailItems = (payloadNailItemsSource.length > 0
+        ? payloadNailItemsSource
+        : [{
+          quantity: 1,
+          serviceId: null,
           shapeMethodConfigId: null,
+          nailVariantId: null,
           customerNailRequestId: null,
           customerNailId: null,
-          quantity: 1,
-        })),
+        }]).map((item) => ({
+        nailVariantId: nextNailVariantId,
+        serviceId: toNullableUuid(item?.serviceId),
+        shapeMethodConfigId: null,
+        customerNailId: nextCustomerNailId,
+        customerNailRequestId: null,
+        quantity: Number(item?.quantity || 1) || 1,
+      }));
+      const preservedServiceItems = existingServiceItems
+        .map((item) => buildServiceOnlyBookingItem(item))
+        .filter((item) => item.serviceId);
+      const mergedServiceItemsMap = new Map(
+        preservedServiceItems.map((item) => [item.serviceId, item]),
+      );
+
+      selectedExtraOptions.forEach((item) => {
+        const serviceId = toNullableUuid(item.id);
+
+        if (!serviceId || mergedServiceItemsMap.has(serviceId)) {
+          return;
+        }
+
+        mergedServiceItemsMap.set(serviceId, buildServiceOnlyBookingItem({ serviceId, quantity: 1 }));
+      });
+
+      const payloadBookingItems = [
+        ...replacementNailItems,
+        ...mergedServiceItemsMap.values(),
       ];
 
       const updatedBooking = await updateStaffBooking(resolvedBookingApiId, {
         bookingDate: nextBookingDetail.bookingDate,
         startTime: nextBookingDetail.startTime,
-        nailArtistId:
+        nailArtistId: toNullableUuid(
           nextBookingDetail.nailArtistId
           || nextBookingDetail.artistId
           || loadAuthSession()?.user?.staffId
-          || loadAuthSession()?.staffId
-          || null,
+          || loadAuthSession()?.staffId,
+        ),
         bookingItems: payloadBookingItems,
       });
 
       setBookingDetail(updatedBooking);
-      setDesignActionSuccess("Booking updated successfully with the new customer nail design.");
+      setDesignActionSuccess(
+        isVariantSelectionMode
+          ? "Booking updated successfully with the selected nail variant."
+          : "Booking updated successfully with the new customer nail design.",
+      );
+      toast.success(
+        isVariantSelectionMode
+          ? "Booking updated successfully with the selected nail variant."
+          : "Booking updated successfully with the new customer nail design.",
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to update booking design.";
       setDesignActionError(message);
+      toast.error(message);
     } finally {
       setIsUpdatingBookingDesign(false);
     }
@@ -2118,6 +2419,22 @@ export function StaffNailDesignStudioPage() {
                 </div>
 
                 <div className="mt-6 space-y-6">
+                  {!isVariantSelectionMode ? (
+                    <div>
+                      <div className="mb-3 flex items-center gap-2">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-extrabold text-white">0</span>
+                        <p className="text-xs font-extrabold text-[#ea4f93]">Nail Name</p>
+                      </div>
+                      <input
+                        type="text"
+                        value={customerNailNameDraft}
+                        onChange={(event) => setCustomerNailNameDraft(event.target.value)}
+                        placeholder={suggestedCustomerNailName}
+                        className="h-11 w-full rounded-[14px] border border-[#f4dbe7] bg-[#fff8fc] px-4 text-sm font-semibold text-[#5f4256] outline-none transition focus:border-[#ef6aac]"
+                      />
+                    </div>
+                  ) : null}
+
                   <div>
                     <div className="mb-3 flex items-center gap-2">
                       <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-extrabold text-white">1</span>
@@ -2367,7 +2684,15 @@ export function StaffNailDesignStudioPage() {
                       : "bg-[linear-gradient(135deg,#37d999_0%,#11b879_100%)]"
                       }`}
                   >
-                    {isConfirmingDesign ? "Creating Nail..." : isDesignConfirmed ? "Design Confirmed" : "Confirm Design"}
+                    {isConfirmingDesign
+                      ? "Creating Nail..."
+                      : isDesignConfirmed
+                        ? isVariantSelectionMode
+                          ? "Variant Confirmed"
+                          : "Design Confirmed"
+                        : isVariantSelectionMode
+                          ? "Confirm Variant"
+                          : "Confirm Design"}
                   </button>
                   <button
                     type="button"
@@ -2384,6 +2709,7 @@ export function StaffNailDesignStudioPage() {
               <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4">
                 <SectionTitle icon={Palette} title="Live Nail Preview" />
                 <InteractiveStudioPreview
+                  previewRef={previewContainerRef}
                   finish={selectedFinish}
                   shape={selectedShape}
                   length={selectedLength}
@@ -2406,7 +2732,9 @@ export function StaffNailDesignStudioPage() {
                 />
                 <div className="mt-4 rounded-[12px] border border-[#f2bfd4] bg-white/70 px-3 py-2 text-center text-[10px] font-bold text-[#b07d97]">
                   {isDesignConfirmed
-                    ? "Design confirmed. Update Booking Design is now ready."
+                    ? isVariantSelectionMode
+                      ? "Variant confirmed. Update Booking Design is now ready."
+                      : "Custom nail confirmed. Update Booking Design is now ready."
                     : "Confirm Design first to unlock Update Booking Design."}
                 </div>
               </article>

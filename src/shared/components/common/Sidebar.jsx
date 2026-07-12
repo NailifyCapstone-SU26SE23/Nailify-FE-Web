@@ -3,6 +3,7 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  ListTodo,
   LogOut,
   LayoutDashboard,
   MapPin,
@@ -26,6 +27,7 @@ const ICON_MAP = {
   settings: Settings,
   store: Store,
   support: MessageSquareWarning,
+  tasks: ListTodo,
   users: Users,
 };
 

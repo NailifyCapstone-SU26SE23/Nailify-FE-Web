@@ -29,6 +29,7 @@ import {
   formatNailSurfaceCurrency,
   formatNailSurfaceDuration,
 } from "../services/nailSurfacesManagementService";
+import { NailSurfacePreview } from "../components/NailSurfacePreview";
 
 function MetricCard({ item }) {
   const Icon = item.icon;
@@ -47,9 +48,7 @@ function MetricCard({ item }) {
 
 function SurfaceBadge({ surface }) {
   return (
-    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#e7d7ff_0%,#ffd7ea_100%)] text-xs font-extrabold text-[#7e4fe6]">
-      {surface.initials || "NS"}
-    </div>
+    <NailSurfacePreview surface={surface} compact />
   );
 }
 
@@ -105,7 +104,6 @@ export function NailSurfacesManagementPage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [shaderFilter, setShaderFilter] = useState("");
   const [selectedSort, setSelectedSort] = useState("surface-asc");
   const [surfaces, setSurfaces] = useState([]);
   const [metaData, setMetaData] = useState({
@@ -251,18 +249,9 @@ export function NailSurfacesManagementPage() {
     return result;
   }, [metaData.currentPage, metaData.totalPages]);
 
-  const shaderOptions = useMemo(
-    () => Array.from(new Set(surfaces.map((item) => item.shaderParam).filter(Boolean))),
-    [surfaces],
-  );
-
   const filteredSurfaces = useMemo(() => {
-    if (!shaderFilter) {
-      return surfaces;
-    }
-
-    return surfaces.filter((item) => item.shaderParam === shaderFilter);
-  }, [shaderFilter, surfaces]);
+    return surfaces;
+  }, [surfaces]);
 
   const sortedSurfaces = useMemo(
     () => sortSurfaces(filteredSurfaces, selectedSort),
@@ -295,24 +284,25 @@ export function NailSurfacesManagementPage() {
           <div className="flex items-center gap-3">
             <SurfaceBadge surface={surface} />
             <div>
-              <p className="text-sm font-bold text-[#432744]">{surface.name}</p>  
+              <p className="text-sm font-bold text-[#432744]">{surface.name}</p>
+             
             </div>
           </div>
         ),
       },
-      {
-        title: (
-          <SortableHeader
-            label="Shader Param"
-            sortKey="shader"
-            selectedSort={selectedSort}
-            onToggle={handleSortToggle}
-          />
-        ),
-        dataIndex: "shaderParam",
-        key: "shaderParam",
-        render: (value) => <span className="text-sm text-[#6b5668]">{value}</span>,
-      },
+      // {
+      //   title: (
+      //     <SortableHeader
+      //       label="Shader Param"
+      //       sortKey="shader"
+      //       selectedSort={selectedSort}
+      //       onToggle={handleSortToggle}
+      //     />
+      //   ),
+      //   dataIndex: "shaderParam",
+      //   key: "shaderParam",
+      //   render: (value) => <span className="text-sm text-[#6b5668]">{value}</span>,
+      // },
       {
         title: (
           <SortableHeader
@@ -324,7 +314,7 @@ export function NailSurfacesManagementPage() {
         ),
         dataIndex: "priceLabel",
         key: "priceLabel",
-        render: (value) => <span className="text-sm font-semibold text-[#432744]">{value}</span>,
+        render: (value) => <span className="text-sm text-[#6b5668]">{value}</span>,
       },
       {
         title: (

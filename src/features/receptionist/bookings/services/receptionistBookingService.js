@@ -132,6 +132,65 @@ export async function fetchReceptionistBookingDetail(bookingId) {
   return unwrapResponse(response, "Failed to load booking detail.");
 }
 
+export async function fetchReceptionistBookingProcedures(bookingItemId) {
+  const normalizedBookingItemId = String(bookingItemId || "").trim();
+
+  if (!normalizedBookingItemId) {
+    throw new Error("Booking item ID is required.");
+  }
+
+  const response = await axiosClient.get(`/BookingProcedures/booking-item/${normalizedBookingItemId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  return unwrapResponse(response, "Failed to load booking procedures.");
+}
+
+export async function fetchReceptionistProcedureAvailableArtists(bookingProcedureId) {
+  const normalizedBookingProcedureId = String(bookingProcedureId || "").trim();
+
+  if (!normalizedBookingProcedureId) {
+    throw new Error("Booking procedure ID is required.");
+  }
+
+  const response = await axiosClient.get(
+    `/BookingProcedures/${normalizedBookingProcedureId}/available-artists`,
+    {
+      headers: getAuthHeaders(),
+    },
+  );
+
+  return unwrapResponse(response, "Failed to load available artists for this procedure.");
+}
+
+export async function updateReceptionistProcedureArtist(bookingProcedureId, artistId) {
+  const normalizedBookingProcedureId = String(bookingProcedureId || "").trim();
+  const normalizedArtistId = String(artistId || "").trim();
+
+  if (!normalizedBookingProcedureId) {
+    throw new Error("Booking procedure ID is required.");
+  }
+
+  if (!normalizedArtistId) {
+    throw new Error("Artist ID is required.");
+  }
+
+  const response = await axiosClient.put(
+    `/BookingProcedures/${normalizedBookingProcedureId}/status`,
+    null,
+    {
+      headers: getAuthHeaders(),
+      params: {
+        artistId: normalizedArtistId,
+        // status: "InProgress", //Pending
+        status: "Pending",
+      },
+    },
+  );
+
+  return unwrapResponse(response, "Failed to assign artist to procedure.");
+}
+
 export async function verifyReceptionistQrToken(qrToken) {
   const normalizedToken = String(qrToken || "").trim();
 

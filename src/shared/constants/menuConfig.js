@@ -72,6 +72,13 @@ export const MENU_CONFIG = {
       badge: "8",
     },
     {
+      key: "staff-tasks",
+      label: "Tasks",
+      to: ROUTES.staffTasks,
+      icon: "tasks",
+      section: "Main",
+    },
+    {
       key: "staff-customer-nails",
       label: "Custom Reviews",
       to: ROUTES.staffCustomerNails,
@@ -101,11 +108,11 @@ export const MENU_CONFIG = {
       disabled: true,
     },
     {
-      key: "staff-settings",
-      label: "Settings",
+      key: "staff-profile",
+      label: "Profile",
+      to: ROUTES.staffProfile,
       icon: "settings",
       section: "Support",
-      disabled: true,
     },
   ],
 
@@ -149,11 +156,11 @@ export const MENU_CONFIG = {
       disabled: true,
     },
     {
-      key: "receptionist-settings",
-      label: "Settings",
+      key: "receptionist-profile",
+      label: "Profile",
+      to: ROUTES.receptionistProfile,
       icon: "settings",
       section: "Support",
-      disabled: true,
     },
   ],
   //manager
@@ -216,11 +223,11 @@ export const MENU_CONFIG = {
       disabled: true,
     },
     {
-      key: "manager-settings",
-      label: "Settings",
+      key: "manager-profile",
+      label: "Profile",
+      to: ROUTES.managerProfile,
       icon: "settings",
       section: "Support",
-      disabled: true,
     },
   ],
 
@@ -319,6 +326,13 @@ export const MENU_CONFIG = {
       section: "Main",
     },
     {
+      key: "admin-promotions",
+      label: "Promotions",
+      to: ROUTES.adminPromotions,
+      icon: "palette",
+      section: "Main",
+    },
+    {
       key: "admin-nail-designs",
       label: "Nail Designs",
       to: ROUTES.adminNailDesigns,
@@ -348,11 +362,11 @@ export const MENU_CONFIG = {
       disabled: true,
     },
     {
-      key: "admin-settings",
-      label: "Settings",
+      key: "admin-profile",
+      label: "Profile",
+      to: ROUTES.adminProfile,
       icon: "settings",
       section: "Support",
-      disabled: true,
     },
   ],
 };
