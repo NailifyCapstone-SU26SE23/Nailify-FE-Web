@@ -94,7 +94,7 @@ export function NailDesignManagementFormFields({
           onChange={onFieldChange("price")}
           disabled={disabled}
           className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-          placeholder="Example: 420,000 VND"
+          placeholder="Example: 420,000 VNĐ"
         />
       </label>
 

@@ -38,7 +38,7 @@ function normalizeMetaData(metaData, defaults) {
 export function formatNailShapeCurrency(value) {
   return `${new Intl.NumberFormat("vi-VN", {
     maximumFractionDigits: 0,
-  }).format(Number(value || 0))} VND`;
+  }).format(Number(value || 0))} VNĐ`;
 }
 
 export function formatNailShapeDuration(value) {

@@ -1,5 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { StaffLayout } from "../layouts/StaffLayout";
+import { ProfilePage } from "../../features/core/auth/pages/profilePage";
 import { StaffDashboardPage } from "../../features/core/dashboard/pages/StaffDashboardPage";
 import { BookingListPage } from "../../shared/bookings/pages/BookingListPage";
 import { BookingCreatePage } from "../../shared/bookings/pages/BookingCreatePage";
@@ -9,6 +10,7 @@ import { StaffServiceSessionPage } from "../../features/staff/bookings/pages/Sta
 import { StaffUpdateBookingDesignPage } from "../../features/staff/bookings/pages/StaffUpdateBookingDesignPage";
 import { StaffCustomerNailsListPage } from "../../features/staff/customer-nail/pages/StaffCustomerNailsListPage";
 import { StaffCustomerNailReviewPage } from "../../features/staff/customer-nail/pages/StaffCustomerNailReviewPage";
+import { StaffTasksPage } from "../../features/staff/task/pages/StaffTasksPage";
 import { StaffWaittingPage } from "../../features/staff/waitting/pages/StaffWaittingPage";
 import { AuthGuard } from "../../shared/components/guards/AuthGuard";
 import { RoleGuard } from "../../shared/components/guards/RoleGuard";
@@ -35,8 +37,16 @@ export const staffRoutes = [
         element: <StaffDashboardPage />,
       },
       {
+        path: ROUTES.staffProfile,
+        element: <ProfilePage />,
+      },
+      {
         path: ROUTES.staffBookings,
         element: <BookingListPage />,
+      },
+      {
+        path: ROUTES.staffTasks,
+        element: <StaffTasksPage />,
       },
       {
         path: ROUTES.staffBookingsCreate,

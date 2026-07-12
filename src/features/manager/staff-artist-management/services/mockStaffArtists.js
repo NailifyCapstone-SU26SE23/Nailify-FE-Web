@@ -40,20 +40,16 @@ export const QUICK_ACTIONS = [
   { label: "Transfer Staff", icon: "arrow" },
 ];
 
-export const STAFF_FILTER_TABS = ["All", "Available", "Busy", "On Break", "On Leave"];
+export const STAFF_FILTER_TABS = ["All", "Active", "Inactive"];
 
 export const STAFF_STATUS_STYLES = {
-  Available: "bg-[#eaf9ee] text-[#2fa25f]",
-  Busy: "bg-[#fff0dd] text-[#db8520]",
-  "On Break": "bg-[#e7ecff] text-[#4755b8]",
-  "On Leave": "bg-[#ffe6ec] text-[#e1447f]",
+  Active: "bg-[#eaf9ee] text-[#2fa25f]",
+  Inactive: "bg-[#fff0dd] text-[#db8520]",
 };
 
 export const SCHEDULE_STATUS_STYLES = {
   Active: "bg-[#eaf9ee] text-[#2fa25f]",
-  Busy: "bg-[#fff0dd] text-[#db8520]",
-  Break: "bg-[#e7ecff] text-[#4755b8]",
-  "On Leave": "bg-[#ffe6ec] text-[#e1447f]",
+  Inactive: "bg-[#fff0dd] text-[#db8520]",
 };
 
 export const STAFF_ARTISTS = [

@@ -1,3 +1,4 @@
+import { Button, Modal } from "antd";
 import { CalendarClock, LoaderCircle, PencilLine, RefreshCcw, Save, Trash2, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { useEffect, useMemo, useState } from "react";
@@ -21,8 +22,12 @@ import {
 } from "../../constants/routes";
 import { confirmCurrentDesign, confirmCustomerNail, setActiveBooking } from "../../../store/bookingSlice";
 import {
+  buildStaffBookingItemsForUpdate,
   buildStaffServiceSessionPayload,
+  claimBookingProcedure,
+  fetchBookingProceduresByBookingItem,
   fetchServiceCatalog,
+  fetchStaffServiceDetail,
   fetchStaffBookingDetail,
   fetchStaffCustomerNailDetail,
   fetchStaffCustomerDetail,
@@ -30,6 +35,7 @@ import {
   formatBookingCode,
   formatCurrency,
   formatTimeValue,
+  toNullableBookingUuid,
   updateStaffBooking,
 } from "../../../features/staff/bookings/services/staffBookingService";
 import { formatDurationMinutes } from "../../utils/formatDuration";
@@ -114,6 +120,22 @@ function formatSignedCurrency(value) {
   return `${sign}${formatCurrency(Math.abs(amount))}`;
 }
 
+function getProcedureStatusTone(status) {
+  switch (String(status || "").trim().toLowerCase()) {
+    case "completed":
+      return "bg-[#e7f8ee] text-[#309e63]";
+    case "inprogress":
+    case "in progress":
+      return "bg-[#efeafd] text-[#7c63d8]";
+    case "pending":
+      return "bg-[#fff4e3] text-[#e09a27]";
+    case "skipped":
+      return "bg-[#f2f2f2] text-[#656565]";
+    default:
+      return "bg-[#fff1f6] text-[#eb5b92]";
+  }
+}
+
 function getUniqueBookingLabels(values) {
   return [...new Set(values.map(normalizeBookingText).filter(Boolean))];
 }
@@ -163,6 +185,9 @@ function buildStaffExperienceFromBooking(
   nailVariantDetail,
   customerNailDetail,
   customerDetail,
+  serviceDetailMap = {},
+  nailVariantDetailMap = {},
+  customerNailDetailMap = {},
 ) {
   const items = booking?.bookingItems ?? [];
   const normalizedItems = items.map((item) => ({
@@ -195,27 +220,63 @@ function buildStaffExperienceFromBooking(
   const serviceNames = getUniqueBookingLabels(normalizedItems.map((item) => item.serviceName));
   const variantNames = getUniqueBookingLabels(normalizedItems.map((item) => item.nailVariantName));
   const customerDesignNames = getUniqueBookingLabels(normalizedItems.map((item) => item.customerNailName));
-  const bookingServiceEntries = normalizedItems
-    .map((item, index) => {
-      const name = item.serviceName || "";
-      const nailServiceName = item.nailVariantName || item.customerNailName || "";
+  const bookingServiceEntries = normalizedItems.flatMap((item, index) => {
+    const bookingItemId = String(item?.bookingItemId || item?.id || "").trim();
+    const serviceId = String(item?.serviceId || "").trim();
+    const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
+    const resolvedService = serviceId ? serviceDetailMap[serviceId] : null;
+    const customerNailId = Number(item?.customerNailId || 0);
+    const nailVariantId = Number(item?.nailVariantId || 0);
+    const resolvedCustomerNail = customerNailId > 0 ? customerNailDetailMap[customerNailId] : null;
+    const resolvedNailVariant = nailVariantId > 0 ? nailVariantDetailMap[nailVariantId] : null;
+    const resolvedNailDetail = resolvedCustomerNail || resolvedNailVariant;
+    const hasNailDetail = Boolean(
+      normalizeBookingText(
+        resolvedCustomerNail?.name ||
+        resolvedNailVariant?.name ||
+        item?.customerNailName ||
+        item?.nailVariantName,
+      ) ||
+      customerNailId > 0 ||
+      nailVariantId > 0
+    );
+    const rows = [];
 
-      if (!name && !nailServiceName) {
-        return null;
-      }
+    const resolvedServiceName = normalizeBookingText(resolvedService?.name || item?.serviceName);
+    if (resolvedServiceName || serviceId) {
+      rows.push({
+        id: `${bookingItemId || `service-${index}`}-service`,
+        bookingItemId,
+        name: resolvedServiceName || "--",
+        detailLabel: "Service",
+        quantity,
+        price: formatCurrency(resolvedService?.price ?? item?.price ?? item?.finalPrice ?? 0),
+        duration: normalizeBookingItemDuration(resolvedService?.duration ?? item?.serviceDuration ?? item?.duration),
+        canViewProcedures: Boolean(bookingItemId) && !hasNailDetail,
+      });
+    }
 
-      const displayName = name || nailServiceName;
+    const resolvedNailName = normalizeBookingText(
+      resolvedCustomerNail?.name ||
+      resolvedNailVariant?.name ||
+      item?.customerNailName ||
+      item?.nailVariantName,
+    );
+    if (resolvedNailName || customerNailId > 0 || nailVariantId > 0) {
+      rows.push({
+        id: `${bookingItemId || `service-${index}`}-nail`,
+        bookingItemId,
+        name: resolvedNailName || "--",
+        detailLabel: resolvedCustomerNail ? "Customer Nail" : "Nail Variant",
+        quantity,
+        price: formatCurrency(resolvedNailDetail?.price ?? 0),
+        duration: normalizeBookingItemDuration(resolvedNailDetail?.duration),
+        canViewProcedures: Boolean(bookingItemId),
+      });
+    }
 
-      return {
-        id: String(item?.bookingItemId || item?.id || `${displayName}-${index}`),
-        name: displayName,
-        nailServiceName,
-        quantity: Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1,
-        price: formatCurrency(item?.finalPrice ?? item?.price ?? 0),
-        duration: normalizeBookingItemDuration(item?.duration || item?.serviceDuration),
-      };
-    })
-    .filter(Boolean);
+    return rows;
+  });
   const bookingItemsBasePrice = normalizedItems.reduce((sum, item) => {
     const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
     const price = Number(item?.price || 0);
@@ -461,6 +522,9 @@ export function BookingDetailPage() {
   const [staffCustomerDetail, setStaffCustomerDetail] = useState(null);
   const [staffNailVariantDetail, setStaffNailVariantDetail] = useState(null);
   const [staffCustomerNailDetail, setStaffCustomerNailDetail] = useState(null);
+  const [staffServiceDetailMap, setStaffServiceDetailMap] = useState({});
+  const [staffBookingNailVariantDetailMap, setStaffBookingNailVariantDetailMap] = useState({});
+  const [staffBookingCustomerNailDetailMap, setStaffBookingCustomerNailDetailMap] = useState({});
   const [isStaffLoading, setIsStaffLoading] = useState(isStaffRole);
   const [staffLoadError, setStaffLoadError] = useState("");
   const [staffNotesDraft, setStaffNotesDraft] = useState([]);
@@ -479,9 +543,14 @@ export function BookingDetailPage() {
   const [serviceCatalogPage, setServiceCatalogPage] = useState(1);
   const [serviceSearchInput, setServiceSearchInput] = useState("");
   const [serviceSearchKeyword, setServiceSearchKeyword] = useState("");
-  const [selectedExtraServiceIds, setSelectedExtraServiceIds] = useState([]);
+  const [selectedExtraServiceQuantities, setSelectedExtraServiceQuantities] = useState({});
   const [isLoadingServiceCatalog, setIsLoadingServiceCatalog] = useState(false);
   const [isSavingExtraService, setIsSavingExtraService] = useState(false);
+  const [selectedProcedureService, setSelectedProcedureService] = useState(null);
+  const [serviceProcedureList, setServiceProcedureList] = useState([]);
+  const [isServiceProcedureModalLoading, setIsServiceProcedureModalLoading] = useState(false);
+  const [serviceProcedureModalError, setServiceProcedureModalError] = useState("");
+  const [claimingProcedureId, setClaimingProcedureId] = useState("");
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(
@@ -509,6 +578,7 @@ export function BookingDetailPage() {
   }, [isStaffRole, location.state]);
   const deleteRequested = role !== ROLES.staff && Boolean(location.state?.requestDelete);
   const normalizedStaffBookingStatus = normalizeStaffBookingStatus(staffBookingDetail?.status);
+  const isCheckinBooking = ["checkedin", "checkin"].includes(normalizedStaffBookingStatus);
   const isPendingBooking = ["pending", "approved"].includes(normalizedStaffBookingStatus);
   const hasServiceStarted = ["inprogress", "servicecompleted", "completed"].includes(
     normalizedStaffBookingStatus,
@@ -645,6 +715,85 @@ export function BookingDetailPage() {
     };
 
     void loadCustomerNailDetail();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isStaffRole, staffBookingDetail?.bookingItems]);
+
+  useEffect(() => {
+    if (!isStaffRole) {
+      return;
+    }
+
+    const bookingItems = Array.isArray(staffBookingDetail?.bookingItems)
+      ? staffBookingDetail.bookingItems
+      : [];
+    const serviceIds = [...new Set(
+      bookingItems
+        .map((item) => String(item?.serviceId || "").trim())
+        .filter(Boolean),
+    )];
+    const nailVariantIds = [...new Set(
+      bookingItems
+        .map((item) => Number(item?.nailVariantId || 0))
+        .filter((value) => Number.isInteger(value) && value > 0),
+    )];
+    const customerNailIds = [...new Set(
+      bookingItems
+        .map((item) => Number(item?.customerNailId || 0))
+        .filter((value) => Number.isInteger(value) && value > 0),
+    )];
+    let isMounted = true;
+
+    if (!serviceIds.length && !nailVariantIds.length && !customerNailIds.length) {
+      setStaffServiceDetailMap({});
+      setStaffBookingNailVariantDetailMap({});
+      setStaffBookingCustomerNailDetailMap({});
+      return;
+    }
+
+    const loadBookingItemDetails = async () => {
+      const [serviceResults, nailVariantResults, customerNailResults] = await Promise.all([
+        Promise.allSettled(serviceIds.map(async (serviceId) => [serviceId, await fetchStaffServiceDetail(serviceId)])),
+        Promise.allSettled(nailVariantIds.map(async (variantId) => [variantId, await fetchStaffNailVariantDetail(variantId)])),
+        Promise.allSettled(customerNailIds.map(async (customerNailId) => [customerNailId, await fetchStaffCustomerNailDetail(customerNailId)])),
+      ]);
+
+      if (!isMounted) {
+        return;
+      }
+
+      setStaffServiceDetailMap(
+        serviceResults.reduce((accumulator, result) => {
+          if (result.status === "fulfilled") {
+            const [serviceId, detail] = result.value;
+            accumulator[serviceId] = detail;
+          }
+          return accumulator;
+        }, {}),
+      );
+      setStaffBookingNailVariantDetailMap(
+        nailVariantResults.reduce((accumulator, result) => {
+          if (result.status === "fulfilled") {
+            const [variantId, detail] = result.value;
+            accumulator[variantId] = detail;
+          }
+          return accumulator;
+        }, {}),
+      );
+      setStaffBookingCustomerNailDetailMap(
+        customerNailResults.reduce((accumulator, result) => {
+          if (result.status === "fulfilled") {
+            const [customerNailId, detail] = result.value;
+            accumulator[customerNailId] = detail;
+          }
+          return accumulator;
+        }, {}),
+      );
+    };
+
+    void loadBookingItemDetails();
 
     return () => {
       isMounted = false;
@@ -853,12 +1002,80 @@ export function BookingDetailPage() {
   };
 
   const handleOpenUpdateBooking = () => {
-    setSelectedExtraServiceIds([]);
+    setSelectedExtraServiceQuantities({});
     setServiceSearchInput("");
     setServiceSearchKeyword("");
     setServiceCatalogPage(1);
     setShowUpdateBookingModal(true);
     setFlashMessage("");
+  };
+
+  const handleOpenServiceProcedures = async (service) => {
+    const bookingItemId = String(service?.bookingItemId || service?.id || "").trim();
+
+    if (!bookingItemId) {
+      toast.error("Booking item ID is not available for this service.");
+      return;
+    }
+
+    setSelectedProcedureService(service);
+    setServiceProcedureList([]);
+    setServiceProcedureModalError("");
+    setIsServiceProcedureModalLoading(true);
+
+    try {
+      const procedures = await fetchBookingProceduresByBookingItem(bookingItemId);
+      setServiceProcedureList(Array.isArray(procedures) ? procedures : []);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to load service procedures.";
+      setServiceProcedureModalError(message);
+      toast.error(message);
+    } finally {
+      setIsServiceProcedureModalLoading(false);
+    }
+  };
+
+  const handleCloseServiceProcedures = () => {
+    setSelectedProcedureService(null);
+    setServiceProcedureList([]);
+    setServiceProcedureModalError("");
+    setIsServiceProcedureModalLoading(false);
+    setClaimingProcedureId("");
+  };
+
+  const handleClaimProcedure = async (procedure) => {
+    const procedureId = String(procedure?.bookingProcedureId || "").trim();
+
+    if (!procedureId || claimingProcedureId) {
+      return;
+    }
+
+    if (!isCheckinBooking) {
+      toast.error("You can only claim procedures when the booking status is CheckedIn.");
+      return;
+    }
+
+    setClaimingProcedureId(procedureId);
+
+    try {
+      const updatedProcedure = await claimBookingProcedure(procedureId);
+      setServiceProcedureList((current) =>
+        current.map((item) =>
+          item?.bookingProcedureId === procedureId
+            ? {
+              ...item,
+              ...updatedProcedure,
+            }
+            : item,
+        ),
+      );
+      toast.success("Procedure claimed successfully.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to claim procedure.";
+      toast.error(message);
+    } finally {
+      setClaimingProcedureId("");
+    }
   };
 
   const handleCloseUpdateBooking = () => {
@@ -872,17 +1089,17 @@ export function BookingDetailPage() {
   const handleSearchExtraServices = (event) => {
     event.preventDefault();
     setServiceCatalogPage(1);
-    setSelectedExtraServiceIds([]);
+    setSelectedExtraServiceQuantities({});
     setServiceSearchKeyword(serviceSearchInput.trim());
   };
 
   const handleAddExtraService = async () => {
     const normalizedBookingId = String(bookingId || "").trim();
-    const normalizedServiceIds = selectedExtraServiceIds
-      .map((serviceId) => String(serviceId || "").trim())
-      .filter(Boolean);
+    const normalizedSelectedServices = Object.entries(selectedExtraServiceQuantities).filter(([, quantity]) => (
+      Number(quantity || 0) > 0
+    ));
 
-    if (!normalizedBookingId || normalizedServiceIds.length === 0 || !staffBookingDetail || isSavingExtraService) {
+    if (!normalizedBookingId || normalizedSelectedServices.length === 0 || !staffBookingDetail || isSavingExtraService) {
       return;
     }
 
@@ -890,45 +1107,37 @@ export function BookingDetailPage() {
 
     try {
       const bookingItems = Array.isArray(staffBookingDetail.bookingItems) ? staffBookingDetail.bookingItems : [];
-      const toNullableNumber = (value) => {
-        if (value === null || value === undefined || value === "") {
-          return null;
-        }
-
-        const normalizedValue = Number(value);
-        return Number.isFinite(normalizedValue) && normalizedValue > 0 ? normalizedValue : null;
-      };
-
-      const payloadBookingItems = [
-        ...bookingItems.map((item) => ({
-          nailVariantId: toNullableNumber(item?.nailVariantId),
-          serviceId: String(item?.serviceId || "").trim() || null,
-          customerNailId: toNullableNumber(item?.customerNailId),
-          quantity: Number(item?.quantity || 1) || 1,
-        })),
-        ...normalizedServiceIds.map((serviceId) => ({
-          nailVariantId: null,
-          serviceId,
-          customerNailId: null,
-          quantity: 1,
-        })),
-      ];
+      const payloadBookingItems = buildStaffBookingItemsForUpdate(
+        bookingItems,
+        selectedExtraServiceQuantities,
+      );
 
       const updatedBooking = await updateStaffBooking(normalizedBookingId, {
         bookingDate: staffBookingDetail.bookingDate,
         startTime: staffBookingDetail.startTime,
-        nailArtistId: staffBookingDetail.nailArtistId || staffBookingDetail.artistId || null,
+        nailArtistId: toNullableBookingUuid(
+          staffBookingDetail.nailArtistId || staffBookingDetail.artistId,
+        ),
         bookingItems: payloadBookingItems,
       });
 
       setStaffBookingDetail(updatedBooking);
       setShowUpdateBookingModal(false);
-      setSelectedExtraServiceIds([]);
+      setSelectedExtraServiceQuantities({});
 
-      const addedServices = serviceCatalog.filter((item) => normalizedServiceIds.includes(item.serviceId));
-      const addedServiceNames = addedServices.map((item) => item.name).filter(Boolean);
-      const message = addedServiceNames.length
-        ? `${addedServiceNames.join(", ")} ${addedServiceNames.length > 1 ? "have" : "has"} been added to this booking.`
+      const selectedServiceNames = normalizedSelectedServices
+        .map(([serviceId, quantity]) => {
+          const matchedService = serviceCatalog.find((item) => item.serviceId === serviceId);
+
+          if (!matchedService?.name) {
+            return "";
+          }
+
+          return quantity > 1 ? `${matchedService.name} x${quantity}` : matchedService.name;
+        })
+        .filter(Boolean);
+      const message = selectedServiceNames.length
+        ? `${selectedServiceNames.join(", ")} ${selectedServiceNames.length > 1 ? "have" : "has"} been added to this booking.`
         : "Extra services have been added to this booking.";
 
       setFlashMessage(message);
@@ -987,6 +1196,9 @@ export function BookingDetailPage() {
       staffNailVariantDetail,
       staffCustomerNailDetail,
       staffCustomerDetail,
+      staffServiceDetailMap,
+      staffBookingNailVariantDetailMap,
+      staffBookingCustomerNailDetailMap,
     );
     const staffExperience = !requiresCustomerNailConfirmation && isCurrentDesignConfirmed
       ? {
@@ -1083,6 +1295,7 @@ export function BookingDetailPage() {
           onConfirmCustomerNail={handleConfirmCustomerNail}
           onDelete={handleDelete}
           onOpenDesignStudio={handleOpenDesignStudio}
+          onOpenServiceProcedures={handleOpenServiceProcedures}
           onOpenUpdateBooking={handleOpenUpdateBooking}
           onStaffNoteChange={handleStaffNoteChange}
           onStartServiceSession={() => void handleOpenServiceSession()}
@@ -1090,7 +1303,7 @@ export function BookingDetailPage() {
         <ExtraServiceModal
           open={showUpdateBookingModal}
           services={serviceCatalog}
-          selectedServiceIds={selectedExtraServiceIds}
+          selectedServiceQuantities={selectedExtraServiceQuantities}
           searchValue={serviceSearchInput}
           isLoading={isLoadingServiceCatalog}
           isSaving={isSavingExtraService}
@@ -1098,25 +1311,181 @@ export function BookingDetailPage() {
           onClose={handleCloseUpdateBooking}
           onSearchChange={(event) => setServiceSearchInput(event.target.value)}
           onSearchSubmit={handleSearchExtraServices}
-          onSelect={(serviceId) =>
-            setSelectedExtraServiceIds((current) =>
-              current.includes(serviceId)
-                ? current.filter((item) => item !== serviceId)
-                : [...current, serviceId],
-            )
+          onDecreaseQuantity={(serviceId) =>
+            setSelectedExtraServiceQuantities((current) => {
+              const nextQuantity = Math.max(0, Number(current?.[serviceId] || 0) - 1);
+
+              if (nextQuantity <= 0) {
+                const nextState = { ...current };
+                delete nextState[serviceId];
+                return nextState;
+              }
+
+              return {
+                ...current,
+                [serviceId]: nextQuantity,
+              };
+            })
+          }
+          onIncreaseQuantity={(serviceId) =>
+            setSelectedExtraServiceQuantities((current) => ({
+              ...current,
+              [serviceId]: Number(current?.[serviceId] || 0) + 1,
+            }))
           }
           onPageChange={(page) => {
             if (page < 1 || page > (serviceCatalogMeta?.totalPages ?? 1)) {
               return;
             }
 
-            setSelectedExtraServiceIds([]);
+            setSelectedExtraServiceQuantities({});
             setServiceCatalogPage(page);
           }}
           onConfirm={handleAddExtraService}
           title="Update Booking Services"
           description="Select extra services to add into the current booking before starting the service session."
         />
+        <Modal
+          open={Boolean(selectedProcedureService)}
+          onCancel={handleCloseServiceProcedures}
+          footer={[
+            <Button key="close-booking-detail-procedure-modal" onClick={handleCloseServiceProcedures}>
+              Close
+            </Button>,
+          ]}
+          centered
+          width={900}
+          title="Service Procedures"
+        >
+          {selectedProcedureService ? (
+            <div className="space-y-5 py-1">
+              <div className="rounded-[18px] border border-[#f4d6e2] bg-[#fffafb] p-4">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <p className="text-[13px] font-extrabold uppercase tracking-[0.16em] text-[#c38ea8]">
+                      Service
+                    </p>
+                    <p className="mt-2 text-lg font-extrabold text-[#4a3741]">
+                      {selectedProcedureService.name || "--"}
+                    </p>
+                    
+                  </div>
+                  <div className="grid gap-2 text-right text-sm">
+                    <div>
+                      <span className="text-[#8f7b88]">Quantity: </span>
+                      <span className="font-bold text-[#4a3741]">{selectedProcedureService.quantity || 1}</span>
+                    </div>
+                    <div>
+                      <span className="text-[#8f7b88]">Duration: </span>
+                      <span className="font-bold text-[#4a3741]">{selectedProcedureService.duration || "--"}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {isServiceProcedureModalLoading ? (
+                <div className="rounded-[18px] border border-[#f4dbe7] bg-white px-4 py-6 text-sm text-[#a88a9d]">
+                  Loading procedure steps...
+                </div>
+              ) : serviceProcedureModalError ? (
+                <div className="rounded-[18px] border border-[#f8d3dc] bg-[#fff5f7] px-4 py-5 text-sm text-[#c9587e]">
+                  {serviceProcedureModalError}
+                </div>
+              ) : serviceProcedureList.length ? (
+                <div className="space-y-3">
+                  {serviceProcedureList
+                    .slice()
+                    .sort((left, right) => (left?.stepOrder ?? 0) - (right?.stepOrder ?? 0))
+                    .map((procedure) => (
+                      <div
+                        key={procedure.bookingProcedureId || `${procedure.procedureId}-${procedure.stepOrder}`}
+                        className="rounded-[18px] border border-[#f4d6e2] bg-white p-4 shadow-[0_10px_22px_rgba(236,72,153,0.04)]"
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="rounded-full bg-[#fff1f6] px-2.5 py-1 text-[10px] font-extrabold text-[#eb5b92]">
+                                Step {procedure.stepOrder ?? "--"}
+                              </span>
+                              <span className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold ${getProcedureStatusTone(procedure.status)}`}>
+                                {procedure.status || "--"}
+                              </span>
+                            </div>
+                            <p className="mt-3 text-base font-extrabold text-[#4a3741]">
+                              {procedure.procedureName || "--"}
+                            </p>
+                            <p className="mt-1 text-sm leading-6 text-[#8f7b88]">
+                              {procedure.description || "No procedure description available."}
+                            </p>
+                          </div>
+                          <div className="grid gap-2 text-right text-xs text-[#8f7b88]">
+                            <span>
+                              {String(procedure.estimatedStartTime || "--").slice(0, 5)} - {String(procedure.estimatedEndTime || "--").slice(0, 5)}
+                            </span>
+                            <span className="font-bold text-[#4a3741]">{procedure.duration ?? 0} min</span>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                          <div className="rounded-2xl bg-[#fff7fb] px-3 py-3 flex flex-col items-center justify-between gap-2">
+                            <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
+                              Assigned Artist
+                            </p>
+                            <div className="mt-1 flex items-start justify-between gap-3">
+                              <p className="text-[13px] font-bold text-[#4a3741]">
+                                 {procedure.assignedArtistId ? (procedure.assignedArtistName || "Assigned") : "Unassigned"}
+                              </p>
+                              {!procedure.assignedArtistId && isCheckinBooking ? (
+                                <button
+                                  type="button"
+                                  onClick={() => void handleClaimProcedure(procedure)}
+                                  disabled={claimingProcedureId === procedure.bookingProcedureId}
+                                  className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-3 py-1 text-[10px] font-extrabold text-white shadow-[0_10px_20px_rgba(236,72,153,0.18)] disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  {claimingProcedureId === procedure.bookingProcedureId ? (
+                                    <LoaderCircle size={12} className="animate-spin" />
+                                  ) : null}
+                                  Claim
+                                </button>
+                              ) : null}
+                            </div>
+                          </div>
+                          <div className="rounded-2xl bg-[#fff7fb] px-3 py-3 flex flex-col items-center justify-between gap-2">
+                            <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
+                              Completed By
+                            </p>
+                            <p className="mt-1 text-[13px] font-bold text-[#4a3741]">
+                              {procedure.completedByName || <span className="text-[#6c6c6c] px-3 py-1 border border-[#0a0909] rounded-2xl bg-gray-100 text-[13px] text-center">Not yet</span>}
+                            </p>
+                          </div>
+                          <div className="rounded-2xl bg-[#fff7fb] px-3 py-3 flex flex-col items-center justify-between gap-2">
+                            <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
+                              Active / Passive
+                            </p>
+                            <p className="mt-1 text-[13px] font-bold text-[#4a3741]">
+                              {procedure.activeDuration ?? 0}m / {procedure.passiveDuration ?? 0}m
+                            </p>
+                          </div>
+                          <div className="rounded-2xl bg-[#fff7fb] px-3 py-3 flex flex-col items-center justify-between gap-2">
+                            <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
+                              Overlap
+                            </p>
+                            <p className="mt-1 text-[13px] font-bold text-[#4a3741]">
+                               {procedure.canOverlap ? <span className="text-[#28a745] px-3 py-1 border border-[#28a745] rounded-2xl bg-green-100 text-[13px] text-center">Allowed</span> : <span className="text-[#6c6c6c] px-3 py-1 border border-[#0a0909] rounded-2xl bg-gray-100 text-[13px] text-center">Not Allowed</span>}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <div className="rounded-[18px] border border-dashed border-[#f1d8e4] bg-[#fffafb] px-4 py-8 text-center text-sm text-[#8f7b88]">
+                  No procedure steps found for this booking item.
+                </div>
+              )}
+            </div>
+          ) : null}
+        </Modal>
       </>
     );
   }

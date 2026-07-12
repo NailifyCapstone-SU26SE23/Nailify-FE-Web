@@ -3,6 +3,7 @@ import {
   CalendarClock,
   Check,
   CheckCheck,
+  ClipboardList,
   ClipboardCheck,
   Eye,
   Palette,
@@ -13,8 +14,10 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { PropTypes } from "../../../../shared/utils/propTypes";
+import { ReadOnlyNailPreview } from "../../../../shared/components/common/ReadOnlyNailPreview";
+import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 
 function SectionTitle({ icon: Icon, title }) {
   return (
@@ -49,28 +52,33 @@ InfoCard.propTypes = {
   value: PropTypes.string.isRequired,
 };
 
-function ServiceInfoCard({services = [] }) {
+function ServiceInfoCard({ services = [], onOpenServiceProcedures = null }) {
+  const hasProcedureAction = typeof onOpenServiceProcedures === "function";
+
   return (
     <article className="rounded-[16px] bg-[#fff9fc] xl:col-span-3">
 
       {services.length ? (
         <div className="overflow-hidden rounded-[20px] border border-[#f2bfd4] bg-white">
-          <div className="hidden grid-cols-[minmax(0,1.8fr)_110px_150px_120px] items-center gap-3 border-b border-[#f8dce8] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f7_100%)] px-5 py-3 md:grid">
+          <div className={`hidden items-center gap-3 border-b border-[#f8dce8] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f7_100%)] px-5 py-3 md:grid ${hasProcedureAction ? "grid-cols-[minmax(0,1.55fr)_110px_150px_120px_120px]" : "grid-cols-[minmax(0,1.8fr)_110px_150px_120px]"}`}>
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Service</p>
             <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Qty</p>
             <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Price</p>
             <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Duration</p>
+            {hasProcedureAction ? (
+              <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Action</p>
+            ) : null}
           </div>
 
           <div className="divide-y divide-[#f9dfeb]">
             {services.map((service, index) => (
               <div
                 key={service.id || `${service.name}-${index}`}
-                className="px-4 py-4 md:grid md:grid-cols-[minmax(0,1.8fr)_110px_150px_120px] md:items-center md:gap-3 md:px-5"
+                className={`px-4 py-4 md:grid md:items-center md:gap-3 md:px-5 ${hasProcedureAction ? "md:grid-cols-[minmax(0,1.55fr)_110px_150px_120px_120px]" : "md:grid-cols-[minmax(0,1.8fr)_110px_150px_120px]"}`}
               >
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
-                    Service {index + 1}
+                    {service.detailLabel || `Service ${index + 1}`}
                   </p>
                   <p className="mt-2 break-words text-sm font-extrabold text-[#ea4f93]">{service.name || "--"}</p>
                   {service.nailServiceName ? (
@@ -100,6 +108,29 @@ function ServiceInfoCard({services = [] }) {
                     {service.duration || "--"}
                   </span>
                 </div>
+
+                {hasProcedureAction ? (
+                  <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Action</p>
+                    {service.canViewProcedures ? (
+                      <ActionDropdown
+                        label="Actions"
+                        items={[
+                          {
+                            key: `view-procedures-${service.id || index}`,
+                            label: "View Procedures",
+                            icon: ClipboardList,
+                            onSelect: () => onOpenServiceProcedures(service),
+                          },
+                        ]}
+                      />
+                    ) : (
+                      <span className="inline-flex rounded-full border border-[#f6dbe7] bg-[#fff9fc] px-3 py-1 text-[11px] font-bold text-[#bca0ae]">
+                        --
+                      </span>
+                    )}
+                  </div>
+                ) : null}
               </div>
             ))}
           </div>
@@ -110,17 +141,20 @@ function ServiceInfoCard({services = [] }) {
 }
 
 ServiceInfoCard.propTypes = {
+  onOpenServiceProcedures: PropTypes.func,
   services: PropTypes.arrayOf(
     PropTypes.shape({
+      bookingItemId: PropTypes.string,
       duration: PropTypes.string,
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string,
+      detailLabel: PropTypes.string,
       nailServiceName: PropTypes.string,
       price: PropTypes.string,
       quantity: PropTypes.number,
+      canViewProcedures: PropTypes.bool,
     }),
   ),
-  value: PropTypes.string.isRequired,
 };
 
 function formatVariantCurrency(value) {
@@ -145,61 +179,10 @@ function formatVariantDuration(value) {
   return `${duration} min`;
 }
 
-function parseVariantColorJson(value) {
-  const raw = String(value || "").trim();
-
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
-
-function buildVariantColorPreviewStyle(colorConfig) {
-  const fallbackColor = String(colorConfig?.color || "").trim() || "#f3d5e2";
-  const gradient = colorConfig?.gradient;
-  const gradientStops = Array.isArray(gradient?.stops)
-    ? gradient.stops.filter((item) => String(item || "").trim())
-    : [];
-
-  if (gradient?.enabled && gradientStops.length >= 2) {
-    const gradientType = String(gradient?.type || "linear").trim().toLowerCase();
-
-    return {
-      background:
-        gradientType === "radial"
-          ? `radial-gradient(circle at center, ${gradientStops.join(", ")})`
-          : `linear-gradient(135deg, ${gradientStops.join(", ")})`,
-    };
-  }
-
-  return {
-    background: fallbackColor,
-  };
-}
-
 function VariantDetailModal({ open, variantDetail, onClose }) {
-  const colorConfig = useMemo(
-    () => parseVariantColorJson(variantDetail?.colorJson),
-    [variantDetail?.colorJson],
-  );
   if (!open || !variantDetail) {
     return null;
   }
-
-  const gradientStops = Array.isArray(colorConfig?.gradient?.stops)
-    ? colorConfig.gradient.stops.filter(Boolean)
-    : [];
-  const colorSwatches = gradientStops.length
-    ? gradientStops
-    : colorConfig?.color
-      ? [colorConfig.color]
-      : [];
-  const colorPreviewStyle = buildVariantColorPreviewStyle(colorConfig);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2f1322]/45 p-4 backdrop-blur-[2px]">
@@ -226,13 +209,12 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
           <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
             <div className="space-y-4">
-              <img
-                crossOrigin="anonymous"
-                src={variantDetail.imageUrl}
-                alt={variantDetail.name}
-                className="h-72 w-full rounded-[22px] border border-[#f4dbe7] object-cover"
-                loading="lazy"
-                referrerPolicy="no-referrer"
+              <ReadOnlyNailPreview
+                variantDetail={variantDetail}
+                className="w-full"
+                showHeader={false}
+                showInstruction={false}
+                showSurfaceMode={false}
               />
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
                 <InfoCard label="Price" value={formatVariantCurrency(variantDetail.price)} note="" tone="success" />
@@ -298,55 +280,6 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                   </div>
                 </article>
               </div>
-
-              <article className="rounded-[20px] border border-[#f3d5e2] bg-[#fff9fc] p-4">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
-                  Color Configuration
-                </p>
-                <div className="mt-3 rounded-[18px] border border-[#f4dbe7] bg-white p-3">
-                  <div
-                    className="h-28 w-full rounded-[14px] border border-white/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]"
-                    style={colorPreviewStyle}
-                  />
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {colorSwatches.length ? (
-                    colorSwatches.map((color) => (
-                      <span
-                        key={color}
-                        className="inline-flex items-center gap-2 rounded-full border border-[#f2bfd4] bg-white px-3 py-1.5 text-xs font-bold text-[#6f5c6b]"
-                      >
-                        <span
-                          className="h-3.5 w-3.5 rounded-full border border-[#ead6df]"
-                          style={{ backgroundColor: color }}
-                        />
-                        {color}
-                      </span>
-                    ))
-                  ) : (
-                    <p className="text-sm text-[#a88a9d]">No color configuration available.</p>
-                  )}
-                </div>
-                <div className="mt-4 grid gap-3 md:grid-cols-3">
-                  <InfoCard label="Mode" value={String(colorConfig?.mode || "--")} note="" />
-                  <InfoCard
-                    label="Gradient"
-                    value={colorConfig?.gradient?.enabled ? "Enabled" : "Disabled"}
-                    note={String(colorConfig?.gradient?.type || "--")}
-                  />
-                  <InfoCard
-                    label="Stops"
-                    value={String(gradientStops.length || 0)}
-                    note={`Stop Count: ${colorConfig?.gradient?.stopCount ?? "--"}`}
-                  />
-                </div>
-                <div className="mt-4 rounded-[16px] border border-[#f4dbe7] bg-white p-4">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Raw JSON</p>
-                  <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-words text-xs text-[#6f5c6b]">
-                    {variantDetail.colorJson || "--"}
-                  </pre>
-                </div>
-              </article>
 
               <article className="rounded-[20px] border border-[#f3d5e2] bg-[#fff9fc] p-4">
                 <div className="flex items-center justify-between gap-3">
@@ -500,6 +433,7 @@ export function StaffBookingConsultationDetail({
   onDelete,
   onOpenDesignStudio,
   onOpenUpdateBooking,
+  onOpenServiceProcedures,
   onStaffNoteChange,
   onStartServiceSession,
   onConfirmCustomerNail,
@@ -598,6 +532,7 @@ export function StaffBookingConsultationDetail({
                     value={item.value}
                     note={item.note}
                     services={item.services}
+                    onOpenServiceProcedures={onOpenServiceProcedures}
                   />
                 ) : (
                   <InfoCard
@@ -631,14 +566,23 @@ export function StaffBookingConsultationDetail({
                   </div>
 
                   <div className="mt-5 flex flex-col gap-4 lg:flex-row">
-                    <img
-                      crossOrigin="anonymous"
-                      src={data.design.image}
-                      alt={data.design.name}
-                      className="h-40 w-full rounded-[18px] object-cover lg:w-44"
-                      loading="lazy"
-                      referrerPolicy="no-referrer"
-                    />
+                    {data.design.variantDetail ? (
+                      <ReadOnlyNailPreview
+                        variantDetail={data.design.variantDetail}
+                        className="max-w-full shrink-0 self-start"
+                        showHeader={false}
+                        showInstruction={false}
+                      />
+                    ) : (
+                      <img
+                        crossOrigin="anonymous"
+                        src={data.design.image}
+                        alt={data.design.name}
+                        className="h-40 w-full rounded-[18px] object-cover lg:w-44"
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                      />
+                    )}
 
                     <div className="flex-1">
                       <h3 className="text-[1.5rem] font-extrabold text-[#ea4f93]">{data.design.name}</h3>
@@ -804,15 +748,9 @@ export function StaffBookingConsultationDetail({
                         onClick={onOpenUpdateBooking}
                         className="rounded-[12px] border border-[#f4cada] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
                       >
-                        Update Booking
+                        Add service
                       </button>
-                      <button
-                        type="button"
-                        onClick={onDelete}
-                        className="rounded-[12px] border border-[#ddd0d8] bg-white px-4 py-2.5 text-xs font-bold text-[#8e7786]"
-                      >
-                        Back to Queue
-                      </button>
+                     
                     </div>
                   ) : null}
                 </article>
@@ -960,12 +898,15 @@ StaffBookingConsultationDetail.propTypes = {
         note: PropTypes.string,
         services: PropTypes.arrayOf(
           PropTypes.shape({
+            bookingItemId: PropTypes.string,
             duration: PropTypes.string,
             id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
             name: PropTypes.string,
+            detailLabel: PropTypes.string,
             nailServiceName: PropTypes.string,
             price: PropTypes.string,
             quantity: PropTypes.number,
+            canViewProcedures: PropTypes.bool,
           }),
         ),
         tone: PropTypes.oneOf(["default", "success"]),
@@ -1097,6 +1038,7 @@ StaffBookingConsultationDetail.propTypes = {
   onConfirmCurrentDesign: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
   onOpenDesignStudio: PropTypes.func.isRequired,
+  onOpenServiceProcedures: PropTypes.func,
   onOpenUpdateBooking: PropTypes.func.isRequired,
   onStaffNoteChange: PropTypes.func.isRequired,
   onStartServiceSession: PropTypes.func.isRequired,

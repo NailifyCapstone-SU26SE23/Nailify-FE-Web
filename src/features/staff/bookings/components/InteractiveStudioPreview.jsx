@@ -8,6 +8,7 @@ const NAIL_LABELS = ["Thumb", "Index", "Middle", "Ring", "Pinky"];
 const DEFAULT_SHAPE_RATIO = 0.42;
 const SMALL_FINGER_HEIGHTS = [62, 75, 88, 75, 60];
 const LARGE_FINGER_HEIGHTS = [132, 160, 190, 160, 126];
+const FABRIC_CROSS_ORIGIN_OPTIONS = { crossOrigin: "anonymous" };
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
@@ -18,7 +19,6 @@ function useShapeAspectRatio(shapeImageUrl) {
 
   useEffect(() => {
     if (!shapeImageUrl) {
-      setAspectRatio(DEFAULT_SHAPE_RATIO);
       return undefined;
     }
 
@@ -45,7 +45,7 @@ function useShapeAspectRatio(shapeImageUrl) {
     };
   }, [shapeImageUrl]);
 
-  return aspectRatio;
+  return shapeImageUrl ? aspectRatio : DEFAULT_SHAPE_RATIO;
 }
 
 function getNailMetrics(index, aspectRatio, large = false) {
@@ -104,7 +104,6 @@ function NailShell({
   shapeImageUrl,
   width,
   height,
-  unclippedCanvas = false,
   children,
 }) {
   const isChrome = finish === "Chrome";
@@ -220,7 +219,6 @@ NailShell.propTypes = {
   shapeImageUrl: PropTypes.string,
   width: PropTypes.number.isRequired,
   height: PropTypes.number.isRequired,
-  unclippedCanvas: PropTypes.bool,
   children: PropTypes.node,
 };
 
@@ -228,7 +226,6 @@ function FabricNailCanvas({
   fingerIndex,
   finish,
   shape,
-  length,
   isActive,
   colorStyle,
   shapeImageUrl,
@@ -371,7 +368,7 @@ function FabricNailCanvas({
         if (!component.imageUrl) continue;
 
         try {
-          const image = await FabricImage.fromURL(component.imageUrl);
+          const image = await FabricImage.fromURL(component.imageUrl, FABRIC_CROSS_ORIGIN_OPTIONS);
           if (isCancelled) return;
 
           image.set({
@@ -399,7 +396,7 @@ function FabricNailCanvas({
           });
 
           if (shapeImageUrl) {
-            const clipMask = await FabricImage.fromURL(shapeImageUrl);
+            const clipMask = await FabricImage.fromURL(shapeImageUrl, FABRIC_CROSS_ORIGIN_OPTIONS);
             if (isCancelled) return;
             clipMask.set({
               left: contentMetrics.contentLeft,
@@ -439,7 +436,7 @@ function FabricNailCanvas({
     return () => {
       isCancelled = true;
     };
-  }, [components, contentMetrics, large, selectedPlacementKey, shapeImageUrl]);
+  }, [components, contentMetrics, large, metrics.nailWidth, selectedPlacementKey, shapeImageUrl]);
 
   return (
     <NailShell
@@ -451,7 +448,6 @@ function FabricNailCanvas({
       shapeImageUrl={shapeImageUrl}
       width={width}
       height={height}
-      unclippedCanvas={large}
     >
       <canvas ref={canvasRef} className="h-full w-full" />
     </NailShell>
@@ -462,7 +458,6 @@ FabricNailCanvas.propTypes = {
   fingerIndex: PropTypes.number.isRequired,
   finish: PropTypes.string.isRequired,
   shape: PropTypes.string.isRequired,
-  length: PropTypes.string.isRequired,
   isActive: PropTypes.bool.isRequired,
   colorStyle: PropTypes.shape({}).isRequired,
   shapeImageUrl: PropTypes.string,
@@ -491,8 +486,6 @@ export function InteractiveStudioPreview({
   componentPlacements,
   activeNailIndex,
   selectedPlacementKey,
-  selectedPlacement,
-  activeFingerPlacements,
   activeTemplateName,
   selectedShape,
   selectedLength,
@@ -502,6 +495,7 @@ export function InteractiveStudioPreview({
   onSelectNail,
   onSelectPlacement,
   onPlacementChange,
+  previewRef,
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -571,7 +565,7 @@ export function InteractiveStudioPreview({
 
   return (
     <>
-      <div className="mt-4 rounded-[18px] bg-[linear-gradient(180deg,#fff3f9_0%,#ffeef7_100%)] p-5">
+      <div ref={previewRef} className="mt-4 rounded-[18px] bg-[linear-gradient(180deg,#fff3f9_0%,#ffeef7_100%)] p-5">
         <div className="mb-4 flex items-center justify-between gap-3 rounded-[14px] bg-white/65 px-3 py-2 text-[10px] font-bold text-[#b07d97]">
           <span>Surface Mode</span>
           <span className="rounded-full bg-[#fff1f7] px-2.5 py-1 text-[#ea4f93]">
@@ -803,13 +797,6 @@ InteractiveStudioPreview.propTypes = {
   })).isRequired,
   activeNailIndex: PropTypes.number.isRequired,
   selectedPlacementKey: PropTypes.string,
-  selectedPlacement: PropTypes.shape({
-    key: PropTypes.string.isRequired,
-  }),
-  activeFingerPlacements: PropTypes.arrayOf(PropTypes.shape({
-    key: PropTypes.string.isRequired,
-    label: PropTypes.string.isRequired,
-  })).isRequired,
   activeTemplateName: PropTypes.string.isRequired,
   selectedShape: PropTypes.string.isRequired,
   selectedLength: PropTypes.string.isRequired,
@@ -819,4 +806,8 @@ InteractiveStudioPreview.propTypes = {
   onSelectNail: PropTypes.func.isRequired,
   onSelectPlacement: PropTypes.func.isRequired,
   onPlacementChange: PropTypes.func.isRequired,
+  previewRef: PropTypes.oneOfType([
+    PropTypes.func,
+    PropTypes.shape({ current: PropTypes.any }),
+  ]),
 };

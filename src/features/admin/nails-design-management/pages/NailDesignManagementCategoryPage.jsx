@@ -619,7 +619,7 @@ export function NailDesignManagementCategoryPage() {
             ? {
                 title: pendingDeleteCategory.name,
                 meta: `${pendingDeleteCategory.status} • ${pendingDeleteCategory.categoryTypeName}`,
-                note: `Category ID #${pendingDeleteCategory.categoryId}`,
+                // note: `Category ID #${pendingDeleteCategory.categoryId}`,
               }
             : null
         }

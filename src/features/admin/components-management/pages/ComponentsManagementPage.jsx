@@ -313,7 +313,7 @@ export function ComponentsManagementPage() {
             <ComponentPreview component={component} />
             <div>
               <p className="text-sm font-bold text-[#432744]">{component.name}</p>
-              {/* <p className="mt-1 text-[11px] text-[#c694ad]">ID #{component.componentId}</p> */}
+             
             </div>
           </div>
         ),
