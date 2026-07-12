@@ -109,6 +109,19 @@ function getHeaderContent(pathname, menus) {
         title: "Service Management",
         description: "Manage services, prices, and estimated durations.",
       };
+    case "staff-tasks":
+      return {
+        title: "Task Queue",
+        description: "Track assigned procedures and claim open salon tasks.",
+      };
+    case "staff-profile":
+    case "receptionist-profile":
+    case "manager-profile":
+    case "admin-profile":
+      return {
+        title: "Profile",
+        description: "View and manage your account information and assigned salon details.",
+      };
     default:
       return {
         title: currentMenu.label,

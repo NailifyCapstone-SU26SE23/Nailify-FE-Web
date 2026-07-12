@@ -8,8 +8,11 @@ export const ROUTES = {
   staffRoot: "/staff",
   receptionistRoot: "/receptionist",
   staffDashboard: "/staff/dashboard",
+  staffProfile: "/staff/profile",
   receptionistDashboard: "/receptionist/dashboard",
+  receptionistProfile: "/receptionist/profile",
   staffBookings: "/staff/bookings",
+  staffTasks: "/staff/tasks",
   staffBookingsCreate: "/staff/bookings/create",
   staffBookingDetail: "/staff/bookings/:bookingId",
   staffBookingDesignStudio: "/staff/bookings/:bookingId/design-studio",
@@ -27,6 +30,7 @@ export const ROUTES = {
   // Manager routes
   managerRoot: "/manager",
   managerDashboard: "/manager/dashboard",
+  managerProfile: "/manager/profile",
   managerBookings: "/manager/bookings",
   managerBookingsCreate: "/manager/bookings/create",
   managerBookingDetail: "/manager/bookings/:bookingId",
@@ -39,6 +43,7 @@ export const ROUTES = {
   // Admin routes
   adminRoot: "/admin",
   adminDashboard: "/admin/dashboard",
+  adminProfile: "/admin/profile",
   adminBookings: "/admin/bookings",
   adminBookingsCreate: "/admin/bookings/create",
   adminBookingDetail: "/admin/bookings/:bookingId",
@@ -74,6 +79,9 @@ export const ROUTES = {
   adminCategories: "/admin/categories",
   adminCategoriesCreate: "/admin/categories/create",
   adminCategoryDetail: "/admin/categories/:categoryId",
+  adminPromotions: "/admin/promotions",
+  adminPromotionsCreate: "/admin/promotions/create",
+  adminPromotionDetail: "/admin/promotions/:promotionId",
   adminNailDesigns: "/admin/nail-designs",
   adminNailDesignCategories: "/admin/nail-designs/categories",
   adminNailDesignsCreate: "/admin/nail-designs/create",
@@ -116,6 +124,7 @@ export const getAdminProcedureDetailRoute = (procedureId) => `/admin/procedures/
 export const getAdminCategoryTypeDetailRoute = (categoryTypeId) => `/admin/category-types/${categoryTypeId}`;
 export const getAdminSkillTypeDetailRoute = (skillTypeId) => `/admin/skill-types/${skillTypeId}`;
 export const getAdminCategoryDetailRoute = (categoryId) => `/admin/categories/${categoryId}`;
+export const getAdminPromotionDetailRoute = (promotionId) => `/admin/promotions/${promotionId}`;
 export const getAdminNailDesignCategoriesRoute = () => "/admin/nail-designs/categories";
 export const getAdminNailDesignDetailRoute = (designId) =>
   `/admin/nail-designs/${designId}`;

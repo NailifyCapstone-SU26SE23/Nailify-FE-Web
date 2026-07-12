@@ -231,7 +231,16 @@ function isNailBookingItem(item) {
 }
 
 function canManualCheckIn(status) {
-  return !["CheckedIn", "Completed", "ServiceCompleted", "Cancelled"].includes(status);
+  const normalizedStatus = String(status || "").trim().toLowerCase();
+
+  return ![
+    "checkedin",
+    "in progress",
+    "inprogress",
+    "completed",
+    "servicecompleted",
+    "cancelled",
+  ].includes(normalizedStatus);
 }
 
 function normalizeBookingStatus(status) {

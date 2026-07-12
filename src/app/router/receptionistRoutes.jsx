@@ -1,5 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { DashboardLayout } from "../layouts/DashboardLayout";
+import { ProfilePage } from "../../features/core/auth/pages/profilePage";
 import { ReceptionistDashboardPage } from "../../features/core/dashboard/pages/ReceptionistDashboardPage";
 import { ReceptionistBookingListPage } from "../../features/receptionist/bookings/pages/ReceptionistBookingListPage";
 import { ReceptionistBookingDetailPage } from "../../features/receptionist/bookings/pages/ReceptionistBookingDetailPage";
@@ -29,6 +30,10 @@ export const receptionistRoutes = [
       {
         path: ROUTES.receptionistDashboard,
         element: <ReceptionistDashboardPage />,
+      },
+      {
+        path: ROUTES.receptionistProfile,
+        element: <ProfilePage />,
       },
       {
         path: ROUTES.receptionistBookings,
