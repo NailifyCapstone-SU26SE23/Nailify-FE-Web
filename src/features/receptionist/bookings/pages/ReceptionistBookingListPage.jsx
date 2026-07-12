@@ -95,7 +95,16 @@ function normalizeBooking(booking) {
 }
 
 function canManualCheckIn(status) {
-  return !["CheckedIn", "Completed", "ServiceCompleted", "Cancelled"].includes(status);
+  const normalizedStatus = String(status || "").trim().toLowerCase();
+
+  return ![
+    "checkedin",
+    "in progress",
+    "inprogress",
+    "completed",
+    "servicecompleted",
+    "cancelled",
+  ].includes(normalizedStatus);
 }
 
 function isReadyForCheckout(status) {

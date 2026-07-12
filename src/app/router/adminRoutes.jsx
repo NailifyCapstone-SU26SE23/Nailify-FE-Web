@@ -1,5 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { AdminLayout } from "../layouts/AdminLayout";
+import { ProfilePage } from "../../features/core/auth/pages/profilePage";
 import { AdminDashboardPage } from "../../features/core/dashboard/pages/AdminDashboardPage";
 import { AuthGuard } from "../../shared/components/guards/AuthGuard";
 import { RoleGuard } from "../../shared/components/guards/RoleGuard";
@@ -44,6 +45,9 @@ import { SkillTypeDetailPage } from "../../features/admin/skill-types-management
 import { CategoriesManagementPage } from "../../features/admin/categories-management/pages/CategoriesManagementPage";
 import { CategoryCreatePage } from "../../features/admin/categories-management/pages/CategoryCreatePage";
 import { CategoryDetailPage } from "../../features/admin/categories-management/pages/CategoryDetailPage";
+import { PromotionsManagementPage } from "../../features/admin/promotion-management/pages/PromotionsManagementPage";
+import { PromotionCreatePage } from "../../features/admin/promotion-management/pages/PromotionCreatePage";
+import { PromotionDetailPage } from "../../features/admin/promotion-management/pages/PromotionDetailPage";
 import { AdminSalonBookingsPage } from "../../features/admin/salon-bookings/pages/AdminSalonBookingsPage";
 import { AdminSalonBookingDetailPage } from "../../features/admin/salon-bookings/pages/AdminSalonBookingDetailPage";
 
@@ -65,6 +69,10 @@ export const adminRoutes = [
       {
         path: ROUTES.adminDashboard,
         element: <AdminDashboardPage />,
+      },
+      {
+        path: ROUTES.adminProfile,
+        element: <ProfilePage />,
       },
       {
         path: ROUTES.adminBookings,
@@ -189,6 +197,18 @@ export const adminRoutes = [
       {
         path: ROUTES.adminCategoryDetail,
         element: <CategoryDetailPage />,
+      },
+      {
+        path: ROUTES.adminPromotions,
+        element: <PromotionsManagementPage />,
+      },
+      {
+        path: ROUTES.adminPromotionsCreate,
+        element: <PromotionCreatePage />,
+      },
+      {
+        path: ROUTES.adminPromotionDetail,
+        element: <PromotionDetailPage />,
       },
       {
         path: ROUTES.adminNailDesigns,
