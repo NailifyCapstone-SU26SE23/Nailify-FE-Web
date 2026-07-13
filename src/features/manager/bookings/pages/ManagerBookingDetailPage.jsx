@@ -214,7 +214,7 @@ function formatVND(amount) {
   if (amount === null || amount === undefined) return "N/A";
   return new Intl.NumberFormat('vi-VN', {
     style: 'currency',
-    currency: 'VNĐ'
+    currency: 'VND'
   }).format(amount);
 }
 
@@ -222,7 +222,7 @@ function formatDuration(totalMinutes) {
   if (!totalMinutes) return "0m";
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
-  
+
   if (hours > 0 && minutes > 0) {
     return `${hours}h${minutes}m`;
   } else if (hours > 0) {
@@ -241,22 +241,22 @@ function getArtistDisplayName(booking) {
 function getQrCodeSrc(qrCode) {
   if (!qrCode) return null;
   const trimmed = String(qrCode).trim();
-  
+
   // If it's already a data URL, use as-is
   if (trimmed.startsWith("data:")) {
     return trimmed;
   }
-  
+
   // If it's a URL (starts with http/https), use as-is
   if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
     return trimmed;
   }
-  
+
   // If it's a valid base64 string (without prefix), add data URL prefix
   if (/^[A-Za-z0-9+/=]+$/.test(trimmed) && trimmed.length > 50) {
     return `data:image/png;base64,${trimmed}`;
   }
-  
+
   return trimmed;
 }
 
@@ -335,7 +335,7 @@ export function ManagerBookingDetailPage() {
       const rawBooking = await fetchBookingById(bookingId);
       const mappedBooking = mapBooking(rawBooking);
       setBooking(mappedBooking);
-      
+
       if (mappedBooking.customerId) {
         try {
           const rawCustomer = await fetchUserById(mappedBooking.customerId);
@@ -394,9 +394,9 @@ export function ManagerBookingDetailPage() {
     normalizedStatus.includes("approved");
 
   return (
-    <motion.section 
-      initial="hidden" 
-      animate="visible" 
+    <motion.section
+      initial="hidden"
+      animate="visible"
       variants={staggerContainer}
       className="flex min-h-[100dvh] flex-col gap-6 p-4 lg:p-8"
     >
@@ -404,7 +404,7 @@ export function ManagerBookingDetailPage() {
         <Card className="overflow-hidden border-none bg-gradient-to-br from-[#fff3f8] via-[#fffafb] to-[#fff5fb] p-0 shadow-[0_20px_40px_-15px_rgba(234,79,147,0.12)]">
           <div className="flex flex-col gap-6 p-7 lg:flex-row lg:items-start lg:justify-between">
             <div className="flex items-start gap-4">
-              <motion.div 
+              <motion.div
                 whileHover={{ scale: 1.05, rotate: 2 }}
                 transition={{ type: "spring", stiffness: 400, damping: 10 }}
                 className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[24px] bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-white shadow-[0_10px_24px_rgba(234,79,147,0.35)]"
@@ -416,7 +416,7 @@ export function ManagerBookingDetailPage() {
                   <h1 className="text-3xl font-bold tracking-tight text-[#2d1b35]">Booking Detail</h1>
                   <span className={`inline-flex items-center gap-1.5 rounded-full border border-transparent px-3 py-1.5 text-xs font-semibold ${getStatusTone(booking?.status)}`}>
                     {booking?.status === "InProgress" || booking?.status === "In Progress" ? (
-                      <motion.span 
+                      <motion.span
                         animate={{ scale: [1, 1.2, 1] }}
                         transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
                         className="h-2 w-2 rounded-full bg-current"
@@ -432,22 +432,22 @@ export function ManagerBookingDetailPage() {
             </div>
 
             <div className="flex flex-col items-start gap-3 lg:items-end">
-              <motion.div 
+              <motion.div
                 className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold ${isRefreshing ? "bg-white text-[#ea4f93] shadow-md" : "bg-white text-[#8b7382]"}`}
               >
                 <span className={`h-2 w-2 rounded-full ${isRefreshing ? "bg-[#ea4f93] animate-pulse" : "bg-[#d9bfd0]"}`} />
                 {isRefreshing ? "Refreshing..." : "Live"}
               </motion.div>
-              
+
               {/* Action Buttons Container - Responsive Layout */}
               <div className="flex w-full flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end lg:w-auto">
 
                 {/* Only show action buttons if not final, not checked in, and not in progress */}
-                {!isFinalStatus && 
-                 booking?.status !== "CheckedIn" && 
-                 booking?.status !== "Checked In" &&
-                 booking?.status !== "InProgress" && 
-                 booking?.status !== "In Progress" ? (
+                {!isFinalStatus &&
+                  booking?.status !== "CheckedIn" &&
+                  booking?.status !== "Checked In" &&
+                  booking?.status !== "InProgress" &&
+                  booking?.status !== "In Progress" ? (
                   <>
                     <motion.button
                       whileHover={{ scale: 1.02 }}
@@ -528,8 +528,8 @@ export function ManagerBookingDetailPage() {
             </SectionTitle>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <InfoItem label="Customer Name">
-                {customer 
-                  ? `${customer.firstName || ''} ${customer.lastName || ''}`.trim() 
+                {customer
+                  ? `${customer.firstName || ''} ${customer.lastName || ''}`.trim()
                   : booking?.customerName}
               </InfoItem>
               {(booking?.phone || customer?.phone) && (
@@ -586,7 +586,7 @@ export function ManagerBookingDetailPage() {
                 <InfoItem label="Status">
                   <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold ${getStatusTone(booking?.status)}`}>
                     {(booking?.status === "InProgress" || booking?.status === "In Progress") && (
-                      <motion.span 
+                      <motion.span
                         animate={{ opacity: [1, 0.5, 1] }}
                         transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
                         className="h-2 w-2 rounded-full bg-white"
@@ -606,7 +606,7 @@ export function ManagerBookingDetailPage() {
               </SectionTitle>
               <div className="space-y-4">
                 {booking.bookingItems.map((item, idx) => (
-                  <motion.div 
+                  <motion.div
                     key={idx}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -622,7 +622,7 @@ export function ManagerBookingDetailPage() {
                         {item.customerNailName && (
                           <p className="text-sm text-[#a88a9f]">Customer Nail Set: {item.customerNailName}</p>
                         )}
-                        
+
                         {/* Nail variant image and customer nail image */}
                         {(item.nailVariantImageUrl || item.customerNailImageUrl) && (
                           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -630,9 +630,9 @@ export function ManagerBookingDetailPage() {
                               <div>
                                 <p className="text-xs font-semibold uppercase tracking-widest text-[#a88a9f] mb-2">Nail Variant</p>
                                 <div className="rounded-lg border border-[#f1e7ed] overflow-hidden">
-                                  <img 
-                                    src={item.nailVariantImageUrl.replace(/`/g, '')} 
-                                    alt={item.nailVariantName} 
+                                  <img
+                                    src={item.nailVariantImageUrl.replace(/`/g, '')}
+                                    alt={item.nailVariantName}
                                     className="w-full h-40 object-cover"
                                     onError={(e) => { e.target.style.display = 'none'; }}
                                   />
@@ -643,9 +643,9 @@ export function ManagerBookingDetailPage() {
                               <div>
                                 <p className="text-xs font-semibold uppercase tracking-widest text-[#a88a9f] mb-2">Customer Nail</p>
                                 <div className="rounded-lg border border-[#f1e7ed] overflow-hidden">
-                                  <img 
-                                    src={item.customerNailImageUrl.replace(/`/g, '')} 
-                                    alt={item.customerNailName} 
+                                  <img
+                                    src={item.customerNailImageUrl.replace(/`/g, '')}
+                                    alt={item.customerNailName}
                                     className="w-full h-40 object-cover"
                                     onError={(e) => { e.target.style.display = 'none'; }}
                                   />
@@ -732,7 +732,7 @@ export function ManagerBookingDetailPage() {
                   <InfoItem label="Final Amount">{formatVND(booking?.totalPrice)}</InfoItem>
                 )}
               </div>
-              
+
               {(booking?.qrCode || booking?.qtCode) && (
                 <div className="pt-4 border-t border-[#f1e7ed]">
                   <div className="flex items-center gap-2 mb-4">
@@ -741,17 +741,17 @@ export function ManagerBookingDetailPage() {
                   </div>
                   <div className="space-y-4">
                     {booking.qrCode && (
-                      <motion.div 
+                      <motion.div
                         whileHover={{ scale: 1.01 }}
                         className="rounded-[18px] border border-[#f1e7ed] bg-gradient-to-br from-white to-[#fffafb] p-4 cursor-pointer hover:border-[#ea4f93] hover:shadow-md transition-all duration-300"
                         onClick={() => setIsQrExpanded(true)}
                       >
                         <div className="flex items-center justify-between mb-3">
                           <p className="text-xs font-semibold uppercase tracking-widest text-[#a88a9f]">QR Code</p>
-                          <motion.button 
+                          <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
-                            type="button" 
+                            type="button"
                             onClick={(e) => { e.stopPropagation(); setIsQrExpanded(true); }}
                             className="text-[#ea4f93] hover:text-[#c9366b] transition-colors"
                           >
@@ -788,7 +788,7 @@ export function ManagerBookingDetailPage() {
         open={isQrExpanded}
         onCancel={() => setIsQrExpanded(false)}
         footer={null}
-        closable={false} 
+        closable={false}
         centered
         width={420}
         styles={{
@@ -799,10 +799,10 @@ export function ManagerBookingDetailPage() {
         <div className="bg-white p-6 text-center">
           <div className="flex justify-between items-center mb-4">
             <p className="text-sm font-semibold text-[#2d1b35]">QR Code</p>
-            <motion.button 
+            <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
-              type="button" 
+              type="button"
               onClick={() => setIsQrExpanded(false)}
               className="text-[#a88a9f] hover:text-[#ea4f93] transition-colors"
             >
