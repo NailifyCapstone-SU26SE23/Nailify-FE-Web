@@ -233,7 +233,6 @@ ProcedureTimelineStep.propTypes = {
     stepNumber: PropTypes.number.isRequired,
   }).isRequired,
 };
-
 function SummaryValue({ label, value, accent = false }) {
   return (
     <div>
@@ -676,6 +675,21 @@ function normalizeSessionText(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
 }
 
+function isServiceSessionFinalizedStatus(status) {
+  const normalizedStatus = String(status || "").trim().toLowerCase();
+
+  return normalizedStatus === "servicecompleted";
+}
+
+function buildProcedureStepMeta(procedure) {
+  const assignedArtistName = String(procedure?.assignedArtistName || "").trim() || "Unassigned";
+  const estimatedStartTime = formatTimeValue(procedure?.estimatedStartTime) || "--";
+  const estimatedEndTime = formatTimeValue(procedure?.estimatedEndTime) || "--";
+  const duration = Number(procedure?.duration || 0);
+
+  return `Artist: ${assignedArtistName} | Duration: ${duration} min | Time: ${estimatedStartTime} - ${estimatedEndTime}`;
+}
+
 function getSessionBookingItemIds(value) {
   return [
     ...new Set(
@@ -1066,6 +1080,10 @@ export function StaffServiceSessionPage() {
       customerNotes: payload?.customerNotes ?? fallbackData?.customerNotes ?? [],
     };
   }, [fallbackData, payload]);
+  const isServerSessionFinalized = useMemo(
+    () => isServiceSessionFinalizedStatus(bookingDetail?.status || payload?.status),
+    [bookingDetail?.status, payload?.status],
+  );
   const hasConfirmedDesign = useMemo(() => {
     const normalizedDesignName = normalizeSessionText(data?.designName).toLowerCase();
 
@@ -1134,9 +1152,11 @@ export function StaffServiceSessionPage() {
   const [isLoadingServiceCatalog, setIsLoadingServiceCatalog] = useState(false);
   const [isSavingExtraService, setIsSavingExtraService] = useState(false);
   const [started, setStarted] = useState(() => persistedSession?.started ?? Boolean(payload?.started));
-  const [completed, setCompleted] = useState(() => persistedSession?.completed ?? Boolean(payload?.completed));
+  const [completed, setCompleted] = useState(
+    () => persistedSession?.completed ?? Boolean(payload?.completed || isServerSessionFinalized),
+  );
   const [isSessionFinalized, setIsSessionFinalized] = useState(
-    () => persistedSession?.isSessionFinalized ?? false,
+    () => persistedSession?.isSessionFinalized ?? isServerSessionFinalized,
   );
   const [isStartingService, setIsStartingService] = useState(false);
   const [isMarkingServiceDone, setIsMarkingServiceDone] = useState(false);
@@ -1363,8 +1383,8 @@ export function StaffServiceSessionPage() {
     setShowStartConfirm(false);
     setShowCompleteConfirm(false);
     setStarted(persistedSession?.started ?? Boolean(payload?.started));
-    setCompleted(persistedSession?.completed ?? Boolean(payload?.completed));
-    setIsSessionFinalized(persistedSession?.isSessionFinalized ?? false);
+    setCompleted(persistedSession?.completed ?? Boolean(payload?.completed || isServerSessionFinalized));
+    setIsSessionFinalized(persistedSession?.isSessionFinalized ?? isServerSessionFinalized);
     setFlashMessage("");
     setBeforePhoto(persistedSession?.beforePhoto ?? payload?.beforePhoto ?? serverBeforePhoto ?? null);
     setAfterPhoto(persistedSession?.afterPhoto ?? payload?.afterPhoto ?? serverAfterPhoto ?? null);
@@ -1382,9 +1402,20 @@ export function StaffServiceSessionPage() {
     payload?.sessionNote,
     payload?.started,
     persistedSession,
+    isServerSessionFinalized,
     serverAfterPhoto,
     serverBeforePhoto,
   ]);
+
+  useEffect(() => {
+    if (!isServerSessionFinalized) {
+      return;
+    }
+
+    setCompleted(true);
+    setIsSessionFinalized(true);
+    setShowCompleteConfirm(false);
+  }, [isServerSessionFinalized]);
 
   useEffect(() => {
     if (!bookingId) {
@@ -1704,7 +1735,7 @@ export function StaffServiceSessionPage() {
         canTick: Boolean(procedure.canComplete),
         isUpdating: Boolean(procedureStatusUpdates[procedure.bookingProcedureId]),
         label: procedure.label,
-        note: procedure.description || "",
+        note: buildProcedureStepMeta(procedure),
         stepNumber: Number.isFinite(procedure.stepOrder) ? procedure.stepOrder : index + 1,
         status: String(procedure.status || "").trim(),
         statusLabel: String(procedure.statusLabel || procedure.status || "").trim() || "--",
@@ -1730,9 +1761,10 @@ export function StaffServiceSessionPage() {
 
   const allConfirmed = displayConfirmations.every((item) => item.checked);
   const canStartService = allConfirmed && Boolean(effectiveBeforePhoto);
+  const hasAfterPhotoFile = Boolean(afterPhoto?.file);
   const canCompleteSession =
     displayCompletionChecks.every((item) => item.checked)
-    && Boolean(effectiveAfterPhoto)
+    && hasAfterPhotoFile
     && areAllProceduresCompleted;
   const canOpenComparison = Boolean(effectiveBeforePhoto) && Boolean(effectiveAfterPhoto);
   const shouldShowProcedureChecklist =
@@ -1987,6 +2019,12 @@ export function StaffServiceSessionPage() {
       return;
     }
 
+    if (isSessionFinalized || isServerSessionFinalized) {
+      setCompleted(true);
+      setIsSessionFinalized(true);
+      return;
+    }
+
     if (!areAllProceduresCompleted) {
       toast.error("All procedure steps must be completed before marking the service as done.");
       return;
@@ -2014,7 +2052,20 @@ export function StaffServiceSessionPage() {
   };
 
   const handleCompleteSession = async () => {
-    if (!bookingId || isCompletingSession || !afterPhoto?.file) {
+    if (!bookingId || isCompletingSession) {
+      return;
+    }
+
+    if (isSessionFinalized || isServerSessionFinalized) {
+      setCompleted(true);
+      setIsSessionFinalized(true);
+      setShowCompleteConfirm(false);
+      toast.error("This service session has already been completed.");
+      return;
+    }
+
+    if (!afterPhoto?.file) {
+      toast.error("Select the after-service photo again before completing the session.");
       return;
     }
 

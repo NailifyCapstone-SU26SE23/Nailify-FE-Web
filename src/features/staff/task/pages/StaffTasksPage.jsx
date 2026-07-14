@@ -17,11 +17,12 @@ import { ROUTES, getStaffBookingDetailRoute } from "../../../../shared/constants
 import { formatDate } from "../../../../shared/utils/formatDate";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 import { getErrorMessage } from "../../../../shared/utils/getErrorMessage";
+import { getStaffArtistId } from "../../bookings/services/staffBookingService";
 import {
   claimStaffTask,
   filterTasksByBookingInProgress,
   fetchAssignedStaffTasks,
-  fetchClaimableSalonTasks,
+  fetchSalonQueueTasks,
   updateStaffTaskStatus,
 } from "../services/staffTaskService";
 
@@ -306,8 +307,23 @@ function isTaskAssigned(task) {
   );
 }
 
-function canTaskBeDragged(task) {
+function isTaskAssignedToCurrentArtist(task, currentStaffArtistId) {
+  const assignedArtistId = String(task?.assignedArtistId || "").trim();
+  const normalizedCurrentStaffArtistId = String(currentStaffArtistId || "").trim();
+
+  if (!assignedArtistId || !normalizedCurrentStaffArtistId) {
+    return false;
+  }
+
+  return assignedArtistId === normalizedCurrentStaffArtistId;
+}
+
+function canTaskBeDragged(task, currentStaffArtistId) {
   if (!isTaskAssigned(task)) {
+    return false;
+  }
+
+  if (!isTaskAssignedToCurrentArtist(task, currentStaffArtistId)) {
     return false;
   }
 
@@ -516,6 +532,13 @@ export function StaffTasksPage() {
   const [draggingSource, setDraggingSource] = useState("");
   const [dragOverColumn, setDragOverColumn] = useState("");
   const [updatingTaskId, setUpdatingTaskId] = useState("");
+  const currentStaffArtistId = useMemo(() => {
+    try {
+      return String(getStaffArtistId() || "").trim();
+    } catch {
+      return "";
+    }
+  }, []);
 
   const loadTasks = useCallback(async (options = {}) => {
     const { silent = false } = options;
@@ -529,13 +552,13 @@ export function StaffTasksPage() {
 
       setError("");
 
-      const [assignedData, claimableData] = await Promise.all([
+      const [assignedData, salonQueueData] = await Promise.all([
         fetchAssignedStaffTasks(),
-        fetchClaimableSalonTasks(),
+        fetchSalonQueueTasks(),
       ]);
       const [visibleAssignedTasks, visibleClaimableTasks] = await Promise.all([
         filterTasksByBookingInProgress(assignedData),
-        filterTasksByBookingInProgress(claimableData),
+        Promise.resolve(salonQueueData),
       ]);
       const decoratedBoards = decorateTaskBoards(visibleAssignedTasks, visibleClaimableTasks);
 
@@ -556,8 +579,13 @@ export function StaffTasksPage() {
   }, [loadTasks]);
 
   const handleClaimTask = useCallback(async (task) => {
+    if (isTaskAssigned(task)) {
+      setError("This task has already been claimed by another staff member.");
+      return;
+    }
+
     if (task?.isBlockedBySequence) {
-      setError("Complete the previous required step before claiming this task.");
+      setError("Claim this booking in step order. Finish the earlier required step first.");
       return;
     }
 
@@ -577,7 +605,7 @@ export function StaffTasksPage() {
   }, [loadTasks]);
 
   const handleDragStart = useCallback((event, task, source = "my") => {
-    if (!canTaskBeDragged(task)) {
+    if (!canTaskBeDragged(task, currentStaffArtistId)) {
       event.preventDefault();
       return;
     }
@@ -586,7 +614,7 @@ export function StaffTasksPage() {
     setDraggingSource(source);
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", task.bookingProcedureId);
-  }, []);
+  }, [currentStaffArtistId]);
 
   const handleDragEnd = useCallback(() => {
     setDraggingTask(null);
@@ -659,8 +687,12 @@ export function StaffTasksPage() {
       return;
     }
 
-    if (!canTaskBeDragged(draggingTask)) {
-      setError("Claim this task before moving it to another status.");
+    if (!canTaskBeDragged(draggingTask, currentStaffArtistId)) {
+      if (isTaskAssigned(draggingTask)) {
+        setError("Only the staff member who claimed this step can move it.");
+      } else {
+        setError("Claim this task before moving it to another status.");
+      }
       setDraggingTask(null);
       setDraggingSource("");
       return;
@@ -714,7 +746,7 @@ export function StaffTasksPage() {
       setDraggingTask(null);
       setDraggingSource("");
     }
-  }, [draggingSource, draggingTask, salonTasks]);
+  }, [currentStaffArtistId, draggingSource, draggingTask, salonTasks]);
 
   const myTasksByColumn = useMemo(() => {
     return BOARD_COLUMNS.reduce((groups, column) => {
@@ -751,7 +783,7 @@ export function StaffTasksPage() {
         key: "claimable",
         title: "Claimable",
         value: salonTasks.length,
-        note: "Open tasks ready to be claimed",
+        note: "Visible steps in the salon queue",
         icon: Sparkles,
         toneClassName: "bg-gradient-to-br from-[#8b5cf6] to-[#7c3aed]",
       },
@@ -806,7 +838,7 @@ export function StaffTasksPage() {
               subtitle={
                 activeTab === "my"
                   ? "Drag tasks between columns to update their working status."
-                  : "Claim unlocked salon tasks and move them into your own queue."
+                  : "Review the full salon task queue. Locked steps stay visible until earlier required steps are finished."
               }
             />
 
@@ -870,8 +902,8 @@ export function StaffTasksPage() {
             )
           ) : salonTasks.length === 0 ? (
             <EmptyState
-              title="No claimable salon tasks"
-              description="There are no open booking procedures ready for self-claim right now."
+              title="No salon tasks"
+              description="There are no in-progress booking procedures visible in the salon queue right now."
             />
           ) : (
             <div className="overflow-x-auto pb-2">
@@ -893,12 +925,20 @@ export function StaffTasksPage() {
                     onDragEnd={handleDragEnd}
                     draggingTaskId={draggingTask?.bookingProcedureId || ""}
                     updatingTaskId={updatingTaskId}
-                    emptyText={column.key === "Pending" ? "No claimable tasks here" : "No tasks in this status"}
+                    emptyText={column.key === "Pending" ? "No salon tasks here" : "No tasks in this status"}
                     renderTask={(task) => {
-                      const canDrag = canTaskBeDragged(task);
+                      const canDrag = canTaskBeDragged(task, currentStaffArtistId);
+                      const isAssigned = isTaskAssigned(task);
+                      const isAssignedToCurrentArtist = isTaskAssignedToCurrentArtist(
+                        task,
+                        currentStaffArtistId,
+                      );
                       const isBlockedBySequence =
                         Boolean(task?.isBlockedBySequence) && normalizeStatusKey(task?.status) === "Pending";
-                      const isClaimable = column.key === "Pending" && !canDrag && !isBlockedBySequence;
+                      const isClaimable =
+                        column.key === "Pending" &&
+                        !isAssigned &&
+                        !isBlockedBySequence;
 
                       return (
                         <BoardTaskCard
@@ -909,13 +949,21 @@ export function StaffTasksPage() {
                           isDragging={draggingTask?.bookingProcedureId === task.bookingProcedureId}
                           isUpdating={updatingTaskId === task.bookingProcedureId}
                           canDrag={canDrag}
-                          ownerLabel={canDrag ? getTaskOwnerLabel(task) : "Unassigned"}
+                          ownerLabel={
+                            isAssigned
+                              ? getTaskOwnerLabel(task, "Assigned")
+                              : "Unassigned"
+                          }
                           footerHint={
                             isBlockedBySequence
-                              ? "Complete the previous required step first"
+                              ? "Claim follows the booking step order"
                               : canDrag
                                 ? "Drag to move this task"
-                                : "Claim this task before updating status"
+                                : isAssignedToCurrentArtist
+                                  ? "Claim this task before updating status"
+                                  : isAssigned
+                                    ? "Only the staff who claimed this step can move it"
+                                    : "Claim this task before updating status"
                           }
                           primaryAction={
                             isClaimable ? (
@@ -958,7 +1006,7 @@ export function StaffTasksPage() {
             <h3 className="text-sm font-extrabold text-[#402542]">How this screen works</h3>
             <div className="mt-3 grid gap-3 md:grid-cols-3">
               <MiniInfo label="My Tasks" value="Drag a card into another column to update its real status." />
-              <MiniInfo label="Salon Tasks" value="Unassigned To Do tasks can be claimed, assigned tasks can be dragged across statuses." />
+              <MiniInfo label="Salon Tasks" value="All salon steps stay visible, but blocked pending steps cannot be claimed until the earlier required step is done." />
               <MiniInfo label="No Add Button" value="This board only reflects backend booking procedures, no manual task creation." />
             </div>
           </div>
