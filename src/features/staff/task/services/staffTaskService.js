@@ -22,6 +22,10 @@ function unwrapResponse(response, fallbackMessage) {
   return payload.data;
 }
 
+function normalizeBookingStatusKey(status) {
+  return String(status || "").trim().toLowerCase();
+}
+
 function getStaffArtistId() {
   const session = loadAuthSession();
   const artistId = session?.user?.staffId || session?.staffId || session?.user?.id || session?.userId;
@@ -101,6 +105,61 @@ export async function fetchClaimableSalonTasks(salonId = getStaffSalonId()) {
 
   const data = unwrapResponse(response, "Failed to load claimable salon tasks.");
   return Array.isArray(data) ? data.map(normalizeTask) : [];
+}
+
+export async function fetchStaffTaskBookingDetail(bookingId) {
+  const normalizedBookingId = String(bookingId || "").trim();
+
+  if (!normalizedBookingId) {
+    throw new Error("Booking ID is required.");
+  }
+
+  const response = await axiosClient.get(`/Bookings/${normalizedBookingId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  return unwrapResponse(response, "Failed to load booking detail.");
+}
+
+export async function filterTasksByBookingInProgress(tasks) {
+  const normalizedTasks = Array.isArray(tasks) ? tasks : [];
+  const bookingIds = [...new Set(
+    normalizedTasks
+      .map((task) => String(task?.bookingId || "").trim())
+      .filter(Boolean),
+  )];
+
+  if (bookingIds.length === 0) {
+    return [];
+  }
+
+  const bookingResults = await Promise.allSettled(
+    bookingIds.map(async (bookingId) => {
+      const booking = await fetchStaffTaskBookingDetail(bookingId);
+      return {
+        bookingId,
+        status: normalizeBookingStatusKey(booking?.status),
+      };
+    }),
+  );
+
+  const visibleBookingIds = new Set();
+
+  bookingResults.forEach((result) => {
+    if (result.status !== "fulfilled") {
+      return;
+    }
+
+    if (result.value.status === "in progress" || result.value.status === "inprogress") {
+      visibleBookingIds.add(result.value.bookingId);
+    }
+  });
+
+  return normalizedTasks.filter((task) => visibleBookingIds.has(String(task?.bookingId || "").trim()));
+}
+
+export async function filterClaimableTasksByBookingInProgress(tasks) {
+  return filterTasksByBookingInProgress(tasks);
 }
 
 export async function claimStaffTask(bookingProcedureId) {
