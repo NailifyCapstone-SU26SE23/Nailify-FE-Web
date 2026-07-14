@@ -10,13 +10,16 @@ import {
   UserRoundCheck,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
 import { EmptyState } from "../../../../shared/components/common/EmptyState";
 import { ROUTES, getStaffBookingDetailRoute } from "../../../../shared/constants/routes";
 import { formatDate } from "../../../../shared/utils/formatDate";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
+import { getErrorMessage } from "../../../../shared/utils/getErrorMessage";
 import {
   claimStaffTask,
+  filterTasksByBookingInProgress,
   fetchAssignedStaffTasks,
   fetchClaimableSalonTasks,
   updateStaffTaskStatus,
@@ -120,6 +123,80 @@ function normalizeStatusKey(status) {
     default:
       return "Pending";
   }
+}
+
+function isTaskTerminalStatus(status) {
+  const normalized = String(status || "").trim().toLowerCase();
+  return normalized === "completed" || normalized === "done" || normalized === "skipped";
+}
+
+function buildTaskSequenceBlockMap(tasks) {
+  const groupedTasks = new Map();
+
+  (Array.isArray(tasks) ? tasks : []).forEach((task) => {
+    const groupKey = String(task?.bookingItemId || task?.bookingId || "").trim();
+
+    if (!groupKey) {
+      return;
+    }
+
+    if (!groupedTasks.has(groupKey)) {
+      groupedTasks.set(groupKey, []);
+    }
+
+    groupedTasks.get(groupKey).push(task);
+  });
+
+  const blockMap = new Map();
+
+  groupedTasks.forEach((groupTasks) => {
+    const sortedTasks = [...groupTasks].sort(
+      (left, right) => Number(left?.stepOrder || 0) - Number(right?.stepOrder || 0),
+    );
+
+    sortedTasks.forEach((task) => {
+      const currentStepOrder = Number(task?.stepOrder || 0);
+      const isBlocked = sortedTasks.some((previousTask) => {
+        const previousStepOrder = Number(previousTask?.stepOrder || 0);
+
+        if (!Number.isFinite(previousStepOrder) || !Number.isFinite(currentStepOrder)) {
+          return false;
+        }
+
+        if (previousStepOrder >= currentStepOrder) {
+          return false;
+        }
+
+        if (!previousTask?.isRequired || previousTask?.canOverlap) {
+          return false;
+        }
+
+        return !isTaskTerminalStatus(previousTask?.status);
+      });
+
+      blockMap.set(String(task?.bookingProcedureId || "").trim(), isBlocked);
+    });
+  });
+
+  return blockMap;
+}
+
+function applyTaskSequenceBlockState(tasks, blockMap) {
+  return (Array.isArray(tasks) ? tasks : []).map((task) => ({
+    ...task,
+    isBlockedBySequence: blockMap.get(String(task?.bookingProcedureId || "").trim()) || false,
+  }));
+}
+
+function decorateTaskBoards(myTaskList, salonTaskList) {
+  const nextMyTasks = Array.isArray(myTaskList) ? myTaskList : [];
+  const nextSalonTasks = Array.isArray(salonTaskList) ? salonTaskList : [];
+  const sequenceBlockMap = buildTaskSequenceBlockMap([...nextMyTasks, ...nextSalonTasks]);
+
+  return {
+    myTasks: applyTaskSequenceBlockState(nextMyTasks, sequenceBlockMap),
+    salonTasks: applyTaskSequenceBlockState(nextSalonTasks, sequenceBlockMap),
+  };
 }
 
 function Card({ className = "", children }) {
@@ -230,11 +307,56 @@ function isTaskAssigned(task) {
 }
 
 function canTaskBeDragged(task) {
-  return isTaskAssigned(task);
+  if (!isTaskAssigned(task)) {
+    return false;
+  }
+
+  return !(task?.isBlockedBySequence && normalizeStatusKey(task?.status) === "Pending");
 }
 
 function getTaskOwnerLabel(task, fallbackLabel = "Assigned to you") {
   return task?.assignedArtistName || fallbackLabel;
+}
+
+function mergeTaskWithStatusUpdate(currentTask, updatedTask) {
+  if (!currentTask) {
+    return updatedTask;
+  }
+
+  if (!updatedTask) {
+    return currentTask;
+  }
+
+  const pickText = (nextValue, currentValue, invalidValues = []) => {
+    const normalizedNext = String(nextValue || "").trim();
+    if (!normalizedNext || invalidValues.includes(normalizedNext)) {
+      return currentValue;
+    }
+
+    return nextValue;
+  };
+
+  return {
+    ...currentTask,
+    ...updatedTask,
+    bookingItemId: pickText(updatedTask.bookingItemId, currentTask.bookingItemId),
+    procedureId: pickText(updatedTask.procedureId, currentTask.procedureId),
+    procedureName: pickText(updatedTask.procedureName, currentTask.procedureName, ["Unnamed Procedure"]),
+    description: pickText(updatedTask.description, currentTask.description),
+    assignedArtistId: pickText(updatedTask.assignedArtistId, currentTask.assignedArtistId),
+    assignedArtistName: pickText(updatedTask.assignedArtistName, currentTask.assignedArtistName),
+    estimatedStartTime: pickText(updatedTask.estimatedStartTime, currentTask.estimatedStartTime),
+    estimatedEndTime: pickText(updatedTask.estimatedEndTime, currentTask.estimatedEndTime),
+    bookingId: pickText(updatedTask.bookingId, currentTask.bookingId),
+    customerName: pickText(updatedTask.customerName, currentTask.customerName, ["Unknown Customer"]),
+    chairName: pickText(updatedTask.chairName, currentTask.chairName),
+    bookingDate: updatedTask.bookingDate || currentTask.bookingDate,
+    startTime: pickText(updatedTask.startTime, currentTask.startTime),
+    stepOrder: updatedTask.stepOrder || currentTask.stepOrder,
+    duration: updatedTask.duration || currentTask.duration,
+    activeDuration: updatedTask.activeDuration || currentTask.activeDuration,
+    passiveDuration: updatedTask.passiveDuration || currentTask.passiveDuration,
+  };
 }
 
 function BoardTaskCard({
@@ -411,12 +533,18 @@ export function StaffTasksPage() {
         fetchAssignedStaffTasks(),
         fetchClaimableSalonTasks(),
       ]);
+      const [visibleAssignedTasks, visibleClaimableTasks] = await Promise.all([
+        filterTasksByBookingInProgress(assignedData),
+        filterTasksByBookingInProgress(claimableData),
+      ]);
+      const decoratedBoards = decorateTaskBoards(visibleAssignedTasks, visibleClaimableTasks);
 
-      setMyTasks(assignedData);
-      setSalonTasks(claimableData);
+      setMyTasks(decoratedBoards.myTasks);
+      setSalonTasks(decoratedBoards.salonTasks);
     } catch (err) {
       console.error("Failed to load staff tasks:", err);
-      setError(err?.message || "Failed to load tasks.");
+      const message = getErrorMessage(err, "Failed to load tasks.");
+      setError(message);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -428,6 +556,11 @@ export function StaffTasksPage() {
   }, [loadTasks]);
 
   const handleClaimTask = useCallback(async (task) => {
+    if (task?.isBlockedBySequence) {
+      setError("Complete the previous required step before claiming this task.");
+      return;
+    }
+
     try {
       setClaimingTaskId(task.bookingProcedureId);
       await claimStaffTask(task.bookingProcedureId);
@@ -435,7 +568,9 @@ export function StaffTasksPage() {
       setActiveTab("my");
     } catch (err) {
       console.error("Failed to claim task:", err);
-      setError(err?.message || "Failed to claim task.");
+      const message = getErrorMessage(err, "Failed to claim task.");
+      setError(message);
+      toast.error(message);
     } finally {
       setClaimingTaskId("");
     }
@@ -482,22 +617,33 @@ export function StaffTasksPage() {
 
     try {
       setUpdatingTaskId(draggingTask.bookingProcedureId);
-      setMyTasks(optimisticTasks);
+      const optimisticBoards = decorateTaskBoards(optimisticTasks, salonTasks);
+      setMyTasks(optimisticBoards.myTasks);
+      setSalonTasks(optimisticBoards.salonTasks);
 
       const updatedTask = await updateStaffTaskStatus(
         draggingTask.bookingProcedureId,
         nextStatus,
       );
 
-      setMyTasks((current) =>
-        current.map((task) =>
-          task.bookingProcedureId === updatedTask.bookingProcedureId ? updatedTask : task,
-        ),
-      );
+      setMyTasks((current) => {
+        const mergedMyTasks = current.map((task) =>
+          task.bookingProcedureId === updatedTask.bookingProcedureId
+            ? mergeTaskWithStatusUpdate(task, updatedTask)
+            : task,
+        );
+        const decoratedBoards = decorateTaskBoards(mergedMyTasks, salonTasks);
+        setSalonTasks(decoratedBoards.salonTasks);
+        return decoratedBoards.myTasks;
+      });
     } catch (err) {
       console.error("Failed to update task status:", err);
-      setMyTasks(previousTasks);
-      setError(err?.message || "Failed to update task status.");
+      const revertedBoards = decorateTaskBoards(previousTasks, salonTasks);
+      setMyTasks(revertedBoards.myTasks);
+      setSalonTasks(revertedBoards.salonTasks);
+      const message = getErrorMessage(err, "Failed to update task status.");
+      setError(message);
+      toast.error(message);
     } finally {
       setUpdatingTaskId("");
       setDraggingTask(null);
@@ -536,22 +682,33 @@ export function StaffTasksPage() {
 
     try {
       setUpdatingTaskId(draggingTask.bookingProcedureId);
-      setSalonTasks(optimisticTasks);
+      const optimisticBoards = decorateTaskBoards(myTasks, optimisticTasks);
+      setMyTasks(optimisticBoards.myTasks);
+      setSalonTasks(optimisticBoards.salonTasks);
 
       const updatedTask = await updateStaffTaskStatus(
         draggingTask.bookingProcedureId,
         nextStatus,
       );
 
-      setSalonTasks((current) =>
-        current.map((task) =>
-          task.bookingProcedureId === updatedTask.bookingProcedureId ? updatedTask : task,
-        ),
-      );
+      setSalonTasks((current) => {
+        const mergedSalonTasks = current.map((task) =>
+          task.bookingProcedureId === updatedTask.bookingProcedureId
+            ? mergeTaskWithStatusUpdate(task, updatedTask)
+            : task,
+        );
+        const decoratedBoards = decorateTaskBoards(myTasks, mergedSalonTasks);
+        setMyTasks(decoratedBoards.myTasks);
+        return decoratedBoards.salonTasks;
+      });
     } catch (err) {
       console.error("Failed to update salon task status:", err);
-      setSalonTasks(previousTasks);
-      setError(err?.message || "Failed to update salon task status.");
+      const revertedBoards = decorateTaskBoards(myTasks, previousTasks);
+      setMyTasks(revertedBoards.myTasks);
+      setSalonTasks(revertedBoards.salonTasks);
+      const message = getErrorMessage(err, "Failed to update salon task status.");
+      setError(message);
+      toast.error(message);
     } finally {
       setUpdatingTaskId("");
       setDraggingTask(null);
@@ -739,7 +896,9 @@ export function StaffTasksPage() {
                     emptyText={column.key === "Pending" ? "No claimable tasks here" : "No tasks in this status"}
                     renderTask={(task) => {
                       const canDrag = canTaskBeDragged(task);
-                      const isClaimable = column.key === "Pending" && !canDrag;
+                      const isBlockedBySequence =
+                        Boolean(task?.isBlockedBySequence) && normalizeStatusKey(task?.status) === "Pending";
+                      const isClaimable = column.key === "Pending" && !canDrag && !isBlockedBySequence;
 
                       return (
                         <BoardTaskCard
@@ -751,7 +910,13 @@ export function StaffTasksPage() {
                           isUpdating={updatingTaskId === task.bookingProcedureId}
                           canDrag={canDrag}
                           ownerLabel={canDrag ? getTaskOwnerLabel(task) : "Unassigned"}
-                          footerHint={canDrag ? "Drag to move this task" : "Claim this task before updating status"}
+                          footerHint={
+                            isBlockedBySequence
+                              ? "Complete the previous required step first"
+                              : canDrag
+                                ? "Drag to move this task"
+                                : "Claim this task before updating status"
+                          }
                           primaryAction={
                             isClaimable ? (
                               <button
