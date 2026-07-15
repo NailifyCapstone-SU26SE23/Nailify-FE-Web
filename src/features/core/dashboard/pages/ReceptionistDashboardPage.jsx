@@ -367,7 +367,7 @@ export function ReceptionistDashboardPage() {
     try {
       const updatedBooking = await manualCheckInReceptionistBooking(bookingId);
       updateAppointmentRow(updatedBooking);
-      toast.success(`Customer for booking ${bookingId} checked in successfully.`);
+      toast.success(`Checked in successfully.`);
     } catch (actionError) {
       const message =
         actionError instanceof Error ? actionError.message : "Failed to check in booking.";

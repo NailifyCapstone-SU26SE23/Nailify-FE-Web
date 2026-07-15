@@ -29,6 +29,7 @@ import {
   getStaffBookingDetailRoute,
   ROUTES,
 } from "../../../../shared/constants/routes";
+import { getErrorMessage } from "../../../../shared/utils/getErrorMessage";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { getMockBookingById } from "../../../../shared/bookings/services/mockBookings";
 import {
@@ -145,7 +146,7 @@ ProgressStep.propTypes = {
   }).isRequired,
 };
 
-function ProcedureTimelineStep({ step, isLast }) {
+function ProcedureTimelineStep({ step, isLast, onTick }) {
   const tone = {
     dot: "bg-[linear-gradient(135deg,#f857a6_0%,#ffcc70_100%)] text-white shadow-[0_12px_24px_rgba(244,114,182,0.2)]",
     line: "bg-[linear-gradient(180deg,#f8bfd8_0%,#ffe09c_100%)]",
@@ -154,37 +155,84 @@ function ProcedureTimelineStep({ step, isLast }) {
     note: "text-[#a78c9d]",
   };
 
-  return (
-    <div className="flex gap-4">
-      <div className="flex w-10 shrink-0 flex-col items-center">
-        <div
-          className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-extrabold ${tone.dot}`}
-        >
-          {step.stepNumber}
-        </div>
-        {!isLast ? <div className={`mt-2 w-1 flex-1 rounded-full ${tone.line}`} /> : null}
+ return (
+  <div className="flex items-stretch gap-4">
+    {/* Step number + connecting line */}
+    <div className="flex w-10 shrink-0 flex-col items-center">
+      <div
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-extrabold ${tone.dot}`}
+      >
+        {step.stepNumber}
       </div>
 
-      <div className={`flex-1 rounded-[20px] px-5 py-4 shadow-[0_14px_32px_rgba(236,72,153,0.08)] ${tone.card}`}>
-        <div className="min-w-0">
-          <p className={`text-sm font-extrabold ${tone.title}`}>{step.label}</p>
-          {step.note ? <p className={`mt-1 text-xs ${tone.note}`}>{step.note}</p> : null}
-        </div>
+      {!isLast ? (
+        <div
+          className={`mt-2 min-h-6 w-1 flex-1 rounded-full ${tone.line}`}
+        />
+      ) : null}
+    </div>
+
+    {/* Procedure information */}
+    <div className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_40px] items-center gap-3">
+      {/* Procedure name */}
+      <div className="min-w-0">
+        <p className={`truncate text-sm font-extrabold ${tone.title}`}>
+          {step.label}
+        </p>
+
+        {step.note ? (
+          <p className={`mt-1 text-xs ${tone.note}`}>
+            {step.note}
+          </p>
+        ) : null}
+      </div>
+
+      {/* Status */}
+      <span
+        className={`inline-flex shrink-0 items-center justify-center rounded-full px-2.5 py-1 text-[10px] font-extrabold ${getProcedureStatusTone(
+          step.status
+        )}`}
+      >
+        {step.statusLabel}
+      </span>
+
+      {/* Tick button */}
+      <div className="flex h-10 w-10 items-center justify-center">
+        {step.canTick ? (
+          <button
+            type="button"
+            onClick={() => onTick(step)}
+            disabled={step.isUpdating}
+            title="Mark this procedure as completed"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#cfead9] bg-[#f3fcf6] text-[#249a5c] shadow-[0_10px_20px_rgba(36,154,92,0.12)] transition hover:bg-[#eaf8f0] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {step.isUpdating ? (
+              <span className="inline-flex h-4 w-4 animate-spin rounded-full border-2 border-[#249a5c]/30 border-t-[#249a5c]" />
+            ) : (
+              <Check size={18} strokeWidth={3} />
+            )}
+          </button>
+        ) : null}
       </div>
     </div>
-  );
+  </div>
+);
 }
 
 ProcedureTimelineStep.propTypes = {
   isLast: PropTypes.bool.isRequired,
+  onTick: PropTypes.func.isRequired,
   step: PropTypes.shape({
+    canTick: PropTypes.bool,
+    isUpdating: PropTypes.bool,
     label: PropTypes.string.isRequired,
     note: PropTypes.string,
     state: PropTypes.oneOf(["active", "upcoming", "complete"]).isRequired,
+    status: PropTypes.string,
+    statusLabel: PropTypes.string,
     stepNumber: PropTypes.number.isRequired,
   }).isRequired,
 };
-
 function SummaryValue({ label, value, accent = false }) {
   return (
     <div>
@@ -328,6 +376,28 @@ function getProcedureStatusTone(status) {
   }
 }
 
+function isProcedureCompletedStatus(status) {
+  const normalizedStatus = String(status || "").trim().toLowerCase();
+  return normalizedStatus === "completed" || normalizedStatus === "done";
+}
+
+function hasAssignedArtist(procedure) {
+  const assignedArtistId = String(procedure?.assignedArtistId || "").trim();
+  const assignedArtistName = String(procedure?.assignedArtistName || "").trim().toLowerCase();
+
+  if (assignedArtistId) {
+    return true;
+  }
+
+  return Boolean(
+    assignedArtistName
+    && assignedArtistName !== "unassigned"
+    && assignedArtistName !== "unassigned artist"
+    && assignedArtistName !== "unknown"
+    && assignedArtistName !== "--",
+  );
+}
+
 function SessionSummaryPanel({
   phase,
   title,
@@ -390,11 +460,11 @@ function SessionSummaryPanel({
         <div className="md:col-span-2">
           {/* <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">Service</p>
           <div className="mt-3"> */}
-            <ServiceSummaryValue
-              services={Array.isArray(data.serviceBreakdown) ? data.serviceBreakdown : []}
-              fallbackValue={data.serviceLabel}
-              onOpenProcedures={onOpenProcedures}
-            />
+          <ServiceSummaryValue
+            services={Array.isArray(data.serviceBreakdown) ? data.serviceBreakdown : []}
+            fallbackValue={data.serviceLabel}
+            onOpenProcedures={onOpenProcedures}
+          />
           {/* </div> */}
         </div>
         <SummaryValue label="Staff Artist" value={data.staffArtist || "--"} />
@@ -603,6 +673,21 @@ function serializeSessionPhoto(photo) {
 
 function normalizeSessionText(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function isServiceSessionFinalizedStatus(status) {
+  const normalizedStatus = String(status || "").trim().toLowerCase();
+
+  return normalizedStatus === "servicecompleted";
+}
+
+function buildProcedureStepMeta(procedure) {
+  const assignedArtistName = String(procedure?.assignedArtistName || "").trim() || "Unassigned";
+  const estimatedStartTime = formatTimeValue(procedure?.estimatedStartTime) || "--";
+  const estimatedEndTime = formatTimeValue(procedure?.estimatedEndTime) || "--";
+  const duration = Number(procedure?.duration || 0);
+
+  return `Artist: ${assignedArtistName} | Duration: ${duration} min | Time: ${estimatedStartTime} - ${estimatedEndTime}`;
 }
 
 function getSessionBookingItemIds(value) {
@@ -995,6 +1080,10 @@ export function StaffServiceSessionPage() {
       customerNotes: payload?.customerNotes ?? fallbackData?.customerNotes ?? [],
     };
   }, [fallbackData, payload]);
+  const isServerSessionFinalized = useMemo(
+    () => isServiceSessionFinalizedStatus(bookingDetail?.status || payload?.status),
+    [bookingDetail?.status, payload?.status],
+  );
   const hasConfirmedDesign = useMemo(() => {
     const normalizedDesignName = normalizeSessionText(data?.designName).toLowerCase();
 
@@ -1063,9 +1152,11 @@ export function StaffServiceSessionPage() {
   const [isLoadingServiceCatalog, setIsLoadingServiceCatalog] = useState(false);
   const [isSavingExtraService, setIsSavingExtraService] = useState(false);
   const [started, setStarted] = useState(() => persistedSession?.started ?? Boolean(payload?.started));
-  const [completed, setCompleted] = useState(() => persistedSession?.completed ?? Boolean(payload?.completed));
+  const [completed, setCompleted] = useState(
+    () => persistedSession?.completed ?? Boolean(payload?.completed || isServerSessionFinalized),
+  );
   const [isSessionFinalized, setIsSessionFinalized] = useState(
-    () => persistedSession?.isSessionFinalized ?? false,
+    () => persistedSession?.isSessionFinalized ?? isServerSessionFinalized,
   );
   const [isStartingService, setIsStartingService] = useState(false);
   const [isMarkingServiceDone, setIsMarkingServiceDone] = useState(false);
@@ -1131,6 +1222,7 @@ export function StaffServiceSessionPage() {
         const procedureName = String(procedure.procedureName || "").trim() || "--";
         const hasStepOrder = Number.isFinite(procedure.stepOrder);
         const assignedArtistId = String(procedure.assignedArtistId || "").trim();
+        const isAssignedToAnyone = hasAssignedArtist(procedure);
         const isTerminalStatus = ["completed", "done", "skipped"].includes(normalizedStatus);
         const isInProgressStatus = ["inprogress", "in progress"].includes(normalizedStatus);
         const isPendingStatus = ["pending", "waiting"].includes(normalizedStatus);
@@ -1161,7 +1253,7 @@ export function StaffServiceSessionPage() {
           checked: ["completed", "done"].includes(normalizedStatus),
           label: hasStepOrder ? `Step ${procedure.stepOrder}: ${procedureName}` : procedureName,
           statusLabel: String(procedure.status || "").trim() || "--",
-          canClaim: isPendingStatus && !isBlocked && isAssignedToCurrentArtist,
+          canClaim: isPendingStatus && !isBlocked && !isAssignedToAnyone,
           canComplete: isInProgressStatus && isAssignedToCurrentArtist,
           canSkip: !isTerminalStatus && isAssignedToCurrentArtist,
           isBlocked,
@@ -1180,6 +1272,7 @@ export function StaffServiceSessionPage() {
     return sortedProcedures.map((procedure) => {
       const normalizedStatus = String(procedure.status || "").trim().toLowerCase();
       const assignedArtistId = String(procedure.assignedArtistId || "").trim();
+      const isAssignedToAnyone = hasAssignedArtist(procedure);
       const isTerminalStatus = ["completed", "done", "skipped"].includes(normalizedStatus);
       const isPendingStatus = ["pending", "waiting"].includes(normalizedStatus);
       const isInProgressStatus = ["inprogress", "in progress"].includes(normalizedStatus);
@@ -1207,7 +1300,7 @@ export function StaffServiceSessionPage() {
 
       return {
         ...procedure,
-        canClaim: isPendingStatus && !isBlocked && isAssignedToCurrentArtist,
+        canClaim: isPendingStatus && !isBlocked && !isAssignedToAnyone,
         canComplete: isInProgressStatus && isAssignedToCurrentArtist,
         canSkip: !isTerminalStatus && isAssignedToCurrentArtist,
         isBlocked,
@@ -1290,8 +1383,8 @@ export function StaffServiceSessionPage() {
     setShowStartConfirm(false);
     setShowCompleteConfirm(false);
     setStarted(persistedSession?.started ?? Boolean(payload?.started));
-    setCompleted(persistedSession?.completed ?? Boolean(payload?.completed));
-    setIsSessionFinalized(persistedSession?.isSessionFinalized ?? false);
+    setCompleted(persistedSession?.completed ?? Boolean(payload?.completed || isServerSessionFinalized));
+    setIsSessionFinalized(persistedSession?.isSessionFinalized ?? isServerSessionFinalized);
     setFlashMessage("");
     setBeforePhoto(persistedSession?.beforePhoto ?? payload?.beforePhoto ?? serverBeforePhoto ?? null);
     setAfterPhoto(persistedSession?.afterPhoto ?? payload?.afterPhoto ?? serverAfterPhoto ?? null);
@@ -1309,9 +1402,20 @@ export function StaffServiceSessionPage() {
     payload?.sessionNote,
     payload?.started,
     persistedSession,
+    isServerSessionFinalized,
     serverAfterPhoto,
     serverBeforePhoto,
   ]);
+
+  useEffect(() => {
+    if (!isServerSessionFinalized) {
+      return;
+    }
+
+    setCompleted(true);
+    setIsSessionFinalized(true);
+    setShowCompleteConfirm(false);
+  }, [isServerSessionFinalized]);
 
   useEffect(() => {
     if (!bookingId) {
@@ -1389,7 +1493,7 @@ export function StaffServiceSessionPage() {
           firstRowOnPage: 0,
           lastRowOnPage: 0,
         });
-        const message = error instanceof Error ? error.message : "Failed to load services.";
+        const message = getErrorMessage(error, "Failed to load services.");
         toast.error(message);
       } finally {
         if (isMounted) {
@@ -1463,8 +1567,7 @@ export function StaffServiceSessionPage() {
 
       setBookingProcedures([]);
       setProcedureStatusUpdates({});
-      const message =
-        error instanceof Error ? error.message : "Failed to load booking procedures.";
+      const message = getErrorMessage(error, "Failed to load booking procedures.");
       setProcedureLoadError(message);
 
       if (options.showToast !== false) {
@@ -1529,7 +1632,7 @@ export function StaffServiceSessionPage() {
       setServiceProcedureList(Array.isArray(procedures) ? procedures : []);
       setServiceProcedureModalError("");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to load service procedures.";
+      const message = getErrorMessage(error, "Failed to load service procedures.");
       setServiceProcedureModalError(message);
 
       if (options.showToast !== false) {
@@ -1628,9 +1731,14 @@ export function StaffServiceSessionPage() {
 
       return procedureChecklist.map((procedure, index) => ({
         id: procedure.bookingProcedureId,
+        bookingProcedureId: procedure.bookingProcedureId,
+        canTick: Boolean(procedure.canComplete),
+        isUpdating: Boolean(procedureStatusUpdates[procedure.bookingProcedureId]),
         label: procedure.label,
-        note: procedure.description || "",
+        note: buildProcedureStepMeta(procedure),
         stepNumber: Number.isFinite(procedure.stepOrder) ? procedure.stepOrder : index + 1,
+        status: String(procedure.status || "").trim(),
+        statusLabel: String(procedure.statusLabel || procedure.status || "").trim() || "--",
         state:
           procedure.checked
             ? "complete"
@@ -1639,10 +1747,13 @@ export function StaffServiceSessionPage() {
               : "upcoming",
       }));
     },
-    [procedureChecklist],
+    [procedureChecklist, procedureStatusUpdates],
   );
 
   const resolvedProcedureLoadError = procedureLoadError && !bookingProcedures.length ? procedureLoadError : "";
+  const areAllProceduresCompleted =
+    procedureChecklist.length > 0
+    && procedureChecklist.every((procedure) => isProcedureCompletedStatus(procedure.status));
 
   if (!data) {
     return <Navigate to={ROUTES.staffBookings} replace />;
@@ -1650,7 +1761,11 @@ export function StaffServiceSessionPage() {
 
   const allConfirmed = displayConfirmations.every((item) => item.checked);
   const canStartService = allConfirmed && Boolean(effectiveBeforePhoto);
-  const canCompleteSession = displayCompletionChecks.every((item) => item.checked) && Boolean(effectiveAfterPhoto);
+  const hasAfterPhotoFile = Boolean(afterPhoto?.file);
+  const canCompleteSession =
+    displayCompletionChecks.every((item) => item.checked)
+    && hasAfterPhotoFile
+    && areAllProceduresCompleted;
   const canOpenComparison = Boolean(effectiveBeforePhoto) && Boolean(effectiveAfterPhoto);
   const shouldShowProcedureChecklist =
     phase === "progress" || procedureChecklist.length > 0 || Boolean(resolvedProcedureLoadError);
@@ -1712,7 +1827,7 @@ export function StaffServiceSessionPage() {
       await reloadBookingProcedures(sessionBookingItemIds, { showToast: false });
       toast.success("Procedure claimed successfully.");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to claim procedure.";
+      const message = getErrorMessage(error, "Failed to claim procedure.");
       toast.error(message);
     } finally {
       setProcedureStatusUpdates((current) => ({
@@ -1746,7 +1861,7 @@ export function StaffServiceSessionPage() {
       ]);
       toast.success("Procedure claimed successfully.");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to claim procedure.";
+      const message = getErrorMessage(error, "Failed to claim procedure.");
       toast.error(message);
     } finally {
       setClaimingProcedureId("");
@@ -1786,7 +1901,7 @@ export function StaffServiceSessionPage() {
       await reloadBookingProcedures(sessionBookingItemIds, { showToast: false });
       toast.success(`Procedure marked as ${normalizedNextStatus}.`);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to update procedure status.";
+      const message = getErrorMessage(error, "Failed to update procedure status.");
       toast.error(message);
     } finally {
       setProcedureStatusUpdates((current) => ({
@@ -1892,7 +2007,7 @@ export function StaffServiceSessionPage() {
       );
       toast.success("Service started successfully.");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to upload before-service image and start service.";
+      const message = getErrorMessage(error, "Failed to upload before-service image and start service.");
       toast.error(message);
     } finally {
       setIsStartingService(false);
@@ -1901,6 +2016,17 @@ export function StaffServiceSessionPage() {
 
   const handleMarkServiceDone = async () => {
     if (isMarkingServiceDone) {
+      return;
+    }
+
+    if (isSessionFinalized || isServerSessionFinalized) {
+      setCompleted(true);
+      setIsSessionFinalized(true);
+      return;
+    }
+
+    if (!areAllProceduresCompleted) {
+      toast.error("All procedure steps must be completed before marking the service as done.");
       return;
     }
 
@@ -1918,7 +2044,7 @@ export function StaffServiceSessionPage() {
       );
       toast.success("Service moved to final review.");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to move the service to final review.";
+      const message = getErrorMessage(error, "Failed to move the service to final review.");
       toast.error(message);
     } finally {
       setIsMarkingServiceDone(false);
@@ -1926,7 +2052,25 @@ export function StaffServiceSessionPage() {
   };
 
   const handleCompleteSession = async () => {
-    if (!bookingId || isCompletingSession || !afterPhoto?.file) {
+    if (!bookingId || isCompletingSession) {
+      return;
+    }
+
+    if (isSessionFinalized || isServerSessionFinalized) {
+      setCompleted(true);
+      setIsSessionFinalized(true);
+      setShowCompleteConfirm(false);
+      toast.error("This service session has already been completed.");
+      return;
+    }
+
+    if (!afterPhoto?.file) {
+      toast.error("Select the after-service photo again before completing the session.");
+      return;
+    }
+
+    if (!areAllProceduresCompleted) {
+      toast.error("All procedure steps must be completed before completing the session.");
       return;
     }
 
@@ -2007,7 +2151,7 @@ export function StaffServiceSessionPage() {
       );
       toast.success("Service completed successfully.");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to complete the service session.";
+      const message = getErrorMessage(error, "Failed to complete the service session.");
       toast.error(message);
     } finally {
       setProcedureStatusUpdates({});
@@ -2118,7 +2262,7 @@ export function StaffServiceSessionPage() {
           : "Extra services added successfully.",
       );
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to add extra service.";
+      const message = getErrorMessage(error, "Failed to add extra service.");
       toast.error(message);
     } finally {
       setIsSavingExtraService(false);
@@ -2384,11 +2528,10 @@ export function StaffServiceSessionPage() {
               type="button"
               disabled={!canOpenComparison}
               onClick={handleOpenComparison}
-              className={`flex min-h-24 items-start gap-4 rounded-[24px] border px-5 py-5 text-left transition ${
-                canOpenComparison
+              className={`flex min-h-24 items-start gap-4 rounded-[24px] border px-5 py-5 text-left transition ${canOpenComparison
                   ? "border-[#f2bfd4] bg-[#fff7fb] hover:bg-[#fff2f8]"
                   : "cursor-not-allowed border-[#f4dbe7] bg-[#fffafb] opacity-70"
-              }`}
+                }`}
             >
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#ffe7f1] text-[#ea4f93]">
                 <Camera size={19} />
@@ -2417,9 +2560,8 @@ export function StaffServiceSessionPage() {
       <div ref={progressSentinelRef} className="h-px w-full" />
       <article
         style={{ top: `${STICKY_HEADER_OFFSET_PX}px` }}
-        className={`z-30 rounded-[22px] border border-[#f3d5e2] bg-white shadow-[0_14px_30px_rgba(236,72,153,0.05)] transition-[padding] duration-200 xl:sticky ${
-          isProgressPinned ? "px-4 py-3 backdrop-blur-sm xl:bg-white/95" : "p-5"
-        }`}
+        className={`z-30 rounded-[22px] border border-[#f3d5e2] bg-white shadow-[0_14px_30px_rgba(236,72,153,0.05)] transition-[padding] duration-200 xl:sticky ${isProgressPinned ? "px-4 py-3 backdrop-blur-sm xl:bg-white/95" : "p-5"
+          }`}
       >
         {!isProgressPinned ? (
           <SectionTitle
@@ -2668,6 +2810,7 @@ export function StaffServiceSessionPage() {
                         {procedureStepSummary.map((procedure, index) => (
                           <ProcedureTimelineStep
                             key={procedure.id}
+                            onTick={(currentProcedure) => void handleUpdateProcedureStatus(currentProcedure, "Completed")}
                             step={procedure}
                             isLast={index === procedureStepSummary.length - 1}
                           />
@@ -2707,8 +2850,11 @@ export function StaffServiceSessionPage() {
                 <button
                   type="button"
                   onClick={handleMarkServiceDone}
-                  disabled={isMarkingServiceDone}
-                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[image:var(--gradient-accent)] px-5 py-4 text-sm font-extrabold text-white shadow-[0_16px_28px_rgba(236,72,153,0.25)]"
+                  disabled={isMarkingServiceDone || !areAllProceduresCompleted}
+                  className={`mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-sm font-extrabold ${isMarkingServiceDone || !areAllProceduresCompleted
+                    ? "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
+                    : "bg-[image:var(--gradient-accent)] text-white shadow-[0_16px_28px_rgba(236,72,153,0.25)]"
+                    }`}
                 >
                   <CheckCircle2 size={16} />
                   {isMarkingServiceDone ? "Opening Final Review..." : "Mark Service as Done"}
@@ -2955,12 +3101,12 @@ export function StaffServiceSessionPage() {
                           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab] md:hidden">Type</p>
                           <span className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-bold 
                           ${item.type === "Discount"
-                            ? "border-emerald-200 bg-emerald-50 text-emerald-600"
-                            : "border-[#f2bfd4] bg-white text-[#ea4f93]"
+                              ? "border-emerald-200 bg-emerald-50 text-emerald-600"
+                              : "border-[#f2bfd4] bg-white text-[#ea4f93]"
                             }
                              ${item.type === "Nail Service"
-                            ? "border-yellow-200 bg-yellow-50 text-yellow-600"
-                            : "border-[#f2bfd4] bg-white text-[#ea4f93]"
+                              ? "border-yellow-200 bg-yellow-50 text-yellow-600"
+                              : "border-[#f2bfd4] bg-white text-[#ea4f93]"
                             }`}>
                             {item.type}
                           </span>
@@ -3194,7 +3340,11 @@ export function StaffServiceSessionPage() {
                   <button
                     type="button"
                     onClick={handleMarkServiceDone}
-                    className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-rose-300 bg-[linear-gradient(180deg,#ffe7ef_0%,#ffd9e6_100%)] px-4 py-3 text-sm font-bold text-[#d65b92] transition hover:bg-[#ffe1eb]"
+                    disabled={isMarkingServiceDone || !areAllProceduresCompleted}
+                    className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-bold transition ${isMarkingServiceDone || !areAllProceduresCompleted
+                      ? "cursor-not-allowed border-[#edd6e0] bg-[#f7edf2] text-[#b895a9]"
+                      : "border-rose-300 bg-[linear-gradient(180deg,#ffe7ef_0%,#ffd9e6_100%)] text-[#d65b92] hover:bg-[#ffe1eb]"
+                      }`}
                   >
                     <CheckCircle2 size={15} />
                     Complete Session
@@ -3324,7 +3474,7 @@ export function StaffServiceSessionPage() {
                   <p className="mt-2 text-lg font-extrabold text-[#4a3741]">
                     {selectedProcedureService.name || "--"}
                   </p>
-                 
+
                 </div>
                 <div className="grid gap-2 text-right text-sm">
                   <div>
@@ -3350,99 +3500,99 @@ export function StaffServiceSessionPage() {
             ) : modalProcedureList.length ? (
               <div className="space-y-3">
                 {modalProcedureList.map((procedure) => (
-                    <div
-                      key={procedure.bookingProcedureId || `${procedure.procedureId}-${procedure.stepOrder}`}
-                      className="rounded-[18px] border border-[#f4d6e2] bg-white p-4 shadow-[0_10px_22px_rgba(236,72,153,0.04)]"
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="rounded-full bg-[#fff1f6] px-2.5 py-1 text-[10px] font-extrabold text-[#eb5b92]">
-                              Step {procedure.stepOrder ?? "--"}
-                            </span>
-                            <span className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold ${getProcedureStatusTone(procedure.status)}`}>
-                              {procedure.status || "--"}
-                            </span>
-                          </div>
-                          <p className="mt-3 text-base font-extrabold text-[#4a3741]">
-                            {procedure.procedureName || "--"}
-                          </p>
-                          <p className="mt-1 text-sm leading-6 text-[#8f7b88]">
-                            {procedure.description || "No procedure description available."}
-                          </p>
-                        </div>
-                        <div className="grid gap-2 text-right text-xs text-[#8f7b88]">
-                          <span>
-                            {String(procedure.estimatedStartTime || "--").slice(0, 5)} - {String(procedure.estimatedEndTime || "--").slice(0, 5)}
+                  <div
+                    key={procedure.bookingProcedureId || `${procedure.procedureId}-${procedure.stepOrder}`}
+                    className="rounded-[18px] border border-[#f4d6e2] bg-white p-4 shadow-[0_10px_22px_rgba(236,72,153,0.04)]"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="rounded-full bg-[#fff1f6] px-2.5 py-1 text-[10px] font-extrabold text-[#eb5b92]">
+                            Step {procedure.stepOrder ?? "--"}
                           </span>
-                          <span className="font-bold text-[#4a3741]">{procedure.duration ?? 0} min</span>
+                          <span className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold ${getProcedureStatusTone(procedure.status)}`}>
+                            {procedure.status || "--"}
+                          </span>
                         </div>
+                        <p className="mt-3 text-base font-extrabold text-[#4a3741]">
+                          {procedure.procedureName || "--"}
+                        </p>
+                        <p className="mt-1 text-sm leading-6 text-[#8f7b88]">
+                          {procedure.description || "No procedure description available."}
+                        </p>
                       </div>
-
-                      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                        <div className="rounded-2xl bg-[#fff7fb] px-3 py-3 flex flex-col items-center justify-between gap-2">
-                          <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
-                            Assigned Artist
-                          </p>
-                          <div className="mt-1 flex items-start justify-between gap-3">
-                            <p className="text-sm font-bold text-[#4a3741]">
-                               {procedure.assignedArtistId ? (procedure.assignedArtistName || "Assigned") : "Unassigned"}
-                            </p>
-                            {procedure.canClaim ? (
-                              <button
-                                type="button"
-                                onClick={() => void handleClaimProcedureFromModal(procedure)}
-                                disabled={claimingProcedureId === procedure.bookingProcedureId}
-                                className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-3 py-1 text-[10px] font-extrabold text-white shadow-[0_10px_20px_rgba(236,72,153,0.18)] disabled:cursor-not-allowed disabled:opacity-60"
-                              >
-                                {claimingProcedureId === procedure.bookingProcedureId ? (
-                                  <span className="inline-flex h-3 w-3 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-                                ) : null}
-                                Claim
-                              </button>
-                            ) : procedure.canComplete ? (
-                              <button
-                                type="button"
-                                onClick={() => void handleUpdateProcedureStatus(procedure, "Completed")}
-                                disabled={Boolean(procedureStatusUpdates[procedure.bookingProcedureId])}
-                                className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[#cfead9] bg-[#f3fcf6] px-3 py-1 text-[10px] font-extrabold text-[#249a5c] shadow-[0_10px_20px_rgba(36,154,92,0.12)] disabled:cursor-not-allowed disabled:opacity-60"
-                              >
-                                Complete
-                              </button>
-                            ) : procedure.isBlocked ? (
-                              <span className="inline-flex shrink-0 rounded-full border border-[#f6d9b8] bg-[#fff7ed] px-3 py-1 text-[10px] font-extrabold text-[#dd8a12]">
-                                Blocked
-                              </span>
-                            ) : null}
-                          </div>
-                        </div>
-                        <div className="rounded-2xl bg-[#fff7fb] px-3 py-3 flex flex-col items-center justify-between gap-2">
-                            <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
-                              Completed By
-                            </p>
-                            <p className="mt-1 text-[13px] font-bold text-[#4a3741]">
-                              {procedure.completedByName || <span className="text-[#6c6c6c] px-3 py-1 border border-[#0a0909] rounded-2xl bg-gray-100 text-[13px] text-center">Not yet</span>}
-                            </p>
-                          </div>
-                          <div className="rounded-2xl bg-[#fff7fb] px-3 py-3 flex flex-col items-center justify-between gap-2">
-                            <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
-                              Active / Passive
-                            </p>
-                            <p className="mt-1 text-[13px] font-bold text-[#4a3741]">
-                              {procedure.activeDuration ?? 0}m / {procedure.passiveDuration ?? 0}m
-                            </p>
-                          </div>
-                          <div className="rounded-2xl bg-[#fff7fb] px-3 py-3 flex flex-col items-center justify-between gap-2">
-                            <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
-                              Overlap
-                            </p>
-                            <p className="mt-1 text-[13px] font-bold text-[#4a3741]">
-                               {procedure.canOverlap ? <span className="text-[#28a745] px-3 py-1 border border-[#28a745] rounded-2xl bg-green-100 text-[13px] text-center">Allowed</span> : <span className="text-[#6c6c6c] px-3 py-1 border border-[#0a0909] rounded-2xl bg-gray-100 text-[13px] text-center">Not Allowed</span>}
-                            </p>
-                          </div>
+                      <div className="grid gap-2 text-right text-xs text-[#8f7b88]">
+                        <span>
+                          {String(procedure.estimatedStartTime || "--").slice(0, 5)} - {String(procedure.estimatedEndTime || "--").slice(0, 5)}
+                        </span>
+                        <span className="font-bold text-[#4a3741]">{procedure.duration ?? 0} min</span>
                       </div>
                     </div>
-                  ))}
+
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                      <div className="rounded-2xl bg-[#fff7fb] px-3 py-3 flex flex-col items-center justify-between gap-2">
+                        <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
+                          Assigned Artist
+                        </p>
+                        <div className="mt-1 flex items-start justify-between gap-3">
+                          <p className="text-sm font-bold text-[#4a3741]">
+                            {procedure.assignedArtistId ? (procedure.assignedArtistName || "Assigned") : "Unassigned"}
+                          </p>
+                          {procedure.canClaim ? (
+                            <button
+                              type="button"
+                              onClick={() => void handleClaimProcedureFromModal(procedure)}
+                              disabled={claimingProcedureId === procedure.bookingProcedureId}
+                              className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-3 py-1 text-[10px] font-extrabold text-white shadow-[0_10px_20px_rgba(236,72,153,0.18)] disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {claimingProcedureId === procedure.bookingProcedureId ? (
+                                <span className="inline-flex h-3 w-3 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                              ) : null}
+                              Claim
+                            </button>
+                          ) : procedure.canComplete ? (
+                            <button
+                              type="button"
+                              onClick={() => void handleUpdateProcedureStatus(procedure, "Completed")}
+                              disabled={Boolean(procedureStatusUpdates[procedure.bookingProcedureId])}
+                              className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[#cfead9] bg-[#f3fcf6] px-3 py-1 text-[10px] font-extrabold text-[#249a5c] shadow-[0_10px_20px_rgba(36,154,92,0.12)] disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              Complete
+                            </button>
+                          ) : procedure.isBlocked ? (
+                            <span className="inline-flex shrink-0 rounded-full border border-[#f6d9b8] bg-[#fff7ed] px-3 py-1 text-[10px] font-extrabold text-[#dd8a12]">
+                              Blocked
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+                      <div className="rounded-2xl bg-[#fff7fb] px-3 py-3 flex flex-col items-center justify-between gap-2">
+                        <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
+                          Completed By
+                        </p>
+                        <p className="mt-1 text-[13px] font-bold text-[#4a3741]">
+                          {procedure.completedByName || <span className="text-[#6c6c6c] px-3 py-1 border border-[#0a0909] rounded-2xl bg-gray-100 text-[13px] text-center">Not yet</span>}
+                        </p>
+                      </div>
+                      <div className="rounded-2xl bg-[#fff7fb] px-3 py-3 flex flex-col items-center justify-between gap-2">
+                        <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
+                          Active / Passive
+                        </p>
+                        <p className="mt-1 text-[13px] font-bold text-[#4a3741]">
+                          {procedure.activeDuration ?? 0}m / {procedure.passiveDuration ?? 0}m
+                        </p>
+                      </div>
+                      <div className="rounded-2xl bg-[#fff7fb] px-3 py-3 flex flex-col items-center justify-between gap-2">
+                        <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
+                          Overlap
+                        </p>
+                        <p className="mt-1 text-[13px] font-bold text-[#4a3741]">
+                          {procedure.canOverlap ? <span className="text-[#28a745] px-3 py-1 border border-[#28a745] rounded-2xl bg-green-100 text-[13px] text-center">Allowed</span> : <span className="text-[#6c6c6c] px-3 py-1 border border-[#0a0909] rounded-2xl bg-gray-100 text-[13px] text-center">Not Allowed</span>}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="rounded-[18px] border border-dashed border-[#f1d8e4] bg-[#fffafb] px-4 py-8 text-center text-sm text-[#8f7b88]">

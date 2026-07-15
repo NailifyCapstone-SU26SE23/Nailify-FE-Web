@@ -90,7 +90,6 @@ function getStatusTone(status) {
       return "bg-[#efeafd] text-[#7c63d8]";
     case "Confirmed":
       return "bg-[#e9f2ff] text-[#4772da]";
-    case "Waiting":
     case "Pending":
       return "bg-[#fff4e3] text-[#e09a27]";
     case "Cancelled":
@@ -121,7 +120,6 @@ function getProcedureStatusTone(status) {
     case "in progress":
       return "bg-[#efeafd] text-[#7c63d8]";
     case "pending":
-    case "waiting":
       return "bg-[#fff4e3] text-[#e09a27]";
     case "cancelled":
       return "bg-[#ffe7ef] text-[#e04d86]";
@@ -159,7 +157,7 @@ function getServiceStatus(index, bookingStatus) {
     return "Confirmed";
   }
 
-  return "Waiting";
+  return "Pending";
 }
 
 function getServiceAction(status) {
@@ -1207,15 +1205,11 @@ export function ReceptionistBookingDetailPage() {
                   </p>
                   <div className="mt-4 space-y-3 text-sm">
                     {[
-                      // ["Booking Item ID", selectedServiceRow.sourceItem?.bookingItemId || selectedServiceRow.id || "--"],
-                      // ["Nail Variant ID", selectedServiceRow.sourceItem?.nailVariantId || "--"],
                       ["Nail Variant Name", selectedServiceRow.sourceItem?.nailVariantName || "--"],
-                      // ["Customer Nail ID", selectedServiceRow.sourceItem?.customerNailId || "--"],
                       ["Customer Nail Name", selectedServiceRow.sourceItem?.customerNailName || "--"],
                       ["Display Name", selectedServiceRow.serviceType || "--"],
                       ["Duration", selectedServiceRow.duration || "--"],
                       ["Price", formatCurrency(selectedServiceRow.sourceItem?.price)],
-                      ["Status", selectedServiceRow.status || "--"],
                       ["Artist", selectedServiceRow.artist || "--"],
                     ].map(([label, value]) => (
                       <div key={label} className="flex items-start justify-between gap-4">
@@ -1269,13 +1263,11 @@ export function ReceptionistBookingDetailPage() {
                 </p>
                 <div className="mt-4 space-y-3 text-sm">
                   {[
-                    // ["Booking Item ID", selectedServiceRow.sourceItem?.bookingItemId || selectedServiceRow.id || "--"],
-                    // ["Service ID", selectedServiceRow.sourceItem?.serviceId || "--"],
+
                     ["Service Name", selectedServiceRow.sourceItem?.serviceName || selectedServiceRow.service || "--"],
                     ["Duration", selectedServiceRow.duration || "--"],
                     ["Quantity", selectedServiceRow.sourceItem?.quantity ?? "--"],
                     ["Price", formatCurrency(selectedServiceRow.sourceItem?.price)],
-                    ["Status", selectedServiceRow.status || "--"],
                     ["Artist", selectedServiceRow.artist || "--"],
                   ].map(([label, value]) => (
                     <div key={label} className="flex items-start justify-between gap-4">
