@@ -12,6 +12,7 @@ export const ROUTES = {
   receptionistDashboard: "/receptionist/dashboard",
   receptionistProfile: "/receptionist/profile",
   staffBookings: "/staff/bookings",
+  staffSchedules: "/staff/schedules",
   staffTasks: "/staff/tasks",
   staffBookingsCreate: "/staff/bookings/create",
   staffBookingDetail: "/staff/bookings/:bookingId",

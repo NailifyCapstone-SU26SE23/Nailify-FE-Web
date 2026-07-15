@@ -24,7 +24,7 @@ function unwrapResponse(response, fallbackMessage) {
 }
 
 function formatVnd(value) {
-  return `${Number(value || 0).toLocaleString("vi-VN")} VNĐ`;
+  return `${Number(value || 0).toLocaleString("vi-VN")} VND`;
 }
 
 function normalizeIntegerId(value, fallback = 0) {

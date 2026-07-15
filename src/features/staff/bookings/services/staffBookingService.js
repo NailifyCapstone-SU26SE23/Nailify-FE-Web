@@ -1034,7 +1034,7 @@ export function formatCurrency(value) {
 
   return `${new Intl.NumberFormat("vi-VN", {
     maximumFractionDigits: 0,
-  }).format(amount)} VNĐ`;
+  }).format(amount)} VND`;
 }
 
 export function formatBookingCode(bookingId) {
@@ -1267,9 +1267,9 @@ export function buildStaffServiceSessionPayload(booking, options = {}) {
     totalPrice: totalPriceLabel,
     totalAmount: totalPriceLabel,
     originalServicePrice: totalPriceLabel,
-    extraServiceFee: "0 VNĐ",
+    extraServiceFee: "0 VND",
     discountLabel: "Discount",
-    discountValue: "0 VNĐ",
+    discountValue: "0 VND",
     remainingBalance: totalPriceLabel,
     beforePhotoTimestamp: "--",
     currentProcess: currentProcessLabel,

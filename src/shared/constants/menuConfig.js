@@ -96,9 +96,9 @@ export const MENU_CONFIG = {
     {
       key: "staff-schedule",
       label: "Schedule",
+      to: ROUTES.staffSchedules,
       icon: "calendar",
       section: "Main",
-      disabled: true,
     },
     {
       key: "staff-customers",
