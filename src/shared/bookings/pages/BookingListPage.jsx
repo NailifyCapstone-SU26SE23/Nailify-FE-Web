@@ -719,8 +719,8 @@ export function BookingListPage() {
         value: revenue > 0
           ? `${new Intl.NumberFormat("vi-VN", {
             maximumFractionDigits: 0,
-          }).format(revenue)} VNĐ`
-          : "0 VNĐ",
+          }).format(revenue)} VND`
+          : "0 VND",
         note: "Total loaded from API",
         icon: AlertTriangle,
         iconClassName: "bg-[#f5ecff] text-[#8b5cf6]",

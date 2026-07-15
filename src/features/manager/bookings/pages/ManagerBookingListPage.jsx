@@ -226,7 +226,7 @@ function formatVND(amount) {
   if (amount === null || amount === undefined) return "N/A";
   return new Intl.NumberFormat('vi-VN', {
     style: 'currency',
-    currency: 'VNĐ'
+    currency: 'VND'
   }).format(amount);
 }
 
