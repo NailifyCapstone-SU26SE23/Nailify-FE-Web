@@ -286,7 +286,7 @@ function formatVND(amount, status) {
     if (status === "PendingReview" || status === "Assigned") {
       return "Pending Quote";
     }
-    return "0 ₫";
+    return "0 VND";
   }
   return new Intl.NumberFormat('vi-VN', {
     style: 'currency',

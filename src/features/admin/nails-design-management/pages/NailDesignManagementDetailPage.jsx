@@ -1322,13 +1322,13 @@ export function NailDesignManagementDetailPage() {
               <div className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c694ad]">Price Range</p>
                 <p className="mt-3 text-sm font-extrabold text-[#432744]">
-                  {formatApiValue(formValues.suggestedPrice === "0 VNĐ" ? null : `${formValues.suggestedPrice}`)}
+                  {formatApiValue(formValues.suggestedPrice === "0 VND" ? null : `${formValues.suggestedPrice}`)}
                 </p>
                 <p className="mt-2 text-xs text-[#8c7085]">
-                  Min: {formatApiValue(formValues.minPrice ? `${formValues.minPrice.toLocaleString("vi-VN")} VNĐ` : null)}
+                  Min: {formatApiValue(formValues.minPrice ? `${formValues.minPrice.toLocaleString("vi-VN")} VND` : null)}
                 </p>
                 <p className="mt-1 text-xs text-[#8c7085]">
-                  Max: {formatApiValue(formValues.maxPrice ? `${formValues.maxPrice.toLocaleString("vi-VN")} VNĐ` : null)}
+                  Max: {formatApiValue(formValues.maxPrice ? `${formValues.maxPrice.toLocaleString("vi-VN")} VND` : null)}
                 </p>
 
               </div>

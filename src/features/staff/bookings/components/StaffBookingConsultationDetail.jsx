@@ -166,7 +166,7 @@ function formatVariantCurrency(value) {
 
   return `${new Intl.NumberFormat("vi-VN", {
     maximumFractionDigits: 0,
-  }).format(amount)} VNĐ`;
+  }).format(amount)} VND`;
 }
 
 function formatVariantDuration(value) {
@@ -569,7 +569,7 @@ export function StaffBookingConsultationDetail({
                     {data.design.variantDetail ? (
                       <ReadOnlyNailPreview
                         variantDetail={data.design.variantDetail}
-                        className="max-w-full shrink-0 self-start"
+                        className="max-w-full shrink-0 self-start lg:max-w-[40%] lg:flex-[0_0_40%]"
                         showHeader={false}
                         showInstruction={false}
                       />
