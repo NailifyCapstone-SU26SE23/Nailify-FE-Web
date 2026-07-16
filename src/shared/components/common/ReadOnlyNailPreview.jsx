@@ -1,9 +1,12 @@
+import { Canvas, FabricImage, Rect } from "fabric";
 import { Sparkles } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PropTypes } from "../../utils/propTypes";
 
 const NAIL_LABELS = ["Thumb", "Index", "Middle", "Ring", "Pinky"];
 const DEFAULT_SHAPE_RATIO = 0.42;
-const COMPACT_FINGER_HEIGHTS = [62, 75, 88, 75, 60];
+const COMPACT_FINGER_HEIGHTS = [78, 78, 78, 78, 78];
+const FABRIC_CROSS_ORIGIN_OPTIONS = { crossOrigin: "anonymous" };
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
@@ -21,6 +24,21 @@ function normalizeColorValue(value, fallback = "#f7bdd7") {
   }
 
   return fallback;
+}
+
+function normalizeGradientStops(gradientStops, primaryColor, secondaryColor) {
+  const normalizedStops = (Array.isArray(gradientStops) ? gradientStops : [])
+    .map((value) => normalizeColorValue(value, ""))
+    .filter(Boolean);
+
+  if (normalizedStops.length >= 2) {
+    return normalizedStops;
+  }
+
+  return [
+    normalizeColorValue(primaryColor, "#f7bdd7"),
+    normalizeColorValue(secondaryColor || primaryColor, "#fce7f3"),
+  ];
 }
 
 function normalizeFingerIndex(value) {
@@ -73,6 +91,40 @@ function parseVariantColorJson(value) {
   }
 }
 
+function useShapeAspectRatio(shapeImageUrl) {
+  const [aspectRatio, setAspectRatio] = useState(DEFAULT_SHAPE_RATIO);
+
+  useEffect(() => {
+    if (!shapeImageUrl) {
+      return undefined;
+    }
+
+    let isCancelled = false;
+    const image = new window.Image();
+    image.referrerPolicy = "no-referrer";
+    image.crossOrigin = "anonymous";
+    image.onload = () => {
+      if (isCancelled) return;
+      const nextRatio = image.naturalWidth && image.naturalHeight
+        ? image.naturalWidth / image.naturalHeight
+        : DEFAULT_SHAPE_RATIO;
+      setAspectRatio(clamp(nextRatio, 0.24, 0.82));
+    };
+    image.onerror = () => {
+      if (!isCancelled) {
+        setAspectRatio(DEFAULT_SHAPE_RATIO);
+      }
+    };
+    image.src = shapeImageUrl;
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [shapeImageUrl]);
+
+  return shapeImageUrl ? aspectRatio : DEFAULT_SHAPE_RATIO;
+}
+
 function buildFingerColorConfigs(colorJson) {
   const fallbackPrimary = "#f7bdd7";
   const fallbackSecondary = "#fce7f3";
@@ -81,6 +133,7 @@ function buildFingerColorConfigs(colorJson) {
     mode: "solid",
     primaryColor: fallbackPrimary,
     secondaryColor: fallbackSecondary,
+    gradientStops: [fallbackPrimary, fallbackSecondary],
   }));
 
   if (!parsed) {
@@ -96,6 +149,11 @@ function buildFingerColorConfigs(colorJson) {
     secondaryColor: normalizeColorValue(
       parsed?.secondaryColor || gradientStops[1] || gradientStops[0] || parsed?.primaryColor,
       fallbackSecondary,
+    ),
+    gradientStops: normalizeGradientStops(
+      gradientStops,
+      parsed?.primaryColor || parsed?.color || gradientStops[0],
+      parsed?.secondaryColor || gradientStops[1] || gradientStops[0] || parsed?.primaryColor,
     ),
   };
 
@@ -124,6 +182,11 @@ function buildFingerColorConfigs(colorJson) {
       secondaryColor: normalizeColorValue(
         finger?.secondaryColor || fingerStops[1] || fingerStops[0] || finger?.primaryColor,
         sharedColor.secondaryColor,
+      ),
+      gradientStops: normalizeGradientStops(
+        fingerStops,
+        finger?.primaryColor || finger?.color || fingerStops[0],
+        finger?.secondaryColor || fingerStops[1] || fingerStops[0] || finger?.primaryColor,
       ),
     };
   });
@@ -172,8 +235,16 @@ function buildComponentPlacements(nailComponents = []) {
 
 function getColorStyle(colorConfig) {
   if (colorConfig?.mode === "gradient") {
+    const gradientFormula = normalizeGradientStops(
+      colorConfig?.gradientStops,
+      colorConfig?.primaryColor,
+      colorConfig?.secondaryColor,
+    )
+      .map((color, index, stops) => `${color} ${((index / Math.max(stops.length - 1, 1)) * 100).toFixed(2)}%`)
+      .join(", ");
+
     return {
-      backgroundImage: `linear-gradient(135deg, ${colorConfig.primaryColor} 0%, ${colorConfig.secondaryColor} 100%)`,
+      backgroundImage: `linear-gradient(135deg, ${gradientFormula})`,
     };
   }
 
@@ -182,21 +253,11 @@ function getColorStyle(colorConfig) {
   };
 }
 
-function getShapeAspectRatio(shapeImageUrl) {
-  const normalized = String(shapeImageUrl || "").trim();
-
-  if (!normalized) {
-    return DEFAULT_SHAPE_RATIO;
-  }
-
-  return DEFAULT_SHAPE_RATIO;
-}
-
 function getNailMetrics(index, aspectRatio) {
   const nailHeight = COMPACT_FINGER_HEIGHTS[index] ?? COMPACT_FINGER_HEIGHTS[2];
   const nailWidth = Math.round(nailHeight * aspectRatio);
-  const frameWidth = clamp(nailWidth + 24, 68, 114);
-  const frameHeight = clamp(nailHeight + 44, 112, 158);
+  const frameWidth = clamp(nailWidth + 52, 94, 146);
+  const frameHeight = clamp(nailHeight + 72, 136, 196);
 
   return {
     nailHeight,
@@ -204,6 +265,12 @@ function getNailMetrics(index, aspectRatio) {
     frameWidth,
     frameHeight,
   };
+}
+
+function getPlacementRenderScale(scale, nailHeight) {
+  const normalizedScale = Number(scale) || 0.8;
+  const referenceHeight = 168;
+  return normalizedScale * (nailHeight / referenceHeight);
 }
 
 function getShapeInsets(width, shapeImageUrl) {
@@ -227,7 +294,8 @@ function getContentMetrics(width, height, shapeImageUrl) {
 }
 
 function NailShell({ colorStyle, index, shapeImageUrl, children }) {
-  const metrics = getNailMetrics(index, getShapeAspectRatio(shapeImageUrl));
+  const aspectRatio = useShapeAspectRatio(shapeImageUrl);
+  const metrics = getNailMetrics(index, aspectRatio);
   const { frameWidth, frameHeight } = metrics;
   const { innerInset } = getShapeInsets(frameWidth, shapeImageUrl);
   const maskStyle = shapeImageUrl
@@ -246,7 +314,7 @@ function NailShell({ colorStyle, index, shapeImageUrl, children }) {
   return (
     <div className="flex min-w-0 flex-col items-center gap-2">
       <div
-        className="relative flex items-center justify-center drop-shadow-[0_14px_22px_rgba(236,72,153,0.10)]"
+        className="relative flex items-center justify-center overflow-visible drop-shadow-[0_14px_22px_rgba(236,72,153,0.10)]"
         style={{ width: frameWidth, height: frameHeight }}
       >
         {shapeImageUrl ? (
@@ -304,46 +372,118 @@ NailShell.propTypes = {
   shapeImageUrl: PropTypes.string,
 };
 
-function NailComponentsLayer({ components, index, shapeImageUrl }) {
-  const metrics = getNailMetrics(index, getShapeAspectRatio(shapeImageUrl));
-  const contentMetrics = getContentMetrics(metrics.frameWidth, metrics.frameHeight, shapeImageUrl);
+function ReadOnlyFabricNailCanvas({ components, index, colorStyle, shapeImageUrl }) {
+  const canvasRef = useRef(null);
+  const fabricCanvasRef = useRef(null);
+  const aspectRatio = useShapeAspectRatio(shapeImageUrl);
+  const metrics = useMemo(() => getNailMetrics(index, aspectRatio), [aspectRatio, index]);
+  const contentMetrics = useMemo(
+    () => getContentMetrics(metrics.frameWidth, metrics.frameHeight, shapeImageUrl),
+    [metrics.frameHeight, metrics.frameWidth, shapeImageUrl],
+  );
 
-  return (
-    <div className="absolute inset-0">
-      {[...components]
-        .sort((left, right) => Number(left.zIndex || 0) - Number(right.zIndex || 0))
-        .map((component) => {
-          if (!component.imageUrl) {
-            return null;
+  useEffect(() => {
+    if (!canvasRef.current) return undefined;
+
+    const canvas = new Canvas(canvasRef.current, {
+      width: metrics.frameWidth,
+      height: metrics.frameHeight,
+      preserveObjectStacking: true,
+      selection: false,
+      backgroundColor: "transparent",
+    });
+
+    fabricCanvasRef.current = canvas;
+
+    const rect = new Rect({
+      left: 0,
+      top: 0,
+      width: metrics.frameWidth,
+      height: metrics.frameHeight,
+      fill: "transparent",
+      selectable: false,
+      evented: false,
+    });
+    canvas.add(rect);
+    canvas.sendObjectToBack(rect);
+
+    return () => {
+      fabricCanvasRef.current = null;
+      canvas.dispose();
+    };
+  }, [metrics.frameHeight, metrics.frameWidth]);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    const renderObjects = async () => {
+      const canvas = fabricCanvasRef.current;
+      if (!canvas) return;
+
+      canvas.getObjects().forEach((object) => {
+        if (object.type !== "rect") {
+          canvas.remove(object);
+        }
+      });
+
+      const sortedComponents = [...components].sort(
+        (left, right) => Number(left.zIndex || 0) - Number(right.zIndex || 0),
+      );
+
+      for (const component of sortedComponents) {
+        if (!component.imageUrl) continue;
+
+        try {
+          const image = await FabricImage.fromURL(component.imageUrl, FABRIC_CROSS_ORIGIN_OPTIONS);
+          if (isCancelled) return;
+
+          image.set({
+            left: contentMetrics.contentLeft + ((Number(component.posX || 50) / 100) * contentMetrics.contentWidth),
+            top: contentMetrics.contentTop + ((Number(component.posY || 52) / 100) * contentMetrics.contentHeight),
+            originX: "center",
+            originY: "center",
+            angle: Number(component.rotation) || 0,
+            scaleX: getPlacementRenderScale(component.scale, metrics.nailHeight),
+            scaleY: getPlacementRenderScale(component.scale, metrics.nailHeight),
+            selectable: false,
+            evented: false,
+          });
+
+          const widthLimit = metrics.nailWidth * 1.42;
+          if ((image.getScaledWidth() || 0) > widthLimit) {
+            const ratio = widthLimit / image.getScaledWidth();
+            image.scale((image.scaleX || 1) * ratio);
           }
 
-          const width = clamp(metrics.nailWidth * Number(component.scale || 0.8), 12, metrics.nailWidth * 1.2);
-          const left = contentMetrics.contentLeft + ((Number(component.posX || 50) / 100) * contentMetrics.contentWidth);
-          const top = contentMetrics.contentTop + ((Number(component.posY || 52) / 100) * contentMetrics.contentHeight);
+          canvas.add(image);
+        } catch (error) {
+          console.error("Unable to load nail component image:", error);
+        }
+      }
 
-          return (
-            <img
-              key={component.key}
-              src={component.imageUrl}
-              alt={component.label}
-              loading="lazy"
-              referrerPolicy="no-referrer"
-              className="pointer-events-none absolute object-contain"
-              style={{
-                left,
-                top,
-                width,
-                transform: `translate(-50%, -50%) rotate(${Number(component.rotation || 0)}deg)`,
-                zIndex: Number(component.zIndex || 1),
-              }}
-            />
-          );
-        })}
-    </div>
+      canvas.renderAll();
+    };
+
+    void renderObjects();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [components, contentMetrics, metrics.nailHeight, metrics.nailWidth]);
+
+  return (
+    <NailShell
+      index={index}
+      colorStyle={colorStyle}
+      shapeImageUrl={shapeImageUrl}
+    >
+      <canvas ref={canvasRef} className="h-full w-full" />
+    </NailShell>
   );
 }
 
-NailComponentsLayer.propTypes = {
+ReadOnlyFabricNailCanvas.propTypes = {
+  colorStyle: PropTypes.shape({}).isRequired,
   components: PropTypes.arrayOf(
     PropTypes.shape({
       imageUrl: PropTypes.string,
@@ -375,7 +515,7 @@ export function ReadOnlyNailPreview({
   const finishLabel = String(variantDetail?.nailSurface?.name || "--").trim() || "--";
 
   return (
-    <article className={`inline-flex w-fit max-w-full flex-col rounded-[24px] border border-[#f6dbe8] bg-[#fff7fb] p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)] ${className}`}>
+    <article className={`flex w-full max-w-full flex-col rounded-[24px] border border-[#f6dbe8] bg-[#fff7fb] p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)] ${className}`}>
       {showHeader ? (
         <div className="flex items-center gap-2">
           <Sparkles size={14} className="text-[#ea4f93]" />
@@ -383,7 +523,7 @@ export function ReadOnlyNailPreview({
         </div>
       ) : null}
 
-      <div className={`${showHeader ? "mt-4" : ""} rounded-[18px] bg-[linear-gradient(180deg,#fff3f9_0%,#ffeef7_100%)] p-5`}>
+      <div className={`${showHeader ? "mt-4" : ""} rounded-[18px] bg-[linear-gradient(180deg,#fff3f9_0%,#ffeef7_100%)] p-4`}>
         {showSurfaceMode ? (
           <div className="mb-4 flex items-center justify-between gap-3 rounded-[14px] bg-white/65 px-3 py-2 text-[10px] font-bold text-[#b07d97]">
             <span>Surface Mode</span>
@@ -399,20 +539,15 @@ export function ReadOnlyNailPreview({
           </div>
         ) : null}
 
-        <div className={`${showInstruction || showSurfaceMode ? "mt-4" : ""} inline-flex max-w-full items-end gap-0.5 px-1`}>
+        <div className={`${showInstruction || showSurfaceMode ? "mt-3" : ""} inline-flex max-w-full items-end gap-[2px] overflow-visible px-0`}>
           {Array.from({ length: 5 }).map((_, index) => (
-            <div key={NAIL_LABELS[index]} className="flex min-w-0 justify-center">
-              <NailShell
+            <div key={NAIL_LABELS[index]} className="flex min-w-0 justify-center overflow-visible py-1">
+              <ReadOnlyFabricNailCanvas
                 index={index}
                 colorStyle={getColorStyle(fingerColorConfigs[index])}
+                components={componentPlacements.filter((item) => item.fingerIndex === index)}
                 shapeImageUrl={shapeImageUrl}
-              >
-                <NailComponentsLayer
-                  index={index}
-                  components={componentPlacements.filter((item) => item.fingerIndex === index)}
-                  shapeImageUrl={shapeImageUrl}
-                />
-              </NailShell>
+              />
             </div>
           ))}
         </div>

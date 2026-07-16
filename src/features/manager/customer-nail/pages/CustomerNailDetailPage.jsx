@@ -296,7 +296,7 @@ function formatVND(amount, status) {
     if (status === "PendingReview" || status === "Assigned") {
       return "Pending Quote";
     }
-    return "0 ₫";
+    return "0 VND";
   }
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
@@ -1243,7 +1243,7 @@ export function CustomerNailDetailPage() {
               {/* Price Tile */}
               <div className="rounded-2xl border border-[#f6d4e3] bg-gradient-to-br from-white to-[#fff9fb] p-5 shadow-[0_10px_24px_rgba(236,72,153,0.04)] flex items-center gap-4">
                 <div className="h-16 w-16 rounded-xl bg-[#fef3c7] flex items-center justify-center text-[#d97706] font-bold text-lg shrink-0">
-                  ₫
+                  VND
                 </div>
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">Total Price</p>

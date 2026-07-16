@@ -1052,7 +1052,7 @@ export function StaffServiceSessionPage() {
       DEFAULT_CUSTOMER_AVATAR;
     const summaryTotalPrice = fallbackData?.totalPrice || payload?.totalPrice || "--";
     const summaryTotalAmount = fallbackData?.totalAmount || payload?.totalAmount || summaryTotalPrice;
-    const summaryDiscountValue = fallbackData?.discountValue || payload?.discountValue || "0 VNĐ";
+    const summaryDiscountValue = fallbackData?.discountValue || payload?.discountValue || "0 VND";
     const summaryRemainingBalance = fallbackData?.remainingBalance || payload?.remainingBalance || summaryTotalPrice;
 
     return {
