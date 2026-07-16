@@ -14,11 +14,13 @@ import {
   UserRound,
   Sparkles,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { ROUTES } from "../../../../shared/constants/routes";
 import { fetchCustomerNailById, fetchSalonStaff, assignReviewer, managerApproveQuote, managerReject, getManagerSalonId } from "../services/customerNailsService";
+import { fetchNailArtistSkills } from "../../staff-artist-management/services/nailArtistsService";
+
 
 function Card({ className = "", children }) {
   return (
@@ -66,6 +68,217 @@ function getStatusTone(status) {
   }
 }
 
+// 🎨 Parse & render surface effects from config JSON (Backend format)
+function renderSurfaceEffects(surfaceName, effectsConfigJson) {
+  const name = (surfaceName || "glossy").toLowerCase();
+
+  let config = {};
+  try {
+    config = typeof effectsConfigJson === 'string'
+      ? JSON.parse(effectsConfigJson)
+      : effectsConfigJson || {};
+  } catch (e) {
+    config = {};
+  }
+
+  // 🪞 CHROME - Ultra metallic mirror
+  if (name.includes("chrome") || name.includes("mirror") || name.includes("tráng gương")) {
+    const reflectivity = config.reflectivity || 0.9;
+    const metallic = config.metallic || 1.0;
+    return (
+      <>
+        {/* Silver metallic base sheen */}
+        <div className="pointer-events-none absolute inset-0" style={{
+          background: `linear-gradient(135deg, rgba(255,255,255,${metallic * 0.7}) 0%, rgba(200,210,220,${metallic * 0.4}) 35%, rgba(80,90,100,${metallic * 0.35}) 65%, rgba(255,255,255,${metallic * 0.6}) 100%)`,
+        }} />
+        {/* Primary chrome streak */}
+        <div className="pointer-events-none absolute" style={{
+          top: '5%', left: '15%', width: '30%', height: '65%',
+          background: `linear-gradient(to bottom, rgba(255,255,255,${reflectivity}) 0%, rgba(255,255,255,${reflectivity * 0.5}) 50%, transparent 100%)`,
+          filter: 'blur(3px)', borderRadius: '50%',
+        }} />
+        {/* Center bright line */}
+        <div className="pointer-events-none absolute" style={{
+          top: '8%', left: '35%', width: '8%', height: '55%',
+          background: `linear-gradient(to bottom, rgba(255,255,255,${metallic}) 0%, rgba(255,255,255,${metallic * 0.3}) 70%, transparent 100%)`,
+          filter: 'blur(1px)', borderRadius: '50%',
+        }} />
+        {/* Right edge reflection */}
+        <div className="pointer-events-none absolute" style={{
+          top: '15%', right: '8%', width: '22%', height: '50%',
+          background: `radial-gradient(ellipse, rgba(220,230,240,${reflectivity * 0.6}) 0%, transparent 70%)`,
+          filter: 'blur(4px)',
+        }} />
+        {/* Bottom dark shadow */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0" style={{
+          height: '35%',
+          background: 'linear-gradient(to top, rgba(0,0,0,0.3) 0%, transparent 100%)',
+        }} />
+      </>
+    );
+  }
+
+  // 🌈 HOLOGRAPHIC - Visible rainbow prism
+  if (name.includes("holographic") || name.includes("holo")) {
+    const intensity = config.intensity || 0.85;
+    return (
+      <>
+        {/* Full rainbow - solid gradient, không dùng rgba */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: `linear-gradient(160deg,
+              hsl(0,100%,65%) 0%,
+              hsl(30,100%,60%) 15%,
+              hsl(55,100%,60%) 28%,
+              hsl(130,80%,55%) 42%,
+              hsl(200,100%,60%) 57%,
+              hsl(260,90%,65%) 72%,
+              hsl(300,90%,65%) 85%,
+              hsl(340,100%,65%) 100%)`,
+            opacity: intensity * 0.75,
+          }}
+        />
+        {/* Iridescent shimmer - diagonal cross */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: `linear-gradient(45deg,
+              hsl(320,100%,70%) 0%,
+              transparent 25%,
+              hsl(190,100%,65%) 45%,
+              transparent 65%,
+              hsl(270,100%,70%) 90%)`,
+            opacity: intensity * 0.45,
+          }}
+        />
+        {/* White specular highlight */}
+        <div
+          className="pointer-events-none absolute"
+          style={{
+            top: '5%', left: '10%', width: '50%', height: '45%',
+            background: 'radial-gradient(ellipse at 30% 25%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.2) 45%, transparent 70%)',
+            filter: 'blur(6px)',
+          }}
+        />
+        {/* Bottom depth */}
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0"
+          style={{
+            height: '25%',
+            background: 'linear-gradient(to top, rgba(0,0,0,0.2) 0%, transparent 100%)',
+          }}
+        />
+      </>
+    );
+  }
+
+  // 😺 CAT EYE - Magnetic vertical streak
+  if (name.includes("cat") || name.includes("cateye") || name.includes("cat-eye")) {
+    const streak = config.streak || 0.8;
+    const angle = config.angle || 90;
+    return (
+      <>
+        {/* Base dark shimmer */}
+        <div className="pointer-events-none absolute inset-0" style={{
+          background: 'linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.12) 100%)',
+        }} />
+        {/* Magnetic cat eye streak */}
+        <div className="pointer-events-none absolute" style={{
+          top: 0, bottom: 0,
+          left: '50%',
+          width: `${streak * 65}%`,
+          transform: `translateX(-50%) rotate(${angle === 90 ? 0 : angle}deg)`,
+          background: `linear-gradient(to right,
+            transparent 0%,
+            rgba(255,255,255,${streak * 0.25}) 25%,
+            rgba(255,255,255,${streak * 0.75}) 50%,
+            rgba(255,255,255,${streak * 0.25}) 75%,
+            transparent 100%)`,
+          filter: 'blur(5px)',
+        }} />
+        {/* Glossy top shine */}
+        <div className="pointer-events-none absolute inset-x-0 top-0" style={{
+          height: '28%',
+          background: `linear-gradient(to bottom, rgba(255,255,255,0.4) 0%, transparent 100%)`,
+        }} />
+        {/* Bottom shadow */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0" style={{
+          height: '25%',
+          background: 'linear-gradient(to top, rgba(0,0,0,0.2) 0%, transparent 100%)',
+        }} />
+      </>
+    );
+  }
+
+  // 🎭 MATTE - Soft flat finish (no shine)
+  if (name.includes("matte") || name.includes("nhám")) {
+    return (
+      <>
+        {/* Matte flat overlay - removes shine, adds softness */}
+        <div className="pointer-events-none absolute inset-0" style={{
+          background: 'rgba(255,255,255,0.18)',
+          backdropFilter: 'blur(0.5px)',
+        }} />
+        {/* Very subtle ambient highlight, no bright spots */}
+        <div className="pointer-events-none absolute inset-x-0 top-0" style={{
+          height: '40%',
+          background: 'linear-gradient(to bottom, rgba(255,255,255,0.1) 0%, transparent 100%)',
+        }} />
+      </>
+    );
+  }
+
+  // ✨ GLOSSY (Default) - Natural shine
+  const shine = config.shine || 0.45;
+  const blur = config.blur || 0;
+  const effectiveBlur = Math.max(4, blur * 20);
+
+  return (
+    <>
+      {/* 1️⃣ Dark base gradient - tạo 3D depth, visible trên nền trắng */}
+      <div className="pointer-events-none absolute inset-0" style={{
+        background: 'linear-gradient(160deg, rgba(255,255,255,0.1) 0%, rgba(180,180,200,0.1) 40%, rgba(80,80,120,0.15) 75%, rgba(40,40,80,0.2) 100%)',
+      }} />
+      {/* 2️⃣ Main gloss blob - top left */}
+      <div className="pointer-events-none absolute" style={{
+        top: '5%', left: '8%', width: '55%', height: '60%',
+        background: `radial-gradient(ellipse at 28% 25%, rgba(255,255,255,${shine * 0.92}) 0%, rgba(255,255,255,${shine * 0.5}) 40%, transparent 72%)`,
+        filter: `blur(${effectiveBlur}px)`,
+        transform: 'rotate(-12deg)',
+      }} />
+      {/* 3️⃣ Sharp specular line */}
+      <div className="pointer-events-none absolute" style={{
+        top: '10%', left: '18%', width: '16%', height: '52%',
+        background: `linear-gradient(to bottom, rgba(255,255,255,${shine}) 0%, rgba(255,255,255,${shine * 0.55}) 45%, transparent 100%)`,
+        filter: `blur(${Math.max(1.5, effectiveBlur * 0.25)}px)`,
+        borderRadius: '50%',
+      }} />
+      {/* 4️⃣ Top edge sheen */}
+      <div className="pointer-events-none absolute inset-x-0 top-0" style={{
+        height: '32%',
+        background: `linear-gradient(to bottom, rgba(255,255,255,${shine * 0.6}) 0%, transparent 100%)`,
+      }} />
+      {/* 5️⃣ Right subtle reflection */}
+      <div className="pointer-events-none absolute" style={{
+        top: '18%', right: '8%', width: '22%', height: '42%',
+        background: `radial-gradient(ellipse, rgba(255,255,255,${shine * 0.45}) 0%, transparent 70%)`,
+        filter: `blur(${Math.max(3, effectiveBlur * 0.55)}px)`,
+      }} />
+      {/* 6️⃣ Bottom shadow - critical for 3D depth on white nails */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0" style={{
+        height: '35%',
+        background: 'linear-gradient(to top, rgba(60,40,80,0.28) 0%, rgba(60,40,80,0.08) 60%, transparent 100%)',
+      }} />
+      {/* 7️⃣ Right edge shadow for curved look */}
+      <div className="pointer-events-none absolute inset-y-0 right-0" style={{
+        width: '20%',
+        background: 'linear-gradient(to left, rgba(60,40,80,0.15) 0%, transparent 100%)',
+      }} />
+    </>
+  );
+}
+
 function formatDate(dateString) {
   if (!dateString) return "N/A";
   const date = new Date(dateString);
@@ -87,7 +300,7 @@ function formatVND(amount, status) {
   }
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
-    currency: "VNĐ",
+    currency: "VND",
   }).format(amount);
 }
 
@@ -170,23 +383,83 @@ function getFingerColorStyle(customColor, fingerIndex) {
           : [];
 
       if (gradientStops.length > 0) {
-        return { background: `linear-gradient(to bottom, ${gradientStops.join(', ')})` };
+        return { background: `linear-gradient(to top, ${gradientStops.join(', ')})` };
       }
     }
     if (parsed.mode === 'perFinger' && Array.isArray(parsed.fingers)) {
       const finger = parsed.fingers.find(f => Number(f.fingerIndex) === Number(fingerIndex));
       if (finger) {
         if (finger.gradient && finger.gradient.enabled && Array.isArray(finger.gradient.stops)) {
-          return { background: `linear-gradient(to bottom, ${finger.gradient.stops.join(', ')})` };
+          return { background: `linear-gradient(to top, ${finger.gradient.stops.join(', ')})` };
         }
-        return { backgroundColor: finger.color || '#f3f4f6' };
+        // Support both finger.color and finger.primaryColor
+        const solidColor = finger.color || finger.primaryColor || '#f3f4f6';
+        if (finger.mode === 'gradient' && finger.primaryColor && finger.secondaryColor) {
+          return { background: `linear-gradient(to top, ${finger.primaryColor}, ${finger.secondaryColor})` };
+        }
+        return { backgroundColor: solidColor };
       }
     }
+
   } catch (e) {
     console.error("Error parsing finger color style:", e);
   }
   return { backgroundColor: '#f3f4f6' };
 }
+
+function getFingerName(fingerIndex) {
+  switch (Number(fingerIndex)) {
+    case 1:
+      return "Thumb";
+    case 2:
+      return "Index";
+    case 3:
+      return "Middle";
+    case 4:
+      return "Ring";
+    case 5:
+      return "Pinky";
+    default:
+      return `Finger ${fingerIndex}`;
+  }
+}
+
+function renderNailTip(style, shapeName, sizeClass = "w-12 h-20") {
+  const name = String(shapeName || "").toLowerCase();
+  let clipPathId = "clip-nail-default";
+  if (name.includes("almond")) clipPathId = "clip-nail-almond";
+  else if (name.includes("coffin")) clipPathId = "clip-nail-coffin";
+  else if (name.includes("stiletto")) clipPathId = "clip-nail-stiletto";
+  else if (name.includes("square")) clipPathId = "clip-nail-square";
+
+  return (
+    <div className={`relative ${sizeClass} drop-shadow-[0_8px_16px_rgba(234,79,147,0.12)] transition-transform duration-300 group-hover/card:scale-105`}>
+      <div
+        className="w-full h-full relative"
+        style={{
+          clipPath: `url(#${clipPathId})`,
+          ...style
+        }}
+      >
+        {/* Shading/Depth Highlights */}
+        {/* Left reflection line */}
+        <div className="absolute inset-y-0 left-0 w-[25%] bg-gradient-to-r from-white/30 to-transparent pointer-events-none" />
+        {/* Right side shadow */}
+        <div className="absolute inset-y-0 right-0 w-[20%] bg-gradient-to-l from-black/15 to-transparent pointer-events-none" />
+        {/* Under shadow */}
+        <div className="absolute bottom-0 inset-x-0 h-[15%] bg-gradient-to-t from-black/10 to-transparent pointer-events-none" />
+        {/* Gloss highlight strip */}
+        <div className="absolute top-[8%] left-[25%] w-[8%] h-[65%] rounded-full bg-white/45 blur-[0.5px] rotate-[-4deg] pointer-events-none" />
+      </div>
+    </div>
+  );
+}
+
+const copyToClipboard = (text) => {
+  if (!text || text === "N/A") return;
+  navigator.clipboard.writeText(text);
+  message.success(`Copied color code: ${text}`);
+};
 
 function ActionButton({
   onClick,
@@ -234,6 +507,11 @@ export function CustomerNailDetailPage() {
   const [isAssignRequiredModalOpen, setIsAssignRequiredModalOpen] = useState(false);
   const [finalPrice, setFinalPrice] = useState('');
   const [finalDuration, setFinalDuration] = useState('');
+  const [selectedComponentId, setSelectedComponentId] = useState(null);
+  const [assignedStaffSkills, setAssignedStaffSkills] = useState([]);
+  const lastFetchedArtistIdRef = useRef(null);
+
+
 
   const skillReqs = useMemo(() => {
     if (!nail) return { A: 2, B: 2, C: 2, D: 2 };
@@ -275,27 +553,41 @@ export function CustomerNailDetailPage() {
       const data = await fetchCustomerNailById(customerNailId);
 
       console.log("[Page] Successfully loaded:", data);
-      setNail(data);
+      let assignedStaff = null;
 
-      // Nếu có approvedArtistId, fetch thông tin staff được assign
+      // Nếu có approvedArtistId, fetch thông tin staff được assign trước khi set state để tránh giật lag/flicker
       if (data?.approvedArtistId) {
         try {
           const salonId = getManagerSalonId();
           const staffList = await fetchSalonStaff(salonId);
-          const assignedStaff = staffList.find(
+          assignedStaff = staffList.find(
             (staff) => (staff.staffId || staff.staffArtistId || staff.userId || staff.id) === data.approvedArtistId
           );
           if (assignedStaff) {
-            setNail((prev) => ({
-              ...prev,
-              assignedStaff: assignedStaff,
-            }));
+            const artistId = assignedStaff.staffId || assignedStaff.staffArtistId || assignedStaff.userId || assignedStaff.id;
+            if (lastFetchedArtistIdRef.current !== artistId) {
+              try {
+                const skills = await fetchNailArtistSkills(artistId);
+                setAssignedStaffSkills(skills || []);
+                lastFetchedArtistIdRef.current = artistId;
+              } catch (err) {
+                console.error("[Page] Error loading staff skills:", err);
+              }
+            }
           }
         } catch (err) {
           console.error("[Page] Error loading assigned staff:", err);
           // Không throw error, chỉ log vì đây là optional
         }
+      } else {
+        lastFetchedArtistIdRef.current = null;
+        setAssignedStaffSkills([]);
       }
+
+      setNail({
+        ...data,
+        assignedStaff: assignedStaff
+      });
     } catch (err) {
       console.error("[Page] Error loading nail:", err);
 
@@ -360,7 +652,20 @@ export function CustomerNailDetailPage() {
           member.role === "StaffArtist" ||
           (member.role && member.role.toLowerCase().includes("artist"))
       );
-      setStaffList(artists);
+
+      const artistsWithSkills = await Promise.all(
+        artists.map(async (member) => {
+          const artistId = member.staffId || member.staffArtistId || member.userId || member.id;
+          try {
+            const skills = await fetchNailArtistSkills(artistId);
+            return { ...member, skills };
+          } catch (e) {
+            console.error(`Failed to fetch skills for artist ${artistId}:`, e);
+            return { ...member, skills: [] };
+          }
+        })
+      );
+      setStaffList(artistsWithSkills);
     } catch (err) {
       console.error("[Page] Error loading salon staff:", err);
       message.error(err.message || "Failed to load salon staff.");
@@ -380,6 +685,18 @@ export function CustomerNailDetailPage() {
       await assignReviewer(nail?.customerNailRequestId || customerNailId, staffKey);
       message.success("Staff assigned successfully!");
       setIsAssignModalOpen(false);
+      if (selectedStaff.skills) {
+        setAssignedStaffSkills(selectedStaff.skills);
+        lastFetchedArtistIdRef.current = staffKey;
+      } else {
+        try {
+          const skills = await fetchNailArtistSkills(staffKey);
+          setAssignedStaffSkills(skills || []);
+          lastFetchedArtistIdRef.current = staffKey;
+        } catch (e) {
+          console.error(e);
+        }
+      }
       setSelectedStaff(null);
       // Update nail object with assigned staff
       setNail((prev) => ({
@@ -533,81 +850,101 @@ export function CustomerNailDetailPage() {
 
   const renderNailPreview = (fingerIndex, fingerName) => {
     const colorStyle = getFingerColorStyle(nail?.customColor, fingerIndex);
+
+    const hasZeroIndex = (nail?.customerNailComponents || []).some(comp => Number(comp.fingerIndex) === 0);
+    const hasFiveIndex = (nail?.customerNailComponents || []).some(comp => Number(comp.fingerIndex) === 5);
+    const isZeroIndexed = hasZeroIndex || (!hasFiveIndex);
+
     const components = (nail?.customerNailComponents || []).filter(comp => {
-      return Number(comp.fingerIndex) === Number(fingerIndex) || Number(comp.fingerIndex) === Number(fingerIndex) - 1;
+      const compIdx = Number(comp.fingerIndex);
+      return isZeroIndexed ? compIdx === (fingerIndex - 1) : compIdx === fingerIndex;
+    });
+
+    const isFingerSelectedWithAccessory = selectedComponentId !== null && components.some(comp => {
+      const globalIdx = (nail?.customerNailComponents || []).findIndex(c => c.customerNailComponentId === comp.customerNailComponentId);
+      const globalId = comp.customerNailComponentId || globalIdx;
+      return selectedComponentId === globalId;
     });
 
     const maskStyle = nail?.nailShape?.imageUrl ? {
       maskImage: `url(${nail.nailShape.imageUrl})`,
       WebkitMaskImage: `url(${nail.nailShape.imageUrl})`,
-      maskSize: '100% 100%',
-      WebkitMaskSize: '100% 100%',
+      maskSize: 'contain',
+      WebkitMaskSize: 'contain',
       maskRepeat: 'no-repeat',
       WebkitMaskRepeat: 'no-repeat',
+      maskPosition: 'center',
+      WebkitMaskPosition: 'center',
     } : {};
-    // Hand posture alignment styling based on finger type
-    let alignmentClass = "";
-    switch (fingerName) {
-      case "Thumb":
-        alignmentClass = "translate-y-8 -rotate-[14deg] hover:translate-y-6 hover:-rotate-[8deg]";
-        break;
-      case "Index":
-        alignmentClass = "translate-y-2 -rotate-[4deg] hover:translate-y-0 hover:-rotate-[2deg]";
-        break;
-      case "Middle":
-        alignmentClass = "-translate-y-3 hover:-translate-y-5";
-        break;
-      case "Ring":
-        alignmentClass = "translate-y-0 rotate-[2deg] hover:-translate-y-2 hover:rotate-0";
-        break;
-      case "Pinky":
-        alignmentClass = "translate-y-6 rotate-[10deg] hover:translate-y-4 hover:rotate-[6deg]";
-        break;
-      default:
-        break;
-    }
+
+    // 🎨 Hand proportions - wider to match real almond nail shape
+    const fingerMetrics = {
+      Thumb: { height: 175, width: 120, lift: 30, rotate: -8, hoverLift: -6 },
+      Index: { height: 205, width: 110, lift: 10, rotate: -3, hoverLift: -8 },
+      Middle: { height: 228, width: 115, lift: 0, rotate: 0, hoverLift: -10 },
+      Ring: { height: 210, width: 112, lift: 6, rotate: 3, hoverLift: -8 },
+      Pinky: { height: 170, width: 98, lift: 26, rotate: 7, hoverLift: -6 },
+    };
+    const { height, width, lift, rotate } = fingerMetrics[fingerName] || fingerMetrics.Middle;
+
+    // Default realistic blush-pink base when no custom color
+    const baseColorStyle = nail?.customColor
+      ? colorStyle
+      : { background: 'linear-gradient(to bottom, #fff0f3 0%, #ffd6db 45%, #fecdd3 100%)' };
 
     return (
-      <div className={`flex flex-col items-center gap-3.5 transition-all duration-500 ease-out ${alignmentClass}`}>
-        {/* Glow behind the nail container to simulate salon UV led curing */}
-        <div className="relative group">
-          <div className="absolute -inset-1 rounded-t-[36px] rounded-b-[18px] bg-gradient-to-t from-[#ea4f93]/15 to-[#ffb8d9]/5 opacity-30 blur-md transition duration-500 group-hover:opacity-60 group-hover:blur-lg" />
+      <div
+        className="group relative flex flex-col items-center gap-4 transition-all duration-700 ease-out"
+        style={{
+          marginBottom: lift,
+          transform: `rotate(${rotate}deg)`,
+        }}
+      >
+        {/* Container with hover lift */}
+        <div
+          className="relative transition-transform duration-700 ease-out group-hover:-translate-y-3"
+          style={{ height, width }}
+        >
+          {/* 🌟 Soft realistic shadow beneath nail */}
+          <div className="absolute -bottom-3 left-1/2 h-4 w-[75%] -translate-x-1/2 rounded-full bg-gradient-radial from-[#ea4f93]/25 via-[#ea4f93]/10 to-transparent blur-lg opacity-60 transition-opacity duration-700 group-hover:opacity-90" />
 
+          {/* 💅 Main nail card (Showcase Display Slot) */}
           <div
-            className="relative h-48 w-24 rounded-t-[32px] rounded-b-[14px] bg-gradient-to-b from-[#fff6f9] to-[#ffeef5] shadow-[0_12px_28px_rgba(236,72,153,0.06)] overflow-hidden transition-all duration-300 border-2 border-[#fcd5e6] group-hover:border-[#ea4f93] group-hover:scale-105"
+            className={`relative h-full w-full transition-all duration-500 rounded-[32px] ${isFingerSelectedWithAccessory
+              ? "border border-[#ea4f93] bg-gradient-to-b from-[#fff2f6] to-[#fffbfc] shadow-[0_20px_40px_rgba(236,72,153,0.15)] ring-2 ring-[#ea4f93]/20 scale-[1.02]"
+              : "bg-gradient-to-b from-white/60 to-[#fffafc]/40 shadow-[0_12px_24px_rgba(236,72,153,0.02)] hover:bg-white/80"
+              }`}
           >
-            {/* Masked Color & Surface Texture */}
-            <div className="absolute inset-0 w-full h-full" style={maskStyle}>
-              {/* Layer 1: Background Color / Gradient */}
-              <div className="absolute inset-0 w-full h-full" style={colorStyle} />
 
-              {/* High-Gloss Topcoat Reflections */}
-              <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-transparent to-black/10 mix-blend-overlay pointer-events-none" />
-              <div className="absolute top-1.5 left-2.5 w-1.5 h-20 rounded-full bg-white/45 blur-[0.7px] pointer-events-none animate-pulse" />
+            {/* Base color & texture layer - masked to nail shape */}
+            <div
+              className="absolute inset-0 h-full w-full"
+              style={nail?.nailShape?.imageUrl ? maskStyle : {
+                width: '60%',
+                height: '80%',
+                left: '20%',
+                top: '10%',
+                position: 'absolute',
+                clipPath: 'url(#clip-nail-default)'
+              }}
+            >
+              {/* Layer 1: Base color */}
+              <div className="absolute inset-0 h-full w-full" style={baseColorStyle} />
 
-              {/* Layer 3: Surface Overlay Effect */}
-              {nail?.nailSurface?.name && (() => {
-                const name = nail.nailSurface.name.toLowerCase();
-                if (name.includes("matte")) {
-                  return <div className="absolute inset-0 w-full h-full bg-white/12 backdrop-blur-[0.5px] pointer-events-none" />;
-                }
-                if (name.includes("tráng gương") || name.includes("metallic") || name.includes("mirror")) {
-                  return <div className="absolute inset-0 w-full h-full bg-[linear-gradient(135deg,rgba(255,255,255,0.45)_0%,rgba(255,255,255,0)_50%,rgba(0,0,0,0.15)_100%)] mix-blend-overlay pointer-events-none" />;
-                }
-                return <div className="absolute inset-0 w-full h-full bg-[linear-gradient(135deg,rgba(255,255,255,0.3)_0%,rgba(255,255,255,0)_100%)] pointer-events-none" />;
-              })()}
+              {/* Layer 2: Surface Effects - inside mask, clipped to nail shape */}
+              {renderSurfaceEffects(nail?.nailSurface?.name, nail?.nailSurface?.shaderParam)}
             </div>
 
-            {/* Layer 2: Shape Mask/Overlay (Highlights and shading details) */}
+            {/* Layer 4: Shape mask overlay with depth */}
             {nail?.nailShape?.imageUrl && (
               <img
                 src={nail.nailShape.imageUrl}
                 alt="shape mask"
-                className="absolute inset-0 w-full h-full object-cover mix-blend-multiply opacity-80 pointer-events-none"
+                className="pointer-events-none absolute inset-0 h-full w-full object-contain mix-blend-multiply opacity-85 transition-opacity duration-500 group-hover:opacity-90"
               />
             )}
 
-            {/* Layer 4: Components / Accessories */}
+            {/* Layer 5: Components / ornaments with premium target indicators */}
             {components.map((comp, idx) => {
               const item = comp.component || comp.customerComponent;
               if (!item?.imageUrl) return null;
@@ -627,102 +964,148 @@ export function CustomerNailDetailPage() {
               const posX = comp.posX !== undefined && comp.posX !== null ? comp.posX : 50;
               const posY = comp.posY !== undefined && comp.posY !== null ? comp.posY : 50;
 
+              const globalIdx = (nail?.customerNailComponents || []).findIndex(c => c.customerNailComponentId === comp.customerNailComponentId);
+              const globalId = comp.customerNailComponentId || globalIdx;
+              const isSelected = selectedComponentId !== null && (
+                selectedComponentId === comp.customerNailComponentId ||
+                (comp.customerNailComponentId === null && globalIdx === selectedComponentId)
+              );
+
               return (
-                <img
+                <div
                   key={comp.customerNailComponentId || idx}
-                  src={item.imageUrl}
-                  alt={item.name}
-                  className="absolute h-9 w-9 object-contain pointer-events-none drop-shadow-[0_4px_8px_rgba(234,79,147,0.18)]"
+                  className="absolute pointer-events-auto cursor-pointer transition-all duration-300"
                   style={{
                     left: `${posX}%`,
                     top: `${posY}%`,
-                    transform: `translate(-50%, -50%) scale(${scale}) rotate(${rotation}deg)`,
+                    transform: `translate(-50%, -50%) scale(${isSelected ? scale * 1.15 : scale}) rotate(${rotation}deg)`,
+                    width: '42px',
+                    height: '42px',
+                    zIndex: isSelected ? 50 : 30,
                   }}
-                />
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedComponentId(prev => prev === globalId ? null : globalId);
+                    const element = document.getElementById(`component-card-${globalId}`);
+                    if (element) {
+                      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                  }}
+                >
+                  {/* High-fidelity selection indicator */}
+                  {isSelected && (
+                    <>
+                      {/* Rotating dash focus ring */}
+                      <div className="absolute -inset-2.5 rounded-full border border-dashed border-[#ea4f93] animate-[spin_10s_linear_infinite] opacity-90" />
+                      {/* Glowing focus aura */}
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-[#ea4f93]/25 to-[#f472b6]/25 blur-sm scale-110" />
+                      {/* Target dots */}
+                      <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#ea4f93] shadow-[0_0_8px_#ea4f93]" />
+                      <div className="absolute -bottom-3.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#ea4f93] shadow-[0_0_8px_#ea4f93]" />
+                    </>
+                  )}
+
+                  <img
+                    src={item.imageUrl}
+                    alt={item.name}
+                    className={`h-full w-full object-contain transition-all duration-300 ${isSelected
+                      ? "drop-shadow-[0_0_12px_rgba(234,79,147,0.85)] scale-110"
+                      : "drop-shadow-[0_4px_8px_rgba(0,0,0,0.18)] hover:scale-110"
+                      }`}
+                  />
+                </div>
               );
             })}
           </div>
         </div>
-        <span className="rounded-full bg-white/90 px-3 py-1 text-[10px] font-extrabold text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)] border border-[#fce6f3] uppercase tracking-[0.14em]">
+
+        {/* Finger label with interactive state */}
+        <span
+          className={`rounded-full border-2 px-4 py-1.5 text-[11px] font-black uppercase tracking-[0.16em] backdrop-blur-sm transition-all duration-500 ${isFingerSelectedWithAccessory
+            ? "border-[#ea4f93] bg-[#ea4f93] text-white shadow-[0_12px_28px_rgba(236,72,153,0.2)] scale-105"
+            : "border-[#fce6f3] bg-white/95 text-[#c08aa4] shadow-[0_8px_20px_rgba(236,72,153,0.08)] group-hover:scale-105 group-hover:border-[#ea4f93] group-hover:bg-[#ea4f93] group-hover:text-white"
+            }`}
+        >
           {fingerName}
         </span>
       </div>
     );
   };
-
   return (
-    <div className="flex min-h-full flex-col gap-5">
-      {/* Back Button */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <button
-          onClick={() => navigate(ROUTES.managerCustomerNails)}
-          className="inline-flex w-fit items-center gap-2 rounded-full border border-[#f4c1d8] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93] shadow-[0_4px_12px_rgba(234,79,147,0.1)] transition hover:bg-[#fff7fb]"
-        >
-          <ChevronLeft size={14} />
-          Back to Customer Nails
-        </button>
-        <div className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-bold transition ${isRefreshing
-          ? "bg-[#fff0f8] text-[#ea4f93]"
-          : "bg-[#f8f4f7] text-[#9b7b8f]"
-          }`}>
-          <span className={`h-2.5 w-2.5 rounded-full ${isRefreshing ? "bg-[#ea4f93]" : "bg-[#d4b7c7]"}`} />
-          {isRefreshing ? "Refreshing..." : "Auto refresh every 3s"}
-        </div>
-      </div>
+    <div className="flex min-h-full flex-col gap-6">
+      <Card className="p-0 border-none shadow-[0_20px_50px_rgba(236,72,153,0.06)] overflow-hidden rounded-[32px]">
+        {/* Premium Header */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-[#fff2f7] via-[#fff9fc] to-[#FAF5F9] p-8 border-b border-[#f3e3ec]/50">
+          {/* Decorative background glow blobs */}
+          <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-gradient-radial from-[#ffd4e4]/30 to-transparent blur-3xl pointer-events-none" />
+          <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-gradient-radial from-[#f3e8ff]/30 to-transparent blur-3xl pointer-events-none" />
 
-      <Card className="p-0">
-        {/* Header */}
-        <div className="border-b border-[#f6dce7] bg-[linear-gradient(135deg,#fff0f8_0%,#fffafb_55%,#fff5fb_100%)] p-6">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center gap-4">
+          <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between z-10">
+            {/* Left side: Info & Image */}
+            <div className="flex flex-col sm:flex-row items-center gap-6">
               {nail?.imageUrl ? (
-                <img
-                  src={nail.imageUrl}
-                  alt={nail.name}
-                  className="h-24 w-24 rounded-[24px] border-4 border-white object-cover shadow-[0_16px_32px_rgba(236,72,153,0.18)]"
-                />
+                <div className="relative group">
+                  <img
+                    src={nail.imageUrl}
+                    alt={nail.name}
+                    className="h-28 w-28 rounded-[32px] border-4 border-white object-cover shadow-[0_20px_45px_rgba(236,72,153,0.15)] transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute -inset-0.5 rounded-[32px] bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none" />
+                </div>
               ) : (
-                <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-[24px] bg-gradient-to-br from-[#ff9ac2] via-[#ea4f93] to-[#c63d79] text-2xl font-black text-white shadow-[0_16px_32px_rgba(234,79,147,0.22)]">
-                  <Palette size={34} />
+                <div className="flex h-28 w-28 shrink-0 items-center justify-center rounded-[32px] bg-gradient-to-br from-[#ff9ac2] via-[#ea4f93] to-[#c63d79] text-3xl font-black text-white shadow-[0_20px_45px_rgba(234,79,147,0.2)]">
+                  <Palette size={38} />
                 </div>
               )}
-              <div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <h2 className="text-2xl font-extrabold text-[#402542]">
+
+              <div className="text-center sm:text-left">
+                <div className="flex flex-wrap justify-center sm:justify-start items-center gap-3">
+                  <h2 className="text-3xl font-black tracking-tight text-[#3f2240]">
                     {nail?.name || "Untitled Design"}
                   </h2>
                   <span
-                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold ${getStatusTone(
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider shadow-sm ${getStatusTone(
                       nail?.status
                     )}`}
                   >
                     {nail?.status === "Approved" ? (
-                      <CheckCircle2 size={14} />
+                      <CheckCircle2 size={12} />
                     ) : nail?.status === "Rejected" ? (
-                      <XCircle size={14} />
+                      <XCircle size={12} />
                     ) : (
-                      <Calendar size={14} />
+                      <Calendar size={12} />
                     )}
                     {nail?.status || "Draft"}
                   </span>
+
+                  {/* Auto-Refresh Badge inside the title row */}
+                  <div className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[9px] font-extrabold border shadow-sm transition-all duration-300 ${isRefreshing
+                    ? "bg-white text-[#ea4f93] border-pink-100 animate-pulse"
+                    : "bg-white/80 text-[#9b7b8f] border-transparent"
+                    }`}>
+                    <span className={`h-1.5 w-1.5 rounded-full ${isRefreshing ? "bg-[#ea4f93] animate-ping" : "bg-[#d4b7c7]"}`} />
+                    {isRefreshing ? "Syncing" : "Synced"}
+                  </div>
                 </div>
-                <p className="mt-2 max-w-2xl text-sm text-[#9c6f87]">
+
+                <p className="mt-3 max-w-xl text-xs font-medium leading-relaxed text-[#8f6b80]">
                   Review custom design details, inspect the requested colors, assign a staff artist,
                   and complete manager actions from one place.
                 </p>
-                <div className="mt-3 flex flex-wrap items-center gap-2.5">
-                  <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold ${nail?.basedOnNailVariantId !== null ? "bg-[#e7ecff] text-[#4755b8]" : "bg-[#fef3c7] text-[#d97706]"}`}>
-                    {nail?.basedOnNailVariantId !== null ? "Preset" : "Custom Design"}
+
+                <div className="mt-4 flex flex-wrap justify-center sm:justify-start items-center gap-2">
+                  <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider shadow-sm ${nail?.basedOnNailVariantId !== null ? "bg-[#eef2ff] text-[#4f46e5] border border-blue-100" : "bg-[#fffbeb] text-[#d97706] border border-amber-100"}`}>
+                    {nail?.basedOnNailVariantId !== null ? "Preset template" : "Custom Unique Design"}
                   </span>
                   {nail?.isFavorite ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#ffe6f1] px-3 py-1.5 text-[11px] font-bold text-[#ea4f93]">
-                      <Heart size={12} fill="currentColor" />
+                    <span className="inline-flex items-center gap-1 rounded-full bg-[#fff1f5] border border-pink-100 px-3 py-1 text-[10px] font-extrabold text-[#ea4f93] uppercase tracking-wider shadow-sm">
+                      <Heart size={11} fill="currentColor" />
                       Favorite
                     </span>
                   ) : null}
                   {nail?.isPublic ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f3f4f6] px-3 py-1.5 text-[11px] font-bold text-[#6b7280]">
-                      <Eye size={12} />
+                    <span className="inline-flex items-center gap-1 rounded-full bg-[#f9fafb] border border-gray-100 px-3 py-1 text-[10px] font-extrabold text-[#6b7280] uppercase tracking-wider shadow-sm">
+                      <Eye size={11} />
                       Public
                     </span>
                   ) : null}
@@ -730,30 +1113,34 @@ export function CustomerNailDetailPage() {
               </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[420px]">
-              <div className="rounded-2xl border border-white/70 bg-white/75 p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)] backdrop-blur">
-                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">
+            {/* Right side: Stats Cards */}
+            <div className="grid gap-3 grid-cols-3 lg:w-auto lg:min-w-[420px]">
+              {/* Price card */}
+              <div className="rounded-2xl border border-amber-100 bg-[#fffdfa] p-4 shadow-[0_10px_25px_rgba(217,119,6,0.03)] flex flex-col justify-between">
+                <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#d97706]">
                   Price
-                </p>
-                <p className="mt-1 text-lg font-extrabold text-[#ea4f93]">
+                </span>
+                <span className="mt-2 text-base font-black text-[#d97706] truncate">
                   {formatVND(nail?.price, nail?.status)}
-                </p>
+                </span>
               </div>
-              <div className="rounded-2xl border border-white/70 bg-white/75 p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)] backdrop-blur">
-                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">
+              {/* Duration card */}
+              <div className="rounded-2xl border border-purple-100 bg-[#fbfaff] p-4 shadow-[0_10px_25px_rgba(139,92,246,0.03)] flex flex-col justify-between">
+                <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#7c3aed]">
                   Duration
-                </p>
-                <p className="mt-1 text-lg font-extrabold text-[#402542]">
+                </span>
+                <span className="mt-2 text-base font-black text-[#7c3aed] truncate">
                   {formatDuration(nail?.duration, nail?.status)}
-                </p>
+                </span>
               </div>
-              <div className="rounded-2xl border border-white/70 bg-white/75 p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)] backdrop-blur">
-                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">
+              {/* Created Date card */}
+              <div className="rounded-2xl border border-pink-100 bg-[#fffafc] p-4 shadow-[0_10px_25px_rgba(236,72,153,0.03)] flex flex-col justify-between">
+                <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#db2777]">
                   Created
-                </p>
-                <p className="mt-1 text-sm font-bold text-[#402542]">
+                </span>
+                <span className="mt-2 text-[11px] font-bold text-[#db2777] leading-snug">
                   {formatDate(nail?.createdAt)}
-                </p>
+                </span>
               </div>
             </div>
           </div>
@@ -765,18 +1152,45 @@ export function CustomerNailDetailPage() {
           <div className="space-y-4">
             <SectionHeading
               title="Custom Design Live Preview"
-              subtitle="Interactive overlay preview showing layers of the nail shape, color blend, surface texture, and accessories."
+              subtitle="Interactive 3D preview showing nail shape, color blend, surface texture, and accessories in realistic hand positioning."
             />
-            <div className="rounded-[28px] border border-[#fbcbe2] bg-gradient-to-tr from-[#fff7f9] via-[#ffffff] to-[#fff4f8] p-8 shadow-[0_16px_36px_rgba(236,72,153,0.06),inset_0_2px_10px_rgba(236,72,153,0.02)] min-h-[360px] flex items-center justify-center relative overflow-hidden">
-              <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#ea4f93]/5 rounded-full blur-[120px] pointer-events-none" />
-              <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[#c63d79]/5 rounded-full blur-[120px] pointer-events-none" />
 
-              <div className="flex flex-wrap items-end justify-center gap-6 md:gap-8 min-h-[260px] pt-8 pb-4 z-10">
+            {/* 🎨 Enhanced preview container with depth and ambiance */}
+            <div className="group relative overflow-hidden rounded-[36px] border-2 border-[#fcd5e6]/60 bg-gradient-to-br from-[#fff8fa] via-white to-[#fff4f8] p-8 shadow-[0_20px_50px_rgba(236,72,153,0.08),inset_0_2px_12px_rgba(255,255,255,0.7)] transition-all duration-700 hover:shadow-[0_28px_64px_rgba(236,72,153,0.14),inset_0_3px_16px_rgba(255,255,255,0.9)]">
+
+              {/* Ambient background glows */}
+              <div className="pointer-events-none absolute left-[15%] top-0 h-[420px] w-[420px] rounded-full bg-gradient-radial from-[#ea4f93]/8 via-[#fbb6ce]/5 to-transparent blur-[100px]" />
+              <div className="pointer-events-none absolute bottom-0 right-[15%] h-[420px] w-[420px] rounded-full bg-gradient-radial from-[#c63d79]/6 via-[#ec4899]/4 to-transparent blur-[100px]" />
+
+              {/* Elegant display stand base */}
+              <div className="pointer-events-none absolute bottom-12 left-1/2 h-[140px] w-[88%] -translate-x-1/2 rounded-[50%] border border-white/40 bg-gradient-to-t from-white/15 via-white/8 to-transparent shadow-[inset_0_2px_8px_rgba(255,255,255,0.5)] backdrop-blur-[2px] [clip-path:ellipse(100%_50%_at_50%_100%)]" />
+
+              {/* Subtle center reflection line */}
+              <div className="pointer-events-none absolute bottom-[46px] left-1/2 h-[1px] w-[85%] -translate-x-1/2 bg-gradient-to-r from-transparent via-[#f5c3da]/50 to-transparent" />
+
+              {/* Main nail display area */}
+              <div className="relative z-10 flex min-h-[340px] flex-wrap items-end justify-center gap-6 pb-6 pt-10 md:gap-8 xl:gap-10">
                 {renderNailPreview(1, "Thumb")}
                 {renderNailPreview(2, "Index")}
                 {renderNailPreview(3, "Middle")}
                 {renderNailPreview(4, "Ring")}
                 {renderNailPreview(5, "Pinky")}
+              </div>
+
+              {/* Floating info badge */}
+              <div className="absolute right-6 top-6 flex flex-col gap-2 rounded-2xl border border-white/70 bg-white/90 p-3 shadow-lg backdrop-blur-sm">
+                <span className="text-[9px] font-bold uppercase tracking-wider text-[#c08aa4]">Design Info</span>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-lg bg-[#fff0f8] px-2 py-1 text-[10px] font-bold text-[#ea4f93]">
+                    {nail?.nailShape?.name || "Custom"}
+                  </span>
+                  <span className="rounded-lg bg-[#fff0f8] px-2 py-1 text-[10px] font-bold text-[#ea4f93]">
+                    {nail?.nailSurface?.name || "Glossy"}
+                  </span>
+                </div>
+                <span className="text-[10px] font-semibold text-[#9c6f87]">
+                  {(nail?.customerNailComponents || []).length} add-ons
+                </span>
               </div>
             </div>
           </div>
@@ -855,38 +1269,53 @@ export function CustomerNailDetailPage() {
             <div className="space-y-4">
               <SectionHeading
                 title="Components & Ornaments"
-                subtitle="Individual stickers, gems, and 3D decors requested on the custom design."
+                subtitle="Individual stickers, gems, and 3D decors requested. Click any card to highlight it on the nail preview."
               />
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {nail.customerNailComponents.map((itemComponent, idx) => {
                   const comp = itemComponent.component || itemComponent.customerComponent;
                   if (!comp) return null;
 
+                  const globalId = itemComponent.customerNailComponentId || idx;
+                  const isCardSelected = selectedComponentId === globalId;
+
                   return (
                     <div
                       key={itemComponent.customerNailComponentId || idx}
-                      className="rounded-2xl border border-[#f6d4e3] bg-gradient-to-br from-white to-[#fffbfd] p-4 shadow-[0_8px_20px_rgba(236,72,153,0.03)] flex items-center gap-3.5"
+                      id={`component-card-${globalId}`}
+                      onClick={() => setSelectedComponentId(prev => prev === globalId ? null : globalId)}
+                      className={`rounded-2xl border p-4 flex items-center justify-between gap-3.5 cursor-pointer transition-all duration-300 hover:-translate-y-0.5 hover:border-[#ea4f93] ${isCardSelected
+                        ? "border-[#ea4f93] bg-gradient-to-br from-[#fff2f7] to-[#fffafc] shadow-[0_12px_28px_rgba(236,72,153,0.12)] scale-[1.02]"
+                        : "border-[#f6d4e3] bg-gradient-to-br from-white to-[#fffbfd] shadow-[0_8px_20px_rgba(236,72,153,0.03)]"
+                        }`}
                     >
-                      {comp.imageUrl ? (
-                        <img
-                          src={comp.imageUrl}
-                          alt={comp.name}
-                          className="h-14 w-14 rounded-xl border border-[#f5c6db] bg-[#fffafc] object-contain p-1 shrink-0"
-                        />
-                      ) : (
-                        <div className="h-14 w-14 rounded-xl bg-pink-100 flex items-center justify-center text-pink-600 text-xs font-bold shrink-0">
-                          Decor
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        {comp.imageUrl ? (
+                          <img
+                            src={comp.imageUrl}
+                            alt={comp.name}
+                            className="h-14 w-14 rounded-xl border border-[#f5c6db] bg-[#fffafc] object-contain p-1 shrink-0"
+                          />
+                        ) : (
+                          <div className="h-14 w-14 rounded-xl bg-pink-100 flex items-center justify-center text-pink-600 text-xs font-bold shrink-0">
+                            Decor
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-[#3f2240] truncate">{comp.name || "Custom Accessory"}</p>
+                          <p className="mt-0.5 text-xs text-[#a37e93]">
+                            Type: {comp.componentType || "Sticker/Gem"} • Finger: {itemComponent.fingerIndex}
+                          </p>
+                          {comp.price ? (
+                            <p className="mt-1 text-xs text-[#ea4f93] font-semibold">+{formatVND(comp.price)}</p>
+                          ) : null}
                         </div>
-                      )}
-                      <div>
-                        <p className="text-sm font-bold text-[#3f2240]">{comp.name || "Custom Accessory"}</p>
-                        <p className="mt-0.5 text-xs text-[#a37e93]">
-                          Type: {comp.componentType || "Sticker/Gem"} • Finger: {itemComponent.fingerIndex}
-                        </p>
-                        {comp.price ? (
-                          <p className="mt-1 text-xs text-[#ea4f93] font-semibold">+{formatVND(comp.price)}</p>
-                        ) : null}
                       </div>
+                      {isCardSelected && (
+                        <span className="rounded-full bg-[#ea4f93] p-1.5 text-white shadow-sm shrink-0 animate-pulse">
+                          <Sparkles size={12} />
+                        </span>
+                      )}
                     </div>
                   );
                 })}
@@ -897,12 +1326,33 @@ export function CustomerNailDetailPage() {
           {/* Custom Color */}
           {nail?.customColor && (
             <div className="space-y-4">
+              {/* Hidden SVG Defs for 3D Nail Shapes */}
+              <svg style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }} aria-hidden="true">
+                <defs>
+                  <clipPath id="clip-nail-almond" clipPathUnits="objectBoundingBox">
+                    <path d="M 0.22,1 C 0.16,0.65 0.22,0.18 0.5,0.02 C 0.78,0.18 0.84,0.65 0.78,1 Z" />
+                  </clipPath>
+                  <clipPath id="clip-nail-coffin" clipPathUnits="objectBoundingBox">
+                    <path d="M 0.22,1 C 0.2,0.7 0.3,0.2 0.32,0.12 L 0.68,0.12 C 0.7,0.2 0.8,0.7 0.78,1 Z" />
+                  </clipPath>
+                  <clipPath id="clip-nail-stiletto" clipPathUnits="objectBoundingBox">
+                    <path d="M 0.25,1 C 0.22,0.7 0.32,0.2 0.5,0.02 C 0.68,0.2 0.78,0.7 0.75,1 Z" />
+                  </clipPath>
+                  <clipPath id="clip-nail-square" clipPathUnits="objectBoundingBox">
+                    <path d="M 0.22,1 L 0.22,0.15 C 0.22,0.08 0.28,0.02 0.35,0.02 L 0.65,0.02 C 0.72,0.02 0.78,0.08 0.78,0.15 L 0.78,1 Z" />
+                  </clipPath>
+                  <clipPath id="clip-nail-default" clipPathUnits="objectBoundingBox">
+                    <path d="M 0.22,1 C 0.16,0.65 0.22,0.18 0.5,0.02 C 0.78,0.18 0.84,0.65 0.78,1 Z" />
+                  </clipPath>
+                </defs>
+              </svg>
+
               <SectionHeading
                 title="Custom Color"
                 subtitle="Preview the requested color configuration for this custom design."
               />
-              <div className="rounded-[24px] border border-[#f4d6e4] bg-[linear-gradient(180deg,#fffafb_0%,#fff5f9_100%)] p-5 shadow-[0_10px_26px_rgba(236,72,153,0.05)]">
-                <div className="flex flex-col gap-4 md:flex-row md:items-center">
+              <div className="rounded-[28px] border border-[#f4d6e4] bg-[linear-gradient(180deg,#fffafb_0%,#fff5f9_100%)] p-6 shadow-[0_10px_26px_rgba(236,72,153,0.05)]">
+                <div className="w-full">
                   {(() => {
                     try {
                       const colorData =
@@ -927,20 +1377,31 @@ export function CustomerNailDetailPage() {
 
                       if (colorData?.mode === "solid" && colorData?.color) {
                         return (
-                          <>
-                            <div
-                              className="h-16 w-16 rounded-[18px] border-4 border-white shadow-[0_10px_24px_rgba(0,0,0,0.08)]"
-                              style={{ backgroundColor: colorData.color }}
-                            />
-                            <div>
-                              <p className="text-sm font-bold text-[#3f2240]">
-                                Solid Color
-                              </p>
-                              <p className="mt-1 text-xs text-[#c08aa4]">
-                                {colorData.color}
-                              </p>
+                          <div
+                            onClick={() => copyToClipboard(colorData.color)}
+                            className="group/card flex flex-col gap-5 sm:flex-row sm:items-center cursor-pointer rounded-3xl border border-[#f5cee1]/60 bg-white/50 p-5 transition-all duration-300 hover:bg-white hover:border-[#ea4f93] hover:shadow-[0_12px_28px_rgba(236,72,153,0.06)]"
+                          >
+                            <div className="relative flex items-center justify-center p-3 rounded-2xl bg-white/40 border border-white/60 shadow-inner w-24 h-32 shrink-0 transition-all duration-300 group-hover/card:bg-white/90">
+                              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-12 h-1 rounded-full bg-[#ea4f93]/10" />
+                              {renderNailTip({ backgroundColor: colorData.color }, nail?.nailShape?.name, "w-14 h-22")}
                             </div>
-                          </>
+                            <div>
+                              <span className="inline-flex rounded-full bg-[#ffe6f1] px-2.5 py-1 text-[10px] font-bold text-[#ea4f93] uppercase tracking-wider">
+                                Solid Color
+                              </span>
+                              <h4 className="mt-2.5 text-base font-extrabold text-[#3f2240] flex items-center gap-2">
+                                <span className="flex items-center gap-1.5 bg-white/80 px-2.5 py-1 rounded-full border border-[#f5cee1] shadow-sm">
+                                  <span className="h-3 w-3 rounded-full border border-white shadow-sm inline-block shrink-0" style={{ backgroundColor: colorData.color }} />
+                                  <span className="font-mono text-sm font-extrabold text-[#5c3b5d]">{colorData.color}</span>
+                                </span>
+                                <span className="text-[10px] font-medium text-[#c08aa4] opacity-0 group-hover/card:opacity-100 transition-opacity">(Click to copy)</span>
+                              </h4>
+                              <div className="mt-2 h-3.5 w-48 rounded-full border border-white/80 bg-[#fff5f9] shadow-[inset_0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
+                                <div className="h-full w-full rounded-full" style={{ backgroundColor: colorData.color }} />
+                              </div>
+                              <p className="mt-2.5 text-xs text-[#c08aa4]">Single solid tone applied across all fingers.</p>
+                            </div>
+                          </div>
                         );
                       } else if (colorData?.mode === "gradient") {
                         const gradientStops = Array.isArray(colorData?.gradient)
@@ -953,54 +1414,138 @@ export function CustomerNailDetailPage() {
                           return null;
                         }
 
+                        const gradientStyle = { background: `linear-gradient(to top, ${gradientStops.join(", ")})` };
+                        const stopsLabel = gradientStops.join(" → ");
+
                         return (
-                          <>
-                            <div
-                              className="h-16 w-16 rounded-[18px] border-4 border-white shadow-[0_10px_24px_rgba(0,0,0,0.08)]"
-                              style={{
-                                background: `linear-gradient(to right, ${gradientStops.join(
-                                  ", "
-                                )})`,
-                              }}
-                            />
-                            <div>
-                              <p className="text-sm font-bold text-[#3f2240]">
-                                Gradient Color
-                              </p>
-                              <p className="mt-1 text-xs text-[#c08aa4]">
-                                {gradientStops.join(" -> ")}
-                              </p>
+                          <div
+                            onClick={() => copyToClipboard(stopsLabel)}
+                            className="group/card flex flex-col gap-5 sm:flex-row sm:items-center cursor-pointer rounded-3xl border border-[#f5cee1]/60 bg-white/50 p-5 transition-all duration-300 hover:bg-white hover:border-[#ea4f93] hover:shadow-[0_12px_28px_rgba(236,72,153,0.06)]"
+                          >
+                            <div className="relative flex items-center justify-center p-3 rounded-2xl bg-white/40 border border-white/60 shadow-inner w-24 h-32 shrink-0 transition-all duration-300 group-hover/card:bg-white/90">
+                              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-12 h-1 rounded-full bg-[#ea4f93]/10" />
+                              {renderNailTip(gradientStyle, nail?.nailShape?.name, "w-14 h-22")}
                             </div>
-                          </>
+                            <div>
+                              <span className="inline-flex rounded-full bg-[#eef2ff] px-2.5 py-1 text-[10px] font-bold text-[#4f46e5] uppercase tracking-wider">
+                                Linear Gradient
+                              </span>
+                              <h4 className="mt-2.5 text-base font-extrabold text-[#3f2240] flex items-center gap-3 flex-wrap">
+                                {gradientStops.map((stop, sidx) => (
+                                  <span key={sidx} className="flex items-center gap-2">
+                                    <span className="flex items-center gap-1.5 bg-white/80 px-2 py-0.5 rounded-full border border-[#f5cee1] shadow-sm">
+                                      <span className="h-3 w-3 rounded-full border border-white shadow-sm inline-block shrink-0" style={{ backgroundColor: stop }} />
+                                      <span className="font-mono text-sm font-extrabold text-[#5c3b5d]">{stop}</span>
+                                    </span>
+                                    {sidx < gradientStops.length - 1 && <span className="text-xs text-[#a5b4fc] font-bold">→</span>}
+                                  </span>
+                                ))}
+                                <span className="text-[10px] font-medium text-[#c08aa4] opacity-0 group-hover/card:opacity-100 transition-opacity">(Click to copy)</span>
+                              </h4>
+                              <div className="mt-2 h-3.5 w-48 rounded-full border border-white/80 shadow-[inset_0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden" style={{ background: `linear-gradient(to right, ${gradientStops.join(", ")})` }} />
+                              <p className="mt-2.5 text-xs text-[#c08aa4]">Smooth color blend applied uniformly across all fingers.</p>
+                            </div>
+                          </div>
                         );
                       } else if (
                         colorData?.mode === "perFinger" &&
                         Array.isArray(colorData?.fingers)
                       ) {
                         return (
-                          <>
-                            <div className="flex flex-wrap gap-3">
-                              {colorData.fingers.map((finger, index) => (
-                                <div key={finger.fingerIndex || index} className="flex flex-col items-center gap-1.5 rounded-2xl border border-white/70 bg-white/70 p-2 shadow-[0_8px_18px_rgba(236,72,153,0.06)]">
+                          <div className="space-y-6 w-full">
+                            <div className="flex items-center justify-between border-b border-[#fcd5e6]/50 pb-2">
+                              <div>
+                                <span className="inline-flex rounded-full bg-[#fdf2f8] px-3 py-1 text-[10px] font-bold text-[#db2777] uppercase tracking-wider">
+                                  Per-Finger Custom Palette
+                                </span>
+                                <p className="mt-1 text-xs text-[#c08aa4]">Each finger has its own unique color or gradient design. Click any card to copy its color code.</p>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
+                              {colorData.fingers.map((finger, index) => {
+                                const fingerName = getFingerName(finger.fingerIndex || index + 1);
+                                let fingerStyle = { backgroundColor: '#f3f4f6' };
+                                let colorLabel = "N/A";
+                                const isGradient = finger.mode === 'gradient' || (finger.gradient && finger.gradient.enabled);
+                                let primaryColor = '#faf4f6';
+                                let secondaryColor = null;
+
+                                if (finger.mode === 'gradient' && finger.primaryColor && finger.secondaryColor) {
+                                  fingerStyle = { background: `linear-gradient(to top, ${finger.primaryColor}, ${finger.secondaryColor})` };
+                                  colorLabel = `${finger.primaryColor} → ${finger.secondaryColor}`;
+                                  primaryColor = finger.primaryColor;
+                                  secondaryColor = finger.secondaryColor;
+                                } else if (finger.gradient && finger.gradient.enabled && Array.isArray(finger.gradient.stops) && finger.gradient.stops.length > 0) {
+                                  fingerStyle = { background: `linear-gradient(to top, ${finger.gradient.stops.join(', ')})` };
+                                  colorLabel = finger.gradient.stops.join(' → ');
+                                  primaryColor = finger.gradient.stops[0];
+                                  secondaryColor = finger.gradient.stops[1] || finger.gradient.stops[0];
+                                } else {
+                                  const solidColor = finger.color || finger.primaryColor || '#f3f4f6';
+                                  fingerStyle = { backgroundColor: solidColor };
+                                  colorLabel = solidColor;
+                                  primaryColor = solidColor;
+                                }
+
+                                return (
                                   <div
-                                    className="h-10 w-8 rounded-[10px] border-2 border-white shadow-md"
-                                    style={{ backgroundColor: finger.color || "#ccc" }}
-                                  />
-                                  <span className="text-[10px] font-bold text-[#c08aa4]">
-                                    {finger.fingerIndex}
-                                  </span>
-                                </div>
-                              ))}
+                                    key={finger.fingerIndex || index}
+                                    onClick={() => copyToClipboard(colorLabel)}
+                                    style={{
+                                      background: isGradient
+                                        ? `linear-gradient(135deg, ${primaryColor}14 0%, ${(secondaryColor || primaryColor)}0a 100%)`
+                                        : `linear-gradient(180deg, ${primaryColor}0d 0%, ${primaryColor}04 100%)`,
+                                      borderColor: `${primaryColor}38`,
+                                    }}
+                                    className="group/card relative flex flex-col items-center gap-4 rounded-3xl border p-5 shadow-[0_8px_20px_rgba(0,0,0,0.01)] transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_16px_36px_rgba(0,0,0,0.06)] cursor-pointer"
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.borderColor = primaryColor;
+                                      e.currentTarget.style.backgroundColor = '#ffffff';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.borderColor = `${primaryColor}38`;
+                                      e.currentTarget.style.background = isGradient
+                                        ? `linear-gradient(135deg, ${primaryColor}14 0%, ${(secondaryColor || primaryColor)}0a 100%)`
+                                        : `linear-gradient(180deg, ${primaryColor}0d 0%, ${primaryColor}04 100%)`;
+                                    }}
+                                  >
+                                    {/* Mini Nail Preview inside a glowing showcase pedestal */}
+                                    <div className="relative flex items-center justify-center p-3 rounded-2xl bg-white/40 border border-white/60 shadow-inner w-20 h-28 shrink-0 transition-all duration-300 group-hover/card:bg-white/90 group-hover/card:shadow-md">
+                                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-[#ea4f93]/10" />
+                                      {renderNailTip(fingerStyle, nail?.nailShape?.name, "w-10 h-16")}
+                                    </div>
+
+                                    <div className="text-center min-w-0 w-full">
+                                      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#3f2240]">{fingerName}</p>
+
+                                      {isGradient ? (
+                                        <div className="mt-2.5 flex items-center justify-center gap-1.5 flex-wrap">
+                                          <span className="flex items-center gap-1 bg-white/80 px-2 py-0.5 rounded-full border border-[#f5cee1] shadow-sm shrink-0">
+                                            <span className="h-2 w-2 rounded-full border border-white shadow-sm shrink-0" style={{ backgroundColor: primaryColor }} />
+                                            <span className="text-[9px] font-extrabold text-[#5c3b5d] font-mono">{primaryColor}</span>
+                                          </span>
+                                          <span className="text-[9px] text-[#c08aa4] font-bold">→</span>
+                                          <span className="flex items-center gap-1 bg-white/80 px-2 py-0.5 rounded-full border border-[#f5cee1] shadow-sm shrink-0">
+                                            <span className="h-2 w-2 rounded-full border border-white shadow-sm shrink-0" style={{ backgroundColor: secondaryColor }} />
+                                            <span className="text-[9px] font-extrabold text-[#5c3b5d] font-mono">{secondaryColor}</span>
+                                          </span>
+                                        </div>
+                                      ) : (
+                                        <div className="mt-2.5 flex items-center justify-center">
+                                          <span className="flex items-center gap-1.5 bg-white/80 px-2.5 py-1 rounded-full border border-[#f5cee1] shadow-sm">
+                                            <span className="h-2 w-2 rounded-full border border-white shadow-sm shrink-0" style={{ backgroundColor: primaryColor }} />
+                                            <span className="text-[9px] font-extrabold text-[#5c3b5d] font-mono">{primaryColor}</span>
+                                          </span>
+                                        </div>
+                                      )}
+
+                                      <span className="mt-2 inline-block text-[8px] font-bold text-[#c08aa4] opacity-0 group-hover/card:opacity-100 transition-opacity">Copy Code</span>
+                                    </div>
+                                  </div>
+                                );
+                              })}
                             </div>
-                            <div>
-                              <p className="text-sm font-bold text-[#3f2240]">
-                                Per-Finger Color
-                              </p>
-                              <p className="mt-1 text-xs text-[#c08aa4]">
-                                {colorData.fingers.length} fingers
-                              </p>
-                            </div>
-                          </>
+                          </div>
                         );
                       }
                     } catch (e) {
@@ -1020,27 +1565,28 @@ export function CustomerNailDetailPage() {
           )}
 
           {/* Reject Reason */}
-          {nail?.rejectReason && (
-            <div className="space-y-4">
-              <SectionHeading
-                title="Reject Reason"
-                subtitle="Latest manager feedback for this request."
-              />
-              <div className="rounded-[24px] border border-[#f4b8cb] bg-[linear-gradient(180deg,#fff1f5_0%,#ffe7ef_100%)] p-5 shadow-[0_10px_24px_rgba(225,68,127,0.08)]">
-                <p className="text-sm text-[#e1447f]">{nail.rejectReason}</p>
+          {
+            nail?.rejectReason && (
+              <div className="space-y-4">
+                <SectionHeading
+                  title="Reject Reason"
+                  subtitle="Latest manager feedback for this request."
+                />
+                <div className="rounded-[24px] border border-[#f4b8cb] bg-[linear-gradient(180deg,#fff1f5_0%,#ffe7ef_100%)] p-5 shadow-[0_10px_24px_rgba(225,68,127,0.08)]">
+                  <p className="text-sm text-[#e1447f]">{nail.rejectReason}</p>
+                </div>
               </div>
-            </div>
-          )}
+            )
+          }
 
 
           {/* Assigned Staff Info - Show if staff already assigned */}
-          {nail?.status === "Assigned" && nail?.assignedStaff && (() => {
-            const artistSkills = getStaffSkills(nail.assignedStaff);
-            return (
+          {
+            nail?.status === "Assigned" && nail?.assignedStaff && (
               <div className="space-y-4">
                 <SectionHeading
-                  title="Assigned Staff & AI Skill Mapping"
-                  subtitle="Current artist details and verification against design requirements."
+                  title="Assigned Artist & Capabilities"
+                  subtitle="Current artist details and their skills."
                 />
 
                 <div className="grid gap-5 lg:grid-cols-2">
@@ -1065,105 +1611,116 @@ export function CustomerNailDetailPage() {
                     </div>
                   </div>
 
-                  {/* Right: Skill Matrix Verification */}
+                  {/* Right: Real Skill Matrix */}
                   <div className="rounded-[24px] border border-[#f5cee1] bg-white p-5 shadow-sm space-y-3">
                     <div className="flex items-center justify-between border-b border-[#fde7f3] pb-2">
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#b87c9b] flex items-center gap-1">
-                        <Sparkles size={11} className="text-[#ea4f93]" />
-                        Matching Score Validation (Artist vs. Design)
-                      </span>
-                      <span className="inline-flex rounded-full bg-[#eaf9ee] px-2 py-0.5 text-[9px] font-extrabold text-[#2fa25f] uppercase tracking-wider">
-                        Passed ✓
+                      <span className="text-xs font-extrabold uppercase tracking-wider text-[#b87c9b] flex items-center gap-1.5">
+                        <Sparkles size={13} className="text-[#ea4f93]" />
+                        Artist Skills & Capabilities
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 text-[10px] text-[#553b4b]">
-                      <div className="rounded-lg bg-[#fff0f6] border border-[#fbdde9] p-2">
-                        <p className="font-bold text-[#ea4f93] mb-1.5">Required Skills</p>
-                        <div className="space-y-1">
-                          <div className="flex justify-between"><span>A: Shape:</span> <span className="font-black">{skillReqs.A}★</span></div>
-                          <div className="flex justify-between"><span>B: Color:</span> <span className="font-black">{skillReqs.B}★</span></div>
-                          <div className="flex justify-between"><span>C: Decor:</span> <span className="font-black">{skillReqs.C}★</span></div>
-                          <div className="flex justify-between"><span>D: Art:</span> <span className="font-black">{skillReqs.D}★</span></div>
-                        </div>
+                    {assignedStaffSkills && assignedStaffSkills.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                        {assignedStaffSkills.map((skill) => (
+                          <div key={skill.nailArtistSkillId || skill.skillTypeName} className="flex items-center justify-between rounded-2xl bg-[#fffafb] border border-[#fbe5ee] p-3 shadow-[0_4px_12px_rgba(236,72,153,0.02)]">
+                            <div className="flex items-center gap-2">
+                              <span className="h-2 w-2 rounded-full bg-[#ea4f93]" />
+                              <span className="text-xs font-bold text-[#553b4b]">{skill.skillTypeName}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {Array.from({ length: 5 }).map((_, i) => (
+                                <svg
+                                  key={i}
+                                  className={`h-3.5 w-3.5 ${i < skill.level ? 'text-[#ea4f93] fill-[#ea4f93]' : 'text-gray-200 fill-gray-200'}`}
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 20 20"
+                                  fill="currentColor"
+                                >
+                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      <div className="rounded-lg bg-[#f0fdf4] border border-[#dcfce7] p-2">
-                        <p className="font-bold text-[#2fa25f] mb-1.5">Artist Capabilities</p>
-                        <div className="space-y-1">
-                          <div className="flex justify-between"><span>A: Shape:</span> <span className="font-black">{artistSkills.A}★</span></div>
-                          <div className="flex justify-between"><span>B: Color:</span> <span className="font-black">{artistSkills.B}★</span></div>
-                          <div className="flex justify-between"><span>C: Decor:</span> <span className="font-black">{artistSkills.C}★</span></div>
-                          <div className="flex justify-between"><span>D: Art:</span> <span className="font-black">{artistSkills.D}★</span></div>
-                        </div>
+                    ) : (
+                      <div className="text-center py-6 text-xs text-[#c08aa4]">
+                        No skills data available for this artist.
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               </div>
-            );
-          })()}
+            )
+          }
 
           {/* Assign Staff Button - Only show if status is PendingReview and no staff assigned */}
-          {nail?.status === "PendingReview" && !nail?.assignedStaff && (
-            <div className="space-y-4">
-              <SectionHeading
-                title="Assign Staff"
-                subtitle="Choose a staff artist so the review can continue with the right owner."
-              />
-              <div className="rounded-[24px] border border-[#f4d6e4] bg-[linear-gradient(180deg,#fffafb_0%,#fff6fa_100%)] p-5">
-                <ActionButton
-                  onClick={handleOpenAssignModal}
-                  disabled={isSubmitting}
-                  icon={UserRound}
-                  className="w-fit bg-[#ea4f93] hover:bg-[#df4588]"
-                >
-                  Assign Staff
-                </ActionButton>
-              </div>
-            </div>
-          )}
-
-          {/* Confirm/Reject Buttons - Only show when status is Reviewed or Quoted */}
-          {(nail?.status === "Reviewed" || nail?.status === "Quoted") && (
-            <div className="space-y-4">
-              <SectionHeading
-                title="Review Actions"
-                subtitle="Finalize the quoted design by confirming or rejecting it."
-              />
-              <div className="rounded-[24px] border border-[#f4d6e4] bg-[linear-gradient(180deg,#fffafb_0%,#fff5f9_100%)] p-5">
-                <div className="flex flex-wrap gap-3">
+          {
+            nail?.status === "PendingReview" && !nail?.assignedStaff && (
+              <div className="space-y-4">
+                <SectionHeading
+                  title="Assign Staff"
+                  subtitle="Choose a staff artist so the review can continue with the right owner."
+                />
+                <div className="rounded-[24px] border border-[#f4d6e4] bg-[linear-gradient(180deg,#fffafb_0%,#fff6fa_100%)] p-5">
                   <ActionButton
-                    onClick={() => setIsApproveModalOpen(true)}
+                    onClick={handleOpenAssignModal}
                     disabled={isSubmitting}
-                    icon={CheckCircle2}
-                    className="w-fit bg-[#2fa25f] hover:bg-[#2a9255]"
+                    icon={UserRound}
+                    className="w-fit bg-[#ea4f93] hover:bg-[#df4588]"
                   >
-                    Confirm Quote
-                  </ActionButton>
-                  <ActionButton
-                    onClick={() => setIsRejectModalOpen(true)}
-                    disabled={isSubmitting}
-                    icon={XCircle}
-                    className="w-fit bg-[#e1447f] hover:bg-[#d63e75]"
-                  >
-                    Reject Quote
+                    Assign Staff
                   </ActionButton>
                 </div>
               </div>
-            </div>
-          )}
+            )
+          }
+
+          {/* Confirm/Reject Buttons - Only show when status is Reviewed or Quoted */}
+          {
+            (nail?.status === "Reviewed" || nail?.status === "Quoted") && (
+              <div className="space-y-4">
+                <SectionHeading
+                  title="Review Actions"
+                  subtitle="Finalize the quoted design by confirming or rejecting it."
+                />
+                <div className="rounded-[24px] border border-[#f4d6e4] bg-[linear-gradient(180deg,#fffafb_0%,#fff5f9_100%)] p-5">
+                  <div className="flex flex-wrap gap-3">
+                    <ActionButton
+                      onClick={() => setIsApproveModalOpen(true)}
+                      disabled={isSubmitting}
+                      icon={CheckCircle2}
+                      className="w-fit bg-[#2fa25f] hover:bg-[#2a9255]"
+                    >
+                      Confirm Quote
+                    </ActionButton>
+                    <ActionButton
+                      onClick={() => setIsRejectModalOpen(true)}
+                      disabled={isSubmitting}
+                      icon={XCircle}
+                      className="w-fit bg-[#e1447f] hover:bg-[#d63e75]"
+                    >
+                      Reject Quote
+                    </ActionButton>
+                  </div>
+                </div>
+              </div>
+            )
+          }
         </div>
-      </Card>
+      </Card >
 
       {/* Reject Modal */}
-      <Modal
+      < Modal
         title={null}
         open={isRejectModalOpen}
         onOk={handleManagerReject}
         onCancel={() => {
           setIsRejectModalOpen(false);
           setRejectReason("");
-        }}
+        }
+        }
         confirmLoading={isSubmitting}
         okText="Reject"
         cancelText="Cancel"
@@ -1207,10 +1764,10 @@ export function CustomerNailDetailPage() {
             className="mt-2"
           />
         </div>
-      </Modal>
+      </Modal >
 
       {/* Approve Quote Modal */}
-      <Modal
+      < Modal
         title={null}
         open={isApproveModalOpen}
         onOk={handleManagerApproveQuote}
@@ -1274,7 +1831,7 @@ export function CustomerNailDetailPage() {
             />
           </div>
         </div>
-      </Modal>
+      </Modal >
 
       <Modal
         title={null}
@@ -1391,11 +1948,6 @@ export function CustomerNailDetailPage() {
                 <p className="text-sm text-[#c08aa4]">No staff available.</p>
               ) : (
                 staffList.map((staff) => {
-                  const skills = getStaffSkills(staff);
-                  const isQualified = skills.A >= skillReqs.A &&
-                    skills.B >= skillReqs.B &&
-                    skills.C >= skillReqs.C &&
-                    skills.D >= skillReqs.D;
                   return (
                     <div
                       key={staff.staffId}
@@ -1424,15 +1976,23 @@ export function CustomerNailDetailPage() {
                             ) : null}
                           </div>
 
-                          {/* Skill verification display */}
-                          <div className="mt-2 flex items-center gap-1.5 flex-wrap">
-                            <span className={`inline-flex rounded px-1.5 py-0.5 text-[9px] font-bold ${isQualified ? "bg-[#eaf9ee] text-[#2fa25f]" : "bg-[#fff0f6] text-[#ea4f93]"}`}>
-                              {isQualified ? "Qualified ✓" : "Needs Training ⚠"}
-                            </span>
-                            <span className="text-[9px] text-[#9c788e]">
-                              Skills: A:{skills.A} B:{skills.B} C:{skills.C} D:{skills.D}
-                            </span>
-                          </div>
+                          {/* Real skills display */}
+                          {staff.skills && staff.skills.length > 0 ? (
+                            <div className="mt-2.5 flex flex-wrap gap-1.5">
+                              {staff.skills.map((sk) => (
+                                <span
+                                  key={sk.nailArtistSkillId || sk.skillTypeName}
+                                  className="inline-flex items-center gap-0.5 rounded-full bg-[#fdf2f8] border border-[#fbe5ee] px-2 py-0.5 text-[9px] font-extrabold text-[#db2777] shadow-[0_2px_6px_rgba(219,39,119,0.02)]"
+                                >
+                                  {sk.skillTypeName}: {sk.level}★
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="mt-2.5 text-[9px] italic text-[#c08aa4]">
+                              No skills registered
+                            </div>
+                          )}
 
                           <div className="mt-3 space-y-1.5">
                             <div className="flex items-center gap-2 text-xs text-[#7f6478]">
@@ -1454,7 +2014,7 @@ export function CustomerNailDetailPage() {
           )}
         </div>
       </Modal>
-    </div>
+    </div >
   );
 }
 

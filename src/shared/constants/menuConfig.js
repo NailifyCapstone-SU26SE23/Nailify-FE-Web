@@ -134,6 +134,20 @@ export const MENU_CONFIG = {
       badge: "24",
     },
     {
+      key: "receptionist-queue",
+      label: "Walk-In Queue",
+      to: ROUTES.receptionistQueue,
+      icon: "users",
+      section: "Main",
+    },
+    {
+      key: "receptionist-waitlist",
+      label: "Salon Waitlist",
+      to: ROUTES.receptionistWaitlist,
+      icon: "support",
+      section: "Main",
+    },
+    {
       key: "receptionist-customers",
       label: "Customers",
       icon: "users",
@@ -179,6 +193,20 @@ export const MENU_CONFIG = {
       icon: "calendar",
       section: "Main",
       badge: "16",
+    },
+    {
+      key: "manager-waitlist",
+      label: "Salon Waitlist",
+      to: ROUTES.managerWaitlist,
+      icon: "support",
+      section: "Main",
+    },
+    {
+      key: "manager-queue",
+      label: "Walk-In Queue",
+      to: ROUTES.managerQueue,
+      icon: "users",
+      section: "Main",
     },
     {
       key: "manager-customer-nails",
