@@ -226,7 +226,7 @@ function formatVND(amount) {
   if (amount === null || amount === undefined) return "N/A";
   return new Intl.NumberFormat('vi-VN', {
     style: 'currency',
-    currency: 'VNĐ'
+    currency: 'VND'
   }).format(amount);
 }
 
@@ -491,7 +491,7 @@ export function ManagerBookingListPage() {
             const customer = await fetchUserById(booking.customerId);
             return { bookingId: booking.id, customer };
           } catch (err) {
-            console.warn(`Failed to fetch customer for booking ${booking.id}:`, err);
+            console.warn(`Failed to fetch customer for booking:`, err);
             return { bookingId: booking.id, customer: null };
           }
         });
