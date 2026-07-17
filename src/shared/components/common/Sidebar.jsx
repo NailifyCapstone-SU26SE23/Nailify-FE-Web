@@ -14,6 +14,7 @@ import {
   Store,
   Users,
   X,
+  Clock3,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { PropTypes } from "../../utils/propTypes";
@@ -29,6 +30,7 @@ const ICON_MAP = {
   support: MessageSquareWarning,
   tasks: ListTodo,
   users: Users,
+  clock: Clock3,
 };
 
 function SidebarItem({ item, collapsed }) {

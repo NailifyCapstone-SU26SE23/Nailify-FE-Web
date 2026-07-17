@@ -7,6 +7,7 @@ import { ReceptionistBookingDetailPage } from "../../features/receptionist/booki
 import { ReceptionistCheckoutPaymentPage } from "../../features/receptionist/payments";
 import { ReceptionistCustomerCreatePage } from "../../features/receptionist/customers";
 import { ReceptionistWalkInBookingCreatePage } from "../../features/receptionist/walk-in-bookings";
+import { ReceptionistBreaksPage } from "../../features/core/breaks/pages/ReceptionistBreaksPage";
 import { AuthGuard } from "../../shared/components/guards/AuthGuard";
 import { RoleGuard } from "../../shared/components/guards/RoleGuard";
 import { ROLES } from "../../shared/constants/roles";
@@ -54,6 +55,10 @@ export const receptionistRoutes = [
       {
         path: ROUTES.receptionistBookingCheckout,
         element: <ReceptionistCheckoutPaymentPage />,
+      },
+      {
+        path: ROUTES.receptionistBreaks,
+        element: <ReceptionistBreaksPage />,
       },
     ],
   },

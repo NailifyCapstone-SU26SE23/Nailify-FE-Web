@@ -1,7 +1,6 @@
 import {
   ArrowLeft,
   BadgePercent,
-  CalendarRange,
   ImagePlus,
   Pencil,
   Save,
@@ -9,17 +8,20 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
-import { ROUTES } from "../../../../shared/constants/routes";
+import { ROUTES, getAdminPromotionDetailRoute } from "../../../../shared/constants/routes";
 import {
   deleteAdminPromotion,
   fetchAdminPromotionDetail,
   fetchPromotionCategoryOptions,
   fetchPromotionCategoryTypeOptions,
   fetchPromotionNailDesignOptions,
+  fetchPromotionsByCategory,
+  fetchPromotionsByCategoryType,
+  fetchPromotionsByNailDesign,
   PROMOTION_DISCOUNT_TYPE_OPTIONS,
   PROMOTION_SCOPE_OPTIONS,
   PROMOTION_TYPE_OPTIONS,
@@ -157,6 +159,8 @@ export function PromotionDetailPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
+  const [relatedPromotions, setRelatedPromotions] = useState([]);
+  const [isLoadingRelatedPromotions, setIsLoadingRelatedPromotions] = useState(false);
   const [lookupOptions, setLookupOptions] = useState({
     categories: [],
     categoryTypes: [],
@@ -221,20 +225,64 @@ export function PromotionDetailPage() {
     };
   }, [promotionId]);
 
-  const summaryItems = useMemo(() => {
-    if (!promotion || !draft) {
-      return [];
-    }
+  useEffect(() => {
+    let isMounted = true;
 
-    return [
-      ["Promotion ID", promotion.promotionId],
-      ["Scope", draft.scope || "--"],
-      ["Type", draft.type || "--"],
-      ["Discount", draft.discountValue ? `${draft.discountValue} (${draft.discountType || "--"})` : "--"],
-      ["Date Range", draft.startDate && draft.endDate ? `${draft.startDate} → ${draft.endDate}` : "--"],
-      ["Status", promotion.status || (promotion.isActive ? "Active" : "Inactive")],
-    ];
-  }, [draft, promotion]);
+    const loadRelatedPromotions = async () => {
+      if (!promotion) {
+        setRelatedPromotions([]);
+        return;
+      }
+
+      const relationConfig = {
+        Category: {
+          id: promotion.categoryId,
+          load: fetchPromotionsByCategory,
+        },
+        CategoryType: {
+          id: promotion.categoryTypeId,
+          load: fetchPromotionsByCategoryType,
+        },
+        NailDesign: {
+          id: promotion.nailDesignId,
+          load: fetchPromotionsByNailDesign,
+        },
+      }[promotion.scope];
+
+      if (!relationConfig?.id || !relationConfig?.load) {
+        setRelatedPromotions([]);
+        return;
+      }
+
+      setIsLoadingRelatedPromotions(true);
+
+      try {
+        const items = await relationConfig.load(relationConfig.id);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setRelatedPromotions(
+          items.filter((item) => Number(item?.promotionId || 0) !== Number(promotion.promotionId || 0)),
+        );
+      } catch {
+        if (isMounted) {
+          setRelatedPromotions([]);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingRelatedPromotions(false);
+        }
+      }
+    };
+
+    void loadRelatedPromotions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [promotion]);
 
   const handleFieldChange = (field, value) => {
     setDraft((current) => ({
@@ -378,6 +426,30 @@ export function PromotionDetailPage() {
           </Link>
           <div>
             <h1 className="text-2xl font-black tracking-tight text-[#cf3d74]">Promotion Detail</h1>
+
+          {promotion.scope !== "All" ? (
+            <PanelCard title="Related Promotions" icon={Tag}>
+              {isLoadingRelatedPromotions ? (
+                <p className="text-sm font-medium text-slate-500">Loading related promotions...</p>
+              ) : relatedPromotions.length > 0 ? (
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  {relatedPromotions.map((item) => (
+                    <Link
+                      key={item.promotionId}
+                      to={getAdminPromotionDetailRoute(item.promotionId)}
+                      className="rounded-2xl border border-rose-100 bg-[#fff8fb] p-4 transition hover:border-[#cf3d74] hover:bg-white"
+                    >
+                      <p className="text-sm font-bold text-slate-800">{item.name}</p>
+                      <p className="mt-1 text-xs text-slate-500">{item.type} · {item.scope}</p>
+                      <p className="mt-2 text-[11px] font-semibold text-rose-500">{item.status || (item.isActive ? "Active" : "Inactive")}</p>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm font-medium text-slate-500">No related promotions found for this scope.</p>
+              )}
+            </PanelCard>
+          ) : null}
             <p className="text-xs font-medium text-slate-400">Review, edit, and delete this promotion from one page.</p>
           </div>
         </div>
