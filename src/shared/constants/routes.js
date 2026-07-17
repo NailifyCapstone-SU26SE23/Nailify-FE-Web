@@ -22,11 +22,13 @@ export const ROUTES = {
   staffCustomerNails: "/staff/customer-nails",
   staffCustomerNailDetail: "/staff/customer-nails/:customerNailId",
   staffWaitting: "/staff/waitting",
+  staffBreaks: "/staff/breaks",
   receptionistBookings: "/receptionist/bookings",
   receptionistBookingsCreate: "/receptionist/bookings/create",
   receptionistBookingDetail: "/receptionist/bookings/:bookingId",
   receptionistBookingCheckout: "/receptionist/bookings/:bookingId/checkout",
   receptionistCustomersCreate: "/receptionist/customers/create",
+  receptionistBreaks: "/receptionist/breaks",
 
   // Manager routes
   managerRoot: "/manager",

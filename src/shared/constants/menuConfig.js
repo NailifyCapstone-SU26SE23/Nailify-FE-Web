@@ -101,6 +101,13 @@ export const MENU_CONFIG = {
       section: "Main",
     },
     {
+      key: "staff-breaks",
+      label: "Breaks",
+      to: ROUTES.staffBreaks,
+      icon: "clock",
+      section: "Main",
+    },
+    {
       key: "staff-customers",
       label: "Customers",
       icon: "users",
@@ -132,6 +139,13 @@ export const MENU_CONFIG = {
       icon: "calendar",
       section: "Main",
       badge: "24",
+    },
+    {
+      key: "receptionist-breaks",
+      label: "Breaks",
+      to: ROUTES.receptionistBreaks,
+      icon: "clock",
+      section: "Main",
     },
     {
       key: "receptionist-customers",

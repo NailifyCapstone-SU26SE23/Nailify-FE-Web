@@ -53,6 +53,18 @@ function normalizeDateTime(value) {
   return String(value || "").trim();
 }
 
+function normalizePromotionList(data) {
+  if (Array.isArray(data)) {
+    return data.map(normalizePromotion);
+  }
+
+  if (Array.isArray(data?.items)) {
+    return data.items.map(normalizePromotion);
+  }
+
+  return [];
+}
+
 export const PROMOTION_TYPE_OPTIONS = [
   "Automatic",
   "Voucher",
@@ -308,4 +320,49 @@ export async function fetchPromotionNailDesignOptions() {
   }
 
   return options.filter((item) => item.value > 0);
+}
+
+export async function fetchPromotionsByCategory(categoryId) {
+  const normalizedCategoryId = Number(categoryId || 0);
+
+  if (!Number.isInteger(normalizedCategoryId) || normalizedCategoryId <= 0) {
+    return [];
+  }
+
+  const response = await axiosClient.get(`/Promotions/by-category/${normalizedCategoryId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  const data = unwrapResponse(response, "Failed to load promotions by category.");
+  return normalizePromotionList(data);
+}
+
+export async function fetchPromotionsByCategoryType(categoryTypeId) {
+  const normalizedCategoryTypeId = Number(categoryTypeId || 0);
+
+  if (!Number.isInteger(normalizedCategoryTypeId) || normalizedCategoryTypeId <= 0) {
+    return [];
+  }
+
+  const response = await axiosClient.get(`/Promotions/by-category-type/${normalizedCategoryTypeId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  const data = unwrapResponse(response, "Failed to load promotions by category type.");
+  return normalizePromotionList(data);
+}
+
+export async function fetchPromotionsByNailDesign(nailDesignId) {
+  const normalizedNailDesignId = Number(nailDesignId || 0);
+
+  if (!Number.isInteger(normalizedNailDesignId) || normalizedNailDesignId <= 0) {
+    return [];
+  }
+
+  const response = await axiosClient.get(`/Promotions/by-nail-design/${normalizedNailDesignId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  const data = unwrapResponse(response, "Failed to load promotions by nail design.");
+  return normalizePromotionList(data);
 }

@@ -1752,8 +1752,8 @@ export function StaffServiceSessionPage() {
 
   const resolvedProcedureLoadError = procedureLoadError && !bookingProcedures.length ? procedureLoadError : "";
   const areAllProceduresCompleted =
-    procedureChecklist.length > 0
-    && procedureChecklist.every((procedure) => isProcedureCompletedStatus(procedure.status));
+    procedureChecklist.length === 0
+    || procedureChecklist.every((procedure) => isProcedureCompletedStatus(procedure.status));
 
   if (!data) {
     return <Navigate to={ROUTES.staffBookings} replace />;
