@@ -2346,13 +2346,13 @@ export function StaffNailDesignStudioPage() {
           customerNailRequestId: null,
           customerNailId: null,
         }]).map((item) => ({
-        nailVariantId: nextNailVariantId,
-        serviceId: toNullableUuid(item?.serviceId),
-        shapeMethodConfigId: null,
-        customerNailId: nextCustomerNailId,
-        customerNailRequestId: null,
-        quantity: Number(item?.quantity || 1) || 1,
-      }));
+          nailVariantId: nextNailVariantId,
+          serviceId: toNullableUuid(item?.serviceId),
+          shapeMethodConfigId: null,
+          customerNailId: nextCustomerNailId,
+          customerNailRequestId: null,
+          quantity: Number(item?.quantity || 1) || 1,
+        }));
       const preservedServiceItems = existingServiceItems
         .map((item) => buildServiceOnlyBookingItem(item))
         .filter((item) => item.serviceId);
@@ -2581,8 +2581,8 @@ export function StaffNailDesignStudioPage() {
                   <h2 className="text-sm font-extrabold text-[#38253a]">Layer-Based Custom Builder</h2>
                   <span
                     className={`rounded-full border px-3 py-1 text-[10px] font-bold ${selectedVariantId
-                        ? "border-orange-200 bg-orange-100 text-orange-600"
-                        : "border-green-200 bg-green-100 text-green-600"
+                      ? "border-orange-200 bg-orange-100 text-orange-600"
+                      : "border-green-200 bg-green-100 text-green-600"
                       }`}
                   >
                     {selectedVariantId ? "Variant Selected" : "Customizing"}

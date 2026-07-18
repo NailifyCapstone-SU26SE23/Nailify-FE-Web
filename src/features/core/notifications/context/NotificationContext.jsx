@@ -54,30 +54,40 @@ export function NotificationProvider({ children }) {
     });
 
     // Display a beautiful real-time toast
-    toast(
-      (t) => (
-        <div className="flex flex-col gap-1">
-          <p className="font-extrabold text-sm text-[#3f2b3f]">{notificationItem.title}</p>
-          <p className="text-xs text-[#69708a]">{notificationItem.message}</p>
+    toast.custom((t) => (
+      <div
+        className={`${
+          t.visible ? "animate-enter" : "animate-leave"
+        } max-w-md w-full bg-white shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-2xl pointer-events-auto flex ring-1 ring-gray-100 p-4 items-start gap-4 transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.16)] cursor-pointer`}
+        onClick={() => toast.dismiss(t.id)}
+      >
+        <div className="flex-shrink-0 mt-0.5">
+          <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-pink-100 to-rose-100 flex items-center justify-center border border-pink-200/50 shadow-inner">
+            <span className="text-lg">🔔</span>
+          </div>
         </div>
-      ),
-      {
-        icon: "🔔",
-        duration: 5000,
-        style: {
-          borderRadius: "16px",
-          background: "#fff",
-          color: "#3f2b3f",
-          border: "1px solid #f1cddd",
-          boxShadow: "0 12px 28px rgba(63, 43, 63, 0.12)",
-        },
-      }
-    );
+        <div className="flex-1 w-0">
+          <p className="text-[15px] font-bold text-gray-900 leading-tight tracking-tight">
+            {notificationItem.title}
+          </p>
+          <p className="mt-1.5 text-[13px] text-gray-500 leading-snug line-clamp-2">
+            {notificationItem.message}
+          </p>
+        </div>
+        <div className="flex-shrink-0 flex items-center justify-center">
+            <div className="h-8 w-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors text-gray-400 hover:text-gray-600">
+                <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+            </div>
+        </div>
+      </div>
+    ), { duration: 5000 });
   };
 
   // Setup connection monitoring effect
   useEffect(() => {
-    const checkAuthAndConnect = () => {
+    const checkAuthAndConnect = async () => {
       const session = loadAuthSession();
       const token = session?.accessToken || session?.token || null;
 
@@ -85,7 +95,7 @@ export function NotificationProvider({ children }) {
       if (!token && currentTokenRef.current) {
         console.log("NotificationContext: User logged out. Disconnecting SignalR.");
         currentTokenRef.current = null;
-        notificationSignalRService.stopConnection();
+        await notificationSignalRService.stopConnection();
         setConnectionStatus("disconnected");
         setNotifications([]); // Clear notifications on logout
         return;
@@ -93,29 +103,34 @@ export function NotificationProvider({ children }) {
 
       // User logged in or token refreshed
       if (token && token !== currentTokenRef.current) {
+        if (isConnectingRef.current) return;
+        
         console.log("NotificationContext: User session detected. Connecting/Reconnecting SignalR.");
         currentTokenRef.current = token;
-        
-        if (isConnectingRef.current) return;
         isConnectingRef.current = true;
-
         setConnectionStatus("connecting");
         
-        notificationSignalRService.stopConnection();
-        notificationSignalRService.startConnection({
-          onNotificationReceived: (notification) => {
-            handleIncomingNotification(notification);
-          },
-          onReconnected: () => {
+        try {
+            await notificationSignalRService.stopConnection();
+            await notificationSignalRService.startConnection({
+                onNotificationReceived: (notification) => {
+                    handleIncomingNotification(notification);
+                },
+                onReconnected: () => {
+                    setConnectionStatus("connected");
+                },
+                onDisconnected: () => {
+                    setConnectionStatus("disconnected");
+                }
+            });
             setConnectionStatus("connected");
-          },
-          onDisconnected: () => {
+        } catch (error) {
+            console.error("SignalR Connection failed:", error);
             setConnectionStatus("disconnected");
-          }
-        });
-
-        setConnectionStatus("connected");
-        isConnectingRef.current = false;
+            currentTokenRef.current = null; // allow retry
+        } finally {
+            isConnectingRef.current = false;
+        }
       }
     };
 
@@ -127,7 +142,11 @@ export function NotificationProvider({ children }) {
 
     return () => {
       clearInterval(intervalId);
+      // We don't await this in cleanup, but we can call it.
+      // In strict mode, it's better to let the next mount handle the re-connection 
+      // cleanly by awaiting the stop in `checkAuthAndConnect` 
       notificationSignalRService.stopConnection();
+      currentTokenRef.current = null;
     };
   }, []);
 

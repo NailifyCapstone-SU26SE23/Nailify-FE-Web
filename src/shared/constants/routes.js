@@ -3,6 +3,7 @@ export const ROUTES = {
   // Public routes
   root: "/",
   login: "/login",
+  paymentStatus: "/payment-status",
 
   // Staff routes
   staffRoot: "/staff",
@@ -42,6 +43,10 @@ export const ROUTES = {
   managerStaffArtistUpdate: "/manager/staff-artists/:staffId",
   managerCustomerNails: "/manager/customer-nails",
   managerCustomerNailDetail: "/manager/customer-nails/:customerNailId",
+  managerWaitlist: "/manager/waitlist",
+  managerQueue: "/manager/queue",
+  receptionistQueue: "/receptionist/queue",
+  receptionistWaitlist: "/receptionist/waitlist",
 
   // Admin routes
   adminRoot: "/admin",
