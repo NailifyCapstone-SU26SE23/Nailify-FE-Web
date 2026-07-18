@@ -33,6 +33,7 @@ import {
   manualCheckInReceptionistBooking,
   updateReceptionistProcedureArtist,
 } from "../services/receptionistBookingService";
+import { createPayment } from "../../payments/services/receptionistPaymentService";
 
 function formatCurrency(value) {
   const amount = Number(value);
@@ -673,30 +674,23 @@ export function ReceptionistBookingDetailPage() {
   }, [bookingId, isManualCheckInAllowed, isManualCheckInSubmitting]);
 
   const handleCheckout = useCallback(async () => {
-    if (!bookingId || !actionAvailability.canCheckout || isCheckoutSubmitting) {
+    if (!bookingId || !actionAvailability.canCheckout) {
       return;
     }
 
-    setIsCheckoutSubmitting(true);
-
     try {
-      const updatedBooking = await checkoutReceptionistBooking(bookingId);
-      setBooking(updatedBooking);
-      toast.success("Checkout completed successfully.");
-      navigate(getReceptionistBookingCheckoutRoute(bookingId), {
-        state: {
-          booking: updatedBooking,
-          customerProfile,
-        },
-      });
-    } catch (actionError) {
-      const message =
-        actionError instanceof Error ? actionError.message : "Failed to check out booking.";
-      toast.error(message);
-    } finally {
-      setIsCheckoutSubmitting(false);
+      const response = await createPayment(bookingId);
+      const paymentUrl = response?.data?.paymentUrl || response?.paymentUrl;
+      
+      if (paymentUrl) {
+        window.location.href = paymentUrl;
+      } else {
+        toast.error("Không tìm thấy link thanh toán.");
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Có lỗi xảy ra khi tạo thanh toán.");
     }
-  }, [actionAvailability.canCheckout, bookingId, customerProfile, isCheckoutSubmitting, navigate]);
+  }, [actionAvailability.canCheckout, bookingId]);
 
   const handlePrimaryHeaderAction = useCallback(async () => {
     if (actionAvailability.canCheckout) {

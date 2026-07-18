@@ -1,9 +1,9 @@
 import { motion } from "framer-motion";
 import dayjs from "dayjs";
-import { 
-  CheckCheck, 
-  Trash2, 
-  X, 
+import {
+  CheckCheck,
+  Trash2,
+  X,
   BellOff,
   Wifi,
   WifiOff
@@ -11,13 +11,13 @@ import {
 import { useNotifications } from "../context/NotificationContext";
 
 export function NotificationDropdown({ isOpen, onClose }) {
-  const { 
-    notifications, 
-    unreadCount, 
+  const {
+    notifications,
+    unreadCount,
     connectionStatus,
-    markAsRead, 
-    markAllAsRead, 
-    deleteNotification, 
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
     clearAll,
     receiveMockNotification // for debugging / user testing
   } = useNotifications();
@@ -29,7 +29,7 @@ export function NotificationDropdown({ isOpen, onClose }) {
     const date = dayjs(isoString);
     if (!date.isValid()) return "";
     const now = dayjs();
-    
+
     if (now.diff(date, "minute") < 1) {
       return "Vừa xong";
     }
@@ -63,11 +63,11 @@ export function NotificationDropdown({ isOpen, onClose }) {
   return (
     <>
       {/* Click-outside backdrop wrapper */}
-      <div 
-        className="fixed inset-0 z-40" 
-        onClick={onClose} 
+      <div
+        className="fixed inset-0 z-40"
+        onClick={onClose}
       />
-      
+
       <motion.div
         initial={{ opacity: 0, y: 15, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -113,7 +113,7 @@ export function NotificationDropdown({ isOpen, onClose }) {
                 </button>
               </>
             )}
-            
+
             {/* Quick action helper to test/mock notifications */}
             <button
               onClick={() => receiveMockNotification("Thông báo thử nghiệm", "Đây là tin nhắn thông báo demo thời gian thực!")}
@@ -142,11 +142,10 @@ export function NotificationDropdown({ isOpen, onClose }) {
               <div
                 key={item.id}
                 onClick={() => !item.isRead && markAsRead(item.id)}
-                className={`group relative p-4 flex gap-3 transition cursor-pointer ${
-                  item.isRead 
-                    ? "bg-white hover:bg-[#fff9fc]" 
-                    : "bg-[#fffcfd] hover:bg-[#fff9fc]"
-                }`}
+                className={`group relative p-4 flex gap-3 transition cursor-pointer ${item.isRead
+                  ? "bg-white hover:bg-[#fff9fc]"
+                  : "bg-[#fffcfd] hover:bg-[#fff9fc]"
+                  }`}
               >
                 {/* Unread indicator dot */}
                 {!item.isRead && (
@@ -165,6 +164,15 @@ export function NotificationDropdown({ isOpen, onClose }) {
                   <p className="text-xs text-slate-500 mt-1.5 leading-relaxed break-words font-medium">
                     {item.message}
                   </p>
+                  {item.type === "AppointmentNextStep" && item.data?.appointmentId && (
+                    <Link
+                      to={`/thanh-toan-thanh-cong/${item.data.appointmentId}`}
+                      onClick={onClose} // Close dropdown when navigating
+                      className="inline-block mt-2 px-3 py-1 bg-gradient-to-r from-[#ea4f93] to-[#f387b0] text-white text-[10px] font-bold rounded-xl hover:shadow-[0_4px_12px_rgba(234,79,147,0.4)] transition duration-300"
+                    >
+                      Xem chi tiết đơn hàng
+                    </Link>
+                  )}
                 </div>
 
                 {/* Delete button */}
