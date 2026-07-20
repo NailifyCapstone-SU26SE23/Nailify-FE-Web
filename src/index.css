@@ -16,12 +16,10 @@
   --color-accent-start: #f25eb5;
   --color-accent-mid: #ffa26f;
   --color-accent-end: #ffdb5a;
-  --gradient-accent: linear-gradient(
-    90deg,
-    var(--color-accent-start) 0%,
-    var(--color-accent-mid) 56%,
-    var(--color-accent-end) 100%
-  );
+  --gradient-accent: linear-gradient(90deg,
+      var(--color-accent-start) 0%,
+      var(--color-accent-mid) 56%,
+      var(--color-accent-end) 100%);
 }
 
 html {

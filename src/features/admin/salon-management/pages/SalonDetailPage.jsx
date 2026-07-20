@@ -301,13 +301,16 @@ export function SalonDetailPage() {
       variants={staggerContainer}
       className="mx-auto w-full min-w-0 max-w-[1300px]"
     >
+      <style>{`
+        .nailify-display { font-family: "Cormorant Garamond", serif; }
+      `}</style>
       <header className="mb-6 flex flex-col gap-5">
         <motion.div variants={fadeInUp} className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
-            <h1 className="text-[28px] font-black tracking-tight text-[#2d1b35]">
+            <h1 className="nailify-display text-[32px] font-semibold text-[#3f2034]">
               {salonDetail?.name || "Salon Detail"}
             </h1>
-            <p className="mt-2 text-[13px] font-medium text-[#a88a9f]">
+            <p className="mt-1 text-sm text-[#a6869a]">
               Review branch information and manage this salon
             </p>
           </div>
