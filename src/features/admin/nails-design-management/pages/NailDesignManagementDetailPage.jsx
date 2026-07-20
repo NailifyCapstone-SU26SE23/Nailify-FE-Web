@@ -213,8 +213,32 @@ function parseVariantColorConfig(colorJson) {
   try {
     return JSON.parse(rawValue);
   } catch {
-    return null;
+    return rawValue;
   }
+}
+
+function getColorGradientStops(colorConfig) {
+  if (!colorConfig) {
+    return [];
+  }
+
+  if (Array.isArray(colorConfig)) {
+    return colorConfig;
+  }
+
+  if (Array.isArray(colorConfig.gradient)) {
+    return colorConfig.gradient;
+  }
+
+  if (Array.isArray(colorConfig.gradient?.stops)) {
+    return colorConfig.gradient.stops;
+  }
+
+  if (Array.isArray(colorConfig.gradientStops)) {
+    return colorConfig.gradientStops;
+  }
+
+  return [];
 }
 
 function buildFingerColorStyle(colorConfig, fingerIndex) {
@@ -222,36 +246,45 @@ function buildFingerColorStyle(colorConfig, fingerIndex) {
     return { backgroundColor: "#f3f4f6" };
   }
 
-  if (colorConfig.mode === "solid" && colorConfig.color) {
-    return { backgroundColor: colorConfig.color };
+  if (typeof colorConfig === "string") {
+    return { backgroundColor: colorConfig };
   }
 
-  if (
-    colorConfig.mode === "gradient" &&
-    colorConfig.gradient &&
-    colorConfig.gradient.enabled &&
-    Array.isArray(colorConfig.gradient.stops) &&
-    colorConfig.gradient.stops.length > 1
-  ) {
-    return { background: `linear-gradient(to bottom, ${colorConfig.gradient.stops.join(", ")})` };
+  if (Array.isArray(colorConfig)) {
+    const color = String(colorConfig[fingerIndex - 1] || colorConfig[fingerIndex] || colorConfig[0] || "#f3f4f6").trim();
+    return { backgroundColor: color || "#f3f4f6" };
+  }
+
+  const gradientStops = getColorGradientStops(colorConfig);
+  if (gradientStops.length > 1) {
+    return { background: `linear-gradient(to bottom, ${gradientStops.join(", ")})` };
   }
 
   if (colorConfig.mode === "perFinger" && Array.isArray(colorConfig.fingers)) {
     const finger = colorConfig.fingers.find((item) => Number(item?.fingerIndex) === Number(fingerIndex));
 
     if (finger) {
-      if (finger.gradient?.enabled && Array.isArray(finger.gradient.stops) && finger.gradient.stops.length > 1) {
-        return { background: `linear-gradient(to bottom, ${finger.gradient.stops.join(", ")})` };
+      const fingerStops = getColorGradientStops(finger);
+      if (fingerStops.length > 1) {
+        return { background: `linear-gradient(to bottom, ${fingerStops.join(", ")})` };
       }
 
-      if (finger.color) {
-        return { backgroundColor: finger.color };
+      if (finger.mode === "gradient" && finger.primaryColor && finger.secondaryColor) {
+        return { background: `linear-gradient(to bottom, ${finger.primaryColor}, ${finger.secondaryColor})` };
+      }
+
+      if (finger.color || finger.primaryColor) {
+        return { backgroundColor: finger.color || finger.primaryColor };
       }
     }
   }
 
   if (colorConfig.color) {
     return { backgroundColor: colorConfig.color };
+  }
+
+  if (colorConfig.primaryColor) {
+    return { backgroundColor: colorConfig.primaryColor };
   }
 
   return { backgroundColor: "#f3f4f6" };
@@ -316,8 +349,8 @@ function NailVariantHandPreview({ variantDetail, compact = false, showShapeOverl
     ? {
       maskImage: `url(${variantDetail.nailShape.imageUrl})`,
       WebkitMaskImage: `url(${variantDetail.nailShape.imageUrl})`,
-      maskSize: "100% 100%",
-      WebkitMaskSize: "100% 100%",
+      maskSize: "cover",
+      WebkitMaskSize: "cover",
       maskRepeat: "no-repeat",
       WebkitMaskRepeat: "no-repeat",
       maskPosition: "center",
@@ -328,7 +361,7 @@ function NailVariantHandPreview({ variantDetail, compact = false, showShapeOverl
     ? "rounded-[18px] border border-[#f7d7e5] bg-[radial-gradient(circle_at_top,#fffdfd_0%,#fff6fb_58%,#fff2f8_100%)] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]"
     : "rounded-[24px] border border-[#f7d7e5] bg-[radial-gradient(circle_at_top,#fffdfd_0%,#fff6fb_58%,#fff2f8_100%)] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]";
   const deckClassName = compact
-    ? "flex min-h-[160px] flex-wrap items-center justify-center gap-2"
+    ? "flex min-h-[180px] flex-wrap items-center justify-center gap-3"
     : "flex min-h-[300px] flex-wrap items-center justify-center gap-5 lg:gap-6";
   const fingerClassName = compact ? "flex flex-col items-center gap-2" : "flex flex-col items-center gap-3.5";
   const fingerGlowClassName = compact
@@ -340,7 +373,7 @@ function NailVariantHandPreview({ variantDetail, compact = false, showShapeOverl
   const glossClassName = compact
     ? "pointer-events-none absolute left-1.5 top-1 h-10 w-1 rounded-full bg-white/45 blur-[0.6px]"
     : "pointer-events-none absolute left-2.5 top-1.5 h-20 w-1.5 animate-pulse rounded-full bg-white/45 blur-[0.7px]";
-  const componentSizeClassName = compact ? "pointer-events-none absolute h-5 w-5 object-contain drop-shadow-[0_4px_8px_rgba(234,79,147,0.18)]" : "pointer-events-none absolute h-9 w-9 object-contain drop-shadow-[0_4px_8px_rgba(234,79,147,0.18)]";
+  const componentSizeClassName = compact ? "pointer-events-none absolute h-7 w-7 object-contain drop-shadow-[0_4px_8px_rgba(234,79,147,0.18)]" : "pointer-events-none absolute h-11 w-11 object-contain drop-shadow-[0_4px_8px_rgba(234,79,147,0.18)]";
   const labelClassName = compact
     ? "rounded-full border border-[#fce6f3] bg-white/90 px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-[0.12em] text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)]"
     : "rounded-full border border-[#fce6f3] bg-white/90 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)]";
@@ -392,6 +425,36 @@ function NailVariantHandPreview({ variantDetail, compact = false, showShapeOverl
                         <div className="pointer-events-none absolute inset-0 h-full w-full bg-[linear-gradient(135deg,rgba(255,255,255,0.3)_0%,rgba(255,255,255,0)_100%)]" />
                       );
                     })()}
+
+                    {fingerComponents.map((componentItem, index) => {
+                      const component = componentItem?.component;
+
+                      if (!component?.imageUrl) {
+                        return null;
+                      }
+
+                      const config = parseComponentConfig(componentItem.configJson);
+                      const scale = Number.isFinite(Number(config?.scale)) ? Number(config.scale) : 1;
+                      const rotation = Number.isFinite(Number(config?.rotation)) ? Number(config.rotation) : 0;
+                      const left = normalizeComponentPosition(componentItem?.posX, 50);
+                      const top = normalizeComponentPosition(componentItem?.posY, 50);
+
+                      return (
+                        <img
+                          key={`${componentItem?.nailComponentId || index}-${finger.fingerIndex}`}
+                          crossOrigin="anonymous"
+                          src={component.imageUrl}
+                          alt={component.name || "component"}
+                          className={componentSizeClassName}
+                          referrerPolicy="no-referrer"
+                          style={{
+                            left: `${left}%`,
+                            top: `${top}%`,
+                            transform: `translate(-50%, -50%) scale(${Math.max(1, scale * 1.25)}) rotate(${rotation}deg)`,
+                          }}
+                        />
+                      );
+                    })}
                   </div>
 
                   {showShapeOverlay && variantDetail?.nailShape?.imageUrl ? (
@@ -403,36 +466,6 @@ function NailVariantHandPreview({ variantDetail, compact = false, showShapeOverl
                       referrerPolicy="no-referrer"
                     />
                   ) : null}
-
-                  {fingerComponents.map((componentItem, index) => {
-                    const component = componentItem?.component;
-
-                    if (!component?.imageUrl) {
-                      return null;
-                    }
-
-                    const config = parseComponentConfig(componentItem.configJson);
-                    const scale = Number.isFinite(Number(config?.scale)) ? Number(config.scale) : 1;
-                    const rotation = Number.isFinite(Number(config?.rotation)) ? Number(config.rotation) : 0;
-                    const left = normalizeComponentPosition(componentItem?.posX, 50);
-                    const top = normalizeComponentPosition(componentItem?.posY, 50);
-
-                    return (
-                      <img
-                        key={`${componentItem?.nailComponentId || index}-${finger.fingerIndex}`}
-                        crossOrigin="anonymous"
-                        src={component.imageUrl}
-                        alt={component.name || "component"}
-                        className={componentSizeClassName}
-                        referrerPolicy="no-referrer"
-                        style={{
-                          left: `${left}%`,
-                          top: `${top}%`,
-                          transform: `translate(-50%, -50%) scale(${scale}) rotate(${rotation}deg)`,
-                        }}
-                      />
-                    );
-                  })}
                 </div>
               </div>
 
@@ -781,9 +814,9 @@ export function NailDesignManagementDetailPage() {
       variants: current.variants.map((variant, variantIndex) =>
         variantIndex === index
           ? {
-              ...variant,
-              [field]: nextValue,
-            }
+            ...variant,
+            [field]: nextValue,
+          }
           : variant,
       ),
     }));
@@ -966,42 +999,14 @@ export function NailDesignManagementDetailPage() {
     }
   };
 
-  const handleViewVariant = async (variant) => {
+  const handleViewVariant = (variant) => {
     if (!variant?.nailVariantId) {
       setError("Variant ID is required.");
       return;
     }
 
     setError("");
-    setIsLoadingVariantDetail(true);
-    setIsLoadingVariantProcedures(true);
-    setSelectedVariantDetail({
-      nailVariantId: variant.nailVariantId,
-      name: variant.name,
-      imageUrl: variant.imageUrl,
-      isPlaceholder: true,
-    });
-    setVariantProcedureDraft([]);
-
-    try {
-      const [detail, procedures] = await Promise.all([
-        fetchAdminNailVariantDetail(variant.nailVariantId),
-        fetchProceduresByVariant(variant.nailVariantId),
-      ]);
-      setSelectedVariantDetail(detail);
-      setVariantProcedureDraft(procedures);
-    } catch (detailError) {
-      setSelectedVariantDetail(null);
-      setVariantProcedureDraft([]);
-      setError(
-        detailError instanceof Error
-          ? detailError.message
-          : "Failed to load nail variant detail.",
-      );
-    } finally {
-      setIsLoadingVariantDetail(false);
-      setIsLoadingVariantProcedures(false);
-    }
+    navigate(getAdminNailVariantDetailRoute(designId, variant.nailVariantId));
   };
 
   const updateVariantProcedureDraft = (index, field, value) => {
@@ -1365,10 +1370,6 @@ export function NailDesignManagementDetailPage() {
                                 ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93]"
                                 : `text-[#8c7085] ${index % 3 === 0 ? "border-[#ead8ff] bg-[#f9f4ff]" : index % 3 === 1 ? "border-[#d7f3e0] bg-[#effcf4]" : "border-[#f8e3b3] bg-[#fff8e8]"}`
                                 }`}
-                              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-bold transition ${active
-                                ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93]"
-                                : `text-[#8c7085] ${index % 3 === 0 ? "border-[#ead8ff] bg-[#f9f4ff]" : index % 3 === 1 ? "border-[#d7f3e0] bg-[#effcf4]" : "border-[#f8e3b3] bg-[#fff8e8]"}`
-                                }`}
                             >
                               <span className="text-xs">{active ? "−" : "+"}</span>
                               {option}
@@ -1527,13 +1528,6 @@ export function NailDesignManagementDetailPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setFlashMessage(`Apply variant "${variant.name}" is not connected yet.`)}
-                      className="flex-1 rounded-full bg-[image:var(--gradient-accent)] px-3 py-2 text-xs font-bold text-white"
-                    >
-                      Apply
-                    </button>
-                    <button
-                      type="button"
                       onClick={() => {
                         if (isEditing) {
                           setPendingDeleteVariant(variant);
@@ -1603,10 +1597,7 @@ export function NailDesignManagementDetailPage() {
                       <div key={label} className="flex items-center justify-between gap-3">
                         <span className="text-[#8c7085]">{label}</span>
                         <span
-                          className={`font-semibold ${index >= 3 ? "text-[#ea4f93]" : "text-[#432744]"
-                            }`}
-                          className={`font-semibold ${index >= 3 ? "text-[#ea4f93]" : "text-[#432744]"
-                            }`}
+                          className={`font-semibold ${index >= 3 ? "text-[#ea4f93]" : "text-[#432744]"}`}
                         >
                           {value}
                         </span>
@@ -1630,115 +1621,6 @@ export function NailDesignManagementDetailPage() {
               </div>
             </div>
           </SectionCard>
-
-          {/* <SectionCard
-            title="Required Staff Skills"
-            subtitle=""
-            icon={<Star size={18} />}
-            sectionId="skills-section"
-            sectionRef={skillsRef}
-            highlighted={highlightedSection === "skills"}
-          >
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {formValues.skills.map(([title, subtitle, score, label], index) => (
-                <div key={title} className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
-                  {isEditing ? (
-                    <div className="space-y-3">
-                      <div>
-                        <InputLabel>Skill</InputLabel>
-                        <EditInput value={title} onChange={handleSkillFieldChange(index, "title")} />
-                      </div>
-                      <div>
-                        <InputLabel>Subtitle</InputLabel>
-                        <EditInput
-                          value={subtitle}
-                          onChange={handleSkillFieldChange(index, "subtitle")}
-                        />
-                      </div>
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <div>
-                          <InputLabel>Level Control</InputLabel>
-                          <SkillLevelSlider
-                            value={score}
-                            onChange={handleSkillFieldChange(index, "score")}
-                          />
-                        </div>
-                        <div>
-                          <InputLabel>Label</InputLabel>
-                          <div className="rounded-2xl border border-[#f4d4e2] bg-white px-4 py-3">
-                            <SkillStars count={score} />
-                            <p className="mt-2 text-sm font-semibold text-[#8c7085]">
-                              {SKILL_LEVEL_LABELS[score]}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="h-1.5 rounded-full bg-[#f9d8e5]">
-                        <div
-                          className="h-full rounded-full bg-[linear-gradient(90deg,#ea4f93_0%,#f59f61_55%,#f7d85f_100%)]"
-                          style={{ width: `${score * 20}%` }}
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c694ad]">
-                        {title}
-                      </p>
-                      <p className="mt-1 text-xs text-[#c694ad]">{subtitle}</p>
-                      <div className="mt-3">
-                        <SkillStars count={score} />
-                      </div>
-                      <div className="mt-3 h-1.5 rounded-full bg-[#f9d8e5]">
-                        <div
-                          className="h-full rounded-full bg-[image:var(--gradient-accent)]"
-                          style={{ width: `${score * 20}%` }}
-                        />
-                      </div>
-                      <p className="mt-2 text-xs font-semibold text-[#8c7085]">{label}</p>
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-4 grid gap-3 md:grid-cols-4">
-              <div className="rounded-[18px] bg-[image:var(--gradient-accent)] px-4 py-4 text-center text-white">
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/80">
-                  Required Staff Level
-                </p>
-                <p className="mt-2 text-lg font-extrabold">Advanced Artist</p>
-              </div>
-              {[
-                [formValues.eligibleArtists, "Eligible Artists"],
-                [formValues.expertLevel, "Expert Level"],
-                [formValues.advancedLevel, "Advanced Level"],
-              ].map(([value, label]) => (
-                <div key={label} className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] px-4 py-4 text-center">
-                  {isEditing ? (
-                    <div className="text-left">
-                      <InputLabel>{label}</InputLabel>
-                      <EditInput
-                        value={value}
-                        onChange={handleChange(
-                          label === "Eligible Artists"
-                            ? "eligibleArtists"
-                            : label === "Expert Level"
-                              ? "expertLevel"
-                              : "advancedLevel",
-                        )}
-                      />
-                    </div>
-                  ) : (
-                    <>
-                      <p className="text-2xl font-extrabold text-[#ea4f93]">{value}</p>
-                      <p className="mt-1 text-xs text-[#c694ad]">{label}</p>
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-          </SectionCard> */}
         </div>
 
         <aside className="space-y-4">
@@ -1848,10 +1730,6 @@ export function NailDesignManagementDetailPage() {
                   ? "bg-[image:var(--gradient-accent)] shadow-[0_14px_26px_rgba(236,72,153,0.28)] ring-4 ring-[#ffd8e8]"
                   : "bg-[image:var(--gradient-accent)]"
                   }`}
-                className={`w-full rounded-full px-4 py-2.5 text-left text-xs font-bold text-white transition ${highlightedSection === "hero"
-                  ? "bg-[image:var(--gradient-accent)] shadow-[0_14px_26px_rgba(236,72,153,0.28)] ring-4 ring-[#ffd8e8]"
-                  : "bg-[image:var(--gradient-accent)]"
-                  }`}
               >
                 <PencilLine size={13} className="mr-1.5 inline" />
                 Edit Design
@@ -1861,10 +1739,6 @@ export function NailDesignManagementDetailPage() {
                 onClick={() =>
                   navigate(getAdminNailVariantCreateRoute(designId))
                 }
-                className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${highlightedSection === "design-variants"
-                  ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
-                  : "border-[#f4c6da] bg-white text-[#7e6075]"
-                  }`}
                 className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${highlightedSection === "design-variants"
                   ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
                   : "border-[#f4c6da] bg-white text-[#7e6075]"
@@ -1880,10 +1754,6 @@ export function NailDesignManagementDetailPage() {
                   ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
                   : "border-[#f4c6da] bg-white text-[#7e6075]"
                   }`}
-                className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${highlightedSection === "pricing"
-                  ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
-                  : "border-[#f4c6da] bg-white text-[#7e6075]"
-                  }`}
               >
                 <CircleDollarSign size={13} className="mr-1.5 inline" />
                 Update Price
@@ -1891,10 +1761,6 @@ export function NailDesignManagementDetailPage() {
               <button
                 type="button"
                 onClick={() => scrollToSection(heroSectionRef, { sectionKey: "hero" })}
-                className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${highlightedSection === "hero"
-                  ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
-                  : "border-[#f4c6da] bg-white text-[#7e6075]"
-                  }`}
                 className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${highlightedSection === "hero"
                   ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
                   : "border-[#f4c6da] bg-white text-[#7e6075]"
@@ -1911,10 +1777,6 @@ export function NailDesignManagementDetailPage() {
                     sectionKey: "quick-summary",
                   })
                 }
-                className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${highlightedSection === "quick-summary"
-                  ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
-                  : "border-[#f4c6da] bg-white text-[#7e6075]"
-                  }`}
                 className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${highlightedSection === "quick-summary"
                   ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
                   : "border-[#f4c6da] bg-white text-[#7e6075]"
@@ -2016,11 +1878,11 @@ export function NailDesignManagementDetailPage() {
         item={
           pendingDeleteVariant
             ? {
-                title: pendingDeleteVariant.name,
-                image: pendingDeleteVariant.imageUrl || formValues.previewImage || DESIGN_PREVIEW_IMAGE,
-                meta: pendingDeleteVariant.level,
-                note: pendingDeleteVariant.description || "Selected variant will be removed from this design.",
-              }
+              title: pendingDeleteVariant.name,
+              image: pendingDeleteVariant.imageUrl || formValues.previewImage || DESIGN_PREVIEW_IMAGE,
+              meta: pendingDeleteVariant.level,
+              note: pendingDeleteVariant.description || "Selected variant will be removed from this design.",
+            }
             : null
         }
         warnings={["This permanently removes the variant from backend if the API call succeeds."]}
@@ -2161,55 +2023,6 @@ export function NailDesignManagementDetailPage() {
                 </div>
               </div>
 
-              {/* <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="font-bold text-[#432744]">Accessories / Components</p>
-                  <Pill tone="purple">
-                    {String(selectedVariantDetail?.nailComponents?.length || 0)} items
-                  </Pill>
-                </div>
-                {selectedVariantDetail?.nailComponents?.length ? (
-                  <div className="mt-4 space-y-3">
-                    {selectedVariantDetail.nailComponents.map((item) => (
-                      <div
-                        key={item.id}
-                        className="rounded-[18px] border border-[#f1d7e3] bg-white p-4"
-                      >
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Pill tone="pink">{item.component?.name || "--"}</Pill>
-                          <Pill tone="blue">{item.component?.componentType || "--"}</Pill>
-                          <Pill tone="yellow">{item.component?.priceLabel || "N/A"}</Pill>
-                        </div>
-                        <div className="mt-3 grid gap-2 text-sm md:grid-cols-3 xl:grid-cols-6">
-
-
-                          <div>
-                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">Finger</p>
-                            <p className="mt-1 font-semibold text-[#432744]">{formatApiValue(item.fingerIndex)}</p>
-                          </div>
-                          <div>
-                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">Pos X</p>
-                            <p className="mt-1 font-semibold text-[#432744]">{formatApiValue(item.posX)}</p>
-                          </div>
-                          <div>
-                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">Pos Y</p>
-                            <p className="mt-1 font-semibold text-[#432744]">{formatApiValue(item.posY)}</p>
-                          </div>
-                          <div>
-                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">Config</p>
-                            <p className="mt-1 font-semibold break-all text-[#432744]">
-                              {item.configJson || "N/A"}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="mt-4 text-sm text-[#8c7085]">N/A</p>
-                )}
-              </div> */}
-
               <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
                 <p className="font-bold text-[#432744]">Color Preview</p>
                 {extractVariantColors(selectedVariantDetail?.colorJson).length > 0 ? (
@@ -2249,7 +2062,7 @@ export function NailDesignManagementDetailPage() {
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="font-bold text-[#432744]">Procedure Steps</p>
-                    
+
                   </div>
                   <div className="flex gap-2">
                     <button
