@@ -163,3 +163,22 @@ export async function uploadSalonImage(salonId, imageFile) {
     throw new Error(error.response?.data?.message || error.message || "Failed to upload salon image.");
   }
 }
+
+export async function updateSalonOperatingHours(salonId, operatingHoursData) {
+  const normalizedId = String(salonId || "").trim();
+
+  if (!normalizedId) {
+    throw new Error("Salon ID is required.");
+  }
+
+  try {
+    const response = await axiosClient.put(`/Salons/${normalizedId}/operating-hours`, operatingHoursData, {
+      headers: getAuthHeaders(),
+    });
+
+    return unwrapResponse(response, "Failed to update salon operating hours.");
+  } catch (error) {
+    console.error("Error updating operating hours:", error.response?.data || error);
+    throw new Error(error.response?.data?.message || error.message || "Failed to update salon operating hours.");
+  }
+}
