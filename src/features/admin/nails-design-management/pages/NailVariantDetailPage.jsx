@@ -93,8 +93,32 @@ function parseVariantColorConfig(colorJson) {
   try {
     return JSON.parse(rawValue);
   } catch {
-    return null;
+    return rawValue;
   }
+}
+
+function getColorGradientStops(colorConfig) {
+  if (!colorConfig) {
+    return [];
+  }
+
+  if (Array.isArray(colorConfig)) {
+    return colorConfig;
+  }
+
+  if (Array.isArray(colorConfig.gradient)) {
+    return colorConfig.gradient;
+  }
+
+  if (Array.isArray(colorConfig.gradient?.stops)) {
+    return colorConfig.gradient.stops;
+  }
+
+  if (Array.isArray(colorConfig.gradientStops)) {
+    return colorConfig.gradientStops;
+  }
+
+  return [];
 }
 
 function buildFingerColorStyle(colorConfig, fingerIndex) {
@@ -102,36 +126,78 @@ function buildFingerColorStyle(colorConfig, fingerIndex) {
     return { backgroundColor: "#f9c2d8" };
   }
 
-  if (colorConfig.mode === "solid" && colorConfig.color) {
-    return { backgroundColor: colorConfig.color };
+  if (typeof colorConfig === "string") {
+    return { backgroundColor: colorConfig };
   }
 
-  if (
-    colorConfig.mode === "gradient" &&
-    colorConfig.gradient?.enabled &&
-    Array.isArray(colorConfig.gradient.stops) &&
-    colorConfig.gradient.stops.length > 1
-  ) {
-    return { background: `linear-gradient(to bottom, ${colorConfig.gradient.stops.join(", ")})` };
+  if (Array.isArray(colorConfig)) {
+    const color = String(colorConfig[fingerIndex - 1] || colorConfig[fingerIndex] || colorConfig[0] || "#f9c2d8").trim();
+    return { backgroundColor: color || "#f9c2d8" };
+  }
+
+  const gradientStops = getColorGradientStops(colorConfig);
+  if (gradientStops.length > 1) {
+    return { background: `linear-gradient(to bottom, ${gradientStops.join(", ")})` };
   }
 
   if (colorConfig.mode === "perFinger" && Array.isArray(colorConfig.fingers)) {
     const finger = colorConfig.fingers.find((item) => Number(item?.fingerIndex) === Number(fingerIndex));
 
-    if (finger?.gradient?.enabled && Array.isArray(finger.gradient.stops) && finger.gradient.stops.length > 1) {
-      return { background: `linear-gradient(to bottom, ${finger.gradient.stops.join(", ")})` };
-    }
+    if (finger) {
+      const fingerStops = getColorGradientStops(finger);
+      if (fingerStops.length > 1) {
+        return { background: `linear-gradient(to bottom, ${fingerStops.join(", ")})` };
+      }
 
-    if (finger?.color) {
-      return { backgroundColor: finger.color };
+      if (finger.mode === "gradient" && finger.primaryColor && finger.secondaryColor) {
+        return { background: `linear-gradient(to bottom, ${finger.primaryColor}, ${finger.secondaryColor})` };
+      }
+
+      if (finger.color || finger.primaryColor) {
+        return { backgroundColor: finger.color || finger.primaryColor };
+      }
     }
+  }
+
+  if (colorConfig.mode === "gradient" && colorConfig.primaryColor && colorConfig.secondaryColor) {
+    return { background: `linear-gradient(to bottom, ${colorConfig.primaryColor}, ${colorConfig.secondaryColor})` };
   }
 
   if (colorConfig.color) {
     return { backgroundColor: colorConfig.color };
   }
 
+  if (colorConfig.primaryColor) {
+    return { backgroundColor: colorConfig.primaryColor };
+  }
+
   return { backgroundColor: "#f9c2d8" };
+}
+
+function normalizeComponentPosition(value, fallbackPercent = 50) {
+  const numericValue = Number(value);
+
+  if (!Number.isFinite(numericValue)) {
+    return fallbackPercent;
+  }
+
+  if (Math.abs(numericValue) <= 1) {
+    return Math.max(0, Math.min(100, 50 + numericValue * 100));
+  }
+
+  return Math.max(0, Math.min(100, numericValue));
+}
+
+function parseComponentConfig(configJson) {
+  if (!configJson) {
+    return {};
+  }
+
+  try {
+    return typeof configJson === "string" ? JSON.parse(configJson) : configJson;
+  } catch {
+    return {};
+  }
 }
 
 function getFingerAlignmentClass(fingerName) {
@@ -167,15 +233,15 @@ function NailVariantHandPreview({ variantDetail }) {
 
   const shapeMaskStyle = variantDetail?.nailShape?.imageUrl
     ? {
-        maskImage: `url(${variantDetail.nailShape.imageUrl})`,
-        WebkitMaskImage: `url(${variantDetail.nailShape.imageUrl})`,
-        maskSize: "100% 100%",
-        WebkitMaskSize: "100% 100%",
-        maskRepeat: "no-repeat",
-        WebkitMaskRepeat: "no-repeat",
-        maskPosition: "center",
-        WebkitMaskPosition: "center",
-      }
+      maskImage: `url(${variantDetail.nailShape.imageUrl})`,
+      WebkitMaskImage: `url(${variantDetail.nailShape.imageUrl})`,
+      maskSize: "cover",
+      WebkitMaskSize: "cover",
+      maskRepeat: "no-repeat",
+      WebkitMaskRepeat: "no-repeat",
+      maskPosition: "center",
+      WebkitMaskPosition: "center",
+    }
     : {};
 
   return (
@@ -217,6 +283,38 @@ function NailVariantHandPreview({ variantDetail }) {
 
                       return <div className="pointer-events-none absolute inset-0 h-full w-full bg-[linear-gradient(135deg,rgba(255,255,255,0.3)_0%,rgba(255,255,255,0)_100%)]" />;
                     })()}
+
+                    {(variantDetail?.nailComponents || []).filter((item) => {
+                      const componentFingerIndex = Number(item?.fingerIndex);
+                      return componentFingerIndex === -1 || componentFingerIndex === finger.fingerIndex;
+                    }).map((componentItem, index) => {
+                      const component = componentItem?.component;
+                      if (!component?.imageUrl) {
+                        return null;
+                      }
+
+                      const config = parseComponentConfig(componentItem.configJson);
+                      const scale = Number.isFinite(Number(config?.scale)) ? Number(config.scale) : 1;
+                      const rotation = Number.isFinite(Number(config?.rotation)) ? Number(config.rotation) : 0;
+                      const left = normalizeComponentPosition(componentItem?.posX, 50);
+                      const top = normalizeComponentPosition(componentItem?.posY, 50);
+
+                      return (
+                        <img
+                          key={`${componentItem?.nailComponentId || index}-${finger.fingerIndex}`}
+                          crossOrigin="anonymous"
+                          src={component.imageUrl}
+                          alt={component.name || "component"}
+                          className="pointer-events-none absolute h-12 w-12 object-contain drop-shadow-[0_6px_10px_rgba(234,79,147,0.18)]"
+                          referrerPolicy="no-referrer"
+                          style={{
+                            left: `${left}%`,
+                            top: `${top}%`,
+                            transform: `translate(-50%, -50%) scale(${Math.max(1, scale * 1.25)}) rotate(${rotation}deg)`,
+                          }}
+                        />
+                      );
+                    })}
                   </div>
 
                   {variantDetail?.nailShape?.imageUrl ? (
