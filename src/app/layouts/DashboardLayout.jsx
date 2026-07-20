@@ -104,6 +104,21 @@ function getHeaderContent(pathname, menus) {
         title: "Users",
         description: "Manage customers, staff artists, and salon managers.",
       };
+    case "admin-loyalty-tiers":
+      return {
+        title: "Loyalty Tiers",
+        description: "Manage customer loyalty programs, point systems, and benefits.",
+      };
+    case "admin-quiz":
+      return {
+        title: "Quiz Management",
+        description: "Configure nail styling diagnostic questions, scoring logic, and shape recommendations.",
+      };
+    case "admin-quiz-create":
+      return {
+        title: "Create Quiz Question",
+        description: "Configure a new diagnostic question with multiple choice options and properties.",
+      };
     case "admin-service-pricing":
       return {
         title: "Service Management",
@@ -173,7 +188,7 @@ export function DashboardLayout() {
 
           <section
             data-dashboard-scroll="desktop"
-            className="flex-1 bg-white p-4 shadow-[0_18px_40px_rgba(94,76,62,0.08)] md:p-5 lg:min-h-0 lg:overflow-auto"
+            className="flex-1 bg-white p-4 shadow-[0_18px_40px_rgba(94,76,62,0.08)] md:p-5 min-h-0 overflow-auto"
           >
             <div className="flex min-h-full flex-col">
               <Outlet />

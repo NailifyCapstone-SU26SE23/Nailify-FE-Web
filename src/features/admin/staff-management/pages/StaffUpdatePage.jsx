@@ -1,9 +1,7 @@
 import {
   ArrowLeft,
   BriefcaseBusiness,
-  CalendarDays,
   Mail,
-  MapPin,
   Phone,
   Save,
   ShieldCheck,
@@ -14,41 +12,26 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
+import { Select } from "antd";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { PropTypes } from "../../../../shared/utils/propTypes";
-import { TimePicker } from "../../../../shared/components/ui/TimePicker";
 import { StaffSaveResultModal } from "../components/StaffSaveResultModal";
-import { StaffSkillAssessmentSection } from "../components/StaffSkillAssessmentSection";
 import { ROUTES } from "../../../../shared/constants/routes";
 import {
-  STAFF_CREATE_STATUS_OPTIONS,
-  STAFF_DAYS_OF_WEEK,
-  STAFF_EMPLOYMENT_TYPES,
   STAFF_UPDATE_CHECKLIST,
   STAFF_ROLE_OPTIONS,
-  STAFF_SALON_OPTIONS,
-  STAFF_SKILL_CATEGORIES,
   createEmptyStaffForm,
-  getSpecialtiesFromSkillRatings,
-  getStaffCreateStatusOption,
   getStaffInitials,
   getStaffRoleOption,
-  createDefaultStaffSkillRatings,
 } from "../services/mockStaff";
 import { fetchUserById } from "../../../manager/bookings/services/bookingsService";
 import { fetchAdminSalons } from "../../salon-management/services/salonManagementService";
-import { fetchAdminSkillTypes } from "../../skill-types-management/services/skillTypesManagementService";
-import { fetchNailArtistSkills } from "../../../manager/staff-artist-management/services/nailArtistsService";
-import { updateUser, assignNailArtistSkills } from "../services/staffManagementService";
+import { updateUser } from "../services/staffManagementService";
 
 const inputWrapperClassName =
   "flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5 transition-all duration-300 hover:border-rose-200 hover:bg-[#fff5f9] focus-within:border-rose-400 focus-within:bg-white focus-within:shadow-[0_0_0_3px_rgba(234,79,147,0.15)]";
 const inputClassName =
   "w-full min-w-0 bg-transparent text-[14px] text-slate-800 outline-none placeholder:text-rose-300 font-medium";
-const selectClassName =
-  "w-full rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5 text-[14px] text-slate-800 outline-none font-medium transition-all duration-300 hover:border-rose-200 hover:bg-[#fff5f9] focus:border-rose-400 focus:bg-white focus:shadow-[0_0_0_3px_rgba(234,79,147,0.15)]";
-
-const readOnlyInputClassName = `${inputClassName} cursor-not-allowed text-slate-500`;
 
 function StaffUpdateLoadingState() {
   return (
@@ -100,9 +83,7 @@ export function StaffUpdatePage() {
   const [isNotFound, setIsNotFound] = useState(false);
   const [saveResult, setSaveResult] = useState(null);
   const [formData, setFormData] = useState(createEmptyStaffForm);
-  const [skillTypes, setSkillTypes] = useState([]);
   const [salons, setSalons] = useState([]);
-  const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
   useEffect(() => {
@@ -128,7 +109,6 @@ export function StaffUpdatePage() {
         case "Inactive":
           return "INACTIVE";
         default:
-          // If it's On Leave, map to Active or Inactive? Let's default to Active
           return "ACTIVE";
       }
     };
@@ -140,60 +120,29 @@ export function StaffUpdatePage() {
       setIsNotFound(false);
 
       try {
-        const [userData, salonsData, skillTypesData] = await Promise.all([
+        const [userData, salonsData] = await Promise.all([
           fetchUserById(staffId),
           fetchAdminSalons({ pageSize: 100 }),
-          fetchAdminSkillTypes({ pageNumber: 1, pageSize: 100 }),
         ]);
-
-        console.log("StaffUpdatePage userData (full):", userData);
-        console.log("StaffUpdatePage userData keys:", Object.keys(userData));
-        console.log("StaffUpdatePage salonsData:", salonsData);
-        console.log("StaffUpdatePage skillTypesData:", skillTypesData);
 
         if (!isMounted) {
           return;
         }
 
-        setSkillTypes(skillTypesData.items || []);
         setSalons(salonsData.items || []);
 
-        // Find salon
         const matchingSalon = salonsData?.items?.find(
           (salon) => salon.salonId === userData.salonId || salon.id === userData.salonId
         );
 
-        const fullName = userData.firstName && userData.lastName 
-          ? `${userData.firstName} ${userData.lastName}` 
+        const fullName = userData.firstName && userData.lastName
+          ? `${userData.firstName} ${userData.lastName}`
           : userData.fullName || userData.name || "Unnamed Staff";
 
-        // Start with empty form to get all required fields
         const baseForm = createEmptyStaffForm();
 
-        // Initialize skill ratings from fetched skill types
-        let skillRatings = {};
-        // Add all skill types with default 0 rating
-        skillTypesData.items?.forEach(skill => {
-          skillRatings[skill.id] = 0;
-        });
-        
-        // Determine the correct nail artist ID
         let nailArtistId = userData.staffId || userData.nailArtistId || userData.id;
-        console.log("StaffUpdatePage: Determined nailArtistId:", nailArtistId, "(from staffId/nailArtistId/id)");
-        
-        // If role is nail artist, load existing skills
-        if (mapApiRoleToForm(userData.role) === "NAIL_ARTIST" && nailArtistId) {
-          try {
-            const existingSkills = await fetchNailArtistSkills(nailArtistId);
-            console.log("StaffUpdatePage existingSkills:", existingSkills);
-            // Create a map of skill type id to level
-            existingSkills.forEach(skill => {
-              skillRatings[skill.skillTypeId] = skill.level || 0;
-            });
-          } catch (skillError) {
-            console.warn("Failed to load existing skills:", skillError);
-          }
-        }
+        console.log("StaffUpdatePage: Determined nailArtistId:", nailArtistId);
 
         const staffForm = {
           ...baseForm,
@@ -210,15 +159,10 @@ export function StaffUpdatePage() {
           status: mapApiStatusToForm(userData.status),
           salonId: userData.salonId || "",
           assignedSalon: matchingSalon?.name || "",
-          skillRatings,
-          specialties: [],
-          notes: "",
         };
 
         console.log("StaffUpdatePage mapped staffForm:", staffForm);
-        console.log("StaffUpdatePage staffForm.staffId (nailArtistId):", staffForm.staffId);
 
-        // Set image preview if avatar exists
         if (userData.avatarUrl) {
           setImagePreview(userData.avatarUrl);
         }
@@ -250,18 +194,10 @@ export function StaffUpdatePage() {
     () => UPDATED_STATUS_OPTIONS.find((option) => option.value === formData.status),
     [formData.status],
   );
-  
-  // Get specialties from skill ratings using skill types
-  const specialties = useMemo(() => {
-    return skillTypes
-      .filter(skill => Number(formData.skillRatings[skill.id] ?? 0) >= 3)
-      .map(skill => skill.name || skill.title);
-  }, [skillTypes, formData.skillRatings]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setSelectedImage(file);
       const reader = new FileReader();
       reader.onload = (e) => {
         setImagePreview(e.target.result);
@@ -273,7 +209,6 @@ export function StaffUpdatePage() {
   };
 
   const handleRemoveImage = () => {
-    setSelectedImage(null);
     setImagePreview(null);
     handleInputChange("avatarUrl", "");
     handleInputChange("imageFile", null);
@@ -282,49 +217,19 @@ export function StaffUpdatePage() {
   const handleInputChange = (field, value) => {
     setFormData((current) => {
       const newFormData = { ...current, [field]: value };
-      
-      // If fullName changed, split into firstName and lastName
+
       if (field === "fullName") {
         const nameParts = value.split(' ');
         newFormData.firstName = nameParts[0] || "";
         newFormData.lastName = nameParts.slice(1).join(' ') || "";
       }
-      
-      // If firstName or lastName changed, update fullName
+
       if (field === "firstName" || field === "lastName") {
         newFormData.fullName = `${newFormData.firstName || ""} ${newFormData.lastName || ""}`.trim();
       }
-      
+
       return newFormData;
     });
-  };
-
-  const handleSkillRatingChange = (skillKey, rating) => {
-    setFormData((current) => {
-      const nextSkillRatings = {
-        ...current.skillRatings,
-        [skillKey]: rating,
-      };
-
-      return {
-        ...current,
-        skillRatings: nextSkillRatings,
-        specialties: getSpecialtiesFromSkillRatings(nextSkillRatings),
-      };
-    });
-  };
-
-  const handleScheduleChange = (day, field, value) => {
-    setFormData((current) => ({
-      ...current,
-      schedule: {
-        ...current.schedule,
-        [day]: {
-          ...current.schedule[day],
-          [field]: value,
-        },
-      },
-    }));
   };
 
   const handleSubmit = (event) => {
@@ -336,7 +241,6 @@ export function StaffUpdatePage() {
     setIsSaving(true);
 
     try {
-      // First, map form status to API status
       const mapFormStatusToApi = (formStatus) => {
         switch (formStatus) {
           case "ACTIVE":
@@ -348,7 +252,6 @@ export function StaffUpdatePage() {
         }
       };
 
-      // Split fullName into firstName and lastName if needed
       let firstName = formData.firstName;
       let lastName = formData.lastName;
       if (!firstName && !lastName && formData.fullName) {
@@ -357,10 +260,8 @@ export function StaffUpdatePage() {
         lastName = nameParts.slice(1).join(' ') || "";
       }
 
-      // Find selected salon ID
-      const selectedSalon = salons.find(s => s.name === formData.assignedSalon);
+      const selectedSalon = salons.find(s => s.id === formData.salonId);
 
-      // Update user
       const userUpdateData = {
         email: formData.email,
         firstName,
@@ -375,31 +276,6 @@ export function StaffUpdatePage() {
 
       console.log("Updating user with data:", userUpdateData);
       await updateUser(formData.userId, userUpdateData);
-
-      // If role is nail artist, update skills
-      if (formData.role === "NAIL_ARTIST" && formData.staffId) {
-        const skills = skillTypes
-          .filter(skill => Number(formData.skillRatings[skill.id] ?? 0) > 0)
-          .map(skill => ({
-            skillTypeId: skill.id,
-            level: Math.floor(Number(formData.skillRatings[skill.id] ?? 0)),
-          }));
-
-        console.log("Updating skills for nail artist (staffId):", formData.staffId);
-        console.log("Skills payload:", skills);
-
-        if (skills.length > 0) {
-          const skillResult = await assignNailArtistSkills(formData.staffId, skills);
-          if (!skillResult.success) {
-            // assignNailArtistSkills không throw nữa mà trả về { success, error }
-            // nên phải tự kiểm tra ở đây, nếu không UI sẽ báo "Update Successful"
-            // ngay cả khi assign/update skill thất bại.
-            throw new Error(skillResult.error || "Failed to update staff skills.");
-          }
-        } else {
-          console.log("No skills to update (all ratings are 0)");
-        }
-      }
 
       setIsSaving(false);
       setShowSaveModal(false);
@@ -487,325 +363,219 @@ export function StaffUpdatePage() {
         <StaffUpdateLoadingState />
       ) : (
         <>
-      <div className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <InfoChip icon={Users} title="Current Team" value="84 Active Profiles" />
-        <InfoChip
-          icon={BriefcaseBusiness}
-          title="Assigned Salon"
-          value={formData.assignedSalon}
-          tone="text-sky-500"
-        />
-        <InfoChip
-          icon={ShieldCheck}
-          title="Role"
-          value={selectedRole?.label ?? "-"}
-          tone="text-violet-500"
-        />
-        <InfoChip
-          icon={Sparkles}
-          title="Status"
-          value={selectedStatus?.label ?? "-"}
-          tone="text-emerald-500"
-        />
-      </div>
+          <div className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <InfoChip icon={Users} title="Current Team" value="84 Active Profiles" />
+            <InfoChip
+              icon={BriefcaseBusiness}
+              title="Assigned Salon"
+              value={formData.assignedSalon}
+              tone="text-sky-500"
+            />
+            <InfoChip
+              icon={ShieldCheck}
+              title="Role"
+              value={selectedRole?.label ?? "-"}
+              tone="text-violet-500"
+            />
+            <InfoChip
+              icon={Sparkles}
+              title="Status"
+              value={selectedStatus?.label ?? "-"}
+              tone="text-emerald-500"
+            />
+          </div>
 
-      <form onSubmit={handleSubmit} className="grid gap-5 lg:grid-cols-3">
-        <div className="space-y-5 lg:col-span-2">
-          <section className="rounded-[28px] bg-white/65 p-5 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
-            <h2 className="mb-4 text-[18px] font-bold text-slate-800">Staff Details</h2>
+          <form onSubmit={handleSubmit} className="grid gap-5 lg:grid-cols-3">
+            <div className="space-y-5 lg:col-span-2">
+              <section className="rounded-[28px] bg-white/65 p-6 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
+                <h2 className="mb-6 text-[20px] font-bold text-slate-800">Staff Details</h2>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className="space-y-2 md:col-span-2">
-                <span className="text-[12px] font-semibold text-slate-500">
-                  Full Name <span className="text-rose-500">*</span>
-                </span>
-                <div className={inputWrapperClassName}>
-                  <User size={14} className="shrink-0 text-rose-300" />
-                  <input
-                    type="text"
-                    value={formData.fullName}
-                    onChange={(event) => handleInputChange("fullName", event.target.value)}
-                    placeholder="Enter full name"
-                    className={inputClassName}
-                    required
-                  />
-                </div>
-              </label>
-
-              <label className="space-y-2">
-                <span className="text-[12px] font-semibold text-slate-500">
-                  Email <span className="text-rose-500">*</span>
-                </span>
-                <div className={inputWrapperClassName}>
-                  <Mail size={14} className="shrink-0 text-rose-300" />
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(event) => handleInputChange("email", event.target.value)}
-                    placeholder="staff@nailify.com"
-                    className={inputClassName}
-                    required
-                  />
-                </div>
-              </label>
-
-              <label className="space-y-2">
-                <span className="text-[12px] font-semibold text-slate-500">
-                  Phone Number <span className="text-rose-500">*</span>
-                </span>
-                <div className={inputWrapperClassName}>
-                  <Phone size={14} className="shrink-0 text-rose-300" />
-                  <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(event) => handleInputChange("phone", event.target.value)}
-                    placeholder="+1 (555) 123-4567"
-                    className={inputClassName}
-                    required
-                  />
-                </div>
-              </label>
-
-              <label className="space-y-2">
-                <span className="text-[12px] font-semibold text-slate-500">Role</span>
-                <select
-                  value={formData.role}
-                  onChange={(event) => handleInputChange("role", event.target.value)}
-                  className={selectClassName}
-                >
-                  {STAFF_ROLE_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="space-y-2">
-                <span className="text-[12px] font-semibold text-slate-500">Assigned Salon</span>
-                <select
-                  value={formData.assignedSalon}
-                  onChange={(event) => handleInputChange("assignedSalon", event.target.value)}
-                  className={selectClassName}
-                >
-                  {salons.map((salon) => (
-                    <option key={salon.salonId || salon.id} value={salon.name}>
-                      {salon.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="space-y-2">
-                <span className="text-[12px] font-semibold text-slate-500">Status</span>
-                <select
-                  value={formData.status}
-                  onChange={(event) => handleInputChange("status", event.target.value)}
-                  className={selectClassName}
-                >
-                  {UPDATED_STATUS_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="space-y-2 md:col-span-2">
-                <span className="text-[12px] font-semibold text-slate-500">Avatar</span>
-                <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-rose-200 bg-gradient-to-br from-[#fffafc] to-[#fff5f9] px-6 py-8 cursor-pointer transition-all duration-300 hover:border-rose-300 hover:bg-gradient-to-br hover:from-[#fff8fb] hover:to-[#fff1f6] hover:shadow-[0_8px_24px_rgba(226,93,143,0.12)]">
-                  {imagePreview ? (
-                    <div className="relative w-full flex items-center justify-center">
-                      <img crossOrigin="anonymous"
-                        src={imagePreview}
-                        alt="Preview"
-                        className="h-40 w-40 object-cover rounded-full shadow-lg border-4 border-rose-100"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleRemoveImage}
-                        className="absolute top-0 right-1/4 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] text-white shadow-lg transition-transform duration-200 hover:scale-110"
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center gap-3 cursor-pointer">
-                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] text-white shadow-lg transition-transform duration-200 hover:scale-105">
-                        <User size={28} />
-                      </div>
-                      <div className="text-center">
-                        <p className="text-base font-semibold text-slate-700">Click to upload staff avatar</p>
-                        <p className="text-xs text-slate-400 mt-1">PNG, JPG up to 5MB</p>
-                      </div>
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="space-y-2 md:col-span-2">
+                    <span className="text-[13px] font-semibold text-slate-600">
+                      Full Name <span className="text-rose-500">*</span>
+                    </span>
+                    <div className={inputWrapperClassName}>
+                      <User size={14} className="shrink-0 text-rose-300" />
                       <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageChange}
-                        className="hidden"
+                        type="text"
+                        value={formData.fullName}
+                        onChange={(event) => handleInputChange("fullName", event.target.value)}
+                        placeholder="Enter full name"
+                        className={inputClassName}
+                        required
                       />
-                    </label>
-                  )}
-                </div>
-              </label>
-            </div>
-          </section>
+                    </div>
+                  </div>
 
-          <section className="space-y-5">
-            {formData.role === "NAIL_ARTIST" && (
-              <StaffSkillAssessmentSection
-                ratings={formData.skillRatings}
-                specialties={specialties}
-                skillTypes={skillTypes}
-                onRatingChange={handleSkillRatingChange}
-              />
-            )}
-            <label className="mt-5 block space-y-2">
-              <span className="text-[12px] font-semibold text-slate-500">Notes</span>
-              <textarea
-                value={formData.notes}
-                onChange={(event) => handleInputChange("notes", event.target.value)}
-                placeholder="Add performance notes, certifications, or internal remarks"
-                className="w-full rounded-xl border border-rose-100 bg-[#fff6f9] px-4 py-3 text-[13px] text-slate-700 outline-none placeholder:text-rose-200"
-                rows={4}
-              />
-            </label>
-          </section>
+                  <div className="space-y-2">
+                    <span className="text-[13px] font-semibold text-slate-600">
+                      Email <span className="text-rose-500">*</span>
+                    </span>
+                    <div className={inputWrapperClassName}>
+                      <Mail size={14} className="shrink-0 text-rose-300" />
+                      <input
+                        type="email"
+                        value={formData.email}
+                        onChange={(event) => handleInputChange("email", event.target.value)}
+                        placeholder="staff@nailify.com"
+                        className={inputClassName}
+                        required
+                      />
+                    </div>
+                  </div>
 
-          <section className="rounded-[28px] bg-white/65 p-5 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
-            <div className="mb-4 flex items-center gap-2">
-              <CalendarDays size={16} className="text-rose-500" />
-              <h2 className="text-[18px] font-bold text-slate-800">Weekly Schedule</h2>
-            </div>
+                  <div className="space-y-2">
+                    <span className="text-[13px] font-semibold text-slate-600">
+                      Phone Number <span className="text-rose-500">*</span>
+                    </span>
+                    <div className={inputWrapperClassName}>
+                      <Phone size={14} className="shrink-0 text-rose-300" />
+                      <input
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(event) => handleInputChange("phone", event.target.value)}
+                        placeholder="+1 (555) 123-4567"
+                        className={inputClassName}
+                        required
+                      />
+                    </div>
+                  </div>
 
-            <div className="space-y-3">
-              {STAFF_DAYS_OF_WEEK.map((day) => (
-                <div
-                  key={day.key}
-                  className="grid gap-3 rounded-2xl border border-rose-100 bg-white px-4 py-3 md:grid-cols-[1.1fr_120px_120px]"
-                >
-                  <label className="flex items-center gap-3 text-[12px] font-semibold text-slate-600">
-                    <input
-                      type="checkbox"
-                      checked={formData.schedule[day.key].enabled}
-                      onChange={(event) =>
-                        handleScheduleChange(day.key, "enabled", event.target.checked)
-                      }
-                      className="h-4 w-4 rounded border-rose-200 accent-rose-500"
+                  <div className="space-y-2">
+                    <span className="text-[13px] font-semibold text-slate-600">Role</span>
+                    <Select
+                      value={formData.role}
+                      onChange={(value) => handleInputChange("role", value)}
+                      options={STAFF_ROLE_OPTIONS.map((option) => ({
+                        value: option.value,
+                        label: option.label,
+                      }))}
+                      className="w-full"
+                      size="large"
                     />
-                    <span>{day.label}</span>
-                  </label>
+                  </div>
 
-                  <TimePicker
-                    value={formData.schedule[day.key].start}
-                    onChange={(value) => handleScheduleChange(day.key, "start", value)}
-                    placeholder="Start"
-                    disabled={!formData.schedule[day.key].enabled}
-                  />
+                  <div className="space-y-2">
+                    <span className="text-[13px] font-semibold text-slate-600">Assigned Salon</span>
+                    <Select
+                      value={formData.salonId}
+                      onChange={(value) => {
+                        const selectedSalon = salons.find(s => s.id === value);
+                        handleInputChange("salonId", value);
+                        handleInputChange("assignedSalon", selectedSalon?.name || "");
+                      }}
+                      options={salons.map((salon) => ({
+                        value: salon.id,
+                        label: salon.name,
+                      }))}
+                      className="w-full"
+                      size="large"
+                    />
+                  </div>
 
-                  <TimePicker
-                    value={formData.schedule[day.key].end}
-                    onChange={(value) => handleScheduleChange(day.key, "end", value)}
-                    placeholder="End"
-                    disabled={!formData.schedule[day.key].enabled}
-                  />
+                  <div className="space-y-2">
+                    <span className="text-[13px] font-semibold text-slate-600">Status</span>
+                    <Select
+                      value={formData.status}
+                      onChange={(value) => handleInputChange("status", value)}
+                      options={UPDATED_STATUS_OPTIONS.map((option) => ({
+                        value: option.value,
+                        label: option.label,
+                      }))}
+                      className="w-full"
+                      size="large"
+                    />
+                  </div>
+
+                  <div className="space-y-2 md:col-span-2">
+                    <span className="text-[13px] font-semibold text-slate-600">Avatar</span>
+                    <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-rose-200 bg-gradient-to-br from-[#fffafc] to-[#fff5f9] px-6 py-8 cursor-pointer transition-all duration-300 hover:border-rose-300 hover:bg-gradient-to-br hover:from-[#fff8fb] hover:to-[#fff1f6] hover:shadow-[0_8px_24px_rgba(226,93,143,0.12)]">
+                      {imagePreview ? (
+                        <div className="relative w-full flex items-center justify-center">
+                          <img crossOrigin="anonymous"
+                            src={imagePreview}
+                            alt="Preview"
+                            className="h-40 w-40 object-cover rounded-full shadow-lg border-4 border-rose-100"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleRemoveImage}
+                            className="absolute top-0 right-1/4 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] text-white shadow-lg transition-transform duration-200 hover:scale-110"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ) : (
+                        <label className="flex flex-col items-center gap-3 cursor-pointer">
+                          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] text-white shadow-lg transition-transform duration-200 hover:scale-105">
+                            <User size={28} />
+                          </div>
+                          <div className="text-center">
+                            <p className="text-base font-semibold text-slate-700">Click to upload staff avatar</p>
+                            <p className="text-xs text-slate-400 mt-1">PNG, JPG up to 5MB</p>
+                          </div>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageChange}
+                            className="hidden"
+                          />
+                        </label>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              ))}
-            </div>
-          </section>
-        </div>
-
-        <aside className="space-y-5">
-          <section className="rounded-[28px] border border-rose-100 bg-gradient-to-br from-[#fff4f8] to-[#fffdfd] p-5 shadow-[0_20px_40px_rgba(226,93,143,0.08)]">
-            <div className="mb-4 flex items-center gap-2">
-              <div className="rounded-xl bg-rose-100 p-2 text-rose-500">
-                <User size={14} />
-              </div>
-              <div>
-                <h3 className="text-[14px] font-black text-slate-800">Profile Preview</h3>
-                <p className="text-[11px] font-medium text-slate-400">
-                  Updated summary for this team member
-                </p>
-              </div>
+              </section>
             </div>
 
-            <div className="rounded-[24px] border border-rose-100 bg-white p-4 text-center shadow-[0_10px_20px_rgba(226,93,143,0.06)]">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-pink-400 to-rose-300 text-[20px] font-black text-white">
-                {getStaffInitials(formData.fullName || "NS")}
-              </div>
-              <h4 className="mt-3 text-[15px] font-black text-slate-800">
-                {formData.fullName || "Staff Member"}
-              </h4>
-              <p className="text-[10px] font-semibold text-slate-400">
-                {selectedRole?.label ?? "Role"} · #{formData.staffId}
-              </p>
-              <div className="mt-3 flex flex-wrap justify-center gap-1.5">
-                {formData.specialties.slice(0, 3).map((item) => (
-                  <span
-                    key={item}
-                    className="rounded-full bg-rose-50 px-2 py-1 text-[9px] font-bold text-rose-500"
-                  >
-                    {item}
-                  </span>
-                ))}
-              </div>
-              <p className="mt-4 text-[11px] font-medium text-slate-400">
-                Assigned Salon:{" "}
-                <span className="font-bold text-rose-400">{formData.assignedSalon}</span>
-              </p>
-            </div>
-          </section>
-
-          <section className="rounded-[28px] bg-white/65 p-5 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
-            <h3 className="mb-4 text-[14px] font-black text-slate-800">Update Checklist</h3>
-            <div className="space-y-3">
-              {STAFF_UPDATE_CHECKLIST.map((item) => (
-                <div
-                  key={item}
-                  className="flex items-center gap-3 rounded-2xl border border-rose-100 bg-white px-4 py-3"
-                >
-                  <div className="h-2.5 w-2.5 rounded-full bg-rose-400" />
-                  <p className="text-[11px] font-semibold text-slate-600">{item}</p>
+            <aside className="space-y-5">
+              <section className="rounded-[28px] border border-rose-100 bg-gradient-to-br from-[#fff4f8] to-[#fffdfd] p-6 shadow-[0_20px_40px_rgba(226,93,143,0.08)]">
+                <div className="mb-4 flex items-center gap-2">
+                  <div className="rounded-xl bg-rose-100 p-2 text-rose-500">
+                    <User size={14} />
+                  </div>
+                  <div>
+                    <h3 className="text-[14px] font-black text-slate-800">Profile Preview</h3>
+                    <p className="text-[11px] font-medium text-slate-400">
+                      Updated summary for this team member
+                    </p>
+                  </div>
                 </div>
-              ))}
-            </div>
-          </section>
 
-          <section className="rounded-[28px] bg-white/65 p-5 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
-            <h3 className="mb-4 text-[14px] font-black text-slate-800">Assigned Summary</h3>
-            <div className="space-y-3">
-              <div className="rounded-2xl bg-[#fff6f9] px-4 py-3">
-                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
-                  Salon
-                </p>
-                <p className="mt-1 text-[12px] font-bold text-slate-700">{formData.assignedSalon}</p>
-              </div>
-              <div className="rounded-2xl bg-[#fff6f9] px-4 py-3">
-                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
-                  Employment Type
-                </p>
-                <p className="mt-1 text-[12px] font-bold text-slate-700">{formData.employmentType}</p>
-              </div>
-              <div className="rounded-2xl bg-[#fff6f9] px-4 py-3">
-                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
-                  Primary Contact
-                </p>
-                <p className="mt-1 text-[12px] font-bold text-slate-700">{formData.phone || "—"}</p>
-              </div>
-              <div className="rounded-2xl bg-[#fff6f9] px-4 py-3">
-                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
-                  Status
-                </p>
-                <span
-                  className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${selectedStatus?.color ?? ""}`}
-                >
-                  {selectedStatus?.label}
-                </span>
-              </div>
-            </div>
-          </section>
-        </aside>
-      </form>
+                <div className="rounded-[24px] border border-rose-100 bg-white p-4 text-center shadow-[0_10px_20px_rgba(226,93,143,0.06)]">
+                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-pink-400 to-rose-300 text-[20px] font-black text-white">
+                    {getStaffInitials(formData.fullName || "NS")}
+                  </div>
+                  <h4 className="mt-3 text-[15px] font-black text-slate-800">
+                    {formData.fullName || "Staff Member"}
+                  </h4>
+                  <p className="text-[10px] font-semibold text-slate-400">
+                    {selectedRole?.label ?? "Role"} · #{formData.staffId}
+                  </p>
+                  <p className="mt-4 text-[11px] font-medium text-slate-400">
+                    Assigned Salon:{" "}
+                    <span className="font-bold text-rose-400">{formData.assignedSalon}</span>
+                  </p>
+                </div>
+              </section>
+
+              <section className="rounded-[28px] bg-white/65 p-6 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
+                <h3 className="mb-4 text-[14px] font-black text-slate-800">Update Checklist</h3>
+                <div className="space-y-3">
+                  {STAFF_UPDATE_CHECKLIST.map((item) => (
+                    <div
+                      key={item}
+                      className="flex items-center gap-3 rounded-2xl border border-rose-100 bg-white px-4 py-3"
+                    >
+                      <div className="h-2.5 w-2.5 rounded-full bg-rose-400" />
+                      <p className="text-[11px] font-semibold text-slate-600">{item}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </aside>
+          </form>
         </>
       )}
 
@@ -825,7 +595,7 @@ export function StaffUpdatePage() {
           { label: "Next Step", value: "Return to staff list" },
         ]}
         warnings={[
-          "Role, salon assignment, availability, and profile changes will not be saved.",
+          "Role, salon assignment, and profile changes will not be saved.",
           "The current staff record will remain unchanged until you confirm the update.",
         ]}
       />
@@ -845,7 +615,6 @@ export function StaffUpdatePage() {
         highlights={[formData.fullName || "Staff profile", formData.role || "Role pending", formData.status]}
         details={[
           { label: "Assigned Salon", value: formData.assignedSalon || "No salon selected" },
-          { label: "Employment Type", value: formData.employmentType || "Not selected" },
         ]}
         warnings={["This mock update changes the current UI state only and does not persist to a backend."]}
       />

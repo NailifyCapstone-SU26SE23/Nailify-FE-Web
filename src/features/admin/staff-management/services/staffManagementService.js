@@ -96,7 +96,7 @@ function mapRoleToApi(role) {
     case "NAIL_ARTIST":
       return "Staff_Artist";
     case "SALON_MANAGER":
-      return "Salon_Manager";
+      return "Manager";
     case "RECEPTIONIST":
       return "Receptionist";
     default:

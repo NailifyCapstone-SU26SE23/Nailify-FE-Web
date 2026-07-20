@@ -1,4 +1,5 @@
 import {
+  Award,
   BarChart3,
   CalendarDays,
   ChevronLeft,
@@ -14,6 +15,8 @@ import {
   Store,
   Users,
   X,
+  HelpCircle,
+  Wallet,
   Clock3,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
@@ -21,6 +24,7 @@ import { PropTypes } from "../../utils/propTypes";
 
 const ICON_MAP = {
   analytics: BarChart3,
+  award: Award,
   calendar: CalendarDays,
   dashboard: LayoutDashboard,
   palette: Palette,
@@ -30,6 +34,8 @@ const ICON_MAP = {
   support: MessageSquareWarning,
   tasks: ListTodo,
   users: Users,
+  quiz: HelpCircle,
+  wallet: Wallet,
   clock: Clock3,
 };
 
