@@ -336,3 +336,23 @@ export async function assignReceptionistArtistToBooking(bookingId, staffArtistId
 
   return unwrapResponse(response, "Failed to assign artist to booking.");
 }
+
+export async function getBookingHistories(bookingId) {
+  const normalizedBookingId = String(bookingId || "").trim();
+  if (!normalizedBookingId) throw new Error("Booking ID is required.");
+  
+  const response = await axiosClient.get(`/BookingHistories/booking/${normalizedBookingId}?pageNumber=1&pageSize=100`, {
+    headers: getAuthHeaders(),
+  });
+  return unwrapResponse(response, "Failed to load booking history.");
+}
+
+export async function getUserById(userId) {
+  const normalizedUserId = String(userId || "").trim();
+  if (!normalizedUserId) throw new Error("User ID is required.");
+  
+  const response = await axiosClient.get(`/Users/${normalizedUserId}`, {
+    headers: getAuthHeaders(),
+  });
+  return unwrapResponse(response, "Failed to load user info.");
+}

@@ -16,9 +16,9 @@ import {
 } from "../services/salonsService";
 
 const inputWrapperClassName =
-  "flex items-center gap-2 rounded-[16px] border border-[#f1e7ed] bg-[#fff8fb] px-4 py-3.5 transition-all duration-300 hover:border-[#f0b7cf] hover:bg-[#fff5f9] focus-within:border-[#ea4f93] focus-within:bg-white focus-within:shadow-[0_0_0_3px_rgba(234,79,147,0.15)]";
+  "flex items-center gap-2 rounded-[16px] border border-[#f5cbdc] bg-[#fff8fb] px-4 py-3.5 transition-all duration-300 hover:border-[#eba2c6] hover:bg-[#fff5f9] focus-within:border-[#ea4f93] focus-within:bg-white focus-within:shadow-[0_0_0_3px_rgba(234,79,147,0.2)]";
 const inputClassName =
-  "w-full min-w-0 bg-transparent text-[14px] text-[#2d1b35] outline-none placeholder:text-[#a88a9f] font-medium";
+  "w-full min-w-0 bg-transparent text-[14px] text-[#3f2034] outline-none placeholder:text-[#c8b0bf] font-medium";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -179,15 +179,18 @@ export function SalonCreatePage() {
       variants={staggerContainer}
       className="mx-auto w-full min-w-0 max-w-[1300px]"
     >
+      <style>{`
+        .nailify-display { font-family: "Cormorant Garamond", serif; }
+      `}</style>
       <motion.header
         variants={fadeInUp}
         className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
       >
         <div className="min-w-0">
-          <h1 className="text-[28px] font-black tracking-tight text-[#2d1b35]">
+          <h1 className="nailify-display text-[32px] font-semibold text-[#3f2034]">
             Add New Salon
           </h1>
-          <p className="mt-2 text-[13px] font-medium text-[#a88a9f]">
+          <p className="mt-1 text-sm text-[#a6869a]">
             Create a new salon branch in the system
           </p>
         </div>

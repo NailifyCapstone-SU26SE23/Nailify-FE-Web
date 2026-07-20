@@ -118,13 +118,13 @@ export function AssignReceptionistArtistModal({
       destroyOnClose
     >
       <div className="space-y-4 py-2">
-        <div className="rounded-[18px] border border-[#f4d6e2] bg-[#fffafb] px-4 py-4 text-sm">
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#c38ea8]">
+        <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-4 text-sm">
+          <p className="text-xs font-semibold text-gray-500">
             Booking Context
           </p>
-          <div className="mt-3 flex items-center justify-between gap-4">
-            <span className="text-[#8f7b88]">Current artist</span>
-            <span className="font-bold text-[#4a3741]">{currentArtistName || "Unassigned"}</span>
+          <div className="mt-2 flex items-center justify-between gap-4">
+            <span className="text-gray-500">Current artist</span>
+            <span className="font-semibold text-gray-900">{currentArtistName || "Unassigned"}</span>
           </div>
         </div>
 
@@ -133,7 +133,7 @@ export function AssignReceptionistArtistModal({
             <Spin tip="Loading available artists..." />
           </div>
         ) : artists.length === 0 ? (
-          <div className="rounded-[18px] border border-[#f4d6e2] bg-[#fffafb] px-4 py-8 text-center text-sm text-[#a48796]">
+          <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-8 text-center text-sm text-gray-500">
             No available artists found for this booking.
           </div>
         ) : (
@@ -147,10 +147,10 @@ export function AssignReceptionistArtistModal({
                   key={artistId}
                   type="button"
                   onClick={() => setSelectedArtistId(artistId)}
-                  className={`rounded-[22px] border p-4 text-left transition ${
+                  className={`rounded-xl border p-4 text-left transition-all ${
                     isSelected
-                      ? "border-[#ea4f93] bg-[#fff1f6] shadow-[0_12px_24px_rgba(236,72,153,0.08)]"
-                      : "border-[#f4d6e2] bg-white hover:border-[#ef8eb6]"
+                      ? "border-[#ea4f93] bg-[#fffafb] ring-1 ring-[#ea4f93] shadow-sm"
+                      : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm"
                   }`}
                 >
                   <div className="flex items-start gap-3">
@@ -158,17 +158,17 @@ export function AssignReceptionistArtistModal({
                       <img crossOrigin="anonymous"
                         src={artist.avatarUrl}
                         alt={getArtistName(artist)}
-                        className="h-12 w-12 rounded-full object-cover"
+                        className="h-12 w-12 rounded-full object-cover border border-gray-100"
                       />
                     ) : (
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd6e5_0%,#ef5b94_100%)] text-sm font-black text-white">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-sm font-bold text-gray-600">
                         {getArtistInitials(artist)}
                       </div>
                     )}
 
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <p className="truncate text-sm font-extrabold text-[#412643]">
+                        <p className="truncate text-sm font-bold text-gray-900">
                           {getArtistName(artist)}
                         </p>
                         <span className="rounded-full bg-[#e8f8ef] px-2 py-0.5 text-[10px] font-bold text-[#1f9d61]">
@@ -196,8 +196,8 @@ export function AssignReceptionistArtistModal({
                       </div>
                     </div>
 
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full border border-[#f1d7e3] bg-white">
-                      <UserRound size={14} className={isSelected ? "text-[#ea4f93]" : "text-[#c38ea8]"} />
+                    <div className="flex h-8 w-8 items-center justify-center">
+                      <UserRound size={16} className={isSelected ? "text-[#ea4f93]" : "text-gray-300"} />
                     </div>
                   </div>
                 </button>
@@ -207,9 +207,9 @@ export function AssignReceptionistArtistModal({
         )}
 
         {selectedArtist ? (
-          <div className="rounded-[18px] border border-[#f4d6e2] bg-[#fffafb] px-4 py-3 text-sm">
-            <span className="text-[#8f7b88]">Selected artist:</span>
-            <span className="ml-2 font-bold text-[#4a3741]">{getArtistName(selectedArtist)}</span>
+          <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm">
+            <span className="text-gray-500">Selected artist:</span>
+            <span className="ml-2 font-semibold text-gray-900">{getArtistName(selectedArtist)}</span>
           </div>
         ) : null}
       </div>

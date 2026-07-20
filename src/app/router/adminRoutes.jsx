@@ -9,6 +9,10 @@ import { ROUTES } from "../../shared/constants/routes";
 import { UserManagementPage } from "../../features/admin/user-management/pages/UserManagementPage";
 import { UserManagementCreatePage } from "../../features/admin/user-management/pages/UserManagementCreatePage";
 import { UserManagementDetailPage } from "../../features/admin/user-management/pages/UserManagementDetailPage";
+import { LoyaltyTierManagement } from "../../features/admin/loyalty-tiers-management/pages/LoyaltyTierManagement";
+import { QuizManagement } from "../../features/admin/quiz-management/pages/QuizManagement";
+import { CreateQuiz } from "../../features/admin/quiz-management/pages/CreateQuiz";
+import { UpdateQuiz } from "../../features/admin/quiz-management/pages/UpdateQuiz";
 import { SalonManagementPage } from "../../features/admin/salon-management/pages/SalonManagementPage";
 import { SalonCreatePage } from "../../features/admin/salon-management/pages/SalonCreatePage";
 import { SalonDetailPage } from "../../features/admin/salon-management/pages/SalonDetailPage";
@@ -50,6 +54,8 @@ import { PromotionCreatePage } from "../../features/admin/promotion-management/p
 import { PromotionDetailPage } from "../../features/admin/promotion-management/pages/PromotionDetailPage";
 import { AdminSalonBookingsPage } from "../../features/admin/salon-bookings/pages/AdminSalonBookingsPage";
 import { AdminSalonBookingDetailPage } from "../../features/admin/salon-bookings/pages/AdminSalonBookingDetailPage";
+import { AdminSalonBookingRatingPage } from "../../features/admin/salon-bookings/pages/AdminSalonBookingRatingPage";
+import { TransactionOverviewPage } from "../../features/admin/transaction-overview/pages/TransactionOverviewPage";
 
 export const adminRoutes = [
   {
@@ -83,6 +89,10 @@ export const adminRoutes = [
         element: <SalonManagementPage />,
       },
       {
+        path: ROUTES.adminTransactions,
+        element: <TransactionOverviewPage />,
+      },
+      {
         path: ROUTES.adminSalonsCreate,
         element: <SalonCreatePage />,
       },
@@ -109,6 +119,22 @@ export const adminRoutes = [
       {
         path: ROUTES.adminUsers,
         element: <UserManagementPage />,
+      },
+      {
+        path: ROUTES.adminLoyaltyTiers,
+        element: <LoyaltyTierManagement />,
+      },
+      {
+        path: ROUTES.adminQuiz,
+        element: <QuizManagement />,
+      },
+      {
+        path: ROUTES.adminQuizCreate,
+        element: <CreateQuiz />,
+      },
+      {
+        path: "/admin/quiz/update/:id",
+        element: <UpdateQuiz />,
       },
       {
         path: ROUTES.adminServicePricing,
@@ -245,6 +271,10 @@ export const adminRoutes = [
       {
         path: ROUTES.adminSalonBookingDetail,
         element: <AdminSalonBookingDetailPage />,
+      },
+      {
+        path: ROUTES.adminBookingRatings,
+        element: <AdminSalonBookingRatingPage />,
       },
       {
         path: "*",

@@ -13,11 +13,41 @@ import {
   Star,
   UserRound,
   X,
+  Clock,
+  Map,
 } from "lucide-react";
 import { useState } from "react";
+import { Table, List, Card, Image } from "antd";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { ReadOnlyNailPreview } from "../../../../shared/components/common/ReadOnlyNailPreview";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
+
+const getStatusColor = (status) => {
+  switch (status) {
+    case 'Pending':
+      return '!border-slate-200 !bg-slate-50 !text-slate-600';
+    case 'Approved':
+      return '!border-emerald-200 !bg-emerald-50 !text-emerald-600';
+    case 'Rejected':
+    case 'Cancelled':
+      return '!border-red-200 !bg-red-50 !text-red-600';
+    case 'CheckedIn':
+      return '!border-purple-200 !bg-purple-50 !text-purple-600';
+    case 'InProgress':
+      return '!border-blue-200 !bg-blue-50 !text-blue-600';
+    case 'ServiceCompleted':
+      return '!border-yellow-200 !bg-yellow-50 !text-yellow-700';
+    case 'Completed':
+      return '!border-green-200 !bg-green-50 !text-green-700';
+    case 'Repaired':
+      return '!border-orange-200 !bg-orange-50 !text-orange-600';
+    case 'ReschedulePending':
+    case 'RescheduleSuggested':
+      return '!border-indigo-200 !bg-indigo-50 !text-indigo-600';
+    default:
+      return '!border-[#f3ddab] !bg-[#fff8df] !text-[#d39a1d]';
+  }
+};
 
 function SectionTitle({ icon: Icon, title }) {
   return (
@@ -56,7 +86,7 @@ function ServiceInfoCard({ services = [], onOpenServiceProcedures = null }) {
   const hasProcedureAction = typeof onOpenServiceProcedures === "function";
 
   return (
-    <article className="rounded-[16px] bg-[#fff9fc] xl:col-span-3">
+    <article className="rounded-[16px] xl:col-span-3">
 
       {services.length ? (
         <div className="overflow-hidden rounded-[20px] border border-[#f2bfd4] bg-white">
@@ -189,13 +219,11 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
       <div className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-[28px] border border-[#f1cade] bg-white shadow-[0_30px_80px_rgba(63,43,63,0.24)]">
         <div className="flex items-start justify-between gap-4 border-b border-[#f7dfeb] px-6 py-5">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
+            <p className="text-[15px] font-bold uppercase tracking-[0.16em] text-pink-500">
               Nail Variant Detail
             </p>
-            <h3 className="mt-2 text-2xl font-extrabold text-[#ea4f93]">{variantDetail.name}</h3>
-            {/* <p className="mt-1 text-sm text-[#a88a9d]">
-              ID #{variantDetail.nailVariantId} • Nail Design #{variantDetail.nailDesignId}
-            </p> */}
+            <h3 className="mt-2 text-2xl font-extrabold text-black">{variantDetail.name}</h3>
+
           </div>
           <button
             type="button"
@@ -223,28 +251,17 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
             </div>
 
             <div className="space-y-5">
-              <div className="grid gap-3 md:grid-cols-2">
-                <InfoCard
-                  label="Variant Name"
-                  value={variantDetail.name || "--"}
-                // note={`Variant ID: ${variantDetail.nailVariantId || "--"}`}
-                />
-                <InfoCard
-                  label="Design Reference"
-                  value={`Design #${variantDetail.nailDesignId || "--"}`}
-                // note={`Shape ID: ${variantDetail.nailShapeId || "--"} • Surface ID: ${variantDetail.nailSurfaceId || "--"}`}
-                />
-              </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <article className="rounded-[20px] border border-[#f3d5e2] bg-[#fff9fc] p-4">
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Nail Shape</p>
                   <div className="mt-3 flex items-start gap-3">
-                    <img
+                    <Image
+                      style={{ height: "40px", width: "40px", borderRadius: "20%", objectFit: "cover" }}
                       crossOrigin="anonymous"
                       src={variantDetail.nailShape?.imageUrl || variantDetail.imageUrl}
                       alt={variantDetail.nailShape?.name || "Nail shape"}
-                      className="h-20 w-20 rounded-2xl border border-[#f4dbe7] object-cover"
+                      className="h-10 w-10 rounded-2xl border border-[#f4dbe7] object-cover"
                       loading="lazy"
                       referrerPolicy="no-referrer"
                     />
@@ -252,12 +269,12 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                       <p className="text-base font-extrabold capitalize text-[#3f2b3f]">
                         {variantDetail.nailShape?.name || "--"}
                       </p>
-                      <p className="mt-1 text-xs text-[#a88a9d]">
+                      {/* <p className="mt-1 text-xs text-[#a88a9d]">
                         Price: {formatVariantCurrency(variantDetail.nailShape?.price)}
                       </p>
                       <p className="mt-1 text-xs text-[#a88a9d]">
                         Duration: {formatVariantDuration(variantDetail.nailShape?.duration)}
-                      </p>
+                      </p> */}
                     </div>
                   </div>
                 </article>
@@ -268,7 +285,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                     <p className="text-base font-extrabold text-[#3f2b3f]">
                       {variantDetail.nailSurface?.name || "--"}
                     </p>
-                    <p className="mt-2 text-xs text-[#a88a9d]">
+                    {/* <p className="mt-2 text-xs text-[#a88a9d]">
                       Shader: {variantDetail.nailSurface?.shaderParam || "--"}
                     </p>
                     <p className="mt-1 text-xs text-[#a88a9d]">
@@ -276,7 +293,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                     </p>
                     <p className="mt-1 text-xs text-[#a88a9d]">
                       Duration: {formatVariantDuration(variantDetail.nailSurface?.duration)}
-                    </p>
+                    </p> */}
                   </div>
                 </article>
               </div>
@@ -296,24 +313,36 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                         className="rounded-[16px] border border-[#f4dbe7] bg-white p-4"
                       >
                         <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="text-sm font-extrabold text-[#3f2b3f]">
-                              {item.component?.name || "--"}
-                            </p>
-                            <p className="mt-1 text-xs text-[#a88a9d]">
-                              Type: {item.component?.componentType || "--"}
-                            </p>
+                          <div className="flex flex-row gap-2">
+                            <Image
+                              style={{ height: "40px", width: "40px", borderRadius: "20%", objectFit: "cover" }}
+                              crossOrigin="anonymous"
+                              src={item.component?.imageUrl || item.imageUrl}
+                              alt={item.component?.name || "Component"}
+                              className="h-10 w-10 rounded-2xl border border-[#f4dbe7] object-cover"
+                              loading="lazy"
+                              referrerPolicy="no-referrer"
+                            />
+                            <div>
+                              <p className="text-sm font-extrabold text-[#3f2b3f]">
+                                {item.component?.name || "--"}
+                              </p>
+                              <p className="mt-1 text-xs text-[#a88a9d]">
+                                Type: {item.component?.componentType || "--"}
+                              </p>
+                            </div>
                           </div>
+
                           <span className="rounded-full border border-[#f2bfd4] bg-[#fff5f9] px-3 py-1 text-[10px] font-bold text-[#ea4f93]">
                             Finger #{item.fingerIndex ?? "--"}
                           </span>
                         </div>
-                        <div className="mt-3 grid gap-2 md:grid-cols-2">
+                        {/* <div className="mt-3 grid gap-2 md:grid-cols-2">
                           <p className="text-xs text-[#6f5c6b]">Position: X {item.posX ?? "--"} • Y {item.posY ?? "--"}</p>
                           <p className="text-xs text-[#6f5c6b]">Price: {formatVariantCurrency(item.component?.price)}</p>
                           <p className="text-xs text-[#6f5c6b]">Duration: {formatVariantDuration(item.component?.duration)}</p>
                           <p className="text-xs text-[#6f5c6b]">Config: {item.configJson || "--"}</p>
-                        </div>
+                        </div> */}
                       </div>
                     ))
                   ) : (
@@ -473,7 +502,12 @@ export function StaffBookingConsultationDetail({
       <div className="rounded-[24px] border border-[#f6dbe8] bg-[#fff7fb] p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
         <div className="mt-4 space-y-4">
           <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
-            <SectionTitle icon={UserRound} title="Customer Information" />
+            <div className="flex items-center gap-3 border-b border-[#fdebf3] pb-4 mb-6">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2]">
+                <UserRound size={16} className="text-[#ea4f93]" />
+              </div>
+              <h2 className="text-sm font-black uppercase tracking-widest text-[#ea4f93]">Customer Information</h2>
+            </div>
 
             <div className="mt-5 flex flex-col gap-5">
               <div className="flex flex-col gap-4 md:flex-row md:items-start">
@@ -521,100 +555,143 @@ export function StaffBookingConsultationDetail({
             </div>
           </article>
 
-          <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
-            <SectionTitle icon={CalendarClock} title="Booking Information" />
-            <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {data.bookingInfo.map((item) =>
-                item.label === "Service" ? (
-                  <ServiceInfoCard
-                    key={item.label}
-                    label={item.label}
-                    value={item.value}
-                    note={item.note}
-                    services={item.services}
-                    onOpenServiceProcedures={onOpenServiceProcedures}
-                  />
-                ) : (
-                  <InfoCard
-                    key={item.label}
-                    label={item.label}
-                    value={item.value}
-                    note={item.note}
-                    tone={item.tone}
-                  />
-                ),
-              )}
+          <article className="relative overflow-hidden rounded-[24px] border border-[#fdebf3] bg-gradient-to-b from-white/95 to-[#fffafb]/95 p-5 md:p-7 backdrop-blur-2xl shadow-[0_12px_40px_rgba(236,72,153,0.08)]">
+            <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-gradient-to-br from-[#ffb4d6]/30 to-[#e4c1f9]/30 blur-[60px]" />
+            <div className="pointer-events-none absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-gradient-to-tr from-[#ffecd2]/40 to-[#fcb69f]/40 blur-[60px]" />
+
+            <div className="relative z-10">
+              <div className="flex flex-row justify-between items-center border-b border-[#fdebf3] pb-4 mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2]">
+                    <CalendarClock size={16} className="text-[#ea4f93]" />
+                  </div>
+                  <h2 className="text-sm font-black uppercase tracking-widest text-[#ea4f93]">Booking Information</h2>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Tag className={`m-0 ${getStatusColor(data.statusLabel)}`}>
+                    <Clock size={11} className="mr-1 inline-block fill-current" />
+                    {data.statusLabel}
+                  </Tag>
+                </div>
+              </div>
+
+
+              <div className="mt-4">
+                {data.bookingInfo.find(item => item.label === "Service") && (
+                  <div className="mb-6">
+                    <ServiceInfoCard
+                      services={data.bookingInfo.find(item => item.label === "Service").services}
+                      onOpenServiceProcedures={onOpenServiceProcedures}
+                    />
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 lg:gap-4">
+                  {data.bookingInfo.filter(item => item.label !== "Service").map((item) => (
+                    <div key={item.label} className="drop-shadow-[0_4px_12px_rgba(236,72,153,0.08)] transition-transform hover:-translate-y-1">
+                      <div
+                        className="flex h-full flex-col justify-between bg-white p-4 pb-8 md:p-5 md:pb-9"
+                        style={{ clipPath: "polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - 20px), 0 100%)" }}
+                      >
+                        <div className="text-[10px] font-black text-[#cbb3c0] uppercase tracking-[0.18em]">
+                          {item.label}
+                        </div>
+                        <div className="mt-3">
+                          <div className={`text-[15px] font-black tracking-tight ${item.tone === 'success' ? 'text-[#059669]' : 'text-[#3f2a3a]'}`}>
+                            {item.value}
+                          </div>
+                          <div className="mt-1.5 h-[16px] text-[11px] font-bold text-[#a68b98]">
+                            {item.note ?? ""}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </article>
 
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
             <div className="space-y-4">
               {hasSelectedNailDesign ? (
-                <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
-                  <div className="flex items-center justify-between gap-3">
-                    <SectionTitle icon={Sparkles} title="Current Selected Nail Design" />
-                    {canViewVariantDetail ? (
-                      <button
-                        type="button"
-                        onClick={() => setIsVariantModalOpen(true)}
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#f2bfd4] bg-[#fff5f9] text-[#ea4f93] hover:bg-[#fff0f6]"
-                        title="View nail detail"
-                      >
-                        <Eye size={16} />
-                      </button>
-                    ) : null}
-                  </div>
+                <article className="relative overflow-hidden rounded-[24px] border border-[#fdebf3] bg-gradient-to-b from-white/95 to-[#fffafb]/95 p-4 backdrop-blur-2xl shadow-[0_12px_40px_rgba(236,72,153,0.08)]">
+                  {/* Decorative Orbs */}
+                  <div className="pointer-events-none absolute -right-32 -top-32 h-72 w-72 rounded-full bg-gradient-to-br from-[#ffb4d6]/20 to-[#e4c1f9]/20 blur-[80px]" />
+                  <div className="pointer-events-none absolute -bottom-32 -left-32 h-72 w-72 rounded-full bg-gradient-to-tr from-[#ffecd2]/30 to-[#fcb69f]/30 blur-[80px]" />
 
-                  <div className="mt-5 flex flex-col gap-4 lg:flex-row">
-                    {data.design.variantDetail ? (
-                      <ReadOnlyNailPreview
-                        variantDetail={data.design.variantDetail}
-                        className="max-w-full shrink-0 self-start lg:max-w-[40%] lg:flex-[0_0_40%]"
-                        showHeader={false}
-                        showInstruction={false}
-                      />
-                    ) : (
-                      <img
-                        crossOrigin="anonymous"
-                        src={data.design.image}
-                        alt={data.design.name}
-                        className="h-40 w-full rounded-[18px] object-cover lg:w-44"
-                        loading="lazy"
-                        referrerPolicy="no-referrer"
-                      />
-                    )}
-
-                    <div className="flex-1">
-                      <h3 className="text-[1.5rem] font-extrabold text-[#ea4f93]">{data.design.name}</h3>
-                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                        {data.design.details
-                          .filter((item) => {
-                            if (item.label === "Service") {
-                              return false;
-                            }
-
-                            if (item.label === "Customer Design") {
-                              const normalizedValue = String(item.value || "").trim();
-                              return normalizedValue && normalizedValue !== "--";
-                            }
-
-                            return true;
-                          })
-                          .map((item) => (
-                            <div key={item.label}>
-                              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
-                                {item.label}
-                              </p>
-                              <p className="mt-1 text-sm font-semibold text-[#4b3348]">{item.value}</p>
-                            </div>
-                          ))}
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between gap-3 border-b border-[#fdebf3] pb-4 mb-6">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2] shadow-inner">
+                          <Sparkles size={18} className="text-[#ea4f93]" />
+                        </div>
+                        <h2 className="text-sm font-black uppercase tracking-widest text-[#ea4f93]">Current Selected Nail Design</h2>
                       </div>
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {data.design.tags.map((tag) => (
-                          <Tag key={tag.label} className={tag.className}>
-                            {tag.label}
-                          </Tag>
-                        ))}
+                      {canViewVariantDetail ? (
+                        <button
+                          type="button"
+                          onClick={() => setIsVariantModalOpen(true)}
+                          className="group inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#f2bfd4] bg-white text-[#ea4f93] shadow-sm transition-all hover:scale-105 hover:bg-[#fff0f6] hover:shadow-md"
+                          title="View nail detail"
+                        >
+                          <Eye size={16} className="transition-transform group-hover:scale-110" />
+                        </button>
+                      ) : null}
+                    </div>
+
+                    <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
+                      <div className="relative mx-auto w-full max-w-[320px] lg:mx-0 lg:w-[45%] lg:max-w-none shrink-0">
+                        {/* Glowing backdrop */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-[#ffb4d6]/30 to-[#e4c1f9]/30 blur-2xl rounded-full scale-90" />
+                        <div className="relative rounded-[24px] bg-white/60 backdrop-blur-md border border-white shadow-xl shadow-pink-500/5">
+                          {data.design.variantDetail ? (
+                            <ReadOnlyNailPreview
+                              variantDetail={data.design.variantDetail}
+                              className="w-full"
+                              showHeader={false}
+                              showInstruction={false}
+                            />
+                          ) : (
+                            <img
+                              crossOrigin="anonymous"
+                              src={data.design.image}
+                              alt={data.design.name}
+                              className="aspect-[4/3] w-full rounded-[18px] object-cover"
+                              loading="lazy"
+                              referrerPolicy="no-referrer"
+                            />
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex-1 space-y-6 pt-2">
+                        <div>
+                          <h3 className="bg-gradient-to-br from-[#ea4f93] to-[#ff8fbb] bg-clip-text text-3xl md:text-[2.2rem] font-black text-transparent drop-shadow-sm tracking-tight leading-none">
+                            {data.design.name}
+                          </h3>
+                        </div>
+
+                        <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2 rounded-[24px] bg-white/50 p-6 border border-white shadow-sm backdrop-blur-md">
+                          {data.design.details
+                            .filter((item) => {
+                              if (item.label === "Service") return false;
+                              if (item.label === "Customer Design") {
+                                const normalizedValue = String(item.value || "").trim();
+                                return normalizedValue && normalizedValue !== "--";
+                              }
+                              return true;
+                            })
+                            .map((item) => (
+                              <div key={item.label} className="group">
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#d67b9f] mb-1.5 flex items-center gap-1.5 transition-colors group-hover:text-[#ea4f93]">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-pink-400 to-rose-400 shadow-[0_0_8px_rgba(244,114,182,0.6)]"></span>
+                                  {item.label}
+                                </p>
+                                <p className="text-[15px] font-semibold text-gray-600 tracking-tight">{item.value}</p>
+                              </div>
+                            ))}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -623,7 +700,12 @@ export function StaffBookingConsultationDetail({
 
               {!isCancelledBooking && !isPendingBooking && !isServiceInProgress && !isServiceCompleted ? (
                 <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
-                  <SectionTitle icon={Search} title="Customer Consultation" />
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2] shadow-inner">
+                      <Search size={18} className="text-[#ea4f93]" />
+                    </div>
+                    <h2 className="text-sm font-black uppercase tracking-widest text-[#ea4f93]">Customer Consultation</h2>
+                  </div>
                   <div className="mt-5 flex flex-col items-center gap-6 text-center">
                     <p className="text-lg font-bold text-[#3f2b3f]">{consultationQuestion}</p>
                     <div className="flex w-full flex-col gap-3 sm:flex-row">
@@ -668,31 +750,14 @@ export function StaffBookingConsultationDetail({
                 </article>
               ) : null}
 
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
-                <SectionTitle icon={PencilLine} title="Staff Notes" />
-                <div className="mt-5 space-y-4">
-                  {data.staffNotes.map((item) => (
-                    <div key={item.label}>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
-                        {item.label}
-                      </p>
-                      <textarea
-                        value={item.value}
-                        onChange={(event) => onStaffNoteChange(item.label, event.target.value)}
-                        rows={3}
-                        className="mt-2 w-full resize-y rounded-[14px] border border-[#f6dbe7] bg-[#fff9fc] px-4 py-3 text-sm text-[#634d5f] outline-none transition focus:border-[#ea4f93] focus:bg-white"
-                      />
-                    </div>
-                  ))}
-                </div>
-                <p className="mt-3 text-[11px] font-medium text-[#b1859d]">
-                  Staff notes are editable here and saved locally when you update this booking.
-                </p>
-              </article>
-
               {!isCancelledBooking && !isPendingBooking && !isServiceCompleted ? (
                 <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
-                  <SectionTitle icon={ClipboardCheck} title="Final Confirmation Checklist" />
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2] shadow-inner">
+                      <ClipboardCheck size={18} className="text-[#ea4f93]" />
+                    </div>
+                    <h2 className="text-sm font-black uppercase tracking-widest text-[#ea4f93]">Final Confirmation Checklist</h2>
+                  </div>
                   <div className="mt-5 space-y-3">
                     {data.checklist.map((item) => (
                       <div
@@ -750,7 +815,7 @@ export function StaffBookingConsultationDetail({
                       >
                         Add service
                       </button>
-                     
+
                     </div>
                   ) : null}
                 </article>
@@ -758,79 +823,7 @@ export function StaffBookingConsultationDetail({
             </div>
 
             <aside className="space-y-4 border-t border-[#f3d5e2] pt-4 xl:border-l xl:border-t-0 xl:pl-4 xl:pt-0">
-              {/* <article className="rounded-[18px] border border-[#f3d5e2] bg-[#fff9fc] p-4">
-                <SectionTitle icon={Clock3} title="Session Status" />
-                <div className="mt-4 space-y-3">
-                  {data.sessionStatus.map((item) => (
-                    <div key={item.label} className="flex items-start justify-between gap-3 text-sm">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
-                        {item.label}
-                      </p>
-                      <p className="text-right font-bold text-[#432744]">{item.value}</p>
-                    </div>
-                  ))}
-                </div>
-              </article> */}
 
-              <article className="rounded-[18px] border border-[#f3d5e2] bg-[#fff9fc] p-4">
-                <SectionTitle icon={ArrowUp} title="Customer History" />
-                <div className="mt-4 space-y-4">
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
-                      Favorite Styles
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {data.customerHistory.favoriteStyles.map((tag) => (
-                        <Tag key={tag.label} className={tag.className}>
-                          {tag.label}
-                        </Tag>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
-                      Previous Nail Shapes
-                    </p>
-                    <p className="mt-2 text-sm font-semibold text-[#4b3348]">
-                      {data.customerHistory.previousShapes}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
-                      Last Uploaded Photo
-                    </p>
-                    <div className="mt-2 flex items-center gap-3 rounded-[14px] border border-[#f6dbe7] bg-white p-2.5">
-                      <img
-                        crossOrigin="anonymous"
-                        src={data.customerHistory.lastUpload.image}
-                        alt={data.customerHistory.lastUpload.title}
-                        className="h-12 w-12 rounded-xl object-cover"
-                        loading="lazy"
-                        referrerPolicy="no-referrer"
-                      />
-                      <div>
-                        <p className="text-xs font-extrabold text-[#432744]">
-                          {data.customerHistory.lastUpload.title}
-                        </p>
-                        <p className="mt-1 text-[10px] text-[#a98b9d]">
-                          {data.customerHistory.lastUpload.date}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </article>
-
-              {/* <article className="rounded-[18px] border border-[#f3d5e2] bg-white p-4">
-                <SectionTitle icon={Sparkles} title="Suggested Designs" />
-                <div className="mt-4 space-y-3">
-                  {data.suggestedDesigns.map((item) => (
-                    <SuggestedCard key={item.name} item={item} />
-                  ))}
-                </div>
-              </article> */}
 
               {!isCancelledBooking && !isPendingBooking && !isServiceCompleted ? (
                 <article className="rounded-[18px] border border-[#f3d5e2] bg-white p-4">
