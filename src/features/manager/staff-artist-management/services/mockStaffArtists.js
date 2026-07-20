@@ -35,8 +35,6 @@ export const STAFF_MINI_STATS = [
 
 export const QUICK_ACTIONS = [
   { label: "Edit Schedule", icon: "calendar" },
-  { label: "Assign Skill", icon: "award" },
-  { label: "View Performance", icon: "chart" },
   { label: "Transfer Staff", icon: "arrow" },
 ];
 

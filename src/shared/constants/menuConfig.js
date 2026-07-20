@@ -202,6 +202,13 @@ export const MENU_CONFIG = {
       section: "Main",
     },
     {
+      key: "manager-transactions",
+      label: "Transactions",
+      to: ROUTES.managerTransactions,
+      icon: "wallet",
+      section: "Main",
+    },
+    {
       key: "manager-customers",
       label: "Customers",
       icon: "users",
@@ -218,9 +225,9 @@ export const MENU_CONFIG = {
     {
       key: "manager-reviews",
       label: "Reviews",
+      to: ROUTES.managerBookingRatings,
       icon: "reviews",
       section: "Analytics",
-      disabled: true,
     },
     {
       key: "manager-profile",
@@ -249,6 +256,13 @@ export const MENU_CONFIG = {
       badge: "24",
     },
     {
+      key: "admin-transactions",
+      label: "Transactions",
+      to: ROUTES.adminTransactions,
+      icon: "wallet",
+      section: "Main",
+    },
+    {
       key: "admin-salons",
       label: "Salons",
       to: ROUTES.adminSalons,
@@ -267,6 +281,20 @@ export const MENU_CONFIG = {
       label: "Users",
       to: ROUTES.adminUsers,
       icon: "users",
+      section: "Main",
+    },
+    {
+      key: "admin-loyalty-tiers",
+      label: "Loyalty Tiers",
+      to: ROUTES.adminLoyaltyTiers,
+      icon: "award",
+      section: "Main",
+    },
+    {
+      key: "admin-quiz",
+      label: "Quiz",
+      to: ROUTES.adminQuiz,
+      icon: "quiz",
       section: "Main",
     },
     {
@@ -349,9 +377,9 @@ export const MENU_CONFIG = {
     {
       key: "admin-reviews",
       label: "Reviews",
+      to: ROUTES.adminBookingRatings,
       icon: "reviews",
       section: "Analytics",
-      disabled: true,
     },
     {
       key: "admin-complaints",

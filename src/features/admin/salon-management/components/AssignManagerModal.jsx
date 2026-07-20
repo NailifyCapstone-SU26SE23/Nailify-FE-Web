@@ -48,99 +48,89 @@ export default function AssignManagerModal({
   return (
     <Modal
       open={open}
-      onOk={() => onConfirm(assignManagerForm)}
       onCancel={handleReset}
-      confirmLoading={confirmLoading}
-      okText="Confirm"
-      cancelText="Cancel"
-      okButtonProps={{
-        style: {
-          backgroundColor: "#ea4f93",
-          color: "#fff",
-          borderRadius: 9999,
-          fontWeight: 700,
-          padding: "8px 20px",
-        },
-        disabled: !assignManagerForm.salonId || !assignManagerForm.managerId,
-      }}
-      cancelButtonProps={{
-        style: {
-          borderRadius: 9999,
-          fontWeight: 700,
-          padding: "8px 20px",
-        },
-      }}
-      width={700}
+      footer={null}
+      closable={false}
+      width={720}
       centered
       destroyOnClose
       styles={{
+        body: { padding: 0 },
         content: {
           padding: 0,
-          borderRadius: 32,
           overflow: "hidden",
-          maxHeight: "80vh",
+          borderRadius: 28,
+          maxHeight: "85vh",
         },
-        body: { padding: 0, overflow: "hidden" },
-        mask: { backdropFilter: "blur(8px)" },
+        mask: {
+          backgroundColor: "rgba(47, 13, 33, 0.26)",
+          backdropFilter: "blur(8px)",
+        },
       }}
     >
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        className="bg-gradient-to-br from-[#fff0f8] via-[#fff5fb] to-[#fff9ff] px-6 pb-8 pt-5"
-      >
-        <div className="flex items-center gap-4">
-          <motion.div
-            whileHover={{ scale: 1.1, rotate: 3 }}
-            transition={{ type: "spring", stiffness: 500, damping: 15 }}
-            className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-white shadow-[0_15px_30px_rgba(234,79,147,0.25)]"
-          >
-            <Users size={20} />
-          </motion.div>
-          <div>
-            <h3 className="text-xl font-extrabold text-[#3d1f3f] tracking-tight">
-              Assign Salon Manager
-            </h3>
-            <p className="mt-1 text-xs text-[#9a5f7f]">
-              Select a salon and manager to assign.
-            </p>
+      <style>{`
+        .nailify-display { font-family: "Cormorant Garamond", "Times New Roman", serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .assign-manager-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .assign-manager-scrollbar::-webkit-scrollbar-track {
+          background: #fff0f6;
+          border-radius: 8px;
+        }
+        .assign-manager-scrollbar::-webkit-scrollbar-thumb {
+          background: #f5cbdc;
+          border-radius: 8px;
+        }
+        .assign-manager-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #ea4f93;
+        }
+      `}</style>
+
+      <div className="flex flex-col max-h-[85vh] bg-[#fffbfc]">
+        {/* Header — matches the brand accent gradient used across Nailify */}
+        <div className="px-6 py-5 text-white bg-[image:var(--gradient-accent)]">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/18 text-white">
+                <Users size={20} />
+              </div>
+              <div>
+                <span className="inline-flex rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] bg-white/20 text-white">
+                  Management
+                </span>
+                <h3 className="nailify-display mt-3 text-2xl font-semibold">Assign Salon Manager</h3>
+                <p className="mt-1 text-sm text-white/85">
+                  Select a salon and manager to assign
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              disabled={confirmLoading}
+              onClick={handleReset}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-white/12 text-white transition hover:bg-white/25 disabled:opacity-50"
+              aria-label="Close modal"
+            >
+              <X size={16} />
+            </button>
           </div>
         </div>
-      </motion.div>
-      <>
-        <style>{`
-          .assign-manager-scrollbar::-webkit-scrollbar {
-            width: 8px;
-          }
-          .assign-manager-scrollbar::-webkit-scrollbar-track {
-            background: #fde7ef;
-            border-radius: 8px;
-          }
-          .assign-manager-scrollbar::-webkit-scrollbar-thumb {
-            background: #ea4f93;
-            border-radius: 8px;
-          }
-          .assign-manager-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #db2777;
-          }
-        `}</style>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: "easeOut", delay: 0.15 }}
-          className="assign-manager-scrollbar -mt-6 rounded-[32px] bg-white px-6 pb-6 pt-6 overflow-y-auto"
+
+        <div
+          className="assign-manager-scrollbar flex-1 overflow-y-auto px-6 py-5"
           style={{
-            maxHeight: "calc(80vh - 140px)",
+            maxHeight: "calc(85vh - 140px)",
             scrollbarWidth: "thin",
-            scrollbarColor: "#ea4f93 #fde7ef",
+            scrollbarColor: "#f5cbdc #fff0f6",
           }}
         >
-          <div className="mb-4 rounded-2xl border border-[#f3d7e7] bg-[#fffafd] p-4">
-            <p className="text-sm text-[#6a5064] leading-relaxed">
-              Choose a salon and then select a manager to assign to that salon.
-            </p>
-          </div>
+          <div className="space-y-5">
+            <div className="rounded-[22px] border border-[#f5cbdc] bg-[#fff6fa] p-4">
+              <p className="text-xs font-bold text-[#7a5b6e] leading-relaxed">
+                Choose a salon and then select a manager to assign to that salon.
+              </p>
+            </div>
 
           <div className="space-y-4">
             <AnimatePresence mode="wait">
@@ -337,8 +327,29 @@ export default function AssignManagerModal({
               )}
             </AnimatePresence>
           </div>
-        </motion.div>
-      </>
+        </div>
+      </div>
+
+        {/* Custom premium footer buttons */}
+        <div className="flex flex-col-reverse gap-2 border-t border-[#f5e3ed] bg-white px-6 py-4 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            disabled={confirmLoading}
+            onClick={handleReset}
+            className="inline-flex items-center justify-center rounded-full border border-[#f5cbdc] bg-white px-5 py-2.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#b95d88] transition hover:bg-[#fff5f8] disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={confirmLoading || !assignManagerForm.salonId || !assignManagerForm.managerId}
+            onClick={() => onConfirm(assignManagerForm)}
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-5 py-2.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-white shadow-[0_16px_28px_rgba(235,90,153,0.2)] transition hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {confirmLoading ? "Assigning..." : "Assign Manager"}
+          </button>
+        </div>
+      </div>
     </Modal>
   );
 }
