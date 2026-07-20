@@ -5,11 +5,13 @@ import { ManagerDashboardPage } from "../../features/core/dashboard/pages/Manage
 import { BookingCreatePage } from "../../shared/bookings/pages/BookingCreatePage";
 import { ManagerBookingDetailPage } from "../../features/manager/bookings/pages/ManagerBookingDetailPage";
 import { ManagerBookingListPage } from "../../features/manager/bookings/pages/ManagerBookingListPage";
+import { BookingRatingListPage } from "../../features/manager/bookings/pages/BookingRatingListPage";
 import { StaffCreatePage } from "../../features/manager/staff-artist-management/pages/StaffCreatePage";
 import { StaffManagementPage } from "../../features/manager/staff-artist-management/pages/StaffManagementPage";
 import { StaffUpdatePage } from "../../features/manager/staff-artist-management/pages/StaffUpdatePage";
 import { CustomerNailPage } from "../../features/manager/customer-nail/pages/CustomerNailPage";
 import { CustomerNailDetailPage } from "../../features/manager/customer-nail/pages/CustomerNailDetailPage";
+import { TransactionManagementPage } from "../../features/manager/transaction-management/pages/TransactionManagementPage";
 import { AuthGuard } from "../../shared/components/guards/AuthGuard";
 import { RoleGuard } from "../../shared/components/guards/RoleGuard";
 import { ROLES } from "../../shared/constants/roles";
@@ -43,13 +45,21 @@ export const managerRoutes = [
         element: <ManagerBookingListPage />,
       },
       {
+        path: ROUTES.managerBookingRatings,
+        element: <BookingRatingListPage />,
+      },
+      {
         path: ROUTES.managerCustomerNails,
         element: <CustomerNailPage />,
       },
       {
-          path: ROUTES.managerCustomerNailDetail,
-          element: <CustomerNailDetailPage />,
-        },
+        path: ROUTES.managerCustomerNailDetail,
+        element: <CustomerNailDetailPage />,
+      },
+      {
+        path: ROUTES.managerTransactions,
+        element: <TransactionManagementPage />,
+      },
       {
         path: ROUTES.managerStaffArtists,
         element: <StaffManagementPage />,
