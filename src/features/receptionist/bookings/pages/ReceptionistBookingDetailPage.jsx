@@ -1092,6 +1092,9 @@ export function ReceptionistBookingDetailPage() {
                                   src={imageUrl}
                                   alt="Hình ảnh"
                                   className="h-24 w-24 rounded-lg border border-gray-200 object-cover shadow-sm"
+                                  style={{
+                                    height: "48px", width: "48px"
+                                  }}
                                 />
                               </div>
                             )}
