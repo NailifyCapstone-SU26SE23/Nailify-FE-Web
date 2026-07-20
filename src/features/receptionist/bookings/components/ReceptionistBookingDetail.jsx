@@ -332,26 +332,28 @@ export function ReceptionistBookingDetail({ booking }) {
                 <button
                   type="button"
                   onClick={() => handleMockAction("Call Customer")}
+                  title="Call Customer"
                   className="inline-flex items-center justify-center gap-2 rounded-full bg-[#fff1f6] px-4 py-2.5 text-xs font-bold text-[#eb5b92]"
                 >
                   <Phone size={14} />
-                  Call Customer
                 </button>
                 <button
                   type="button"
                   onClick={() => handleMockAction("Send Message")}
+                  title="Send Message"
                   className="inline-flex items-center justify-center gap-2 rounded-full bg-[#f2edff] px-4 py-2.5 text-xs font-bold text-[#7b68c8]"
                 >
                   <Send size={14} />
-                  Send Message
+
                 </button>
                 <button
                   type="button"
                   onClick={() => handleMockAction("View History")}
+                  title="View History"
                   className="inline-flex items-center justify-center gap-2 rounded-full bg-[#fff4cf] px-4 py-2.5 text-xs font-bold text-[#c89516]"
                 >
                   <Sparkles size={14} />
-                  View History
+
                 </button>
               </div>
             </div>

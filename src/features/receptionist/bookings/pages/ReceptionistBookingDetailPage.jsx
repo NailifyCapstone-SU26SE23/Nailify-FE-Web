@@ -1,8 +1,9 @@
-import { Button, Modal, Table } from "antd";
+import { Button, Modal, Table, Descriptions, Image, Divider, Timeline, Card, Tag, Badge, List, Avatar } from "antd";
 import {
   CalendarClock,
   CheckCircle2,
   ClipboardList,
+  Clock,
   CreditCard,
   Eye,
   LoaderCircle,
@@ -32,7 +33,38 @@ import {
   fetchReceptionistCustomerDetail,
   manualCheckInReceptionistBooking,
   updateReceptionistProcedureArtist,
+  getBookingHistories,
+  getUserById,
 } from "../services/receptionistBookingService";
+import { createPayment } from "../../payments/services/receptionistPaymentService";
+import dayjs from "dayjs";
+
+const getStatusColor = (status) => {
+  switch (status) {
+    case 'Pending':
+      return '!border-slate-200 !bg-slate-50 !text-slate-600';
+    case 'Approved':
+      return '!border-emerald-200 !bg-emerald-50 !text-emerald-600';
+    case 'Rejected':
+    case 'Cancelled':
+      return '!border-red-200 !bg-red-50 !text-red-600';
+    case 'CheckedIn':
+      return '!border-purple-200 !bg-purple-50 !text-purple-600';
+    case 'InProgress':
+      return '!border-blue-200 !bg-blue-50 !text-blue-600';
+    case 'ServiceCompleted':
+      return '!border-yellow-200 !bg-yellow-50 !text-yellow-700';
+    case 'Completed':
+      return '!border-green-200 !bg-green-50 !text-green-700';
+    case 'Repaired':
+      return '!border-orange-200 !bg-orange-50 !text-orange-600';
+    case 'ReschedulePending':
+    case 'RescheduleSuggested':
+      return '!border-indigo-200 !bg-indigo-50 !text-indigo-600';
+    default:
+      return '!border-[#f3ddab] !bg-[#fff8df] !text-[#d39a1d]';
+  }
+};
 
 function formatCurrency(value) {
   const amount = Number(value);
@@ -43,7 +75,7 @@ function formatCurrency(value) {
 
   return `${new Intl.NumberFormat("vi-VN", {
     maximumFractionDigits: 0,
-  }).format(amount)} VNĐ`;
+  }).format(amount)} VND`;
 }
 
 function formatDate(value) {
@@ -90,7 +122,6 @@ function getStatusTone(status) {
       return "bg-[#efeafd] text-[#7c63d8]";
     case "Confirmed":
       return "bg-[#e9f2ff] text-[#4772da]";
-    case "Waiting":
     case "Pending":
       return "bg-[#fff4e3] text-[#e09a27]";
     case "Cancelled":
@@ -121,7 +152,6 @@ function getProcedureStatusTone(status) {
     case "in progress":
       return "bg-[#efeafd] text-[#7c63d8]";
     case "pending":
-    case "waiting":
       return "bg-[#fff4e3] text-[#e09a27]";
     case "cancelled":
       return "bg-[#ffe7ef] text-[#e04d86]";
@@ -159,7 +189,7 @@ function getServiceStatus(index, bookingStatus) {
     return "Confirmed";
   }
 
-  return "Waiting";
+  return "Pending";
 }
 
 function getServiceAction(status) {
@@ -276,74 +306,21 @@ function DetailCard({ title, subtitle, badge, children, className = "" }) {
           {subtitle ? <p className="mt-1 text-xs text-[#a48796]">{subtitle}</p> : null}
         </div>
         {badge ? (
-          <span className="rounded-full border border-[#f4d6e2] bg-[#fff1f6] px-3 py-1 text-[10px] font-extrabold text-[#eb5b92]">
-            {badge}
-          </span>
+          // <span className="rounded-full border border-[#f4d6e2] bg-[#fff1f6] px-3 py-1 text-[10px] font-extrabold text-[#eb5b92]">
+          //   {badge}
+          // </span>
+          <div className="flex items-center gap-2">
+            <Tag className={`m-0 ${getStatusColor(badge)}`} style={{ padding: "5px 10px", borderRadius: "20px" }}>
+              <Clock size={11} className="mr-1 inline-block fill-current" />
+              {badge}
+            </Tag>
+          </div>
         ) : null}
       </div>
       <div className="mt-4">{children}</div>
     </section>
   );
 }
-
-// const ACTION_CENTER = [
-//   {
-//     label: "Check In",
-//     subtitle: "Manual arrival check-in",
-//     icon: SquareCheckBig,
-//     cardTone: "bg-[linear-gradient(180deg,#fff1f6_0%,#ffe6f0_100%)]",
-//     iconTone: "bg-[#ffdcea] text-[#eb5b92]",
-//   },
-//   {
-//     label: "Start Service",
-//     subtitle: "Begin session",
-//     icon: Sparkles,
-//     cardTone: "bg-[linear-gradient(180deg,#f2edff_0%,#e9e1ff_100%)]",
-//     iconTone: "bg-[#dfd1ff] text-[#8160df]",
-//   },
-//   {
-//     label: "Reassign Artist",
-//     subtitle: "Change staff",
-//     icon: UserRound,
-//     cardTone: "bg-[linear-gradient(180deg,#fff8df_0%,#fff0bf_100%)]",
-//     iconTone: "bg-[#ffe6a1] text-[#d8a01c]",
-//   },
-//   {
-//     label: "Move Schedule",
-//     subtitle: "Reschedule time",
-//     icon: CalendarClock,
-//     cardTone: "bg-[linear-gradient(180deg,#ebf7ff_0%,#dff1ff_100%)]",
-//     iconTone: "bg-[#cfe8fb] text-[#4391c9]",
-//   },
-//   {
-//     label: "Add Service",
-//     subtitle: "Extra treatment",
-//     icon: Sparkles,
-//     cardTone: "bg-[linear-gradient(180deg,#e6f8ef_0%,#d8f2e5_100%)]",
-//     iconTone: "bg-[#cdeedb] text-[#2da466]",
-//   },
-//   {
-//     label: "Complete Booking",
-//     subtitle: "Finalize session",
-//     icon: CheckCircle2,
-//     cardTone: "bg-[linear-gradient(180deg,#f2edff_0%,#ebe3ff_100%)]",
-//     iconTone: "bg-[#ddd2ff] text-[#8260df]",
-//   },
-//   {
-//     label: "Cancel Booking",
-//     subtitle: "Void appointment",
-//     icon: XCircle,
-//     cardTone: "bg-[linear-gradient(180deg,#fff1f1_0%,#ffe9e9_100%)]",
-//     iconTone: "bg-[#ffd8d8] text-[#ef6b6b]",
-//   },
-//   {
-//     label: "Send Invoice",
-//     subtitle: "Email to client",
-//     icon: ReceiptText,
-//     cardTone: "bg-[linear-gradient(180deg,#fff9eb_0%,#fff2cd_100%)]",
-//     iconTone: "bg-[#ffe7ae] text-[#d19a15]",
-//   },
-// ];
 
 export function ReceptionistBookingDetailPage() {
   const { bookingId } = useParams();
@@ -369,6 +346,37 @@ export function ReceptionistBookingDetailPage() {
   const [notes, setNotes] = useState(
     "Customer notes not available from API yet. Use this area for receptionist-only reminders.",
   );
+  const [bookingHistories, setBookingHistories] = useState([]);
+  const [isBookingHistoriesLoading, setIsBookingHistoriesLoading] = useState(true);
+
+  const loadBookingHistories = useCallback(async () => {
+    if (!bookingId) return;
+    try {
+      setIsBookingHistoriesLoading(true);
+      const historyData = await getBookingHistories(bookingId);
+      const histories = historyData?.items || [];
+      const actorIds = [...new Set(histories.map(h => h.actorId).filter(Boolean))];
+      const userInfos = await Promise.all(
+        actorIds.map(async (id) => {
+          try { return await getUserById(id); } catch (e) { return null; }
+        })
+      );
+      const roleMap = {};
+      actorIds.forEach((id, index) => {
+        if (userInfos[index]) roleMap[id] = userInfos[index].role;
+      });
+      const enrichedHistories = histories.map(h => ({
+        ...h,
+        actorRole: roleMap[h.actorId] || (h.actorName?.includes("Khách") ? "Customer" : "Unknown")
+      }));
+      setBookingHistories(enrichedHistories);
+    } catch (error) {
+      console.error("Failed to fetch booking histories", error);
+      setBookingHistories([]);
+    } finally {
+      setIsBookingHistoriesLoading(false);
+    }
+  }, [bookingId]);
 
   useEffect(() => {
     if (!bookingId) {
@@ -405,6 +413,8 @@ export function ReceptionistBookingDetailPage() {
         } finally {
           setIsLoading(false);
         }
+
+        await loadBookingHistories();
       })();
     }, 0);
 
@@ -447,6 +457,7 @@ export function ReceptionistBookingDetailPage() {
         serviceType: item.nailVariantName || item.customerNailName || "--",
         artist: booking?.artistName || "--",
         duration: item.duration ? formatDurationMinutes(item.duration) : "--",
+        price: item.price ? formatCurrency(item.price) : "--",
         status,
         actionLabel: getServiceAction(status),
         sourceItem: item,
@@ -455,9 +466,10 @@ export function ReceptionistBookingDetailPage() {
   ), [booking]);
 
   const totalAmount = formatCurrency(booking?.totalPrice);
+  const price = formatCurrency(booking?.price);
   const discount = formatCurrency(booking?.discount);
-  const depositPaid = "--";
-  const remainingBalance = totalAmount;
+  const depositPaid = formatCurrency(booking?.amountPaid || 0);
+  const remainingBalance = formatCurrency(booking?.amountDue || booking?.totalPrice - booking?.depositPaid);
   const progressPercent = getProgressPercent(booking);
   const isManualCheckInAllowed = canManualCheckIn(booking?.status);
   const actionAvailability = useMemo(
@@ -497,6 +509,7 @@ export function ReceptionistBookingDetailPage() {
         setCustomerProfile(null);
       }
       toast.success("Booking detail refreshed.");
+      await loadBookingHistories();
     } catch (loadError) {
       const message = loadError instanceof Error ? loadError.message : "Failed to refresh booking detail.";
       setError(message);
@@ -592,6 +605,7 @@ export function ReceptionistBookingDetailPage() {
           ? "Procedure artist reassigned successfully."
           : "Procedure artist assigned successfully.",
       );
+      await loadBookingHistories();
     } catch (assignError) {
       const message =
         assignError instanceof Error ? assignError.message : "Failed to assign artist to procedure.";
@@ -599,7 +613,7 @@ export function ReceptionistBookingDetailPage() {
     } finally {
       setAssigningProcedureArtistId("");
     }
-  }, []);
+  }, [loadBookingHistories]);
 
   const serviceColumns = useMemo(() => ([
     {
@@ -642,6 +656,12 @@ export function ReceptionistBookingDetailPage() {
       render: (value) => <span className="text-xs text-[#4a3741]">{value}</span>,
     },
     {
+      title: "Price",
+      dataIndex: "price",
+      key: "price",
+      render: (value) => <span className="text-xs font-bold text-green-700">{value}</span>,
+    },
+    {
       title: "Action",
       key: "action",
       render: (_, row) => (
@@ -665,6 +685,7 @@ export function ReceptionistBookingDetailPage() {
       const updatedBooking = await manualCheckInReceptionistBooking(bookingId);
       setBooking(updatedBooking);
       toast.success("Customer checked in successfully.");
+      await loadBookingHistories();
     } catch (actionError) {
       const message =
         actionError instanceof Error ? actionError.message : "Failed to check in booking.";
@@ -672,33 +693,26 @@ export function ReceptionistBookingDetailPage() {
     } finally {
       setIsManualCheckInSubmitting(false);
     }
-  }, [bookingId, isManualCheckInAllowed, isManualCheckInSubmitting]);
+  }, [bookingId, isManualCheckInAllowed, isManualCheckInSubmitting, loadBookingHistories]);
 
   const handleCheckout = useCallback(async () => {
-    if (!bookingId || !actionAvailability.canCheckout || isCheckoutSubmitting) {
+    if (!bookingId || !actionAvailability.canCheckout) {
       return;
     }
 
-    setIsCheckoutSubmitting(true);
-
     try {
-      const updatedBooking = await checkoutReceptionistBooking(bookingId);
-      setBooking(updatedBooking);
-      toast.success("Checkout completed successfully.");
-      navigate(getReceptionistBookingCheckoutRoute(bookingId), {
-        state: {
-          booking: updatedBooking,
-          customerProfile,
-        },
-      });
-    } catch (actionError) {
-      const message =
-        actionError instanceof Error ? actionError.message : "Failed to check out booking.";
-      toast.error(message);
-    } finally {
-      setIsCheckoutSubmitting(false);
+      const response = await createPayment(bookingId);
+      const paymentUrl = response?.data?.paymentUrl || response?.paymentUrl;
+
+      if (paymentUrl) {
+        window.location.href = paymentUrl;
+      } else {
+        toast.error("Không tìm thấy link thanh toán.");
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Có lỗi xảy ra khi tạo thanh toán.");
     }
-  }, [actionAvailability.canCheckout, bookingId, customerProfile, isCheckoutSubmitting, navigate]);
+  }, [actionAvailability.canCheckout, bookingId]);
 
   const handlePrimaryHeaderAction = useCallback(async () => {
     if (actionAvailability.canCheckout) {
@@ -868,8 +882,7 @@ export function ReceptionistBookingDetailPage() {
         <div className="space-y-4">
           <DetailCard
             title="Customer Overview"
-            subtitle={booking.status || "Appointment details"}
-            badge="Active Booking"
+            badge={booking.status || null}
           >
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex flex-1 items-start gap-4">
@@ -943,30 +956,31 @@ export function ReceptionistBookingDetailPage() {
                 </div>
               </div>
 
-              <div className="grid gap-2 sm:w-[160px]">
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => handleMockAction("Call Customer")}
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[#fff1f6] px-4 py-2.5 text-xs font-bold text-[#eb5b92]"
+                  title="Call Customer"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[#fff1f6] p-4 text-xs font-bold text-[#eb5b92]"
                 >
                   <Phone size={14} />
-                  Call Customer
                 </button>
                 <button
                   type="button"
                   onClick={() => handleMockAction("Send Message")}
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[#f2edff] px-4 py-2.5 text-xs font-bold text-[#7b68c8]"
+                  title="Send Message"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[#f2edff] p-4 text-xs font-bold text-[#7b68c8]"
                 >
                   <MessageCircleMore size={14} />
-                  Send Message
                 </button>
                 <button
                   type="button"
                   onClick={() => handleMockAction("View History")}
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[#fff4cf] px-4 py-2.5 text-xs font-bold text-[#c89516]"
+                  title="View History"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[#fff4cf] p-4 text-xs font-bold text-[#c89516]"
                 >
                   <Sparkles size={14} />
-                  View History
+
                 </button>
               </div>
             </div>
@@ -988,6 +1002,52 @@ export function ReceptionistBookingDetailPage() {
           </DetailCard>
 
           <DetailCard
+            title="Booking Timeline"
+            subtitle="History of actions on this booking"
+            badge={isBookingHistoriesLoading ? "Loading..." : `${bookingHistories.length} Events`}
+          >
+            {isBookingHistoriesLoading ? (
+              <div className="flex justify-center p-8"><LoaderCircle className="animate-spin text-[#eb5b92]" /></div>
+            ) : bookingHistories.length > 0 ? (
+              <div className="mt-6 flex flex-col">
+                {[...bookingHistories].reverse().map((history, idx) => (
+                  <div key={history.bookingHistoryId || idx} className="flex gap-6" title={dayjs(history.createdAt).format("DD/MM/YYYY HH:mm")}>
+                    <div className="w-[130px] shrink-0 pt-0.5 text-right">
+                      <span className="text-xs font-bold text-orange-500">
+                        {dayjs(history.createdAt).format("DD/MM/YYYY")}
+                      </span>
+                      <span className="mx-1 text-gray-400">|</span>
+                      <span className="text-xs font-bold text-emerald-600">
+                        {dayjs(history.createdAt).format("HH:mm")}
+                      </span>
+                    </div>
+
+                    <div className="relative flex flex-col items-center">
+                      <div className="h-[10px] w-[10px] mt-1.5 rounded-full border-2 border-[#eb5b92] bg-white z-10 shrink-0" />
+                      {idx !== bookingHistories.length - 1 && (
+                        <div className="w-[2px] h-full bg-[#f0f0f0] absolute top-3" />
+                      )}
+                    </div>
+
+                    <div className="flex-1 pb-6 text-sm">
+                      <p className="font-extrabold text-[#eb5b92] mb-1">
+                        [{history.actorRole}] {history.actorName}
+                      </p>
+                      <p className="text-[#8f7b88] leading-relaxed">
+                        {history.payload}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-[18px] border border-dashed border-[#f1d8e4] bg-[#fffafb] px-4 py-8 text-center text-sm text-[#8f7b88]">
+                No history events found for this booking.
+              </div>
+            )}
+          </DetailCard>
+
+          <DetailCard
             title="Payment Summary"
             subtitle="Booking financial overview"
             badge="API Data"
@@ -996,41 +1056,45 @@ export function ReceptionistBookingDetailPage() {
               <div>
                 <div className="space-y-3 text-sm">
                   {[
-                    ["Subtotal", totalAmount],
+                    ["Price", price],
                     ["Discount", discount],
-                    ["Deposit Paid", depositPaid],
                   ].map(([label, value]) => (
                     <div key={label} className="flex items-center justify-between gap-3">
                       <span className="text-[#8f7b88]">{label}</span>
-                      <span className="font-bold text-[#4a3741]">{value}</span>
+                      <span
+                        className={`font-bold ${label === "Discount"
+                          ? "text-red-500"
+                          : "text-[#4a3741]"
+                          }`}
+                      >
+                        {value}
+                      </span>
                     </div>
                   ))}
                 </div>
 
-                <div className="mt-4 border-t border-[#f3d7e2] pt-4">
+                <div className="mt-4 border-t border-[#f3d7e2] pt-4 space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm font-medium text-[#8f7b88]">Deposit Paid</span>
+                    <span className="text-sm font-bold text-[#4a3741]">{depositPaid}</span>
+                  </div>
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-sm font-medium text-[#8f7b88]">Remaining Balance</span>
                     <span className="text-sm font-extrabold text-[#eb5b92]">{remainingBalance}</span>
                   </div>
                 </div>
 
-                <div className="mt-4 flex items-end justify-between gap-4">
-                  <div>
-                    <p className="text-sm font-bold text-[#4a3741]">Total Amount</p>
-                    <p className="mt-2 text-[1.8rem] font-black leading-none text-[#eb5b92]">{totalAmount}</p>
-                  </div>
-                  <div className="text-right text-[11px] text-[#a48796]">
-                    <p>Deposit paid {depositPaid}</p>
-                    <p className="mt-1">Remaining {remainingBalance}</p>
-                  </div>
+                <div className="mt-4 flex items-center justify-between gap-4">
+                  <p className="text-sm font-bold text-[#4a3741]">Total Amount</p>
+                  <p className="text-[1.8rem] font-black leading-none text-green-700">{totalAmount}</p>
                 </div>
 
-                <div className="mt-4 h-2 rounded-full bg-[#f6d6e3]">
+                {/* <div className="mt-4 h-2 rounded-full bg-[#f6d6e3]">
                   <div
                     className="h-full rounded-full bg-[linear-gradient(90deg,#eb5b92_0%,#f4869f_100%)]"
                     style={{ width: `${progressPercent}%` }}
                   />
-                </div>
+                </div> */}
               </div>
 
               <div className="space-y-3">
@@ -1144,44 +1208,6 @@ export function ReceptionistBookingDetailPage() {
             </p>
           </DetailCard>
 
-          {/* <DetailCard title="Internal Notes">
-            <textarea
-              value={notes}
-              onChange={(event) => setNotes(event.target.value)}
-              className="min-h-[120px] w-full rounded-2xl border border-[#f3d7e2] bg-[#fffafb] px-4 py-3 text-xs leading-6 text-[#4a3741] outline-none"
-            />
-            <button
-              type="button"
-              onClick={() => toast.success("Receptionist notes saved in local UI.")}
-              className="mt-4 w-full rounded-xl border border-[#f3d7e2] bg-[#fff1f6] px-4 py-3 text-xs font-extrabold text-[#eb5b92]"
-            >
-              Save Notes
-            </button>
-          </DetailCard> */}
-
-          {/* <DetailCard title="Next Appointment">
-            <div className="rounded-[20px] border border-[#f3d7e2] bg-[#fff7fb] px-4 py-4">
-              <p className="text-xs font-extrabold text-[#eb5b92]">Next slot --</p>
-              <p className="mt-2 text-sm font-bold text-[#4a3741]">{serviceRows[0]?.service || "--"}</p>
-              <p className="mt-2 text-[11px] text-[#8f7b88]">with {booking.artistName || "--"} - Chair --</p>
-            </div>
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => handleMockAction("View next appointment")}
-                className="rounded-xl border border-[#f3d7e2] bg-[#fff1f6] px-4 py-2.5 text-xs font-extrabold text-[#eb5b92]"
-              >
-                View
-              </button>
-              <button
-                type="button"
-                onClick={() => handleMockAction("Edit next appointment")}
-                className="rounded-xl border border-[#e3dbff] bg-[#f2edff] px-4 py-2.5 text-xs font-extrabold text-[#7c63d8]"
-              >
-                Edit
-              </button>
-            </div>
-          </DetailCard> */}
         </aside>
       </div>
 
@@ -1198,92 +1224,85 @@ export function ReceptionistBookingDetailPage() {
         title="Service & Nail Detail"
       >
         {selectedServiceRow ? (
-          <div className="space-y-5 py-1">
+          <div className="space-y-6 py-2">
             {isSelectedRowNail ? (
-              <div className="space-y-4">
-                <div className="rounded-[18px] border border-[#f4d6e2] bg-[#fffafb] p-4">
-                  <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#c38ea8]">
-                    Nail Data
-                  </p>
-                  <div className="mt-4 space-y-3 text-sm">
-                    {[
-                      // ["Booking Item ID", selectedServiceRow.sourceItem?.bookingItemId || selectedServiceRow.id || "--"],
-                      // ["Nail Variant ID", selectedServiceRow.sourceItem?.nailVariantId || "--"],
-                      ["Nail Variant Name", selectedServiceRow.sourceItem?.nailVariantName || "--"],
-                      // ["Customer Nail ID", selectedServiceRow.sourceItem?.customerNailId || "--"],
-                      ["Customer Nail Name", selectedServiceRow.sourceItem?.customerNailName || "--"],
-                      ["Display Name", selectedServiceRow.serviceType || "--"],
-                      ["Duration", selectedServiceRow.duration || "--"],
-                      ["Price", formatCurrency(selectedServiceRow.sourceItem?.price)],
-                      ["Status", selectedServiceRow.status || "--"],
-                      ["Artist", selectedServiceRow.artist || "--"],
-                    ].map(([label, value]) => (
-                      <div key={label} className="flex items-start justify-between gap-4">
-                        <span className="text-[#8f7b88]">{label}</span>
-                        <span className="text-right font-bold text-[#4a3741]">{value}</span>
-                      </div>
-                    ))}
-                  </div>
+              <div className="space-y-6">
+                <div className="rounded-[24px] border border-[#f4d6e2] bg-[#fffafb] p-6 shadow-sm">
+                  <Descriptions
+                    title={<span className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-[#eb5b92]">Nail Data</span>}
+                    bordered
+                    column={{ xxl: 2, xl: 2, lg: 2, md: 1, sm: 1, xs: 1 }}
+                    size="middle"
+                    labelStyle={{ fontWeight: "bold", color: "#000000ff", backgroundColor: "#fff5f8" }}
+                    contentStyle={{ color: "#4c4448ff", backgroundColor: "white", fontWeight: "500" }}
+                  >
+                    <Descriptions.Item label="Nail Variant Name">{selectedServiceRow.sourceItem?.nailVariantName || "--"}</Descriptions.Item>
+                    <Descriptions.Item label="Customer Nail Name">{selectedServiceRow.sourceItem?.customerNailName || "--"}</Descriptions.Item>
+                    <Descriptions.Item label="Display Name">{selectedServiceRow.serviceType || "--"}</Descriptions.Item>
+                    <Descriptions.Item label="Duration">{selectedServiceRow.duration || "--"}</Descriptions.Item>
+                    <Descriptions.Item label="Price"><span className="text-green-700 font-bold">{formatCurrency(selectedServiceRow.sourceItem?.price)}</span></Descriptions.Item>
+                    <Descriptions.Item label="Artist">{selectedServiceRow.artist || "--"}</Descriptions.Item>
+                  </Descriptions>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="rounded-[18px] border border-[#f4d6e2] bg-white p-4">
-                    <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#c38ea8]">
-                      Nail Variant Image
-                    </p>
-                    <div className="mt-4 flex min-h-[220px] items-center justify-center rounded-[18px] border border-dashed border-[#f1d8e4] bg-[#fffafb] p-3">
-                      {sanitizeImageUrl(selectedServiceRow.sourceItem?.nailVariantImageUrl) ? (
-                        <img crossOrigin="anonymous"
-                          src={sanitizeImageUrl(selectedServiceRow.sourceItem?.nailVariantImageUrl)}
-                          alt={selectedServiceRow.sourceItem?.nailVariantName || "Nail variant"}
-                          className="max-h-[220px] rounded-2xl object-contain"
-                        />
-                      ) : (
-                        <span className="text-sm text-[#a48796]">No nail variant image.</span>
+                {(sanitizeImageUrl(selectedServiceRow.sourceItem?.nailVariantImageUrl) || sanitizeImageUrl(selectedServiceRow.sourceItem?.customerNailImageUrl)) && (
+                  <div>
+                    <Divider orientation="left" className="!text-[#c38ea8] !text-[12px] !font-extrabold uppercase tracking-[0.16em] !border-[#f4d6e2]">
+                      Attached Images
+                    </Divider>
+                    <div className="flex flex-wrap items-start justify-center gap-8">
+                      {sanitizeImageUrl(selectedServiceRow.sourceItem?.nailVariantImageUrl) && (
+                        <div className="flex flex-col items-center gap-3">
+                          <span className="rounded-full bg-[#fff1f6] px-4 py-1 text-[11px] font-extrabold text-[#eb5b92] shadow-sm">
+                            Nail Variant
+                          </span>
+                          <div className="overflow-hidden rounded-[20px] border-4 border-white shadow-[0_12px_24px_rgba(236,72,153,0.12)]">
+                            <Image
+                              src={sanitizeImageUrl(selectedServiceRow.sourceItem?.nailVariantImageUrl)}
+                              alt="Nail Variant"
+                              height={240}
+                              className="object-cover"
+                              crossOrigin="anonymous"
+                            />
+                          </div>
+                        </div>
+                      )}
+                      {sanitizeImageUrl(selectedServiceRow.sourceItem?.customerNailImageUrl) && (
+                        <div className="flex flex-col items-center gap-3">
+                          <span className="rounded-full bg-[#f2edff] px-4 py-1 text-[11px] font-extrabold text-[#7c63d8] shadow-sm">
+                            Customer Nail
+                          </span>
+                          <div className="overflow-hidden rounded-[20px] border-4 border-white shadow-[0_12px_24px_rgba(124,99,216,0.12)]">
+                            <Image
+                              src={sanitizeImageUrl(selectedServiceRow.sourceItem?.customerNailImageUrl)}
+                              alt="Customer Nail"
+                              height={240}
+                              className="object-cover"
+                              crossOrigin="anonymous"
+                            />
+                          </div>
+                        </div>
                       )}
                     </div>
                   </div>
-
-                  <div className="rounded-[18px] border border-[#f4d6e2] bg-white p-4">
-                    <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#c38ea8]">
-                      Customer Nail Image
-                    </p>
-                    <div className="mt-4 flex min-h-[220px] items-center justify-center rounded-[18px] border border-dashed border-[#f1d8e4] bg-[#fffafb] p-3">
-                      {sanitizeImageUrl(selectedServiceRow.sourceItem?.customerNailImageUrl) ? (
-                        <img crossOrigin="anonymous"
-                          src={sanitizeImageUrl(selectedServiceRow.sourceItem?.customerNailImageUrl)}
-                          alt={selectedServiceRow.sourceItem?.customerNailName || "Customer nail"}
-                          className="max-h-[220px] rounded-2xl object-contain"
-                        />
-                      ) : (
-                        <span className="text-sm text-[#a48796]">No customer nail image.</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                )}
               </div>
             ) : (
-              <div className="rounded-[18px] border border-[#f4d6e2] bg-[#fffafb] p-4">
-                <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#c38ea8]">
-                  Service Data
-                </p>
-                <div className="mt-4 space-y-3 text-sm">
-                  {[
-                    // ["Booking Item ID", selectedServiceRow.sourceItem?.bookingItemId || selectedServiceRow.id || "--"],
-                    // ["Service ID", selectedServiceRow.sourceItem?.serviceId || "--"],
-                    ["Service Name", selectedServiceRow.sourceItem?.serviceName || selectedServiceRow.service || "--"],
-                    ["Duration", selectedServiceRow.duration || "--"],
-                    ["Quantity", selectedServiceRow.sourceItem?.quantity ?? "--"],
-                    ["Price", formatCurrency(selectedServiceRow.sourceItem?.price)],
-                    ["Status", selectedServiceRow.status || "--"],
-                    ["Artist", selectedServiceRow.artist || "--"],
-                  ].map(([label, value]) => (
-                    <div key={label} className="flex items-start justify-between gap-4">
-                      <span className="text-[#8f7b88]">{label}</span>
-                      <span className="text-right font-bold text-[#4a3741]">{value}</span>
-                    </div>
-                  ))}
-                </div>
+              <div className="rounded-[24px] border border-[#f4d6e2] bg-[#fffafb] p-6 shadow-sm">
+                <Descriptions
+                  title={<span className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-[#eb5b92]">Service Data</span>}
+                  bordered
+                  column={{ xxl: 2, xl: 2, lg: 2, md: 1, sm: 1, xs: 1 }}
+                  size="middle"
+                  labelStyle={{ fontWeight: "bold", color: "#8f7b88", backgroundColor: "#fff5f8" }}
+                  contentStyle={{ color: "#4a3741", backgroundColor: "white", fontWeight: "500" }}
+                >
+                  <Descriptions.Item label="Service Name" span={2}>{selectedServiceRow.sourceItem?.serviceName || selectedServiceRow.service || "--"}</Descriptions.Item>
+                  <Descriptions.Item label="Duration">{selectedServiceRow.duration || "--"}</Descriptions.Item>
+                  <Descriptions.Item label="Quantity">{selectedServiceRow.sourceItem?.quantity ?? "--"}</Descriptions.Item>
+                  <Descriptions.Item label="Price"><span className="text-[#eb5b92] font-bold">{formatCurrency(selectedServiceRow.sourceItem?.price)}</span></Descriptions.Item>
+                  <Descriptions.Item label="Artist">{selectedServiceRow.artist || "--"}</Descriptions.Item>
+                </Descriptions>
               </div>
             )}
           </div>
@@ -1357,97 +1376,105 @@ export function ReceptionistBookingDetailPage() {
                 {proceduresError}
               </div>
             ) : bookingProcedures.length ? (
-              <div className="space-y-3">
-                {bookingProcedures
-                  .slice()
-                  .sort((left, right) => (left?.stepOrder ?? 0) - (right?.stepOrder ?? 0))
-                  .map((procedure) => (
-                    <div
-                      key={procedure.bookingProcedureId || `${procedure.procedureId}-${procedure.stepOrder}`}
-                      className="rounded-[18px] border border-[#f4d6e2] bg-white p-4 shadow-[0_10px_22px_rgba(236,72,153,0.04)]"
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="rounded-full bg-[#fff1f6] px-2.5 py-1 text-[10px] font-extrabold text-[#eb5b92]">
-                              Step {procedure.stepOrder ?? "--"}
-                            </span>
-                            <span className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold ${getProcedureStatusTone(procedure.status)}`}>
-                              {procedure.status || "--"}
-                            </span>
-                            {procedure.isMainStep ? (
-                              <span className="rounded-full bg-[#efeafd] px-2.5 py-1 text-[10px] font-extrabold text-[#7c63d8]">
-                                Main Step
-                              </span>
-                            ) : null}
-                            {procedure.isRequired ? (
-                              <span className="rounded-full bg-[#fff4cf] px-2.5 py-1 text-[10px] font-extrabold text-[#c89516]">
-                                Required
-                              </span>
-                            ) : null}
-                          </div>
-                          <p className="mt-3 text-base font-extrabold text-[#4a3741]">
-                            {procedure.procedureName || "--"}
-                          </p>
-                          <p className="mt-1 text-sm leading-6 text-[#8f7b88]">
-                            {procedure.description || "No procedure description available."}
-                          </p>
-                        </div>
-                        <div className="grid gap-2 text-right text-xs text-[#8f7b88]">
-                          <span>
-                            {String(procedure.estimatedStartTime || "--").slice(0, 5)} - {String(procedure.estimatedEndTime || "--").slice(0, 5)}
-                          </span>
-                          <span className="font-bold text-[#4a3741]">
-                            {formatDurationMinutes(procedure.duration || 0)}
-                          </span>
-                        </div>
-                      </div>
+              <div className="mt-8 ml-[90px] pr-4">
+                <Timeline
+                  items={bookingProcedures
+                    .slice()
+                    .sort((left, right) => (left?.stepOrder ?? 0) - (right?.stepOrder ?? 0))
+                    .map((procedure) => {
+                      let dotColor = "gray";
+                      if (procedure.status === "Completed") dotColor = "green";
+                      else if (procedure.status === "In Progress" || procedure.status === "InProgress") dotColor = "blue";
+                      else if (procedure.status === "Pending") dotColor = "orange";
+                      else if (procedure.status === "Cancelled") dotColor = "red";
 
-                      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                        <div className="rounded-2xl bg-[#fff7fb] px-3 py-3">
-                          <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
-                            Assigned Artist
-                          </p>
-                          <div className="mt-1 flex items-start justify-between gap-3">
-                            <p className="text-sm font-bold text-[#4a3741]">
-                              {procedure.assignedArtistId ? (procedure.assignedArtistName || "Assigned") : "Unassigned"}
-                            </p>
-                            <button
-                              type="button"
-                              onClick={() => void handleOpenProcedureArtistPicker(procedure)}
-                              className="shrink-0 rounded-full border border-[#f1d8e4] bg-white px-3 py-1 text-[10px] font-extrabold text-[#eb5b92] transition hover:border-[#eb5b92]"
+                      return {
+                        color: dotColor,
+                        children: (
+                          <div className="relative">
+                            <div className="absolute top-0 right-[calc(100%+28px)] text-right whitespace-nowrap">
+                              <span className="block text-[13px] font-bold text-[#4a3741]">
+                                {String(procedure.estimatedStartTime || "--").slice(0, 5)} - {String(procedure.estimatedEndTime || "--").slice(0, 5)}
+                              </span>
+                              <span className="block text-[11px] font-bold text-[#eb5b92] mt-1">
+                                {formatDurationMinutes(procedure.duration || 0)}
+                              </span>
+                            </div>
+                            <Card
+                              size="small"
+                              bordered={false}
+                              className="shadow-[0_8px_20px_rgba(236,72,153,0.06)] border border-[#f4d6e2] !rounded-[18px] !rounded-tl-none mb-6 w-full"
+                              styles={{ body: { padding: '16px' } }}
                             >
-                              {procedure.assignedArtistName ? "Reassign" : "Assign"}
-                            </button>
+                              <div className="flex flex-col gap-3">
+                                <div className="flex flex-wrap items-start justify-between gap-4">
+                                  <div>
+                                    <div className="flex flex-wrap gap-2 mb-3">
+                                      <Tag color="magenta" className="rounded-full font-bold m-0 border-[#f4d6e2]">Step {procedure.stepOrder ?? "--"}</Tag>
+                                      <Tag color={dotColor} className="rounded-full font-bold uppercase m-0">{procedure.status || "--"}</Tag>
+                                      {procedure.isMainStep && <Tag color="purple" className="rounded-full font-bold m-0">Main Step</Tag>}
+                                      {procedure.isRequired && <Tag color="gold" className="rounded-full font-bold m-0">Required</Tag>}
+                                    </div>
+                                    <h4 className="text-[15px] font-extrabold text-[#4a3741] m-0 leading-snug">{procedure.procedureName || "--"}</h4>
+
+                                  </div>
+                                </div>
+
+                                <div className="bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)] rounded-xl p-3 flex flex-wrap justify-between items-center gap-3 mt-2 border border-[#fdf2f7]">
+                                  <div className="flex flex-col gap-1 min-w-[130px]">
+                                    <span className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">Artist</span>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[12px] font-bold text-[#4a3741] truncate max-w-[80px]" title={procedure.assignedArtistId ? (procedure.assignedArtistName || "Assigned") : "Unassigned"}>
+                                        {procedure.assignedArtistId ? (procedure.assignedArtistName || "Assigned") : "Unassigned"}
+                                      </span>
+                                      <Button
+                                        type="primary"
+                                        size="small"
+                                        shape="round"
+                                        icon={procedure.assignedArtistName ? <RefreshCcw size={10} /> : <UserRound size={10} />}
+                                        style={{
+                                          background: procedure.assignedArtistName ? '#f4d6e2' : 'linear-gradient(to right, #eb5b92, #ff7eb3)',
+                                          color: procedure.assignedArtistName ? '#c38ea8' : '#fff',
+                                          border: 'none',
+                                          boxShadow: '0 2px 4px rgba(236,91,146,0.2)'
+                                        }}
+                                        className="!text-[10px] !font-bold !h-6 !px-3 hover:scale-105 transition-transform hover:opacity-90 flex items-center justify-center"
+                                        onClick={() => void handleOpenProcedureArtistPicker(procedure)}
+                                      >
+                                        {procedure.assignedArtistName ? "Reassign" : "Assign"}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col gap-1 text-center min-w-[90px]">
+                                    <span className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">Time (Act)</span>
+                                    <span className="text-[12px] font-bold text-[#4a3741]">
+                                      {procedure.startTime ? String(procedure.startTime).split('T').pop().slice(0, 5) : "--:--"} - {procedure.completedAt ? String(procedure.completedAt).split('T').pop().slice(0, 5) : "--:--"}
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-col gap-1 text-center min-w-[90px]">
+                                    <span className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">Completed By</span>
+                                    <span className="text-[12px] font-bold text-[#4a3741]">
+                                      {procedure.completedByName || <span className="text-[#a48796] italic text-[11px]">Not yet</span>}
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-col gap-1 text-center min-w-[70px]">
+                                    <span className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">Act / Pass</span>
+                                    <span className="text-[12px] font-bold text-[#4a3741]">{procedure.activeDuration ?? 0}m / {procedure.passiveDuration ?? 0}m</span>
+                                  </div>
+                                  <div className="flex flex-col gap-1 text-center min-w-[60px]">
+                                    <span className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">Overlap</span>
+                                    <span className="text-[12px]">
+                                      {procedure.canOverlap ? <Badge status="success" text={<span className="font-bold text-[#28a745]">Yes</span>} /> : <Badge status="default" text={<span className="font-bold text-[#6c6c6c]">No</span>} />}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </Card>
                           </div>
-                        </div>
-                        <div className="rounded-2xl bg-[#fff7fb] px-3 py-3 flex flex-col items-center justify-between gap-2">
-                          <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
-                            Completed By
-                          </p>
-                          <p className="mt-1 text-[13px] font-bold text-[#4a3741]">
-                            {procedure.completedByName || <span className="text-[#6c6c6c] px-3 py-1 border border-[#0a0909] rounded-2xl bg-gray-100 text-[13px] text-center">Not yet</span>}
-                          </p>
-                        </div>
-                        <div className="rounded-2xl bg-[#fff7fb] px-3 py-3 flex flex-col items-center justify-between gap-2">
-                          <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
-                            Active / Passive
-                          </p>
-                          <p className="mt-1 text-[13px] font-bold text-[#4a3741]">
-                            {procedure.activeDuration ?? 0}m / {procedure.passiveDuration ?? 0}m
-                          </p>
-                        </div>
-                        <div className="rounded-2xl bg-[#fff7fb] px-3 py-3 flex flex-col items-center justify-between gap-2">
-                          <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
-                            Overlap
-                          </p>
-                          <p className="mt-1 text-[13px] font-bold text-[#4a3741]">
-                            {procedure.canOverlap ? <span className="text-[#28a745] px-3 py-1 border border-[#28a745] rounded-2xl bg-green-100 text-[13px] text-center">Allowed</span> : <span className="text-[#6c6c6c] px-3 py-1 border border-[#0a0909] rounded-2xl bg-gray-100 text-[13px] text-center">Not Allowed</span>}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                        )
+                      };
+                    })}
+                />
               </div>
             ) : (
               <div className="rounded-[18px] border border-dashed border-[#f1d8e4] bg-[#fffafb] px-4 py-8 text-center text-sm text-[#8f7b88]">
@@ -1509,40 +1536,84 @@ export function ReceptionistBookingDetailPage() {
                 {procedureArtistsError}
               </div>
             ) : procedureArtists.length ? (
-              <div className="space-y-3">
-                {procedureArtists.map((artist) => {
+              <List
+                grid={{ gutter: 16, xs: 1, sm: 2, md: 2, lg: 3, xl: 3, xxl: 3 }}
+                dataSource={procedureArtists}
+                renderItem={(artist) => {
                   const isSubmitting = assigningProcedureArtistId === artist.nailArtistId;
 
                   return (
-                    <div
-                      key={artist.nailArtistId || artist.name}
-                      className="flex flex-col gap-3 rounded-[18px] border border-[#f4d6e2] bg-white p-4 shadow-[0_10px_22px_rgba(236,72,153,0.04)] sm:flex-row sm:items-center sm:justify-between"
-                    >
-                      <div className="min-w-0">
-                        <p className="text-sm font-extrabold text-[#4a3741]">{artist.name || "--"}</p>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          <span className={`rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${getProcedureArtistTone(artist.isFree, artist.isQualified)}`}>
-                            {artist.isFree ? "Free" : "Busy"}
-                          </span>
-                          <span className={`rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${artist.isQualified ? "border-[#cfead9] bg-[#f3fcf6] text-[#249a5c]" : "border-[#ffe2b5] bg-[#fff8ea] text-[#d59218]"}`}>
-                            {artist.isQualified ? "Qualified" : "Not Qualified"}
-                          </span>
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => void handleAssignProcedureArtist(artistPickerProcedure, artist)}
-                        disabled={isSubmitting}
-                        className="inline-flex items-center justify-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-extrabold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)] disabled:cursor-not-allowed disabled:opacity-60"
+                    <List.Item>
+                      <Card
+                        hoverable
+                        className={`overflow-hidden border-2 transition-all duration-300 rounded-[18px] ${artist.isQualified && artist.isFree ? 'border-[#f4d6e2] hover:border-[#eb5b92] shadow-sm hover:shadow-md' : 'border-[#fdf2f7] opacity-80'}`}
+                        styles={{ body: { padding: '16px' } }}
                       >
-                        {isSubmitting ? <LoaderCircle size={14} className="animate-spin" /> : null}
-                        {artistPickerProcedure.assignedArtistName ? "Reassign" : "Assign"}
-                      </button>
-                    </div>
+                        <div className="flex flex-col items-center text-center">
+                          <Avatar
+                            size={56}
+                            style={{
+                              backgroundColor: artist.isFree && artist.isQualified ? '#eb5b92' : '#d9d9d9',
+                              color: '#fff',
+                              fontSize: '20px',
+                              fontWeight: 'bold',
+                              boxShadow: '0 4px 10px rgba(0,0,0,0.05)'
+                            }}
+                          >
+                            {artist.name ? artist.name.charAt(0).toUpperCase() : 'A'}
+                          </Avatar>
+                          <h4 className="mt-3 text-[14px] font-extrabold text-[#4a3741] truncate w-full">{artist.name || "--"}</h4>
+
+                          <div className="mt-2 flex flex-wrap justify-center gap-1.5">
+                            <Tag
+                              color={artist.isFree ? "green" : "red"}
+                              className="m-0 rounded-full text-[9px] font-bold"
+                            >
+                              {artist.isFree ? "Free" : "Busy"}
+                            </Tag>
+                            <Tag color={artist.isQualified ? "blue" : "orange"} className="rounded-full text-[9px] font-bold m-0">
+                              {artist.isQualified ? "Qualified" : "Not Qual."}
+                            </Tag>
+                          </div>
+
+                          <Button
+                            type="primary"
+                            shape="round"
+                            block
+                            style={{
+                              background:
+                                artist.isFree && artist.isQualified
+                                  ? "linear-gradient(to right, #eb5b92, #ff7eb3)"
+                                  : "#f4d6e2",
+                              color:
+                                artist.isFree && artist.isQualified
+                                  ? "#fff"
+                                  : "#c38ea8",
+                              border: "none",
+                              boxShadow:
+                                artist.isFree && artist.isQualified
+                                  ? "0 4px 10px rgba(236,91,146,0.3)"
+                                  : "none",
+                            }}
+                            className="mt-4 h-8 text-[11px] font-bold transition-transform hover:scale-105"
+                            onClick={() => void handleAssignProcedureArtist(artistPickerProcedure, artist)}
+                            loading={isSubmitting}
+                            disabled={
+                              isSubmitting || !artist.isFree || !artist.isQualified
+                            }
+                          >
+                            {artist.isFree && artist.isQualified
+                              ? artistPickerProcedure.assignedArtistName
+                                ? "Reassign"
+                                : "Assign"
+                              : "Can't Assign"}
+                          </Button>
+                        </div>
+                      </Card>
+                    </List.Item>
                   );
-                })}
-              </div>
+                }}
+              />
             ) : (
               <div className="rounded-[18px] border border-dashed border-[#f1d8e4] bg-[#fffafb] px-4 py-8 text-center text-sm text-[#8f7b88]">
                 No available artists found for this procedure.

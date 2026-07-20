@@ -17,6 +17,7 @@ import {
   X,
   HelpCircle,
   Wallet,
+  Clock3,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { PropTypes } from "../../utils/propTypes";
@@ -35,6 +36,7 @@ const ICON_MAP = {
   users: Users,
   quiz: HelpCircle,
   wallet: Wallet,
+  clock: Clock3,
 };
 
 function SidebarItem({ item, collapsed }) {

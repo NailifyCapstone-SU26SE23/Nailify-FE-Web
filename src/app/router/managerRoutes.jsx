@@ -11,11 +11,11 @@ import { StaffManagementPage } from "../../features/manager/staff-artist-managem
 import { StaffUpdatePage } from "../../features/manager/staff-artist-management/pages/StaffUpdatePage";
 import { CustomerNailPage } from "../../features/manager/customer-nail/pages/CustomerNailPage";
 import { CustomerNailDetailPage } from "../../features/manager/customer-nail/pages/CustomerNailDetailPage";
-import { TransactionManagementPage } from "../../features/manager/transaction-management/pages/TransactionManagementPage";
 import { AuthGuard } from "../../shared/components/guards/AuthGuard";
 import { RoleGuard } from "../../shared/components/guards/RoleGuard";
 import { ROLES } from "../../shared/constants/roles";
 import { ROUTES } from "../../shared/constants/routes";
+import { TransactionManagementPage } from "../../features/manager/transaction-management/pages/TransactionManagementPage";
 
 export const managerRoutes = [
   {
@@ -43,10 +43,6 @@ export const managerRoutes = [
       {
         path: ROUTES.managerBookings,
         element: <ManagerBookingListPage />,
-      },
-      {
-        path: ROUTES.managerBookingRatings,
-        element: <BookingRatingListPage />,
       },
       {
         path: ROUTES.managerCustomerNails,
@@ -79,6 +75,10 @@ export const managerRoutes = [
       {
         path: ROUTES.managerBookingDetail,
         element: <ManagerBookingDetailPage />,
+      },
+      {
+        path: ROUTES.managerBookingRatings,
+        element: <BookingRatingListPage />,
       },
     ],
   },

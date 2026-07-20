@@ -40,7 +40,7 @@ export const COMPONENT_TYPE_OPTIONS = ["Gem", "Sticker", "Charm", "Art"];
 export function formatComponentCurrency(value) {
   return `${new Intl.NumberFormat("vi-VN", {
     maximumFractionDigits: 0,
-  }).format(Number(value || 0))} VNĐ`;
+  }).format(Number(value || 0))} VND`;
 }
 
 export function formatComponentDuration(value) {

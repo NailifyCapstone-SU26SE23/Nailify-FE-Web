@@ -59,7 +59,7 @@ function unwrapApiResponse(response, fallbackMessage) {
 }
 
 function formatCurrencyValue(value) {
-  return `${Number(value || 0).toLocaleString("vi-VN")} VNĐ`;
+  return `${Number(value || 0).toLocaleString("vi-VN")} VND`;
 }
 
 function rgbToHex(rgbValue) {
@@ -90,6 +90,37 @@ function hexToRgbLabel(hexValue) {
   return `RGB(${red}, ${green}, ${blue})`;
 }
 
+function normalizeGradientStops(stops, primaryColor, secondaryColor) {
+  const normalizedStops = (Array.isArray(stops) ? stops : [])
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
+
+  if (normalizedStops.length >= 2) {
+    return normalizedStops;
+  }
+
+  return [
+    String(primaryColor || "#f8b4d9").trim() || "#f8b4d9",
+    String(secondaryColor || primaryColor || "#f3e8ff").trim() || "#f3e8ff",
+  ];
+}
+
+function buildGradientStyle(gradientStops = []) {
+  const normalizedStops = normalizeGradientStops(gradientStops);
+  const gradientFormula = normalizedStops
+    .map((color, index) => {
+      if (normalizedStops.length === 1) {
+        return `${color} 0%`;
+      }
+
+      const position = (index / (normalizedStops.length - 1)) * 100;
+      return `${color} ${position.toFixed(2)}%`;
+    })
+    .join(", ");
+
+  return `linear-gradient(135deg, ${gradientFormula})`;
+}
+
 function buildColorSummary(mode, primaryColor, secondaryColor) {
   if (mode === "gradient") {
     return `${hexToRgbLabel(primaryColor)} → ${hexToRgbLabel(secondaryColor)}`;
@@ -104,6 +135,27 @@ function createDefaultFingerColor(primaryColor = "#f8b4d9", secondaryColor = "#f
     primaryColor,
     secondaryColor,
   };
+}
+
+function normalizeFingerColorConfig(colorConfig) {
+  const primaryColor = String(colorConfig?.primaryColor || "#f8b4d9").trim() || "#f8b4d9";
+  const secondaryColor = String(colorConfig?.secondaryColor || primaryColor || "#f3e8ff").trim() || "#f3e8ff";
+  const gradientStops = normalizeGradientStops(colorConfig?.gradientStops, primaryColor, secondaryColor);
+
+  return {
+    mode: colorConfig?.mode === "gradient" ? "gradient" : "solid",
+    primaryColor: gradientStops[0],
+    secondaryColor: gradientStops[1],
+    gradientStops,
+  };
+}
+
+function getFingerColorSummary(colorConfig) {
+  const normalizedConfig = normalizeFingerColorConfig(colorConfig);
+
+  return normalizedConfig.mode === "gradient"
+    ? normalizedConfig.gradientStops.map((color) => hexToRgbLabel(color)).join(" -> ")
+    : hexToRgbLabel(normalizedConfig.primaryColor);
 }
 
 function normalizeFingerIndex(value) {
@@ -145,7 +197,7 @@ function parseVariantColorJson(colorJson, fallbackPrimaryColor, fallbackSecondar
         }
 
         const gradientStops = Array.isArray(finger?.gradient?.stops) ? finger.gradient.stops.filter(Boolean) : [];
-        defaultFingerColors[fingerIndex] = {
+        defaultFingerColors[fingerIndex] = normalizeFingerColorConfig({
           mode: gradientStops.length >= 2 ? "gradient" : "solid",
           primaryColor: String(finger?.primaryColor || finger?.color || gradientStops[0] || fallbackPrimaryColor),
           secondaryColor: String(
@@ -155,14 +207,15 @@ function parseVariantColorJson(colorJson, fallbackPrimaryColor, fallbackSecondar
             || finger?.primaryColor
             || fallbackSecondaryColor,
           ),
-        };
+          gradientStops,
+        });
       });
 
       return defaultFingerColors;
     }
 
     const gradientStops = Array.isArray(parsed?.gradient?.stops) ? parsed.gradient.stops.filter(Boolean) : [];
-    const sharedColor = {
+    const sharedColor = normalizeFingerColorConfig({
       mode: parsed?.mode === "gradient" && gradientStops.length >= 2 ? "gradient" : "solid",
       primaryColor: String(parsed?.primaryColor || parsed?.color || gradientStops[0] || fallbackPrimaryColor),
       secondaryColor: String(
@@ -172,7 +225,8 @@ function parseVariantColorJson(colorJson, fallbackPrimaryColor, fallbackSecondar
         || parsed?.primaryColor
         || fallbackSecondaryColor,
       ),
-    };
+      gradientStops,
+    });
 
     return Array.from({ length: NAIL_LABELS.length }, () => ({ ...sharedColor }));
   } catch {
@@ -323,6 +377,24 @@ function toNullableUuid(value) {
   const normalizedValue = String(value || "").trim();
 
   return isUuidLike(normalizedValue) ? normalizedValue : null;
+}
+
+function getPrimaryNailVariantId(bookingItems) {
+  const matchedItem = (Array.isArray(bookingItems) ? bookingItems : []).find((item) => {
+    const variantId = Number(item?.nailVariantId || 0);
+    return Number.isInteger(variantId) && variantId > 0;
+  });
+
+  return Number(matchedItem?.nailVariantId || 0);
+}
+
+function getPrimaryCustomerNailId(bookingItems) {
+  const matchedItem = (Array.isArray(bookingItems) ? bookingItems : []).find((item) => {
+    const customerNailId = Number(item?.customerNailId || 0);
+    return Number.isInteger(customerNailId) && customerNailId > 0;
+  });
+
+  return Number(matchedItem?.customerNailId || 0);
 }
 
 function isNailLinkedBookingItem(item) {
@@ -591,13 +663,19 @@ function createNailDecorationLayout(decorations = []) {
   return layout;
 }
 
-function buildPlacementKey(fingerIndex, label) {
-  return `${fingerIndex}:${label}`;
+function buildPlacementKey(fingerIndex, label, uniqueToken = "base") {
+  return `${fingerIndex}:${label}:${uniqueToken}`;
 }
 
-function buildDefaultPlacement(option, fingerIndex) {
+function buildDefaultPlacement(option, fingerIndex, uniqueToken) {
+  const resolvedUniqueToken = uniqueToken
+    || option.customerComponentId
+    || option.componentId
+    || option.id
+    || option.label
+    || "base";
   return {
-    key: buildPlacementKey(fingerIndex, option.label),
+    key: buildPlacementKey(fingerIndex, option.label, resolvedUniqueToken),
     fingerIndex,
     label: option.label,
     componentId: toNullableNumber(option.componentId || option.id),
@@ -638,7 +716,7 @@ function parsePlacementConfig(configJson) {
 function getColorStyle(colorMode, primaryColor, secondaryColor) {
   if (colorMode === "gradient") {
     return {
-      backgroundImage: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
+      backgroundImage: buildGradientStyle([primaryColor, secondaryColor]),
     };
   }
 
@@ -1286,15 +1364,18 @@ export function StaffNailDesignStudioPage() {
     });
   }, [designTemplates, designVariants, designView, showAllDesigns, templateStartIndex]);
   const activeColorConfig = useMemo(
-    () => fingerColorConfigs[selectedColorFingerIndices[0] ?? 0] ?? createDefaultFingerColor(),
+    () => normalizeFingerColorConfig(
+      fingerColorConfigs[selectedColorFingerIndices[0] ?? 0] ?? createDefaultFingerColor(),
+    ),
     [fingerColorConfigs, selectedColorFingerIndices],
   );
   const selectedColorMode = activeColorConfig.mode;
   const selectedPrimaryColor = activeColorConfig.primaryColor;
   const selectedSecondaryColor = activeColorConfig.secondaryColor;
+  const selectedGradientStops = activeColorConfig.gradientStops;
   const selectedColor = useMemo(
-    () => buildColorSummary(selectedColorMode, selectedPrimaryColor, selectedSecondaryColor),
-    [selectedColorMode, selectedPrimaryColor, selectedSecondaryColor],
+    () => getFingerColorSummary(activeColorConfig),
+    [activeColorConfig],
   );
   const shapeFamilyOptions = useMemo(() => {
     const familyMap = new Map();
@@ -1402,10 +1483,11 @@ export function StaffNailDesignStudioPage() {
     () => JSON.stringify({
       mode: "perFinger",
       fingers: fingerColorConfigs.map((item, index) => ({
+        ...normalizeFingerColorConfig(item),
         fingerIndex: index + 1,
-        mode: item?.mode || "solid",
-        primaryColor: item?.primaryColor || "#f8b4d9",
-        secondaryColor: item?.secondaryColor || item?.primaryColor || "#f3e8ff",
+        gradient: {
+          stops: normalizeFingerColorConfig(item).gradientStops,
+        },
       })),
     }),
     [fingerColorConfigs],
@@ -1614,8 +1696,12 @@ export function StaffNailDesignStudioPage() {
           return;
         }
 
-        const key = buildPlacementKey(fingerIndex, label);
-        nextPlacements.push(currentMap.get(key) ?? buildDefaultPlacement(option, fingerIndex));
+        const key = buildPlacementKey(fingerIndex, label, option.customerComponentId || option.componentId || option.id || label);
+        nextPlacements.push(currentMap.get(key) ?? buildDefaultPlacement(
+          option,
+          fingerIndex,
+          option.customerComponentId || option.componentId || option.id || label,
+        ));
       });
     });
 
@@ -1690,7 +1776,7 @@ export function StaffNailDesignStudioPage() {
     const nextDecorations = Array.from({ length: NAIL_LABELS.length }, () => []);
     const nextPlacements = [];
 
-    rawComponents.forEach((item) => {
+    rawComponents.forEach((item, index) => {
       const sourceComponent = item?.customerComponent || item?.component;
       const label = String(sourceComponent?.name || "").trim();
       const fingerIndex = normalizeFingerIndex(item?.fingerIndex);
@@ -1718,7 +1804,11 @@ export function StaffNailDesignStudioPage() {
       }
 
       nextPlacements.push({
-        key: buildPlacementKey(fingerIndex, label),
+        key: buildPlacementKey(
+          fingerIndex,
+          label,
+          item?.customerNailComponentId || item?.nailComponentId || `existing-${index}`,
+        ),
         fingerIndex,
         label,
         componentId: toNullableNumber(item?.componentId),
@@ -1750,16 +1840,30 @@ export function StaffNailDesignStudioPage() {
   });
 
   useEffect(() => {
-    if (hasHydratedInitialNailRef.current || isBuilderCatalogLoading || !bookingDetail) {
+    if (hasHydratedInitialNailRef.current || isBuilderCatalogLoading) {
       return;
     }
 
-    const baseNailItem = Array.isArray(bookingDetail?.bookingItems)
-      ? bookingDetail.bookingItems.find(isNailLinkedBookingItem)
-      : null;
-    const customerNailId = toNullableNumber(baseNailItem?.customerNailId);
+    const stateDesignDetail = studioState?.currentDesignDetail || studioState?.designDetail || null;
 
-    if (!customerNailId) {
+    if (stateDesignDetail) {
+      if (stateDesignDetail?.detailType === "customerNail" || stateDesignDetail?.customerNailId) {
+        applyCustomerNailDetailToBuilder(stateDesignDetail);
+      } else {
+        applyVariantToBuilder(stateDesignDetail);
+      }
+      hasHydratedInitialNailRef.current = true;
+      return;
+    }
+
+    if (!bookingDetail) {
+      return;
+    }
+
+    const customerNailId = toNullableNumber(getPrimaryCustomerNailId(bookingDetail?.bookingItems));
+    const nailVariantId = toNullableNumber(getPrimaryNailVariantId(bookingDetail?.bookingItems));
+
+    if (!customerNailId && !nailVariantId) {
       hasHydratedInitialNailRef.current = true;
       return;
     }
@@ -1768,13 +1872,26 @@ export function StaffNailDesignStudioPage() {
 
     const hydrateCustomerNail = async () => {
       try {
-        const customerNailDetail = await fetchStaffCustomerNailDetail(customerNailId);
+        if (customerNailId) {
+          const customerNailDetail = await fetchStaffCustomerNailDetail(customerNailId);
 
-        if (!isMounted) {
+          if (!isMounted) {
+            return;
+          }
+
+          applyCustomerNailDetailToBuilder(customerNailDetail);
           return;
         }
 
-        applyCustomerNailDetailToBuilder(customerNailDetail);
+        if (nailVariantId) {
+          const variantDetail = await fetchStaffNailVariantDetail(nailVariantId);
+
+          if (!isMounted) {
+            return;
+          }
+
+          applyVariantToBuilder(variantDetail);
+        }
       } catch (error) {
         if (!isMounted) {
           return;
@@ -1794,7 +1911,7 @@ export function StaffNailDesignStudioPage() {
     return () => {
       isMounted = false;
     };
-  }, [bookingDetail, isBuilderCatalogLoading]);
+  }, [applyCustomerNailDetailToBuilder, bookingDetail, isBuilderCatalogLoading, studioState]);
 
   const applyVariantToBuilder = (variantDetail) => {
     if (!variantDetail) {
@@ -1840,7 +1957,7 @@ export function StaffNailDesignStudioPage() {
     const nextPlacements = [];
     const variantComponents = Array.isArray(variantDetail?.nailComponents) ? variantDetail.nailComponents : [];
 
-    variantComponents.forEach((item) => {
+    variantComponents.forEach((item, index) => {
       const componentName = String(item?.component?.name || "").trim();
 
       if (!componentName || (allowedDecorationLabels.size > 0 && !allowedDecorationLabels.has(componentName))) {
@@ -1856,7 +1973,7 @@ export function StaffNailDesignStudioPage() {
           }
 
           nextPlacements.push({
-            key: buildPlacementKey(currentFingerIndex, componentName),
+            key: buildPlacementKey(currentFingerIndex, componentName, `variant-${index}-${currentFingerIndex}`),
             fingerIndex: currentFingerIndex,
             label: componentName,
             componentId: Number(item?.component?.componentId || item?.componentId || 0),
@@ -1876,7 +1993,7 @@ export function StaffNailDesignStudioPage() {
       }
 
       nextPlacements.push({
-        key: buildPlacementKey(fingerIndex, componentName),
+        key: buildPlacementKey(fingerIndex, componentName, `variant-${index}`),
         fingerIndex,
         label: componentName,
         componentId: Number(item?.component?.componentId || item?.componentId || 0),
@@ -2030,7 +2147,61 @@ export function StaffNailDesignStudioPage() {
 
   const updateFingerColors = (updater) => {
     markAsCustomized();
-    updateSelectedFingerColors(updater);
+    updateSelectedFingerColors((item, index) => normalizeFingerColorConfig(updater(
+      normalizeFingerColorConfig(item),
+      index,
+    )));
+  };
+
+  const handleGradientStopChange = (stopIndex, value) => {
+    updateFingerColors((item) => {
+      const gradientStops = [...normalizeFingerColorConfig(item).gradientStops];
+      gradientStops[stopIndex] = value;
+
+      return {
+        ...item,
+        mode: "gradient",
+        primaryColor: gradientStops[0],
+        secondaryColor: gradientStops[1] || gradientStops[0],
+        gradientStops,
+      };
+    });
+  };
+
+  const handleAddGradientStop = () => {
+    updateFingerColors((item) => {
+      const normalizedConfig = normalizeFingerColorConfig(item);
+      const gradientStops = [
+        ...normalizedConfig.gradientStops,
+        normalizedConfig.gradientStops[normalizedConfig.gradientStops.length - 1] || normalizedConfig.secondaryColor,
+      ];
+
+      return {
+        ...normalizedConfig,
+        mode: "gradient",
+        gradientStops,
+      };
+    });
+  };
+
+  const handleRemoveGradientStop = (stopIndex) => {
+    updateFingerColors((item) => {
+      const normalizedConfig = normalizeFingerColorConfig(item);
+      const gradientStops = normalizedConfig.gradientStops.filter((_, index) => index !== stopIndex);
+      const nextStops = normalizeGradientStops(
+        gradientStops,
+        gradientStops[0] || normalizedConfig.primaryColor,
+        gradientStops[1] || gradientStops[0] || normalizedConfig.secondaryColor,
+      );
+
+      return {
+        ...normalizedConfig,
+        mode: "gradient",
+        primaryColor: nextStops[0],
+        secondaryColor: nextStops[1],
+        gradientStops: nextStops,
+      };
+    });
   };
 
   const updatePlacementConfig = (placementKey, patch) => {
@@ -2175,13 +2346,13 @@ export function StaffNailDesignStudioPage() {
           customerNailRequestId: null,
           customerNailId: null,
         }]).map((item) => ({
-        nailVariantId: nextNailVariantId,
-        serviceId: toNullableUuid(item?.serviceId),
-        shapeMethodConfigId: null,
-        customerNailId: nextCustomerNailId,
-        customerNailRequestId: null,
-        quantity: Number(item?.quantity || 1) || 1,
-      }));
+          nailVariantId: nextNailVariantId,
+          serviceId: toNullableUuid(item?.serviceId),
+          shapeMethodConfigId: null,
+          customerNailId: nextCustomerNailId,
+          customerNailRequestId: null,
+          quantity: Number(item?.quantity || 1) || 1,
+        }));
       const preservedServiceItems = existingServiceItems
         .map((item) => buildServiceOnlyBookingItem(item))
         .filter((item) => item.serviceId);
@@ -2260,7 +2431,7 @@ export function StaffNailDesignStudioPage() {
             </div>
           </article>
 
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(430px,0.44fr)]">
             <div className="space-y-4">
               <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
                 <div className="flex items-start justify-between gap-3">
@@ -2410,8 +2581,8 @@ export function StaffNailDesignStudioPage() {
                   <h2 className="text-sm font-extrabold text-[#38253a]">Layer-Based Custom Builder</h2>
                   <span
                     className={`rounded-full border px-3 py-1 text-[10px] font-bold ${selectedVariantId
-                        ? "border-orange-200 bg-orange-100 text-orange-600"
-                        : "border-green-200 bg-green-100 text-green-600"
+                      ? "border-orange-200 bg-orange-100 text-orange-600"
+                      : "border-green-200 bg-green-100 text-green-600"
                       }`}
                   >
                     {selectedVariantId ? "Variant Selected" : "Customizing"}
@@ -2498,55 +2669,108 @@ export function StaffNailDesignStudioPage() {
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        <Pill active={selectedColorMode === "solid"} onClick={() => updateFingerColors((item) => ({ ...item, mode: "solid" }))}>
+                        <Pill
+                          active={selectedColorMode === "solid"}
+                          onClick={() => updateFingerColors((item) => ({ ...item, mode: "solid" }))}
+                        >
                           Solid
                         </Pill>
-                        <Pill active={selectedColorMode === "gradient"} onClick={() => updateFingerColors((item) => ({ ...item, mode: "gradient" }))}>
+                        <Pill
+                          active={selectedColorMode === "gradient"}
+                          onClick={() => updateFingerColors((item) => ({
+                            ...item,
+                            mode: "gradient",
+                            gradientStops: normalizeFingerColorConfig(item).gradientStops,
+                          }))}
+                        >
                           Gradient
                         </Pill>
                       </div>
-                      <div className="grid gap-3 md:grid-cols-2">
-                        <label className="rounded-[14px] border border-[#f4dbe7] bg-white p-3">
-                          <span className="text-[10px] font-extrabold text-[#ea4f93]">
-                            {selectedColorMode === "gradient" ? "Gradient Start" : "Primary Color"}
-                          </span>
-                          <div className="mt-3 flex items-center gap-3">
-                            <input
-                              type="color"
-                              value={selectedPrimaryColor}
-                              onChange={(event) => updateFingerColors((item) => ({ ...item, primaryColor: event.target.value }))}
-                              className="h-10 w-14 cursor-pointer rounded-md border border-[#f2bfd4] bg-white p-1"
-                            />
+                      {selectedColorMode === "gradient" ? (
+                        <div className="space-y-3 rounded-[14px] border border-[#f4dbe7] bg-white p-3">
+                          <div className="flex items-center justify-between gap-3">
                             <div>
-                              <p className="text-[10px] font-bold text-[#38253a]">{selectedPrimaryColor.toUpperCase()}</p>
-                              <p className="mt-1 text-[10px] text-[#a98c9f]">{hexToRgbLabel(selectedPrimaryColor)}</p>
+                              <p className="text-[10px] font-extrabold text-[#ea4f93]">Gradient Stops</p>
+                              <p className="mt-1 text-[10px] text-[#a98c9f]">Add multiple colors for rainbow-style nails.</p>
                             </div>
+                            <button
+                              type="button"
+                              onClick={handleAddGradientStop}
+                              className="rounded-full border border-[#f2bfd4] bg-[#fff5fa] px-3 py-1 text-[10px] font-extrabold text-[#ea4f93]"
+                            >
+                              + Add color
+                            </button>
                           </div>
-                        </label>
-
-                        <label className={`rounded-[14px] border border-[#f4dbe7] bg-white p-3 ${selectedColorMode === "gradient" ? "" : "opacity-60"}`}>
-                          <span className="text-[10px] font-extrabold text-[#ea4f93]">Gradient End</span>
-                          <div className="mt-3 flex items-center gap-3">
-                            <input
-                              type="color"
-                              value={selectedSecondaryColor}
-                              onChange={(event) => updateFingerColors((item) => ({ ...item, secondaryColor: event.target.value }))}
-                              disabled={selectedColorMode !== "gradient"}
-                              className="h-10 w-14 cursor-pointer rounded-md border border-[#f2bfd4] bg-white p-1 disabled:cursor-not-allowed"
-                            />
-                            <div>
-                              <p className="text-[10px] font-bold text-[#38253a]">{selectedSecondaryColor.toUpperCase()}</p>
-                              <p className="mt-1 text-[10px] text-[#a98c9f]">{hexToRgbLabel(selectedSecondaryColor)}</p>
+                          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                            {selectedGradientStops.map((stopColor, stopIndex) => (
+                              <label
+                                key={`gradient-stop-${stopIndex}`}
+                                className="rounded-[14px] border border-[#f4dbe7] bg-[#fffafd] p-3"
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="text-[10px] font-extrabold text-[#ea4f93]">
+                                    Stop {stopIndex + 1}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveGradientStop(stopIndex)}
+                                    disabled={selectedGradientStops.length <= 2}
+                                    className="text-[10px] font-bold text-[#c48aa4] disabled:cursor-not-allowed disabled:opacity-40"
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                                <div className="mt-3 flex items-center gap-3">
+                                  <input
+                                    type="color"
+                                    value={stopColor}
+                                    onChange={(event) => handleGradientStopChange(stopIndex, event.target.value)}
+                                    className="h-10 w-14 cursor-pointer rounded-md border border-[#f2bfd4] bg-white p-1"
+                                  />
+                                  <div>
+                                    <p className="text-[10px] font-bold text-[#38253a]">{stopColor.toUpperCase()}</p>
+                                    <p className="mt-1 text-[10px] text-[#a98c9f]">{hexToRgbLabel(stopColor)}</p>
+                                  </div>
+                                </div>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <label className="rounded-[14px] border border-[#f4dbe7] bg-white p-3">
+                            <span className="text-[10px] font-extrabold text-[#ea4f93]">Primary Color</span>
+                            <div className="mt-3 flex items-center gap-3">
+                              <input
+                                type="color"
+                                value={selectedPrimaryColor}
+                                onChange={(event) => updateFingerColors((item) => ({
+                                  ...item,
+                                  primaryColor: event.target.value,
+                                  gradientStops: [
+                                    event.target.value,
+                                    normalizeFingerColorConfig(item).gradientStops[1] || event.target.value,
+                                    ...normalizeFingerColorConfig(item).gradientStops.slice(2),
+                                  ],
+                                }))}
+                                className="h-10 w-14 cursor-pointer rounded-md border border-[#f2bfd4] bg-white p-1"
+                              />
+                              <div>
+                                <p className="text-[10px] font-bold text-[#38253a]">{selectedPrimaryColor.toUpperCase()}</p>
+                                <p className="mt-1 text-[10px] text-[#a98c9f]">{hexToRgbLabel(selectedPrimaryColor)}</p>
+                              </div>
                             </div>
-                          </div>
-                        </label>
-                      </div>
+                          </label>
+                        </div>
+                      )}
                       <div className="rounded-[14px] border border-dashed border-[#f2bfd4] bg-white p-3">
                         <p className="text-[10px] font-bold text-[#a98c9f]">Live Color Formula</p>
                         <div className="mt-2 flex items-center gap-3">
                           <span
                             className="h-10 w-10 rounded-full border border-[#f2bfd4]"
-                            style={getColorStyle(selectedColorMode, selectedPrimaryColor, selectedSecondaryColor)}
+                            style={selectedColorMode === "gradient"
+                              ? { backgroundImage: buildGradientStyle(selectedGradientStops) }
+                              : { backgroundColor: selectedPrimaryColor }}
                           />
                           <div>
                             <p className="text-[10px] font-extrabold text-[#ea4f93]">{selectedColorMode === "gradient" ? "Gradient RGB" : "Solid RGB"}</p>

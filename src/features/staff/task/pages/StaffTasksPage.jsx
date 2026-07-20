@@ -10,15 +10,19 @@ import {
   UserRoundCheck,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
 import { EmptyState } from "../../../../shared/components/common/EmptyState";
 import { ROUTES, getStaffBookingDetailRoute } from "../../../../shared/constants/routes";
 import { formatDate } from "../../../../shared/utils/formatDate";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
+import { getErrorMessage } from "../../../../shared/utils/getErrorMessage";
+import { getStaffArtistId } from "../../bookings/services/staffBookingService";
 import {
   claimStaffTask,
+  filterTasksByBookingInProgress,
   fetchAssignedStaffTasks,
-  fetchClaimableSalonTasks,
+  fetchSalonQueueTasks,
   updateStaffTaskStatus,
 } from "../services/staffTaskService";
 
@@ -120,6 +124,80 @@ function normalizeStatusKey(status) {
     default:
       return "Pending";
   }
+}
+
+function isTaskTerminalStatus(status) {
+  const normalized = String(status || "").trim().toLowerCase();
+  return normalized === "completed" || normalized === "done" || normalized === "skipped";
+}
+
+function buildTaskSequenceBlockMap(tasks) {
+  const groupedTasks = new Map();
+
+  (Array.isArray(tasks) ? tasks : []).forEach((task) => {
+    const groupKey = String(task?.bookingItemId || task?.bookingId || "").trim();
+
+    if (!groupKey) {
+      return;
+    }
+
+    if (!groupedTasks.has(groupKey)) {
+      groupedTasks.set(groupKey, []);
+    }
+
+    groupedTasks.get(groupKey).push(task);
+  });
+
+  const blockMap = new Map();
+
+  groupedTasks.forEach((groupTasks) => {
+    const sortedTasks = [...groupTasks].sort(
+      (left, right) => Number(left?.stepOrder || 0) - Number(right?.stepOrder || 0),
+    );
+
+    sortedTasks.forEach((task) => {
+      const currentStepOrder = Number(task?.stepOrder || 0);
+      const isBlocked = sortedTasks.some((previousTask) => {
+        const previousStepOrder = Number(previousTask?.stepOrder || 0);
+
+        if (!Number.isFinite(previousStepOrder) || !Number.isFinite(currentStepOrder)) {
+          return false;
+        }
+
+        if (previousStepOrder >= currentStepOrder) {
+          return false;
+        }
+
+        if (!previousTask?.isRequired || previousTask?.canOverlap) {
+          return false;
+        }
+
+        return !isTaskTerminalStatus(previousTask?.status);
+      });
+
+      blockMap.set(String(task?.bookingProcedureId || "").trim(), isBlocked);
+    });
+  });
+
+  return blockMap;
+}
+
+function applyTaskSequenceBlockState(tasks, blockMap) {
+  return (Array.isArray(tasks) ? tasks : []).map((task) => ({
+    ...task,
+    isBlockedBySequence: blockMap.get(String(task?.bookingProcedureId || "").trim()) || false,
+  }));
+}
+
+function decorateTaskBoards(myTaskList, salonTaskList) {
+  const nextMyTasks = Array.isArray(myTaskList) ? myTaskList : [];
+  const nextSalonTasks = Array.isArray(salonTaskList) ? salonTaskList : [];
+  const sequenceBlockMap = buildTaskSequenceBlockMap([...nextMyTasks, ...nextSalonTasks]);
+
+  return {
+    myTasks: applyTaskSequenceBlockState(nextMyTasks, sequenceBlockMap),
+    salonTasks: applyTaskSequenceBlockState(nextSalonTasks, sequenceBlockMap),
+  };
 }
 
 function Card({ className = "", children }) {
@@ -229,12 +307,72 @@ function isTaskAssigned(task) {
   );
 }
 
-function canTaskBeDragged(task) {
-  return isTaskAssigned(task);
+function isTaskAssignedToCurrentArtist(task, currentStaffArtistId) {
+  const assignedArtistId = String(task?.assignedArtistId || "").trim();
+  const normalizedCurrentStaffArtistId = String(currentStaffArtistId || "").trim();
+
+  if (!assignedArtistId || !normalizedCurrentStaffArtistId) {
+    return false;
+  }
+
+  return assignedArtistId === normalizedCurrentStaffArtistId;
+}
+
+function canTaskBeDragged(task, currentStaffArtistId) {
+  if (!isTaskAssigned(task)) {
+    return false;
+  }
+
+  if (!isTaskAssignedToCurrentArtist(task, currentStaffArtistId)) {
+    return false;
+  }
+
+  return !(task?.isBlockedBySequence && normalizeStatusKey(task?.status) === "Pending");
 }
 
 function getTaskOwnerLabel(task, fallbackLabel = "Assigned to you") {
   return task?.assignedArtistName || fallbackLabel;
+}
+
+function mergeTaskWithStatusUpdate(currentTask, updatedTask) {
+  if (!currentTask) {
+    return updatedTask;
+  }
+
+  if (!updatedTask) {
+    return currentTask;
+  }
+
+  const pickText = (nextValue, currentValue, invalidValues = []) => {
+    const normalizedNext = String(nextValue || "").trim();
+    if (!normalizedNext || invalidValues.includes(normalizedNext)) {
+      return currentValue;
+    }
+
+    return nextValue;
+  };
+
+  return {
+    ...currentTask,
+    ...updatedTask,
+    bookingItemId: pickText(updatedTask.bookingItemId, currentTask.bookingItemId),
+    procedureId: pickText(updatedTask.procedureId, currentTask.procedureId),
+    procedureName: pickText(updatedTask.procedureName, currentTask.procedureName, ["Unnamed Procedure"]),
+    description: pickText(updatedTask.description, currentTask.description),
+    assignedArtistId: pickText(updatedTask.assignedArtistId, currentTask.assignedArtistId),
+    assignedArtistName: pickText(updatedTask.assignedArtistName, currentTask.assignedArtistName),
+    estimatedStartTime: pickText(updatedTask.estimatedStartTime, currentTask.estimatedStartTime),
+    estimatedEndTime: pickText(updatedTask.estimatedEndTime, currentTask.estimatedEndTime),
+    bookingId: pickText(updatedTask.bookingId, currentTask.bookingId),
+    customerName: pickText(updatedTask.customerName, currentTask.customerName, ["Unknown Customer"]),
+    chairName: pickText(updatedTask.chairName, currentTask.chairName),
+    bookingDate: updatedTask.bookingDate || currentTask.bookingDate,
+    startTime: pickText(updatedTask.startTime, currentTask.startTime),
+    stepOrder: updatedTask.stepOrder || currentTask.stepOrder,
+    duration: updatedTask.duration || currentTask.duration,
+    activeDuration: updatedTask.activeDuration || currentTask.activeDuration,
+    passiveDuration: updatedTask.passiveDuration || currentTask.passiveDuration,
+  };
 }
 
 function BoardTaskCard({
@@ -394,6 +532,13 @@ export function StaffTasksPage() {
   const [draggingSource, setDraggingSource] = useState("");
   const [dragOverColumn, setDragOverColumn] = useState("");
   const [updatingTaskId, setUpdatingTaskId] = useState("");
+  const currentStaffArtistId = useMemo(() => {
+    try {
+      return String(getStaffArtistId() || "").trim();
+    } catch {
+      return "";
+    }
+  }, []);
 
   const loadTasks = useCallback(async (options = {}) => {
     const { silent = false } = options;
@@ -407,16 +552,22 @@ export function StaffTasksPage() {
 
       setError("");
 
-      const [assignedData, claimableData] = await Promise.all([
+      const [assignedData, salonQueueData] = await Promise.all([
         fetchAssignedStaffTasks(),
-        fetchClaimableSalonTasks(),
+        fetchSalonQueueTasks(),
       ]);
+      const [visibleAssignedTasks, visibleClaimableTasks] = await Promise.all([
+        filterTasksByBookingInProgress(assignedData),
+        Promise.resolve(salonQueueData),
+      ]);
+      const decoratedBoards = decorateTaskBoards(visibleAssignedTasks, visibleClaimableTasks);
 
-      setMyTasks(assignedData);
-      setSalonTasks(claimableData);
+      setMyTasks(decoratedBoards.myTasks);
+      setSalonTasks(decoratedBoards.salonTasks);
     } catch (err) {
       console.error("Failed to load staff tasks:", err);
-      setError(err?.message || "Failed to load tasks.");
+      const message = getErrorMessage(err, "Failed to load tasks.");
+      setError(message);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -428,6 +579,16 @@ export function StaffTasksPage() {
   }, [loadTasks]);
 
   const handleClaimTask = useCallback(async (task) => {
+    if (isTaskAssigned(task)) {
+      setError("This task has already been claimed by another staff member.");
+      return;
+    }
+
+    if (task?.isBlockedBySequence) {
+      setError("Claim this booking in step order. Finish the earlier required step first.");
+      return;
+    }
+
     try {
       setClaimingTaskId(task.bookingProcedureId);
       await claimStaffTask(task.bookingProcedureId);
@@ -435,14 +596,16 @@ export function StaffTasksPage() {
       setActiveTab("my");
     } catch (err) {
       console.error("Failed to claim task:", err);
-      setError(err?.message || "Failed to claim task.");
+      const message = getErrorMessage(err, "Failed to claim task.");
+      setError(message);
+      toast.error(message);
     } finally {
       setClaimingTaskId("");
     }
   }, [loadTasks]);
 
   const handleDragStart = useCallback((event, task, source = "my") => {
-    if (!canTaskBeDragged(task)) {
+    if (!canTaskBeDragged(task, currentStaffArtistId)) {
       event.preventDefault();
       return;
     }
@@ -451,7 +614,7 @@ export function StaffTasksPage() {
     setDraggingSource(source);
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", task.bookingProcedureId);
-  }, []);
+  }, [currentStaffArtistId]);
 
   const handleDragEnd = useCallback(() => {
     setDraggingTask(null);
@@ -482,22 +645,33 @@ export function StaffTasksPage() {
 
     try {
       setUpdatingTaskId(draggingTask.bookingProcedureId);
-      setMyTasks(optimisticTasks);
+      const optimisticBoards = decorateTaskBoards(optimisticTasks, salonTasks);
+      setMyTasks(optimisticBoards.myTasks);
+      setSalonTasks(optimisticBoards.salonTasks);
 
       const updatedTask = await updateStaffTaskStatus(
         draggingTask.bookingProcedureId,
         nextStatus,
       );
 
-      setMyTasks((current) =>
-        current.map((task) =>
-          task.bookingProcedureId === updatedTask.bookingProcedureId ? updatedTask : task,
-        ),
-      );
+      setMyTasks((current) => {
+        const mergedMyTasks = current.map((task) =>
+          task.bookingProcedureId === updatedTask.bookingProcedureId
+            ? mergeTaskWithStatusUpdate(task, updatedTask)
+            : task,
+        );
+        const decoratedBoards = decorateTaskBoards(mergedMyTasks, salonTasks);
+        setSalonTasks(decoratedBoards.salonTasks);
+        return decoratedBoards.myTasks;
+      });
     } catch (err) {
       console.error("Failed to update task status:", err);
-      setMyTasks(previousTasks);
-      setError(err?.message || "Failed to update task status.");
+      const revertedBoards = decorateTaskBoards(previousTasks, salonTasks);
+      setMyTasks(revertedBoards.myTasks);
+      setSalonTasks(revertedBoards.salonTasks);
+      const message = getErrorMessage(err, "Failed to update task status.");
+      setError(message);
+      toast.error(message);
     } finally {
       setUpdatingTaskId("");
       setDraggingTask(null);
@@ -513,8 +687,12 @@ export function StaffTasksPage() {
       return;
     }
 
-    if (!canTaskBeDragged(draggingTask)) {
-      setError("Claim this task before moving it to another status.");
+    if (!canTaskBeDragged(draggingTask, currentStaffArtistId)) {
+      if (isTaskAssigned(draggingTask)) {
+        setError("Only the staff member who claimed this step can move it.");
+      } else {
+        setError("Claim this task before moving it to another status.");
+      }
       setDraggingTask(null);
       setDraggingSource("");
       return;
@@ -536,28 +714,39 @@ export function StaffTasksPage() {
 
     try {
       setUpdatingTaskId(draggingTask.bookingProcedureId);
-      setSalonTasks(optimisticTasks);
+      const optimisticBoards = decorateTaskBoards(myTasks, optimisticTasks);
+      setMyTasks(optimisticBoards.myTasks);
+      setSalonTasks(optimisticBoards.salonTasks);
 
       const updatedTask = await updateStaffTaskStatus(
         draggingTask.bookingProcedureId,
         nextStatus,
       );
 
-      setSalonTasks((current) =>
-        current.map((task) =>
-          task.bookingProcedureId === updatedTask.bookingProcedureId ? updatedTask : task,
-        ),
-      );
+      setSalonTasks((current) => {
+        const mergedSalonTasks = current.map((task) =>
+          task.bookingProcedureId === updatedTask.bookingProcedureId
+            ? mergeTaskWithStatusUpdate(task, updatedTask)
+            : task,
+        );
+        const decoratedBoards = decorateTaskBoards(myTasks, mergedSalonTasks);
+        setMyTasks(decoratedBoards.myTasks);
+        return decoratedBoards.salonTasks;
+      });
     } catch (err) {
       console.error("Failed to update salon task status:", err);
-      setSalonTasks(previousTasks);
-      setError(err?.message || "Failed to update salon task status.");
+      const revertedBoards = decorateTaskBoards(myTasks, previousTasks);
+      setMyTasks(revertedBoards.myTasks);
+      setSalonTasks(revertedBoards.salonTasks);
+      const message = getErrorMessage(err, "Failed to update salon task status.");
+      setError(message);
+      toast.error(message);
     } finally {
       setUpdatingTaskId("");
       setDraggingTask(null);
       setDraggingSource("");
     }
-  }, [draggingSource, draggingTask, salonTasks]);
+  }, [currentStaffArtistId, draggingSource, draggingTask, salonTasks]);
 
   const myTasksByColumn = useMemo(() => {
     return BOARD_COLUMNS.reduce((groups, column) => {
@@ -594,7 +783,7 @@ export function StaffTasksPage() {
         key: "claimable",
         title: "Claimable",
         value: salonTasks.length,
-        note: "Open tasks ready to be claimed",
+        note: "Visible steps in the salon queue",
         icon: Sparkles,
         toneClassName: "bg-gradient-to-br from-[#8b5cf6] to-[#7c3aed]",
       },
@@ -649,7 +838,7 @@ export function StaffTasksPage() {
               subtitle={
                 activeTab === "my"
                   ? "Drag tasks between columns to update their working status."
-                  : "Claim unlocked salon tasks and move them into your own queue."
+                  : "Review the full salon task queue. Locked steps stay visible until earlier required steps are finished."
               }
             />
 
@@ -713,8 +902,8 @@ export function StaffTasksPage() {
             )
           ) : salonTasks.length === 0 ? (
             <EmptyState
-              title="No claimable salon tasks"
-              description="There are no open booking procedures ready for self-claim right now."
+              title="No salon tasks"
+              description="There are no in-progress booking procedures visible in the salon queue right now."
             />
           ) : (
             <div className="overflow-x-auto pb-2">
@@ -736,10 +925,20 @@ export function StaffTasksPage() {
                     onDragEnd={handleDragEnd}
                     draggingTaskId={draggingTask?.bookingProcedureId || ""}
                     updatingTaskId={updatingTaskId}
-                    emptyText={column.key === "Pending" ? "No claimable tasks here" : "No tasks in this status"}
+                    emptyText={column.key === "Pending" ? "No salon tasks here" : "No tasks in this status"}
                     renderTask={(task) => {
-                      const canDrag = canTaskBeDragged(task);
-                      const isClaimable = column.key === "Pending" && !canDrag;
+                      const canDrag = canTaskBeDragged(task, currentStaffArtistId);
+                      const isAssigned = isTaskAssigned(task);
+                      const isAssignedToCurrentArtist = isTaskAssignedToCurrentArtist(
+                        task,
+                        currentStaffArtistId,
+                      );
+                      const isBlockedBySequence =
+                        Boolean(task?.isBlockedBySequence) && normalizeStatusKey(task?.status) === "Pending";
+                      const isClaimable =
+                        column.key === "Pending" &&
+                        !isAssigned &&
+                        !isBlockedBySequence;
 
                       return (
                         <BoardTaskCard
@@ -750,8 +949,22 @@ export function StaffTasksPage() {
                           isDragging={draggingTask?.bookingProcedureId === task.bookingProcedureId}
                           isUpdating={updatingTaskId === task.bookingProcedureId}
                           canDrag={canDrag}
-                          ownerLabel={canDrag ? getTaskOwnerLabel(task) : "Unassigned"}
-                          footerHint={canDrag ? "Drag to move this task" : "Claim this task before updating status"}
+                          ownerLabel={
+                            isAssigned
+                              ? getTaskOwnerLabel(task, "Assigned")
+                              : "Unassigned"
+                          }
+                          footerHint={
+                            isBlockedBySequence
+                              ? "Claim follows the booking step order"
+                              : canDrag
+                                ? "Drag to move this task"
+                                : isAssignedToCurrentArtist
+                                  ? "Claim this task before updating status"
+                                  : isAssigned
+                                    ? "Only the staff who claimed this step can move it"
+                                    : "Claim this task before updating status"
+                          }
                           primaryAction={
                             isClaimable ? (
                               <button
@@ -793,7 +1006,7 @@ export function StaffTasksPage() {
             <h3 className="text-sm font-extrabold text-[#402542]">How this screen works</h3>
             <div className="mt-3 grid gap-3 md:grid-cols-3">
               <MiniInfo label="My Tasks" value="Drag a card into another column to update its real status." />
-              <MiniInfo label="Salon Tasks" value="Unassigned To Do tasks can be claimed, assigned tasks can be dragged across statuses." />
+              <MiniInfo label="Salon Tasks" value="All salon steps stay visible, but blocked pending steps cannot be claimed until the earlier required step is done." />
               <MiniInfo label="No Add Button" value="This board only reflects backend booking procedures, no manual task creation." />
             </div>
           </div>
