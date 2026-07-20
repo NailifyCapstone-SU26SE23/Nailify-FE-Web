@@ -126,7 +126,7 @@ export function ExtraServiceModal({
                     <div className="mt-3 flex justify-between ">
                       <div className="flex flex-wrap gap-2">
                         <span className="rounded-full bg-[#fff4da] px-3 py-2 text-[11px] font-bold text-[#bd8517]">
-                          {new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(service.price)} VNĐ
+                          {new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(service.price)} VND
                         </span>
                         <span className="rounded-full bg-[#f7efff] px-3 py-2 text-[11px] font-bold text-[#8b5cf6]">
                           {formatServiceDuration(service.duration)}

@@ -23,6 +23,7 @@ import toast from "react-hot-toast";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
+import { ServiceProceduresViewerModal } from "../../../../shared/components/common/ServiceProceduresViewerModal";
 import { ExtraServiceModal } from "../components/ExtraServiceModal";
 import {
   getStaffBookingDesignUpdateRoute,
@@ -56,6 +57,7 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { setServiceSession } from "../../../../store/serviceSessionSlice";
 import { Button, Image, Modal } from "antd";
+import { useNotifications } from "../../../core/notifications/context/NotificationContext";
 
 const DEFAULT_CUSTOMER_AVATAR =
   "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=140&q=80";
@@ -65,12 +67,12 @@ const STICKY_HEADER_OFFSET_PX = -20;
 function SectionTitle({ icon: Icon, title, subtitle }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#fff0f6_0%,#ffe5ef_100%)] text-[#ea4f93]">
+      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fdf2f7] text-[#ea4f93]">
         <Icon size={18} />
       </div>
       <div>
-        <h2 className="text-sm font-extrabold text-[#3f2b3f]">{title}</h2>
-        {subtitle ? <p className="mt-1 text-xs text-[#a88a9d]">{subtitle}</p> : null}
+        <h2 className="text-sm font-bold text-gray-900">{title}</h2>
+        {subtitle ? <p className="mt-1 text-xs text-gray-500">{subtitle}</p> : null}
       </div>
     </div>
   );
@@ -155,68 +157,68 @@ function ProcedureTimelineStep({ step, isLast, onTick }) {
     note: "text-[#a78c9d]",
   };
 
- return (
-  <div className="flex items-stretch gap-4">
-    {/* Step number + connecting line */}
-    <div className="flex w-10 shrink-0 flex-col items-center">
-      <div
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-extrabold ${tone.dot}`}
-      >
-        {step.stepNumber}
-      </div>
-
-      {!isLast ? (
+  return (
+    <div className="flex items-stretch gap-4">
+      {/* Step number + connecting line */}
+      <div className="flex w-10 shrink-0 flex-col items-center">
         <div
-          className={`mt-2 min-h-6 w-1 flex-1 rounded-full ${tone.line}`}
-        />
-      ) : null}
-    </div>
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-extrabold ${tone.dot}`}
+        >
+          {step.stepNumber}
+        </div>
 
-    {/* Procedure information */}
-    <div className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_40px] items-center gap-3">
-      {/* Procedure name */}
-      <div className="min-w-0">
-        <p className={`truncate text-sm font-extrabold ${tone.title}`}>
-          {step.label}
-        </p>
+        {!isLast ? (
+          <div
+            className={`mt-2 min-h-6 w-1 flex-1 rounded-full ${tone.line}`}
+          />
+        ) : null}
+      </div>
 
-        {step.note ? (
-          <p className={`mt-1 text-xs ${tone.note}`}>
-            {step.note}
+      {/* Procedure information */}
+      <div className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_40px] items-center gap-3">
+        {/* Procedure name */}
+        <div className="min-w-0">
+          <p className={`truncate text-sm font-extrabold ${tone.title}`}>
+            {step.label}
           </p>
-        ) : null}
-      </div>
 
-      {/* Status */}
-      <span
-        className={`inline-flex shrink-0 items-center justify-center rounded-full px-2.5 py-1 text-[10px] font-extrabold ${getProcedureStatusTone(
-          step.status
-        )}`}
-      >
-        {step.statusLabel}
-      </span>
+          {step.note ? (
+            <p className={`mt-1 text-xs ${tone.note}`}>
+              {step.note}
+            </p>
+          ) : null}
+        </div>
 
-      {/* Tick button */}
-      <div className="flex h-10 w-10 items-center justify-center">
-        {step.canTick ? (
-          <button
-            type="button"
-            onClick={() => onTick(step)}
-            disabled={step.isUpdating}
-            title="Mark this procedure as completed"
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#cfead9] bg-[#f3fcf6] text-[#249a5c] shadow-[0_10px_20px_rgba(36,154,92,0.12)] transition hover:bg-[#eaf8f0] disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {step.isUpdating ? (
-              <span className="inline-flex h-4 w-4 animate-spin rounded-full border-2 border-[#249a5c]/30 border-t-[#249a5c]" />
-            ) : (
-              <Check size={18} strokeWidth={3} />
-            )}
-          </button>
-        ) : null}
+        {/* Status */}
+        <span
+          className={`inline-flex shrink-0 items-center justify-center rounded-full px-2.5 py-1 text-[10px] font-extrabold ${getProcedureStatusTone(
+            step.status
+          )}`}
+        >
+          {step.statusLabel}
+        </span>
+
+        {/* Tick button */}
+        <div className="flex h-10 w-10 items-center justify-center">
+          {step.canTick ? (
+            <button
+              type="button"
+              onClick={() => onTick(step)}
+              disabled={step.isUpdating}
+              title="Mark this procedure as completed"
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#cfead9] bg-[#f3fcf6] text-[#249a5c] shadow-[0_10px_20px_rgba(36,154,92,0.12)] transition hover:bg-[#eaf8f0] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {step.isUpdating ? (
+                <span className="inline-flex h-4 w-4 animate-spin rounded-full border-2 border-[#249a5c]/30 border-t-[#249a5c]" />
+              ) : (
+                <Check size={18} strokeWidth={3} />
+              )}
+            </button>
+          ) : null}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
 }
 
 ProcedureTimelineStep.propTypes = {
@@ -236,8 +238,8 @@ ProcedureTimelineStep.propTypes = {
 function SummaryValue({ label, value, accent = false }) {
   return (
     <div>
-      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">{label}</p>
-      <p className={`mt-1 whitespace-pre-line text-sm font-bold ${accent ? "text-[#ea4f93]" : "text-[#3f2b3f]"}`}>{value}</p>
+      <p className="text-[11px] font-semibold text-gray-500">{label}</p>
+      <p className={`mt-1 whitespace-pre-line text-sm font-semibold ${accent ? "text-[#ea4f93]" : "text-gray-900"}`}>{value}</p>
     </div>
   );
 }
@@ -254,84 +256,73 @@ function ServiceSummaryValue({ services = [], fallbackValue = "", onOpenProcedur
 
   if (!hasServices) {
     return (
-      <div className="rounded-[18px] border border-[#f4dbe7] bg-[#fff9fc] px-4 py-4">
-        <p className="break-words text-sm font-extrabold leading-6 text-[#ea4f93]">{fallbackValue || "--"}</p>
+      <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-4">
+        <p className="break-words text-sm font-semibold leading-6 text-gray-500">{fallbackValue || "--"}</p>
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-[20px] border border-[#f2bfd4] bg-white shadow-[0_10px_22px_rgba(236,72,153,0.05)]">
+    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
       <div className="overflow-x-auto">
-        <div className={`hidden min-w-[620px] items-center gap-3 border-b border-[#f8dce8] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f7_100%)] px-5 py-3 md:grid ${hasProcedureAction ? "grid-cols-[minmax(220px,1.6fr)_90px_140px_110px_120px]" : "grid-cols-[minmax(220px,1.8fr)_90px_140px_110px]"}`}>
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Service</p>
-          <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Qty</p>
-          <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Price</p>
-          <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Duration</p>
+        <div className={`hidden min-w-[620px] items-center gap-3 border-b border-gray-200 bg-gray-50 px-5 py-3 md:grid ${hasProcedureAction ? "grid-cols-[minmax(220px,1.6fr)_90px_140px_110px_120px]" : "grid-cols-[minmax(220px,1.8fr)_90px_140px_110px]"}`}>
+          <p className="text-xs font-semibold text-gray-500">Service</p>
+          <p className="text-center text-xs font-semibold text-gray-500">Qty</p>
+          <p className="text-center text-xs font-semibold text-gray-500">Price</p>
+          <p className="text-center text-xs font-semibold text-gray-500">Duration</p>
           {hasProcedureAction ? (
-            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Action</p>
+            <p className="text-center text-xs font-semibold text-gray-500">Action</p>
           ) : null}
         </div>
 
-        <div className="divide-y divide-[#f9dfeb]">
+        <div className="divide-y divide-gray-100">
           {services.map((service, index) => (
             <div
               key={service.id || `${service.name}-${index}`}
               className={`px-4 py-4 md:grid md:min-w-[620px] md:items-center md:gap-3 md:px-5 ${hasProcedureAction ? "md:grid-cols-[minmax(220px,1.6fr)_90px_140px_110px_120px]" : "md:grid-cols-[minmax(220px,1.8fr)_90px_140px_110px]"}`}
             >
               <div className="min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
+                <p className="text-[11px] font-semibold text-gray-500">
                   {service.detailLabel || `Service ${index + 1}`}
                 </p>
-                <p className="mt-2 text-sm font-extrabold text-[#ea4f93] md:break-words">{service.name || "--"}</p>
+                <p className="mt-1 text-sm font-bold text-gray-900 md:break-words">{service.name || "--"}</p>
                 {service.nailServiceName ? (
-                  <p className="mt-1 text-xs font-semibold text-[#7a6275] md:break-words">
+                  <p className="mt-1 text-xs font-medium text-gray-500 md:break-words">
                     Nail service: {service.nailServiceName}
                   </p>
                 ) : null}
               </div>
 
               <div className="mt-4 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Qty</p>
-                <span className="inline-flex rounded-full border border-[#f6dbe7] bg-[#fff9fc] px-3 py-1 text-[11px] font-bold text-[#6f5c6b]">
+                <p className="text-xs font-semibold text-gray-500 md:hidden">Qty</p>
+                <span className="inline-flex rounded-full bg-yellow-100 px-3 py-1 text-[11px] font-semibold text-yellow-700">
                   {service.quantity || 1}
                 </span>
               </div>
 
-              <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Price</p>
-                <span className="inline-flex rounded-full border border-[#d8f0df] bg-[#f1fcf4] px-3 py-1 text-[11px] font-bold text-[#16975f]">
+              <div className="mt-4 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
+                <p className="text-xs font-semibold text-gray-500 md:hidden">Price</p>
+                <span className="inline-flex rounded-full bg-[#e6fce5] px-3 py-1 text-[11px] font-bold text-[#16975f]">
                   {service.priceLabel || "--"}
                 </span>
               </div>
 
-              <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Duration</p>
-                <span className="inline-flex rounded-full bg-[#f4efff] px-4 py-2 text-sm font-extrabold text-[#8c63ef]">
+              <div className="mt-4 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
+                <p className="text-xs font-semibold text-gray-500 md:hidden">Duration</p>
+                <span className="inline-flex rounded-full bg-blue-100 px-3 py-1 text-[11px] font-semibold text-blue-700">
                   {service.durationLabel || "--"}
                 </span>
               </div>
 
               {hasProcedureAction ? (
-                <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Action</p>
-                  {service.canViewProcedures ? (
-                    <ActionDropdown
-                      label="Actions"
-                      items={[
-                        {
-                          key: `view-procedures-${service.id || index}`,
-                          label: "View Procedures",
-                          icon: ClipboardList,
-                          onSelect: () => onOpenProcedures(service),
-                        },
-                      ]}
-                    />
-                  ) : (
-                    <span className="inline-flex rounded-full border border-[#f6dbe7] bg-[#fff9fc] px-3 py-1 text-[11px] font-bold text-[#bca0ae]">
-                      --
-                    </span>
-                  )}
+                <div className="mt-4 flex items-center justify-end gap-3 md:mt-0 md:block md:text-center">
+                  <button
+                    type="button"
+                    onClick={() => onOpenProcedures(service)}
+                    className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold text-[#ea4f93] transition hover:bg-gray-50 hover:shadow-sm"
+                  >
+                    Procedures
+                  </button>
                 </div>
               ) : null}
             </div>
@@ -408,9 +399,9 @@ function SessionSummaryPanel({
   onOpenProcedures,
 }) {
   const summaryToneByPhase = {
-    start: "bg-[linear-gradient(180deg,#fffafc_0%,#fff5f9_100%)]",
-    progress: "bg-[linear-gradient(180deg,#fffafc_0%,#fff4f8_100%)]",
-    done: "bg-[linear-gradient(180deg,#fffafc_0%,#fff6fb_100%)]",
+    start: "bg-white",
+    progress: "bg-white",
+    done: "bg-white",
   };
   const serviceStatusToneByPhase = {
     start: "border-[#cfead8] bg-[#f2fcf5] text-[#1f9d57] shadow-[0_8px_18px_rgba(31,157,87,0.12)]",
@@ -419,14 +410,14 @@ function SessionSummaryPanel({
   };
 
   return (
-    <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+    <article className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
       <SectionTitle
         icon={UserRound}
-        title={title}
-        subtitle={subtitle}
+        title="Customer Summary"
+        subtitle="Review customer profile and preferences"
       />
 
-      <div className={`mt-5 rounded-[22px] border border-[#f5d9e6] p-5 ${summaryToneByPhase[phase] || summaryToneByPhase.start}`}>
+      <div className={`mt-4 rounded-xl border border-gray-200 p-5 ${summaryToneByPhase[phase] || summaryToneByPhase.start}`}>
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex min-w-0 items-center gap-4">
             <img crossOrigin="anonymous"
@@ -524,11 +515,11 @@ function ConfirmationItem({ checked, disabled = false, label, onToggle, trailing
         type="button"
         onClick={onToggle}
         disabled={disabled}
-        className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm font-medium transition ${trailing ? "pr-24" : ""
+        className={`flex w-full items-center gap-3 rounded-lg border border-pink-300 px-4 py-3 text-left text-sm font-medium transition-colors ${trailing ? "pr-24" : ""
           } ${disabled ? "cursor-not-allowed opacity-60" : ""
           } ${checked
-            ? "border-[#f2bfd4] bg-[#fff1f7] text-[#3f2b3f]"
-            : "border-[#f4dbe7] bg-[#fff9fc] text-[#6f5c6b] hover:bg-[#fff4f8]"
+            ? "border-primary bg-primary/5 text-primary"
+            : "border-gray-200 bg-gray-50 text-gray-500 hover:bg-gray-100 hover:border-gray-300"
           }`}
       >
         <span
@@ -706,6 +697,7 @@ export function StaffServiceSessionPage() {
   const location = useLocation();
   const { bookingId } = useParams();
   const booking = getMockBookingById(bookingId);
+  const { notifications } = useNotifications();
   const payload = location.state?.serviceSession;
   const persistedSession = useSelector((state) =>
     bookingId ? state.serviceSession.sessions?.[bookingId] ?? null : null,
@@ -1052,7 +1044,7 @@ export function StaffServiceSessionPage() {
       DEFAULT_CUSTOMER_AVATAR;
     const summaryTotalPrice = fallbackData?.totalPrice || payload?.totalPrice || "--";
     const summaryTotalAmount = fallbackData?.totalAmount || payload?.totalAmount || summaryTotalPrice;
-    const summaryDiscountValue = fallbackData?.discountValue || payload?.discountValue || "0 VNĐ";
+    const summaryDiscountValue = fallbackData?.discountValue || payload?.discountValue || "0 VND";
     const summaryRemainingBalance = fallbackData?.remainingBalance || payload?.remainingBalance || summaryTotalPrice;
 
     return {
@@ -1214,7 +1206,11 @@ export function StaffServiceSessionPage() {
     }
 
     const sortedProcedures = [...bookingProcedures]
-      .sort((left, right) => (left.stepOrder ?? 0) - (right.stepOrder ?? 0));
+      .sort((left, right) => {
+        const idCompare = String(left.bookingItemId || "").localeCompare(String(right.bookingItemId || ""));
+        if (idCompare !== 0) return idCompare;
+        return (left.stepOrder ?? 0) - (right.stepOrder ?? 0);
+      });
 
     return sortedProcedures
       .map((procedure) => {
@@ -1254,7 +1250,7 @@ export function StaffServiceSessionPage() {
           label: hasStepOrder ? `Step ${procedure.stepOrder}: ${procedureName}` : procedureName,
           statusLabel: String(procedure.status || "").trim() || "--",
           canClaim: isPendingStatus && !isBlocked && !isAssignedToAnyone,
-          canComplete: isInProgressStatus && isAssignedToCurrentArtist,
+          canComplete: (isInProgressStatus || (isPendingStatus && assignedArtistId === currentStaffArtistId)) && isAssignedToCurrentArtist && !isBlocked,
           canSkip: !isTerminalStatus && isAssignedToCurrentArtist,
           isBlocked,
           isAssignedToCurrentArtist,
@@ -1301,7 +1297,7 @@ export function StaffServiceSessionPage() {
       return {
         ...procedure,
         canClaim: isPendingStatus && !isBlocked && !isAssignedToAnyone,
-        canComplete: isInProgressStatus && isAssignedToCurrentArtist,
+        canComplete: (isInProgressStatus || (isPendingStatus && assignedArtistId === currentStaffArtistId)) && isAssignedToCurrentArtist && !isBlocked,
         canSkip: !isTerminalStatus && isAssignedToCurrentArtist,
         isBlocked,
       };
@@ -1544,8 +1540,12 @@ export function StaffServiceSessionPage() {
       }
 
       const successfulProcedures = results
-        .filter((result) => result.status === "fulfilled")
-        .flatMap((result) => result.value);
+        .map((result, index) =>
+          result.status === "fulfilled"
+            ? result.value.map((p) => ({ ...p, bookingItemId: normalizedBookingItemIds[index] }))
+            : []
+        )
+        .flat();
       const uniqueProcedures = [
         ...new Map(
           successfulProcedures.map((procedure) => [procedure.bookingProcedureId, procedure]),
@@ -1581,6 +1581,17 @@ export function StaffServiceSessionPage() {
       }
     }
   }, []);
+
+  // Real-time update for procedures when there's a new notification
+  useEffect(() => {
+    if (notifications && notifications.length > 0 && phase === "progress") {
+      const latestNotification = notifications[0];
+      if (!latestNotification.isRead) {
+        // Trigger a silent reload to fetch any overlap status changes
+        void reloadBookingProcedures(sessionBookingItemIds, { silent: true, showToast: false });
+      }
+    }
+  }, [notifications, phase, sessionBookingItemIds, reloadBookingProcedures]);
 
   useEffect(() => {
     let isMounted = true;
@@ -1702,9 +1713,11 @@ export function StaffServiceSessionPage() {
       return fallbackNote;
     }
 
-    const sortedProcedures = [...bookingProcedures].sort(
-      (left, right) => (left.stepOrder ?? 0) - (right.stepOrder ?? 0),
-    );
+    const sortedProcedures = [...bookingProcedures].sort((left, right) => {
+      const idCompare = String(left.bookingItemId || "").localeCompare(String(right.bookingItemId || ""));
+      if (idCompare !== 0) return idCompare;
+      return (left.stepOrder ?? 0) - (right.stepOrder ?? 0);
+    });
     const activeProcedure =
       sortedProcedures.find((procedure) => {
         const normalizedStatus = String(procedure.status || "").trim().toLowerCase();
@@ -1735,6 +1748,9 @@ export function StaffServiceSessionPage() {
         canTick: Boolean(procedure.canComplete),
         isUpdating: Boolean(procedureStatusUpdates[procedure.bookingProcedureId]),
         label: procedure.label,
+        artist: String(procedure.assignedArtistName || "").trim() || "Unassigned",
+        duration: Number(procedure.duration || 0),
+        time: `${formatTimeValue(procedure.estimatedStartTime) || "--"} - ${formatTimeValue(procedure.estimatedEndTime) || "--"}`,
         note: buildProcedureStepMeta(procedure),
         stepNumber: Number.isFinite(procedure.stepOrder) ? procedure.stepOrder : index + 1,
         status: String(procedure.status || "").trim(),
@@ -1745,6 +1761,8 @@ export function StaffServiceSessionPage() {
             : firstPendingIndex === -1 || index === firstPendingIndex
               ? "active"
               : "upcoming",
+        isFirst: index === 0,
+        isLast: index === procedureChecklist.length - 1,
       }));
     },
     [procedureChecklist, procedureStatusUpdates],
@@ -1752,8 +1770,8 @@ export function StaffServiceSessionPage() {
 
   const resolvedProcedureLoadError = procedureLoadError && !bookingProcedures.length ? procedureLoadError : "";
   const areAllProceduresCompleted =
-    procedureChecklist.length > 0
-    && procedureChecklist.every((procedure) => isProcedureCompletedStatus(procedure.status));
+    procedureChecklist.length === 0
+    || procedureChecklist.every((procedure) => isProcedureCompletedStatus(procedure.status));
 
   if (!data) {
     return <Navigate to={ROUTES.staffBookings} replace />;
@@ -2286,11 +2304,11 @@ export function StaffServiceSessionPage() {
 
   const comparisonModal = showComparisonView ? (
     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[#2b1323]/55 px-4 py-6 backdrop-blur-sm">
-      <div className="relative max-h-[92vh] w-full max-w-6xl overflow-hidden rounded-[32px] border border-[#f3d5e2] bg-[linear-gradient(180deg,#fffdfd_0%,#fff5f9_100%)] shadow-[0_30px_80px_rgba(43,19,35,0.24)]">
+      <div className="relative max-h-[92vh] w-full max-w-6xl overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 shadow-xl">
         <button
           type="button"
           onClick={() => setShowComparisonView(false)}
-          className="absolute right-5 top-5 z-10 inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#f2bfd4] bg-white/90 text-[#8a6179] transition hover:bg-[#fff6fa]"
+          className="absolute right-5 top-5 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
           aria-label="Close comparison modal"
         >
           <X size={18} />
@@ -2310,14 +2328,14 @@ export function StaffServiceSessionPage() {
           </div>
 
           <div className="mt-6 grid gap-5 xl:grid-cols-2">
-            <div className="overflow-hidden rounded-[26px] border border-[#f3d5e2] bg-white shadow-[0_18px_40px_rgba(236,72,153,0.06)]">
-              <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] px-5 py-4">
+            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+              <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#b68aa2]">
-                    Before
+                  <p className="text-xs font-semibold text-gray-500">
+                    Before service
                   </p>
-                  <p className="mt-1 text-base font-extrabold text-[#3f2b3f]">
-                    Before Service Photo
+                  <p className="mt-1 text-sm font-bold text-gray-900">
+                    Original design
                   </p>
                 </div>
                 <span className="rounded-full bg-[#fff1f7] px-3 py-1 text-[10px] font-bold text-[#ea4f93]">
@@ -2339,14 +2357,14 @@ export function StaffServiceSessionPage() {
               </div>
             </div>
 
-            <div className="overflow-hidden rounded-[26px] border border-[#f3d5e2] bg-white shadow-[0_18px_40px_rgba(236,72,153,0.06)]">
-              <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] px-5 py-4">
+            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+              <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#b68aa2]">
-                    After
+                  <p className="text-xs font-semibold text-gray-500">
+                    After service
                   </p>
-                  <p className="mt-1 text-base font-extrabold text-[#3f2b3f]">
-                    After Service Photo
+                  <p className="mt-1 text-sm font-bold text-gray-900">
+                    Final design
                   </p>
                 </div>
                 <span className="rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold text-emerald-600">
@@ -2529,8 +2547,8 @@ export function StaffServiceSessionPage() {
               disabled={!canOpenComparison}
               onClick={handleOpenComparison}
               className={`flex min-h-24 items-start gap-4 rounded-[24px] border px-5 py-5 text-left transition ${canOpenComparison
-                  ? "border-[#f2bfd4] bg-[#fff7fb] hover:bg-[#fff2f8]"
-                  : "cursor-not-allowed border-[#f4dbe7] bg-[#fffafb] opacity-70"
+                ? "border-[#f2bfd4] bg-[#fff7fb] hover:bg-[#fff2f8]"
+                : "cursor-not-allowed border-[#f4dbe7] bg-[#fffafb] opacity-70"
                 }`}
             >
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#ffe7f1] text-[#ea4f93]">
@@ -2784,16 +2802,7 @@ export function StaffServiceSessionPage() {
                       </div>
                     </div>
                   ) : null}
-                  <div className="rounded-[18px] border border-[#f2bfd4] bg-[#fff6fa] p-4 xl:col-span-2">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
-                      Session Summary
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-[#8a7082]">
-                      {Array.isArray(data.serviceBreakdown) && data.serviceBreakdown.length
-                        ? `${data.serviceBreakdown.length} service item(s) are currently queued in this session.`
-                        : "Service details are currently loaded for this active session."}
-                    </p>
-                  </div>
+
                 </div>
 
                 {phase === "progress" ? (
@@ -2806,15 +2815,79 @@ export function StaffServiceSessionPage() {
                         Loading procedure steps...
                       </div>
                     ) : procedureStepSummary.length > 0 ? (
-                      <div className="mt-4 flex flex-col gap-4">
-                        {procedureStepSummary.map((procedure, index) => (
-                          <ProcedureTimelineStep
-                            key={procedure.id}
-                            onTick={(currentProcedure) => void handleUpdateProcedureStatus(currentProcedure, "Completed")}
-                            step={procedure}
-                            isLast={index === procedureStepSummary.length - 1}
-                          />
-                        ))}
+                      <div className="mt-4 overflow-x-auto rounded-xl border border-[#f4dbe7]">
+                        <table className="w-full text-left text-sm whitespace-nowrap">
+                          <thead className="bg-[#fdf4f8] text-[#b59aab] uppercase tracking-wider text-[10px]">
+                            <tr>
+                              <th className="px-4 py-3 font-bold">Step</th>
+                              <th className="px-4 py-3 font-bold">Procedure</th>
+                              <th className="px-4 py-3 font-bold">Artist</th>
+                              <th className="px-4 py-3 font-bold">Duration & Time</th>
+                              <th className="px-4 py-3 font-bold">Status</th>
+                              <th className="px-4 py-3 font-bold text-center">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white">
+                            {procedureStepSummary.map((procedure) => (
+                              <tr key={procedure.id} className="hover:bg-[#fff9fc] transition-colors group">
+                                <td className="px-4 py-4 text-center relative w-20">
+                                  {!procedure.isFirst && (
+                                    <div className="absolute top-0 bottom-1/2 left-1/2 w-[2px] -ml-[1px] bg-[#f7dce8] z-0" />
+                                  )}
+                                  {!procedure.isLast && (
+                                    <div className="absolute top-1/2 bottom-0 left-1/2 w-[2px] -ml-[1px] bg-[#f7dce8] z-0" />
+                                  )}
+                                  <div className={`relative z-10 mx-auto flex h-8 w-8 items-center justify-center rounded-full text-[13px] font-extrabold transition-all duration-300 ${procedure.state === "complete"
+                                    ? "bg-[#249a5c] text-white shadow-[0_4px_12px_rgba(36,154,92,0.25)]"
+                                    : procedure.state === "active"
+                                      ? "bg-[linear-gradient(135deg,#f857a6_0%,#ffcc70_100%)] text-white shadow-[0_8px_16px_rgba(244,114,182,0.25)]"
+                                      : "border-2 border-[#e2d3db] bg-[#faf5f7] text-[#a88a9d]"
+                                    }`}>
+                                    {procedure.state === "complete" ? <Check size={16} strokeWidth={4} /> : procedure.stepNumber}
+                                  </div>
+                                </td>
+                                <td className="px-4 py-4 font-bold text-[#3f2b3f]">
+                                  {procedure.label}
+                                </td>
+                                <td className="px-4 py-4 text-[#8a7082]">
+                                  {procedure.artist}
+                                </td>
+                                <td className="px-4 py-4">
+                                  <div className="flex flex-col items-start">
+                                    <span className="rounded bg-purple-100 px-2 py-0.5 text-sm font-bold text-purple-900">{procedure.time}</span>
+                                    <span className="mt-1 text-[11px] font-semibold text-green-500">
+                                      {procedure.duration >= 60
+                                        ? `${Math.floor(procedure.duration / 60)}h${procedure.duration % 60 > 0 ? ` ${procedure.duration % 60}m` : ""}`
+                                        : `${procedure.duration} min`}
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-4">
+                                  <span className={`inline-flex shrink-0 items-center justify-center rounded-full px-2.5 py-1 text-[10px] font-extrabold ${getProcedureStatusTone(procedure.status)}`}>
+                                    {procedure.statusLabel}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-4 text-center">
+                                  {procedure.canTick ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleUpdateProcedureStatus(procedure, "Completed")}
+                                      disabled={procedure.isUpdating}
+                                      title="Mark this procedure as completed"
+                                      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#cfead9] bg-[#f3fcf6] text-[#249a5c] shadow-[0_4px_10px_rgba(36,154,92,0.12)] transition hover:bg-[#eaf8f0] disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                      {procedure.isUpdating ? (
+                                        <span className="inline-flex h-4 w-4 animate-spin rounded-full border-2 border-[#249a5c]/30 border-t-[#249a5c]" />
+                                      ) : (
+                                        <Check size={16} strokeWidth={3} />
+                                      )}
+                                    </button>
+                                  ) : null}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     ) : (
                       <div className="mt-4 rounded-[18px] border border-[#f4dbe7] bg-white px-4 py-4 text-sm text-[#a88a9d]">
@@ -2861,21 +2934,7 @@ export function StaffServiceSessionPage() {
                 </button>
               </article>
 
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
-                <SectionTitle
-                  icon={FilePenLine}
-                  title="Staff Notes"
-                  subtitle="Capture progress notes for the current live session."
-                />
 
-                <textarea
-                  value={sessionNote}
-                  onChange={(event) => setSessionNote(event.target.value)}
-                  rows={6}
-                  placeholder="Add notes about polish layers, customer feedback, or special handling instructions."
-                  className="mt-5 w-full rounded-[20px] border border-[#f2bfd4] bg-[#fffafd] px-4 py-3 text-sm text-[#3f2b3f] outline-none transition placeholder:text-[#b59aab] focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ffd8e8]"
-                />
-              </article>
             </>
           ) : (
             <>
@@ -3451,157 +3510,18 @@ export function StaffServiceSessionPage() {
         description="Select extra services to add into the current booking before starting the service session."
       />
 
-      <Modal
-        open={Boolean(selectedProcedureService)}
-        onCancel={handleCloseServiceProcedureModal}
-        footer={[
-          <Button key="close-service-procedure-modal" onClick={handleCloseServiceProcedureModal}>
-            Close
-          </Button>,
-        ]}
-        centered
-        width={900}
-        title="Service Procedures"
-      >
-        {selectedProcedureService ? (
-          <div className="space-y-5 py-1">
-            <div className="rounded-[18px] border border-[#f4d6e2] bg-[#fffafb] p-4">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#c38ea8]">
-                    Service
-                  </p>
-                  <p className="mt-2 text-lg font-extrabold text-[#4a3741]">
-                    {selectedProcedureService.name || "--"}
-                  </p>
-
-                </div>
-                <div className="grid gap-2 text-right text-sm">
-                  <div>
-                    <span className="text-[#8f7b88]">Quantity: </span>
-                    <span className="font-bold text-[#4a3741]">{selectedProcedureService.quantity || 1}</span>
-                  </div>
-                  <div>
-                    <span className="text-[#8f7b88]">Duration: </span>
-                    <span className="font-bold text-[#4a3741]">{selectedProcedureService.durationLabel || "--"}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {isServiceProcedureModalLoading ? (
-              <div className="rounded-[18px] border border-[#f4dbe7] bg-white px-4 py-6 text-sm text-[#a88a9d]">
-                Loading procedure steps...
-              </div>
-            ) : serviceProcedureModalError ? (
-              <div className="rounded-[18px] border border-[#f8d3dc] bg-[#fff5f7] px-4 py-5 text-sm text-[#c9587e]">
-                {serviceProcedureModalError}
-              </div>
-            ) : modalProcedureList.length ? (
-              <div className="space-y-3">
-                {modalProcedureList.map((procedure) => (
-                  <div
-                    key={procedure.bookingProcedureId || `${procedure.procedureId}-${procedure.stepOrder}`}
-                    className="rounded-[18px] border border-[#f4d6e2] bg-white p-4 shadow-[0_10px_22px_rgba(236,72,153,0.04)]"
-                  >
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="rounded-full bg-[#fff1f6] px-2.5 py-1 text-[10px] font-extrabold text-[#eb5b92]">
-                            Step {procedure.stepOrder ?? "--"}
-                          </span>
-                          <span className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold ${getProcedureStatusTone(procedure.status)}`}>
-                            {procedure.status || "--"}
-                          </span>
-                        </div>
-                        <p className="mt-3 text-base font-extrabold text-[#4a3741]">
-                          {procedure.procedureName || "--"}
-                        </p>
-                        <p className="mt-1 text-sm leading-6 text-[#8f7b88]">
-                          {procedure.description || "No procedure description available."}
-                        </p>
-                      </div>
-                      <div className="grid gap-2 text-right text-xs text-[#8f7b88]">
-                        <span>
-                          {String(procedure.estimatedStartTime || "--").slice(0, 5)} - {String(procedure.estimatedEndTime || "--").slice(0, 5)}
-                        </span>
-                        <span className="font-bold text-[#4a3741]">{procedure.duration ?? 0} min</span>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                      <div className="rounded-2xl bg-[#fff7fb] px-3 py-3 flex flex-col items-center justify-between gap-2">
-                        <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
-                          Assigned Artist
-                        </p>
-                        <div className="mt-1 flex items-start justify-between gap-3">
-                          <p className="text-sm font-bold text-[#4a3741]">
-                            {procedure.assignedArtistId ? (procedure.assignedArtistName || "Assigned") : "Unassigned"}
-                          </p>
-                          {procedure.canClaim ? (
-                            <button
-                              type="button"
-                              onClick={() => void handleClaimProcedureFromModal(procedure)}
-                              disabled={claimingProcedureId === procedure.bookingProcedureId}
-                              className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-3 py-1 text-[10px] font-extrabold text-white shadow-[0_10px_20px_rgba(236,72,153,0.18)] disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              {claimingProcedureId === procedure.bookingProcedureId ? (
-                                <span className="inline-flex h-3 w-3 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-                              ) : null}
-                              Claim
-                            </button>
-                          ) : procedure.canComplete ? (
-                            <button
-                              type="button"
-                              onClick={() => void handleUpdateProcedureStatus(procedure, "Completed")}
-                              disabled={Boolean(procedureStatusUpdates[procedure.bookingProcedureId])}
-                              className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[#cfead9] bg-[#f3fcf6] px-3 py-1 text-[10px] font-extrabold text-[#249a5c] shadow-[0_10px_20px_rgba(36,154,92,0.12)] disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              Complete
-                            </button>
-                          ) : procedure.isBlocked ? (
-                            <span className="inline-flex shrink-0 rounded-full border border-[#f6d9b8] bg-[#fff7ed] px-3 py-1 text-[10px] font-extrabold text-[#dd8a12]">
-                              Blocked
-                            </span>
-                          ) : null}
-                        </div>
-                      </div>
-                      <div className="rounded-2xl bg-[#fff7fb] px-3 py-3 flex flex-col items-center justify-between gap-2">
-                        <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
-                          Completed By
-                        </p>
-                        <p className="mt-1 text-[13px] font-bold text-[#4a3741]">
-                          {procedure.completedByName || <span className="text-[#6c6c6c] px-3 py-1 border border-[#0a0909] rounded-2xl bg-gray-100 text-[13px] text-center">Not yet</span>}
-                        </p>
-                      </div>
-                      <div className="rounded-2xl bg-[#fff7fb] px-3 py-3 flex flex-col items-center justify-between gap-2">
-                        <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
-                          Active / Passive
-                        </p>
-                        <p className="mt-1 text-[13px] font-bold text-[#4a3741]">
-                          {procedure.activeDuration ?? 0}m / {procedure.passiveDuration ?? 0}m
-                        </p>
-                      </div>
-                      <div className="rounded-2xl bg-[#fff7fb] px-3 py-3 flex flex-col items-center justify-between gap-2">
-                        <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
-                          Overlap
-                        </p>
-                        <p className="mt-1 text-[13px] font-bold text-[#4a3741]">
-                          {procedure.canOverlap ? <span className="text-[#28a745] px-3 py-1 border border-[#28a745] rounded-2xl bg-green-100 text-[13px] text-center">Allowed</span> : <span className="text-[#6c6c6c] px-3 py-1 border border-[#0a0909] rounded-2xl bg-gray-100 text-[13px] text-center">Not Allowed</span>}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-[18px] border border-dashed border-[#f1d8e4] bg-[#fffafb] px-4 py-8 text-center text-sm text-[#8f7b88]">
-                No procedure steps found for this booking item.
-              </div>
-            )}
-          </div>
-        ) : null}
-      </Modal>
+      <ServiceProceduresViewerModal
+        isOpen={Boolean(selectedProcedureService)}
+        onClose={handleCloseServiceProcedureModal}
+        service={selectedProcedureService}
+        procedures={modalProcedureList}
+        isLoading={isServiceProcedureModalLoading}
+        error={serviceProcedureModalError}
+        onClaimProcedure={handleClaimProcedureFromModal}
+        onCompleteProcedure={(procedure) => handleUpdateProcedureStatus(procedure, "Completed")}
+        claimingProcedureId={claimingProcedureId}
+        procedureStatusUpdates={procedureStatusUpdates}
+      />
     </section>
   );
 }

@@ -16,6 +16,7 @@ import { motion } from "framer-motion";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { TimePicker } from "../../../../shared/components/ui/TimePicker";
 import { SalonSaveResultModal } from "../components/SalonSaveResultModal";
+import HolidayClosureModal from "../components/HolidayClosureModal";
 import { ROUTES, getAdminSalonDetailRoute } from "../../../../shared/constants/routes";
 import {
   SALON_DAYS_OF_WEEK,
@@ -28,10 +29,10 @@ import { updateSalon, uploadSalonImage } from "../services/salonsService";
 import { fetchAdminSalonDetail, mapSalonOperatingHours } from "../services/salonManagementService";
 
 const inputWrapperClassName =
-  "flex items-center gap-2 rounded-[16px] border border-[#f1e7ed] bg-[#fff8fb] px-4 py-3.5 transition-all duration-300 hover:border-[#f0b7cf] hover:bg-[#fff5f9] focus-within:border-[#ea4f93] focus-within:bg-white focus-within:shadow-[0_0_0_3px_rgba(234,79,147,0.15)]";
+  "flex items-center gap-2 rounded-[16px] border border-[#f5cbdc] bg-[#fff8fb] px-4 py-3.5 transition-all duration-300 hover:border-[#eba2c6] hover:bg-[#fff5f9] focus-within:border-[#ea4f93] focus-within:bg-white focus-within:shadow-[0_0_0_3px_rgba(234,79,147,0.2)]";
 const inputClassName =
-  "w-full min-w-0 bg-transparent text-[14px] text-[#2d1b35] outline-none placeholder:text-[#a88a9f] font-medium";
-const readOnlyInputClassName = `${inputClassName} cursor-not-allowed text-[#a88a9f] bg-[#fff5f9]`;
+  "w-full min-w-0 bg-transparent text-[14px] text-[#3f2034] outline-none placeholder:text-[#c8b0bf] font-medium";
+const readOnlyInputClassName = `${inputClassName} cursor-not-allowed text-[#c8b0bf] bg-[#fff5f9]`;
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -95,6 +96,7 @@ export function SalonUpdatePage() {
   const [formError, setFormError] = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [showHolidayClosureModal, setShowHolidayClosureModal] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -249,13 +251,16 @@ export function SalonUpdatePage() {
       variants={staggerContainer}
       className="mx-auto w-full min-w-0 max-w-[1300px]"
     >
+      <style>{`
+        .nailify-display { font-family: "Cormorant Garamond", serif; }
+      `}</style>
       <header className="mb-6 flex flex-col gap-5">
         <motion.div variants={fadeInUp} className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
-            <h1 className="text-[28px] font-black tracking-tight text-[#2d1b35]">
+            <h1 className="nailify-display text-[32px] font-semibold text-[#3f2034]">
               Update Salon
             </h1>
-            <p className="mt-2 text-[13px] font-medium text-[#a88a9f]">
+            <p className="mt-1 text-sm text-[#a6869a]">
               Update salon information for {formData.salonName || "Salon"}
             </p>
           </div>
@@ -501,20 +506,11 @@ export function SalonUpdatePage() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     type="button"
+                    onClick={() => setShowHolidayClosureModal(true)}
                     className="flex w-full items-center justify-center gap-2.5 rounded-full border border-[#f1e7ed] bg-[#fff8fb] px-4 py-3 text-[13px] font-bold text-[#2d1b35] transition-all duration-300 hover:bg-[#fff5fb] hover:shadow-[0_4px_16px_rgba(234,79,147,0.08)]"
                   >
                     <Calendar size={16} />
                     Set Holiday Schedule
-                  </motion.button>
-
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    type="button"
-                    className="flex w-full items-center justify-center gap-2.5 rounded-full border border-[#f1e7ed] bg-[#fff8fb] px-4 py-3 text-[13px] font-bold text-[#2d1b35] transition-all duration-300 hover:bg-[#fff5fb] hover:shadow-[0_4px_16px_rgba(234,79,147,0.08)]"
-                  >
-                    <Users size={16} />
-                    Manage Staff
                   </motion.button>
 
                   <motion.button
@@ -630,6 +626,12 @@ export function SalonUpdatePage() {
         failureDescription="Unable to update the salon."
         onFailureClose={handleCloseResultModal}
         onSuccessComplete={handleSuccessComplete}
+      />
+
+      <HolidayClosureModal
+        open={showHolidayClosureModal}
+        onCancel={() => setShowHolidayClosureModal(false)}
+        salonOptions={[{ value: salonId, label: formData.salonName || "This Salon" }]}
       />
     </motion.section>
   );

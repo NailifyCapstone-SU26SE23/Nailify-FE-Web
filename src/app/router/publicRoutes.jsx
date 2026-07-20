@@ -3,6 +3,7 @@ import { PublicLayout } from "../layouts/PublicLayout";
 import { LoginPage } from "../../features/core/auth/pages/LoginPage";
 import { GuestGuard } from "../../shared/components/guards/GuestGuard";
 import { ROUTES } from "../../shared/constants/routes";
+import PaymentStatusPage from "../../features/receptionist/payments/pages/PaymentStatusPage";
 
 export const publicRoutes = [
   {
@@ -21,5 +22,9 @@ export const publicRoutes = [
         element: <LoginPage />,
       },
     ],
+  },
+  {
+    path: ROUTES.paymentStatus,
+    element: <PaymentStatusPage />,
   },
 ];

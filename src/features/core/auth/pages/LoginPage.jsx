@@ -2,7 +2,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import toast from "react-hot-toast";
 import { z } from "zod";
 import { useAuth } from "../hooks/useAuth";
 import { AUTH_STATUS } from "../constants/authConstants";
@@ -14,17 +15,18 @@ const loginSchema = z.object({
 });
 
 const demoAccounts = [
-  "admin@nailify.com / 123456",
-  "manager1@gmail.com / 123456",
-  "artist@gmail.com / 123456",
-  "admin1@gmail.com / 123456",
-  "recep@gmail.com / 123456",
+  "(admin) admin@nailify.com / 123456",
+  "(manager) tuedo4@gmail.com / 123456",
+  "(staff) tuedo2@gmail.com / 123456",
+  "(receptionist) recep@gmail.com / 123456",
+  "(staff) hieu@gmail.com / 123456",
 ];
 
 const DECORATIVE_DOTS = Array.from({ length: 12 }, (_, index) => `dot-${index + 1}`);
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { login, isAuthenticated, status, error, role } = useAuth();
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const {
@@ -44,6 +46,14 @@ export function LoginPage() {
       navigate(getDashboardRouteByRole(role), { replace: true });
     }
   }, [isAuthenticated, navigate, role]);
+
+  useEffect(() => {
+    if (searchParams.get("reason") === "session_expired") {
+      toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.", { duration: 4000 });
+      // Remove the reason param from URL so it doesn't show again on refresh
+      setSearchParams(new URLSearchParams());
+    }
+  }, [searchParams, setSearchParams]);
 
   const onSubmit = async (values) => {
     const result = await login(values);

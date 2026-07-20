@@ -21,7 +21,7 @@ import {
 function formatCurrency(value) {
   return `${new Intl.NumberFormat("vi-VN", {
     maximumFractionDigits: 0,
-  }).format(Number(value || 0))} VNĐ`;
+  }).format(Number(value || 0))} VND`;
 }
 
 function formatDate(value) {
