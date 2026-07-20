@@ -296,7 +296,7 @@ function formatVND(amount, status) {
     if (status === "PendingReview" || status === "Assigned") {
       return "Pending Quote";
     }
-    return "0 ₫";
+    return "0 VND";
   }
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
@@ -405,6 +405,29 @@ function getFingerColorStyle(customColor, fingerIndex) {
     console.error("Error parsing finger color style:", e);
   }
   return { backgroundColor: '#f3f4f6' };
+}
+
+function normalizeComponentPosition(value, fallbackPercent = 50) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) {
+    return fallbackPercent;
+  }
+  if (Math.abs(numericValue) <= 1) {
+    return Math.max(0, Math.min(100, 50 + numericValue * 100));
+  }
+  return Math.max(0, Math.min(100, numericValue));
+}
+
+function parseComponentConfig(configJson) {
+  if (!configJson) {
+    return {};
+  }
+
+  try {
+    return typeof configJson === 'string' ? JSON.parse(configJson) : configJson;
+  } catch {
+    return {};
+  }
 }
 
 function getFingerName(fingerIndex) {
@@ -879,11 +902,11 @@ export function CustomerNailDetailPage() {
 
     // 🎨 Hand proportions - wider to match real almond nail shape
     const fingerMetrics = {
-      Thumb: { height: 175, width: 120, lift: 30, rotate: -8, hoverLift: -6 },
-      Index: { height: 205, width: 110, lift: 10, rotate: -3, hoverLift: -8 },
-      Middle: { height: 228, width: 115, lift: 0, rotate: 0, hoverLift: -10 },
-      Ring: { height: 210, width: 112, lift: 6, rotate: 3, hoverLift: -8 },
-      Pinky: { height: 170, width: 98, lift: 26, rotate: 7, hoverLift: -6 },
+      Thumb: { height: 205, width: 140, lift: 30, rotate: -8, hoverLift: -6 },
+      Index: { height: 235, width: 130, lift: 10, rotate: -3, hoverLift: -8 },
+      Middle: { height: 255, width: 135, lift: 0, rotate: 0, hoverLift: -10 },
+      Ring: { height: 235, width: 130, lift: 6, rotate: 3, hoverLift: -8 },
+      Pinky: { height: 190, width: 110, lift: 26, rotate: 7, hoverLift: -6 },
     };
     const { height, width, lift, rotate } = fingerMetrics[fingerName] || fingerMetrics.Middle;
 
@@ -894,7 +917,7 @@ export function CustomerNailDetailPage() {
 
     return (
       <div
-        className="group relative flex flex-col items-center gap-4 transition-all duration-700 ease-out"
+        className="group relative flex flex-col items-center gap-2 transition-all duration-700 ease-out"
         style={{
           marginBottom: lift,
           transform: `rotate(${rotate}deg)`,
@@ -949,20 +972,11 @@ export function CustomerNailDetailPage() {
               const item = comp.component || comp.customerComponent;
               if (!item?.imageUrl) return null;
 
-              let scale = 1;
-              let rotation = 0;
-              try {
-                if (comp.configJson) {
-                  const config = typeof comp.configJson === 'string' ? JSON.parse(comp.configJson) : comp.configJson;
-                  scale = config.scale !== undefined ? config.scale : 1;
-                  rotation = config.rotation !== undefined ? config.rotation : 0;
-                }
-              } catch {
-                // ignore
-              }
-
-              const posX = comp.posX !== undefined && comp.posX !== null ? comp.posX : 50;
-              const posY = comp.posY !== undefined && comp.posY !== null ? comp.posY : 50;
+              const config = parseComponentConfig(comp.configJson);
+              const scale = Number.isFinite(Number(config?.scale)) ? Number(config.scale) : 1;
+              const rotation = Number.isFinite(Number(config?.rotation)) ? Number(config.rotation) : 0;
+              const left = normalizeComponentPosition(comp.posX, 50);
+              const top = normalizeComponentPosition(comp.posY, 50);
 
               const globalIdx = (nail?.customerNailComponents || []).findIndex(c => c.customerNailComponentId === comp.customerNailComponentId);
               const globalId = comp.customerNailComponentId || globalIdx;
@@ -971,14 +985,16 @@ export function CustomerNailDetailPage() {
                 (comp.customerNailComponentId === null && globalIdx === selectedComponentId)
               );
 
+              const displayScale = Math.max(1, scale * 1.25);
+
               return (
                 <div
                   key={comp.customerNailComponentId || idx}
                   className="absolute pointer-events-auto cursor-pointer transition-all duration-300"
                   style={{
-                    left: `${posX}%`,
-                    top: `${posY}%`,
-                    transform: `translate(-50%, -50%) scale(${isSelected ? scale * 1.15 : scale}) rotate(${rotation}deg)`,
+                    left: `${left}%`,
+                    top: `${top}%`,
+                    transform: `translate(-50%, -50%) scale(${isSelected ? displayScale * 1.15 : displayScale}) rotate(${rotation}deg)`,
                     width: '42px',
                     height: '42px',
                     zIndex: isSelected ? 50 : 30,
@@ -1155,21 +1171,8 @@ export function CustomerNailDetailPage() {
               subtitle="Interactive 3D preview showing nail shape, color blend, surface texture, and accessories in realistic hand positioning."
             />
 
-            {/* 🎨 Enhanced preview container with depth and ambiance */}
-            <div className="group relative overflow-hidden rounded-[36px] border-2 border-[#fcd5e6]/60 bg-gradient-to-br from-[#fff8fa] via-white to-[#fff4f8] p-8 shadow-[0_20px_50px_rgba(236,72,153,0.08),inset_0_2px_12px_rgba(255,255,255,0.7)] transition-all duration-700 hover:shadow-[0_28px_64px_rgba(236,72,153,0.14),inset_0_3px_16px_rgba(255,255,255,0.9)]">
-
-              {/* Ambient background glows */}
-              <div className="pointer-events-none absolute left-[15%] top-0 h-[420px] w-[420px] rounded-full bg-gradient-radial from-[#ea4f93]/8 via-[#fbb6ce]/5 to-transparent blur-[100px]" />
-              <div className="pointer-events-none absolute bottom-0 right-[15%] h-[420px] w-[420px] rounded-full bg-gradient-radial from-[#c63d79]/6 via-[#ec4899]/4 to-transparent blur-[100px]" />
-
-              {/* Elegant display stand base */}
-              <div className="pointer-events-none absolute bottom-12 left-1/2 h-[140px] w-[88%] -translate-x-1/2 rounded-[50%] border border-white/40 bg-gradient-to-t from-white/15 via-white/8 to-transparent shadow-[inset_0_2px_8px_rgba(255,255,255,0.5)] backdrop-blur-[2px] [clip-path:ellipse(100%_50%_at_50%_100%)]" />
-
-              {/* Subtle center reflection line */}
-              <div className="pointer-events-none absolute bottom-[46px] left-1/2 h-[1px] w-[85%] -translate-x-1/2 bg-gradient-to-r from-transparent via-[#f5c3da]/50 to-transparent" />
-
-              {/* Main nail display area */}
-              <div className="relative z-10 flex min-h-[340px] flex-wrap items-end justify-center gap-6 pb-6 pt-10 md:gap-8 xl:gap-10">
+            <div className="relative rounded-[24px] border border-[#f7d7e5] bg-[radial-gradient(circle_at_top,#fffdfd_0%,#fff6fb_58%,#fff2f8_100%)] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+              <div className="flex min-h-[360px] flex-wrap items-center justify-center gap-5 lg:gap-6">
                 {renderNailPreview(1, "Thumb")}
                 {renderNailPreview(2, "Index")}
                 {renderNailPreview(3, "Middle")}
@@ -1177,7 +1180,6 @@ export function CustomerNailDetailPage() {
                 {renderNailPreview(5, "Pinky")}
               </div>
 
-              {/* Floating info badge */}
               <div className="absolute right-6 top-6 flex flex-col gap-2 rounded-2xl border border-white/70 bg-white/90 p-3 shadow-lg backdrop-blur-sm">
                 <span className="text-[9px] font-bold uppercase tracking-wider text-[#c08aa4]">Design Info</span>
                 <div className="flex items-center gap-2">
@@ -1243,7 +1245,7 @@ export function CustomerNailDetailPage() {
               {/* Price Tile */}
               <div className="rounded-2xl border border-[#f6d4e3] bg-gradient-to-br from-white to-[#fff9fb] p-5 shadow-[0_10px_24px_rgba(236,72,153,0.04)] flex items-center gap-4">
                 <div className="h-16 w-16 rounded-xl bg-[#fef3c7] flex items-center justify-center text-[#d97706] font-bold text-lg shrink-0">
-                  ₫
+                  VND
                 </div>
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">Total Price</p>

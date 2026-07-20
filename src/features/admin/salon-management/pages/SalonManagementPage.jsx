@@ -77,8 +77,8 @@ PremiumCard.propTypes = {
 function SectionHeading({ title, subtitle }) {
   return (
     <div>
-      <h2 className="text-[16px] font-black text-[#2d1b35]">{title}</h2>
-      {subtitle ? <p className="mt-1.5 text-[11px] text-[#a88a9f] leading-relaxed">{subtitle}</p> : null}
+      <h2 className="nailify-display text-2xl font-semibold text-[#3f2034]">{title}</h2>
+      {subtitle ? <p className="mt-1 text-xs text-[#a6869a] leading-relaxed">{subtitle}</p> : null}
     </div>
   );
 }
@@ -97,15 +97,15 @@ function StatCard({ item, index }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1, type: "spring", stiffness: 300, damping: 20 }}
       whileHover={{ y: -4, scale: 1.02 }}
-      className={`relative overflow-hidden rounded-[28px] border border-white/70 bg-gradient-to-br ${item.accent} p-6 shadow-[0_20px_40px_-15px_rgba(226,93,143,0.06)]`}
+      className={`relative overflow-hidden rounded-[28px] border border-[#f5cbdc]/50 bg-gradient-to-br ${item.accent} p-6 shadow-[0_20px_40px_-15px_rgba(226,93,143,0.04)]`}
     >
       <div className="absolute right-[-12px] top-[-12px] h-12 w-12 rounded-full bg-white/45" />
-      <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-xl ${item.iconBg}`}>
+      <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-xl ${item.iconBg} text-[#ea4f93]`}>
         <Icon size={20} strokeWidth={2.2} />
       </div>
-      <p className="text-[32px] font-bold leading-none text-slate-800">{item.title}</p>
-      <p className="mt-2 text-[13px] font-semibold text-slate-500">{item.label}</p>
-      <p className={`mt-1 text-[12px] font-semibold ${item.noteColor}`}>{item.note}</p>
+      <p className="nailify-display text-[36px] font-semibold leading-none text-[#3f2034]">{item.title}</p>
+      <p className="mt-2 text-[10px] font-extrabold uppercase tracking-wider text-[#a6869a]">{item.label}</p>
+      <p className={`mt-1.5 text-[11px] font-bold ${item.noteColor}`}>{item.note}</p>
     </motion.div>
   );
 }
@@ -736,6 +736,9 @@ export function SalonManagementPage() {
 
   return (
     <section className="mx-auto max-w-[1400px] px-4 py-8 text-slate-700">
+      <style>{`
+        .nailify-display { font-family: "Cormorant Garamond", "Times New Roman", serif; }
+      `}</style>
       {flashMessage ? (
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 rounded-[20px] bg-[#edfdf4] px-6 py-4 text-sm font-medium text-[#16975f]">
           {flashMessage}

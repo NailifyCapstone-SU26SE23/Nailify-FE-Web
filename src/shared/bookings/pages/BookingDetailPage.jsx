@@ -113,7 +113,7 @@ function formatSignedCurrency(value) {
   const amount = Number(value || 0);
 
   if (!Number.isFinite(amount) || amount === 0) {
-    return "0 VNĐ";
+    return "0 VND";
   }
 
   const sign = amount < 0 ? "-" : "+";
@@ -944,33 +944,6 @@ export function BookingDetailPage() {
     });
   };
 
-  const handleOpenDesignStudio = () => {
-    navigate(getStaffBookingDesignStudioRoute(bookingId), {
-      state: {
-        designStudio: {
-          booking: {
-            id: bookingId,
-          },
-          bookingCode: staffBookingDetail ? formatBookingCode(staffBookingDetail.bookingId) : "",
-          customerName: staffBookingDetail?.customerName || formValues?.customerName || "--",
-          staffName: staffBookingDetail?.artistName || "--",
-          statusLabel: staffBookingDetail?.status || "Pending",
-          selectedDesignName:
-            staffBookingDetail?.bookingItems?.[0]?.customerNailName ||
-            staffBookingDetail?.bookingItems?.[0]?.nailVariantName ||
-            staffBookingDetail?.bookingItems?.[0]?.serviceName ||
-            "--",
-          selectedDesignImage:
-            staffBookingDetail?.bookingItems?.[0]?.customerNailImageUrl ||
-            staffBookingDetail?.checkInImageUrl ||
-            staffBookingDetail?.checkOutImagesUrl ||
-            DEFAULT_DESIGN_IMAGE,
-          totalDuration: staffBookingDetail?.totalDuration || 0,
-        },
-      },
-    });
-  };
-
   const handleConfirmCurrentDesign = () => {
     if (requiresCustomerNailConfirmation || isCurrentDesignConfirmed) {
       return;
@@ -989,10 +962,6 @@ export function BookingDetailPage() {
     dispatch(confirmCustomerNail(normalizedBookingId));
     setFlashMessage("Customer nail has been confirmed for this booking.");
     toast.success("Customer nail confirmed for this booking.");
-  };
-
-  const handleChooseAnotherDesign = () => {
-    handleOpenDesignStudio();
   };
 
   const handleStaffNoteChange = (label, value) => {
@@ -1245,6 +1214,39 @@ export function BookingDetailPage() {
         },
       }
       : staffExperienceWithCustomerNail;
+
+  const handleOpenDesignStudio = () => {
+    navigate(getStaffBookingDesignStudioRoute(bookingId), {
+      state: {
+        designStudio: {
+          booking: staffBookingDetail || {
+            id: bookingId,
+          },
+          bookingDetail: staffBookingDetail || null,
+          bookingCode: staffBookingDetail ? formatBookingCode(staffBookingDetail.bookingId) : "",
+          customerName: staffBookingDetail?.customerName || formValues?.customerName || "--",
+          staffName: staffBookingDetail?.artistName || "--",
+          statusLabel: staffBookingDetail?.status || "Pending",
+          selectedDesignName:
+            staffBookingDetail?.bookingItems?.[0]?.customerNailName ||
+            staffBookingDetail?.bookingItems?.[0]?.nailVariantName ||
+            staffBookingDetail?.bookingItems?.[0]?.serviceName ||
+            "--",
+          selectedDesignImage:
+            staffBookingDetail?.bookingItems?.[0]?.customerNailImageUrl ||
+            staffBookingDetail?.checkInImageUrl ||
+            staffBookingDetail?.checkOutImagesUrl ||
+            DEFAULT_DESIGN_IMAGE,
+          totalDuration: staffBookingDetail?.totalDuration || 0,
+          currentDesignDetail: resolvedStaffExperience?.design?.variantDetail || null,
+        },
+      },
+    });
+  };
+
+  const handleChooseAnotherDesign = () => {
+    handleOpenDesignStudio();
+  };
 
   const handleOpenServiceSession = () => {
     if (!isBookingReadyForService && !hasServiceStarted) {

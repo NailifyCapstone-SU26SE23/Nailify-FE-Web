@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRightLeft,
@@ -7,7 +7,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock3,
-  Eye,
+  Lock,
   Mail,
   Phone,
   Star,
@@ -17,28 +17,43 @@ import {
   Search,
   AlertCircle,
   Calendar,
+  X,
 } from "lucide-react";
-import { Modal, Spin, Alert, DatePicker } from "antd";
+import { Modal, Spin, Alert, DatePicker, Drawer, message, Select, TimePicker as AntdTimePicker } from "antd";
 import { Link } from "react-router-dom";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { ROUTES, getManagerStaffUpdateRoute } from "../../../../shared/constants/routes";
 import {
-  LOW_RATING_ALERTS,
-  PERFORMANCE_OVERVIEW,
   QUICK_ACTIONS,
   SCHEDULE_DAY_KEYS,
   SCHEDULE_STATUS_STYLES,
   STAFF_FILTER_TABS,
   STAFF_ON_LEAVE,
   STAFF_STATUS_STYLES,
-  TOP_PERFORMER,
-  WEEKLY_SCHEDULE,
   filterStaffByStatus,
   getStaffInitials,
 } from "../services/mockStaffArtists";
-import { fetchNailArtists, fetchNailArtistById, fetchSchedules } from "../services/nailArtistsService";
-import { Pagination } from "../../../../shared/components/common/Pagination";
+import { fetchBookingsBySalonId } from "../../bookings/services/bookingsService";
+import { formatCurrency } from "../../../../shared/utils/formatCurrency";
+import {
+  fetchNailArtists,
+  fetchNailArtistById,
+  fetchSchedules,
+  fetchNailArtistSkills,
+  fetchArtistSchedules,
+  createSchedule
+} from "../services/nailArtistsService";
+import { Pagination } from "../../../../shared/components/common/Pagination.jsx";
+import { TimePicker } from "../../../../shared/components/ui/TimePicker.jsx";
+import { StaffAvatar } from "../../../../shared/components/common/StaffAvatar.jsx";
+import { getSalonId } from "../services/nailArtistsService";
 import dayjs from "dayjs";
+
+// Import separated modals
+import { EditScheduleModal } from "../components/EditScheduleModal";
+import { TransferStaffModal } from "../components/TransferStaffModal";
+import { StaffDetailModal } from "../components/StaffDetailModal";
+
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -55,6 +70,250 @@ const staggerContainer = {
     },
   },
 };
+
+// Status metadata for the Create Shift modal's segmented control
+const SHIFT_STATUS_META = {
+  Active: {
+    label: "Active",
+    color: "bg-[#eaf9ee] text-[#2fa25f] border-[#2fa25f]/30",
+    dot: "bg-[#2fa25f]",
+  },
+  Off: {
+    label: "Day Off",
+    color: "bg-gray-100 text-gray-600 border-gray-300",
+    dot: "bg-gray-400",
+  },
+  Leave: {
+    label: "On Leave",
+    color: "bg-[#fff0dd] text-[#db8520] border-[#db8520]/30",
+    dot: "bg-[#db8520]",
+  },
+};
+
+const SHIFT_DURATION_PRESETS = [
+  { label: "4h", hours: 4 },
+  { label: "6h", hours: 6 },
+  { label: "8h", hours: 8 },
+];
+
+// Guard rail: the create-shift endpoint only accepts one date per call, so a
+// date range is expanded into one request per day. Cap the range so a
+// misclick (e.g. picking a whole year) can't fire off hundreds of requests.
+const MAX_BULK_SHIFT_DAYS = 31;
+const HIGH_RATING_THRESHOLD = 4.5;
+
+function getBookingArtistId(booking) {
+  const artistId = booking?.staffId || booking?.nailArtistId || booking?.staffArtistId || booking?.artistId;
+  return artistId ? String(artistId) : null;
+}
+
+function isCompletedBooking(status) {
+  const normalized = String(status || "").trim().toLowerCase();
+  return normalized === "completed" || normalized === "servicecompleted";
+}
+
+function getBookingRating(booking) {
+  const rawRating =
+    booking?.rating ??
+    booking?.serviceRating ??
+    booking?.reviewRating ??
+    booking?.customerRating ??
+    booking?.feedbackRating ??
+    booking?.artistRating;
+  const parsed = Number(rawRating);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function parseBookingDate(booking) {
+  const rawDate = booking?.bookingDate || booking?.createdAt;
+  return rawDate ? dayjs(rawDate) : null;
+}
+
+function buildArtistBookingStats(bookings = []) {
+  const today = dayjs().startOf("day");
+  const monthStart = dayjs().startOf("month");
+  const statsMap = new Map();
+
+  bookings.forEach((booking) => {
+    const artistId = getBookingArtistId(booking);
+    if (!artistId) return;
+
+    if (!statsMap.has(artistId)) {
+      statsMap.set(artistId, {
+        artistId,
+        todayCount: 0,
+        monthCompleted: 0,
+        monthRevenue: 0,
+        totalCompleted: 0,
+        ratedCount: 0,
+        ratingSum: 0,
+        highRatedCount: 0,
+      });
+    }
+
+    const stats = statsMap.get(artistId);
+    const bookingDate = parseBookingDate(booking);
+    const completed = isCompletedBooking(booking.status);
+    const totalPrice = Number(booking.totalPrice) || 0;
+    const bookingRating = getBookingRating(booking);
+
+    if (completed) {
+      stats.totalCompleted += 1;
+
+      if (bookingDate?.isSame(today, "day")) {
+        stats.todayCount += 1;
+      }
+
+      if (bookingDate && (bookingDate.isSame(monthStart, "day") || bookingDate.isAfter(monthStart))) {
+        stats.monthCompleted += 1;
+        stats.monthRevenue += totalPrice;
+      }
+    }
+
+    if (bookingRating !== null) {
+      stats.ratedCount += 1;
+      stats.ratingSum += bookingRating;
+      if (bookingRating >= HIGH_RATING_THRESHOLD) {
+        stats.highRatedCount += 1;
+      }
+    }
+  });
+
+  return statsMap;
+}
+
+function formatCompactRevenue(amount) {
+  const value = Number(amount) || 0;
+  if (value >= 1_000_000) {
+    return `${(value / 1_000_000).toFixed(1)}M`;
+  }
+  if (value >= 1_000) {
+    return `${Math.round(value / 1_000)}k`;
+  }
+  return formatCurrency(value);
+}
+
+function buildPerformanceInsights(staffArtists = [], bookings = []) {
+  const bookingStats = buildArtistBookingStats(bookings);
+  const performers = staffArtists.map((staff) => {
+    const artistId = String(staff.id);
+    const stats = bookingStats.get(artistId) || {
+      todayCount: 0,
+      monthCompleted: 0,
+      monthRevenue: 0,
+      totalCompleted: 0,
+      ratedCount: 0,
+      ratingSum: 0,
+      highRatedCount: 0,
+    };
+
+    const bookingAvgRating = stats.ratedCount > 0
+      ? stats.ratingSum / stats.ratedCount
+      : null;
+    const effectiveRating = bookingAvgRating ?? (Number(staff.rating) || 0);
+    const satisfaction = stats.ratedCount > 0
+      ? `${Math.round((stats.highRatedCount / stats.ratedCount) * 100)}%`
+      : "—";
+
+    return {
+      id: artistId,
+      name: staff.name,
+      role: staff.role,
+      avatarTone: staff.avatarTone,
+      rating: effectiveRating,
+      completedCount: stats.monthCompleted,
+      stats: {
+        today: stats.todayCount,
+        month: stats.monthCompleted,
+        revenue: formatCompactRevenue(stats.monthRevenue),
+        monthRevenue: stats.monthRevenue,
+      },
+      metrics: {
+        completed: String(stats.monthCompleted),
+        rating: effectiveRating.toFixed(1),
+        revenue: formatCurrency(stats.monthRevenue),
+        satisfaction,
+      },
+    };
+  });
+
+  const sortByCompletedDesc = (a, b) => {
+    if (b.completedCount !== a.completedCount) return b.completedCount - a.completedCount;
+    return a.name.localeCompare(b.name);
+  };
+
+  const sortByCompletedAsc = (a, b) => {
+    if (a.completedCount !== b.completedCount) return a.completedCount - b.completedCount;
+    return a.name.localeCompare(b.name);
+  };
+
+  const mostCompletedStaff = [...performers].sort(sortByCompletedDesc)[0] || null;
+
+  const leastCompletedStaff = [...performers]
+    .sort(sortByCompletedAsc)
+    .slice(0, 2)
+    .map((performer) => ({
+      name: performer.name,
+      completed: String(performer.completedCount),
+    }));
+
+  const topCompletedPerformers = [...performers]
+    .sort(sortByCompletedDesc)
+    .slice(0, 3);
+
+  return {
+    performers,
+    mostCompletedStaff: mostCompletedStaff
+      ? {
+          name: mostCompletedStaff.name,
+          completed: String(mostCompletedStaff.completedCount),
+        }
+      : null,
+    leastCompletedStaff,
+    topCompletedPerformers,
+    completedServices: performers.reduce((sum, performer) => sum + performer.stats.month, 0),
+  };
+}
+
+// Expand an inclusive [start, end] dayjs range into an array of dayjs dates,
+// one per day. Assumes start <= end.
+function getDatesInRange(start, end) {
+  const totalDays = end.startOf("day").diff(start.startOf("day"), "day");
+  const dates = [];
+  for (let i = 0; i <= totalDays; i += 1) {
+    dates.push(start.add(i, "day"));
+  }
+  return dates;
+}
+
+const DAYS_OF_WEEK = [
+  { key: "Mon", label: "Monday", offset: 0 },
+  { key: "Tue", label: "Tuesday", offset: 1 },
+  { key: "Wed", label: "Wednesday", offset: 2 },
+  { key: "Thu", label: "Thursday", offset: 3 },
+  { key: "Fri", label: "Friday", offset: 4 },
+  { key: "Sat", label: "Saturday", offset: 5 },
+  { key: "Sun", label: "Sunday", offset: 6 },
+];
+
+const TIME_SLOTS_30MIN = [
+  { start: "09:00", end: "09:30" },
+  { start: "09:30", end: "10:00" },
+  { start: "10:00", end: "10:30" },
+  { start: "10:30", end: "11:00" },
+  { start: "11:00", end: "11:30" },
+  { start: "11:30", end: "12:00" },
+  { start: "12:00", end: "12:30" },
+  { start: "12:30", end: "13:00" },
+  { start: "13:00", end: "13:30" },
+  { start: "13:30", end: "14:00" },
+  { start: "14:00", end: "14:30" },
+  { start: "14:30", end: "15:00" },
+  { start: "15:00", end: "15:30" },
+  { start: "15:30", end: "16:00" },
+  { start: "16:00", end: "16:30" },
+  { start: "16:30", end: "17:00" },
+];
 
 function PremiumCard({ className = "", children, noHover = false }) {
   return (
@@ -86,6 +345,20 @@ SectionHeading.propTypes = {
   subtitle: PropTypes.string,
 };
 
+function InfoItem({ label, children }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-xs font-semibold uppercase tracking-widest text-[#a88a9f]">{label}</p>
+      <div className="mt-2 text-sm font-medium text-[#2d1b35] break-all">{children}</div>
+    </div>
+  );
+}
+
+InfoItem.propTypes = {
+  label: PropTypes.string.isRequired,
+  children: PropTypes.node,
+};
+
 function StatusPill({ status }) {
   const isActive = status === "Active";
   return (
@@ -99,190 +372,43 @@ StatusPill.propTypes = {
   status: PropTypes.string.isRequired,
 };
 
-function StaffDetailModal({ staff, onClose, loading }) {
-  const avgPerDay =
-    staff?.stats?.month && staff.stats.month > 0
-      ? (staff.stats.month / 26).toFixed(1)
-      : "—";
+function StaffArtistCard({ staff, onOpenDrawer }) {
+  // Extract skill names from skill objects
+  const skillNames = staff.skills.map(skill => skill.skillTypeName || skill.name || "Skill");
+  const visibleSkills = skillNames.slice(0, 2);
+  const extraSkillsCount = skillNames.length - visibleSkills.length;
 
-  return (
-    <Modal
-      open={!!staff}
-      onCancel={onClose}
-      footer={null}
-      width={520}
-      centered
-      destroyOnClose
-      styles={{
-        content: { padding: 0, borderRadius: 24, overflow: "hidden" },
-        mask: { backdropFilter: "blur(4px)" },
-      }}
-    >
-      {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Spin size="large" tip="Loading artist detail..." />
-        </div>
-      ) : staff && (
-        <>
-          <div className="bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] px-6 pt-6 pb-10">
-            <div className="flex items-center gap-4">
-              {staff.avatarUrl ? (
-                <img
-                  crossOrigin="anonymous"
-                  referrerPolicy="no-referrer"
-                  src={staff.avatarUrl}
-                  alt={staff.name}
-                  className="h-16 w-16 shrink-0 rounded-full object-cover ring-4 ring-white/40 shadow-lg"
-                />
-              ) : (
-                <div
-                  className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${staff.avatarTone} ring-4 ring-white/40 text-xl font-black text-white shadow-lg`}
-                >
-                  {getStaffInitials(staff.name)}
-                </div>
-              )}
-              <div>
-                <h2 className="text-[20px] font-extrabold text-white">{staff.name}</h2>
-                <p className="text-[12px] font-semibold text-white/80">{staff.role}</p>
-                <div className="mt-1.5 flex items-center gap-2">
-                  <span className={`rounded-full px-3 py-1 text-[11px] font-bold ${STAFF_STATUS_STYLES[staff.status]}`}>
-                    {staff.status}
-                  </span>
-                  <span className="flex items-center gap-1 text-[11px] font-bold text-white/90">
-                    <Star size={11} fill="currentColor" className="text-yellow-300" />
-                    {staff.rating?.toFixed(1) ?? "—"}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
+  const handleCardClick = () => {
+    onOpenDrawer(staff.id);
+  };
 
-          <div className="-mt-6 space-y-4 rounded-[24px] bg-white px-6 pt-6 pb-6">
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { label: "Today", value: staff.stats?.today ?? "—", sub: "bookings" },
-                { label: "This Month", value: staff.stats?.month ?? "—", sub: "bookings" },
-                { label: "Revenue", value: staff.stats?.revenue ?? "—", sub: "total" },
-              ].map(({ label, value, sub }) => (
-                <div
-                  key={label}
-                  className="rounded-[14px] border border-[#f1e7ed] bg-[#fffafd] px-3 py-3 text-center"
-                >
-                  <p className="text-[16px] font-extrabold text-[#ea4f93]">{value}</p>
-                  <p className="text-[10px] font-semibold text-[#9a5f7f]">{label}</p>
-                  <p className="text-[9px] text-[#9a5f7f]">{sub}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-[14px] border border-[#f1e7ed] bg-[#fffafd] px-4 py-3">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9a5f7f]">Avg / Work Day</p>
-                <p className="mt-1 text-[16px] font-extrabold text-[#2d1b35]">{avgPerDay}</p>
-                <p className="text-[9px] text-[#9a5f7f]">bookings per day</p>
-              </div>
-              <div className="rounded-[14px] border border-[#f1e7ed] bg-[#fffafd] px-4 py-3">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9a5f7f]">Rating</p>
-                <div className="mt-1 flex items-center gap-1.5">
-                  <Star size={14} fill="#fbbf24" className="text-[#fbbf24]" />
-                  <p className="text-[16px] font-extrabold text-[#2d1b35]">{staff.rating?.toFixed(1) ?? "—"}</p>
-                </div>
-                <p className="text-[9px] text-[#9a5f7f]">customer rating</p>
-              </div>
-            </div>
-
-            {(staff.email || staff.phone) && (
-              <div className="space-y-2 rounded-[14px] border border-[#f1e7ed] bg-[#fffafd] px-4 py-3">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9a5f7f]">Contact</p>
-                {staff.email && (
-                  <div className="flex items-center gap-2 text-[13px] text-[#7f6478]">
-                    <Mail size={14} className="text-[#ea4f93]" />
-                    <span>{staff.email}</span>
-                  </div>
-                )}
-                {staff.phone && (
-                  <div className="flex items-center gap-2 text-[13px] text-[#7f6478]">
-                    <Phone size={14} className="text-[#ea4f93]" />
-                    <span>{staff.phone}</span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {staff.skills?.length > 0 && (
-              <div>
-                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9a5f7f]">
-                  Skills & Specialties
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {staff.skills.map((skill) => (
-                    <span
-                      key={skill}
-                      className="rounded-full bg-[#ffe7ef] px-3 py-1.5 text-[11px] font-semibold text-[#ea4f93]"
-                    >
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="flex gap-2 pt-1">
-              <Link
-                to={getManagerStaffUpdateRoute(staff.id)}
-                className="flex-1 rounded-full bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] py-2.5 text-center text-[12px] font-bold text-white shadow-[0_10px_22px_rgba(234,79,147,0.22)] transition hover:opacity-95"
-              >
-                Edit Profile
-              </Link>
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 rounded-full border border-[#f1c6dd] bg-white py-2.5 text-[12px] font-bold text-[#ea4f93] transition hover:bg-[#fffafd]"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-    </Modal>
-  );
-}
-
-StaffDetailModal.propTypes = {
-  staff: PropTypes.object,
-  onClose: PropTypes.func.isRequired,
-  loading: PropTypes.bool,
-};
-
-function StaffArtistCard({ staff, onView }) {
-  const visibleSkills = staff.skills.slice(0, 2);
-  const extraSkillsCount = staff.skills.length - visibleSkills.length;
+  const handleCardKeyDown = (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onOpenDrawer(staff.id);
+    }
+  };
 
   return (
     <motion.article
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.985 }}
       transition={{ type: "spring", stiffness: 320, damping: 26 }}
-      className="group flex h-full min-w-0 flex-col rounded-2xl border border-[#f1e7ed] bg-white p-5 shadow-[0_4px_20px_-8px_rgba(45,27,53,0.1)] transition-colors duration-300 hover:border-[#ea4f93]/40"
+      onClick={handleCardClick}
+      onKeyDown={handleCardKeyDown}
+      role="button"
+      tabIndex={0}
+      aria-label={`View details for ${staff.name}`}
+      className="group flex h-full min-w-0 cursor-pointer flex-col rounded-2xl border border-[#f1e7ed] bg-white p-5 shadow-[0_4px_20px_-8px_rgba(45,27,53,0.1)] transition-colors duration-300 hover:border-[#ea4f93]/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ea4f93]/40 focus-visible:ring-offset-2"
     >
       <div className="flex items-start gap-4">
-        {staff.avatarUrl ? (
-          <img
-            crossOrigin="anonymous"
-            referrerPolicy="no-referrer"
-            src={staff.avatarUrl}
-            alt={staff.name}
-            className="h-14 w-14 shrink-0 rounded-xl object-cover ring-2 ring-[#fff5fa]"
-          />
-        ) : (
-          <div
-            className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${staff.avatarTone} text-base font-bold text-white ring-2 ring-[#fff5fa]`}
-          >
-            {getStaffInitials(staff.name)}
-          </div>
-        )}
+        <StaffAvatar
+          staff={{ ...staff, initials: getStaffInitials(staff.name) }}
+          className="h-14 w-14 shrink-0 rounded-xl object-cover ring-2 ring-[#fff5fa]"
+          fallbackClassName={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${staff.avatarTone} text-base font-bold text-white ring-2 ring-[#fff5fa]`}
+        />
 
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
@@ -304,9 +430,9 @@ function StaffArtistCard({ staff, onView }) {
       <div className="mt-4 flex min-h-[28px] flex-wrap gap-1.5">
         {visibleSkills.length > 0 ? (
           <>
-            {visibleSkills.map((skill) => (
+            {visibleSkills.map((skill, index) => (
               <span
-                key={skill}
+                key={index}
                 className="rounded-md bg-[#fff0f6] px-2.5 py-1 text-[11px] font-medium text-[#ea4f93]"
               >
                 {skill}
@@ -339,20 +465,13 @@ function StaffArtistCard({ staff, onView }) {
         ))}
       </div>
 
-      <div className="mt-auto flex gap-2 pt-4">
-        <button
-          type="button"
-          onClick={() => onView(staff)}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-[#f1c6dd] py-2.5 text-[12px] font-semibold text-[#ea4f93] transition hover:bg-[#fff5fa] active:scale-[0.98]"
-        >
-          <Eye size={14} />
-          View
-        </button>
+      <div className="mt-auto pt-4">
         <Link
           to={getManagerStaffUpdateRoute(staff.id)}
-          className="flex flex-1 items-center justify-center rounded-xl bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] py-2.5 text-[12px] font-semibold text-white shadow-[0_6px_16px_rgba(234,79,147,0.2)] transition hover:opacity-95 active:scale-[0.98]"
+          onClick={(event) => event.stopPropagation()}
+          className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] py-2.5 text-[12px] font-semibold text-white shadow-[0_6px_16px_rgba(234,79,147,0.2)] transition hover:opacity-95 active:scale-[0.98]"
         >
-          Edit
+          Edit Profile
         </Link>
       </div>
     </motion.article>
@@ -366,7 +485,7 @@ StaffArtistCard.propTypes = {
     name: PropTypes.string.isRequired,
     rating: PropTypes.number.isRequired,
     role: PropTypes.string.isRequired,
-    skills: PropTypes.arrayOf(PropTypes.string).isRequired,
+    skills: PropTypes.arrayOf(PropTypes.object).isRequired,
     stats: PropTypes.shape({
       month: PropTypes.number.isRequired,
       revenue: PropTypes.string.isRequired,
@@ -375,396 +494,14 @@ StaffArtistCard.propTypes = {
     status: PropTypes.string.isRequired,
     id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   }).isRequired,
-  onView: PropTypes.func.isRequired,
+  onOpenDrawer: PropTypes.func.isRequired,
 };
 
-function EditScheduleModal({ open, onClose }) {
-  return (
-    <Modal
-      open={open}
-      onCancel={onClose}
-      footer={null}
-      width={560}
-      centered
-      destroyOnClose
-      styles={{
-        content: { padding: 0, borderRadius: 24, overflow: "hidden" },
-        mask: { backdropFilter: "blur(4px)" },
-      }}
-    >
-      <div className="bg-white">
-        <div className="bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] px-6 py-6">
-          <h2 className="text-xl font-bold text-white">Edit Schedule</h2>
-          <p className="text-sm text-white/80 mt-1">Update staff working hours and breaks</p>
-        </div>
 
-        <div className="p-6 space-y-4">
-          <div>
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-[#a88a9f] block mb-2">Select Staff</label>
-            <select className="w-full rounded-[20px] border border-[#f1e7ed] bg-[#fffafd] px-4 py-3 text-sm text-[#2d1b35] focus:outline-none focus:ring-2 focus:ring-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10">
-              <option>Choose a staff member...</option>
-            </select>
-          </div>
 
-          <div>
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-[#a88a9f] block mb-2">Day</label>
-            <div className="grid grid-cols-7 gap-2">
-              {SCHEDULE_DAY_KEYS.map((day) => (
-                <button key={day} type="button" className="py-2 rounded-[12px] border border-[#f1c6dd] text-[11px] font-semibold text-[#a88a9f] hover:bg-[#fffafd] hover:text-[#ea4f93]">
-                  {day}
-                </button>
-              ))}
-            </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-[11px] font-semibold uppercase tracking-wider text-[#a88a9f] block mb-2">Start Time</label>
-              <input type="time" className="w-full rounded-[20px] border border-[#f1e7ed] bg-[#fffafd] px-4 py-3 text-sm text-[#2d1b35] focus:outline-none focus:ring-2 focus:ring-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10" />
-            </div>
-            <div>
-              <label className="text-[11px] font-semibold uppercase tracking-wider text-[#a88a9f] block mb-2">End Time</label>
-              <input type="time" className="w-full rounded-[20px] border border-[#f1e7ed] bg-[#fffafd] px-4 py-3 text-sm text-[#2d1b35] focus:outline-none focus:ring-2 focus:ring-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10" />
-            </div>
-          </div>
 
-          <div>
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-[#a88a9f] block mb-2">Break Duration</label>
-            <select className="w-full rounded-[20px] border border-[#f1e7ed] bg-[#fffafd] px-4 py-3 text-sm text-[#2d1b35] focus:outline-none focus:ring-2 focus:ring-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10">
-              <option>30 minutes</option>
-              <option>45 minutes</option>
-              <option>1 hour</option>
-              <option>1.5 hours</option>
-            </select>
-          </div>
-
-          <div className="flex gap-2 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 rounded-full border border-[#f1c6dd] bg-white py-2.5 text-[12px] font-bold text-[#ea4f93] transition hover:bg-[#fffafd]"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              className="flex-1 rounded-full bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] py-2.5 text-center text-[12px] font-bold text-white shadow-[0_10px_22px_rgba(234,79,147,0.22)] transition hover:opacity-95"
-            >
-              Save Changes
-            </button>
-          </div>
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
-EditScheduleModal.propTypes = {
-  open: PropTypes.bool.isRequired,
-  onClose: PropTypes.func.isRequired,
-};
-
-function AssignSkillModal({ open, onClose }) {
-  const [skills, setSkills] = useState([
-    { 
-      id: 0,
-      name: "Precision", 
-      vietnamese: "Độ chính xác", 
-      level: 1, 
-      feedback: "Sơn lem, viền không đều" 
-    },
-    { 
-      id: 1,
-      name: "Color", 
-      vietnamese: "Màu sắc", 
-      level: 1, 
-      feedback: "Chọn màu chưa hợp, dễ lệch tone" 
-    },
-    { 
-      id: 2,
-      name: "Form", 
-      vietnamese: "Form móng", 
-      level: 1, 
-      feedback: "Form lệch, không cân đối" 
-    },
-    { 
-      id: 3,
-      name: "Material", 
-      vietnamese: "Vật liệu", 
-      level: 1, 
-      feedback: "Không kiểm soát được gel/bột" 
-    },
-    { 
-      id: 4,
-      name: "Design", 
-      vietnamese: "Thẩm mỹ", 
-      level: 1, 
-      feedback: "Làm theo mẫu, không sáng tạo" 
-    },
-    { 
-      id: 5,
-      name: "Speed", 
-      vietnamese: "Tốc độ", 
-      level: 1, 
-      feedback: ">120 phút – Rất chậm" 
-    }
-  ]);
-
-  const updateSkillLevel = (skillId, newLevel) => {
-    setSkills(skills.map((skill) => 
-      skill.id === skillId ? { ...skill, level: newLevel } : skill
-    ));
-  };
-
-  return (
-    <Modal
-      open={open}
-      onCancel={onClose}
-      footer={null}
-      width={900}
-      centered
-      destroyOnClose
-      styles={{
-        content: { padding: 0, borderRadius: 24, overflow: "hidden" },
-        mask: { backdropFilter: "blur(4px)" },
-      }}
-    >
-      <div className="bg-white">
-        <div className="p-6 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] flex items-center justify-center">
-              <Award size={20} className="text-white" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-[#2d1b35]">Skills & Specialties</h2>
-              <p className="text-[13px] text-[#a88a9f] mt-1">Đánh giá kỹ năng theo từng hạng mục (Level 1-5)</p>
-            </div>
-          </div>
-          <select className="rounded-[20px] border border-[#f1c6dd] bg-[#fffafd] px-4 py-2.5 text-[13px] font-semibold text-[#a88a9f] focus:outline-none focus:ring-2 focus:ring-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10">
-            <option>Beginner</option>
-            <option>Intermediate</option>
-            <option>Advanced</option>
-            <option>Expert</option>
-          </select>
-        </div>
-
-        <div className="p-6 space-y-4">
-          <div>
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-[#a88a9f] block mb-2">Select Staff</label>
-            <select className="w-full rounded-[20px] border border-[#f1e7ed] bg-[#fffafd] px-4 py-3 text-sm text-[#2d1b35] focus:outline-none focus:ring-2 focus:ring-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10">
-              <option>Choose a staff member...</option>
-            </select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            {skills.map((skill) => (
-              <div key={skill.id} className="rounded-[20px] border border-[#f1e7ed] bg-[#fffafd] p-5 shadow-[0_4px_20px_rgba(234,79,147,0.08)]">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-bold text-[#2d1b35]">{skill.name}</h3>
-                    <span className="text-[13px] font-semibold text-[#a88a9f]">{skill.vietnamese}</span>
-                  </div>
-                  <span className="rounded-full bg-[#ffe7ef] px-3 py-1 text-[11px] font-bold text-[#ea4f93]">
-                    Level {skill.level}
-                  </span>
-                </div>
-
-                <div className="flex gap-2 mb-3">
-                  {[1, 2, 3, 4, 5].map((level) => (
-                    <button
-                      key={level}
-                      type="button"
-                      className="flex-1 flex flex-col items-center gap-1 cursor-pointer"
-                      onClick={() => updateSkillLevel(skill.id, level)}
-                    >
-                      <div 
-                        className={`w-full h-2 rounded-full transition-all duration-200 ${level <= skill.level ? 'bg-[#ea4f93]' : 'bg-[#f1e7ed] hover:bg-[#fde7ef]'}`} 
-                      />
-                      <span className={`text-[10px] font-bold ${level <= skill.level ? 'text-[#ea4f93]' : 'text-[#a88a9f]'}`}>{level}</span>
-                    </button>
-                  ))}
-                </div>
-
-                <p className="text-[13px] font-semibold text-[#ea4f93]">{skill.feedback}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex gap-2 pt-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 rounded-full border border-[#f1c6dd] bg-white py-2.5 text-[12px] font-bold text-[#ea4f93] transition hover:bg-[#fffafd]"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              className="flex-1 rounded-full bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] py-2.5 text-center text-[12px] font-bold text-white shadow-[0_10px_22px_rgba(234,79,147,0.22)] transition hover:opacity-95"
-            >
-              Save Skills
-            </button>
-          </div>
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
-AssignSkillModal.propTypes = {
-  open: PropTypes.bool.isRequired,
-  onClose: PropTypes.func.isRequired,
-};
-
-function ViewPerformanceModal({ open, onClose }) {
-  return (
-    <Modal
-      open={open}
-      onCancel={onClose}
-      footer={null}
-      width={600}
-      centered
-      destroyOnClose
-      styles={{
-        content: { padding: 0, borderRadius: 24, overflow: "hidden" },
-        mask: { backdropFilter: "blur(4px)" },
-      }}
-    >
-      <div className="bg-white">
-        <div className="bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] px-6 py-6">
-          <h2 className="text-xl font-bold text-white">View Performance</h2>
-          <p className="text-sm text-white/80 mt-1">Detailed performance metrics and analytics</p>
-        </div>
-
-        <div className="p-6 space-y-5">
-          <div>
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-[#a88a9f] block mb-2">Select Staff</label>
-            <select className="w-full rounded-[20px] border border-[#f1e7ed] bg-[#fffafd] px-4 py-3 text-sm text-[#2d1b35] focus:outline-none focus:ring-2 focus:ring-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10">
-              <option>Choose a staff member...</option>
-            </select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-[14px] border border-[#f1e7ed] bg-[#fffafd] px-4 py-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#a88a9f]">Total Bookings</p>
-              <p className="text-[20px] font-bold text-[#ea4f93] mt-1">156</p>
-              <p className="text-[10px] text-[#a88a9f] mt-1">This month</p>
-            </div>
-            <div className="rounded-[14px] border border-[#f1e7ed] bg-[#fffafd] px-4 py-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#a88a9f]">Revenue</p>
-              <p className="text-[20px] font-bold text-[#ea4f93] mt-1">$8,240</p>
-              <p className="text-[10px] text-[#a88a9f] mt-1">This month</p>
-            </div>
-            <div className="rounded-[14px] border border-[#f1e7ed] bg-[#fffafd] px-4 py-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#a88a9f]">Avg Rating</p>
-              <div className="flex items-center gap-2 mt-1">
-                <p className="text-[20px] font-bold text-[#ea4f93]">4.8</p>
-                <Star size={16} fill="#fbbf24" className="text-[#fbbf24]" />
-              </div>
-              <p className="text-[10px] text-[#a88a9f] mt-1">From 124 reviews</p>
-            </div>
-            <div className="rounded-[14px] border border-[#f1e7ed] bg-[#fffafd] px-4 py-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#a88a9f]">No-Shows</p>
-              <p className="text-[20px] font-bold text-[#ea4f93] mt-1">3</p>
-              <p className="text-[10px] text-[#a88a9f] mt-1">This month</p>
-            </div>
-          </div>
-
-          <div className="flex gap-2 pt-1">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 rounded-full border border-[#f1c6dd] bg-white py-2.5 text-[12px] font-bold text-[#ea4f93] transition hover:bg-[#fffafd]"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
-ViewPerformanceModal.propTypes = {
-  open: PropTypes.bool.isRequired,
-  onClose: PropTypes.func.isRequired,
-};
-
-function TransferStaffModal({ open, onClose }) {
-  return (
-    <Modal
-      open={open}
-      onCancel={onClose}
-      footer={null}
-      width={540}
-      centered
-      destroyOnClose
-      styles={{
-        content: { padding: 0, borderRadius: 24, overflow: "hidden" },
-        mask: { backdropFilter: "blur(4px)" },
-      }}
-    >
-      <div className="bg-white">
-        <div className="bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] px-6 py-6">
-          <h2 className="text-xl font-bold text-white">Transfer Staff</h2>
-          <p className="text-sm text-white/80 mt-1">Move staff to another branch or shift</p>
-        </div>
-
-        <div className="p-6 space-y-4">
-          <div>
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-[#a88a9f] block mb-2">Select Staff to Transfer</label>
-            <select className="w-full rounded-[20px] border border-[#f1e7ed] bg-[#fffafd] px-4 py-3 text-sm text-[#2d1b35] focus:outline-none focus:ring-2 focus:ring-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10">
-              <option>Choose a staff member...</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-[#a88a9f] block mb-2">Select Target Branch</label>
-            <select className="w-full rounded-[20px] border border-[#f1e7ed] bg-[#fffafd] px-4 py-3 text-sm text-[#2d1b35] focus:outline-none focus:ring-2 focus:ring-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10">
-              <option>Main Salon (Downtown)</option>
-              <option>West End Branch</option>
-              <option>East Side Location</option>
-              <option>North Mall Salon</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-[#a88a9f] block mb-2">Effective Date</label>
-            <input type="date" className="w-full rounded-[20px] border border-[#f1e7ed] bg-[#fffafd] px-4 py-3 text-sm text-[#2d1b35] focus:outline-none focus:ring-2 focus:ring-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10" />
-          </div>
-
-          <div>
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-[#a88a9f] block mb-2">Reason for Transfer</label>
-            <textarea className="w-full rounded-[20px] border border-[#f1e7ed] bg-[#fffafd] px-4 py-3 text-sm text-[#2d1b35] focus:outline-none focus:ring-2 focus:ring-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10" rows={3} placeholder="Enter reason for transfer..." />
-          </div>
-
-          <div className="flex gap-2 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 rounded-full border border-[#f1c6dd] bg-white py-2.5 text-[12px] font-bold text-[#ea4f93] transition hover:bg-[#fffafd]"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              className="flex-1 rounded-full bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] py-2.5 text-center text-[12px] font-bold text-white shadow-[0_10px_22px_rgba(234,79,147,0.22)] transition hover:opacity-95"
-            >
-              Confirm Transfer
-            </button>
-          </div>
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
-TransferStaffModal.propTypes = {
-  open: PropTypes.bool.isRequired,
-  onClose: PropTypes.func.isRequired,
-};
-
-function InsightStrip() {
+function InsightStrip({ mostCompletedStaff, leastCompletedStaff, loadingBookings }) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
       <PremiumCard className="p-4">
@@ -774,13 +511,27 @@ function InsightStrip() {
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-[#a88a9f]">
-              Top Performer
+              Most Completed
             </p>
-            <p className="truncate text-sm font-bold text-[#2d1b35]">{TOP_PERFORMER.name}</p>
+            {loadingBookings ? (
+              <p className="text-sm text-[#a88a9f]">Loading...</p>
+            ) : mostCompletedStaff ? (
+              <p className="truncate text-sm font-bold text-[#2d1b35]">{mostCompletedStaff.name}</p>
+            ) : (
+              <p className="text-sm text-[#a88a9f]">No data yet</p>
+            )}
           </div>
           <div className="text-right">
-            <p className="text-sm font-bold text-[#ea4f93]">{TOP_PERFORMER.stats.rating}</p>
-            <p className="text-[10px] text-[#a88a9f]">{TOP_PERFORMER.stats.bookings} bookings</p>
+            {loadingBookings ? (
+              <p className="text-sm text-[#a88a9f]">—</p>
+            ) : mostCompletedStaff ? (
+              <>
+                <p className="text-sm font-bold text-[#ea4f93]">{mostCompletedStaff.completed}</p>
+                <p className="text-[10px] text-[#a88a9f]">completed bookings</p>
+              </>
+            ) : (
+              <p className="text-[10px] text-[#a88a9f]">This month</p>
+            )}
           </div>
         </div>
       </PremiumCard>
@@ -813,22 +564,42 @@ function InsightStrip() {
             <AlertCircle size={16} />
           </div>
           <div>
-            <p className="text-sm font-bold text-[#2d1b35]">Low Rating Alerts</p>
-            <p className="text-[11px] text-[#a88a9f]">Needs attention</p>
+            <p className="text-sm font-bold text-[#2d1b35]">Least Completed</p>
+            <p className="text-[11px] text-[#a88a9f]">Fewest bookings this month</p>
           </div>
         </div>
         <div className="space-y-2">
-          {LOW_RATING_ALERTS.slice(0, 2).map((alert) => (
-            <div key={alert.name} className="flex items-center justify-between gap-2 text-[12px]">
-              <span className="truncate font-medium text-[#2d1b35]">{alert.name}</span>
-              <span className="shrink-0 font-bold text-[#ea4f93]">{alert.rating}</span>
-            </div>
-          ))}
+          {loadingBookings ? (
+            <p className="text-[12px] text-[#a88a9f]">Loading...</p>
+          ) : leastCompletedStaff.length > 0 ? (
+            leastCompletedStaff.map((staff) => (
+              <div key={staff.name} className="flex items-center justify-between gap-2 text-[12px]">
+                <span className="truncate font-medium text-[#2d1b35]">{staff.name}</span>
+                <span className="shrink-0 font-bold text-[#ea4f93]">{staff.completed}</span>
+              </div>
+            ))
+          ) : (
+            <p className="text-[12px] text-[#a88a9f]">No staff data available</p>
+          )}
         </div>
       </PremiumCard>
     </div>
   );
 }
+
+InsightStrip.propTypes = {
+  mostCompletedStaff: PropTypes.shape({
+    name: PropTypes.string.isRequired,
+    completed: PropTypes.string.isRequired,
+  }),
+  leastCompletedStaff: PropTypes.arrayOf(
+    PropTypes.shape({
+      name: PropTypes.string.isRequired,
+      completed: PropTypes.string.isRequired,
+    }),
+  ).isRequired,
+  loadingBookings: PropTypes.bool.isRequired,
+};
 
 function pickField(entry, keys) {
   for (const key of keys) {
@@ -841,7 +612,7 @@ function pickField(entry, keys) {
 
 function mapSchedulesToTimeline(artists, schedules, startOfWeekDate) {
   const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  
+
   return artists.map((artist) => {
     // Initialize days with "Off"
     const days = {
@@ -868,36 +639,77 @@ function mapSchedulesToTimeline(artists, schedules, startOfWeekDate) {
       const rawDay = scheduleDate.day(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
       const dayKey = rawDay === 0 ? "Sun" : dayNames[rawDay - 1];
 
-      const startVal = schedule.startTime || schedule.start || schedule.from || schedule.checkIn;
-      const endVal = schedule.endTime || schedule.end || schedule.to || schedule.checkOut;
+      const startVal = schedule.shiftStart || schedule.startTime || schedule.start || schedule.from || schedule.checkIn;
+      const endVal = schedule.shiftEnd || schedule.endTime || schedule.end || schedule.to || schedule.checkOut;
       const statusVal = schedule.status || schedule.scheduleStatus || "Active";
 
-      if (statusVal.toLowerCase() === "off" || statusVal.toLowerCase() === "leave" || !startVal || !endVal) {
-        days[dayKey] = { status: "Off" };
+      const parseTimeToHours = (timeStr) => {
+        if (!timeStr) return 9;
+        const parts = String(timeStr).split(":");
+        const hour = parseInt(parts[0], 10);
+        const min = parts[1] ? parseInt(parts[1], 10) : 0;
+        return hour + min / 60;
+      };
+
+      const formatTime = (hourVal) => {
+        const h = Math.floor(hourVal);
+        const m = Math.round((hourVal - h) * 60);
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+      };
+
+      const isOffStatus = statusVal.toLowerCase() === "off" || statusVal.toLowerCase() === "leave" || !startVal || !endVal;
+
+      if (!days[dayKey] || days[dayKey].status === "Off" || days[dayKey].status === "Leave") {
+        if (isOffStatus) {
+          days[dayKey] = {
+            id: schedule.id || schedule.scheduleId,
+            status: statusVal === "Leave" ? "Leave" : "Off",
+            rawSchedule: schedule,
+            schedules: [schedule]
+          };
+        } else {
+          const startHour = parseTimeToHours(startVal);
+          const endHour = parseTimeToHours(endVal);
+          days[dayKey] = {
+            id: schedule.id || schedule.scheduleId,
+            status: statusVal,
+            start: startHour,
+            end: endHour,
+            label: `${formatTime(startHour)} - ${formatTime(endHour)}`,
+            rawSchedule: schedule,
+            schedules: [schedule]
+          };
+        }
       } else {
-        const parseTimeToHours = (timeStr) => {
-          if (!timeStr) return 9;
-          const parts = String(timeStr).split(":");
-          const hour = parseInt(parts[0], 10);
-          const min = parts[1] ? parseInt(parts[1], 10) : 0;
-          return hour + min / 60;
-        };
+        // Group multiple active schedules on the same day
+        if (!isOffStatus) {
+          const startHour = parseTimeToHours(startVal);
+          const endHour = parseTimeToHours(endVal);
 
-        const startHour = parseTimeToHours(startVal);
-        const endHour = parseTimeToHours(endVal);
+          if (!days[dayKey].schedules) {
+            days[dayKey].schedules = [days[dayKey].rawSchedule || schedule];
+          }
+          days[dayKey].schedules.push(schedule);
 
-        const formatTime = (hourVal) => {
-          const h = Math.floor(hourVal);
-          const m = Math.round((hourVal - h) * 60);
-          return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-        };
+          // Sort chronologically
+          days[dayKey].schedules.sort((a, b) => {
+            const aS = a.shiftStart || a.startTime || a.start || "";
+            const bS = b.shiftStart || b.startTime || b.start || "";
+            return String(aS).localeCompare(String(bS));
+          });
 
-        days[dayKey] = {
-          status: statusVal,
-          start: startHour,
-          end: endHour,
-          label: `${formatTime(startHour)} - ${formatTime(endHour)}`,
-        };
+          // Rebuild compound label
+          const labels = days[dayKey].schedules.map((s) => {
+            const st = s.shiftStart || s.startTime || s.start || "";
+            const en = s.shiftEnd || s.endTime || s.end || "";
+            const sh = parseTimeToHours(st);
+            const eh = parseTimeToHours(en);
+            return `${formatTime(sh)} - ${formatTime(eh)}`;
+          });
+
+          days[dayKey].label = labels.join("\n");
+          days[dayKey].status = "Active";
+        }
       }
     });
 
@@ -912,18 +724,16 @@ function mapSchedulesToTimeline(artists, schedules, startOfWeekDate) {
   });
 }
 
-function TimelineSchedule({ 
-  weeklySchedules, 
-  loading, 
-  selectedDayTab, 
-  setSelectedDayTab,
+function TimelineSchedule({
+  weeklySchedules,
+  loading,
   monday,
   sunday,
   onPrevWeek,
   onNextWeek,
-  onCurrentWeek
+  onCurrentWeek,
+  onEditSchedule
 }) {
-  const hours = Array.from({ length: 12 }, (_, i) => i + 8);
   const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
   const weekDays = useMemo(() => {
@@ -934,6 +744,7 @@ function TimelineSchedule({
         key: dayNames[i],
         label: dayNames[i],
         dateStr: d.format("MMM DD"),
+        date: d,
       });
     }
     return days;
@@ -963,7 +774,7 @@ function TimelineSchedule({
               &gt;
             </button>
           </div>
-          
+
           <button
             type="button"
             onClick={onCurrentWeek}
@@ -975,38 +786,20 @@ function TimelineSchedule({
         </div>
       </div>
 
-      <div className="mb-6 flex flex-wrap gap-1.5 bg-[#fff0f6]/50 p-1 rounded-xl w-fit">
-        {weekDays.map((day) => {
-          const isActive = selectedDayTab === day.key;
-          return (
-            <button
-              key={day.key}
-              type="button"
-              onClick={() => setSelectedDayTab(day.key)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                isActive
-                  ? "bg-[#ea4f93] text-white shadow-sm"
-                  : "text-[#7f6478] hover:bg-[#fff0f6]"
-              }`}
-            >
-              {day.label} ({day.dateStr})
-            </button>
-          );
-        })}
-      </div>
-
       {loading ? (
         <div className="flex items-center justify-center py-12">
           <Spin size="large" tip="Loading schedules..." />
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <div className="min-w-[900px]">
+          <div className="min-w-[1100px]">
+            {/* Header Row */}
             <div className="flex border-b border-[#f1e7ed] pb-4">
               <div className="w-48 shrink-0" />
-              {hours.map((hour) => (
-                <div key={hour} className="flex-1 text-center text-[11px] font-semibold text-[#a88a9f]">
-                  {hour}:00
+              {weekDays.map((day) => (
+                <div key={day.key} className="flex-1 text-center">
+                  <p className="text-[11px] font-bold text-[#a88a9f]">{day.label}</p>
+                  <p className="text-xs font-semibold text-[#ea4f93]">{day.dateStr}</p>
                 </div>
               ))}
             </div>
@@ -1017,64 +810,81 @@ function TimelineSchedule({
                 <p className="mt-1 text-xs text-[#a88a9f]">There are no schedules registered for this week</p>
               </div>
             ) : (
-              weeklySchedules.map((staff) => {
-                const dayData = staff.days[selectedDayTab];
-                const isOff = !dayData || dayData.status === "Off";
-                
-                return (
-                  <div key={staff.id} className="flex py-4 border-b border-[#f1e7ed] last:border-0 items-center">
-                    <div className="w-48 shrink-0 flex items-center gap-3 pr-4">
-                      {staff.avatarUrl ? (
-                        <img
-                          crossOrigin="anonymous"
-                          referrerPolicy="no-referrer"
-                          src={staff.avatarUrl}
-                          alt={staff.name}
-                          className="h-10 w-10 shrink-0 rounded-2xl object-cover ring-2 ring-[#fff5fa]"
-                        />
-                      ) : (
-                        <div
-                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${staff.avatarTone} text-[12px] font-bold text-white`}
-                        >
-                          {getStaffInitials(staff.name)}
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        <p className="text-[13px] font-bold text-[#2d1b35] truncate">{staff.name}</p>
-                        <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${SCHEDULE_STATUS_STYLES[staff.status] || "bg-gray-100 text-gray-600"}`}>
-                          {staff.status}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex-1 relative h-12 bg-[#fffafd] rounded-[14px] overflow-hidden flex items-center">
-                      {isOff ? (
-                        <div className="absolute inset-0 flex items-center justify-center bg-gray-50/50">
-                          <span className="text-[11px] font-semibold text-[#a88a9f]">Day Off</span>
-                        </div>
-                      ) : (() => {
-                        const { start, end, label } = dayData;
-                        const startPercent = Math.max(0, Math.min(100, ((start - 8) / 12) * 100));
-                        const widthPercent = Math.max(0, Math.min(100 - startPercent, ((end - start) / 12) * 100));
-
-                        return (
-                          <div
-                            className="absolute top-1 bottom-1 rounded-[8px] bg-gradient-to-r from-[#ff8ebb]/20 to-[#ea4f93]/30 border border-[#ea4f93]/30 flex items-center justify-center"
-                            style={{
-                              left: `${startPercent}%`,
-                              width: `${widthPercent}%`
-                            }}
-                          >
-                            <span className="text-[10px] font-bold text-[#ea4f93] whitespace-nowrap px-2">
-                              {label}
-                            </span>
-                          </div>
-                        );
-                      })()}
+              weeklySchedules.map((staff) => (
+                <div key={staff.id} className="flex py-4 border-b border-[#f1e7ed] last:border-0 items-center">
+                  {/* Staff Info */}
+                  <div className="w-48 shrink-0 flex items-center gap-3 pr-4">
+                    <StaffAvatar
+                      staff={{ ...staff, initials: getStaffInitials(staff.name) }}
+                      className="h-10 w-10 shrink-0 rounded-2xl object-cover ring-2 ring-[#fff5fa]"
+                      fallbackClassName={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${staff.avatarTone} text-[12px] font-bold text-white`}
+                    />
+                    <div className="min-w-0">
+                      <p className="text-[13px] font-bold text-[#2d1b35] truncate">{staff.name}</p>
+                      <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${SCHEDULE_STATUS_STYLES[staff.status] || "bg-gray-100 text-gray-600"}`}>
+                        {staff.status}
+                      </span>
                     </div>
                   </div>
-                );
-              })
+
+                  {/* Days */}
+                  {weekDays.map((day) => {
+                    const dayData = staff.days[day.key];
+                    const isOff = !dayData || dayData.status === "Off" || dayData.status === "Leave";
+                    const isLeave = dayData?.status === "Leave";
+                    const hasSchedule = !!dayData?.id;
+
+                    // Extract shift arrays
+                    const shiftLabels = !isOff && dayData?.label ? dayData.label.split("\n") : [];
+
+                    let containerClass = "h-[72px] rounded-xl flex flex-col items-center justify-center text-center transition-all duration-300 p-2 ";
+                    if (hasSchedule) {
+                      if (isOff) {
+                        if (isLeave) {
+                          containerClass += "bg-gradient-to-br from-[#fffdf9] to-[#fff9ee] border border-[#ffe0b2] text-[#d97706] hover:shadow-sm";
+                        } else {
+                          containerClass += "bg-[#fafbfc] border border-dashed border-[#e4dbe0] text-[#a88a9f]";
+                        }
+                      } else {
+                        // Active working days get a clean pink accent card
+                        containerClass += "bg-white border-l-[3.5px] border-l-[#ea4f93] border-y border-r border-[#f1e7ed] cursor-pointer hover:shadow-md hover:border-[#ea4f93]/40 shadow-sm";
+                      }
+                    } else {
+                      // Empty slot (Day Off)
+                      containerClass += "bg-[#fafbfc] border border-dashed border-[#e4dbe0] text-[#b09cb0]/70";
+                    }
+
+                    return (
+                      <div key={day.key} className="flex-1 px-1">
+                        <div
+                          onClick={() => hasSchedule && onEditSchedule && onEditSchedule(staff, day.key, dayData)}
+                          className={containerClass}
+                        >
+                          {isOff ? (
+                            <span className={`text-[10px] font-bold tracking-wide ${isLeave ? "text-[#db8520]" : "text-[#a88a9f]"}`}>
+                              {isLeave ? "On Leave" : "Day Off"}
+                            </span>
+                          ) : (
+                            <div className="flex flex-col gap-1 w-full justify-center">
+                              {shiftLabels.map((shift, sIdx) => (
+                                <span
+                                  key={sIdx}
+                                  className="inline-block px-1.5 py-0.5 rounded-md bg-[#ffeaf4] text-[#ea4f93] text-[9px] font-extrabold tracking-tight border border-[#fbd2e8]/40 truncate w-full text-center"
+                                >
+                                  {shift}
+                                </span>
+                              ))}
+                              <span className="text-[7.5px] font-bold text-[#b39aac] uppercase tracking-wider mt-0.5 block leading-none">
+                                {dayData?.status || "Active"}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))
             )}
           </div>
         </div>
@@ -1093,6 +903,7 @@ TimelineSchedule.propTypes = {
   onPrevWeek: PropTypes.func.isRequired,
   onNextWeek: PropTypes.func.isRequired,
   onCurrentWeek: PropTypes.func.isRequired,
+  onEditSchedule: PropTypes.func,
 };
 
 export function StaffManagementPage() {
@@ -1101,10 +912,11 @@ export function StaffManagementPage() {
   const [viewingStaffDetail, setViewingStaffDetail] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [isEditScheduleModalOpen, setIsEditScheduleModalOpen] = useState(false);
-  const [isAssignSkillModalOpen, setIsAssignSkillModalOpen] = useState(false);
-  const [isViewPerformanceModalOpen, setIsViewPerformanceModalOpen] = useState(false);
   const [isTransferStaffModalOpen, setIsTransferStaffModalOpen] = useState(false);
+  const [salonId, setSalonId] = useState(null);
   const [staffArtists, setStaffArtists] = useState([]);
+  const [bookings, setBookings] = useState([]);
+  const [loadingBookings, setLoadingBookings] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
@@ -1114,8 +926,14 @@ export function StaffManagementPage() {
 
   const [schedules, setSchedules] = useState([]);
   const [loadingSchedules, setLoadingSchedules] = useState(false);
-  const [selectedDayTab, setSelectedDayTab] = useState("Mon");
-  
+
+  // Drawer state
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [selectedStaff, setSelectedStaff] = useState(null);
+  const [isLoadingDrawer, setIsLoadingDrawer] = useState(false);
+  const [staffSkills, setStaffSkills] = useState([]);
+  const [isLoadingSkills, setIsLoadingSkills] = useState(false);
+
   const [monday, setMonday] = useState(() => {
     const today = dayjs();
     const currentDay = today.day();
@@ -1130,26 +948,60 @@ export function StaffManagementPage() {
     return today.add(daysToMonday, "day").add(6, "day");
   });
 
+  // Schedule Edit/Create states
+  const [editingSchedule, setEditingSchedule] = useState(null);
+
+  const initialScheduleState = DAYS_OF_WEEK.reduce((acc, day) => {
+    acc[day.key] = false;
+    return acc;
+  }, {});
+  const [newShiftSchedule, setNewShiftSchedule] = useState(initialScheduleState);
+  const [selectedTimeSlots, setSelectedTimeSlots] = useState(
+    TIME_SLOTS_30MIN.map((_, idx) => idx)
+  );
+  const [newShiftStatus, setNewShiftStatus] = useState("Active");
+
+  const [isCreatingShift, setIsCreatingShift] = useState(false);
+  const [isCreateShiftModalOpen, setIsCreateShiftModalOpen] = useState(false);
+
+  // Modal has its own week state so user can navigate independently of the timeline
+  const [modalMonday, setModalMonday] = useState(monday);
+  const modalSunday = modalMonday.add(6, "day");
+  const [modalWeekSchedules, setModalWeekSchedules] = useState({});
+  const [loadingModalSchedules, setLoadingModalSchedules] = useState(false);
+
+  const loadSchedules = useCallback(async () => {
+    if (staffArtists.length === 0) return;
+    try {
+      setLoadingSchedules(true);
+      const startStr = monday.format("YYYY-MM-DDT00:00:00");
+      const endStr = sunday.format("YYYY-MM-DDT23:59:59");
+
+      const promises = staffArtists.map(async (artist) => {
+        try {
+          const data = await fetchArtistSchedules(artist.id, {
+            startDate: startStr,
+            endDate: endStr
+          });
+          return data || [];
+        } catch (err) {
+          console.error(`Failed to load schedules for artist ${artist.id}:`, err);
+          return [];
+        }
+      });
+
+      const results = await Promise.all(promises);
+      setSchedules(results.flat());
+    } catch (err) {
+      console.error("Failed to load schedules:", err);
+    } finally {
+      setLoadingSchedules(false);
+    }
+  }, [monday, sunday, staffArtists]);
+
   useEffect(() => {
-    const loadSchedules = async () => {
-      try {
-        setLoadingSchedules(true);
-        const startStr = monday.format("YYYY-MM-DDT00:00:00");
-        const endStr = sunday.format("YYYY-MM-DDT23:59:59");
-        const data = await fetchSchedules({
-          startDate: startStr,
-          endDate: endStr,
-          pageSize: 200
-        });
-        setSchedules(data || []);
-      } catch (err) {
-        console.error("Failed to load schedules:", err);
-      } finally {
-        setLoadingSchedules(false);
-      }
-    };
     loadSchedules();
-  }, [monday, sunday]);
+  }, [loadSchedules]);
 
   const handlePrevWeek = () => {
     const prevMon = monday.subtract(1, 'week');
@@ -1172,6 +1024,220 @@ export function StaffManagementPage() {
     setSunday(currentMon.add(6, 'day'));
   };
 
+  // Handle opening staff detail drawer
+  const handleOpenDrawer = useCallback((artistId) => {
+    setIsDrawerOpen(true);
+    setIsLoadingDrawer(false);
+    setIsLoadingSkills(false);
+
+    // Find the staff in our already loaded list
+    const staff = staffArtists.find(s => s.id === artistId);
+    console.log("Opening drawer for staff:", staff);
+
+    if (staff) {
+      setSelectedStaff(staff);
+      setStaffSkills(staff.skills); // Use skills we already have!
+    } else {
+      setSelectedStaff(null);
+      setStaffSkills([]);
+    }
+  }, [staffArtists]);
+
+  const handleEditSchedule = (staff, dayKey, dayData) => {
+    setEditingSchedule({
+      id: dayData.id,
+      name: staff.name,
+      artistId: staff.id,
+      workDate: dayData.rawSchedule?.workDate || dayData.rawSchedule?.date,
+      start: dayData.start,
+      end: dayData.end,
+      status: dayData.status,
+      rawSchedule: dayData.rawSchedule,
+      schedules: dayData.schedules || (dayData.rawSchedule ? [dayData.rawSchedule] : []),
+    });
+    setIsEditScheduleModalOpen(true);
+  };
+
+  // Derived: shift duration in hours for the Create Shift modal (null if invalid/incomplete)
+  const shiftDurationHours = useMemo(() => {
+    if (newShiftStatus !== "Active") return 0;
+    return selectedTimeSlots.length * 0.5;
+  }, [newShiftStatus, selectedTimeSlots]);
+
+  // Only Active shifts require a valid, positive time range
+  const isShiftTimeInvalid = newShiftStatus === "Active" && selectedTimeSlots.length === 0;
+
+  const applyShiftDurationPreset = (hours) => {
+    const slotCount = hours * 2;
+    const newSelected = [];
+    for (let i = 0; i < slotCount; i++) {
+      newSelected.push(i);
+    }
+    setSelectedTimeSlots(newSelected);
+  };
+
+  const resetShiftForm = () => {
+    setNewShiftSchedule(initialScheduleState);
+    setSelectedTimeSlots(TIME_SLOTS_30MIN.map((_, idx) => idx));
+    setNewShiftStatus("Active");
+  };
+
+  const handleScheduleChange = (dayKey, checked) => {
+    setNewShiftSchedule(prev => ({
+      ...prev,
+      [dayKey]: checked
+    }));
+  };
+
+  // Fetch the selected staff's existing schedules for the modal's current week
+  useEffect(() => {
+    if (!isCreateShiftModalOpen || !selectedStaff?.id) {
+      setModalWeekSchedules({});
+      return;
+    }
+    let cancelled = false;
+    const load = async () => {
+      setLoadingModalSchedules(true);
+      try {
+        const data = await fetchArtistSchedules(selectedStaff.id, {
+          startDate: modalMonday.format("YYYY-MM-DDT00:00:00"),
+          endDate: modalSunday.format("YYYY-MM-DDT23:59:59"),
+        });
+        if (cancelled) return;
+        const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+        const map = {};
+        (data || []).forEach((s) => {
+          const dateVal = s.date || s.workDate || s.scheduleDate || s.day;
+          if (!dateVal) return;
+          const d = dayjs(dateVal);
+          const rawDay = d.day(); // 0 = Sun
+          const key = rawDay === 0 ? "Sun" : DAY_NAMES[rawDay - 1];
+          map[key] = s;
+        });
+        setModalWeekSchedules(map);
+      } catch {
+        if (!cancelled) setModalWeekSchedules({});
+      } finally {
+        if (!cancelled) setLoadingModalSchedules(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [isCreateShiftModalOpen, selectedStaff, modalMonday]);
+
+  const handleOpenCreateShiftModal = () => {
+    // Sync modal week to the current timeline week when opening
+    setModalMonday(monday);
+    resetShiftForm();
+    setIsCreateShiftModalOpen(true);
+  };
+
+  const handleModalPrevWeek = () => setModalMonday((prev) => prev.subtract(1, "week"));
+  const handleModalNextWeek = () => setModalMonday((prev) => prev.add(1, "week"));
+
+  const handleCreateShift = async () => {
+    if (!selectedStaff?.id) {
+      message.error("No staff selected.");
+      return;
+    }
+
+    // Skip days that already have an existing schedule
+    const daysToCreate = DAYS_OF_WEEK.filter(
+      (day) => newShiftSchedule[day.key] && !modalWeekSchedules[day.key]
+    );
+
+    if (daysToCreate.length === 0) {
+      message.error("Please select at least one available day.");
+      return;
+    }
+
+    if (isShiftTimeInvalid) {
+      message.error("Please select at least one time slot.");
+      return;
+    }
+
+    const getContiguousTimeGroups = (selectedIndices) => {
+      if (!selectedIndices || selectedIndices.length === 0) return [];
+      const sorted = [...selectedIndices].sort((a, b) => a - b);
+      const groups = [];
+      let currentGroup = [sorted[0]];
+      for (let i = 1; i < sorted.length; i++) {
+        if (sorted[i] === sorted[i - 1] + 1) {
+          currentGroup.push(sorted[i]);
+        } else {
+          groups.push(currentGroup);
+          currentGroup = [sorted[i]];
+        }
+      }
+      groups.push(currentGroup);
+      return groups.map((group) => {
+        const startIdx = group[0];
+        const endIdx = group[group.length - 1];
+        return {
+          shiftStart: TIME_SLOTS_30MIN[startIdx].start,
+          shiftEnd: TIME_SLOTS_30MIN[endIdx].end,
+        };
+      });
+    };
+
+    try {
+      setIsCreatingShift(true);
+
+      const formatTimeWithSeconds = (timeStr) => {
+        if (!timeStr) return "00:00:00";
+        const parts = timeStr.split(":");
+        const h = parts[0] ? parts[0].padStart(2, '0') : "00";
+        const m = parts[1] ? parts[1].padStart(2, '0') : "00";
+        const s = parts[2] ? parts[2].padStart(2, '0') : "00";
+        return `${h}:${m}:${s}`;
+      };
+
+      const isWorkingShift = newShiftStatus === "Active";
+      const promises = [];
+
+      if (isWorkingShift) {
+        const timeGroups = getContiguousTimeGroups(selectedTimeSlots);
+        daysToCreate.forEach((day) => {
+          const workDate = modalMonday.add(day.offset, "day");
+          timeGroups.forEach((group) => {
+            const payload = {
+              nailArtistId: selectedStaff.id,
+              workDate: workDate.format("YYYY-MM-DDT00:00:00.000[Z]"),
+              shiftStart: formatTimeWithSeconds(group.shiftStart),
+              shiftEnd: formatTimeWithSeconds(group.shiftEnd),
+              status: newShiftStatus,
+            };
+            promises.push(createSchedule(payload));
+          });
+        });
+      } else {
+        daysToCreate.forEach((day) => {
+          const workDate = modalMonday.add(day.offset, "day");
+          const payload = {
+            nailArtistId: selectedStaff.id,
+            workDate: workDate.format("YYYY-MM-DDT00:00:00.000[Z]"),
+            shiftStart: null,
+            shiftEnd: null,
+            status: newShiftStatus,
+          };
+          promises.push(createSchedule(payload));
+        });
+      }
+
+      await Promise.all(promises);
+      message.success("New shifts created successfully!");
+
+      resetShiftForm();
+      setIsCreateShiftModalOpen(false);
+      loadSchedules();
+    } catch (err) {
+      console.error("Failed to create shift:", err);
+      message.error(err.message || "Failed to create shifts.");
+    } finally {
+      setIsCreatingShift(false);
+    }
+  };
+
   const weeklySchedules = useMemo(() => {
     return mapSchedulesToTimeline(staffArtists, schedules, monday);
   }, [staffArtists, schedules, monday]);
@@ -1185,7 +1251,7 @@ export function StaffManagementPage() {
       role: apiArtist.role || "Nail Artist",
       rating: apiArtist.averageRating || 4.5,
       status: apiArtist.status || "Active",
-      skills: [],
+      skills: [], // Will hold skill objects
       stats: {
         today: 0,
         month: 0,
@@ -1195,6 +1261,8 @@ export function StaffManagementPage() {
       avatarUrl: apiArtist.avatarUrl || "",
       email: apiArtist.email || "",
       phone: apiArtist.phone || "",
+      staffId: apiArtist.staffId || apiArtist.id,
+      userId: apiArtist.userId,
     };
   };
 
@@ -1214,14 +1282,36 @@ export function StaffManagementPage() {
   };
 
   useEffect(() => {
+    try {
+      const id = getSalonId();
+      setSalonId(id);
+    } catch (e) {
+      console.warn("Failed to get salonId:", e);
+    }
+  }, []);
+
+  useEffect(() => {
     const loadNailArtists = async () => {
       try {
         setLoading(true);
         setError(null);
         const data = await fetchNailArtists();
-        const mappedData = Array.isArray(data)
-          ? data.map(mapApiArtistToUiFormat)
+        const mappedDataPromises = Array.isArray(data)
+          ? data.map(async (apiArtist) => {
+            const artist = mapApiArtistToUiFormat(apiArtist);
+            // Fetch skills for this artist
+            try {
+              const skills = await fetchNailArtistSkills(apiArtist.staffId || apiArtist.id || apiArtist.userId);
+              // Keep skills as array of objects so we can use them in drawer and card
+              artist.skills = skills;
+            } catch (err) {
+              console.warn("Failed to load skills for artist", artist.id, err);
+              artist.skills = [];
+            }
+            return artist;
+          })
           : [];
+        const mappedData = await Promise.all(mappedDataPromises);
         setStaffArtists(mappedData);
       } catch (err) {
         console.error("Failed to load nail artists:", err);
@@ -1234,22 +1324,63 @@ export function StaffManagementPage() {
     loadNailArtists();
   }, []);
 
+  const loadBookings = useCallback(async () => {
+    if (!salonId) return;
+
+    try {
+      setLoadingBookings(true);
+      const result = await fetchBookingsBySalonId(salonId, { pageNumber: 1, pageSize: 1000 });
+      const apiBookings = result?.items || (Array.isArray(result) ? result : []);
+      setBookings(apiBookings);
+    } catch (err) {
+      console.error("Failed to load bookings for performance insights:", err);
+      setBookings([]);
+    } finally {
+      setLoadingBookings(false);
+    }
+  }, [salonId]);
+
+  useEffect(() => {
+    loadBookings();
+  }, [loadBookings]);
+
+  const performanceInsights = useMemo(
+    () => buildPerformanceInsights(staffArtists, bookings),
+    [staffArtists, bookings],
+  );
+
+  const staffArtistsWithStats = useMemo(() => {
+    const statsById = new Map(
+      performanceInsights.performers.map((performer) => [String(performer.id), performer]),
+    );
+
+    return staffArtists.map((staff) => {
+      const performer = statsById.get(String(staff.id));
+      if (!performer) return staff;
+
+      return {
+        ...staff,
+        stats: performer.stats,
+      };
+    });
+  }, [staffArtists, performanceInsights.performers]);
+
   const filteredStaff = useMemo(
     () => {
-      let filtered = filterStaffByStatus(staffArtists, activeFilter);
-      
+      let filtered = filterStaffByStatus(staffArtistsWithStats, activeFilter);
+
       if (query.trim() !== "") {
         const lowerQuery = query.toLowerCase();
-        filtered = filtered.filter((staff) => 
+        filtered = filtered.filter((staff) =>
           staff.name.toLowerCase().includes(lowerQuery) ||
           staff.role.toLowerCase().includes(lowerQuery) ||
           staff.status.toLowerCase().includes(lowerQuery)
         );
       }
-      
+
       return filtered;
     },
-    [staffArtists, activeFilter, query],
+    [staffArtistsWithStats, activeFilter, query],
   );
 
   const paginatedStaff = useMemo(() => {
@@ -1264,41 +1395,39 @@ export function StaffManagementPage() {
   const summaryStats = useMemo(() => [
     {
       label: "Total Staff",
-      value: staffArtists.length,
+      value: staffArtistsWithStats.length,
       icon: Users,
       tone: "bg-[#ffe8f2] text-[#ea4f93]",
     },
     {
       label: "Active Today",
-      value: staffArtists.filter((s) => s.status === "Active").length,
+      value: staffArtistsWithStats.filter((s) => s.status === "Active").length,
       icon: CheckCircle2,
       tone: "bg-[#eaf9ee] text-[#2fa25f]",
     },
     {
       label: "Average Rating",
-      value: staffArtists.length > 0 
-        ? (staffArtists.reduce((acc, s) => acc + s.rating, 0) / staffArtists.length).toFixed(1)
+      value: staffArtistsWithStats.length > 0
+        ? (staffArtistsWithStats.reduce((acc, s) => acc + s.rating, 0) / staffArtistsWithStats.length).toFixed(1)
         : "0",
       icon: Star,
       tone: "bg-[#fff0dd] text-[#db8520]",
     },
     {
       label: "Completed Services",
-      value: staffArtists.reduce((acc, s) => acc + s.stats.month, 0),
+      value: performanceInsights.completedServices,
       icon: CalendarDays,
       tone: "bg-[#e7ecff] text-[#4755b8]",
     },
-  ], [staffArtists]);
+  ], [staffArtistsWithStats, performanceInsights.completedServices]);
 
   const handlePageChange = (newPage) => setCurrentPage(newPage);
 
   const getActionHandler = (label) => {
     switch (label) {
       case "Edit Schedule": return () => setIsEditScheduleModalOpen(true);
-      case "Assign Skill": return () => setIsAssignSkillModalOpen(true);
-      case "View Performance": return () => setIsViewPerformanceModalOpen(true);
       case "Transfer Staff": return () => setIsTransferStaffModalOpen(true);
-      default: return () => {};
+      default: return () => { };
     }
   };
 
@@ -1319,206 +1448,209 @@ export function StaffManagementPage() {
         </div>
       ) : (
         <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="space-y-5">
-            <motion.div variants={fadeInUp} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              {summaryStats.map((stat) => (
-                  <PremiumCard key={stat.label} className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${stat.tone}`}>
-                        <stat.icon size={18} />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xl font-bold text-[#2d1b35]">{stat.value}</p>
-                        <p className="truncate text-[11px] text-[#8b7382]">{stat.label}</p>
-                      </div>
-                    </div>
-                  </PremiumCard>
-              ))}
-            </motion.div>
-
-            <motion.div variants={fadeInUp}>
-              <InsightStrip />
-            </motion.div>
-
-            <motion.div variants={fadeInUp} className="flex flex-wrap gap-2">
-              {QUICK_ACTIONS.map((action) => {
-                const Icon = {
-                  "calendar": CalendarDays,
-                  "award": Award,
-                  "chart": BarChart3,
-                  "arrow": ArrowRightLeft,
-                }[action.icon] || CalendarDays;
-                const handler = getActionHandler(action.label);
-
-                return (
-                  <button
-                    key={action.label}
-                    type="button"
-                    onClick={handler}
-                    className="inline-flex items-center gap-2 rounded-xl border border-[#f1c6dd] bg-white px-4 py-2 text-[11px] font-semibold text-[#ea4f93] transition hover:bg-[#fffafd] active:scale-[0.98]"
-                  >
-                    <Icon size={14} />
-                    {action.label}
-                  </button>
-                );
-              })}
-              <Link
-                to={ROUTES.managerStaffArtistsCreate}
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] px-4 py-2 text-[11px] font-semibold text-white shadow-[0_6px_16px_rgba(234,79,147,0.2)] transition hover:opacity-95 active:scale-[0.98]"
-              >
-                <UserPlus size={14} />
-                Add Staff Artist
-              </Link>
-            </motion.div>
-
-            <motion.div variants={fadeInUp}>
-              <PremiumCard className="overflow-hidden p-0">
-                <div className="border-b border-[#f1e7ed] bg-[#fffafd] px-5 py-4 sm:px-6">
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                    <SectionHeading
-                      title="Staff Artists"
-                      subtitle="View and manage your nail artists"
-                    />
-                    <div className="flex flex-wrap gap-2">
-                      {STAFF_FILTER_TABS.map((filter) => {
-                        const count = filter === "All" ? staffArtists.length : staffArtists.filter(s => s.status === filter).length;
-                        const isActive = activeFilter === filter;
-                        return (
-                          <button
-                            key={filter}
-                            type="button"
-                            onClick={() => { setActiveFilter(filter); setCurrentPage(1); }}
-                            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                              isActive
-                                ? "bg-[#ea4f93] text-white shadow-[0_4px_12px_rgba(234,79,147,0.25)]"
-                                : "border border-[#f3d7e4] bg-white text-[#7f6478] hover:border-[#ea4f93]/30 hover:text-[#ea4f93]"
-                            }`}
-                          >
-                            {filter}
-                            <span className={isActive ? "rounded bg-white/20 px-1.5 py-0.5 text-[10px]" : "rounded bg-[#fff0f6] px-1.5 py-0.5 text-[10px] text-[#c86d98]"}>
-                              {count}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
+          <motion.div variants={fadeInUp} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            {summaryStats.map((stat) => (
+              <PremiumCard key={stat.label} className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${stat.tone}`}>
+                    <stat.icon size={18} />
                   </div>
+                  <div className="min-w-0">
+                    <p className="text-xl font-bold text-[#2d1b35]">{stat.value}</p>
+                    <p className="truncate text-[11px] text-[#8b7382]">{stat.label}</p>
+                  </div>
+                </div>
+              </PremiumCard>
+            ))}
+          </motion.div>
 
-                  <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_200px_auto]">
-                    <label className="group relative block">
-                      <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#a88a9f] group-focus-within:text-[#ea4f93]" />
-                      <input
-                        value={query}
-                        onChange={(e) => { setQuery(e.target.value); setCurrentPage(1); }}
-                        placeholder="Search by name, role, or status..."
-                        className="h-10 w-full rounded-xl border border-[#f3d7e4] bg-white pl-10 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#c8b0bf] focus:border-[#ea4f93] focus:ring-2 focus:ring-[#ea4f93]/10"
-                      />
-                    </label>
+          <motion.div variants={fadeInUp}>
+            <InsightStrip
+              mostCompletedStaff={performanceInsights.mostCompletedStaff}
+              leastCompletedStaff={performanceInsights.leastCompletedStaff}
+              loadingBookings={loadingBookings}
+            />
+          </motion.div>
 
-                    <DatePicker
-                      value={selectedDate}
-                      onChange={(d) => setSelectedDate(d)}
-                      placeholder="Select date"
-                      className="h-10 w-full rounded-xl border border-[#f3d7e4]"
-                      suffixIcon={<Calendar size={14} className="text-[#a88a9f]" />}
+          <motion.div variants={fadeInUp} className="flex flex-wrap gap-2">
+            {QUICK_ACTIONS.map((action) => {
+              const Icon = {
+                "calendar": CalendarDays,
+                "award": Award,
+                "chart": BarChart3,
+                "arrow": ArrowRightLeft,
+              }[action.icon] || CalendarDays;
+              const handler = getActionHandler(action.label);
+
+              return (
+                <button
+                  key={action.label}
+                  type="button"
+                  onClick={handler}
+                  className="inline-flex items-center gap-2 rounded-xl border border-[#f1c6dd] bg-white px-4 py-2 text-[11px] font-semibold text-[#ea4f93] transition hover:bg-[#fffafd] active:scale-[0.98]"
+                >
+                  <Icon size={14} />
+                  {action.label}
+                </button>
+              );
+            })}
+            <Link
+              to={ROUTES.managerStaffArtistsCreate}
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] px-4 py-2 text-[11px] font-semibold text-white shadow-[0_6px_16px_rgba(234,79,147,0.2)] transition hover:opacity-95 active:scale-[0.98]"
+            >
+              <UserPlus size={14} />
+              Add Staff Artist
+            </Link>
+          </motion.div>
+
+          <motion.div variants={fadeInUp}>
+            <PremiumCard className="overflow-hidden p-0">
+              <div className="border-b border-[#f1e7ed] bg-[#fffafd] px-5 py-4 sm:px-6">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                  <SectionHeading
+                    title="Staff Artists"
+                    subtitle="View and manage your nail artists"
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    {STAFF_FILTER_TABS.map((filter) => {
+                      const count = filter === "All" ? staffArtists.length : staffArtists.filter(s => s.status === filter).length;
+                      const isActive = activeFilter === filter;
+                      return (
+                        <button
+                          key={filter}
+                          type="button"
+                          onClick={() => { setActiveFilter(filter); setCurrentPage(1); }}
+                          className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${isActive
+                              ? "bg-[#ea4f93] text-white shadow-[0_4px_12px_rgba(234,79,147,0.25)]"
+                              : "border border-[#f3d7e4] bg-white text-[#7f6478] hover:border-[#ea4f93]/30 hover:text-[#ea4f93]"
+                            }`}
+                        >
+                          {filter}
+                          <span className={isActive ? "rounded bg-white/20 px-1.5 py-0.5 text-[10px]" : "rounded bg-[#fff0f6] px-1.5 py-0.5 text-[10px] text-[#c86d98]"}>
+                            {count}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_200px_auto]">
+                  <label className="group relative block">
+                    <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#a88a9f] group-focus-within:text-[#ea4f93]" />
+                    <input
+                      value={query}
+                      onChange={(e) => { setQuery(e.target.value); setCurrentPage(1); }}
+                      placeholder="Search by name, role, or status..."
+                      className="h-10 w-full rounded-xl border border-[#f3d7e4] bg-white pl-10 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#c8b0bf] focus:border-[#ea4f93] focus:ring-2 focus:ring-[#ea4f93]/10"
                     />
+                  </label>
 
+                  <DatePicker
+                    value={selectedDate}
+                    onChange={(d) => setSelectedDate(d)}
+                    placeholder="Select date"
+                    className="h-10 w-full rounded-xl border border-[#f3d7e4]"
+                    suffixIcon={<Calendar size={14} className="text-[#a88a9f]" />}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => { setQuery(""); setSelectedDate(null); setActiveFilter("All"); setCurrentPage(1); }}
+                    disabled={!query.trim() && !selectedDate && activeFilter === "All"}
+                    className={`h-10 rounded-xl border px-4 text-sm font-semibold transition ${query.trim() || selectedDate || activeFilter !== "All"
+                        ? "border-[#f3d7e4] bg-white text-[#ea4f93] hover:bg-[#fff5fa]"
+                        : "cursor-not-allowed border-[#f5e8ef] bg-[#fffafb] text-[#d6b9c8]"
+                      }`}
+                  >
+                    Reset
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-5 sm:p-6">
+                {filteredStaff.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#fff0f8] text-[#ea4f93]">
+                      <Search size={22} />
+                    </div>
+                    <p className="text-base font-semibold text-[#5c4559]">No staff artists found</p>
+                    <p className="mt-1 max-w-xs text-xs text-[#a88a9f]">
+                      Try adjusting your filters or search term
+                    </p>
                     <button
                       type="button"
                       onClick={() => { setQuery(""); setSelectedDate(null); setActiveFilter("All"); setCurrentPage(1); }}
-                      disabled={!query.trim() && !selectedDate && activeFilter === "All"}
-                      className={`h-10 rounded-xl border px-4 text-sm font-semibold transition ${
-                        query.trim() || selectedDate || activeFilter !== "All"
-                          ? "border-[#f3d7e4] bg-white text-[#ea4f93] hover:bg-[#fff5fa]"
-                          : "cursor-not-allowed border-[#f5e8ef] bg-[#fffafb] text-[#d6b9c8]"
-                      }`}
+                      className="mt-4 rounded-xl bg-[#ea4f93] px-4 py-2 text-xs font-semibold text-white transition active:scale-[0.98]"
                     >
-                      Reset
+                      Clear filters
                     </button>
                   </div>
-                </div>
-
-                <div className="p-5 sm:p-6">
-                  {filteredStaff.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-16 text-center">
-                      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#fff0f8] text-[#ea4f93]">
-                        <Search size={22} />
-                      </div>
-                      <p className="text-base font-semibold text-[#5c4559]">No staff artists found</p>
-                      <p className="mt-1 max-w-xs text-xs text-[#a88a9f]">
-                        Try adjusting your filters or search term
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => { setQuery(""); setSelectedDate(null); setActiveFilter("All"); setCurrentPage(1); }}
-                        className="mt-4 rounded-xl bg-[#ea4f93] px-4 py-2 text-xs font-semibold text-white transition active:scale-[0.98]"
-                      >
-                        Clear filters
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                        <AnimatePresence mode="popLayout">
-                          {paginatedStaff.map((staff) => (
-                            <StaffArtistCard
-                              key={staff.id}
-                              staff={staff}
-                              onView={(selectedStaff) => {
-                                setViewingStaff(selectedStaff);
-                                fetchArtistDetail(selectedStaff.id);
-                              }}
-                            />
-                          ))}
-                        </AnimatePresence>
-                      </div>
-                      {filteredTotalPages > 1 && (
-                        <div className="mt-6 flex justify-end border-t border-[#f1e7ed] pt-5">
-                          <Pagination
-                            currentPage={currentPage}
-                            totalPages={filteredTotalPages}
-                            onPageChange={handlePageChange}
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                      <AnimatePresence mode="popLayout">
+                        {paginatedStaff.map((staff) => (
+                          <StaffArtistCard
+                            key={staff.id}
+                            staff={staff}
+                            onOpenDrawer={handleOpenDrawer}
                           />
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              </PremiumCard>
-            </motion.div>
+                        ))}
+                      </AnimatePresence>
+                    </div>
+                    {filteredTotalPages > 1 && (
+                      <div className="mt-6 flex justify-end border-t border-[#f1e7ed] pt-5">
+                        <Pagination
+                          currentPage={currentPage}
+                          totalPages={filteredTotalPages}
+                          onPageChange={handlePageChange}
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </PremiumCard>
+          </motion.div>
 
-            <motion.div variants={fadeInUp}>
-              <TimelineSchedule
-                weeklySchedules={weeklySchedules}
-                loading={loadingSchedules}
-                selectedDayTab={selectedDayTab}
-                setSelectedDayTab={setSelectedDayTab}
-                monday={monday}
-                sunday={sunday}
-                onPrevWeek={handlePrevWeek}
-                onNextWeek={handleNextWeek}
-                onCurrentWeek={handleCurrentWeek}
-              />
-            </motion.div>
+          <motion.div variants={fadeInUp}>
+            <TimelineSchedule
+              weeklySchedules={weeklySchedules}
+              loading={loadingSchedules}
+              monday={monday}
+              sunday={sunday}
+              onPrevWeek={handlePrevWeek}
+              onNextWeek={handleNextWeek}
+              onCurrentWeek={handleCurrentWeek}
+              onEditSchedule={handleEditSchedule}
+            />
+          </motion.div>
 
-            <motion.div variants={fadeInUp}>
-              <PremiumCard className="p-5">
-                <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <SectionHeading
-                    title="Performance Overview"
-                    subtitle="Top performers this month"
-                  />
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-2 rounded-xl border border-[#f1c6dd] bg-[#fffafd] px-4 py-2 text-[11px] font-semibold text-[#ea4f93]"
-                  >
-                    <TrendingUp size={14} />
-                    This Month
-                  </button>
-                </div>
-                <div className="grid gap-4 lg:grid-cols-3">
-                  {PERFORMANCE_OVERVIEW.map((item) => (
+          <motion.div variants={fadeInUp}>
+            <PremiumCard className="p-5">
+              <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <SectionHeading
+                  title="Performance Overview"
+                  subtitle="Staff with the most completed bookings this month"
+                />
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-2 rounded-xl border border-[#f1c6dd] bg-[#fffafd] px-4 py-2 text-[11px] font-semibold text-[#ea4f93]"
+                >
+                  <TrendingUp size={14} />
+                  This Month
+                </button>
+              </div>
+              <div className="grid gap-4 lg:grid-cols-3">
+                {loadingBookings ? (
+                  <div className="col-span-full flex items-center justify-center py-10">
+                    <Spin tip="Loading performance data..." />
+                  </div>
+                ) : performanceInsights.topCompletedPerformers.length > 0 ? (
+                  performanceInsights.topCompletedPerformers.map((item) => (
                     <div
-                      key={item.name}
+                      key={item.id}
                       className="rounded-xl border border-[#f1e7ed] bg-[#fffafd] p-4"
                     >
                       <div className="flex items-center gap-3">
@@ -1549,33 +1681,468 @@ export function StaffManagementPage() {
                         ))}
                       </div>
                     </div>
-                  ))}
-                </div>
-              </PremiumCard>
-            </motion.div>
+                  ))
+                ) : (
+                  <div className="col-span-full rounded-xl border border-dashed border-[#f1c6dd] bg-[#fffafd] px-4 py-8 text-center text-sm text-[#a88a9f]">
+                    No completed bookings this month yet
+                  </div>
+                )}
+              </div>
+            </PremiumCard>
+          </motion.div>
         </motion.div>
       )}
 
-      <StaffDetailModal
-        staff={viewingStaff}
-        onClose={() => setViewingStaff(null)}
-        loading={loadingDetail}
-      />
+      {/* Staff Detail Drawer */}
+      <Drawer
+        title={null}
+        open={isDrawerOpen}
+        onClose={() => {
+          setIsDrawerOpen(false);
+          setSelectedStaff(null);
+          // Reset shift creation form state
+          resetShiftForm();
+        }}
+        size="large"
+        styles={{
+          body: { padding: 0 },
+          section: { background: "#fafafa" }
+        }}
+        placement="right"
+        mask={true}
+        maskClosable={true}
+        destroyOnClose
+        closable={false}
+      >
+        {isLoadingDrawer ? (
+          <div className="flex min-h-[400px] items-center justify-center">
+            <Spin size="large" />
+          </div>
+        ) : selectedStaff ? (
+          <div className="bg-[#fafafa] h-full flex flex-col">
+            {/* Drawer Header */}
+            <div className="sticky top-0 z-10 bg-gradient-to-r from-[#ff8ebb] via-[#ff7ba4] to-[#ffaab6] shadow-md p-6 rounded-b-3xl">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4 flex-1 min-w-0">
+                  <StaffAvatar
+                    staff={{
+                      ...selectedStaff,
+                      name: selectedStaff.name,
+                      initials: getStaffInitials(selectedStaff.name),
+                    }}
+                    className="h-14 w-14 rounded-full object-cover border-2 border-white/30 flex-shrink-0"
+                    fallbackClassName="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-white text-2xl font-bold border-2 border-white/30 flex-shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-white/85">Staff Details</p>
+                    <h2 className="text-xl font-bold text-white mt-1 truncate">
+                      {selectedStaff.name}
+                    </h2>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsDrawerOpen(false);
+                    setSelectedStaff(null);
+                  }}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white transition hover:bg-white/30 flex-shrink-0"
+                >
+                  <X size={20} color="#ffffff" />
+                </button>
+              </div>
+
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                {selectedStaff.role && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5 text-xs font-semibold text-white">
+                    {selectedStaff.role}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {/* Personal Information */}
+              <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f1e7ed]">
+                <h3 className="text-sm font-bold text-[#2d1b35] mb-4">Personal Information</h3>
+                <div className="space-y-4">
+                  <InfoItem label="Name">{selectedStaff.name || '-'}</InfoItem>
+                  <InfoItem label="Email">{selectedStaff.email || '-'}</InfoItem>
+                  <InfoItem label="Phone Number">{selectedStaff.phone || '-'}</InfoItem>
+                </div>
+              </div>
+
+              {/* Account Information */}
+              <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f1e7ed]">
+                <h3 className="text-sm font-bold text-[#2d1b35] mb-4">Account Information</h3>
+                <div className="space-y-4">
+                  <InfoItem label="Role">{selectedStaff.role || '-'}</InfoItem>
+                  <InfoItem label="Status">
+                    <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold bg-[#eaf9ee] text-[#2fa25f]">
+                      {selectedStaff.status || 'Active'}
+                    </span>
+                  </InfoItem>
+                </div>
+              </div>
+
+              {/* Skills Section */}
+              <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f1e7ed]">
+                <h3 className="text-sm font-bold text-[#2d1b35] mb-4">Skills &amp; Specialties</h3>
+                {isLoadingSkills ? (
+                  <div className="flex justify-center py-4">
+                    <Spin size="small" />
+                  </div>
+                ) : staffSkills.length > 0 ? (
+                  <div className="space-y-3">
+                    {staffSkills.map((skill, index) => {
+                      const level = skill.level ? Math.min(Math.max(Math.round(Number(skill.level)), 0), 5) : 0;
+                      return (
+                        <div
+                          key={skill.id || index}
+                          className="flex items-center justify-between rounded-xl bg-[#fff8fc] px-4 py-3 border border-[#f1e7ed]"
+                        >
+                          <span className="text-sm font-semibold text-[#2d1b35]">
+                            {skill.skillTypeName || skill.name || 'Skill'}
+                          </span>
+                          <div className="flex items-center gap-0.5">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <span
+                                key={i}
+                                className={i < level ? 'text-[#ea4f93] text-sm' : 'text-[#e0c8d8] text-sm'}
+                              >
+                                ★
+                              </span>
+                            ))}
+                            <span className="ml-1.5 text-[11px] font-medium text-[#a88a9f]">{level}/5</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-xs text-[#a88a9f]">No skills assigned yet</p>
+                )}
+              </div>
+
+              {/* Update Button + Create Shift */}
+              <div className="pt-4 border-t border-[#f1e7ed] space-y-3">
+                <Link
+                  to={getManagerStaffUpdateRoute(selectedStaff.id || selectedStaff.userId || selectedStaff.staffId)}
+                  onClick={() => {
+                    setIsDrawerOpen(false);
+                  }}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-[#ea4f93] bg-white px-4 py-3 text-xs font-bold text-[#ea4f93] shadow-lg transition-all hover:bg-[#fff0f8] hover:border-[#ea4f93] hover:scale-[1.02]"
+                >
+                  <UserPlus size={14} />
+                  Update Profile
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleOpenCreateShiftModal}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] px-4 py-3 text-xs font-bold text-white shadow-lg transition-all hover:opacity-90 hover:scale-[1.02]"
+                >
+                  <CalendarDays size={14} />
+                  Create New Shift
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </Drawer>
+
+      {/* Create New Shift Modal */}
+      <Modal
+        open={isCreateShiftModalOpen}
+        onCancel={() => {
+          setIsCreateShiftModalOpen(false);
+          resetShiftForm();
+        }}
+        footer={null}
+        closable={false}
+        centered
+        width={newShiftStatus === "Active" ? 860 : 480}
+        destroyOnClose
+        styles={{
+          content: { padding: 0, borderRadius: 24, overflow: "hidden" },
+          mask: { backdropFilter: "blur(6px)" },
+        }}
+      >
+        {/* Header */}
+        <div className="relative bg-gradient-to-r from-[#ff8ebb] via-[#ff7ba4] to-[#ea4f93] px-6 py-5">
+          <button
+            type="button"
+            onClick={() => {
+              setIsCreateShiftModalOpen(false);
+              resetShiftForm();
+            }}
+            className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white transition hover:bg-white/30"
+          >
+            <X size={16} />
+          </button>
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white">
+              <CalendarDays size={20} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-widest text-white/80">New Shift</p>
+              <h3 className="truncate text-base font-bold text-white">
+                {selectedStaff?.name || "Select staff"}
+              </h3>
+            </div>
+          </div>
+        </div>
+        <div className="p-6">
+          <div className={`grid gap-6 ${newShiftStatus === "Active" ? "grid-cols-1 md:grid-cols-[1.15fr_1fr]" : "grid-cols-1"}`}>
+            {/* Column 1: Days & Status */}
+            <div className="space-y-5">
+              <div className="rounded-2xl border border-rose-100 bg-[#fffafd] p-4">
+                {/* Week navigation */}
+                <div className="mb-4 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={handleModalPrevWeek}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#f1c6dd] bg-white text-[#ea4f93] hover:bg-[#fff5fa] transition text-xs font-bold"
+                  >
+                    &#8249;
+                  </button>
+                  <h4 className="text-sm font-bold text-[#2d1b35] text-center flex-1">
+                    {modalMonday.format("MMM DD")} &mdash; {modalSunday.format("MMM DD, YYYY")}
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={handleModalNextWeek}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#f1c6dd] bg-white text-[#ea4f93] hover:bg-[#fff5fa] transition text-xs font-bold"
+                  >
+                    &#8250;
+                  </button>
+                </div>
+
+                {loadingModalSchedules ? (
+                  <div className="flex items-center justify-center py-6">
+                    <Spin size="small" />
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-7 gap-1.5">
+                    {DAYS_OF_WEEK.map((day) => {
+                      const dayDate = modalMonday.add(day.offset, "day");
+                      const date = dayDate.format("DD");
+                      const isChecked = newShiftSchedule[day.key];
+                      const existingSchedule = modalWeekSchedules[day.key];
+                      const hasExisting = Boolean(existingSchedule);
+
+                      // Summarise existing shift into a compact badge (start time only, or status)
+                      const existingLabel = hasExisting
+                        ? (() => {
+                          const s = existingSchedule;
+                          const st = s.shiftStart || s.startTime || s.start || "";
+                          if (st) return st.slice(0, 5);
+                          return (s.status || "Busy").slice(0, 5);
+                        })()
+                        : null;
+
+                      return (
+                        <label
+                          key={day.key}
+                          className={`relative flex min-h-[86px] cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border px-1 py-2 text-center transition-all duration-200 ${
+                            hasExisting
+                              ? "cursor-not-allowed border-[#f1e7ed] bg-[#f6f6f6]"
+                              : isChecked
+                                ? "border-[#ea4f93] bg-[#fff5fa] shadow-sm ring-1 ring-[#ea4f93]/25"
+                                : "border-rose-100 bg-white hover:border-rose-200 hover:shadow-sm"
+                          }`}
+                        >
+                          {hasExisting ? (
+                            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#ece7ea] text-[#a88a9f]">
+                              <Lock size={9} />
+                            </span>
+                          ) : (
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(event) => handleScheduleChange(day.key, event.target.checked)}
+                              className="h-3.5 w-3.5 rounded border-rose-200 accent-[#ea4f93]"
+                            />
+                          )}
+                          <span className="w-full truncate text-[11px] font-bold leading-none text-slate-700">
+                            {day.key}
+                          </span>
+                          <span className="text-[10px] font-medium leading-none text-slate-400">{date}</span>
+                          {hasExisting && (
+                            <span className="mt-0.5 w-full truncate rounded-md bg-[#ffe8f2] px-1 py-0.5 text-[9px] font-bold leading-none text-[#ea4f93]">
+                              {existingLabel}
+                            </span>
+                          )}
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <p className="mt-3 flex items-center gap-1.5 text-[10.5px] text-[#b39aac]">
+                  <Lock size={10} />
+                  Days with a lock icon already have a schedule and can&apos;t be selected
+                </p>
+              </div>
+
+              {/* Status segmented control */}
+              <div>
+                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-wider text-[#a88a9f]">
+                  Status
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {Object.entries(SHIFT_STATUS_META).map(([key, meta]) => {
+                    const isActive = newShiftStatus === key;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setNewShiftStatus(key)}
+                        className={`flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-xs font-semibold transition ${isActive
+                            ? `${meta.color} ring-2 ring-offset-1 ring-current`
+                            : "border-[#f1e7ed] bg-white text-[#a88a9f] hover:border-[#ea4f93]/30"
+                          }`}
+                      >
+                        <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
+                        {meta.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Column 2: Working hours — only relevant when the shift is Active */}
+            {newShiftStatus === "Active" && (
+              <div className="border-t pt-5 md:border-t-0 md:pt-0 md:border-l md:pl-6 border-[#f1e7ed] flex flex-col justify-between">
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <label className="text-[11px] font-semibold uppercase tracking-wider text-[#a88a9f]">
+                      Working Hours
+                    </label>
+                    <div className="flex gap-1.5">
+                      {SHIFT_DURATION_PRESETS.map((preset) => (
+                        <button
+                          key={preset.label}
+                          type="button"
+                          onClick={() => applyShiftDurationPreset(preset.hours)}
+                          className="rounded-full border border-[#f1c6dd] bg-white px-2.5 py-1 text-[10px] font-semibold text-[#ea4f93] transition hover:bg-[#fff5fa]"
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Time Slots Helpers */}
+                  <div className="mb-3 flex items-center justify-between border-b border-rose-50 pb-2">
+                    <span className="text-[10px] text-slate-400">Select working intervals:</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTimeSlots(TIME_SLOTS_30MIN.map((_, i) => i))}
+                        className="text-[10px] font-bold text-[#ea4f93] hover:underline"
+                      >
+                        Select All
+                      </button>
+                      <span className="text-[10px] text-slate-300">|</span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTimeSlots([])}
+                        className="text-[10px] font-bold text-slate-500 hover:underline"
+                      >
+                        Clear All
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Time Slots Selector Grid */}
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {TIME_SLOTS_30MIN.map((slot, idx) => {
+                      const isSelected = selectedTimeSlots.includes(idx);
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setSelectedTimeSlots((prev) =>
+                              prev.includes(idx)
+                                ? prev.filter((i) => i !== idx)
+                                : [...prev, idx]
+                            );
+                          }}
+                          className={`rounded-xl border py-1.5 text-center text-[9.5px] font-bold tracking-tight transition-all duration-150 ${
+                            isSelected
+                              ? "border-[#ea4f93] bg-[#fff5fa] text-[#ea4f93] shadow-sm"
+                              : "border-slate-100 bg-[#fafafa] text-slate-500 hover:border-[#ea4f93]/30 hover:bg-[#fffbfc]"
+                          }`}
+                        >
+                          {slot.start} - {slot.end}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Live validation / duration preview */}
+                <div className="mt-3">
+                  {isShiftTimeInvalid ? (
+                    <p className="flex items-center gap-1.5 text-[11px] font-medium text-red-500">
+                      <AlertCircle size={12} />
+                      Please select at least one time slot
+                    </p>
+                  ) : (
+                    shiftDurationHours > 0 && (
+                      <p className="flex items-center gap-1.5 text-[11px] font-semibold text-[#2fa25f]">
+                        <CheckCircle2 size={12} />
+                        {shiftDurationHours.toFixed(1)}h total working duration
+                      </p>
+                    )
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Unified Footer Actions */}
+          <div className="mt-6 flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
+            <button
+              type="button"
+              onClick={() => {
+                setIsCreateShiftModalOpen(false);
+                resetShiftForm();
+              }}
+              className="rounded-xl px-5 py-2.5 text-xs font-semibold text-[#a88a9f] hover:bg-[#fff5fa] hover:text-[#2d1b35] transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleCreateShift}
+              disabled={isCreatingShift || isShiftTimeInvalid}
+              className="flex min-w-[140px] items-center justify-center gap-2 rounded-xl bg-[#ea4f93] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#ea4f93]/20 transition hover:bg-[#d63d81] disabled:opacity-50"
+            >
+              {isCreatingShift ? <Spin size="small" className="brightness-200" /> : "Create Schedule"}
+            </button>
+          </div>
+        </div>
+      </Modal>
       <EditScheduleModal
         open={isEditScheduleModalOpen}
-        onClose={() => setIsEditScheduleModalOpen(false)}
-      />
-      <AssignSkillModal
-        open={isAssignSkillModalOpen}
-        onClose={() => setIsAssignSkillModalOpen(false)}
-      />
-      <ViewPerformanceModal
-        open={isViewPerformanceModalOpen}
-        onClose={() => setIsViewPerformanceModalOpen(false)}
+        onClose={() => {
+          setIsEditScheduleModalOpen(false);
+          setEditingSchedule(null);
+        }}
+        schedule={editingSchedule}
+        staffArtists={staffArtists}
+        monday={monday}
+        onSuccess={() => loadSchedules()}
       />
       <TransferStaffModal
         open={isTransferStaffModalOpen}
         onClose={() => setIsTransferStaffModalOpen(false)}
+        salonId={salonId}
+        onSuccess={() => loadNailArtists()}
       />
     </section>
   );

@@ -3,6 +3,7 @@ export const ROUTES = {
   // Public routes
   root: "/",
   login: "/login",
+  paymentStatus: "/payment-status",
 
   // Staff routes
   staffRoot: "/staff",
@@ -12,6 +13,7 @@ export const ROUTES = {
   receptionistDashboard: "/receptionist/dashboard",
   receptionistProfile: "/receptionist/profile",
   staffBookings: "/staff/bookings",
+  staffSchedules: "/staff/schedules",
   staffTasks: "/staff/tasks",
   staffBookingsCreate: "/staff/bookings/create",
   staffBookingDetail: "/staff/bookings/:bookingId",
@@ -21,11 +23,13 @@ export const ROUTES = {
   staffCustomerNails: "/staff/customer-nails",
   staffCustomerNailDetail: "/staff/customer-nails/:customerNailId",
   staffWaitting: "/staff/waitting",
+  staffBreaks: "/staff/breaks",
   receptionistBookings: "/receptionist/bookings",
   receptionistBookingsCreate: "/receptionist/bookings/create",
   receptionistBookingDetail: "/receptionist/bookings/:bookingId",
   receptionistBookingCheckout: "/receptionist/bookings/:bookingId/checkout",
   receptionistCustomersCreate: "/receptionist/customers/create",
+  receptionistBreaks: "/receptionist/breaks",
 
   // Manager routes
   managerRoot: "/manager",
@@ -39,6 +43,8 @@ export const ROUTES = {
   managerStaffArtistUpdate: "/manager/staff-artists/:staffId",
   managerCustomerNails: "/manager/customer-nails",
   managerCustomerNailDetail: "/manager/customer-nails/:customerNailId",
+  managerTransactions: "/manager/transactions",
+  managerBookingRatings: "/manager/bookings/ratings",
   managerWaitlist: "/manager/waitlist",
   managerQueue: "/manager/queue",
   receptionistQueue: "/receptionist/queue",
@@ -61,7 +67,10 @@ export const ROUTES = {
   adminUsers: "/admin/users",
   adminUsersCreate: "/admin/users/create",
   adminUserDetail: "/admin/users/:userId",
+  adminLoyaltyTiers: "/admin/loyalty-tiers",
   adminServicePricing: "/admin/service-pricing",
+  adminQuiz: "/admin/quiz",
+  adminQuizCreate: "/admin/quiz/create",
   adminNailShapes: "/admin/nail-shapes",
   adminNailShapesCreate: "/admin/nail-shapes/create",
   adminNailShapeDetail: "/admin/nail-shapes/:shapeId",
@@ -96,6 +105,8 @@ export const ROUTES = {
   adminNailVariantTryOn: "/admin/nail-designs/:designId/variants/:variantId/try-on",
   adminSalonBookings: "/admin/bookings",
   adminSalonBookingDetail: "/admin/bookings/:salonId",
+  adminTransactions: "/admin/transactions",
+  adminBookingRatings: "/admin/bookings/ratings",
 };
 
 export const getStaffBookingDetailRoute = (bookingId) =>
@@ -120,7 +131,10 @@ export const getAdminSalonDetailRoute = (salonId) => `/admin/salons/${salonId}`;
 export const getAdminSalonUpdateRoute = (salonId) => `/admin/salons/${salonId}/edit`;
 export const getAdminStaffUpdateRoute = (staffId) => `/admin/staff/${staffId}`;
 export const getAdminUserDetailRoute = (userId) => `/admin/users/${userId}`;
+export const getAdminLoyaltyTiersRoute = () => "/admin/loyalty-tiers";
 export const getAdminServicePricingRoute = () => "/admin/service-pricing";
+export const getAdminQuizRoute = () => "/admin/quiz";
+export const getAdminQuizCreateRoute = () => "/admin/quiz/create";
 export const getAdminNailShapeDetailRoute = (shapeId) => `/admin/nail-shapes/${shapeId}`;
 export const getAdminNailSurfaceDetailRoute = (surfaceId) => `/admin/nail-surfaces/${surfaceId}`;
 export const getAdminComponentDetailRoute = (componentId) => `/admin/components/${componentId}`;

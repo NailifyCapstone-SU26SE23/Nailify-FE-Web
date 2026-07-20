@@ -213,8 +213,32 @@ function parseVariantColorConfig(colorJson) {
   try {
     return JSON.parse(rawValue);
   } catch {
-    return null;
+    return rawValue;
   }
+}
+
+function getColorGradientStops(colorConfig) {
+  if (!colorConfig) {
+    return [];
+  }
+
+  if (Array.isArray(colorConfig)) {
+    return colorConfig;
+  }
+
+  if (Array.isArray(colorConfig.gradient)) {
+    return colorConfig.gradient;
+  }
+
+  if (Array.isArray(colorConfig.gradient?.stops)) {
+    return colorConfig.gradient.stops;
+  }
+
+  if (Array.isArray(colorConfig.gradientStops)) {
+    return colorConfig.gradientStops;
+  }
+
+  return [];
 }
 
 function buildFingerColorStyle(colorConfig, fingerIndex) {
@@ -222,36 +246,45 @@ function buildFingerColorStyle(colorConfig, fingerIndex) {
     return { backgroundColor: "#f3f4f6" };
   }
 
-  if (colorConfig.mode === "solid" && colorConfig.color) {
-    return { backgroundColor: colorConfig.color };
+  if (typeof colorConfig === "string") {
+    return { backgroundColor: colorConfig };
   }
 
-  if (
-    colorConfig.mode === "gradient" &&
-    colorConfig.gradient &&
-    colorConfig.gradient.enabled &&
-    Array.isArray(colorConfig.gradient.stops) &&
-    colorConfig.gradient.stops.length > 1
-  ) {
-    return { background: `linear-gradient(to bottom, ${colorConfig.gradient.stops.join(", ")})` };
+  if (Array.isArray(colorConfig)) {
+    const color = String(colorConfig[fingerIndex - 1] || colorConfig[fingerIndex] || colorConfig[0] || "#f3f4f6").trim();
+    return { backgroundColor: color || "#f3f4f6" };
+  }
+
+  const gradientStops = getColorGradientStops(colorConfig);
+  if (gradientStops.length > 1) {
+    return { background: `linear-gradient(to bottom, ${gradientStops.join(", ")})` };
   }
 
   if (colorConfig.mode === "perFinger" && Array.isArray(colorConfig.fingers)) {
     const finger = colorConfig.fingers.find((item) => Number(item?.fingerIndex) === Number(fingerIndex));
 
     if (finger) {
-      if (finger.gradient?.enabled && Array.isArray(finger.gradient.stops) && finger.gradient.stops.length > 1) {
-        return { background: `linear-gradient(to bottom, ${finger.gradient.stops.join(", ")})` };
+      const fingerStops = getColorGradientStops(finger);
+      if (fingerStops.length > 1) {
+        return { background: `linear-gradient(to bottom, ${fingerStops.join(", ")})` };
       }
 
-      if (finger.color) {
-        return { backgroundColor: finger.color };
+      if (finger.mode === "gradient" && finger.primaryColor && finger.secondaryColor) {
+        return { background: `linear-gradient(to bottom, ${finger.primaryColor}, ${finger.secondaryColor})` };
+      }
+
+      if (finger.color || finger.primaryColor) {
+        return { backgroundColor: finger.color || finger.primaryColor };
       }
     }
   }
 
   if (colorConfig.color) {
     return { backgroundColor: colorConfig.color };
+  }
+
+  if (colorConfig.primaryColor) {
+    return { backgroundColor: colorConfig.primaryColor };
   }
 
   return { backgroundColor: "#f3f4f6" };
@@ -316,8 +349,8 @@ function NailVariantHandPreview({ variantDetail, compact = false, showShapeOverl
     ? {
       maskImage: `url(${variantDetail.nailShape.imageUrl})`,
       WebkitMaskImage: `url(${variantDetail.nailShape.imageUrl})`,
-      maskSize: "100% 100%",
-      WebkitMaskSize: "100% 100%",
+      maskSize: "cover",
+      WebkitMaskSize: "cover",
       maskRepeat: "no-repeat",
       WebkitMaskRepeat: "no-repeat",
       maskPosition: "center",
@@ -328,7 +361,7 @@ function NailVariantHandPreview({ variantDetail, compact = false, showShapeOverl
     ? "rounded-[18px] border border-[#f7d7e5] bg-[radial-gradient(circle_at_top,#fffdfd_0%,#fff6fb_58%,#fff2f8_100%)] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]"
     : "rounded-[24px] border border-[#f7d7e5] bg-[radial-gradient(circle_at_top,#fffdfd_0%,#fff6fb_58%,#fff2f8_100%)] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]";
   const deckClassName = compact
-    ? "flex min-h-[160px] flex-wrap items-center justify-center gap-2"
+    ? "flex min-h-[180px] flex-wrap items-center justify-center gap-3"
     : "flex min-h-[300px] flex-wrap items-center justify-center gap-5 lg:gap-6";
   const fingerClassName = compact ? "flex flex-col items-center gap-2" : "flex flex-col items-center gap-3.5";
   const fingerGlowClassName = compact
@@ -340,7 +373,7 @@ function NailVariantHandPreview({ variantDetail, compact = false, showShapeOverl
   const glossClassName = compact
     ? "pointer-events-none absolute left-1.5 top-1 h-10 w-1 rounded-full bg-white/45 blur-[0.6px]"
     : "pointer-events-none absolute left-2.5 top-1.5 h-20 w-1.5 animate-pulse rounded-full bg-white/45 blur-[0.7px]";
-  const componentSizeClassName = compact ? "pointer-events-none absolute h-5 w-5 object-contain drop-shadow-[0_4px_8px_rgba(234,79,147,0.18)]" : "pointer-events-none absolute h-9 w-9 object-contain drop-shadow-[0_4px_8px_rgba(234,79,147,0.18)]";
+  const componentSizeClassName = compact ? "pointer-events-none absolute h-7 w-7 object-contain drop-shadow-[0_4px_8px_rgba(234,79,147,0.18)]" : "pointer-events-none absolute h-11 w-11 object-contain drop-shadow-[0_4px_8px_rgba(234,79,147,0.18)]";
   const labelClassName = compact
     ? "rounded-full border border-[#fce6f3] bg-white/90 px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-[0.12em] text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)]"
     : "rounded-full border border-[#fce6f3] bg-white/90 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)]";
@@ -392,6 +425,36 @@ function NailVariantHandPreview({ variantDetail, compact = false, showShapeOverl
                         <div className="pointer-events-none absolute inset-0 h-full w-full bg-[linear-gradient(135deg,rgba(255,255,255,0.3)_0%,rgba(255,255,255,0)_100%)]" />
                       );
                     })()}
+
+                    {fingerComponents.map((componentItem, index) => {
+                      const component = componentItem?.component;
+
+                      if (!component?.imageUrl) {
+                        return null;
+                      }
+
+                      const config = parseComponentConfig(componentItem.configJson);
+                      const scale = Number.isFinite(Number(config?.scale)) ? Number(config.scale) : 1;
+                      const rotation = Number.isFinite(Number(config?.rotation)) ? Number(config.rotation) : 0;
+                      const left = normalizeComponentPosition(componentItem?.posX, 50);
+                      const top = normalizeComponentPosition(componentItem?.posY, 50);
+
+                      return (
+                        <img
+                          key={`${componentItem?.nailComponentId || index}-${finger.fingerIndex}`}
+                          crossOrigin="anonymous"
+                          src={component.imageUrl}
+                          alt={component.name || "component"}
+                          className={componentSizeClassName}
+                          referrerPolicy="no-referrer"
+                          style={{
+                            left: `${left}%`,
+                            top: `${top}%`,
+                            transform: `translate(-50%, -50%) scale(${Math.max(1, scale * 1.25)}) rotate(${rotation}deg)`,
+                          }}
+                        />
+                      );
+                    })}
                   </div>
 
                   {showShapeOverlay && variantDetail?.nailShape?.imageUrl ? (
@@ -403,36 +466,6 @@ function NailVariantHandPreview({ variantDetail, compact = false, showShapeOverl
                       referrerPolicy="no-referrer"
                     />
                   ) : null}
-
-                  {fingerComponents.map((componentItem, index) => {
-                    const component = componentItem?.component;
-
-                    if (!component?.imageUrl) {
-                      return null;
-                    }
-
-                    const config = parseComponentConfig(componentItem.configJson);
-                    const scale = Number.isFinite(Number(config?.scale)) ? Number(config.scale) : 1;
-                    const rotation = Number.isFinite(Number(config?.rotation)) ? Number(config.rotation) : 0;
-                    const left = normalizeComponentPosition(componentItem?.posX, 50);
-                    const top = normalizeComponentPosition(componentItem?.posY, 50);
-
-                    return (
-                      <img
-                        key={`${componentItem?.nailComponentId || index}-${finger.fingerIndex}`}
-                        crossOrigin="anonymous"
-                        src={component.imageUrl}
-                        alt={component.name || "component"}
-                        className={componentSizeClassName}
-                        referrerPolicy="no-referrer"
-                        style={{
-                          left: `${left}%`,
-                          top: `${top}%`,
-                          transform: `translate(-50%, -50%) scale(${scale}) rotate(${rotation}deg)`,
-                        }}
-                      />
-                    );
-                  })}
                 </div>
               </div>
 
@@ -781,9 +814,9 @@ export function NailDesignManagementDetailPage() {
       variants: current.variants.map((variant, variantIndex) =>
         variantIndex === index
           ? {
-              ...variant,
-              [field]: nextValue,
-            }
+            ...variant,
+            [field]: nextValue,
+          }
           : variant,
       ),
     }));
@@ -966,42 +999,14 @@ export function NailDesignManagementDetailPage() {
     }
   };
 
-  const handleViewVariant = async (variant) => {
+  const handleViewVariant = (variant) => {
     if (!variant?.nailVariantId) {
       setError("Variant ID is required.");
       return;
     }
 
     setError("");
-    setIsLoadingVariantDetail(true);
-    setIsLoadingVariantProcedures(true);
-    setSelectedVariantDetail({
-      nailVariantId: variant.nailVariantId,
-      name: variant.name,
-      imageUrl: variant.imageUrl,
-      isPlaceholder: true,
-    });
-    setVariantProcedureDraft([]);
-
-    try {
-      const [detail, procedures] = await Promise.all([
-        fetchAdminNailVariantDetail(variant.nailVariantId),
-        fetchProceduresByVariant(variant.nailVariantId),
-      ]);
-      setSelectedVariantDetail(detail);
-      setVariantProcedureDraft(procedures);
-    } catch (detailError) {
-      setSelectedVariantDetail(null);
-      setVariantProcedureDraft([]);
-      setError(
-        detailError instanceof Error
-          ? detailError.message
-          : "Failed to load nail variant detail.",
-      );
-    } finally {
-      setIsLoadingVariantDetail(false);
-      setIsLoadingVariantProcedures(false);
-    }
+    navigate(getAdminNailVariantDetailRoute(designId, variant.nailVariantId));
   };
 
   const updateVariantProcedureDraft = (index, field, value) => {
@@ -1322,13 +1327,13 @@ export function NailDesignManagementDetailPage() {
               <div className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c694ad]">Price Range</p>
                 <p className="mt-3 text-sm font-extrabold text-[#432744]">
-                  {formatApiValue(formValues.suggestedPrice === "0 VNĐ" ? null : `${formValues.suggestedPrice}`)}
+                  {formatApiValue(formValues.suggestedPrice === "0 VND" ? null : `${formValues.suggestedPrice}`)}
                 </p>
                 <p className="mt-2 text-xs text-[#8c7085]">
-                  Min: {formatApiValue(formValues.minPrice ? `${formValues.minPrice.toLocaleString("vi-VN")} VNĐ` : null)}
+                  Min: {formatApiValue(formValues.minPrice ? `${formValues.minPrice.toLocaleString("vi-VN")} VND` : null)}
                 </p>
                 <p className="mt-1 text-xs text-[#8c7085]">
-                  Max: {formatApiValue(formValues.maxPrice ? `${formValues.maxPrice.toLocaleString("vi-VN")} VNĐ` : null)}
+                  Max: {formatApiValue(formValues.maxPrice ? `${formValues.maxPrice.toLocaleString("vi-VN")} VND` : null)}
                 </p>
 
               </div>
@@ -1524,13 +1529,6 @@ export function NailDesignManagementDetailPage() {
                       className="flex-1 rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-2 text-xs font-bold text-[#ea4f93]"
                     >
                       View
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFlashMessage(`Apply variant "${variant.name}" is not connected yet.`)}
-                      className="flex-1 rounded-full bg-[image:var(--gradient-accent)] px-3 py-2 text-xs font-bold text-white"
-                    >
-                      Apply
                     </button>
                     <button
                       type="button"
@@ -2016,11 +2014,11 @@ export function NailDesignManagementDetailPage() {
         item={
           pendingDeleteVariant
             ? {
-                title: pendingDeleteVariant.name,
-                image: pendingDeleteVariant.imageUrl || formValues.previewImage || DESIGN_PREVIEW_IMAGE,
-                meta: pendingDeleteVariant.level,
-                note: pendingDeleteVariant.description || "Selected variant will be removed from this design.",
-              }
+              title: pendingDeleteVariant.name,
+              image: pendingDeleteVariant.imageUrl || formValues.previewImage || DESIGN_PREVIEW_IMAGE,
+              meta: pendingDeleteVariant.level,
+              note: pendingDeleteVariant.description || "Selected variant will be removed from this design.",
+            }
             : null
         }
         warnings={["This permanently removes the variant from backend if the API call succeeds."]}
@@ -2249,7 +2247,7 @@ export function NailDesignManagementDetailPage() {
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="font-bold text-[#432744]">Procedure Steps</p>
-                    
+
                   </div>
                   <div className="flex gap-2">
                     <button
