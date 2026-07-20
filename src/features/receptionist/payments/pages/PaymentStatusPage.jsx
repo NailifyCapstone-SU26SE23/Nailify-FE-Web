@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { BadgeCheck, XCircle, ArrowLeft } from "lucide-react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { ROUTES } from "../../../../shared/constants/routes";
@@ -13,6 +14,14 @@ export default function PaymentStatusPage() {
   const orderCode = searchParams.get("orderCode");
 
   const isSuccess = !isCancel && (status === "PAID" || status === "SUCCESS");
+
+  useEffect(() => {
+    if (isSuccess) {
+      navigate(`/payment/success?orderCode=${orderCode || ""}`, { replace: true });
+    } else {
+      navigate(`/payment/cancel?orderCode=${orderCode || ""}`, { replace: true });
+    }
+  }, [isSuccess, navigate, orderCode]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#fff9fc] p-4">
