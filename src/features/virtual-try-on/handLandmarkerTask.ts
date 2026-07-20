@@ -37,18 +37,18 @@ type PlacementConfig = {
 
 type VariantColorConfig =
   | {
-      mode?: 'solid' | 'gradient';
+    mode?: 'solid' | 'gradient';
+    color?: string;
+    gradient?: any;
+  }
+  | {
+    mode: 'perFinger';
+    fingers?: Array<{
+      fingerIndex?: number;
       color?: string;
       gradient?: any;
-    }
-  | {
-      mode: 'perFinger';
-      fingers?: Array<{
-        fingerIndex?: number;
-        color?: string;
-        gradient?: any;
-      }>;
-    };
+    }>;
+  };
 
 export type SerializedNailSet = {
   shape: string;

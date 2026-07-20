@@ -90,19 +90,29 @@ function NailBlueprint({ nail, componentsList }) {
         {fingers.map((f) => {
           let fingerStyle = { backgroundColor: "#faf4f6" };
           let colorLabel = "Base Color";
+          let fingerColor = null;
 
           if (colorData) {
             if (colorData.mode === "solid" && colorData.color) {
               fingerStyle = { backgroundColor: colorData.color };
               colorLabel = colorData.color;
             } else if (colorData.mode === "gradient" && Array.isArray(colorData.gradient)) {
-              fingerStyle = { background: `linear-gradient(to bottom, ${colorData.gradient.join(", ")})` };
+              fingerStyle = { background: `linear-gradient(to top, ${colorData.gradient.join(", ")})` };
               colorLabel = "Gradient";
             } else if (colorData.mode === "perFinger" && Array.isArray(colorData.fingers)) {
-              const fingerColor = colorData.fingers.find(fc => Number(fc.fingerIndex) === f.index);
+              fingerColor = colorData.fingers.find(fc => Number(fc.fingerIndex) === f.index);
               if (fingerColor) {
-                fingerStyle = { backgroundColor: fingerColor.color };
-                colorLabel = fingerColor.color;
+                if (fingerColor.mode === 'gradient' && fingerColor.primaryColor && fingerColor.secondaryColor) {
+                  fingerStyle = { background: `linear-gradient(to top, ${fingerColor.primaryColor}, ${fingerColor.secondaryColor})` };
+                  colorLabel = `${fingerColor.primaryColor} → ${fingerColor.secondaryColor}`;
+                } else if (fingerColor.gradient && fingerColor.gradient.enabled && Array.isArray(fingerColor.gradient.stops)) {
+                  fingerStyle = { background: `linear-gradient(to top, ${fingerColor.gradient.stops.join(', ')})` };
+                  colorLabel = fingerColor.gradient.stops.join(' → ');
+                } else {
+                  const solidColor = fingerColor.color || fingerColor.primaryColor || "#faf4f6";
+                  fingerStyle = { backgroundColor: solidColor };
+                  colorLabel = solidColor;
+                }
               }
             }
           }
@@ -125,9 +135,24 @@ function NailBlueprint({ nail, componentsList }) {
                 )}
               </div>
 
-              <span className="text-[8px] font-medium text-[#c08aa4] truncate w-full" title={colorLabel}>
-                {colorLabel}
-              </span>
+              {fingerColor && (fingerColor.mode === 'gradient' || (fingerColor.gradient && fingerColor.gradient.enabled)) ? (
+                <div className="mt-1 flex items-center justify-center gap-0.5 flex-wrap max-w-full">
+                  <span className="h-1.5 w-1.5 rounded-full border border-white shadow-sm shrink-0" style={{ backgroundColor: fingerColor.primaryColor || (fingerColor.gradient?.stops?.[0]) }} />
+                  <span className="font-mono text-[7px] font-bold text-[#ea4f93]">{fingerColor.primaryColor || (fingerColor.gradient?.stops?.[0])}</span>
+                  <span className="text-[6px] text-[#c08aa4] font-bold">→</span>
+                  <span className="h-1.5 w-1.5 rounded-full border border-white shadow-sm shrink-0" style={{ backgroundColor: fingerColor.secondaryColor || (fingerColor.gradient?.stops?.[1]) }} />
+                  <span className="font-mono text-[7px] font-bold text-[#ea4f93]">{fingerColor.secondaryColor || (fingerColor.gradient?.stops?.[1])}</span>
+                </div>
+              ) : (
+                <div className="mt-1 flex items-center justify-center gap-1">
+                  {colorLabel !== "Base Color" && colorLabel !== "Gradient" && colorLabel !== "N/A" && colorLabel.startsWith('#') && (
+                    <span className="h-1.5 w-1.5 rounded-full border border-white shadow-sm shrink-0" style={{ backgroundColor: colorLabel }} />
+                  )}
+                  <span className="text-[8px] font-medium text-[#c08aa4] truncate w-full font-mono" title={colorLabel}>
+                    {colorLabel}
+                  </span>
+                </div>
+              )}
 
               {fingerComponents.length > 0 ? (
                 <div className="mt-2 w-full space-y-1">
@@ -560,7 +585,7 @@ export function StaffCustomerNailReviewPage() {
                       {/* Quoted Price */}
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-[0.08em] text-[#c08aa4] mb-1.5">
-                          Quoted Price (VNĐ)
+                          Quoted Price (VND)
                         </label>
                         <Input
                           type="number"

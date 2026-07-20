@@ -27,14 +27,16 @@ import {
   fetchReceptionistCustomerDetail,
   fetchReceptionistSalonDetail,
   getReceptionistSalonId,
+  checkoutReceptionistBooking,
 } from "../../bookings/services/receptionistBookingService";
+import { createPayment, getPaymentStatus, cancelPayment } from "../services/receptionistPaymentService";
 
 function formatCurrency(value) {
   const amount = Number(value || 0);
 
   return `${new Intl.NumberFormat("vi-VN", {
     maximumFractionDigits: 0,
-  }).format(amount)} VNĐ`;
+  }).format(amount)} VND`;
 }
 
 function formatDate(value) {
@@ -126,6 +128,9 @@ export function ReceptionistCheckoutPaymentPage() {
   const [salonProfile, setSalonProfile] = useState(null);
   const [paymentStage, setPaymentStage] = useState("awaiting");
   const [secondsRemaining, setSecondsRemaining] = useState(598);
+  const [paymentInfo, setPaymentInfo] = useState(null);
+  const [isCreatingPayment, setIsCreatingPayment] = useState(false);
+  const [isCancellingPayment, setIsCancellingPayment] = useState(false);
 
   useEffect(() => {
     if (!bookingId) {
@@ -175,11 +180,7 @@ export function ReceptionistCheckoutPaymentPage() {
         } catch (salonError) {
           if (isMounted) {
             setSalonProfile(null);
-            toast.error(
-              salonError instanceof Error
-                ? salonError.message
-                : "Failed to load salon detail.",
-            );
+            console.error("Failed to load salon detail:", salonError);
           }
         }
       } catch (loadError) {
@@ -216,6 +217,39 @@ export function ReceptionistCheckoutPaymentPage() {
     return () => window.clearTimeout(timerId);
   }, [paymentStage, secondsRemaining]);
 
+  // Polling payment status
+  useEffect(() => {
+    if (paymentStage !== "awaiting" || !paymentInfo?.orderCode) {
+      return undefined;
+    }
+
+    const intervalId = setInterval(async () => {
+      try {
+        const response = await getPaymentStatus(paymentInfo.orderCode);
+        const status = response?.data?.status || response?.status;
+        if (status === "PAID") {
+          setPaymentStage("paid");
+          toast.success("Payment completed successfully.");
+          
+          try {
+            await checkoutReceptionistBooking(bookingId);
+            toast.success("Booking checked out successfully.");
+          } catch (checkoutErr) {
+            toast.error(checkoutErr instanceof Error ? checkoutErr.message : "Failed to check out booking automatically.");
+          }
+        } else if (status === "CANCELLED") {
+          setPaymentStage("cancelled");
+          toast.error("Payment was cancelled.");
+        }
+      } catch (err) {
+        // Silently ignore errors during polling to avoid spamming the user
+        console.error("Failed to fetch payment status", err);
+      }
+    }, 5000); // poll every 5 seconds
+
+    return () => clearInterval(intervalId);
+  }, [paymentStage, paymentInfo?.orderCode]);
+
   const customerDisplayName = getCustomerDisplayName(customerProfile, booking);
   const customerInitials = getCustomerInitials(customerProfile, booking);
   const billItems = useMemo(() => getBillItems(booking), [booking]);
@@ -225,8 +259,15 @@ export function ReceptionistCheckoutPaymentPage() {
   const depositValue = 0;
   const remainingValue = Math.max(0, totalValue - depositValue);
   const qrImageSrc = useMemo(
-    () => (booking?.qrCode ? `data:image/png;base64,${booking.qrCode}` : ""),
-    [booking],
+    () => {
+      if (paymentInfo?.qrCode) {
+        if (paymentInfo.qrCode.startsWith("data:")) return paymentInfo.qrCode;
+        if (paymentInfo.qrCode.startsWith("http")) return paymentInfo.qrCode;
+        return `https://quickchart.io/qr?text=${encodeURIComponent(paymentInfo.qrCode)}&size=300`;
+      }
+      return booking?.qrCode ? `data:image/png;base64,${booking.qrCode}` : "";
+    },
+    [booking, paymentInfo],
   );
   const paymentReference = `VNPAY-${String(booking?.bookingId || bookingId || "PAY").slice(-6).toUpperCase()}`;
   const paymentBadge =
@@ -248,20 +289,47 @@ export function ReceptionistCheckoutPaymentPage() {
   const completedTime = formatTimeWithMeridiem(booking?.startTime);
   const countdownLabel = `${String(Math.floor(secondsRemaining / 60)).padStart(2, "0")}:${String(secondsRemaining % 60).padStart(2, "0")}`;
 
-  const handleRefreshQr = () => {
-    setSecondsRemaining(598);
-    setPaymentStage("awaiting");
-    toast.success("QR payment session refreshed.");
+  const handleRefreshQr = async () => {
+    try {
+      setIsCreatingPayment(true);
+      const res = await createPayment(bookingId);
+      setPaymentInfo(res?.data || res);
+      setSecondsRemaining(598);
+      setPaymentStage("awaiting");
+      toast.success("Payment session created.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to create payment link.");
+    } finally {
+      setIsCreatingPayment(false);
+    }
   };
 
-  const handleConfirmPayment = () => {
-    setPaymentStage("paid");
-    toast.success("Payment marked as successful in UI.");
+  const handleConfirmPayment = async () => {
+    try {
+      await checkoutReceptionistBooking(bookingId);
+      setPaymentStage("paid");
+      toast.success("Payment confirmed and booking checked out successfully.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to checkout booking.");
+    }
   };
 
-  const handleCancelPayment = () => {
-    setPaymentStage("cancelled");
-    toast.success("Payment marked as cancelled in UI.");
+  const handleCancelPayment = async () => {
+    if (paymentInfo?.orderCode) {
+      try {
+        setIsCancellingPayment(true);
+        await cancelPayment(paymentInfo.orderCode);
+        setPaymentStage("cancelled");
+        toast.success("Payment cancelled successfully.");
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Failed to cancel payment link.");
+      } finally {
+        setIsCancellingPayment(false);
+      }
+    } else {
+      setPaymentStage("cancelled");
+      toast.success("Payment marked as cancelled in UI.");
+    }
   };
 
   if (isLoading) {
@@ -438,13 +506,34 @@ export function ReceptionistCheckoutPaymentPage() {
                       className="h-40 w-40 rounded-[20px] border-[3px] border-[#f3cade] bg-white p-2 object-contain"
                     />
                   ) : (
-                    <div className="flex h-40 w-40 items-center justify-center rounded-[20px] border-[3px] border-[#f3cade] bg-white text-center text-xs text-[#b38a9f]">
-                      QR code not available
+                    <div className="flex h-40 w-40 flex-col gap-2 items-center justify-center rounded-[20px] border-[3px] border-[#f3cade] bg-white text-center text-xs text-[#b38a9f]">
+                      <span>QR code not available</span>
+                      <button
+                        type="button"
+                        onClick={handleRefreshQr}
+                        disabled={isCreatingPayment}
+                        className="inline-flex items-center gap-1 rounded-full bg-[#ea4f93] px-3 py-1.5 font-bold text-white transition-colors hover:bg-[#d14c84] disabled:opacity-50"
+                      >
+                        {isCreatingPayment ? <LoaderCircle size={14} className="animate-spin" /> : <RefreshCcw size={14} />}
+                        Generate
+                      </button>
                     </div>
                   )}
 
                   <p className="mt-4 text-4xl font-black text-[#cf2e7a]">{formatCurrency(remainingValue)}</p>
                   <p className="mt-1 text-xs text-[#a48796]">Ref: {paymentReference}</p>
+                  
+                  {paymentInfo?.paymentUrl && (
+                    <a
+                      href={paymentInfo.paymentUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-3 text-xs font-bold text-[#1888f3] hover:underline"
+                    >
+                      Open Payment Gateway
+                    </a>
+                  )}
+
                   <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-[#fff1f6] px-3 py-1.5 text-xs font-bold text-[#cf2e7a]">
                     <Clock3 size={13} />
                     {countdownLabel}
@@ -488,10 +577,11 @@ export function ReceptionistCheckoutPaymentPage() {
                   <button
                     type="button"
                     onClick={handleRefreshQr}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#f3d7e2] bg-white px-4 py-3 text-sm font-extrabold text-[#d54186]"
+                    disabled={isCreatingPayment}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#f3d7e2] bg-white px-4 py-3 text-sm font-extrabold text-[#d14c84] disabled:opacity-50"
                   >
-                    <RefreshCcw size={14} />
-                    Refresh QR Code
+                    {isCreatingPayment ? <LoaderCircle size={14} className="animate-spin" /> : <RefreshCcw size={14} />}
+                    {paymentInfo ? "Regenerate Link" : "Generate Payment Link"}
                   </button>
                   <button
                     type="button"
@@ -504,9 +594,10 @@ export function ReceptionistCheckoutPaymentPage() {
                   <button
                     type="button"
                     onClick={handleCancelPayment}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#f3d7e2] bg-white px-4 py-3 text-sm font-extrabold text-[#d14c84]"
+                    disabled={isCancellingPayment}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#f3d7e2] bg-white px-4 py-3 text-sm font-extrabold text-[#d14c84] disabled:opacity-50"
                   >
-                    <X size={14} />
+                    {isCancellingPayment ? <LoaderCircle size={14} className="animate-spin" /> : <X size={14} />}
                     Cancel Payment
                   </button>
                 </div>

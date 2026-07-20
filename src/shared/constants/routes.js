@@ -3,6 +3,7 @@ export const ROUTES = {
   // Public routes
   root: "/",
   login: "/login",
+  paymentStatus: "/payment-status",
 
   // Staff routes
   staffRoot: "/staff",
@@ -12,6 +13,7 @@ export const ROUTES = {
   receptionistDashboard: "/receptionist/dashboard",
   receptionistProfile: "/receptionist/profile",
   staffBookings: "/staff/bookings",
+  staffSchedules: "/staff/schedules",
   staffTasks: "/staff/tasks",
   staffBookingsCreate: "/staff/bookings/create",
   staffBookingDetail: "/staff/bookings/:bookingId",
@@ -21,11 +23,13 @@ export const ROUTES = {
   staffCustomerNails: "/staff/customer-nails",
   staffCustomerNailDetail: "/staff/customer-nails/:customerNailId",
   staffWaitting: "/staff/waitting",
+  staffBreaks: "/staff/breaks",
   receptionistBookings: "/receptionist/bookings",
   receptionistBookingsCreate: "/receptionist/bookings/create",
   receptionistBookingDetail: "/receptionist/bookings/:bookingId",
   receptionistBookingCheckout: "/receptionist/bookings/:bookingId/checkout",
   receptionistCustomersCreate: "/receptionist/customers/create",
+  receptionistBreaks: "/receptionist/breaks",
 
   // Manager routes
   managerRoot: "/manager",
@@ -41,6 +45,10 @@ export const ROUTES = {
   managerCustomerNailDetail: "/manager/customer-nails/:customerNailId",
   managerTransactions: "/manager/transactions",
   managerBookingRatings: "/manager/bookings/ratings",
+  managerWaitlist: "/manager/waitlist",
+  managerQueue: "/manager/queue",
+  receptionistQueue: "/receptionist/queue",
+  receptionistWaitlist: "/receptionist/waitlist",
 
   // Admin routes
   adminRoot: "/admin",

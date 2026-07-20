@@ -28,12 +28,14 @@ function unwrapResponse(response, fallbackMessage, isDetail = false, includePagi
   // Handle both formats: data.items (for lists) or just data (for single items)
   if (payload.data && payload.data.items) {
     if (includePagination) {
+      const metaData = payload.data.metaData || {};
       return {
         items: payload.data.items,
-        totalCount: payload.data.totalCount,
-        pageNumber: payload.data.pageNumber,
-        pageSize: payload.data.pageSize,
-        totalPages: payload.data.totalPages
+        metaData,
+        totalCount: payload.data.totalCount ?? metaData.totalItems ?? payload.data.items.length,
+        pageNumber: payload.data.pageNumber ?? metaData.currentPage,
+        pageSize: payload.data.pageSize ?? metaData.pageSize,
+        totalPages: payload.data.totalPages ?? metaData.totalPages,
       };
     }
     return payload.data.items;
@@ -379,6 +381,7 @@ export async function fetchBookingRatingsBySalonId(salonId) {
     return unwrapResponse(response, "Failed to load booking ratings.");
   } catch (error) {
     console.warn("Error fetching booking ratings from API, using mock fallback:", error);
+  }
     
     // Fallback Mock Data matching the user schema for local development/fallback
     const MOCK_RATINGS = [
@@ -466,5 +469,26 @@ export async function fetchBookingRatingsBySalonId(salonId) {
     ];
 
     return MOCK_RATINGS;
+}
+
+export async function fetchSalonWaitlist(salonId, options = {}) {
+  const { pageNumber = 1, pageSize = 10 } = options;
+  const normalizedPage = normalizePageNumber(pageNumber);
+
+  console.log("Fetching waitlist for salonId:", salonId, { pageNumber: normalizedPage, pageSize });
+  try {
+    const response = await axiosClient.get(`/Waitlists/salon/${salonId}`, {
+      headers: getAuthHeaders(),
+      params: {
+        pageNumber: normalizedPage,
+        pageSize,
+      }
+    });
+
+    return unwrapResponse(response, "Failed to load waitlist entries.", false, true);
+  } catch (error) {
+    const errorMessage = error?.response?.data?.message || error?.message || "Failed to load waitlist entries.";
+    console.error("Error fetching salon waitlist:", error?.response?.data || error);
+    throw new Error(errorMessage, { cause: error });
   }
 }

@@ -74,7 +74,7 @@ const QUICK_STATUS = [
   ["Available Chairs", "4 / 10"],
   ["In Service Now", "6"],
   ["Completed Today", "12"],
-  ["Revenue Today", "842.000 VNĐ"],
+  ["Revenue Today", "842.000 VND"],
 ];
 
 const WAITING_QUEUE = [
@@ -367,7 +367,7 @@ export function ReceptionistDashboardPage() {
     try {
       const updatedBooking = await manualCheckInReceptionistBooking(bookingId);
       updateAppointmentRow(updatedBooking);
-      toast.success(`Customer for booking ${bookingId} checked in successfully.`);
+      toast.success(`Checked in successfully.`);
     } catch (actionError) {
       const message =
         actionError instanceof Error ? actionError.message : "Failed to check in booking.";

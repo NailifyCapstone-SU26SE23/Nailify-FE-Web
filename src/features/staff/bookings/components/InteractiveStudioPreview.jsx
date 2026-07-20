@@ -6,8 +6,8 @@ import { PropTypes } from "../../../../shared/utils/propTypes";
 
 const NAIL_LABELS = ["Thumb", "Index", "Middle", "Ring", "Pinky"];
 const DEFAULT_SHAPE_RATIO = 0.42;
-const SMALL_FINGER_HEIGHTS = [62, 75, 88, 75, 60];
-const LARGE_FINGER_HEIGHTS = [132, 160, 190, 160, 126];
+const SMALL_FINGER_HEIGHTS = [62, 62, 62, 62, 62];
+const LARGE_FINGER_HEIGHTS = [168, 168, 168, 168, 168];
 const FABRIC_CROSS_ORIGIN_OPTIONS = { crossOrigin: "anonymous" };
 
 function clamp(value, min, max) {
@@ -52,8 +52,8 @@ function getNailMetrics(index, aspectRatio, large = false) {
   const fingerHeights = large ? LARGE_FINGER_HEIGHTS : SMALL_FINGER_HEIGHTS;
   const nailHeight = fingerHeights[index] ?? fingerHeights[2];
   const nailWidth = Math.round(nailHeight * aspectRatio);
-  const frameWidth = clamp(nailWidth + (large ? 64 : 24), large ? 160 : 68, large ? 248 : 114);
-  const frameHeight = clamp(nailHeight + (large ? 96 : 44), large ? 210 : 112, large ? 320 : 158);
+  const frameWidth = clamp(nailWidth + (large ? 120 : 36), large ? 220 : 72, large ? 320 : 112);
+  const frameHeight = clamp(nailHeight + (large ? 144 : 54), large ? 280 : 112, large ? 392 : 156);
 
   return {
     nailHeight,
@@ -63,14 +63,43 @@ function getNailMetrics(index, aspectRatio, large = false) {
   };
 }
 
-function getColorStyle(colorMode, primaryColor, secondaryColor) {
-  if (colorMode === "gradient") {
+function getPlacementRenderScale(scale, nailHeight) {
+  const normalizedScale = Number(scale) || 0.8;
+  const referenceHeight = LARGE_FINGER_HEIGHTS[2];
+  return normalizedScale * (nailHeight / referenceHeight);
+}
+
+function normalizeGradientStops(gradientStops, primaryColor, secondaryColor) {
+  const normalizedStops = (Array.isArray(gradientStops) ? gradientStops : [])
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
+
+  if (normalizedStops.length >= 2) {
+    return normalizedStops;
+  }
+
+  return [
+    String(primaryColor || "#f7bdd7").trim() || "#f7bdd7",
+    String(secondaryColor || primaryColor || "#fce7f3").trim() || "#fce7f3",
+  ];
+}
+
+function getColorStyle(colorConfig) {
+  if (colorConfig?.mode === "gradient") {
+    const gradientFormula = normalizeGradientStops(
+      colorConfig?.gradientStops,
+      colorConfig?.primaryColor,
+      colorConfig?.secondaryColor,
+    )
+      .map((color, index, stops) => `${color} ${((index / Math.max(stops.length - 1, 1)) * 100).toFixed(2)}%`)
+      .join(", ");
+
     return {
-      backgroundImage: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
+      backgroundImage: `linear-gradient(135deg, ${gradientFormula})`,
     };
   }
 
-  return { backgroundColor: primaryColor };
+  return { backgroundColor: colorConfig?.primaryColor || "#f7bdd7" };
 }
 
 function getShapeInsets(width, shapeImageUrl) {
@@ -127,7 +156,7 @@ function NailShell({
   return (
     <div className={`flex flex-col items-center gap-2 ${isActive ? "scale-[1.03]" : ""}`}>
       <div
-        className={`relative flex items-center justify-center ${isActive ? "drop-shadow-[0_18px_30px_rgba(236,72,153,0.16)]" : "drop-shadow-[0_14px_22px_rgba(236,72,153,0.10)]"}`}
+        className={`relative flex items-center justify-center overflow-visible ${isActive ? "drop-shadow-[0_18px_30px_rgba(236,72,153,0.16)]" : "drop-shadow-[0_14px_22px_rgba(236,72,153,0.10)]"}`}
         style={{ width, height }}
       >
         {shapeImageUrl ? (
@@ -282,16 +311,18 @@ function FabricNailCanvas({
       const objectHeight = (target.height || 0) * (target.scaleY || 1);
       const halfWidth = objectWidth / 2;
       const halfHeight = objectHeight / 2;
+      const horizontalInset = large ? 12 : 4;
+      const verticalInset = large ? 12 : 4;
       target.set({
         left: clamp(
           target.left || 0,
-          contentMetrics.contentLeft + halfWidth,
-          contentMetrics.contentLeft + contentMetrics.contentWidth - halfWidth,
+          halfWidth - horizontalInset,
+          width - halfWidth + horizontalInset,
         ),
         top: clamp(
           target.top || 0,
-          contentMetrics.contentTop + halfHeight,
-          contentMetrics.contentTop + contentMetrics.contentHeight - halfHeight,
+          halfHeight - verticalInset,
+          height - halfHeight + verticalInset,
         ),
       });
     };
@@ -377,8 +408,8 @@ function FabricNailCanvas({
             originX: "center",
             originY: "center",
             angle: Number(component.rotation) || 0,
-            scaleX: Number(component.scale) || 0.8,
-            scaleY: Number(component.scale) || 0.8,
+            scaleX: getPlacementRenderScale(component.scale, metrics.nailHeight),
+            scaleY: getPlacementRenderScale(component.scale, metrics.nailHeight),
             selectable: large,
             evented: large,
             transparentCorners: false,
@@ -395,24 +426,7 @@ function FabricNailCanvas({
             },
           });
 
-          if (shapeImageUrl) {
-            const clipMask = await FabricImage.fromURL(shapeImageUrl, FABRIC_CROSS_ORIGIN_OPTIONS);
-            if (isCancelled) return;
-            clipMask.set({
-              left: contentMetrics.contentLeft,
-              top: contentMetrics.contentTop,
-              originX: "left",
-              originY: "top",
-              absolutePositioned: true,
-              selectable: false,
-              evented: false,
-              scaleX: contentMetrics.contentWidth / Math.max(clipMask.width || 1, 1),
-              scaleY: contentMetrics.contentHeight / Math.max(clipMask.height || 1, 1),
-            });
-            image.clipPath = clipMask;
-          }
-
-          const widthLimit = metrics.nailWidth * (large ? 0.9 : 0.96);
+          const widthLimit = metrics.nailWidth * 1.42;
           if ((image.getScaledWidth() || 0) > widthLimit) {
             const ratio = widthLimit / image.getScaledWidth();
             image.scale((image.scaleX || 1) * ratio);
@@ -436,7 +450,7 @@ function FabricNailCanvas({
     return () => {
       isCancelled = true;
     };
-  }, [components, contentMetrics, large, metrics.nailWidth, selectedPlacementKey, shapeImageUrl]);
+  }, [components, contentMetrics, large, metrics.nailHeight, metrics.nailWidth, selectedPlacementKey, shapeImageUrl]);
 
   return (
     <NailShell
@@ -577,13 +591,13 @@ export function InteractiveStudioPreview({
           Click a nail to open its editor and edit component position there.
         </div>
 
-        <div className="mt-4 grid grid-cols-5 items-end gap-0.5 px-1">
+        <div className="mt-4 flex items-end justify-between gap-0.5 overflow-visible px-0">
           {Array.from({ length: 5 }).map((_, index) => (
             <button
               key={index}
               type="button"
               onClick={() => openNailEditor(index)}
-              className="flex min-w-0 justify-center bg-transparent"
+              className="relative isolate flex min-w-[68px] flex-1 justify-center overflow-visible bg-transparent py-1"
             >
               <FabricNailCanvas
                 fingerIndex={index}
@@ -591,11 +605,7 @@ export function InteractiveStudioPreview({
                 shape={shape}
                 length={length}
                 isActive={activeNailIndex === -1 ? true : activeNailIndex === index}
-                colorStyle={getColorStyle(
-                  fingerColorConfigs[index]?.mode,
-                  fingerColorConfigs[index]?.primaryColor,
-                  fingerColorConfigs[index]?.secondaryColor,
-                )}
+                colorStyle={getColorStyle(fingerColorConfigs[index])}
                 components={componentPlacements.filter((item) => item.fingerIndex === index)}
                 shapeImageUrl={shapeImageUrl}
                 selectedPlacementKey={selectedPlacementKey}
@@ -659,7 +669,7 @@ export function InteractiveStudioPreview({
         centered
         destroyOnClose={false}
         styles={{
-          content: { padding: 0, borderRadius: 28, overflow: "hidden" },
+          content: { padding: 0, borderRadius: 28, overflow: "visible" },
           body: { padding: 0 },
           mask: { backdropFilter: "blur(6px)" },
         }}
@@ -681,24 +691,20 @@ export function InteractiveStudioPreview({
           </div>
         </div>
 
-        <div className="-mt-6 grid gap-6 rounded-[28px] bg-white px-6 pb-6 pt-6 lg:grid-cols-[340px_minmax(0,1fr)]">
+        <div className="-mt-6 grid gap-6 rounded-[28px] bg-white px-6 pb-6 pt-6 lg:grid-cols-[420px_minmax(0,1fr)]">
           <div className="space-y-4">
-            <div className="rounded-2xl border border-[#f6d8e6] bg-[#fffafb] p-4">
+            <div className="rounded-2xl border border-[#f6d8e6] bg-[#fffafb] p-4 overflow-visible">
               <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">
                 Live Nail Canvas
               </p>
-              <div className="mt-4 flex justify-center">
+              <div className="mt-4 flex justify-center overflow-visible px-2 py-3">
                 <FabricNailCanvas
                   fingerIndex={modalFingerIndex}
                   finish={finish}
                   shape={shape}
                   length={length}
                   isActive
-                  colorStyle={getColorStyle(
-                    fingerColorConfigs[modalFingerIndex]?.mode,
-                    fingerColorConfigs[modalFingerIndex]?.primaryColor,
-                    fingerColorConfigs[modalFingerIndex]?.secondaryColor,
-                  )}
+                  colorStyle={getColorStyle(fingerColorConfigs[modalFingerIndex])}
                   components={modalFingerPlacements}
                   shapeImageUrl={shapeImageUrl}
                   selectedPlacementKey={selectedPlacementKey}
@@ -783,6 +789,7 @@ InteractiveStudioPreview.propTypes = {
     mode: PropTypes.string,
     primaryColor: PropTypes.string,
     secondaryColor: PropTypes.string,
+    gradientStops: PropTypes.arrayOf(PropTypes.string),
   })).isRequired,
   componentPlacements: PropTypes.arrayOf(PropTypes.shape({
     key: PropTypes.string.isRequired,

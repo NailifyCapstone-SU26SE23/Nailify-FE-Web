@@ -15,6 +15,8 @@ import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ROUTES } from "../../../../shared/constants/routes";
+import { receptionistWalkInBookingService } from "../../walk-in-bookings/services/receptionistWalkInBookingService";
+import toast from "react-hot-toast";
 
 function PanelCard({ title, icon, children, className = "" }) {
   const Icon = icon;
@@ -100,23 +102,50 @@ export function ReceptionistCustomerCreatePage() {
     }));
   };
 
-  const handleCreate = (continueBooking) => {
-    setShowConfirm(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-    if (continueBooking || location.state?.continueToBooking) {
-      navigate(ROUTES.receptionistBookingsCreate, {
-        state: {
-          prefillCustomerName: formValues.fullName || "New Customer",
-        },
-      });
+  const handleCreate = async (continueBooking) => {
+    setShowConfirm(false);
+    
+    if (!formValues.fullName || !formValues.phoneNumber) {
+      toast.error("Vui lòng điền họ tên và số điện thoại.");
       return;
     }
 
-    navigate(ROUTES.receptionistDashboard, {
-      state: {
-        flashMessage: `Customer account created for ${formValues.fullName || "new customer"}.`,
-      },
-    });
+    const nameParts = formValues.fullName.trim().split(" ");
+    const firstName = nameParts.pop() || "";
+    const lastName = nameParts.join(" ") || "";
+
+    const payload = {
+      email: formValues.email || `${formValues.phoneNumber}@nailify.test`, // Dummy email if missing since it might be required by backend
+      password: "User@1234",
+      confirmPassword: "User@1234",
+      firstName: firstName,
+      lastName: lastName || firstName,
+      phone: formValues.phoneNumber
+    };
+
+    try {
+      setIsSubmitting(true);
+      await receptionistWalkInBookingService.registerCustomer(payload);
+      toast.success(`Đã tạo tài khoản cho ${formValues.fullName}`);
+
+      if (continueBooking || location.state?.continueToBooking) {
+        navigate(ROUTES.receptionistBookingsCreate, {
+          state: {
+            prefillCustomerName: formValues.fullName,
+          },
+        });
+        return;
+      }
+
+      navigate(ROUTES.receptionistDashboard);
+    } catch (err) {
+      console.error(err);
+      toast.error("Tạo khách hàng thất bại. Vui lòng kiểm tra lại thông tin.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -265,15 +294,17 @@ export function ReceptionistCustomerCreatePage() {
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <button
                 type="button"
+                disabled={isSubmitting}
                 onClick={() => setShowConfirm(true)}
-                className="rounded-xl bg-[image:var(--gradient-accent)] px-5 py-3 text-sm font-bold text-white"
+                className="rounded-xl bg-[image:var(--gradient-accent)] px-5 py-3 text-sm font-bold text-white disabled:opacity-50"
               >
                 Create Customer Account
               </button>
               <button
                 type="button"
+                disabled={isSubmitting}
                 onClick={() => handleCreate(true)}
-                className="rounded-xl border border-[#f3cadb] bg-[#fff1f7] px-5 py-3 text-sm font-bold text-[#ea4f93]"
+                className="rounded-xl border border-[#f3cadb] bg-[#fff1f7] px-5 py-3 text-sm font-bold text-[#ea4f93] disabled:opacity-50"
               >
                 Create Account & Continue Booking
               </button>
@@ -383,7 +414,7 @@ export function ReceptionistCustomerCreatePage() {
           { label: "Membership", value: "New Member" },
           { label: "Booking Link", value: location.state?.continueToBooking ? "Continue to walk-in booking" : "Account only" },
         ]}
-        warnings={["This customer registration flow currently updates the UI only and does not persist to backend customer APIs yet."]}
+        warnings={[]}
       />
     </section>
   );
