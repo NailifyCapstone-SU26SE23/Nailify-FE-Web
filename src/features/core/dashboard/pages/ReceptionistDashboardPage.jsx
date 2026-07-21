@@ -695,7 +695,7 @@ export function ReceptionistDashboardPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => navigate(ROUTES.receptionistBookingsCreate)}
+                    onClick={() => navigate(ROUTES.receptionistQueue)}
                     className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-[#f3cfe0] bg-[#fff3f8] px-4 text-sm font-bold text-[#eb5a98] whitespace-nowrap sm:min-w-[170px]"
                   >
                     <Plus size={15} />
@@ -755,11 +755,10 @@ export function ReceptionistDashboardPage() {
                       type="button"
                       onClick={() => setAppointmentPage(Math.max(1, appointmentPage - 1))}
                       disabled={appointmentPage === 1}
-                      className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition ${
-                        appointmentPage === 1
+                      className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition ${appointmentPage === 1
                           ? "cursor-not-allowed border-[#f2dce6] bg-[#fff7fb] text-[#d4b5c4]"
                           : "border-[#f2bfd4] bg-white text-[#ea4f93] hover:bg-[#fff2f8]"
-                      }`}
+                        }`}
                     >
                       <ChevronLeft size={15} />
                     </button>
@@ -770,11 +769,10 @@ export function ReceptionistDashboardPage() {
                       type="button"
                       onClick={() => setAppointmentPage(Math.min(appointmentTotalPages, appointmentPage + 1))}
                       disabled={appointmentPage === appointmentTotalPages}
-                      className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition ${
-                        appointmentPage === appointmentTotalPages
+                      className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition ${appointmentPage === appointmentTotalPages
                           ? "cursor-not-allowed border-[#f2dce6] bg-[#fff7fb] text-[#d4b5c4]"
                           : "border-[#f2bfd4] bg-white text-[#ea4f93] hover:bg-[#fff2f8]"
-                      }`}
+                        }`}
                     >
                       <ChevronRight size={15} />
                     </button>
@@ -870,7 +868,7 @@ export function ReceptionistDashboardPage() {
                 ))}
               </div>
             </DashboardCard>
- 
+
           </aside>
         </div>
       </div>

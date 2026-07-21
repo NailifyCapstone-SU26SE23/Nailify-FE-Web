@@ -10,8 +10,18 @@ import { AUTH_STATUS } from "../constants/authConstants";
 import { getDashboardRouteByRole } from "../utils/getDashboardRouteByRole";
 
 const loginSchema = z.object({
-  email: z.email("Invalid email address."),
-  password: z.string().min(6, "Password must be at least 6 characters."),
+  email: z
+    .string()
+    .min(1, "Email is mandatory.")
+    .regex(
+      /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+      "Must match standard email format."
+    ),
+  password: z
+    .string()
+    .min(1, "Password is mandatory.")
+    .min(6, "Password must be at least 6 characters.")
+    .max(30, "Password must be at most 30 characters."),
 });
 
 const demoAccounts = [
