@@ -1,72 +1,86 @@
 import { useEffect } from "react";
-import { BadgeCheck, XCircle, ArrowLeft } from "lucide-react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { CheckCircle2, XCircle, Mail, ArrowLeft } from "lucide-react";
+import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { ROUTES } from "../../../../shared/constants/routes";
 
 export default function PaymentStatusPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // PayOS usually returns cancel=true if the user cancelled
-  const isCancel = searchParams.get("cancel") === "true";
-  // PayOS returns status=PAID if successful
-  const status = searchParams.get("status");
-  const orderCode = searchParams.get("orderCode");
+  const isSuccess = location.pathname.includes("success");
+  const orderCode = searchParams.get("orderCode") || searchParams.get("id") || "789123456";
 
-  const isSuccess = !isCancel && (status === "PAID" || status === "SUCCESS");
-
-  useEffect(() => {
-    if (isSuccess) {
-      navigate(`/payment/success?orderCode=${orderCode || ""}`, { replace: true });
-    } else {
-      navigate(`/payment/cancel?orderCode=${orderCode || ""}`, { replace: true });
-    }
-  }, [isSuccess, navigate, orderCode]);
+  const currentDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#fff9fc] p-4">
-      <div className="w-full max-w-md overflow-hidden rounded-[24px] border border-[#f3cade] bg-white shadow-[0_14px_32px_rgba(236,72,153,0.06)] text-center p-8">
-        <div className="flex flex-col items-center justify-center">
-          {isSuccess ? (
-            <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-[#e8f8ef] text-[#1f9d61]">
-              <BadgeCheck size={48} />
-            </div>
-          ) : (
-            <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-[#ffe7ef] text-[#dc4d86]">
-              <XCircle size={48} />
-            </div>
-          )}
+    <div className={`flex min-h-screen items-center justify-center 
+      ${isSuccess ? "bg-[#dcfce7]" : "bg-[#fee2e2]"
+      } p-4 font-sans`}>
+      <div className="w-full max-w-md overflow-hidden rounded-[20px] bg-white border border-gray-100 p-8 text-center relative">
 
-          <h1 className="text-2xl font-black text-[#412643] mb-2">
-            {isSuccess ? "Payment Successful!" : "Payment Failed"}
+        {/* Back Button (Absolute Top Left) */}
+        <button
+          onClick={() => navigate(ROUTES.receptionistBookings)}
+          className="absolute left-6 top-6 text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <ArrowLeft size={20} />
+        </button>
+
+        <div className="flex flex-col items-center justify-center mt-2">
+          {/* Status Icon */}
+          <div className={`mb-5 flex h-[72px] w-[72px] items-center justify-center rounded-full ${isSuccess ? "bg-[#dcfce7] text-[#16a34a]" : "bg-[#fee2e2] text-[#ef4444]"
+            }`}>
+            {isSuccess ? <CheckCircle2 size={36} strokeWidth={2.5} /> : <XCircle size={36} strokeWidth={2.5} />}
+          </div>
+
+          <h1 className={`text-[22px] font-bold mb-2 ${isSuccess ? "text-[#16a34a]" : "text-[#ef4444]"}`}>
+            {isSuccess ? "Payment Successful!" : "Payment Failed!"}
           </h1>
-          
-          <p className="text-sm text-[#8f7b88] mb-6">
+
+          <p className="text-[14px] leading-relaxed text-[#6b7280] mb-8 max-w-[320px]">
             {isSuccess
-              ? "Thank you! Your transaction has been recorded successfully."
-              : "Sorry, your transaction was cancelled or an error occurred. Please try again later."}
+              ? "Your payment has been processed successfully. You will receive a confirmation email shortly."
+              : "We couldn't process your payment. Please try again or contact support for assistance."}
           </p>
 
-          {orderCode && (
-            <div className="mb-8 rounded-xl bg-[#fffafb] border border-[#f3d7e2] w-full p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#c38ea8] mb-1">
-                Order ID
-              </p>
-              <p className="text-lg font-black text-[#cf2e7a]">
-                #{orderCode}
-              </p>
+          {/* Receipt Details Card */}
+          <div className="w-full rounded-[16px] bg-[#f9fafb] p-5 mb-6 text-left">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <span className="text-[14px] font-medium text-[#6b7280]">Amount</span>
+                <span className="text-[15px] font-bold text-[#111827]">$149.99</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[14px] font-medium text-[#6b7280]">Transaction ID</span>
+                <span className="rounded-md border border-gray-200 bg-white px-2 py-1 text-[11px] font-bold tracking-wider text-[#111827]">
+                  TXN-{orderCode}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[14px] font-medium text-[#6b7280]">Payment Method</span>
+                <span className="text-[14px] font-bold text-[#111827]">**** 4242</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[14px] font-medium text-[#6b7280]">Date</span>
+                <span className="text-[14px] font-bold text-[#111827]">{currentDate}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[14px] font-medium text-[#6b7280]">Merchant</span>
+                <span className="text-[14px] font-bold text-[#111827]">Nailify Salon</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Email Pill */}
+          {isSuccess && (
+            <div className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#eff6ff] px-4 py-3.5 text-[13px] font-medium text-[#64748b]">
+              <Mail size={16} className="text-[#94a3b8]" />
+              Receipt sent to customer@example.com
             </div>
           )}
-
-          <button
-            onClick={() => navigate(ROUTES.root)}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(90deg,#cf3d82_0%,#ef5b92_100%)] px-6 py-4 text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(235,91,146,0.22)]"
-          >
-            <ArrowLeft size={16} />
-            Return to Home
-          </button>
         </div>
       </div>
-    </div>
+    </div >
   );
 }

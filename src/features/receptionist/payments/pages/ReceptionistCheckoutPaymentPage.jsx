@@ -13,8 +13,10 @@ import {
   ShieldCheck,
   Sparkles,
   X,
+  QrCode, Wallet
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Table, Radio } from "antd";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import toast from "react-hot-toast";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import {
@@ -89,10 +91,10 @@ function getCustomerInitials(customerProfile, booking) {
 function getBillItems(booking) {
   return (booking?.bookingItems ?? []).map((item, index) => ({
     id: item.bookingItemId || `${item.serviceId || "service"}-${index}`,
-    name: item.serviceName ,
-    subtitle: item.nailVariantName || item.customerNailName || "Service item",
+    name: item.nailVariantName || item.customerNailName || item.serviceName,
     duration: item.duration ? formatDurationMinutes(item.duration) : "--",
     total: Number(item.price || 0) * Math.max(1, Number(item.quantity || 1)),
+    quantity: Math.max(1, Number(item.quantity || 1)),
   }));
 }
 
@@ -131,6 +133,7 @@ export function ReceptionistCheckoutPaymentPage() {
   const [paymentInfo, setPaymentInfo] = useState(null);
   const [isCreatingPayment, setIsCreatingPayment] = useState(false);
   const [isCancellingPayment, setIsCancellingPayment] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("payos");
 
   useEffect(() => {
     if (!bookingId) {
@@ -230,16 +233,18 @@ export function ReceptionistCheckoutPaymentPage() {
         if (status === "PAID") {
           setPaymentStage("paid");
           toast.success("Payment completed successfully.");
-          
+
           try {
             await checkoutReceptionistBooking(bookingId);
             toast.success("Booking checked out successfully.");
+            navigate(`${ROUTES.paymentSuccess}?orderCode=${paymentInfo.orderCode}`);
           } catch (checkoutErr) {
             toast.error(checkoutErr instanceof Error ? checkoutErr.message : "Failed to check out booking automatically.");
           }
         } else if (status === "CANCELLED") {
           setPaymentStage("cancelled");
           toast.error("Payment was cancelled.");
+          navigate(`${ROUTES.paymentCancel}?orderCode=${paymentInfo.orderCode}`);
         }
       } catch (err) {
         // Silently ignore errors during polling to avoid spamming the user
@@ -331,6 +336,28 @@ export function ReceptionistCheckoutPaymentPage() {
       toast.success("Payment marked as cancelled in UI.");
     }
   };
+
+  const handleCheckout = useCallback(async () => {
+    if (!bookingId) {
+      return;
+    }
+
+    setIsCreatingPayment(true);
+    try {
+      const response = await createPayment(bookingId);
+      const paymentUrl = response?.data?.paymentUrl || response?.paymentUrl || response?.data?.checkoutUrl || response?.checkoutUrl;
+
+      if (paymentUrl) {
+        window.location.href = paymentUrl;
+      } else {
+        toast.error("Payment link not found.");
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "An error occurred while creating payment.");
+    } finally {
+      setIsCreatingPayment(false);
+    }
+  }, [bookingId]);
 
   if (isLoading) {
     return (
@@ -432,34 +459,50 @@ export function ReceptionistCheckoutPaymentPage() {
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">Completed</p>
                   <p className="mt-1 text-xs font-bold text-[#4a3741]">{completedTime}</p>
                 </div>
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">Booking ID</p>
-                  <p className="mt-1 text-xs font-bold text-[#4a3741]">#{String(booking.bookingId || bookingId).slice(-8).toUpperCase()}</p>
-                </div>
+
               </div>
             </div>
           </SummaryCard>
 
           <SummaryCard title="Bill Details">
             <div className="overflow-hidden rounded-[20px] border border-[#f5d7e4]">
-              <div className="grid grid-cols-[minmax(0,1.4fr)_140px_140px] gap-4 border-b border-[#f5d7e4] bg-[#fff9fc] px-4 py-3 text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#c38ea8]">
-                <span>Service</span>
-                <span>Duration</span>
-                <span className="text-right">Price</span>
-              </div>
-
-              <div className="divide-y divide-[#f8e6ee] bg-white">
-                {billItems.map((item) => (
-                  <div key={item.id} className="grid grid-cols-[minmax(0,1.4fr)_140px_140px] gap-4 px-4 py-4">
-                    <div>
-                      <p className="text-sm font-extrabold text-[#412643]">{item.name} </p>
-                      <p className="mt-1 text-xs text-[#b38a9f]">{item.subtitle}</p>
-                    </div>
-                    <p className="text-sm text-[#8f7b88]">{item.duration}</p>
-                    <p className="text-right text-sm font-extrabold text-[#412643]">{formatCurrency(item.total)}</p>
-                  </div>
-                ))}
-              </div>
+              <Table
+                dataSource={billItems}
+                pagination={false}
+                rowKey="id"
+                columns={[
+                  {
+                    title: <span className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#c38ea8]">Service</span>,
+                    key: 'service',
+                    render: (_, record) => (
+                      <div>
+                        <p className="text-sm font-extrabold text-[#412643]">{record.name} </p>
+                      </div>
+                    ),
+                  },
+                  {
+                    title: <span className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#c38ea8]">Duration</span>,
+                    dataIndex: 'duration',
+                    key: 'duration',
+                    render: (text) => <span className="text-sm text-[#8f7b88]">{text}</span>,
+                  },
+                  {
+                    title: <span className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#c38ea8]">Qty</span>,
+                    dataIndex: 'quantity',
+                    key: 'quantity',
+                    render: (text) => <span className="text-sm font-bold text-[#8f7b88]">x{text}</span>,
+                  },
+                  {
+                    title: <span className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#c38ea8]">Price</span>,
+                    key: 'price',
+                    align: 'right',
+                    render: (_, record) => (
+                      <span className="text-sm font-semibold text-green-700">{formatCurrency(record.total)}</span>
+                    ),
+                  },
+                ]}
+                className="custom-bill-table"
+              />
             </div>
 
             <div className="mt-4 space-y-3 text-sm">
@@ -486,12 +529,119 @@ export function ReceptionistCheckoutPaymentPage() {
 
             <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#f5d7e4] pt-4">
               <span className="text-lg font-extrabold text-[#412643]">Total Amount</span>
-              <span className="text-2xl font-black text-[#412643]">{formatCurrency(totalValue)}</span>
+              <span className="text-2xl font-black text-green-700">{formatCurrency(totalValue)}</span>
             </div>
           </SummaryCard>
 
-          <SummaryCard title="VNPay QR Payment">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+          <SummaryCard title="Payment Method">
+            <div className="mb-4 w-fit">
+              <Radio.Group
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                className="mx-auto grid w-fit grid-cols-2 gap-8"
+                style={{ display: "flex", justifyContent: "center", alignItems: "center" }}
+              >
+                <Radio.Button
+                  value="payos"
+                  className="
+                            group !h-24 !rounded-2xl !border-2 !border-[#f3d7e2]
+                            !bg-white transition-all duration-200
+                            hover:-translate-y-1 hover:shadow-lg
+                            data-[checked=true]:!border-[#ea4f93]
+                            data-[checked=true]:!bg-[#fff3f8]
+                            data-[checked=true]:shadow-[0_8px_24px_rgba(234,79,147,0.18)]
+                          "
+                >
+                  <div className="flex h-full items-center gap-3">
+                    <div
+                      className="
+                                flex h-12 w-12 items-center justify-center rounded-xl
+                                bg-[#fff0f6] text-[#ea4f93]
+                                transition-colors
+                                group-data-[checked=true]:bg-[#ea4f93]
+                                group-data-[checked=true]:text-white
+                              "
+                    >
+                      <QrCode size={24} strokeWidth={2.2} />
+                    </div>
+
+                    <div className="text-left">
+                      <p className="font-bold text-[#412643]">
+                        PayOS
+                      </p>
+                      <p className="text-xs text-[#8d6a7b]">
+                        Scan QR to pay
+                      </p>
+                    </div>
+                  </div>
+                </Radio.Button>
+
+                <Radio.Button
+                  value="cod"
+                  className="
+                            group !h-24 !rounded-2xl !border-2 !border-[#f3d7e2]
+                            !bg-white transition-all duration-200
+                            hover:-translate-y-1 hover:shadow-lg
+                            data-[checked=true]:!border-[#ea4f93]
+                            data-[checked=true]:!bg-[#fff3f8]
+                            data-[checked=true]:shadow-[0_8px_24px_rgba(234,79,147,0.18)]
+                          "
+                >
+                  <div className="flex h-full items-center gap-3">
+                    <div
+                      className="
+                                flex h-12 w-12 items-center justify-center rounded-xl
+                                bg-[#fff0f6] text-[#ea4f93]
+                                transition-colors
+                                group-data-[checked=true]:bg-[#ea4f93]
+                                group-data-[checked=true]:text-white
+                              "
+                    >
+                      <Wallet size={24} strokeWidth={2.2} />
+                    </div>
+
+                    <div className="text-left">
+                      <p className="font-bold text-[#412643]">
+                        Cash
+                      </p>
+                      <p className="text-xs text-[#8d6a7b]">
+                        Pay at salon
+                      </p>
+                    </div>
+                  </div>
+                </Radio.Button>
+              </Radio.Group>
+            </div>
+
+            {paymentMethod === 'cod' && (
+              <div className="flex flex-col items-center justify-center p-6 border border-[#f3cade] rounded-[20px] bg-[#fffafb] mt-4">
+                <CircleDollarSign size={48} className="text-[#ea4f93] mb-4" />
+                <p className="text-lg font-bold text-[#412643]">Pay with Cash</p>
+                <p className="text-sm text-[#b38a9f] text-center mb-6 max-w-sm">
+                  Please collect {formatCurrency(totalValue)} from the customer before completing the checkout.
+                </p>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await checkoutReceptionistBooking(bookingId);
+                      toast.success("Booking checked out successfully.");
+                      navigate(`${ROUTES.paymentSuccess}?orderCode=COD-${bookingId}`);
+                    } catch (checkoutErr) {
+                      toast.error(checkoutErr instanceof Error ? checkoutErr.message : "Failed to check out booking.");
+                    }
+                  }}
+                  className="inline-flex w-full max-w-xs items-center justify-center gap-2 rounded-xl bg-[linear-gradient(90deg,#cf3d82_0%,#ef5b92_100%)] px-4 py-3 text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(235,91,146,0.22)]"
+                >
+                  <Check size={18} />
+                  Complete Checkout
+                </button>
+              </div>
+            )}
+
+            {/* PayOS UI Commented Out
+            {paymentMethod === 'payos' && (
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start mt-4">
               <div className="rounded-[20px] border border-[#f5d7e4] bg-[#fffafb] px-5 py-5 lg:w-[280px]">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-extrabold text-[#d54186]">Scan VNPay QR to Pay</p>
@@ -522,7 +672,7 @@ export function ReceptionistCheckoutPaymentPage() {
 
                   <p className="mt-4 text-4xl font-black text-[#cf2e7a]">{formatCurrency(remainingValue)}</p>
                   <p className="mt-1 text-xs text-[#a48796]">Ref: {paymentReference}</p>
-                  
+
                   {paymentInfo?.paymentUrl && (
                     <a
                       href={paymentInfo.paymentUrl}
@@ -603,9 +753,42 @@ export function ReceptionistCheckoutPaymentPage() {
                 </div>
               </div>
             </div>
+            )}
+            */}
+
+            {/* Mock buttons for testing PaymentStatusPage (kept visible as requested) */}
+            {paymentMethod === 'payos' && (
+              <div className="flex flex-col gap-4 mt-4">
+                <button
+                  type="button"
+                  onClick={handleCheckout}
+                  disabled={isCreatingPayment}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1888f3] px-2 py-3 text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(24,136,243,0.22)] disabled:opacity-50"
+                >
+                  {isCreatingPayment ? <LoaderCircle size={14} className="animate-spin" /> : null}
+                  Checkout with PayOS
+                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => navigate(`${ROUTES.paymentSuccess}?orderCode=${paymentInfo?.orderCode || "123456"}`)}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(90deg,#34d399_0%,#10b981_100%)] px-2 py-3 text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(16,185,129,0.22)]"
+                  >
+                    Mock Success
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`${ROUTES.paymentCancel}?orderCode=${paymentInfo?.orderCode || "123456"}`)}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(90deg,#fb7185_0%,#f43f5e_100%)] px-2 py-3 text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(244,63,94,0.22)]"
+                  >
+                    Mock Failed
+                  </button>
+                </div>
+              </div>
+            )}
           </SummaryCard>
 
-          <SummaryCard title="Payment Confirmation">
+          {/* <SummaryCard title="Payment Confirmation">
             <div className={`rounded-[18px] border px-4 py-4 ${paymentStage === "paid" ? "border-[#cfe9d8] bg-[linear-gradient(90deg,#eef9f1_0%,#f4fff6_100%)]" : "border-[#f3d7e2] bg-[#fffafb]"}`}>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
@@ -662,17 +845,16 @@ export function ReceptionistCheckoutPaymentPage() {
               </button>
               <Link
                 to={ROUTES.receptionistBookings}
-                className={`inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-extrabold ${
-                  paymentStage === "paid"
-                    ? "border-[#dcebdc] bg-[#eef9f1] text-[#1f9d61]"
-                    : "border-[#f3d7e2] bg-[#fffafb] text-[#8f7b88]"
-                }`}
+                className={`inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-extrabold ${paymentStage === "paid"
+                  ? "border-[#dcebdc] bg-[#eef9f1] text-[#1f9d61]"
+                  : "border-[#f3d7e2] bg-[#fffafb] text-[#8f7b88]"
+                  }`}
               >
                 <ShieldCheck size={14} />
                 Finish Checkout
               </Link>
             </div>
-          </SummaryCard>
+          </SummaryCard> */}
 
           <SummaryCard title="Receipt Preview">
             <div className="rounded-[20px] border border-[#f3d7e2] bg-white px-5 py-5">
@@ -684,7 +866,7 @@ export function ReceptionistCheckoutPaymentPage() {
 
               <div className="mt-5 space-y-2 border-y border-[#f3d7e2] py-4 text-sm">
                 {[
-                  ["Booking ID", `#${String(booking.bookingId || bookingId).slice(-8).toUpperCase()}`],
+
                   ["Customer", customerDisplayName],
                   ["Staff Artist", booking.artistName || "--"],
                   ["Date", formatDate(booking.bookingDate)],
@@ -700,11 +882,8 @@ export function ReceptionistCheckoutPaymentPage() {
               <div className="mt-4 space-y-2 text-sm">
                 {billItems.map((item) => (
                   <div key={item.id} className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="font-medium text-[#412643]">{item.name}</p>
-                      <p className="text-xs text-[#b38a9f]">{item.subtitle}</p>
-                    </div>
-                    <span className="font-medium text-[#412643]">{formatCurrency(item.total)}</span>
+                    <p className="font-medium text-[#412643]">{item.name} (x{item.quantity})</p>
+                    <span className="font-medium text-green-700">{formatCurrency(item.total)}</span>
                   </div>
                 ))}
               </div>
@@ -721,7 +900,17 @@ export function ReceptionistCheckoutPaymentPage() {
                 ].map(([label, value]) => (
                   <div key={label} className="flex items-center justify-between gap-4">
                     <span className={label === "Amount Paid" ? "font-bold text-[#d54186]" : "text-[#8f7b88]"}>{label}</span>
-                    <span className={label === "Total Amount" ? "font-extrabold text-[#412643]" : "font-medium text-[#412643]"}>{value}</span>
+                    <span
+                      className={
+                        label === "Total Amount"
+                          ? "font-extrabold text-green-700"
+                          : label === "Discount" || label === "Deposit Paid"
+                            ? "font-medium text-red-700"
+                            : "font-medium text-[#412643]"
+                      }
+                    >
+                      {value}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -730,6 +919,35 @@ export function ReceptionistCheckoutPaymentPage() {
                 <p className="text-sm font-extrabold text-[#cf2e7a]">Thank you for choosing Nailify!</p>
                 <p className="mt-1 text-xs text-[#b38a9f]">Please come back soon. We love you!</p>
               </div>
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              <button
+                type="button"
+                onClick={() => toast.success("Print bill is ready in UI.")}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[linear-gradient(90deg,#cf3d82_0%,#ef5b92_100%)] px-4 py-3 text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(235,91,146,0.22)]"
+              >
+                <Printer size={14} />
+                Print Bill
+              </button>
+              <button
+                type="button"
+                onClick={() => toast.success("Receipt send flow is ready for payment API integration.")}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#f3d7e2] bg-white px-4 py-3 text-sm font-extrabold text-[#d54186]"
+              >
+                <Mail size={14} />
+                Send Receipt to Customer
+              </button>
+              <Link
+                to={ROUTES.receptionistBookings}
+                className={`inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-extrabold ${paymentStage === "paid"
+                  ? "border-[#dcebdc] bg-[#eef9f1] text-[#1f9d61]"
+                  : "border-[#f3d7e2] bg-[#fffafb] text-[#8f7b88]"
+                  }`}
+              >
+                <ShieldCheck size={14} />
+                Finish Checkout
+              </Link>
             </div>
           </SummaryCard>
         </div>
@@ -809,7 +1027,7 @@ export function ReceptionistCheckoutPaymentPage() {
           </SummaryCard>
         </aside>
       </div>
-    </section>
+    </section >
   );
 }
 
