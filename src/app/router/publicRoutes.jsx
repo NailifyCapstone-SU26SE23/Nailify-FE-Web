@@ -3,7 +3,10 @@ import { PublicLayout } from "../layouts/PublicLayout";
 import { LoginPage } from "../../features/core/auth/pages/LoginPage";
 import { GuestGuard } from "../../shared/components/guards/GuestGuard";
 import { ROUTES } from "../../shared/constants/routes";
-import PaymentStatusPage from "../../features/receptionist/payments/pages/PaymentStatusPage";
+import PaymentStatusPage, {
+  PaymentCancelPage,
+  PaymentSuccessPage,
+} from "../../features/receptionist/payments/pages/PaymentStatusPage";
 
 export const publicRoutes = [
   {
@@ -30,5 +33,13 @@ export const publicRoutes = [
   {
     path: ROUTES.paymentCancel,
     element: <PaymentStatusPage />,
+  },
+  {
+    path: ROUTES.paymentSuccess,
+    element: <PaymentSuccessPage />,
+  },
+  {
+    path: ROUTES.paymentCancel,
+    element: <PaymentCancelPage />,
   },
 ];

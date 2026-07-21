@@ -1,16 +1,58 @@
 import { useEffect } from "react";
-import { CheckCircle2, XCircle, Mail, ArrowLeft } from "lucide-react";
+import { CheckCircle2, XCircle, Mail, ArrowLeft, BadgeCheck } from "lucide-react";
 import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { ROUTES } from "../../../../shared/constants/routes";
+import { checkoutReceptionistBooking } from "../../bookings/services/receptionistBookingService";
 
 export default function PaymentStatusPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isSuccess = location.pathname.includes("success");
-  const orderCode = searchParams.get("orderCode") || searchParams.get("id") || "789123456";
+  const isCancel = searchParams.get("cancel") === "true";
+  const status = searchParams.get("status");
+  const orderCode = searchParams.get("orderCode");
+  const isSuccess = !isCancel && (status === "PAID" || status === "SUCCESS");
 
+  useEffect(() => {
+    const nextParams = orderCode ? `?orderCode=${encodeURIComponent(orderCode)}` : "";
+    const nextPath = isSuccess ? ROUTES.paymentSuccess : ROUTES.paymentCancel;
+
+    navigate(`${nextPath}${nextParams}`, { replace: true });
+  }, [isSuccess, navigate, orderCode]);
+
+  return <PaymentResultPage isSuccess={isSuccess} orderCode={orderCode} />;
+}
+
+export function PaymentSuccessPage() {
+  const [searchParams] = useSearchParams();
+  const orderCode = searchParams.get("orderCode");
+
+  useEffect(() => {
+    const bookingId = localStorage.getItem("pendingPaymentBookingId");
+    if (bookingId) {
+      checkoutReceptionistBooking(bookingId)
+        .then(() => {
+          console.log("Successfully checked out booking:", bookingId);
+          localStorage.removeItem("pendingPaymentBookingId");
+        })
+        .catch((err) => {
+          console.error("Failed to automatically checkout booking after payment:", err);
+        });
+    }
+  }, []);
+
+  return <PaymentResultPage isSuccess orderCode={orderCode} />;
+}
+
+export function PaymentCancelPage() {
+  const [searchParams] = useSearchParams();
+
+  return <PaymentResultPage isSuccess={false} orderCode={searchParams.get("orderCode")} />;
+}
+
+function PaymentResultPage({ isSuccess, orderCode }) {
+  const navigate = useNavigate();
   const currentDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
   return (
@@ -52,14 +94,14 @@ export default function PaymentStatusPage() {
                 <span className="text-[15px] font-bold text-[#111827]">$149.99</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[14px] font-medium text-[#6b7280]">Transaction ID</span>
+                <span className="text-[14px] font-medium text-[#6b7280]">Order Code</span>
                 <span className="rounded-md border border-gray-200 bg-white px-2 py-1 text-[11px] font-bold tracking-wider text-[#111827]">
-                  TXN-{orderCode}
+                  {orderCode}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[14px] font-medium text-[#6b7280]">Payment Method</span>
-                <span className="text-[14px] font-bold text-[#111827]">**** 4242</span>
+                <span className="text-[14px] font-bold text-[#111827]">PayOS (QR)</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[14px] font-medium text-[#6b7280]">Date</span>
