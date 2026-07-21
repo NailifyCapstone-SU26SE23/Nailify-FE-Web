@@ -24,16 +24,29 @@ function unwrapResponse(response, fallbackMessage) {
 }
 
 export const dashboardService = {
-  getAdminDashboard: async (startDate, endDate) => {
+  getAdminDashboard: async (startDate, endDate, groupBy) => {
     const params = {};
     if (startDate) params.startDate = startDate;
     if (endDate) params.endDate = endDate;
+    if (groupBy) params.groupBy = groupBy;
     
     const response = await axiosClient.get("/Dashboard/admin", { 
       params,
       headers: getAuthHeaders(),
     });
     return unwrapResponse(response, "Failed to load dashboard data");
+  },
+  getManagerDashboard: async (salonId, startDate, endDate, groupBy) => {
+    const params = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    if (groupBy) params.groupBy = groupBy;
+    
+    const response = await axiosClient.get(`/Dashboard/salon/${salonId}`, { 
+      params,
+      headers: getAuthHeaders(),
+    });
+    return unwrapResponse(response, "Failed to load manager dashboard data");
   },
   getRecentUsers: async () => {
     const response = await axiosClient.get("/Users", {
