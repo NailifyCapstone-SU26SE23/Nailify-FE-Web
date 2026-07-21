@@ -707,10 +707,10 @@ export function ReceptionistBookingDetailPage() {
       if (paymentUrl) {
         window.location.href = paymentUrl;
       } else {
-        toast.error("Không tìm thấy link thanh toán.");
+        toast.error("Payment link not found.");
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Có lỗi xảy ra khi tạo thanh toán.");
+      toast.error(err instanceof Error ? err.message : "An error occurred while creating payment.");
     }
   }, [actionAvailability.canCheckout, bookingId]);
 
