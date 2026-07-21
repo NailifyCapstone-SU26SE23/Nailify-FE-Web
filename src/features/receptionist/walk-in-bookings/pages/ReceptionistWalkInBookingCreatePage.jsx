@@ -31,8 +31,8 @@ function formatDateLabel(dateValue) {
 }
 
 function formatVND(amount) {
-  if (!amount) return "0 đ";
-  return amount.toLocaleString("vi-VN") + " đ";
+  if (!amount) return "0 VND";
+  return amount.toLocaleString("vi-VN") + " VND";
 }
 
 function DashboardCard({ title, description, icon, children, className = "" }) {
@@ -145,7 +145,7 @@ export function ReceptionistWalkInBookingCreatePage() {
   const handleCreate = async () => {
     try {
       if (!bookingItems.length) {
-        toast.error("Vui lòng chọn ít nhất 1 dịch vụ hoặc mẫu nail.");
+        toast.error("Please select at least 1 service or nail design.");
         return;
       }
 
@@ -169,7 +169,7 @@ export function ReceptionistWalkInBookingCreatePage() {
       });
     } catch (err) {
       console.error(err);
-      toast.error("Có lỗi xảy ra khi tạo booking.");
+      toast.error("An error occurred while creating booking.");
       setShowCreateConfirm(false);
     }
   };
@@ -279,7 +279,7 @@ export function ReceptionistWalkInBookingCreatePage() {
                       </div>
                       <div className="p-3">
                         <p className="text-sm font-bold text-[#432744] truncate">{design.name}</p>
-                        <p className="mt-1 text-[11px] font-bold text-[#ea4f93]">Từ {formatVND(design.minPrice)}</p>
+                        <p className="mt-1 text-[11px] font-bold text-[#ea4f93]">From {formatVND(design.minPrice)}</p>
                       </div>
                     </button>
                   ))}

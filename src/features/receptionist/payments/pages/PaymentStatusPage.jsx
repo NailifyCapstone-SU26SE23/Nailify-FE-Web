@@ -38,19 +38,19 @@ export default function PaymentStatusPage() {
           )}
 
           <h1 className="text-2xl font-black text-[#412643] mb-2">
-            {isSuccess ? "Thanh toán thành công!" : "Thanh toán thất bại"}
+            {isSuccess ? "Payment Successful!" : "Payment Failed"}
           </h1>
           
           <p className="text-sm text-[#8f7b88] mb-6">
             {isSuccess
-              ? "Cảm ơn bạn! Giao dịch của bạn đã được ghi nhận thành công."
-              : "Rất tiếc, giao dịch của bạn đã bị hủy hoặc có lỗi xảy ra. Vui lòng thử lại sau."}
+              ? "Thank you! Your transaction has been recorded successfully."
+              : "Sorry, your transaction was cancelled or an error occurred. Please try again later."}
           </p>
 
           {orderCode && (
             <div className="mb-8 rounded-xl bg-[#fffafb] border border-[#f3d7e2] w-full p-4">
               <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#c38ea8] mb-1">
-                Mã đơn hàng
+                Order ID
               </p>
               <p className="text-lg font-black text-[#cf2e7a]">
                 #{orderCode}
@@ -63,7 +63,7 @@ export default function PaymentStatusPage() {
             className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(90deg,#cf3d82_0%,#ef5b92_100%)] px-6 py-4 text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(235,91,146,0.22)]"
           >
             <ArrowLeft size={16} />
-            Quay lại trang chủ
+            Return to Home
           </button>
         </div>
       </div>
