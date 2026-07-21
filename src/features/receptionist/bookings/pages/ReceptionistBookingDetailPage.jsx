@@ -695,24 +695,32 @@ export function ReceptionistBookingDetailPage() {
     }
   }, [bookingId, isManualCheckInAllowed, isManualCheckInSubmitting, loadBookingHistories]);
 
-  const handleCheckout = useCallback(async () => {
+  // const handleCheckout = useCallback(async () => {
+  //     if (!bookingId || !actionAvailability.canCheckout) {
+  //       return;
+  //     }
+
+  //     try {
+  //       const response = await createPayment(bookingId);
+  //       const paymentUrl = response?.data?.paymentUrl || response?.paymentUrl;
+
+  //       if (paymentUrl) {
+  //         window.location.href = paymentUrl;
+  //       } else {
+  //         toast.error("Payment link not found.");
+  //       }
+  //     } catch (err) {
+  //       toast.error(err instanceof Error ? err.message : "An error occurred while creating payment.");
+  //     }
+  //   }, [actionAvailability.canCheckout, bookingId]);
+
+  const handleCheckout = useCallback(() => {
     if (!bookingId || !actionAvailability.canCheckout) {
       return;
     }
 
-    try {
-      const response = await createPayment(bookingId);
-      const paymentUrl = response?.data?.paymentUrl || response?.paymentUrl;
-
-      if (paymentUrl) {
-        window.location.href = paymentUrl;
-      } else {
-        toast.error("Payment link not found.");
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "An error occurred while creating payment.");
-    }
-  }, [actionAvailability.canCheckout, bookingId]);
+    navigate(getReceptionistBookingCheckoutRoute(bookingId));
+  }, [actionAvailability.canCheckout, bookingId, navigate]);
 
   const handlePrimaryHeaderAction = useCallback(async () => {
     if (actionAvailability.canCheckout) {
