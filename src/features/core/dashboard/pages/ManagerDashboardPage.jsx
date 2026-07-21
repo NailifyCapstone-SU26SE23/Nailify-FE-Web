@@ -6,10 +6,16 @@ import {
   Percent,
   Clock3,
 } from "lucide-react";
-import { Spin, Alert, DatePicker, Segmented } from "antd";
+import { Spin, Alert, DatePicker, Segmented, Modal, Avatar, Rate } from "antd";
+import { UserOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useState } from "react";
-import { useManagerDashboard } from "../hooks/useAdminDashboard";
+import {
+  useManagerDashboard,
+  useSalonStaffs,
+  useNailArtistDashboard,
+  useUserDetail
+} from "../hooks/useAdminDashboard";
 import { loadAuthSession } from "../../auth/model/authStorage";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import ReactECharts from "echarts-for-react";
@@ -59,6 +65,7 @@ export function ManagerDashboardPage() {
   const salonId = getSalonId();
   const [dateRange, setDateRange] = useState([dayjs().subtract(7, 'day'), dayjs()]);
   const [filterMode, setFilterMode] = useState("Week");
+  const [selectedStaff, setSelectedStaff] = useState(null);
 
   const startDate = dateRange?.[0]?.format("YYYY-MM-DD");
   const endDate = dateRange?.[1]?.format("YYYY-MM-DD");
@@ -71,6 +78,7 @@ export function ManagerDashboardPage() {
   }
 
   const { data, isLoading, isError } = useManagerDashboard(salonId, startDate, endDate, groupBy);
+  const { data: staffData, isLoading: isStaffLoading } = useSalonStaffs(salonId);
 
   const handleFilterModeChange = (mode) => {
     setFilterMode(mode);
@@ -273,7 +281,7 @@ export function ManagerDashboardPage() {
 
       <div className="p-8 pt-2 space-y-6 max-w-[1600px] mx-auto w-full">
         {/* Top Metrics Row (Inspired by the image layout) */}
-        <div className="flex flex-wrap justify-between gap-4 py-4 px-2">
+        <div className="flex flex-wrap justify-between gap-4 py-4 px-2" y>
           {topMetrics.map((metric, i) => (
             <div key={i} className="flex flex-1 min-w-[150px] flex-col items-center justify-center relative">
               <span className="text-[28px] font-black tracking-tight" style={{ color: TEXT_PRIMARY }}>
@@ -282,8 +290,8 @@ export function ManagerDashboardPage() {
               <span className="text-[13px] font-bold mt-1" style={{ color: TEXT_SECONDARY }}>
                 {metric.label}
               </span>
-              <div 
-                className="mt-4 h-1 w-full max-w-[120px] rounded-full opacity-80" 
+              <div
+                className="mt-4 h-1 w-full max-w-[120px] rounded-full opacity-80"
                 style={{ backgroundColor: metric.color, boxShadow: `0 2px 10px ${metric.color}80` }}
               />
             </div>
@@ -296,7 +304,7 @@ export function ManagerDashboardPage() {
             <SectionHeading title="Revenue Breakdown" />
             <ReactECharts option={revenueBreakdownOption} style={{ height: '280px' }} opts={{ renderer: 'svg' }} />
           </Card>
-          
+
           <Card>
             <SectionHeading title="Key Ratios" />
             <div className="flex h-[280px] items-center justify-around">
@@ -322,7 +330,7 @@ export function ManagerDashboardPage() {
             <SectionHeading title="Customer Retention Trend" />
             <ReactECharts option={retentionOption} style={{ height: '300px' }} opts={{ renderer: 'svg' }} />
           </Card>
-          
+
           <Card>
             <SectionHeading title="Peak Hours Heatmap" />
             <ReactECharts option={peakHoursOption} style={{ height: '300px' }} opts={{ renderer: 'svg' }} />
@@ -349,7 +357,11 @@ export function ManagerDashboardPage() {
                       <td className="px-3 py-3 text-[13px] font-bold text-slate-800">{artist.artistName}</td>
                       <td className="px-3 py-3 text-[13px] font-semibold text-center text-slate-600">{artist.completedBookings}</td>
                       <td className="px-3 py-3 text-[13px] font-bold text-right text-emerald-600">{artist.revenueGenerated.toLocaleString("vi-VN")} ₫</td>
-                      <td className="px-3 py-3 text-[13px] font-bold text-center text-amber-500">{artist.averageRating} / 5</td>
+                      <td className="px-3 py-3 text-[13px] font-bold text-center text-amber-500">
+                         <div className="flex items-center justify-center gap-1">
+                           <Rate disabled allowHalf value={artist.averageRating} className="text-[12px] text-amber-400" />
+                         </div>
+                      </td>
                     </tr>
                   ))}
                   {(!data?.artistPerformanceLeaderboard || data.artistPerformanceLeaderboard.length === 0) && (
@@ -390,7 +402,117 @@ export function ManagerDashboardPage() {
           </Card>
         </div>
 
+        {/* Staff Directory Row */}
+        <div className="mt-6">
+          <Card className="flex flex-col">
+            <SectionHeading title="Staff Directory" subtitle="Click on a staff member to view performance details" />
+            <div className="flex-1 mt-2">
+              {isStaffLoading ? (
+                <div className="flex items-center justify-center py-10">
+                  <Spin />
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                  {staffData?.items?.map((staff) => (
+                    <div
+                      key={staff.userId}
+                      className="flex flex-col items-center justify-center p-4 border border-slate-100 rounded-xl hover:shadow-md cursor-pointer transition-all bg-white hover:border-sky-200"
+                      onClick={() => setSelectedStaff(staff)}
+                    >
+                      <Avatar
+                        size={56}
+                        src={staff.avatarUrl}
+                        icon={!staff.avatarUrl && <UserOutlined />}
+                        className="mb-2 shadow-sm border border-slate-100"
+                      />
+                      <span className="text-sm font-bold text-slate-800 text-center line-clamp-1 w-full">{staff.firstName} {staff.lastName}</span>
+                      <span className="text-xs text-slate-500 font-medium">{staff.email}</span>
+                    </div>
+                  ))}
+                  {(!staffData?.items || staffData.items.length === 0) && (
+                    <div className="col-span-full text-center py-6 text-sm text-slate-500">
+                      No staff members found.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </Card>
+        </div>
+
       </div>
+
+      {/* Staff Detail Modal */}
+      <StaffDetailModal
+        staff={selectedStaff}
+        startDate={startDate}
+        endDate={endDate}
+        onClose={() => setSelectedStaff(null)}
+      />
     </div>
+  );
+}
+
+// Staff Detail Modal Component
+function StaffDetailModal({ staff, startDate, endDate, onClose }) {
+  const { data: userDetail, isLoading: isUserLoading } = useUserDetail(staff?.userId);
+  const { data: dashboard, isLoading: isDashboardLoading } = useNailArtistDashboard(staff?.staffId, startDate, endDate);
+
+  const isLoading = isUserLoading || isDashboardLoading;
+
+  return (
+    <Modal
+      title={<span className="text-slate-800 font-bold">Staff Information</span>}
+      open={!!staff}
+      onCancel={onClose}
+      footer={null}
+      destroyOnClose
+      width={450}
+    >
+      {isLoading ? (
+        <div className="flex items-center justify-center py-10">
+          <Spin />
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4 py-4">
+          <div className="flex items-center gap-4">
+            <Avatar
+              size={64}
+              src={userDetail?.avatarUrl}
+              icon={!userDetail?.avatarUrl && <UserOutlined />}
+              className="border border-slate-200 shadow-sm"
+            />
+            <div>
+              <h3 className="text-[17px] font-black text-slate-800">{userDetail?.firstName} {userDetail?.lastName}</h3>
+              <p className="text-[13px] font-medium text-slate-500">{userDetail?.email}</p>
+              <p className="text-[13px] font-medium text-slate-500">{userDetail?.phone || "No phone number"}</p>
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-xl border border-slate-200 p-4 bg-slate-50">
+            <h4 className="text-[13px] font-bold text-slate-500 mb-3 uppercase tracking-wider">Performance ({dayjs(startDate).format("DD/MM/YY")} - {dayjs(endDate).format("DD/MM/YY")})</h4>
+            <div className="flex flex-col gap-3">
+              <div className="flex justify-between items-center pb-3 border-b border-slate-200">
+                <span className="text-[14px] font-semibold text-slate-700">Estimated Earnings</span>
+                <span className="font-black text-emerald-600 text-[18px]">
+                  {dashboard?.estimatedEarnings ? dashboard.estimatedEarnings.toLocaleString("vi-VN") : "0"} ₫
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[14px] font-medium text-slate-600">Completed Appointments</span>
+                <span className="font-bold text-slate-800">{dashboard?.completedAppointmentsCount || 0}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[14px] font-medium text-slate-600">Average Rating</span>
+                <div className="flex items-center gap-2">
+                  <Rate disabled allowHalf value={dashboard?.averageRatingScore || 0} className="text-amber-400 text-sm" />
+                  <span className="font-bold text-amber-500">{dashboard?.averageRatingScore || 0}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </Modal>
   );
 }

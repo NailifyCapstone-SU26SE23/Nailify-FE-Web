@@ -75,4 +75,28 @@ export const dashboardService = {
     });
     return unwrapResponse(response, "Failed to load staffs");
   },
+  getSalonStaffs: async (salonId) => {
+    const response = await axiosClient.get("/Users", {
+      params: { pageNumber: 1, pageSize: 100, role: "Staff_Artist", salonId },
+      headers: getAuthHeaders(),
+    });
+    return unwrapResponse(response, "Failed to load salon staffs");
+  },
+  getNailArtistDashboard: async (artistId, startDate, endDate) => {
+    const params = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+
+    const response = await axiosClient.get(`/Dashboard/nail-artist/${artistId}`, {
+      params,
+      headers: getAuthHeaders(),
+    });
+    return unwrapResponse(response, "Failed to load artist dashboard");
+  },
+  getUserDetail: async (userId) => {
+    const response = await axiosClient.get(`/Users/${userId}`, {
+      headers: getAuthHeaders(),
+    });
+    return unwrapResponse(response, "Failed to load user details");
+  },
 };

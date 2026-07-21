@@ -58,3 +58,30 @@ export const useSalonsList = () => {
     staleTime: 5 * 60 * 1000,
   });
 };
+
+export const useSalonStaffs = (salonId) => {
+  return useQuery({
+    queryKey: ["salonStaffs", salonId],
+    queryFn: () => dashboardService.getSalonStaffs(salonId),
+    enabled: !!salonId,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useNailArtistDashboard = (artistId, startDate, endDate) => {
+  return useQuery({
+    queryKey: ["nailArtistDashboard", artistId, startDate, endDate],
+    queryFn: () => dashboardService.getNailArtistDashboard(artistId, startDate, endDate),
+    enabled: !!artistId,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useUserDetail = (userId) => {
+  return useQuery({
+    queryKey: ["userDetail", userId],
+    queryFn: () => dashboardService.getUserDetail(userId),
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
+  });
+};
