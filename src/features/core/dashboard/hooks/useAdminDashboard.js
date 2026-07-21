@@ -2,11 +2,20 @@ import { useQuery } from "@tanstack/react-query";
 import { dashboardService } from "../services/dashboardService";
 import { fetchSalons } from "../../../admin/salon-management/services/salonsService";
 
-export const useAdminDashboard = (startDate, endDate) => {
+export const useAdminDashboard = (startDate, endDate, groupBy) => {
   return useQuery({
-    queryKey: ["adminDashboard", startDate, endDate],
-    queryFn: () => dashboardService.getAdminDashboard(startDate, endDate),
+    queryKey: ["adminDashboard", startDate, endDate, groupBy],
+    queryFn: () => dashboardService.getAdminDashboard(startDate, endDate, groupBy),
     staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+export const useManagerDashboard = (salonId, startDate, endDate, groupBy) => {
+  return useQuery({
+    queryKey: ["managerDashboard", salonId, startDate, endDate, groupBy],
+    queryFn: () => dashboardService.getManagerDashboard(salonId, startDate, endDate, groupBy),
+    staleTime: 5 * 60 * 1000,
+    enabled: !!salonId,
   });
 };
 
