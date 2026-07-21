@@ -1030,12 +1030,77 @@ export function ReceptionistBookingDetailPage() {
                     </div>
 
                     <div className="flex-1 pb-6 text-sm">
-                      <p className="font-extrabold text-[#eb5b92] mb-1">
-                        [{history.actorRole}] {history.actorName}
-                      </p>
-                      <p className="text-[#8f7b88] leading-relaxed">
-                        {history.payload}
-                      </p>
+                      {(() => {
+                        let roleText = history.actorRole;
+                        if (history.actorRole === "Customer") roleText = "Khách Hàng";
+                        else if (history.actorRole === "Manager") roleText = "Quản lý";
+                        else if (history.actorRole === "Receptionist") roleText = "Lễ tân";
+                        else if (history.actorRole === "Staff_Artist" || history.actorRole === "Artist") roleText = "Nhân viên";
+                        else if (history.actorRole === "System") roleText = "Hệ thống";
+
+                        let payload = history.payload || "";
+                        payload = payload.replace(/\s?Mã QR \(Base64\) đã được khởi tạo\./g, "");
+
+                        if (payload.startsWith("Quản lý Salon ")) {
+                          payload = payload.replace("Quản lý Salon ", "");
+                        }
+                        if (payload === "Khách hàng đã check-in." || payload === "Khách hàng đã check-in") {
+                          payload = "làm check-in cho khách.";
+                        }
+                        if (payload.startsWith("Đơn đặt lịch được tạo thành công")) {
+                          payload = payload.replace("Đơn đặt lịch", "làm Đơn đặt lịch");
+                        }
+                        if (payload.startsWith("Check-in thành công")) {
+                          payload = payload.replace("Check-in thành công", "làm Check-in thành công");
+                        }
+                        if (payload.startsWith("Thợ nail đã ")) {
+                          payload = payload.replace("Thợ nail đã ", "");
+                        }
+                        if (payload.startsWith("Thợ làm móng ")) {
+                          payload = payload.replace("Thợ làm móng ", "");
+                        }
+                        if (payload.includes("Khách hàng đã thanh toán hóa đơn và hoàn thành thủ tục check-out")) {
+                          payload = "làm thủ tục thanh toán và check-out cho khách.";
+                        }
+                        if (payload.includes("Đơn đặt lịch được cập nhật.")) {
+                          payload = payload.replace("Đơn đặt lịch được cập nhật.", "làm Đơn đặt lịch được cập nhật.");
+                        }
+
+                        const urlRegex = /(https?:\/\/[^\s]+)/g;
+                        let imageUrl = null;
+                        const match = payload.match(urlRegex);
+                        if (match) {
+                          imageUrl = match[0];
+                          payload = payload.replace(urlRegex, "").trim();
+                        }
+
+                        return (
+                          <>
+                            <p className="text-[#8f7b88] leading-relaxed">
+                              <span className="">
+                                {roleText}
+                              </span>{" "}
+                              <span className="font-extrabold text-[#eb5b92]">
+                                "{history.actorName}"
+                              </span>{" "}
+                              đã {payload}
+                            </p>
+                            {imageUrl && (
+                              <div className="mt-3">
+                                <Image
+                                  crossOrigin="anonymous"
+                                  src={imageUrl}
+                                  alt="Hình ảnh"
+                                  className="h-24 w-24 rounded-lg border border-gray-200 object-cover shadow-sm"
+                                  style={{
+                                    height: "48px", width: "48px"
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                 ))}
