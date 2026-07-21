@@ -4,6 +4,8 @@ export const ROUTES = {
   root: "/",
   login: "/login",
   paymentStatus: "/payment-status",
+  paymentSuccess: "/payment/success",
+  paymentCancel: "/payment/cancel",
 
   // Staff routes
   staffRoot: "/staff",
