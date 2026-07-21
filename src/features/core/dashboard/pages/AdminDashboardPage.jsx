@@ -61,7 +61,14 @@ export function AdminDashboardPage() {
   const startDate = dateRange?.[0]?.format("YYYY-MM-DD");
   const endDate = dateRange?.[1]?.format("YYYY-MM-DD");
 
-  const { data, isLoading, isError } = useAdminDashboard(startDate, endDate);
+  let groupBy = "Day";
+  if (filterMode === "Year") {
+    groupBy = "Month";
+  } else if (filterMode === "Month") {
+    groupBy = "Day";
+  }
+
+  const { data, isLoading, isError } = useAdminDashboard(startDate, endDate, groupBy);
   const { data: salonDetails, isLoading: isLoadingSalon } = useSalonDetails(selectedSalonId);
   const { data: managersList } = useManagersList();
   const { data: salonsList } = useSalonsList();
