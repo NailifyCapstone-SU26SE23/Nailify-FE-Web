@@ -5,11 +5,18 @@ import {
   AlertCircle,
   Percent,
   Clock3,
+  GripHorizontal,
+  Pin,
+  PinOff,
+  EyeOff,
+  Settings2,
+  Eye,
+  RotateCcw
 } from "lucide-react";
-import { Spin, Alert, DatePicker, Segmented, Modal, Avatar, Rate } from "antd";
+import { Spin, Alert, DatePicker, Segmented, Modal, Avatar, Rate, Dropdown, Button } from "antd";
 import { UserOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   useManagerDashboard,
   useSalonStaffs,
@@ -32,6 +39,16 @@ const getSalonId = () => {
   return session?.user?.salonId || session?.salonId;
 };
 
+const defaultWidgets = [
+  { id: 'revenueBreakdown', title: 'Revenue Breakdown', visible: true, pinned: false },
+  { id: 'keyRatios', title: 'Key Ratios', visible: true, pinned: false },
+  { id: 'retentionRate', title: 'Customer Retention Rate', visible: true, pinned: false },
+  { id: 'peakHours', title: 'Peak Hours Heatmap', visible: true, pinned: false },
+  { id: 'artistLeaderboard', title: 'Artist Leaderboard', visible: true, pinned: false },
+  { id: 'staffLeaveAlerts', title: 'Staff Leave Alerts', visible: true, pinned: false },
+  { id: 'staffDirectory', title: 'Staff Directory', visible: true, pinned: false },
+];
+
 function Card({ className = "", children }) {
   return (
     <article
@@ -47,18 +64,61 @@ Card.propTypes = {
   children: PropTypes.node,
 };
 
-function SectionHeading({ title, subtitle }) {
+function WidgetWrapper({ id, widget, onPin, onHide, onDragStart, onDragOver, onDrop, onDragEnter, children, isPinned }) {
   return (
-    <div className="mb-4">
-      <h3 className="text-[15px] font-bold text-slate-800">{title}</h3>
-      {subtitle && <p className="text-xs text-slate-500 font-medium">{subtitle}</p>}
+    <div
+      draggable={!isPinned}
+      onDragStart={(e) => onDragStart(e, id)}
+      onDragOver={onDragOver}
+      onDragEnter={(e) => onDragEnter(e, id)}
+      onDrop={(e) => onDrop(e, id)}
+      className={`relative group h-full flex flex-col ${isPinned ? 'col-span-full' : ''}`}
+    >
+      <Card className={`flex flex-col h-full ${isPinned ? 'min-h-[400px]' : ''}`}>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            {!isPinned && (
+              <div className="cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600">
+                <GripHorizontal size={18} />
+              </div>
+            )}
+            <h3 className={`font-bold text-slate-800 ${isPinned ? 'text-[18px]' : 'text-[15px]'}`}>{widget.title}</h3>
+          </div>
+          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={() => onPin(id)}
+              className="p-1.5 text-slate-400 hover:text-sky-500 hover:bg-sky-50 rounded-md transition-colors"
+              title={isPinned ? "Unpin widget" : "Pin to top"}
+            >
+              {isPinned ? <PinOff size={16} /> : <Pin size={16} />}
+            </button>
+            <button
+              onClick={() => onHide(id)}
+              className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+              title="Hide widget"
+            >
+              <EyeOff size={16} />
+            </button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-hidden flex flex-col">
+          {children}
+        </div>
+      </Card>
     </div>
   );
 }
-
-SectionHeading.propTypes = {
-  title: PropTypes.string.isRequired,
-  subtitle: PropTypes.string,
+WidgetWrapper.propTypes = {
+  id: PropTypes.string,
+  widget: PropTypes.object,
+  onPin: PropTypes.func,
+  onHide: PropTypes.func,
+  onDragStart: PropTypes.func,
+  onDragOver: PropTypes.func,
+  onDrop: PropTypes.func,
+  onDragEnter: PropTypes.func,
+  children: PropTypes.node,
+  isPinned: PropTypes.bool,
 };
 
 export function ManagerDashboardPage() {
@@ -66,6 +126,22 @@ export function ManagerDashboardPage() {
   const [dateRange, setDateRange] = useState([dayjs().subtract(7, 'day'), dayjs()]);
   const [filterMode, setFilterMode] = useState("Week");
   const [selectedStaff, setSelectedStaff] = useState(null);
+
+  const [widgets, setWidgets] = useState(() => {
+    const saved = localStorage.getItem('managerDashboardWidgets');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) { }
+    }
+    return defaultWidgets;
+  });
+
+  const [draggedWidgetId, setDraggedWidgetId] = useState(null);
+
+  useEffect(() => {
+    localStorage.setItem('managerDashboardWidgets', JSON.stringify(widgets));
+  }, [widgets]);
 
   const startDate = dateRange?.[0]?.format("YYYY-MM-DD");
   const endDate = dateRange?.[1]?.format("YYYY-MM-DD");
@@ -108,6 +184,49 @@ export function ManagerDashboardPage() {
     }
   };
 
+  const handleDragStart = (e, id) => {
+    setDraggedWidgetId(id);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", id);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e, targetId) => {
+    e.preventDefault();
+    if (!draggedWidgetId || draggedWidgetId === targetId) return;
+
+    setWidgets((prev) => {
+      const newWidgets = [...prev];
+      const draggedIndex = newWidgets.findIndex(w => w.id === draggedWidgetId);
+      const targetIndex = newWidgets.findIndex(w => w.id === targetId);
+
+      const [draggedItem] = newWidgets.splice(draggedIndex, 1);
+      newWidgets.splice(targetIndex, 0, draggedItem);
+      return newWidgets;
+    });
+    setDraggedWidgetId(null);
+  };
+
+  const handleDragEnter = (e, id) => {
+    e.preventDefault();
+  };
+
+  const togglePin = (id) => {
+    setWidgets(prev => prev.map(w => w.id === id ? { ...w, pinned: !w.pinned } : w));
+  };
+
+  const toggleHide = (id) => {
+    setWidgets(prev => prev.map(w => w.id === id ? { ...w, visible: !w.visible } : w));
+  };
+  
+  const resetLayout = () => {
+    setWidgets(defaultWidgets);
+  };
+
   if (!salonId) {
     return (
       <div className="p-10 max-w-2xl mx-auto">
@@ -147,12 +266,10 @@ export function ManagerDashboardPage() {
   // ==========================================
   // ECharts Configurations
   // ==========================================
-
   const commonTooltip = { backgroundColor: 'rgba(255,255,255,0.95)', borderColor: BORDER_COLOR, borderWidth: 1, padding: 12, textStyle: { color: TEXT_PRIMARY, fontSize: 12, fontFamily: 'sans-serif' } };
   const commonAxisLabel = { color: TEXT_SECONDARY, fontSize: 11, fontFamily: 'sans-serif' };
   const commonSplitLine = { lineStyle: { type: 'dashed', color: GRID_COLOR } };
 
-  // 1. Revenue Breakdown (Donut)
   const revenueBreakdownOption = {
     color: THEME_COLORS,
     tooltip: { ...commonTooltip, trigger: 'item', formatter: '{b}: {c} ({d}%)' },
@@ -180,7 +297,6 @@ export function ManagerDashboardPage() {
     ]
   };
 
-  // Helper for Circular Progress Ring
   const createRingOption = (value, name, color) => ({
     series: [
       {
@@ -209,7 +325,6 @@ export function ManagerDashboardPage() {
   const cancelRateOption = createRingOption(data?.cancellationRate || 0, 'Cancellation Rate', '#0ea5e9');
   const completionRateOption = createRingOption(completionRate, 'Completion Rate', '#6366f1');
 
-  // 3. Customer Retention Rate (Smooth Line, like image left bottom)
   const retentionOption = {
     color: ['#0ea5e9'],
     tooltip: { ...commonTooltip, trigger: 'axis' },
@@ -234,7 +349,6 @@ export function ManagerDashboardPage() {
     ]
   };
 
-  // 4. Peak Hours (Line chart with markers, like image right bottom)
   const peakHoursOption = {
     color: ['#f59e0b', '#10b981', '#6366f1'],
     tooltip: { ...commonTooltip, trigger: 'axis' },
@@ -255,15 +369,170 @@ export function ManagerDashboardPage() {
     ]
   };
 
+  const renderWidgetContent = (id, isPinned) => {
+    switch (id) {
+      case 'revenueBreakdown':
+        return <ReactECharts option={revenueBreakdownOption} style={{ height: isPinned ? '350px' : '280px', width: '100%' }} opts={{ renderer: 'svg' }} />;
+      case 'keyRatios':
+        return (
+          <div className={`flex ${isPinned ? 'h-[350px]' : 'h-[280px]'} items-center justify-around w-full`}>
+            <div className="flex flex-col items-center w-1/3">
+              <ReactECharts option={staffUtilOption} style={{ height: isPinned ? '250px' : '200px', width: '100%' }} opts={{ renderer: 'svg' }} />
+              <span className="text-[13px] font-bold text-slate-600 mt-[-20px]">Staff Util</span>
+            </div>
+            <div className="flex flex-col items-center w-1/3">
+              <ReactECharts option={cancelRateOption} style={{ height: isPinned ? '250px' : '200px', width: '100%' }} opts={{ renderer: 'svg' }} />
+              <span className="text-[13px] font-bold text-slate-600 mt-[-20px]">Cancel Rate</span>
+            </div>
+            <div className="flex flex-col items-center w-1/3">
+              <ReactECharts option={completionRateOption} style={{ height: isPinned ? '250px' : '200px', width: '100%' }} opts={{ renderer: 'svg' }} />
+              <span className="text-[13px] font-bold text-slate-600 mt-[-20px]">Completion</span>
+            </div>
+          </div>
+        );
+      case 'retentionRate':
+        return <ReactECharts option={retentionOption} style={{ height: isPinned ? '350px' : '280px', width: '100%' }} opts={{ renderer: 'svg' }} />;
+      case 'peakHours':
+        return <ReactECharts option={peakHoursOption} style={{ height: isPinned ? '350px' : '280px', width: '100%' }} opts={{ renderer: 'svg' }} />;
+      case 'artistLeaderboard':
+        return (
+          <div className="flex-1 overflow-auto h-full w-full">
+            <table className="min-w-full text-left border-collapse w-full">
+              <thead className="sticky top-0 bg-white z-10">
+                <tr className="border-b border-slate-200 text-[11px] uppercase tracking-wider text-slate-500">
+                  <th className="px-3 py-3 font-bold">Artist Name</th>
+                  <th className="px-3 py-3 font-bold text-center">Bookings</th>
+                  <th className="px-3 py-3 font-bold text-right">Revenue</th>
+                  <th className="px-3 py-3 font-bold text-center">Rating</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...(data?.artistPerformanceLeaderboard || [])]
+                  .sort((a, b) => (b.completedBookings || 0) - (a.completedBookings || 0))
+                  .map((artist, i) => (
+                  <tr key={artist.artistId || i} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors">
+                    <td className="px-3 py-3 text-[13px] font-bold text-slate-800">{artist.artistName}</td>
+                    <td className="px-3 py-3 text-[13px] font-semibold text-center text-slate-600">{artist.completedBookings}</td>
+                    <td className="px-3 py-3 text-[13px] font-bold text-right text-emerald-600">{artist.revenueGenerated.toLocaleString("vi-VN")} ₫</td>
+                    <td className="px-3 py-3 text-[13px] font-bold text-center text-amber-500">
+                      <div className="flex items-center justify-center gap-1">
+                        <Rate disabled allowHalf value={artist.averageRating} className="text-[12px] text-amber-400" />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {(!data?.artistPerformanceLeaderboard || data.artistPerformanceLeaderboard.length === 0) && (
+                  <tr>
+                    <td colSpan="4" className="text-center py-6 text-sm text-slate-500">No artist data available.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        );
+      case 'staffLeaveAlerts':
+        return (
+          <div className="flex flex-col gap-3 h-full overflow-auto pr-2 w-full">
+            {data?.staffLeaveAlerts?.length > 0 ? (
+              data.staffLeaveAlerts.map((alert, i) => (
+                <div key={i} className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-700 shrink-0">
+                  <AlertCircle size={20} className="shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-sm">{alert.artistName}</p>
+                    <div className="mt-1 flex items-center gap-4 text-xs font-medium">
+                      <span>Date: {dayjs(alert.breakDate).format("DD/MM/YYYY")}</span>
+                      <span>Time: {alert.startTime} - {alert.endTime}</span>
+                    </div>
+                    <p className="mt-1 text-xs opacity-90 truncate max-w-[400px]" title={alert.reason}>
+                      Reason: {alert.reason}
+                    </p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="py-6 text-center text-sm font-medium text-slate-500 w-full">
+                No leave alerts for this period.
+              </div>
+            )}
+          </div>
+        );
+      case 'staffDirectory':
+        return (
+          <div className="flex-1 h-full overflow-auto w-full">
+            {isStaffLoading ? (
+              <div className="flex items-center justify-center py-10 h-full">
+                <Spin />
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                {staffData?.items?.map((staff) => (
+                  <div
+                    key={staff.userId}
+                    className="flex flex-col items-center justify-center p-4 border border-slate-100 rounded-xl hover:shadow-md cursor-pointer transition-all bg-white hover:border-sky-200"
+                    onClick={() => setSelectedStaff(staff)}
+                  >
+                    <Avatar
+                      size={56}
+                      src={staff.avatarUrl}
+                      icon={!staff.avatarUrl && <UserOutlined />}
+                      className="mb-2 shadow-sm border border-slate-100"
+                    />
+                    <span className="text-sm font-bold text-slate-800 text-center line-clamp-1 w-full">{staff.firstName} {staff.lastName}</span>
+                    <span className="text-xs text-slate-500 font-medium">{staff.email}</span>
+                  </div>
+                ))}
+                {(!staffData?.items || staffData.items.length === 0) && (
+                  <div className="col-span-full text-center py-6 text-sm text-slate-500 w-full">
+                    No staff members found.
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const hiddenWidgets = widgets.filter(w => !w.visible);
+  
+  const layoutMenuProps = {
+    items: [
+      ...hiddenWidgets.map((w) => ({
+        key: `restore-${w.id}`,
+        label: `Show ${w.title}`,
+        icon: <Eye size={16} />,
+        onClick: () => toggleHide(w.id),
+      })),
+      hiddenWidgets.length > 0 ? { type: 'divider' } : null,
+      {
+        key: 'reset',
+        label: 'Reset Layout',
+        icon: <RotateCcw size={16} />,
+        onClick: resetLayout,
+        danger: true,
+      }
+    ].filter(Boolean),
+  };
+
+  const pinnedWidgets = widgets.filter(w => w.pinned && w.visible);
+  const unpinnedWidgets = widgets.filter(w => !w.pinned && w.visible);
+
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-800 font-sans">
       {/* Header & Controls */}
-      <div className="mb-4 flex flex-col gap-4 bg-white px-8 py-5 shadow-sm border-b border-slate-200 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-4 bg-white px-8 py-5 shadow-sm border-b border-slate-200 md:flex-row md:items-center md:justify-between z-10 sticky top-0">
         <div>
           <h1 className="text-[22px] font-black tracking-tight text-slate-900">Manager Dashboard</h1>
           <p className="text-[13px] text-slate-500 font-medium">Overview of salon operations</p>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <Dropdown menu={layoutMenuProps} trigger={['click']} placement="bottomRight">
+            <Button icon={<Settings2 size={16} className="text-slate-500"/>} className="border-slate-200 font-medium text-slate-700 bg-white shadow-sm">
+              Customize
+            </Button>
+          </Dropdown>
           <Segmented
             options={["Day", "Week", "Month", "Year", "Custom"]}
             value={filterMode}
@@ -279,15 +548,15 @@ export function ManagerDashboardPage() {
         </div>
       </div>
 
-      <div className="p-8 pt-2 space-y-6 max-w-[1600px] mx-auto w-full">
-        {/* Top Metrics Row (Inspired by the image layout) */}
-        <div className="flex flex-wrap justify-between gap-4 py-4 px-2" y>
+      <div className="p-8 space-y-6 mx-auto w-full bg-[radial-gradient(circle_at_top_right,rgba(255,227,160,.35),transparent_35%),radial-gradient(circle_at_bottom_left,rgba(255,193,220,.22),transparent_35%),linear-gradient(to_right,#f7dbe7_1px,transparent_1px),linear-gradient(to_bottom,#f7dbe7_1px,transparent_1px)]">
+        {/* Top Metrics Row */}
+        <div className="flex flex-wrap justify-between gap-4 py-4 px-2">
           {topMetrics.map((metric, i) => (
-            <div key={i} className="flex flex-1 min-w-[150px] flex-col items-center justify-center relative">
+            <div key={i} className="flex flex-1 min-w-[150px] flex-col items-center justify-center relative bg-white/50 backdrop-blur-sm p-4 rounded-xl border border-slate-200/60 shadow-sm">
               <span className="text-[28px] font-black tracking-tight" style={{ color: TEXT_PRIMARY }}>
                 {metric.value}
               </span>
-              <span className="text-[13px] font-bold mt-1" style={{ color: TEXT_SECONDARY }}>
+              <span className="text-[13px] font-bold mt-1 text-center" style={{ color: TEXT_SECONDARY }}>
                 {metric.label}
               </span>
               <div
@@ -298,148 +567,47 @@ export function ManagerDashboardPage() {
           ))}
         </div>
 
-        {/* Middle Row: Donut Chart & Rings */}
+        {/* Pinned Widgets Section */}
+        {pinnedWidgets.length > 0 && (
+          <div className="flex flex-col gap-6">
+            {pinnedWidgets.map((widget) => (
+              <WidgetWrapper
+                key={widget.id}
+                id={widget.id}
+                widget={widget}
+                isPinned={true}
+                onPin={togglePin}
+                onHide={toggleHide}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDragEnter={handleDragEnter}
+                onDrop={handleDrop}
+              >
+                {renderWidgetContent(widget.id, true)}
+              </WidgetWrapper>
+            ))}
+          </div>
+        )}
+
+        {/* Unpinned Widgets Grid */}
         <div className="grid gap-6 lg:grid-cols-2">
-          <Card>
-            <SectionHeading title="Revenue Breakdown" />
-            <ReactECharts option={revenueBreakdownOption} style={{ height: '280px' }} opts={{ renderer: 'svg' }} />
-          </Card>
-
-          <Card>
-            <SectionHeading title="Key Ratios" />
-            <div className="flex h-[280px] items-center justify-around">
-              <div className="flex flex-col items-center w-1/3">
-                <ReactECharts option={staffUtilOption} style={{ height: '200px', width: '100%' }} opts={{ renderer: 'svg' }} />
-                <span className="text-[13px] font-bold text-slate-600 mt-[-20px]">Staff Util</span>
-              </div>
-              <div className="flex flex-col items-center w-1/3">
-                <ReactECharts option={cancelRateOption} style={{ height: '200px', width: '100%' }} opts={{ renderer: 'svg' }} />
-                <span className="text-[13px] font-bold text-slate-600 mt-[-20px]">Cancel Rate</span>
-              </div>
-              <div className="flex flex-col items-center w-1/3">
-                <ReactECharts option={completionRateOption} style={{ height: '200px', width: '100%' }} opts={{ renderer: 'svg' }} />
-                <span className="text-[13px] font-bold text-slate-600 mt-[-20px]">Completion</span>
-              </div>
-            </div>
-          </Card>
+          {unpinnedWidgets.map((widget) => (
+            <WidgetWrapper
+              key={widget.id}
+              id={widget.id}
+              widget={widget}
+              isPinned={false}
+              onPin={togglePin}
+              onHide={toggleHide}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDragEnter={handleDragEnter}
+              onDrop={handleDrop}
+            >
+              {renderWidgetContent(widget.id, false)}
+            </WidgetWrapper>
+          ))}
         </div>
-
-        {/* Bottom Row: Line Charts */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Card>
-            <SectionHeading title="Customer Retention Trend" />
-            <ReactECharts option={retentionOption} style={{ height: '300px' }} opts={{ renderer: 'svg' }} />
-          </Card>
-
-          <Card>
-            <SectionHeading title="Peak Hours Heatmap" />
-            <ReactECharts option={peakHoursOption} style={{ height: '300px' }} opts={{ renderer: 'svg' }} />
-          </Card>
-        </div>
-
-        {/* Tables Row: Leaderboard & Alerts */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Card className="flex flex-col">
-            <SectionHeading title="Artist Leaderboard" />
-            <div className="flex-1 overflow-auto mt-2">
-              <table className="min-w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-200 text-[11px] uppercase tracking-wider text-slate-500">
-                    <th className="px-3 py-3 font-bold">Artist Name</th>
-                    <th className="px-3 py-3 font-bold text-center">Bookings</th>
-                    <th className="px-3 py-3 font-bold text-right">Revenue</th>
-                    <th className="px-3 py-3 font-bold text-center">Rating</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data?.artistPerformanceLeaderboard?.map((artist, i) => (
-                    <tr key={artist.artistId || i} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors">
-                      <td className="px-3 py-3 text-[13px] font-bold text-slate-800">{artist.artistName}</td>
-                      <td className="px-3 py-3 text-[13px] font-semibold text-center text-slate-600">{artist.completedBookings}</td>
-                      <td className="px-3 py-3 text-[13px] font-bold text-right text-emerald-600">{artist.revenueGenerated.toLocaleString("vi-VN")} ₫</td>
-                      <td className="px-3 py-3 text-[13px] font-bold text-center text-amber-500">
-                         <div className="flex items-center justify-center gap-1">
-                           <Rate disabled allowHalf value={artist.averageRating} className="text-[12px] text-amber-400" />
-                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {(!data?.artistPerformanceLeaderboard || data.artistPerformanceLeaderboard.length === 0) && (
-                    <tr>
-                      <td colSpan="4" className="text-center py-6 text-sm text-slate-500">No artist data available.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-
-          <Card>
-            <SectionHeading title="Staff Leave Alerts" />
-            {data?.staffLeaveAlerts?.length > 0 ? (
-              <div className="flex flex-col gap-3 mt-4">
-                {data.staffLeaveAlerts.map((alert, i) => (
-                  <div key={i} className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-700">
-                    <AlertCircle size={20} className="shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-bold text-sm">{alert.artistName}</p>
-                      <div className="mt-1 flex items-center gap-4 text-xs font-medium">
-                        <span>Date: {dayjs(alert.breakDate).format("DD/MM/YYYY")}</span>
-                        <span>Time: {alert.startTime} - {alert.endTime}</span>
-                      </div>
-                      <p className="mt-1 text-xs opacity-90 truncate max-w-[400px]" title={alert.reason}>
-                        Reason: {alert.reason}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="py-6 text-center text-sm font-medium text-slate-500">
-                No leave alerts for this period.
-              </div>
-            )}
-          </Card>
-        </div>
-
-        {/* Staff Directory Row */}
-        <div className="mt-6">
-          <Card className="flex flex-col">
-            <SectionHeading title="Staff Directory" subtitle="Click on a staff member to view performance details" />
-            <div className="flex-1 mt-2">
-              {isStaffLoading ? (
-                <div className="flex items-center justify-center py-10">
-                  <Spin />
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-                  {staffData?.items?.map((staff) => (
-                    <div
-                      key={staff.userId}
-                      className="flex flex-col items-center justify-center p-4 border border-slate-100 rounded-xl hover:shadow-md cursor-pointer transition-all bg-white hover:border-sky-200"
-                      onClick={() => setSelectedStaff(staff)}
-                    >
-                      <Avatar
-                        size={56}
-                        src={staff.avatarUrl}
-                        icon={!staff.avatarUrl && <UserOutlined />}
-                        className="mb-2 shadow-sm border border-slate-100"
-                      />
-                      <span className="text-sm font-bold text-slate-800 text-center line-clamp-1 w-full">{staff.firstName} {staff.lastName}</span>
-                      <span className="text-xs text-slate-500 font-medium">{staff.email}</span>
-                    </div>
-                  ))}
-                  {(!staffData?.items || staffData.items.length === 0) && (
-                    <div className="col-span-full text-center py-6 text-sm text-slate-500">
-                      No staff members found.
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </Card>
-        </div>
-
       </div>
 
       {/* Staff Detail Modal */}
