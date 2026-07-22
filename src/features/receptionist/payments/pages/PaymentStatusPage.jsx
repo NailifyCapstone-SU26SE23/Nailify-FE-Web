@@ -1,18 +1,18 @@
-import { useEffect } from "react";
-import { CheckCircle2, XCircle, Mail, ArrowLeft, BadgeCheck } from "lucide-react";
-import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
-import { ROUTES } from "../../../../shared/constants/routes";
+import { useEffect, useState } from "react";
+import { ArrowLeft, CalendarDays, CheckCircle2, LoaderCircle, XCircle } from "lucide-react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { ROUTES, getReceptionistBookingDetailRoute } from "../../../../shared/constants/routes";
 import { checkoutReceptionistBooking } from "../../bookings/services/receptionistBookingService";
+import { getBookingIdByOrderCode } from "../services/receptionistPaymentService";
 
 export default function PaymentStatusPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const location = useLocation();
 
   const isCancel = searchParams.get("cancel") === "true";
   const status = searchParams.get("status");
   const orderCode = searchParams.get("orderCode");
-  const isSuccess = !isCancel && (status === "PAID" || status === "SUCCESS");
+  const isSuccess = !isCancel && (status === "PAID");
 
   useEffect(() => {
     const nextParams = orderCode ? `?orderCode=${encodeURIComponent(orderCode)}` : "";
@@ -53,22 +53,47 @@ export function PaymentCancelPage() {
 
 function PaymentResultPage({ isSuccess, orderCode }) {
   const navigate = useNavigate();
+  const [bookingId, setBookingId] = useState("");
+  const [isBookingIdLoading, setIsBookingIdLoading] = useState(false);
+  const [bookingIdError, setBookingIdError] = useState("");
   const currentDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  useEffect(() => {
+    if (!orderCode) {
+      return;
+    }
+
+    let isMounted = true;
+    setIsBookingIdLoading(true);
+    setBookingIdError("");
+
+    getBookingIdByOrderCode(orderCode)
+      .then((data) => {
+        if (!isMounted) return;
+
+        setBookingId(data?.bookingId || "");
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+
+        setBookingIdError(err instanceof Error ? err.message : "Failed to fetch booking detail link.");
+      })
+      .finally(() => {
+        if (!isMounted) return;
+
+        setIsBookingIdLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [orderCode]);
 
   return (
     <div className={`flex min-h-screen items-center justify-center 
       ${isSuccess ? "bg-[#dcfce7]" : "bg-[#fee2e2]"
       } p-4 font-sans`}>
       <div className="w-full max-w-md overflow-hidden rounded-[20px] bg-white border border-gray-100 p-8 text-center relative">
-
-        {/* Back Button (Absolute Top Left) */}
-        <button
-          onClick={() => navigate(ROUTES.receptionistBookings)}
-          className="absolute left-6 top-6 text-gray-400 hover:text-gray-600 transition-colors"
-        >
-          <ArrowLeft size={20} />
-        </button>
-
         <div className="flex flex-col items-center justify-center mt-2">
           {/* Status Icon */}
           <div className={`mb-5 flex h-[72px] w-[72px] items-center justify-center rounded-full ${isSuccess ? "bg-[#dcfce7] text-[#16a34a]" : "bg-[#fee2e2] text-[#ef4444]"
@@ -76,51 +101,73 @@ function PaymentResultPage({ isSuccess, orderCode }) {
             {isSuccess ? <CheckCircle2 size={36} strokeWidth={2.5} /> : <XCircle size={36} strokeWidth={2.5} />}
           </div>
 
-          <h1 className={`text-[22px] font-bold mb-2 ${isSuccess ? "text-[#16a34a]" : "text-[#ef4444]"}`}>
-            {isSuccess ? "Payment Successful!" : "Payment Failed!"}
+          <h1 className={`text-[30px] font-bold mb-2 ${isSuccess ? "text-[#16a34a]" : "text-[#ef4444]"}`}>
+            {isSuccess ? "Payment Successful!" : "Payment Cancelled!"}
           </h1>
 
-          <p className="text-[14px] leading-relaxed text-[#6b7280] mb-8 max-w-[320px]">
+          <p className="text-[16px] leading-relaxed text-[#6b7280] mb-8 max-w-[320px]">
             {isSuccess
-              ? "Your payment has been processed successfully. You will receive a confirmation email shortly."
-              : "We couldn't process your payment. Please try again or contact support for assistance."}
+              ? "Your payment has been processed successfully."
+              : "You have cancelled the payment."}
           </p>
-
-          {/* Receipt Details Card */}
+          
+          {isSuccess && (
           <div className="w-full rounded-[16px] bg-[#f9fafb] p-5 mb-6 text-left">
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between">
-                <span className="text-[14px] font-medium text-[#6b7280]">Amount</span>
-                <span className="text-[15px] font-bold text-[#111827]">$149.99</span>
-              </div>
-              <div className="flex items-center justify-between">
                 <span className="text-[14px] font-medium text-[#6b7280]">Order Code</span>
-                <span className="rounded-md border border-gray-200 bg-white px-2 py-1 text-[11px] font-bold tracking-wider text-[#111827]">
+                <span className="rounded-md border border-gray-200 bg-white px-2 py-1 text-[14px] font-bold tracking-wider text-[#111827]">
                   {orderCode}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[14px] font-medium text-[#6b7280]">Payment Method</span>
-                <span className="text-[14px] font-bold text-[#111827]">PayOS (QR)</span>
+                <span className="text-[14px] font-bold text-[#111827]">VietQR (QR)</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[14px] font-medium text-[#6b7280]">Date</span>
                 <span className="text-[14px] font-bold text-[#111827]">{currentDate}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[14px] font-medium text-[#6b7280]">Merchant</span>
-                <span className="text-[14px] font-bold text-[#111827]">Nailify Salon</span>
-              </div>
             </div>
           </div>
-
-          {/* Email Pill */}
-          {isSuccess && (
-            <div className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#eff6ff] px-4 py-3.5 text-[13px] font-medium text-[#64748b]">
-              <Mail size={16} className="text-[#94a3b8]" />
-              Receipt sent to customer@example.com
-            </div>
           )}
+
+          {bookingIdError && (
+            <p className="mb-4 text-sm font-medium text-[#ef4444]">{bookingIdError}</p>
+          )}
+
+          <div className="flex w-full flex-col gap-3">
+            {bookingId && (
+              <button
+                type="button"
+                onClick={() => navigate(getReceptionistBookingDetailRoute(bookingId))}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#111827] px-5 py-3.5 text-sm font-extrabold text-white transition hover:bg-[#1f2937]"
+              >
+                <CalendarDays size={17} />
+                Return to Booking Detail
+              </button>
+            )}
+
+            {!bookingId && isBookingIdLoading && (
+              <button
+                type="button"
+                disabled
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#e5e7eb] px-5 py-3.5 text-sm font-extrabold text-[#6b7280]"
+              >
+                <LoaderCircle size={17} className="animate-spin" />
+                Loading Booking Detail
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => navigate(ROUTES.root)}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-5 py-3.5 text-sm font-extrabold text-[#374151] transition hover:bg-[#f9fafb]"
+            >
+              <ArrowLeft size={17} />
+              Back to Home
+            </button>
+          </div>
         </div>
       </div>
     </div >
