@@ -3,6 +3,7 @@ export const ROUTES = {
   // Public routes
   root: "/",
   login: "/login",
+  paymentStatus: "/payment-status",
   paymentSuccess: "/payment/success",
   paymentCancel: "/payment/cancel",
 
