@@ -236,6 +236,7 @@ export function ReceptionistCheckoutPaymentPage() {
 
           try {
             await checkoutReceptionistBooking(bookingId);
+            localStorage.removeItem("pendingPaymentBookingId");
             toast.success("Booking checked out successfully.");
             navigate(`${ROUTES.paymentSuccess}?orderCode=${paymentInfo.orderCode}`);
           } catch (checkoutErr) {
@@ -348,6 +349,7 @@ export function ReceptionistCheckoutPaymentPage() {
       const paymentUrl = response?.data?.paymentUrl || response?.paymentUrl || response?.data?.checkoutUrl || response?.checkoutUrl;
 
       if (paymentUrl) {
+        localStorage.setItem("pendingPaymentBookingId", bookingId);
         window.location.href = paymentUrl;
       } else {
         toast.error("Payment link not found.");
@@ -652,27 +654,10 @@ export function ReceptionistCheckoutPaymentPage() {
                   {isCreatingPayment ? <LoaderCircle size={14} className="animate-spin" /> : null}
                   Checkout with PayOS
                 </button>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => navigate(`${ROUTES.paymentSuccess}?orderCode=${paymentInfo?.orderCode || "123456"}`)}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(90deg,#34d399_0%,#10b981_100%)] px-2 py-3 text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(16,185,129,0.22)]"
-                  >
-                    Mock Success
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => navigate(`${ROUTES.paymentCancel}?orderCode=${paymentInfo?.orderCode || "123456"}`)}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(90deg,#fb7185_0%,#f43f5e_100%)] px-2 py-3 text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(244,63,94,0.22)]"
-                  >
-                    Mock Failed
-                  </button>
-                </div>
+                
               </div>
             )}
           </SummaryCard>
-
-
 
           <SummaryCard title="Receipt Preview">
             <div className="rounded-[20px] border border-[#f3d7e2] bg-white px-5 py-5">
