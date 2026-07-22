@@ -56,6 +56,8 @@ const defaultWidgets = [
 ];
 
 function WidgetWrapper({ id, widget, onPin, onHide, onDragStart, onDragOver, onDrop, onDragEnter, children, isPinned }) {
+  const isFullWidth = ['rankedSalons'].includes(id);
+
   return (
     <div
       draggable={!isPinned}
@@ -63,7 +65,7 @@ function WidgetWrapper({ id, widget, onPin, onHide, onDragStart, onDragOver, onD
       onDragOver={onDragOver}
       onDragEnter={(e) => onDragEnter(e, id)}
       onDrop={(e) => onDrop(e, id)}
-      className={`relative group h-full flex flex-col ${isPinned ? 'col-span-full' : ''}`}
+      className={`relative group h-full flex flex-col ${isPinned ? 'col-span-full' : (isFullWidth ? 'lg:col-span-2' : '')}`}
     >
       <Card className={`flex flex-col h-full ${isPinned ? 'min-h-[450px]' : 'h-[380px]'}`}>
         <div className="flex items-center justify-between mb-4 border-b border-slate-200 pb-2">

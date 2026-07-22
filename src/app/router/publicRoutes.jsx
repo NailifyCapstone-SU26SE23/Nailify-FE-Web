@@ -27,11 +27,7 @@ export const publicRoutes = [
     ],
   },
   {
-    path: ROUTES.paymentSuccess,
-    element: <PaymentStatusPage />,
-  },
-  {
-    path: ROUTES.paymentCancel,
+    path: ROUTES.paymentStatus,
     element: <PaymentStatusPage />,
   },
   {
