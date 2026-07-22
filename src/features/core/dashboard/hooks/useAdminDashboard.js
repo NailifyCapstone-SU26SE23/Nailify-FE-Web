@@ -19,6 +19,24 @@ export const useManagerDashboard = (salonId, startDate, endDate, groupBy) => {
   });
 };
 
+export const useStaffDashboard = (artistId, startDate, endDate) => {
+  return useQuery({
+    queryKey: ["staffDashboard", artistId, startDate, endDate],
+    queryFn: () => dashboardService.getStaffDashboard(artistId, startDate, endDate),
+    staleTime: 5 * 60 * 1000,
+    enabled: !!artistId,
+  });
+};
+
+export const useStaffSkills = (artistId) => {
+  return useQuery({
+    queryKey: ["staffSkills", artistId],
+    queryFn: () => dashboardService.getStaffSkills(artistId),
+    staleTime: 5 * 60 * 1000,
+    enabled: !!artistId,
+  });
+};
+
 export const useRecentUsers = () => {
   return useQuery({
     queryKey: ["recentUsersDashboard"],
@@ -83,5 +101,38 @@ export const useUserDetail = (userId) => {
     queryFn: () => dashboardService.getUserDetail(userId),
     enabled: !!userId,
     staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useReceptionistDashboard = (salonId, date) => {
+  return useQuery({
+    queryKey: ["receptionistDashboard", salonId, date],
+    queryFn: () => dashboardService.getReceptionistDashboard(salonId, date),
+    enabled: !!salonId && !!date,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useWalkInQueue = (salonId) => {
+  return useQuery({
+    queryKey: ["walkInQueue", salonId],
+    queryFn: () => dashboardService.getWalkInQueue(salonId),
+    enabled: !!salonId,
+  });
+};
+
+export const useWaitlist = (salonId) => {
+  return useQuery({
+    queryKey: ["waitlist", salonId],
+    queryFn: () => dashboardService.getWaitlist(salonId),
+    enabled: !!salonId,
+  });
+};
+
+export const useStaffArtists = (salonId) => {
+  return useQuery({
+    queryKey: ["staffArtists", salonId],
+    queryFn: () => dashboardService.getStaffArtists(salonId),
+    enabled: !!salonId,
   });
 };
