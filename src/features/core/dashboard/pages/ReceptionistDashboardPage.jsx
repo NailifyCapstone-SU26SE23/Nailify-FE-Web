@@ -656,6 +656,8 @@ export function ReceptionistDashboardPage() {
 
     let isBusy = c.isOccupied === true;
     const artistQuery = artistSlotQueries[idx];
+    const isOffToday = artistQuery?.data?.isOffToday === true;
+
     if (artistQuery?.data?.busySlots?.length > 0) {
       const now = new Date();
       isBusy = artistQuery.data.busySlots.some(slot => {
@@ -668,9 +670,10 @@ export function ReceptionistDashboardPage() {
     return [
       name,
       getInitials(name),
-      c.status === "Active" && !isBusy ? "Available" : (isBusy ? "Busy" : "Inactive"),
+      isOffToday ? "Off Today" : (c.status === "Active" && !isBusy ? "Available" : (isBusy ? "Busy" : "Inactive")),
       getAvatarTone(idx),
-      c.status === "Active" && !isBusy ? "bg-[#e8f8ed] text-[#30a364]" : "bg-[#ffeaf2] text-[#ef5a95]"
+      isOffToday ? "bg-[#ffeaf2] text-[#ef5a95]" : (c.status === "Active" && !isBusy ? "bg-[#e8f8ed] text-[#30a364]" : "bg-[#ffeaf2] text-[#ef5a95]"),
+      isOffToday
     ];
   });
 
@@ -932,17 +935,17 @@ export function ReceptionistDashboardPage() {
                 <SectionTitle icon={UserRound} title="Staff Availability" />
                 <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                   {displayStaff.length > 0 ? (
-                    displayStaff.map(([name, initials, status, avatarTone, badgeTone]) => (
+                    displayStaff.map(([name, initials, status, avatarTone, badgeTone, isOffToday]) => (
                       <div
                         key={name}
-                        className="rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-4 text-center"
+                        className={`rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-4 text-center ${isOffToday ? "opacity-50 grayscale" : ""}`}
                       >
                         <div
                           className={`mx-auto flex h-11 w-11 items-center justify-center rounded-full text-sm font-extrabold text-white ${avatarTone}`}
                         >
                           {initials}
                         </div>
-                        <p className="mt-3 text-sm font-bold text-[#432744]">{name}</p>
+                        <p className={`mt-3 text-sm font-bold ${isOffToday ? "text-gray-500" : "text-[#432744]"}`}>{name}</p>
                         <span
                           className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${badgeTone}`}
                         >
