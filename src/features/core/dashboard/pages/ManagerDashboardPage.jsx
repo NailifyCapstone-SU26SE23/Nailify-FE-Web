@@ -11,7 +11,9 @@ import {
   EyeOff,
   Settings2,
   Eye,
-  RotateCcw
+  RotateCcw,
+  Wallet,
+  CalendarCheck2
 } from "lucide-react";
 import { Spin, Alert, DatePicker, Segmented, Modal, Avatar, Rate, Dropdown, Button } from "antd";
 import { UserOutlined } from "@ant-design/icons";
@@ -257,11 +259,42 @@ export function ManagerDashboardPage() {
   const completionRate = (completed + pending) > 0 ? (completed / (completed + pending)) * 100 : 0;
 
   const topMetrics = [
-    { label: "Today's Revenue", value: data?.todaysRevenue ? `${data.todaysRevenue.toLocaleString("vi-VN")} ₫` : "0 ₫", color: "#0ea5e9" },
-    { label: "Avg Ticket Value", value: data?.averageTicketValue ? `${data.averageTicketValue.toLocaleString("vi-VN")} ₫` : "0 ₫", color: "#10b981" },
-    { label: "Completed Bookings", value: completed, color: "#f59e0b" },
-    { label: "Pending Bookings", value: pending, color: "#8b5cf6" },
-    { label: "Staff Utilization", value: data?.staffUtilizationRate ? `${data.staffUtilizationRate.toFixed(1)}%` : "0%", color: "#ec4899" },
+    {
+      label: "Today's Revenue",
+      value: data?.todaysRevenue
+        ? `${data.todaysRevenue.toLocaleString("vi-VN")} ₫`
+        : "0 ₫",
+      color: "#0ea5e9",
+      icon: CircleDollarSign,
+    },
+    {
+      label: "Avg Ticket Value",
+      value: data?.averageTicketValue
+        ? `${data.averageTicketValue.toLocaleString("vi-VN")} ₫`
+        : "0 ₫",
+      color: "#10b981",
+      icon: Wallet,
+    },
+    {
+      label: "Completed",
+      value: completed,
+      color: "#f59e0b",
+      icon: CalendarCheck2,
+    },
+    {
+      label: "Pending",
+      value: pending,
+      color: "#8b5cf6",
+      icon: Clock3,
+    },
+    {
+      label: "Staff Utilization",
+      value: data?.staffUtilizationRate
+        ? `${data.staffUtilizationRate.toFixed(1)}%`
+        : "0%",
+      color: "#ec4899",
+      icon: Users,
+    },
   ];
 
   // ==========================================
@@ -531,7 +564,17 @@ export function ManagerDashboardPage() {
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-800 font-sans">
       {/* Header & Controls */}
-      <div className="flex flex-col gap-4 bg-white px-8 py-5 shadow-sm border-b border-slate-200 md:flex-row md:items-center md:justify-between z-10 sticky top-0">
+      {/* <div className="flex flex-col gap-4 bg-white px-8 py-5 shadow-sm border-b border-slate-200 md:flex-row md:items-center md:justify-between z-50 sticky top-0"> */}
+      <div
+        className="
+                  sticky top-0 z-50
+                  flex flex-col gap-4
+                  border-b border-white/30
+                  bg-[linear-gradient(135deg,rgba(255,236,244,0.8)_0%,rgba(255,248,220,0.8)_100%)]
+                  backdrop-blur-xl
+                  shadow-[0_8px_24px_rgba(236,72,153,0.08)]
+                  px-8 py-5
+                  md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-[22px] font-black tracking-tight text-slate-900">Manager Dashboard</h1>
           <p className="text-[13px] text-slate-500 font-medium">Overview of salon operations</p>
@@ -557,23 +600,70 @@ export function ManagerDashboardPage() {
         </div>
       </div>
 
-      <div className="p-8 space-y-6 mx-auto w-full bg-[radial-gradient(circle_at_top_right,rgba(255,227,160,.35),transparent_35%),radial-gradient(circle_at_bottom_left,rgba(255,193,220,.22),transparent_35%),linear-gradient(to_right,#f7dbe7_1px,transparent_1px),linear-gradient(to_bottom,#f7dbe7_1px,transparent_1px)]">
+      <div className="mx-auto w-full space-y-6 p-8
+                      bg-[#fff9fb]
+                      bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.55),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.35),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.45),transparent_35%),linear-gradient(to_right,#f3c7db_1px,transparent_1px),linear-gradient(to_bottom,#f3c7db_1px,transparent_1px)]
+                    ">
         {/* Top Metrics Row */}
-        <div className="flex flex-wrap justify-between gap-4 py-4 px-2">
-          {topMetrics.map((metric, i) => (
-            <div key={i} className="flex flex-1 min-w-[150px] flex-col items-center justify-center relative bg-white/50 backdrop-blur-sm p-4 rounded-xl border border-slate-200/60 shadow-sm">
-              <span className="text-[28px] font-black tracking-tight" style={{ color: TEXT_PRIMARY }}>
-                {metric.value}
-              </span>
-              <span className="text-[13px] font-bold mt-1 text-center" style={{ color: TEXT_SECONDARY }}>
-                {metric.label}
-              </span>
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
+          {topMetrics.map((metric, i) => {
+            const Icon = metric.icon;
+
+            return (
               <div
-                className="mt-4 h-1 w-full max-w-[120px] rounded-full opacity-80"
-                style={{ backgroundColor: metric.color, boxShadow: `0 2px 10px ${metric.color}80` }}
-              />
-            </div>
-          ))}
+                key={i}
+                className="
+                          group relative overflow-hidden
+                          rounded-2xl border border-slate-200
+                          bg-white
+                          p-5
+                          shadow-sm
+                          transition-all duration-300
+                          hover:-translate-y-1
+                          hover:shadow-xl
+                        "
+              >
+                {/* Gradient Background */}
+                <div
+                  className="absolute inset-0 opacity-[0.06]"
+                  style={{
+                    background: `linear-gradient(135deg, ${metric.color}, transparent 75%)`,
+                  }}
+                />
+
+                <div className="relative flex items-start justify-between">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                      {metric.label}
+                    </p>
+
+                    <h2 className="mt-3 text-[30px] font-black tracking-tight text-slate-800">
+                      {metric.value}
+                    </h2>
+                  </div>
+
+                  <div
+                    className="flex h-12 w-12 items-center justify-center
+                              rounded-2xl
+                              shadow-sm"
+                    style={{
+                      backgroundColor: `${metric.color}18`,
+                      color: metric.color,
+                    }}
+                  >
+                    <Icon size={24} strokeWidth={2.4} />
+                  </div>
+                </div>
+
+                <div
+                  className="mt-6 h-1.5 rounded-full"
+                  style={{
+                    background: `linear-gradient(to right, ${metric.color}, transparent)`,
+                  }}
+                />
+              </div>
+            );
+          })}
         </div>
 
         {/* Pinned Widgets Section */}
@@ -682,10 +772,10 @@ function StaffDetailModal({ staff, startDate, endDate, onClose }) {
       const start = dayjs(startDate);
       const end = dayjs(endDate);
       const diff = end.diff(start, 'day');
-      
+
       labels = [];
       data = [];
-      
+
       if (diff >= 0 && diff <= 31) {
         for (let i = 0; i <= diff; i++) {
           labels.push(start.add(i, 'day').format('DD/MM'));
