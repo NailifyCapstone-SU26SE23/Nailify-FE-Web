@@ -106,9 +106,9 @@ export function ReceptionistCustomerCreatePage() {
 
   const handleCreate = async (continueBooking) => {
     setShowConfirm(false);
-    
+
     if (!formValues.fullName || !formValues.phoneNumber) {
-      toast.error("Vui lòng điền họ tên và số điện thoại.");
+      toast.error("Please enter full name and phone number.");
       return;
     }
 
@@ -128,7 +128,7 @@ export function ReceptionistCustomerCreatePage() {
     try {
       setIsSubmitting(true);
       await receptionistWalkInBookingService.registerCustomer(payload);
-      toast.success(`Đã tạo tài khoản cho ${formValues.fullName}`);
+      toast.success(`An account has been created for ${formValues.fullName}`);
 
       if (continueBooking || location.state?.continueToBooking) {
         navigate(ROUTES.receptionistBookingsCreate, {
@@ -142,7 +142,7 @@ export function ReceptionistCustomerCreatePage() {
       navigate(ROUTES.receptionistDashboard);
     } catch (err) {
       console.error(err);
-      toast.error("Tạo khách hàng thất bại. Vui lòng kiểm tra lại thông tin.");
+      toast.error("Failed to create customer. Please check the provided information.");
     } finally {
       setIsSubmitting(false);
     }
@@ -359,42 +359,6 @@ export function ReceptionistCustomerCreatePage() {
               <li>Exclusive member-only promotions</li>
             </ul>
           </PanelCard>
-
-          {/* <PanelCard title="Next Steps" icon={MapPin}>
-            <div className="space-y-3">
-              <button
-                type="button"
-                onClick={() => handleCreate(true)}
-                className="w-full rounded-xl border border-[#f3cadb] bg-white px-4 py-3 text-left text-sm font-bold text-[#ea4f93]"
-              >
-                Continue to Booking
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate(ROUTES.receptionistDashboard)}
-                className="w-full rounded-xl border border-[#f3cadb] bg-white px-4 py-3 text-left text-sm font-bold text-[#ea4f93]"
-              >
-                Open Queue Dashboard
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setFormValues({
-                    fullName: "",
-                    phoneNumber: "",
-                    email: "",
-                    birthday: "",
-                    gender: "",
-                    address: "",
-                    notes: "",
-                  });
-                }}
-                className="w-full rounded-xl border border-[#f3cadb] bg-white px-4 py-3 text-left text-sm font-bold text-[#ea4f93]"
-              >
-                Create Another Customer
-              </button>
-            </div>
-          </PanelCard> */}
         </aside>
       </div>
 

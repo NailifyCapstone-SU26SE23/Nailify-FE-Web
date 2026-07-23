@@ -5,7 +5,11 @@ import { ReceptionistDashboardPage } from "../../features/core/dashboard/pages/R
 import { ReceptionistBookingListPage } from "../../features/receptionist/bookings/pages/ReceptionistBookingListPage";
 import { ReceptionistBookingDetailPage } from "../../features/receptionist/bookings/pages/ReceptionistBookingDetailPage";
 import { ReceptionistCheckoutPaymentPage } from "../../features/receptionist/payments";
-import { ReceptionistCustomerCreatePage } from "../../features/receptionist/customers";
+import {
+  ReceptionistCustomerCreatePage,
+  ReceptionistCustomerListPage,
+  ReceptionistCustomerDetailPage
+} from "../../features/receptionist/customers";
 import { ReceptionistWalkInBookingCreatePage } from "../../features/receptionist/walk-in-bookings";
 import { ReceptionistBreaksPage } from "../../features/core/breaks/pages/ReceptionistBreaksPage";
 import { WalkInQueuePage } from "../../features/manager/bookings/pages/WalkInQueuePage";
@@ -55,8 +59,16 @@ export const receptionistRoutes = [
         element: <ReceptionistWalkInBookingCreatePage />,
       },
       {
+        path: ROUTES.receptionistCustomers,
+        element: <ReceptionistCustomerListPage />,
+      },
+      {
         path: ROUTES.receptionistCustomersCreate,
         element: <ReceptionistCustomerCreatePage />,
+      },
+      {
+        path: ROUTES.receptionistCustomerDetail,
+        element: <ReceptionistCustomerDetailPage />,
       },
       {
         path: ROUTES.receptionistBookingDetail,

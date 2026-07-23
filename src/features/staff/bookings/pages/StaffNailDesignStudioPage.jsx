@@ -2962,51 +2962,6 @@ export function StaffNailDesignStudioPage() {
                     : "Confirm Design first to unlock Update Booking Design."}
                 </div>
               </article>
-
-              {/* <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4">
-                <SectionTitle icon={Star} title="Customer Preferences" />
-                <div className="mt-4 space-y-4">
-                  {studio.preferences.map((item) => (
-                    <div key={item.label} className="border-b border-[#f8e6ef] pb-3 last:border-b-0 last:pb-0">
-                      <p className="text-[10px] text-[#a98c9f]">{item.label}</p>
-                      <p className="mt-1 text-xs font-extrabold text-[#38253a]">{item.value}</p>
-                    </div>
-                  ))}
-                </div>
-              </article> */}
-
-              {/* <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4">
-                <SectionTitle icon={Check} title="Current Booking Summary" />
-                <div className="mt-4 space-y-3 text-sm">
-                  {[
-                    ["Booking ID", `#${studio.bookingCode}`],
-                    ["Status", studio.statusLabel],
-                    ["Current Service", activeTemplate.summaryService ?? studio.selectedDesign.summaryService],
-                    ["Assigned Staff", studio.staffName],
-                    ["Selected Design", activeTemplate.name],
-                    ["Appointment", "Today, 2:30 PM"],
-                    ["Est. Total", studio.builder.totalPrice],
-                  ].map(([label, value], index) => (
-                    <div
-                      key={label}
-                      className={`flex items-center justify-between gap-4 ${
-                        index < 6 ? "border-b border-[#f8e6ef] pb-3" : ""
-                      }`}
-                    >
-                      <span className="text-[11px] text-[#a98c9f]">{label}</span>
-                      <span className={`text-right font-extrabold ${label === "Est. Total" ? "text-[#d83379]" : "text-[#38253a]"}`}>
-                        {label === "Status" ? (
-                          <span className="rounded-full bg-[#fff3d9] px-2 py-1 text-[10px] text-[#c58a12]">
-                            {value}
-                          </span>
-                        ) : (
-                          value
-                        )}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </article> */}
             </aside>
           </div>
         </div>

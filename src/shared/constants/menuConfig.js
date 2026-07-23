@@ -141,10 +141,20 @@ export const MENU_CONFIG = {
       badge: "24",
     },
     {
+      key: "receptionist-customers",
+      label: "Customers",
+      to: ROUTES.receptionistCustomers,
+      icon: "users",
+      section: "Main",
+    },
+    {
       key: "receptionist-breaks",
       label: "Breaks",
       to: ROUTES.receptionistBreaks,
       icon: "clock",
+      section: "Main",
+    },
+    {
       key: "receptionist-queue",
       label: "Walk-In Queue",
       to: ROUTES.receptionistQueue,
@@ -157,13 +167,6 @@ export const MENU_CONFIG = {
       to: ROUTES.receptionistWaitlist,
       icon: "support",
       section: "Main",
-    },
-    {
-      key: "receptionist-customers",
-      label: "Customers",
-      icon: "users",
-      section: "Main",
-      disabled: true,
     },
     {
       key: "receptionist-reviews",

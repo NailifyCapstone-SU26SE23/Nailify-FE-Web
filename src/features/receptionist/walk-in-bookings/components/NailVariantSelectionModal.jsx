@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 import { receptionistWalkInBookingService } from "./../services/receptionistWalkInBookingService";
 
 function formatVND(amount) {
-  if (!amount) return "0 đ";
-  return amount.toLocaleString("vi-VN") + " đ";
+  if (!amount) return "0 VND";
+  return amount.toLocaleString("vi-VN") + " VND";
 }
 
 export function NailVariantSelectionModal({

@@ -37,6 +37,15 @@ export async function getPaymentStatus(orderCode) {
   return unwrapResponse(response, "Failed to fetch payment status.");
 }
 
+export async function getBookingIdByOrderCode(orderCode) {
+  if (orderCode === undefined || orderCode === null) {
+    throw new Error("Order code is required.");
+  }
+
+  const response = await axiosClient.get(`/Bookings/by-order-code/${orderCode}/booking-id`);
+  return unwrapResponse(response, "Failed to fetch booking by order code.");
+}
+
 export async function cancelPayment(orderCode) {
   if (orderCode === undefined || orderCode === null) {
     throw new Error("Order code is required.");
