@@ -64,7 +64,7 @@ Card.propTypes = {
   children: PropTypes.node,
 };
 
-function WidgetWrapper({ id, widget, onPin, onHide, onDragStart, onDragOver, onDrop, onDragEnter, children, isPinned }) {
+function WidgetWrapper({ id, widget, onPin, onHide, onDragStart, onDragOver, onDrop, onDragEnter, children, isPinned, fullWidth }) {
   return (
     <div
       draggable={!isPinned}
@@ -72,7 +72,7 @@ function WidgetWrapper({ id, widget, onPin, onHide, onDragStart, onDragOver, onD
       onDragOver={onDragOver}
       onDragEnter={(e) => onDragEnter(e, id)}
       onDrop={(e) => onDrop(e, id)}
-      className={`relative group h-full flex flex-col ${isPinned ? 'col-span-full' : ''}`}
+      className={`relative group h-full flex flex-col ${isPinned ? 'col-span-full' : (fullWidth ? 'lg:col-span-2' : '')}`}
     >
       <Card className={`flex flex-col h-full ${isPinned ? 'min-h-[400px]' : ''}`}>
         <div className="flex items-center justify-between mb-4">
@@ -119,6 +119,7 @@ WidgetWrapper.propTypes = {
   onDragEnter: PropTypes.func,
   children: PropTypes.node,
   isPinned: PropTypes.bool,
+  fullWidth: PropTypes.bool,
 };
 
 export function ManagerDashboardPage() {
@@ -222,7 +223,7 @@ export function ManagerDashboardPage() {
   const toggleHide = (id) => {
     setWidgets(prev => prev.map(w => w.id === id ? { ...w, visible: !w.visible } : w));
   };
-  
+
   const resetLayout = () => {
     setWidgets(defaultWidgets);
   };
@@ -410,17 +411,24 @@ export function ManagerDashboardPage() {
                 {[...(data?.artistPerformanceLeaderboard || [])]
                   .sort((a, b) => (b.completedBookings || 0) - (a.completedBookings || 0))
                   .map((artist, i) => (
-                  <tr key={artist.artistId || i} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors">
-                    <td className="px-3 py-3 text-[13px] font-bold text-slate-800">{artist.artistName}</td>
-                    <td className="px-3 py-3 text-[13px] font-semibold text-center text-slate-600">{artist.completedBookings}</td>
-                    <td className="px-3 py-3 text-[13px] font-bold text-right text-emerald-600">{artist.revenueGenerated.toLocaleString("vi-VN")} ₫</td>
-                    <td className="px-3 py-3 text-[13px] font-bold text-center text-amber-500">
-                      <div className="flex items-center justify-center gap-1">
-                        <Rate disabled allowHalf value={artist.averageRating} className="text-[12px] text-amber-400" />
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                    <tr
+                      key={artist.artistId || i}
+                      className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors cursor-pointer"
+                      onClick={() => {
+                        const matchedStaff = staffData?.items?.find(s => s.staffId === artist.artistId) || { staffId: artist.artistId, firstName: artist.artistName };
+                        setSelectedStaff(matchedStaff);
+                      }}
+                    >
+                      <td className="px-3 py-3 text-[13px] font-bold text-slate-800">{artist.artistName}</td>
+                      <td className="px-3 py-3 text-[13px] font-semibold text-center text-slate-600">{artist.completedBookings}</td>
+                      <td className="px-3 py-3 text-[13px] font-bold text-right text-emerald-600">{artist.revenueGenerated.toLocaleString("vi-VN")} ₫</td>
+                      <td className="px-3 py-3 text-[13px] font-bold text-center text-amber-500">
+                        <div className="flex items-center justify-center gap-1">
+                          <Rate disabled allowHalf value={artist.averageRating} className="text-[12px] text-amber-400" />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
                 {(!data?.artistPerformanceLeaderboard || data.artistPerformanceLeaderboard.length === 0) && (
                   <tr>
                     <td colSpan="4" className="text-center py-6 text-sm text-slate-500">No artist data available.</td>
@@ -457,6 +465,8 @@ export function ManagerDashboardPage() {
           </div>
         );
       case 'staffDirectory':
+        const getInitials = (firstName, lastName) =>
+          `${firstName?.[0] || ""}${lastName?.[0] || ""}`.toUpperCase();
         return (
           <div className="flex-1 h-full overflow-auto w-full">
             {isStaffLoading ? (
@@ -471,11 +481,10 @@ export function ManagerDashboardPage() {
                     className="flex flex-col items-center justify-center p-4 border border-slate-100 rounded-xl hover:shadow-md cursor-pointer transition-all bg-white hover:border-sky-200"
                     onClick={() => setSelectedStaff(staff)}
                   >
-                    <Avatar
+                    <StaffAvatar
+                      staff={staff}
                       size={56}
-                      src={staff.avatarUrl}
-                      icon={!staff.avatarUrl && <UserOutlined />}
-                      className="mb-2 shadow-sm border border-slate-100"
+                      className="mb-2 border border-slate-100 !bg-pink-500 !text-white font-bold shadow-sm"
                     />
                     <span className="text-sm font-bold text-slate-800 text-center line-clamp-1 w-full">{staff.firstName} {staff.lastName}</span>
                     <span className="text-xs text-slate-500 font-medium">{staff.email}</span>
@@ -496,7 +505,7 @@ export function ManagerDashboardPage() {
   };
 
   const hiddenWidgets = widgets.filter(w => !w.visible);
-  
+
   const layoutMenuProps = {
     items: [
       ...hiddenWidgets.map((w) => ({
@@ -529,7 +538,7 @@ export function ManagerDashboardPage() {
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <Dropdown menu={layoutMenuProps} trigger={['click']} placement="bottomRight">
-            <Button icon={<Settings2 size={16} className="text-slate-500"/>} className="border-slate-200 font-medium text-slate-700 bg-white shadow-sm">
+            <Button icon={<Settings2 size={16} className="text-slate-500" />} className="border-slate-200 font-medium text-slate-700 bg-white shadow-sm">
               Customize
             </Button>
           </Dropdown>
@@ -603,6 +612,7 @@ export function ManagerDashboardPage() {
               onDragOver={handleDragOver}
               onDragEnter={handleDragEnter}
               onDrop={handleDrop}
+              fullWidth={widget.id === 'staffDirectory'}
             >
               {renderWidgetContent(widget.id, false)}
             </WidgetWrapper>
@@ -621,6 +631,29 @@ export function ManagerDashboardPage() {
   );
 }
 
+const StaffAvatar = ({ staff, size = 56, className }) => {
+  const [error, setError] = useState(false);
+  const getInitials = (f, l) => `${f?.[0] || ""}${l?.[0] || ""}`.toUpperCase();
+
+  useEffect(() => {
+    setError(false);
+  }, [staff.avatarUrl]);
+
+  return (
+    <Avatar
+      size={size}
+      src={!error ? staff.avatarUrl : undefined}
+      onError={() => {
+        setError(true);
+        return false;
+      }}
+      className={className}
+    >
+      {getInitials(staff.firstName, staff.lastName)}
+    </Avatar>
+  );
+};
+
 // Staff Detail Modal Component
 function StaffDetailModal({ staff, startDate, endDate, onClose }) {
   const { data: userDetail, isLoading: isUserLoading } = useUserDetail(staff?.userId);
@@ -628,28 +661,73 @@ function StaffDetailModal({ staff, startDate, endDate, onClose }) {
 
   const isLoading = isUserLoading || isDashboardLoading;
 
+  const [avatarError, setAvatarError] = useState(false);
+  const getInitials = (fullName) =>
+    fullName
+      ?.trim()
+      .split(/\s+/)
+      .map((word) => word[0])
+      .join("")
+      .toUpperCase();
+
+  useEffect(() => {
+    setAvatarError(false);
+  }, [staff]);
+
+  const getChartData = () => {
+    let labels = dashboard?.earningsTracker?.labels || [];
+    let data = dashboard?.earningsTracker?.datasets?.[0]?.data || [];
+
+    if (labels.length === 0 && startDate && endDate) {
+      const start = dayjs(startDate);
+      const end = dayjs(endDate);
+      const diff = end.diff(start, 'day');
+      
+      labels = [];
+      data = [];
+      
+      if (diff >= 0 && diff <= 31) {
+        for (let i = 0; i <= diff; i++) {
+          labels.push(start.add(i, 'day').format('DD/MM'));
+          data.push(0);
+        }
+      } else {
+        labels = [start.format('DD/MM/YY'), end.format('DD/MM/YY')];
+        data = [0, 0];
+      }
+    }
+    return { labels, data };
+  };
+
+  const chartData = getChartData();
+
   return (
     <Modal
       title={<span className="text-slate-800 font-bold">Staff Information</span>}
       open={!!staff}
       onCancel={onClose}
       footer={null}
-      destroyOnClose
-      width={450}
+      destroyOnHidden
+      width={500}
     >
       {isLoading ? (
         <div className="flex items-center justify-center py-10">
           <Spin />
         </div>
       ) : (
-        <div className="flex flex-col gap-4 py-4">
+        <div className="flex flex-col gap-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
           <div className="flex items-center gap-4">
             <Avatar
               size={64}
-              src={userDetail?.avatarUrl}
-              icon={!userDetail?.avatarUrl && <UserOutlined />}
-              className="border border-slate-200 shadow-sm"
-            />
+              src={!avatarError ? userDetail?.avatarUrl : undefined}
+              onError={() => {
+                setAvatarError(true);
+                return false;
+              }}
+              className="shrink-0 border border-slate-200 !bg-pink-500 text-white font-bold"
+            >
+              {getInitials(`${userDetail?.firstName || ""} ${userDetail?.lastName || ""}`)}
+            </Avatar>
             <div>
               <h3 className="text-[17px] font-black text-slate-800">{userDetail?.firstName} {userDetail?.lastName}</h3>
               <p className="text-[13px] font-medium text-slate-500">{userDetail?.email}</p>
@@ -679,6 +757,70 @@ function StaffDetailModal({ staff, startDate, endDate, onClose }) {
               </div>
             </div>
           </div>
+
+          {dashboard && (
+            <div className="rounded-xl border border-slate-200 p-4 bg-slate-50">
+              <h4 className="text-[13px] font-bold text-slate-500 mb-3 uppercase tracking-wider">Earnings Tracker</h4>
+              <ReactECharts
+                option={{
+                  color: ['#10b981'],
+                  tooltip: { backgroundColor: 'rgba(255,255,255,0.95)', borderColor: '#e2e8f0', borderWidth: 1, padding: 12, textStyle: { color: '#1e293b', fontSize: 12, fontFamily: 'sans-serif' }, trigger: 'axis' },
+                  grid: { left: '2%', right: '4%', bottom: '3%', top: '10%', containLabel: true },
+                  xAxis: { type: 'category', boundaryGap: false, data: chartData.labels, axisLine: { lineStyle: { color: '#e2e8f0' } }, axisLabel: { color: '#64748b', fontSize: 11, fontFamily: 'sans-serif' } },
+                  yAxis: { type: 'value', axisLabel: { color: '#64748b', fontSize: 11, fontFamily: 'sans-serif' }, splitLine: { lineStyle: { type: 'dashed', color: '#f1f5f9' } } },
+                  series: [
+                    {
+                      name: 'Earnings',
+                      type: 'line',
+                      smooth: true,
+                      showSymbol: false,
+                      lineStyle: { width: 2, color: '#10b981' },
+                      areaStyle: {
+                        color: {
+                          type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+                          colorStops: [{ offset: 0, color: 'rgba(16,185,129,0.3)' }, { offset: 1, color: 'rgba(16,185,129,0)' }]
+                        }
+                      },
+                      data: chartData.data
+                    }
+                  ]
+                }}
+                style={{ height: '220px', width: '100%' }}
+                opts={{ renderer: 'svg' }}
+              />
+            </div>
+          )}
+
+          {dashboard?.recentFeedback?.length > 0 && (
+            <div className="rounded-xl border border-slate-200 p-4 bg-slate-50">
+              <h4 className="text-[13px] font-bold text-slate-500 mb-3 uppercase tracking-wider">Recent Feedback</h4>
+              <div className="flex flex-col gap-3">
+                {dashboard.recentFeedback.map((fb, idx) => (
+                  <div key={idx} className="flex gap-3 bg-white p-3.5 rounded-xl border border-slate-100 shadow-sm transition-all hover:shadow-md hover:border-sky-100">
+                    <Avatar className="bg-gradient-to-br from-sky-400 to-indigo-500 text-white font-bold shrink-0 mt-0.5 shadow-sm">
+                      {getInitials(fb.customerName)?.slice(0, 2) || "U"}
+                    </Avatar>
+                    <div className="flex-1 w-full">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <span className="font-extrabold text-[13px] text-slate-800 block">{fb.customerName}</span>
+                          <span className="text-[10px] text-slate-400 font-medium">{dayjs(fb.date).format("MMM DD, YYYY • HH:mm")}</span>
+                        </div>
+                        <div className="bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100 flex items-center">
+                          <Rate disabled allowHalf value={fb.score} className="text-[10px] text-amber-500 m-0" />
+                        </div>
+                      </div>
+                      {fb.comment && (
+                        <div className="mt-2.5 bg-slate-50 p-2.5 rounded-lg text-[12px] text-slate-600 border border-slate-100 leading-relaxed italic relative">
+                          "{fb.comment}"
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </Modal>

@@ -144,13 +144,20 @@ export const dashboardService = {
     return unwrapResponse(response, "Failed to load staff artists");
   },
   getArtistAvailableSlots: async (artistId, date) => {
-    const response = await axiosClient.get(`/Bookings/artist-available-slots`, {
-      params: {
-        NailArtistId: artistId,
-        BookingDate: date,
-      },
-      headers: getAuthHeaders(),
-    });
-    return unwrapResponse(response, "Failed to load artist slots");
+    try {
+      const response = await axiosClient.get(`/Bookings/artist-available-slots`, {
+        params: {
+          NailArtistId: artistId,
+          BookingDate: date,
+        },
+        headers: getAuthHeaders(),
+      });
+      return unwrapResponse(response, "Failed to load artist slots");
+    } catch (error) {
+      if (error.response?.data?.message === "Thợ nail không có lịch làm việc trong ngày này.") {
+        return { isOffToday: true };
+      }
+      throw error;
+    }
   },
 };
