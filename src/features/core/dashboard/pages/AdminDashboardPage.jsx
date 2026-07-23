@@ -7,11 +7,18 @@ import {
   UserRound,
   Users,
   X,
-  Activity
+  Activity,
+  GripHorizontal,
+  Pin,
+  PinOff,
+  EyeOff,
+  Settings2,
+  Eye,
+  RotateCcw
 } from "lucide-react";
-import { Modal, Table, Spin, Alert, DatePicker, Segmented } from "antd";
+import { Modal, Table, Spin, Alert, DatePicker, Segmented, Dropdown, Button } from "antd";
 import dayjs from "dayjs";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useAdminDashboard, useSalonDetails, useManagersList, useSalonsList, useStaffsList } from "../hooks/useAdminDashboard";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import ReactECharts from "echarts-for-react";
@@ -26,7 +33,7 @@ const GRID_COLOR = "#f1f5f9";
 function Card({ className = "", children }) {
   return (
     <article
-      className={`bg-white border border-slate-200 p-5 ${className}`}
+      className={`bg-white border border-slate-200 p-5 shadow-sm ${className}`}
     >
       {children}
     </article>
@@ -38,25 +45,98 @@ Card.propTypes = {
   children: PropTypes.node,
 };
 
-function SectionHeading({ title, subtitle }) {
+const defaultWidgets = [
+  { id: 'globalServicePopularity', title: 'Global Service Popularity', subtitle: 'Referer dataset analysis', visible: true, pinned: false },
+  { id: 'salonRatingDistribution', title: 'Salon Rating Distribution', subtitle: 'Radar dimensional analysis', visible: true, pinned: false },
+  { id: 'revenueTrend', title: 'Revenue Trend', subtitle: 'Stacked timeline series', visible: true, pinned: false },
+  { id: 'userGrowth', title: 'User Growth', subtitle: 'Race tracking metrics', visible: true, pinned: false },
+  { id: 'globalPromotionPerformance', title: 'Global Promotion Performance', subtitle: 'Shared dataset comparative', visible: true, pinned: false },
+  { id: 'topPerformingSalons', title: 'Top Performing Salons', subtitle: 'Top performing salons by revenue', visible: true, pinned: false },
+  { id: 'rankedSalons', title: 'Ranked Salons by Revenue', subtitle: 'Live active salon revenue', visible: true, pinned: false },
+];
+
+function WidgetWrapper({ id, widget, onPin, onHide, onDragStart, onDragOver, onDrop, onDragEnter, children, isPinned }) {
+  const isFullWidth = ['rankedSalons'].includes(id);
+
   return (
-    <div className="mb-5 border-b border-slate-200 pb-2">
-      <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest">{title}</h3>
-      {subtitle && <p className="mt-1 text-xs text-slate-500 font-medium">{subtitle}</p>}
+    <div
+      draggable={!isPinned}
+      onDragStart={(e) => onDragStart(e, id)}
+      onDragOver={onDragOver}
+      onDragEnter={(e) => onDragEnter(e, id)}
+      onDrop={(e) => onDrop(e, id)}
+      className={`relative group h-full flex flex-col ${isPinned ? 'col-span-full' : (isFullWidth ? 'lg:col-span-2' : '')}`}
+    >
+      <Card className={`flex flex-col h-full ${isPinned ? 'min-h-[450px]' : 'h-[380px]'}`}>
+        <div className="flex items-center justify-between mb-4 border-b border-slate-200 pb-2">
+          <div className="flex items-center gap-2">
+            {!isPinned && (
+              <div className="cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600">
+                <GripHorizontal size={18} />
+              </div>
+            )}
+            <div>
+              <h3 className={`font-bold text-slate-800 uppercase tracking-widest ${isPinned ? 'text-[15px]' : 'text-sm'}`}>{widget.title}</h3>
+              {widget.subtitle && <p className="mt-1 text-xs text-slate-500 font-medium">{widget.subtitle}</p>}
+            </div>
+          </div>
+          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={() => onPin(id)}
+              className="p-1.5 text-slate-400 hover:text-sky-500 hover:bg-sky-50 rounded-md transition-colors"
+              title={isPinned ? "Unpin widget" : "Pin to top"}
+            >
+              {isPinned ? <PinOff size={16} /> : <Pin size={16} />}
+            </button>
+            <button
+              onClick={() => onHide(id)}
+              className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+              title="Hide widget"
+            >
+              <EyeOff size={16} />
+            </button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-hidden flex flex-col w-full">
+          {children}
+        </div>
+      </Card>
     </div>
   );
 }
-
-SectionHeading.propTypes = {
-  title: PropTypes.string.isRequired,
-  subtitle: PropTypes.string,
+WidgetWrapper.propTypes = {
+  id: PropTypes.string,
+  widget: PropTypes.object,
+  onPin: PropTypes.func,
+  onHide: PropTypes.func,
+  onDragStart: PropTypes.func,
+  onDragOver: PropTypes.func,
+  onDrop: PropTypes.func,
+  onDragEnter: PropTypes.func,
+  children: PropTypes.node,
+  isPinned: PropTypes.bool,
 };
 
 export function AdminDashboardPage() {
   const [selectedSalonId, setSelectedSalonId] = useState(null);
-
   const [dateRange, setDateRange] = useState([dayjs().subtract(7, 'day'), dayjs()]);
   const [filterMode, setFilterMode] = useState("Week");
+
+  const [widgets, setWidgets] = useState(() => {
+    const saved = localStorage.getItem('adminDashboardWidgets');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) { }
+    }
+    return defaultWidgets;
+  });
+
+  const [draggedWidgetId, setDraggedWidgetId] = useState(null);
+
+  useEffect(() => {
+    localStorage.setItem('adminDashboardWidgets', JSON.stringify(widgets));
+  }, [widgets]);
 
   const startDate = dateRange?.[0]?.format("YYYY-MM-DD");
   const endDate = dateRange?.[1]?.format("YYYY-MM-DD");
@@ -102,14 +182,54 @@ export function AdminDashboardPage() {
     }
   };
 
+  const handleDragStart = (e, id) => {
+    setDraggedWidgetId(id);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", id);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e, targetId) => {
+    e.preventDefault();
+    if (!draggedWidgetId || draggedWidgetId === targetId) return;
+
+    setWidgets((prev) => {
+      const newWidgets = [...prev];
+      const draggedIndex = newWidgets.findIndex(w => w.id === draggedWidgetId);
+      const targetIndex = newWidgets.findIndex(w => w.id === targetId);
+
+      const [draggedItem] = newWidgets.splice(draggedIndex, 1);
+      newWidgets.splice(targetIndex, 0, draggedItem);
+      return newWidgets;
+    });
+    setDraggedWidgetId(null);
+  };
+
+  const handleDragEnter = (e, id) => {
+    e.preventDefault();
+  };
+
+  const togglePin = (id) => {
+    setWidgets(prev => prev.map(w => w.id === id ? { ...w, pinned: !w.pinned } : w));
+  };
+
+  const toggleHide = (id) => {
+    setWidgets(prev => prev.map(w => w.id === id ? { ...w, visible: !w.visible } : w));
+  };
+  
+  const resetLayout = () => {
+    setWidgets(defaultWidgets);
+  };
+
   const salonPerformanceRows = useMemo(() => {
     if (!salonsList) return [];
-
     return salonsList.map((salon) => {
       const salonId = salon.salonId || salon.id;
       const salonName = salon.name;
-
-      // Find revenue from topPerformingSalons (default to 0 if not found)
       let revenue = 0;
       if (data?.topPerformingSalons?.labels) {
         const topIndex = data.topPerformingSalons.labels.findIndex(label => label === salonName);
@@ -117,8 +237,6 @@ export function AdminDashboardPage() {
           revenue = data.topPerformingSalons.datasets[0].data[topIndex];
         }
       }
-
-      // Find manager
       let managerName = "N/A";
       if (salonId && managersList?.items) {
         const manager = managersList.items.find(m => m.salonId === salonId);
@@ -126,14 +244,7 @@ export function AdminDashboardPage() {
           managerName = `${manager.firstName} ${manager.lastName}`;
         }
       }
-
-      return {
-        id: salonId,
-        name: salonName,
-        manager: managerName,
-        revenue: revenue,
-        originalId: salonId
-      };
+      return { id: salonId, name: salonName, manager: managerName, revenue: revenue, originalId: salonId };
     }).sort((a, b) => b.revenue - a.revenue);
   }, [data, salonsList, managersList]);
 
@@ -144,7 +255,6 @@ export function AdminDashboardPage() {
       render: (_, salon) => (
         <div>
           <p className="font-bold text-slate-800 text-sm">{salon.name}</p>
-
         </div>
       ),
     },
@@ -186,11 +296,8 @@ export function AdminDashboardPage() {
           revenue = data.topPerformingSalons.datasets[0].data[topIndex];
         }
       }
-      return {
-        name: salon.name,
-        value: revenue
-      };
-    }).sort((a, b) => a.value - b.value); // sort ascending for ECharts horizontal bar
+      return { name: salon.name, value: revenue };
+    }).sort((a, b) => a.value - b.value);
   }, [salonsList, data]);
 
   if (isLoading) {
@@ -217,15 +324,11 @@ export function AdminDashboardPage() {
     { label: "AVG RATING", value: (data?.platformAverageRating || 0).toFixed(1), unit: "/ 5.0", trend: "+0.2" },
   ];
 
-  // ==========================================
-  // ECharts Configurations (Technical Style)
-  // ==========================================
-
+  // ECharts Configs
   const commonTooltip = { backgroundColor: 'rgba(255,255,255,0.95)', borderColor: BORDER_COLOR, borderWidth: 1, padding: 12, textStyle: { color: TEXT_PRIMARY, fontSize: 12, fontFamily: 'monospace' } };
   const commonAxisLabel = { color: TEXT_SECONDARY, fontSize: 11, fontFamily: 'monospace' };
   const commonSplitLine = { lineStyle: { type: 'dashed', color: GRID_COLOR } };
 
-  // 1. Stacked Line Chart (Revenue Trajectory)
   const stackedLineOption = {
     color: ['#0ea5e9'],
     tooltip: { ...commonTooltip, trigger: 'axis' },
@@ -243,17 +346,13 @@ export function AdminDashboardPage() {
         symbolSize: 6,
         lineStyle: { width: 2, color: '#0ea5e9' },
         areaStyle: {
-          color: {
-            type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
-            colorStops: [{ offset: 0, color: 'rgba(14,165,233,0.3)' }, { offset: 1, color: 'rgba(14,165,233,0)' }]
-          }
+          color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(14,165,233,0.3)' }, { offset: 1, color: 'rgba(14,165,233,0)' }] }
         },
         data: data?.revenueTrend?.datasets?.[0]?.data || []
       }
     ]
   };
 
-  // 2. Line Race (Customer Acquisition)
   const lineRaceOption = {
     animationDuration: 3000,
     color: ['#10b981'],
@@ -275,7 +374,6 @@ export function AdminDashboardPage() {
     ]
   };
 
-  // 3. Referer of a Website (Service Demand Pie Chart)
   const pieData = data?.globalServicePopularity?.labels?.map((label, i) => ({
     name: label,
     value: data.globalServicePopularity.datasets[0].data[i]
@@ -298,14 +396,8 @@ export function AdminDashboardPage() {
     ]
   };
 
-  // 4. Basic Radar Chart (Salon Ratings)
-  const radarIndicator = data?.salonRatingDistribution?.map(rating => ({
-    name: rating.salonName,
-    max: 5
-  })) || [{ name: 'N/A', max: 5 }];
-
+  const radarIndicator = data?.salonRatingDistribution?.map(rating => ({ name: rating.salonName, max: 5 })) || [{ name: 'N/A', max: 5 }];
   const radarData = data?.salonRatingDistribution?.map(rating => rating.averageRating) || [0];
-
   const radarOption = {
     color: ['#6366f1'],
     tooltip: { ...commonTooltip, trigger: 'item' },
@@ -330,14 +422,10 @@ export function AdminDashboardPage() {
     ]
   };
 
-  // 5. Share Dataset (Campaign Effectiveness)
   const datasetSource = [['Promotion', 'Revenue', 'Discount']];
   if (data?.globalPromotionPerformance) {
-    data.globalPromotionPerformance.forEach(promo => {
-      datasetSource.push([promo.promotionName, promo.revenueGenerated, promo.discountGiven]);
-    });
+    data.globalPromotionPerformance.forEach(promo => { datasetSource.push([promo.promotionName, promo.revenueGenerated, promo.discountGiven]); });
   }
-
   const shareDatasetOption = {
     color: ['#0ea5e9', '#f59e0b'],
     legend: { top: 0, right: 0, textStyle: { color: TEXT_SECONDARY, fontSize: 11, fontFamily: 'monospace' }, icon: 'rect' },
@@ -346,50 +434,77 @@ export function AdminDashboardPage() {
     grid: { left: '2%', right: '2%', bottom: '3%', top: '15%', containLabel: true },
     xAxis: { type: 'category', axisLine: { lineStyle: { color: BORDER_COLOR } }, axisLabel: commonAxisLabel },
     yAxis: { axisLabel: { ...commonAxisLabel, formatter: (value) => `${(value / 1000).toLocaleString("vi-VN")}k ₫` }, splitLine: commonSplitLine },
-    series: [
-      { type: 'bar', barWidth: 16 },
-      { type: 'bar', barWidth: 16 }
-    ]
+    series: [{ type: 'bar', barWidth: 16 }, { type: 'bar', barWidth: 16 }]
   };
 
-  // 6. Top Performing Salons (Horizontal Bar)
   const topSalonsOption = {
     color: ['#14b8a6'],
     tooltip: { ...commonTooltip, trigger: 'axis', axisPointer: { type: 'shadow' } },
     grid: { left: '2%', right: '6%', bottom: '3%', top: '10%', containLabel: true },
     xAxis: { type: 'value', axisLine: { lineStyle: { color: BORDER_COLOR } }, axisLabel: { ...commonAxisLabel, formatter: (val) => `${(val / 1000).toLocaleString("vi-VN")}k ₫` }, splitLine: commonSplitLine },
     yAxis: { type: 'category', data: topSalonsData.map(d => d.name), axisLine: { lineStyle: { color: BORDER_COLOR } }, axisLabel: commonAxisLabel },
-    series: [
-      {
-        name: 'Revenue',
-        type: 'bar',
-        data: topSalonsData.map(d => d.value),
-        barWidth: 12,
-        itemStyle: { color: '#14b8a6' }
-      }
-    ]
+    series: [{ name: 'Revenue', type: 'bar', data: topSalonsData.map(d => d.value), barWidth: 12, itemStyle: { color: '#14b8a6' } }]
   };
 
+  const renderWidgetContent = (id, isPinned) => {
+    const chartHeight = isPinned ? '400px' : '300px';
+    switch (id) {
+      case 'globalServicePopularity': return <ReactECharts option={refererPieOption} style={{ height: chartHeight, width: '100%' }} />;
+      case 'salonRatingDistribution': return <ReactECharts option={radarOption} style={{ height: chartHeight, width: '100%' }} />;
+      case 'revenueTrend': return <ReactECharts option={stackedLineOption} style={{ height: chartHeight, width: '100%' }} />;
+      case 'userGrowth': return <ReactECharts option={lineRaceOption} style={{ height: chartHeight, width: '100%' }} />;
+      case 'globalPromotionPerformance': return <ReactECharts option={shareDatasetOption} style={{ height: chartHeight, width: '100%' }} />;
+      case 'topPerformingSalons': return <ReactECharts option={topSalonsOption} style={{ height: chartHeight, width: '100%' }} />;
+      case 'rankedSalons':
+        return (
+          <div className={`flex-1 overflow-auto -mx-2 ${isPinned ? 'max-h-[400px]' : 'max-h-[300px]'}`}>
+            <Table
+              rowKey="id"
+              columns={salonPerformanceColumns}
+              dataSource={salonPerformanceRows}
+              pagination={false}
+              size="small"
+              className="custom-admin-table h-full [&_.ant-table]:!bg-transparent [&_.ant-table-thead_th]:!bg-slate-100 [&_.ant-table-thead_th]:!border-b [&_.ant-table-thead_th]:!border-slate-200 [&_.ant-table-thead_th]:!text-slate-500 [&_.ant-table-thead_th]:!font-bold [&_.ant-table-thead_th]:!text-[10px] [&_.ant-table-thead_th]:!tracking-widest [&_.ant-table-tbody_tr>td]:!border-b [&_.ant-table-tbody_tr>td]:!border-slate-100 [&_.ant-table-tbody_tr:hover>td]:!bg-slate-50 transition-colors rounded-none"
+            />
+          </div>
+        );
+      default: return null;
+    }
+  };
+
+  const hiddenWidgets = widgets.filter(w => !w.visible);
+  const layoutMenuProps = {
+    items: [
+      ...hiddenWidgets.map((w) => ({
+        key: `restore-${w.id}`,
+        label: `Show ${w.title}`,
+        icon: <Eye size={16} />,
+        onClick: () => toggleHide(w.id),
+      })),
+      hiddenWidgets.length > 0 ? { type: 'divider' } : null,
+      { key: 'reset', label: 'Reset Layout', icon: <RotateCcw size={16} />, onClick: resetLayout, danger: true }
+    ].filter(Boolean),
+  };
+
+  const pinnedWidgets = widgets.filter(w => w.pinned && w.visible);
+  const unpinnedWidgets = widgets.filter(w => !w.pinned && w.visible);
+
   return (
-    <section className="
-min-h-full
-bg-[#fff9fb]
-bg-[radial-gradient(circle_at_top_right,rgba(255,227,160,.35),transparent_35%),radial-gradient(circle_at_bottom_left,rgba(255,193,220,.22),transparent_35%),linear-gradient(to_right,#f7dbe7_1px,transparent_1px),linear-gradient(to_bottom,#f7dbe7_1px,transparent_1px)]
-bg-[size:auto,auto,24px_24px,24px_24px]
-p-6 lg:p-8
-font-sans
-">
+    <section className="min-h-full bg-[#fff9fb] bg-[radial-gradient(circle_at_top_right,rgba(255,227,160,.35),transparent_35%),radial-gradient(circle_at_bottom_left,rgba(255,193,220,.22),transparent_35%),linear-gradient(to_right,#f7dbe7_1px,transparent_1px),linear-gradient(to_bottom,#f7dbe7_1px,transparent_1px)] p-6 lg:p-8 font-sans">
       <div className="mx-auto max-w-[1600px] space-y-6">
 
         {/* Header Section */}
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between mb-8">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between mb-8 z-10 sticky top-0 bg-[#fff9fb]/80 backdrop-blur-md p-4 -mx-4 rounded-xl border border-slate-200 shadow-sm">
           <div>
-            <h1 className="text-2xl font-bold tracking-widest text-slate-900 uppercase">
-              System Dashboard
-            </h1>
+            <h1 className="text-2xl font-bold tracking-widest text-slate-900 uppercase">System Dashboard</h1>
             <p className="text-xs font-mono text-slate-500 uppercase tracking-widest mt-1">Data Telemetry & Monitoring</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            <Dropdown menu={layoutMenuProps} trigger={['click']} placement="bottomRight">
+              <Button icon={<Settings2 size={16} className="text-slate-500"/>} className="border-slate-200 font-mono text-xs rounded-none bg-white h-[32px] hover:border-slate-800">
+                Customize
+              </Button>
+            </Dropdown>
             <div className="bg-white border border-slate-200">
               <Segmented
                 options={['Day', 'Week', 'Month', 'Year']}
@@ -424,72 +539,31 @@ font-sans
           ))}
         </div>
 
-        {/* Charts Row 1 */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Card className="h-[380px] flex flex-col">
-            <SectionHeading title="Global Service Popularity" subtitle="Referer dataset analysis" />
-            <div className="flex-1 w-full">
-              <ReactECharts option={refererPieOption} style={{ height: '100%', width: '100%' }} />
-            </div>
-          </Card>
-
-          <Card className="h-[380px] flex flex-col">
-            <SectionHeading title="Salon Rating Distribution" subtitle="Radar dimensional analysis" />
-            <div className="flex-1 w-full">
-              <ReactECharts option={radarOption} style={{ height: '100%', width: '100%' }} />
-            </div>
-          </Card>
-        </div>
-
-        {/* Charts Row 2 */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Card className="h-[380px] flex flex-col">
-            <SectionHeading title="Revenue Trend" subtitle="Stacked timeline series" />
-            <div className="flex-1 w-full">
-              <ReactECharts option={stackedLineOption} style={{ height: '100%', width: '100%' }} />
-            </div>
-          </Card>
-
-          <Card className="h-[380px] flex flex-col">
-            <SectionHeading title="User Growth" subtitle="Race tracking metrics" />
-            <div className="flex-1 w-full">
-              <ReactECharts option={lineRaceOption} style={{ height: '100%', width: '100%' }} />
-            </div>
-          </Card>
-        </div>
-
-        {/* Charts Row 3 */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Card className="h-[420px] flex flex-col">
-            <SectionHeading title="Global Promotion Performance" subtitle="Shared dataset comparative" />
-            <div className="flex-1 w-full">
-              <ReactECharts option={shareDatasetOption} style={{ height: '100%', width: '100%' }} />
-            </div>
-          </Card>
-
-          <Card className="h-[420px] flex flex-col">
-            <SectionHeading title="Top Performing Salons" subtitle="Top performing salons by revenue" />
-            <div className="flex-1 w-full">
-              <ReactECharts option={topSalonsOption} style={{ height: '100%', width: '100%' }} />
-            </div>
-          </Card>
-        </div>
-
-        {/* Table Row */}
-        <Card className="overflow-hidden flex flex-col">
-          <SectionHeading title="Ranked Salons by Revenue" subtitle="Live active salon revenue" />
-          <div className="flex-1 overflow-auto -mx-2">
-            <Table
-              rowKey="id"
-              columns={salonPerformanceColumns}
-              dataSource={salonPerformanceRows}
-              pagination={false}
-              size="small"
-              className="custom-admin-table [&_.ant-table]:!bg-transparent [&_.ant-table-thead_th]:!bg-slate-100 [&_.ant-table-thead_th]:!border-b [&_.ant-table-thead_th]:!border-slate-200 [&_.ant-table-thead_th]:!text-slate-500 [&_.ant-table-thead_th]:!font-bold [&_.ant-table-thead_th]:!text-[10px] [&_.ant-table-thead_th]:!tracking-widest [&_.ant-table-tbody_tr>td]:!border-b [&_.ant-table-tbody_tr>td]:!border-slate-100 [&_.ant-table-tbody_tr:hover>td]:!bg-slate-50 transition-colors rounded-none"
-            />
+        {/* Pinned Widgets Section */}
+        {pinnedWidgets.length > 0 && (
+          <div className="flex flex-col gap-6">
+            {pinnedWidgets.map((widget) => (
+              <WidgetWrapper
+                key={widget.id} id={widget.id} widget={widget} isPinned={true}
+                onPin={togglePin} onHide={toggleHide} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnter={handleDragEnter} onDrop={handleDrop}
+              >
+                {renderWidgetContent(widget.id, true)}
+              </WidgetWrapper>
+            ))}
           </div>
-        </Card>
+        )}
 
+        {/* Unpinned Widgets Grid */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          {unpinnedWidgets.map((widget) => (
+            <WidgetWrapper
+              key={widget.id} id={widget.id} widget={widget} isPinned={false}
+              onPin={togglePin} onHide={toggleHide} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnter={handleDragEnter} onDrop={handleDrop}
+            >
+              {renderWidgetContent(widget.id, false)}
+            </WidgetWrapper>
+          ))}
+        </div>
       </div>
 
       {/* Detail Modal */}
@@ -501,22 +575,14 @@ font-sans
         width={400}
         centered
         destroyOnClose
-        styles={{
-          content: { padding: 0, borderRadius: 0, border: "1px solid #e2e8f0" },
-          mask: { backgroundColor: "rgba(241,245,249,0.8)" },
-        }}
+        styles={{ content: { padding: 0, borderRadius: 0, border: "1px solid #e2e8f0" }, mask: { backgroundColor: "rgba(241,245,249,0.8)" } }}
       >
         <div className="bg-white">
           <div className="border-b border-slate-200 px-6 py-4 flex items-center justify-between bg-slate-50">
             <div>
               <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest">Salon Details</h3>
-
             </div>
-            <button
-              type="button"
-              onClick={() => setSelectedSalonId(null)}
-              className="text-slate-400 hover:text-slate-800 transition-colors"
-            >
+            <button type="button" onClick={() => setSelectedSalonId(null)} className="text-slate-400 hover:text-slate-800 transition-colors">
               <X size={16} />
             </button>
           </div>
@@ -527,10 +593,8 @@ font-sans
               <div className="space-y-4">
                 {(() => {
                   const selectedRow = salonPerformanceRows.find(row => row.originalId === selectedSalonId);
-                  
                   const managerCount = managersList?.items?.filter(m => m.salonId === selectedSalonId)?.length || 0;
                   const staffCount = staffsList?.items?.filter(s => s.salonId === selectedSalonId)?.length || 0;
-                  
                   return [
                     { label: "NAME", value: salonDetails.name },
                     { label: "MANAGER", value: selectedRow?.manager },
@@ -551,10 +615,7 @@ font-sans
             ) : (
               <div className="text-center text-slate-500 text-sm py-4 font-mono">Failed to load data.</div>
             )}
-            <button
-              className="w-full mt-6 py-2 border border-slate-800 text-slate-800 font-bold text-[11px] uppercase tracking-widest hover:bg-slate-800 hover:text-white transition-colors"
-              onClick={() => setSelectedSalonId(null)}
-            >
+            <button className="w-full mt-6 py-2 border border-slate-800 text-slate-800 font-bold text-[11px] uppercase tracking-widest hover:bg-slate-800 hover:text-white transition-colors" onClick={() => setSelectedSalonId(null)}>
               CLOSE
             </button>
           </div>
