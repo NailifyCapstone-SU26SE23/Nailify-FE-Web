@@ -93,11 +93,22 @@ export const dashboardService = {
     return unwrapResponse(response, "Failed to load staffs");
   },
   getSalonStaffs: async (salonId) => {
-    const response = await axiosClient.get("/Users", {
-      params: { pageNumber: 1, pageSize: 100, role: "Staff_Artist", salonId },
+    const response = await axiosClient.get(`/Users/salon/${salonId}/staff`, {
+      params: { pageNumber: 1, pageSize: 100, role: "Staff_Artist" },
       headers: getAuthHeaders(),
     });
     return unwrapResponse(response, "Failed to load salon staffs");
+  },
+  getSalonStaffByRole: async (salonId, role) => {
+    const params = { pageNumber: 1, pageSize: 1 };
+    if (role) {
+      params.role = role;
+    }
+    const response = await axiosClient.get(`/Users/salon/${salonId}/staff`, {
+      params,
+      headers: getAuthHeaders(),
+    });
+    return response.data?.data || null;
   },
   getNailArtistDashboard: async (artistId, startDate, endDate) => {
     const params = {};
@@ -144,13 +155,20 @@ export const dashboardService = {
     return unwrapResponse(response, "Failed to load staff artists");
   },
   getArtistAvailableSlots: async (artistId, date) => {
-    const response = await axiosClient.get(`/Bookings/artist-available-slots`, {
-      params: {
-        NailArtistId: artistId,
-        BookingDate: date,
-      },
-      headers: getAuthHeaders(),
-    });
-    return unwrapResponse(response, "Failed to load artist slots");
+    try {
+      const response = await axiosClient.get(`/Bookings/artist-available-slots`, {
+        params: {
+          NailArtistId: artistId,
+          BookingDate: date,
+        },
+        headers: getAuthHeaders(),
+      });
+      return unwrapResponse(response, "Failed to load artist slots");
+    } catch (error) {
+      if (error.response?.data?.message === "Thợ nail không có lịch làm việc trong ngày này.") {
+        return { isOffToday: true };
+      }
+      throw error;
+    }
   },
 };

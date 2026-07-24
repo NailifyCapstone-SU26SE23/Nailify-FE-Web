@@ -62,6 +62,7 @@ export const ROUTES = {
   adminBookingsCreate: "/admin/bookings/create",
   adminBookingDetail: "/admin/bookings/:bookingId",
   adminSalons: "/admin/salons",
+  adminChairs: "/admin/chairs",
   adminSalonsCreate: "/admin/salons/create",
   adminSalonDetail: "/admin/salons/:salonId",
   adminSalonUpdate: "/admin/salons/:salonId/edit",
@@ -121,33 +122,53 @@ export const getStaffBookingDesignUpdateRoute = (bookingId) =>
   `/staff/bookings/${bookingId}/update-booking-design`;
 export const getStaffBookingServiceSessionRoute = (bookingId) =>
   `/staff/bookings/${bookingId}/service-session`;
+
 export const getReceptionistBookingDetailRoute = (bookingId) =>
   `/receptionist/bookings/${bookingId}`;
 export const getReceptionistBookingCheckoutRoute = (bookingId) =>
   `/receptionist/bookings/${bookingId}/checkout`;
+
 export const getManagerBookingDetailRoute = (bookingId) =>
   `/manager/bookings/${bookingId}`;
 export const getManagerStaffUpdateRoute = (staffId) =>
   `/manager/staff-artists/${staffId}`;
+
 export const getAdminBookingDetailRoute = (bookingId) =>
   `/admin/bookings/${bookingId}`;
-export const getAdminSalonDetailRoute = (salonId) => `/admin/salons/${salonId}`;
-export const getAdminSalonUpdateRoute = (salonId) => `/admin/salons/${salonId}/edit`;
-export const getAdminStaffUpdateRoute = (staffId) => `/admin/staff/${staffId}`;
-export const getAdminUserDetailRoute = (userId) => `/admin/users/${userId}`;
-export const getAdminLoyaltyTiersRoute = () => "/admin/loyalty-tiers";
-export const getAdminServicePricingRoute = () => "/admin/service-pricing";
-export const getAdminQuizRoute = () => "/admin/quiz";
-export const getAdminQuizCreateRoute = () => "/admin/quiz/create";
-export const getAdminNailShapeDetailRoute = (shapeId) => `/admin/nail-shapes/${shapeId}`;
-export const getAdminNailSurfaceDetailRoute = (surfaceId) => `/admin/nail-surfaces/${surfaceId}`;
-export const getAdminComponentDetailRoute = (componentId) => `/admin/components/${componentId}`;
-export const getAdminProcedureDetailRoute = (procedureId) => `/admin/procedures/${procedureId}`;
-export const getAdminCategoryTypeDetailRoute = (categoryTypeId) => `/admin/category-types/${categoryTypeId}`;
-export const getAdminSkillTypeDetailRoute = (skillTypeId) => `/admin/skill-types/${skillTypeId}`;
-export const getAdminCategoryDetailRoute = (categoryId) => `/admin/categories/${categoryId}`;
-export const getAdminPromotionDetailRoute = (promotionId) => `/admin/promotions/${promotionId}`;
-export const getAdminNailDesignCategoriesRoute = () => "/admin/nail-designs/categories";
+export const getAdminSalonDetailRoute = (salonId) =>
+  `/admin/salons/${salonId}`;
+export const getAdminSalonUpdateRoute = (salonId) =>
+  `/admin/salons/${salonId}/edit`;
+export const getAdminStaffUpdateRoute = (staffId) =>
+  `/admin/staff/${staffId}`;
+export const getAdminUserDetailRoute = (userId) =>
+  `/admin/users/${userId}`;
+export const getAdminLoyaltyTiersRoute = () =>
+  "/admin/loyalty-tiers";
+export const getAdminServicePricingRoute = () =>
+  "/admin/service-pricing";
+export const getAdminQuizRoute = () =>
+  "/admin/quiz";
+export const getAdminQuizCreateRoute = () =>
+  "/admin/quiz/create";
+export const getAdminNailShapeDetailRoute = (shapeId) =>
+  `/admin/nail-shapes/${shapeId}`;
+export const getAdminNailSurfaceDetailRoute = (surfaceId) =>
+  `/admin/nail-surfaces/${surfaceId}`;
+export const getAdminComponentDetailRoute = (componentId) =>
+  `/admin/components/${componentId}`;
+export const getAdminProcedureDetailRoute = (procedureId) =>
+  `/admin/procedures/${procedureId}`;
+export const getAdminCategoryTypeDetailRoute = (categoryTypeId) =>
+  `/admin/category-types/${categoryTypeId}`;
+export const getAdminSkillTypeDetailRoute = (skillTypeId) =>
+  `/admin/skill-types/${skillTypeId}`;
+export const getAdminCategoryDetailRoute = (categoryId) =>
+  `/admin/categories/${categoryId}`;
+export const getAdminPromotionDetailRoute = (promotionId) =>
+  `/admin/promotions/${promotionId}`;
+export const getAdminNailDesignCategoriesRoute = () =>
+  "/admin/nail-designs/categories";
 export const getAdminNailDesignDetailRoute = (designId) =>
   `/admin/nail-designs/${designId}`;
 export const getAdminNailVariantDetailRoute = (designId, variantId) =>
