@@ -29,9 +29,14 @@ import { RejectBookingModal } from "../components/RejectBookingModal";
 import { CancelBookingModal } from "../components/CancelBookingModal";
 import { Pagination } from "../../../../shared/components/common/Pagination";
 
+import { loadAuthSession } from "../../../core/auth/model/authStorage";
+
 const roleConfig = BOOKING_ROLE_CONFIG[ROLES.manager];
-const DEFAULT_SALON_ID = "484c3aef-3ae1-4ad6-8aba-6b0bc6df586d";
 const BOOKING_PAGE_SIZE = 10;
+const getManagerSalonId = () => {
+  const session = loadAuthSession();
+  return session?.user?.salonId || session?.salonId;
+};
 
 const ACCENT_COLOR = "#ea4f93";
 const NEUTRAL_BASE = "#f9fafb";
@@ -255,17 +260,17 @@ function matchesFilter(status, filter) {
 function getQrCodeSrc(qrCode) {
   if (!qrCode) return null;
   const trimmed = String(qrCode).trim();
-  
+
   // If it's already a data URL, use as-is
   if (trimmed.startsWith("data:")) {
     return trimmed;
   }
-  
+
   // If it's a URL (starts with http/https), use as-is
   if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
     return trimmed;
   }
-  
+
   // If it's a valid base64 string (without prefix), add data URL prefix
   // Try to detect if it's base64 (length > 0, no spaces, valid characters)
   if (/^[A-Za-z0-9+/=]+$/.test(trimmed) && trimmed.length > 50) {
@@ -273,7 +278,7 @@ function getQrCodeSrc(qrCode) {
     // For simplicity, default to PNG, which is common for QR codes
     return `data:image/png;base64,${trimmed}`;
   }
-  
+
   // If none of the above, return it as-is (maybe it's a relative URL or other format)
   return trimmed;
 }
@@ -475,7 +480,9 @@ export function ManagerBookingListPage() {
     setIsLoading(true);
     setError("");
     try {
-      const result = await fetchBookingsBySalonId(DEFAULT_SALON_ID, { pageNumber: 1, pageSize: 1000 });
+      const salonId = getManagerSalonId();
+      if (!salonId) throw new Error("No salon ID found in session.");
+      const result = await fetchBookingsBySalonId(salonId, { pageNumber: 1, pageSize: 1000 });
       let apiBookings = [];
       if (result?.items) apiBookings = result.items;
       else if (Array.isArray(result)) apiBookings = result;
@@ -497,7 +504,7 @@ export function ManagerBookingListPage() {
         });
 
       const customerResults = await Promise.all(customerPromises);
-      
+
       // Update bookings with customer phone numbers
       uiBookings = uiBookings.map(booking => {
         const customerResult = customerResults.find(r => r.bookingId === booking.id);
@@ -818,11 +825,10 @@ export function ManagerBookingListPage() {
                               whileHover={{ scale: 1.02 }}
                               whileTap={{ scale: 0.98 }}
                               onClick={() => setActiveFilter(filter.value)}
-                              className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-semibold transition-all duration-300 ${
-                                isActive
+                              className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-semibold transition-all duration-300 ${isActive
                                   ? "border-[#ea4f93] bg-[#ea4f93] text-white shadow-[0_10px_20px_rgba(234,79,147,0.22)]"
                                   : "border-[#f3d7e4] bg-white text-[#7f6478] hover:border-[#f0b7cf] hover:bg-[#fff7fb] hover:text-[#ea4f93]"
-                              }`}
+                                }`}
                             >
                               <span>{filter.label}</span>
                               <span className={isActive ? "rounded-full bg-white/20 px-2 py-0.5 text-[11px]" : "rounded-full bg-[#fff0f6] px-2 py-0.5 text-[11px] text-[#c86d98]"}>
@@ -863,11 +869,10 @@ export function ManagerBookingListPage() {
                             whileTap={query.trim() || selectedDate || activeFilter !== "All" ? { scale: 0.98 } : {}}
                             onClick={handleResetFilters}
                             disabled={!query.trim() && !selectedDate && activeFilter === "All"}
-                            className={`h-11 rounded-2xl border px-4 text-sm font-semibold transition-all duration-300 ${
-                              query.trim() || selectedDate || activeFilter !== "All"
+                            className={`h-11 rounded-2xl border px-4 text-sm font-semibold transition-all duration-300 ${query.trim() || selectedDate || activeFilter !== "All"
                                 ? "border-[#f3d7e4] bg-white text-[#ea4f93] hover:border-[#ea4f93] hover:bg-[#fff5fa]"
                                 : "border-[#f5e8ef] bg-[#fffafb] text-[#d6b9c8] cursor-not-allowed"
-                            }`}
+                              }`}
                           >
                             Reset
                           </motion.button>
@@ -980,16 +985,16 @@ export function ManagerBookingListPage() {
                                     (row.nailArtistId || row.staffId || row.staffArtistId || row.artistId) &&
                                     (row.status === "CheckedIn" || row.status === "Checked In")
                                   ) && (!isFinalStatus(row.status) || row.status === "Approved") && (
-                                    <motion.button
-                                      whileHover={{ scale: 1.05 }}
-                                      whileTap={{ scale: 0.95 }}
-                                      onClick={() => { setSelectedBookingForAssign(row); setIsAssignArtistModalOpen(true); }}
-                                      className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#e7ecff] text-[#4755b8] transition-all duration-300 ease-out hover:bg-[#4755b8] hover:text-white"
-                                      title="Assign"
-                                    >
-                                      <UserCheck size={13} />
-                                    </motion.button>
-                                  )}
+                                      <motion.button
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={() => { setSelectedBookingForAssign(row); setIsAssignArtistModalOpen(true); }}
+                                        className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#e7ecff] text-[#4755b8] transition-all duration-300 ease-out hover:bg-[#4755b8] hover:text-white"
+                                        title="Assign"
+                                      >
+                                        <UserCheck size={13} />
+                                      </motion.button>
+                                    )}
                                   {!isFinalStatus(row.status) && !(row.status === "CheckedIn" || row.status === "Checked In" || row.status === "InProgress" || row.status === "In Progress") && (
                                     <>
                                       <motion.button
@@ -1071,11 +1076,10 @@ export function ManagerBookingListPage() {
                   <button
                     key={tf.value}
                     onClick={() => setSelectedTimeFilter(tf.value)}
-                    className={`flex-1 rounded-[12px] px-3 py-2 text-[11px] font-semibold transition-all ${
-                      selectedTimeFilter === tf.value
+                    className={`flex-1 rounded-[12px] px-3 py-2 text-[11px] font-semibold transition-all ${selectedTimeFilter === tf.value
                         ? "bg-white text-[#ea4f93] shadow-sm"
                         : "text-[#8b7382] hover:text-[#5b4256]"
-                    }`}
+                      }`}
                   >
                     {tf.label}
                   </button>
@@ -1091,13 +1095,13 @@ export function ManagerBookingListPage() {
                     <div className="space-y-3">
                       {(() => {
                         const currentFilter = timeFilters.find((tf) => tf.value === selectedTimeFilter) || timeFilters[0];
-                        
+
                         // Get bookings for this time filter
                         const filteredBookings = scheduleDateBookings.filter(b => {
                           const startHour = parseInt(b.startTime?.split(':')[0] || '0');
                           return startHour >= currentFilter.startHour && startHour < currentFilter.endHour;
                         });
-                        
+
                         // Group bookings by hour
                         const bookingsByHour = {};
                         filteredBookings.forEach(b => {
@@ -1105,15 +1109,15 @@ export function ManagerBookingListPage() {
                           if (!bookingsByHour[startHour]) bookingsByHour[startHour] = [];
                           bookingsByHour[startHour].push(b);
                         });
-                        
+
                         const hours = [];
                         for (let h = currentFilter.startHour; h < currentFilter.endHour; h++) {
                           hours.push(h);
                         }
-                        
+
                         return hours.map((hour, idx) => {
                           const bookingsAtHour = bookingsByHour[hour] || [];
-                          
+
                           if (bookingsAtHour.length === 0) {
                             return (
                               <div key={hour} className="group flex items-start gap-3">
@@ -1129,12 +1133,12 @@ export function ManagerBookingListPage() {
                               </div>
                             );
                           }
-                          
+
                           const isExpanded = expandedHours.has(hour);
                           const MAX_BOOKINGS = 3;
                           const hasMoreBookings = bookingsAtHour.length > MAX_BOOKINGS;
                           const visibleBookings = isExpanded ? bookingsAtHour : bookingsAtHour.slice(0, MAX_BOOKINGS);
-                          
+
                           return (
                             <div key={hour} className="group flex items-start gap-3">
                               <div className="mt-1 h-1.5 w-1.5 rounded-full bg-[#e2ccd9]" />
@@ -1147,7 +1151,7 @@ export function ManagerBookingListPage() {
                                   const palette = scheduleColorPalette[colorIndex];
                                   const artistName = getArtistDisplayName(b);
                                   const artistInitials = artistName === "Unassigned" ? "--" : artistName.split(" ").map(p => p[0]).join("");
-                                  
+
                                   return (
                                     <div
                                       key={b.id}
@@ -1227,7 +1231,7 @@ export function ManagerBookingListPage() {
           open={isAssignArtistModalOpen}
           onClose={() => { setIsAssignArtistModalOpen(false); setSelectedBookingForAssign(null); }}
           bookingId={String(selectedBookingForAssign.id)}
-          salonId={selectedBookingForAssign.salonId ? String(selectedBookingForAssign.salonId) : DEFAULT_SALON_ID}
+          salonId={selectedBookingForAssign.salonId ? String(selectedBookingForAssign.salonId) : getManagerSalonId()}
           booking={selectedBookingForAssign}
           onSuccess={() => loadBookings()}
         />
@@ -1404,7 +1408,7 @@ export function ManagerBookingListPage() {
         open={isQrExpanded}
         onCancel={() => setIsQrExpanded(false)}
         footer={null}
-        closable={false} 
+        closable={false}
         centered
         width={400}
         styles={{ content: { padding: 0, borderRadius: 28, overflow: "hidden" }, mask: { backdropFilter: "blur(4px)" } }}

@@ -17,6 +17,7 @@ import { SalonManagementPage } from "../../features/admin/salon-management/pages
 import { SalonCreatePage } from "../../features/admin/salon-management/pages/SalonCreatePage";
 import { SalonDetailPage } from "../../features/admin/salon-management/pages/SalonDetailPage";
 import { SalonUpdatePage } from "../../features/admin/salon-management/pages/SalonUpdatePage";
+import ChairManagementPage from "../../features/admin/chair-management/pages/ChairManagementPage";
 import { StaffManagementPage } from "../../features/admin/staff-management/pages/StaffManagementPage";
 import { StaffCreatePage } from "../../features/admin/staff-management/pages/StaffCreatePage";
 import { StaffUpdatePage } from "../../features/admin/staff-management/pages/StaffUpdatePage";
@@ -87,6 +88,10 @@ export const adminRoutes = [
       {
         path: ROUTES.adminSalons,
         element: <SalonManagementPage />,
+      },
+      {
+        path: ROUTES.adminChairs,
+        element: <ChairManagementPage />,
       },
       {
         path: ROUTES.adminTransactions,
