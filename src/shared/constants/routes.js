@@ -62,6 +62,7 @@ export const ROUTES = {
   adminBookingsCreate: "/admin/bookings/create",
   adminBookingDetail: "/admin/bookings/:bookingId",
   adminSalons: "/admin/salons",
+  adminChairs: "/admin/chairs",
   adminSalonsCreate: "/admin/salons/create",
   adminSalonDetail: "/admin/salons/:salonId",
   adminSalonUpdate: "/admin/salons/:salonId/edit",

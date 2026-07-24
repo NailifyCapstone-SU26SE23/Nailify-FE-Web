@@ -189,6 +189,13 @@ function getStatusTone(status) {
 function MetricCard({ item }) {
   const Icon = item.icon;
   const color = item.color || '#10b981';
+  
+  // Safely extract string from value/note in case backend returns an object
+  const safeStr = (val) => {
+    if (val === null || val === undefined) return '';
+    if (typeof val === 'object') return val.customerName || JSON.stringify(val);
+    return String(val);
+  };
 
   return (
     <div
@@ -206,9 +213,9 @@ function MetricCard({ item }) {
             {item.label}
           </p>
           <h2 className="mt-3 text-[24px] font-black tracking-tight text-slate-800 leading-none break-all">
-            {item.value} <span className="text-[14px] text-slate-400 font-semibold">{item.unit || ''}</span>
+            {safeStr(item.value)} <span className="text-[14px] text-slate-400 font-semibold">{item.unit || ''}</span>
           </h2>
-          <p className="mt-1 text-[11px] font-medium text-slate-400">{item.note}</p>
+          <p className="mt-1 text-[11px] font-medium text-slate-400">{safeStr(item.note)}</p>
         </div>
         <div
           className="flex h-12 w-12 items-center justify-center rounded-2xl shadow-sm shrink-0 ml-2"

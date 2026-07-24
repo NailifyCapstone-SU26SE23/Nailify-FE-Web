@@ -86,6 +86,15 @@ export const useSalonStaffs = (salonId) => {
   });
 };
 
+export const useSalonStaffByRole = (salonId, role) => {
+  return useQuery({
+    queryKey: ["salonStaffByRole", salonId, role],
+    queryFn: () => dashboardService.getSalonStaffByRole(salonId, role),
+    enabled: !!salonId,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
 export const useNailArtistDashboard = (artistId, startDate, endDate) => {
   return useQuery({
     queryKey: ["nailArtistDashboard", artistId, startDate, endDate],

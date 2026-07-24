@@ -26,10 +26,11 @@ function unwrapResponse(response, fallbackMessage) {
   return payload.data;
 }
 
-export async function fetchSalons() {
+export async function fetchSalons(params = {}) {
   try {
     const response = await axiosClient.get(`/Salons`, {
       headers: getAuthHeaders(),
+      params,
     });
 
     return unwrapResponse(response, "Failed to load salons.");

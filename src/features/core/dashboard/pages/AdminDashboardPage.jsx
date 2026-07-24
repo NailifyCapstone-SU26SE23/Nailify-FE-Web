@@ -19,7 +19,7 @@ import {
 import { Modal, Table, Spin, Alert, DatePicker, Segmented, Dropdown, Button } from "antd";
 import dayjs from "dayjs";
 import { useMemo, useState, useEffect } from "react";
-import { useAdminDashboard, useSalonDetails, useManagersList, useSalonsList, useStaffsList } from "../hooks/useAdminDashboard";
+import { useAdminDashboard, useSalonDetails, useManagersList, useSalonsList, useStaffsList, useSalonStaffByRole } from "../hooks/useAdminDashboard";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import ReactECharts from "echarts-for-react";
 
@@ -153,6 +153,10 @@ export function AdminDashboardPage() {
   const { data: managersList } = useManagersList();
   const { data: salonsList } = useSalonsList();
   const { data: staffsList } = useStaffsList();
+
+  const { data: salonManagers } = useSalonStaffByRole(selectedSalonId, "Manager");
+  const { data: salonReceptionists } = useSalonStaffByRole(selectedSalonId, "Receptionist");
+  const { data: salonStaffArtists } = useSalonStaffByRole(selectedSalonId, "Staff_Artist");
 
   const handleFilterModeChange = (mode) => {
     setFilterMode(mode);
@@ -693,12 +697,14 @@ export function AdminDashboardPage() {
               <div className="space-y-4">
                 {(() => {
                   const selectedRow = salonPerformanceRows.find(row => row.originalId === selectedSalonId);
-                  const managerCount = managersList?.items?.filter(m => m.salonId === selectedSalonId)?.length || 0;
-                  const staffCount = staffsList?.items?.filter(s => s.salonId === selectedSalonId)?.length || 0;
+                  const managerCount = salonManagers?.metaData?.totalItems || 0;
+                  const receptionistCount = salonReceptionists?.metaData?.totalItems || 0;
+                  const staffCount = salonStaffArtists?.metaData?.totalItems || 0;
                   return [
                     { label: "NAME", value: salonDetails.name },
                     { label: "MANAGER", value: selectedRow?.manager },
                     { label: "MANAGERS COUNT", value: managerCount },
+                    { label: "RECEPTIONISTS COUNT", value: receptionistCount },
                     { label: "STAFF COUNT", value: staffCount },
                     { label: "REVENUE", value: selectedRow ? `${(selectedRow.revenue || 0).toLocaleString("vi-VN")} ₫` : "0 ₫" },
                     { label: "STATUS", value: salonDetails.status },
