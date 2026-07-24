@@ -18,6 +18,16 @@ import {
   HelpCircle,
   Wallet,
   Clock3,
+  Armchair,
+  Scissors,
+  Shapes,
+  Layers,
+  Puzzle,
+  ClipboardList,
+  Tags,
+  Wand2,
+  FolderTree,
+  Gift,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { PropTypes } from "../../utils/propTypes";
@@ -37,6 +47,16 @@ const ICON_MAP = {
   quiz: HelpCircle,
   wallet: Wallet,
   clock: Clock3,
+  armchair: Armchair,
+  scissors: Scissors,
+  shapes: Shapes,
+  layers: Layers,
+  puzzle: Puzzle,
+  "clipboard-list": ClipboardList,
+  tags: Tags,
+  wand2: Wand2,
+  "folder-tree": FolderTree,
+  gift: Gift,
 };
 
 function SidebarItem({ item, collapsed }) {

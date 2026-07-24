@@ -15,6 +15,8 @@ import {
   Users,
   AlertCircle,
   ClipboardList,
+  Armchair,
+  Activity,
 } from "lucide-react";
 import { Modal, Table } from "antd";
 import jsQR from "jsqr";
@@ -23,6 +25,7 @@ import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/hooks/useAuth";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
+import ChairMap from "../../../../shared/components/ui/ChairMap";
 import { usePagination } from "../../../../shared/hooks/usePagination";
 import {
   ROUTES,
@@ -115,7 +118,7 @@ function normalizeAppointmentRow(booking, index) {
     id: booking.bookingId,
     bookingId: booking.bookingId,
     time: formatTimeLabel(booking.startTime, booking.totalDuration),
-    customer: booking.customerName || "--",
+    customer: typeof booking.customerName === 'object' ? booking.customerName?.customerName || "--" : (booking.customerName || "--"),
     service:
       booking.bookingItems?.map((item) => item.serviceName).filter(Boolean).join(", ") || "--",
     staff: booking.artistName || "--",
@@ -156,23 +159,44 @@ function SectionTitle({ icon: Icon, title, action }) {
 }
 
 function MetricCard({ item }) {
-  const Icon = item.icon;
+  const Icon = item.icon || Activity;
+  const color = item.color || '#10b981';
 
   return (
-    <DashboardCard className="p-4">
-      <div className="flex items-center gap-3">
-        <div
-          className={`flex h-11 w-11 items-center justify-center rounded-[14px] ${item.iconClassName}`}
-        >
-          <Icon size={18} />
-        </div>
+    <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+      <div
+        className="absolute inset-0 opacity-[0.06]"
+        style={{
+          background: `linear-gradient(135deg, ${color}, transparent 75%)`,
+        }}
+      />
+      <div className="relative flex items-start justify-between">
         <div>
-          <p className="text-[1.7rem] font-black leading-none text-[#432744]">{item.value}</p>
-          <p className="mt-1 text-xs text-[#8e7a87]">{item.label}</p>
-          <p className={`mt-1 text-[11px] font-semibold ${item.noteClassName}`}>{item.note}</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            {item.label}
+          </p>
+          <h2 className="mt-3 text-[24px] font-black tracking-tight text-slate-800 leading-none break-all">
+            {item.value} <span className="text-[14px] text-slate-400 font-semibold">{item.unit !== "VND" ? "" : "₫"}</span>
+          </h2>
+          <p className="mt-2 text-[11px] font-semibold text-slate-500">{item.note}</p>
+        </div>
+        <div
+          className="flex h-12 w-12 items-center justify-center rounded-2xl shadow-sm shrink-0 ml-2"
+          style={{
+            backgroundColor: `${color}18`,
+            color: color,
+          }}
+        >
+          <Icon size={24} strokeWidth={2.4} />
         </div>
       </div>
-    </DashboardCard>
+      <div
+        className="mt-6 h-1.5 rounded-full"
+        style={{
+          background: `linear-gradient(to right, ${color}, transparent)`,
+        }}
+      />
+    </div>
   );
 }
 
@@ -611,32 +635,28 @@ export function ReceptionistDashboardPage() {
       value: String(dashboardData.currentWalkInQueueSize || "0"),
       note: `Clear in ${dashboardData.estimatedTimeToClearQueueMins || 0}m`,
       icon: UserRound,
-      iconClassName: "bg-[#ffeaf4] text-[#ef4f92]",
-      noteClassName: "text-[#33b46e]",
+      color: "#ef4f92",
     },
     {
       label: "Appointments Left",
       value: String(dashboardData.remainingAppointmentsToday || "0"),
       note: "Today",
       icon: CalendarClock,
-      iconClassName: "bg-[#f1eaff] text-[#8d54ef]",
-      noteClassName: "text-[#33b46e]",
+      color: "#8d54ef",
     },
     {
       label: "Waitlist Size",
       value: String(dashboardData.currentWaitlistSize || "0"),
       note: `Avg wait ${dashboardData.averageWaitTimeMinutes || 0}m`,
       icon: Clock3,
-      iconClassName: "bg-[#fff0ea] text-[#ff7a3d]",
-      noteClassName: "text-[#ff7a3d]",
+      color: "#ff7a3d",
     },
     {
       label: "Staff On Duty",
       value: (dashboardData.staffOnDutyText || "").split(" ")[0] || "0",
       note: dashboardData.staffOnDutyText || "0 artists",
       icon: Users,
-      iconClassName: "bg-[#e8fbf5] text-[#1da989]",
-      noteClassName: "text-[#33b46e]",
+      color: "#1da989",
     },
   ] : [];
 
@@ -649,7 +669,11 @@ export function ReceptionistDashboardPage() {
   ] : [];
 
   const activeWaitlistItems = waitlistData?.items || dashboardData?.liveWaitlist || [];
-  const displayQueue = activeWaitlistItems.map(w => [w.customerName || "Walk-in", `Pos: ${w.position}`, `${w.estimatedDuration || w.estimatedWait || 0}m`]);
+  const displayQueue = activeWaitlistItems.map(w => [
+    typeof w.customerName === 'object' ? w.customerName?.customerName || "Walk-in" : (w.customerName || "Walk-in"), 
+    `Pos: ${w.position}`, 
+    `${w.estimatedDuration || w.estimatedWait || 0}m`
+  ]);
 
   const displayStaff = activeStaffItems.map((c, idx) => {
     const name = c.firstName ? `${c.firstName} ${c.lastName}` : (c.name || "Chair");
@@ -678,13 +702,16 @@ export function ReceptionistDashboardPage() {
   });
 
   const displayArrivals = dashboardData?.upcomingArrivals?.length ?
-    dashboardData.upcomingArrivals.map((u, idx) => [
-      u.customerName || "Customer",
-      u.assignedArtistName || "--",
-      new Date(u.arrivalTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + " | Upcoming",
-      getInitials(u.customerName || "C"),
-      getAvatarTone(idx)
-    ]) : [];
+    dashboardData.upcomingArrivals.map((u, idx) => {
+      const cName = typeof u.customerName === 'object' ? u.customerName?.customerName || 'Customer' : (u.customerName || 'Customer');
+      return [
+        cName,
+        u.assignedArtistName || "--",
+        new Date(u.arrivalTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + " | Upcoming",
+        getInitials(cName),
+        getAvatarTone(idx)
+      ];
+    }) : [];
 
   const displayWalkInQueue = walkInQueueData || dashboardData?.liveWalkInQueue || [];
   const displayMasterSchedule = dashboardData?.masterSalonSchedule || [];
@@ -693,239 +720,252 @@ export function ReceptionistDashboardPage() {
 
 
   return (
-    <section className="flex min-h-full w-full min-w-0 flex-col gap-5 overflow-x-hidden p-2 sm:p-4">
-      <div className="flex w-full min-w-0 flex-col gap-4">
-        <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0">
-            <p className="text-lg font-black text-[#ea4f93]">
-              Good Morning, {greetingName}
-              <span className="ml-1 text-[#f49fc2]">*</span>
-            </p>
-            <p className="mt-1 break-words text-xs text-[#bc8ca2]">
-              Saturday, July 12, 2025 | Salon opens at 9:00 AM
-            </p>
-          </div>
-        </div>
-        <div className="grid w-full min-w-0 gap-4 xl:grid-cols-[minmax(0,1.72fr)_280px]">
-          <div className="min-w-0 space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {displayMetrics.map((item) => (
-                <MetricCard key={item.label} item={item} />
-              ))}
-            </div>
-
-            <DashboardCard>
-              <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between mb-4">
-                <SectionTitle icon={CalendarClock} title="Today's Appointments" />
-                <div className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] xl:w-auto xl:min-w-[720px]">
-                  <label className="flex h-11 min-w-0 items-center gap-2 rounded-full border border-[#f4d6e2] bg-white px-4 text-sm text-[#c59bb0] sm:min-w-[0] xl:min-w-[380px]">
-                    <Search size={16} className="text-[#3f2f39]" />
-                    <input
-                      type="text"
-                      value={appointmentQuery}
-                      onChange={(event) => setAppointmentQuery(event.target.value)}
-                      placeholder="Search customer by phone number, name, ..."
-                      className="w-full bg-transparent text-sm text-[#5c4557] outline-none placeholder:text-[#c7a0b2]"
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setIsScannerOpen(true)}
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-[#e7dcff] bg-white px-4 text-sm font-bold text-[#7a57d9] shadow-[0_10px_24px_rgba(122,87,217,0.1)] whitespace-nowrap sm:min-w-[140px]"
-                  >
-                    <UserCheck size={15} />
-                    Check-in
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => navigate(ROUTES.receptionistQueue)}
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-[#f3cfe0] bg-[#fff3f8] px-4 text-sm font-bold text-[#eb5a98] whitespace-nowrap sm:min-w-[170px]"
-                  >
-                    <Plus size={15} />
-                    Create Walk-In
-                  </button>
-                </div>
+    <section className="flex min-h-screen flex-col bg-slate-50 text-slate-800 font-sans">
+      <div className="mx-auto w-full space-y-6 p-4 md:p-8
+                      bg-[#fff9fb]
+                      bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.55),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.35),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.45),transparent_35%),linear-gradient(to_right,#f3c7db_1px,transparent_1px),linear-gradient(to_bottom,#f3c7db_1px,transparent_1px)]
+                    ">
+        <div className="flex w-full min-w-0 flex-col gap-4">
+          <div className="grid w-full min-w-0 gap-4 xl:grid-cols-[minmax(0,1.72fr)_280px]">
+            <div className="min-w-0 space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {displayMetrics.map((item) => (
+                  <MetricCard key={item.label} item={item} />
+                ))}
               </div>
 
-              <div className="mt-4 space-y-3 md:hidden">
-                {isAppointmentsLoading ? (
-                  <div className="flex min-h-40 items-center justify-center gap-3 rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-sm font-medium text-[#b38a9f]">
-                    <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
-                    Loading today's appointments...
-                  </div>
-                ) : appointmentsError ? (
-                  <div className="rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-center text-sm text-[#d14c84]">
-                    {appointmentsError}
-                  </div>
-                ) : paginatedAppointmentRows.length ? (
-                  paginatedAppointmentRows.map((row) => (
-                    <MobileAppointmentCard
-                      key={row.id}
-                      row={row}
-                      actions={getActionItems(row.bookingId, row.status)}
-                    />
-                  ))
-                ) : (
-                  <div className="rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-center text-sm text-[#aa8a99]">
-                    No appointments found for today.
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-4 hidden md:block">
-                <Table
-                  rowKey="id"
-                  columns={appointmentColumns}
-                  dataSource={paginatedAppointmentRows}
-                  loading={isAppointmentsLoading}
-                  pagination={false}
-                  scroll={{ x: 960 }}
-                  locale={{ emptyText: appointmentsError || "No appointments found for today." }}
-                />
-              </div>
-
-              {!isAppointmentsLoading && !appointmentsError && filteredAppointmentRows.length > 0 ? (
-                <div className="mt-4 flex flex-col gap-3 border-t border-[#f7e0ea] pt-4 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-xs text-[#aa8a99]">
-                    Showing {(appointmentPage - 1) * APPOINTMENTS_PAGE_SIZE + 1}
-                    {" - "}
-                    {Math.min(appointmentPage * APPOINTMENTS_PAGE_SIZE, filteredAppointmentRows.length)}
-                    {" of "}
-                    {filteredAppointmentRows.length} appointments
-                  </p>
-                  <div className="flex items-center gap-2 self-end sm:self-auto">
+              <DashboardCard>
+                <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between mb-4">
+                  <SectionTitle icon={CalendarClock} title="Today's Appointments" />
+                  <div className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] xl:w-auto xl:min-w-[720px]">
+                    <label className="flex h-11 min-w-0 items-center gap-2 rounded-full border border-[#f4d6e2] bg-white px-4 text-sm text-[#c59bb0] sm:min-w-[0] xl:min-w-[380px]">
+                      <Search size={16} className="text-[#3f2f39]" />
+                      <input
+                        type="text"
+                        value={appointmentQuery}
+                        onChange={(event) => setAppointmentQuery(event.target.value)}
+                        placeholder="Search customer by phone number, name, ..."
+                        className="w-full bg-transparent text-sm text-[#5c4557] outline-none placeholder:text-[#c7a0b2]"
+                      />
+                    </label>
                     <button
                       type="button"
-                      onClick={() => setAppointmentPage(Math.max(1, appointmentPage - 1))}
-                      disabled={appointmentPage === 1}
-                      className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition ${appointmentPage === 1
-                        ? "cursor-not-allowed border-[#f2dce6] bg-[#fff7fb] text-[#d4b5c4]"
-                        : "border-[#f2bfd4] bg-white text-[#ea4f93] hover:bg-[#fff2f8]"
-                        }`}
+                      onClick={() => setIsScannerOpen(true)}
+                      className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-[#e7dcff] bg-white px-4 text-sm font-bold text-[#7a57d9] shadow-[0_10px_24px_rgba(122,87,217,0.1)] whitespace-nowrap sm:min-w-[140px]"
                     >
-                      <ChevronLeft size={15} />
+                      <UserCheck size={15} />
+                      Check-in
                     </button>
-                    <span className="min-w-[84px] text-center text-xs font-bold text-[#7f6478]">
-                      Page {appointmentPage}/{appointmentTotalPages}
-                    </span>
                     <button
                       type="button"
-                      onClick={() => setAppointmentPage(Math.min(appointmentTotalPages, appointmentPage + 1))}
-                      disabled={appointmentPage === appointmentTotalPages}
-                      className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition ${appointmentPage === appointmentTotalPages
-                        ? "cursor-not-allowed border-[#f2dce6] bg-[#fff7fb] text-[#d4b5c4]"
-                        : "border-[#f2bfd4] bg-white text-[#ea4f93] hover:bg-[#fff2f8]"
-                        }`}
+                      onClick={() => navigate(ROUTES.receptionistQueue)}
+                      className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-[#f3cfe0] bg-[#fff3f8] px-4 text-sm font-bold text-[#eb5a98] whitespace-nowrap sm:min-w-[170px]"
                     >
-                      <ChevronRight size={15} />
+                      <Plus size={15} />
+                      Create Walk-In
                     </button>
                   </div>
                 </div>
-              ) : null}
-            </DashboardCard>
 
-            <div className="grid w-full min-w-0 gap-4 xl:grid-cols-[0.95fr_1.05fr]">
-              <div className="space-y-4">
+                <div className="mt-4 space-y-3 md:hidden">
+                  {isAppointmentsLoading ? (
+                    <div className="flex min-h-40 items-center justify-center gap-3 rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-sm font-medium text-[#b38a9f]">
+                      <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
+                      Loading today's appointments...
+                    </div>
+                  ) : appointmentsError ? (
+                    <div className="rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-center text-sm text-[#d14c84]">
+                      {appointmentsError}
+                    </div>
+                  ) : paginatedAppointmentRows.length ? (
+                    paginatedAppointmentRows.map((row) => (
+                      <MobileAppointmentCard
+                        key={row.id}
+                        row={row}
+                        actions={getActionItems(row.bookingId, row.status)}
+                      />
+                    ))
+                  ) : (
+                    <div className="rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-center text-sm text-[#aa8a99]">
+                      No appointments found for today.
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-4 hidden md:block">
+                  <Table
+                    rowKey="id"
+                    columns={appointmentColumns}
+                    dataSource={paginatedAppointmentRows}
+                    loading={isAppointmentsLoading}
+                    pagination={false}
+                    scroll={{ x: 960 }}
+                    locale={{ emptyText: appointmentsError || "No appointments found for today." }}
+                  />
+                </div>
+
+                {!isAppointmentsLoading && !appointmentsError && filteredAppointmentRows.length > 0 ? (
+                  <div className="mt-4 flex flex-col gap-3 border-t border-[#f7e0ea] pt-4 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-xs text-[#aa8a99]">
+                      Showing {(appointmentPage - 1) * APPOINTMENTS_PAGE_SIZE + 1}
+                      {" - "}
+                      {Math.min(appointmentPage * APPOINTMENTS_PAGE_SIZE, filteredAppointmentRows.length)}
+                      {" of "}
+                      {filteredAppointmentRows.length} appointments
+                    </p>
+                    <div className="flex items-center gap-2 self-end sm:self-auto">
+                      <button
+                        type="button"
+                        onClick={() => setAppointmentPage(Math.max(1, appointmentPage - 1))}
+                        disabled={appointmentPage === 1}
+                        className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition ${appointmentPage === 1
+                          ? "cursor-not-allowed border-[#f2dce6] bg-[#fff7fb] text-[#d4b5c4]"
+                          : "border-[#f2bfd4] bg-white text-[#ea4f93] hover:bg-[#fff2f8]"
+                          }`}
+                      >
+                        <ChevronLeft size={15} />
+                      </button>
+                      <span className="min-w-[84px] text-center text-xs font-bold text-[#7f6478]">
+                        Page {appointmentPage}/{appointmentTotalPages}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setAppointmentPage(Math.min(appointmentTotalPages, appointmentPage + 1))}
+                        disabled={appointmentPage === appointmentTotalPages}
+                        className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition ${appointmentPage === appointmentTotalPages
+                          ? "cursor-not-allowed border-[#f2dce6] bg-[#fff7fb] text-[#d4b5c4]"
+                          : "border-[#f2bfd4] bg-white text-[#ea4f93] hover:bg-[#fff2f8]"
+                          }`}
+                      >
+                        <ChevronRight size={15} />
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+              </DashboardCard>
+
+              <div className="grid w-full min-w-0 gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+                <div className="space-y-4">
+                  <DashboardCard>
+                    <SectionTitle icon={Clock3} title="Walk-In Queue" />
+                    <div className="mt-4 space-y-3">
+                      {displayWalkInQueue.length > 0 ? (
+                        displayWalkInQueue.map((item, index) => (
+                          <div
+                            key={`${item.guestName}-${index}`}
+                            className="flex flex-col gap-3 rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#ea4f93] text-[10px] font-extrabold text-white">
+                                {item.queuePosition || index + 1}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-bold text-[#432744]">
+                                  {typeof item.guestName === 'object' ? item.guestName?.customerName || 'Customer' : (item.guestName || 'Customer')}
+                                </p>
+                                <p className="mt-1 break-words text-[11px] text-[#b28a9f]">
+                                  {typeof item.requestNote === 'object' ? item.requestNote?.note || 'Walk-in request' : (item.requestNote || "--")}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-left sm:text-right">
+                              <p className="text-sm font-extrabold text-[#ea4f93]">
+                                {item.estimatedWait || 0}m
+                              </p>
+                              <p className="text-[10px] text-[#c59bb0]">waiting</p>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-center text-sm text-[#aa8a99]">
+                          No walk-ins currently waiting.
+                        </div>
+                      )}
+                    </div>
+                  </DashboardCard>
+                </div>
+
                 <DashboardCard>
-                  <SectionTitle icon={Clock3} title="Walk-In Queue" />
+                  <SectionTitle icon={Clock3} title="Waitlist Queue" />
                   <div className="mt-4 space-y-3">
-                    {displayWalkInQueue.length > 0 ? (
-                      displayWalkInQueue.map((item, index) => (
+                    {displayQueue.length > 0 ? (
+                      displayQueue.map(([name, service, wait], index) => (
                         <div
-                          key={`${item.guestName}-${index}`}
+                          key={`${name}-${wait}`}
                           className="flex flex-col gap-3 rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
                         >
                           <div className="flex items-start gap-3">
                             <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#ea4f93] text-[10px] font-extrabold text-white">
-                              {item.queuePosition || index + 1}
+                              {index + 1}
                             </div>
                             <div className="min-w-0">
-                              <p className="text-sm font-bold text-[#432744]">{item.guestName}</p>
-                              <p className="mt-1 break-words text-[11px] text-[#b28a9f]">
-                                {item.requestNote || "--"}
-                              </p>
+                              <p className="text-sm font-bold text-[#432744]">{name}</p>
+                              <p className="mt-1 break-words text-[11px] text-[#b28a9f]">{service}</p>
                             </div>
                           </div>
                           <div className="text-left sm:text-right">
-                            <p className="text-sm font-extrabold text-[#ea4f93]">
-                              {item.estimatedWait || 0}m
-                            </p>
+                            <p className="text-sm font-extrabold text-[#ea4f93]">{wait}</p>
                             <p className="text-[10px] text-[#c59bb0]">waiting</p>
                           </div>
                         </div>
                       ))
                     ) : (
                       <div className="rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-center text-sm text-[#aa8a99]">
-                        No walk-ins currently waiting.
+                        No customers currently on the waitlist.
                       </div>
                     )}
                   </div>
                 </DashboardCard>
               </div>
-
-              <DashboardCard>
-                <SectionTitle icon={Clock3} title="Waitlist Queue" />
-                <div className="mt-4 space-y-3">
-                  {displayQueue.length > 0 ? (
-                    displayQueue.map(([name, service, wait], index) => (
-                      <div
-                        key={`${name}-${wait}`}
-                        className="flex flex-col gap-3 rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#ea4f93] text-[10px] font-extrabold text-white">
-                            {index + 1}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-bold text-[#432744]">{name}</p>
-                            <p className="mt-1 break-words text-[11px] text-[#b28a9f]">{service}</p>
-                          </div>
-                        </div>
-                        <div className="text-left sm:text-right">
-                          <p className="text-sm font-extrabold text-[#ea4f93]">{wait}</p>
-                          <p className="text-[10px] text-[#c59bb0]">waiting</p>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-center text-sm text-[#aa8a99]">
-                      No customers currently on the waitlist.
-                    </div>
-                  )}
-                </div>
-              </DashboardCard>
-
               <DashboardCard>
                 <SectionTitle icon={UserRound} title="Live Chair Status" />
-                <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="mt-4">
                   {dashboardData?.liveChairStatus?.length > 0 ? (
-                    dashboardData.liveChairStatus.map((chair, index) => (
-                      <div
-                        key={chair.chairId || index}
-                        className="flex flex-col items-center justify-center gap-2 rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-4 text-center"
-                      >
-                        <div
-                          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-extrabold text-white ${chair.isOccupied ? "bg-[#eb5b92]" : "bg-[#8e50cf]"}`}
-                        >
-                          {chair.name ? getInitials(chair.name) : "C"}
-                        </div>
-                        <p className="mt-1 text-sm font-bold text-[#432744]">{chair.name || "Chair"}</p>
-                        {chair.isOccupied ? (
-                          <div className="flex flex-col items-center">
-                            <span className="inline-flex rounded-full bg-[#ffeaf2] px-2.5 py-1 text-[10px] font-bold text-[#ef5a95]">
-                              Occupied
-                            </span>
-                            <span className="mt-1 text-[10px] text-[#aa8a99]">{chair.currentCustomer}</span>
-                          </div>
-                        ) : (
-                          <span className="inline-flex rounded-full bg-[#e8f8ed] px-2.5 py-1 text-[10px] font-bold text-[#30a364]">
-                            Available
-                          </span>
-                        )}
-                      </div>
-                    ))
+                    <ChairMap
+                      chairs={dashboardData.liveChairStatus.map(c => ({ ...c, chairName: c.name }))}
+                      renderCell={(cellName, chair) => {
+                        if (chair) {
+                          return (
+                            <div
+                              key={cellName}
+                              className="flex flex-col items-center justify-center gap-1 w-[90px] h-[90px] rounded-2xl border-2 transition-all duration-300 bg-[#fff8fb] border-pink-200 shadow-sm hover:shadow-md"
+                            >
+                              <div
+                                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-extrabold text-white ${chair.isOccupied ? "bg-[#eb5b92]" : "bg-[#8e50cf]"}`}
+                              >
+                                <Armchair size={16} />
+                              </div>
+                              <p className="mt-1 text-[11px] font-bold text-[#432744] truncate w-full text-center px-1">{chair.name || "Chair"}</p>
+                              {chair.isOccupied ? (
+                                <div className="flex flex-col items-center leading-tight">
+                                  <span className="inline-flex rounded-full bg-[#ffeaf2] px-2 py-0.5 text-[9px] font-bold text-[#ef5a95]">
+                                    Occupied
+                                  </span>
+                                  <span className="text-[9px] text-[#aa8a99] truncate w-20 text-center">
+                                    {typeof chair.currentCustomer === 'object' ? chair.currentCustomer?.customerName || 'Customer' : (chair.currentCustomer || 'Customer')}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="inline-flex rounded-full bg-[#e8f8ed] px-2 py-0.5 text-[9px] font-bold text-[#30a364]">
+                                  Available
+                                </span>
+                              )}
+                            </div>
+                          );
+                        } else {
+                          return (
+                            <div
+                              key={cellName}
+                              className="flex flex-col items-center justify-center w-[90px] h-[90px] rounded-2xl border-2 border-dashed border-slate-200 bg-white/50 opacity-40 pointer-events-none"
+                            >
+                              <span className="text-[10px] font-bold text-slate-300">{cellName}</span>
+                            </div>
+                          );
+                        }
+                      }}
+                    />
                   ) : (
-                    <div className="col-span-full rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-center text-sm text-[#aa8a99]">
+                    <div className="rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-center text-sm text-[#aa8a99]">
                       No chair status data available.
                     </div>
                   )}
@@ -933,7 +973,7 @@ export function ReceptionistDashboardPage() {
               </DashboardCard>
               <DashboardCard>
                 <SectionTitle icon={UserRound} title="Staff Availability" />
-                <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   {displayStaff.length > 0 ? (
                     displayStaff.map(([name, initials, status, avatarTone, badgeTone, isOffToday]) => (
                       <div
@@ -961,76 +1001,78 @@ export function ReceptionistDashboardPage() {
                 </div>
               </DashboardCard>
             </div>
-          </div>
 
-          <aside className="min-w-0 space-y-4">
-            <DashboardCard>
-              <SectionTitle icon={AlertCircle} title="Late / No-Show Alerts" />
-              <div className="mt-4 space-y-3">
-                {displayAlerts.length > 0 ? (
-                  displayAlerts.map((alert, index) => (
-                    <div
-                      key={alert.bookingId || index}
-                      className="flex flex-col gap-3 rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#ef4f92] text-[10px] font-extrabold text-white">
-                          !
+            <aside className="min-w-0 space-y-4">
+              <DashboardCard>
+                <SectionTitle icon={AlertCircle} title="Late / No-Show Alerts" />
+                <div className="mt-4 space-y-3">
+                  {displayAlerts.length > 0 ? (
+                    displayAlerts.map((alert, index) => (
+                      <div
+                        key={alert.bookingId || index}
+                        className="flex flex-col gap-3 rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#ef4f92] text-[10px] font-extrabold text-white">
+                            !
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold text-[#432744]">
+                              {typeof alert.customerName === 'object' ? alert.customerName?.customerName || 'Customer' : (alert.customerName || 'Customer')}
+                            </p>
+                            <p className="mt-1 text-[11px] font-semibold text-[#ef4f92]">{alert.minutesLate} mins late</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-center text-sm text-[#aa8a99]">
+                      No late alerts at this time.
+                    </div>
+                  )}
+                </div>
+              </DashboardCard>
+
+              <DashboardCard>
+                <SectionTitle icon={Sparkles} title="Quick Status" />
+                <div className="mt-4 space-y-4">
+                  {displayQuickStatus.map(([label, value]) => (
+                    <div key={label} className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                      <span className="break-words text-[#9d8191]">{label}</span>
+                      <span className="font-extrabold text-[#ea4f93]">{value}</span>
+                    </div>
+                  ))}
+                </div>
+              </DashboardCard>
+
+              <DashboardCard>
+                <SectionTitle icon={Bell} title="Recent Check-ins & Arrivals" />
+                <div className="mt-4 space-y-4">
+                  {displayArrivals.length > 0 ? (
+                    displayArrivals.map(([name, service, time, initials, bg], index) => (
+                      <div key={index} className="flex items-center gap-3">
+                        <div
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-extrabold text-white ${bg}`}
+                        >
+                          {initials}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-sm font-bold text-[#432744]">{alert.customerName}</p>
-                          <p className="mt-1 text-[11px] font-semibold text-[#ef4f92]">{alert.minutesLate} mins late</p>
+                          <p className="text-sm font-bold text-[#432744]">{name}</p>
+                          <p className="mt-1 truncate text-xs text-[#aa8a99]">
+                            {service} • <span className="font-semibold text-[#ef4f92]">{time}</span>
+                          </p>
                         </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className="rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-center text-sm text-[#aa8a99]">
+                      No upcoming arrivals today.
                     </div>
-                  ))
-                ) : (
-                  <div className="rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-center text-sm text-[#aa8a99]">
-                    No late alerts at this time.
-                  </div>
-                )}
-              </div>
-            </DashboardCard>
-
-            <DashboardCard>
-              <SectionTitle icon={Sparkles} title="Quick Status" />
-              <div className="mt-4 space-y-4">
-                {displayQuickStatus.map(([label, value]) => (
-                  <div key={label} className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                    <span className="break-words text-[#9d8191]">{label}</span>
-                    <span className="font-extrabold text-[#ea4f93]">{value}</span>
-                  </div>
-                ))}
-              </div>
-            </DashboardCard>
-
-            <DashboardCard>
-              <SectionTitle icon={Bell} title="Recent Check-ins & Arrivals" />
-              <div className="mt-4 space-y-4">
-                {displayArrivals.length > 0 ? (
-                  displayArrivals.map(([name, service, time, initials, bg], index) => (
-                    <div key={index} className="flex items-center gap-3">
-                      <div
-                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-extrabold text-white ${bg}`}
-                      >
-                        {initials}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-bold text-[#432744]">{name}</p>
-                        <p className="mt-1 truncate text-xs text-[#aa8a99]">
-                          {service} • <span className="font-semibold text-[#ef4f92]">{time}</span>
-                        </p>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-center text-sm text-[#aa8a99]">
-                    No upcoming arrivals today.
-                  </div>
-                )}
-              </div>
-            </DashboardCard>
-          </aside>
+                  )}
+                </div>
+              </DashboardCard>
+            </aside>
+          </div>
         </div>
       </div>
 

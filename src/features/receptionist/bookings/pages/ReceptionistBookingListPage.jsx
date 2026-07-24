@@ -333,23 +333,31 @@ export function ReceptionistBookingListPage() {
       title: "Customer",
       dataIndex: "customerName",
       key: "customerName",
+      sorter: (a, b) => (a.customerName || "").localeCompare(b.customerName || ""),
       render: (value) => <span className="text-sm font-bold text-[#412643]">{value}</span>,
     },
     {
       title: "Salon",
       dataIndex: "salonName",
       key: "salonName",
+      sorter: (a, b) => (a.salonName || "").localeCompare(b.salonName || ""),
       render: (value) => <span className="text-sm text-[#6b5668]">{value}</span>,
     },
     {
       title: "Artist",
       dataIndex: "artistName",
       key: "artistName",
+      sorter: (a, b) => (a.artistName || "").localeCompare(b.artistName || ""),
       render: (value) => <span className="text-sm text-[#6b5668]">{value}</span>,
     },
     {
       title: "Schedule",
       key: "schedule",
+      sorter: (a, b) => {
+        const timeA = new Date(`${a.bookingDate?.split('T')[0] || ''}T${a.startTime || '00:00:00'}`).getTime() || 0;
+        const timeB = new Date(`${b.bookingDate?.split('T')[0] || ''}T${b.startTime || '00:00:00'}`).getTime() || 0;
+        return timeA - timeB;
+      },
       render: (_, booking) => (
         <div>
           <p className="text-sm font-semibold text-[#412643]">{formatDate(booking.bookingDate)}</p>
@@ -361,12 +369,14 @@ export function ReceptionistBookingListPage() {
       title: "Price",
       dataIndex: "totalPrice",
       key: "totalPrice",
+      sorter: (a, b) => (a.totalPrice || 0) - (b.totalPrice || 0),
       render: (value) => <span className="text-sm font-semibold text-[#412643]">{formatCurrency(value)}</span>,
     },
     {
       title: "Status",
       dataIndex: "status",
       key: "status",
+      sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
       render: (status) => (
         <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-extrabold ${getStatusTone(status)}`}>
           {status}

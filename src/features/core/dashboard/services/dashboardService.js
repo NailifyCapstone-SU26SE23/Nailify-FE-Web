@@ -93,11 +93,22 @@ export const dashboardService = {
     return unwrapResponse(response, "Failed to load staffs");
   },
   getSalonStaffs: async (salonId) => {
-    const response = await axiosClient.get("/Users", {
-      params: { pageNumber: 1, pageSize: 100, role: "Staff_Artist", salonId },
+    const response = await axiosClient.get(`/Users/salon/${salonId}/staff`, {
+      params: { pageNumber: 1, pageSize: 100, role: "Staff_Artist" },
       headers: getAuthHeaders(),
     });
     return unwrapResponse(response, "Failed to load salon staffs");
+  },
+  getSalonStaffByRole: async (salonId, role) => {
+    const params = { pageNumber: 1, pageSize: 1 };
+    if (role) {
+      params.role = role;
+    }
+    const response = await axiosClient.get(`/Users/salon/${salonId}/staff`, {
+      params,
+      headers: getAuthHeaders(),
+    });
+    return response.data?.data || null;
   },
   getNailArtistDashboard: async (artistId, startDate, endDate) => {
     const params = {};
