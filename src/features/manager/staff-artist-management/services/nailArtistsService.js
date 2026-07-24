@@ -78,49 +78,26 @@ function normalizeStaffMember(staff) {
 }
 
 export async function fetchNailArtists(salonId) {
-  try {
-    const id = salonId || getSalonId();
-    const response = await axiosClient.get(`/Users/salon/${id}/staff`, {
-      headers: getAuthHeaders(),
-      params: { role: "Staff_Artist" },
-    });
+  const id = salonId || getSalonId();
+  const response = await axiosClient.get(`/Users/salon/${id}/staff`, {
+    headers: getAuthHeaders(),
+    params: { role: "Staff_Artist" },
+  });
 
-    const data = unwrapResponse(response, "Failed to load nail artists.");
-    const items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
-    return items.map(normalizeStaffMember);
-  } catch (error) {
-    console.warn("Failed to load nail artists with current salon.", error);
-    const response = await axiosClient.get(`/Users/salon/484c3aef-3ae1-4ad6-8aba-6b0bc6df586d/staff`, {
-      headers: getAuthHeaders(),
-      params: { role: "Staff_Artist" },
-    });
-
-    const data = unwrapResponse(response, "Failed to load nail artists.");
-    const items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
-    return items.map(normalizeStaffMember);
-  }
+  const data = unwrapResponse(response, "Failed to load nail artists.");
+  const items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
+  return items.map(normalizeStaffMember);
 }
 
 export async function fetchAllSalonStaff(salonId) {
-  try {
-    const id = salonId || getSalonId();
-    const response = await axiosClient.get(`/Users/salon/${id}/staff`, {
-      headers: getAuthHeaders(),
-    });
+  const id = salonId || getSalonId();
+  const response = await axiosClient.get(`/Users/salon/${id}/staff`, {
+    headers: getAuthHeaders(),
+  });
 
-    const data = unwrapResponse(response, "Failed to load salon staff.");
-    const items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
-    return items.map(normalizeStaffMember);
-  } catch (error) {
-    console.warn("Failed to load all salon staff with current salon.", error);
-    const response = await axiosClient.get(`/Users/salon/484c3aef-3ae1-4ad6-8aba-6b0bc6df586d/staff`, {
-      headers: getAuthHeaders(),
-    });
-
-    const data = unwrapResponse(response, "Failed to load salon staff.");
-    const items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
-    return items.map(normalizeStaffMember);
-  }
+  const data = unwrapResponse(response, "Failed to load salon staff.");
+  const items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
+  return items.map(normalizeStaffMember);
 }
 
 export async function fetchNailArtistById(artistId) {

@@ -298,26 +298,23 @@ function getReceptionistActionAvailability(status) {
 function DetailCard({ title, subtitle, badge, children, className = "" }) {
   return (
     <section
-      className={`rounded-[24px] border border-[#f4d6e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)] ${className}`}
+      className={`rounded-3xl border border-white/60 bg-white/70 p-6 shadow-sm backdrop-blur-xl transition-all hover:shadow-md ${className}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-sm font-extrabold text-[#4a3741]">{title}</h3>
-          {subtitle ? <p className="mt-1 text-xs text-[#a48796]">{subtitle}</p> : null}
+          <h3 className="text-base font-black tracking-tight text-slate-800">{title}</h3>
+          {subtitle ? <p className="mt-1 text-[13px] font-medium text-slate-500">{subtitle}</p> : null}
         </div>
         {badge ? (
-          // <span className="rounded-full border border-[#f4d6e2] bg-[#fff1f6] px-3 py-1 text-[10px] font-extrabold text-[#eb5b92]">
-          //   {badge}
-          // </span>
           <div className="flex items-center gap-2">
-            <Tag className={`m-0 ${getStatusColor(badge)}`} style={{ padding: "5px 10px", borderRadius: "20px" }}>
-              <Clock size={11} className="mr-1 inline-block fill-current" />
+            <Tag className={`m-0 border-0 shadow-sm ${getStatusColor(badge)}`} style={{ padding: "6px 12px", borderRadius: "100px", fontWeight: 700 }}>
+              <Clock size={12} className="mr-1.5 inline-block" />
               {badge}
             </Tag>
           </div>
         ) : null}
       </div>
-      <div className="mt-4">{children}</div>
+      <div className="mt-5">{children}</div>
     </section>
   );
 }
@@ -853,36 +850,35 @@ export function ReceptionistBookingDetailPage() {
   }
 
   return (
-    <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
-      <div className="rounded-[24px] border border-[#f6d8e5] bg-white px-5 py-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-lg font-black text-[#412643]">Booking Details</p>
-            <p className="mt-1 text-xs text-[#b38a9f]">Manage customer appointment and salon operations</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setIsQrOpen(true)}
-              className="inline-flex items-center gap-2 rounded-full border border-[#f3cade] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
-            >
-              <QrCode size={14} />
-              View QR
-            </button>
-            <button
-              type="button"
-              onClick={() => void handlePrimaryHeaderAction()}
-              disabled={isPrimaryHeaderActionDisabled}
-              className="inline-flex items-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isManualCheckInSubmitting || isCheckoutSubmitting ? (
-                <LoaderCircle size={14} className="animate-spin" />
-              ) : (
-                <SquareCheckBig size={14} />
-              )}
-              {primaryHeaderAction}
-            </button>
-          </div>
+    <section className="flex min-h-full flex-col gap-6  bg-[#fff9fb]
+                      bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.55),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.35),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.45),transparent_35%),linear-gradient(to_right,#f3c7db_1px,transparent_1px),linear-gradient(to_bottom,#f3c7db_1px,transparent_1px)] p-2 sm:p-6 lg:p-8 ">
+      <div className="flex flex-col gap-4 rounded-3xl border border-white/60 bg-white/80 p-6 shadow-sm backdrop-blur-xl md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-[24px] font-black tracking-tight text-slate-900">Booking Details</h1>
+          <p className="mt-1 text-[13px] font-medium text-slate-500">Manage customer appointment and salon operations</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setIsQrOpen(true)}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:text-slate-900"
+          >
+            <QrCode size={16} />
+            View QR
+          </button>
+          <button
+            type="button"
+            onClick={() => void handlePrimaryHeaderAction()}
+            disabled={isPrimaryHeaderActionDisabled}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 px-5 text-sm font-bold text-white shadow-md transition-all hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isManualCheckInSubmitting || isCheckoutSubmitting ? (
+              <LoaderCircle size={16} className="animate-spin" />
+            ) : (
+              <SquareCheckBig size={16} />
+            )}
+            {primaryHeaderAction}
+          </button>
         </div>
       </div>
 

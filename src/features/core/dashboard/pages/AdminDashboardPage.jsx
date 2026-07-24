@@ -19,7 +19,7 @@ import {
 import { Modal, Table, Spin, Alert, DatePicker, Segmented, Dropdown, Button } from "antd";
 import dayjs from "dayjs";
 import { useMemo, useState, useEffect } from "react";
-import { useAdminDashboard, useSalonDetails, useManagersList, useSalonsList, useStaffsList } from "../hooks/useAdminDashboard";
+import { useAdminDashboard, useSalonDetails, useManagersList, useSalonsList, useStaffsList, useSalonStaffByRole } from "../hooks/useAdminDashboard";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import ReactECharts from "echarts-for-react";
 
@@ -154,6 +154,10 @@ export function AdminDashboardPage() {
   const { data: salonsList } = useSalonsList();
   const { data: staffsList } = useStaffsList();
 
+  const { data: salonManagers } = useSalonStaffByRole(selectedSalonId, "Manager");
+  const { data: salonReceptionists } = useSalonStaffByRole(selectedSalonId, "Receptionist");
+  const { data: salonStaffArtists } = useSalonStaffByRole(selectedSalonId, "Staff_Artist");
+
   const handleFilterModeChange = (mode) => {
     setFilterMode(mode);
     const today = dayjs();
@@ -220,7 +224,7 @@ export function AdminDashboardPage() {
   const toggleHide = (id) => {
     setWidgets(prev => prev.map(w => w.id === id ? { ...w, visible: !w.visible } : w));
   };
-  
+
   const resetLayout = () => {
     setWidgets(defaultWidgets);
   };
@@ -232,7 +236,9 @@ export function AdminDashboardPage() {
       const salonName = salon.name;
       let revenue = 0;
       if (data?.topPerformingSalons?.labels) {
-        const topIndex = data.topPerformingSalons.labels.findIndex(label => label === salonName);
+        const topIndex = data.topPerformingSalons.labels.findIndex(label =>
+          label.trim().toLowerCase() === salonName.trim().toLowerCase()
+        );
         if (topIndex !== -1) {
           revenue = data.topPerformingSalons.datasets[0].data[topIndex];
         }
@@ -291,7 +297,9 @@ export function AdminDashboardPage() {
     return salonsList.map((salon) => {
       let revenue = 0;
       if (data?.topPerformingSalons?.labels) {
-        const topIndex = data.topPerformingSalons.labels.findIndex(label => label === salon.name);
+        const topIndex = data.topPerformingSalons.labels.findIndex(label =>
+          label.trim().toLowerCase() === salon.name.trim().toLowerCase()
+        );
         if (topIndex !== -1) {
           revenue = data.topPerformingSalons.datasets[0].data[topIndex];
         }
@@ -299,6 +307,30 @@ export function AdminDashboardPage() {
       return { name: salon.name, value: revenue };
     }).sort((a, b) => a.value - b.value);
   }, [salonsList, data]);
+
+  const salonRatingData = useMemo(() => {
+    if (!salonsList) return [];
+    return salonsList.map((salon) => {
+      let rating = 0;
+      if (data?.salonRatingDistribution?.length) {
+        const found = data.salonRatingDistribution.find(r =>
+          r.salonName.trim().toLowerCase() === salon.name.trim().toLowerCase()
+        );
+        if (found) {
+          rating = found.averageRating;
+        }
+      }
+      return { name: salon.name, value: rating };
+    }).sort((a, b) => a.value - b.value);
+  }, [salonsList, data]);
+
+  const metricCards = useMemo(() => [
+    { label: "Total Revenue", value: `${(data?.totalPlatformRevenue || 0).toLocaleString("vi-VN")}`, unit: "VND", trend: "+12.5%", icon: CircleDollarSign, color: '#0ea5e9' },
+    { label: "Customers", value: `${data?.totalRegisteredCustomers || 0}`, unit: "USERS", trend: "+8.2%", icon: Users, color: '#10b981' },
+    { label: "Active Salons", value: `${data?.totalActiveSalons || 0}`, unit: "LOCATIONS", trend: "+2", icon: Store, color: '#f59e0b' },
+    { label: "Active Staff", value: `${data?.totalActiveStaff || 0}`, unit: "STAFF", trend: "+5", icon: UserRound, color: '#8b5cf6' },
+    { label: "Avg Rating", value: `${data?.platformAverageRating || 0}`, unit: "/ 5.0", trend: "+0.2", icon: Activity, color: '#ec4899' },
+  ], [data]);
 
   if (isLoading) {
     return (
@@ -316,25 +348,39 @@ export function AdminDashboardPage() {
     );
   }
 
-  const metricCards = [
-    { label: "TOTAL REVENUE", value: `${(data?.totalPlatformRevenue || 0).toLocaleString("vi-VN")}`, unit: "VND", trend: "+12.5%" },
-    { label: "CUSTOMERS", value: data?.totalRegisteredCustomers || 0, unit: "USERS", trend: "+8.2%" },
-    { label: "ACTIVE SALONS", value: data?.totalActiveSalons || 0, unit: "LOCATIONS", trend: "+2" },
-    { label: "ACTIVE STAFF", value: data?.totalActiveStaff || 0, unit: "STAFF", trend: "+5" },
-    { label: "AVG RATING", value: (data?.platformAverageRating || 0).toFixed(1), unit: "/ 5.0", trend: "+0.2" },
-  ];
-
   // ECharts Configs
   const commonTooltip = { backgroundColor: 'rgba(255,255,255,0.95)', borderColor: BORDER_COLOR, borderWidth: 1, padding: 12, textStyle: { color: TEXT_PRIMARY, fontSize: 12, fontFamily: 'monospace' } };
   const commonAxisLabel = { color: TEXT_SECONDARY, fontSize: 11, fontFamily: 'monospace' };
   const commonSplitLine = { lineStyle: { type: 'dashed', color: GRID_COLOR } };
 
+  const getEmptyTimeLabels = () => {
+    if (!startDate || !endDate) return { labels: ['No Data'], data: [0] };
+    const start = dayjs(startDate);
+    const end = dayjs(endDate);
+    const diff = end.diff(start, 'day');
+
+    let labels = [];
+    let data = [];
+    if (diff >= 0 && diff <= 31) {
+      for (let i = 0; i <= diff; i++) {
+        labels.push(start.add(i, 'day').format('DD/MM'));
+        data.push(0);
+      }
+    } else {
+      labels = [start.format('DD/MM/YY'), end.format('DD/MM/YY')];
+      data = [0, 0];
+    }
+    return { labels, data };
+  };
+
+  const emptyTimeData = getEmptyTimeLabels();
+
   const stackedLineOption = {
     color: ['#0ea5e9'],
     tooltip: { ...commonTooltip, trigger: 'axis' },
     grid: { left: '2%', right: '4%', bottom: '3%', top: '10%', containLabel: true },
-    xAxis: { type: 'category', boundaryGap: false, data: data?.revenueTrend?.labels || [], axisLine: { lineStyle: { color: BORDER_COLOR } }, axisLabel: commonAxisLabel },
-    yAxis: { type: 'value', axisLabel: commonAxisLabel, splitLine: commonSplitLine },
+    xAxis: { type: 'category', boundaryGap: false, data: data?.revenueTrend?.labels?.length ? data.revenueTrend.labels : emptyTimeData.labels, axisLine: { lineStyle: { color: BORDER_COLOR } }, axisLabel: commonAxisLabel },
+    yAxis: { type: 'value', axisLabel: commonAxisLabel, splitLine: commonSplitLine, max: (val) => val.max === 0 ? 100000 : null },
     series: [
       {
         name: 'Revenue',
@@ -348,7 +394,7 @@ export function AdminDashboardPage() {
         areaStyle: {
           color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(14,165,233,0.3)' }, { offset: 1, color: 'rgba(14,165,233,0)' }] }
         },
-        data: data?.revenueTrend?.datasets?.[0]?.data || []
+        data: data?.revenueTrend?.datasets?.[0]?.data?.length ? data.revenueTrend.datasets[0].data : emptyTimeData.data
       }
     ]
   };
@@ -358,8 +404,8 @@ export function AdminDashboardPage() {
     color: ['#10b981'],
     tooltip: { ...commonTooltip, trigger: 'axis' },
     grid: { left: '2%', right: '8%', bottom: '3%', top: '10%', containLabel: true },
-    xAxis: { type: 'category', data: data?.userGrowth?.labels || [], axisLine: { lineStyle: { color: BORDER_COLOR } }, axisLabel: commonAxisLabel },
-    yAxis: { type: 'value', axisLabel: commonAxisLabel, splitLine: commonSplitLine },
+    xAxis: { type: 'category', data: data?.userGrowth?.labels?.length ? data.userGrowth.labels : emptyTimeData.labels, axisLine: { lineStyle: { color: BORDER_COLOR } }, axisLabel: commonAxisLabel },
+    yAxis: { type: 'value', axisLabel: commonAxisLabel, splitLine: commonSplitLine, max: (val) => val.max === 0 ? 100 : null },
     series: [
       {
         name: 'New Customers',
@@ -369,15 +415,17 @@ export function AdminDashboardPage() {
         endLabel: { show: true, formatter: '{c}', color: '#10b981', fontSize: 12, fontFamily: 'monospace', distance: 8 },
         labelLayout: { moveOverlap: 'shiftY' },
         lineStyle: { width: 2, color: '#10b981' },
-        data: data?.userGrowth?.datasets?.[0]?.data || []
+        data: data?.userGrowth?.datasets?.[0]?.data?.length ? data.userGrowth.datasets[0].data : emptyTimeData.data
       }
     ]
   };
 
-  const pieData = data?.globalServicePopularity?.labels?.map((label, i) => ({
-    name: label,
-    value: data.globalServicePopularity.datasets[0].data[i]
-  })).slice(0, 6) || [];
+  const pieData = data?.globalServicePopularity?.labels?.length
+    ? data.globalServicePopularity.labels.map((label, i) => ({
+      name: label,
+      value: data.globalServicePopularity.datasets[0].data[i]
+    })).slice(0, 6)
+    : [{ name: 'No Data', value: 0 }];
 
   const refererPieOption = {
     color: TECH_COLORS,
@@ -396,36 +444,49 @@ export function AdminDashboardPage() {
     ]
   };
 
-  const radarIndicator = data?.salonRatingDistribution?.map(rating => ({ name: rating.salonName, max: 5 })) || [{ name: 'N/A', max: 5 }];
-  const radarData = data?.salonRatingDistribution?.map(rating => rating.averageRating) || [0];
-  const radarOption = {
+  const ratingBarRaceOption = {
     color: ['#6366f1'],
-    tooltip: { ...commonTooltip, trigger: 'item' },
-    radar: {
-      indicator: radarIndicator,
-      splitArea: { areaStyle: { color: ['#f8fafc', '#f1f5f9'] } },
+    tooltip: { ...commonTooltip, trigger: 'axis', axisPointer: { type: 'shadow' } },
+    grid: { left: '2%', right: '10%', bottom: '3%', top: '10%', containLabel: true },
+    xAxis: {
+      type: 'value',
+      max: 5,
       axisLine: { lineStyle: { color: BORDER_COLOR } },
-      splitLine: { lineStyle: { color: BORDER_COLOR } },
-      axisName: { color: TEXT_SECONDARY, fontSize: 11, fontFamily: 'monospace' }
+      axisLabel: commonAxisLabel,
+      splitLine: commonSplitLine
+    },
+    yAxis: {
+      type: 'category',
+      data: salonRatingData.length ? salonRatingData.map(d => d.name) : ['No Data'],
+      axisLine: { lineStyle: { color: BORDER_COLOR } },
+      axisLabel: commonAxisLabel
     },
     series: [
       {
         name: 'Average Rating',
-        type: 'radar',
-        data: [{ value: radarData, name: 'Average Rating' }],
-        symbol: 'rect',
-        symbolSize: 6,
-        itemStyle: { color: '#6366f1' },
-        areaStyle: { color: 'rgba(99,102,241,0.2)' },
-        lineStyle: { width: 1.5 }
+        type: 'bar',
+        data: salonRatingData.length ? salonRatingData.map(d => d.value) : [0],
+        barWidth: 12,
+        itemStyle: { color: '#6366f1', borderRadius: [0, 4, 4, 0] },
+        label: {
+          show: true,
+          position: 'right',
+          valueAnimation: true,
+          fontFamily: 'monospace',
+          fontSize: 11,
+          color: '#6366f1'
+        }
       }
     ]
   };
 
   const datasetSource = [['Promotion', 'Revenue', 'Discount']];
-  if (data?.globalPromotionPerformance) {
+  if (data?.globalPromotionPerformance && data.globalPromotionPerformance.length > 0) {
     data.globalPromotionPerformance.forEach(promo => { datasetSource.push([promo.promotionName, promo.revenueGenerated, promo.discountGiven]); });
+  } else {
+    datasetSource.push(['No Data', 0, 0]);
   }
+
   const shareDatasetOption = {
     color: ['#0ea5e9', '#f59e0b'],
     legend: { top: 0, right: 0, textStyle: { color: TEXT_SECONDARY, fontSize: 11, fontFamily: 'monospace' }, icon: 'rect' },
@@ -433,7 +494,7 @@ export function AdminDashboardPage() {
     dataset: { source: datasetSource },
     grid: { left: '2%', right: '2%', bottom: '3%', top: '15%', containLabel: true },
     xAxis: { type: 'category', axisLine: { lineStyle: { color: BORDER_COLOR } }, axisLabel: commonAxisLabel },
-    yAxis: { axisLabel: { ...commonAxisLabel, formatter: (value) => `${(value / 1000).toLocaleString("vi-VN")}k ₫` }, splitLine: commonSplitLine },
+    yAxis: { axisLabel: { ...commonAxisLabel, formatter: (value) => `${(value / 1000).toLocaleString("vi-VN")}k ₫` }, splitLine: commonSplitLine, max: (val) => val.max === 0 ? 100000 : null },
     series: [{ type: 'bar', barWidth: 16 }, { type: 'bar', barWidth: 16 }]
   };
 
@@ -441,16 +502,16 @@ export function AdminDashboardPage() {
     color: ['#14b8a6'],
     tooltip: { ...commonTooltip, trigger: 'axis', axisPointer: { type: 'shadow' } },
     grid: { left: '2%', right: '6%', bottom: '3%', top: '10%', containLabel: true },
-    xAxis: { type: 'value', axisLine: { lineStyle: { color: BORDER_COLOR } }, axisLabel: { ...commonAxisLabel, formatter: (val) => `${(val / 1000).toLocaleString("vi-VN")}k ₫` }, splitLine: commonSplitLine },
-    yAxis: { type: 'category', data: topSalonsData.map(d => d.name), axisLine: { lineStyle: { color: BORDER_COLOR } }, axisLabel: commonAxisLabel },
-    series: [{ name: 'Revenue', type: 'bar', data: topSalonsData.map(d => d.value), barWidth: 12, itemStyle: { color: '#14b8a6' } }]
+    xAxis: { type: 'value', max: (val) => val.max === 0 ? 100000 : null, axisLine: { lineStyle: { color: BORDER_COLOR } }, axisLabel: { ...commonAxisLabel, formatter: (val) => `${(val / 1000).toLocaleString("vi-VN")}k ₫` }, splitLine: commonSplitLine },
+    yAxis: { type: 'category', data: topSalonsData.length ? topSalonsData.map(d => d.name) : ['No Data'], axisLine: { lineStyle: { color: BORDER_COLOR } }, axisLabel: commonAxisLabel },
+    series: [{ name: 'Revenue', type: 'bar', data: topSalonsData.length ? topSalonsData.map(d => d.value) : [0], barWidth: 12, itemStyle: { color: '#14b8a6' } }]
   };
 
   const renderWidgetContent = (id, isPinned) => {
     const chartHeight = isPinned ? '400px' : '300px';
     switch (id) {
       case 'globalServicePopularity': return <ReactECharts option={refererPieOption} style={{ height: chartHeight, width: '100%' }} />;
-      case 'salonRatingDistribution': return <ReactECharts option={radarOption} style={{ height: chartHeight, width: '100%' }} />;
+      case 'salonRatingDistribution': return <ReactECharts option={ratingBarRaceOption} style={{ height: chartHeight, width: '100%' }} />;
       case 'revenueTrend': return <ReactECharts option={stackedLineOption} style={{ height: chartHeight, width: '100%' }} />;
       case 'userGrowth': return <ReactECharts option={lineRaceOption} style={{ height: chartHeight, width: '100%' }} />;
       case 'globalPromotionPerformance': return <ReactECharts option={shareDatasetOption} style={{ height: chartHeight, width: '100%' }} />;
@@ -490,53 +551,96 @@ export function AdminDashboardPage() {
   const unpinnedWidgets = widgets.filter(w => !w.pinned && w.visible);
 
   return (
-    <section className="min-h-full bg-[#fff9fb] bg-[radial-gradient(circle_at_top_right,rgba(255,227,160,.35),transparent_35%),radial-gradient(circle_at_bottom_left,rgba(255,193,220,.22),transparent_35%),linear-gradient(to_right,#f7dbe7_1px,transparent_1px),linear-gradient(to_bottom,#f7dbe7_1px,transparent_1px)] p-6 lg:p-8 font-sans">
-      <div className="mx-auto max-w-[1600px] space-y-6">
-
-        {/* Header Section */}
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between mb-8 z-10 sticky top-0 bg-[#fff9fb]/80 backdrop-blur-md p-4 -mx-4 rounded-xl border border-slate-200 shadow-sm">
-          <div>
-            <h1 className="text-2xl font-bold tracking-widest text-slate-900 uppercase">System Dashboard</h1>
-            <p className="text-xs font-mono text-slate-500 uppercase tracking-widest mt-1">Data Telemetry & Monitoring</p>
-          </div>
-          <div className="flex gap-2 items-center">
-            <Dropdown menu={layoutMenuProps} trigger={['click']} placement="bottomRight">
-              <Button icon={<Settings2 size={16} className="text-slate-500"/>} className="border-slate-200 font-mono text-xs rounded-none bg-white h-[32px] hover:border-slate-800">
-                Customize
-              </Button>
-            </Dropdown>
-            <div className="bg-white border border-slate-200">
-              <Segmented
-                options={['Day', 'Week', 'Month', 'Year']}
-                value={filterMode === "Custom" ? null : filterMode}
-                onChange={handleFilterModeChange}
-                className="bg-transparent font-mono text-xs rounded-none [&_.ant-segmented-item-selected]:bg-slate-800 [&_.ant-segmented-item-selected]:text-white [&_.ant-segmented-item]:rounded-none"
-              />
-            </div>
-            <DatePicker.RangePicker
-              value={dateRange}
-              onChange={handleDateRangeChange}
-              className="border border-slate-200 bg-white rounded-none font-mono text-xs h-[32px]"
-              format="DD/MM/YYYY"
-            />
-          </div>
+    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-800 font-sans">
+      {/* Header & Controls */}
+      {/* <div className="flex flex-col gap-4 bg-white px-8 py-5 shadow-sm border-b border-slate-200 md:flex-row md:items-center md:justify-between z-50 sticky top-0"> */}
+      <div
+        className="
+                  sticky top-0 z-50
+                  flex flex-col gap-4
+                  border-b border-white/30
+                  bg-[linear-gradient(135deg,rgba(255,236,244,0.8)_0%,rgba(255,248,220,0.8)_100%)]
+                  backdrop-blur-xl
+                  shadow-[0_8px_24px_rgba(236,72,153,0.08)]
+                  px-8 py-5
+                  md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-[22px] font-black tracking-tight text-slate-900">Admin Dashboard</h1>
+          <p className="text-[13px] text-slate-500 font-medium">Data Telemetry & Monitoring</p>
         </div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <Dropdown menu={layoutMenuProps} trigger={['click']} placement="bottomRight">
+            <Button icon={<Settings2 size={16} className="text-slate-500" />} className="border-slate-200 font-medium text-slate-700 bg-white shadow-sm">
+              Customize
+            </Button>
+          </Dropdown>
+          <Segmented
+            options={['Day', 'Week', 'Month', 'Year', 'Custom']}
+            value={filterMode}
+            onChange={handleFilterModeChange}
+            className="rounded-md bg-slate-100 p-1 font-semibold"
+          />
+          <DatePicker.RangePicker
+            value={dateRange}
+            onChange={handleDateRangeChange}
+            className="rounded-md border-slate-200 hover:border-sky-500 focus:border-sky-500"
+            format="YYYY-MM-DD"
+          />
+        </div>
+      </div>
 
+      <div
+        className="
+    mx-auto w-full space-y-6 p-8
+    bg-[#fff9fb]
+    bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.55),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.35),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.45),transparent_35%),linear-gradient(to_right,#f3c7db_1px,transparent_1px),linear-gradient(to_bottom,#f3c7db_1px,transparent_1px)]
+  "
+      >
         {/* Top Metrics Row */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-6 border-b border-slate-200 pb-6">
-          {metricCards.map((card, index) => (
-            <div key={card.label} className="relative px-4 first:border-l-0 border-l border-slate-200">
-              <p className="text-[10px] font-bold text-slate-500 tracking-widest uppercase mb-1">{card.label}</p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-light text-slate-900 tracking-tight">{card.value}</span>
-                <span className="text-xs font-mono text-slate-400">{card.unit}</span>
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
+          {metricCards.map((metric, i) => {
+            const Icon = metric.icon || Activity;
+            const color = metric.color || '#10b981';
+
+            return (
+              <div
+                key={i}
+                className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+              >
+                <div
+                  className="absolute inset-0 opacity-[0.06]"
+                  style={{
+                    background: `linear-gradient(135deg, ${color}, transparent 75%)`,
+                  }}
+                />
+                <div className="relative flex items-start justify-between">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                      {metric.label}
+                    </p>
+                    <h2 className="mt-3 text-[24px] font-black tracking-tight text-slate-800 leading-none break-all">
+                      {metric.value} <span className="text-[14px] text-slate-400 font-semibold">{metric.unit !== "VND" ? "" : "₫"}</span>
+                    </h2>
+                  </div>
+                  <div
+                    className="flex h-12 w-12 items-center justify-center rounded-2xl shadow-sm shrink-0 ml-2"
+                    style={{
+                      backgroundColor: `${color}18`,
+                      color: color,
+                    }}
+                  >
+                    <Icon size={24} strokeWidth={2.4} />
+                  </div>
+                </div>
+                <div
+                  className="mt-6 h-1.5 rounded-full"
+                  style={{
+                    background: `linear-gradient(to right, ${color}, transparent)`,
+                  }}
+                />
               </div>
-              <div className="mt-1 flex items-center gap-1 text-[10px] font-mono text-emerald-600">
-                <ArrowUpRight size={10} />
-                <span>{card.trend}</span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Pinned Widgets Section */}
@@ -593,12 +697,14 @@ export function AdminDashboardPage() {
               <div className="space-y-4">
                 {(() => {
                   const selectedRow = salonPerformanceRows.find(row => row.originalId === selectedSalonId);
-                  const managerCount = managersList?.items?.filter(m => m.salonId === selectedSalonId)?.length || 0;
-                  const staffCount = staffsList?.items?.filter(s => s.salonId === selectedSalonId)?.length || 0;
+                  const managerCount = salonManagers?.metaData?.totalItems || 0;
+                  const receptionistCount = salonReceptionists?.metaData?.totalItems || 0;
+                  const staffCount = salonStaffArtists?.metaData?.totalItems || 0;
                   return [
                     { label: "NAME", value: salonDetails.name },
                     { label: "MANAGER", value: selectedRow?.manager },
                     { label: "MANAGERS COUNT", value: managerCount },
+                    { label: "RECEPTIONISTS COUNT", value: receptionistCount },
                     { label: "STAFF COUNT", value: staffCount },
                     { label: "REVENUE", value: selectedRow ? `${(selectedRow.revenue || 0).toLocaleString("vi-VN")} ₫` : "0 ₫" },
                     { label: "STATUS", value: salonDetails.status },
@@ -621,6 +727,6 @@ export function AdminDashboardPage() {
           </div>
         </div>
       </Modal>
-    </section>
+    </div>
   );
 }
