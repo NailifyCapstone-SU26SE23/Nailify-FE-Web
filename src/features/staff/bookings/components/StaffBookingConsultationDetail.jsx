@@ -14,7 +14,7 @@ import {
   UserRound,
   X,
   Clock,
-  Map,
+  Map, ChevronDown, ChevronUp
 } from "lucide-react";
 import { useState } from "react";
 import { Table, List, Card, Image } from "antd";
@@ -269,12 +269,6 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                       <p className="text-base font-extrabold capitalize text-[#3f2b3f]">
                         {variantDetail.nailShape?.name || "--"}
                       </p>
-                      {/* <p className="mt-1 text-xs text-[#a88a9d]">
-                        Price: {formatVariantCurrency(variantDetail.nailShape?.price)}
-                      </p>
-                      <p className="mt-1 text-xs text-[#a88a9d]">
-                        Duration: {formatVariantDuration(variantDetail.nailShape?.duration)}
-                      </p> */}
                     </div>
                   </div>
                 </article>
@@ -285,15 +279,6 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                     <p className="text-base font-extrabold text-[#3f2b3f]">
                       {variantDetail.nailSurface?.name || "--"}
                     </p>
-                    {/* <p className="mt-2 text-xs text-[#a88a9d]">
-                      Shader: {variantDetail.nailSurface?.shaderParam || "--"}
-                    </p>
-                    <p className="mt-1 text-xs text-[#a88a9d]">
-                      Price: {formatVariantCurrency(variantDetail.nailSurface?.price)}
-                    </p>
-                    <p className="mt-1 text-xs text-[#a88a9d]">
-                      Duration: {formatVariantDuration(variantDetail.nailSurface?.duration)}
-                    </p> */}
                   </div>
                 </article>
               </div>
@@ -337,12 +322,6 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                             Finger #{item.fingerIndex ?? "--"}
                           </span>
                         </div>
-                        {/* <div className="mt-3 grid gap-2 md:grid-cols-2">
-                          <p className="text-xs text-[#6f5c6b]">Position: X {item.posX ?? "--"} • Y {item.posY ?? "--"}</p>
-                          <p className="text-xs text-[#6f5c6b]">Price: {formatVariantCurrency(item.component?.price)}</p>
-                          <p className="text-xs text-[#6f5c6b]">Duration: {formatVariantDuration(item.component?.duration)}</p>
-                          <p className="text-xs text-[#6f5c6b]">Config: {item.configJson || "--"}</p>
-                        </div> */}
                       </div>
                     ))
                   ) : (
@@ -497,18 +476,59 @@ export function StaffBookingConsultationDetail({
       : "Booking Confirmed";
   const chooseAnotherDesignButtonLabel = hasSelectedNailDesign ? "Choose Another Design" : "Choose Design";
 
+  const [customerExpanded, setCustomerExpanded] = useState(true);
+  const [bookingExpanded, setBookingExpanded] = useState(true);
+
   return (
-    <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff5fa_100%)]">
-      <div className="rounded-[24px] border border-[#f6dbe8] bg-[#fff7fb] p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
-        <div className="mt-4 space-y-4">
-          <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
-            <div className="flex items-center gap-3 border-b border-[#fdebf3] pb-4 mb-6">
+    <section className="flex min-h-full flex-col gap-6 bg-slate-50/50 p-2 sm:p-6 lg:p-8  bg-[#fff9fb]
+                      bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.55),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.35),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.45),transparent_35%),linear-gradient(to_right,#f3c7db_1px,transparent_1px),linear-gradient(to_bottom,#f3c7db_1px,transparent_1px)]">
+      <div className="mt-2 space-y-6">
+        <article className="rounded-3xl border border-white/60 bg-white/70 p-6 shadow-sm backdrop-blur-xl md:p-8 transition-all hover:shadow-md">
+          {/* <div className="flex items-center gap-3 border-b border-[#fdebf3] pb-4 mb-6">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2]">
+              <UserRound size={16} className="text-[#ea4f93]" />
+            </div>
+            <h2 className="text-sm font-black uppercase tracking-widest text-[#ea4f93]">Customer Information</h2>
+          </div> */}
+          <div className="mb-6 flex items-center justify-between border-b border-[#fdebf3] pb-4">
+            <div className="flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2]">
                 <UserRound size={16} className="text-[#ea4f93]" />
               </div>
-              <h2 className="text-sm font-black uppercase tracking-widest text-[#ea4f93]">Customer Information</h2>
+
+              <h2 className="text-sm font-black uppercase tracking-widest text-[#ea4f93]">
+                Customer Information
+              </h2>
             </div>
 
+            <button
+              type="button"
+              onClick={() => setCustomerExpanded((prev) => !prev)}
+              className="
+                        flex h-9 w-9 items-center justify-center
+                        rounded-full
+                        border border-[#f6d5e2]
+                        bg-white/70
+                        text-[#ea4f93]
+                        transition-all
+                        duration-300
+                        hover:scale-105
+                        hover:bg-[#fff3f8]
+                        hover:shadow-md
+                      ">
+              {customerExpanded ? (
+                <ChevronDown size={18} />
+              ) : (
+                <ChevronUp size={18} />
+              )}
+            </button>
+          </div>
+          <div
+            className={`overflow-hidden transition-all duration-500 ${customerExpanded
+              ? "max-h-[1000px] opacity-100"
+              : "max-h-0 opacity-0"
+              }`}
+          >
             <div className="mt-5 flex flex-col gap-5">
               <div className="flex flex-col gap-4 md:flex-row md:items-start">
                 <img
@@ -553,29 +573,74 @@ export function StaffBookingConsultationDetail({
                 {data.customer.preferences}
               </p>
             </div>
-          </article>
+          </div>
+        </article>
 
-          <article className="relative overflow-hidden rounded-[24px] border border-[#fdebf3] bg-gradient-to-b from-white/95 to-[#fffafb]/95 p-5 md:p-7 backdrop-blur-2xl shadow-[0_12px_40px_rgba(236,72,153,0.08)]">
-            <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-gradient-to-br from-[#ffb4d6]/30 to-[#e4c1f9]/30 blur-[60px]" />
-            <div className="pointer-events-none absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-gradient-to-tr from-[#ffecd2]/40 to-[#fcb69f]/40 blur-[60px]" />
+        <article className="relative overflow-hidden rounded-3xl border border-white/60 bg-white/70 p-6 md:p-8 backdrop-blur-2xl shadow-sm transition-all hover:shadow-md">
+          <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-gradient-to-br from-[#ffb4d6]/30 to-[#e4c1f9]/30 blur-[60px]" />
+          <div className="pointer-events-none absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-gradient-to-tr from-[#ffecd2]/40 to-[#fcb69f]/40 blur-[60px]" />
 
-            <div className="relative z-10">
-              <div className="flex flex-row justify-between items-center border-b border-[#fdebf3] pb-4 mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2]">
-                    <CalendarClock size={16} className="text-[#ea4f93]" />
-                  </div>
-                  <h2 className="text-sm font-black uppercase tracking-widest text-[#ea4f93]">Booking Information</h2>
+          <div className="relative z-10">
+            {/* <div className="flex flex-row justify-between items-center border-b border-[#fdebf3] pb-4 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2]">
+                  <CalendarClock size={16} className="text-[#ea4f93]" />
                 </div>
-                <div className="flex items-center gap-2">
-                  <Tag className={`m-0 ${getStatusColor(data.statusLabel)}`}>
-                    <Clock size={11} className="mr-1 inline-block fill-current" />
-                    {data.statusLabel}
-                  </Tag>
-                </div>
+                <h2 className="text-sm font-black uppercase tracking-widest text-[#ea4f93]">Booking Information</h2>
               </div>
+              <div className="flex items-center gap-2">
+                <Tag className={`m-0 ${getStatusColor(data.statusLabel)}`}>
+                  <Clock size={11} className="mr-1 inline-block fill-current" />
+                  {data.statusLabel}
+                </Tag>
+              </div>
+            </div> */}
+            <div className="mb-6 flex items-center justify-between border-b border-[#fdebf3] pb-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2]">
+                  <CalendarClock size={16} className="text-[#ea4f93]" />
+                </div>
+
+                <h2 className="text-sm font-black uppercase tracking-widest text-[#ea4f93]">
+                  Booking Information
+                </h2>
 
 
+              </div>
+              <div className="flex items-center gap-2">
+                <Tag className={`m-0 ${getStatusColor(data.statusLabel)}`}>
+                  <Clock size={11} className="mr-1 inline-block fill-current" />
+                  {data.statusLabel}
+                </Tag>
+                <button
+                  type="button"
+                  onClick={() => setBookingExpanded((prev) => !prev)}
+                  className="
+                          flex h-9 w-9 items-center justify-center
+                          rounded-full
+                          border border-[#f6d5e2]
+                          bg-white/70
+                          text-[#ea4f93]
+                          transition-all duration-300
+                          hover:scale-105
+                          hover:bg-[#fff3f8]
+                          hover:shadow-md
+                        ">
+                  {bookingExpanded ? (
+                    <ChevronDown size={18} />
+                  ) : (
+                    <ChevronUp size={18} />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div
+              className={`overflow-hidden transition-all duration-500 ${bookingExpanded
+                ? "max-h-[2500px] opacity-100"
+                : "max-h-0 opacity-0"
+                }`}
+            >
               <div className="mt-4">
                 {data.bookingInfo.find(item => item.label === "Service") && (
                   <div className="mb-6">
@@ -586,9 +651,9 @@ export function StaffBookingConsultationDetail({
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 lg:gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 lg:gap-6">
                   {data.bookingInfo.filter(item => item.label !== "Service").map((item) => (
-                    <div key={item.label} className="drop-shadow-[0_4px_12px_rgba(236,72,153,0.08)] transition-transform hover:-translate-y-1">
+                    <div key={item.label} className="drop-shadow-sm transition-transform hover:-translate-y-1">
                       <div
                         className="flex h-full flex-col justify-between bg-white p-4 pb-8 md:p-5 md:pb-9"
                         style={{ clipPath: "polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - 20px), 0 100%)" }}
@@ -610,267 +675,266 @@ export function StaffBookingConsultationDetail({
                 </div>
               </div>
             </div>
-          </article>
+          </div>
+        </article>
 
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
-            <div className="space-y-4">
-              {hasSelectedNailDesign ? (
-                <article className="relative overflow-hidden rounded-[24px] border border-[#fdebf3] bg-gradient-to-b from-white/95 to-[#fffafb]/95 p-4 backdrop-blur-2xl shadow-[0_12px_40px_rgba(236,72,153,0.08)]">
-                  {/* Decorative Orbs */}
-                  <div className="pointer-events-none absolute -right-32 -top-32 h-72 w-72 rounded-full bg-gradient-to-br from-[#ffb4d6]/20 to-[#e4c1f9]/20 blur-[80px]" />
-                  <div className="pointer-events-none absolute -bottom-32 -left-32 h-72 w-72 rounded-full bg-gradient-to-tr from-[#ffecd2]/30 to-[#fcb69f]/30 blur-[80px]" />
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
+          <div className="space-y-4">
+            {hasSelectedNailDesign ? (
+              <article className="relative overflow-hidden rounded-[24px] border border-[#fdebf3] bg-gradient-to-b from-white/95 to-[#fffafb]/95 p-4 backdrop-blur-2xl shadow-[0_12px_40px_rgba(236,72,153,0.08)]">
+                {/* Decorative Orbs */}
+                <div className="pointer-events-none absolute -right-32 -top-32 h-72 w-72 rounded-full bg-gradient-to-br from-[#ffb4d6]/20 to-[#e4c1f9]/20 blur-[80px]" />
+                <div className="pointer-events-none absolute -bottom-32 -left-32 h-72 w-72 rounded-full bg-gradient-to-tr from-[#ffecd2]/30 to-[#fcb69f]/30 blur-[80px]" />
 
-                  <div className="relative z-10">
-                    <div className="flex items-center justify-between gap-3 border-b border-[#fdebf3] pb-4 mb-6">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2] shadow-inner">
-                          <Sparkles size={18} className="text-[#ea4f93]" />
-                        </div>
-                        <h2 className="text-sm font-black uppercase tracking-widest text-[#ea4f93]">Current Selected Nail Design</h2>
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between gap-3 border-b border-[#fdebf3] pb-4 mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2] shadow-inner">
+                        <Sparkles size={18} className="text-[#ea4f93]" />
                       </div>
-                      {canViewVariantDetail ? (
-                        <button
-                          type="button"
-                          onClick={() => setIsVariantModalOpen(true)}
-                          className="group inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#f2bfd4] bg-white text-[#ea4f93] shadow-sm transition-all hover:scale-105 hover:bg-[#fff0f6] hover:shadow-md"
-                          title="View nail detail"
-                        >
-                          <Eye size={16} className="transition-transform group-hover:scale-110" />
-                        </button>
-                      ) : null}
+                      <h2 className="text-sm font-black uppercase tracking-widest text-[#ea4f93]">Current Selected Nail Design</h2>
                     </div>
-
-                    <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
-                      <div className="relative mx-auto w-full max-w-[320px] lg:mx-0 lg:w-[45%] lg:max-w-none shrink-0">
-                        {/* Glowing backdrop */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-[#ffb4d6]/30 to-[#e4c1f9]/30 blur-2xl rounded-full scale-90" />
-                        <div className="relative rounded-[24px] bg-white/60 backdrop-blur-md border border-white shadow-xl shadow-pink-500/5">
-                          {data.design.variantDetail ? (
-                            <ReadOnlyNailPreview
-                              variantDetail={data.design.variantDetail}
-                              className="w-full"
-                              showHeader={false}
-                              showInstruction={false}
-                            />
-                          ) : (
-                            <img
-                              crossOrigin="anonymous"
-                              src={data.design.image}
-                              alt={data.design.name}
-                              className="aspect-[4/3] w-full rounded-[18px] object-cover"
-                              loading="lazy"
-                              referrerPolicy="no-referrer"
-                            />
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex-1 space-y-6 pt-2">
-                        <div>
-                          <h3 className="bg-gradient-to-br from-[#ea4f93] to-[#ff8fbb] bg-clip-text text-3xl md:text-[2.2rem] font-black text-transparent drop-shadow-sm tracking-tight leading-none">
-                            {data.design.name}
-                          </h3>
-                        </div>
-
-                        <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2 rounded-[24px] bg-white/50 p-6 border border-white shadow-sm backdrop-blur-md">
-                          {data.design.details
-                            .filter((item) => {
-                              if (item.label === "Service") return false;
-                              if (item.label === "Customer Design") {
-                                const normalizedValue = String(item.value || "").trim();
-                                return normalizedValue && normalizedValue !== "--";
-                              }
-                              return true;
-                            })
-                            .map((item) => (
-                              <div key={item.label} className="group">
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#d67b9f] mb-1.5 flex items-center gap-1.5 transition-colors group-hover:text-[#ea4f93]">
-                                  <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-pink-400 to-rose-400 shadow-[0_0_8px_rgba(244,114,182,0.6)]"></span>
-                                  {item.label}
-                                </p>
-                                <p className="text-[15px] font-semibold text-gray-600 tracking-tight">{item.value}</p>
-                              </div>
-                            ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </article>
-              ) : null}
-
-              {!isCancelledBooking && !isPendingBooking && !isServiceInProgress && !isServiceCompleted ? (
-                <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2] shadow-inner">
-                      <Search size={18} className="text-[#ea4f93]" />
-                    </div>
-                    <h2 className="text-sm font-black uppercase tracking-widest text-[#ea4f93]">Customer Consultation</h2>
-                  </div>
-                  <div className="mt-5 flex flex-col items-center gap-6 text-center">
-                    <p className="text-lg font-bold text-[#3f2b3f]">{consultationQuestion}</p>
-                    <div className="flex w-full flex-col gap-3 sm:flex-row">
-                      {requiresCustomerNailConfirmation ? (
-                        <button
-                          type="button"
-                          onClick={onConfirmCustomerNail}
-                          disabled={isCustomerNailConfirmed || isServiceCompleted}
-                          className={`inline-flex flex-1 items-center justify-center gap-2 rounded-[14px] px-5 py-4 text-sm font-bold ${isCustomerNailConfirmed || isServiceCompleted
-                            ? "cursor-default bg-[#eef7ff] text-[#327adf]"
-                            : "border border-[#d8cbff] bg-white text-[#7c63d8]"
-                            }`}
-                        >
-                          <Check size={16} />
-                          {confirmCustomerNailButtonLabel}
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={onConfirmCurrentDesign}
-                          disabled={isCurrentDesignConfirmed || isServiceCompleted}
-                          className={`inline-flex flex-1 items-center justify-center gap-2 rounded-[14px] px-5 py-4 text-sm font-bold shadow-[0_16px_28px_rgba(236,72,153,0.2)] ${isCurrentDesignConfirmed || isServiceCompleted
-                            ? "cursor-default bg-[#e9f9ef] text-[#16975f] shadow-none"
-                            : "bg-[image:var(--gradient-accent)] text-white"
-                            }`}
-                        >
-                          <Check size={16} />
-                          {isCurrentDesignConfirmed || isServiceCompleted ? confirmedButtonLabel : confirmButtonLabel}
-                        </button>
-                      )}
-
+                    {canViewVariantDetail ? (
                       <button
                         type="button"
-                        onClick={onChooseAnotherDesign}
-                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-[14px] border border-[#f4cada] bg-white px-5 py-4 text-sm font-bold text-[#ea4f93]"
+                        onClick={() => setIsVariantModalOpen(true)}
+                        className="group inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#f2bfd4] bg-white text-[#ea4f93] shadow-sm transition-all hover:scale-105 hover:bg-[#fff0f6] hover:shadow-md"
+                        title="View nail detail"
                       >
-                        <Palette size={16} />
-                        {chooseAnotherDesignButtonLabel}
+                        <Eye size={16} className="transition-transform group-hover:scale-110" />
                       </button>
-                    </div>
+                    ) : null}
                   </div>
-                </article>
-              ) : null}
 
-              {!isCancelledBooking && !isPendingBooking && !isServiceCompleted ? (
-                <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2] shadow-inner">
-                      <ClipboardCheck size={18} className="text-[#ea4f93]" />
+                  <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
+                    <div className="relative mx-auto w-full max-w-[320px] lg:mx-0 lg:w-[45%] lg:max-w-none shrink-0">
+                      {/* Glowing backdrop */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-[#ffb4d6]/30 to-[#e4c1f9]/30 blur-2xl rounded-full scale-90" />
+                      <div className="relative rounded-[24px] bg-white/60 backdrop-blur-md border border-white shadow-xl shadow-pink-500/5">
+                        {data.design.variantDetail ? (
+                          <ReadOnlyNailPreview
+                            variantDetail={data.design.variantDetail}
+                            className="w-full"
+                            showHeader={false}
+                            showInstruction={false}
+                          />
+                        ) : (
+                          <img
+                            crossOrigin="anonymous"
+                            src={data.design.image}
+                            alt={data.design.name}
+                            className="aspect-[4/3] w-full rounded-[18px] object-cover"
+                            loading="lazy"
+                            referrerPolicy="no-referrer"
+                          />
+                        )}
+                      </div>
                     </div>
-                    <h2 className="text-sm font-black uppercase tracking-widest text-[#ea4f93]">Final Confirmation Checklist</h2>
+
+                    <div className="flex-1 space-y-6 pt-2">
+                      <div>
+                        <h3 className="bg-gradient-to-br from-[#ea4f93] to-[#ff8fbb] bg-clip-text text-3xl md:text-[2.2rem] font-black text-transparent drop-shadow-sm tracking-tight leading-none">
+                          {data.design.name}
+                        </h3>
+                      </div>
+
+                      <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2 rounded-[24px] bg-white/50 p-6 border border-white shadow-sm backdrop-blur-md">
+                        {data.design.details
+                          .filter((item) => {
+                            if (item.label === "Service") return false;
+                            if (item.label === "Customer Design") {
+                              const normalizedValue = String(item.value || "").trim();
+                              return normalizedValue && normalizedValue !== "--";
+                            }
+                            return true;
+                          })
+                          .map((item) => (
+                            <div key={item.label} className="group">
+                              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#d67b9f] mb-1.5 flex items-center gap-1.5 transition-colors group-hover:text-[#ea4f93]">
+                                <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-pink-400 to-rose-400 shadow-[0_0_8px_rgba(244,114,182,0.6)]"></span>
+                                {item.label}
+                              </p>
+                              <p className="text-[15px] font-semibold text-gray-600 tracking-tight">{item.value}</p>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
                   </div>
-                  <div className="mt-5 space-y-3">
-                    {data.checklist.map((item) => (
-                      <div
-                        key={item.label}
-                        className={`flex items-center gap-3 rounded-[14px] border px-4 py-3 text-sm font-semibold ${item.checked
-                          ? "border-[#f2a9c9] bg-[#fff1f7] text-[#d74f8d]"
-                          : "border-[#f0d8e3] bg-white text-[#6f5c6b]"
+                </div>
+              </article>
+            ) : null}
+
+            {!isCancelledBooking && !isPendingBooking && !isServiceInProgress && !isServiceCompleted ? (
+              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2] shadow-inner">
+                    <Search size={18} className="text-[#ea4f93]" />
+                  </div>
+                  <h2 className="text-sm font-black uppercase tracking-widest text-[#ea4f93]">Customer Consultation</h2>
+                </div>
+                <div className="mt-5 flex flex-col items-center gap-6 text-center">
+                  <p className="text-lg font-bold text-[#3f2b3f]">{consultationQuestion}</p>
+                  <div className="flex w-full flex-col gap-3 sm:flex-row">
+                    {requiresCustomerNailConfirmation ? (
+                      <button
+                        type="button"
+                        onClick={onConfirmCustomerNail}
+                        disabled={isCustomerNailConfirmed || isServiceCompleted}
+                        className={`inline-flex flex-1 items-center justify-center gap-2 rounded-[14px] px-5 py-4 text-sm font-bold ${isCustomerNailConfirmed || isServiceCompleted
+                          ? "cursor-default bg-[#eef7ff] text-[#327adf]"
+                          : "border border-[#d8cbff] bg-white text-[#7c63d8]"
                           }`}
                       >
-                        <span
-                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${item.checked
-                            ? "border-[#df5c96] bg-[#df5c96] text-white"
-                            : "border-[#e4cbd7] bg-[#fff7fb] text-transparent"
-                            }`}
-                        >
-                          <Check size={12} />
-                        </span>
-                        <span>{item.label}</span>
-                      </div>
-                    ))}
-                  </div>
+                        <Check size={16} />
+                        {confirmCustomerNailButtonLabel}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={onConfirmCurrentDesign}
+                        disabled={isCurrentDesignConfirmed || isServiceCompleted}
+                        className={`inline-flex flex-1 items-center justify-center gap-2 rounded-[14px] px-5 py-4 text-sm font-bold shadow-[0_16px_28px_rgba(236,72,153,0.2)] ${isCurrentDesignConfirmed || isServiceCompleted
+                          ? "cursor-default bg-[#e9f9ef] text-[#16975f] shadow-none"
+                          : "bg-[image:var(--gradient-accent)] text-white"
+                          }`}
+                      >
+                        <Check size={16} />
+                        {isCurrentDesignConfirmed || isServiceCompleted ? confirmedButtonLabel : confirmButtonLabel}
+                      </button>
+                    )}
 
+                    <button
+                      type="button"
+                      onClick={onChooseAnotherDesign}
+                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-[14px] border border-[#f4cada] bg-white px-5 py-4 text-sm font-bold text-[#ea4f93]"
+                    >
+                      <Palette size={16} />
+                      {chooseAnotherDesignButtonLabel}
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ) : null}
+
+            {!isCancelledBooking && !isPendingBooking && !isServiceCompleted ? (
+              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2] shadow-inner">
+                    <ClipboardCheck size={18} className="text-[#ea4f93]" />
+                  </div>
+                  <h2 className="text-sm font-black uppercase tracking-widest text-[#ea4f93]">Final Confirmation Checklist</h2>
+                </div>
+                <div className="mt-5 space-y-3">
+                  {data.checklist.map((item) => (
+                    <div
+                      key={item.label}
+                      className={`flex items-center gap-3 rounded-[14px] border px-4 py-3 text-sm font-semibold ${item.checked
+                        ? "border-[#f2a9c9] bg-[#fff1f7] text-[#d74f8d]"
+                        : "border-[#f0d8e3] bg-white text-[#6f5c6b]"
+                        }`}
+                    >
+                      <span
+                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${item.checked
+                          ? "border-[#df5c96] bg-[#df5c96] text-white"
+                          : "border-[#e4cbd7] bg-[#fff7fb] text-transparent"
+                          }`}
+                      >
+                        <Check size={12} />
+                      </span>
+                      <span>{item.label}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={onStartServiceSession}
+                  disabled={!canProceedToService}
+                  className={`mt-5 w-full rounded-[14px] px-5 py-4 text-sm font-bold ${canProceedToService
+                    ? "bg-[image:var(--gradient-accent)] text-white shadow-[0_16px_28px_rgba(236,72,153,0.2)]"
+                    : "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
+                    }`}
+                >
+                  {isServiceInProgress ? "Continue Service" : "Proceed to Service Session"}
+                </button>
+                {!canProceedToService ? (
+                  <p className="mt-3 text-xs font-medium text-[#b1859d]">
+                    {requiresCustomerNailConfirmation
+                      ? "Confirm current nail before proceeding to the service session."
+                      : "Confirm Current Design before proceeding to the service session."}
+                  </p>
+                ) : null}
+
+                {!isServiceInProgress ? (
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={onOpenDesignStudio}
+                      className="rounded-[12px] border border-[#f4cada] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
+                    >
+                      Open Design Studio
+                    </button>
+                    <button
+                      type="button"
+                      onClick={onOpenUpdateBooking}
+                      className="rounded-[12px] border border-[#f4cada] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
+                    >
+                      Add service
+                    </button>
+
+                  </div>
+                ) : null}
+              </article>
+            ) : null}
+          </div>
+
+          <aside className="space-y-4 border-t border-[#f3d5e2] bg-transparent pt-4 xl:border-l xl:border-t-0 xl:pl-4 xl:pt-0">
+            {!isCancelledBooking && !isPendingBooking && !isServiceCompleted ? (
+              <article className="rounded-[18px] border border-[#f3d5e2] bg-white p-4 ">
+                <SectionTitle
+                  icon={CheckCheck}
+                  title={isServiceInProgress ? "Continue Service" : "Next Actions"}
+                />
+                <div className="mt-4 space-y-3">
+                  {!isServiceInProgress ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={onOpenUpdateBooking}
+                        className="flex w-full items-center justify-center gap-2 rounded-[12px] border border-[#f4cada] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
+                      >
+                        <PencilLine size={13} />
+                        Update Booking
+                      </button>
+                      <button
+                        type="button"
+                        onClick={onOpenDesignStudio}
+                        className="flex w-full items-center justify-center gap-2 rounded-[12px] border border-[#f4cada] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
+                      >
+                        <Search size={13} />
+                        Open Design Studio
+                      </button>
+                    </>
+                  ) : null}
                   <button
                     type="button"
                     onClick={onStartServiceSession}
                     disabled={!canProceedToService}
-                    className={`mt-5 w-full rounded-[14px] px-5 py-4 text-sm font-bold ${canProceedToService
-                      ? "bg-[image:var(--gradient-accent)] text-white shadow-[0_16px_28px_rgba(236,72,153,0.2)]"
+                    className={`flex w-full items-center justify-center gap-2 rounded-[12px] px-4 py-2.5 text-xs font-bold ${canProceedToService
+                      ? "bg-[image:var(--gradient-accent)] text-white"
                       : "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
                       }`}
                   >
-                    {isServiceInProgress ? "Continue Service" : "Proceed to Service Session"}
+                    <ArrowUp size={13} />
+                    {isServiceInProgress ? "Continue Service" : "Start Service"}
                   </button>
-                  {!canProceedToService ? (
-                    <p className="mt-3 text-xs font-medium text-[#b1859d]">
-                      {requiresCustomerNailConfirmation
-                        ? "Confirm current nail before proceeding to the service session."
-                        : "Confirm Current Design before proceeding to the service session."}
-                    </p>
-                  ) : null}
-
-                  {!isServiceInProgress ? (
-                    <div className="mt-4 flex flex-wrap gap-3">
-                      <button
-                        type="button"
-                        onClick={onOpenDesignStudio}
-                        className="rounded-[12px] border border-[#f4cada] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
-                      >
-                        Open Design Studio
-                      </button>
-                      <button
-                        type="button"
-                        onClick={onOpenUpdateBooking}
-                        className="rounded-[12px] border border-[#f4cada] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
-                      >
-                        Add service
-                      </button>
-
-                    </div>
-                  ) : null}
-                </article>
-              ) : null}
-            </div>
-
-            <aside className="space-y-4 border-t border-[#f3d5e2] pt-4 xl:border-l xl:border-t-0 xl:pl-4 xl:pt-0">
-
-
-              {!isCancelledBooking && !isPendingBooking && !isServiceCompleted ? (
-                <article className="rounded-[18px] border border-[#f3d5e2] bg-white p-4">
-                  <SectionTitle
-                    icon={CheckCheck}
-                    title={isServiceInProgress ? "Continue Service" : "Next Actions"}
-                  />
-                  <div className="mt-4 space-y-3">
-                    {!isServiceInProgress ? (
-                      <>
-                        <button
-                          type="button"
-                          onClick={onOpenUpdateBooking}
-                          className="flex w-full items-center justify-center gap-2 rounded-[12px] border border-[#f4cada] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
-                        >
-                          <PencilLine size={13} />
-                          Update Booking
-                        </button>
-                        <button
-                          type="button"
-                          onClick={onOpenDesignStudio}
-                          className="flex w-full items-center justify-center gap-2 rounded-[12px] border border-[#f4cada] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
-                        >
-                          <Search size={13} />
-                          Open Design Studio
-                        </button>
-                      </>
-                    ) : null}
-                    <button
-                      type="button"
-                      onClick={onStartServiceSession}
-                      disabled={!canProceedToService}
-                      className={`flex w-full items-center justify-center gap-2 rounded-[12px] px-4 py-2.5 text-xs font-bold ${canProceedToService
-                        ? "bg-[image:var(--gradient-accent)] text-white"
-                        : "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
-                        }`}
-                    >
-                      <ArrowUp size={13} />
-                      {isServiceInProgress ? "Continue Service" : "Start Service"}
-                    </button>
-                  </div>
-                </article>
-              ) : null}
-            </aside>
-          </div>
+                </div>
+              </article>
+            ) : null}
+          </aside>
         </div>
       </div>
+
       <VariantDetailModal
         open={isVariantModalOpen}
         variantDetail={data.design.variantDetail}

@@ -16,7 +16,7 @@ import {
   Sparkles,
   Upload,
   UserRound,
-  X,
+  X, ChevronDown, ChevronUp
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
@@ -409,60 +409,136 @@ function SessionSummaryPanel({
     done: "border-[#cde3ff] bg-[#eef6ff] text-[#327adf] shadow-[0_8px_18px_rgba(50,122,223,0.12)]",
   };
 
+  const [summaryExpanded, setSummaryExpanded] = useState(true);
+
   return (
     <article className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-      <SectionTitle
-        icon={UserRound}
-        title="Customer Summary"
-        subtitle="Review customer profile and preferences"
-      />
+      <div className="flex items-center justify-between border-b border-[#fdebf3] pb-4">
+        <SectionTitle
+          icon={UserRound}
+          title="Customer Summary"
+          subtitle="Review customer profile and preferences"
+        />
 
-      <div className={`mt-4 rounded-xl border border-gray-200 p-5 ${summaryToneByPhase[phase] || summaryToneByPhase.start}`}>
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex min-w-0 items-center gap-4">
-            <img crossOrigin="anonymous"
-              src={data.customerAvatar}
-              alt={data.customerName}
-              className="h-16 w-16 rounded-2xl border border-[#f2bfd4] object-cover"
-              loading="lazy"
-              referrerPolicy="no-referrer"
-            />
-            <div className="min-w-0">
-              <p className="truncate text-xl font-extrabold text-[#3f2b3f]">{data.customerName}</p>
-              <p className="mt-1 text-sm text-[#a88a9d]">{data.customerPhone || "--"}</p>
-            </div>
-          </div>
-
-          <span
-            className={`inline-flex w-fit items-center rounded-full border px-4 py-2 text-xs font-bold ${serviceStatusToneByPhase[phase] || serviceStatusToneByPhase.start}`}
-          >
-            {serviceStatusLabel}
-          </span>
-        </div>
-
-        <div className="mt-4 flex flex-wrap gap-2">
-          <SessionChip icon={UserRound} label={data.staffArtist || "--"} />
-          <SessionChip icon={Clock3} label={`Start: ${data.appointmentTime || "--"}`} />
-          <SessionChip icon={Clock3} label={`Est. Finish: ${data.estimatedFinishTime || "--"}`} />
-        </div>
+        <button
+          type="button"
+          onClick={() => setSummaryExpanded((prev) => !prev)}
+          className="
+        flex h-9 w-9 items-center justify-center
+        rounded-full
+        border border-[#f6d5e2]
+        bg-white/70
+        text-[#ea4f93]
+        transition-all
+        duration-300
+        hover:scale-105
+        hover:bg-[#fff3f8]
+        hover:shadow-md
+      "
+        >
+          {summaryExpanded ? (
+            <ChevronDown size={18} />
+          ) : (
+            <ChevronUp size={18} />
+          )}
+        </button>
       </div>
 
-      <div className="mt-5 grid gap-5 md:grid-cols-2">
-        <div className="md:col-span-2">
-          {/* <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">Service</p>
-          <div className="mt-3"> */}
-          <ServiceSummaryValue
-            services={Array.isArray(data.serviceBreakdown) ? data.serviceBreakdown : []}
-            fallbackValue={data.serviceLabel}
-            onOpenProcedures={onOpenProcedures}
-          />
-          {/* </div> */}
+      <div
+        className={`overflow-hidden transition-all duration-500 ease-[cubic-bezier(.22,1,.36,1)] ${summaryExpanded
+          ? "max-h-[2500px] opacity-100"
+          : "max-h-0 opacity-0"
+          }`}
+      >
+        <div
+          className={`mt-4 rounded-xl border border-gray-200 p-5 ${summaryToneByPhase[phase] || summaryToneByPhase.start
+            }`}
+        >
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex min-w-0 items-center gap-4">
+              <img
+                crossOrigin="anonymous"
+                src={data.customerAvatar}
+                alt={data.customerName}
+                className="h-16 w-16 rounded-2xl border border-[#f2bfd4] object-cover"
+                loading="lazy"
+                referrerPolicy="no-referrer"
+              />
+
+              <div className="min-w-0">
+                <p className="truncate text-xl font-extrabold text-[#3f2b3f]">
+                  {data.customerName}
+                </p>
+
+                <p className="mt-1 text-sm text-[#a88a9d]">
+                  {data.customerPhone || "--"}
+                </p>
+              </div>
+            </div>
+
+            <span
+              className={`inline-flex w-fit items-center rounded-full border px-4 py-2 text-xs font-bold ${serviceStatusToneByPhase[phase] ||
+                serviceStatusToneByPhase.start
+                }`}
+            >
+              {serviceStatusLabel}
+            </span>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <SessionChip icon={UserRound} label={data.staffArtist || "--"} />
+            <SessionChip
+              icon={Clock3}
+              label={`Start: ${data.appointmentTime || "--"}`}
+            />
+            <SessionChip
+              icon={Clock3}
+              label={`Est. Finish: ${data.estimatedFinishTime || "--"}`}
+            />
+          </div>
         </div>
-        <SummaryValue label="Staff Artist" value={data.staffArtist || "--"} />
-        <SummaryValue label="Appointment Time" value={data.appointmentTime || "--"} />
-        <SummaryValue label="Estimated Finish" value={data.estimatedFinishTime || "--"} />
-        <SummaryValue label="Estimated Duration" value={data.estimatedDuration || "--"} accent={phase === "done"} />
-        {hasConfirmedDesign ? <SummaryValue label="Confirmed Design" value={data.designName} /> : null}
+
+        <div className="mt-5 grid gap-5 md:grid-cols-2">
+          <div className="md:col-span-2">
+            <ServiceSummaryValue
+              services={
+                Array.isArray(data.serviceBreakdown)
+                  ? data.serviceBreakdown
+                  : []
+              }
+              fallbackValue={data.serviceLabel}
+              onOpenProcedures={onOpenProcedures}
+            />
+          </div>
+
+          <SummaryValue
+            label="Staff Artist"
+            value={data.staffArtist || "--"}
+          />
+
+          <SummaryValue
+            label="Appointment Time"
+            value={data.appointmentTime || "--"}
+          />
+
+          <SummaryValue
+            label="Estimated Finish"
+            value={data.estimatedFinishTime || "--"}
+          />
+
+          <SummaryValue
+            label="Estimated Duration"
+            value={data.estimatedDuration || "--"}
+            accent={phase === "done"}
+          />
+
+          {hasConfirmedDesign && (
+            <SummaryValue
+              label="Confirmed Design"
+              value={data.designName}
+            />
+          )}
+        </div>
       </div>
     </article>
   );
@@ -1751,6 +1827,7 @@ export function StaffServiceSessionPage() {
         artist: String(procedure.assignedArtistName || "").trim() || "Unassigned",
         duration: Number(procedure.duration || 0),
         time: `${formatTimeValue(procedure.estimatedStartTime) || "--"} - ${formatTimeValue(procedure.estimatedEndTime) || "--"}`,
+        actualTime: `${formatTimeValue(procedure.actualStartTime) || "--"} - ${formatTimeValue(procedure.actualEndTime) || "--"}`,
         note: buildProcedureStepMeta(procedure),
         stepNumber: Number.isFinite(procedure.stepOrder) ? procedure.stepOrder : index + 1,
         status: String(procedure.status || "").trim(),
@@ -2567,7 +2644,8 @@ export function StaffServiceSessionPage() {
   }
 
   return (
-    <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f9_100%)]">
+    <section className="flex min-h-full flex-col gap-4 p-4 bg-[#fff9fb]
+                      bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.55),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.35),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.45),transparent_35%),linear-gradient(to_right,#f3c7db_1px,transparent_1px),linear-gradient(to_bottom,#f3c7db_1px,transparent_1px)]">
 
       {flashMessage ? (
         <div className="rounded-[18px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
@@ -2578,17 +2656,62 @@ export function StaffServiceSessionPage() {
       <div ref={progressSentinelRef} className="h-px w-full" />
       <article
         style={{ top: `${STICKY_HEADER_OFFSET_PX}px` }}
-        className={`z-30 rounded-[22px] border border-[#f3d5e2] bg-white shadow-[0_14px_30px_rgba(236,72,153,0.05)] transition-[padding] duration-200 xl:sticky ${isProgressPinned ? "px-4 py-3 backdrop-blur-sm xl:bg-white/95" : "p-5"
-          }`}
+        className={`
+                    z-30
+                    rounded-[22px]
+                    border border-[#f3d5e2]
+                    shadow-[0_14px_30px_rgba(236,72,153,0.05)]
+                    xl:sticky
+
+                    transition-all
+                    duration-500
+                    ease-[cubic-bezier(.22,1,.36,1)]
+                    will-change-[padding,background-color,box-shadow,backdrop-filter]
+
+                   ${isProgressPinned
+            ? `
+                    bg-white/90
+                    backdrop-blur-xl
+                    px-4
+                    py-3
+                    shadow-[0_18px_40px_rgba(236,72,153,0.10)]
+                  `
+            : `
+                    bg-white
+                    p-5
+                  `
+          }
+            `}
       >
-        {!isProgressPinned ? (
+        <div
+          className={`
+                        overflow-hidden
+                        transition-all
+                        duration-500
+                        ease-[cubic-bezier(.22,1,.36,1)]
+                        ${isProgressPinned
+              ? "max-h-0 opacity-0 -translate-y-2"
+              : "max-h-32 opacity-100 translate-y-0 mb-6"
+            }
+                         `} >
           <SectionTitle
             icon={Sparkles}
             title="Session Progress"
             subtitle="Track the start and completion of the service workflow."
           />
-        ) : null}
-        <div className={`${isProgressPinned ? "mt-0" : "mt-6"} flex flex-col gap-5 xl:flex-row`}>
+        </div>
+
+        <div
+          className={`
+      flex flex-col gap-5 xl:flex-row
+
+      transition-all
+      duration-500
+      ease-[cubic-bezier(.22,1,.36,1)]
+
+      ${isProgressPinned ? "mt-0" : "mt-6"}
+    `}
+        >
           {progressSteps.map((step, index) => (
             <ProgressStep
               key={step.label}
@@ -2823,6 +2946,7 @@ export function StaffServiceSessionPage() {
                               <th className="px-4 py-3 font-bold">Procedure</th>
                               <th className="px-4 py-3 font-bold">Artist</th>
                               <th className="px-4 py-3 font-bold">Duration & Time</th>
+                              <th className="px-4 py-3 font-bold">Start & End Time</th>
                               <th className="px-4 py-3 font-bold">Status</th>
                               <th className="px-4 py-3 font-bold text-center">Action</th>
                             </tr>
@@ -2860,6 +2984,11 @@ export function StaffServiceSessionPage() {
                                         ? `${Math.floor(procedure.duration / 60)}h${procedure.duration % 60 > 0 ? ` ${procedure.duration % 60}m` : ""}`
                                         : `${procedure.duration} min`}
                                     </span>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-4">
+                                  <div className="flex flex-col items-start">
+                                    <span className="rounded bg-indigo-50 px-2 py-0.5 text-sm font-bold text-indigo-700">{procedure.actualTime}</span>
                                   </div>
                                 </td>
                                 <td className="px-4 py-4">

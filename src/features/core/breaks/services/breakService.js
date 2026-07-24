@@ -102,8 +102,7 @@ export async function deleteBreakRequest(id) {
 
 export async function fetchNailArtists() {
   try {
-    const salonId = getSalonId();
-    const id = salonId || "484c3aef-3ae1-4ad6-8aba-6b0bc6df586d"; // fallback ID from nailArtistsService.js
+    const id = getSalonId();
     const response = await axiosClient.get(`/Users/salon/${id}/staff`, {
       headers: getAuthHeaders(),
       params: { role: "Staff_Artist" },
