@@ -155,13 +155,6 @@ export const MENU_CONFIG = {
       section: "Main",
     },
     {
-      key: "receptionist-queue",
-      label: "Walk-In Queue",
-      to: ROUTES.receptionistQueue,
-      icon: "users",
-      section: "Main",
-    },
-    {
       key: "receptionist-waitlist",
       label: "Salon Waitlist",
       to: ROUTES.receptionistWaitlist,
@@ -232,15 +225,22 @@ export const MENU_CONFIG = {
     {
       key: "manager-schedules",
       label: "Schedules",
+      to: ROUTES.managerSchedules,
       icon: "calendar",
       section: "Main",
-      disabled: true,
     },
     {
       key: "manager-staff",
       label: "Staff Artists",
       to: ROUTES.managerStaffArtists,
       icon: "users",
+      section: "Main",
+    },
+    {
+      key: "manager-breaks",
+      label: "Artist Breaks",
+      to: ROUTES.managerBreaks,
+      icon: "clock",
       section: "Main",
     },
     {

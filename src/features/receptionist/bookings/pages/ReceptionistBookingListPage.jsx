@@ -63,18 +63,22 @@ function getTodayDateParam() {
 }
 
 function getStatusTone(status) {
-  switch (status) {
-    case "Completed":
-      return "bg-[#e8f8ef] text-[#1f9d61]";
-    case "Confirmed":
-    case "CheckedIn":
-      return "bg-[#eaf1ff] text-[#4c71d9]";
-    case "Pending":
-      return "bg-[#fff3e5] text-[#d98b1d]";
-    case "Cancelled":
-      return "bg-[#ffe8ef] text-[#df4e86]";
+  const norm = String(status || "").trim().toLowerCase();
+  switch (norm) {
+    case "completed":
+    case "servicecompleted":
+      return "bg-[#e8f8ef] text-[#1f9d61] border border-[#b8f0d0]";
+    case "confirmed":
+    case "approved":
+    case "checkedin":
+      return "bg-[#eaf1ff] text-[#4c71d9] border border-[#c4d7ff]";
+    case "pending":
+      return "bg-[#fff3e5] text-[#d98b1d] border border-[#ffe0b3]";
+    case "cancelled":
+    case "rejected":
+      return "bg-[#ffe8ef] text-[#df4e86] border border-[#ffc2d5]";
     default:
-      return "bg-[#f5ecff] text-[#7c63d8]";
+      return "bg-[#f5ecff] text-[#7c63d8] border border-[#dcd0ff]";
   }
 }
 
