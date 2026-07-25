@@ -475,7 +475,7 @@ export function ManagerBookingListPage() {
     setIsLoading(true);
     setError("");
     try {
-      const result = await fetchBookingsBySalonId(DEFAULT_SALON_ID, { pageNumber: 1, pageSize: 1000 });
+      const result = await fetchBookingsBySalonId(DEFAULT_SALON_ID, { pageNumber: 1, pageSize: 1000, isAdmin: true });
       let apiBookings = [];
       if (result?.items) apiBookings = result.items;
       else if (Array.isArray(result)) apiBookings = result;
