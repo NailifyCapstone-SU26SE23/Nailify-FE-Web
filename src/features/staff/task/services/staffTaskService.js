@@ -7,8 +7,8 @@ function getAuthHeaders() {
 
   return token
     ? {
-        Authorization: `Bearer ${token}`,
-      }
+      Authorization: `Bearer ${token}`,
+    }
     : {};
 }
 
@@ -89,6 +89,8 @@ function normalizeTask(task, fallbackTask = {}) {
     assignedArtistName: pickTrimmedString(task?.assignedArtistName, fallbackTask?.assignedArtistName),
     estimatedStartTime: pickTrimmedString(task?.estimatedStartTime, fallbackTask?.estimatedStartTime),
     estimatedEndTime: pickTrimmedString(task?.estimatedEndTime, fallbackTask?.estimatedEndTime),
+    actualStartTime: pickTrimmedString(task?.actualStartTime, fallbackTask?.actualStartTime),
+    actualEndTime: pickTrimmedString(task?.actualEndTime, fallbackTask?.actualEndTime),
     duration: pickNumber(task?.duration, fallbackTask?.duration),
     activeDuration: pickNumber(task?.activeDuration, fallbackTask?.activeDuration),
     passiveDuration: pickNumber(task?.passiveDuration, fallbackTask?.passiveDuration),

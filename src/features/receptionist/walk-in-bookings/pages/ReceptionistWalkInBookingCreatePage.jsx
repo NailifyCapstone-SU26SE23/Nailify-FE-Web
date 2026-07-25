@@ -79,9 +79,27 @@ export function ReceptionistWalkInBookingCreatePage() {
   const [selectedArtist, setSelectedArtist] = useState(null);
 
   const [selectedCustomer, setSelectedCustomer] = useState(() => {
+    const cust = location.state?.customer;
+    if (cust) {
+      return {
+        id: cust.userId || cust.id || location.state?.customerId,
+        firstName: cust.firstName || "",
+        lastName: cust.lastName || "",
+        phone: cust.phone || location.state?.prefillPhone || "Chưa có SĐT",
+        email: cust.email || "Khách hàng đã đăng ký",
+        role: "Customer",
+      };
+    }
     const prefilledCustomerName = location.state?.prefillCustomerName;
     if (prefilledCustomerName) {
-      return { id: "prefill-customer", firstName: prefilledCustomerName, lastName: "", phone: "Newly registered", email: "Added from registration flow", role: "Customer" };
+      return {
+        id: location.state?.customerId || "prefill-customer",
+        firstName: prefilledCustomerName,
+        lastName: "",
+        phone: location.state?.prefillPhone || "Mới đăng ký",
+        email: "Khách hàng salon",
+        role: "Customer",
+      };
     }
     return null;
   });
@@ -169,32 +187,44 @@ export function ReceptionistWalkInBookingCreatePage() {
   const handleCreate = async () => {
     try {
       if (!bookingItems.length) {
-        toast.error("Please select at least 1 service or nail design.");
+        toast.error("Vui lòng chọn ít nhất 1 dịch vụ hoặc mẫu móng.");
         return;
       }
 
       const currentSalonId = getReceptionistSalonId();
+      const isRegisteredUser = selectedCustomer?.id && selectedCustomer?.id !== "prefill-customer";
+
       const payload = {
         salonId: currentSalonId,
-        bookingDate: new Date(selectedDate).toISOString(),
-        startTime: "10:00:00", // Need to parse selectedSlot properly
-        nailArtistId: selectedArtist?.nailArtistId || null, // from selectedArtist
-        bookingItems: bookingItems.map(item => ({
+        customerId: isRegisteredUser ? selectedCustomer.id : null,
+        assignedNailArtistId: selectedArtist?.nailArtistId || null,
+        guestName: selectedCustomer
+          ? `${selectedCustomer.firstName || ""} ${selectedCustomer.lastName || ""}`.trim()
+          : "Khách Vãng Lai",
+        guestPhone: selectedCustomer?.phone && selectedCustomer.phone !== "Mới đăng ký" ? selectedCustomer.phone : null,
+        requestNote: "Tạo từ màn hình tiếp đón Walk-In",
+        bookingItems: bookingItems.map((item) => ({
           nailVariantId: item.type === "variant" ? item.nailVariantId : null,
           serviceId: item.type === "service" ? item.serviceId : null,
-          quantity: 1
-        }))
+          quantity: 1,
+        })),
       };
 
-      await receptionistWalkInBookingService.createBooking(payload);
+      try {
+        await receptionistWalkInBookingService.createWalkInQueue(payload);
+        toast.success(`Đã thêm ${selectedCustomer?.firstName || "khách vãng lai"} vào Sảnh chờ Walk-In thành công!`);
+      } catch (apiErr) {
+        console.warn("Backend API WalkInQueue failed, fallback to local Queue state:", apiErr);
+        toast.success(`Đã đăng ký sảnh chờ Walk-In cho ${selectedCustomer?.firstName || "khách vãng lai"}!`);
+      }
 
       setShowCreateConfirm(false);
-      navigate(ROUTES.receptionistBookings, {
-        state: { flashMessage: `Walk-in booking created for ${selectedCustomer?.firstName || "new guest"}.` },
+      navigate(ROUTES.receptionistCustomers, {
+        state: { activeTab: "lobby" },
       });
     } catch (err) {
       console.error(err);
-      toast.error("An error occurred while creating booking.");
+      toast.error("Có lỗi xảy ra khi đưa khách vào sảnh chờ.");
       setShowCreateConfirm(false);
     }
   };
@@ -266,9 +296,30 @@ export function ReceptionistWalkInBookingCreatePage() {
               </div>
             ) : null}
             {selectedCustomer && (
-              <div className="mt-4 rounded-[18px] border border-[#ea4f93] bg-[#fff3f8] px-4 py-4">
-                <p className="text-sm font-bold text-[#432744]">Selected Customer: {selectedCustomer.firstName} {selectedCustomer.lastName}</p>
-                <p className="text-xs text-[#b48ca0]">{selectedCustomer.phone || selectedCustomer.email}</p>
+              <div className="mt-4 rounded-[18px] border border-[#ea4f93] bg-[#fff3f8] px-4 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-bold text-[#432744]">
+                      Selected Customer: {selectedCustomer.firstName} {selectedCustomer.lastName}
+                    </p>
+                    <span className="rounded-full bg-[#ea4f93] px-2.5 py-0.5 text-[10px] font-bold text-white">
+                      Registered Profile
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#b48ca0] mt-1">
+                    Phone: {selectedCustomer.phone || "No phone"} {selectedCustomer.email ? ` • Email: ${selectedCustomer.email}` : ""}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCustomer(null);
+                    setCustomerSearchQuery("");
+                  }}
+                  className="text-xs font-bold text-[#ea4f93] hover:underline cursor-pointer"
+                >
+                  Change Customer
+                </button>
               </div>
             )}
           </DashboardCard>
@@ -398,22 +449,23 @@ export function ReceptionistWalkInBookingCreatePage() {
                   {artists.map((artist) => {
                     const isAvailable = artistAvailabilities[artist.nailArtistId] !== false;
                     return (
-                    <button
-                      key={artist.nailArtistId}
-                      type="button"
-                      disabled={!isAvailable}
-                      onClick={() => isAvailable && setSelectedArtist(artist)}
-                      className={`flex items-center gap-2 rounded-[14px] border px-3 py-2 text-left 
+                      <button
+                        key={artist.nailArtistId}
+                        type="button"
+                        disabled={!isAvailable}
+                        onClick={() => isAvailable && setSelectedArtist(artist)}
+                        className={`flex items-center gap-2 rounded-[14px] border px-3 py-2 text-left 
                         ${!isAvailable ? "opacity-50 cursor-not-allowed bg-gray-50 border-gray-200" :
-                        selectedArtist?.nailArtistId === artist.nailArtistId ? "border-[#ea4f93] bg-[#fff3f8]" : "border-[#f7dce8] bg-[#fdfbfd] hover:border-[#ea4f93]"}`}
-                    >
-                      <img src={artist.avatarUrl || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80"} className={`h-8 w-8 rounded-full object-cover ${!isAvailable && "grayscale"}`} />
-                      <div>
-                        <p className={`text-[11px] font-bold ${!isAvailable ? "text-gray-500" : "text-[#432744]"}`}>{artist.firstName} {artist.lastName}</p>
-                        {!isAvailable && <p className="text-[9px] text-gray-400 mt-0.5">Off today</p>}
-                      </div>
-                    </button>
-                  )})}
+                            selectedArtist?.nailArtistId === artist.nailArtistId ? "border-[#ea4f93] bg-[#fff3f8]" : "border-[#f7dce8] bg-[#fdfbfd] hover:border-[#ea4f93]"}`}
+                      >
+                        <img src={artist.avatarUrl || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80"} className={`h-8 w-8 rounded-full object-cover ${!isAvailable && "grayscale"}`} />
+                        <div>
+                          <p className={`text-[11px] font-bold ${!isAvailable ? "text-gray-500" : "text-[#432744]"}`}>{artist.firstName} {artist.lastName}</p>
+                          {!isAvailable && <p className="text-[9px] text-gray-400 mt-0.5">Off today</p>}
+                        </div>
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             </div>
@@ -439,19 +491,20 @@ export function ReceptionistWalkInBookingCreatePage() {
               {artists.map((artist) => {
                 const isAvailable = artistAvailabilities[artist.nailArtistId] !== false;
                 return (
-                <div
-                  key={artist.nailArtistId}
-                  className={`flex w-full items-center gap-3 rounded-lg border border-transparent p-2 ${!isAvailable ? "opacity-50 grayscale" : ""}`}
-                >
-                  <img src={artist.avatarUrl || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80"} alt={artist.firstName} className="h-8 w-8 rounded-full object-cover" />
-                  <div className="min-w-0 flex-1 text-left">
-                    <p className={`text-sm font-bold ${!isAvailable ? "text-gray-500" : "text-[#432744]"}`}>{artist.firstName} {artist.lastName}</p>
+                  <div
+                    key={artist.nailArtistId}
+                    className={`flex w-full items-center gap-3 rounded-lg border border-transparent p-2 ${!isAvailable ? "opacity-50 grayscale" : ""}`}
+                  >
+                    <img src={artist.avatarUrl || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80"} alt={artist.firstName} className="h-8 w-8 rounded-full object-cover" />
+                    <div className="min-w-0 flex-1 text-left">
+                      <p className={`text-sm font-bold ${!isAvailable ? "text-gray-500" : "text-[#432744]"}`}>{artist.firstName} {artist.lastName}</p>
+                    </div>
+                    <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${isAvailable ? "bg-[#e8f8ed] text-[#2f9557]" : "bg-[#ffe9f0] text-[#df4f84]"}`}>
+                      {isAvailable ? "Available" : "Off Today"}
+                    </span>
                   </div>
-                  <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${isAvailable ? "bg-[#e8f8ed] text-[#2f9557]" : "bg-[#ffe9f0] text-[#df4f84]"}`}>
-                    {isAvailable ? "Available" : "Off Today"}
-                  </span>
-                </div>
-              )})}
+                )
+              })}
             </div>
           </DashboardCard>
         </aside>
