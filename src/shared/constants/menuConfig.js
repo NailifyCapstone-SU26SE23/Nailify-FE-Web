@@ -162,6 +162,13 @@ export const MENU_CONFIG = {
       section: "Main",
     },
     {
+      key: "receptionist-chairs",
+      label: "Chairs",
+      to: ROUTES.receptionistChairs,
+      icon: "armchair",
+      section: "Main",
+    },
+    {
       key: "receptionist-reviews",
       label: "Reviews",
       icon: "reviews",
@@ -213,6 +220,13 @@ export const MENU_CONFIG = {
       label: "Walk-In Queue",
       to: ROUTES.managerQueue,
       icon: "users",
+      section: "Main",
+    },
+    {
+      key: "manager-chairs",
+      label: "Chairs",
+      to: ROUTES.managerChairs,
+      icon: "armchair",
       section: "Main",
     },
     {
