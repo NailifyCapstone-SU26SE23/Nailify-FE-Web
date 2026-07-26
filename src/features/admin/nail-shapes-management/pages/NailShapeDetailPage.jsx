@@ -9,6 +9,7 @@ import {
   Upload,
   Wallet,
   X,
+  Plus,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
@@ -22,7 +23,13 @@ import {
   formatNailShapeDuration,
   updateAdminNailShape,
 } from "../services/nailShapesManagementService";
-import { Image } from "antd";
+import {
+  fetchAdminShapeMethodConfigsByNailShape,
+  createAdminShapeMethodConfig,
+  updateAdminShapeMethodConfig,
+  deleteAdminShapeMethodConfig,
+} from "../../shape-method-configs-management/services/shapeMethodConfigsManagementService";
+import { Image, Table, Modal, Form, Input, InputNumber, Switch, Button, Popconfirm } from "antd";
 
 function validateForm(formValues) {
   if (!String(formValues.name || "").trim()) {
@@ -56,6 +63,74 @@ export function NailShapeDetailPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
 
+  const [configs, setConfigs] = useState([]);
+  const [isLoadingConfigs, setIsLoadingConfigs] = useState(true);
+
+  const [isConfigModalVisible, setIsConfigModalVisible] = useState(false);
+  const [editingConfig, setEditingConfig] = useState(null);
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
+  const [configForm] = Form.useForm();
+
+  const handleOpenConfigModal = (config = null) => {
+    setEditingConfig(config);
+    if (config) {
+      configForm.setFieldsValue({
+        name: config.name,
+        price: config.price,
+        duration: config.duration,
+        status: config.status === "Active",
+      });
+    } else {
+      configForm.resetFields();
+      configForm.setFieldsValue({ status: true });
+    }
+    setIsConfigModalVisible(true);
+  };
+
+  const handleSaveConfig = async () => {
+    try {
+      const values = await configForm.validateFields();
+      setIsSavingConfig(true);
+      const toastId = toast.loading(editingConfig ? "Updating config..." : "Creating config...");
+      
+      const payload = {
+        nailShapeId: Number(shapeId),
+        name: values.name.trim(),
+        price: Number(values.price),
+        duration: Number(values.duration),
+        status: values.status ? "Active" : "Inactive",
+      };
+
+      if (editingConfig) {
+        const updatedConfig = await updateAdminShapeMethodConfig(editingConfig.shapeMethodConfigId, payload);
+        setConfigs((prev) => prev.map(c => c.shapeMethodConfigId === updatedConfig.shapeMethodConfigId ? updatedConfig : c));
+        toast.success("Config updated successfully", { id: toastId });
+      } else {
+        const newConfig = await createAdminShapeMethodConfig(payload);
+        setConfigs((prev) => [...prev, newConfig]);
+        toast.success("Config created successfully", { id: toastId });
+      }
+
+      setIsConfigModalVisible(false);
+    } catch (error) {
+      if (error.name === 'ValidationError') return; // form validation failed
+      toast.error(error instanceof Error ? error.message : "Failed to save config.");
+    } finally {
+      setIsSavingConfig(false);
+    }
+  };
+
+  const handleDeleteConfig = async (configId) => {
+    const toastId = toast.loading("Deleting config...");
+    try {
+      await deleteAdminShapeMethodConfig(configId);
+      setConfigs((prev) => prev.filter((c) => c.shapeMethodConfigId !== configId));
+      toast.success("Config deleted successfully", { id: toastId });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete config.", { id: toastId });
+    }
+  };
+
   useEffect(() => {
     if (!location.state?.flashMessage && !location.state?.startInEdit) {
       return;
@@ -86,6 +161,14 @@ export function NailShapeDetailPage() {
           image: null,
         });
         setImagePreview(response.imageUrl || "");
+
+        // Fetch configs for this shape
+        try {
+          const configData = await fetchAdminShapeMethodConfigsByNailShape(shapeId);
+          if (isMounted) setConfigs(configData);
+        } catch (configError) {
+          console.error("Failed to load configs", configError);
+        }
       } catch (loadError) {
         if (!isMounted) {
           return;
@@ -95,6 +178,7 @@ export function NailShapeDetailPage() {
       } finally {
         if (isMounted) {
           setIsLoading(false);
+          setIsLoadingConfigs(false);
         }
       }
     };
@@ -424,7 +508,82 @@ export function NailShapeDetailPage() {
             </div>
           </section>
 
-          
+          <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-100 md:p-8">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-slate-800">Shape Method Configs</h2>
+              <Button 
+                type="primary" 
+                icon={<Plus size={16} />} 
+                onClick={() => handleOpenConfigModal()}
+                className="bg-rose-500 hover:bg-rose-600 border-none rounded-full px-5 shadow-md shadow-rose-200"
+              >
+                Add Config
+              </Button>
+            </div>
+            <Table
+              dataSource={configs}
+              rowKey="shapeMethodConfigId"
+              pagination={false}
+              loading={isLoadingConfigs}
+              columns={[
+                {
+                  title: 'Name',
+                  dataIndex: 'name',
+                  key: 'name',
+                  render: (text) => <span className="font-semibold text-slate-700">{text}</span>
+                },
+                {
+                  title: 'Price',
+                  dataIndex: 'price',
+                  key: 'price',
+                  render: (val) => <span className="text-emerald-600 font-medium">{formatNailShapeCurrency(val)}</span>
+                },
+                {
+                  title: 'Duration',
+                  dataIndex: 'duration',
+                  key: 'duration',
+                  render: (val) => <span className="text-blue-600 font-medium">{formatNailShapeDuration(val)}</span>
+                },
+                {
+                  title: 'Status',
+                  dataIndex: 'status',
+                  key: 'status',
+                  render: (val) => (
+                    <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${val === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                      {val}
+                    </span>
+                  )
+                },
+                {
+                  title: 'Actions',
+                  key: 'actions',
+                  align: 'right',
+                  render: (_, record) => (
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        type="text"
+                        icon={<Pencil size={16} />}
+                        onClick={() => handleOpenConfigModal(record)}
+                        className="text-slate-500 hover:text-blue-600"
+                      />
+                      <Popconfirm
+                        title="Delete Config"
+                        description="Are you sure you want to delete this config?"
+                        onConfirm={() => handleDeleteConfig(record.shapeMethodConfigId)}
+                        okText="Yes"
+                        cancelText="No"
+                        okButtonProps={{ danger: true }}
+                      >
+                        <Button type="text" danger icon={<Trash2 size={16} />} />
+                      </Popconfirm>
+                    </div>
+                  )
+                }
+              ]}
+              className="border border-slate-100 rounded-xl overflow-hidden"
+            />
+          </section>
+
         </div>
       )}
 
@@ -471,6 +630,87 @@ export function NailShapeDetailPage() {
         }
         warnings={["This action calls the backend delete endpoint and removes the record permanently."]}
       />
+
+      <Modal
+        title={
+          <h3 className="text-lg font-bold text-slate-800">
+            {editingConfig ? "Edit Shape Method Config" : "Add Shape Method Config"}
+          </h3>
+        }
+        open={isConfigModalVisible}
+        onCancel={() => !isSavingConfig && setIsConfigModalVisible(false)}
+        footer={null}
+        destroyOnClose
+        className="rounded-2xl"
+      >
+        <Form
+          form={configForm}
+          layout="vertical"
+          onFinish={handleSaveConfig}
+          className="mt-6"
+        >
+          <Form.Item
+            name="name"
+            label={<span className="text-sm font-semibold text-slate-700">Name</span>}
+            rules={[{ required: true, message: 'Please enter a name' }]}
+          >
+            <Input className="rounded-xl border-slate-200 py-2 hover:border-rose-300 focus:border-rose-400 focus:ring-rose-100" />
+          </Form.Item>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Form.Item
+              name="price"
+              label={<span className="text-sm font-semibold text-slate-700">Price (VND)</span>}
+              rules={[{ required: true, message: 'Please enter price' }]}
+            >
+              <InputNumber 
+                className="w-full rounded-xl border-slate-200 hover:border-rose-300 focus:border-rose-400 focus:ring-rose-100" 
+                min={0}
+                step={1000}
+                formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                parser={value => value?.replace(/\$\s?|(,*)/g, '') || ''}
+              />
+            </Form.Item>
+            
+            <Form.Item
+              name="duration"
+              label={<span className="text-sm font-semibold text-slate-700">Duration (mins)</span>}
+              rules={[{ required: true, message: 'Please enter duration' }]}
+            >
+              <InputNumber 
+                className="w-full rounded-xl border-slate-200 hover:border-rose-300 focus:border-rose-400 focus:ring-rose-100" 
+                min={1} 
+              />
+            </Form.Item>
+          </div>
+
+          <Form.Item
+            name="status"
+            label={<span className="text-sm font-semibold text-slate-700">Status Active</span>}
+            valuePropName="checked"
+          >
+            <Switch />
+          </Form.Item>
+
+          <div className="mt-8 flex justify-end gap-3">
+            <Button 
+              onClick={() => setIsConfigModalVisible(false)} 
+              disabled={isSavingConfig}
+              className="rounded-full px-6 font-semibold"
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="primary" 
+              htmlType="submit" 
+              loading={isSavingConfig}
+              className="rounded-full bg-rose-500 px-6 font-semibold shadow-md shadow-rose-200 hover:bg-rose-600"
+            >
+              Save Config
+            </Button>
+          </div>
+        </Form>
+      </Modal>
     </section>
   );
 }

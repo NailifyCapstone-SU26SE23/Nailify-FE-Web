@@ -375,6 +375,13 @@ export const MENU_CONFIG = {
       section: "Main",
     },
     {
+      key: "admin-shape-method-configs",
+      label: "Shape Method Configs",
+      to: ROUTES.adminShapeMethodConfigs,
+      icon: "sliders",
+      section: "Main",
+    },
+    {
       key: "admin-nail-surfaces",
       label: "Nail Surfaces",
       to: ROUTES.adminNailSurfaces,
