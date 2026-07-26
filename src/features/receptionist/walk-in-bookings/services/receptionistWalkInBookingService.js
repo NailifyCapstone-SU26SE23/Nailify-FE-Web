@@ -75,5 +75,17 @@ export const receptionistWalkInBookingService = {
       console.error("Error registering customer:", error);
       throw error;
     }
+  },
+
+  getArtistAvailableSlots: async (nailArtistId, bookingDate) => {
+    try {
+      const response = await axiosClient.get("/Bookings/artist-available-slots", {
+        params: { NailArtistId: nailArtistId, BookingDate: bookingDate }
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching artist slots:", error);
+      return error.response?.data || { isSucceeded: false, message: "Unknown error" };
+    }
   }
 };

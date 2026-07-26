@@ -15,6 +15,7 @@ import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfi
 import { ROUTES } from "../../../../shared/constants/routes";
 import { receptionistWalkInBookingService } from "../services/receptionistWalkInBookingService";
 import { NailVariantSelectionModal } from "../components/NailVariantSelectionModal";
+import { getReceptionistSalonId } from "../../bookings/services/receptionistBookingService";
 
 const TIME_SLOTS = [
   { time: "10:00 - 10:30 AM", status: "Available", tone: "border-[#bfe7ca] bg-[#effcf3] text-[#2f9557]" },
@@ -31,8 +32,8 @@ function formatDateLabel(dateValue) {
 }
 
 function formatVND(amount) {
-  if (!amount) return "0 đ";
-  return amount.toLocaleString("vi-VN") + " đ";
+  if (!amount) return "0 VND";
+  return amount.toLocaleString("vi-VN") + " VND";
 }
 
 function DashboardCard({ title, description, icon, children, className = "" }) {
@@ -66,6 +67,7 @@ export function ReceptionistWalkInBookingCreatePage() {
   const [nailDesigns, setNailDesigns] = useState([]);
   const [services, setServices] = useState([]);
   const [artists, setArtists] = useState([]);
+  const [artistAvailabilities, setArtistAvailabilities] = useState({});
 
   const [selectedDesignForModal, setSelectedDesignForModal] = useState(null);
 
@@ -103,10 +105,32 @@ export function ReceptionistWalkInBookingCreatePage() {
 
   // Fetch initial API data
   useEffect(() => {
+    const currentSalonId = getReceptionistSalonId();
     receptionistWalkInBookingService.getNailDesigns({ pageSize: 50 }).then(res => setNailDesigns(res.data?.items || [])).catch(console.error);
     receptionistWalkInBookingService.getServices({ pageSize: 50 }).then(res => setServices(res.data?.items || [])).catch(console.error);
-    receptionistWalkInBookingService.getAvailableArtists("3fa85f64-5717-4562-b3fc-2c963f66afa6").then(res => setArtists(res.data?.items || [])).catch(console.error);
+    if (currentSalonId) {
+      receptionistWalkInBookingService.getAvailableArtists(currentSalonId).then(res => setArtists(res.data?.items || [])).catch(console.error);
+    }
   }, []);
+
+  // Fetch artist availability for selected date
+  useEffect(() => {
+    if (artists.length > 0 && selectedDate) {
+      const fetchAvailabilities = async () => {
+        const availabilities = {};
+        await Promise.all(artists.map(async (artist) => {
+          const res = await receptionistWalkInBookingService.getArtistAvailableSlots(artist.nailArtistId, selectedDate);
+          if (res?.isSucceeded === false && res?.message === "Thợ nail không có lịch làm việc trong ngày này.") {
+            availabilities[artist.nailArtistId] = false;
+          } else {
+            availabilities[artist.nailArtistId] = true;
+          }
+        }));
+        setArtistAvailabilities(availabilities);
+      };
+      fetchAvailabilities();
+    }
+  }, [artists, selectedDate]);
 
   const estimatedPrice = useMemo(() => bookingItems.reduce((sum, item) => sum + Number(item.price || 0), 0), [bookingItems]);
   const estimatedDuration = useMemo(() => bookingItems.reduce((sum, item) => sum + Number(item.duration || 30), 0), [bookingItems]);
@@ -145,12 +169,13 @@ export function ReceptionistWalkInBookingCreatePage() {
   const handleCreate = async () => {
     try {
       if (!bookingItems.length) {
-        toast.error("Vui lòng chọn ít nhất 1 dịch vụ hoặc mẫu nail.");
+        toast.error("Please select at least 1 service or nail design.");
         return;
       }
 
+      const currentSalonId = getReceptionistSalonId();
       const payload = {
-        salonId: "3fa85f64-5717-4562-b3fc-2c963f66afa6", // TODO: Replace with real salon ID
+        salonId: currentSalonId,
         bookingDate: new Date(selectedDate).toISOString(),
         startTime: "10:00:00", // Need to parse selectedSlot properly
         nailArtistId: selectedArtist?.nailArtistId || null, // from selectedArtist
@@ -169,7 +194,7 @@ export function ReceptionistWalkInBookingCreatePage() {
       });
     } catch (err) {
       console.error(err);
-      toast.error("Có lỗi xảy ra khi tạo booking.");
+      toast.error("An error occurred while creating booking.");
       setShowCreateConfirm(false);
     }
   };
@@ -279,7 +304,7 @@ export function ReceptionistWalkInBookingCreatePage() {
                       </div>
                       <div className="p-3">
                         <p className="text-sm font-bold text-[#432744] truncate">{design.name}</p>
-                        <p className="mt-1 text-[11px] font-bold text-[#ea4f93]">Từ {formatVND(design.minPrice)}</p>
+                        <p className="mt-1 text-[11px] font-bold text-[#ea4f93]">From {formatVND(design.minPrice)}</p>
                       </div>
                     </button>
                   ))}
@@ -370,19 +395,25 @@ export function ReceptionistWalkInBookingCreatePage() {
                     <p className="text-[11px] font-bold text-[#432744]">Any Available Artist</p>
                     <p className="mt-1 text-[10px] text-[#b48ca0]">First available</p>
                   </button>
-                  {artists.map((artist) => (
+                  {artists.map((artist) => {
+                    const isAvailable = artistAvailabilities[artist.nailArtistId] !== false;
+                    return (
                     <button
                       key={artist.nailArtistId}
                       type="button"
-                      onClick={() => setSelectedArtist(artist)}
-                      className={`flex items-center gap-2 rounded-[14px] border px-3 py-2 text-left ${selectedArtist?.nailArtistId === artist.nailArtistId ? "border-[#ea4f93] bg-[#fff3f8]" : "border-[#f7dce8] bg-[#fdfbfd] hover:border-[#ea4f93]"}`}
+                      disabled={!isAvailable}
+                      onClick={() => isAvailable && setSelectedArtist(artist)}
+                      className={`flex items-center gap-2 rounded-[14px] border px-3 py-2 text-left 
+                        ${!isAvailable ? "opacity-50 cursor-not-allowed bg-gray-50 border-gray-200" :
+                        selectedArtist?.nailArtistId === artist.nailArtistId ? "border-[#ea4f93] bg-[#fff3f8]" : "border-[#f7dce8] bg-[#fdfbfd] hover:border-[#ea4f93]"}`}
                     >
-                      <img src={artist.avatarUrl || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80"} className="h-8 w-8 rounded-full object-cover" />
+                      <img src={artist.avatarUrl || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80"} className={`h-8 w-8 rounded-full object-cover ${!isAvailable && "grayscale"}`} />
                       <div>
-                        <p className="text-[11px] font-bold text-[#432744]">{artist.firstName} {artist.lastName}</p>
+                        <p className={`text-[11px] font-bold ${!isAvailable ? "text-gray-500" : "text-[#432744]"}`}>{artist.firstName} {artist.lastName}</p>
+                        {!isAvailable && <p className="text-[9px] text-gray-400 mt-0.5">Off today</p>}
                       </div>
                     </button>
-                  ))}
+                  )})}
                 </div>
               </div>
             </div>
@@ -405,20 +436,22 @@ export function ReceptionistWalkInBookingCreatePage() {
           <DashboardCard title="Staff Availability" description="" icon={UserRound}>
             <div className="space-y-3">
               {artists.length === 0 && <p className="text-xs text-[#b48ca0]">No staff found</p>}
-              {artists.map((artist, index) => (
+              {artists.map((artist) => {
+                const isAvailable = artistAvailabilities[artist.nailArtistId] !== false;
+                return (
                 <div
                   key={artist.nailArtistId}
-                  className={`flex w-full items-center gap-3 rounded-lg border border-transparent p-2`}
+                  className={`flex w-full items-center gap-3 rounded-lg border border-transparent p-2 ${!isAvailable ? "opacity-50 grayscale" : ""}`}
                 >
                   <img src={artist.avatarUrl || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80"} alt={artist.firstName} className="h-8 w-8 rounded-full object-cover" />
                   <div className="min-w-0 flex-1 text-left">
-                    <p className="text-sm font-bold text-[#432744]">{artist.firstName} {artist.lastName}</p>
+                    <p className={`text-sm font-bold ${!isAvailable ? "text-gray-500" : "text-[#432744]"}`}>{artist.firstName} {artist.lastName}</p>
                   </div>
-                  <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${index % 2 === 0 ? "bg-[#e8f8ed] text-[#2f9557]" : "bg-[#ffe9f0] text-[#df4f84]"}`}>
-                    {index % 2 === 0 ? "Available" : "Busy"}
+                  <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${isAvailable ? "bg-[#e8f8ed] text-[#2f9557]" : "bg-[#ffe9f0] text-[#df4f84]"}`}>
+                    {isAvailable ? "Available" : "Off Today"}
                   </span>
                 </div>
-              ))}
+              )})}
             </div>
           </DashboardCard>
         </aside>

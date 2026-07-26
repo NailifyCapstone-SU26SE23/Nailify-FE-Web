@@ -59,9 +59,8 @@ function ProcedureStatusBadge({ status }) {
 function ProcedureRequiredBadge({ isRequired }) {
   return (
     <span
-      className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${
-        isRequired ? "bg-[#fff4df] text-[#d9871c]" : "bg-[#f3ebff] text-[#7e4fe6]"
-      }`}
+      className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${isRequired ? "bg-[#fff4df] text-[#d9871c]" : "bg-[#f3ebff] text-[#7e4fe6]"
+        }`}
     >
       {isRequired ? "Required" : "Optional"}
     </span>
@@ -313,10 +312,10 @@ export function ProceduresManagementPage() {
         key: "procedure",
         render: (_, procedure) => (
           <div className="flex items-center gap-3">
-            
+
             <div>
               <p className="text-sm font-bold text-[#432744]">{procedure.name}</p>
-            
+
             </div>
           </div>
         ),
@@ -506,14 +505,15 @@ export function ProceduresManagementPage() {
               <option value="Inactive">Inactive</option>
             </select>
           </div>
-
-          <Link
-            to={ROUTES.adminProceduresCreate}
-            className="inline-flex items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
-          >
-            <Plus size={13} className="mr-1.5 shrink-0" />
-            Add Procedure
-          </Link>
+          <div className="w-auto min-w-[150px]">
+            <Link
+              to={ROUTES.adminProceduresCreate}
+              className="inline-flex h-[40px] items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
+            >
+              <Plus size={13} className="mr-1.5 shrink-0" />
+              Add Procedure
+            </Link>
+          </div>
         </div>
 
         <section className="overflow-hidden rounded-[20px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
@@ -567,11 +567,10 @@ export function ProceduresManagementPage() {
 
                     setMetaData((current) => ({ ...current, currentPage: item }));
                   }}
-                  className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md px-2 text-[11px] ${
-                    item === metaData.currentPage
-                      ? "bg-[#ea4f93] font-bold text-white"
-                      : "border border-[#f3cade] bg-white font-medium text-[#b9849f]"
-                  } disabled:cursor-default disabled:opacity-100`}
+                  className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md px-2 text-[11px] ${item === metaData.currentPage
+                    ? "bg-[#ea4f93] font-bold text-white"
+                    : "border border-[#f3cade] bg-white font-medium text-[#b9849f]"
+                    } disabled:cursor-default disabled:opacity-100`}
                 >
                   {item}
                 </button>
@@ -610,7 +609,7 @@ export function ProceduresManagementPage() {
           item={{
             title: deleteTarget.name,
             meta: `${deleteTarget.durationLabel} | ${deleteTarget.status}`,
-            
+
           }}
           warnings={["This action calls the backend delete endpoint and removes this procedure record."]}
         />

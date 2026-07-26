@@ -43,6 +43,36 @@ export default defineConfig({
   worker: {
     format: 'es',
   },
+  build: {
+    chunkSizeWarningLimit: 2500,
+    rolldownOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) {
+            return undefined
+          }
+
+          if (id.includes('@mediapipe') || id.includes('three') || id.includes('@react-three')) {
+            return 'vendor-vision'
+          }
+
+          if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom') || id.includes('@reduxjs')) {
+            return 'vendor-react'
+          }
+
+          if (id.includes('antd') || id.includes('@headlessui') || id.includes('lucide-react') || id.includes('framer-motion')) {
+            return 'vendor-ui'
+          }
+
+          if (id.includes('recharts') || id.includes('fabric') || id.includes('html-to-image')) {
+            return 'vendor-visualization'
+          }
+
+          return 'vendor'
+        },
+      },
+    },
+  },
   server: {
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin',

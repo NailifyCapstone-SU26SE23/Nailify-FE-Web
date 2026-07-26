@@ -1,196 +1,60 @@
-import { useState } from "react";
 import {
-  Armchair,
   CalendarDays,
   CircleDollarSign,
-  Clock3,
-  Footprints,
   Users,
+  AlertCircle,
+  Percent,
+  Clock3,
+  GripHorizontal,
+  Pin,
+  PinOff,
+  EyeOff,
+  Settings2,
+  Eye,
+  RotateCcw,
+  Wallet,
+  CalendarCheck2
 } from "lucide-react";
-import { Modal } from "antd";
+import { Spin, Alert, DatePicker, Segmented, Modal, Avatar, Rate, Dropdown, Button } from "antd";
+import { UserOutlined } from "@ant-design/icons";
+import dayjs from "dayjs";
+import { useState, useEffect } from "react";
+import {
+  useManagerDashboard,
+  useSalonStaffs,
+  useNailArtistDashboard,
+  useUserDetail
+} from "../hooks/useAdminDashboard";
+import { loadAuthSession } from "../../auth/model/authStorage";
 import { PropTypes } from "../../../../shared/utils/propTypes";
+import ReactECharts from "echarts-for-react";
 
-const metricCards = [
-  {
-    icon: CalendarDays,
-    label: "Today's Bookings",
-    value: "34",
-    delta: "+12%",
-    deltaTone: "bg-[#eaf9ee] text-[#2fa25f]",
-    tint: "from-[#ff5e95] to-[#ff7f4f]",
-    glow: "bg-[#ffe8e3]",
-  },
-  {
-    icon: Footprints,
-    label: "Walk-in Customers",
-    value: "7",
-    delta: "+5",
-    deltaTone: "bg-[#eaf9ee] text-[#2fa25f]",
-    tint: "from-[#a74ce6] to-[#7d38dd]",
-    glow: "bg-[#efe2ff]",
-  },
-  {
-    icon: Users,
-    label: "Available Staff",
-    value: "3",
-    delta: "3 Free",
-    deltaTone: "bg-[#eaf9ee] text-[#2fa25f]",
-    tint: "from-[#2fc5a9] to-[#2a9d8f]",
-    glow: "bg-[#dff7f2]",
-  },
-  {
-    icon: Armchair,
-    label: "Occupied Chairs",
-    value: "6",
-    delta: "6/12",
-    deltaTone: "bg-[#ffe7ef] text-[#ea4f93]",
-    tint: "from-[#ff8352] to-[#ff5f6f]",
-    glow: "bg-[#ffe9de]",
-  },
-  {
-    icon: CircleDollarSign,
-    label: "Daily Revenue",
-    value: "$1,840",
-    delta: "+12%",
-    deltaTone: "bg-[#eaf9ee] text-[#2fa25f]",
-    tint: "from-[#ff4f98] to-[#d92e7a]",
-    glow: "bg-[#ffe2ee]",
-  },
-  {
-    icon: Clock3,
-    label: "Average Wait Time",
-    value: "18m",
-    delta: "+10min",
-    deltaTone: "bg-[#fff0dd] text-[#db8520]",
-    tint: "from-[#ffad33] to-[#ff7f4f]",
-    glow: "bg-[#fff0dd]",
-  },
+// Admin/Tech Light Theme Palette
+const THEME_COLORS = ["#0ea5e9", "#f59e0b", "#10b981", "#6366f1", "#8b5cf6", "#ec4899", "#14b8a6"];
+const TEXT_PRIMARY = "#1e293b";
+const TEXT_SECONDARY = "#64748b";
+const BORDER_COLOR = "#e2e8f0";
+const GRID_COLOR = "#f1f5f9";
+
+const getSalonId = () => {
+  const session = loadAuthSession();
+  return session?.user?.salonId || session?.salonId;
+};
+
+const defaultWidgets = [
+  { id: 'revenueBreakdown', title: 'Revenue Breakdown', visible: true, pinned: false },
+  { id: 'keyRatios', title: 'Key Ratios', visible: true, pinned: false },
+  { id: 'retentionRate', title: 'Customer Retention Rate', visible: true, pinned: false },
+  { id: 'peakHours', title: 'Peak Hours Heatmap', visible: true, pinned: false },
+  { id: 'artistLeaderboard', title: 'Artist Leaderboard', visible: true, pinned: false },
+  { id: 'staffLeaveAlerts', title: 'Staff Leave Alerts', visible: true, pinned: false },
+  { id: 'staffDirectory', title: 'Staff Directory', visible: true, pinned: false },
 ];
-
-const staffMembers = [
-  { name: "Tina L.", role: "Nail Artist", status: "Busy", avatarTone: "from-[#ffc5de] to-[#ea4f93]", phone: "+65 9123 4567", email: "tina@nailify.com", experience: "5 years", skills: ["Gel Nails", "Nail Art", "Acrylic"] },
-  { name: "Mei K.", role: "Nail Artist", status: "Available", avatarTone: "from-[#b8f0d8] to-[#2fc5a9]", phone: "+65 8234 5678", email: "mei@nailify.com", experience: "3 years", skills: ["French Tips", "Gel Manicure", "Nail Design"] },
-  { name: "Priya S.", role: "Nail Artist", status: "Busy", avatarTone: "from-[#ffd0e2] to-[#f04f91]", phone: "+65 9345 6789", email: "priya@nailify.com", experience: "4 years", skills: ["Acrylic Full Set", "Nail Art", "Gel Pedicure"] },
-  { name: "Jess T.", role: "Nail Artist", status: "On Break", avatarTone: "from-[#ffe0b2] to-[#ff9800]", phone: "+65 8456 7890", email: "jess@nailify.com", experience: "2 years", skills: ["Basic Manicure", "Polish Change"] },
-  { name: "Lily N.", role: "Nail Artist", status: "Available", avatarTone: "from-[#d8c4ff] to-[#8b5cf6]", phone: "+65 9567 8901", email: "lily@nailify.com", experience: "6 years", skills: ["3D Nail Art", "Ombre", "Gel Extensions"] },
-  { name: "Chloe W.", role: "Nail Artist", status: "Busy", avatarTone: "from-[#ffc5de] to-[#ea4f93]", phone: "+65 8678 9012", email: "chloe@nailify.com", experience: "3 years", skills: ["French Manicure", "Gel Nails", "Nail Design"] },
-  { name: "Sophie P.", role: "Nail Artist", status: "Available", avatarTone: "from-[#b8f0d8] to-[#2fc5a9]", phone: "+65 9789 0123", email: "sophie@nailify.com", experience: "4 years", skills: ["Acrylic", "Gel Pedicure", "Nail Art"] },
-  { name: "Mia T.", role: "Nail Artist", status: "Busy", avatarTone: "from-[#ffd0e2] to-[#f04f91]", phone: "+65 8890 1234", email: "mia@nailify.com", experience: "2 years", skills: ["Basic Manicure", "Polish Change"] },
-  { name: "Rachel L.", role: "Nail Artist", status: "On Break", avatarTone: "from-[#ffe0b2] to-[#ff9800]", phone: "+65 9901 2345", email: "rachel@nailify.com", experience: "5 years", skills: ["Gel Nails", "Acrylic", "Nail Design"] },
-  { name: "Amanda K.", role: "Nail Artist", status: "Available", avatarTone: "from-[#d8c4ff] to-[#8b5cf6]", phone: "+65 8012 3456", email: "amanda@nailify.com", experience: "3 years", skills: ["French Tips", "Gel Manicure"] },
-  { name: "Fiona N.", role: "Nail Artist", status: "Busy", avatarTone: "from-[#ffc5de] to-[#ea4f93]", phone: "+65 9123 4568", email: "fiona@nailify.com", experience: "4 years", skills: ["Nail Art", "Ombre", "Gel Extensions"] },
-  { name: "Siti R.", role: "Nail Artist", status: "Available", avatarTone: "from-[#b8f0d8] to-[#2fc5a9]", phone: "+65 8234 5679", email: "siti@nailify.com", experience: "2 years", skills: ["Basic Manicure", "Gel Nails"] },
-  { name: "Hana Y.", role: "Nail Artist", status: "Busy", avatarTone: "from-[#ffd0e2] to-[#f04f91]", phone: "+65 9345 6780", email: "hana@nailify.com", experience: "6 years", skills: ["3D Nail Art", "Acrylic Full Set", "Nail Design"] },
-  { name: "Clara M.", role: "Nail Artist", status: "Available", avatarTone: "from-[#d8c4ff] to-[#8b5cf6]", phone: "+65 8456 7891", email: "clara@nailify.com", experience: "3 years", skills: ["French Manicure", "Gel Pedicure"] },
-];
-
-const queueItems = [
-  { label: "Waiting Customers", value: "5", tone: "bg-[#fff0dd] text-[#db8520]" },
-  { label: "Current Bookings", value: "6", tone: "bg-[#ffe7ef] text-[#ea4f93]" },
-  { label: "Delayed Bookings", value: "2", tone: "bg-[#ffe6ec] text-[#e1447f]" },
-  { label: "No-shows", value: "1", tone: "bg-[#f3f4f6] text-[#6b7280]" },
-];
-
-const scheduleRows = [
-  {
-    time: "09:00 AM",
-    customer: "Sarah Chen",
-    phone: "+65 9123 4567",
-    service: "Gel Manicure",
-    nailSet: "Classic Almond Medium",
-    price: "$45",
-    artist: "Tina L.",
-    status: "Completed",
-    action: "View",
-    initials: "SC",
-    avatarTone: "from-[#ffc5de] to-[#ea4f93]",
-    notes: "Customer wants a bit sensitive to strong chemicals - use fragrance-free products"
-  },
-  {
-    time: "09:30 AM",
-    customer: "Emily Wong",
-    phone: "+65 8234 5678",
-    service: "Nail Art Design",
-    nailSet: "Square Short",
-    price: "$65",
-    artist: "Mei K.",
-    status: "In Progress",
-    action: "View",
-    initials: "EW",
-    avatarTone: "from-[#d8c4ff] to-[#8b5cf6]",
-    notes: "Requested cherry blossom design - reference photo saved in app"
-  },
-  {
-    time: "10:00 AM",
-    customer: "Jessica Tan",
-    phone: "+65 9345 6789",
-    service: "Acrylic Full Set",
-    nailSet: "Coffin Long",
-    price: "$85",
-    artist: "Priya S.",
-    status: "Checked In",
-    action: "View",
-    initials: "JT",
-    avatarTone: "from-[#b8f0d8] to-[#2fc5a9]",
-    notes: "First time getting acrylics"
-  },
-  {
-    time: "10:30 AM",
-    customer: "Grace Teo",
-    phone: "+65 8456 7890",
-    service: "French Tip",
-    nailSet: "Oval Medium",
-    price: "$40",
-    artist: "Jess T.",
-    status: "Waiting",
-    action: "View",
-    initials: "GT",
-    avatarTone: "from-[#ffe0b2] to-[#ff9800]",
-    notes: "Regular customer - prefers pink base"
-  },
-  {
-    time: "11:00 AM",
-    customer: "Wendy Chua",
-    phone: "+65 9567 8901",
-    service: "Gel Pedicure",
-    nailSet: "Natural Toenails",
-    price: "$55",
-    artist: "Lily N.",
-    status: "Cancelled",
-    action: "View",
-    initials: "WC",
-    avatarTone: "from-[#ffd0e2] to-[#f04f91]",
-    notes: "Cancelled due to illness"
-  },
-];
-
-const urgentIssues = [
-  {
-    title: "Late Customer",
-    description: "Grace Teo is 15 minutes late for her 10:30 AM appointment.",
-    tone: "border-[#ffe0b2] bg-[#fff8eb] text-[#c9770a]",
-    dot: "bg-[#ff9800]",
-  },
-  {
-    title: "Staff Absence",
-    description: "Jess T. requested an emergency leave — reassign 2 bookings.",
-    tone: "border-[#f8c4d8] bg-[#fff0f6] text-[#e1447f]",
-    dot: "bg-[#ea4f93]",
-  },
-  {
-    title: "Customer Complaint",
-    description: "Sarah Chen reported chipped polish after 1 day — follow up needed.",
-    tone: "border-[#ddd6fe] bg-[#f5f3ff] text-[#7c3aed]",
-    dot: "bg-[#8b5cf6]",
-  },
-];
-
-const scheduleFilters = ["All", "Waiting", "In Progress", "Completed"];
 
 function Card({ className = "", children }) {
   return (
     <article
-      className={`rounded-[18px] border border-[#f8deea] bg-white p-5 shadow-[0_10px_24px_rgba(236,72,153,0.06)] ${className}`}
+      className={`rounded-xl border border-slate-200 bg-white p-5 shadow-sm ${className}`}
     >
       {children}
     </article>
@@ -202,489 +66,853 @@ Card.propTypes = {
   children: PropTypes.node,
 };
 
-function SectionHeading({ title, subtitle }) {
+function WidgetWrapper({ id, widget, onPin, onHide, onDragStart, onDragOver, onDrop, onDragEnter, children, isPinned, fullWidth }) {
   return (
-    <div>
-      <h3 className="text-sm font-extrabold text-[#3f2240]">{title}</h3>
-      {subtitle ? <p className="mt-1 text-xs text-[#c08aa4]">{subtitle}</p> : null}
-    </div>
-  );
-}
-
-SectionHeading.propTypes = {
-  title: PropTypes.string.isRequired,
-  subtitle: PropTypes.string,
-};
-
-function getStaffStatusTone(status) {
-  switch (status) {
-    case "Busy":
-      return "bg-[#ffe7ef] text-[#ea4f93]";
-    case "On Break":
-      return "bg-[#fff0dd] text-[#db8520]";
-    default:
-      return "bg-[#eaf9ee] text-[#2fa25f]";
-  }
-}
-
-function getBookingStatusTone(status) {
-  switch (status) {
-    case "Completed":
-      return "bg-[#eaf9ee] text-[#2fa25f]";
-    case "In Progress":
-      return "bg-[#ffe7ef] text-[#ea4f93]";
-    case "Checked In":
-      return "bg-[#e7ecff] text-[#4755b8]";
-    case "Waiting":
-      return "bg-[#fff0dd] text-[#db8520]";
-    default:
-      return "bg-[#ffe6ec] text-[#e1447f]";
-  }
-}
-
-function StaffCard({ name, role, status, avatarTone, onClick, skills }) {
-  return (
-    <div 
-      onClick={onClick}
-      className="flex flex-col items-center rounded-[14px] border border-[#f8deea] bg-[#fffafb] px-2 py-3 text-center cursor-pointer hover:shadow-lg transition-shadow"
+    <div
+      draggable={!isPinned}
+      onDragStart={(e) => onDragStart(e, id)}
+      onDragOver={onDragOver}
+      onDragEnter={(e) => onDragEnter(e, id)}
+      onDrop={(e) => onDrop(e, id)}
+      className={`relative group h-full flex flex-col ${isPinned ? 'col-span-full' : (fullWidth ? 'lg:col-span-2' : '')}`}
     >
-      <div
-        className={`flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br ${avatarTone} text-xs font-bold text-white shadow-sm`}
-      >
-        {name
-          .split(" ")
-          .map((part) => part[0])
-          .join("")}
-      </div>
-      <p className="mt-2 text-[11px] font-bold text-[#402542]">{name}</p>
-      <p className="mt-0.5 text-[10px] text-[#c08aa4]">{role}</p>
-      <span
-        className={`mt-2 inline-flex rounded-full px-2 py-0.5 text-[9px] font-bold ${getStaffStatusTone(status)}`}
-      >
-        {status}
-      </span>
-      {/* Show first 1 skill */}
-      {skills && skills.length > 0 && (
-        <div className="mt-2 w-full overflow-hidden">
-          <p className="text-[8px] text-[#c08aa4] truncate px-1">
-            {skills[0]}
-            {skills.length > 1 && ` +${skills.length - 1}`}
-          </p>
+      <Card className={`flex flex-col h-full ${isPinned ? 'min-h-[400px]' : ''}`}>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            {!isPinned && (
+              <div className="cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600">
+                <GripHorizontal size={18} />
+              </div>
+            )}
+            <h3 className={`font-bold text-slate-800 ${isPinned ? 'text-[18px]' : 'text-[15px]'}`}>{widget.title}</h3>
+          </div>
+          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={() => onPin(id)}
+              className="p-1.5 text-slate-400 hover:text-sky-500 hover:bg-sky-50 rounded-md transition-colors"
+              title={isPinned ? "Unpin widget" : "Pin to top"}
+            >
+              {isPinned ? <PinOff size={16} /> : <Pin size={16} />}
+            </button>
+            <button
+              onClick={() => onHide(id)}
+              className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+              title="Hide widget"
+            >
+              <EyeOff size={16} />
+            </button>
+          </div>
         </div>
-      )}
+        <div className="flex-1 overflow-hidden flex flex-col">
+          {children}
+        </div>
+      </Card>
     </div>
   );
 }
-
-StaffCard.propTypes = {
-  name: PropTypes.string.isRequired,
-  role: PropTypes.string.isRequired,
-  status: PropTypes.string.isRequired,
-  avatarTone: PropTypes.string.isRequired,
-  onClick: PropTypes.func,
-  skills: PropTypes.arrayOf(PropTypes.string),
+WidgetWrapper.propTypes = {
+  id: PropTypes.string,
+  widget: PropTypes.object,
+  onPin: PropTypes.func,
+  onHide: PropTypes.func,
+  onDragStart: PropTypes.func,
+  onDragOver: PropTypes.func,
+  onDrop: PropTypes.func,
+  onDragEnter: PropTypes.func,
+  children: PropTypes.node,
+  isPinned: PropTypes.bool,
+  fullWidth: PropTypes.bool,
 };
 
 export function ManagerDashboardPage() {
+  const salonId = getSalonId();
+  const [dateRange, setDateRange] = useState([dayjs().subtract(7, 'day'), dayjs()]);
+  const [filterMode, setFilterMode] = useState("Week");
   const [selectedStaff, setSelectedStaff] = useState(null);
-  const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
-  const [activeFilter, setActiveFilter] = useState("All");
-  const [selectedSchedule, setSelectedSchedule] = useState(null);
-  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
 
-  const handleStaffClick = (staff) => {
-    setSelectedStaff(staff);
-    setIsStaffModalOpen(true);
+  const [widgets, setWidgets] = useState(() => {
+    const saved = localStorage.getItem('managerDashboardWidgets');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) { }
+    }
+    return defaultWidgets;
+  });
+
+  const [draggedWidgetId, setDraggedWidgetId] = useState(null);
+
+  useEffect(() => {
+    localStorage.setItem('managerDashboardWidgets', JSON.stringify(widgets));
+  }, [widgets]);
+
+  const startDate = dateRange?.[0]?.format("YYYY-MM-DD");
+  const endDate = dateRange?.[1]?.format("YYYY-MM-DD");
+
+  let groupBy = "Day";
+  if (filterMode === "Year") {
+    groupBy = "Month";
+  } else if (filterMode === "Month") {
+    groupBy = "Day";
+  }
+
+  const { data, isLoading, isError } = useManagerDashboard(salonId, startDate, endDate, groupBy);
+  const { data: staffData, isLoading: isStaffLoading } = useSalonStaffs(salonId);
+
+  const handleFilterModeChange = (mode) => {
+    setFilterMode(mode);
+    const today = dayjs();
+    switch (mode) {
+      case "Day":
+        setDateRange([today, today]);
+        break;
+      case "Week":
+        setDateRange([today.subtract(7, 'day'), today]);
+        break;
+      case "Month":
+        setDateRange([today.startOf('month'), today.endOf('month')]);
+        break;
+      case "Year":
+        setDateRange([today.startOf('year'), today.endOf('year')]);
+        break;
+      default:
+        break;
+    }
   };
 
-  const handleActionClick = (row) => {
-    setSelectedSchedule(row);
-    setIsScheduleModalOpen(true);
+  const handleDateRangeChange = (dates) => {
+    setDateRange(dates);
+    if (dates) {
+      setFilterMode("Custom");
+    }
   };
 
-  // Filter schedule rows based on active filter
-  const filteredScheduleRows = activeFilter === "All" 
-    ? scheduleRows 
-    : scheduleRows.filter(row => row.status === activeFilter);
+  const handleDragStart = (e, id) => {
+    setDraggedWidgetId(id);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", id);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e, targetId) => {
+    e.preventDefault();
+    if (!draggedWidgetId || draggedWidgetId === targetId) return;
+
+    setWidgets((prev) => {
+      const newWidgets = [...prev];
+      const draggedIndex = newWidgets.findIndex(w => w.id === draggedWidgetId);
+      const targetIndex = newWidgets.findIndex(w => w.id === targetId);
+
+      const [draggedItem] = newWidgets.splice(draggedIndex, 1);
+      newWidgets.splice(targetIndex, 0, draggedItem);
+      return newWidgets;
+    });
+    setDraggedWidgetId(null);
+  };
+
+  const handleDragEnter = (e, id) => {
+    e.preventDefault();
+  };
+
+  const togglePin = (id) => {
+    setWidgets(prev => prev.map(w => w.id === id ? { ...w, pinned: !w.pinned } : w));
+  };
+
+  const toggleHide = (id) => {
+    setWidgets(prev => prev.map(w => w.id === id ? { ...w, visible: !w.visible } : w));
+  };
+
+  const resetLayout = () => {
+    setWidgets(defaultWidgets);
+  };
+
+  if (!salonId) {
+    return (
+      <div className="p-10 max-w-2xl mx-auto">
+        <Alert message="Salon Missing" description="No salon assigned to this manager." type="error" showIcon />
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex h-[80vh] items-center justify-center bg-slate-50">
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="p-10 max-w-2xl mx-auto bg-slate-50">
+        <Alert message="System Error" description="Unable to load manager dashboard data. Please check your connection." type="error" showIcon />
+      </div>
+    );
+  }
+
+  const completed = data?.totalCompletedBookings || 0;
+  const pending = data?.totalPendingBookings || 0;
+  const completionRate = (completed + pending) > 0 ? (completed / (completed + pending)) * 100 : 0;
+
+  const topMetrics = [
+    {
+      label: "Today's Revenue",
+      value: data?.todaysRevenue
+        ? `${data.todaysRevenue.toLocaleString("vi-VN")} ₫`
+        : "0 ₫",
+      color: "#0ea5e9",
+      icon: CircleDollarSign,
+    },
+    {
+      label: "Avg Ticket Value",
+      value: data?.averageTicketValue
+        ? `${data.averageTicketValue.toLocaleString("vi-VN")} ₫`
+        : "0 ₫",
+      color: "#10b981",
+      icon: Wallet,
+    },
+    {
+      label: "Completed",
+      value: completed,
+      color: "#f59e0b",
+      icon: CalendarCheck2,
+    },
+    {
+      label: "Pending",
+      value: pending,
+      color: "#8b5cf6",
+      icon: Clock3,
+    },
+    {
+      label: "Staff Utilization",
+      value: data?.staffUtilizationRate
+        ? `${data.staffUtilizationRate.toFixed(1)}%`
+        : "0%",
+      color: "#ec4899",
+      icon: Users,
+    },
+  ];
+
+  // ==========================================
+  // ECharts Configurations
+  // ==========================================
+  const commonTooltip = { backgroundColor: 'rgba(255,255,255,0.95)', borderColor: BORDER_COLOR, borderWidth: 1, padding: 12, textStyle: { color: TEXT_PRIMARY, fontSize: 12, fontFamily: 'sans-serif' } };
+  const commonAxisLabel = { color: TEXT_SECONDARY, fontSize: 11, fontFamily: 'sans-serif' };
+  const commonSplitLine = { lineStyle: { type: 'dashed', color: GRID_COLOR } };
+
+  const revenueBreakdownOption = {
+    color: THEME_COLORS,
+    tooltip: { ...commonTooltip, trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+    legend: {
+      type: 'scroll',
+      orient: 'vertical',
+      left: 'left',
+      top: 'middle',
+      textStyle: { color: TEXT_SECONDARY, fontSize: 11 }
+    },
+    series: [
+      {
+        type: 'pie',
+        radius: ['45%', '70%'],
+        center: ['65%', '50%'],
+        avoidLabelOverlap: false,
+        itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
+        label: { show: false },
+        labelLine: { show: false },
+        data: data?.revenueBreakdown?.labels?.map((label, i) => ({
+          name: label,
+          value: data.revenueBreakdown.datasets[0].data[i]
+        })) || []
+      }
+    ]
+  };
+
+  const createRingOption = (value, name, color) => ({
+    series: [
+      {
+        type: 'pie',
+        radius: ['75%', '90%'],
+        center: ['50%', '45%'],
+        avoidLabelOverlap: false,
+        hoverAnimation: false,
+        label: {
+          show: true,
+          position: 'center',
+          formatter: `${value.toFixed(0)}%`,
+          fontSize: 20,
+          fontWeight: 'bold',
+          color: TEXT_PRIMARY
+        },
+        data: [
+          { value: value, name: name, itemStyle: { color: color } },
+          { value: 100 - value, name: '', itemStyle: { color: GRID_COLOR }, tooltip: { show: false } }
+        ]
+      }
+    ]
+  });
+
+  const staffUtilOption = createRingOption(data?.staffUtilizationRate || 0, 'Staff Utilization', '#10b981');
+  const cancelRateOption = createRingOption(data?.cancellationRate || 0, 'Cancellation Rate', '#0ea5e9');
+  const completionRateOption = createRingOption(completionRate, 'Completion Rate', '#6366f1');
+
+  const retentionOption = {
+    color: ['#0ea5e9'],
+    tooltip: { ...commonTooltip, trigger: 'axis' },
+    grid: { left: '2%', right: '4%', bottom: '3%', top: '10%', containLabel: true },
+    xAxis: { type: 'category', boundaryGap: false, data: data?.customerRetentionRate?.labels || [], axisLine: { lineStyle: { color: BORDER_COLOR } }, axisLabel: commonAxisLabel },
+    yAxis: { type: 'value', axisLabel: { ...commonAxisLabel, formatter: '{value}%' }, splitLine: commonSplitLine },
+    series: [
+      {
+        name: 'Retention',
+        type: 'line',
+        smooth: true,
+        showSymbol: false,
+        lineStyle: { width: 2, color: '#0ea5e9' },
+        areaStyle: {
+          color: {
+            type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+            colorStops: [{ offset: 0, color: 'rgba(14,165,233,0.3)' }, { offset: 1, color: 'rgba(14,165,233,0)' }]
+          }
+        },
+        data: data?.customerRetentionRate?.datasets?.[0]?.data || []
+      }
+    ]
+  };
+
+  const peakHoursOption = {
+    color: ['#f59e0b', '#10b981', '#6366f1'],
+    tooltip: { ...commonTooltip, trigger: 'axis' },
+    legend: { top: 0, right: 0, icon: 'circle', textStyle: { color: TEXT_SECONDARY, fontSize: 11 } },
+    grid: { left: '2%', right: '4%', bottom: '3%', top: '15%', containLabel: true },
+    xAxis: { type: 'category', data: data?.peakHoursHeatmap?.labels || [], axisLine: { lineStyle: { color: BORDER_COLOR } }, axisLabel: commonAxisLabel },
+    yAxis: { type: 'value', axisLabel: commonAxisLabel, splitLine: commonSplitLine },
+    series: [
+      {
+        name: 'Bookings',
+        type: 'line',
+        smooth: false,
+        symbol: 'circle',
+        symbolSize: 6,
+        lineStyle: { width: 2 },
+        data: data?.peakHoursHeatmap?.datasets?.[0]?.data || []
+      }
+    ]
+  };
+
+  const renderWidgetContent = (id, isPinned) => {
+    switch (id) {
+      case 'revenueBreakdown':
+        return <ReactECharts option={revenueBreakdownOption} style={{ height: isPinned ? '350px' : '280px', width: '100%' }} opts={{ renderer: 'svg' }} />;
+      case 'keyRatios':
+        return (
+          <div className={`flex ${isPinned ? 'h-[350px]' : 'h-[280px]'} items-center justify-around w-full`}>
+            <div className="flex flex-col items-center w-1/3">
+              <ReactECharts option={staffUtilOption} style={{ height: isPinned ? '250px' : '200px', width: '100%' }} opts={{ renderer: 'svg' }} />
+              <span className="text-[13px] font-bold text-slate-600 mt-[-20px]">Staff Util</span>
+            </div>
+            <div className="flex flex-col items-center w-1/3">
+              <ReactECharts option={cancelRateOption} style={{ height: isPinned ? '250px' : '200px', width: '100%' }} opts={{ renderer: 'svg' }} />
+              <span className="text-[13px] font-bold text-slate-600 mt-[-20px]">Cancel Rate</span>
+            </div>
+            <div className="flex flex-col items-center w-1/3">
+              <ReactECharts option={completionRateOption} style={{ height: isPinned ? '250px' : '200px', width: '100%' }} opts={{ renderer: 'svg' }} />
+              <span className="text-[13px] font-bold text-slate-600 mt-[-20px]">Completion</span>
+            </div>
+          </div>
+        );
+      case 'retentionRate':
+        return <ReactECharts option={retentionOption} style={{ height: isPinned ? '350px' : '280px', width: '100%' }} opts={{ renderer: 'svg' }} />;
+      case 'peakHours':
+        return <ReactECharts option={peakHoursOption} style={{ height: isPinned ? '350px' : '280px', width: '100%' }} opts={{ renderer: 'svg' }} />;
+      case 'artistLeaderboard':
+        return (
+          <div className="flex-1 overflow-auto h-full w-full">
+            <table className="min-w-full text-left border-collapse w-full">
+              <thead className="sticky top-0 bg-white z-10">
+                <tr className="border-b border-slate-200 text-[11px] uppercase tracking-wider text-slate-500">
+                  <th className="px-3 py-3 font-bold">Artist Name</th>
+                  <th className="px-3 py-3 font-bold text-center">Bookings</th>
+                  <th className="px-3 py-3 font-bold text-right">Revenue</th>
+                  <th className="px-3 py-3 font-bold text-center">Rating</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...(data?.artistPerformanceLeaderboard || [])]
+                  .sort((a, b) => (b.completedBookings || 0) - (a.completedBookings || 0))
+                  .map((artist, i) => (
+                    <tr
+                      key={artist.artistId || i}
+                      className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors cursor-pointer"
+                      onClick={() => {
+                        const matchedStaff = staffData?.items?.find(s => s.staffId === artist.artistId) || { staffId: artist.artistId, firstName: artist.artistName };
+                        setSelectedStaff(matchedStaff);
+                      }}
+                    >
+                      <td className="px-3 py-3 text-[13px] font-bold text-slate-800">{artist.artistName}</td>
+                      <td className="px-3 py-3 text-[13px] font-semibold text-center text-slate-600">{artist.completedBookings}</td>
+                      <td className="px-3 py-3 text-[13px] font-bold text-right text-emerald-600">{artist.revenueGenerated.toLocaleString("vi-VN")} ₫</td>
+                      <td className="px-3 py-3 text-[13px] font-bold text-center text-amber-500">
+                        <div className="flex items-center justify-center gap-1">
+                          <Rate disabled allowHalf value={artist.averageRating} className="text-[12px] text-amber-400" />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                {(!data?.artistPerformanceLeaderboard || data.artistPerformanceLeaderboard.length === 0) && (
+                  <tr>
+                    <td colSpan="4" className="text-center py-6 text-sm text-slate-500">No artist data available.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        );
+      case 'staffLeaveAlerts':
+        return (
+          <div className="flex flex-col gap-3 h-full overflow-auto pr-2 w-full">
+            {data?.staffLeaveAlerts?.length > 0 ? (
+              data.staffLeaveAlerts.map((alert, i) => (
+                <div key={i} className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-700 shrink-0">
+                  <AlertCircle size={20} className="shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-sm">{alert.artistName}</p>
+                    <div className="mt-1 flex items-center gap-4 text-xs font-medium">
+                      <span>Date: {dayjs(alert.breakDate).format("DD/MM/YYYY")}</span>
+                      <span>Time: {alert.startTime} - {alert.endTime}</span>
+                    </div>
+                    <p className="mt-1 text-xs opacity-90 truncate max-w-[400px]" title={alert.reason}>
+                      Reason: {alert.reason}
+                    </p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="py-6 text-center text-sm font-medium text-slate-500 w-full">
+                No leave alerts for this period.
+              </div>
+            )}
+          </div>
+        );
+      case 'staffDirectory':
+        const getInitials = (firstName, lastName) =>
+          `${firstName?.[0] || ""}${lastName?.[0] || ""}`.toUpperCase();
+        return (
+          <div className="flex-1 h-full overflow-auto w-full">
+            {isStaffLoading ? (
+              <div className="flex items-center justify-center py-10 h-full">
+                <Spin />
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                {staffData?.items?.map((staff) => (
+                  <div
+                    key={staff.userId}
+                    className="flex flex-col items-center justify-center p-4 border border-slate-100 rounded-xl hover:shadow-md cursor-pointer transition-all bg-white hover:border-sky-200"
+                    onClick={() => setSelectedStaff(staff)}
+                  >
+                    <StaffAvatar
+                      staff={staff}
+                      size={56}
+                      className="mb-2 border border-slate-100 !bg-pink-500 !text-white font-bold shadow-sm"
+                    />
+                    <span className="text-sm font-bold text-slate-800 text-center line-clamp-1 w-full">{staff.firstName} {staff.lastName}</span>
+                    <span className="text-xs text-slate-500 font-medium">{staff.email}</span>
+                  </div>
+                ))}
+                {(!staffData?.items || staffData.items.length === 0) && (
+                  <div className="col-span-full text-center py-6 text-sm text-slate-500 w-full">
+                    No staff members found.
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const hiddenWidgets = widgets.filter(w => !w.visible);
+
+  const layoutMenuProps = {
+    items: [
+      ...hiddenWidgets.map((w) => ({
+        key: `restore-${w.id}`,
+        label: `Show ${w.title}`,
+        icon: <Eye size={16} />,
+        onClick: () => toggleHide(w.id),
+      })),
+      hiddenWidgets.length > 0 ? { type: 'divider' } : null,
+      {
+        key: 'reset',
+        label: 'Reset Layout',
+        icon: <RotateCcw size={16} />,
+        onClick: resetLayout,
+        danger: true,
+      }
+    ].filter(Boolean),
+  };
+
+  const pinnedWidgets = widgets.filter(w => w.pinned && w.visible);
+  const unpinnedWidgets = widgets.filter(w => !w.pinned && w.visible);
 
   return (
-    <>
-      <section className="flex min-h-full flex-col gap-4 gap-y-6">
-        
+    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-800 font-sans">
+      {/* Header & Controls */}
+      {/* <div className="flex flex-col gap-4 bg-white px-8 py-5 shadow-sm border-b border-slate-200 md:flex-row md:items-center md:justify-between z-50 sticky top-0"> */}
+      <div
+        className="
+                  sticky top-0 z-50
+                  flex flex-col gap-4
+                  border-b border-white/30
+                  bg-[linear-gradient(135deg,rgba(255,236,244,0.8)_0%,rgba(255,248,220,0.8)_100%)]
+                  backdrop-blur-xl
+                  shadow-[0_8px_24px_rgba(236,72,153,0.08)]
+                  px-8 py-5
+                  md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-[22px] font-black tracking-tight text-slate-900">Manager Dashboard</h1>
+          <p className="text-[13px] text-slate-500 font-medium">Overview of salon operations</p>
+        </div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <Dropdown menu={layoutMenuProps} trigger={['click']} placement="bottomRight">
+            <Button icon={<Settings2 size={16} className="text-slate-500" />} className="border-slate-200 font-medium text-slate-700 bg-white shadow-sm">
+              Customize
+            </Button>
+          </Dropdown>
+          <Segmented
+            options={["Day", "Week", "Month", "Year", "Custom"]}
+            value={filterMode}
+            onChange={handleFilterModeChange}
+            className="rounded-md bg-slate-100 p-1 font-semibold"
+          />
+          <DatePicker.RangePicker
+            value={dateRange}
+            onChange={handleDateRangeChange}
+            className="rounded-md border-slate-200 hover:border-sky-500 focus:border-sky-500"
+            format="YYYY-MM-DD"
+          />
+        </div>
+      </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {metricCards.map((card) => {
-            const Icon = card.icon;
+      <div className="mx-auto w-full space-y-6 p-8
+                      bg-[#fff9fb]
+                      bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.55),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.35),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.45),transparent_35%),linear-gradient(to_right,#f3c7db_1px,transparent_1px),linear-gradient(to_bottom,#f3c7db_1px,transparent_1px)]
+                    ">
+        {/* Top Metrics Row */}
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
+          {topMetrics.map((metric, i) => {
+            const Icon = metric.icon;
 
             return (
-              <Card key={card.label} className="relative overflow-hidden">
-                <div className={`absolute -bottom-6 -right-6 h-24 w-24 rounded-full ${card.glow}`} />
-                <div className="relative">
-                  <div className="flex items-start justify-between gap-3">
-                    <div
-                      className={`inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${card.tint} text-white shadow-[0_8px_16px_rgba(236,72,153,0.15)]`}
-                    >
-                      <Icon size={17} />
-                    </div>
-                    <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${card.deltaTone}`}>
-                      {card.delta}
-                    </span>
+              <div
+                key={i}
+                className="
+                          group relative overflow-hidden
+                          rounded-2xl border border-slate-200
+                          bg-white
+                          p-5
+                          shadow-sm
+                          transition-all duration-300
+                          hover:-translate-y-1
+                          hover:shadow-xl
+                        "
+              >
+                {/* Gradient Background */}
+                <div
+                  className="absolute inset-0 opacity-[0.06]"
+                  style={{
+                    background: `linear-gradient(135deg, ${metric.color}, transparent 75%)`,
+                  }}
+                />
+
+                <div className="relative flex items-start justify-between">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                      {metric.label}
+                    </p>
+
+                    <h2 className="mt-3 text-[30px] font-black tracking-tight text-slate-800">
+                      {metric.value}
+                    </h2>
                   </div>
-                  <p className="mt-4 text-[1.75rem] font-extrabold leading-none text-[#3b2241]">
-                    {card.value}
-                  </p>
-                  <p className="mt-2 text-sm font-semibold text-[#7f6478]">{card.label}</p>
+
+                  <div
+                    className="flex h-12 w-12 items-center justify-center
+                              rounded-2xl
+                              shadow-sm"
+                    style={{
+                      backgroundColor: `${metric.color}18`,
+                      color: metric.color,
+                    }}
+                  >
+                    <Icon size={24} strokeWidth={2.4} />
+                  </div>
                 </div>
-              </Card>
+
+                <div
+                  className="mt-6 h-1.5 rounded-full"
+                  style={{
+                    background: `linear-gradient(to right, ${metric.color}, transparent)`,
+                  }}
+                />
+              </div>
             );
           })}
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
-          <Card>
-            <SectionHeading
-              title="Staff Availability"
-              subtitle="8 staff members on shift today"
-            />
-            <div className="mt-5 grid grid-cols-4 gap-3 sm:grid-cols-5 lg:grid-cols-7">
-              {staffMembers.map((staff) => (
-                <StaffCard
-                  key={staff.name}
-                  name={staff.name}
-                  role={staff.role}
-                  status={staff.status}
-                  avatarTone={staff.avatarTone}
-                  skills={staff.skills}
-                  onClick={() => handleStaffClick(staff)}
-                />
-              ))}
-            </div>
-          </Card>
+        {/* Pinned Widgets Section */}
+        {pinnedWidgets.length > 0 && (
+          <div className="flex flex-col gap-6">
+            {pinnedWidgets.map((widget) => (
+              <WidgetWrapper
+                key={widget.id}
+                id={widget.id}
+                widget={widget}
+                isPinned={true}
+                onPin={togglePin}
+                onHide={toggleHide}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDragEnter={handleDragEnter}
+                onDrop={handleDrop}
+              >
+                {renderWidgetContent(widget.id, true)}
+              </WidgetWrapper>
+            ))}
+          </div>
+        )}
 
-          <Card>
-            <SectionHeading
-              title="Queue Overview"
-              subtitle="Live queue status as of now"
-            />
-            <div className="mt-5 grid grid-cols-2 gap-3">
-              {queueItems.map((item) => (
-                <div
-                  key={item.label}
-                  className={`flex min-h-[88px] flex-col items-center justify-center rounded-[14px] px-3 py-4 text-center ${item.tone}`}
-                >
-                  <p className="text-2xl font-extrabold leading-none">{item.value}</p>
-                  <p className="mt-2 text-[10px] font-semibold leading-tight">{item.label}</p>
-                </div>
-              ))}
-            </div>
-          </Card>
+        {/* Unpinned Widgets Grid */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          {unpinnedWidgets.map((widget) => (
+            <WidgetWrapper
+              key={widget.id}
+              id={widget.id}
+              widget={widget}
+              isPinned={false}
+              onPin={togglePin}
+              onHide={toggleHide}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDragEnter={handleDragEnter}
+              onDrop={handleDrop}
+              fullWidth={widget.id === 'staffDirectory'}
+            >
+              {renderWidgetContent(widget.id, false)}
+            </WidgetWrapper>
+          ))}
         </div>
+      </div>
 
-        <Card className="p-0">
-          <div className="flex flex-col gap-4 border-b border-[#f6dce7] p-5 sm:flex-row sm:items-center sm:justify-between">
-            <SectionHeading
-              title="Today's Schedule"
-              subtitle="24 appointments · Last updated 5 min ago"
-            />
-            <div className="flex flex-wrap gap-2">
-              {scheduleFilters.map((filter) => (
-                <button
-                  key={filter}
-                  type="button"
-                  onClick={() => setActiveFilter(filter)}
-                  className={
-                    activeFilter === filter
-                      ? "rounded-full bg-[#ea4f93] px-4 py-1.5 text-xs font-bold text-white shadow-[0_8px_16px_rgba(234,79,147,0.2)] transition-all"
-                      : "rounded-full border border-[#f4c1d8] bg-[#fff7fb] px-4 py-1.5 text-xs font-bold text-[#c08aa4] hover:border-[#ea4f93] hover:text-[#ea4f93] transition-all"
-                  }
-                >
-                  {filter}
-                </button>
-              ))}
+      {/* Staff Detail Modal */}
+      <StaffDetailModal
+        staff={selectedStaff}
+        startDate={startDate}
+        endDate={endDate}
+        onClose={() => setSelectedStaff(null)}
+      />
+    </div>
+  );
+}
+
+const StaffAvatar = ({ staff, size = 56, className }) => {
+  const [error, setError] = useState(false);
+  const getInitials = (f, l) => `${f?.[0] || ""}${l?.[0] || ""}`.toUpperCase();
+
+  useEffect(() => {
+    setError(false);
+  }, [staff.avatarUrl]);
+
+  return (
+    <Avatar
+      size={size}
+      src={!error ? staff.avatarUrl : undefined}
+      onError={() => {
+        setError(true);
+        return false;
+      }}
+      className={className}
+    >
+      {getInitials(staff.firstName, staff.lastName)}
+    </Avatar>
+  );
+};
+
+// Staff Detail Modal Component
+function StaffDetailModal({ staff, startDate, endDate, onClose }) {
+  const { data: userDetail, isLoading: isUserLoading } = useUserDetail(staff?.userId);
+  const { data: dashboard, isLoading: isDashboardLoading } = useNailArtistDashboard(staff?.staffId, startDate, endDate);
+
+  const isLoading = isUserLoading || isDashboardLoading;
+
+  const [avatarError, setAvatarError] = useState(false);
+  const getInitials = (fullName) =>
+    fullName
+      ?.trim()
+      .split(/\s+/)
+      .map((word) => word[0])
+      .join("")
+      .toUpperCase();
+
+  useEffect(() => {
+    setAvatarError(false);
+  }, [staff]);
+
+  const getChartData = () => {
+    let labels = dashboard?.earningsTracker?.labels || [];
+    let data = dashboard?.earningsTracker?.datasets?.[0]?.data || [];
+
+    if (labels.length === 0 && startDate && endDate) {
+      const start = dayjs(startDate);
+      const end = dayjs(endDate);
+      const diff = end.diff(start, 'day');
+
+      labels = [];
+      data = [];
+
+      if (diff >= 0 && diff <= 31) {
+        for (let i = 0; i <= diff; i++) {
+          labels.push(start.add(i, 'day').format('DD/MM'));
+          data.push(0);
+        }
+      } else {
+        labels = [start.format('DD/MM/YY'), end.format('DD/MM/YY')];
+        data = [0, 0];
+      }
+    }
+    return { labels, data };
+  };
+
+  const chartData = getChartData();
+
+  return (
+    <Modal
+      title={<span className="text-slate-800 font-bold">Staff Information</span>}
+      open={!!staff}
+      onCancel={onClose}
+      footer={null}
+      destroyOnHidden
+      width={500}
+    >
+      {isLoading ? (
+        <div className="flex items-center justify-center py-10">
+          <Spin />
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
+          <div className="flex items-center gap-4">
+            <Avatar
+              size={64}
+              src={!avatarError ? userDetail?.avatarUrl : undefined}
+              onError={() => {
+                setAvatarError(true);
+                return false;
+              }}
+              className="shrink-0 border border-slate-200 !bg-pink-500 text-white font-bold"
+            >
+              {getInitials(`${userDetail?.firstName || ""} ${userDetail?.lastName || ""}`)}
+            </Avatar>
+            <div>
+              <h3 className="text-[17px] font-black text-slate-800">{userDetail?.firstName} {userDetail?.lastName}</h3>
+              <p className="text-[13px] font-medium text-slate-500">{userDetail?.email}</p>
+              <p className="text-[13px] font-medium text-slate-500">{userDetail?.phone || "No phone number"}</p>
             </div>
           </div>
-          <div className="overflow-x-auto p-5 pt-0">
-            <table className="min-w-full text-left">
-              <thead>
-                <tr className="border-b border-[#f6dce7] text-[10px] uppercase tracking-[0.16em] text-[#c693ad]">
-                  <th className="px-3 py-3">Time</th>
-                  <th className="px-3 py-3">Customer</th>
-                  <th className="px-3 py-3">Service</th>
-                  <th className="px-3 py-3">Staff Artist</th>
-                  <th className="px-3 py-3">Status</th>
-                  <th className="px-3 py-3">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredScheduleRows.map((row) => (
-                  <tr key={`${row.time}-${row.customer}`} className="border-b border-[#fbe7ef] last:border-b-0">
-                    <td className="px-3 py-4 text-sm font-semibold text-[#402542]">{row.time}</td>
-                    <td className="px-3 py-4">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${row.avatarTone} text-[10px] font-bold text-white`}
-                        >
-                          {row.initials}
-                        </div>
+
+          <div className="mt-4 rounded-xl border border-slate-200 p-4 bg-slate-50">
+            <h4 className="text-[13px] font-bold text-slate-500 mb-3 uppercase tracking-wider">Performance ({dayjs(startDate).format("DD/MM/YY")} - {dayjs(endDate).format("DD/MM/YY")})</h4>
+            <div className="flex flex-col gap-3">
+              <div className="flex justify-between items-center pb-3 border-b border-slate-200">
+                <span className="text-[14px] font-semibold text-slate-700">Estimated Earnings</span>
+                <span className="font-black text-emerald-600 text-[18px]">
+                  {dashboard?.estimatedEarnings ? dashboard.estimatedEarnings.toLocaleString("vi-VN") : "0"} ₫
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[14px] font-medium text-slate-600">Completed Appointments</span>
+                <span className="font-bold text-slate-800">{dashboard?.completedAppointmentsCount || 0}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[14px] font-medium text-slate-600">Average Rating</span>
+                <div className="flex items-center gap-2">
+                  <Rate disabled allowHalf value={dashboard?.averageRatingScore || 0} className="text-amber-400 text-sm" />
+                  <span className="font-bold text-amber-500">{dashboard?.averageRatingScore || 0}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {dashboard && (
+            <div className="rounded-xl border border-slate-200 p-4 bg-slate-50">
+              <h4 className="text-[13px] font-bold text-slate-500 mb-3 uppercase tracking-wider">Earnings Tracker</h4>
+              <ReactECharts
+                option={{
+                  color: ['#10b981'],
+                  tooltip: { backgroundColor: 'rgba(255,255,255,0.95)', borderColor: '#e2e8f0', borderWidth: 1, padding: 12, textStyle: { color: '#1e293b', fontSize: 12, fontFamily: 'sans-serif' }, trigger: 'axis' },
+                  grid: { left: '2%', right: '4%', bottom: '3%', top: '10%', containLabel: true },
+                  xAxis: { type: 'category', boundaryGap: false, data: chartData.labels, axisLine: { lineStyle: { color: '#e2e8f0' } }, axisLabel: { color: '#64748b', fontSize: 11, fontFamily: 'sans-serif' } },
+                  yAxis: { type: 'value', axisLabel: { color: '#64748b', fontSize: 11, fontFamily: 'sans-serif' }, splitLine: { lineStyle: { type: 'dashed', color: '#f1f5f9' } } },
+                  series: [
+                    {
+                      name: 'Earnings',
+                      type: 'line',
+                      smooth: true,
+                      showSymbol: false,
+                      lineStyle: { width: 2, color: '#10b981' },
+                      areaStyle: {
+                        color: {
+                          type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+                          colorStops: [{ offset: 0, color: 'rgba(16,185,129,0.3)' }, { offset: 1, color: 'rgba(16,185,129,0)' }]
+                        }
+                      },
+                      data: chartData.data
+                    }
+                  ]
+                }}
+                style={{ height: '220px', width: '100%' }}
+                opts={{ renderer: 'svg' }}
+              />
+            </div>
+          )}
+
+          {dashboard?.recentFeedback?.length > 0 && (
+            <div className="rounded-xl border border-slate-200 p-4 bg-slate-50">
+              <h4 className="text-[13px] font-bold text-slate-500 mb-3 uppercase tracking-wider">Recent Feedback</h4>
+              <div className="flex flex-col gap-3">
+                {dashboard.recentFeedback.map((fb, idx) => (
+                  <div key={idx} className="flex gap-3 bg-white p-3.5 rounded-xl border border-slate-100 shadow-sm transition-all hover:shadow-md hover:border-sky-100">
+                    <Avatar className="bg-gradient-to-br from-sky-400 to-indigo-500 text-white font-bold shrink-0 mt-0.5 shadow-sm">
+                      {getInitials(fb.customerName)?.slice(0, 2) || "U"}
+                    </Avatar>
+                    <div className="flex-1 w-full">
+                      <div className="flex justify-between items-start">
                         <div>
-                          <p className="text-sm font-bold text-[#402542]">{row.customer}</p>
-                          <p className="text-[11px] text-[#c08aa4]">{row.phone}</p>
+                          <span className="font-extrabold text-[13px] text-slate-800 block">{fb.customerName}</span>
+                          <span className="text-[10px] text-slate-400 font-medium">{dayjs(fb.date).format("MMM DD, YYYY • HH:mm")}</span>
+                        </div>
+                        <div className="bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100 flex items-center">
+                          <Rate disabled allowHalf value={fb.score} className="text-[10px] text-amber-500 m-0" />
                         </div>
                       </div>
-                    </td>
-                    <td className="px-3 py-4 text-sm text-[#7a6176]">{row.service}</td>
-                    <td className="px-3 py-4 text-sm text-[#7a6176]">{row.artist}</td>
-                    <td className="px-3 py-4">
-                      <span
-                        className={`inline-flex rounded-full px-3 py-1 text-[11px] font-bold ${getBookingStatusTone(row.status)}`}
-                      >
-                        {row.status}
-                      </span>
-                    </td>
-                    <td className="px-3 py-4">
-                      <button
-                        type="button"
-                        onClick={() => handleActionClick(row)}
-                        className="rounded-full border border-[#f4c7da] bg-[#fff6fa] px-3 py-1.5 text-xs font-bold text-[#e84d92] hover:bg-[#ea4f93] hover:text-white transition-colors"
-                      >
-                        {row.action}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card>
-            <SectionHeading title="Quick Status" />
-            <div className="mt-5 space-y-4">
-              {[
-                ["Salon Status", "Open", "bg-[#eaf9ee] text-[#2fa25f]"],
-                ["Queue Capacity", "75% Full", "bg-[#ffe7ef] text-[#ea4f93]"],
-                ["Next Break", "12:00 PM", "bg-[#fff0dd] text-[#db8520]"],
-                ["Closing Time", "8:00 PM", "bg-[#f3f4f6] text-[#6b7280]"],
-              ].map(([label, value, tone]) => (
-                <div key={label} className="flex items-center justify-between gap-3">
-                  <span className="text-sm font-medium text-[#7f6478]">{label}</span>
-                  <span className={`rounded-full px-3 py-1 text-xs font-bold ${tone}`}>{value}</span>
-                </div>
-              ))}
-            </div>
-            <div className="mt-6">
-              <div className="mb-2 flex items-center justify-between gap-3 text-xs">
-                <span className="font-semibold text-[#7f6478]">Capacity Bar</span>
-                <span className="font-bold text-[#ea4f93]">12/16 chairs</span>
-              </div>
-              <div className="h-2.5 rounded-full bg-[#fbe1ec]">
-                <div className="h-full w-3/4 rounded-full bg-[#ea4f93]" />
-              </div>
-            </div>
-          </Card>
-
-          <Card>
-            <SectionHeading title="Urgent Issues" subtitle="3 items need attention" />
-            <div className="mt-5 space-y-3">
-              {urgentIssues.map((issue) => (
-                <div
-                  key={issue.title}
-                  className={`rounded-[14px] border p-4 ${issue.tone}`}
-                >
-                  <div className="flex items-start gap-3">
-                    <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${issue.dot}`} />
-                    <div>
-                      <p className="text-sm font-extrabold">{issue.title}</p>
-                      <p className="mt-1 text-xs leading-5 opacity-90">{issue.description}</p>
+                      {fb.comment && (
+                        <div className="mt-2.5 bg-slate-50 p-2.5 rounded-lg text-[12px] text-slate-600 border border-slate-100 leading-relaxed italic relative">
+                          "{fb.comment}"
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </Card>
+          )}
         </div>
-      </section>
-
-      {/* Staff Modal */}
-      <Modal
-        title={false}
-        open={isStaffModalOpen}
-        onCancel={() => setIsStaffModalOpen(false)}
-        footer={false}
-        centered
-        width={500}
-        styles={{
-          body: { padding: 0 }
-        }}
-      >
-        {selectedStaff && (
-          <div className="bg-white rounded-[20px] overflow-hidden">
-            {/* Header with gradient background */}
-            <div className={`bg-gradient-to-r ${selectedStaff.avatarTone} p-8 text-center`}>
-              <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-white/20 text-4xl font-bold text-white shadow-lg backdrop-blur-sm">
-                {selectedStaff.name
-                  .split(" ")
-                  .map((part) => part[0])
-                  .join("")}
-              </div>
-              <h2 className="mt-4 text-2xl font-extrabold text-white">{selectedStaff.name}</h2>
-              <p className="text-sm text-white/90">{selectedStaff.role}</p>
-              <span
-                className={`mt-3 inline-flex rounded-full bg-white/20 px-4 py-1 text-xs font-bold text-white`}
-              >
-                {selectedStaff.status}
-              </span>
-            </div>
-
-            {/* Body */}
-            <div className="p-6 space-y-4">
-              {/* Info Section */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-[#fffafb] border border-[#f8deea]">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f8deea] text-[#ea4f93]">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-[10px] font-medium text-[#c08aa4]">Phone</p>
-                    <p className="text-sm font-bold text-[#402542]">{selectedStaff.phone}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-[#fffafb] border border-[#f8deea]">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f8deea] text-[#ea4f93]">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-[10px] font-medium text-[#c08aa4]">Email</p>
-                    <p className="text-sm font-bold text-[#402542]">{selectedStaff.email}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-[#fffafb] border border-[#f8deea]">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f8deea] text-[#ea4f93]">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-[10px] font-medium text-[#c08aa4]">Experience</p>
-                    <p className="text-sm font-bold text-[#402542]">{selectedStaff.experience}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Skills Section */}
-              <div>
-                <p className="text-[10px] font-bold text-[#c08aa4] uppercase tracking-wider mb-2">Skills</p>
-                <div className="flex flex-wrap gap-2">
-                  {selectedStaff.skills.map((skill, index) => (
-                    <span key={index} className="rounded-full bg-[#fff0f6] px-3 py-1 text-[11px] font-semibold text-[#ea4f93] border border-[#f8deea]">
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* Close Button */}
-              <button
-                onClick={() => setIsStaffModalOpen(false)}
-                className="w-full mt-2 rounded-full bg-gradient-to-r from-[#ff4f98] to-[#ea4f93] px-4 py-2.5 text-sm font-bold text-white shadow-[0_8px_16px_rgba(234,79,147,0.2)] hover:shadow-[0_8px_20px_rgba(234,79,147,0.3)] transition-all"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        )}
-      </Modal>
-
-      {/* Schedule Detail Modal */}
-      <Modal
-        title={false}
-        open={isScheduleModalOpen}
-        onCancel={() => setIsScheduleModalOpen(false)}
-        footer={false}
-        centered
-        width={520}
-        styles={{
-          body: { padding: 0 }
-        }}
-      >
-        {selectedSchedule && (
-          <div className="bg-white rounded-[20px] overflow-hidden">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-[#ff4f98] to-[#ff7f4f] p-6 text-center">
-              <div className="flex items-center justify-center gap-2 text-white/90 mb-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
-                <span className="text-sm font-semibold">{selectedSchedule.time}</span>
-              </div>
-              <h2 className="text-2xl font-extrabold text-white">{selectedSchedule.customer}</h2>
-              <p className="text-sm text-white/90 mt-1">{selectedSchedule.phone}</p>
-              <span
-                className={`mt-3 inline-flex rounded-full px-4 py-1 text-xs font-bold ${getBookingStatusTone(selectedSchedule.status)}`}
-              >
-                {selectedSchedule.status}
-              </span>
-            </div>
-
-            {/* Body */}
-            <div className="p-6 space-y-5">
-              {/* Service & Nail Set */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl bg-[#fffafb] border border-[#f8deea]">
-                  <div className="flex items-center gap-2 mb-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ea4f93" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                    <span className="text-[10px] font-bold uppercase text-[#c08aa4]">Service</span>
-                  </div>
-                  <p className="text-sm font-bold text-[#402542]">{selectedSchedule.service}</p>
-                </div>
-                <div className="p-4 rounded-xl bg-[#fffafb] border border-[#f8deea]">
-                  <div className="flex items-center gap-2 mb-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ea4f93" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                    <span className="text-[10px] font-bold uppercase text-[#c08aa4]">Nail Set</span>
-                  </div>
-                  <p className="text-sm font-bold text-[#402542]">{selectedSchedule.nailSet}</p>
-                </div>
-              </div>
-
-              {/* Price & Artist */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl bg-gradient-to-r from-[#fff0f6] to-[#ffe4f0] border border-[#f8deea]">
-                  <div className="flex items-center gap-2 mb-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ea4f93" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                    <span className="text-[10px] font-bold uppercase text-[#c08aa4]">Price</span>
-                  </div>
-                  <p className="text-xl font-extrabold text-[#ea4f93]">{selectedSchedule.price}</p>
-                </div>
-                <div className="p-4 rounded-xl bg-[#fffafb] border border-[#f8deea]">
-                  <div className="flex items-center gap-2 mb-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ea4f93" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                    <span className="text-[10px] font-bold uppercase text-[#c08aa4]">Artist</span>
-                  </div>
-                  <p className="text-sm font-bold text-[#402542]">{selectedSchedule.artist}</p>
-                </div>
-              </div>
-
-              {/* Notes (if any) */}
-              {selectedSchedule.notes && (
-                <div className="p-4 rounded-xl bg-[#fff8ed] border border-[#ffe0b2]">
-                  <div className="flex items-center gap-2 mb-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#db8520" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                    <span className="text-[10px] font-bold uppercase text-[#c08aa4]">Notes</span>
-                  </div>
-                  <p className="text-sm text-[#7a6176]">{selectedSchedule.notes}</p>
-                </div>
-              )}
-
-              {/* Close Button */}
-              <button
-                onClick={() => setIsScheduleModalOpen(false)}
-                className="w-full mt-2 rounded-full bg-gradient-to-r from-[#ff4f98] to-[#ff7f4f] px-4 py-2.5 text-sm font-bold text-white shadow-[0_8px_16px_rgba(234,79,147,0.2)] hover:shadow-[0_8px_20px_rgba(234,79,147,0.3)] transition-all"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        )}
-      </Modal>
-    </>
+      )}
+    </Modal>
   );
 }

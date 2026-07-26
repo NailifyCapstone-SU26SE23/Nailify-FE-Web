@@ -1,63 +1,175 @@
-import { BadgeCheck, XCircle, ArrowLeft } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowLeft, CalendarDays, CheckCircle2, LoaderCircle, XCircle } from "lucide-react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { ROUTES } from "../../../../shared/constants/routes";
+import { ROUTES, getReceptionistBookingDetailRoute } from "../../../../shared/constants/routes";
+import { checkoutReceptionistBooking } from "../../bookings/services/receptionistBookingService";
+import { getBookingIdByOrderCode } from "../services/receptionistPaymentService";
 
 export default function PaymentStatusPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // PayOS usually returns cancel=true if the user cancelled
   const isCancel = searchParams.get("cancel") === "true";
-  // PayOS returns status=PAID if successful
   const status = searchParams.get("status");
   const orderCode = searchParams.get("orderCode");
+  const isSuccess = !isCancel && (status === "PAID");
 
-  const isSuccess = !isCancel && (status === "PAID" || status === "SUCCESS");
+  useEffect(() => {
+    const nextParams = orderCode ? `?orderCode=${encodeURIComponent(orderCode)}` : "";
+    const nextPath = isSuccess ? ROUTES.paymentSuccess : ROUTES.paymentCancel;
+
+    navigate(`${nextPath}${nextParams}`, { replace: true });
+  }, [isSuccess, navigate, orderCode]);
+
+  return <PaymentResultPage isSuccess={isSuccess} orderCode={orderCode} />;
+}
+
+export function PaymentSuccessPage() {
+  const [searchParams] = useSearchParams();
+  const orderCode = searchParams.get("orderCode");
+
+  useEffect(() => {
+    const bookingId = localStorage.getItem("pendingPaymentBookingId");
+    if (bookingId) {
+      checkoutReceptionistBooking(bookingId)
+        .then(() => {
+          console.log("Successfully checked out booking:", bookingId);
+          localStorage.removeItem("pendingPaymentBookingId");
+        })
+        .catch((err) => {
+          console.error("Failed to automatically checkout booking after payment:", err);
+        });
+    }
+  }, []);
+
+  return <PaymentResultPage isSuccess orderCode={orderCode} />;
+}
+
+export function PaymentCancelPage() {
+  const [searchParams] = useSearchParams();
+
+  return <PaymentResultPage isSuccess={false} orderCode={searchParams.get("orderCode")} />;
+}
+
+function PaymentResultPage({ isSuccess, orderCode }) {
+  const navigate = useNavigate();
+  const [bookingId, setBookingId] = useState("");
+  const [isBookingIdLoading, setIsBookingIdLoading] = useState(false);
+  const [bookingIdError, setBookingIdError] = useState("");
+  const currentDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  useEffect(() => {
+    if (!orderCode) {
+      return;
+    }
+
+    let isMounted = true;
+    setIsBookingIdLoading(true);
+    setBookingIdError("");
+
+    getBookingIdByOrderCode(orderCode)
+      .then((data) => {
+        if (!isMounted) return;
+
+        setBookingId(data?.bookingId || "");
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+
+        setBookingIdError(err instanceof Error ? err.message : "Failed to fetch booking detail link.");
+      })
+      .finally(() => {
+        if (!isMounted) return;
+
+        setIsBookingIdLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [orderCode]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#fff9fc] p-4">
-      <div className="w-full max-w-md overflow-hidden rounded-[24px] border border-[#f3cade] bg-white shadow-[0_14px_32px_rgba(236,72,153,0.06)] text-center p-8">
-        <div className="flex flex-col items-center justify-center">
-          {isSuccess ? (
-            <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-[#e8f8ef] text-[#1f9d61]">
-              <BadgeCheck size={48} />
-            </div>
-          ) : (
-            <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-[#ffe7ef] text-[#dc4d86]">
-              <XCircle size={48} />
-            </div>
-          )}
+    <div className={`flex min-h-screen items-center justify-center 
+      ${isSuccess ? "bg-[#dcfce7]" : "bg-[#fee2e2]"
+      } p-4 font-sans`}>
+      <div className="w-full max-w-md overflow-hidden rounded-[20px] bg-white border border-gray-100 p-8 text-center relative">
+        <div className="flex flex-col items-center justify-center mt-2">
+          {/* Status Icon */}
+          <div className={`mb-5 flex h-[72px] w-[72px] items-center justify-center rounded-full ${isSuccess ? "bg-[#dcfce7] text-[#16a34a]" : "bg-[#fee2e2] text-[#ef4444]"
+            }`}>
+            {isSuccess ? <CheckCircle2 size={36} strokeWidth={2.5} /> : <XCircle size={36} strokeWidth={2.5} />}
+          </div>
 
-          <h1 className="text-2xl font-black text-[#412643] mb-2">
-            {isSuccess ? "Thanh toán thành công!" : "Thanh toán thất bại"}
+          <h1 className={`text-[30px] font-bold mb-2 ${isSuccess ? "text-[#16a34a]" : "text-[#ef4444]"}`}>
+            {isSuccess ? "Payment Successful!" : "Payment Cancelled!"}
           </h1>
-          
-          <p className="text-sm text-[#8f7b88] mb-6">
-            {isSuccess
-              ? "Cảm ơn bạn! Giao dịch của bạn đã được ghi nhận thành công."
-              : "Rất tiếc, giao dịch của bạn đã bị hủy hoặc có lỗi xảy ra. Vui lòng thử lại sau."}
-          </p>
 
-          {orderCode && (
-            <div className="mb-8 rounded-xl bg-[#fffafb] border border-[#f3d7e2] w-full p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#c38ea8] mb-1">
-                Mã đơn hàng
-              </p>
-              <p className="text-lg font-black text-[#cf2e7a]">
-                #{orderCode}
-              </p>
+          <p className="text-[16px] leading-relaxed text-[#6b7280] mb-8 max-w-[320px]">
+            {isSuccess
+              ? "Your payment has been processed successfully."
+              : "You have cancelled the payment."}
+          </p>
+          
+          {isSuccess && (
+          <div className="w-full rounded-[16px] bg-[#f9fafb] p-5 mb-6 text-left">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <span className="text-[14px] font-medium text-[#6b7280]">Order Code</span>
+                <span className="rounded-md border border-gray-200 bg-white px-2 py-1 text-[14px] font-bold tracking-wider text-[#111827]">
+                  {orderCode}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[14px] font-medium text-[#6b7280]">Payment Method</span>
+                <span className="text-[14px] font-bold text-[#111827]">VietQR (QR)</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[14px] font-medium text-[#6b7280]">Date</span>
+                <span className="text-[14px] font-bold text-[#111827]">{currentDate}</span>
+              </div>
             </div>
+          </div>
           )}
 
-          <button
-            onClick={() => navigate(ROUTES.root)}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(90deg,#cf3d82_0%,#ef5b92_100%)] px-6 py-4 text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(235,91,146,0.22)]"
-          >
-            <ArrowLeft size={16} />
-            Quay lại trang chủ
-          </button>
+          {bookingIdError && (
+            <p className="mb-4 text-sm font-medium text-[#ef4444]">{bookingIdError}</p>
+          )}
+
+          <div className="flex w-full flex-col gap-3">
+            {bookingId && (
+              <button
+                type="button"
+                onClick={() => navigate(getReceptionistBookingDetailRoute(bookingId))}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#111827] px-5 py-3.5 text-sm font-extrabold text-white transition hover:bg-[#1f2937]"
+              >
+                <CalendarDays size={17} />
+                Return to Booking Detail
+              </button>
+            )}
+
+            {!bookingId && isBookingIdLoading && (
+              <button
+                type="button"
+                disabled
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#e5e7eb] px-5 py-3.5 text-sm font-extrabold text-[#6b7280]"
+              >
+                <LoaderCircle size={17} className="animate-spin" />
+                Loading Booking Detail
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => navigate(ROUTES.root)}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-5 py-3.5 text-sm font-extrabold text-[#374151] transition hover:bg-[#f9fafb]"
+            >
+              <ArrowLeft size={17} />
+              Back to Home
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 }
