@@ -16,11 +16,13 @@ import {
   Clock,
   Map, ChevronDown, ChevronUp
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Table, List, Card, Image } from "antd";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { ReadOnlyNailPreview } from "../../../../shared/components/common/ReadOnlyNailPreview";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
+import { useQuery } from "@tanstack/react-query";
+import { fetchStaffCustomerDetail, fetchLoyaltyTiers } from "../services/staffBookingService";
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -452,7 +454,11 @@ export function StaffBookingConsultationDetail({
   const [isVariantModalOpen, setIsVariantModalOpen] = useState(false);
   const hasSelectedNailDesign = Boolean(
     data.design.variantDetail ||
-    (String(data.design.name || "").trim() && String(data.design.name || "").trim() !== "--"),
+    (
+      String(data.design.name || "").trim() && 
+      String(data.design.name || "").trim() !== "--" &&
+      String(data.design.name || "").trim() !== "Selected design not specified"
+    ),
   );
   const canViewVariantDetail = Boolean(
     data.design.variantDetail &&
@@ -478,6 +484,35 @@ export function StaffBookingConsultationDetail({
 
   const [customerExpanded, setCustomerExpanded] = useState(true);
   const [bookingExpanded, setBookingExpanded] = useState(true);
+
+  const customerId = data?.customerId || data?.customer?.id || data?.customer?.userId || data?.customer?.customerId;
+
+  const { data: customerData } = useQuery({
+    queryKey: ['customer', customerId],
+    queryFn: async () => {
+      if (!customerId) return null;
+      return await fetchStaffCustomerDetail(customerId);
+    },
+    enabled: !!customerId,
+  });
+
+  const { data: loyaltyTiers } = useQuery({
+    queryKey: ['loyaltyTiers'],
+    queryFn: async () => {
+      return await fetchLoyaltyTiers();
+    }
+  });
+
+  const { customerTier, customerPoints } = useMemo(() => {
+    const points = customerData?.loyaltyPoint || 0;
+    if (!loyaltyTiers?.length) return { customerTier: null, customerPoints: points };
+
+    const tier = loyaltyTiers.find(t =>
+      points >= t.minLifetimePoints &&
+      (t.maxLifetimePoints === null || points <= t.maxLifetimePoints)
+    );
+    return { customerTier: tier, customerPoints: points };
+  }, [customerData, loyaltyTiers]);
 
   return (
     <section className="flex min-h-full flex-col gap-6 bg-slate-50/50 p-2 sm:p-6 lg:p-8  bg-[#fff9fb]
@@ -545,10 +580,24 @@ export function StaffBookingConsultationDetail({
                       <p className="text-2xl font-extrabold text-[#3f2b3f]">{data.customer.name}</p>
                       <p className="mt-1 text-sm text-[#9a7f90]">{data.customer.phone}</p>
                     </div>
-                    <Tag className="border-[#f3ddab] bg-[#fff8df] text-[#d39a1d]">
-                      <Star size={11} className="mr-1 inline-block fill-current" />
-                      {data.customer.memberTier}
-                    </Tag>
+                    {customerTier ? (
+                      <span
+                        className="inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold items-center gap-1"
+                        style={{
+                          backgroundColor: customerTier.backgroundColor + '15',
+                          borderColor: customerTier.backgroundColor + '40',
+                          color: customerTier.backgroundColor
+                        }}
+                      >
+                        <Star size={11} className="fill-current" />
+                        {customerTier.name} ({customerPoints} pts)
+                      </span>
+                    ) : (
+                      <span className="inline-flex rounded-full bg-gray-50 border border-gray-200 px-2.5 py-1 text-[10px] font-bold text-gray-500 items-center gap-1">
+                        <Star size={11} className="fill-current" />
+                        {customerPoints} pts
+                      </span>
+                    )}
                   </div>
 
                   <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -581,20 +630,6 @@ export function StaffBookingConsultationDetail({
           <div className="pointer-events-none absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-gradient-to-tr from-[#ffecd2]/40 to-[#fcb69f]/40 blur-[60px]" />
 
           <div className="relative z-10">
-            {/* <div className="flex flex-row justify-between items-center border-b border-[#fdebf3] pb-4 mb-6">
-              <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2]">
-                  <CalendarClock size={16} className="text-[#ea4f93]" />
-                </div>
-                <h2 className="text-sm font-black uppercase tracking-widest text-[#ea4f93]">Booking Information</h2>
-              </div>
-              <div className="flex items-center gap-2">
-                <Tag className={`m-0 ${getStatusColor(data.statusLabel)}`}>
-                  <Clock size={11} className="mr-1 inline-block fill-current" />
-                  {data.statusLabel}
-                </Tag>
-              </div>
-            </div> */}
             <div className="mb-6 flex items-center justify-between border-b border-[#fdebf3] pb-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2]">

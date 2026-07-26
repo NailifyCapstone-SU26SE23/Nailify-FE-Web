@@ -89,15 +89,22 @@ function formatTimeLabel(startTime, totalDuration) {
 function getStatusTone(status) {
   switch (status) {
     case "Completed":
-      return "bg-[#ffeaf2] text-[#ef5a95]";
-    case "CheckedIn":
+      return "bg-green-100 text-green-600";
+    case "ServiceCompleted":
       return "bg-[#e8f8ed] text-[#309d63]";
-    case "Approved":
+    case "CheckedIn":
       return "bg-[#eef1fb] text-[#6876c8]";
+    case "Approved":
+      return "bg-[#f2f0ff] text-[#8b5cf6]";
     case "Pending":
       return "bg-[#fff4e8] text-[#f08b2e]";
+    case "ReschedulePending":
+      return "bg-[#fffbe6] text-[#faad14]";
+    case "Cancelled":
+    case "NoShow":
+      return "bg-[#fff1f0] text-[#f5222d]";
     default:
-      return "bg-[#fff1f6] text-[#eb5a98]";
+      return "bg-[#f3f4f6] text-[#6b7280]";
   }
 }
 
@@ -117,6 +124,7 @@ function normalizeAppointmentRow(booking, index) {
   return {
     id: booking.bookingId,
     bookingId: booking.bookingId,
+    rawStartTime: booking.startTime || "",
     time: formatTimeLabel(booking.startTime, booking.totalDuration),
     customer: typeof booking.customerName === 'object' ? booking.customerName?.customerName || "--" : (booking.customerName || "--"),
     service:
@@ -146,9 +154,9 @@ function DashboardCard({ children, className = "" }) {
   );
 }
 
-function SectionTitle({ icon: Icon, title, action }) {
+function SectionTitle({ icon: Icon, title, action, className = "" }) {
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+    <div className={`flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3 ${className}`}>
       <div className="flex min-w-0 items-center gap-2">
         {Icon ? <Icon size={14} className="text-[#eb5a98]" /> : null}
         <h3 className="min-w-0 text-sm font-extrabold text-[#e14f91]">{title}</h3>
@@ -270,6 +278,10 @@ export function ReceptionistDashboardPage() {
   const [isVerifyingQr, setIsVerifyingQr] = useState(false);
   const [scannerError, setScannerError] = useState("");
   const [lastScannedCode, setLastScannedCode] = useState("");
+  
+  const [selectedChair, setSelectedChair] = useState(null);
+  const [isChairModalOpen, setIsChairModalOpen] = useState(false);
+
   const scannerVideoRef = useRef(null);
   const scannerCanvasRef = useRef(null);
   const scannerStreamRef = useRef(null);
@@ -414,17 +426,21 @@ export function ReceptionistDashboardPage() {
       title: "Time",
       dataIndex: "time",
       key: "time",
-      render: (value) => <span className="text-xs font-semibold text-[#ea4f93]">{value}</span>,
+      width: 170,
+      sorter: (a, b) => (a.rawStartTime || "").localeCompare(b.rawStartTime || ""),
+      defaultSortOrder: 'ascend',
+      render: (value) => <span className="text-xs font-semibold text-[#ea4f93] whitespace-nowrap">{value}</span>,
     },
     {
       title: "Customer",
       key: "customer",
+      sorter: (a, b) => a.customer.localeCompare(b.customer),
       render: (_, row) => (
         <div className="flex items-center gap-3">
-          <div className={`flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-extrabold text-white ${row.avatarTone}`}>
+          <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold text-white ${row.avatarTone}`}>
             {getInitials(row.customer)}
           </div>
-          <p className="text-xs font-bold text-[#432744]">{row.customer}</p>
+          <p className="text-xs font-bold text-[#432744] whitespace-nowrap">{row.customer}</p>
         </div>
       ),
     },
@@ -438,14 +454,17 @@ export function ReceptionistDashboardPage() {
       title: "Staff",
       dataIndex: "staff",
       key: "staff",
-      render: (value) => <span className="text-xs text-[#584654]">{value}</span>,
+      sorter: (a, b) => a.staff.localeCompare(b.staff),
+      render: (value) => <span className="text-xs text-[#584654] whitespace-nowrap">{value}</span>,
     },
     {
       title: "Status",
       dataIndex: "status",
       key: "status",
+      width: 150,
+      sorter: (a, b) => a.status.localeCompare(b.status),
       render: (value, row) => (
-        <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${row.tone}`}>
+        <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold whitespace-nowrap ${row.tone}`}>
           {value}
         </span>
       ),
@@ -453,6 +472,7 @@ export function ReceptionistDashboardPage() {
     {
       title: "Action",
       key: "action",
+      width: 100,
       render: (_, row) => (
         <ActionDropdown
           label="Action"
@@ -670,8 +690,8 @@ export function ReceptionistDashboardPage() {
 
   const activeWaitlistItems = waitlistData?.items || dashboardData?.liveWaitlist || [];
   const displayQueue = activeWaitlistItems.map(w => [
-    typeof w.customerName === 'object' ? w.customerName?.customerName || "Walk-in" : (w.customerName || "Walk-in"), 
-    `Pos: ${w.position}`, 
+    typeof w.customerName === 'object' ? w.customerName?.customerName || "Walk-in" : (w.customerName || "Walk-in"),
+    `Pos: ${w.position}`,
     `${w.estimatedDuration || w.estimatedWait || 0}m`
   ]);
 
@@ -726,19 +746,20 @@ export function ReceptionistDashboardPage() {
                       bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.55),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.35),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.45),transparent_35%),linear-gradient(to_right,#f3c7db_1px,transparent_1px),linear-gradient(to_bottom,#f3c7db_1px,transparent_1px)]
                     ">
         <div className="flex w-full min-w-0 flex-col gap-4">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {displayMetrics.map((item) => (
+              <MetricCard key={item.label} item={item} />
+            ))}
+          </div>
           <div className="grid w-full min-w-0 gap-4 xl:grid-cols-[minmax(0,1.72fr)_280px]">
             <div className="min-w-0 space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {displayMetrics.map((item) => (
-                  <MetricCard key={item.label} item={item} />
-                ))}
-              </div>
+
 
               <DashboardCard>
                 <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between mb-4">
-                  <SectionTitle icon={CalendarClock} title="Today's Appointments" />
-                  <div className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] xl:w-auto xl:min-w-[720px]">
-                    <label className="flex h-11 min-w-0 items-center gap-2 rounded-full border border-[#f4d6e2] bg-white px-4 text-sm text-[#c59bb0] sm:min-w-[0] xl:min-w-[380px]">
+                  <SectionTitle icon={CalendarClock} title="Today's Appointments" className="w-[250px]" />
+                  <div className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] w-auto">
+                    <label className="flex h-9 min-w-0 items-center gap-2 rounded-full border border-[#f4d6e2] bg-white px-4 text-sm text-[#c59bb0] sm:min-w-[0] xl:min-w-[380px]">
                       <Search size={16} className="text-[#3f2f39]" />
                       <input
                         type="text"
@@ -751,7 +772,7 @@ export function ReceptionistDashboardPage() {
                     <button
                       type="button"
                       onClick={() => setIsScannerOpen(true)}
-                      className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-[#e7dcff] bg-white px-4 text-sm font-bold text-[#7a57d9] shadow-[0_10px_24px_rgba(122,87,217,0.1)] whitespace-nowrap sm:min-w-[140px]"
+                      className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-[#e7dcff] bg-white hover:bg-[#7a57d9] hover:text-white px-4 text-sm font-bold text-[#7a57d9] shadow-[0_10px_24px_rgba(122,87,217,0.1)] whitespace-nowrap"
                     >
                       <UserCheck size={15} />
                       Check-in
@@ -759,7 +780,7 @@ export function ReceptionistDashboardPage() {
                     <button
                       type="button"
                       onClick={() => navigate(ROUTES.receptionistQueue)}
-                      className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-[#f3cfe0] bg-[#fff3f8] px-4 text-sm font-bold text-[#eb5a98] whitespace-nowrap sm:min-w-[170px]"
+                      className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-[#f3cfe0] bg-[#fff3f8] hover:bg-[#eb5a98] hover:text-white px-4 text-sm font-bold text-[#eb5a98] whitespace-nowrap"
                     >
                       <Plus size={15} />
                       Create Walk-In
@@ -799,7 +820,8 @@ export function ReceptionistDashboardPage() {
                     dataSource={paginatedAppointmentRows}
                     loading={isAppointmentsLoading}
                     pagination={false}
-                    scroll={{ x: 960 }}
+                    size="middle"
+                    scroll={{ x: "max-content" }}
                     locale={{ emptyText: appointmentsError || "No appointments found for today." }}
                   />
                 </div>
@@ -928,7 +950,11 @@ export function ReceptionistDashboardPage() {
                           return (
                             <div
                               key={cellName}
-                              className="flex flex-col items-center justify-center gap-1 w-[90px] h-[90px] rounded-2xl border-2 transition-all duration-300 bg-[#fff8fb] border-pink-200 shadow-sm hover:shadow-md"
+                              onClick={() => {
+                                setSelectedChair(chair);
+                                setIsChairModalOpen(true);
+                              }}
+                              className="flex flex-col items-center justify-center gap-1 w-[90px] h-[90px] rounded-2xl border-2 transition-all duration-300 bg-[#fff8fb] border-pink-200 shadow-sm hover:shadow-md cursor-pointer hover:scale-105"
                             >
                               <div
                                 className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-extrabold text-white ${chair.isOccupied ? "bg-[#eb5b92]" : "bg-[#8e50cf]"}`}
@@ -941,14 +967,19 @@ export function ReceptionistDashboardPage() {
                                   <span className="inline-flex rounded-full bg-[#ffeaf2] px-2 py-0.5 text-[9px] font-bold text-[#ef5a95]">
                                     Occupied
                                   </span>
-                                  <span className="text-[9px] text-[#aa8a99] truncate w-20 text-center">
+                                  <span className="text-[9px] text-[#aa8a99] truncate w-20 text-center mt-0.5">
                                     {typeof chair.currentCustomer === 'object' ? chair.currentCustomer?.customerName || 'Customer' : (chair.currentCustomer || 'Customer')}
                                   </span>
                                 </div>
                               ) : (
-                                <span className="inline-flex rounded-full bg-[#e8f8ed] px-2 py-0.5 text-[9px] font-bold text-[#30a364]">
-                                  Available
-                                </span>
+                                <div className="flex flex-col items-center leading-tight">
+                                  <span className="inline-flex rounded-full bg-[#e8f8ed] px-2 py-0.5 text-[9px] font-bold text-[#30a364]">
+                                    Available
+                                  </span>
+                                  <span className="text-[9px] text-[#aa8a99] truncate w-20 text-center mt-0.5">
+                                    {typeof chair.currentCustomer === 'object' ? chair.currentCustomer?.customerName || '--' : (chair.currentCustomer || '--')}
+                                  </span>
+                                </div>
                               )}
                             </div>
                           );
@@ -1032,19 +1063,6 @@ export function ReceptionistDashboardPage() {
                   )}
                 </div>
               </DashboardCard>
-
-              <DashboardCard>
-                <SectionTitle icon={Sparkles} title="Quick Status" />
-                <div className="mt-4 space-y-4">
-                  {displayQuickStatus.map(([label, value]) => (
-                    <div key={label} className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                      <span className="break-words text-[#9d8191]">{label}</span>
-                      <span className="font-extrabold text-[#ea4f93]">{value}</span>
-                    </div>
-                  ))}
-                </div>
-              </DashboardCard>
-
               <DashboardCard>
                 <SectionTitle icon={Bell} title="Recent Check-ins & Arrivals" />
                 <div className="mt-4 space-y-4">
@@ -1129,6 +1147,55 @@ export function ReceptionistDashboardPage() {
             </div>
           ) : null}
         </div>
+      </Modal>
+
+      <Modal
+        title={
+          <div className="flex items-center gap-2 text-[#432744]">
+            <Armchair className="text-[#ea4f93]" size={20} />
+            <span className="font-bold text-lg">Chair {selectedChair?.name} Details</span>
+          </div>
+        }
+        open={isChairModalOpen}
+        onCancel={() => {
+          setIsChairModalOpen(false);
+          setSelectedChair(null);
+        }}
+        footer={null}
+        width={400}
+        centered
+        className="rounded-2xl"
+      >
+        {selectedChair && (
+          <div className="mt-4 space-y-4 text-sm text-[#584654]">
+            <div className="flex justify-between items-center py-2 border-b border-[#f7e0ea]">
+              <span className="font-semibold text-[#aa8a99]">isOccupied</span>
+              <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                selectedChair.isOccupied ? "bg-pink-50 text-pink-600" : "bg-emerald-50 text-emerald-600"
+              }`}>
+                {selectedChair.isOccupied ? "true" : "false"}
+              </span>
+            </div>
+
+            <div className="bg-[#fff8fb] rounded-xl p-4 border border-[#f7e0ea] mt-4 flex items-center gap-3">
+              <div className={`p-2 rounded-full ${selectedChair.isOccupied ? 'bg-pink-100 text-pink-500' : 'bg-emerald-100 text-emerald-500'}`}>
+                <UserRound size={18} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-[#aa8a99]">currentCustomer</p>
+                <p className="font-bold text-[#432744] text-base truncate">
+                  {selectedChair.isOccupied ? (
+                    typeof selectedChair.currentCustomer === 'object' 
+                      ? selectedChair.currentCustomer?.customerName 
+                      : (selectedChair.currentCustomer || "Walk-In")
+                  ) : (
+                    <span className="text-gray-400 italic">None</span>
+                  )}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </Modal>
     </section>
   );

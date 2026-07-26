@@ -363,11 +363,14 @@ function buildStaffExperienceFromBooking(
       .map((part) => part[0])
       .join("")
       .toUpperCase(),
+    customerId: booking?.customerId,
     customer: {
       name: customerDisplayName,
       phone: customerPhone,
       avatar: customerAvatar,
       memberTier: customerMemberTier,
+      id: booking?.customerId,
+      userId: booking?.customerId,
       facts: [
         { label: "Salon", value: booking?.salonName || "--" },
         { label: "Total Services", value: String(items.length || 0) },

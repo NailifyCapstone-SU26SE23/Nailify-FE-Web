@@ -34,6 +34,7 @@ export const ROUTES = {
   receptionistCustomersCreate: "/receptionist/customers/create",
   receptionistCustomerDetail: "/receptionist/customers/:id",
   receptionistBreaks: "/receptionist/breaks",
+  receptionistChairs: "/receptionist/chairs",
 
   // Manager routes
   managerRoot: "/manager",
@@ -53,6 +54,7 @@ export const ROUTES = {
   managerWaitlist: "/manager/waitlist",
   managerQueue: "/manager/queue",
   managerBreaks: "/manager/breaks",
+  managerChairs: "/manager/chairs",
   receptionistQueue: "/receptionist/queue",
   receptionistWaitlist: "/receptionist/waitlist",
 

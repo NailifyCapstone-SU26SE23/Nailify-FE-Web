@@ -43,14 +43,15 @@ import {
   fetchReceptionistBookingDetail,
   fetchReceptionistBookingProcedures,
   fetchReceptionistProcedureAvailableArtists,
-  fetchReceptionistCustomerDetail,
   manualCheckInReceptionistBooking,
   updateReceptionistProcedureArtist,
   getBookingHistories,
   getUserById,
 } from "../services/receptionistBookingService";
+import { fetchReceptionistCustomerDetail, fetchLoyaltyTiers } from "../../customers/services/receptionistCustomerService";
 import { createPayment } from "../../payments/services/receptionistPaymentService";
 import dayjs from "dayjs";
+import { useQuery } from "@tanstack/react-query";
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -449,9 +450,15 @@ export function ReceptionistBookingDetailPage() {
         try {
           const data = await fetchReceptionistBookingDetail(bookingId);
           setBooking(data);
-          if (data?.customerId) {
+          
+          console.log("Booking Detail Fetched:", data);
+          
+          const custId = data?.customerId || data?.customer?.id || data?.customer?.userId || data?.customerUserId;
+          console.log("Extracted Customer ID:", custId);
+          
+          if (custId) {
             try {
-              const customerData = await fetchReceptionistCustomerDetail(data.customerId);
+              const customerData = await fetchReceptionistCustomerDetail(custId);
               setCustomerProfile(customerData);
             } catch (customerError) {
               setCustomerProfile(null);
@@ -498,6 +505,29 @@ export function ReceptionistBookingDetailPage() {
     booking?.qrCode ? `data:image/png;base64,${booking.qrCode}` : ""
   ), [booking]);
   const customerDisplayName = getCustomerDisplayName(customerProfile, booking);
+
+  const { data: loyaltyTiers } = useQuery({
+    queryKey: ['loyaltyTiers'],
+    queryFn: async () => {
+      return await fetchLoyaltyTiers();
+    }
+  });
+
+  const { customerTier, customerPoints } = useMemo(() => {
+    if (!customerProfile) return { customerTier: null, customerPoints: 0 };
+    const points = customerProfile.loyaltyPoint || 0;
+    if (!loyaltyTiers?.length) return { customerTier: null, customerPoints: points };
+
+    const tier = loyaltyTiers.find(t =>
+      points >= t.minLifetimePoints &&
+      (t.maxLifetimePoints === null || points <= t.maxLifetimePoints)
+    );
+    return { customerTier: tier, customerPoints: points };
+  }, [customerProfile, loyaltyTiers]);
+
+  console.log("customer", customerTier);
+  console.log("point", customerPoints);
+
   const customerInitials = getCustomerInitials(customerProfile, booking);
   const isSelectedRowNail = isNailBookingItem(selectedServiceRow?.sourceItem);
 
@@ -1084,48 +1114,66 @@ export function ReceptionistBookingDetailPage() {
                       {customerInitials}
                     </div>
                   )}
-                  <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-[#F59E0B] to-[#D97706] px-2.5 py-0.5 text-[9px] font-black text-white shadow-xs border border-white uppercase tracking-wider whitespace-nowrap">
+                  {/* <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-[#F59E0B] to-[#D97706] px-2.5 py-0.5 text-[9px] font-black text-white shadow-xs border border-white uppercase tracking-wider whitespace-nowrap">
                     VIP
-                  </span>
+                  </span> */}
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2.5 flex-wrap">
-                    <p className="text-xl font-black text-[#2B182B] truncate">{customerDisplayName}</p>
-                    <span className="rounded-full bg-[#FEF3C7] border border-[#FDE68A] px-2.5 py-0.5 text-[10px] font-black text-[#B45309]">
-                      Gold Tier
-                    </span>
-                  </div>
 
-                  {/* Prominent pill tags */}
-                  <div className="mt-2.5 flex flex-wrap gap-1.5">
-                    {(
-                      [
-                        customerProfile?.membershipTierName || booking?.customerMembershipTier || "VIP Member",
-                        customerProfile?.allergies || customerProfile?.skinCondition || null,
-                        customerProfile?.totalVisits ? `${customerProfile.totalVisits} Visits` : null,
-                      ].filter(Boolean).length > 0
-                        ? [
-                          customerProfile?.membershipTierName || booking?.customerMembershipTier || "VIP Member",
-                          customerProfile?.allergies || customerProfile?.skinCondition || null,
-                          customerProfile?.totalVisits ? `${customerProfile.totalVisits} Visits` : null,
-                        ].filter(Boolean)
-                        : ["VIP Member"]
-                    ).map((tag, index) => (
-                      <span
-                        key={tag}
-                        className={[
-                          "rounded-full px-2.5 py-0.5 text-[10px] font-extrabold transition-all",
-                          index === 0
-                            ? "border border-[#F3D6E5] bg-[#FFF0F6] text-[#E84F93]"
-                            : index === 1
-                              ? "border border-[#FDE68A] bg-[#FEF3C7] text-[#B45309]"
-                              : "border border-[#DDD6FE] bg-[#F5F3FF] text-[#6D28D9]",
-                        ].join(" ")}
+                  <div className="flex flex-row justify-between">
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <p className="text-xl font-black text-[#2B182B] truncate">{customerDisplayName}</p>
+                      {customerTier ? (
+                        <span
+                          className="rounded-full border px-2.5 py-0.5 text-[10px] font-black flex items-center gap-1"
+                          style={{
+                            backgroundColor: customerTier.backgroundColor + '15',
+                            borderColor: customerTier.backgroundColor + '40',
+                            color: customerTier.backgroundColor
+                          }}
+                        >
+                          <Star size={10} className="fill-current" />
+                          {customerTier.name} ({customerPoints} pts)
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-gray-50 border border-gray-200 px-2.5 py-0.5 text-[10px] font-black text-gray-500 flex items-center gap-1">
+                          <Star size={10} className="fill-current" />
+                          {customerPoints} pts
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Quick Actions rounded icon buttons */}
+                    <div className="flex items-center gap-2 lg:items-end shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleMockAction("Call Customer")}
+                        title="Call Customer"
+                        className="p-3 rounded-2xl bg-[#FFF0F6] border border-[#F3D6E5] text-[#E84F93] hover:bg-[#E84F93] hover:text-white transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 text-xs font-extrabold"
                       >
-                        {tag}
-                      </span>
-                    ))}
+                        <Phone size={16} />
+                        <span className="hidden sm:inline lg:hidden">Call</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMockAction("Send SMS / Chat")}
+                        title="Send SMS / Chat"
+                        className="p-3 rounded-2xl bg-[#F5F3FF] border border-[#DDD6FE] text-[#8B5CF6] hover:bg-[#8B5CF6] hover:text-white transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 text-xs font-extrabold"
+                      >
+                        <MessageCircleMore size={16} />
+                        <span className="hidden sm:inline lg:hidden">SMS</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMockAction("View VTO History")}
+                        title="View VTO Try-On History"
+                        className="p-3 rounded-2xl bg-[#FEF3C7] border border-[#FDE68A] text-[#B45309] hover:bg-[#F59E0B] hover:text-white transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 text-xs font-extrabold"
+                      >
+                        <Sparkles size={16} />
+                        <span className="hidden sm:inline lg:hidden">VTO</span>
+                      </button>
+                    </div>
                   </div>
 
                   {/* Clean 2-column key-value grid */}
@@ -1137,7 +1185,26 @@ export function ReceptionistBookingDetailPage() {
                       </div>
                       <div>
                         <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497]">Membership Tier</p>
-                        <p className="mt-0.5 font-extrabold text-[#E84F93]">Gold Member (1,250 pts)</p>
+                        <div className="mt-0.5 font-extrabold text-[#E84F93]"><div className="flex items-center gap-2.5 flex-wrap">
+                          {customerTier ? (
+                            <span
+                              className="rounded-full border px-2.5 py-0.5 text-[10px] font-black flex items-center gap-1"
+                              style={{
+                                backgroundColor: customerTier.backgroundColor + '15',
+                                borderColor: customerTier.backgroundColor + '40',
+                                color: customerTier.backgroundColor
+                              }}
+                            >
+                              <Star size={10} className="fill-current" />
+                              {customerTier.name} ({customerPoints} pts)
+                            </span>
+                          ) : (
+                            <span className="rounded-full bg-gray-50 border border-gray-200 px-2.5 py-0.5 text-[10px] font-black text-gray-500 flex items-center gap-1">
+                              <Star size={10} className="fill-current" />
+                              {customerPoints} pts
+                            </span>
+                          )}
+                        </div></div>
                       </div>
                     </div>
 
@@ -1153,37 +1220,6 @@ export function ReceptionistBookingDetailPage() {
                     </div>
                   </div>
                 </div>
-              </div>
-
-              {/* Quick Actions rounded icon buttons */}
-              <div className="flex items-center gap-2 lg:flex-col lg:items-end shrink-0">
-                <button
-                  type="button"
-                  onClick={() => handleMockAction("Call Customer")}
-                  title="Call Customer"
-                  className="p-3 rounded-2xl bg-[#FFF0F6] border border-[#F3D6E5] text-[#E84F93] hover:bg-[#E84F93] hover:text-white transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 text-xs font-extrabold"
-                >
-                  <Phone size={16} />
-                  <span className="hidden sm:inline lg:hidden">Call</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleMockAction("Send SMS / Chat")}
-                  title="Send SMS / Chat"
-                  className="p-3 rounded-2xl bg-[#F5F3FF] border border-[#DDD6FE] text-[#8B5CF6] hover:bg-[#8B5CF6] hover:text-white transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 text-xs font-extrabold"
-                >
-                  <MessageCircleMore size={16} />
-                  <span className="hidden sm:inline lg:hidden">SMS</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleMockAction("View VTO History")}
-                  title="View VTO Try-On History"
-                  className="p-3 rounded-2xl bg-[#FEF3C7] border border-[#FDE68A] text-[#B45309] hover:bg-[#F59E0B] hover:text-white transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 text-xs font-extrabold"
-                >
-                  <Sparkles size={16} />
-                  <span className="hidden sm:inline lg:hidden">VTO</span>
-                </button>
               </div>
             </div>
           </DetailCard>
