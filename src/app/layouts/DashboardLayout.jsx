@@ -229,7 +229,7 @@ export function DashboardLayout() {
               menuGroups={menuGroups}
               onCloseMobile={() => setMobileMenuOpen(false)}
               onLogout={logout}
-              onToggleCollapse={() => {}}
+              onToggleCollapse={() => { }}
               portalLabel={portalLabel}
               profileName={profileName}
               profileRole={profileRole}

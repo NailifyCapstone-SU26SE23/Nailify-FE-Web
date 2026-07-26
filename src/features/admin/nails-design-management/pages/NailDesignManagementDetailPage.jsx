@@ -1370,10 +1370,6 @@ export function NailDesignManagementDetailPage() {
                                 ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93]"
                                 : `text-[#8c7085] ${index % 3 === 0 ? "border-[#ead8ff] bg-[#f9f4ff]" : index % 3 === 1 ? "border-[#d7f3e0] bg-[#effcf4]" : "border-[#f8e3b3] bg-[#fff8e8]"}`
                                 }`}
-                              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-bold transition ${active
-                                ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93]"
-                                : `text-[#8c7085] ${index % 3 === 0 ? "border-[#ead8ff] bg-[#f9f4ff]" : index % 3 === 1 ? "border-[#d7f3e0] bg-[#effcf4]" : "border-[#f8e3b3] bg-[#fff8e8]"}`
-                                }`}
                             >
                               <span className="text-xs">{active ? "−" : "+"}</span>
                               {option}
@@ -1601,10 +1597,7 @@ export function NailDesignManagementDetailPage() {
                       <div key={label} className="flex items-center justify-between gap-3">
                         <span className="text-[#8c7085]">{label}</span>
                         <span
-                          className={`font-semibold ${index >= 3 ? "text-[#ea4f93]" : "text-[#432744]"
-                            }`}
-                          className={`font-semibold ${index >= 3 ? "text-[#ea4f93]" : "text-[#432744]"
-                            }`}
+                          className={`font-semibold ${index >= 3 ? "text-[#ea4f93]" : "text-[#432744]"}`}
                         >
                           {value}
                         </span>
@@ -1628,115 +1621,6 @@ export function NailDesignManagementDetailPage() {
               </div>
             </div>
           </SectionCard>
-
-          {/* <SectionCard
-            title="Required Staff Skills"
-            subtitle=""
-            icon={<Star size={18} />}
-            sectionId="skills-section"
-            sectionRef={skillsRef}
-            highlighted={highlightedSection === "skills"}
-          >
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {formValues.skills.map(([title, subtitle, score, label], index) => (
-                <div key={title} className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
-                  {isEditing ? (
-                    <div className="space-y-3">
-                      <div>
-                        <InputLabel>Skill</InputLabel>
-                        <EditInput value={title} onChange={handleSkillFieldChange(index, "title")} />
-                      </div>
-                      <div>
-                        <InputLabel>Subtitle</InputLabel>
-                        <EditInput
-                          value={subtitle}
-                          onChange={handleSkillFieldChange(index, "subtitle")}
-                        />
-                      </div>
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <div>
-                          <InputLabel>Level Control</InputLabel>
-                          <SkillLevelSlider
-                            value={score}
-                            onChange={handleSkillFieldChange(index, "score")}
-                          />
-                        </div>
-                        <div>
-                          <InputLabel>Label</InputLabel>
-                          <div className="rounded-2xl border border-[#f4d4e2] bg-white px-4 py-3">
-                            <SkillStars count={score} />
-                            <p className="mt-2 text-sm font-semibold text-[#8c7085]">
-                              {SKILL_LEVEL_LABELS[score]}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="h-1.5 rounded-full bg-[#f9d8e5]">
-                        <div
-                          className="h-full rounded-full bg-[linear-gradient(90deg,#ea4f93_0%,#f59f61_55%,#f7d85f_100%)]"
-                          style={{ width: `${score * 20}%` }}
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c694ad]">
-                        {title}
-                      </p>
-                      <p className="mt-1 text-xs text-[#c694ad]">{subtitle}</p>
-                      <div className="mt-3">
-                        <SkillStars count={score} />
-                      </div>
-                      <div className="mt-3 h-1.5 rounded-full bg-[#f9d8e5]">
-                        <div
-                          className="h-full rounded-full bg-[image:var(--gradient-accent)]"
-                          style={{ width: `${score * 20}%` }}
-                        />
-                      </div>
-                      <p className="mt-2 text-xs font-semibold text-[#8c7085]">{label}</p>
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-4 grid gap-3 md:grid-cols-4">
-              <div className="rounded-[18px] bg-[image:var(--gradient-accent)] px-4 py-4 text-center text-white">
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/80">
-                  Required Staff Level
-                </p>
-                <p className="mt-2 text-lg font-extrabold">Advanced Artist</p>
-              </div>
-              {[
-                [formValues.eligibleArtists, "Eligible Artists"],
-                [formValues.expertLevel, "Expert Level"],
-                [formValues.advancedLevel, "Advanced Level"],
-              ].map(([value, label]) => (
-                <div key={label} className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] px-4 py-4 text-center">
-                  {isEditing ? (
-                    <div className="text-left">
-                      <InputLabel>{label}</InputLabel>
-                      <EditInput
-                        value={value}
-                        onChange={handleChange(
-                          label === "Eligible Artists"
-                            ? "eligibleArtists"
-                            : label === "Expert Level"
-                              ? "expertLevel"
-                              : "advancedLevel",
-                        )}
-                      />
-                    </div>
-                  ) : (
-                    <>
-                      <p className="text-2xl font-extrabold text-[#ea4f93]">{value}</p>
-                      <p className="mt-1 text-xs text-[#c694ad]">{label}</p>
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-          </SectionCard> */}
         </div>
 
         <aside className="space-y-4">
@@ -1846,10 +1730,6 @@ export function NailDesignManagementDetailPage() {
                   ? "bg-[image:var(--gradient-accent)] shadow-[0_14px_26px_rgba(236,72,153,0.28)] ring-4 ring-[#ffd8e8]"
                   : "bg-[image:var(--gradient-accent)]"
                   }`}
-                className={`w-full rounded-full px-4 py-2.5 text-left text-xs font-bold text-white transition ${highlightedSection === "hero"
-                  ? "bg-[image:var(--gradient-accent)] shadow-[0_14px_26px_rgba(236,72,153,0.28)] ring-4 ring-[#ffd8e8]"
-                  : "bg-[image:var(--gradient-accent)]"
-                  }`}
               >
                 <PencilLine size={13} className="mr-1.5 inline" />
                 Edit Design
@@ -1859,10 +1739,6 @@ export function NailDesignManagementDetailPage() {
                 onClick={() =>
                   navigate(getAdminNailVariantCreateRoute(designId))
                 }
-                className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${highlightedSection === "design-variants"
-                  ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
-                  : "border-[#f4c6da] bg-white text-[#7e6075]"
-                  }`}
                 className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${highlightedSection === "design-variants"
                   ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
                   : "border-[#f4c6da] bg-white text-[#7e6075]"
@@ -1878,10 +1754,6 @@ export function NailDesignManagementDetailPage() {
                   ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
                   : "border-[#f4c6da] bg-white text-[#7e6075]"
                   }`}
-                className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${highlightedSection === "pricing"
-                  ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
-                  : "border-[#f4c6da] bg-white text-[#7e6075]"
-                  }`}
               >
                 <CircleDollarSign size={13} className="mr-1.5 inline" />
                 Update Price
@@ -1889,10 +1761,6 @@ export function NailDesignManagementDetailPage() {
               <button
                 type="button"
                 onClick={() => scrollToSection(heroSectionRef, { sectionKey: "hero" })}
-                className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${highlightedSection === "hero"
-                  ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
-                  : "border-[#f4c6da] bg-white text-[#7e6075]"
-                  }`}
                 className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${highlightedSection === "hero"
                   ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
                   : "border-[#f4c6da] bg-white text-[#7e6075]"
@@ -1909,10 +1777,6 @@ export function NailDesignManagementDetailPage() {
                     sectionKey: "quick-summary",
                   })
                 }
-                className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${highlightedSection === "quick-summary"
-                  ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
-                  : "border-[#f4c6da] bg-white text-[#7e6075]"
-                  }`}
                 className={`w-full rounded-full border px-4 py-2.5 text-left text-xs font-bold transition ${highlightedSection === "quick-summary"
                   ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.16)] ring-4 ring-[#ffd8e8]"
                   : "border-[#f4c6da] bg-white text-[#7e6075]"
@@ -2158,55 +2022,6 @@ export function NailDesignManagementDetailPage() {
                   </div>
                 </div>
               </div>
-
-              {/* <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="font-bold text-[#432744]">Accessories / Components</p>
-                  <Pill tone="purple">
-                    {String(selectedVariantDetail?.nailComponents?.length || 0)} items
-                  </Pill>
-                </div>
-                {selectedVariantDetail?.nailComponents?.length ? (
-                  <div className="mt-4 space-y-3">
-                    {selectedVariantDetail.nailComponents.map((item) => (
-                      <div
-                        key={item.id}
-                        className="rounded-[18px] border border-[#f1d7e3] bg-white p-4"
-                      >
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Pill tone="pink">{item.component?.name || "--"}</Pill>
-                          <Pill tone="blue">{item.component?.componentType || "--"}</Pill>
-                          <Pill tone="yellow">{item.component?.priceLabel || "N/A"}</Pill>
-                        </div>
-                        <div className="mt-3 grid gap-2 text-sm md:grid-cols-3 xl:grid-cols-6">
-
-
-                          <div>
-                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">Finger</p>
-                            <p className="mt-1 font-semibold text-[#432744]">{formatApiValue(item.fingerIndex)}</p>
-                          </div>
-                          <div>
-                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">Pos X</p>
-                            <p className="mt-1 font-semibold text-[#432744]">{formatApiValue(item.posX)}</p>
-                          </div>
-                          <div>
-                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">Pos Y</p>
-                            <p className="mt-1 font-semibold text-[#432744]">{formatApiValue(item.posY)}</p>
-                          </div>
-                          <div>
-                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">Config</p>
-                            <p className="mt-1 font-semibold break-all text-[#432744]">
-                              {item.configJson || "N/A"}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="mt-4 text-sm text-[#8c7085]">N/A</p>
-                )}
-              </div> */}
 
               <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
                 <p className="font-bold text-[#432744]">Color Preview</p>

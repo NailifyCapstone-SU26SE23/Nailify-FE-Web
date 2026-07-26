@@ -5,6 +5,7 @@ import { ManagerDashboardPage } from "../../features/core/dashboard/pages/Manage
 import { BookingCreatePage } from "../../shared/bookings/pages/BookingCreatePage";
 import { ManagerBookingDetailPage } from "../../features/manager/bookings/pages/ManagerBookingDetailPage";
 import { ManagerBookingListPage } from "../../features/manager/bookings/pages/ManagerBookingListPage";
+import { RescheduleBooking } from "../../features/manager/bookings/pages/RescheduleBooking";
 import { BookingRatingListPage } from "../../features/manager/bookings/pages/BookingRatingListPage";
 import { StaffCreatePage } from "../../features/manager/staff-artist-management/pages/StaffCreatePage";
 import { StaffManagementPage } from "../../features/manager/staff-artist-management/pages/StaffManagementPage";
@@ -43,6 +44,10 @@ export const managerRoutes = [
       {
         path: ROUTES.managerBookings,
         element: <ManagerBookingListPage />,
+      },
+      {
+        path: ROUTES.managerReschedule,
+        element: <RescheduleBooking />,
       },
       {
         path: ROUTES.managerCustomerNails,

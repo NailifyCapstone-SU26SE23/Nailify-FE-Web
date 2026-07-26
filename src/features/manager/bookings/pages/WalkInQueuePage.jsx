@@ -47,11 +47,11 @@ const getSalonId = () => {
 
 // Queue status definitions and metadata
 const STATUS_META = {
-  Waiting: { label: "Đang Đợi", color: "#d89b1d", bg: "bg-[#fffdf9] text-[#d89b1d] border-[#fbe9c7]" },
-  Called: { label: "Tại Quầy", color: "#3b82f6", bg: "bg-[#fffdf9] text-[#3b82f6] border-[#d2e4f7]" },
-  InService: { label: "Đang Làm", color: "#22a06b", bg: "bg-[#fffdf9] text-[#22a06b] border-[#c8ebd3]" },
-  Done: { label: "Hoàn Thành", color: "#5b6472", bg: "bg-[#fffdf9] text-[#5b6472] border-[#e0e0e0]" },
-  Left: { label: "Vắng / Rời", color: "#e56b6f", bg: "bg-[#fffdf9] text-[#e56b6f] border-[#fbc9c9]" },
+  Waiting: { label: "Waiting", color: "#d89b1d", bg: "bg-[#fffdf9] text-[#d89b1d] border-[#fbe9c7]" },
+  Called: { label: "At Counter", color: "#3b82f6", bg: "bg-[#fffdf9] text-[#3b82f6] border-[#d2e4f7]" },
+  InService: { label: "In Service", color: "#22a06b", bg: "bg-[#fffdf9] text-[#22a06b] border-[#c8ebd3]" },
+  Done: { label: "Completed", color: "#5b6472", bg: "bg-[#fffdf9] text-[#5b6472] border-[#e0e0e0]" },
+  Left: { label: "Absent / Left", color: "#e56b6f", bg: "bg-[#fffdf9] text-[#e56b6f] border-[#fbc9c9]" },
 };
 
 // Standard timeline time slots for calendar view (08:00 - 21:00)
@@ -151,7 +151,7 @@ export function WalkInQueuePage() {
   const speakCalling = (ticketNumber, customerName) => {
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
-      const messageText = `Mời khách hàng số ${ticketNumber}, ${customerName}, đến quầy lễ tân để nhận phục vụ.`;
+      const messageText = `Calling customer number ${ticketNumber}, ${customerName}, VNDến quầy lễ tân VNDể nhận phục vụ.`;
       const utterance = new SpeechSynthesisUtterance(messageText);
       utterance.lang = "vi-VN";
       utterance.rate = 0.9;
@@ -197,12 +197,12 @@ export function WalkInQueuePage() {
         }
       } else if (targetStatus === "Done") {
         await completeQueueEntry(item.queueId);
-        message.success(`Đã đánh dấu hoàn thành lượt của ${item.guestName || "Khách"}`);
+        message.success(`Đã VNDánh dấu hoàn thành lượt của ${item.guestName || "Guest"}`);
         loadQueue();
       } else if (targetStatus === "Left") {
         await handleMarkLeft(item.queueId);
       } else if (targetStatus === "Waiting") {
-        message.info("Kéo về sảnh chờ thành công.");
+        message.info("Moved back to lobby successfully.");
       }
     } catch (err) {
       message.error(err.message || "Không thể thực hiện thao tác kéo thả.");
@@ -219,17 +219,17 @@ export function WalkInQueuePage() {
       const item = JSON.parse(dataStr);
 
       if (artistId === "unassigned") {
-        message.warning("Không thể bỏ gán thợ trực tiếp. Vui lòng đổi thợ.");
+        message.warning("Không thể bỏ gán thợ trực tiếp. Vui lòng VNDổi thợ.");
         return;
       }
 
       if (item.assignedNailArtistId === artistId) return;
 
       await assignArtistToQueue(item.queueId, artistId);
-      message.success(`Đã phân bổ thợ thành công.`);
+      message.success(`Assigned artist successfully.`);
       loadQueue();
     } catch (err) {
-      message.error(err.message || "Phân bổ thợ thất bại.");
+      message.error(err.message || "Failed to assign artist.");
     }
   };
 
@@ -237,12 +237,12 @@ export function WalkInQueuePage() {
   const handleCall = async (item) => {
     try {
       setCallingState(item);
-      speakCalling(item.queuePosition, item.guestName || "Khách vãng lai");
+      speakCalling(item.queuePosition, item.guestName || "Walk-in guest");
       await callQueueEntry(item.queueId);
-      message.success(`Đã gọi số thứ tự ${item.queuePosition}`);
+      message.success(`Called queue number ${item.queuePosition}`);
       loadQueue();
     } catch (err) {
-      message.error(err.message || "Không thể gọi số thứ tự.");
+      message.error(err.message || "Failed to call queue number.");
     }
   };
 
@@ -250,10 +250,10 @@ export function WalkInQueuePage() {
   const handlePrioritize = async (id) => {
     try {
       await prioritizeQueueEntry(id);
-      message.success("Đã đẩy khách hàng lên đầu hàng chờ.");
+      message.success("Đã VNDẩy guests hàng lên VNDầu hàng chờ.");
       loadQueue();
     } catch (err) {
-      message.error(err.message || "Không thể ưu tiên khách hàng.");
+      message.error(err.message || "Failed to prioritize customer.");
     }
   };
 
@@ -261,10 +261,10 @@ export function WalkInQueuePage() {
   const handleMarkLeft = async (id) => {
     try {
       await markQueueEntryLeft(id);
-      message.warning("Đã đánh dấu khách hàng rời hàng chờ.");
+      message.warning("Đã VNDánh dấu guests hàng rời hàng chờ.");
       loadQueue();
     } catch (err) {
-      message.error(err.message || "Không thể cập nhật trạng thái.");
+      message.error(err.message || "Failed to update status.");
     }
   };
 
@@ -279,11 +279,11 @@ export function WalkInQueuePage() {
     if (!selectedQueueItem) return;
     try {
       await assignArtistToQueue(selectedQueueItem.queueId, artistId);
-      message.success("Đã phân bổ thợ cho khách hàng.");
+      message.success("Assigned artist to customer.");
       setIsAssignModalOpen(false);
       loadQueue();
     } catch (err) {
-      message.error(err.message || "Phân bổ thợ thất bại.");
+      message.error(err.message || "Failed to assign artist.");
     }
   };
 
@@ -291,17 +291,17 @@ export function WalkInQueuePage() {
   const handleCompleteCheckin = async (id) => {
     try {
       await completeQueueEntry(id);
-      message.success("Đã hoàn thành lượt xếp hàng. Khách hàng bắt đầu dịch vụ.");
+      message.success("Đã hoàn thành lượt xếp hàng. Guest hàng bắt VNDầu dịch vụ.");
       loadQueue();
     } catch (err) {
-      message.error(err.message || "Không thể hoàn thành lượt xếp hàng.");
+      message.error(err.message || "Failed to complete queue turn.");
     }
   };
 
   // Create Walk-in Queue Entry API
   const handleCreateQueueEntry = async () => {
     if (!guestName.trim()) {
-      message.error("Vui lòng nhập tên khách hàng.");
+      message.error("Please enter customer name.");
       return;
     }
 
@@ -320,12 +320,12 @@ export function WalkInQueuePage() {
 
     try {
       await addToQueue(payload);
-      message.success("Đã đăng ký khách hàng vào hàng chờ thành công!");
+      message.success("Đã VNDăng ký guests hàng vào hàng chờ thành công!");
       setIsAddDrawerOpen(false);
       resetForm();
       loadQueue();
     } catch (err) {
-      message.error(err.message || "Đăng ký hàng chờ thất bại.");
+      message.error(err.message || "Failed to register queue.");
     }
   };
 
@@ -415,11 +415,11 @@ export function WalkInQueuePage() {
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
             <h1 className="text-xl font-black text-[#2f2430] tracking-tight flex items-center gap-2">
-              Hàng Chờ Salon Lobby
+              Salon Lobby Queue
               <Sparkle size={16} className="text-[#e85d9b] fill-[#e85d9b] animate-spin" style={{ animationDuration: '6s' }} />
             </h1>
             <p className="text-[11px] text-[#7d6d78] mt-1 font-semibold max-w-xl">
-              Điều phối thứ tự phục vụ và gán thợ làm móng nhanh chóng cho khách hàng vãng lai trong ngày.
+              Coordinate service order and quickly assign nail artists for daily walk-in customers.
             </p>
           </div>
 
@@ -434,7 +434,7 @@ export function WalkInQueuePage() {
                   }`}
               >
                 <LayoutGrid size={13} />
-                Bảng Kéo Thả
+                Drag-and-Drop Board
               </button>
               <button
                 onClick={() => setViewMode("timeline")}
@@ -444,7 +444,7 @@ export function WalkInQueuePage() {
                   }`}
               >
                 <Calendar size={13} />
-                Lịch Phân Bổ
+                Allocation Schedule
               </button>
             </div>
 
@@ -454,12 +454,12 @@ export function WalkInQueuePage() {
               onClick={() => setIsAddDrawerOpen(true)}
               className="h-10 rounded-xl bg-[#e85d9b] hover:bg-[#d84b8a] border-none font-bold text-white shadow-sm transition-all"
             >
-              Thêm Khách Hàng
+              Add Guest
             </Button>
             <button
               onClick={loadQueue}
               className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#e2e8f0] bg-[#fffdf9] text-[#7d6d78] hover:text-[#e85d9b] hover:bg-gray-50 transition-all shadow-sm"
-              title="Tải lại dữ liệu"
+              title="Reload data"
             >
               <RotateCw size={14} className={isLoading ? "animate-spin" : ""} />
             </button>
@@ -479,26 +479,26 @@ export function WalkInQueuePage() {
               <div className="space-y-2">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-pink-300">
                   <span className="h-1.5 w-1.5 rounded-full bg-[#e85d9b] animate-pulse" />
-                  Loa Gọi Khách
+                  Loa Call Guest
                 </span>
 
                 {lastCalledEntry ? (
                   <div>
                     <h2 className="text-3xl font-black text-pink-100 tracking-tight select-none">
-                      Số #{lastCalledEntry.queuePosition}
+                      No. #{lastCalledEntry.queuePosition}
                     </h2>
                     <p className="mt-1 text-lg font-bold text-white leading-tight">
                       {lastCalledEntry.guestName}
                     </p>
                     <p className="mt-1 text-[10px] text-white/60 font-medium">
-                      Gọi lúc: {dayjs(lastCalledEntry.calledTime).format("HH:mm")}
+                      Called at: {dayjs(lastCalledEntry.calledTime).format("HH:mm")}
                     </p>
                   </div>
                 ) : (
                   <div>
-                    <h3 className="text-sm font-bold text-white/70">Chưa gọi số nào</h3>
+                    <h3 className="text-sm font-bold text-white/70">No numbers called yet</h3>
                     <p className="text-[10px] text-white/50 mt-1 max-w-sm">
-                      Bấm nút "Gọi số" trên card khách ở cột Sảnh Chờ để mời khách.
+                      Bấm nút "Call" trên card guests ở cột Sảnh Chờ VNDể mời guests.
                     </p>
                   </div>
                 )}
@@ -512,13 +512,13 @@ export function WalkInQueuePage() {
                     onClick={() => speakCalling(lastCalledEntry.queuePosition, lastCalledEntry.guestName)}
                     className="rounded-xl h-9.5 bg-[#e85d9b] hover:bg-[#d84b8a] border-none font-bold text-white text-xs shadow-sm"
                   >
-                    Gọi lại
+                    Recall
                   </Button>
                   <Button
                     onClick={() => openAssignArtist(lastCalledEntry)}
                     className="rounded-xl h-9.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs"
                   >
-                    Gán thợ
+                    Assign
                   </Button>
                 </div>
               )}
@@ -528,34 +528,34 @@ export function WalkInQueuePage() {
           {/* Core Numbers */}
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl bg-[#fffdf9] p-3 border border-[#e2e8f0] flex flex-col justify-between h-18 transition hover:bg-gray-50/50">
-              <span className="text-[9px] font-black uppercase text-[#7d6d78] tracking-wider">Đang chờ</span>
+              <span className="text-[9px] font-black uppercase text-[#7d6d78] tracking-wider">Waiting</span>
               <div className="flex items-baseline gap-1">
                 <span className="text-xl font-black text-[#d89b1d]">{stats.waiting}</span>
-                <span className="text-[9px] text-[#7d6d78] font-bold"> khách</span>
+                <span className="text-[9px] text-[#7d6d78] font-bold"> guests</span>
               </div>
             </div>
 
             <div className="rounded-xl bg-[#fffdf9] p-3 border border-[#e2e8f0] flex flex-col justify-between h-18 transition hover:bg-gray-50/50">
-              <span className="text-[9px] font-black uppercase text-[#7d6d78] tracking-wider">Tại quầy</span>
+              <span className="text-[9px] font-black uppercase text-[#7d6d78] tracking-wider">At counter</span>
               <div className="flex items-baseline gap-1">
                 <span className="text-xl font-black text-[#3b82f6]">{stats.called}</span>
-                <span className="text-[9px] text-[#7d6d78] font-bold"> khách</span>
+                <span className="text-[9px] text-[#7d6d78] font-bold"> guests</span>
               </div>
             </div>
 
             <div className="rounded-xl bg-[#fffdf9] p-3 border border-[#e2e8f0] flex flex-col justify-between h-18 transition hover:bg-gray-50/50">
-              <span className="text-[9px] font-black uppercase text-[#7d6d78] tracking-wider">Đang làm</span>
+              <span className="text-[9px] font-black uppercase text-[#7d6d78] tracking-wider">In service</span>
               <div className="flex items-baseline gap-1">
                 <span className="text-xl font-black text-[#22a06b]">{stats.servicing}</span>
-                <span className="text-[9px] text-[#7d6d78] font-bold"> bàn</span>
+                <span className="text-[9px] text-[#7d6d78] font-bold"> tables</span>
               </div>
             </div>
 
             <div className="rounded-xl bg-[#fffdf9] p-3 border border-[#e2e8f0] flex flex-col justify-between h-18 transition hover:bg-gray-50/50">
-              <span className="text-[9px] font-black uppercase text-[#e85d9b] tracking-wider">Chờ TB</span>
+              <span className="text-[9px] font-black uppercase text-[#e85d9b] tracking-wider">Avg Wait</span>
               <div className="flex items-baseline gap-1">
                 <span className="text-xl font-black text-[#e85d9b]">~{stats.avgWait}</span>
-                <span className="text-[9px] text-[#e85d9b] font-bold"> phút</span>
+                <span className="text-[9px] text-[#e85d9b] font-bold"> mins</span>
               </div>
             </div>
           </div>
@@ -567,7 +567,7 @@ export function WalkInQueuePage() {
       {/* Filter / Search Bar */}
       <div className="max-w-md">
         <Input
-          placeholder="Tìm kiếm khách hàng bằng tên hoặc số điện thoại..."
+          placeholder="Tìm kiếm guests hàng bằng tên hoặc số VNDiện thoại..."
           prefix={<Search size={16} className="text-[#a08497]" />}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -594,7 +594,7 @@ export function WalkInQueuePage() {
             <div className="flex items-center justify-between border-b border-[#e2d5c5]/20 pb-3 mb-4">
               <div className="flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#d89b1d]" />
-                <h3 className="font-extrabold text-[#2f2430] text-xs uppercase tracking-wider">Sảnh Chờ ({waitingEntries.length})</h3>
+                <h3 className="font-extrabold text-[#2f2430] text-xs uppercase tracking-wider">Lobby ({waitingEntries.length})</h3>
               </div>
               <span className="rounded-full bg-[#d89b1d]/10 px-2 py-0.5 text-[9px] font-black uppercase text-[#d89b1d] border border-[#d89b1d]/20">Waiting</span>
             </div>
@@ -603,7 +603,7 @@ export function WalkInQueuePage() {
               {waitingEntries.length === 0 ? (
                 <div className="flex h-40 flex-col items-center justify-center text-center text-gray-400 border border-dashed border-gray-200/60 rounded-2xl bg-gray-50/10">
                   <Users size={16} className="opacity-20 mb-1" />
-                  <p className="text-[10px] font-bold text-gray-400">Kéo thả khách về chờ</p>
+                  <p className="text-[10px] font-bold text-gray-400">Kéo thả guests về chờ</p>
                 </div>
               ) : (
                 waitingEntries.map((item) => (
@@ -622,13 +622,13 @@ export function WalkInQueuePage() {
                           onClick={() => handleCall(item)}
                           className="flex-1 bg-[#e85d9b] hover:bg-[#d84b8a] border-none font-bold text-[10px] rounded-xl h-8.5 shadow-sm text-white"
                         >
-                          Gọi số
+                          Call
                         </Button>
                         <Button
                           size="small"
                           icon={<ArrowUp size={11} />}
                           onClick={() => handlePrioritize(item.queueId)}
-                          title="Đẩy lên đầu"
+                          title="Đẩy lên VNDầu"
                           className="border-gray-200 text-gray-500 hover:border-pink-300 hover:text-[#e85d9b] h-8.5 w-8.5 flex items-center justify-center rounded-xl"
                         />
                         <Button
@@ -636,7 +636,7 @@ export function WalkInQueuePage() {
                           danger
                           icon={<XCircle size={11} />}
                           onClick={() => handleMarkLeft(item.queueId)}
-                          title="Khách về"
+                          title="Guest left"
                           className="border-rose-100 bg-rose-50/50 hover:bg-rose-100 text-rose-600 h-8.5 w-8.5 flex items-center justify-center rounded-xl"
                         />
                       </div>
@@ -656,7 +656,7 @@ export function WalkInQueuePage() {
             <div className="flex items-center justify-between border-b border-[#d2e4f7]/20 pb-3 mb-4">
               <div className="flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#3b82f6]" />
-                <h3 className="font-extrabold text-[#2f2430] text-xs uppercase tracking-wider">Tại Quầy ({calledEntries.length})</h3>
+                <h3 className="font-extrabold text-[#2f2430] text-xs uppercase tracking-wider">At Counter ({calledEntries.length})</h3>
               </div>
               <span className="rounded-full bg-[#3b82f6]/10 px-2 py-0.5 text-[9px] font-black uppercase text-[#3b82f6] border border-[#3b82f6]/20">Called</span>
             </div>
@@ -665,7 +665,7 @@ export function WalkInQueuePage() {
               {calledEntries.length === 0 ? (
                 <div className="flex h-40 flex-col items-center justify-center text-center text-gray-400 border border-dashed border-gray-200/60 rounded-2xl bg-gray-50/10">
                   <User size={16} className="opacity-20 mb-1" />
-                  <p className="text-[10px] font-bold text-gray-400">Kéo khách lên quầy</p>
+                  <p className="text-[10px] font-bold text-gray-400">Drag guest to counter</p>
                 </div>
               ) : (
                 calledEntries.map((item) => (
@@ -686,7 +686,7 @@ export function WalkInQueuePage() {
                               onClick={() => handleCompleteCheckin(item.queueId)}
                               className="w-full bg-[#22a06b] hover:bg-[#1b8557] border-none font-bold text-[10px] rounded-xl h-8.5 shadow-sm text-white"
                             >
-                              Phục vụ ngay
+                              Serve now
                             </Button>
                             <div className="flex gap-2">
                               <Button
@@ -694,13 +694,13 @@ export function WalkInQueuePage() {
                                 onClick={() => openAssignArtist(item)}
                                 className="flex-1 border-[#e2e8f0] text-[#7d6d78] hover:border-[#e85d9b] hover:text-[#e85d9b] rounded-xl h-8 text-[10px] font-bold"
                               >
-                                Đổi thợ
+                                Change artist
                               </Button>
                               <Button
                                 size="small"
                                 icon={<Volume2 size={11} />}
                                 onClick={() => speakCalling(item.queuePosition, item.guestName)}
-                                title="Gọi loa lại"
+                                title="Re-announce"
                                 className="border-[#e2e8f0] text-[#7d6d78] hover:border-[#e85d9b] hover:text-[#e85d9b] h-8 w-8 flex items-center justify-center rounded-xl"
                               />
                               <Button
@@ -708,7 +708,7 @@ export function WalkInQueuePage() {
                                 danger
                                 icon={<XCircle size={11} />}
                                 onClick={() => handleMarkLeft(item.queueId)}
-                                title="Khách vắng mặt"
+                                title="Absent"
                                 className="border-[#fee2e2] bg-[#fff8f8] text-[#e56b6f] h-8 w-8 flex items-center justify-center rounded-xl"
                               />
                             </div>
@@ -721,24 +721,24 @@ export function WalkInQueuePage() {
                               onClick={() => openAssignArtist(item)}
                               className="w-full bg-[#e85d9b] hover:bg-[#d84b8a] border-none font-bold text-[10px] rounded-xl h-8.5 shadow-sm text-white"
                             >
-                              Chọn thợ phân công
+                              Assign artist
                             </Button>
                             <div className="flex gap-2">
                               <Button
                                 size="small"
                                 icon={<Volume2 size={11} />}
                                 onClick={() => speakCalling(item.queuePosition, item.guestName)}
-                                title="Gọi loa"
+                                title="Announce"
                                 className="flex-1 border-[#e2e8f0] text-[#7d6d78] hover:border-[#e85d9b] hover:text-[#e85d9b] h-8 flex items-center justify-center gap-1.5 rounded-xl font-bold text-[10px]"
                               >
-                                <Volume2 size={11} /> Gọi loa
+                                <Volume2 size={11} /> Announce
                               </Button>
                               <Button
                                 size="small"
                                 danger
                                 icon={<XCircle size={11} />}
                                 onClick={() => handleMarkLeft(item.queueId)}
-                                title="Khách vắng mặt"
+                                title="Absent"
                                 className="border-[#fee2e2] bg-[#fff8f8] text-[#e56b6f] h-8 w-8 flex items-center justify-center rounded-xl"
                               />
                             </div>
@@ -761,7 +761,7 @@ export function WalkInQueuePage() {
             <div className="flex items-center justify-between border-b border-[#c8ebd3]/20 pb-3 mb-4">
               <div className="flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#22a06b]" />
-                <h3 className="font-extrabold text-[#2f2430] text-xs uppercase tracking-wider">Đang Làm ({inServiceEntries.length})</h3>
+                <h3 className="font-extrabold text-[#2f2430] text-xs uppercase tracking-wider">In Service ({inServiceEntries.length})</h3>
               </div>
               <span className="rounded-full bg-[#22a06b]/10 px-2 py-0.5 text-[9px] font-black uppercase text-[#22a06b] border border-[#22a06b]/20">In Service</span>
             </div>
@@ -770,7 +770,7 @@ export function WalkInQueuePage() {
               {inServiceEntries.length === 0 ? (
                 <div className="flex h-40 flex-col items-center justify-center text-center text-gray-400 border border-dashed border-gray-200/60 rounded-2xl bg-gray-50/10">
                   <Clock size={16} className="opacity-20 mb-1" />
-                  <p className="text-[10px] font-bold text-gray-400">Kéo khách khi vào bàn</p>
+                  <p className="text-[10px] font-bold text-gray-400">Drag customer when seated</p>
                 </div>
               ) : (
                 inServiceEntries.map((item) => (
@@ -789,15 +789,15 @@ export function WalkInQueuePage() {
                           onClick={async () => {
                             try {
                               await completeQueueEntry(item.queueId);
-                              message.success("Hoàn thành dịch vụ.");
+                              message.success("Service completed.");
                               loadQueue();
                             } catch (err) {
-                              message.error(err.message || "Thao tác thất bại.");
+                              message.error(err.message || "Operation failed.");
                             }
                           }}
                           className="w-full bg-[#5b6472] hover:bg-[#474e59] border-none font-bold text-[10px] rounded-xl h-8.5 text-white"
                         >
-                          Hoàn thành dịch vụ
+                          Complete Service
                         </Button>
                       </div>
                     }
@@ -816,7 +816,7 @@ export function WalkInQueuePage() {
             <div className="flex items-center justify-between border-b border-[#e2e8f0]/20 pb-3 mb-4">
               <div className="flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#5b6472]" />
-                <h3 className="font-extrabold text-[#2f2430] text-xs uppercase tracking-wider">Hoàn Thành ({doneEntries.length})</h3>
+                <h3 className="font-extrabold text-[#2f2430] text-xs uppercase tracking-wider">Completed ({doneEntries.length})</h3>
               </div>
               <span className="rounded-full bg-[#5b6472]/10 px-2 py-0.5 text-[9px] font-black uppercase text-[#5b6472] border border-[#5b6472]/20">Done</span>
             </div>
@@ -825,7 +825,7 @@ export function WalkInQueuePage() {
               {doneEntries.length === 0 ? (
                 <div className="flex h-40 flex-col items-center justify-center text-center text-gray-400 border border-dashed border-gray-200/60 rounded-2xl bg-gray-50/10">
                   <Check size={16} className="opacity-20 mb-1" />
-                  <p className="text-[10px] font-bold text-gray-400">Lịch sử hoàn thành</p>
+                  <p className="text-[10px] font-bold text-gray-400">Completion history</p>
                 </div>
               ) : (
                 doneEntries.map((item) => (
@@ -850,7 +850,7 @@ export function WalkInQueuePage() {
             <div className="flex items-center justify-between border-b border-[#fee2e2]/25 pb-3 mb-4">
               <div className="flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#e56b6f]" />
-                <h3 className="font-extrabold text-[#2f2430] text-xs uppercase tracking-wider">Vắng / Rời ({leftEntries.length})</h3>
+                <h3 className="font-extrabold text-[#2f2430] text-xs uppercase tracking-wider">Absent / Left ({leftEntries.length})</h3>
               </div>
               <span className="rounded-full bg-[#e56b6f]/10 px-2 py-0.5 text-[9px] font-black uppercase text-[#e56b6f] border border-[#e56b6f]/20">Left</span>
             </div>
@@ -859,7 +859,7 @@ export function WalkInQueuePage() {
               {leftEntries.length === 0 ? (
                 <div className="flex h-40 flex-col items-center justify-center text-center text-gray-400 border border-dashed border-gray-200/60 rounded-2xl bg-gray-50/10">
                   <XCircle size={16} className="opacity-20 mb-1" />
-                  <p className="text-[10px] font-bold text-gray-400">Khách bỏ về/hủy</p>
+                  <p className="text-[10px] font-bold text-gray-400">Customer left/cancelled</p>
                 </div>
               ) : (
                 leftEntries.map((item) => (
@@ -885,10 +885,10 @@ export function WalkInQueuePage() {
               <div>
                 <h3 className="text-base font-black text-[#2f2430] flex items-center gap-2">
                   <Calendar size={18} className="text-[#e85d9b]" />
-                  Lịch Phân Bổ Công Việc Cho Thợ Hôm Nay
+                  Today's Staff Allocation Schedule
                 </h3>
                 <p className="text-[11px] text-[#7d6d78] mt-0.5 font-medium">
-                  Kéo thả thẻ khách hàng từ ô <b>Chưa gán thợ</b> hoặc từ thợ này sang thợ khác để đổi thợ phân phối trực tiếp.
+                  Drag and drop customer cards from <b>Unassigned</b> or between artists to reassign directly.
                 </p>
               </div>
               <div className="flex gap-2.5">
@@ -913,16 +913,16 @@ export function WalkInQueuePage() {
               {/* Vertical Header - Artist Names (Fixed Roster Panel look) */}
               <div className="divide-y divide-gray-100 border-r border-[#e2e8f0] bg-[#fffdf9]">
                 <div className="h-14 flex items-center px-4 font-black text-[#2f2430] text-[10px] uppercase tracking-wider bg-gray-50/50 border-b border-[#e2e8f0]">
-                  Thợ làm móng
+                  Nail Artist
                 </div>
 
                 {/* Row for Unassigned / Queue Pool */}
                 <div className="h-32 flex flex-col justify-center px-4 bg-gradient-to-br from-[#fcf8f0] to-[#fffdf9]">
                   <p className="font-black text-[#d89b1d] text-xs flex items-center gap-1.5">
                     <span className="h-1.5 w-1.5 rounded-full bg-[#d89b1d] animate-ping" />
-                    Chưa Phân Bổ
+                    Unassigned
                   </p>
-                  <p className="text-[10px] text-[#7d6d78] mt-1 font-semibold">Khách vãng lai chờ thợ</p>
+                  <p className="text-[10px] text-[#7d6d78] mt-1 font-semibold">Walk-in customers waiting</p>
                 </div>
 
                 {/* Rows for each Nail Artist */}
@@ -1049,7 +1049,7 @@ export function WalkInQueuePage() {
             <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-pink-100 text-[#ea4f93] shadow-sm">
               <Plus size={16} />
             </span>
-            <span className="font-black text-[#321735] text-base">Đăng ký khách vào hàng chờ</span>
+            <span className="font-black text-[#321735] text-base">Register Walk-in Guest</span>
           </div>
         }
         placement="right"
@@ -1065,10 +1065,10 @@ export function WalkInQueuePage() {
         <div className="space-y-6">
           <div className="space-y-2">
             <label className="text-xs font-black uppercase text-[#9b7f92] tracking-wider">
-              Tên Khách Hàng <span className="text-red-500">*</span>
+              Customer Name <span className="text-red-500">*</span>
             </label>
             <Input
-              placeholder="Nhập tên khách hàng"
+              placeholder="Enter customer name"
               value={guestName}
               onChange={(e) => setGuestName(e.target.value)}
               className="h-11 rounded-xl focus:border-[#ea4f93] hover:border-[#ea4f93]"
@@ -1076,9 +1076,9 @@ export function WalkInQueuePage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-black uppercase text-[#9b7f92] tracking-wider">Số Điện Thoại</label>
+            <label className="text-xs font-black uppercase text-[#9b7f92] tracking-wider">Phone Number</label>
             <Input
-              placeholder="Nhập số điện thoại (nếu có)"
+              placeholder="Enter phone number (optional)"
               value={guestPhone}
               onChange={(e) => setGuestPhone(e.target.value)}
               className="h-11 rounded-xl focus:border-[#ea4f93] hover:border-[#ea4f93]"
@@ -1086,7 +1086,7 @@ export function WalkInQueuePage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-black uppercase text-[#9b7f92] tracking-wider block">Phân loại khách hàng</label>
+            <label className="text-xs font-black uppercase text-[#9b7f92] tracking-wider block">Customer Category</label>
             <div className="flex gap-4">
               <button
                 type="button"
@@ -1096,7 +1096,7 @@ export function WalkInQueuePage() {
                   : "border-gray-200 bg-white text-gray-500 hover:border-pink-200"
                   }`}
               >
-                Khách Vãng Lai
+                Walk-in
               </button>
               <button
                 type="button"
@@ -1106,7 +1106,7 @@ export function WalkInQueuePage() {
                   : "border-gray-200 bg-white text-gray-500 hover:border-pink-200"
                   }`}
               >
-                Khách Tới Trễ (&gt;15 phút)
+                Late Customer (&gt;15 mins)
               </button>
             </div>
           </div>
@@ -1114,10 +1114,10 @@ export function WalkInQueuePage() {
           {/* Service catalog selection */}
           <div className="space-y-2">
             <label className="text-xs font-black uppercase text-[#9b7f92] tracking-wider block">
-              Dịch vụ đăng ký ({selectedServices.length})
+              Requested Services ({selectedServices.length})
             </label>
             <Input
-              placeholder="Tìm nhanh dịch vụ..."
+              placeholder="Quick search services..."
               prefix={<Search size={14} className="text-gray-400" />}
               value={searchServiceQuery}
               onChange={(e) => setSearchServiceQuery(e.target.value)}
@@ -1125,9 +1125,9 @@ export function WalkInQueuePage() {
             />
             <div className="max-h-[180px] overflow-y-auto border border-[#f3d9e8] rounded-xl p-2 space-y-1.5 bg-gray-50/50 scrollbar-thin">
               {isServicesLoading ? (
-                <div className="text-center py-4 text-xs text-[#a88a9f] font-semibold">Đang tải danh sách dịch vụ...</div>
+                <div className="text-center py-4 text-xs text-[#a88a9f] font-semibold">Loading services...</div>
               ) : filteredServices.length === 0 ? (
-                <div className="text-center py-4 text-xs text-[#a88a9f] font-semibold">Không tìm thấy dịch vụ nào</div>
+                <div className="text-center py-4 text-xs text-[#a88a9f] font-semibold">No services found</div>
               ) : (
                 filteredServices.map((service) => {
                   const isSelected = selectedServices.some((s) => s.serviceId === service.serviceId);
@@ -1143,7 +1143,7 @@ export function WalkInQueuePage() {
                     >
                       <span>{service.name}</span>
                       <span className="text-[10px] opacity-75 font-semibold">
-                        {service.duration}m • {service.price.toLocaleString("vi-VN")} đ
+                        {service.duration}m • {service.price.toLocaleString("vi-VN")} VND
                       </span>
                     </button>
                   );
@@ -1154,9 +1154,9 @@ export function WalkInQueuePage() {
 
           {/* Artist selector */}
           <div className="space-y-2">
-            <label className="text-xs font-black uppercase text-[#9b7f92] tracking-wider block">Chọn thợ làm móng trước (Tùy chọn)</label>
+            <label className="text-xs font-black uppercase text-[#9b7f92] tracking-wider block">Select preferred artist (Optional)</label>
             <Select
-              placeholder="Chọn thợ làm móng phù hợp"
+              placeholder="Select an artist"
               allowClear
               value={selectedArtistId}
               onChange={(val) => setSelectedArtistId(val)}
@@ -1172,9 +1172,9 @@ export function WalkInQueuePage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-black uppercase text-[#9b7f92] tracking-wider block">Yêu cầu / Ghi chú</label>
+            <label className="text-xs font-black uppercase text-[#9b7f92] tracking-wider block">Requests / Notes</label>
             <Input.TextArea
-              placeholder="Nhập yêu cầu đặc biệt của khách (ví dụ: móng giả, vẽ gel phức tạp...)"
+              placeholder="Enter special requests (e.g., acrylics, complex gel art...)"
               value={requestNote}
               onChange={(e) => setRequestNote(e.target.value)}
               rows={3}
@@ -1186,16 +1186,16 @@ export function WalkInQueuePage() {
             <div className="rounded-2xl bg-[#fff5fa] p-4 border border-[#fbe1ef] text-xs space-y-2">
               <p className="font-black text-[#ea4f93] flex items-center gap-1">
                 <Sparkles size={12} />
-                Thông tin dịch vụ đã chọn
+                Selected Services Info
               </p>
               <div className="flex justify-between text-[#806579] font-medium">
-                <span>Tổng thời gian ước tính:</span>
-                <span className="font-bold text-[#321735]">{totalEstDuration} phút</span>
+                <span>Estimated total duration:</span>
+                <span className="font-bold text-[#321735]">{totalEstDuration} mins</span>
               </div>
               <div className="flex justify-between text-[#806579] font-medium">
-                <span>Tổng tiền ước tính:</span>
+                <span>Estimated total price:</span>
                 <span className="font-black text-[#ea4f93] text-sm">
-                  {totalEstPrice.toLocaleString("vi-VN")} đ
+                  {totalEstPrice.toLocaleString("vi-VN")} VND
                 </span>
               </div>
             </div>
@@ -1209,14 +1209,14 @@ export function WalkInQueuePage() {
               }}
               className="flex-1 h-11 rounded-xl font-bold border-gray-250 text-gray-500 hover:text-pink-600 hover:border-pink-300"
             >
-              Hủy
+              Cancel
             </Button>
             <Button
               type="primary"
               onClick={handleCreateQueueEntry}
               className="flex-1 h-11 rounded-xl bg-gradient-to-r from-[#ea4f93] to-[#cc437a] border-none font-bold text-white shadow-md shadow-pink-200"
             >
-              Đăng ký sảnh chờ
+              Register to Lobby
             </Button>
           </div>
         </div>
@@ -1227,7 +1227,7 @@ export function WalkInQueuePage() {
         title={
           <div className="flex items-center gap-2">
             <Award size={16} className="text-[#ea4f93]" />
-            <span className="font-black text-[#321735]">Phân bổ thợ làm móng</span>
+            <span className="font-black text-[#321735]">Assign Nail Artist</span>
           </div>
         }
         open={isAssignModalOpen}
@@ -1239,7 +1239,7 @@ export function WalkInQueuePage() {
         {selectedQueueItem && (
           <div className="space-y-4 py-2">
             <div className="rounded-2xl bg-gradient-to-tr from-[#fff7fb] to-[#fffbfc] p-4 border border-[#f3d9e8] text-xs">
-              <p className="text-[#9b7f92] font-semibold">Khách hàng được gán:</p>
+              <p className="text-[#9b7f92] font-semibold">Assigned Customer:</p>
               <p className="font-black text-[#321735] text-sm mt-1 flex items-center gap-2">
                 <span className="flex h-5 w-5 items-center justify-center rounded bg-[#ea4f93] text-white text-[9px]">
                   #{selectedQueueItem.queuePosition}
@@ -1249,7 +1249,7 @@ export function WalkInQueuePage() {
             </div>
 
             <p className="text-[10px] font-black uppercase text-[#9b7f92] tracking-widest">
-              Danh sách thợ làm móng của Salon
+              Salon's Artist List
             </p>
 
             <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1 scrollbar-thin">
@@ -1258,7 +1258,7 @@ export function WalkInQueuePage() {
                   <Spin size="small" />
                 </div>
               ) : staffList.length === 0 ? (
-                <p className="text-xs text-gray-400 text-center py-4 font-semibold">Không tìm thấy thợ nào hoạt động.</p>
+                <p className="text-xs text-gray-400 text-center py-4 font-semibold">No active artists found.</p>
               ) : (
                 staffList.map((artist) => (
                   <button
@@ -1272,7 +1272,7 @@ export function WalkInQueuePage() {
                         {artist.firstName} {artist.lastName}
                       </p>
                       <p className="text-[10px] text-gray-400 mt-1 font-semibold">
-                        Trạng thái: {artist.status}
+                        Status: {artist.status}
                       </p>
                     </div>
                     <div>
@@ -1326,11 +1326,11 @@ function DraggableCard({ item, onDragStart, onDragEnd, isDragging, extraActions 
           <div className="mt-3 space-y-1">
             <p className="text-[10px] text-[#7d6d78] flex items-center gap-1.5 font-normal">
               <Phone size={10} className="text-[#7d6d78] opacity-75" />
-              {item.guestPhone || "Không có SĐT"}
+              {item.guestPhone || "No Phone"}
             </p>
             <p className="text-[10px] text-[#7d6d78] flex items-center gap-1.5 font-normal">
               <Clock size={10} className="text-[#7d6d78] opacity-75" />
-              Đến lúc: <span className="text-[#2f2430] font-semibold">{dayjs(item.arrivalTime).format("HH:mm")}</span>
+              Arrival: <span className="text-[#2f2430] font-semibold">{dayjs(item.arrivalTime).format("HH:mm")}</span>
             </p>
           </div>
 
@@ -1343,23 +1343,23 @@ function DraggableCard({ item, onDragStart, onDragEnd, isDragging, extraActions 
           {item.assignedNailArtistName && (
             <div className="mt-3 flex items-center gap-1.5 text-[9px] font-bold text-[#22a06b] bg-[#22a06b]/10 border border-[#22a06b]/15 px-2 py-0.5 rounded-lg w-max max-w-full shadow-sm">
               <span className="h-1 w-1 rounded-full bg-[#22a06b] animate-pulse" />
-              <span className="truncate">Thợ: {item.assignedNailArtistName}</span>
+              <span className="truncate">Artist: {item.assignedNailArtistName}</span>
             </div>
           )}
 
           {item.status === "Waiting" && item.estimatedWait !== null && (
             <div className="mt-3 flex items-center gap-1.5 text-[9px] text-[#d89b1d] font-bold bg-[#d89b1d]/10 border border-[#d89b1d]/15 px-2 py-0.5 rounded-lg w-max shadow-sm">
               <Clock size={10} className="text-[#d89b1d]" />
-              <span>Chờ: {item.estimatedWait} phút</span>
+              <span>Wait: {item.estimatedWait} mins</span>
             </div>
           )}
         </div>
 
         <div className="shrink-0">
           {item.isLateArrival ? (
-            <span className="bg-red-50 text-[#e56b6f] border border-red-100 text-[8px] font-bold uppercase px-1.5 py-0.5 rounded shadow-sm">Trễ 15m+</span>
+            <span className="bg-red-50 text-[#e56b6f] border border-red-100 text-[8px] font-bold uppercase px-1.5 py-0.5 rounded shadow-sm">Late 15m+</span>
           ) : (
-            <span className="bg-[#f5f1ed] text-[#7d6d78] border border-[#e2e8f0] text-[8px] font-bold uppercase px-1.5 py-0.5 rounded shadow-sm">Vãng lai</span>
+            <span className="bg-[#f5f1ed] text-[#7d6d78] border border-[#e2e8f0] text-[8px] font-bold uppercase px-1.5 py-0.5 rounded shadow-sm">Walk-in</span>
           )}
         </div>
       </div>
@@ -1395,7 +1395,7 @@ function TimelinePill({ item, onDragStart, onDragEnd, onCallClick, onAssignClick
       </div>
 
       <p className="text-[9px] text-[#7d6d78] mt-1.5 font-medium">
-        Đến lúc: {dayjs(item.arrivalTime).format("HH:mm")}
+        Arrival: {dayjs(item.arrivalTime).format("HH:mm")}
       </p>
 
       {/* Mini Actions for instant clicking in calendar view */}
@@ -1405,7 +1405,7 @@ function TimelinePill({ item, onDragStart, onDragEnd, onCallClick, onAssignClick
             onClick={onCallClick}
             className="flex-1 bg-[#fffdf9] text-[#e85d9b] hover:bg-[#fff5f9] py-1 border border-[#e2e8f0] rounded-lg font-bold text-[8px] transition-all shadow-sm cursor-pointer"
           >
-            Gọi
+            Call
           </button>
         )}
         {!item.assignedNailArtistId && (item.status === "Waiting" || item.status === "Called") && (
@@ -1413,7 +1413,7 @@ function TimelinePill({ item, onDragStart, onDragEnd, onCallClick, onAssignClick
             onClick={onAssignClick}
             className="flex-1 bg-[#e85d9b] text-white hover:bg-[#d84b8a] py-1 rounded-lg font-bold text-[8px] transition-all cursor-pointer"
           >
-            Gán thợ
+            Assign
           </button>
         )}
       </div>
