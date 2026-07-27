@@ -100,6 +100,23 @@ export async function deleteBreakRequest(id) {
   return unwrapResponse(response, "Failed to delete break request.");
 }
 
+export async function approveRejectBreakRequest(id, { status, rejectReason }) {
+  const params = {
+    status, // "Approved" (or 1) / "Rejected" (or 2)
+  };
+
+  if (rejectReason) {
+    params.rejectReason = rejectReason;
+  }
+
+  const response = await axiosClient.post(`/NailArtistBreaks/${id}/approve-reject`, null, {
+    headers: getAuthHeaders(),
+    params,
+  });
+
+  return unwrapResponse(response, "Failed to update break request status.");
+}
+
 export async function fetchNailArtists() {
   try {
     const id = getSalonId();

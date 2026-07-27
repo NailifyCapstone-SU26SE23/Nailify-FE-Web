@@ -6,6 +6,7 @@ import { useNotifications } from "../../../features/core/notifications/context/N
 import { NotificationDropdown } from "../../../features/core/notifications/components/NotificationDropdown";
 
 export function Header({
+  showBackButton = false,
   backButtonFallbackTo = "/",
   backButtonLabel = "Back",
   backButtonTo = null,
@@ -32,13 +33,15 @@ export function Header({
             </button>
           </div>
           <div className="mb-3 flex items-center gap-3">
-            <div className="hidden md:block">
-              <BackButton
-                fallbackTo={backButtonFallbackTo}
-                label={backButtonLabel}
-                to={backButtonTo}
-              />
-            </div>
+            {showBackButton && (
+              <div className="hidden md:block">
+                <BackButton
+                  fallbackTo={backButtonFallbackTo}
+                  label={backButtonLabel}
+                  to={backButtonTo}
+                />
+              </div>
+            )}
             <h1 className="text-[1.85rem] font-extrabold leading-none text-[#3d2a3a]">
               {title}
             </h1>
@@ -93,6 +96,7 @@ Header.propTypes = {
   description: PropTypes.string.isRequired,
   onOpenMobileMenu: PropTypes.func.isRequired,
   onLogout: PropTypes.func.isRequired,
+  showBackButton: PropTypes.bool,
   title: PropTypes.string.isRequired,
   todayLabel: PropTypes.string.isRequired,
 };

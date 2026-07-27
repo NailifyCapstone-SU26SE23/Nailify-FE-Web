@@ -116,7 +116,6 @@ export function NotificationProvider({ children }) {
         setConnectionStatus("connecting");
         
         try {
-            await notificationSignalRService.stopConnection();
             const conn = await notificationSignalRService.startConnection({
                 // Use ref to always call the LATEST version of the handler (avoids stale closure)
                 onNotificationReceived: (notification) => {
@@ -136,6 +135,8 @@ export function NotificationProvider({ children }) {
 
             if (conn) {
                 console.log("NotificationContext: SignalR connection established ✅");
+                // Re-set the ref in case the StrictMode cleanup had nulled it while we were awaiting
+                currentTokenRef.current = token;
                 setConnectionStatus("connected");
             } else {
                 // startConnection returned null — silent failure, allow retry
@@ -157,14 +158,14 @@ export function NotificationProvider({ children }) {
     checkAuthAndConnect();
 
     // Check periodically to handle login/logout events cleanly
-    const intervalId = setInterval(checkAuthAndConnect, 2000);
+    const intervalId = setInterval(checkAuthAndConnect, 5000);
 
     return () => {
       clearInterval(intervalId);
-      // We don't await this in cleanup, but we can call it.
-      // In strict mode, it's better to let the next mount handle the re-connection 
-      // cleanly by awaiting the stop in `checkAuthAndConnect` 
-      notificationSignalRService.stopConnection();
+      // NotificationProvider lives at the app root and never truly unmounts during normal usage.
+      // Stopping the connection here would abort an in-progress negotiation in React StrictMode
+      // (double-invoke) and cause a reconnect loop. Logout disconnection is handled inside
+      // checkAuthAndConnect when it detects the token is gone.
       currentTokenRef.current = null;
     };
   }, []);

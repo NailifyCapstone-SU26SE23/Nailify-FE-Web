@@ -48,10 +48,12 @@ export const ROUTES = {
   managerStaffArtistUpdate: "/manager/staff-artists/:staffId",
   managerCustomerNails: "/manager/customer-nails",
   managerCustomerNailDetail: "/manager/customer-nails/:customerNailId",
+  managerSchedules: "/manager/schedules",
   managerTransactions: "/manager/transactions",
   managerBookingRatings: "/manager/bookings/ratings",
   managerWaitlist: "/manager/waitlist",
   managerQueue: "/manager/queue",
+  managerBreaks: "/manager/breaks",
   receptionistQueue: "/receptionist/queue",
   receptionistWaitlist: "/receptionist/waitlist",
 

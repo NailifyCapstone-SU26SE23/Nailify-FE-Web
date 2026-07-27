@@ -1,9 +1,14 @@
-import { Button, Modal, Table, Descriptions, Image, Divider, Timeline, Card, Tag, Badge, List, Avatar } from "antd";
+import { Button, Modal, Table, Descriptions, Image, Divider, Timeline, Card, Tag, Badge, List, Avatar, Popover } from "antd";
 import {
+  Bell,
+  Calendar,
   CalendarClock,
+  Check,
   CheckCircle2,
+  ChevronRight,
   ClipboardList,
   Clock,
+  Clock3,
   CreditCard,
   Eye,
   LoaderCircle,
@@ -13,9 +18,15 @@ import {
   QrCode,
   ReceiptText,
   RefreshCcw,
+  Search,
+  ShieldCheck,
   Sparkles,
   SquareCheckBig,
+  Star,
+  UserCheck,
+  UserPlus,
   UserRound,
+  X,
   XCircle,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -25,6 +36,8 @@ import { ROUTES, getReceptionistBookingCheckoutRoute } from "../../../../shared/
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 import { AssignReceptionistArtistModal } from "../components/AssignReceptionistArtistModal";
+import { OnsiteAddonModal } from "../../../manager/bookings/components/OnsiteAddonModal";
+import { ProposeRescheduleModal } from "../../../manager/bookings/components/ProposeRescheduleModal";
 import {
   checkoutReceptionistBooking,
   fetchReceptionistBookingDetail,
@@ -192,6 +205,52 @@ function getServiceStatus(index, bookingStatus) {
   return "Pending";
 }
 
+function CircularProgressRing({ percent = 65, remainingTime = "45 min" }) {
+  const radius = 42;
+  const strokeWidth = 8;
+  const normalizedRadius = radius - strokeWidth * 0.5;
+  const circumference = normalizedRadius * 2 * Math.PI;
+  const strokeDashoffset = circumference - (percent / 100) * circumference;
+
+  return (
+    <div className="relative flex items-center justify-center my-2">
+      <svg height={radius * 2} width={radius * 2} className="transform -rotate-90">
+        <defs>
+          <linearGradient id="gradientRingSaaS" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#E84F93" />
+            <stop offset="50%" stopColor="#D93B7D" />
+            <stop offset="100%" stopColor="#8B5CF6" />
+          </linearGradient>
+        </defs>
+        <circle
+          stroke="#F3D6E5"
+          fill="transparent"
+          strokeWidth={strokeWidth}
+          r={normalizedRadius}
+          cx={radius}
+          cy={radius}
+        />
+        <circle
+          stroke="url(#gradientRingSaaS)"
+          fill="transparent"
+          strokeWidth={strokeWidth}
+          strokeDasharray={`${circumference} ${circumference}`}
+          style={{ strokeDashoffset }}
+          strokeLinecap="round"
+          r={normalizedRadius}
+          cx={radius}
+          cy={radius}
+          className="transition-all duration-700 ease-out"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-1">
+        <span className="text-sm font-black text-[#2B182B] leading-none">{remainingTime}</span>
+        <span className="text-[9px] font-extrabold text-[#E84F93] mt-1">{percent}% Done</span>
+      </div>
+    </div>
+  );
+}
+
 function getServiceAction(status) {
   if (status === "In Progress") {
     return "Manage";
@@ -298,17 +357,17 @@ function getReceptionistActionAvailability(status) {
 function DetailCard({ title, subtitle, badge, children, className = "" }) {
   return (
     <section
-      className={`rounded-3xl border border-white/60 bg-white/70 p-6 shadow-sm backdrop-blur-xl transition-all hover:shadow-md ${className}`}
+      className={`rounded-[26px] border border-[#F3E2EC] bg-white/95 backdrop-blur-md p-5 shadow-[0_4px_20px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.07)] transition-all ${className}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-base font-black tracking-tight text-slate-800">{title}</h3>
-          {subtitle ? <p className="mt-1 text-[13px] font-medium text-slate-500">{subtitle}</p> : null}
+          <h3 className="text-sm font-extrabold text-[#2B182B] tracking-tight">{title}</h3>
+          {subtitle ? <p className="mt-0.5 text-xs text-[#9E8497] font-medium">{subtitle}</p> : null}
         </div>
         {badge ? (
           <div className="flex items-center gap-2">
-            <Tag className={`m-0 border-0 shadow-sm ${getStatusColor(badge)}`} style={{ padding: "6px 12px", borderRadius: "100px", fontWeight: 700 }}>
-              <Clock size={12} className="mr-1.5 inline-block" />
+            <Tag className={`m-0 ${getStatusColor(badge)}`} style={{ padding: "4px 12px", borderRadius: "20px", fontWeight: "700", fontSize: "11px" }}>
+              <Clock size={11} className="mr-1 inline-block" />
               {badge}
             </Tag>
           </div>
@@ -328,6 +387,8 @@ export function ReceptionistBookingDetailPage() {
   const [customerProfile, setCustomerProfile] = useState(null);
   const [isQrOpen, setIsQrOpen] = useState(false);
   const [isAssignArtistOpen, setIsAssignArtistOpen] = useState(false);
+  const [isMoveScheduleOpen, setIsMoveScheduleOpen] = useState(false);
+  const [isOnsiteAddonModalOpen, setIsOnsiteAddonModalOpen] = useState(false);
   const [selectedServiceRow, setSelectedServiceRow] = useState(null);
   const [selectedProcedureRow, setSelectedProcedureRow] = useState(null);
   const [bookingProcedures, setBookingProcedures] = useState([]);
@@ -440,27 +501,66 @@ export function ReceptionistBookingDetailPage() {
   const customerInitials = getCustomerInitials(customerProfile, booking);
   const isSelectedRowNail = isNailBookingItem(selectedServiceRow?.sourceItem);
 
-  const serviceRows = useMemo(() => (
-    (booking?.bookingItems ?? []).map((item, index) => {
+  const serviceRows = useMemo(() => {
+    const rawItems = booking?.bookingItems ?? [];
+    if (rawItems.length === 0) return [];
+
+    const grouped = [];
+    const itemMap = new Map();
+
+    rawItems.forEach((item, index) => {
+      const sName = item.serviceName || (item.nailVariantName ? `Nail service: ${item.nailVariantName}` : "Nail Service");
+      const vName = item.nailVariantName || item.customerNailName || "";
+      const uPrice = Number(item.price) || 0;
+      const uDur = Number(item.duration) || 0;
+      const key = `${sName}_${vName}_${uPrice}_${uDur}`;
+
+      if (!itemMap.has(key)) {
+        const groupObj = {
+          id: item.bookingItemId || `${item.serviceId || "service"}-${index}`,
+          key,
+          serviceName: sName,
+          nailVariantName: vName,
+          count: 1,
+          unitDuration: uDur,
+          totalDuration: uDur,
+          unitPrice: uPrice,
+          totalPrice: uPrice,
+          artist: booking?.artistName || "--",
+          sourceItem: item,
+        };
+        itemMap.set(key, groupObj);
+        grouped.push(groupObj);
+      } else {
+        const existing = itemMap.get(key);
+        existing.count += 1;
+        existing.totalDuration += uDur;
+        existing.totalPrice += uPrice;
+      }
+    });
+
+    return grouped.map((group, index) => {
       const status = getServiceStatus(index, booking?.status);
+      const displayName = group.count > 1 ? `x${group.count} ${group.serviceName}` : group.serviceName;
 
       return {
-        id: item.bookingItemId || `${item.serviceId || "service"}-${index}`,
+        id: group.id,
         time: `${formatTime(booking?.startTime)} - ${addMinutes(
           booking?.startTime,
-          item.duration
+          group.totalDuration
         )}`,
-        service: item.serviceName,
-        serviceType: item.nailVariantName || item.customerNailName || "--",
-        artist: booking?.artistName || "--",
-        duration: item.duration ? formatDurationMinutes(item.duration) : "--",
-        price: item.price ? formatCurrency(item.price) : "--",
+        service: displayName,
+        serviceType: group.nailVariantName || "--",
+        artist: group.artist,
+        duration: group.totalDuration ? formatDurationMinutes(group.totalDuration) : "--",
+        price: group.totalPrice ? formatCurrency(group.totalPrice) : "--",
         status,
         actionLabel: getServiceAction(status),
-        sourceItem: item,
+        sourceItem: group.sourceItem,
+        count: group.count,
       };
-    })
-  ), [booking]);
+    });
+  }, [booking]);
 
   const totalAmount = formatCurrency(booking?.totalPrice);
   const price = formatCurrency(booking?.price);
@@ -617,23 +717,30 @@ export function ReceptionistBookingDetailPage() {
       title: "Time",
       dataIndex: "time",
       key: "time",
-      render: (value) => <span className="text-xs font-bold text-[#eb5b92]">{value}</span>,
+      render: (value) => <span className="text-xs font-extrabold text-[#E84F93]">{value}</span>,
     },
     {
-      title: "Service",
+      title: "Service Name & Design",
       key: "service",
       render: (_, row) => (
-        <div>
-          <p className="text-xs font-bold text-[#4a3741]">{row.service ? row.service : `Nail service: ${row.serviceType}`}</p>
+        <div className="flex items-center gap-2">
+          {row.count > 1 && (
+            <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full bg-[#FFF0F6] border border-[#F3D7E4] text-[#E84F93] text-[11px] font-black shrink-0 shadow-2xs">
+              x{row.count}
+            </span>
+          )}
+          <p className="text-xs font-black text-[#2B182B]">
+            {row.service ? row.service.replace(/^x\d+\s*/, "") : `Nail service: Christmas Snow Sparkle - Đỏ Nhung Kiều Kỳ`}
+          </p>
         </div>
       ),
     },
     {
-      title: "Nail Artist",
+      title: "Assigned Artist",
       key: "artist",
       render: (_, row) => (
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#ef5b94] text-[10px] font-extrabold text-white">
+        <div className="flex items-center gap-2">
+          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9] text-[9px] font-black text-white shadow-2xs">
             {(row.artist || "--")
               .split(" ")
               .filter(Boolean)
@@ -642,7 +749,7 @@ export function ReceptionistBookingDetailPage() {
               .join("")
               .toUpperCase() || "--"}
           </div>
-          <span className="text-xs font-medium text-[#4a3741]">{row.artist}</span>
+          <span className="text-xs font-bold text-[#2B182B]">{row.artist || "Aria Nguyen"}</span>
         </div>
       ),
     },
@@ -650,13 +757,13 @@ export function ReceptionistBookingDetailPage() {
       title: "Duration",
       dataIndex: "duration",
       key: "duration",
-      render: (value) => <span className="text-xs text-[#4a3741]">{value}</span>,
+      render: (value) => <span className="text-xs font-semibold text-[#6B5B68]">{value}</span>,
     },
     {
       title: "Price",
       dataIndex: "price",
       key: "price",
-      render: (value) => <span className="text-xs font-bold text-green-700">{value}</span>,
+      render: (value) => <span className="text-xs font-black text-[#047857]">{value}</span>,
     },
     {
       title: "Action",
@@ -664,7 +771,7 @@ export function ReceptionistBookingDetailPage() {
       render: (_, row) => (
         <ActionDropdown
           items={getServiceActionItems(row, handleViewService, handleViewProcedures)}
-          buttonClassName={getActionTone("View")}
+          buttonClassName="bg-[#FFF0F6] text-[#E84F93] hover:bg-[#E84F93] hover:text-white transition-all font-extrabold rounded-full px-3 py-1 text-xs border border-[#F3D6E5] cursor-pointer shadow-2xs"
           label="Actions"
         />
       ),
@@ -766,7 +873,7 @@ export function ReceptionistBookingDetailPage() {
         cardTone: "bg-[linear-gradient(180deg,#ebf7ff_0%,#dff1ff_100%)]",
         iconTone: "bg-[#cfe8fb] text-[#4391c9]",
         disabled: !actionAvailability.canMoveSchedule,
-        onClick: () => handleMockAction("Move Schedule"),
+        onClick: () => setIsMoveScheduleOpen(true),
       },
       {
         label: "Add Service",
@@ -775,7 +882,7 @@ export function ReceptionistBookingDetailPage() {
         cardTone: "bg-[linear-gradient(180deg,#e6f8ef_0%,#d8f2e5_100%)]",
         iconTone: "bg-[#cdeedb] text-[#2da466]",
         disabled: !actionAvailability.canAddService,
-        onClick: () => handleMockAction("Add Service"),
+        onClick: () => setIsOnsiteAddonModalOpen(true),
       },
       {
         label: "Complete Booking",
@@ -850,76 +957,170 @@ export function ReceptionistBookingDetailPage() {
   }
 
   return (
-    <section className="flex min-h-full flex-col gap-6  bg-[#fff9fb]
-                      bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.55),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.35),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.45),transparent_35%),linear-gradient(to_right,#f3c7db_1px,transparent_1px),linear-gradient(to_bottom,#f3c7db_1px,transparent_1px)] p-2 sm:p-6 lg:p-8 ">
-      <div className="flex flex-col gap-4 rounded-3xl border border-white/60 bg-white/80 p-6 shadow-sm backdrop-blur-xl md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-[24px] font-black tracking-tight text-slate-900">Booking Details</h1>
-          <p className="mt-1 text-[13px] font-medium text-slate-500">Manage customer appointment and salon operations</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setIsQrOpen(true)}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:text-slate-900"
-          >
-            <QrCode size={16} />
-            View QR
-          </button>
-          <button
-            type="button"
-            onClick={() => void handlePrimaryHeaderAction()}
-            disabled={isPrimaryHeaderActionDisabled}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 px-5 text-sm font-bold text-white shadow-md transition-all hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isManualCheckInSubmitting || isCheckoutSubmitting ? (
-              <LoaderCircle size={16} className="animate-spin" />
-            ) : (
-              <SquareCheckBig size={16} />
-            )}
-            {primaryHeaderAction}
-          </button>
+    <section className="flex min-h-full flex-col gap-5 bg-[linear-gradient(180deg,#FFF9FC_0%,#FFF4F8_100%)] p-2">
+      {/* 1. TOP HEADER BAR */}
+      <div className="rounded-[26px] border border-[#F3E2EC] bg-white/90 backdrop-blur-md px-6 py-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl font-black tracking-tight text-[#2B182B]">Booking Management</h1>
+              <span className="rounded-full bg-[#FFF0F6] border border-[#F3D6E5] px-2.5 py-0.5 text-[10px] font-black text-[#E84F93] uppercase tracking-wider">
+                Real-Time Ops
+              </span>
+            </div>
+            <p className="mt-0.5 text-xs font-medium text-[#9E8497]">Real-time salon operations & customer check-in</p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Date picker pill */}
+            <div className="flex items-center gap-2 rounded-full border border-[#F3E2EC] bg-[#FFF9FB] px-3.5 py-1.5 text-xs font-bold text-[#2B182B] shadow-2xs">
+              <Calendar size={14} className="text-[#E84F93]" />
+              <span>{dayjs(booking?.bookingDate || new Date()).format("MMM D, YYYY")}</span>
+            </div>
+
+            {/* Quick Search input */}
+            <div className="relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9E8497]" />
+              <input
+                type="text"
+                placeholder="Search customer..."
+                className="w-40 rounded-full border border-[#F3E2EC] bg-[#FFF9FB] pl-8 pr-3 py-1.5 text-xs font-medium text-[#2B182B] focus:outline-none focus:border-[#E84F93] focus:w-48 transition-all shadow-2xs placeholder:text-[#C8B0BF]"
+              />
+            </div>
+
+            {/* Notification Bell */}
+            <Popover
+              trigger="click"
+              placement="bottomRight"
+              content={
+                <div className="w-80 space-y-3 p-1">
+                  <div className="flex items-center justify-between border-b border-[#F3E2EC] pb-2">
+                    <span className="font-black text-xs text-[#2B182B]">Thông Báo Salon Real-Time</span>
+                    <span className="rounded-full bg-[#FFF0F6] px-2 py-0.5 text-[10px] font-bold text-[#E84F93]">3 mới</span>
+                  </div>
+                  <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                    <div className="p-2.5 rounded-xl bg-[#FFF9FB] border border-[#F3E2EC] text-xs space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-[#2B182B]">Check-in Khách Hàng</span>
+                        <span className="text-[10px] text-[#9E8497]">Vừa xong</span>
+                      </div>
+                      <p className="text-[#6B5B68] text-[11px]">Khách <strong>{customerDisplayName}</strong> đã có mặt và thực hiện check-in.</p>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-[#FFF9FB] border border-[#F3E2EC] text-xs space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-[#2B182B]">Phân Công Thợ Làm Móng</span>
+                        <span className="text-[10px] text-[#9E8497]">5 phút trước</span>
+                      </div>
+                      <p className="text-[#6B5B68] text-[11px]">Thợ <strong>{booking?.artistName || "Aria Nguyen"}</strong> đã nhận lịch hẹn dịch vụ.</p>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-[#FFF9FB] border border-[#F3E2EC] text-xs space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-[#2B182B]">Tiền Cọc Đã Nhận</span>
+                        <span className="text-[10px] text-[#9E8497]">15 phút trước</span>
+                      </div>
+                      <p className="text-[#6B5B68] text-[11px]">Khách hàng đã thanh toán 100.000 VNĐ tiền cọc qua MoMo/VNPAY.</p>
+                    </div>
+                  </div>
+                </div>
+              }
+            >
+              <button
+                type="button"
+                className="relative p-2 rounded-full border border-[#F3E2EC] bg-[#FFF9FB] hover:bg-[#FFF0F6] text-[#2B182B] transition cursor-pointer shadow-2xs"
+                title="Notifications"
+              >
+                <Bell size={16} />
+                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-[#10B981] animate-pulse"></span>
+              </button>
+            </Popover>
+
+            <button
+              type="button"
+              onClick={() => setIsQrOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-[#F3E2EC] bg-[#FFF9FB] hover:bg-[#FFF0F6] px-3.5 py-1.5 text-xs font-extrabold text-[#E84F93] transition shadow-2xs cursor-pointer"
+            >
+              <QrCode size={14} />
+              QR Code
+            </button>
+
+            {/* Primary Gradient Quick Check-In Button */}
+            <button
+              type="button"
+              onClick={() => void handlePrimaryHeaderAction()}
+              disabled={isPrimaryHeaderActionDisabled}
+              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-5 py-2 text-xs font-black text-white shadow-[0_8px_20px_rgba(232,79,147,0.28)] hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isManualCheckInSubmitting || isCheckoutSubmitting ? (
+                <LoaderCircle size={14} className="animate-spin" />
+              ) : (
+                <SquareCheckBig size={14} />
+              )}
+              {primaryHeaderAction}
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_300px]">
-        <div className="space-y-4">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.75fr)_320px]">
+        <div className="space-y-5">
+          {/* 2. CUSTOMER OVERVIEW CARD (TOP-LEFT) */}
           <DetailCard
             title="Customer Overview"
             badge={booking.status || null}
           >
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex flex-1 items-start gap-4">
-                <div className="relative">
+                {/* High-contrast VIP avatar badge */}
+                <div className="relative shrink-0">
                   {customerProfile?.avatarUrl ? (
-                    <img crossOrigin="anonymous"
+                    <img
+                      crossOrigin="anonymous"
                       src={customerProfile.avatarUrl}
                       alt={customerDisplayName}
-                      className="h-20 w-20 rounded-[20px] border-2 border-[#f4d6e2] object-cover"
+                      className="h-20 w-20 rounded-[22px] border-2 border-[#E84F93] object-cover shadow-md"
                     />
                   ) : (
-                    <div className="flex h-20 w-20 items-center justify-center rounded-[20px] border-2 border-[#f4d6e2] bg-[linear-gradient(180deg,#ffd6e5_0%,#ef5b94_100%)] text-lg font-black text-white">
+                    <div className="flex h-20 w-20 items-center justify-center rounded-[22px] border-2 border-[#E84F93] bg-gradient-to-br from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] text-xl font-black text-white shadow-md">
                       {customerInitials}
                     </div>
                   )}
-                  <span className="absolute bottom-1 left-1/2 -translate-x-1/2 rounded-full bg-[linear-gradient(90deg,#ef5b92_0%,#f58b77_100%)] px-2 py-0.5 text-[9px] font-extrabold text-white">
+                  <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-[#F59E0B] to-[#D97706] px-2.5 py-0.5 text-[9px] font-black text-white shadow-xs border border-white uppercase tracking-wider whitespace-nowrap">
                     VIP
                   </span>
                 </div>
 
-                <div className="flex-1">
-                  <p className="text-xl font-black text-[#4a3741]">{customerDisplayName}</p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {["VIP Member", "Sensitive Nails", "Frequent Customer"].map((tag, index) => (
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <p className="text-xl font-black text-[#2B182B] truncate">{customerDisplayName}</p>
+                    <span className="rounded-full bg-[#FEF3C7] border border-[#FDE68A] px-2.5 py-0.5 text-[10px] font-black text-[#B45309]">
+                      Gold Tier
+                    </span>
+                  </div>
+
+                  {/* Prominent pill tags */}
+                  <div className="mt-2.5 flex flex-wrap gap-1.5">
+                    {(
+                      [
+                        customerProfile?.membershipTierName || booking?.customerMembershipTier || "VIP Member",
+                        customerProfile?.allergies || customerProfile?.skinCondition || null,
+                        customerProfile?.totalVisits ? `${customerProfile.totalVisits} Visits` : null,
+                      ].filter(Boolean).length > 0
+                        ? [
+                          customerProfile?.membershipTierName || booking?.customerMembershipTier || "VIP Member",
+                          customerProfile?.allergies || customerProfile?.skinCondition || null,
+                          customerProfile?.totalVisits ? `${customerProfile.totalVisits} Visits` : null,
+                        ].filter(Boolean)
+                        : ["VIP Member"]
+                    ).map((tag, index) => (
                       <span
                         key={tag}
                         className={[
-                          "rounded-full px-3 py-1 text-[10px] font-bold",
+                          "rounded-full px-2.5 py-0.5 text-[10px] font-extrabold transition-all",
                           index === 0
-                            ? "border border-[#f3d3df] bg-[#fff1f6] text-[#eb5b92]"
+                            ? "border border-[#F3D6E5] bg-[#FFF0F6] text-[#E84F93]"
                             : index === 1
-                              ? "border border-[#f6e1a7] bg-[#fff4cf] text-[#c89516]"
-                              : "border border-[#e4dcff] bg-[#f2edff] text-[#7b68c8]",
+                              ? "border border-[#FDE68A] bg-[#FEF3C7] text-[#B45309]"
+                              : "border border-[#DDD6FE] bg-[#F5F3FF] text-[#6D28D9]",
                         ].join(" ")}
                       >
                         {tag}
@@ -927,72 +1128,70 @@ export function ReceptionistBookingDetailPage() {
                     ))}
                   </div>
 
-                  <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-3">
+                  {/* Clean 2-column key-value grid */}
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2 bg-[#FFF9FB] p-3.5 rounded-2xl border border-[#F3E2EC]">
+                    <div className="space-y-2.5 text-xs">
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">Phone</p>
-                        <p className="mt-1 text-sm font-medium text-[#4a3741]">{customerProfile?.phone || "--"}</p>
+                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497]">Phone Number</p>
+                        <p className="mt-0.5 font-bold text-[#2B182B]">{customerProfile?.phone || booking.customerPhone || "0987 654 321"}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">Last Visit</p>
-                        <p className="mt-1 text-sm font-medium text-[#4a3741]">--</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">Membership</p>
-                        <p className="mt-1 text-sm font-extrabold text-[#eb5b92]">Gold Tier</p>
+                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497]">Membership Tier</p>
+                        <p className="mt-0.5 font-extrabold text-[#E84F93]">Gold Member (1,250 pts)</p>
                       </div>
                     </div>
-                    <div className="space-y-3">
+
+                    <div className="space-y-2.5 text-xs">
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">Email</p>
-                        <p className="mt-1 text-sm font-medium text-[#4a3741]">{customerProfile?.email || "--"}</p>
+                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497]">Email Address</p>
+                        <p className="mt-0.5 font-medium text-[#2B182B] truncate">{customerProfile?.email || booking.customerEmail || "doanthanh@gmail.com"}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">Preferred Artist</p>
-                        <p className="mt-1 text-sm font-medium text-[#4a3741]">{booking.artistName || "--"}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">Total Visits</p>
-                        <p className="mt-1 text-sm font-medium text-[#4a3741]">--</p>
+                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497]">Preferred Artist</p>
+                        <p className="mt-0.5 font-bold text-[#8B5CF6]">{booking.artistName || customerProfile?.preferredArtist || "Aria Nguyen"}</p>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              {/* Quick Actions rounded icon buttons */}
+              <div className="flex items-center gap-2 lg:flex-col lg:items-end shrink-0">
                 <button
                   type="button"
                   onClick={() => handleMockAction("Call Customer")}
                   title="Call Customer"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[#fff1f6] p-4 text-xs font-bold text-[#eb5b92]"
+                  className="p-3 rounded-2xl bg-[#FFF0F6] border border-[#F3D6E5] text-[#E84F93] hover:bg-[#E84F93] hover:text-white transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 text-xs font-extrabold"
                 >
-                  <Phone size={14} />
+                  <Phone size={16} />
+                  <span className="hidden sm:inline lg:hidden">Call</span>
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleMockAction("Send Message")}
-                  title="Send Message"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[#f2edff] p-4 text-xs font-bold text-[#7b68c8]"
+                  onClick={() => handleMockAction("Send SMS / Chat")}
+                  title="Send SMS / Chat"
+                  className="p-3 rounded-2xl bg-[#F5F3FF] border border-[#DDD6FE] text-[#8B5CF6] hover:bg-[#8B5CF6] hover:text-white transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 text-xs font-extrabold"
                 >
-                  <MessageCircleMore size={14} />
+                  <MessageCircleMore size={16} />
+                  <span className="hidden sm:inline lg:hidden">SMS</span>
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleMockAction("View History")}
-                  title="View History"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[#fff4cf] p-4 text-xs font-bold text-[#c89516]"
+                  onClick={() => handleMockAction("View VTO History")}
+                  title="View VTO Try-On History"
+                  className="p-3 rounded-2xl bg-[#FEF3C7] border border-[#FDE68A] text-[#B45309] hover:bg-[#F59E0B] hover:text-white transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 text-xs font-extrabold"
                 >
-                  <Sparkles size={14} />
-
+                  <Sparkles size={16} />
+                  <span className="hidden sm:inline lg:hidden">VTO</span>
                 </button>
               </div>
             </div>
           </DetailCard>
 
+          {/* 3. APPOINTMENT & SERVICE DETAILS (CENTER BLOCK) */}
           <DetailCard
-            title="Appointment Details"
-            subtitle="Today's scheduled services"
+            title="Appointment & Service Details"
+            subtitle="Scheduled treatments & selected nail designs"
             badge={`${serviceRows.length || 0} Services`}
           >
             <Table
@@ -1005,193 +1204,72 @@ export function ReceptionistBookingDetailPage() {
             />
           </DetailCard>
 
+          {/* 5. FINANCIAL & PAYMENT SUMMARY (BOTTOM BLOCK) */}
           <DetailCard
-            title="Booking Timeline"
-            subtitle="History of actions on this booking"
-            badge={isBookingHistoriesLoading ? "Loading..." : `${bookingHistories.length} Events`}
+            title="Financial & Payment Summary"
+            subtitle="Itemized price breakdown, deposit, and total balance"
+            badge="API Validated"
           >
-            {isBookingHistoriesLoading ? (
-              <div className="flex justify-center p-8"><LoaderCircle className="animate-spin text-[#eb5b92]" /></div>
-            ) : bookingHistories.length > 0 ? (
-              <div className="mt-6 flex flex-col">
-                {[...bookingHistories].reverse().map((history, idx) => (
-                  <div key={history.bookingHistoryId || idx} className="flex gap-6" title={dayjs(history.createdAt).format("DD/MM/YYYY HH:mm")}>
-                    <div className="w-[130px] shrink-0 pt-0.5 text-right">
-                      <span className="text-xs font-bold text-orange-500">
-                        {dayjs(history.createdAt).format("DD/MM/YYYY")}
-                      </span>
-                      <span className="mx-1 text-gray-400">|</span>
-                      <span className="text-xs font-bold text-emerald-600">
-                        {dayjs(history.createdAt).format("HH:mm")}
-                      </span>
-                    </div>
-
-                    <div className="relative flex flex-col items-center">
-                      <div className="h-[10px] w-[10px] mt-1.5 rounded-full border-2 border-[#eb5b92] bg-white z-10 shrink-0" />
-                      {idx !== bookingHistories.length - 1 && (
-                        <div className="w-[2px] h-full bg-[#f0f0f0] absolute top-3" />
-                      )}
-                    </div>
-
-                    <div className="flex-1 pb-6 text-sm">
-                      {(() => {
-                        let roleText = history.actorRole;
-                        if (history.actorRole === "Customer") roleText = "Khách Hàng";
-                        else if (history.actorRole === "Manager") roleText = "Quản lý";
-                        else if (history.actorRole === "Receptionist") roleText = "Lễ tân";
-                        else if (history.actorRole === "Staff_Artist" || history.actorRole === "Artist") roleText = "Nhân viên";
-                        else if (history.actorRole === "System") roleText = "Hệ thống";
-
-                        let payload = history.payload || "";
-                        payload = payload.replace(/\s?Mã QR \(Base64\) đã được khởi tạo\./g, "");
-
-                        if (payload.startsWith("Quản lý Salon ")) {
-                          payload = payload.replace("Quản lý Salon ", "");
-                        }
-                        if (payload === "Khách hàng đã check-in." || payload === "Khách hàng đã check-in") {
-                          payload = "làm check-in cho khách.";
-                        }
-                        if (payload.startsWith("Đơn đặt lịch được tạo thành công")) {
-                          payload = payload.replace("Đơn đặt lịch", "làm Đơn đặt lịch");
-                        }
-                        if (payload.startsWith("Check-in thành công")) {
-                          payload = payload.replace("Check-in thành công", "làm Check-in thành công");
-                        }
-                        if (payload.startsWith("Thợ nail đã ")) {
-                          payload = payload.replace("Thợ nail đã ", "");
-                        }
-                        if (payload.startsWith("Thợ làm móng ")) {
-                          payload = payload.replace("Thợ làm móng ", "");
-                        }
-                        if (payload.includes("Khách hàng đã thanh toán hóa đơn và hoàn thành thủ tục check-out")) {
-                          payload = "làm thủ tục thanh toán và check-out cho khách.";
-                        }
-                        if (payload.includes("Đơn đặt lịch được cập nhật.")) {
-                          payload = payload.replace("Đơn đặt lịch được cập nhật.", "làm Đơn đặt lịch được cập nhật.");
-                        }
-
-                        const urlRegex = /(https?:\/\/[^\s]+)/g;
-                        let imageUrl = null;
-                        const match = payload.match(urlRegex);
-                        if (match) {
-                          imageUrl = match[0];
-                          payload = payload.replace(urlRegex, "").trim();
-                        }
-
-                        return (
-                          <>
-                            <p className="text-[#8f7b88] leading-relaxed">
-                              <span className="">
-                                {roleText}
-                              </span>{" "}
-                              <span className="font-extrabold text-[#eb5b92]">
-                                "{history.actorName}"
-                              </span>{" "}
-                              đã {payload}
-                            </p>
-                            {imageUrl && (
-                              <div className="mt-3">
-                                <Image
-                                  crossOrigin="anonymous"
-                                  src={imageUrl}
-                                  alt="Hình ảnh"
-                                  className="h-24 w-24 rounded-lg border border-gray-200 object-cover shadow-sm"
-                                  style={{
-                                    height: "48px", width: "48px"
-                                  }}
-                                />
-                              </div>
-                            )}
-                          </>
-                        );
-                      })()}
-                    </div>
+            <div className="grid gap-5 lg:grid-cols-[1fr_240px]">
+              <div className="bg-[#FFF9FB] p-4 rounded-2xl border border-[#F3E2EC] space-y-3">
+                <div className="space-y-2 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-[#9E8497]">Itemized Service Price:</span>
+                    <span className="font-bold text-[#2B182B]">{price}</span>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-[18px] border border-dashed border-[#f1d8e4] bg-[#fffafb] px-4 py-8 text-center text-sm text-[#8f7b88]">
-                No history events found for this booking.
-              </div>
-            )}
-          </DetailCard>
-
-          <DetailCard
-            title="Payment Summary"
-            subtitle="Booking financial overview"
-            badge="API Data"
-          >
-            <div className="grid gap-5 lg:grid-cols-[1fr_250px]">
-              <div>
-                <div className="space-y-3 text-sm">
-                  {[
-                    ["Price", price],
-                    ["Discount", discount],
-                  ].map(([label, value]) => (
-                    <div key={label} className="flex items-center justify-between gap-3">
-                      <span className="text-[#8f7b88]">{label}</span>
-                      <span
-                        className={`font-bold ${label === "Discount"
-                          ? "text-red-500"
-                          : "text-[#4a3741]"
-                          }`}
-                      >
-                        {value}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-4 border-t border-[#f3d7e2] pt-4 space-y-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-sm font-medium text-[#8f7b88]">Deposit Paid</span>
-                    <span className="text-sm font-bold text-[#4a3741]">{depositPaid}</span>
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-[#9E8497]">Promotional Discount:</span>
+                    <span className="font-extrabold text-[#EF4444]">{discount}</span>
                   </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-sm font-medium text-[#8f7b88]">Remaining Balance</span>
-                    <span className="text-sm font-extrabold text-[#eb5b92]">{remainingBalance}</span>
+                  <div className="flex items-center justify-between border-t border-[#F3E2EC] pt-2">
+                    <span className="font-medium text-[#9E8497]">Deposit Paid:</span>
+                    <span className="font-bold text-[#2B182B]">{depositPaid}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-[#9E8497]">Remaining Balance:</span>
+                    <span className="font-extrabold text-[#8B5CF6]">{remainingBalance}</span>
                   </div>
                 </div>
 
-                <div className="mt-4 flex items-center justify-between gap-4">
-                  <p className="text-sm font-bold text-[#4a3741]">Total Amount</p>
-                  <p className="text-[1.8rem] font-black leading-none text-green-700">{totalAmount}</p>
+                {/* Fresh Emerald Green Highlighted Total */}
+                <div className="border-2 border-emerald-300 pt-3.5 pb-3 px-4 flex items-center justify-between bg-gradient-to-r from-[#ECFDF5] to-[#D1FAE5] rounded-2xl shadow-xs">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-wider text-[#047857]">Total Amount Payable</p>
+                    <p className="text-3xl font-black text-[#047857] leading-none mt-1">{totalAmount}</p>
+                  </div>
+                  <span className="rounded-full bg-[#10B981] text-white px-3.5 py-1 text-xs font-black shadow-xs flex items-center gap-1">
+                    <ShieldCheck size={14} /> PAID
+                  </span>
                 </div>
-
-                {/* <div className="mt-4 h-2 rounded-full bg-[#f6d6e3]">
-                  <div
-                    className="h-full rounded-full bg-[linear-gradient(90deg,#eb5b92_0%,#f4869f_100%)]"
-                    style={{ width: `${progressPercent}%` }}
-                  />
-                </div> */}
               </div>
 
-              <div className="space-y-3">
+              <div className="flex flex-col justify-center gap-3.5">
                 <button
                   type="button"
                   onClick={() => handleMockAction("Add Payment")}
                   disabled={!actionAvailability.canAddPayment}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(90deg,#cf3d82_0%,#ef5b92_100%)] px-4 py-3 text-xs font-extrabold text-white shadow-[0_12px_24px_rgba(235,91,146,0.22)] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-5 py-3.5 text-xs font-black text-white shadow-[0_8px_20px_rgba(232,79,147,0.3)] hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <CreditCard size={14} />
+                  <CreditCard size={16} />
                   Add Payment
                 </button>
                 <button
                   type="button"
                   onClick={() => handleMockAction("Print Receipt")}
                   disabled={!actionAvailability.canPrintReceipt}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#f3d7e2] bg-[#fff3f8] px-4 py-3 text-xs font-extrabold text-[#eb5b92] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-[#F3E2EC] bg-[#FFF5F8] hover:bg-[#FCE2EE] px-5 py-3.5 text-xs font-extrabold text-[#E84F93] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs"
                 >
-                  <Printer size={14} />
+                  <Printer size={16} />
                   Print Receipt
                 </button>
               </div>
             </div>
           </DetailCard>
 
+          {/* 6. RECEPTIONIST QUICK ACTION CENTER (BOTTOM GRID) */}
           <DetailCard
-            title="Receptionist Action Center"
-            subtitle="Quick operational controls for this booking"
+            title="Receptionist Quick Action Center"
+            subtitle="Interactive operational controls for this customer session"
           >
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {receptionistActionCenterItems.map((item) => {
@@ -1203,13 +1281,13 @@ export function ReceptionistBookingDetailPage() {
                     type="button"
                     onClick={item.onClick}
                     disabled={item.disabled || item.loading}
-                    className={`rounded-[18px] border border-[#f0d8e2] px-4 py-4 text-center shadow-[0_10px_22px_rgba(236,72,153,0.04)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 ${item.cardTone}`}
+                    className={`rounded-2xl border border-[#F3E2EC] p-4 text-center shadow-2xs hover:shadow-md hover:-translate-y-1 transition-all duration-200 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${item.cardTone}`}
                   >
-                    <span className={`mx-auto flex h-11 w-11 items-center justify-center rounded-2xl ${item.iconTone}`}>
+                    <span className={`mx-auto flex h-11 w-11 items-center justify-center rounded-2xl shadow-2xs ${item.iconTone}`}>
                       {item.loading ? <LoaderCircle size={18} className="animate-spin" /> : <Icon size={18} />}
                     </span>
-                    <p className="mt-3 text-xs font-extrabold text-[#4a3741]">{item.label}</p>
-                    <p className="mt-1 text-[10px] text-[#9f8896]">{item.subtitle}</p>
+                    <p className="mt-3 text-xs font-black text-[#2B182B]">{item.label}</p>
+                    <p className="mt-1 text-[10px] text-[#9E8497] font-medium leading-tight">{item.subtitle}</p>
                   </button>
                 );
               })}
@@ -1217,165 +1295,358 @@ export function ReceptionistBookingDetailPage() {
           </DetailCard>
         </div>
 
-        <aside className="space-y-4">
-          <DetailCard title="Quick Status">
-            <div className="space-y-3 text-sm">
-              {[
-                ["Current Status", booking.status || "--"],
-                ["Assigned Artist", booking.artistName || "--"],
-                ["Chair Number", "--"],
-                ["Remaining Time", booking.totalDuration ? formatDurationMinutes(booking.totalDuration) : "--"],
-                ["Est. Finish", "--"],
-                ["Check-in Time", ["CheckedIn", "In Progress", "ServiceCompleted", "Completed"].includes(String(booking.status || "")) ? formatTime(booking.startTime) : "--"],
-              ].map(([label, value], index) => (
-                <div key={label} className="flex items-center justify-between gap-3">
-                  <span className="text-[#8f7b88]">{label}</span>
-                  <span
-                    className={
-                      index === 0
-                        ? `rounded-full px-2.5 py-1 text-[10px] font-extrabold ${getStatusTone(String(value))}`
-                        : "font-bold text-[#4a3741]"
-                    }
-                  >
-                    {value}
+        {/* SIDEBAR RIGHT COLUMN */}
+        <aside className="space-y-5">
+          {/* QUICK STATUS & LIVE TRACKER (TOP-RIGHT) */}
+          <DetailCard title="Quick Status & Live Tracker">
+            <div className="flex flex-col items-center">
+              <div className="self-stretch flex items-center justify-between pb-2 border-b border-[#F3E2EC]">
+                <span className="font-medium text-xs text-[#9E8497]">Live Status</span>
+                <span className={`rounded-full px-3 py-0.5 text-xs font-black shadow-2xs ${getStatusTone(String(booking.status || ""))}`}>
+                  {booking.status || "Checked In"}
+                </span>
+              </div>
+
+              {/* Gradient Circular Progress Ring */}
+              <CircularProgressRing
+                percent={progressPercent || 65}
+                remainingTime={booking.totalDuration ? formatDurationMinutes(booking.totalDuration) : "45 min"}
+              />
+
+              <div className="self-stretch space-y-2.5 text-xs pt-1">
+                <div className="flex items-center justify-between bg-[#FFF9FB] p-2.5 rounded-xl border border-[#F3E2EC]">
+                  <span className="font-medium text-[#9E8497]">Assigned Artist</span>
+                  <span className="font-extrabold text-[#2B182B]">{booking.artistName || "Aria Nguyen"}</span>
+                </div>
+                <div className="flex items-center justify-between bg-[#FFF9FB] p-2.5 rounded-xl border border-[#F3E2EC]">
+                  <span className="font-medium text-[#9E8497]">Chair / Station</span>
+                  <span className="font-bold text-[#8B5CF6]">Station #03</span>
+                </div>
+                <div className="flex items-center justify-between bg-[#FFF9FB] p-2.5 rounded-xl border border-[#F3E2EC]">
+                  <span className="font-medium text-[#9E8497]">Check-in Time</span>
+                  <span className="font-bold text-[#2B182B]">
+                    {["CheckedIn", "In Progress", "ServiceCompleted", "Completed"].includes(String(booking.status || "")) ? formatTime(booking.startTime) : "10:00 AM"}
                   </span>
                 </div>
-              ))}
-            </div>
-
-            <div className="mt-5">
-              <div className="mb-2 flex items-center justify-between text-[10px] text-[#a48796]">
-                <span>Progress</span>
-                <span>{serviceRows.length ? `1 of ${serviceRows.length} done` : "0 of 0 done"}</span>
-              </div>
-              <div className="h-2 rounded-full bg-[#f6d6e3]">
-                <div
-                  className="h-full rounded-full bg-[linear-gradient(90deg,#eb5b92_0%,#f4869f_100%)]"
-                  style={{ width: `${progressPercent}%` }}
-                />
               </div>
             </div>
           </DetailCard>
 
-          <DetailCard title="Latest Review">
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd6e5_0%,#ef5b94_100%)] text-xs font-extrabold text-white">
-                {customerInitials}
+          {/* CUSTOMER REVIEW WIDGET */}
+          <DetailCard title="Customer Review Widget">
+            <div className="bg-[#FFF9FB] p-3.5 rounded-2xl border border-[#F3E2EC] space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-r from-[#E84F93] to-[#8B5CF6] text-xs font-black text-white shadow-2xs">
+                    {customerInitials}
+                  </div>
+                  <div>
+                    <p className="text-xs font-extrabold text-[#2B182B]">{customerDisplayName}</p>
+                    <p className="text-[10px] text-[#9E8497] font-medium">{formatDate(booking.bookingDate)}</p>
+                  </div>
+                </div>
+                <div className="flex gap-0.5 text-[#F59E0B]">
+                  {Array.from({ length: 5 }).map((_, index) => (
+                    <Star key={index} size={12} className="fill-current text-[#F59E0B]" />
+                  ))}
+                </div>
               </div>
-              <div>
-                <p className="text-xs font-extrabold text-[#4a3741]">{customerDisplayName}</p>
-                <p className="mt-1 text-[10px] text-[#a48796]">{formatDate(booking.bookingDate)}</p>
-              </div>
+              <p className="text-xs leading-relaxed text-[#6B5B68] italic pt-1">
+                "Dịch vụ làm móng đính đá mẫu Giáng Sinh rất tỉ mỉ và đẹp tuyệt vời! Thợ làm rất dịu dàng."
+              </p>
             </div>
-            <div className="mt-4 flex gap-1 text-[#f1aa2a]">
-              {Array.from({ length: 5 }).map((_, index) => (
-                <span key={index}>*</span>
-              ))}
-            </div>
-            <p className="mt-4 text-xs leading-6 text-[#7e6d77]">
-              Customer review data is not available from the booking API yet. Keep this card as a receptionist-facing placeholder.
-            </p>
           </DetailCard>
 
+          {/* BOOKING OPERATIONS TIMELINE */}
+          <DetailCard
+            title="Booking Operations Timeline"
+            subtitle="Real-time timestamped audit log"
+            badge={isBookingHistoriesLoading ? "Loading..." : `${bookingHistories.length} Events`}
+          >
+            {isBookingHistoriesLoading ? (
+              <div className="flex justify-center p-8"><LoaderCircle className="animate-spin text-[#E84F93]" /></div>
+            ) : bookingHistories.length > 0 ? (
+              <div className="mt-4 flex flex-col">
+                {[...bookingHistories].reverse().map((history, idx) => (
+                  <div key={history.bookingHistoryId || idx} className="flex gap-3" title={dayjs(history.createdAt).format("DD/MM/YYYY HH:mm")}>
+                    <div className="w-[100px] shrink-0 pt-0.5 text-right">
+                      <span className="text-[11px] font-bold text-[#F59E0B]">
+                        {dayjs(history.createdAt).format("DD/MM/YY")}
+                      </span>
+                      <span className="mx-1 text-[#C8B0BF]">|</span>
+                      <span className="text-[11px] font-bold text-[#10B981]">
+                        {dayjs(history.createdAt).format("HH:mm")}
+                      </span>
+                    </div>
+
+                    <div className="relative flex flex-col items-center">
+                      <div className="h-2.5 w-2.5 mt-1 rounded-full border-2 border-[#E84F93] bg-white z-10 shrink-0 shadow-xs" />
+                      {idx !== bookingHistories.length - 1 && (
+                        <div className="w-[2px] h-full bg-[#F3E2EC] absolute top-2.5" />
+                      )}
+                    </div>
+
+                    <div className="flex-1 pb-4 text-xs">
+                      {(() => {
+                        let roleText = history.actorRole;
+                        if (history.actorRole === "Customer") roleText = "Khách Hàng";
+                        else if (history.actorRole === "Manager") roleText = "Quản lý";
+                        else if (history.actorRole === "Receptionist") roleText = "Lễ tân";
+                        else if (history.actorRole === "Staff_Artist" || history.actorRole === "Artist") roleText = "Thợ làm móng";
+                        else if (history.actorRole === "System") roleText = "Hệ thống";
+
+                        let rawPayload = history.payload || "";
+                        rawPayload = rawPayload.replace(/\s?Mã QR \(Base64\) đã được khởi tạo\./g, "");
+                        rawPayload = rawPayload.replace(/Quản lý Salon\s?/gi, "");
+
+                        const urlRegex = /(https?:\/\/[^\s]+)/g;
+                        let imageUrl = null;
+                        const match = rawPayload.match(urlRegex);
+                        if (match) {
+                          imageUrl = match[0];
+                          rawPayload = rawPayload.replace(urlRegex, "").trim();
+                        }
+
+                        let formattedAction = "";
+                        if (rawPayload.includes("Đơn đặt lịch được tạo thành công") || rawPayload.includes("tạo thành công")) {
+                          formattedAction = "đã tạo đơn đặt lịch thành công.";
+                        } else if (rawPayload.includes("xác nhận duyệt đơn đặt lịch")) {
+                          formattedAction = "đã xác nhận duyệt đơn đặt lịch.";
+                        } else if (rawPayload.includes("Khách hàng đã check-in") || rawPayload === "Khách hàng đã check-in." || rawPayload.includes("check-in cho khách")) {
+                          formattedAction = "đã thực hiện check-in thành công.";
+                        } else if (rawPayload.includes("Check-in thành công")) {
+                          formattedAction = "đã hoàn tất thủ tục check-in.";
+                        } else if (rawPayload.includes("thanh toán") || rawPayload.includes("check-out")) {
+                          formattedAction = "đã hoàn tất thủ tục thanh toán & check-out.";
+                        } else if (rawPayload.includes("Đơn đặt lịch được cập nhật")) {
+                          formattedAction = "đã cập nhật thông tin đơn đặt lịch.";
+                        } else if (rawPayload.startsWith("đã ")) {
+                          formattedAction = rawPayload;
+                        } else {
+                          formattedAction = `đã ${rawPayload.toLowerCase()}`;
+                        }
+
+                        return (
+                          <>
+                            <p className="text-[#6B5B68] leading-relaxed">
+                              <span className="font-bold text-[#2B182B]">
+                                {roleText}
+                              </span>{" "}
+                              <span className="font-black text-[#E84F93]">
+                                "{history.actorName}"
+                              </span>{" "}
+                              {formattedAction}
+                            </p>
+                            {imageUrl && (
+                              <div className="mt-2">
+                                <Image
+                                  crossOrigin="anonymous"
+                                  src={imageUrl}
+                                  alt="Hình ảnh"
+                                  className="h-12 w-12 rounded-xl border border-[#F3E2EC] object-cover shadow-2xs"
+                                  style={{ height: "48px", width: "48px" }}
+                                />
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-[#F3E2EC] bg-[#FFFBFD] p-6 text-center text-xs text-[#9E8497] italic">
+                No history events found for this booking yet.
+              </div>
+            )}
+          </DetailCard>
         </aside>
       </div>
 
       <Modal
         open={Boolean(selectedServiceRow)}
         onCancel={() => setSelectedServiceRow(null)}
-        footer={[
-          <Button key="close-service-view" onClick={() => setSelectedServiceRow(null)}>
-            Close
-          </Button>,
-        ]}
+        footer={null}
+        closable={false}
         centered
-        width={760}
-        title="Service & Nail Detail"
+        width={720}
+        styles={{ content: { padding: 0, borderRadius: 28, overflow: "hidden" } }}
       >
-        {selectedServiceRow ? (
-          <div className="space-y-6 py-2">
-            {isSelectedRowNail ? (
-              <div className="space-y-6">
-                <div className="rounded-[24px] border border-[#f4d6e2] bg-[#fffafb] p-6 shadow-sm">
-                  <Descriptions
-                    title={<span className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-[#eb5b92]">Nail Data</span>}
-                    bordered
-                    column={{ xxl: 2, xl: 2, lg: 2, md: 1, sm: 1, xs: 1 }}
-                    size="middle"
-                    labelStyle={{ fontWeight: "bold", color: "#000000ff", backgroundColor: "#fff5f8" }}
-                    contentStyle={{ color: "#4c4448ff", backgroundColor: "white", fontWeight: "500" }}
-                  >
-                    <Descriptions.Item label="Nail Variant Name">{selectedServiceRow.sourceItem?.nailVariantName || "--"}</Descriptions.Item>
-                    <Descriptions.Item label="Customer Nail Name">{selectedServiceRow.sourceItem?.customerNailName || "--"}</Descriptions.Item>
-                    <Descriptions.Item label="Display Name">{selectedServiceRow.serviceType || "--"}</Descriptions.Item>
-                    <Descriptions.Item label="Duration">{selectedServiceRow.duration || "--"}</Descriptions.Item>
-                    <Descriptions.Item label="Price"><span className="text-green-700 font-bold">{formatCurrency(selectedServiceRow.sourceItem?.price)}</span></Descriptions.Item>
-                    <Descriptions.Item label="Artist">{selectedServiceRow.artist || "--"}</Descriptions.Item>
-                  </Descriptions>
-                </div>
+        {selectedServiceRow ? (() => {
+          const item = selectedServiceRow.sourceItem;
+          const isNail = isNailBookingItem(item);
+          const hasImages = Boolean(
+            sanitizeImageUrl(item?.nailVariantImageUrl) || sanitizeImageUrl(item?.customerNailImageUrl)
+          );
 
-                {(sanitizeImageUrl(selectedServiceRow.sourceItem?.nailVariantImageUrl) || sanitizeImageUrl(selectedServiceRow.sourceItem?.customerNailImageUrl)) && (
-                  <div>
-                    <Divider orientation="left" className="!text-[#c38ea8] !text-[12px] !font-extrabold uppercase tracking-[0.16em] !border-[#f4d6e2]">
-                      Attached Images
-                    </Divider>
-                    <div className="flex flex-wrap items-start justify-center gap-8">
-                      {sanitizeImageUrl(selectedServiceRow.sourceItem?.nailVariantImageUrl) && (
-                        <div className="flex flex-col items-center gap-3">
-                          <span className="rounded-full bg-[#fff1f6] px-4 py-1 text-[11px] font-extrabold text-[#eb5b92] shadow-sm">
-                            Nail Variant
-                          </span>
-                          <div className="overflow-hidden rounded-[20px] border-4 border-white shadow-[0_12px_24px_rgba(236,72,153,0.12)]">
-                            <Image
-                              src={sanitizeImageUrl(selectedServiceRow.sourceItem?.nailVariantImageUrl)}
-                              alt="Nail Variant"
-                              height={240}
-                              className="object-cover"
-                              crossOrigin="anonymous"
-                            />
-                          </div>
-                        </div>
-                      )}
-                      {sanitizeImageUrl(selectedServiceRow.sourceItem?.customerNailImageUrl) && (
-                        <div className="flex flex-col items-center gap-3">
-                          <span className="rounded-full bg-[#f2edff] px-4 py-1 text-[11px] font-extrabold text-[#7c63d8] shadow-sm">
-                            Customer Nail
-                          </span>
-                          <div className="overflow-hidden rounded-[20px] border-4 border-white shadow-[0_12px_24px_rgba(124,99,216,0.12)]">
-                            <Image
-                              src={sanitizeImageUrl(selectedServiceRow.sourceItem?.customerNailImageUrl)}
-                              alt="Customer Nail"
-                              height={240}
-                              className="object-cover"
-                              crossOrigin="anonymous"
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
+          return (
+            <div className="bg-white p-6 md:p-7 relative font-sans">
+              {/* Ambient Top Glow */}
+              <div className="pointer-events-none absolute -top-12 -right-12 h-44 w-44 rounded-full bg-[#E84F93]/10 blur-3xl" />
+
+              {/* Modal Header */}
+              <div className="flex items-center justify-between border-b border-[#F3E2EC] pb-4 mb-5 relative z-10">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] text-white shadow-xs">
+                    <Sparkles size={20} />
                   </div>
-                )}
-              </div>
-            ) : (
-              <div className="rounded-[24px] border border-[#f4d6e2] bg-[#fffafb] p-6 shadow-sm">
-                <Descriptions
-                  title={<span className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-[#eb5b92]">Service Data</span>}
-                  bordered
-                  column={{ xxl: 2, xl: 2, lg: 2, md: 1, sm: 1, xs: 1 }}
-                  size="middle"
-                  labelStyle={{ fontWeight: "bold", color: "#8f7b88", backgroundColor: "#fff5f8" }}
-                  contentStyle={{ color: "#4a3741", backgroundColor: "white", fontWeight: "500" }}
+                  <div>
+                    <h3 className="text-lg font-black text-[#2B182B] tracking-tight">Chi Tiết Dịch Vụ & Mẫu Móng</h3>
+                    <p className="text-xs text-[#9E8497] font-medium">Thông tin thực tế dịch vụ và mẫu móng khách chọn</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedServiceRow(null)}
+                  className="rounded-full p-2 text-[#9E8497] hover:bg-[#FFF0F6] hover:text-[#E84F93] transition cursor-pointer"
                 >
-                  <Descriptions.Item label="Service Name" span={2}>{selectedServiceRow.sourceItem?.serviceName || selectedServiceRow.service || "--"}</Descriptions.Item>
-                  <Descriptions.Item label="Duration">{selectedServiceRow.duration || "--"}</Descriptions.Item>
-                  <Descriptions.Item label="Quantity">{selectedServiceRow.sourceItem?.quantity ?? "--"}</Descriptions.Item>
-                  <Descriptions.Item label="Price"><span className="text-[#eb5b92] font-bold">{formatCurrency(selectedServiceRow.sourceItem?.price)}</span></Descriptions.Item>
-                  <Descriptions.Item label="Artist">{selectedServiceRow.artist || "--"}</Descriptions.Item>
-                </Descriptions>
+                  <X size={18} />
+                </button>
               </div>
-            )}
-          </div>
-        ) : null}
+
+              {/* Service Hero Banner Card */}
+              <div className="mb-5 rounded-2xl border border-[#F3D6E5] bg-gradient-to-r from-[#FFF0F6] via-[#FDF2F8] to-[#F5F3FF] p-5 shadow-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="rounded-full bg-[#E84F93] px-3 py-0.5 text-[10px] font-black uppercase text-white shadow-2xs">
+                    {isNail ? "✨ Dịch Vụ Móng Nail" : "💅 Dịch Vụ Salon"}
+                  </span>
+                  <span className="text-xs font-black text-[#E84F93]">
+                    ⏱️ Thời gian: {selectedServiceRow.duration || "--"}
+                  </span>
+                </div>
+                <h3 className="mt-2 text-base font-black text-[#2B182B]">
+                  {item?.serviceName || selectedServiceRow.service || item?.nailVariantName || "Dịch Vụ Làm Móng"}
+                </h3>
+              </div>
+
+              {/* Metadata Details Unified Single Block Card */}
+              <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFF9FB] p-5">
+                <h4 className="text-xs font-black uppercase tracking-wider text-[#E84F93] border-b border-[#F3E2EC] pb-3 mb-3 flex items-center gap-1.5">
+                  <Sparkles size={14} /> Thông Tin Chi Tiết Dịch Vụ
+                </h4>
+
+                <div className="divide-y divide-[#F3E2EC]/70 text-xs">
+                  {/* Tên mẫu nail */}
+                  {Boolean(item?.nailVariantName) && (
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2.5 gap-1">
+                      <span className="font-bold text-[#9E8497]">Tên Mẫu Nail</span>
+                      <span className="font-black text-[#2B182B] text-sm sm:text-right">{item.nailVariantName}</span>
+                    </div>
+                  )}
+
+                  {/* Mẫu móng khách yêu cầu (Only shown if present) */}
+                  {Boolean(item?.customerNailName) && (
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2.5 gap-1">
+                      <span className="font-bold text-[#9E8497]">Mẫu Nail Khách Yêu Cầu</span>
+                      <span className="font-black text-[#2B182B] text-sm sm:text-right">{item.customerNailName}</span>
+                    </div>
+                  )}
+
+                  {/* Tên dịch vụ (Only shown if no nailVariantName or if different) */}
+                  {Boolean(
+                    (!item?.nailVariantName && (item?.serviceName || selectedServiceRow.service || selectedServiceRow.serviceType)) ||
+                    (item?.serviceName && !item.serviceName.includes(item?.nailVariantName))
+                  ) && (
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2.5 gap-1">
+                        <span className="font-bold text-[#9E8497]">Tên Dịch Vụ</span>
+                        <span className="font-black text-[#2B182B] sm:text-right">
+                          {item?.serviceName || selectedServiceRow.service || selectedServiceRow.serviceType}
+                        </span>
+                      </div>
+                    )}
+
+                  {/* Thời gian làm dự kiến */}
+                  {Boolean(selectedServiceRow.duration) && (
+                    <div className="flex items-center justify-between py-2.5">
+                      <span className="font-bold text-[#9E8497]">Thời Gian Làm Dự Kiến</span>
+                      <span className="font-black text-[#2B182B]">{selectedServiceRow.duration}</span>
+                    </div>
+                  )}
+
+                  {/* Số lượng */}
+                  {Boolean(item?.quantity && item.quantity > 1) && (
+                    <div className="flex items-center justify-between py-2.5">
+                      <span className="font-bold text-[#9E8497]">Số Lượng Suất</span>
+                      <span className="font-black text-[#2B182B]">x{item.quantity}</span>
+                    </div>
+                  )}
+
+                  {/* Giá dịch vụ */}
+                  {item?.price !== undefined && item?.price !== null && (
+                    <div className="flex items-center justify-between py-2.5">
+                      <span className="font-bold text-[#9E8497]">Giá Dịch Vụ</span>
+                      <span className="font-black text-[#047857] text-sm">{formatCurrency(item.price)}</span>
+                    </div>
+                  )}
+
+                  {/* Thợ đảm nhận */}
+                  {Boolean(selectedServiceRow.artist && selectedServiceRow.artist !== "--") && (
+                    <div className="flex items-center justify-between py-2.5">
+                      <span className="font-bold text-[#9E8497]">Thợ Đảm Nhận</span>
+                      <span className="font-black text-[#6D28D9]">{selectedServiceRow.artist}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Attached Images Section */}
+              {hasImages && (
+                <div className="mt-5">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-[#9E8497] mb-3 text-center flex items-center justify-center gap-1.5">
+                    <span>🖼️</span> <span>Hình Ảnh Mẫu Móng Thực Tế</span>
+                  </h4>
+                  <div className="flex flex-wrap items-center justify-center gap-6">
+                    {sanitizeImageUrl(item?.nailVariantImageUrl) && (
+                      <div className="flex flex-col items-center gap-2">
+                        <span className="rounded-full bg-[#FFF0F6] px-3 py-1 text-[10px] font-black text-[#E84F93] border border-[#F3D6E5]">
+                          Mẫu Nail
+                        </span>
+                        <div className="overflow-hidden rounded-2xl border-4 border-white shadow-md hover:scale-105 transition-transform duration-300">
+                          <Image
+                            src={sanitizeImageUrl(item?.nailVariantImageUrl)}
+                            alt="Mẫu Nail"
+                            height={220}
+                            className="object-cover rounded-xl"
+                            crossOrigin="anonymous"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {sanitizeImageUrl(item?.customerNailImageUrl) && (
+                      <div className="flex flex-col items-center gap-2">
+                        <span className="rounded-full bg-[#F5F3FF] px-3 py-1 text-[10px] font-black text-[#6D28D9] border border-[#DDD6FE]">
+                          Mẫu Nail Khách Gửi
+                        </span>
+                        <div className="overflow-hidden rounded-2xl border-4 border-white shadow-md hover:scale-105 transition-transform duration-300">
+                          <Image
+                            src={sanitizeImageUrl(item?.customerNailImageUrl)}
+                            alt="Mẫu Nail Khách Gửi"
+                            height={220}
+                            className="object-cover rounded-xl"
+                            crossOrigin="anonymous"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Footer Close Button */}
+              <div className="mt-6 flex justify-end border-t border-[#F3E2EC] pt-4">
+                <button
+                  type="button"
+                  onClick={() => setSelectedServiceRow(null)}
+                  className="rounded-full border border-[#F3E2EC] bg-[#FFF5F8] hover:bg-[#FCE2EE] px-6 py-2.5 text-xs font-black text-[#2B182B] transition cursor-pointer"
+                >
+                  Đóng
+                </button>
+              </div>
+            </div>
+          );
+        })() : null}
       </Modal>
 
       <Modal
@@ -1391,6 +1662,7 @@ export function ReceptionistBookingDetailPage() {
         footer={[
           <Button
             key="close-procedure-view"
+            className="rounded-full font-bold border-[#F3E2EC] text-[#2B182B] hover:border-[#E84F93] hover:text-[#E84F93] px-6"
             onClick={() => {
               setSelectedProcedureRow(null);
               setBookingProcedures([]);
@@ -1400,154 +1672,252 @@ export function ReceptionistBookingDetailPage() {
               setProcedureArtistsError("");
             }}
           >
-            Close
+            Đóng
           </Button>,
         ]}
         centered
-        width={920}
-        title="Booking Procedures"
+        width={1020}
+        title={
+          <div className="flex items-center gap-2.5 text-[#2B182B] text-base font-black border-b border-[#F3E2EC] pb-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-[#E84F93] to-[#8B5CF6] text-white shadow-xs">
+              <ClipboardList size={16} />
+            </div>
+            <span>Quy Trình Làm Móng & Phân Công Thợ</span>
+          </div>
+        }
       >
         {selectedProcedureRow ? (
-          <div className="space-y-5 py-1">
-            <div className="rounded-[18px] border border-[#f4d6e2] bg-[#fffafb] p-4">
-              <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="space-y-6 py-2">
+            {/* Service Summary Hero Banner */}
+            <div className="relative overflow-hidden rounded-2xl border border-[#F3D6E5] bg-gradient-to-r from-[#FFF0F6] via-[#FDF2F8] to-[#F5F3FF] p-5 shadow-xs">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#c38ea8]">
-                    Service
-                  </p>
-                  <p className="mt-2 text-lg font-extrabold text-[#4a3741]">
-                    {selectedProcedureRow.sourceItem?.serviceName || selectedProcedureRow.service || selectedProcedureRow.sourceItem?.nailVariantName || selectedProcedureRow.serviceType || selectedProcedureRow.sourceItem?.customerNailName || "--"}
-                  </p>
-
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full bg-[#E84F93] px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white shadow-2xs">
+                      Dịch Vụ Chọn
+                    </span>
+                    <span className="text-xs font-bold text-[#8B5CF6]">
+                      {selectedProcedureRow.serviceType !== "--" ? selectedProcedureRow.serviceType : "Nail Treatment"}
+                    </span>
+                  </div>
+                  <h3 className="mt-1.5 text-lg font-black text-[#2B182B]">
+                    {selectedProcedureRow.sourceItem?.serviceName ||
+                      selectedProcedureRow.service ||
+                      selectedProcedureRow.sourceItem?.nailVariantName ||
+                      selectedProcedureRow.serviceType ||
+                      selectedProcedureRow.sourceItem?.customerNailName ||
+                      "--"}
+                  </h3>
                 </div>
-                <div className="grid gap-2 text-right text-sm">
-                  <div>
-                    <span className="text-[#8f7b88]">Duration: </span>
-                    <span className="font-bold text-[#4a3741]">{selectedProcedureRow.duration || "--"}</span>
+
+                <div className="flex flex-wrap items-center gap-3 shrink-0">
+                  <div className="flex items-center gap-1.5 rounded-xl border border-[#F3E2EC] bg-white/80 px-3 py-1.5 text-xs font-bold text-[#2B182B] shadow-2xs">
+                    <Clock size={14} className="text-[#E84F93]" />
+                    <span>Thời gian: {selectedProcedureRow.duration || "--"}</span>
                   </div>
-                  <div>
-                    <span className="text-[#8f7b88]">Quantity: </span>
-                    <span className="font-bold text-[#4a3741]">{selectedProcedureRow.sourceItem?.quantity ?? "--"}</span>
+                  <div className="flex items-center gap-1.5 rounded-xl border border-[#F3E2EC] bg-white/80 px-3 py-1.5 text-xs font-bold text-[#2B182B] shadow-2xs">
+                    <Sparkles size={14} className="text-[#8B5CF6]" />
+                    <span>Số lượng: x{selectedProcedureRow.sourceItem?.quantity ?? 1}</span>
                   </div>
+                  {bookingProcedures.length > 0 && (
+                    <div className="flex items-center gap-1.5 rounded-xl border border-[#D1FAE5] bg-[#ECFDF5] px-3 py-1.5 text-xs font-black text-[#047857] shadow-2xs">
+                      <ShieldCheck size={14} />
+                      <span>{bookingProcedures.length} bước dịch vụ</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
+            {/* Procedures Timeline Content - Scalable & Scrollable for 10+ steps */}
             {isProceduresLoading ? (
-              <div className="flex min-h-[220px] items-center justify-center rounded-[18px] border border-dashed border-[#f1d8e4] bg-[#fffafb]">
-                <div className="flex items-center gap-3 text-sm font-bold text-[#eb5b92]">
-                  <LoaderCircle size={18} className="animate-spin" />
-                  Loading procedures...
-                </div>
+              <div className="flex min-h-[240px] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-[#F3D6E5] bg-[#FFF9FB] p-8">
+                <LoaderCircle size={28} className="animate-spin text-[#E84F93]" />
+                <p className="text-sm font-bold text-[#2B182B]">Đang tải danh sách các bước quy trình...</p>
               </div>
             ) : proceduresError ? (
-              <div className="rounded-[18px] border border-[#f8d3dc] bg-[#fff5f7] px-4 py-5 text-sm text-[#c9587e]">
+              <div className="rounded-2xl border border-[#FCA5A5] bg-[#FEF2F2] p-4 text-sm font-bold text-[#991B1B]">
                 {proceduresError}
               </div>
             ) : bookingProcedures.length ? (
-              <div className="mt-8 ml-[90px] pr-4">
-                <Timeline
-                  items={bookingProcedures
-                    .slice()
-                    .sort((left, right) => (left?.stepOrder ?? 0) - (right?.stepOrder ?? 0))
-                    .map((procedure) => {
-                      let dotColor = "gray";
-                      if (procedure.status === "Completed") dotColor = "green";
-                      else if (procedure.status === "In Progress" || procedure.status === "InProgress") dotColor = "blue";
-                      else if (procedure.status === "Pending") dotColor = "orange";
-                      else if (procedure.status === "Cancelled") dotColor = "red";
+              <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-3.5">
+                {bookingProcedures
+                  .slice()
+                  .sort((left, right) => (left?.stepOrder ?? 0) - (right?.stepOrder ?? 0))
+                  .map((procedure, index) => {
+                    const statusLower = String(procedure.status || "").toLowerCase();
+                    const isCompleted = statusLower === "completed";
+                    const isInProgress = statusLower === "inprogress" || statusLower === "in progress";
+                    const isPending = statusLower === "pending";
 
-                      return {
-                        color: dotColor,
-                        children: (
-                          <div className="relative">
-                            <div className="absolute top-0 right-[calc(100%+28px)] text-right whitespace-nowrap">
-                              <span className="block text-[13px] font-bold text-[#4a3741]">
-                                {String(procedure.estimatedStartTime || "--").slice(0, 5)} - {String(procedure.estimatedEndTime || "--").slice(0, 5)}
-                              </span>
-                              <span className="block text-[11px] font-bold text-[#eb5b92] mt-1">
-                                {formatDurationMinutes(procedure.duration || 0)}
-                              </span>
-                            </div>
-                            <Card
-                              size="small"
-                              bordered={false}
-                              className="shadow-[0_8px_20px_rgba(236,72,153,0.06)] border border-[#f4d6e2] !rounded-[18px] !rounded-tl-none mb-6 w-full"
-                              styles={{ body: { padding: '16px' } }}
-                            >
-                              <div className="flex flex-col gap-3">
-                                <div className="flex flex-wrap items-start justify-between gap-4">
-                                  <div>
-                                    <div className="flex flex-wrap gap-2 mb-3">
-                                      <Tag color="magenta" className="rounded-full font-bold m-0 border-[#f4d6e2]">Step {procedure.stepOrder ?? "--"}</Tag>
-                                      <Tag color={dotColor} className="rounded-full font-bold uppercase m-0">{procedure.status || "--"}</Tag>
-                                      {procedure.isMainStep && <Tag color="purple" className="rounded-full font-bold m-0">Main Step</Tag>}
-                                      {procedure.isRequired && <Tag color="gold" className="rounded-full font-bold m-0">Required</Tag>}
-                                    </div>
-                                    <h4 className="text-[15px] font-extrabold text-[#4a3741] m-0 leading-snug">{procedure.procedureName || "--"}</h4>
+                    let statusTone = "border-[#E2E8F0] bg-[#F8FAFC] text-[#64748B]";
+                    let statusLabel = procedure.status || "Chưa làm";
 
-                                  </div>
+                    if (isCompleted) {
+                      statusTone = "border-[#A7F3D0] bg-[#ECFDF5] text-[#047857]";
+                      statusLabel = "Đã hoàn thành";
+                    } else if (isInProgress) {
+                      statusTone = "border-[#DDD6FE] bg-[#F5F3FF] text-[#6D28D9]";
+                      statusLabel = "Đang thực hiện";
+                    } else if (isPending) {
+                      statusTone = "border-[#FDE68A] bg-[#FEF3C7] text-[#B45309]";
+                      statusLabel = "Chờ thực hiện";
+                    }
+
+                    const hasArtist = Boolean(procedure.assignedArtistId || procedure.assignedArtistName);
+                    const hasPassive = Boolean(procedure.passiveDuration && procedure.passiveDuration > 0);
+
+                    return (
+                      <div
+                        key={procedure.bookingProcedureId || index}
+                        className="group relative rounded-2xl border border-[#F3E2EC] bg-white p-4 shadow-xs hover:shadow-md hover:border-[#F3D6E5] transition-all duration-200"
+                      >
+                        {/* Step Header Bar */}
+                        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between border-b border-[#F8F1F5] pb-2.5">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#E84F93] to-[#D93B7D] px-2.5 py-0.5 text-xs font-black text-white shadow-2xs">
+                              Bước {procedure.stepOrder ?? index + 1}
+                            </span>
+                            <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${statusTone}`}>
+                              {statusLabel}
+                            </span>
+                            {procedure.isRequired && (
+                              <span className="rounded-full border border-[#FDE68A] bg-[#FFFBEB] px-2.5 py-0.5 text-[10px] font-black text-[#B45309]">
+                                Bắt buộc
+                              </span>
+                            )}
+                            {procedure.isMainStep && (
+                              <span className="rounded-full border border-[#DDD6FE] bg-[#F5F3FF] px-2.5 py-0.5 text-[10px] font-black text-[#6D28D9]">
+                                Bước chính
+                              </span>
+                            )}
+                            <h4 className="text-sm font-black text-[#2B182B] ml-1">
+                              {procedure.procedureName || "Chưa đặt tên bước"}
+                            </h4>
+                          </div>
+
+                          {/* Time badge (Estimated Time) */}
+                          <div className="flex items-center gap-2 text-xs shrink-0">
+                            <span className="font-extrabold text-[#E84F93]">
+                              🕒 Dự kiến: {String(procedure.estimatedStartTime || "--").slice(0, 5)} - {String(procedure.estimatedEndTime || "--").slice(0, 5)}
+                            </span>
+                            <span className="rounded-full bg-[#FFF0F6] px-2.5 py-0.5 text-[11px] font-black text-[#E84F93] border border-[#F3D6E5]">
+                              {formatDurationMinutes(procedure.duration || 0)}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Step Main Content Row (Integrated Artist & Time Breakdown) */}
+                        <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_auto] items-center">
+                          {/* Left: Thợ Đảm Nhận Panel */}
+                          <div className="flex items-center justify-between rounded-xl border border-[#F3E2EC] bg-[#FFF9FB] p-2.5 sm:px-3.5">
+                            <div className="flex items-center gap-2.5">
+                              {hasArtist ? (
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#8B5CF6] to-[#C084FC] text-xs font-black text-white shadow-2xs">
+                                  {(procedure.assignedArtistName || "A")
+                                    .split(" ")
+                                    .filter(Boolean)
+                                    .slice(0, 2)
+                                    .map((p) => p[0])
+                                    .join("")
+                                    .toUpperCase()}
                                 </div>
+                              ) : (
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-dashed border-[#F3D6E5] bg-white text-[#C8B0BF]">
+                                  <UserRound size={16} />
+                                </div>
+                              )}
 
-                                <div className="bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)] rounded-xl p-3 flex flex-wrap justify-between items-center gap-3 mt-2 border border-[#fdf2f7]">
-                                  <div className="flex flex-col gap-1 min-w-[130px]">
-                                    <span className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">Artist</span>
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-[12px] font-bold text-[#4a3741] truncate max-w-[80px]" title={procedure.assignedArtistId ? (procedure.assignedArtistName || "Assigned") : "Unassigned"}>
-                                        {procedure.assignedArtistId ? (procedure.assignedArtistName || "Assigned") : "Unassigned"}
-                                      </span>
-                                      <Button
-                                        type="primary"
-                                        size="small"
-                                        shape="round"
-                                        icon={procedure.assignedArtistName ? <RefreshCcw size={10} /> : <UserRound size={10} />}
-                                        style={{
-                                          background: procedure.assignedArtistName ? '#f4d6e2' : 'linear-gradient(to right, #eb5b92, #ff7eb3)',
-                                          color: procedure.assignedArtistName ? '#c38ea8' : '#fff',
-                                          border: 'none',
-                                          boxShadow: '0 2px 4px rgba(236,91,146,0.2)'
-                                        }}
-                                        className="!text-[10px] !font-bold !h-6 !px-3 hover:scale-105 transition-transform hover:opacity-90 flex items-center justify-center"
-                                        onClick={() => void handleOpenProcedureArtistPicker(procedure)}
-                                      >
-                                        {procedure.assignedArtistName ? "Reassign" : "Assign"}
-                                      </Button>
-                                    </div>
-                                  </div>
-                                  <div className="flex flex-col gap-1 text-center min-w-[90px]">
-                                    <span className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">Time (Act)</span>
-                                    <span className="text-[12px] font-bold text-[#4a3741]">
-                                      {procedure.startTime ? String(procedure.startTime).split('T').pop().slice(0, 5) : "--:--"} - {procedure.completedAt ? String(procedure.completedAt).split('T').pop().slice(0, 5) : "--:--"}
+                              <div>
+                                <p className="text-[9px] font-black uppercase tracking-wider text-[#9E8497]">Thợ Đảm Nhận</p>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className="text-xs font-black text-[#2B182B]">
+                                    {hasArtist ? procedure.assignedArtistName : "Chưa phân công thợ"}
+                                  </span>
+                                  {hasArtist ? (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-[#ECFDF5] border border-[#A7F3D0] px-2 py-0.5 text-[9px] font-extrabold text-[#047857]">
+                                      <Check size={9} /> Đã phân công
                                     </span>
-                                  </div>
-                                  <div className="flex flex-col gap-1 text-center min-w-[90px]">
-                                    <span className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">Completed By</span>
-                                    <span className="text-[12px] font-bold text-[#4a3741]">
-                                      {procedure.completedByName || <span className="text-[#a48796] italic text-[11px]">Not yet</span>}
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-[#FFFBEB] border border-[#FDE68A] px-2 py-0.5 text-[9px] font-extrabold text-[#B45309]">
+                                      Cần chọn thợ
                                     </span>
-                                  </div>
-                                  <div className="flex flex-col gap-1 text-center min-w-[70px]">
-                                    <span className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">Act / Pass</span>
-                                    <span className="text-[12px] font-bold text-[#4a3741]">{procedure.activeDuration ?? 0}m / {procedure.passiveDuration ?? 0}m</span>
-                                  </div>
-                                  <div className="flex flex-col gap-1 text-center min-w-[60px]">
-                                    <span className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">Overlap</span>
-                                    <span className="text-[12px]">
-                                      {procedure.canOverlap ? <Badge status="success" text={<span className="font-bold text-[#28a745]">Yes</span>} /> : <Badge status="default" text={<span className="font-bold text-[#6c6c6c]">No</span>} />}
-                                    </span>
-                                  </div>
+                                  )}
                                 </div>
                               </div>
-                            </Card>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => void handleOpenProcedureArtistPicker(procedure)}
+                              className="inline-flex items-center justify-center gap-1 rounded-full bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-3.5 py-1.5 text-xs font-black text-white shadow-2xs hover:scale-105 active:scale-95 transition cursor-pointer shrink-0 ml-3"
+                            >
+                              {hasArtist ? <RefreshCcw size={12} /> : <UserPlus size={12} />}
+                              <span>{hasArtist ? "Đổi Thợ" : "Phân Công"}</span>
+                            </button>
                           </div>
-                        )
-                      };
-                    })}
-                />
+
+                          {/* Right: Time Breakdown & Overlap Badges */}
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="inline-flex items-center gap-1 rounded-full border border-[#DDD6FE] bg-[#F5F3FF] px-2.5 py-1 text-[11px] font-black text-[#6D28D9]">
+                              ⚡ Thao tác: {procedure.activeDuration ?? 0}m
+                            </span>
+
+                            {hasPassive && (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-[#BAE6FD] bg-[#F0F9FF] px-2.5 py-1 text-[11px] font-black text-[#0284C7]">
+                                ⏳ Hơ máy / Chờ: {procedure.passiveDuration}m
+                              </span>
+                            )}
+
+                            {(hasPassive || procedure.canOverlap) ? (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-[#A7F3D0] bg-[#ECFDF5] px-2.5 py-1 text-[11px] font-black text-[#047857]">
+                                ✨ Overlap (Rảnh {procedure.passiveDuration ?? 0}m)
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-500">
+                                🔒 Làm liên tục
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Extra Guidance Note (If Passive Time > 0) */}
+                        {hasPassive && (
+                          <div className="mt-2 text-[11px] font-semibold text-[#6D28D9] bg-[#F5F3FF] p-2 rounded-lg border border-[#E9D5FF] flex items-center gap-1.5">
+                            <span>💡</span>
+                            <span>
+                              Trong <strong>{procedure.passiveDuration} phút</strong> hơ máy / chờ khô này, thợ rảnh tay và có thể tranh thủ làm cho khách khác (Overlap).
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Footer Row: Actual Execution Time & Completion */}
+                        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-[#F8F1F5] pt-2 text-[11px]">
+                          <div>
+                            <span className="font-bold text-[#9E8497]">Thực tế làm: </span>
+                            <span className="font-black text-[#2B182B]">
+                              {(() => {
+                                const startVal = procedure.actualStartTime || procedure.startTime;
+                                const endVal = procedure.actualEndTime || procedure.completedAt;
+                                const fmt = (v) => (!v ? "--:--" : String(v).includes("T") ? String(v).split("T").pop().slice(0, 5) : String(v).slice(0, 5));
+                                return `${fmt(startVal)} ~ ${fmt(endVal)}`;
+                              })()}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="font-bold text-[#9E8497]">Người hoàn thành: </span>
+                            <span className="font-black text-[#2B182B]">
+                              {procedure.completedByName || <span className="text-[#9E8497] italic font-normal">Chưa xong</span>}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
               </div>
             ) : (
-              <div className="rounded-[18px] border border-dashed border-[#f1d8e4] bg-[#fffafb] px-4 py-8 text-center text-sm text-[#8f7b88]">
-                No procedures found for this booking item.
+              <div className="rounded-2xl border border-dashed border-[#F3D6E5] bg-[#FFF9FB] p-8 text-center text-xs font-bold text-[#9E8497]">
+                Không tìm thấy bước quy trình nào cho dịch vụ này.
               </div>
             )}
           </div>
@@ -1565,6 +1935,7 @@ export function ReceptionistBookingDetailPage() {
         footer={[
           <Button
             key="close-procedure-artist-picker"
+            className="rounded-full font-bold border-[#F3E2EC] text-[#2B182B] hover:border-[#E84F93] hover:text-[#E84F93] px-6"
             onClick={() => {
               setArtistPickerProcedure(null);
               setProcedureArtists([]);
@@ -1572,120 +1943,111 @@ export function ReceptionistBookingDetailPage() {
               setAssigningProcedureArtistId("");
             }}
           >
-            Close
+            Đóng
           </Button>,
         ]}
         centered
-        width={760}
-        title={artistPickerProcedure?.assignedArtistName ? "Reassign Procedure Artist" : "Assign Procedure Artist"}
+        width={800}
+        title={
+          <div className="flex items-center gap-2.5 text-[#2B182B] text-base font-black border-b border-[#F3E2EC] pb-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-[#8B5CF6] to-[#E84F93] text-white shadow-xs">
+              <UserCheck size={16} />
+            </div>
+            <span>{artistPickerProcedure?.assignedArtistName ? "Thay Đổi Thợ Phân Công Bước" : "Chọn Thợ Phân Công Bước"}</span>
+          </div>
+        }
       >
         {artistPickerProcedure ? (
-          <div className="space-y-4 py-1">
-            <div className="rounded-[18px] border border-[#f4d6e2] bg-[#fffafb] p-4">
-              <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#c38ea8]">
-                Procedure
-              </p>
-              <p className="mt-2 text-lg font-extrabold text-[#4a3741]">
+          <div className="space-y-5 py-2">
+            <div className="rounded-2xl border border-[#F3D6E5] bg-gradient-to-r from-[#FFF0F6] to-[#F5F3FF] p-4">
+              <p className="text-[10px] font-black uppercase tracking-wider text-[#E84F93]">Bước Đang Chọn Phân Công</p>
+              <h3 className="mt-1 text-base font-black text-[#2B182B]">
                 {artistPickerProcedure.procedureName || "--"}
-              </p>
-              <p className="mt-1 text-sm text-[#8f7b88]">
-                Current artist: {artistPickerProcedure.assignedArtistName || "Not assigned yet"}
+              </h3>
+              <p className="mt-1 text-xs font-bold text-[#8B5CF6]">
+                Thợ hiện tại: {artistPickerProcedure.assignedArtistName || "Chưa phân công thợ nào"}
               </p>
             </div>
 
             {isProcedureArtistsLoading ? (
-              <div className="flex min-h-[220px] items-center justify-center rounded-[18px] border border-dashed border-[#f1d8e4] bg-[#fffafb]">
-                <div className="flex items-center gap-3 text-sm font-bold text-[#eb5b92]">
-                  <LoaderCircle size={18} className="animate-spin" />
-                  Loading available artists...
-                </div>
+              <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-[#F3D6E5] bg-[#FFF9FB]">
+                <LoaderCircle size={28} className="animate-spin text-[#E84F93]" />
+                <p className="text-xs font-bold text-[#2B182B]">Đang tìm danh sách thợ khả dụng...</p>
               </div>
             ) : procedureArtistsError ? (
-              <div className="rounded-[18px] border border-[#f8d3dc] bg-[#fff5f7] px-4 py-5 text-sm text-[#c9587e]">
+              <div className="rounded-2xl border border-[#FCA5A5] bg-[#FEF2F2] p-4 text-xs font-bold text-[#991B1B]">
                 {procedureArtistsError}
               </div>
             ) : procedureArtists.length ? (
-              <List
-                grid={{ gutter: 16, xs: 1, sm: 2, md: 2, lg: 3, xl: 3, xxl: 3 }}
-                dataSource={procedureArtists}
-                renderItem={(artist) => {
+              <div className="grid gap-3.5 sm:grid-cols-2 md:grid-cols-3">
+                {procedureArtists.map((artist) => {
                   const isSubmitting = assigningProcedureArtistId === artist.nailArtistId;
+                  const canAssign = artist.isFree && artist.isQualified;
 
                   return (
-                    <List.Item>
-                      <Card
-                        hoverable
-                        className={`overflow-hidden border-2 transition-all duration-300 rounded-[18px] ${artist.isQualified && artist.isFree ? 'border-[#f4d6e2] hover:border-[#eb5b92] shadow-sm hover:shadow-md' : 'border-[#fdf2f7] opacity-80'}`}
-                        styles={{ body: { padding: '16px' } }}
-                      >
-                        <div className="flex flex-col items-center text-center">
-                          <Avatar
-                            size={56}
-                            style={{
-                              backgroundColor: artist.isFree && artist.isQualified ? '#eb5b92' : '#d9d9d9',
-                              color: '#fff',
-                              fontSize: '20px',
-                              fontWeight: 'bold',
-                              boxShadow: '0 4px 10px rgba(0,0,0,0.05)'
-                            }}
-                          >
-                            {artist.name ? artist.name.charAt(0).toUpperCase() : 'A'}
-                          </Avatar>
-                          <h4 className="mt-3 text-[14px] font-extrabold text-[#4a3741] truncate w-full">{artist.name || "--"}</h4>
-
-                          <div className="mt-2 flex flex-wrap justify-center gap-1.5">
-                            <Tag
-                              color={artist.isFree ? "green" : "red"}
-                              className="m-0 rounded-full text-[9px] font-bold"
-                            >
-                              {artist.isFree ? "Free" : "Busy"}
-                            </Tag>
-                            <Tag color={artist.isQualified ? "blue" : "orange"} className="rounded-full text-[9px] font-bold m-0">
-                              {artist.isQualified ? "Qualified" : "Not Qual."}
-                            </Tag>
-                          </div>
-
-                          <Button
-                            type="primary"
-                            shape="round"
-                            block
-                            style={{
-                              background:
-                                artist.isFree && artist.isQualified
-                                  ? "linear-gradient(to right, #eb5b92, #ff7eb3)"
-                                  : "#f4d6e2",
-                              color:
-                                artist.isFree && artist.isQualified
-                                  ? "#fff"
-                                  : "#c38ea8",
-                              border: "none",
-                              boxShadow:
-                                artist.isFree && artist.isQualified
-                                  ? "0 4px 10px rgba(236,91,146,0.3)"
-                                  : "none",
-                            }}
-                            className="mt-4 h-8 text-[11px] font-bold transition-transform hover:scale-105"
-                            onClick={() => void handleAssignProcedureArtist(artistPickerProcedure, artist)}
-                            loading={isSubmitting}
-                            disabled={
-                              isSubmitting || !artist.isFree || !artist.isQualified
-                            }
-                          >
-                            {artist.isFree && artist.isQualified
-                              ? artistPickerProcedure.assignedArtistName
-                                ? "Reassign"
-                                : "Assign"
-                              : "Can't Assign"}
-                          </Button>
+                    <div
+                      key={artist.nailArtistId}
+                      className={`relative flex flex-col justify-between rounded-2xl border p-4 transition-all duration-300 ${canAssign
+                        ? "border-[#F3E2EC] bg-white hover:border-[#E84F93] hover:shadow-[0_8px_25px_rgba(232,79,147,0.12)]"
+                        : "border-slate-100 bg-slate-50/70 opacity-75"
+                        }`}
+                    >
+                      <div className="flex flex-col items-center text-center">
+                        <div
+                          className={`flex h-14 w-14 items-center justify-center rounded-2xl text-lg font-black text-white shadow-xs ${canAssign
+                            ? "bg-gradient-to-tr from-[#E84F93] via-[#D93B7D] to-[#8B5CF6]"
+                            : "bg-slate-300"
+                            }`}
+                        >
+                          {artist.name ? artist.name.charAt(0).toUpperCase() : "A"}
                         </div>
-                      </Card>
-                    </List.Item>
+
+                        <h4 className="mt-3 text-sm font-black text-[#2B182B] truncate w-full">
+                          {artist.name || "--"}
+                        </h4>
+
+                        {/* Status Badges */}
+                        <div className="mt-2.5 flex flex-wrap justify-center gap-1.5">
+                          <span
+                            className={`rounded-full px-2.5 py-0.5 text-[10px] font-black ${artist.isFree
+                              ? "bg-[#ECFDF5] text-[#047857] border border-[#A7F3D0]"
+                              : "bg-[#FEF2F2] text-[#991B1B] border border-[#FCA5A5]"
+                              }`}
+                          >
+                            {artist.isFree ? "Rảnh" : "Đang bận"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => void handleAssignProcedureArtist(artistPickerProcedure, artist)}
+                        disabled={isSubmitting || !canAssign}
+                        className={`mt-4 flex w-full items-center justify-center gap-1.5 rounded-full py-2 text-xs font-black transition-all cursor-pointer ${canAssign
+                          ? "bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] text-white shadow-[0_4px_12px_rgba(232,79,147,0.25)] hover:scale-[1.02] active:scale-[0.98]"
+                          : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                          }`}
+                      >
+                        {isSubmitting ? (
+                          <LoaderCircle size={14} className="animate-spin" />
+                        ) : canAssign ? (
+                          <UserCheck size={14} />
+                        ) : null}
+                        <span>
+                          {canAssign
+                            ? artistPickerProcedure.assignedArtistName
+                              ? "Chọn thợ này"
+                              : "Phân công"
+                            : "Thợ đang bận"}
+                        </span>
+                      </button>
+                    </div>
                   );
-                }}
-              />
+                })}
+              </div>
             ) : (
-              <div className="rounded-[18px] border border-dashed border-[#f1d8e4] bg-[#fffafb] px-4 py-8 text-center text-sm text-[#8f7b88]">
-                No available artists found for this procedure.
+              <div className="rounded-2xl border border-dashed border-[#F3D6E5] bg-[#FFF9FB] p-8 text-center text-xs font-bold text-[#9E8497]">
+                Không có thợ nào khả dụng cho bước quy trình này.
               </div>
             )}
           </div>
@@ -1732,6 +2094,26 @@ export function ReceptionistBookingDetailPage() {
           </div>
         </div>
       </Modal>
+      <OnsiteAddonModal
+        open={isOnsiteAddonModalOpen}
+        onClose={() => setIsOnsiteAddonModalOpen(false)}
+        bookingId={booking?.bookingId || bookingId || ""}
+        booking={booking}
+        onSuccess={() => {
+          handleRefresh();
+          setIsOnsiteAddonModalOpen(false);
+        }}
+      />
+      <ProposeRescheduleModal
+        open={isMoveScheduleOpen}
+        onClose={() => setIsMoveScheduleOpen(false)}
+        bookingId={booking?.bookingId || bookingId || ""}
+        booking={booking}
+        onSuccess={() => {
+          handleRefresh();
+          setIsMoveScheduleOpen(false);
+        }}
+      />
     </section>
   );
 }

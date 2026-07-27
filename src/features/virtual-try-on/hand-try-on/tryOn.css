@@ -1196,11 +1196,184 @@
 }
 
 /* Try-On View webcam / results */
-.tryon-content-full {
-  flex: 1;
-  min-height: calc(100vh - 152px);
+/* ═══════════════════════════════════════════════════════════════════════
+   CYBER-SALON AR STUDIO — Reference-based Widescreen Try-On View
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.tryon-viewport-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  min-height: 600px;
   overflow: hidden;
-  background: #000;
+  background: #0a0608;
+  font-family: "Outfit", "Plus Jakarta Sans", sans-serif;
+}
+
+/* Floating Action Circle Buttons */
+.hud-circle-btn {
+  position: absolute;
+  top: 24px;
+  z-index: 20;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(13, 8, 10, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.hud-circle-btn:hover {
+  background: #ffffff;
+  color: #0a0608;
+  transform: scale(1.1);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.35);
+}
+
+.hud-circle-btn span.material-icons {
+  font-size: 22px;
+}
+
+.hud-back-btn {
+  left: 24px;
+}
+
+.hud-close-btn {
+  right: 24px;
+}
+
+/* Floating Status Indicator */
+.hud-top-status {
+  position: absolute;
+  top: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(13, 8, 10, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 8px 20px;
+  border-radius: 24px;
+  color: #0ecb81;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  animation: slideDownHUD 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.hud-top-status .status-dot {
+  width: 6px;
+  height: 6px;
+  background-color: #0ecb81;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #0ecb81;
+}
+
+/* Left Vertical Slider Column (mimics reference "Smooth" slider) */
+.hud-vertical-slider-container {
+  position: absolute;
+  left: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  background: rgba(13, 8, 10, 0.5);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 24px 14px;
+  border-radius: 30px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+  animation: slideLeftHUD 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.hud-slider-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 8px;
+}
+
+.hud-slider-wrapper-vertical {
+  width: 24px;
+  height: 180px;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.hud-slider-wrapper-vertical input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 170px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+  transform: rotate(-90deg);
+  outline: none;
+  cursor: pointer;
+  position: absolute;
+}
+
+.hud-slider-wrapper-vertical input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ff2d55; /* Hot pink like in reference image! */
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 10px rgba(255, 45, 85, 0.6);
+  transition: transform 0.1s, background-color 0.2s;
+}
+
+.hud-slider-wrapper-vertical input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.3);
+  background: #ffffff;
+}
+
+.hud-slider-val {
+  font-family: "Roboto Mono", monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #ff2d55;
+  background: rgba(255, 45, 85, 0.08);
+  border: 1px solid rgba(255, 45, 85, 0.2);
+  padding: 4px 8px;
+  border-radius: 6px;
+  min-width: 32px;
+  text-align: center;
+}
+
+/* Immersive Viewport Content */
+.tryon-content-full {
+  width: 100%;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+  background: #0a0608;
   display: flex;
   flex-direction: column;
 }
@@ -1221,13 +1394,29 @@
 .image-result-container {
   width: 100%;
   height: 100%;
-  min-height: calc(100vh - 152px);
   position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
   overflow: hidden;
-  background: #000;
+  background: #0a0608;
+}
+
+/* Fine dark-grid backdrop for AR scanner environment */
+.cam-container-full::before,
+.image-result-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: 
+    radial-gradient(circle at 50% 50%, rgba(255, 45, 85, 0.08) 0%, transparent 80%),
+    linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+  background-size: 100% 100%, 40px 40px, 40px 40px;
+  background-position: center;
+  opacity: 0.8;
+  pointer-events: none;
+  z-index: 1;
 }
 
 #webcam,
@@ -1236,9 +1425,12 @@
 #test-image {
   width: 100%;
   height: 100%;
-  max-width: none;
-  max-height: none;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
+  transform: scale(var(--zoom-factor, 1));
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 2;
 }
 
 #webcam,
@@ -1249,11 +1441,7 @@
 
 #view-webcam #webcam,
 #view-webcam #output_canvas {
-  transform: scaleX(-1);
-}
-
-#test-image {
-  object-fit: contain;
+  transform: scaleX(-1) scale(var(--zoom-factor, 1));
 }
 
 .result-scroll-wrapper {
@@ -1264,77 +1452,312 @@
   width: 100%;
   height: 100%;
   overflow: auto;
+  z-index: 2;
 }
 
-/* Bottom camera settings and confidence status */
-.tryon-settings-compact {
-  min-height: 80px;
+/* Scanner target guide frame with white brackets */
+.scanner-target-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 16px 32px;
-  background: var(--tryon-surface);
-  border-top: 1px solid var(--tryon-border);
-  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.02);
+  justify-content: center;
 }
 
-.control-group {
+.scanner-corner {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-color: #ffffff;
+  border-style: solid;
+  opacity: 0.8;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.2));
+}
+
+.scanner-corner.top-left {
+  top: 60px;
+  left: 15%;
+  border-width: 4px 0 0 4px;
+}
+
+.scanner-corner.top-right {
+  top: 60px;
+  right: 15%;
+  border-width: 4px 4px 0 0;
+}
+
+.scanner-corner.bottom-left {
+  bottom: 140px;
+  left: 15%;
+  border-width: 0 0 4px 4px;
+}
+
+.scanner-corner.bottom-right {
+  bottom: 140px;
+  right: 15%;
+  border-width: 0 4px 4px 0;
+}
+
+.scanner-grid-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+  opacity: 0.4;
+  animation: scanline 4s linear infinite;
+}
+
+/* Center Hand Silhouette Guide */
+.hud-hand-guide-container {
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 16px;
-  color: var(--tryon-text-main);
-  font-weight: 600;
-  font-size: 0.9rem;
+  animation: fadeInGuide 1s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.control-group input[type="range"] {
-  accent-color: var(--tryon-primary);
-  width: 160px;
+.hud-hand-guide-svg {
+  width: 170px;
+  height: auto;
+  opacity: 0.85;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
+}
+
+.hud-center-tip {
+  color: #ffffff;
+  font-size: 1.2rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
+  animation: breathingText 2.5s infinite ease-in-out;
+}
+
+/* Right Actions Column (mimics reference pink actions) */
+.hud-right-actions {
+  position: absolute;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: rgba(13, 8, 10, 0.5);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 24px 14px;
+  border-radius: 30px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+  animation: slideRightHUD 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.hud-action-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 45, 85, 0.8); /* Hot pink controls! */
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(255, 45, 85, 0.35);
 }
 
-.value-badge {
-  background: #faf6f8;
-  border: 1px solid var(--tryon-border);
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  color: var(--tryon-primary);
-  font-weight: 700;
-  font-family: "Roboto Mono", monospace;
+.hud-action-circle:hover {
+  transform: scale(1.1) rotate(15deg);
+  background: #ff2d55;
+  box-shadow: 0 0 15px rgba(255, 45, 85, 0.6);
 }
 
-.inference-time,
-.status-message {
-  color: var(--tryon-text-secondary);
-  font-size: 0.85rem;
-  font-weight: 600;
-  background: #faf6f8;
-  border: 1px solid var(--tryon-border);
-  padding: 6px 14px;
+.hud-action-circle span.material-icons {
+  font-size: 22px;
+}
+
+/* Bottom Shutter & Footer Container */
+.hud-bottom-container {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  animation: slideUpHUD 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* White Shutter Button */
+.hud-shutter-btn {
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  border: 4px solid #ffffff;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hud-shutter-btn:hover {
+  transform: scale(1.08);
+  border-color: #ff2d55;
+}
+
+.hud-shutter-btn:active {
+  transform: scale(0.95);
+}
+
+.shutter-inner {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: all 0.3s ease;
+}
+
+.hud-shutter-btn:hover .shutter-inner {
+  background: #ff2d55;
+}
+
+/* Transparent Footer Overlay */
+.hud-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(13, 8, 10, 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 6px 18px;
   border-radius: 20px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
 }
 
-.status-message {
-  border-color: #d1ebd9;
-  background: #e8f7ed;
-  color: #1e7d44;
+.hud-divider {
+  color: rgba(255, 255, 255, 0.15);
+}
+
+.hud-footer .text-accent {
+  color: #ff2d55;
+  font-weight: 700;
+}
+
+/* Animations */
+@keyframes slideDownHUD {
+  from {
+    transform: translate(-50%, -24px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideUpHUD {
+  from {
+    transform: translate(-50%, 24px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideLeftHUD {
+  from {
+    transform: translate(-24px, -50%);
+    opacity: 0;
+  }
+  to {
+    transform: translate(0, -50%);
+    opacity: 1;
+  }
+}
+
+@keyframes slideRightHUD {
+  from {
+    transform: translate(24px, -50%);
+    opacity: 0;
+  }
+  to {
+    transform: translate(0, -50%);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInGuide {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+}
+
+@keyframes breathingText {
+  0% {
+    transform: scale(0.97);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.03);
+    opacity: 1;
+    text-shadow: 0 4px 15px rgba(255, 255, 255, 0.25);
+  }
+  100% {
+    transform: scale(0.97);
+    opacity: 0.85;
+  }
+}
+
+@keyframes scanline {
+  0% {
+    top: 60px;
+  }
+  50% {
+    top: calc(100% - 140px);
+  }
+  100% {
+    top: 60px;
+  }
 }
 
 .viewport.loading-model::after {
   content: "Loading AI Model...";
   position: absolute;
   inset: 0;
-  background: rgba(20, 13, 16, 0.85);
+  background: rgba(20, 13, 16, 0.9);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
-  color: var(--tryon-accent);
-  font-weight: 700;
+  font-size: 1.35rem;
+  color: #ff2d55;
+  font-weight: 800;
   z-index: 100;
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
+  letter-spacing: 2px;
+  text-transform: uppercase;
 }
 
 /* Material icons styling */
@@ -1420,4 +1843,41 @@
     flex-direction: column;
     gap: 12px;
   }
+}
+
+/* Floating Status Indicator States */
+.hud-top-status.status-ready {
+  color: #0ecb81 !important;
+  border-color: rgba(14, 203, 129, 0.2) !important;
+}
+.hud-top-status.status-ready .status-dot {
+  background-color: #0ecb81 !important;
+  box-shadow: 0 0 8px #0ecb81 !important;
+}
+
+.hud-top-status.status-warn {
+  color: #ff9500 !important;
+  border-color: rgba(255, 149, 0, 0.2) !important;
+}
+.hud-top-status.status-warn .status-dot {
+  background-color: #ff9500 !important;
+  box-shadow: 0 0 8px #ff9500 !important;
+}
+
+.hud-top-status.status-error {
+  color: #ff2d55 !important;
+  border-color: rgba(255, 45, 85, 0.2) !important;
+}
+.hud-top-status.status-error .status-dot {
+  background-color: #ff2d55 !important;
+  box-shadow: 0 0 8px #ff2d55 !important;
+}
+
+.hud-top-status.status-none {
+  color: rgba(255, 255, 255, 0.4) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+.hud-top-status.status-none .status-dot {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  box-shadow: none !important;
 }

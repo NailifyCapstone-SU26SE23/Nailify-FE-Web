@@ -2,19 +2,20 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Modal, Select, Spin, message } from "antd";
 import { Clock3, CheckCircle2, AlertCircle, X } from "lucide-react";
 import { PropTypes } from "../../../../shared/utils/propTypes";
-import { patchSchedule, fetchArtistSchedules, createSchedule } from "../services/nailArtistsService";
+import { patchSchedule, fetchArtistSchedules, createSchedule, getSalonIdAsync } from "../services/nailArtistsService";
+import { fetchSalonById } from "../../../admin/salon-management/services/salonsService";
 import dayjs from "dayjs";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const DAYS_OF_WEEK = [
-  { key: "Mon", label: "Monday",    offset: 0 },
-  { key: "Tue", label: "Tuesday",   offset: 1 },
+  { key: "Mon", label: "Monday", offset: 0 },
+  { key: "Tue", label: "Tuesday", offset: 1 },
   { key: "Wed", label: "Wednesday", offset: 2 },
-  { key: "Thu", label: "Thursday",  offset: 3 },
-  { key: "Fri", label: "Friday",    offset: 4 },
-  { key: "Sat", label: "Saturday",  offset: 5 },
-  { key: "Sun", label: "Sunday",    offset: 6 },
+  { key: "Thu", label: "Thursday", offset: 3 },
+  { key: "Fri", label: "Friday", offset: 4 },
+  { key: "Sat", label: "Saturday", offset: 5 },
+  { key: "Sun", label: "Sunday", offset: 6 },
 ];
 
 const STATUS_META = {
@@ -35,25 +36,36 @@ const STATUS_META = {
   },
 };
 
-/** 09:00→17:00, 30-min slots */
-const TIME_SLOTS_30MIN = [
-  { start: "09:00", end: "09:30" },
-  { start: "09:30", end: "10:00" },
-  { start: "10:00", end: "10:30" },
-  { start: "10:30", end: "11:00" },
-  { start: "11:00", end: "11:30" },
-  { start: "11:30", end: "12:00" },
-  { start: "12:00", end: "12:30" },
-  { start: "12:30", end: "13:00" },
-  { start: "13:00", end: "13:30" },
-  { start: "13:30", end: "14:00" },
-  { start: "14:00", end: "14:30" },
-  { start: "14:30", end: "15:00" },
-  { start: "15:00", end: "15:30" },
-  { start: "15:30", end: "16:00" },
-  { start: "16:00", end: "16:30" },
-  { start: "16:30", end: "17:00" },
-];
+
+
+function generateSlotsFromOperatingHours(openTimeStr = "08:00", closeTimeStr = "19:00") {
+  const parseMinutes = (timeStr) => {
+    if (!timeStr) return 480;
+    const [h, m] = String(timeStr).split(":").map(Number);
+    return (h || 0) * 60 + (m || 0);
+  };
+
+  const formatMinutes = (totalMin) => {
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  };
+
+  const startMin = parseMinutes(openTimeStr);
+  const endMin = parseMinutes(closeTimeStr);
+  const slots = [];
+
+  for (let current = startMin; current + 30 <= endMin; current += 30) {
+    slots.push({
+      start: formatMinutes(current),
+      end: formatMinutes(current + 30),
+    });
+  }
+
+  return slots;
+}
+
+const TIME_SLOTS_30MIN = generateSlotsFromOperatingHours("08:00", "19:00");
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -104,12 +116,12 @@ function decimalToHHMM(dec) {
  * Map a time range (e.g. "09:00"–"11:30") to slot indices.
  * Only slots fully WITHIN [startStr, endStr] are included.
  */
-function rangeToSlotIndices(startStr, endStr) {
-  if (!startStr || !endStr) return [];
+function rangeToSlotIndices(startStr, endStr, slots = TIME_SLOTS_30MIN) {
+  if (!startStr || !endStr || !slots?.length) return [];
   const s = String(startStr).substring(0, 5);
   const e = String(endStr).substring(0, 5);
   const indices = [];
-  TIME_SLOTS_30MIN.forEach((slot, idx) => {
+  slots.forEach((slot, idx) => {
     if (slot.start >= s && slot.end <= e) indices.push(idx);
   });
   return indices;
@@ -119,8 +131,8 @@ function rangeToSlotIndices(startStr, endStr) {
  * Group sorted selected slot indices into contiguous runs.
  * Returns [{shiftStart, shiftEnd}, …]
  */
-function groupContiguous(selectedIndices) {
-  if (!selectedIndices?.length) return [];
+function groupContiguous(selectedIndices, slots = TIME_SLOTS_30MIN) {
+  if (!selectedIndices?.length || !slots?.length) return [];
   const sorted = [...selectedIndices].sort((a, b) => a - b);
   const groups = [];
   let run = [sorted[0]];
@@ -134,8 +146,8 @@ function groupContiguous(selectedIndices) {
   }
   groups.push(run);
   return groups.map((g) => ({
-    shiftStart: TIME_SLOTS_30MIN[g[0]].start,
-    shiftEnd:   TIME_SLOTS_30MIN[g[g.length - 1]].end,
+    shiftStart: slots[g[0]]?.start || "08:00",
+    shiftEnd: slots[g[g.length - 1]]?.end || "19:00",
   }));
 }
 
@@ -148,6 +160,7 @@ export function EditScheduleModal({
   staffArtists = [],
   monday: timelineMondayProp,
   onSuccess,
+  operatingHours = [],
 }) {
   const [loading, setLoading] = useState(false);
   const [method, setMethod] = useState("PATCH");
@@ -164,9 +177,93 @@ export function EditScheduleModal({
   const [selectedDays, setSelectedDays] = useState({});
 
   const [editStatus, setEditStatus] = useState("Active");
-  /** Set of slot indices (0-15) that are selected = working */
+
+  const [fetchedSalonHours, setFetchedSalonHours] = useState(null);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    const loadSalonHours = async () => {
+      try {
+        const sId = await getSalonIdAsync();
+        if (sId) {
+          const salonData = await fetchSalonById(sId);
+          if (!cancelled && Array.isArray(salonData?.operatingHours) && salonData.operatingHours.length > 0) {
+            setFetchedSalonHours(salonData.operatingHours);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch salon operating hours:", err);
+      }
+    };
+    loadSalonHours();
+    return () => { cancelled = true; };
+  }, [open]);
+
+  // ── Derived Salon Operating Hours ─────────────────────────────────────────
+  const activeHoursSummary = useMemo(() => {
+    const list = fetchedSalonHours?.length
+      ? fetchedSalonHours
+      : operatingHours?.length
+        ? operatingHours
+        : [];
+    const selectedKeys = Object.keys(selectedDays).filter((k) => selectedDays[k]);
+
+    if (!list.length) {
+      return { openTime: "08:00", closeTime: "20:00", label: "08:00 – 20:00" };
+    }
+
+    let matchedHours = list;
+    if (selectedKeys.length === 1) {
+      const dayKey = selectedKeys[0];
+      const dowMap = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 0 };
+      const targetDow = dowMap[dayKey];
+      const singleMatch = list.filter((item) => item.dayOfWeek === targetDow);
+      if (singleMatch.length > 0) matchedHours = singleMatch;
+    } else if (selectedKeys.length > 1) {
+      const dowMap = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 0 };
+      const targetDows = selectedKeys.map((k) => dowMap[k]);
+      const multiMatch = list.filter((item) => targetDows.includes(item.dayOfWeek));
+      if (multiMatch.length > 0) matchedHours = multiMatch;
+    }
+
+    const openDays = matchedHours.filter((item) => !item.isClosed);
+    if (openDays.length === 0) {
+      return { openTime: "08:00", closeTime: "19:00", label: "Closed" };
+    }
+
+    const parseToMin = (t) => {
+      const [h, m] = String(t || "08:00").split(":").map(Number);
+      return (h || 0) * 60 + (m || 0);
+    };
+
+    const minOpen = Math.min(...openDays.map((item) => parseToMin(item.openTime)));
+    const maxClose = Math.max(...openDays.map((item) => parseToMin(item.closeTime)));
+
+    const formatFromMin = (min) => {
+      const h = Math.floor(min / 60);
+      const m = min % 60;
+      return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    };
+
+    const openStr = formatFromMin(minOpen);
+    const closeStr = formatFromMin(maxClose);
+
+    const label = selectedKeys.length === 1
+      ? `${selectedKeys[0]}: ${openStr} – ${closeStr}`
+      : `${openStr} – ${closeStr}`;
+
+    return { openTime: openStr, closeTime: closeStr, label };
+  }, [fetchedSalonHours, operatingHours, selectedDays]);
+
+  const currentSlots = useMemo(
+    () => generateSlotsFromOperatingHours(activeHoursSummary.openTime, activeHoursSummary.closeTime),
+    [activeHoursSummary]
+  );
+
+  /** Set of slot indices that are selected = working */
   const [selectedSlots, setSelectedSlots] = useState(
-    () => TIME_SLOTS_30MIN.map((_, i) => i)
+    () => currentSlots.map((_, i) => i)
   );
 
   // ── Init from schedule prop ─────────────────────────────────────────────────
@@ -174,7 +271,8 @@ export function EditScheduleModal({
     if (!open) return;
 
     if (schedule) {
-      setSelectedStaffId(schedule.artistId ?? null);
+      const staffIdVal = schedule.artistId || schedule.id || schedule.staffId || null;
+      setSelectedStaffId(staffIdVal);
 
       const dateVal =
         schedule.workDate ||
@@ -185,8 +283,8 @@ export function EditScheduleModal({
         dateVal
           ? getMondayOfWeek(dateVal)
           : timelineMondayProp
-          ? getMondayOfWeek(timelineMondayProp)
-          : getMondayOfWeek(dayjs())
+            ? getMondayOfWeek(timelineMondayProp)
+            : getMondayOfWeek(dayjs())
       );
 
       setEditStatus(schedule.status || schedule.rawSchedule?.status || "Active");
@@ -202,14 +300,14 @@ export function EditScheduleModal({
       const preselectedIndices = new Set();
       activeShifts.forEach((s) => {
         const rawStart = s.shiftStart || s.startTime || s.start;
-        const rawEnd   = s.shiftEnd   || s.endTime   || s.end;
+        const rawEnd = s.shiftEnd || s.endTime || s.end;
         const startStr = typeof rawStart === "number"
           ? decimalToHHMM(rawStart)
           : String(rawStart || "");
         const endStr = typeof rawEnd === "number"
           ? decimalToHHMM(rawEnd)
           : String(rawEnd || "");
-        rangeToSlotIndices(startStr, endStr).forEach((i) =>
+        rangeToSlotIndices(startStr, endStr, currentSlots).forEach((i) =>
           preselectedIndices.add(i)
         );
       });
@@ -217,7 +315,7 @@ export function EditScheduleModal({
       setSelectedSlots(
         activeShifts.length > 0
           ? [...preselectedIndices]
-          : TIME_SLOTS_30MIN.map((_, i) => i)
+          : currentSlots.map((_, i) => i)
       );
 
       if (dateVal) {
@@ -237,8 +335,9 @@ export function EditScheduleModal({
       );
       setSelectedDays({});
       setEditStatus("Active");
-      setSelectedSlots(TIME_SLOTS_30MIN.map((_, i) => i));
+      setSelectedSlots(currentSlots.map((_, i) => i));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, schedule, timelineMondayProp]);
 
   // ── Fetch weekly schedules for selected staff ───────────────────────────────
@@ -253,7 +352,7 @@ export function EditScheduleModal({
       try {
         const data = await fetchArtistSchedules(selectedStaffId, {
           startDate: modalMonday.format("YYYY-MM-DDT00:00:00"),
-          endDate:   modalSunday.format("YYYY-MM-DDT23:59:59"),
+          endDate: modalSunday.format("YYYY-MM-DDT23:59:59"),
         });
         if (!cancelled) setWeekMap(buildDayMap(data));
       } catch {
@@ -277,11 +376,11 @@ export function EditScheduleModal({
   const isTimeInvalid = !isNonWorking && selectedSlots.length === 0;
 
   // Slot helpers
-  const selectAllSlots  = () => setSelectedSlots(TIME_SLOTS_30MIN.map((_, i) => i));
-  const clearAllSlots   = () => setSelectedSlots([]);
+  const selectAllSlots = () => setSelectedSlots(currentSlots.map((_, i) => i));
+  const clearAllSlots = () => setSelectedSlots([]);
   const applyPreset = (hours) => {
     const count = hours * 2; // 30-min slots per hour
-    setSelectedSlots(Array.from({ length: count }, (_, i) => i));
+    setSelectedSlots(Array.from({ length: Math.min(count, currentSlots.length) }, (_, i) => i));
   };
   const toggleSlot = (idx) =>
     setSelectedSlots((prev) =>
@@ -305,7 +404,7 @@ export function EditScheduleModal({
     }
 
     // Target groups from slot selection
-    const targetGroups = isNonWorking ? [] : groupContiguous(selectedSlots);
+    const targetGroups = isNonWorking ? [] : groupContiguous(selectedSlots, currentSlots);
 
     /**
      * For a given day's existing schedules + target groups:
@@ -339,7 +438,7 @@ export function EditScheduleModal({
               patchSchedule(existingSchedules[i].id || existingSchedules[i].scheduleId, {
                 workDate: workDateStr,
                 shiftStart: toApiTime(targetGroups[i].shiftStart),
-                shiftEnd:   toApiTime(targetGroups[i].shiftEnd),
+                shiftEnd: toApiTime(targetGroups[i].shiftEnd),
                 status: "Active",
               })
             );
@@ -350,7 +449,7 @@ export function EditScheduleModal({
                 nailArtistId: selectedStaffId,
                 workDate: workDateStr,
                 shiftStart: toApiTime(targetGroups[i].shiftStart),
-                shiftEnd:   toApiTime(targetGroups[i].shiftEnd),
+                shiftEnd: toApiTime(targetGroups[i].shiftEnd),
                 status: "Active",
               })
             );
@@ -381,23 +480,17 @@ export function EditScheduleModal({
       let daysToProcess = [];
 
       if (method === "PUT") {
-        daysToProcess = DAYS_OF_WEEK.filter((d) => weekMap[d.key]?.length > 0);
-        if (daysToProcess.length === 0) {
-          message.warning("No existing schedules found for this week.");
-          return;
-        }
+        daysToProcess = DAYS_OF_WEEK;
       } else {
-        daysToProcess = DAYS_OF_WEEK.filter(
-          (d) => selectedDays[d.key] && weekMap[d.key]?.length > 0
-        );
+        daysToProcess = DAYS_OF_WEEK.filter((d) => selectedDays[d.key]);
         if (daysToProcess.length === 0) {
-          message.error("Please select at least one day that has an existing schedule.");
+          message.error("Please select at least one day to update.");
           return;
         }
       }
 
       const allOps = daysToProcess.flatMap((d) => {
-        const daySchedules = weekMap[d.key];
+        const daySchedules = weekMap[d.key] || [];
         const workDate =
           formatDate(daySchedules[0]) ||
           modalMonday.add(d.offset, "day").format("YYYY-MM-DDT00:00:00.000[Z]");
@@ -471,7 +564,7 @@ export function EditScheduleModal({
               </label>
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { value: "PUT",   label: "Full Update",    sub: "Apply to all days of the week" },
+                  { value: "PUT", label: "Full Update", sub: "Apply to all days of the week" },
                   { value: "PATCH", label: "Partial Update", sub: "Select specific days to edit" },
                 ].map((opt) => {
                   const isActive = method === opt.value;
@@ -480,11 +573,10 @@ export function EditScheduleModal({
                       key={opt.value}
                       type="button"
                       onClick={() => setMethod(opt.value)}
-                      className={`flex flex-col items-start rounded-xl border px-3 py-2 text-left transition-all ${
-                        isActive
-                          ? "border-transparent bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] text-white shadow-sm"
-                          : "border-[#f1e7ed] bg-white text-[#a88a9f] hover:border-[#ea4f93]/30"
-                      }`}
+                      className={`flex flex-col items-start rounded-xl border px-3 py-2 text-left transition-all ${isActive
+                        ? "border-transparent bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] text-white shadow-sm"
+                        : "border-[#f1e7ed] bg-white text-[#a88a9f] hover:border-[#ea4f93]/30"
+                        }`}
                     >
                       <span className="text-[11px] font-bold">{opt.label}</span>
                       <span className={`mt-0.5 text-[9px] font-medium ${isActive ? "text-white/75" : "text-[#c0a8ba]"}`}>
@@ -534,11 +626,10 @@ export function EditScheduleModal({
                       key={key}
                       type="button"
                       onClick={() => setEditStatus(key)}
-                      className={`flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-[11px] font-semibold transition ${
-                        isActive
-                          ? `${meta.color} ring-2 ring-offset-1 ring-current`
-                          : "border-[#f1e7ed] bg-white text-[#a88a9f] hover:border-[#ea4f93]/30"
-                      }`}
+                      className={`flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-[11px] font-semibold transition ${isActive
+                        ? `${meta.color} ring-2 ring-offset-1 ring-current`
+                        : "border-[#f1e7ed] bg-white text-[#a88a9f] hover:border-[#ea4f93]/30"
+                        }`}
                     >
                       <span className={`h-1.5 w-1.5 rounded-full ${isActive ? meta.dot : "bg-[#c0a8ba]"}`} />
                       {meta.label}
@@ -553,9 +644,14 @@ export function EditScheduleModal({
               <div>
                 {/* Header row */}
                 <div className="mb-2 flex items-center justify-between">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[#a88a9f]">
-                    Working Hours
-                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#ea4f93]">
+                      Salon Operating Hours
+                    </label>
+                    <span className="rounded-md bg-rose-50 border border-rose-200/60 px-1.5 py-0.5 text-[9px] font-extrabold text-[#ea4f93]">
+                      {activeHoursSummary.label}
+                    </span>
+                  </div>
                   <div className="flex items-center gap-1.5">
                     {[4, 6, 8].map((h) => (
                       <button
@@ -596,27 +692,24 @@ export function EditScheduleModal({
 
                 {/* 4-column grid of 30-min slots */}
                 <div className="grid grid-cols-4 gap-1.5">
-                  {TIME_SLOTS_30MIN.map((slot, idx) => {
+                  {currentSlots.map((slot, idx) => {
                     const on = selectedSlots.includes(idx);
                     return (
                       <button
                         key={idx}
                         type="button"
                         onClick={() => toggleSlot(idx)}
-                        className={`rounded-xl border px-1 py-1 text-center transition-all duration-150 ${
-                          on
-                            ? "border-[#ea4f93] bg-[#fff5fa] shadow-sm"
-                            : "border-slate-100 bg-[#fafafa] hover:border-[#ea4f93]/30 hover:bg-[#fffbfc]"
-                        }`}
+                        className={`rounded-xl border px-1 py-1 text-center transition-all duration-150 ${on
+                          ? "border-[#ea4f93] bg-[#fff5fa] shadow-sm"
+                          : "border-slate-100 bg-[#fafafa] hover:border-[#ea4f93]/30 hover:bg-[#fffbfc]"
+                          }`}
                       >
-                        <span className={`block text-[9.5px] font-bold leading-none ${
-                          on ? "text-[#ea4f93]" : "text-slate-400"
-                        }`}>
+                        <span className={`block text-[9.5px] font-bold leading-none ${on ? "text-[#ea4f93]" : "text-slate-400"
+                          }`}>
                           {slot.start}
                         </span>
-                        <span className={`block text-[8px] leading-none mt-0.5 ${
-                          on ? "text-[#ea4f93]/60" : "text-slate-300"
-                        }`}>
+                        <span className={`block text-[8px] leading-none mt-0.5 ${on ? "text-[#ea4f93]/60" : "text-slate-300"
+                          }`}>
                           {slot.end}
                         </span>
                       </button>
@@ -712,33 +805,31 @@ export function EditScheduleModal({
                 ) : (
                   <div className="grid grid-cols-1 gap-1.5 flex-1">
                     {DAYS_OF_WEEK.map((day) => {
-                      const dayDate     = modalMonday.add(day.offset, "day");
+                      const dayDate = modalMonday.add(day.offset, "day");
                       const daySchedules = weekMap[day.key] || [];
-                      const hasShift    = daySchedules.length > 0;
-                      const isPartial   = method === "PATCH";
-                      const isSelected  = isPartial && Boolean(selectedDays[day.key]);
+                      const hasShift = daySchedules.length > 0;
+                      const isPartial = method === "PATCH";
+                      const isSelected = isPartial && Boolean(selectedDays[day.key]);
 
                       const shiftLabel = hasShift
                         ? daySchedules
-                            .map((s) => {
-                              const st = s.shiftStart || s.startTime || "";
-                              const en = s.shiftEnd   || s.endTime   || "";
-                              const st2 = (s.status || s.scheduleStatus || "").toLowerCase();
-                              if (st2 === "off" || st2 === "leave" || !st || !en)
-                                return st2 === "leave" ? "On Leave" : "Day Off";
-                              return `${String(st).slice(0, 5)}–${String(en).slice(0, 5)}`;
-                            })
-                            .join(", ")
+                          .map((s) => {
+                            const st = s.shiftStart || s.startTime || "";
+                            const en = s.shiftEnd || s.endTime || "";
+                            const st2 = (s.status || s.scheduleStatus || "").toLowerCase();
+                            if (st2 === "off" || st2 === "leave" || !st || !en)
+                              return st2 === "leave" ? "On Leave" : "Day Off";
+                            return `${String(st).slice(0, 5)}–${String(en).slice(0, 5)}`;
+                          })
+                          .join(", ")
                         : null;
 
                       let cardClass =
-                        "relative flex items-center gap-2 rounded-lg border p-2 transition-all duration-200 ";
-                      if (!hasShift) {
-                        cardClass += "border-[#f5e8ef] bg-[#fdf8fc] opacity-40 cursor-not-allowed";
-                      } else if (isPartial) {
+                        "relative flex items-center gap-2 rounded-lg border p-2 transition-all duration-200 cursor-pointer ";
+                      if (isPartial) {
                         cardClass += isSelected
-                          ? "border-[#ea4f93] bg-[#fff5fa] shadow-sm cursor-pointer"
-                          : "border-rose-100 bg-white hover:border-rose-200 cursor-pointer";
+                          ? "border-[#ea4f93] bg-[#fff5fa] shadow-sm"
+                          : "border-slate-200 bg-white hover:border-[#ea4f93]/40";
                       } else {
                         cardClass += "border-[#ea4f93]/40 bg-[#fff5fa] cursor-default";
                       }
@@ -748,16 +839,16 @@ export function EditScheduleModal({
                           key={day.key}
                           className={cardClass}
                           onClick={() => {
-                            if (!hasShift || !isPartial) return;
+                            if (!isPartial) return;
                             setSelectedDays((p) => ({ ...p, [day.key]: !p[day.key] }));
                           }}
                         >
-                          {isPartial && hasShift && (
+                          {isPartial && (
                             <input
                               type="checkbox"
                               readOnly
                               checked={isSelected}
-                              className="h-3.5 w-3.5 accent-[#ea4f93] pointer-events-none"
+                              className="h-3.5 w-3.5 accent-[#ea4f93] pointer-events-none shrink-0"
                             />
                           )}
                           {!isPartial && hasShift && (
@@ -778,7 +869,7 @@ export function EditScheduleModal({
                                 {shiftLabel}
                               </span>
                             ) : (
-                              <span className="mt-0.5 text-[8px] leading-none text-slate-300">
+                              <span className="mt-0.5 text-[8px] leading-none text-slate-400 font-medium block">
                                 No shift
                               </span>
                             )}

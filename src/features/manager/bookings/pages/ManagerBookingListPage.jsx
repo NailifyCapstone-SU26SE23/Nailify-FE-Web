@@ -12,22 +12,37 @@ import {
   X,
   Loader2,
   Maximize2,
+  Phone,
+  User,
+  ShieldCheck,
+  TrendingUp,
+  Filter,
+  Sparkle,
+  LayoutGrid,
+  CalendarDays,
+  Grid as GridIcon,
+  Table as TableIcon,
+  GripVertical,
+  Plus,
+  Image as ImageIcon,
+  Edit3,
 } from "lucide-react";
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Spin, Alert, DatePicker, Drawer, Modal } from "antd";
+import { Spin, Alert, DatePicker, Drawer, Modal, Tooltip } from "antd";
 import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
+import toast from "react-hot-toast";
 import { ROLES } from "../../../../shared/constants/roles";
 import { PropTypes } from "../../../../shared/utils/propTypes";
-import { formatDurationLabel } from "../../../../shared/utils/formatDuration";
 import { BOOKING_ROLE_CONFIG } from "../services/mockBookings";
-import { fetchBookingsBySalonId, fetchBookingById, fetchUserById } from "../services/bookingsService";
+import { fetchBookingsBySalonId, fetchBookingById, fetchUserById, fetchSalonStaff, assignArtistToBookingOld } from "../services/bookingsService";
 import { AssignArtistModal } from "../components/AssignArtistModal";
 import { ConfirmBookingModal } from "../components/ConfirmBookingModal";
 import { RejectBookingModal } from "../components/RejectBookingModal";
 import { CancelBookingModal } from "../components/CancelBookingModal";
 import { Pagination } from "../../../../shared/components/common/Pagination";
+import { getSalonId, getSalonIdAsync } from "../../staff-artist-management/services/nailArtistsService";
 
 import { loadAuthSession } from "../../../core/auth/model/authStorage";
 
@@ -38,14 +53,18 @@ const getManagerSalonId = () => {
   return session?.user?.salonId || session?.salonId;
 };
 
-const ACCENT_COLOR = "#ea4f93";
-const NEUTRAL_BASE = "#f9fafb";
-const BORDER_COLOR = "#f1e7ed";
+// --- Sample Luxury Nail Art Try-On Thumbnails for Demo ---
+const SAMPLE_NAIL_THUMBNAILS = [
+  "https://images.unsplash.com/photo-1604654894610-df63bc536371?w=150&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1632345031435-8727f6897d53?w=150&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1519014816548-bf5fe059798b?w=150&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=150&auto=format&fit=crop&q=80",
+];
 
 // --- Motion Presets ---
 const fadeInUp = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+  hidden: { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } },
 };
 
 const staggerContainer = {
@@ -53,17 +72,18 @@ const staggerContainer = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.1,
+      staggerChildren: 0.08,
+      delayChildren: 0.05,
     },
   },
 };
 
-// --- Components (Isolated for Performance) ---
+// --- Custom Components ---
 function PremiumCard({ className = "", children, noHover = false }) {
   return (
     <article
-      className={`relative overflow-hidden rounded-[28px] border border-[${BORDER_COLOR}] bg-white p-6 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.04)] transition-all duration-500 ease-out ${!noHover ? "hover:-translate-y-1 hover:shadow-[0_30px_50px_-15px_rgba(0,0,0,0.06)]" : ""} ${className}`}
+      className={`relative overflow-hidden rounded-[24px] border border-[#F3E2EC] bg-white p-6 shadow-[0_12px_32px_-8px_rgba(219,70,117,0.05)] transition-all duration-300 ease-out ${!noHover ? "hover:-translate-y-1 hover:shadow-[0_20px_40px_-8px_rgba(219,70,117,0.12)] hover:border-[#E8C5D8]" : ""
+        } ${className}`}
     >
       {children}
     </article>
@@ -76,11 +96,23 @@ PremiumCard.propTypes = {
   noHover: PropTypes.bool,
 };
 
-function SectionHeading({ title, subtitle }) {
+function SectionHeading({ title, subtitle, icon: Icon, actionButton }) {
   return (
-    <div>
-      <h3 className="text-sm font-bold text-[#2d1b35] tracking-tight">{title}</h3>
-      {subtitle ? <p className="mt-1.5 text-xs text-[#a88a9f] leading-relaxed">{subtitle}</p> : null}
+    <div className="flex items-start justify-between">
+      <div className="flex items-start gap-2.5">
+        {Icon && (
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#FFF0F5] to-[#FFE4EE] text-[#E84F93] shadow-xs">
+            <Icon size={16} />
+          </div>
+        )}
+        <div>
+          <h3 className="text-base font-bold text-[#2B182B] tracking-tight flex items-center gap-2">
+            {title}
+          </h3>
+          {subtitle ? <p className="mt-0.5 text-xs text-[#9E8497] leading-relaxed">{subtitle}</p> : null}
+        </div>
+      </div>
+      {actionButton}
     </div>
   );
 }
@@ -88,13 +120,15 @@ function SectionHeading({ title, subtitle }) {
 SectionHeading.propTypes = {
   title: PropTypes.string.isRequired,
   subtitle: PropTypes.string,
+  icon: PropTypes.elementType,
+  actionButton: PropTypes.node,
 };
 
 function InfoItem({ label, children }) {
   return (
     <div className="min-w-0">
-      <p className="text-[11px] font-semibold text-[#a88a9f] mb-1">{label}</p>
-      <div className="text-sm font-medium text-[#2d1b35] break-all">{children}</div>
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-[#9E8497] mb-1">{label}</p>
+      <div className="text-sm font-medium text-[#2B182B] break-all">{children}</div>
     </div>
   );
 }
@@ -104,62 +138,69 @@ InfoItem.propTypes = {
   children: PropTypes.node,
 };
 
-function StatusPill({ status }) {
+function StatusPill({ status, compact = false }) {
   const getStyle = () => {
     switch (status) {
       case "Checked In":
       case "CheckedIn":
-        return "bg-[#e7ecff] text-[#4755b8] border-transparent";
+        return "bg-[#EEF2FF] text-[#4338CA] border-[#A5B4FC] shadow-2xs";
       case "In Progress":
       case "InProgress":
-        return "bg-[#f3ebff] text-[#7e4fe6] border-transparent";
+        return "bg-[#F5F3FF] text-[#6D28D9] border-[#C4B5FD] shadow-2xs";
       case "Pending":
-        return "bg-[#fff0dd] text-[#c17a1c] border-transparent";
+        return "bg-[#FFFBEB] text-[#B45309] border-[#FCD34D] shadow-2xs";
       case "Confirmed":
       case "Approved":
-        return "bg-[#eaf9ee] text-[#238a55] border-transparent";
+        return "bg-[#ECFDF5] text-[#047857] border-[#6EE7B7] shadow-2xs";
       case "Completed":
       case "ServiceCompleted":
-        return "bg-[#eaf9ee] text-[#238a55] border-transparent";
+        return "bg-[#ECFDF5] text-[#065F46] border-[#34D399] shadow-2xs";
       case "Rejected":
-        return "bg-[#ffe5ee] text-[#d6376f] border-transparent";
+        return "bg-[#FEF2F2] text-[#B91C1C] border-[#FCA5A5] shadow-2xs";
       case "RescheduleReq":
       case "Reschedule Req":
-        return "bg-[#fff0dd] text-[#c17a1c] border-transparent";
+      case "ReschedulePending":
+        return "bg-[#FFF7ED] text-[#C2410C] border-[#FDBA74] shadow-2xs";
+      case "RescheduleSuggested":
+        return "bg-[#EFF6FF] text-[#1D4ED8] border-[#93C5FD] shadow-2xs";
       default:
-        return "bg-[#f3f4f6] text-[#6b7280] border-transparent";
+        return "bg-[#F3F4F6] text-[#6B7280] border-[#E5E7EB]";
     }
   };
 
   const formatDisplay = (s) => {
     if (s === "CheckedIn") return "Checked In";
     if (s === "InProgress") return "In Progress";
-    if (s === "RescheduleReq") return "Reschedule req";
+    if (s === "RescheduleReq" || s === "ReschedulePending") return "Reschedule Req";
+    if (s === "RescheduleSuggested") return "Reschedule Proposed";
     if (s === "ServiceCompleted") return "Completed";
     return s;
   };
 
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold whitespace-nowrap ${getStyle()}`}>
+    <span className={`inline-flex items-center gap-1 rounded-full border ${compact ? "px-2 py-0.5 text-[9px]" : "px-3 py-1 text-xs"} font-bold transition-all max-w-full truncate ${getStyle()}`}>
       {(status === "InProgress" || status === "In Progress") && (
-        <Loader2 size={11} className="animate-spin" />
+        <span className="relative flex h-2 w-2 shrink-0">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#8B5CF6] opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-[#7C3AED]"></span>
+        </span>
       )}
-      {formatDisplay(status)}
+      <span className="truncate">{formatDisplay(status)}</span>
     </span>
   );
 }
 
 function SkeletonLoader() {
   return (
-    <div className="space-y-4 animate-pulse">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="flex items-center gap-4 px-4 py-3">
-          <div className="h-4 w-28 bg-[#f5e2ec] rounded-full" />
-          <div className="h-4 w-40 bg-[#f5e2ec] rounded-full" />
-          <div className="h-4 w-32 bg-[#f5e2ec] rounded-full" />
-          <div className="h-4 w-32 bg-[#f5e2ec] rounded-full" />
-          <div className="h-8 w-24 bg-[#f5e2ec] rounded-full" />
-          <div className="h-8 w-32 bg-[#f5e2ec] rounded-full ml-auto" />
+    <div className="space-y-4 p-4 animate-pulse">
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} className="flex items-center gap-4 px-4 py-3.5 rounded-2xl bg-[#FAF0F5]/50">
+          <div className="h-4 w-28 bg-[#F3D6E5] rounded-full" />
+          <div className="h-4 w-40 bg-[#F3D6E5] rounded-full" />
+          <div className="h-4 w-32 bg-[#F3D6E5] rounded-full" />
+          <div className="h-4 w-32 bg-[#F3D6E5] rounded-full" />
+          <div className="h-7 w-24 bg-[#F3D6E5] rounded-full" />
+          <div className="h-8 w-28 bg-[#F3D6E5] rounded-full ml-auto" />
         </div>
       ))}
     </div>
@@ -215,7 +256,7 @@ function formatTimeRange(startTime, durationMinutes, fallbackDateTime) {
   if (Number.isNaN(hours) || Number.isNaN(minutes)) return formattedStart;
 
   const totalStartMinutes = hours * 60 + minutes;
-  const totalEndMinutes = totalStartMinutes + durationMinutes;
+  const totalEndMinutes = totalStartMinutes + (durationMinutes || 60);
   const endHours = Math.floor(totalEndMinutes / 60) % 24;
   const endMinutes = totalEndMinutes % 60;
 
@@ -251,35 +292,20 @@ function getArtistDisplayName(artist) {
 
 function matchesFilter(status, filter) {
   if (filter === "All") return true;
-  if (filter === "Reschedule") return status === "RescheduleReq" || status === "Reschedule Req";
+  if (filter === "Reschedule") return status === "RescheduleReq" || status === "Reschedule Req" || status === "ReschedulePending" || status === "RescheduleSuggested";
   if (filter === "Completed") return status === "Completed" || status === "ServiceCompleted";
   return status === filter;
 }
 
-// Helper to properly format QR code src
 function getQrCodeSrc(qrCode) {
   if (!qrCode) return null;
   const trimmed = String(qrCode).trim();
-
-  // If it's already a data URL, use as-is
-  if (trimmed.startsWith("data:")) {
+  if (trimmed.startsWith("data:") || trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
     return trimmed;
   }
-
-  // If it's a URL (starts with http/https), use as-is
-  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-    return trimmed;
-  }
-
-  // If it's a valid base64 string (without prefix), add data URL prefix
-  // Try to detect if it's base64 (length > 0, no spaces, valid characters)
   if (/^[A-Za-z0-9+/=]+$/.test(trimmed) && trimmed.length > 50) {
-    // Try to detect if it's PNG or JPG by checking magic bytes (optional but helpful)
-    // For simplicity, default to PNG, which is common for QR codes
     return `data:image/png;base64,${trimmed}`;
   }
-
-  // If none of the above, return it as-is (maybe it's a relative URL or other format)
   return trimmed;
 }
 
@@ -301,7 +327,7 @@ function mapBookingForDrawer(rawBooking) {
     artistId,
     deposit: rawBooking.depositAmount ? formatVND(rawBooking.depositAmount) : "Pending",
     depositAmount: rawBooking.depositAmount,
-    depositTone: rawBooking.depositAmount ? "text-[#2fa25f]" : "text-[#db8520]",
+    depositTone: rawBooking.depositAmount ? "text-[#059669] font-extrabold" : "text-[#D97706] font-bold",
     status: rawBooking.status || "Pending",
     totalPrice: rawBooking.totalPrice,
     qrCode: rawBooking.qrCode,
@@ -314,8 +340,7 @@ function mapBookingForDrawer(rawBooking) {
   };
 }
 
-function mapApiBookingToUiFormat(apiBooking) {
-  console.log("mapApiBookingToUiFormat - apiBooking:", apiBooking); // Log the full booking object
+function mapApiBookingToUiFormat(apiBooking, index) {
   const customerName = apiBooking.customerName || (apiBooking.customer ? `${apiBooking.customer.firstName} ${apiBooking.customer.lastName}` : "Unknown Customer");
   const customerInitials = customerName
     .split(" ")
@@ -325,6 +350,17 @@ function mapApiBookingToUiFormat(apiBooking) {
     .toUpperCase();
   const artistName = getArtistDisplayName(apiBooking);
   const artistId = apiBooking.staffId || apiBooking.nailArtistId || apiBooking.staffArtistId || apiBooking.artistId || null;
+
+  // Extract or assign thumbnail URL
+  let thumbnail = null;
+  if (apiBooking.bookingItems && apiBooking.bookingItems.length > 0) {
+    const item = apiBooking.bookingItems[0];
+    thumbnail = item.nailVariantImageUrl || item.customerNailImageUrl;
+  }
+  if (!thumbnail) {
+    thumbnail = SAMPLE_NAIL_THUMBNAILS[index % SAMPLE_NAIL_THUMBNAILS.length];
+  }
+
   return {
     id: apiBooking.bookingId || apiBooking.id,
     bookingId: apiBooking.bookingId || apiBooking.id,
@@ -346,7 +382,7 @@ function mapApiBookingToUiFormat(apiBooking) {
     nailArtistId: artistId,
     deposit: apiBooking.depositAmount ? formatVND(apiBooking.depositAmount) : "Pending",
     depositAmount: apiBooking.depositAmount,
-    depositTone: apiBooking.depositAmount ? "text-[#2fa25f]" : "text-[#db8520]",
+    depositTone: apiBooking.depositAmount ? "text-[#059669]" : "text-[#D97706]",
     status: apiBooking.status || "Pending",
     totalPrice: apiBooking.totalPrice,
     qrCode: apiBooking.qrCode,
@@ -355,8 +391,7 @@ function mapApiBookingToUiFormat(apiBooking) {
     bookingItems: apiBooking.bookingItems || [],
     salonId: apiBooking.salonId,
     initials: customerInitials,
-    avatarTone: "from-[#ffc5de] to-[#ea4f93]",
-    artistTone: "from-[#d8c4ff] to-[#8b5cf6]",
+    thumbnailUrl: thumbnail,
     ...apiBooking,
   };
 }
@@ -367,61 +402,23 @@ function isFinalStatus(status) {
 }
 
 const scheduleColorPalette = [
-  { dot: "bg-[#8b5cf6]", tone: "border-[#d9c2fb] bg-[#f3ebff] text-[#7e4fe6]" },
-  { dot: "bg-[#ea4f93]", tone: "border-[#f8c4d8] bg-[#ffe7ef] text-[#ea4f93]" },
-  { dot: "bg-[#3b82f6]", tone: "border-[#c7d7ff] bg-[#e7ecff] text-[#4755b8]" },
-  { dot: "bg-[#22c55e]", tone: "border-[#b8e6cc] bg-[#eaf9ee] text-[#2fa25f]" },
-  { dot: "bg-[#f97316]", tone: "border-[#f5d0a0] bg-[#fff0dd] text-[#db8520]" },
-];
-
-const capacityPeriods = [
-  { label: "Morning (9-12)", value: 85, tone: "bg-[#ea4f93]" },
-  { label: "Afternoon (12-3)", value: 72, tone: "bg-[#8b5cf6]" },
-  { label: "Evening (3-6)", value: 58, tone: "bg-[#ff9800]" },
-];
-
-const staffWorkload = [
-  { name: "Luna Park", filled: 8, total: 10, tone: "from-[#d8c4ff] to-[#8b5cf6]" },
-  { name: "Aria Nguyen", filled: 9, total: 10, tone: "from-[#ffc5de] to-[#ea4f93]" },
-  { name: "Chloe Davis", filled: 6, total: 10, tone: "from-[#b8f0d8] to-[#2fc5a9]" },
-  { name: "Mel Santos", filled: 7, total: 10, tone: "from-[#ffe0b2] to-[#ff9800]" },
-];
-
-const waitlist = [
-  { name: "Kim Nguyen", service: "Gel Manicure", time: "ASAP • Morning" },
-  { name: "Lisa Hoang", service: "Nail Art", time: "After 2 PM" },
-  { name: "Anna Tran", service: "Pedicure", time: "Any slot today" },
-];
-
-const bookingConflicts = [
-  {
-    title: "Double Booking",
-    time: "11 AM • Aria Nguyen",
-    action: "Resolve Now",
-  },
-  {
-    title: "Unassigned Booking",
-    time: "2 PM • No staff assigned",
-    action: "Assign staff",
-  },
-  {
-    title: "Deposit Missing",
-    time: "10 AM • Jessica Tan",
-    action: "Resolve Now",
-  },
+  { dot: "bg-[#8B5CF6]", tone: "border-[#DDD6FE] bg-[#F5F3FF] text-[#6D28D9]" },
+  { dot: "bg-[#E84F93]", tone: "border-[#FBCFE8] bg-[#FFF0F5] text-[#DB2777]" },
+  { dot: "bg-[#3B82F6]", tone: "border-[#BFDBFE] bg-[#EFF6FF] text-[#1D4ED8]" },
+  { dot: "bg-[#10B981]", tone: "border-[#A7F3D0] bg-[#ECFDF5] text-[#047857]" },
+  { dot: "bg-[#F59E0B]", tone: "border-[#FDE68A] bg-[#FFFBEB] text-[#B45309]" },
 ];
 
 function formatHourLabel(hour) {
-  if (hour === 12) return "12 PM";
-  if (hour > 12) return `${hour - 12} PM`;
-  return `${hour} AM`;
+  if (hour === 12) return "12:00 PM";
+  if (hour > 12) return `${hour - 12}:00 PM`;
+  return `${hour}:00 AM`;
 }
 
 const appointmentFilters = [
   { value: "All", label: "All" },
   { value: "Pending", label: "Pending" },
   { value: "Confirmed", label: "Confirmed" },
-  { value: "Approved", label: "Approved" },
   { value: "CheckedIn", label: "Checked In" },
   { value: "InProgress", label: "In Progress" },
   { value: "Completed", label: "Completed" },
@@ -429,12 +426,53 @@ const appointmentFilters = [
   { value: "Reschedule", label: "Reschedule" },
 ];
 
+const KNOWN_STAFF_LIST = ["Luna Park", "Aria Nguyen", "Chloe Davis", "Mel Santos", "Unassigned"];
+
+function getCalendarCardStyle(status) {
+  switch (status) {
+    case "CheckedIn":
+    case "Checked In":
+      return "border-[#A5B4FC] bg-[#EEF2FF] text-[#4338CA]";
+    case "InProgress":
+    case "In Progress":
+      return "border-[#C4B5FD] bg-[#F5F3FF] text-[#6D28D9]";
+    case "Pending":
+      return "border-[#FCD34D] bg-[#FFFBEB] text-[#B45309]";
+    case "Confirmed":
+    case "Approved":
+      return "border-[#6EE7B7] bg-[#ECFDF5] text-[#047857]";
+    case "Completed":
+    case "ServiceCompleted":
+      return "border-[#34D399] bg-[#ECFDF5] text-[#065F46]";
+    case "Rejected":
+      return "border-[#FCA5A5] bg-[#FEF2F2] text-[#B91C1C]";
+    case "RescheduleReq":
+    case "Reschedule Req":
+    case "ReschedulePending":
+      return "border-[#FDBA74] bg-[#FFF7ED] text-[#C2410C]";
+    case "RescheduleSuggested":
+      return "border-[#93C5FD] bg-[#EFF6FF] text-[#1D4ED8]";
+    default:
+      return "border-[#E5E7EB] bg-[#F9FAFB] text-[#4B5563]";
+  }
+}
+
 // --- Main Page Component ---
 export function ManagerBookingListPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
   const tableContainerRef = useRef(null);
+
+  // View Mode: 'table' | 'day' | 'week' | 'month'
+  const [viewMode, setViewMode] = useState("table");
+
+  // Drag & Drop State
+  const [draggedBooking, setDraggedBooking] = useState(null);
+  const [dragOverTarget, setDragOverTarget] = useState(null);
+
+  // Thumbnail preview modal state
+  const [activeImageModalUrl, setActiveImageModalUrl] = useState(null);
 
   // Drawer state
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -446,8 +484,8 @@ export function ManagerBookingListPage() {
   const [selectedTimeFilter, setSelectedTimeFilter] = useState('morning');
   const [scheduleDate, setScheduleDate] = useState(dayjs());
   const timeFilters = [
-    { label: "9AM - 3PM", value: "morning", startHour: 9, endHour: 15 },
-    { label: "3PM - 8PM", value: "afternoon", startHour: 15, endHour: 20 }
+    { label: "9 AM - 3 PM", value: "morning", startHour: 9, endHour: 15 },
+    { label: "3 PM - 8 PM", value: "afternoon", startHour: 15, endHour: 20 }
   ];
 
   // Core state
@@ -469,6 +507,8 @@ export function ManagerBookingListPage() {
   const [selectedBookingForAction, setSelectedBookingForAction] = useState(null);
   const [isQrExpanded, setIsQrExpanded] = useState(false);
   const [expandedHours, setExpandedHours] = useState(new Set());
+  const [selectedDateForModal, setSelectedDateForModal] = useState(null);
+  const [isDayBookingsModalOpen, setIsDayBookingsModalOpen] = useState(false);
 
   // --- Effects ---
   useEffect(() => {
@@ -476,21 +516,55 @@ export function ManagerBookingListPage() {
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
 
+  const [salonStaffList, setSalonStaffList] = useState([]);
+
+  const dayViewStaffList = useMemo(() => {
+    if (!salonStaffList || salonStaffList.length === 0) {
+      return [
+        { id: "unassigned", name: "Unassigned", isUnassigned: true }
+      ];
+    }
+
+    const artists = salonStaffList.map((member) => {
+      const name = [member?.firstName, member?.lastName].filter(Boolean).join(" ").trim() || member?.fullName || member?.name || member?.email || "Thợ Nail";
+      const staffArtistId = member?.staffArtistId || member?.staffId || member?.userId || member?.id;
+      return {
+        id: staffArtistId,
+        staffArtistId,
+        name,
+        member,
+        isUnassigned: false,
+      };
+    });
+
+    return [
+      ...artists,
+      { id: "unassigned", name: "Unassigned", isUnassigned: true }
+    ];
+  }, [salonStaffList]);
+
   const loadBookings = useCallback(async () => {
     setIsLoading(true);
     setError("");
     try {
-      const salonId = getManagerSalonId();
-      if (!salonId) throw new Error("No salon ID found in session.");
+      const salonId = (await getSalonIdAsync()) || getSalonId();
+      if (!salonId) {
+        setError("No salon ID found in session. Please log in as a salon manager.");
+        setIsLoading(false);
+        return;
+      }
+      try {
+        const staffMembers = await fetchSalonStaff(salonId);
+        setSalonStaffList(Array.isArray(staffMembers) ? staffMembers : staffMembers?.items || []);
+      } catch (staffErr) {
+        console.warn("Failed to fetch salon staff:", staffErr);
+      }
       const result = await fetchBookingsBySalonId(salonId, { pageNumber: 1, pageSize: 1000 });
       let apiBookings = [];
       if (result?.items) apiBookings = result.items;
       else if (Array.isArray(result)) apiBookings = result;
-      console.log("Raw API bookings:", apiBookings); // Log raw API data
-      let uiBookings = apiBookings.map(mapApiBookingToUiFormat);
-      console.log("Mapped UI bookings:", uiBookings); // Log mapped data
+      let uiBookings = apiBookings.map((b, idx) => mapApiBookingToUiFormat(b, idx));
 
-      // Fetch customer details for each booking to get phone number
       const customerPromises = uiBookings
         .filter(booking => booking.customerId && !booking.phone)
         .map(async (booking) => {
@@ -505,7 +579,6 @@ export function ManagerBookingListPage() {
 
       const customerResults = await Promise.all(customerPromises);
 
-      // Update bookings with customer phone numbers
       uiBookings = uiBookings.map(booking => {
         const customerResult = customerResults.find(r => r.bookingId === booking.id);
         if (customerResult?.customer?.phone) {
@@ -528,40 +601,148 @@ export function ManagerBookingListPage() {
     if (!hasLoadedOnce) loadBookings();
   }, [hasLoadedOnce, loadBookings]);
 
+  // --- Drag & Drop Handlers ---
+  const handleDragStart = (e, booking) => {
+    setDraggedBooking(booking);
+    e.dataTransfer.setData("text/plain", booking.id);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e, targetId) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (dragOverTarget !== targetId) {
+      setDragOverTarget(targetId);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDragOverTarget(null);
+  };
+
+  const handleDropSlot = async (e, targetHour, artistItem) => {
+    e.preventDefault();
+    setDragOverTarget(null);
+    if (!draggedBooking) return;
+
+    const formattedTime = `${String(targetHour).padStart(2, "0")}:00:00`;
+    const formattedRange = formatTimeRange(formattedTime, draggedBooking.totalDuration || 60);
+    const bookingIdToAssign = draggedBooking.id || draggedBooking.bookingId;
+
+    const targetArtistName = typeof artistItem === "object" ? artistItem.name : artistItem;
+    const staffArtistId = typeof artistItem === "object" ? artistItem.staffArtistId : null;
+    const isUnassigned = typeof artistItem === "object" ? artistItem.isUnassigned : (artistItem === "Unassigned");
+
+    // Optimistically update UI
+    setBookings((prevBookings) =>
+      prevBookings.map((b) => {
+        if (b.id === draggedBooking.id) {
+          return {
+            ...b,
+            startTime: formattedTime,
+            time: formattedRange,
+            artist: targetArtistName || b.artist,
+            nailArtistName: targetArtistName || b.nailArtistName,
+            artistId: staffArtistId || b.artistId,
+            nailArtistId: staffArtistId || b.nailArtistId,
+          };
+        }
+        return b;
+      })
+    );
+
+    const activeDragged = draggedBooking;
+    setDraggedBooking(null);
+
+    // Call API POST /api/Bookings/{id}/receptionist-assign-artist
+    if (!isUnassigned && staffArtistId && bookingIdToAssign) {
+      try {
+        await assignArtistToBookingOld(bookingIdToAssign, staffArtistId);
+        toast.success(`Đã phân công Thợ ${targetArtistName} cho lịch hẹn!`, { icon: "✨" });
+        loadBookings();
+      } catch (err) {
+        console.error("Failed to assign artist via drag & drop:", err);
+        toast.error(err.message || "Không thể phân công thợ cho lịch hẹn này.");
+        loadBookings();
+      }
+    } else {
+      toast.success(
+        `Reassigned ${activeDragged.customer}'s booking to ${formatHourLabel(targetHour)} (${targetArtistName || activeDragged.artist})`,
+        { icon: "✨" }
+      );
+    }
+  };
+
+  const handleDropDate = (e, targetDate) => {
+    e.preventDefault();
+    setDragOverTarget(null);
+    if (!draggedBooking) return;
+
+    const formattedDate = targetDate.format("YYYY-MM-DD");
+    const displayDate = targetDate.format("MMM D, YYYY");
+
+    setBookings((prevBookings) =>
+      prevBookings.map((b) => {
+        if (b.id === draggedBooking.id) {
+          return {
+            ...b,
+            bookingDate: formattedDate,
+            date: displayDate,
+          };
+        }
+        return b;
+      })
+    );
+
+    toast.success(
+      `Rescheduled ${draggedBooking.customer}'s booking to ${displayDate}`,
+      { icon: "📅" }
+    );
+    setDraggedBooking(null);
+  };
+
   // --- Derived State ---
   const summaryStats = useMemo(() => {
     const pending = bookings.filter(b => b.status === "Pending").length;
-    const confirmed = bookings.filter(b => b.status === "Confirmed").length;
+    const confirmed = bookings.filter(b => b.status === "Confirmed" || b.status === "Approved").length;
     const checkedIn = bookings.filter(b => b.status === "CheckedIn" || b.status === "Checked In").length;
     const completed = bookings.filter(b => b.status === "Completed" || b.status === "ServiceCompleted").length;
     return [
       {
         label: "Pending",
         value: pending,
-        note: "awaiting confirmation",
+        subtext: "Awaiting confirmation",
         icon: Clock3,
-        tone: "bg-[#ffe8f2] text-[#ea4f93]",
+        accentBg: "bg-gradient-to-br from-[#FFFBEB] to-[#FEF3C7]",
+        accentText: "text-[#D97706]",
+        badgeBorder: "border-[#FCD34D]",
       },
       {
         label: "Confirmed",
         value: confirmed,
-        note: "locked in",
+        subtext: "Locked & ready",
         icon: CheckCircle2,
-        tone: "bg-[#eaf9ee] text-[#2fa25f]",
+        accentBg: "bg-gradient-to-br from-[#ECFDF5] to-[#D1FAE5]",
+        accentText: "text-[#059669]",
+        badgeBorder: "border-[#6EE7B7]",
       },
       {
-        label: "Checked in",
+        label: "Checked In",
         value: checkedIn,
-        note: "in salon",
+        subtext: "In salon",
         icon: UserCheck,
-        tone: "bg-[#e7ecff] text-[#4755b8]",
+        accentBg: "bg-gradient-to-br from-[#EEF2FF] to-[#E0E7FF]",
+        accentText: "text-[#4F46E5]",
+        badgeBorder: "border-[#A5B4FC]",
       },
       {
         label: "Completed",
         value: completed,
-        note: "finished today",
-        icon: CheckCircle2,
-        tone: "bg-[#eaf9ee] text-[#2fa25f]",
+        subtext: "Finished today",
+        icon: Sparkles,
+        accentBg: "bg-gradient-to-br from-[#FFF0F5] to-[#FFE4EE]",
+        accentText: "text-[#E84F93]",
+        badgeBorder: "border-[#FBCFE8]",
       },
     ];
   }, [bookings]);
@@ -600,7 +781,6 @@ export function ManagerBookingListPage() {
     return Math.max(1, Math.ceil(filteredAppointments.length / BOOKING_PAGE_SIZE));
   }, [filteredAppointments.length]);
 
-  // Filter bookings for the selected schedule date
   const scheduleDateBookings = useMemo(() => {
     return bookings.filter(b => {
       const d = dayjs(b.bookingDate || b.createdAt);
@@ -608,13 +788,11 @@ export function ManagerBookingListPage() {
     });
   }, [bookings, scheduleDate]);
 
-  // Calculate capacity by time periods
   const capacityData = useMemo(() => {
-    // Define time periods
     const periods = [
-      { label: "Morning (9-12)", start: 9, end: 12, maxSlots: 10 },
-      { label: "Afternoon (12-3)", start: 12, end: 15, maxSlots: 10 },
-      { label: "Evening (3-6)", start: 15, end: 18, maxSlots: 10 }
+      { label: "Morning (9 AM - 12 PM)", start: 9, end: 12, maxSlots: 10 },
+      { label: "Afternoon (12 PM - 3 PM)", start: 12, end: 15, maxSlots: 10 },
+      { label: "Evening (3 PM - 6 PM)", start: 15, end: 18, maxSlots: 10 }
     ];
 
     return periods.map(period => {
@@ -623,12 +801,11 @@ export function ManagerBookingListPage() {
         return startHour >= period.start && startHour < period.end;
       });
       const value = Math.min(100, Math.round((bookingsInPeriod.length / period.maxSlots) * 100));
-      const tone = value > 80 ? "bg-[#ff9800]" : value > 50 ? "bg-[#8b5cf6]" : "bg-[#ea4f93]";
+      const tone = value > 80 ? "from-[#F59E0B] to-[#D97706]" : value > 50 ? "from-[#8B5CF6] to-[#7C3AED]" : "from-[#FF75A8] to-[#E84F93]";
       return { ...period, value, tone };
     });
   }, [scheduleDateBookings]);
 
-  // Calculate staff workload
   const staffWorkloadData = useMemo(() => {
     const staffMap = new Map();
 
@@ -641,15 +818,19 @@ export function ManagerBookingListPage() {
     });
 
     const workload = Array.from(staffMap.values());
-    // If no staff, add some default
     if (workload.length === 0) {
       return [
-        { name: "Luna Park", filled: 0, total: 10, tone: "from-[#d8c4ff] to-[#8b5cf6]" },
-        { name: "Aria Nguyen", filled: 0, total: 10, tone: "from-[#ffc5de] to-[#ea4f93]" }
+        { name: "Luna Park", filled: 0, total: 10, tone: "from-[#8B5CF6] to-[#6D28D9]" },
+        { name: "Aria Nguyen", filled: 0, total: 10, tone: "from-[#FF75A8] to-[#E84F93]" }
       ];
     }
 
-    const tones = ["from-[#d8c4ff] to-[#8b5cf6]", "from-[#ffc5de] to-[#ea4f93]", "from-[#b8f0d8] to-[#2fc5a9]", "from-[#ffe0b2] to-[#ff9800]"];
+    const tones = [
+      "from-[#8B5CF6] to-[#6D28D9]",
+      "from-[#FF75A8] to-[#E84F93]",
+      "from-[#10B981] to-[#047857]",
+      "from-[#F59E0B] to-[#D97706]"
+    ];
     return workload.map((staff, i) => ({
       ...staff,
       tone: tones[i % tones.length]
@@ -706,113 +887,154 @@ export function ManagerBookingListPage() {
   };
 
   return (
-    <section className="flex min-h-[100dvh] flex-col gap-6 bg-[#f9fafb] p-4 lg:p-8">
-      {/* Hero Header */}
+    <section className="flex min-h-[100dvh] flex-col gap-6 bg-[#FAF6F8] p-4 lg:p-8 font-sans">
+      {/* Luxury Hero Banner */}
       <motion.div initial="hidden" animate="visible" variants={fadeInUp}>
-        <PremiumCard className="border-none bg-gradient-to-br from-[#fff3f8] via-[#fffafb] to-[#fff5fb] p-0 shadow-[0_20px_40px_-15px_rgba(234,79,147,0.12)]">
-          <div className="flex flex-col gap-8 p-7 lg:flex-row lg:items-center lg:justify-between">
-            <div className="max-w-3xl">
+        <div className="relative overflow-hidden rounded-[28px] border border-[#F3D6E5]/80 bg-gradient-to-r from-[#FFF0F5] via-[#FFF6FA] to-[#FFF0F5] p-6 lg:p-8 shadow-[0_16px_36px_-10px_rgba(234,79,147,0.12)]">
+          <div className="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-gradient-to-br from-[#FFD6E8]/40 to-[#E84F93]/10 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-gradient-to-tr from-[#F7E7CE]/40 to-[#C99635]/10 blur-2xl pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-2xl">
               <div className="flex items-center gap-4">
                 <motion.div
-                  className="flex h-14 w-14 items-center justify-center rounded-3xl bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-white shadow-[0_10px_24px_rgba(234,79,147,0.35)]"
-                  whileHover={{ scale: 1.05, rotate: 2 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                  className="flex h-16 w-16 items-center justify-center rounded-[22px] bg-gradient-to-br from-[#F7E7CE] via-[#E5C158] to-[#C99635] text-white shadow-[0_8px_20px_rgba(201,150,53,0.3)] border border-white/60 shrink-0"
+                  whileHover={{ scale: 1.06, rotate: 3 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 12 }}
                 >
-                  <Calendar size={26} />
+                  <Calendar size={28} className="drop-shadow-sm text-white" />
                 </motion.div>
                 <div>
-                  <span className="inline-flex rounded-full border border-white/70 bg-white/80 px-3 py-1 text-[11px] font-semibold text-[#ea4f93] shadow-[0_6px_14px_rgba(234,79,147,0.08)] backdrop-blur">
-                    Manager dashboard
-                  </span>
-                  <h1 className="text-3xl font-bold text-[#2d1b35] mt-2 tracking-tight">Branch Bookings</h1>
-                  <p className="mt-1 text-sm text-[#a88a9f]">Track appointments, assign artists, and keep operations smooth</p>
+                  <div className="inline-flex items-center gap-1.5 rounded-full border border-[#E5C687]/50 bg-gradient-to-r from-[#FFF9EE] to-[#FFF3DC] px-3 py-1 text-[11px] font-bold text-[#9E731A] shadow-xs">
+                    <Sparkles size={12} className="text-[#C99635]" />
+                    <span>Nailify Salon Manager Portal</span>
+                  </div>
+                  <h1 className="text-2xl lg:text-3xl font-extrabold text-[#2B182B] mt-1.5 tracking-tight font-serif">
+                    Booking Management
+                  </h1>
+                  <p className="mt-1 text-xs lg:text-sm text-[#9E8497] font-medium leading-relaxed">
+                    Track appointments, assign staff artists, and drag-and-drop to reschedule in real-time
+                  </p>
                 </div>
               </div>
             </div>
-            <div className="grid gap-3 sm:grid-cols-3 lg:w-[420px]">
-              {[
-                { label: "Today", value: bookings.filter(b => { const d = dayjs(b.bookingDate || b.createdAt); return d.isValid() && d.isSame(dayjs(), "day"); }).length, sub: "appointments" },
-                { label: "In view", value: filteredAppointments.length, sub: "bookings" },
-                { label: "Needs action", value: bookings.filter(b => b.status === "Pending" || !(b.nailArtistId || b.staffId || b.staffArtistId || b.artistId)).length, sub: "pending" }
-              ].map((stat, i) => (
-                <motion.div
-                  key={stat.label}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 + i * 0.05 }}
-                  className="rounded-[24px] border border-white/80 bg-white/80 p-4 shadow-[0_10px_30px_rgba(236,72,153,0.08)] backdrop-blur"
-                >
-                  <p className="text-[11px] font-medium text-[#b28ca2]">{stat.label}</p>
-                  <p className="mt-2 text-2xl font-bold text-[#2d1b35]">{stat.value}</p>
-                  <p className="mt-1 text-[11px] text-[#8b7382]">{stat.sub}</p>
-                </motion.div>
-              ))}
+
+            {/* Quick Hero Highlights */}
+            <div className="grid grid-cols-3 gap-2.5 w-full lg:w-[380px]">
+              <div className="rounded-2xl border border-white/80 bg-white/90 p-3 shadow-2xs backdrop-blur-md text-center">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">Today</p>
+                <p className="mt-0.5 text-xl font-black text-[#2B182B]">
+                  {bookings.filter(b => { const d = dayjs(b.bookingDate || b.createdAt); return d.isValid() && d.isSame(dayjs(), "day"); }).length}
+                </p>
+                <p className="text-[9px] text-[#E84F93] font-semibold">Appointments</p>
+              </div>
+
+              <div className="rounded-2xl border border-white/80 bg-white/90 p-3 shadow-2xs backdrop-blur-md text-center">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">In View</p>
+                <p className="mt-0.5 text-xl font-black text-[#2B182B]">{filteredAppointments.length}</p>
+                <p className="text-[9px] text-[#4F46E5] font-semibold">Bookings</p>
+              </div>
+
+              <div className="rounded-2xl border border-white/80 bg-white/90 p-3 shadow-2xs backdrop-blur-md text-center">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">Action</p>
+                <p className="mt-0.5 text-xl font-black text-[#D97706]">
+                  {bookings.filter(b => b.status === "Pending" || !(b.nailArtistId || b.staffId || b.staffArtistId || b.artistId)).length}
+                </p>
+                <p className="text-[9px] text-[#D97706] font-semibold">Pending</p>
+              </div>
             </div>
           </div>
-        </PremiumCard>
+        </div>
       </motion.div>
 
-      {flashMessage && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="rounded-[16px] bg-[#edfdf4] px-4 py-3 text-sm font-medium text-[#16975f]">
-          {flashMessage}
-        </motion.div>
-      )}
+      {
+        flashMessage && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-[#A7F3D0] bg-[#ECFDF5] px-4 py-3 text-sm font-semibold text-[#047857] shadow-sm flex items-center gap-2">
+            <CheckCircle2 size={18} />
+            {flashMessage}
+          </motion.div>
+        )
+      }
 
-      {error && (
-        <Alert message="Error Loading Bookings" description={error} type="error" showIcon />
-      )}
+      {
+        error && (
+          <Alert message="Error Loading Data" description={error} type="error" showIcon className="rounded-2xl border-rose-200" />
+        )
+      }
 
-      {isLoading ? (
-        <div className="flex min-h-[300px] items-center justify-center">
-          <Spin size="large" />
-        </div>
-      ) : hasLoadedOnce ? (
-        <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_300px]">
-          {/* Left Column */}
-          <div className="space-y-4">
-            {/* Stats Row */}
-            <motion.div variants={fadeInUp} className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              {summaryStats.map((stat, i) => (
-                <motion.div
-                  key={stat.label}
-                  whileHover={{ y: -4 }}
-                  transition={{ type: "spring", stiffness: 300 }}
-                >
-                  <PremiumCard className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className={`flex h-10 w-10 items-center justify-center rounded-2xl ${stat.tone}`}>
-                        <stat.icon size={18} />
+      {
+        isLoading ? (
+          <div className="flex min-h-[350px] items-center justify-center">
+            <Spin size="large" tip="Loading booking list..." />
+          </div>
+        ) : hasLoadedOnce ? (
+          <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="grid gap-6 lg:grid-cols-[minmax(0,1.7fr)_320px]">
+            {/* Main Content Area */}
+            <div className="space-y-6">
+              {/* KPI Summary Stats Grid */}
+              <motion.div variants={fadeInUp} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {summaryStats.map((stat) => (
+                  <motion.div
+                    key={stat.label}
+                    whileHover={{ y: -3 }}
+                    transition={{ type: "spring", stiffness: 350, damping: 15 }}
+                  >
+                    <div className="relative overflow-hidden rounded-[22px] border border-[#F3E2EC] bg-white p-4 shadow-[0_10px_28px_-6px_rgba(219,70,117,0.06)] hover:border-[#E8C5D8] transition-all">
+                      <div className="flex items-center justify-between">
+                        <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${stat.accentBg} ${stat.accentText} border ${stat.badgeBorder} shadow-xs`}>
+                          <stat.icon size={20} />
+                        </div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497] px-2 py-0.5 rounded-full bg-[#FAF0F5]">
+                          {stat.subtext}
+                        </span>
                       </div>
-                      <div>
-                        <p className="text-2xl font-bold text-[#2d1b35]">{stat.value}</p>
-                        <p className="text-[11px] text-[#8b7382]">{stat.label}</p>
+                      <div className="mt-3">
+                        <p className="text-2xl font-extrabold text-[#2B182B] tracking-tight">{stat.value}</p>
+                        <p className="text-xs font-semibold text-[#9E8497] mt-0.5">{stat.label}</p>
                       </div>
                     </div>
-                  </PremiumCard>
-                </motion.div>
-              ))}
-            </motion.div>
+                  </motion.div>
+                ))}
+              </motion.div>
 
-            {/* Booking Board */}
-            <motion.div variants={fadeInUp}>
-              <PremiumCard className="p-0 overflow-hidden">
-                {/* Filter Header */}
-                <div className="border-b border-[#f5e2ec] bg-gradient-to-b from-[#fff9fb] to-white p-6">
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                    <SectionHeading
-                      title="Booking board"
-                      subtitle="Filter, scan, and act on appointments quickly"
-                    />
-                    <div className="flex flex-wrap gap-2">
-                      <span className="inline-flex rounded-full border border-[#f5d6e4] bg-white px-3 py-1.5 text-[11px] font-medium text-[#7f6478]">
-                        {filteredAppointments.length} in view
-                      </span>
+              {/* Booking Board Card */}
+              <motion.div variants={fadeInUp}>
+                <PremiumCard className="p-0 overflow-hidden border-[#F3E2EC]">
+                  {/* Header, View Switcher & Filter Controls */}
+                  <div className="border-b border-[#F3E2EC] bg-gradient-to-b from-[#FFF7FA] to-white p-6">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                      <SectionHeading
+                        title="Salon Booking Board"
+                        subtitle="Search, filter, and drag-and-drop to reschedule bookings"
+                        icon={Filter}
+                      />
+
+                      {/* View Switcher Controls */}
+                      <div className="flex items-center gap-1.5 rounded-2xl border border-[#F3D6E5] bg-[#FFF0F5] p-1.5 shadow-2xs">
+                        {[
+                          { mode: "table", label: "Table", icon: TableIcon },
+                          { mode: "day", label: "Day View", icon: LayoutGrid },
+                          { mode: "week", label: "Week View", icon: CalendarDays },
+                          { mode: "month", label: "Month View", icon: GridIcon },
+                        ].map((btn) => (
+                          <button
+                            key={btn.mode}
+                            type="button"
+                            onClick={() => setViewMode(btn.mode)}
+                            className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${viewMode === btn.mode
+                              ? "bg-gradient-to-r from-[#E84F93] to-[#F43F5E] text-white shadow-md"
+                              : "text-[#9E8497] hover:bg-white hover:text-[#2B182B]"
+                              }`}
+                          >
+                            <btn.icon size={13} />
+                            <span>{btn.label}</span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="mt-5 rounded-[24px] border border-[#f7dce8] bg-white p-5">
-                    <div className="flex flex-col gap-4">
-                      {/* Status Pills */}
+                    {/* Status Filter Pills */}
+                    <div className="mt-5 space-y-4">
                       <div className="flex flex-wrap gap-2">
                         {appointmentFilters.map((filter) => {
                           const count = filter.value === "All"
@@ -825,13 +1047,13 @@ export function ManagerBookingListPage() {
                               whileHover={{ scale: 1.02 }}
                               whileTap={{ scale: 0.98 }}
                               onClick={() => setActiveFilter(filter.value)}
-                              className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-semibold transition-all duration-300 ${isActive
-                                  ? "border-[#ea4f93] bg-[#ea4f93] text-white shadow-[0_10px_20px_rgba(234,79,147,0.22)]"
-                                  : "border-[#f3d7e4] bg-white text-[#7f6478] hover:border-[#f0b7cf] hover:bg-[#fff7fb] hover:text-[#ea4f93]"
+                              className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-bold transition-all duration-200 ${isActive
+                                ? "border-[#E84F93] bg-gradient-to-r from-[#E84F93] to-[#F43F5E] text-white shadow-[0_6px_18px_rgba(234,79,147,0.3)]"
+                                : "border-[#F3D7E4] bg-white text-[#7F6478] hover:border-[#F0B7CF] hover:bg-[#FFF7FB] hover:text-[#E84F93]"
                                 }`}
                             >
                               <span>{filter.label}</span>
-                              <span className={isActive ? "rounded-full bg-white/20 px-2 py-0.5 text-[11px]" : "rounded-full bg-[#fff0f6] px-2 py-0.5 text-[11px] text-[#c86d98]"}>
+                              <span className={`rounded-full px-2 py-0.5 text-[11px] font-extrabold ${isActive ? "bg-white/25 text-white" : "bg-[#FFF0F6] text-[#C86D98]"}`}>
                                 {count}
                               </span>
                             </motion.button>
@@ -839,29 +1061,32 @@ export function ManagerBookingListPage() {
                         })}
                       </div>
 
-                      {/* Search & Date */}
-                      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_auto]">
-                        <label className="group relative block">
-                          <span className="mb-2 block text-[11px] font-semibold text-[#b28ca2]">Search</span>
-                          <Search size={15} className="pointer-events-none absolute left-3 top-[calc(50%+11px)] -translate-y-1/2 text-[#a88a9f] transition-colors group-focus-within:text-[#ea4f93]" />
-                          <input
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            placeholder="Customer, phone, artist, service..."
-                            className="h-11 w-full rounded-2xl border border-[#f3d7e4] bg-white pl-10 pr-4 text-sm text-[#5c4559] outline-none transition-all duration-300 ease-out placeholder:text-[#c8b0bf] hover:border-[#f0b7cf] focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10"
-                          />
-                        </label>
+                      {/* Search & Date Controls */}
+                      <div className="grid gap-3 pt-1 lg:grid-cols-[minmax(0,1fr)_220px_auto]">
+                        <div className="relative">
+                          <span className="mb-1.5 block text-[11px] font-bold text-[#9E8497] uppercase tracking-wider">Search</span>
+                          <div className="relative">
+                            <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9E8497]" />
+                            <input
+                              value={query}
+                              onChange={(e) => setQuery(e.target.value)}
+                              placeholder="Customer name, phone, service, artist..."
+                              className="h-11 w-full rounded-2xl border border-[#F3D7E4] bg-white pl-10 pr-4 text-xs font-medium text-[#2B182B] outline-none transition-all duration-200 placeholder:text-[#C8B0BF] hover:border-[#F0B7CF] focus:border-[#E84F93] focus:ring-4 focus:ring-[#E84F93]/10 shadow-xs"
+                            />
+                          </div>
+                        </div>
 
-                        <label className="block">
-                          <span className="mb-2 block text-[11px] font-semibold text-[#b28ca2]">Date</span>
+                        <div>
+                          <span className="mb-1.5 block text-[11px] font-bold text-[#9E8497] uppercase tracking-wider">Booking Date</span>
                           <DatePicker
                             value={selectedDate}
                             onChange={(d) => setSelectedDate(d)}
                             placeholder="Select date"
-                            className="h-11 w-full rounded-2xl border border-[#f3d7e4] bg-white px-3 text-sm text-[#5c4559] outline-none transition-all duration-300 ease-out placeholder:text-[#c8b0bf] hover:border-[#f0b7cf] focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10"
-                            suffixIcon={<Calendar size={14} className="text-[#a88a9f]" />}
+                            format="DD/MM/YYYY"
+                            className="h-11 w-full rounded-2xl border border-[#F3D7E4] bg-white px-3 text-xs text-[#2B182B] outline-none transition-all duration-200 hover:border-[#F0B7CF] focus:border-[#E84F93]"
+                            suffixIcon={<Calendar size={15} className="text-[#9E8497]" />}
                           />
-                        </label>
+                        </div>
 
                         <div className="flex items-end">
                           <motion.button
@@ -869,401 +1094,741 @@ export function ManagerBookingListPage() {
                             whileTap={query.trim() || selectedDate || activeFilter !== "All" ? { scale: 0.98 } : {}}
                             onClick={handleResetFilters}
                             disabled={!query.trim() && !selectedDate && activeFilter === "All"}
-                            className={`h-11 rounded-2xl border px-4 text-sm font-semibold transition-all duration-300 ${query.trim() || selectedDate || activeFilter !== "All"
-                                ? "border-[#f3d7e4] bg-white text-[#ea4f93] hover:border-[#ea4f93] hover:bg-[#fff5fa]"
-                                : "border-[#f5e8ef] bg-[#fffafb] text-[#d6b9c8] cursor-not-allowed"
+                            className={`h-11 rounded-2xl border px-4 text-xs font-bold transition-all duration-200 ${query.trim() || selectedDate || activeFilter !== "All"
+                              ? "border-[#E84F93] bg-white text-[#E84F93] hover:bg-[#FFF5FA] shadow-xs"
+                              : "border-[#F5E8EF] bg-[#FAFAFA] text-[#D6B9C8] cursor-not-allowed"
                               }`}
                           >
-                            Reset
+                            Reset Filters
                           </motion.button>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Table */}
-                <div ref={tableContainerRef} className="overflow-x-auto bg-white">
-                  {isLoading ? (
-                    <div className="p-6">
+                  {/* Main View Renderer (Table / Day / Week / Month) */}
+                  <div ref={tableContainerRef} className="overflow-x-auto bg-white">
+                    {isLoading ? (
                       <SkeletonLoader />
-                    </div>
-                  ) : paginatedAppointments.length === 0 ? (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-16 text-center">
-                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#fff0f8] text-[#ea4f93] mb-4">
-                        <Search size={24} />
-                      </div>
-                      <p className="text-base font-semibold text-[#5b4256]">No bookings found</p>
-                      <p className="mt-1 text-xs text-[#a88a9f] max-w-xs">
-                        Try adjusting your filters or search term
-                      </p>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={handleResetFilters}
-                        className="mt-4 rounded-full bg-[#ea4f93] px-4 py-2 text-xs font-semibold text-white"
-                      >
-                        Clear filters
-                      </motion.button>
-                    </motion.div>
-                  ) : (
-                    <table className="w-full min-w-[740px] table-fixed text-left">
-                      <colgroup>
-                        <col className="w-[130px]" />
-                        <col className="w-[160px]" />
-                        <col className="w-[140px]" />
-                        <col className="w-[140px]" />
-                        <col className="w-[120px]" />
-                        <col className="w-[130px]" />
-                      </colgroup>
-                      <thead>
-                        <tr className="border-b border-[#f5e2ec] bg-[#fff8fb] text-[11px] font-semibold text-[#a88a9f]">
-                          <th className="px-3 py-2.5 font-semibold text-left">Time</th>
-                          <th className="px-3 py-2.5 font-semibold text-left">Customer</th>
-                          <th className="px-3 py-2.5 font-semibold text-left">Service</th>
-                          <th className="px-3 py-2.5 font-semibold text-left">Artist</th>
-                          <th className="px-3 py-2.5 font-semibold text-left">Status</th>
-                          <th className="px-3 py-2.5 font-semibold text-left">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <AnimatePresence>
-                          {paginatedAppointments.map((row) => (
-                            <motion.tr
-                              key={row.id}
-                              initial={{ opacity: 0, x: -10 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              exit={{ opacity: 0, x: 10 }}
-                              className="group relative cursor-pointer border-b border-[#f7e7ee] transition-colors duration-300 ease-out hover:bg-[#fff9fb] last:border-b-0"
-                              onClick={() => handleOpenDrawer(row.id)}
-                            >
-                              <td className="px-3 py-2.5 align-middle">
-                                <p className="text-xs font-semibold text-[#2d1b35] truncate">{row.time}</p>
-                                <p className="mt-0.5 text-[10px] text-[#a88a9f]">{row.duration}</p>
-                              </td>
-                              <td className="px-3 py-2.5 align-middle">
-                                <div className="flex min-w-0 items-center gap-2">
-                                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#ffc5de] to-[#ea4f93] text-[10px] font-bold text-white shadow-[0_2px_6px_rgba(234,79,147,0.28)]">
-                                    {row.initials}
+                    ) : filteredAppointments.length === 0 ? (
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-16 text-center">
+                        <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-[#FFF0F8] text-[#E84F93] mb-3 shadow-inner">
+                          <Search size={28} />
+                        </div>
+                        <p className="text-base font-bold text-[#2B182B]">No bookings found</p>
+                        <p className="mt-1 text-xs text-[#9E8497] max-w-xs leading-relaxed">
+                          Try adjusting your search terms or filter selection
+                        </p>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={handleResetFilters}
+                          className="mt-4 rounded-full bg-[#E84F93] px-5 py-2 text-xs font-bold text-white shadow-md hover:bg-[#D93D82]"
+                        >
+                          Clear filters
+                        </motion.button>
+                      </motion.div>
+                    ) : viewMode === "table" ? (
+                      /* --- 1. TABLE BOARD VIEW (WITH TRY-ON NAIL THUMBNAILS & TOOLTIPS) --- */
+                      <table className="w-full min-w-[960px] table-fixed text-left">
+                        <colgroup>
+                          <col className="w-[110px]" />
+                          <col className="w-[160px]" />
+                          <col className="w-[180px]" />
+                          <col className="w-[130px]" />
+                          <col className="w-[160px]" />
+                          <col className="w-[160px]" />
+                        </colgroup>
+                        <thead>
+                          <tr className="border-b border-[#F3E2EC] bg-[#FFF5F8] text-[11px] font-bold uppercase tracking-wider text-[#9E8497]">
+                            <th className="px-3.5 py-3.5 text-left">Time</th>
+                            <th className="px-3.5 py-3.5 text-left">Customer</th>
+                            <th className="px-3.5 py-3.5 text-left">Service & Try-On Design</th>
+                            <th className="px-3.5 py-3.5 text-left">Nail Artist</th>
+                            <th className="px-3.5 py-3.5 text-left">Status</th>
+                            <th className="px-3.5 py-3.5 text-center">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <AnimatePresence>
+                            {paginatedAppointments.map((row) => (
+                              <motion.tr
+                                key={row.id}
+                                initial={{ opacity: 0, y: 4 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -4 }}
+                                className="group relative cursor-pointer border-b border-[#F7E7EE] transition-colors duration-200 hover:bg-[#FFF9FB] last:border-b-0"
+                                onClick={() => handleOpenDrawer(row.id)}
+                              >
+                                <td className="px-4 py-3.5 align-middle">
+                                  <p className="text-xs font-extrabold text-[#2B182B] truncate">{row.time}</p>
+                                  <div className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-[#9E8497]">
+                                    <Clock3 size={11} className="text-[#E84F93]" />
+                                    <span>{row.duration}</span>
                                   </div>
-                                  <div className="min-w-0">
-                                    <p className="truncate text-xs font-semibold text-[#2d1b35]">{row.customer}</p>
-                                    <p className="mt-0.5 truncate text-[10px] text-[#a88a9f]">{row.phone || "No phone"}</p>
+                                </td>
+
+                                <td className="px-4 py-3.5 align-middle">
+                                  <div className="flex min-w-0 items-center gap-2.5">
+                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#FF9EBF] to-[#E84F93] text-xs font-black text-white shadow-sm border border-white">
+                                      {row.initials}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="truncate text-xs font-bold text-[#2B182B] group-hover:text-[#E84F93] transition-colors">
+                                        {row.customer}
+                                      </p>
+                                      <p className="mt-0.5 truncate text-[11px] text-[#9E8497] font-medium flex items-center gap-1">
+                                        <Phone size={10} className="shrink-0 text-[#C8B0BF]" />
+                                        {row.phone || "No phone"}
+                                      </p>
+                                    </div>
                                   </div>
-                                </div>
-                              </td>
-                              <td className="px-3 py-2.5 align-middle">
-                                <div className="min-w-0">
-                                  <p className="truncate text-xs font-semibold text-[#2d1b35]">{row.service}</p>
-                                </div>
-                              </td>
-                              <td className="px-3 py-2.5 align-middle">
-                                <div className="flex min-w-0 items-center gap-1.5">
-                                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#d8c4ff] to-[#8b5cf6] text-[8px] font-bold text-white shadow-[0_2px_6px_rgba(139,92,246,0.28)]">
-                                    {row.artist === "Unassigned" ? "--" : row.artist.split(" ").map(p => p[0]).join("")}
-                                  </div>
-                                  <div className="min-w-0">
-                                    <p className="truncate text-xs font-medium text-[#5b4256]">{row.artist}</p>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="px-3 py-2.5 align-middle">
-                                <StatusPill status={row.status} />
-                              </td>
-                              <td className="px-3 py-2.5 align-middle" onClick={(e) => e.stopPropagation()}>
-                                <div className="flex items-center gap-1">
-                                  <motion.button
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    onClick={() => handleViewBooking(row.id)}
-                                    className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#fff0f8] text-[#ea4f93] transition-all duration-300 ease-out hover:bg-[#ea4f93] hover:text-white"
-                                    title="View"
-                                  >
-                                    <Eye size={13} />
-                                  </motion.button>
-                                  {!(
-                                    (row.nailArtistId || row.staffId || row.staffArtistId || row.artistId) &&
-                                    (row.status === "CheckedIn" || row.status === "Checked In")
-                                  ) && (!isFinalStatus(row.status) || row.status === "Approved") && (
-                                      <motion.button
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
-                                        onClick={() => { setSelectedBookingForAssign(row); setIsAssignArtistModalOpen(true); }}
-                                        className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#e7ecff] text-[#4755b8] transition-all duration-300 ease-out hover:bg-[#4755b8] hover:text-white"
-                                        title="Assign"
-                                      >
-                                        <UserCheck size={13} />
-                                      </motion.button>
-                                    )}
-                                  {!isFinalStatus(row.status) && !(row.status === "CheckedIn" || row.status === "Checked In" || row.status === "InProgress" || row.status === "In Progress") && (
-                                    <>
-                                      <motion.button
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
-                                        onClick={() => { setSelectedBookingForAction(row); setIsConfirmModalOpen(true); }}
-                                        className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#eaf9ee] text-[#2fa25f] transition-all duration-300 ease-out hover:bg-[#2fa25f] hover:text-white"
-                                        title="Confirm"
-                                      >
-                                        <CheckCircle2 size={13} />
-                                      </motion.button>
-                                      <motion.button
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
-                                        onClick={() => { setSelectedBookingForAction(row); setIsCancelModalOpen(true); }}
-                                        className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#fff0dd] text-[#db8520] transition-all duration-300 ease-out hover:bg-[#db8520] hover:text-white"
-                                        title="Cancel"
-                                      >
-                                        <XCircle size={13} />
-                                      </motion.button>
-                                    </>
-                                  )}
-                                </div>
-                              </td>
-                            </motion.tr>
-                          ))}
-                        </AnimatePresence>
-                      </tbody>
-                    </table>
-                  )}
-                </div>
+                                </td>
 
-                {/* Pagination */}
-                {paginatedAppointments.length > 0 && (
-                  <div className="flex justify-end p-4 border-t border-[#f5e2ec] bg-gradient-to-b from-white to-[#fffafb]">
-                    <Pagination
-                      currentPage={currentPage}
-                      totalPages={filteredTotalPages}
-                      onPageChange={handlePageChange}
-                    />
-                  </div>
-                )}
-              </PremiumCard>
-            </motion.div>
-          </div>
-
-          {/* Right Column - Today Schedule */}
-          <motion.div variants={fadeInUp} className="space-y-4 lg:sticky lg:top-8 lg:self-start">
-            {/* Today's Capacity */}
-            <PremiumCard className="p-5">
-              <SectionHeading title="Today's capacity" subtitle="Traffic by shift" />
-              <div className="mt-5 space-y-4">
-                {capacityData.map((period, i) => (
-                  <div key={i}>
-                    <div className="flex items-center justify-between text-xs text-[#8b7382]">
-                      <span className="font-semibold text-[#5b4256]">{period.label}</span>
-                      <span className="font-bold text-[#2d1b35]">{period.value}%</span>
-                    </div>
-                    <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[#f5e2ec]">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${period.value}%` }}
-                        transition={{ delay: 0.4 + i * 0.08, duration: 1.2, ease: "easeOut" }}
-                        className={`h-full rounded-full ${period.tone}`}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </PremiumCard>
-
-            {/* Today Schedule Board */}
-            <PremiumCard className="p-5">
-              <div className="flex items-center justify-between">
-                <SectionHeading title="Today's schedule" subtitle="Time slots (9 AM - 8 PM)" />
-              </div>
-              <div className="mt-4 flex items-center justify-between rounded-[16px] bg-[#fff9fb] p-1.5">
-                {timeFilters.map((tf) => (
-                  <button
-                    key={tf.value}
-                    onClick={() => setSelectedTimeFilter(tf.value)}
-                    className={`flex-1 rounded-[12px] px-3 py-2 text-[11px] font-semibold transition-all ${selectedTimeFilter === tf.value
-                        ? "bg-white text-[#ea4f93] shadow-sm"
-                        : "text-[#8b7382] hover:text-[#5b4256]"
-                      }`}
-                  >
-                    {tf.label}
-                  </button>
-                ))}
-              </div>
-              <div className="mt-4">
-                <div className="flex items-center justify-between text-xs text-[#8b7382] mb-2">
-                  <span className="font-semibold">Date</span>
-                  <span className="font-semibold">{scheduleDate.format("ddd, MMM D")}</span>
-                </div>
-                <div className="relative mt-1">
-                  <div className="mt-2 rounded-[14px] border border-[#f7dce8] bg-white p-3">
-                    <div className="space-y-3">
-                      {(() => {
-                        const currentFilter = timeFilters.find((tf) => tf.value === selectedTimeFilter) || timeFilters[0];
-
-                        // Get bookings for this time filter
-                        const filteredBookings = scheduleDateBookings.filter(b => {
-                          const startHour = parseInt(b.startTime?.split(':')[0] || '0');
-                          return startHour >= currentFilter.startHour && startHour < currentFilter.endHour;
-                        });
-
-                        // Group bookings by hour
-                        const bookingsByHour = {};
-                        filteredBookings.forEach(b => {
-                          const startHour = parseInt(b.startTime?.split(':')[0] || '0');
-                          if (!bookingsByHour[startHour]) bookingsByHour[startHour] = [];
-                          bookingsByHour[startHour].push(b);
-                        });
-
-                        const hours = [];
-                        for (let h = currentFilter.startHour; h < currentFilter.endHour; h++) {
-                          hours.push(h);
-                        }
-
-                        return hours.map((hour, idx) => {
-                          const bookingsAtHour = bookingsByHour[hour] || [];
-
-                          if (bookingsAtHour.length === 0) {
-                            return (
-                              <div key={hour} className="group flex items-start gap-3">
-                                <div className="mt-1 h-1.5 w-1.5 rounded-full bg-[#e2ccd9]" />
-                                <div className="min-w-[60px] pt-[2px] text-[11px] font-semibold text-[#8b7382]">
-                                  {formatHourLabel(hour)}
-                                </div>
-                                <div className="flex-1 border-l border-dashed border-[#f0d7e4] pl-3">
-                                  <div className="text-[11px] text-[#c8b0bf] italic py-2">
-                                    No bookings
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          }
-
-                          const isExpanded = expandedHours.has(hour);
-                          const MAX_BOOKINGS = 3;
-                          const hasMoreBookings = bookingsAtHour.length > MAX_BOOKINGS;
-                          const visibleBookings = isExpanded ? bookingsAtHour : bookingsAtHour.slice(0, MAX_BOOKINGS);
-
-                          return (
-                            <div key={hour} className="group flex items-start gap-3">
-                              <div className="mt-1 h-1.5 w-1.5 rounded-full bg-[#e2ccd9]" />
-                              <div className="min-w-[60px] pt-[2px] text-[11px] font-semibold text-[#8b7382]">
-                                {formatHourLabel(hour)}
-                              </div>
-                              <div className="flex-1 border-l border-dashed border-[#f0d7e4] pl-3 space-y-2">
-                                {visibleBookings.map((b, bIdx) => {
-                                  const colorIndex = bIdx % scheduleColorPalette.length;
-                                  const palette = scheduleColorPalette[colorIndex];
-                                  const artistName = getArtistDisplayName(b);
-                                  const artistInitials = artistName === "Unassigned" ? "--" : artistName.split(" ").map(p => p[0]).join("");
-
-                                  return (
-                                    <div
-                                      key={b.id}
-                                      className={`relative overflow-hidden rounded-[14px] border ${palette.tone} px-3.5 py-2.5 cursor-pointer hover:shadow-md transition-shadow`}
-                                      onClick={() => handleOpenDrawer(b.id)}
-                                    >
-                                      <div className="flex items-center justify-between">
-                                        <div>
-                                          <p className="text-[11px] font-bold truncate">{artistName}</p>
-                                          <p className="mt-1 text-[10px]">• {formatDuration(b.totalDuration || 60)}</p>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                          <div className={`flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br ${palette.tone.includes("d8c4ff") ? "from-[#d8c4ff] to-[#8b5cf6]" : "from-[#ffc5de] to-[#ea4f93]"} text-[9px] font-bold text-white`}>
-                                            {artistInitials}
+                                {/* Service & Try-On Nail Design Thumbnail Preview */}
+                                <td className="px-4 py-3.5 align-middle">
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    {row.thumbnailUrl && (
+                                      <Tooltip title="Click to enlarge Try-On design">
+                                        <div
+                                          className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-[#F3D6E5] bg-[#FFF0F5] cursor-pointer hover:border-[#E84F93] transition group/img"
+                                          onClick={(e) => { e.stopPropagation(); setActiveImageModalUrl(row.thumbnailUrl); }}
+                                        >
+                                          <img src={row.thumbnailUrl} alt="Try-On Design" className="h-full w-full object-cover group-hover/img:scale-110 transition duration-200" />
+                                          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/img:opacity-100 flex items-center justify-center text-white transition">
+                                            <Maximize2 size={12} />
                                           </div>
                                         </div>
-                                      </div>
+                                      </Tooltip>
+                                    )}
+                                    <div className="min-w-0">
+                                      <p className="truncate text-xs font-bold text-[#2B182B]">{row.service}</p>
+                                      {row.totalPrice && (
+                                        <p className="mt-0.5 text-[11px] font-extrabold text-[#E84F93]">
+                                          {formatVND(row.totalPrice)}
+                                        </p>
+                                      )}
                                     </div>
+                                  </div>
+                                </td>
+
+                                <td className="px-4 py-3.5 align-middle">
+                                  <div className="flex min-w-0 items-center gap-2">
+                                    <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-xl text-[9px] font-bold text-white shadow-xs ${row.artist === "Unassigned" ? "bg-[#D97706]" : "bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9]"}`}>
+                                      {row.artist === "Unassigned" ? "!" : row.artist.split(" ").map(p => p[0]).join("")}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className={`truncate text-xs font-semibold ${row.artist === "Unassigned" ? "text-[#D97706] italic" : "text-[#2B182B]"}`}>
+                                        {row.artist === "Unassigned" ? "Unassigned" : row.artist}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </td>
+
+                                <td className="px-3 py-3.5 align-middle">
+                                  <StatusPill status={row.status} />
+                                </td>
+
+                                <td className="px-3 py-3.5 align-middle text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                                  <div className="flex items-center justify-center gap-1.5">
+                                    <Tooltip title="View details">
+                                      <motion.button
+                                        whileHover={{ scale: 1.1 }}
+                                        whileTap={{ scale: 0.9 }}
+                                        onClick={() => handleViewBooking(row.id)}
+                                        className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#FFF0F8] text-[#E84F93] hover:bg-[#E84F93] hover:text-white transition-all shadow-2xs"
+                                      >
+                                        <Eye size={14} />
+                                      </motion.button>
+                                    </Tooltip>
+
+                                    {!(
+                                      (row.nailArtistId || row.staffId || row.staffArtistId || row.artistId) &&
+                                      (row.status === "CheckedIn" || row.status === "Checked In")
+                                    ) && (!isFinalStatus(row.status) || row.status === "Approved") && (
+                                        <Tooltip title="Assign staff artist">
+                                          <motion.button
+                                            whileHover={{ scale: 1.1 }}
+                                            whileTap={{ scale: 0.9 }}
+                                            onClick={() => { setSelectedBookingForAssign(row); setIsAssignArtistModalOpen(true); }}
+                                            className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#EEF2FF] text-[#4F46E5] hover:bg-[#4F46E5] hover:text-white transition-all shadow-2xs"
+                                          >
+                                            <UserCheck size={14} />
+                                          </motion.button>
+                                        </Tooltip>
+                                      )}
+
+                                    {!isFinalStatus(row.status) && !(row.status === "CheckedIn" || row.status === "Checked In" || row.status === "InProgress" || row.status === "In Progress") && (
+                                      <>
+                                        <Tooltip title="Confirm booking">
+                                          <motion.button
+                                            whileHover={{ scale: 1.1 }}
+                                            whileTap={{ scale: 0.9 }}
+                                            onClick={() => { setSelectedBookingForAction(row); setIsConfirmModalOpen(true); }}
+                                            className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#ECFDF5] text-[#059669] hover:bg-[#059669] hover:text-white transition-all shadow-2xs"
+                                          >
+                                            <CheckCircle2 size={14} />
+                                          </motion.button>
+                                        </Tooltip>
+
+                                        <Tooltip title="Cancel booking">
+                                          <motion.button
+                                            whileHover={{ scale: 1.1 }}
+                                            whileTap={{ scale: 0.9 }}
+                                            onClick={() => { setSelectedBookingForAction(row); setIsCancelModalOpen(true); }}
+                                            className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#FEF2F2] text-[#E11D48] hover:bg-[#E11D48] hover:text-white transition-all shadow-2xs"
+                                          >
+                                            <XCircle size={14} />
+                                          </motion.button>
+                                        </Tooltip>
+                                      </>
+                                    )}
+                                  </div>
+                                </td>
+                              </motion.tr>
+                            ))}
+                          </AnimatePresence>
+                        </tbody>
+                      </table>
+                    ) : viewMode === "day" ? (
+                      /* --- 2. DAY VIEW SCHEDULER (ARTISTS x HOURS MATRIX WITH DRAG & DROP) --- */
+                      <div className="p-4 space-y-4">
+                        <div className="flex items-center justify-between bg-[#FFF5F8] p-3 rounded-2xl border border-[#F3D6E5]/60 text-xs">
+                          <span className="font-bold text-[#E84F93] flex items-center gap-1.5">
+                            <GripVertical size={16} /> Drag & drop booking cards onto another hour or artist column to reschedule!
+                          </span>
+                          <span className="font-bold text-[#2B182B]">
+                            {selectedDate ? selectedDate.format("dddd, MMM D, YYYY") : dayjs().format("dddd, MMM D, YYYY")}
+                          </span>
+                        </div>
+
+                        <div className="overflow-x-auto border border-[#F3E2EC] rounded-2xl scrollbar-thin scrollbar-thumb-[#E84F93]/20">
+                          <table className="w-full border-collapse min-w-full">
+                            <thead>
+                              <tr className="bg-[#FFF5F8] text-xs font-bold text-[#2B182B] border-b border-[#F3E2EC]">
+                                <th className="w-24 min-w-[90px] p-3 text-center border-r border-[#F3E2EC] bg-[#FFF5F8] sticky left-0 z-20 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
+                                  Time
+                                </th>
+                                {dayViewStaffList.map((artistItem) => {
+                                  const isUnassigned = artistItem.isUnassigned;
+                                  const displayName = artistItem.name;
+                                  const initials = isUnassigned
+                                    ? "!"
+                                    : displayName.split(" ").filter(Boolean).map(p => p[0]).slice(0, 2).join("").toUpperCase();
+
+                                  return (
+                                    <th key={artistItem.id || displayName} className="min-w-[175px] p-3 text-center border-r border-[#F3E2EC] last:border-r-0">
+                                      <div className="flex items-center justify-center gap-1.5 min-w-0">
+                                        <div className={`h-6 w-6 rounded-full shrink-0 flex items-center justify-center text-[10px] text-white font-black ${isUnassigned ? "bg-[#D97706]" : "bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9]"}`}>
+                                          {initials}
+                                        </div>
+                                        <span className="truncate" title={displayName}>{displayName}</span>
+                                      </div>
+                                    </th>
                                   );
                                 })}
-                                {hasMoreBookings && (
-                                  <motion.button
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    type="button"
-                                    onClick={(e) => { e.stopPropagation(); toggleHourExpanded(hour); }}
-                                    className="w-full text-center rounded-[14px] border border-[#f0d7e4] bg-[#fff9fb] px-3.5 py-2 text-[11px] font-semibold text-[#ea4f93] hover:border-[#ea4f93] hover:bg-[#fff3f8] transition-all"
-                                  >
-                                    {isExpanded ? `Show less` : `+${bookingsAtHour.length - MAX_BOOKINGS} more`}
-                                  </motion.button>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        });
-                      })()}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </PremiumCard>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {[9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19].map((hour) => (
+                                <tr key={hour} className="border-b border-[#F7E7EE] last:border-b-0 text-xs">
+                                  <td className="w-24 min-w-[90px] p-3 font-bold text-[#9E8497] bg-[#FFF9FB] text-center border-r border-[#F3E2EC] sticky left-0 z-10 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
+                                    {formatHourLabel(hour)}
+                                  </td>
+                                  {dayViewStaffList.map((artistItem) => {
+                                    const cellTargetId = `day-${hour}-${artistItem.id || artistItem.name}`;
+                                    const isOver = dragOverTarget === cellTargetId;
+                                    const slotBookings = filteredAppointments.filter((b) => {
+                                      const bHour = parseInt(b.startTime?.split(":")[0] || "0");
+                                      if (bHour !== hour) return false;
+                                      if (artistItem.isUnassigned) {
+                                        return !b.artistId && (!b.nailArtistName || b.nailArtistName === "Chưa chỉ định" || b.artist === "Unassigned");
+                                      }
+                                      return (
+                                        (b.artistId && String(b.artistId).toLowerCase() === String(artistItem.staffArtistId).toLowerCase()) ||
+                                        (b.nailArtistName && b.nailArtistName.toLowerCase() === artistItem.name.toLowerCase()) ||
+                                        (b.artist && b.artist.toLowerCase() === artistItem.name.toLowerCase())
+                                      );
+                                    });
 
-            {/* Staff Workload */}
-            <PremiumCard className="p-5">
-              <SectionHeading title="Staff workload" subtitle="Bookings per nail tech" />
-              <div className="mt-4 space-y-4">
-                {staffWorkloadData.map((staff, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <div className={`flex h-8 w-8 items-center justify-center rounded-[18px] bg-gradient-to-br ${staff.tone} text-xs font-bold text-white shadow-[0_6px_14px_rgba(234,79,147,0.12)]`}>
-                      {staff.name.split(" ").map((p) => p[0]).join("")}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs font-semibold text-[#2d1b35] truncate">{staff.name}</p>
-                        <p className="text-[11px] font-bold text-[#ea4f93]">
-                          {staff.filled}/{staff.total}
-                        </p>
+                                    return (
+                                      <td
+                                        key={cellTargetId}
+                                        onDragOver={(e) => handleDragOver(e, cellTargetId)}
+                                        onDragLeave={handleDragLeave}
+                                        onDrop={(e) => handleDropSlot(e, hour, artistItem)}
+                                        className={`min-w-[175px] p-2 border-r border-[#F3E2EC] last:border-r-0 align-top transition-all min-h-[70px] ${isOver
+                                          ? "bg-[#FFF0F5] border-2 border-dashed border-[#E84F93] shadow-inner"
+                                          : "hover:bg-[#FFFDFE]"
+                                          }`}
+                                      >
+                                        <div className="space-y-2 min-h-[50px] w-full">
+                                          {slotBookings.map((b) => (
+                                            <div
+                                              key={b.id}
+                                              draggable
+                                              onDragStart={(e) => handleDragStart(e, b)}
+                                              onClick={() => handleOpenDrawer(b.id)}
+                                              className={`group relative rounded-xl border p-2.5 cursor-grab active:cursor-grabbing shadow-2xs hover:shadow-md transition-all w-full overflow-hidden ${getCalendarCardStyle(b.status)}`}
+                                            >
+                                              <div className="flex items-center justify-between mb-1 min-w-0">
+                                                <span className="font-extrabold text-xs truncate" title={b.customer}>{b.customer}</span>
+                                                <GripVertical size={14} className="opacity-40 group-hover:opacity-100 transition shrink-0 ml-1" />
+                                              </div>
+                                              <p className="text-[10px] opacity-80 truncate mb-1" title={b.service}>{b.service}</p>
+                                              <div className="mt-1 flex flex-wrap items-center justify-between gap-1 text-[9px] font-bold">
+                                                <span className="shrink-0">{b.time}</span>
+                                                <StatusPill status={b.status} />
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
-                      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[#f5e2ec]">
-                        <div
-                          className={`h-full rounded-full bg-gradient-to-r ${staff.tone}`}
-                          style={{ width: `${(staff.filled / staff.total) * 100}%` }}
+                    ) : viewMode === "week" ? (
+                      /* --- 3. WEEK VIEW CALENDAR (7 DAYS GRID WITH DRAG & DROP) --- */
+                      <div className="p-4 space-y-4">
+                        <div className="flex items-center justify-between bg-[#FFF5F8] p-3 rounded-2xl border border-[#F3D6E5]/60 text-xs">
+                          <span className="font-bold text-[#E84F93] flex items-center gap-1.5">
+                            <GripVertical size={16} /> Drag & drop booking cards to another day to reschedule!
+                          </span>
+                          <span className="font-bold text-[#2B182B]">
+                            Week of {scheduleDate.startOf("week").format("MMM D")} - {scheduleDate.endOf("week").format("MMM D, YYYY")}
+                          </span>
+                        </div>
+
+                        <div className="overflow-x-auto border border-[#F3E2EC] rounded-2xl p-2 scrollbar-thin scrollbar-thumb-[#E84F93]/20">
+                          <div className="grid grid-cols-7 gap-2 min-w-[950px]">
+                            {[0, 1, 2, 3, 4, 5, 6].map((dayOffset) => {
+                              const currentDay = (selectedDate || dayjs()).startOf("week").add(dayOffset, "day");
+                              const dayKey = currentDay.format("YYYY-MM-DD");
+                              const isOver = dragOverTarget === `week-${dayKey}`;
+                              const dayBookings = filteredAppointments.filter((b) => {
+                                const bDate = dayjs(b.bookingDate || b.createdAt);
+                                return bDate.isValid() && bDate.isSame(currentDay, "day");
+                              });
+
+                              return (
+                                <div
+                                  key={dayKey}
+                                  onDragOver={(e) => handleDragOver(e, `week-${dayKey}`)}
+                                  onDragLeave={handleDragLeave}
+                                  onDrop={(e) => handleDropDate(e, currentDay)}
+                                  className={`rounded-2xl border border-[#F3E2EC] p-2.5 min-h-[360px] flex flex-col transition-all min-w-[130px] ${isOver
+                                    ? "bg-[#FFF0F5] border-2 border-dashed border-[#E84F93] shadow-md"
+                                    : currentDay.isSame(dayjs(), "day")
+                                      ? "bg-gradient-to-b from-[#FFF0F5] to-white border-[#E84F93]/40"
+                                      : "bg-white"
+                                    }`}
+                                >
+                                  <div className="text-center border-b border-[#F3E2EC] pb-2 mb-2">
+                                    <p className="text-[10px] font-bold text-[#9E8497] uppercase">{currentDay.format("ddd")}</p>
+                                    <p className={`text-sm font-black ${currentDay.isSame(dayjs(), "day") ? "text-[#E84F93]" : "text-[#2B182B]"}`}>
+                                      {currentDay.format("D")}
+                                    </p>
+                                  </div>
+
+                                  <div className="flex-1 space-y-2 overflow-y-auto max-h-[320px] pr-1">
+                                    {dayBookings.length === 0 ? (
+                                      <p className="text-[10px] text-[#C8B0BF] italic text-center py-4">No bookings</p>
+                                    ) : (
+                                      dayBookings.map((b) => (
+                                        <div
+                                          key={b.id}
+                                          draggable
+                                          onDragStart={(e) => handleDragStart(e, b)}
+                                          onClick={() => handleOpenDrawer(b.id)}
+                                          className={`group relative rounded-xl border p-2 cursor-grab active:cursor-grabbing hover:shadow-md transition-all w-full overflow-hidden ${getCalendarCardStyle(b.status)}`}
+                                        >
+                                          <div className="flex items-center justify-between min-w-0">
+                                            <p className="text-xs font-extrabold truncate" title={b.customer}>{b.customer}</p>
+                                            <GripVertical size={12} className="opacity-40 group-hover:opacity-100 shrink-0 ml-1" />
+                                          </div>
+                                          <p className="text-[10px] opacity-80 truncate mt-0.5" title={b.service}>{b.service}</p>
+                                          <div className="mt-1.5 flex flex-col gap-1 text-[9px] font-bold min-w-0">
+                                            <span className="text-[#86687D] truncate" title={b.time}>{b.time}</span>
+                                            <div className="self-start max-w-full overflow-hidden">
+                                              <StatusPill status={b.status} compact />
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ))
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      /* --- 4. MONTH VIEW CALENDAR GRID (35 DAYS WITH DRAG & DROP) --- */
+                      <div className="p-4 space-y-4">
+                        <div className="flex items-center justify-between bg-[#FFF5F8] p-3 rounded-2xl border border-[#F3D6E5]/60 text-xs">
+                          <span className="font-bold text-[#E84F93] flex items-center gap-1.5">
+                            <GripVertical size={16} /> Drag & drop booking cards to another calendar date cell!
+                          </span>
+                          <span className="font-bold text-[#2B182B]">
+                            {(selectedDate || dayjs()).format("MMMM YYYY")}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-7 gap-1.5">
+                          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((dayName) => (
+                            <div key={dayName} className="text-center text-[11px] font-bold text-[#9E8497] uppercase py-2 bg-[#FFF5F8] rounded-xl">
+                              {dayName}
+                            </div>
+                          ))}
+
+                          {(() => {
+                            const baseMonth = selectedDate || dayjs();
+                            const startOfMonth = baseMonth.startOf("month");
+                            const startDayOfWeek = startOfMonth.day();
+                            const startDate = startOfMonth.subtract(startDayOfWeek, "day");
+
+                            const monthDays = [];
+                            for (let i = 0; i < 35; i++) {
+                              monthDays.push(startDate.add(i, "day"));
+                            }
+
+                            return monthDays.map((cellDay) => {
+                              const dateKey = cellDay.format("YYYY-MM-DD");
+                              const isOver = dragOverTarget === `month-${dateKey}`;
+                              const isCurrentMonth = cellDay.isSame(baseMonth, "month");
+                              const isToday = cellDay.isSame(dayjs(), "day");
+
+                              const dayBookings = filteredAppointments.filter((b) => {
+                                const bDate = dayjs(b.bookingDate || b.createdAt);
+                                return bDate.isValid() && bDate.isSame(cellDay, "day");
+                              });
+
+                              return (
+                                <div
+                                  key={dateKey}
+                                  onDragOver={(e) => handleDragOver(e, `month-${dateKey}`)}
+                                  onDragLeave={handleDragLeave}
+                                  onDrop={(e) => handleDropDate(e, cellDay)}
+                                  className={`rounded-xl border border-[#F3E2EC] p-2 min-h-[95px] flex flex-col justify-between transition-all ${isOver
+                                    ? "bg-[#FFF0F5] border-2 border-dashed border-[#E84F93] shadow-md"
+                                    : !isCurrentMonth
+                                      ? "bg-[#FAFAFA] opacity-50"
+                                      : isToday
+                                        ? "bg-gradient-to-b from-[#FFF0F5] to-white border-[#E84F93]"
+                                        : "bg-white hover:bg-[#FFF9FB]"
+                                    }`}
+                                >
+                                  <div
+                                    className="flex items-center justify-between text-[11px] cursor-pointer hover:opacity-80 transition"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (dayBookings.length > 0) {
+                                        setSelectedDateForModal(cellDay);
+                                        setIsDayBookingsModalOpen(true);
+                                      }
+                                    }}
+                                  >
+                                    <span className={`font-extrabold ${isToday ? "text-[#E84F93]" : "text-[#2B182B]"}`}>
+                                      {cellDay.format("D")}
+                                    </span>
+                                    {dayBookings.length > 0 && (
+                                      <span className="rounded-full bg-[#FFF0F6] px-1.5 py-0.5 text-[9px] font-black text-[#E84F93] hover:bg-[#FCE2EE] transition">
+                                        {dayBookings.length}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <div className="space-y-1 my-1 overflow-hidden">
+                                    {dayBookings.slice(0, 2).map((b) => (
+                                      <div
+                                        key={b.id}
+                                        draggable
+                                        onDragStart={(e) => handleDragStart(e, b)}
+                                        onClick={() => handleOpenDrawer(b.id)}
+                                        className={`rounded-lg border px-1.5 py-1 text-[9px] font-bold cursor-grab active:cursor-grabbing truncate ${getCalendarCardStyle(b.status)}`}
+                                      >
+                                        {b.customer} ({b.time.split("-")[0].trim()})
+                                      </div>
+                                    ))}
+                                    {dayBookings.length > 2 && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedDateForModal(cellDay);
+                                          setIsDayBookingsModalOpen(true);
+                                        }}
+                                        className="w-full text-[9px] font-extrabold text-[#E84F93] hover:text-[#D93B7D] text-center py-0.5 rounded bg-[#FFF0F6] hover:bg-[#FCE2EE] transition cursor-pointer"
+                                      >
+                                        +{dayBookings.length - 2} more
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            });
+                          })()}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Pagination */}
+                  {viewMode === "table" && paginatedAppointments.length > 0 && (
+                    <div className="flex justify-end p-4 border-t border-[#F3E2EC] bg-gradient-to-b from-white to-[#FFF9FB]">
+                      <Pagination
+                        currentPage={currentPage}
+                        totalPages={filteredTotalPages}
+                        onPageChange={handlePageChange}
+                      />
+                    </div>
+                  )}
+                </PremiumCard>
+              </motion.div>
+            </div>
+
+            {/* Right Operations Column */}
+            <motion.div variants={fadeInUp} className="space-y-5 lg:sticky lg:top-8 lg:self-start">
+              {/* Today Capacity Progress */}
+              <PremiumCard className="p-5 border-[#F3E2EC]">
+                <SectionHeading title="Capacity Overview" subtitle="Slot distribution by shift" icon={TrendingUp} />
+                <div className="mt-4 space-y-4">
+                  {capacityData.map((period, i) => (
+                    <div key={i}>
+                      <div className="flex items-center justify-between text-xs text-[#9E8497]">
+                        <span className="font-bold text-[#2B182B]">{period.label}</span>
+                        <span className="font-extrabold text-[#E84F93]">{period.value}%</span>
+                      </div>
+                      <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-[#FAF0F5]">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${period.value}%` }}
+                          transition={{ delay: 0.3 + i * 0.1, duration: 1, ease: "easeOut" }}
+                          className={`h-full rounded-full bg-gradient-to-r ${period.tone}`}
                         />
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </PremiumCard>
-          </motion.div>
-        </motion.div>
-      ) : null}
+                  ))}
+                </div>
+              </PremiumCard>
 
-      {/* --- Modals & Drawer --- */}
-      {selectedBookingForAssign && (
-        <AssignArtistModal
-          open={isAssignArtistModalOpen}
-          onClose={() => { setIsAssignArtistModalOpen(false); setSelectedBookingForAssign(null); }}
-          bookingId={String(selectedBookingForAssign.id)}
-          salonId={selectedBookingForAssign.salonId ? String(selectedBookingForAssign.salonId) : getManagerSalonId()}
-          booking={selectedBookingForAssign}
-          onSuccess={() => loadBookings()}
-        />
-      )}
+              {/* Today Schedule Timeline */}
+              <PremiumCard className="p-5 border-[#F3E2EC]">
+                <SectionHeading title="Today's Schedule" subtitle="Time slots timeline" icon={Clock3} />
+
+                <div className="mt-3 flex items-center justify-between rounded-xl bg-[#FFF5F8] p-1 border border-[#F3D6E5]/60">
+                  {timeFilters.map((tf) => (
+                    <button
+                      key={tf.value}
+                      onClick={() => setSelectedTimeFilter(tf.value)}
+                      className={`flex-1 rounded-lg px-2.5 py-1.5 text-[11px] font-bold transition-all ${selectedTimeFilter === tf.value
+                        ? "bg-white text-[#E84F93] shadow-xs"
+                        : "text-[#9E8497] hover:text-[#2B182B]"
+                        }`}
+                    >
+                      {tf.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mt-4 space-y-3">
+                  <div className="flex items-center justify-between text-xs text-[#9E8497] border-b border-[#F3E2EC] pb-2">
+                    <span className="font-bold">Date</span>
+                    <span className="font-extrabold text-[#2B182B]">{scheduleDate.format("MMM D, YYYY")}</span>
+                  </div>
+
+                  <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+                    {(() => {
+                      const currentFilter = timeFilters.find((tf) => tf.value === selectedTimeFilter) || timeFilters[0];
+                      const filteredBookings = scheduleDateBookings.filter(b => {
+                        const startHour = parseInt(b.startTime?.split(':')[0] || '0');
+                        return startHour >= currentFilter.startHour && startHour < currentFilter.endHour;
+                      });
+
+                      const bookingsByHour = {};
+                      filteredBookings.forEach(b => {
+                        const startHour = parseInt(b.startTime?.split(':')[0] || '0');
+                        if (!bookingsByHour[startHour]) bookingsByHour[startHour] = [];
+                        bookingsByHour[startHour].push(b);
+                      });
+
+                      const hours = [];
+                      for (let h = currentFilter.startHour; h < currentFilter.endHour; h++) {
+                        hours.push(h);
+                      }
+
+                      return hours.map((hour) => {
+                        const bookingsAtHour = bookingsByHour[hour] || [];
+
+                        if (bookingsAtHour.length === 0) {
+                          return (
+                            <div key={hour} className="flex items-start gap-2.5">
+                              <div className="mt-1 h-2 w-2 rounded-full bg-[#E5CCD8]" />
+                              <div className="min-w-[65px] text-[11px] font-bold text-[#9E8497]">
+                                {formatHourLabel(hour)}
+                              </div>
+                              <div className="flex-1 border-l border-dashed border-[#F3D6E5] pl-3 py-1">
+                                <p className="text-[11px] text-[#C8B0BF] italic">No bookings</p>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        const isExpanded = expandedHours.has(hour);
+                        const MAX_BOOKINGS = 2;
+                        const hasMoreBookings = bookingsAtHour.length > MAX_BOOKINGS;
+                        const visibleBookings = isExpanded ? bookingsAtHour : bookingsAtHour.slice(0, MAX_BOOKINGS);
+
+                        return (
+                          <div key={hour} className="flex items-start gap-2.5">
+                            <div className="mt-1 h-2 w-2 rounded-full bg-[#E84F93]" />
+                            <div className="min-w-[65px] text-[11px] font-bold text-[#2B182B]">
+                              {formatHourLabel(hour)}
+                            </div>
+                            <div className="flex-1 border-l-2 border-[#E84F93]/30 pl-3 space-y-2">
+                              {visibleBookings.map((b, bIdx) => {
+                                const palette = scheduleColorPalette[bIdx % scheduleColorPalette.length];
+                                const artistName = getArtistDisplayName(b);
+                                return (
+                                  <div
+                                    key={b.id}
+                                    className={`rounded-xl border ${palette.tone} p-2.5 cursor-pointer hover:shadow-sm transition-all`}
+                                    onClick={() => handleOpenDrawer(b.id)}
+                                  >
+                                    <p className="text-xs font-extrabold truncate">{b.customerName || b.customer}</p>
+                                    <div className="mt-1 flex items-center justify-between text-[10px] font-bold">
+                                      <span>{artistName === "Unassigned" ? "Unassigned" : artistName}</span>
+                                      <span>{formatDuration(b.totalDuration || 60)}</span>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                              {hasMoreBookings && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); toggleHourExpanded(hour); }}
+                                  className="w-full text-center rounded-lg border border-[#F3D6E5] bg-[#FFF0F5] py-1 text-[10px] font-bold text-[#E84F93] hover:bg-[#FFE4EE]"
+                                >
+                                  {isExpanded ? "Show less" : `+${bookingsAtHour.length - MAX_BOOKINGS} more bookings`}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
+              </PremiumCard>
+
+              {/* Staff Workload */}
+              <PremiumCard className="p-5 border-[#F3E2EC]">
+                <SectionHeading title="Staff Workload" subtitle="Bookings per nail tech" icon={UserCheck} />
+                <div className="mt-4 space-y-3.5">
+                  {staffWorkloadData.map((staff, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br ${staff.tone} text-xs font-black text-white shadow-xs`}>
+                        {staff.name.split(" ").map((p) => p[0]).join("")}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <p className="font-bold text-[#2B182B] truncate">{staff.name}</p>
+                          <p className="font-extrabold text-[#E84F93]">
+                            {staff.filled}/{staff.total} slots
+                          </p>
+                        </div>
+                        <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-[#FAF0F5]">
+                          <div
+                            className={`h-full rounded-full bg-gradient-to-r ${staff.tone}`}
+                            style={{ width: `${(staff.filled / staff.total) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </PremiumCard>
+            </motion.div>
+          </motion.div>
+        ) : null
+      }
+
+      {/* --- Image Zoom Modal --- */}
+      <Modal
+        open={!!activeImageModalUrl}
+        onCancel={() => setActiveImageModalUrl(null)}
+        footer={null}
+        closable={false}
+        centered
+        width={480}
+        styles={{ content: { padding: 0, borderRadius: 24, overflow: "hidden" } }}
+      >
+        <div className="bg-white p-6 text-center">
+          <div className="flex justify-between items-center mb-3">
+            <p className="text-sm font-bold text-[#2B182B]">Customer Try-On Nail Design</p>
+            <button type="button" onClick={() => setActiveImageModalUrl(null)} className="text-[#9E8497] hover:text-[#E84F93]">
+              <X size={18} />
+            </button>
+          </div>
+          {activeImageModalUrl && (
+            <img src={activeImageModalUrl} alt="Try-On Design" className="max-w-full max-h-[420px] mx-auto rounded-xl shadow-md border border-[#F3E2EC]" />
+          )}
+        </div>
+      </Modal>
+
+      {/* --- Modals --- */}
+      {
+        selectedBookingForAssign && (
+          <AssignArtistModal
+            open={isAssignArtistModalOpen}
+            onClose={() => { setIsAssignArtistModalOpen(false); setSelectedBookingForAssign(null); }}
+            bookingId={String(selectedBookingForAssign.id)}
+            salonId={selectedBookingForAssign.salonId ? String(selectedBookingForAssign.salonId) : (getSalonId() || "")}
+            booking={selectedBookingForAssign}
+            onSuccess={() => loadBookings()}
+          />
+        )
+      }
+
       <ConfirmBookingModal
         open={isConfirmModalOpen}
         onClose={() => { setIsConfirmModalOpen(false); setSelectedBookingForAction(null); }}
         bookingId={selectedBookingForAction?.id ? String(selectedBookingForAction.id) : ""}
+        booking={selectedBookingForAction || {}}
         onSuccess={() => loadBookings()}
       />
+
       <CancelBookingModal
         open={isCancelModalOpen}
         onClose={() => { setIsCancelModalOpen(false); setSelectedBookingForAction(null); }}
         bookingId={selectedBookingForAction?.id ? String(selectedBookingForAction.id) : ""}
+        booking={selectedBookingForAction || {}}
         onSuccess={() => loadBookings()}
       />
+
       <RejectBookingModal
         open={isRejectModalOpen}
         onClose={() => { setIsRejectModalOpen(false); setSelectedBookingForAction(null); }}
         bookingId={selectedBookingForAction?.id ? String(selectedBookingForAction.id) : ""}
+        booking={selectedBookingForAction || {}}
         onSuccess={() => loadBookings()}
       />
 
-      {/* Drawer */}
+      {/* Quick View Drawer */}
       <Drawer
         title={null}
         open={isDrawerOpen}
         onClose={() => { setIsDrawerOpen(false); setSelectedBookingForDrawer(null); }}
-        width={480}
+        width={460}
         styles={{
           body: { padding: 0 },
-          content: { background: "#f9fafb" }
+          content: { background: "#FAF6F8" }
         }}
         placement="right"
         mask={true}
@@ -1273,132 +1838,116 @@ export function ManagerBookingListPage() {
       >
         {isLoadingDrawer ? (
           <div className="flex min-h-[400px] items-center justify-center">
-            <Spin size="large" />
+            <Spin size="large" tip="Loading booking details..." />
           </div>
         ) : selectedBookingForDrawer ? (
-          <div className="bg-[#f9fafb] h-full flex flex-col">
-            {/* Header */}
-            <div className="sticky top-0 z-10 bg-gradient-to-r from-[#ea4f93] via-[#ff7ba4] to-[#ffaab6] shadow-md p-6 rounded-b-[28px]">
+          <div className="bg-[#FAF6F8] h-full flex flex-col font-sans">
+            {/* Header Card */}
+            <div className="sticky top-0 z-10 bg-gradient-to-br from-[#E84F93] via-[#EC4899] to-[#F43F5E] shadow-md p-6 text-white rounded-b-[24px]">
               <div className="flex items-center justify-between gap-4">
-                <div className="flex-1">
-                  <p className="text-[11px] font-semibold uppercase tracking-widest text-white/85">Booking details</p>
-                  <h2 className="text-xl font-bold text-white mt-1">#{String(selectedBookingForDrawer.bookingId || selectedBookingForDrawer.id).slice(0, 8)}</h2>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/80">Booking ID</p>
+                  <h2 className="text-xl font-extrabold text-white mt-0.5 tracking-tight">
+                    #{String(selectedBookingForDrawer.bookingId || selectedBookingForDrawer.id).slice(0, 8).toUpperCase()}
+                  </h2>
                 </div>
                 <button
                   type="button"
                   onClick={() => { setIsDrawerOpen(false); setSelectedBookingForDrawer(null); }}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white transition hover:bg-white/30 flex-shrink-0"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition shrink-0"
                 >
-                  <X size={20} />
+                  <X size={18} />
                 </button>
               </div>
-              <div className="mt-3">
+              <div className="mt-3 flex items-center justify-between">
                 <StatusPill status={selectedBookingForDrawer.status} />
+                <button
+                  type="button"
+                  onClick={() => handleViewBooking(selectedBookingForDrawer.id)}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-md px-3 py-1 text-xs font-bold text-white hover:bg-white hover:text-[#E84F93] transition"
+                >
+                  <Eye size={12} />
+                  <span>Full Details Page</span>
+                </button>
               </div>
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              {/* Customer */}
-              <PremiumCard className="p-5">
-                <h3 className="text-sm font-bold text-[#2d1b35] mb-4">Customer</h3>
-                <div className="space-y-3">
-                  <InfoItem label="Name">
+            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+              {/* Customer Info */}
+              <PremiumCard className="p-4 border-[#F3E2EC]">
+                <h3 className="text-xs font-bold text-[#9E8497] uppercase tracking-wider mb-3">Customer Info</h3>
+                <div className="space-y-2.5">
+                  <InfoItem label="Full Name">
                     {selectedCustomerForDrawer
                       ? `${selectedCustomerForDrawer.firstName || ''} ${selectedCustomerForDrawer.lastName || ''}`.trim()
                       : selectedBookingForDrawer.customerName}
                   </InfoItem>
                   {(selectedBookingForDrawer.phone || selectedCustomerForDrawer?.phone) && (
-                    <InfoItem label="Phone">
-                      {selectedCustomerForDrawer?.phone || selectedBookingForDrawer.phone}
+                    <InfoItem label="Phone Number">
+                      <span className="font-extrabold text-[#E84F93]">
+                        {selectedCustomerForDrawer?.phone || selectedBookingForDrawer.phone}
+                      </span>
                     </InfoItem>
                   )}
                   {(selectedBookingForDrawer.email || selectedCustomerForDrawer?.email) && (
-                    <InfoItem label="Email">
+                    <InfoItem label="Email Address">
                       {selectedCustomerForDrawer?.email || selectedBookingForDrawer.email}
                     </InfoItem>
                   )}
                 </div>
               </PremiumCard>
 
-              {/* Service */}
-              <PremiumCard className="p-5">
-                <h3 className="text-sm font-bold text-[#2d1b35] mb-4">Service</h3>
-                <div className="space-y-3">
-                  <InfoItem label="Service">{selectedBookingForDrawer.serviceName}</InfoItem>
-                  <InfoItem label="Artist">{selectedBookingForDrawer.artistName}</InfoItem>
-                  <div className="grid grid-cols-2 gap-3">
+              {/* Service Info */}
+              <PremiumCard className="p-4 border-[#F3E2EC]">
+                <h3 className="text-xs font-bold text-[#9E8497] uppercase tracking-wider mb-3">Service & Schedule</h3>
+                <div className="space-y-2.5">
+                  <InfoItem label="Service Name">{selectedBookingForDrawer.serviceName}</InfoItem>
+                  <InfoItem label="Assigned Artist">{selectedBookingForDrawer.artistName}</InfoItem>
+                  <div className="grid grid-cols-2 gap-3 pt-1">
                     <InfoItem label="Date">{selectedBookingForDrawer.date}</InfoItem>
-                    <InfoItem label="Time">{selectedBookingForDrawer.time}</InfoItem>
+                    <InfoItem label="Time Slot">{selectedBookingForDrawer.time}</InfoItem>
                   </div>
-                  {selectedBookingForDrawer.totalDuration && (
-                    <InfoItem label="Duration">{formatDuration(selectedBookingForDrawer.totalDuration)}</InfoItem>
-                  )}
                 </div>
               </PremiumCard>
 
-              {/* Payment */}
-              <PremiumCard className="p-5">
-                <h3 className="text-sm font-bold text-[#2d1b35] mb-4">Payment & codes</h3>
-                <div className="space-y-3">
-                  <InfoItem label="Deposit status">
-                    <span className={selectedBookingForDrawer.depositTone}>{selectedBookingForDrawer.deposit}</span>
-                  </InfoItem>
-                  <InfoItem label="Total">{formatVND(selectedBookingForDrawer.totalPrice)}</InfoItem>
+              {/* Payment & QR */}
+              <PremiumCard className="p-4 border-[#F3E2EC]">
+                <h3 className="text-xs font-bold text-[#9E8497] uppercase tracking-wider mb-3">Payment & Check-in Codes</h3>
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between border-b border-[#F3E2EC] pb-2">
+                    <span className="text-xs font-semibold text-[#9E8497]">Deposit Status:</span>
+                    <span className={`text-xs font-bold ${selectedBookingForDrawer.depositTone}`}>{selectedBookingForDrawer.deposit}</span>
+                  </div>
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-xs font-bold text-[#2B182B]">Total Amount:</span>
+                    <span className="text-base font-extrabold text-[#E84F93]">{formatVND(selectedBookingForDrawer.totalPrice)}</span>
+                  </div>
+
                   {(selectedBookingForDrawer.qrCode || selectedBookingForDrawer.qtCode) && (
-                    <div className="pt-3 mt-3 border-t border-[#f5e2ec]">
-                      <p className="text-[11px] font-semibold text-[#a88a9f] mb-3">Confirmation codes</p>
+                    <div className="pt-3 mt-2 border-t border-[#F3E2EC]">
+                      <p className="text-[11px] font-bold text-[#9E8497] uppercase tracking-wider mb-2">Check-in QR Code</p>
                       {selectedBookingForDrawer.qrCode && (
                         <div
-                          className="rounded-[16px] border border-[#f5d6e4] bg-white p-4 mb-3 cursor-pointer hover:border-[#ea4f93] hover:shadow-md transition-all"
+                          className="rounded-2xl border border-[#F3D6E5] bg-white p-3 text-center cursor-pointer hover:border-[#E84F93] transition"
                           onClick={() => setIsQrExpanded(true)}
                         >
-                          <div className="flex items-center justify-between mb-3">
-                            <p className="text-[11px] font-semibold text-[#a88a9f]">QR code</p>
-                            <button
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); setIsQrExpanded(true); }}
-                              className="text-[#ea4f93] hover:text-[#c9366b] transition"
-                            >
-                              <Maximize2 size={16} />
-                            </button>
-                          </div>
                           <img
                             crossOrigin="anonymous"
                             src={getQrCodeSrc(selectedBookingForDrawer.qrCode)}
                             alt="QR Code"
                             className="max-w-[120px] mx-auto rounded-xl"
-                            referrerPolicy="no-referrer"
-                            onError={(e) => { console.error("QR Code failed to load"); e.target.style.display = "none"; }}
+                            onError={(e) => { e.target.style.display = "none"; }}
                           />
-                        </div>
-                      )}
-                      {selectedBookingForDrawer.qtCode && (
-                        <div className="rounded-[16px] border border-[#f5d6e4] bg-white p-4">
-                          <p className="mb-2 text-[11px] font-semibold text-[#a88a9f]">QT code</p>
-                          <p className="break-all text-sm font-medium text-[#2d1b35]">{selectedBookingForDrawer.qtCode}</p>
+                          <p className="mt-2 text-[10px] font-bold text-[#E84F93] flex items-center justify-center gap-1">
+                            <Maximize2 size={12} /> Click to enlarge
+                          </p>
                         </div>
                       )}
                     </div>
                   )}
                 </div>
               </PremiumCard>
-
-              {/* Check-in image */}
-              {selectedBookingForDrawer.checkInImageUrl && (
-                <PremiumCard className="p-5">
-                  <h3 className="text-sm font-bold text-[#2d1b35] mb-4">Check-in photo</h3>
-                  <div className="overflow-hidden rounded-[16px] border border-[#f5d6e4] bg-white p-2">
-                    <img
-                      crossOrigin="anonymous"
-                      src={selectedBookingForDrawer.checkInImageUrl}
-                      alt="Check-in"
-                      className="max-w-full rounded-lg w-full object-cover"
-                      referrerPolicy="no-referrer"
-                    />
-                  </div>
-                </PremiumCard>
-              )}
             </div>
           </div>
         ) : null}
@@ -1410,13 +1959,13 @@ export function ManagerBookingListPage() {
         footer={null}
         closable={false}
         centered
-        width={400}
-        styles={{ content: { padding: 0, borderRadius: 28, overflow: "hidden" }, mask: { backdropFilter: "blur(4px)" } }}
+        width={380}
+        styles={{ content: { padding: 0, borderRadius: 24, overflow: "hidden" } }}
       >
         <div className="bg-white p-6 text-center">
           <div className="flex justify-between items-center mb-4">
-            <p className="text-sm font-bold text-[#402542]">QR Code</p>
-            <button type="button" onClick={() => setIsQrExpanded(false)} className="text-[#a88a9f] hover:text-[#ea4f93] transition">
+            <p className="text-sm font-bold text-[#2B182B]">Customer QR Code</p>
+            <button type="button" onClick={() => setIsQrExpanded(false)} className="text-[#9E8497] hover:text-[#E84F93]">
               <X size={18} />
             </button>
           </div>
@@ -1425,12 +1974,101 @@ export function ManagerBookingListPage() {
               crossOrigin="anonymous"
               src={getQrCodeSrc(selectedBookingForDrawer.qrCode)}
               alt="QR Code"
-              className="max-w-[280px] mx-auto rounded-xl"
-              referrerPolicy="no-referrer"
-              onError={(e) => { console.error("QR Code failed to load"); e.target.style.display = "none"; }}
+              className="max-w-[260px] mx-auto rounded-xl shadow-md border border-[#F3E2EC]"
+              onError={(e) => { e.target.style.display = "none"; }}
             />
           )}
         </div>
+      </Modal>
+
+      {/* Modal chi tiết danh sách tất cả lịch hẹn trong ngày khi bấm +N more */}
+      <Modal
+        open={isDayBookingsModalOpen}
+        onCancel={() => setIsDayBookingsModalOpen(false)}
+        footer={null}
+        width={640}
+        centered
+        destroyOnClose
+        styles={{
+          content: { padding: 0, borderRadius: 24, overflow: "hidden" },
+          mask: { backdropFilter: "blur(6px)" },
+        }}
+      >
+        {selectedDateForModal && (() => {
+          const modalDayBookings = filteredAppointments.filter((b) => {
+            const bDate = dayjs(b.bookingDate || b.createdAt);
+            return bDate.isValid() && bDate.isSame(selectedDateForModal, "day");
+          });
+
+          return (
+            <div className="p-6 space-y-5">
+              <div className="flex items-center justify-between border-b border-[#F3E2EC] pb-4">
+                <div>
+                  <h3 className="text-lg font-black text-[#2B182B] flex items-center gap-2">
+                    <Calendar className="text-[#E84F93]" size={20} />
+                    Lịch hẹn ngày {selectedDateForModal.format("DD/MM/YYYY")}
+                  </h3>
+                  <p className="text-xs text-[#9E8497] mt-0.5 font-medium">
+                    Tổng cộng {modalDayBookings.length} đơn đặt lịch trong ngày này
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsDayBookingsModalOpen(false);
+                    setSelectedDate(selectedDateForModal);
+                    setViewMode("day");
+                  }}
+                  className="px-3.5 py-2 text-xs font-extrabold text-white bg-gradient-to-r from-[#E84F93] to-[#D93B7D] rounded-full shadow-xs hover:opacity-90 transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <CalendarDays size={14} /> Xem ma trận giờ & thợ
+                </button>
+              </div>
+
+              <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+                {modalDayBookings.length === 0 ? (
+                  <p className="text-xs text-[#9E8497] italic text-center py-8">
+                    Không có lịch hẹn nào trong ngày này.
+                  </p>
+                ) : (
+                  modalDayBookings.map((b) => (
+                    <div
+                      key={b.id}
+                      onClick={() => {
+                        setIsDayBookingsModalOpen(false);
+                        handleOpenDrawer(b.id);
+                      }}
+                      className="group p-3.5 rounded-2xl border border-[#F3E2EC] bg-[#FFFBFD] hover:bg-[#FFF0F6]/60 hover:border-[#E84F93]/40 transition-all cursor-pointer flex items-center justify-between gap-4 shadow-2xs"
+                    >
+                      <div className="space-y-1 min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-black text-sm text-[#2B182B] truncate">{b.customer}</span>
+                          <StatusPill status={b.status} compact />
+                        </div>
+                        <p className="text-xs text-[#6B5B68] truncate">{b.service}</p>
+                        <div className="flex items-center gap-4 text-[11px] text-[#9E8497] font-semibold pt-0.5">
+                          <span className="flex items-center gap-1 text-[#E84F93] font-bold">
+                            <Clock3 size={12} /> {b.time}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <User size={12} /> Thợ: {b.nailArtistName || b.artist || "Chưa chỉ định"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="text-right shrink-0 flex flex-col items-end gap-1.5">
+                        <span className="text-xs font-black text-[#E84F93]">{formatVND(b.totalPrice)}</span>
+                        <span className="text-[10px] font-bold text-[#8B5CF6] group-hover:underline flex items-center gap-0.5">
+                          Chi tiết <ChevronRight size={12} />
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          );
+        })()}
       </Modal>
     </section>
   );

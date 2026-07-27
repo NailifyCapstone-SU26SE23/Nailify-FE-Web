@@ -7,6 +7,13 @@ import {
   Upload,
   User,
   X,
+  Camera,
+  Building2,
+  CheckCircle2,
+  Clock,
+  Sparkles,
+  Star,
+  ShieldCheck,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
