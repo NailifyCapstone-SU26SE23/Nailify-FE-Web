@@ -40,7 +40,7 @@ export function ShapeMethodConfigCreatePage() {
     const newErrors = {};
     if (!formValues.name.trim()) newErrors.name = "Name is required.";
     if (!formValues.nailShapeId) newErrors.nailShapeId = "Nail shape is required.";
-    
+
     const priceNum = Number(formValues.price);
     if (!formValues.price || isNaN(priceNum) || priceNum < 0) {
       newErrors.price = "Price must be a valid positive number.";
@@ -97,7 +97,7 @@ export function ShapeMethodConfigCreatePage() {
               <Sliders size={24} />
             </div>
             <div>
-              <h1 className="text-2xl font-black tracking-tight text-[#432744]">Create Method Config</h1>
+              <h1 className="text-2xl font-bold tracking-tight text-[#432744]">Create Method Config</h1>
               <p className="mt-1 text-sm font-medium text-[#b58a9f]">Add a new configuration for a nail shape method</p>
             </div>
           </div>
@@ -116,11 +116,10 @@ export function ShapeMethodConfigCreatePage() {
                 value={formValues.name}
                 onChange={handleChange}
                 placeholder="e.g. Gắn móng giả (Tip)"
-                className={`h-12 w-full rounded-xl border bg-[#fffafc] px-4 text-[15px] font-medium text-[#432744] shadow-sm outline-none transition-all focus:bg-white focus:ring-4 ${
-                  errors.name
+                className={`h-12 w-full rounded-xl border bg-[#fffafc] px-4 text-[15px] font-medium text-[#432744] shadow-sm outline-none transition-all focus:bg-white focus:ring-4 ${errors.name
                     ? "border-red-300 focus:border-red-500 focus:ring-red-500/10"
                     : "border-[#f4dbe7] focus:border-[#ea4f93] focus:ring-[#ea4f93]/10"
-                }`}
+                  }`}
               />
               {errors.name && <p className="mt-2 text-xs font-semibold text-red-500">{errors.name}</p>}
             </div>
@@ -135,11 +134,10 @@ export function ShapeMethodConfigCreatePage() {
                 value={formValues.nailShapeId}
                 onChange={handleChange}
                 disabled={isLoadingShapes}
-                className={`h-12 w-full rounded-xl border bg-[#fffafc] px-4 text-[15px] font-medium text-[#432744] shadow-sm outline-none transition-all focus:bg-white focus:ring-4 disabled:opacity-60 ${
-                  errors.nailShapeId
+                className={`h-12 w-full rounded-xl border bg-[#fffafc] px-4 text-[15px] font-medium text-[#432744] shadow-sm outline-none transition-all focus:bg-white focus:ring-4 disabled:opacity-60 ${errors.nailShapeId
                     ? "border-red-300 focus:border-red-500 focus:ring-red-500/10"
                     : "border-[#f4dbe7] focus:border-[#ea4f93] focus:ring-[#ea4f93]/10"
-                }`}
+                  }`}
               >
                 <option value="">Select a nail shape...</option>
                 {nailShapes.map((shape) => (
@@ -165,11 +163,10 @@ export function ShapeMethodConfigCreatePage() {
                   value={formValues.price}
                   onChange={handleChange}
                   placeholder="e.g. 250000"
-                  className={`h-12 w-full rounded-xl border bg-[#fffafc] px-4 text-[15px] font-medium text-[#432744] shadow-sm outline-none transition-all focus:bg-white focus:ring-4 ${
-                    errors.price
+                  className={`h-12 w-full rounded-xl border bg-[#fffafc] px-4 text-[15px] font-medium text-[#432744] shadow-sm outline-none transition-all focus:bg-white focus:ring-4 ${errors.price
                       ? "border-red-300 focus:border-red-500 focus:ring-red-500/10"
                       : "border-[#f4dbe7] focus:border-[#ea4f93] focus:ring-[#ea4f93]/10"
-                  }`}
+                    }`}
                 />
                 {errors.price && <p className="mt-2 text-xs font-semibold text-red-500">{errors.price}</p>}
               </div>
@@ -186,11 +183,10 @@ export function ShapeMethodConfigCreatePage() {
                   value={formValues.duration}
                   onChange={handleChange}
                   placeholder="e.g. 60"
-                  className={`h-12 w-full rounded-xl border bg-[#fffafc] px-4 text-[15px] font-medium text-[#432744] shadow-sm outline-none transition-all focus:bg-white focus:ring-4 ${
-                    errors.duration
+                  className={`h-12 w-full rounded-xl border bg-[#fffafc] px-4 text-[15px] font-medium text-[#432744] shadow-sm outline-none transition-all focus:bg-white focus:ring-4 ${errors.duration
                       ? "border-red-300 focus:border-red-500 focus:ring-red-500/10"
                       : "border-[#f4dbe7] focus:border-[#ea4f93] focus:ring-[#ea4f93]/10"
-                  }`}
+                    }`}
                 />
                 {errors.duration && <p className="mt-2 text-xs font-semibold text-red-500">{errors.duration}</p>}
               </div>

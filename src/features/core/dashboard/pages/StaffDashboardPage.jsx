@@ -189,7 +189,7 @@ function getStatusTone(status) {
 function MetricCard({ item }) {
   const Icon = item.icon;
   const color = item.color || '#10b981';
-  
+
   // Safely extract string from value/note in case backend returns an object
   const safeStr = (val) => {
     if (val === null || val === undefined) return '';
@@ -212,7 +212,7 @@ function MetricCard({ item }) {
           <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
             {item.label}
           </p>
-          <h2 className="mt-3 text-[24px] font-black tracking-tight text-slate-800 leading-none break-all">
+          <h2 className="mt-3 text-[24px] font-bold tracking-tight text-slate-800 leading-none break-all">
             {safeStr(item.value)} <span className="text-[14px] text-slate-400 font-semibold">{item.unit || ''}</span>
           </h2>
           <p className="mt-1 text-[11px] font-medium text-slate-400">{safeStr(item.note)}</p>
@@ -1047,7 +1047,7 @@ export function StaffDashboardPage() {
                   px-8 py-5
                   md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-[22px] font-black tracking-tight text-slate-900">Good morning, {greetingName}!</h1>
+            <h1 className="text-[22px] font-bold tracking-tight text-slate-900">Good morning, {greetingName}!</h1>
             <p className="text-[13px] text-slate-500 font-medium">Welcome to your dashboard overview.</p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

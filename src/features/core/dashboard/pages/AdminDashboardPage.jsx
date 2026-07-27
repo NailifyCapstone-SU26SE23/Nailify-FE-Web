@@ -565,7 +565,7 @@ export function AdminDashboardPage() {
                   px-8 py-5
                   md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-[22px] font-black tracking-tight text-slate-900">Admin Dashboard</h1>
+          <h1 className="text-[22px] font-bold tracking-tight text-slate-900">Admin Dashboard</h1>
           <p className="text-[13px] text-slate-500 font-medium">Data Telemetry & Monitoring</p>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -618,7 +618,7 @@ export function AdminDashboardPage() {
                     <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
                       {metric.label}
                     </p>
-                    <h2 className="mt-3 text-[24px] font-black tracking-tight text-slate-800 leading-none break-all">
+                    <h2 className="mt-3 text-[24px] font-bold tracking-tight text-slate-800 leading-none break-all">
                       {metric.value} <span className="text-[14px] text-slate-400 font-semibold">{metric.unit !== "VND" ? "" : "₫"}</span>
                     </h2>
                   </div>

@@ -102,7 +102,7 @@ export function StaffUpdatePage() {
           const normalizedSkills = normalizedItems.map(normalizeAdminSkillType);
           const defaultRatings = {};
           normalizedSkills.forEach((s) => { defaultRatings[s.id] = 3; });
-          
+
           setFormData({
             userId: mockData.id,
             nailArtistId: mockData.id,
@@ -152,8 +152,8 @@ export function StaffUpdatePage() {
         const items = Array.isArray(skillTypesData?.items)
           ? skillTypesData.items
           : Array.isArray(skillTypesData)
-          ? skillTypesData
-          : [];
+            ? skillTypesData
+            : [];
         const normalizedItems = items.map(normalizeAdminSkillType);
         setSkillTypes(normalizedItems);
 
@@ -171,8 +171,8 @@ export function StaffUpdatePage() {
           const skillArr = Array.isArray(existingSkills?.items)
             ? existingSkills.items
             : Array.isArray(existingSkills)
-            ? existingSkills
-            : [];
+              ? existingSkills
+              : [];
           skillArr.forEach((s) => {
             const skillTypeId = s.skillTypeId || s.SkillTypeId;
             if (skillTypeId) skillRatings[skillTypeId] = s.level ?? 0;
@@ -272,7 +272,7 @@ export function StaffUpdatePage() {
         lastName: formData.lastName,
         phone: formData.phone,
       };
-      
+
       // Only include imageFile if there is one
       if (formData.imageFile) {
         updatePayload.imageFile = formData.imageFile;
@@ -349,7 +349,7 @@ export function StaffUpdatePage() {
             <div className="rounded-[24px] bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
               <div className="h-6 w-48 rounded-full bg-rose-100 mb-5 animate-pulse" />
               <div className="grid gap-5 md:grid-cols-2">
-                {[1,2,3,4,5,6].map(i => (
+                {[1, 2, 3, 4, 5, 6].map(i => (
                   <div key={i} className="h-16 rounded-2xl bg-rose-50 animate-pulse" />
                 ))}
               </div>
@@ -371,7 +371,7 @@ export function StaffUpdatePage() {
       {/* Header */}
       <header className="mb-4 flex flex-col gap-4 rounded-[20px] bg-white/70 px-4 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur sm:mb-5 sm:rounded-[24px] sm:px-5 lg:rounded-[28px] lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
-          <h1 className="text-xl font-black tracking-tight text-[#cf3d74] sm:text-2xl lg:text-[28px]">
+          <h1 className="text-xl font-bold tracking-tight text-[#cf3d74] sm:text-2xl lg:text-[28px]">
             Update Artist
           </h1>
           <p className="text-[11px] font-medium text-slate-400 sm:text-[12px]">
@@ -565,12 +565,12 @@ export function StaffUpdatePage() {
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-pink-400 to-rose-300 text-[28px] font-black text-white">
+                      <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-pink-400 to-rose-300 text-[28px] font-bold text-white">
                         {getStaffInitials(formData.firstName + " " + formData.lastName || "Artist")}
                       </div>
                     )}
                   </div>
-                  <h3 className="text-[15px] font-black text-slate-800 mb-1">
+                  <h3 className="text-[15px] font-bold text-slate-800 mb-1">
                     {[formData.firstName, formData.lastName].filter(Boolean).join(" ") || "Artist"}
                   </h3>
                   <p className="text-xs text-slate-400 mb-3">

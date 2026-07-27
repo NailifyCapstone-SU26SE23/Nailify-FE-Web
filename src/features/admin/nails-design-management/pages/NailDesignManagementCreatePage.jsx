@@ -123,7 +123,7 @@ function SectionCard({ step, title, subtitle, icon, children }) {
       <div className="flex items-start gap-3">
         <div className="rounded-[16px] bg-[#fff0f7] p-3 text-[#ea4f93]">{icon}</div>
         <div>
-          <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#c694ad]">Step {step}</div>
+          <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#c694ad]">Step {step}</div>
           <h3 className="mt-1 text-lg font-extrabold text-[#432744]">{title}</h3>
           <p className="mt-1 text-sm text-[#a88a9d]">{subtitle}</p>
         </div>
@@ -138,11 +138,10 @@ function PillButton({ active = false, children, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold transition ${
-        active
+      className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold transition ${active
           ? "border-[#ea4f93] bg-[linear-gradient(180deg,#f25b99_0%,#d92f7b_100%)] text-white shadow-[0_10px_20px_rgba(236,72,153,0.18)]"
           : "border-[#f4c6da] bg-white text-[#8c7085] hover:border-[#ef6bb4] hover:text-[#ea4f93]"
-      }`}
+        }`}
     >
       {children}
     </button>
@@ -154,11 +153,10 @@ function ColorSwatchButton({ active = false, label, onClick, swatch }) {
     <button
       type="button"
       onClick={onClick}
-      className={`flex min-w-[92px] flex-col items-center gap-2 rounded-[18px] border px-3 py-3 text-center transition ${
-        active
+      className={`flex min-w-[92px] flex-col items-center gap-2 rounded-[18px] border px-3 py-3 text-center transition ${active
           ? "border-[#ea4f93] bg-[#fff0f7] shadow-[0_10px_20px_rgba(236,72,153,0.12)]"
           : "border-[#f4c6da] bg-white hover:border-[#ef6bb4]"
-      }`}
+        }`}
     >
       <span
         className="h-9 w-9 rounded-full border border-white shadow-[0_6px_14px_rgba(67,39,68,0.12)]"
@@ -236,9 +234,9 @@ export function NailDesignManagementCreatePage() {
         setFormValues((current) =>
           !current.category && categoryResponse.items.length > 0
             ? {
-                ...current,
-                category: categoryResponse.items[0].name,
-              }
+              ...current,
+              category: categoryResponse.items[0].name,
+            }
             : current,
         );
         setVariants((current) =>
@@ -532,11 +530,10 @@ export function NailDesignManagementCreatePage() {
               {variants.map((variant, index) => (
                 <div
                   key={variant.code}
-                  className={`rounded-[22px] border p-4 transition ${
-                    activeVariantIndex === index
+                  className={`rounded-[22px] border p-4 transition ${activeVariantIndex === index
                       ? "border-[#ef6bb4] bg-[#fff0f6] shadow-[0_12px_24px_rgba(236,72,153,0.12)]"
                       : "border-[#f7d7e5] bg-[#fff3f8]"
-                  }`}
+                    }`}
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <button

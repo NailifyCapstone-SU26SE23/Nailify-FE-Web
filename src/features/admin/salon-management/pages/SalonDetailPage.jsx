@@ -162,7 +162,7 @@ export function SalonDetailPage() {
           fetchAdminSalonDetail(salonId),
           fetchAdminUsers({ role: "Manager", pageSize: 1000 })
         ]);
-        
+
         const normalizedSalon = normalizeAdminSalon(apiSalon);
         setManagers(managersData.items);
 
@@ -433,7 +433,7 @@ export function SalonDetailPage() {
                       </AnimatePresence>
                     </div>
                     <div className="min-w-0 pb-2">
-                      <h2 className="truncate text-[26px] font-black tracking-tight text-[#2d1b35]">
+                      <h2 className="truncate text-[26px] font-bold tracking-tight text-[#2d1b35]">
                         {salonDetail.name}
                       </h2>
                       <p className="mt-1.5 flex items-center gap-1.5 truncate text-[14px] font-medium text-[#a88a9f]">
@@ -584,7 +584,7 @@ export function SalonDetailPage() {
                 <X size={16} />
               </button>
               <div className="mb-4 text-center">
-                <h3 className="text-[20px] font-black text-[#2d1b35]">{salonDetail?.name || "Salon"} Avatar</h3>
+                <h3 className="text-[20px] font-bold text-[#2d1b35]">{salonDetail?.name || "Salon"} Avatar</h3>
               </div>
               <div className="flex justify-center">
                 <motion.img
@@ -631,7 +631,7 @@ export function SalonDetailPage() {
                 <X size={16} />
               </button>
               <div className="mb-6">
-                <h3 className="text-[20px] font-black text-[#2d1b35]">Update Avatar</h3>
+                <h3 className="text-[20px] font-bold text-[#2d1b35]">Update Avatar</h3>
                 <p className="mt-2 text-[13px] text-[#a88a9f]">
                   Upload a new image for {salonDetail?.name || "this salon"}
                 </p>

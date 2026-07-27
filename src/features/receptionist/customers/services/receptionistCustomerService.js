@@ -79,6 +79,25 @@ export async function fetchLoyaltyTiers() {
   }
 }
 
+export async function fetchPromotions(pageNumber = 1, pageSize = 10) {
+  try {
+    const response = await axiosClient.get('/Promotions', {
+      params: { pageNumber, pageSize },
+      headers: getAuthHeaders()
+    });
+
+    const payload = response.data;
+    if (!payload?.isSucceeded) {
+      throw new Error(payload?.message || "Failed to fetch promotions.");
+    }
+
+    return payload.data;
+  } catch (error) {
+    console.error("Error fetching promotions:", error);
+    throw error;
+  }
+}
+
 export async function updateReceptionistCustomer(id, data) {
   try {
     const response = await axiosClient.put(`/Users/${id}`, data, {

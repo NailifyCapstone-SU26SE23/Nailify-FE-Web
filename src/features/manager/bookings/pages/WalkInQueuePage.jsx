@@ -414,7 +414,7 @@ export function WalkInQueuePage() {
         {/* Row 1: Title and Actions */}
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
-            <h1 className="text-xl font-black text-[#2f2430] tracking-tight flex items-center gap-2">
+            <h1 className="text-xl font-bold text-[#2f2430] tracking-tight flex items-center gap-2">
               Salon Lobby Queue
               <Sparkle size={16} className="text-[#e85d9b] fill-[#e85d9b] animate-spin" style={{ animationDuration: '6s' }} />
             </h1>
@@ -477,14 +477,14 @@ export function WalkInQueuePage() {
             <div className="absolute -right-16 -top-16 h-36 w-36 rounded-full bg-[#e85d9b]/10 blur-xl" />
             <div className="relative z-10 flex flex-col justify-between h-full gap-4 md:flex-row md:items-center">
               <div className="space-y-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-pink-300">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-pink-300">
                   <span className="h-1.5 w-1.5 rounded-full bg-[#e85d9b] animate-pulse" />
                   Loa Call Guest
                 </span>
 
                 {lastCalledEntry ? (
                   <div>
-                    <h2 className="text-3xl font-black text-pink-100 tracking-tight select-none">
+                    <h2 className="text-3xl font-bold text-pink-100 tracking-tight select-none">
                       No. #{lastCalledEntry.queuePosition}
                     </h2>
                     <p className="mt-1 text-lg font-bold text-white leading-tight">
@@ -528,33 +528,33 @@ export function WalkInQueuePage() {
           {/* Core Numbers */}
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl bg-[#fffdf9] p-3 border border-[#e2e8f0] flex flex-col justify-between h-18 transition hover:bg-gray-50/50">
-              <span className="text-[9px] font-black uppercase text-[#7d6d78] tracking-wider">Waiting</span>
+              <span className="text-[9px] font-bold uppercase text-[#7d6d78] tracking-wider">Waiting</span>
               <div className="flex items-baseline gap-1">
-                <span className="text-xl font-black text-[#d89b1d]">{stats.waiting}</span>
+                <span className="text-xl font-bold text-[#d89b1d]">{stats.waiting}</span>
                 <span className="text-[9px] text-[#7d6d78] font-bold"> guests</span>
               </div>
             </div>
 
             <div className="rounded-xl bg-[#fffdf9] p-3 border border-[#e2e8f0] flex flex-col justify-between h-18 transition hover:bg-gray-50/50">
-              <span className="text-[9px] font-black uppercase text-[#7d6d78] tracking-wider">At counter</span>
+              <span className="text-[9px] font-bold uppercase text-[#7d6d78] tracking-wider">At counter</span>
               <div className="flex items-baseline gap-1">
-                <span className="text-xl font-black text-[#3b82f6]">{stats.called}</span>
+                <span className="text-xl font-bold text-[#3b82f6]">{stats.called}</span>
                 <span className="text-[9px] text-[#7d6d78] font-bold"> guests</span>
               </div>
             </div>
 
             <div className="rounded-xl bg-[#fffdf9] p-3 border border-[#e2e8f0] flex flex-col justify-between h-18 transition hover:bg-gray-50/50">
-              <span className="text-[9px] font-black uppercase text-[#7d6d78] tracking-wider">In service</span>
+              <span className="text-[9px] font-bold uppercase text-[#7d6d78] tracking-wider">In service</span>
               <div className="flex items-baseline gap-1">
-                <span className="text-xl font-black text-[#22a06b]">{stats.servicing}</span>
+                <span className="text-xl font-bold text-[#22a06b]">{stats.servicing}</span>
                 <span className="text-[9px] text-[#7d6d78] font-bold"> tables</span>
               </div>
             </div>
 
             <div className="rounded-xl bg-[#fffdf9] p-3 border border-[#e2e8f0] flex flex-col justify-between h-18 transition hover:bg-gray-50/50">
-              <span className="text-[9px] font-black uppercase text-[#e85d9b] tracking-wider">Avg Wait</span>
+              <span className="text-[9px] font-bold uppercase text-[#e85d9b] tracking-wider">Avg Wait</span>
               <div className="flex items-baseline gap-1">
-                <span className="text-xl font-black text-[#e85d9b]">~{stats.avgWait}</span>
+                <span className="text-xl font-bold text-[#e85d9b]">~{stats.avgWait}</span>
                 <span className="text-[9px] text-[#e85d9b] font-bold"> mins</span>
               </div>
             </div>
@@ -596,7 +596,7 @@ export function WalkInQueuePage() {
                 <span className="h-1.5 w-1.5 rounded-full bg-[#d89b1d]" />
                 <h3 className="font-extrabold text-[#2f2430] text-xs uppercase tracking-wider">Lobby ({waitingEntries.length})</h3>
               </div>
-              <span className="rounded-full bg-[#d89b1d]/10 px-2 py-0.5 text-[9px] font-black uppercase text-[#d89b1d] border border-[#d89b1d]/20">Waiting</span>
+              <span className="rounded-full bg-[#d89b1d]/10 px-2 py-0.5 text-[9px] font-bold uppercase text-[#d89b1d] border border-[#d89b1d]/20">Waiting</span>
             </div>
 
             <div className="flex-1 space-y-4 overflow-y-auto max-h-[620px] pr-1 scrollbar-thin">
@@ -658,7 +658,7 @@ export function WalkInQueuePage() {
                 <span className="h-1.5 w-1.5 rounded-full bg-[#3b82f6]" />
                 <h3 className="font-extrabold text-[#2f2430] text-xs uppercase tracking-wider">At Counter ({calledEntries.length})</h3>
               </div>
-              <span className="rounded-full bg-[#3b82f6]/10 px-2 py-0.5 text-[9px] font-black uppercase text-[#3b82f6] border border-[#3b82f6]/20">Called</span>
+              <span className="rounded-full bg-[#3b82f6]/10 px-2 py-0.5 text-[9px] font-bold uppercase text-[#3b82f6] border border-[#3b82f6]/20">Called</span>
             </div>
 
             <div className="flex-1 space-y-4 overflow-y-auto max-h-[620px] pr-1 scrollbar-thin">
@@ -763,7 +763,7 @@ export function WalkInQueuePage() {
                 <span className="h-1.5 w-1.5 rounded-full bg-[#22a06b]" />
                 <h3 className="font-extrabold text-[#2f2430] text-xs uppercase tracking-wider">In Service ({inServiceEntries.length})</h3>
               </div>
-              <span className="rounded-full bg-[#22a06b]/10 px-2 py-0.5 text-[9px] font-black uppercase text-[#22a06b] border border-[#22a06b]/20">In Service</span>
+              <span className="rounded-full bg-[#22a06b]/10 px-2 py-0.5 text-[9px] font-bold uppercase text-[#22a06b] border border-[#22a06b]/20">In Service</span>
             </div>
 
             <div className="flex-1 space-y-4 overflow-y-auto max-h-[620px] pr-1 scrollbar-thin">
@@ -818,7 +818,7 @@ export function WalkInQueuePage() {
                 <span className="h-1.5 w-1.5 rounded-full bg-[#5b6472]" />
                 <h3 className="font-extrabold text-[#2f2430] text-xs uppercase tracking-wider">Completed ({doneEntries.length})</h3>
               </div>
-              <span className="rounded-full bg-[#5b6472]/10 px-2 py-0.5 text-[9px] font-black uppercase text-[#5b6472] border border-[#5b6472]/20">Done</span>
+              <span className="rounded-full bg-[#5b6472]/10 px-2 py-0.5 text-[9px] font-bold uppercase text-[#5b6472] border border-[#5b6472]/20">Done</span>
             </div>
 
             <div className="flex-1 space-y-4 overflow-y-auto max-h-[620px] pr-1 scrollbar-thin">
@@ -852,7 +852,7 @@ export function WalkInQueuePage() {
                 <span className="h-1.5 w-1.5 rounded-full bg-[#e56b6f]" />
                 <h3 className="font-extrabold text-[#2f2430] text-xs uppercase tracking-wider">Absent / Left ({leftEntries.length})</h3>
               </div>
-              <span className="rounded-full bg-[#e56b6f]/10 px-2 py-0.5 text-[9px] font-black uppercase text-[#e56b6f] border border-[#e56b6f]/20">Left</span>
+              <span className="rounded-full bg-[#e56b6f]/10 px-2 py-0.5 text-[9px] font-bold uppercase text-[#e56b6f] border border-[#e56b6f]/20">Left</span>
             </div>
 
             <div className="flex-1 space-y-4 overflow-y-auto max-h-[620px] pr-1 scrollbar-thin">
@@ -883,7 +883,7 @@ export function WalkInQueuePage() {
 
             <div className="flex justify-between items-center border-b border-[#e2e8f0]/60 pb-4">
               <div>
-                <h3 className="text-base font-black text-[#2f2430] flex items-center gap-2">
+                <h3 className="text-base font-bold text-[#2f2430] flex items-center gap-2">
                   <Calendar size={18} className="text-[#e85d9b]" />
                   Today's Staff Allocation Schedule
                 </h3>
@@ -892,15 +892,15 @@ export function WalkInQueuePage() {
                 </p>
               </div>
               <div className="flex gap-2.5">
-                <span className="rounded-full bg-[#d89b1d]/10 px-3 py-1 text-[9px] font-black uppercase text-[#d89b1d] border border-[#d89b1d]/20 shadow-sm flex items-center gap-1.5">
+                <span className="rounded-full bg-[#d89b1d]/10 px-3 py-1 text-[9px] font-bold uppercase text-[#d89b1d] border border-[#d89b1d]/20 shadow-sm flex items-center gap-1.5">
                   <span className="h-1 w-1 rounded-full bg-[#d89b1d] animate-pulse" />
                   Waiting
                 </span>
-                <span className="rounded-full bg-[#3b82f6]/10 px-3 py-1 text-[9px] font-black uppercase text-[#3b82f6] border border-[#3b82f6]/20 shadow-sm flex items-center gap-1.5">
+                <span className="rounded-full bg-[#3b82f6]/10 px-3 py-1 text-[9px] font-bold uppercase text-[#3b82f6] border border-[#3b82f6]/20 shadow-sm flex items-center gap-1.5">
                   <span className="h-1 w-1 rounded-full bg-[#3b82f6]" />
                   Called
                 </span>
-                <span className="rounded-full bg-[#22a06b]/10 px-3 py-1 text-[9px] font-black uppercase text-[#22a06b] border border-[#22a06b]/20 shadow-sm flex items-center gap-1.5">
+                <span className="rounded-full bg-[#22a06b]/10 px-3 py-1 text-[9px] font-bold uppercase text-[#22a06b] border border-[#22a06b]/20 shadow-sm flex items-center gap-1.5">
                   <span className="h-1 w-1 rounded-full bg-[#22a06b] animate-ping" />
                   In Service
                 </span>
@@ -912,13 +912,13 @@ export function WalkInQueuePage() {
 
               {/* Vertical Header - Artist Names (Fixed Roster Panel look) */}
               <div className="divide-y divide-gray-100 border-r border-[#e2e8f0] bg-[#fffdf9]">
-                <div className="h-14 flex items-center px-4 font-black text-[#2f2430] text-[10px] uppercase tracking-wider bg-gray-50/50 border-b border-[#e2e8f0]">
+                <div className="h-14 flex items-center px-4 font-bold text-[#2f2430] text-[10px] uppercase tracking-wider bg-gray-50/50 border-b border-[#e2e8f0]">
                   Nail Artist
                 </div>
 
                 {/* Row for Unassigned / Queue Pool */}
                 <div className="h-32 flex flex-col justify-center px-4 bg-gradient-to-br from-[#fcf8f0] to-[#fffdf9]">
-                  <p className="font-black text-[#d89b1d] text-xs flex items-center gap-1.5">
+                  <p className="font-bold text-[#d89b1d] text-xs flex items-center gap-1.5">
                     <span className="h-1.5 w-1.5 rounded-full bg-[#d89b1d] animate-ping" />
                     Unassigned
                   </p>
@@ -928,7 +928,7 @@ export function WalkInQueuePage() {
                 {/* Rows for each Nail Artist */}
                 {staffList.map((artist) => (
                   <div key={artist.staffId} className="h-32 flex items-center gap-3 px-4 bg-[#fffdf9] transition hover:bg-gray-50/40">
-                    <div className="flex h-9.5 w-9.5 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#e85d9b] to-[#7c3aed] text-white font-black text-xs shadow-sm">
+                    <div className="flex h-9.5 w-9.5 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#e85d9b] to-[#7c3aed] text-white font-bold text-xs shadow-sm">
                       {artist.firstName?.[0]}{artist.lastName?.[0]}
                     </div>
                     <div className="min-w-0">
@@ -949,7 +949,7 @@ export function WalkInQueuePage() {
                 <div className="w-[1200px] divide-y divide-gray-100">
 
                   {/* Grid Time Headers with Current Hour & Peak Hour tags */}
-                  <div className="h-14 flex bg-gray-50/50 text-[10px] font-black text-[#7d6d78] divide-x divide-gray-100 border-b border-[#e2e8f0]">
+                  <div className="h-14 flex bg-gray-50/50 text-[10px] font-bold text-[#7d6d78] divide-x divide-gray-100 border-b border-[#e2e8f0]">
                     {TIME_SLOTS.map((slot) => {
                       const isCurrentHour = dayjs().format("HH:00") === slot;
                       const isPeak = ["11:00", "12:00", "13:00", "17:00", "18:00", "19:00"].includes(slot);
@@ -1049,7 +1049,7 @@ export function WalkInQueuePage() {
             <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-pink-100 text-[#ea4f93] shadow-sm">
               <Plus size={16} />
             </span>
-            <span className="font-black text-[#321735] text-base">Register Walk-in Guest</span>
+            <span className="font-bold text-[#321735] text-base">Register Walk-in Guest</span>
           </div>
         }
         placement="right"
@@ -1064,7 +1064,7 @@ export function WalkInQueuePage() {
       >
         <div className="space-y-6">
           <div className="space-y-2">
-            <label className="text-xs font-black uppercase text-[#9b7f92] tracking-wider">
+            <label className="text-xs font-bold uppercase text-[#9b7f92] tracking-wider">
               Customer Name <span className="text-red-500">*</span>
             </label>
             <Input
@@ -1076,7 +1076,7 @@ export function WalkInQueuePage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-black uppercase text-[#9b7f92] tracking-wider">Phone Number</label>
+            <label className="text-xs font-bold uppercase text-[#9b7f92] tracking-wider">Phone Number</label>
             <Input
               placeholder="Enter phone number (optional)"
               value={guestPhone}
@@ -1086,13 +1086,13 @@ export function WalkInQueuePage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-black uppercase text-[#9b7f92] tracking-wider block">Customer Category</label>
+            <label className="text-xs font-bold uppercase text-[#9b7f92] tracking-wider block">Customer Category</label>
             <div className="flex gap-4">
               <button
                 type="button"
                 onClick={() => setIsLateArrival(false)}
                 className={`flex-1 py-3 px-4 rounded-xl border text-xs font-extrabold text-center transition-all ${!isLateArrival
-                  ? "border-[#ea4f93] bg-[#fff5f9] text-[#ea4f93] font-black shadow-sm"
+                  ? "border-[#ea4f93] bg-[#fff5f9] text-[#ea4f93] font-bold shadow-sm"
                   : "border-gray-200 bg-white text-gray-500 hover:border-pink-200"
                   }`}
               >
@@ -1102,7 +1102,7 @@ export function WalkInQueuePage() {
                 type="button"
                 onClick={() => setIsLateArrival(true)}
                 className={`flex-1 py-3 px-4 rounded-xl border text-xs font-extrabold text-center transition-all ${isLateArrival
-                  ? "border-[#ea4f93] bg-[#fff5f9] text-[#ea4f93] font-black shadow-sm"
+                  ? "border-[#ea4f93] bg-[#fff5f9] text-[#ea4f93] font-bold shadow-sm"
                   : "border-gray-200 bg-white text-gray-500 hover:border-pink-200"
                   }`}
               >
@@ -1113,7 +1113,7 @@ export function WalkInQueuePage() {
 
           {/* Service catalog selection */}
           <div className="space-y-2">
-            <label className="text-xs font-black uppercase text-[#9b7f92] tracking-wider block">
+            <label className="text-xs font-bold uppercase text-[#9b7f92] tracking-wider block">
               Requested Services ({selectedServices.length})
             </label>
             <Input
@@ -1137,7 +1137,7 @@ export function WalkInQueuePage() {
                       type="button"
                       onClick={() => toggleServiceSelection(service)}
                       className={`w-full flex items-center justify-between p-2.5 rounded-lg text-left transition text-xs border ${isSelected
-                        ? "bg-[#fff0f6] border-[#f8b4d2] text-[#ea4f93] font-black shadow-sm"
+                        ? "bg-[#fff0f6] border-[#f8b4d2] text-[#ea4f93] font-bold shadow-sm"
                         : "bg-white border-gray-100 text-[#402542] hover:border-pink-200 hover:bg-pink-50/10"
                         }`}
                     >
@@ -1154,7 +1154,7 @@ export function WalkInQueuePage() {
 
           {/* Artist selector */}
           <div className="space-y-2">
-            <label className="text-xs font-black uppercase text-[#9b7f92] tracking-wider block">Select preferred artist (Optional)</label>
+            <label className="text-xs font-bold uppercase text-[#9b7f92] tracking-wider block">Select preferred artist (Optional)</label>
             <Select
               placeholder="Select an artist"
               allowClear
@@ -1172,7 +1172,7 @@ export function WalkInQueuePage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-black uppercase text-[#9b7f92] tracking-wider block">Requests / Notes</label>
+            <label className="text-xs font-bold uppercase text-[#9b7f92] tracking-wider block">Requests / Notes</label>
             <Input.TextArea
               placeholder="Enter special requests (e.g., acrylics, complex gel art...)"
               value={requestNote}
@@ -1184,7 +1184,7 @@ export function WalkInQueuePage() {
 
           {selectedServices.length > 0 && (
             <div className="rounded-2xl bg-[#fff5fa] p-4 border border-[#fbe1ef] text-xs space-y-2">
-              <p className="font-black text-[#ea4f93] flex items-center gap-1">
+              <p className="font-bold text-[#ea4f93] flex items-center gap-1">
                 <Sparkles size={12} />
                 Selected Services Info
               </p>
@@ -1194,7 +1194,7 @@ export function WalkInQueuePage() {
               </div>
               <div className="flex justify-between text-[#806579] font-medium">
                 <span>Estimated total price:</span>
-                <span className="font-black text-[#ea4f93] text-sm">
+                <span className="font-bold text-[#ea4f93] text-sm">
                   {totalEstPrice.toLocaleString("vi-VN")} VND
                 </span>
               </div>
@@ -1227,7 +1227,7 @@ export function WalkInQueuePage() {
         title={
           <div className="flex items-center gap-2">
             <Award size={16} className="text-[#ea4f93]" />
-            <span className="font-black text-[#321735]">Assign Nail Artist</span>
+            <span className="font-bold text-[#321735]">Assign Nail Artist</span>
           </div>
         }
         open={isAssignModalOpen}
@@ -1240,7 +1240,7 @@ export function WalkInQueuePage() {
           <div className="space-y-4 py-2">
             <div className="rounded-2xl bg-gradient-to-tr from-[#fff7fb] to-[#fffbfc] p-4 border border-[#f3d9e8] text-xs">
               <p className="text-[#9b7f92] font-semibold">Assigned Customer:</p>
-              <p className="font-black text-[#321735] text-sm mt-1 flex items-center gap-2">
+              <p className="font-bold text-[#321735] text-sm mt-1 flex items-center gap-2">
                 <span className="flex h-5 w-5 items-center justify-center rounded bg-[#ea4f93] text-white text-[9px]">
                   #{selectedQueueItem.queuePosition}
                 </span>
@@ -1248,7 +1248,7 @@ export function WalkInQueuePage() {
               </p>
             </div>
 
-            <p className="text-[10px] font-black uppercase text-[#9b7f92] tracking-widest">
+            <p className="text-[10px] font-bold uppercase text-[#9b7f92] tracking-widest">
               Salon's Artist List
             </p>
 
@@ -1317,7 +1317,7 @@ function DraggableCard({ item, onDragStart, onDragEnd, isDragging, extraActions 
       <div className="flex justify-between items-start gap-2 pl-1.5">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded bg-[#e85d9b]/10 text-[9px] font-black text-[#e85d9b] border border-[#e85d9b]/15 shadow-sm">
+            <span className="flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded bg-[#e85d9b]/10 text-[9px] font-bold text-[#e85d9b] border border-[#e85d9b]/15 shadow-sm">
               #{item.queuePosition}
             </span>
             <h4 className="font-extrabold text-[#2f2430] text-sm truncate tracking-tight">{item.guestName}</h4>
@@ -1390,7 +1390,7 @@ function TimelinePill({ item, onDragStart, onDragEnd, onCallClick, onAssignClick
       <div className="flex items-center justify-between gap-1 font-extrabold">
         <span className="truncate">#{item.queuePosition} {item.guestName}</span>
         {item.isLateArrival && (
-          <span className="text-[7px] bg-red-150 text-[#e56b6f] px-1 py-0.5 rounded font-black uppercase shadow-sm">L</span>
+          <span className="text-[7px] bg-red-150 text-[#e56b6f] px-1 py-0.5 rounded font-bold uppercase shadow-sm">L</span>
         )}
       </div>
 

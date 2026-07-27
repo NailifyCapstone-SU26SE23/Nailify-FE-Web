@@ -35,6 +35,8 @@ import {
   fetchReceptionistCustomerDetail,
   updateReceptionistCustomer,
   fetchCustomerBookings,
+  fetchLoyaltyTiers,
+  fetchPromotions,
 } from "../services/receptionistCustomerService";
 import { getReceptionistSalonId } from "../../bookings/services/receptionistBookingService";
 import { ROUTES } from "../../../../shared/constants/routes";
@@ -117,6 +119,8 @@ export function ReceptionistCustomerDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadingBookings, setLoadingBookings] = useState(false);
   const [activeTab, setActiveTab] = useState("info"); // "info" | "bookings" | "preferences" | "loyalty"
+  const [loyaltyTiers, setLoyaltyTiers] = useState([]);
+  const [promotions, setPromotions] = useState([]);
 
   // Customer Preferences State
   const [preferenceTags, setPreferenceTags] = useState(["Sơn Gel nhạt", "Móng vuông tròn", "Ưu tiên thợ kinh nghiệm"]);
@@ -143,6 +147,12 @@ export function ReceptionistCustomerDetailPage() {
       setEditPhone(data.phone || "");
       setEditStatus(data.status || "Active");
 
+      const tiers = await fetchLoyaltyTiers();
+      setLoyaltyTiers(tiers || []);
+
+      const promoData = await fetchPromotions();
+      setPromotions(promoData?.items || []);
+
       // Load customer bookings
       try {
         const salonId = getReceptionistSalonId();
@@ -167,6 +177,43 @@ export function ReceptionistCustomerDetailPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  const customerTier = useMemo(() => {
+    if (!loyaltyTiers?.length || !customer) return null;
+    const pts = customer.loyaltyPoint || 0;
+    return loyaltyTiers.find(t =>
+      pts >= t.minLifetimePoints &&
+      (t.maxLifetimePoints === null || pts <= t.maxLifetimePoints)
+    ) || loyaltyTiers[0];
+  }, [customer, loyaltyTiers]);
+
+  const nextTier = useMemo(() => {
+    if (!loyaltyTiers?.length || !customerTier) return null;
+    const currentIdx = loyaltyTiers.findIndex(t => t.loyaltyTierId === customerTier.loyaltyTierId);
+    if (currentIdx !== -1 && currentIdx < loyaltyTiers.length - 1) {
+      return loyaltyTiers[currentIdx + 1];
+    }
+    return null;
+  }, [loyaltyTiers, customerTier]);
+
+  const promotionMessage = useMemo(() => {
+    if (!promotions || promotions.length === 0) return "Tích điểm để nhận nhiều ưu đãi!";
+
+    // Tìm khuyến mãi Active phù hợp không phải đền bù
+    const activePromos = promotions.filter(p => p.status === 'Active' && p.situation !== 'Cancelled' && p.situation !== 'Reschedule');
+
+    if (activePromos.length > 0) {
+      const p = activePromos[0];
+      if (p.discountType === 'Percentage') {
+        return `Đủ điều kiện đổi ưu đãi ${p.discountValue}%`;
+      } else if (p.discountType === 'FixedAmount') {
+        return `Đủ điều kiện đổi ưu đãi ${p.discountValue.toLocaleString('vi-VN')}đ`;
+      }
+      return `Đủ điều kiện đổi: ${p.name}`;
+    }
+
+    return "Tích điểm để nhận nhiều ưu đãi!";
+  }, [promotions]);
 
   const handleCreateWalkIn = () => {
     if (!customer) return;
@@ -252,7 +299,7 @@ export function ReceptionistCustomerDetailPage() {
         <p className="text-base font-extrabold text-[#3D243C]">Không tìm thấy thông tin khách hàng</p>
         <button
           onClick={() => navigate(-1)}
-          className="mt-4 px-6 py-2.5 bg-[#FFF0F5] border border-[#F4D6E4] hover:bg-[#FFE5EE] text-[#EA4F93] rounded-full text-xs font-black transition shadow-2xs"
+          className="mt-4 px-6 py-2.5 bg-[#FFF0F5] border border-[#F4D6E4] hover:bg-[#FFE5EE] text-[#EA4F93] rounded-full text-xs font-bold transition shadow-2xs"
         >
           Quay lại danh sách
         </button>
@@ -279,11 +326,8 @@ export function ReceptionistCustomerDetailPage() {
             <ArrowLeft size={18} />
           </button>
           <div>
-            <h1 className="text-2xl font-black text-[#2B182B] tracking-tight flex items-center gap-2.5">
+            <h1 className="text-2xl font-bold text-[#2B182B] tracking-tight flex items-center gap-2.5">
               Hồ Sơ Khách Hàng
-              <span className="text-xs font-black text-[#EA4F93] bg-[#FFF0F5] border border-[#F4D6E4] px-2.5 py-0.5 rounded-full">
-                ID: {String(customer.userId).split("-")[0]}
-              </span>
             </h1>
             <p className="text-xs text-[#9E8497] font-medium">
               Quản lý chi tiết tài khoản, lịch sử dịch vụ và ưu đãi tích điểm
@@ -296,7 +340,7 @@ export function ReceptionistCustomerDetailPage() {
           <button
             type="button"
             onClick={() => setIsEditModalOpen(true)}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-white border border-[#F4D6E4] text-[#2B182B] text-xs font-black shadow-2xs hover:bg-[#FFF8FA] hover:border-[#EA4F93] transition cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-white border border-[#F4D6E4] text-[#2B182B] text-xs font-bold shadow-2xs hover:bg-[#FFF8FA] hover:border-[#EA4F93] transition cursor-pointer"
           >
             <Edit size={15} className="text-[#EA4F93]" />
             Chỉnh Sửa Hồ Sơ
@@ -305,7 +349,7 @@ export function ReceptionistCustomerDetailPage() {
           <button
             type="button"
             onClick={handleCreateWalkIn}
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-[#EA4F93] via-[#E11D48] to-[#BE123C] text-white text-xs font-black shadow-md hover:shadow-lg transition hover:-translate-y-0.5 cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-[#EA4F93] via-[#E11D48] to-[#BE123C] text-white text-xs font-bold shadow-md hover:shadow-lg transition hover:-translate-y-0.5 cursor-pointer"
           >
             <CalendarPlus size={16} />
             Tạo Lịch Hẹn Đặt Chỗ
@@ -329,55 +373,63 @@ export function ReceptionistCustomerDetailPage() {
                 className="w-20 h-20 rounded-2xl object-cover border-2 border-white/30 shadow-md ring-4 ring-pink-500/30 shrink-0"
               />
             ) : (
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#EA4F93] via-[#E11D48] to-[#8B5CF6] flex items-center justify-center text-white font-black text-2xl shadow-md border-2 border-white/30 ring-4 ring-pink-500/30 shrink-0">
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#EA4F93] via-[#E11D48] to-[#8B5CF6] flex items-center justify-center text-white font-bold text-2xl shadow-md border-2 border-white/30 ring-4 ring-pink-500/30 shrink-0">
                 {initials}
               </div>
             )}
 
             <div className="space-y-1.5 min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-xl md:text-2xl font-black tracking-tight text-white truncate">{fullName}</h2>
+                <h2 className="text-xl md:text-2xl font-bold tracking-tight text-white truncate">{fullName}</h2>
               </div>
 
               <div className="flex flex-wrap items-center gap-2 pt-0.5">
-                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wide border ${statusInfo.bg}`}>
+                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide border ${statusInfo.bg}`}>
                   {statusInfo.label}
                 </span>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wide bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-xs flex items-center gap-1">
-                  <Award size={11} /> VIP Gold
-                </span>
+                {customerTier && (
+                  <span
+                    className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide shadow-xs flex items-center gap-1"
+                    style={{
+                      backgroundColor: customerTier.backgroundColor,
+                      color: customerTier.textColor || '#fff'
+                    }}
+                  >
+                    <Award size={11} /> VIP {customerTier.name}
+                  </span>
+                )}
               </div>
             </div>
           </div>
 
           {/* Col 2: Translucent Info Cards (Email, Phone, Date) (5 Cols) */}
-          <div className="lg:col-span-4 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-            <div className="rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 p-3 hover:bg-white/10 transition">
+          <div className="lg:col-span-4 flex flex-wrap items-center gap-2.5 overflow-hidden">
+            <div className="rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 p-3 hover:bg-white/10 transition max-w-full min-w-0">
               <p className="text-[10px] font-bold text-purple-300 uppercase tracking-wider flex items-center gap-1.5">
                 <Mail size={12} className="text-pink-400" /> Email
               </p>
               <a
                 href={customer.email ? `mailto:${customer.email}` : "#"}
-                className="text-xs font-bold text-white hover:text-pink-300 transition truncate block mt-0.5"
+                className="text-xs font-bold text-white hover:text-pink-300 transition block mt-0.5 truncate"
                 title={customer.email || "Chưa cập nhật"}
               >
                 {customer.email || "Chưa cập nhật"}
               </a>
             </div>
 
-            <div className="rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 p-3 hover:bg-white/10 transition">
+            <div className="rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 p-3 hover:bg-white/10 transition max-w-full shrink-0">
               <p className="text-[10px] font-bold text-purple-300 uppercase tracking-wider flex items-center gap-1.5">
                 <Phone size={12} className="text-pink-400" /> SĐT
               </p>
               <a
                 href={customer.phone ? `tel:${customer.phone}` : "#"}
-                className="text-xs font-bold text-white hover:text-pink-300 transition truncate block mt-0.5"
+                className="text-xs font-bold text-white hover:text-pink-300 transition block mt-0.5 truncate"
               >
                 {customer.phone || "Chưa cập nhật"}
               </a>
             </div>
 
-            <div className="rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 p-3 hover:bg-white/10 transition">
+            <div className="rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 p-3 hover:bg-white/10 transition max-w-full shrink-0">
               <p className="text-[10px] font-bold text-purple-300 uppercase tracking-wider flex items-center gap-1.5">
                 <Calendar size={12} className="text-pink-400" /> Ngày Đăng Ký
               </p>
@@ -388,14 +440,14 @@ export function ReceptionistCustomerDetailPage() {
           {/* Col 3: Gold Loyalty Points Box (3 Cols) */}
           <div className="lg:col-span-3">
             <div className="rounded-2xl bg-gradient-to-br from-amber-500/20 via-pink-500/10 to-purple-500/20 border border-amber-400/30 p-4 text-center space-y-1 shadow-md backdrop-blur-md">
-              <p className="text-[10px] font-black text-amber-300 uppercase tracking-wider flex items-center justify-center gap-1">
+              <p className="text-[10px] font-bold text-amber-300 uppercase tracking-wider flex items-center justify-center gap-1">
                 <Star size={12} className="text-amber-400 fill-amber-400 animate-pulse" /> Điểm Thưởng Tích Lũy
               </p>
-              <p className="text-3xl font-black text-amber-300">
-                450 <span className="text-xs font-extrabold text-white">pts</span>
+              <p className="text-3xl font-bold text-amber-300">
+                {customer.loyaltyPoint || 0} <span className="text-xs font-extrabold text-white">pts</span>
               </p>
               <span className="inline-block rounded-full bg-amber-400/20 border border-amber-400/40 px-2.5 py-0.5 text-[9.5px] font-bold text-amber-200">
-                Đủ điều kiện đổi Voucher 15%
+                {promotionMessage}
               </span>
             </div>
           </div>
@@ -410,7 +462,7 @@ export function ReceptionistCustomerDetailPage() {
           </div>
           <div>
             <p className="text-[11px] font-extrabold uppercase text-[#9E8497]">Tổng Lịch Hẹn</p>
-            <p className="text-xl font-black text-[#2B182B]">{metrics.totalBookings} đơn</p>
+            <p className="text-xl font-bold text-[#2B182B]">{metrics.totalBookings} đơn</p>
             <p className="text-[10px] text-emerald-600 font-bold mt-0.5">{metrics.completedBookings} hoàn thành</p>
           </div>
         </div>
@@ -421,7 +473,7 @@ export function ReceptionistCustomerDetailPage() {
           </div>
           <div>
             <p className="text-[11px] font-extrabold uppercase text-[#9E8497]">Tổng Chi Tiêu</p>
-            <p className="text-xl font-black text-[#2B182B]">{formatCurrency(metrics.totalSpent)}</p>
+            <p className="text-xl font-bold text-[#2B182B]">{formatCurrency(metrics.totalSpent)}</p>
             <p className="text-[10px] text-[#9E8497] font-semibold mt-0.5">~{formatCurrency(metrics.avgSpent)}/lần</p>
           </div>
         </div>
@@ -432,19 +484,19 @@ export function ReceptionistCustomerDetailPage() {
           </div>
           <div>
             <p className="text-[11px] font-extrabold uppercase text-[#9E8497]">Đánh Giá Dịch Vụ</p>
-            <p className="text-xl font-black text-[#2B182B]">5.0 / 5.0</p>
+            <p className="text-xl font-bold text-[#2B182B]">5.0 / 5.0</p>
             <p className="text-[10px] text-[#D97706] font-bold mt-0.5">3 Đánh giá hài lòng</p>
           </div>
         </div>
 
         <div className="rounded-2xl bg-white p-4 border border-[#F3E2EC] shadow-2xs flex items-center gap-3.5">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EEF2FF] text-[#4F46E5] shrink-0">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl shrink-0" style={{ backgroundColor: customerTier ? `${customerTier.backgroundColor}20` : '#EEF2FF', color: customerTier ? customerTier.backgroundColor : '#4F46E5' }}>
             <Award size={22} />
           </div>
           <div>
             <p className="text-[11px] font-extrabold uppercase text-[#9E8497]">Hạng Thành Viên</p>
-            <p className="text-xl font-black text-[#2B182B]">Gold Member</p>
-            <p className="text-[10px] text-[#4F46E5] font-bold mt-0.5">Tích điểm tự động</p>
+            <p className="text-xl font-bold text-[#2B182B]" style={{ color: customerTier?.backgroundColor }}>{customerTier ? customerTier.name : "Thành Viên"}</p>
+            <p className="text-[10px] font-bold mt-0.5" style={{ color: customerTier?.backgroundColor || '#4F46E5' }}>Tích điểm tự động</p>
           </div>
         </div>
       </div>
@@ -456,7 +508,7 @@ export function ReceptionistCustomerDetailPage() {
           <button
             type="button"
             onClick={() => setActiveTab("info")}
-            className={`flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-black transition cursor-pointer ${activeTab === "info"
+            className={`flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition cursor-pointer ${activeTab === "info"
               ? "border-[#EA4F93] text-[#EA4F93]"
               : "border-transparent text-[#9E8497] hover:text-[#2B182B]"
               }`}
@@ -468,7 +520,7 @@ export function ReceptionistCustomerDetailPage() {
           <button
             type="button"
             onClick={() => setActiveTab("bookings")}
-            className={`flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-black transition cursor-pointer ${activeTab === "bookings"
+            className={`flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition cursor-pointer ${activeTab === "bookings"
               ? "border-[#EA4F93] text-[#EA4F93]"
               : "border-transparent text-[#9E8497] hover:text-[#2B182B]"
               }`}
@@ -480,7 +532,7 @@ export function ReceptionistCustomerDetailPage() {
           <button
             type="button"
             onClick={() => setActiveTab("preferences")}
-            className={`flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-black transition cursor-pointer ${activeTab === "preferences"
+            className={`flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition cursor-pointer ${activeTab === "preferences"
               ? "border-[#EA4F93] text-[#EA4F93]"
               : "border-transparent text-[#9E8497] hover:text-[#2B182B]"
               }`}
@@ -492,7 +544,7 @@ export function ReceptionistCustomerDetailPage() {
           <button
             type="button"
             onClick={() => setActiveTab("loyalty")}
-            className={`flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-black transition cursor-pointer ${activeTab === "loyalty"
+            className={`flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition cursor-pointer ${activeTab === "loyalty"
               ? "border-[#EA4F93] text-[#EA4F93]"
               : "border-transparent text-[#9E8497] hover:text-[#2B182B]"
               }`}
@@ -509,7 +561,7 @@ export function ReceptionistCustomerDetailPage() {
             <div className="space-y-6 animate-fadeIn w-full">
               <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFF9FC] p-5 space-y-4">
                 <div className="flex items-center justify-between border-b border-[#F4D6E4] pb-3">
-                  <h3 className="text-sm font-black text-[#2B182B] uppercase tracking-wider flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-[#2B182B] uppercase tracking-wider flex items-center gap-2">
                     <UserCheck size={16} className="text-[#EA4F93]" /> Thông Tin Liên Hệ Khách Hàng
                   </h3>
                   <span className="text-[11px] text-[#9E8497] font-semibold">Tài khoản chính chủ</span>
@@ -552,7 +604,7 @@ export function ReceptionistCustomerDetailPage() {
               {/* Customer Preferences Tags */}
               <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFF9FC] p-5 space-y-3">
                 <div className="flex items-center justify-between border-b border-[#F4D6E4] pb-3">
-                  <h3 className="text-sm font-black text-[#2B182B] uppercase tracking-wider flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-[#2B182B] uppercase tracking-wider flex items-center gap-2">
                     <Tag size={16} className="text-[#EA4F93]" /> Nhãn Sở Thích & Lưu Ý Làm Móng
                   </h3>
                 </div>
@@ -587,7 +639,7 @@ export function ReceptionistCustomerDetailPage() {
                   <button
                     type="button"
                     onClick={handleAddPreferenceTag}
-                    className="rounded-xl bg-[#EA4F93] px-4 py-2 text-xs font-black text-white hover:bg-[#D4387B] transition shrink-0 cursor-pointer"
+                    className="rounded-xl bg-[#EA4F93] px-4 py-2 text-xs font-bold text-white hover:bg-[#D4387B] transition shrink-0 cursor-pointer"
                   >
                     + Thêm
                   </button>
@@ -600,7 +652,7 @@ export function ReceptionistCustomerDetailPage() {
           {activeTab === "bookings" && (
             <div className="space-y-4 animate-fadeIn">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-black text-[#2B182B] uppercase tracking-wider flex items-center gap-2">
+                <h3 className="text-sm font-bold text-[#2B182B] uppercase tracking-wider flex items-center gap-2">
                   <Clock size={16} className="text-[#EA4F93]" /> Danh Sách Lịch Hẹn Đặt Chỗ
                 </h3>
                 <span className="text-xs font-bold text-[#9E8497]">Hiển thị {bookings.length} lịch hẹn gần nhất</span>
@@ -615,12 +667,12 @@ export function ReceptionistCustomerDetailPage() {
                   <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#FFF0F5] text-[#EA4F93] mx-auto">
                     <Calendar size={28} />
                   </div>
-                  <p className="text-sm font-black text-[#2B182B]">Chưa tìm thấy lịch hẹn nào của khách hàng</p>
+                  <p className="text-sm font-bold text-[#2B182B]">Chưa tìm thấy lịch hẹn nào của khách hàng</p>
                   <p className="text-xs text-[#9E8497]">Tạo ngay một lịch hẹn mới cho khách hàng tại chi nhánh.</p>
                   <button
                     type="button"
                     onClick={handleCreateWalkIn}
-                    className="inline-flex items-center gap-2 rounded-full bg-[#EA4F93] px-5 py-2 text-xs font-black text-white shadow-2xs hover:bg-[#D4387B] transition cursor-pointer"
+                    className="inline-flex items-center gap-2 rounded-full bg-[#EA4F93] px-5 py-2 text-xs font-bold text-white shadow-2xs hover:bg-[#D4387B] transition cursor-pointer"
                   >
                     <CalendarPlus size={15} /> Tạo Lịch Hẹn Mới
                   </button>
@@ -636,15 +688,15 @@ export function ReceptionistCustomerDetailPage() {
                         className="rounded-2xl border border-[#F3E2EC] bg-white p-4 hover:border-[#EA4F93]/40 transition shadow-2xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
                       >
                         <div className="flex items-center gap-3.5 min-w-0">
-                          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#FFF0F5] text-[#EA4F93] shrink-0 font-black text-xs">
+                          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#FFF0F5] text-[#EA4F93] shrink-0 font-bold text-xs">
                             #{String(item.orderCode || item.bookingId || idx + 1).slice(-4)}
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
-                              <p className="text-sm font-black text-[#2B182B]">
+                              <p className="text-sm font-bold text-[#2B182B]">
                                 Lịch Hẹn {formatDate(item.bookingDate || item.appointmentTime)}
                               </p>
-                              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black border uppercase tracking-wider ${statusClass}`}>
+                              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider ${statusClass}`}>
                                 {bStatus}
                               </span>
                             </div>
@@ -657,7 +709,7 @@ export function ReceptionistCustomerDetailPage() {
                         <div className="flex items-center justify-between md:justify-end w-full md:w-auto gap-4 border-t md:border-t-0 border-[#F3E2EC] pt-3 md:pt-0">
                           <div className="text-right">
                             <p className="text-xs text-[#9E8497] font-medium">Tổng Tiền Dịch Vụ</p>
-                            <p className="text-sm font-black text-[#EA4F93]">
+                            <p className="text-sm font-bold text-[#EA4F93]">
                               {formatCurrency(item.totalAmount || item.finalPrice || 0)}
                             </p>
                           </div>
@@ -683,7 +735,7 @@ export function ReceptionistCustomerDetailPage() {
           {activeTab === "preferences" && (
             <div className="space-y-6 animate-fadeIn">
               <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFF9FC] p-5 space-y-4">
-                <h3 className="text-sm font-black text-[#2B182B] uppercase tracking-wider flex items-center gap-2">
+                <h3 className="text-sm font-bold text-[#2B182B] uppercase tracking-wider flex items-center gap-2">
                   <Scissors size={16} className="text-[#EA4F93]" /> Mẫu Móng & Phong Cách Thường Làm
                 </h3>
                 <p className="text-xs text-[#9E8497]">
@@ -693,15 +745,15 @@ export function ReceptionistCustomerDetailPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
                   <div className="p-4 bg-white rounded-xl border border-[#F3E2EC] text-center space-y-1">
                     <p className="text-xs font-bold text-[#9E8497]">Dáng Móng Yêu Thích</p>
-                    <p className="text-base font-black text-[#2B182B]">Square Almond (Vuông Tròn)</p>
+                    <p className="text-base font-bold text-[#2B182B]">Square Almond (Vuông Tròn)</p>
                   </div>
                   <div className="p-4 bg-white rounded-xl border border-[#F3E2EC] text-center space-y-1">
                     <p className="text-xs font-bold text-[#9E8497]">Tone Màu Sơn Hay Dùng</p>
-                    <p className="text-base font-black text-[#EA4F93]">Nude Pastel & Pastel Pink</p>
+                    <p className="text-base font-bold text-[#EA4F93]">Nude Pastel & Pastel Pink</p>
                   </div>
                   <div className="p-4 bg-white rounded-xl border border-[#F3E2EC] text-center space-y-1">
                     <p className="text-xs font-bold text-[#9E8497]">Loại Mặt Móng Ưu Tiên</p>
-                    <p className="text-base font-black text-[#2B182B]">Gel Cứng Cao Cấp</p>
+                    <p className="text-base font-bold text-[#2B182B]">Gel Cứng Cao Cấp</p>
                   </div>
                 </div>
               </div>
@@ -714,25 +766,25 @@ export function ReceptionistCustomerDetailPage() {
               <div className="rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50/60 via-amber-50/20 to-amber-50/60 p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-400 text-black font-black text-xl shadow-xs">
-                      <Award size={26} />
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl shadow-xs" style={{ backgroundColor: customerTier?.backgroundColor || '#F5C842' }}>
+                      <Award size={26} style={{ color: customerTier?.textColor || '#fff' }} />
                     </div>
                     <div>
-                      <h3 className="text-base font-black text-[#2B182B]">Hạng Thành Viên VIP Gold</h3>
-                      <p className="text-xs text-[#9E8497] font-medium">Tích 450 điểm thưởng / Đã tiêu 2.450.000đ</p>
+                      <h3 className="text-base font-bold text-[#2B182B]">Hạng Thành Viên VIP {customerTier ? customerTier.name : ""}</h3>
+                      <p className="text-xs text-[#9E8497] font-medium">Tích {customer.loyaltyPoint || 0} điểm thưởng / Đã tiêu {formatCurrency(metrics.totalSpent)}</p>
                     </div>
                   </div>
-                  <span className="rounded-full bg-amber-400 px-4 py-1.5 text-xs font-black text-black uppercase tracking-wider shadow-xs">
-                    Vàng (Gold)
+                  <span className="rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wider shadow-xs" style={{ backgroundColor: customerTier?.backgroundColor || '#F5C842', color: customerTier?.textColor || '#fff' }}>
+                    {customerTier ? customerTier.name : "Thành Viên"}
                   </span>
                 </div>
 
                 <div className="space-y-1.5 pt-2">
                   <div className="flex justify-between text-xs font-extrabold text-[#2B182B]">
-                    <span>Tiến trình thăng hạng Diamond (Kim Cương)</span>
-                    <span>450 / 1000 Pts</span>
+                    <span>Tiến trình thăng hạng {nextTier ? nextTier.name : "Tối đa"}</span>
+                    <span>{customer.loyaltyPoint || 0} {nextTier ? `/ ${nextTier.minLifetimePoints} Pts` : "Pts"}</span>
                   </div>
-                  <Progress percent={45} strokeColor={{ "0%": "#F59E0B", "100%": "#D97706" }} showInfo={false} />
+                  <Progress percent={nextTier ? ((customer.loyaltyPoint || 0) / nextTier.minLifetimePoints) * 100 : 100} strokeColor={{ "0%": customerTier?.backgroundColor || "#F59E0B", "100%": nextTier?.backgroundColor || "#D97706" }} showInfo={false} />
                 </div>
               </div>
             </div>
@@ -757,7 +809,7 @@ export function ReceptionistCustomerDetailPage() {
                 <Edit size={22} />
               </div>
               <div>
-                <h3 className="text-lg font-black text-[#2B182B]">Chỉnh Sửa Thông Tin Khách Hàng</h3>
+                <h3 className="text-lg font-bold text-[#2B182B]">Chỉnh Sửa Thông Tin Khách Hàng</h3>
                 <p className="text-xs text-[#9E8497] font-medium">Cập nhật hồ sơ tài khoản chi tiết</p>
               </div>
             </div>
@@ -773,7 +825,7 @@ export function ReceptionistCustomerDetailPage() {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-black text-[#2B182B] uppercase tracking-wider mb-1">
+                <label className="block text-xs font-bold text-[#2B182B] uppercase tracking-wider mb-1">
                   Họ (Last Name)
                 </label>
                 <Input
@@ -784,7 +836,7 @@ export function ReceptionistCustomerDetailPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-black text-[#2B182B] uppercase tracking-wider mb-1">
+                <label className="block text-xs font-bold text-[#2B182B] uppercase tracking-wider mb-1">
                   Tên (First Name)
                 </label>
                 <Input
@@ -797,7 +849,7 @@ export function ReceptionistCustomerDetailPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-black text-[#2B182B] uppercase tracking-wider mb-1 flex items-center gap-1">
+              <label className="block text-xs font-bold text-[#2B182B] uppercase tracking-wider mb-1 flex items-center gap-1">
                 <Phone size={13} className="text-[#EA4F93]" /> Số Điện Thoại
               </label>
               <Input
@@ -809,7 +861,7 @@ export function ReceptionistCustomerDetailPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-black text-[#2B182B] uppercase tracking-wider mb-1 flex items-center gap-1">
+              <label className="block text-xs font-bold text-[#2B182B] uppercase tracking-wider mb-1 flex items-center gap-1">
                 <Mail size={13} className="text-[#EA4F93]" /> Địa Chỉ Email
               </label>
               <Input
@@ -821,7 +873,7 @@ export function ReceptionistCustomerDetailPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-black text-[#2B182B] uppercase tracking-wider mb-1">
+              <label className="block text-xs font-bold text-[#2B182B] uppercase tracking-wider mb-1">
                 Trạng Thái Tài Khoản
               </label>
               <Select
@@ -839,7 +891,7 @@ export function ReceptionistCustomerDetailPage() {
               <button
                 type="button"
                 onClick={() => setIsEditModalOpen(false)}
-                className="rounded-full border border-[#F3D7E4] px-5 py-2.5 text-xs font-black text-[#2B182B] hover:bg-[#FAF0F5] transition cursor-pointer"
+                className="rounded-full border border-[#F3D7E4] px-5 py-2.5 text-xs font-bold text-[#2B182B] hover:bg-[#FAF0F5] transition cursor-pointer"
               >
                 Hủy
               </button>
@@ -847,7 +899,7 @@ export function ReceptionistCustomerDetailPage() {
                 type="button"
                 onClick={handleSaveProfile}
                 disabled={isSavingProfile}
-                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#EA4F93] to-[#E11D48] px-6 py-2.5 text-xs font-black text-white shadow-md hover:shadow-lg transition cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#EA4F93] to-[#E11D48] px-6 py-2.5 text-xs font-bold text-white shadow-md hover:shadow-lg transition cursor-pointer disabled:opacity-50"
               >
                 <Check size={16} />
                 {isSavingProfile ? "Đang lưu..." : "Lưu Thay Đổi"}

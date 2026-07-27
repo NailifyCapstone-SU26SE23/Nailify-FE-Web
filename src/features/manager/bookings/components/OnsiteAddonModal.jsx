@@ -194,7 +194,7 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
               <Sparkles size={24} className="animate-pulse" />
             </div>
             <div>
-              <h3 className="text-lg font-black text-[#0F172A] tracking-tight">Thêm dịch vụ & Mẫu móng phát sinh</h3>
+              <h3 className="text-lg font-bold text-[#0F172A] tracking-tight">Thêm dịch vụ & Mẫu móng phát sinh</h3>
               <p className="text-xs text-[#64748B] font-medium mt-0.5">Tùy chọn số lượng từng dịch vụ thực tế khi làm tại salon</p>
             </div>
           </div>
@@ -213,7 +213,7 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
             type="button"
             onClick={() => setActiveTab("services")}
             className={[
-              "flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer",
+              "flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer",
               activeTab === "services"
                 ? "bg-white text-[#E84F93] shadow-xs border border-[#F3D7E4]"
                 : "text-[#64748B] hover:text-[#0F172A]",
@@ -222,7 +222,7 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
             <Layers size={15} />
             <span>Dịch Vụ Salon</span>
             {Object.keys(serviceQuantities).length > 0 && (
-              <span className="flex h-5 px-1.5 items-center justify-center rounded-full bg-[#E84F93] text-[10px] font-black text-white">
+              <span className="flex h-5 px-1.5 items-center justify-center rounded-full bg-[#E84F93] text-[10px] font-bold text-white">
                 {Object.values(serviceQuantities).reduce((a, b) => a + b, 0)}
               </span>
             )}
@@ -232,7 +232,7 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
             type="button"
             onClick={() => setActiveTab("variants")}
             className={[
-              "flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer",
+              "flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer",
               activeTab === "variants"
                 ? "bg-white text-[#8B5CF6] shadow-xs border border-[#E0E7FF]"
                 : "text-[#64748B] hover:text-[#0F172A]",
@@ -241,7 +241,7 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
             <Palette size={15} />
             <span>Mẫu Móng Art</span>
             {Object.keys(nailVariantQuantities).length > 0 && (
-              <span className="flex h-5 px-1.5 items-center justify-center rounded-full bg-[#8B5CF6] text-[10px] font-black text-white">
+              <span className="flex h-5 px-1.5 items-center justify-center rounded-full bg-[#8B5CF6] text-[10px] font-bold text-white">
                 {Object.values(nailVariantQuantities).reduce((a, b) => a + b, 0)}
               </span>
             )}
@@ -252,7 +252,7 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
         {activeTab === "services" && (
           <div className="space-y-3 animate-fadeIn">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-black text-[#0F172A] uppercase tracking-wider">
+              <span className="text-xs font-bold text-[#0F172A] uppercase tracking-wider">
                 Danh Mục Dịch Vụ Salon
               </span>
               <span className="text-[11px] text-[#64748B] font-medium">
@@ -277,12 +277,12 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
                       ].join(" ")}
                     >
                       <div className="min-w-0 flex-1 pr-2">
-                        <p className="text-xs font-extrabold text-[#0F172A] truncate">
+                        <p className="text-xs font-bold text-[#0F172A] truncate">
                           {s.name || s.serviceName}
                         </p>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="inline-flex items-center gap-1 text-[11px] font-black text-[#E84F93]">
-                            +{Number((s.price || 0) * (qty || 1)).toLocaleString("vi-VN")}đ
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#E84F93]">
+                            +{Number((s.price || 0) * (qty || 1)).toLocaleString("vi-VN")} VND
                           </span>
                           <span className="text-[10px] text-[#64748B] font-semibold bg-[#F1F5F9] px-2 py-0.5 rounded-full">
                             +{(s.duration || 15) * (qty || 1)} phút
@@ -301,7 +301,7 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
                             >
                               <Minus size={12} />
                             </button>
-                            <span className="text-xs font-black text-[#E84F93] min-w-[18px] text-center">
+                            <span className="text-xs font-bold text-[#E84F93] min-w-[18px] text-center">
                               {qty}
                             </span>
                             <button
@@ -316,7 +316,7 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
                           <button
                             type="button"
                             onClick={() => handleUpdateServiceQty(sId, 1)}
-                            className="inline-flex items-center gap-1 rounded-full bg-[#FFF0F6] border border-[#F3D7E4] px-3 py-1.5 text-xs font-extrabold text-[#E84F93] hover:bg-[#E84F93] hover:text-white transition cursor-pointer"
+                            className="inline-flex items-center gap-1 rounded-full bg-[#FFF0F6] border border-[#F3D7E4] px-3 py-1.5 text-xs font-bold text-[#E84F93] hover:bg-[#E84F93] hover:text-white transition cursor-pointer"
                           >
                             <Plus size={12} />
                             <span>Thêm</span>
@@ -339,7 +339,7 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
         {activeTab === "variants" && (
           <div className="space-y-3 animate-fadeIn">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-black text-[#0F172A] uppercase tracking-wider">
+              <span className="text-xs font-bold text-[#0F172A] uppercase tracking-wider">
                 Mẫu Móng Art & Đính Đá
               </span>
               <span className="text-[11px] text-[#64748B] font-medium">
@@ -390,7 +390,7 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
                         {v.name || v.title || "Mẫu móng DB"}
                       </p>
                       <div className="flex items-center justify-between mt-1.5">
-                        <span className="text-xs font-black text-[#8B5CF6]">
+                        <span className="text-xs font-bold text-[#8B5CF6]">
                           {Number(v.price || 100000).toLocaleString("vi-VN")}đ
                         </span>
                         <span className="text-[10px] font-bold text-[#64748B] bg-white/90 px-1.5 py-0.5 rounded-md border border-[#E2E8F0]">
@@ -402,7 +402,7 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
                       <div className="mt-2 pt-2 border-t border-[#E0E7FF] text-center">
                         <span
                           className={[
-                            "block w-full py-1 text-center rounded-full text-[11px] font-extrabold transition",
+                            "block w-full py-1 text-center rounded-full text-[11px] font-bold transition",
                             isSelected
                               ? "bg-[#8B5CF6] text-white"
                               : "bg-[#F5F3FF] border border-[#DDD6FE] text-[#8B5CF6] group-hover:bg-[#8B5CF6] group-hover:text-white",
@@ -427,7 +427,7 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
         <div className="mt-4 pt-3 border-t border-[#F1F5F9] space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-black text-[#0F172A] uppercase tracking-wider mb-1 flex items-center gap-1">
+              <label className="block text-[11px] font-bold text-[#0F172A] uppercase tracking-wider mb-1 flex items-center gap-1">
                 <Clock size={13} className="text-[#E84F93]" />
                 Thời gian dự kiến (+phút)
               </label>
@@ -438,12 +438,12 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
                 max={240}
                 step={5}
                 prefix={<Clock size={14} className="text-[#94A3B8] mr-1" />}
-                className="w-full rounded-xl border-[#E2E8F0] py-1 text-xs font-black focus:border-[#E84F93]"
+                className="w-full rounded-xl border-[#E2E8F0] py-1 text-xs font-bold focus:border-[#E84F93]"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-black text-[#0F172A] uppercase tracking-wider mb-1 flex items-center gap-1">
+              <label className="block text-[11px] font-bold text-[#0F172A] uppercase tracking-wider mb-1 flex items-center gap-1">
                 <Banknote size={13} className="text-[#10B981]" />
                 Chi phí bổ sung (VNĐ)
               </label>
@@ -452,15 +452,16 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
                 onChange={(val) => setExtraPrice(val || 0)}
                 min={0}
                 step={10000}
-                prefix={<span className="text-xs font-black text-[#10B981] mr-1">₫</span>}
-                className="w-full rounded-xl border-[#E2E8F0] py-1 text-xs font-black focus:border-[#E84F93]"
+                suffix={<span className="text-xs font-bold text-[#10B981] mr-1">VND</span>}
+                className="w-full rounded-xl border-[#E2E8F0] py-1 text-xs font-bold focus:border-[#E84F93]"
                 formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                style={{ width: 150 }}
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-[11px] font-black text-[#0F172A] uppercase tracking-wider mb-1">
+            <label className="block text-[11px] font-bold text-[#0F172A] uppercase tracking-wider mb-1">
               Ghi chú dịch vụ phát sinh
             </label>
             <Input.TextArea
@@ -481,7 +482,7 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
             </div>
             <div>
               <p className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Tổng Cộng Phát Sinh</p>
-              <p className="text-xs font-extrabold text-[#0F172A] truncate max-w-[240px]">
+              <p className="text-xs font-bold text-[#0F172A] truncate max-w-[240px]">
                 {totalSelectedCount > 0
                   ? `Đã chọn tổng cộng ${totalSelectedCount} món phát sinh`
                   : "Chưa chọn dịch vụ nào"}
@@ -492,11 +493,11 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
           <div className="flex items-center gap-3 text-right">
             <div className="bg-white/90 px-2.5 py-1 rounded-xl border border-[#E2E8F0]">
               <span className="text-[10px] text-[#64748B] block font-medium">Thời gian</span>
-              <span className="text-xs font-black text-[#0F172A]">+{extraDuration}p</span>
+              <span className="text-xs font-bold text-[#0F172A]">+{extraDuration}p</span>
             </div>
             <div className="bg-gradient-to-r from-[#E84F93] to-[#8B5CF6] px-3 py-1 rounded-xl text-white shadow-2xs">
               <span className="text-[10px] text-white/80 block font-medium">Chi phí cộng</span>
-              <span className="text-xs font-black">+{extraPrice.toLocaleString("vi-VN")}đ</span>
+              <span className="text-xs font-bold">+{extraPrice.toLocaleString("vi-VN")} VND</span>
             </div>
           </div>
         </div>
@@ -514,7 +515,7 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
             type="button"
             onClick={handleConfirm}
             disabled={confirming}
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-7 py-2.5 text-xs font-black text-white shadow-[0_10px_25px_-5px_rgba(232,79,147,0.4)] hover:shadow-[0_12px_30px_-4px_rgba(232,79,147,0.5)] hover:scale-[1.02] active:scale-[0.98] transition disabled:opacity-50 cursor-pointer"
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-7 py-2.5 text-xs font-bold text-white shadow-[0_10px_25px_-5px_rgba(232,79,147,0.4)] hover:shadow-[0_12px_30px_-4px_rgba(232,79,147,0.5)] hover:scale-[1.02] active:scale-[0.98] transition disabled:opacity-50 cursor-pointer"
           >
             <CheckCircle2 size={16} />
             {confirming ? "Đang xử lý..." : "Xác nhận & Cập nhật Lịch"}

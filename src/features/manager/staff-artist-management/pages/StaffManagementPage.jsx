@@ -414,7 +414,7 @@ function StaffArtistCard({ staff, onOpenDrawer }) {
           <StaffAvatar
             staff={{ ...staff, initials: getStaffInitials(staff.name) }}
             className="h-14 w-14 rounded-full object-cover ring-2 ring-slate-100 shadow-2xs"
-            fallbackClassName={`flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br ${staff.avatarTone} text-base font-black text-white ring-2 ring-slate-100 shadow-2xs`}
+            fallbackClassName={`flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br ${staff.avatarTone} text-base font-bold text-white ring-2 ring-slate-100 shadow-2xs`}
           />
           {staff.status === "Active" && (
             <span
@@ -803,7 +803,7 @@ function TimelineSchedule({
                     </div>
                     <div className="min-w-0">
                       <p className="text-[12px] font-bold text-[#2d1b35] truncate leading-tight">{staff.name}</p>
-                      <span className={`inline-flex rounded-full px-1.5 py-0.5 text-[9px] font-black tracking-wide ${SCHEDULE_STATUS_STYLES[staff.status] || "bg-gray-100 text-gray-600"}`}>
+                      <span className={`inline-flex rounded-full px-1.5 py-0.5 text-[9px] font-bold tracking-wide ${SCHEDULE_STATUS_STYLES[staff.status] || "bg-gray-100 text-gray-600"}`}>
                         {staff.status}
                       </span>
                     </div>
@@ -851,13 +851,13 @@ function TimelineSchedule({
                             <div className="flex flex-col items-center gap-1">
                               {isLeave ? (
                                 <div className="flex flex-col items-center gap-1">
-                                  <span className="text-[9px] font-black uppercase tracking-widest text-amber-500">On Leave</span>
+                                  <span className="text-[9px] font-bold uppercase tracking-widest text-amber-500">On Leave</span>
                                   <span className="rounded-full bg-amber-100 border border-amber-200 px-2 py-0.5 text-[8px] font-bold text-amber-600">Approved</span>
                                 </div>
                               ) : (
                                 <>
                                   <span className="text-[9px] font-semibold text-slate-300 tracking-wide group-hover/cell:opacity-0 transition-opacity">— Off —</span>
-                                  <span className="absolute inset-0 flex flex-col items-center justify-center text-[9px] font-black text-[#E84F93] opacity-0 group-hover/cell:opacity-100 transition-opacity bg-pink-50/95 rounded-2xl border border-pink-200/60 gap-1">
+                                  <span className="absolute inset-0 flex flex-col items-center justify-center text-[9px] font-bold text-[#E84F93] opacity-0 group-hover/cell:opacity-100 transition-opacity bg-pink-50/95 rounded-2xl border border-pink-200/60 gap-1">
                                     <span className="text-[16px] leading-none">✦</span>
                                     Assign Shift
                                   </span>
@@ -867,7 +867,7 @@ function TimelineSchedule({
                           ) : (
                             <div className="flex flex-col gap-1 w-full justify-center items-center">
                               {isSplitShift && (
-                                <div className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-violet-500 to-purple-600 px-2 py-0.5 text-[7.5px] font-black text-white uppercase tracking-widest shadow-sm">
+                                <div className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-violet-500 to-purple-600 px-2 py-0.5 text-[7.5px] font-bold text-white uppercase tracking-widest shadow-sm">
                                   <span>⚡ Split ({shiftLabels.length})</span>
                                 </div>
                               )}
@@ -883,7 +883,7 @@ function TimelineSchedule({
                                 ))}
                               </div>
                               {!isSplitShift && (
-                                <span className="text-[7.5px] font-black text-emerald-600 uppercase tracking-widest block leading-none mt-0.5">
+                                <span className="text-[7.5px] font-bold text-emerald-600 uppercase tracking-widest block leading-none mt-0.5">
                                   {dayData?.duration ? `${dayData.duration}h` : dayData?.status || "Active"}
                                 </span>
                               )}
@@ -1513,7 +1513,7 @@ export function StaffManagementPage() {
                   })}
                   <Link
                     to={ROUTES.managerStaffArtistsCreate}
-                    className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#E84F93] via-[#EC4899] to-[#F43F5E] px-6 py-2.5 text-xs font-black text-white shadow-[0_10px_25px_rgba(232,79,147,0.35)] hover:shadow-xl transition-all"
+                    className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#E84F93] via-[#EC4899] to-[#F43F5E] px-6 py-2.5 text-xs font-bold text-white shadow-[0_10px_25px_rgba(232,79,147,0.35)] hover:shadow-xl transition-all"
                   >
                     <UserPlus size={16} />
                     <span>Add Staff Artist</span>
@@ -1531,7 +1531,7 @@ export function StaffManagementPage() {
                         <stat.icon size={16} />
                       </div>
                     </div>
-                    <p className="mt-2.5 text-2xl font-black text-slate-900 tracking-tight">{stat.value}</p>
+                    <p className="mt-2.5 text-2xl font-bold text-slate-900 tracking-tight">{stat.value}</p>
                   </div>
                 ))}
               </div>

@@ -92,7 +92,7 @@ export function NailShapeDetailPage() {
       const values = await configForm.validateFields();
       setIsSavingConfig(true);
       const toastId = toast.loading(editingConfig ? "Updating config..." : "Creating config...");
-      
+
       const payload = {
         nailShapeId: Number(shapeId),
         name: values.name.trim(),
@@ -344,7 +344,7 @@ export function NailShapeDetailPage() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-[#cf3d74]">Nail Shape Detail</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">Nail Shape Detail</h1>
             <p className="text-xs font-medium text-slate-400">
               Review, edit, and delete this nail shape from one page.
             </p>
@@ -468,11 +468,10 @@ export function NailShapeDetailPage() {
               <label className="space-y-2.5 md:col-span-2">
                 <span className="text-[13px] font-semibold text-slate-600">Preview Image</span>
                 <label
-                  className={`flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-rose-200 px-6 py-8 ${
-                    isEditing
+                  className={`flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-rose-200 px-6 py-8 ${isEditing
                       ? "cursor-pointer bg-gradient-to-br from-[#fffafc] to-[#fff5f9] transition hover:border-rose-300 hover:shadow-[0_8px_24px_rgba(226,93,143,0.12)]"
                       : "bg-gradient-to-br from-[#fffafc] to-[#fff5f9]"
-                  }`}
+                    }`}
                 >
                   {imagePreview ? (
                     <Image
@@ -511,9 +510,9 @@ export function NailShapeDetailPage() {
           <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-100 md:p-8">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-800">Shape Method Configs</h2>
-              <Button 
-                type="primary" 
-                icon={<Plus size={16} />} 
+              <Button
+                type="primary"
+                icon={<Plus size={16} />}
                 onClick={() => handleOpenConfigModal()}
                 className="bg-rose-500 hover:bg-rose-600 border-none rounded-full px-5 shadow-md shadow-rose-200"
               >
@@ -621,11 +620,11 @@ export function NailShapeDetailPage() {
         item={
           shape
             ? {
-                image: shape.imageUrl || undefined,
-                title: shape.name,
-                meta: `${shape.priceLabel} • ${shape.durationLabel}`,
-                note: `Shape ID: ${shape.nailShapeId}`,
-              }
+              image: shape.imageUrl || undefined,
+              title: shape.name,
+              meta: `${shape.priceLabel} • ${shape.durationLabel}`,
+              note: `Shape ID: ${shape.nailShapeId}`,
+            }
             : null
         }
         warnings={["This action calls the backend delete endpoint and removes the record permanently."]}
@@ -663,23 +662,23 @@ export function NailShapeDetailPage() {
               label={<span className="text-sm font-semibold text-slate-700">Price (VND)</span>}
               rules={[{ required: true, message: 'Please enter price' }]}
             >
-              <InputNumber 
-                className="w-full rounded-xl border-slate-200 hover:border-rose-300 focus:border-rose-400 focus:ring-rose-100" 
+              <InputNumber
+                className="w-full rounded-xl border-slate-200 hover:border-rose-300 focus:border-rose-400 focus:ring-rose-100"
                 min={0}
                 step={1000}
                 formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                 parser={value => value?.replace(/\$\s?|(,*)/g, '') || ''}
               />
             </Form.Item>
-            
+
             <Form.Item
               name="duration"
               label={<span className="text-sm font-semibold text-slate-700">Duration (mins)</span>}
               rules={[{ required: true, message: 'Please enter duration' }]}
             >
-              <InputNumber 
-                className="w-full rounded-xl border-slate-200 hover:border-rose-300 focus:border-rose-400 focus:ring-rose-100" 
-                min={1} 
+              <InputNumber
+                className="w-full rounded-xl border-slate-200 hover:border-rose-300 focus:border-rose-400 focus:ring-rose-100"
+                min={1}
               />
             </Form.Item>
           </div>
@@ -693,16 +692,16 @@ export function NailShapeDetailPage() {
           </Form.Item>
 
           <div className="mt-8 flex justify-end gap-3">
-            <Button 
-              onClick={() => setIsConfigModalVisible(false)} 
+            <Button
+              onClick={() => setIsConfigModalVisible(false)}
               disabled={isSavingConfig}
               className="rounded-full px-6 font-semibold"
             >
               Cancel
             </Button>
-            <Button 
-              type="primary" 
-              htmlType="submit" 
+            <Button
+              type="primary"
+              htmlType="submit"
               loading={isSavingConfig}
               className="rounded-full bg-rose-500 px-6 font-semibold shadow-md shadow-rose-200 hover:bg-rose-600"
             >

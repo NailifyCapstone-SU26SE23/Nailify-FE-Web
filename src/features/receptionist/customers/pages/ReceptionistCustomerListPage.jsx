@@ -30,7 +30,8 @@ import {
   AlertTriangle,
   X,
   Smartphone,
-  UserX
+  UserX,
+  Armchair
 } from "lucide-react";
 import { Table, Spin, Modal, Input, Select, Tag } from "antd";
 import toast from "react-hot-toast";
@@ -40,6 +41,7 @@ import { fetchReceptionistCustomers } from "../services/receptionistCustomerServ
 import { receptionistWalkInBookingService } from "../../walk-in-bookings/services/receptionistWalkInBookingService";
 import { getReceptionistSalonId } from "../../bookings/services/receptionistBookingService";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
+import { AssignChairModal } from "../../bookings/components/AssignChairModal";
 
 function formatDate(dateString) {
   if (!dateString) return "Chưa cập nhật";
@@ -119,61 +121,10 @@ export function ReceptionistCustomerListPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  const [walkInGuests, setWalkInGuests] = useState([
-    {
-      id: "W-01",
-      customerName: "Nguyễn Thị Phương",
-      phone: "0912 345 678",
-      entryType: "app_user",
-      nailDesign: "Sơn Gel Ombre Pink Rose",
-      serviceName: "Sơn Gel & Chăm Sóc Móng",
-      assignedArtist: "Olivia Lê",
-      duration: "15 phút",
-      status: "lobby",
-      checkInTime: "10:15",
-      userId: "dcb2364e-1111-2222-3333-444455556666",
-    },
-    {
-      id: "W-02",
-      customerName: "Trần Bảo Ngọc",
-      phone: "0988 123 456",
-      entryType: "late_arrival",
-      lateMinutes: 18,
-      nailDesign: "Nail Art Floral Chic",
-      serviceName: "Cắt Móng & Vẽ Art Hoa Văn",
-      assignedArtist: "Minh Thư",
-      duration: "35 phút",
-      status: "called",
-      checkInTime: "10:30",
-      userId: null,
-    },
-    {
-      id: "W-03",
-      customerName: "Đoàn Thanh",
-      phone: "0966 340 303",
-      entryType: "new_guest",
-      nailDesign: "Móng Vuông Đính Đá Subtle",
-      serviceName: "Đính Đá & Làm Đệm Móng",
-      assignedArtist: "Anh Thư",
-      duration: "45 phút",
-      status: "in_service",
-      checkInTime: "09:45",
-      userId: null,
-    },
-    {
-      id: "W-04",
-      customerName: "Hoàng Mỹ Duyên",
-      phone: "0909 888 777",
-      entryType: "app_user",
-      nailDesign: "Chăm Sóc Dưỡng Móng Tự Nhiên",
-      serviceName: "Tháo Móng & Dưỡng Da",
-      assignedArtist: "Kim Ngân",
-      duration: "20 phút",
-      status: "completed",
-      checkInTime: "09:10",
-      userId: null,
-    },
-  ]);
+  const [walkInGuests, setWalkInGuests] = useState([]);
+
+  const [isAssignChairModalOpen, setIsAssignChairModalOpen] = useState(false);
+  const [assignChairGuest, setAssignChairGuest] = useState(null);
 
   const [isWalkInModalOpen, setIsWalkInModalOpen] = useState(false);
   const [walkInTab, setWalkInTab] = useState("app_user");
@@ -463,8 +414,9 @@ export function ReceptionistCustomerListPage() {
       });
 
       if (autoSeatAfterAssign) {
-        await receptionistWalkInBookingService.convertQueueToBooking(actualQueueId);
-        toast.success(`Đã phân công thợ & tạo đơn Booking cho ${selectedQueueGuest.customerName} (Vào ghế)!`);
+        setAssignChairGuest(selectedQueueGuest);
+        setIsAssignChairModalOpen(true);
+        toast.success(`Đã phân công thợ cho ${selectedQueueGuest.customerName}. Vui lòng chọn ghế!`);
       } else {
         toast.success(`Đã phân công thợ cho khách ${selectedQueueGuest.customerName}!`);
       }
@@ -747,8 +699,9 @@ export function ReceptionistCustomerListPage() {
     const targetGuest = walkInGuests.find((g) => g.id === guestId || g.queueId === guestId);
     if (!targetGuest) return;
 
-    if (newStatus === "in_service" && (!targetGuest.assignedNailArtistId || targetGuest.assignedArtist === "Chưa phân công")) {
-      handleOpenAssignModal(targetGuest, true);
+    if (newStatus === "in_service") {
+      setAssignChairGuest(targetGuest);
+      setIsAssignChairModalOpen(true);
       return;
     }
 
@@ -764,9 +717,6 @@ export function ReceptionistCustomerListPage() {
         if (newStatus === "called") {
           await receptionistWalkInBookingService.callQueue(actualQueueId);
           toast.success(`Đã phát loa gọi ${targetGuest?.customerName || "khách"} lên quầy tư vấn!`);
-        } else if (newStatus === "in_service") {
-          await receptionistWalkInBookingService.convertQueueToBooking(actualQueueId);
-          toast.success(`Đã tạo đơn Booking (InProgress) & chuyển ${targetGuest?.customerName || "khách"} vào ghế!`);
         } else if (newStatus === "completed") {
           await receptionistWalkInBookingService.completeQueue(actualQueueId);
           toast.success(`Đã hoàn thành lượt xếp hàng cho ${targetGuest?.customerName || "khách"}!`);
@@ -782,6 +732,28 @@ export function ReceptionistCustomerListPage() {
       }
     } else {
       toast.success("Đã chuyển trạng thái lượt chờ!");
+    }
+  };
+
+  const handleConfirmAssignChair = async (selectedChair) => {
+    if (!assignChairGuest) return;
+    const actualQueueId = assignChairGuest.queueId || assignChairGuest.id;
+    try {
+      await receptionistWalkInBookingService.convertQueueToBooking(actualQueueId);
+      toast.success(`Đã tạo đơn Booking & chuyển khách vào ghế ${selectedChair?.chairName || ""}!`);
+
+      setWalkInGuests((prev) =>
+        prev.map((g) => (g.id === assignChairGuest.id || g.queueId === assignChairGuest.id ? { ...g, status: "in_service" } : g))
+      );
+
+      setIsAssignChairModalOpen(false);
+      setAssignChairGuest(null);
+      await loadWalkInQueue();
+    } catch (err) {
+      const errMsg = err?.response?.data?.message || err?.message || "Không thể thực hiện thao tác.";
+      toast.error(`Lỗi: ${errMsg}`);
+      console.warn("Backend status update API error:", err);
+      await loadWalkInQueue();
     }
   };
 
@@ -848,7 +820,7 @@ export function ReceptionistCustomerListPage() {
                 <div
                   className={`w-9 h-9 rounded-full bg-gradient-to-tr ${getAvatarGradient(
                     record.userId
-                  )} flex items-center justify-center text-white font-black text-xs shadow-xs`}
+                  )} flex items-center justify-center text-white font-bold text-xs shadow-xs`}
                 >
                   {getInitials(record.firstName, record.lastName)}
                 </div>
@@ -938,7 +910,7 @@ export function ReceptionistCustomerListPage() {
               type="button"
               onClick={() => setMainWorkspaceTab("directory")}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${mainWorkspaceTab === "directory"
-                ? "bg-white text-[#B86B8E] shadow-sm font-black"
+                ? "bg-white text-[#B86B8E] shadow-sm font-bold"
                 : "text-gray-500 hover:text-gray-800"
                 }`}
             >
@@ -949,7 +921,7 @@ export function ReceptionistCustomerListPage() {
               type="button"
               onClick={() => setMainWorkspaceTab("lobby")}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${mainWorkspaceTab === "lobby"
-                ? "bg-white text-[#B86B8E] shadow-sm font-black"
+                ? "bg-white text-[#B86B8E] shadow-sm font-bold"
                 : "text-gray-500 hover:text-gray-800"
                 }`}
             >
@@ -1242,7 +1214,7 @@ export function ReceptionistCustomerListPage() {
                             onClick={() => handleOpenGuestProfile(g)}
                             className="px-2 py-1 text-[10px] font-bold text-gray-500 hover:text-[#C97A9E] hover:bg-[#FAF0F5] border border-gray-200 rounded-lg transition cursor-pointer"
                           >
-                            View
+                            <Eye size={15} /> View
                           </button>
                           <div className="flex items-center gap-1">
                             {(g.assignedArtist === "Chưa phân công" || !g.assignedNailArtistId) && (
@@ -1251,7 +1223,7 @@ export function ReceptionistCustomerListPage() {
                                 onClick={() => handleOpenAssignModal(g, false)}
                                 className="px-2 py-1 text-[10px] font-bold text-white bg-[#C97A9E] hover:bg-[#B86B8E] rounded-lg transition shadow-xs cursor-pointer flex items-center gap-0.5"
                               >
-                                <UserCheck size={11} /> Phân Thợ
+                                <UserCheck size={15} /> Phân Thợ
                               </button>
                             )}
                             <button
@@ -1259,14 +1231,14 @@ export function ReceptionistCustomerListPage() {
                               onClick={() => handleMoveGuestStatus(g.id, "called")}
                               className="px-2 py-1 text-[10px] font-bold text-[#C97A9E] bg-[#FAF0F5] hover:bg-[#C97A9E] hover:text-white border border-[#F2D6E3] rounded-lg transition cursor-pointer flex items-center gap-0.5"
                             >
-                              <Volume2 size={11} /> Gọi Loa
+                              <Volume2 size={15} /> Gọi Loa
                             </button>
                             <button
                               type="button"
                               onClick={() => handleMoveGuestStatus(g.id, "in_service")}
                               className="px-2.5 py-1 text-[10px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition cursor-pointer flex items-center gap-0.5"
                             >
-                              Vào Ghế
+                              <Armchair size={15} />  Vào Ghế
                             </button>
                           </div>
                         </div>
@@ -1327,9 +1299,9 @@ export function ReceptionistCustomerListPage() {
                           <button
                             type="button"
                             onClick={() => handleOpenGuestProfile(g)}
-                            className="px-2 py-1 text-[10px] font-bold text-gray-500 hover:text-[#C97A9E] hover:bg-[#FAF0F5] border border-gray-200 rounded-lg transition cursor-pointer"
+                            className="px-2.5 py-1 text-[10px] font-bold text-white bg-gray-500 hover:bg-blue-500 rounded-lg transition shadow-xs cursor-pointer flex items-center gap-0.5"
                           >
-                            View
+                            <Eye size={15} /> View
                           </button>
                           <div className="flex items-center gap-1">
                             {(g.assignedArtist === "Chưa phân công" || !g.assignedNailArtistId) && (
@@ -1338,7 +1310,7 @@ export function ReceptionistCustomerListPage() {
                                 onClick={() => handleOpenAssignModal(g, false)}
                                 className="px-2.5 py-1 text-[10px] font-bold text-white bg-[#C97A9E] hover:bg-[#B86B8E] rounded-lg transition shadow-xs cursor-pointer flex items-center gap-0.5"
                               >
-                                <UserCheck size={11} /> Phân Thợ
+                                <UserCheck size={15} /> Phân Thợ
                               </button>
                             )}
                             <button
@@ -1346,7 +1318,7 @@ export function ReceptionistCustomerListPage() {
                               onClick={() => handleMoveGuestStatus(g.id, "in_service")}
                               className="px-2.5 py-1 text-[10px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition shadow-xs cursor-pointer flex items-center gap-0.5"
                             >
-                              💺 Vào Ghế
+                              <Armchair size={15} /> Vào Ghế
                             </button>
                           </div>
                         </div>
@@ -1442,7 +1414,7 @@ export function ReceptionistCustomerListPage() {
                 type="button"
                 onClick={() => setWalkInTab("app_user")}
                 className={`py-1.5 px-3 text-[11px] font-bold rounded-lg transition flex items-center gap-1 cursor-pointer ${walkInTab === "app_user"
-                  ? "bg-[#C97A9E] text-white shadow-xs font-black"
+                  ? "bg-[#C97A9E] text-white shadow-xs font-bold"
                   : "text-gray-600 hover:text-[#C97A9E]"
                   }`}
               >
@@ -1452,7 +1424,7 @@ export function ReceptionistCustomerListPage() {
                 type="button"
                 onClick={() => setWalkInTab("new_guest")}
                 className={`py-1.5 px-3 text-[11px] font-bold rounded-lg transition flex items-center gap-1 cursor-pointer ${walkInTab === "new_guest"
-                  ? "bg-[#C97A9E] text-white shadow-xs font-black"
+                  ? "bg-[#C97A9E] text-white shadow-xs font-bold"
                   : "text-gray-600 hover:text-[#C97A9E]"
                   }`}
               >
@@ -1462,7 +1434,7 @@ export function ReceptionistCustomerListPage() {
                 type="button"
                 onClick={() => setWalkInTab("late_arrival")}
                 className={`py-1.5 px-3 text-[11px] font-bold rounded-lg transition flex items-center gap-1 cursor-pointer ${walkInTab === "late_arrival"
-                  ? "bg-[#C97A9E] text-white shadow-xs font-black"
+                  ? "bg-[#C97A9E] text-white shadow-xs font-bold"
                   : "text-gray-600 hover:text-[#C97A9E]"
                   }`}
               >
@@ -1497,7 +1469,7 @@ export function ReceptionistCustomerListPage() {
                         label: (
                           <div className="flex items-center justify-between w-full py-1.5 px-1 gap-3 border-b border-gray-50 last:border-none min-w-[260px]">
                             <div className="flex items-center gap-2 min-w-0">
-                              <span className="w-6 h-6 rounded-full bg-purple-100 text-[#C97A9E] font-black text-[10px] flex items-center justify-center shrink-0">
+                              <span className="w-6 h-6 rounded-full bg-purple-100 text-[#C97A9E] font-bold text-[10px] flex items-center justify-center shrink-0">
                                 👤
                               </span>
                               <span className="font-extrabold text-[#221F26] text-xs truncate">{name}</span>
@@ -1615,7 +1587,7 @@ export function ReceptionistCustomerListPage() {
                       label: (
                         <div className="flex items-center justify-between w-full py-1.5 px-1 gap-3 border-b border-gray-50 last:border-none min-w-[260px]">
                           <div className="flex items-center gap-2 min-w-0">
-                            <span className="w-5 h-5 rounded-md bg-[#FAF0F5] text-[#C97A9E] font-black text-[10px] flex items-center justify-center shrink-0">
+                            <span className="w-5 h-5 rounded-md bg-[#FAF0F5] text-[#C97A9E] font-bold text-[10px] flex items-center justify-center shrink-0">
                               💅
                             </span>
                             <span className="font-extrabold text-[#221F26] text-xs truncate">{name}</span>
@@ -1667,7 +1639,7 @@ export function ReceptionistCustomerListPage() {
                             >
                               -
                             </button>
-                            <span className="w-5 text-center text-xs font-black text-[#C97A9E]">{qty}</span>
+                            <span className="w-5 text-center text-xs font-bold text-[#C97A9E]">{qty}</span>
                             <button
                               type="button"
                               onClick={() => {
@@ -1729,7 +1701,7 @@ export function ReceptionistCustomerListPage() {
                             {avatar ? (
                               <img src={avatar} alt={name} className="w-6 h-6 rounded-full object-cover border border-[#F2D6E3] shrink-0" />
                             ) : (
-                              <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[#C97A9E] to-[#B86B8E] text-white font-black text-[10px] flex items-center justify-center shrink-0 shadow-2xs">
+                              <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[#C97A9E] to-[#B86B8E] text-white font-bold text-[10px] flex items-center justify-center shrink-0 shadow-2xs">
                                 {name.charAt(0).toUpperCase()}
                               </div>
                             )}
@@ -1754,7 +1726,7 @@ export function ReceptionistCustomerListPage() {
                   </span>
                 </label>
                 <div className="flex items-center gap-2.5 p-2 px-3 bg-gradient-to-r from-emerald-50 via-teal-50/60 to-emerald-50 border border-emerald-200/90 rounded-xl shadow-2xs">
-                  <div className="w-6 h-6 rounded-lg bg-emerald-500 text-white flex items-center justify-center font-black shadow-xs shrink-0">
+                  <div className="w-6 h-6 rounded-lg bg-emerald-500 text-white flex items-center justify-center font-bold shadow-xs shrink-0">
                     <Clock size={13} />
                   </div>
                   <span className="font-extrabold text-xs text-emerald-900">
@@ -1768,7 +1740,7 @@ export function ReceptionistCustomerListPage() {
             <div className="col-span-7 space-y-3">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-black uppercase tracking-wider text-[#221F26] flex items-center gap-1.5">
+                  <label className="text-xs font-bold uppercase tracking-wider text-[#221F26] flex items-center gap-1.5">
                     <Sparkles size={14} className="text-[#C97A9E]" /> Vùng Chọn Mẫu Móng Visual (Nail Variants)
                   </label>
                   <span className="text-[11px] font-bold text-[#C97A9E] bg-[#FAF0F5] px-2.5 py-0.5 rounded-full border border-[#F2D6E3]">
@@ -1840,7 +1812,7 @@ export function ReceptionistCustomerListPage() {
                             </p>
 
                             <div className="mt-1 flex items-center justify-between pt-1 border-t border-gray-100">
-                              <p className="text-xs font-black text-[#C97A9E]">
+                              <p className="text-xs font-bold text-[#C97A9E]">
                                 {price.toLocaleString("vi-VN")}đ
                               </p>
 
@@ -1860,7 +1832,7 @@ export function ReceptionistCustomerListPage() {
                                   >
                                     -
                                   </button>
-                                  <span className="text-xs font-black text-[#C97A9E] min-w-[14px] text-center">
+                                  <span className="text-xs font-bold text-[#C97A9E] min-w-[14px] text-center">
                                     {variantQty}
                                   </span>
                                   <button
@@ -1907,7 +1879,7 @@ export function ReceptionistCustomerListPage() {
               {totalCalculatedPrice > 0 ? (
                 <div className="flex items-center gap-2.5 bg-[#FAF0F5] px-3.5 py-1.5 rounded-xl border border-[#F2D6E3] text-xs font-bold text-[#C97A9E]">
                   <span>✨ Tổng dịch vụ & mẫu móng:</span>
-                  <span className="font-black text-[#B86B8E] text-sm">
+                  <span className="font-bold text-[#B86B8E] text-sm">
                     {totalCalculatedPrice.toLocaleString("vi-VN")}đ
                   </span>
                 </div>
@@ -1930,7 +1902,7 @@ export function ReceptionistCustomerListPage() {
                 type="button"
                 onClick={handleQuickAddWalkInGuest}
                 disabled={isSubmittingWalkIn}
-                className="px-7 py-2.5 text-xs font-black text-white bg-gradient-to-r from-[#C97A9E] to-[#B86B8E] hover:from-[#B86B8E] hover:to-[#A3597D] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all shadow-md shadow-[#C97A9E]/30 cursor-pointer flex items-center gap-2"
+                className="px-7 py-2.5 text-xs font-bold text-white bg-gradient-to-r from-[#C97A9E] to-[#B86B8E] hover:from-[#B86B8E] hover:to-[#A3597D] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all shadow-md shadow-[#C97A9E]/30 cursor-pointer flex items-center gap-2"
               >
                 <Plus size={16} />
                 {isSubmittingWalkIn ? "Đang xử lý..." : "Xác Nhận Check-In"}
@@ -1978,7 +1950,7 @@ export function ReceptionistCustomerListPage() {
           {selectedQueueGuest && (
             <div className="mx-6 mt-5 bg-gradient-to-r from-[#FAF0F5]/80 via-white to-[#FAF0F5]/80 border border-[#F2D6E3] p-3.5 rounded-2xl flex items-center justify-between shadow-xs">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#C97A9E] text-white font-black text-sm flex items-center justify-center shadow-sm">
+                <div className="w-10 h-10 rounded-xl bg-[#C97A9E] text-white font-bold text-sm flex items-center justify-center shadow-sm">
                   {selectedQueueGuest.customerName.charAt(0).toUpperCase()}
                 </div>
                 <div>
@@ -2034,7 +2006,7 @@ export function ReceptionistCustomerListPage() {
                     >
                       <div className="flex items-center gap-3.5">
                         <div
-                          className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs transition-transform ${isSelected
+                          className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs transition-transform ${isSelected
                             ? "bg-gradient-to-br from-[#C97A9E] to-[#B86B8E] text-white shadow-sm scale-105"
                             : "bg-[#FAF0F5] text-[#C97A9E] border border-[#F2D6E3]"
                             }`}
@@ -2099,6 +2071,22 @@ export function ReceptionistCustomerListPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Assign Chair Modal */}
+      {isAssignChairModalOpen && (
+        <AssignChairModal
+          isOpen={isAssignChairModalOpen}
+          onClose={() => setIsAssignChairModalOpen(false)}
+          booking={{
+            salonId: getReceptionistSalonId(),
+            customerName: assignChairGuest?.customerName || "Khách",
+            bookingDate: new Date().toISOString().split('T')[0],
+            startTime: new Date().toLocaleTimeString('en-US', { hour12: false }).substring(0, 5),
+            totalDuration: parseInt(assignChairGuest?.duration) || 60,
+          }}
+          onAssign={handleConfirmAssignChair}
+        />
+      )}
     </div>
   );
 }

@@ -14,7 +14,7 @@ import { fetchAdminNailShapes } from "../../nail-shapes-management/services/nail
 export function ShapeMethodConfigDetailPage() {
   const navigate = useNavigate();
   const { configId } = useParams();
-  
+
   const [config, setConfig] = useState(null);
   const [draft, setDraft] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -40,7 +40,7 @@ export function ShapeMethodConfigDetailPage() {
       try {
         const data = await fetchAdminShapeMethodConfigDetail(configId);
         if (!isMounted) return;
-        
+
         setConfig(data);
         setDraft({
           name: data.name,
@@ -82,7 +82,7 @@ export function ShapeMethodConfigDetailPage() {
     const newErrors = {};
     if (!String(draft.name || "").trim()) newErrors.name = "Name is required.";
     if (!draft.nailShapeId) newErrors.nailShapeId = "Nail shape is required.";
-    
+
     const priceNum = Number(draft.price);
     if (!draft.price || isNaN(priceNum) || priceNum < 0) {
       newErrors.price = "Price must be a valid positive number.";
@@ -151,14 +151,14 @@ export function ShapeMethodConfigDetailPage() {
 
   const hasChanges = Boolean(
     config &&
-      draft &&
-      (
-        config.name !== draft.name ||
-        config.nailShapeId !== Number(draft.nailShapeId) ||
-        config.price !== Number(draft.price) ||
-        config.duration !== Number(draft.duration) ||
-        config.status !== draft.status
-      )
+    draft &&
+    (
+      config.name !== draft.name ||
+      config.nailShapeId !== Number(draft.nailShapeId) ||
+      config.price !== Number(draft.price) ||
+      config.duration !== Number(draft.duration) ||
+      config.status !== draft.status
+    )
   );
 
   if (isLoading) {
@@ -203,13 +203,13 @@ export function ShapeMethodConfigDetailPage() {
               <Sliders size={24} />
             </div>
             <div>
-              <h1 className="text-2xl font-black tracking-tight text-[#432744]">Config Details</h1>
+              <h1 className="text-2xl font-bold tracking-tight text-[#432744]">Config Details</h1>
               <p className="mt-1 text-sm font-medium text-[#b58a9f]">Update shape method config information</p>
             </div>
           </div>
 
           <div className="flex gap-2 text-xs font-semibold text-[#cd98b1]">
-             ID: <span className="text-[#ea4f93]">{configId}</span>
+            ID: <span className="text-[#ea4f93]">{configId}</span>
           </div>
         </div>
 
@@ -226,11 +226,10 @@ export function ShapeMethodConfigDetailPage() {
                   type="text"
                   value={draft.name}
                   onChange={handleChange}
-                  className={`h-12 w-full rounded-xl border bg-[#fffafc] px-4 text-[15px] font-medium text-[#432744] shadow-sm outline-none transition-all focus:bg-white focus:ring-4 ${
-                    errors.name
+                  className={`h-12 w-full rounded-xl border bg-[#fffafc] px-4 text-[15px] font-medium text-[#432744] shadow-sm outline-none transition-all focus:bg-white focus:ring-4 ${errors.name
                       ? "border-red-300 focus:border-red-500 focus:ring-red-500/10"
                       : "border-[#f4dbe7] focus:border-[#ea4f93] focus:ring-[#ea4f93]/10"
-                  }`}
+                    }`}
                 />
                 {errors.name && <p className="mt-2 text-xs font-semibold text-red-500">{errors.name}</p>}
               </div>
@@ -245,11 +244,10 @@ export function ShapeMethodConfigDetailPage() {
                   value={draft.nailShapeId}
                   onChange={handleChange}
                   disabled={isLoadingShapes}
-                  className={`h-12 w-full rounded-xl border bg-[#fffafc] px-4 text-[15px] font-medium text-[#432744] shadow-sm outline-none transition-all focus:bg-white focus:ring-4 disabled:opacity-60 ${
-                    errors.nailShapeId
+                  className={`h-12 w-full rounded-xl border bg-[#fffafc] px-4 text-[15px] font-medium text-[#432744] shadow-sm outline-none transition-all focus:bg-white focus:ring-4 disabled:opacity-60 ${errors.nailShapeId
                       ? "border-red-300 focus:border-red-500 focus:ring-red-500/10"
                       : "border-[#f4dbe7] focus:border-[#ea4f93] focus:ring-[#ea4f93]/10"
-                  }`}
+                    }`}
                 >
                   <option value="">Select a nail shape...</option>
                   {nailShapes.map((shape) => (
@@ -274,11 +272,10 @@ export function ShapeMethodConfigDetailPage() {
                     step="1000"
                     value={draft.price}
                     onChange={handleChange}
-                    className={`h-12 w-full rounded-xl border bg-[#fffafc] px-4 text-[15px] font-medium text-[#432744] shadow-sm outline-none transition-all focus:bg-white focus:ring-4 ${
-                      errors.price
+                    className={`h-12 w-full rounded-xl border bg-[#fffafc] px-4 text-[15px] font-medium text-[#432744] shadow-sm outline-none transition-all focus:bg-white focus:ring-4 ${errors.price
                         ? "border-red-300 focus:border-red-500 focus:ring-red-500/10"
                         : "border-[#f4dbe7] focus:border-[#ea4f93] focus:ring-[#ea4f93]/10"
-                    }`}
+                      }`}
                   />
                   {errors.price && <p className="mt-2 text-xs font-semibold text-red-500">{errors.price}</p>}
                 </div>
@@ -294,11 +291,10 @@ export function ShapeMethodConfigDetailPage() {
                     min="1"
                     value={draft.duration}
                     onChange={handleChange}
-                    className={`h-12 w-full rounded-xl border bg-[#fffafc] px-4 text-[15px] font-medium text-[#432744] shadow-sm outline-none transition-all focus:bg-white focus:ring-4 ${
-                      errors.duration
+                    className={`h-12 w-full rounded-xl border bg-[#fffafc] px-4 text-[15px] font-medium text-[#432744] shadow-sm outline-none transition-all focus:bg-white focus:ring-4 ${errors.duration
                         ? "border-red-300 focus:border-red-500 focus:ring-red-500/10"
                         : "border-[#f4dbe7] focus:border-[#ea4f93] focus:ring-[#ea4f93]/10"
-                    }`}
+                      }`}
                   />
                   {errors.duration && <p className="mt-2 text-xs font-semibold text-red-500">{errors.duration}</p>}
                 </div>

@@ -119,7 +119,7 @@ export function NailSurfaceCreatePage() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-[#cf3d74]">Add New Nail Surface</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">Add New Nail Surface</h1>
             <p className="text-xs font-medium text-slate-400">
               Create a new nail surface with shader configuration and pricing.
             </p>

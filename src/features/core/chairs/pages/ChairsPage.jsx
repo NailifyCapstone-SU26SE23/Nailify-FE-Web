@@ -2,12 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from "../../auth/hooks/useAuth";
 import { useSalonChairs, useLiveChairStatus } from "../hooks/useChairs";
 import ChairMap from "../../../../shared/components/ui/ChairMap";
-import { Modal, Spin } from "antd";
-import { LoaderCircle, Armchair, User } from "lucide-react";
+import { Modal, Spin, Button } from "antd";
+import { LoaderCircle, Armchair, User, Plus, Eye } from "lucide-react";
 import dayjs from "dayjs";
+import { AssignBookingModal } from "../components/AssignBookingModal";
+import { useQueryClient } from "@tanstack/react-query";
+import { CHAIRS_QUERY_KEYS } from "../hooks/useChairs";
 
 export function ChairsPage() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const salonId = user?.salonId;
   
   // Use today's date for live status, formatted as YYYY-MM-DD
@@ -18,6 +22,8 @@ export function ChairsPage() {
 
   const [selectedChair, setSelectedChair] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  
+  const [assignChair, setAssignChair] = useState(null);
 
   const isLoading = isLoadingChairs || isLoadingLiveStatus;
   const error = chairsError || liveStatusError;
@@ -53,12 +59,11 @@ export function ChairsPage() {
     return (
       <div
         key={cellName}
-        onClick={() => handleChairClick(chairInfo, liveInfo)}
-        className={`w-[90px] h-[90px] border ${borderColor} ${bgColor} rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:shadow-md hover:scale-105 transition-all relative overflow-hidden`}
+        className={`group w-[90px] h-[90px] border ${borderColor} ${bgColor} rounded-2xl flex flex-col items-center justify-center relative overflow-hidden transition-all`}
       >
-        <span className={`font-bold ${textColor} text-lg mb-1`}>{chairInfo.chairName}</span>
+        <span className={`font-bold ${textColor} text-lg mb-1 group-hover:opacity-10 transition-opacity`}>{chairInfo.chairName}</span>
         {isOccupied ? (
-           <div className="flex flex-col items-center leading-tight px-1 w-full">
+           <div className="flex flex-col items-center leading-tight px-1 w-full group-hover:opacity-10 transition-opacity">
              <span className="inline-flex rounded-full bg-pink-500 px-2 py-0.5 text-[9px] font-bold text-white mb-0.5 whitespace-nowrap">
                Occupied
              </span>
@@ -67,12 +72,36 @@ export function ChairsPage() {
              </span>
            </div>
         ) : (
-          <div className="flex flex-col items-center leading-tight w-full">
+          <div className="flex flex-col items-center leading-tight w-full group-hover:opacity-10 transition-opacity">
              <span className="inline-flex rounded-full bg-emerald-500 px-2 py-0.5 text-[9px] font-bold text-white">
                Available
              </span>
           </div>
         )}
+
+        {/* Hover Overlay */}
+        <div className="absolute inset-0 bg-white/95 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-stretch justify-center gap-1.5 z-10 px-3">
+          <Button 
+            type="primary" 
+            size="small"
+            icon={<Eye size={14} />}
+            onClick={(e) => { e.stopPropagation(); handleChairClick(chairInfo, liveInfo); }}
+            className="w-full text-[11px] font-medium bg-blue-500 hover:bg-blue-600 border-none rounded-md shadow-sm flex items-center justify-center gap-1"
+          >
+            Detail
+          </Button>
+          {!isOccupied && (
+            <Button 
+              type="primary" 
+              size="small"
+              icon={<Plus size={14} />}
+              onClick={(e) => { e.stopPropagation(); setAssignChair(chairInfo); }}
+              className="w-full text-[11px] font-medium bg-blue-500 hover:bg-blue-600 border-none rounded-md shadow-sm flex items-center justify-center gap-1"
+            >
+              Assign
+            </Button>
+          )}
+        </div>
       </div>
     );
   };
@@ -99,21 +128,21 @@ export function ChairsPage() {
         )}
       </div>
 
-      <Modal
-        title={
-          <div className="flex items-center gap-2 text-[#432744]">
-            <Armchair className="text-[#ea4f93]" size={20} />
-            <span className="font-bold text-lg">Chair {selectedChair?.chairInfo?.chairName} Details</span>
-          </div>
-        }
-        open={isModalVisible}
-        onCancel={handleCloseModal}
-        footer={null}
-        width={400}
-        centered
-        className="rounded-2xl"
-      >
-        {selectedChair && (
+      {selectedChair && (
+        <Modal
+          title={
+            <div className="flex items-center gap-2 text-[#432744]">
+              <Armchair className="text-[#ea4f93]" size={20} />
+              <span className="font-bold text-lg">Chair {selectedChair?.chairInfo?.chairName} Details</span>
+            </div>
+          }
+          open={isModalVisible}
+          onCancel={handleCloseModal}
+          footer={null}
+          width={400}
+          centered
+          className="rounded-2xl"
+        >
           <div className="mt-4 space-y-4 text-sm text-[#584654]">
             <div className="flex justify-between items-center py-2 border-b border-[#f7e0ea]">
               <span className="font-semibold text-[#aa8a99]">isOccupied</span>
@@ -152,8 +181,18 @@ export function ChairsPage() {
               </div>
             </div>
           </div>
-        )}
-      </Modal>
+        </Modal>
+      )}
+
+      <AssignBookingModal
+        isOpen={!!assignChair}
+        onClose={() => setAssignChair(null)}
+        salonId={salonId}
+        chair={assignChair}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: CHAIRS_QUERY_KEYS.liveStatus(salonId, todayDate) });
+        }}
+      />
     </div>
   );
 }

@@ -300,7 +300,7 @@ function ServiceSummaryValue({ services = [], fallbackValue = "", onOpenProcedur
 
               <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
                 <p className="text-xs font-semibold text-slate-400 md:hidden">Qty</p>
-                <span className="inline-flex items-center justify-center min-w-[28px] rounded-full bg-amber-50 border border-amber-200/80 px-2.5 py-0.5 text-xs font-black text-amber-700 shadow-xs">
+                <span className="inline-flex items-center justify-center min-w-[28px] rounded-full bg-amber-50 border border-amber-200/80 px-2.5 py-0.5 text-xs font-bold text-amber-700 shadow-xs">
                   {service.quantity || 1}
                 </span>
               </div>
@@ -485,7 +485,7 @@ function SessionSummaryPanel({
         {hasConfirmedDesign ? (
           <div className="rounded-xl border border-pink-200 bg-gradient-to-r from-pink-50 to-rose-50 p-4 shadow-xs">
             <p className="text-[10px] font-bold uppercase tracking-wider text-[#ea4f93]">Confirmed Design</p>
-            <p className="mt-1 text-sm font-black text-slate-800">{data.designName}</p>
+            <p className="mt-1 text-sm font-bold text-slate-800">{data.designName}</p>
           </div>
         ) : null}
       </div>
@@ -2406,7 +2406,7 @@ export function StaffServiceSessionPage() {
             <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#c990ab]">
               Final Result Review
             </p>
-            <h2 className="mt-2 text-2xl font-black tracking-tight text-[#3f2b3f]">
+            <h2 className="mt-2 text-2xl font-bold tracking-tight text-[#3f2b3f]">
               Before & After Comparison
             </h2>
             <p className="mt-2 max-w-2xl text-sm text-[#8f7286]">
@@ -2554,7 +2554,7 @@ export function StaffServiceSessionPage() {
             <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.18em] text-[#16975f]">
               Session Completed
             </p>
-            <h1 className="mt-2 text-[2rem] font-black tracking-tight text-[#15803d]">
+            <h1 className="mt-2 text-[2rem] font-bold tracking-tight text-[#15803d]">
               Complete Session Successfully
             </h1>
             <p className="mt-3 max-w-2xl text-sm text-[#5f8a70]">
@@ -2868,7 +2868,7 @@ export function StaffServiceSessionPage() {
                       <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
                         Estimated Time
                       </p>
-                      <p className="mt-1 text-base font-black text-[#ea4f93]">{data.remainingTime}</p>
+                      <p className="mt-1 text-base font-bold text-[#ea4f93]">{data.remainingTime}</p>
                     </div>
                   ) : null}
                 </div>
