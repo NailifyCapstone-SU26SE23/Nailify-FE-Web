@@ -47,7 +47,7 @@ export function NailVariantSelectionModal({
       >
         <div className="flex items-center justify-between border-b border-[#f5d6e3] px-6 py-4">
           <div>
-            <h2 className="text-lg font-black text-[#412643]">Select Nail Variant</h2>
+            <h2 className="text-lg font-bold text-[#412643]">Select Nail Variant</h2>
             <p className="mt-1 text-sm text-[#c092a8]">
               Choose a specific variant for {nailDesign.name}
             </p>
@@ -80,11 +80,10 @@ export function NailVariantSelectionModal({
                     key={variant.nailVariantId}
                     type="button"
                     onClick={() => setSelectedVariantId(variant.nailVariantId)}
-                    className={`relative overflow-hidden rounded-[16px] border bg-white text-left transition ${
-                      isSelected
+                    className={`relative overflow-hidden rounded-[16px] border bg-white text-left transition ${isSelected
                         ? "border-[#ea4f93] shadow-[0_4px_12px_rgba(236,72,153,0.15)] ring-2 ring-[#ea4f93] ring-offset-2"
                         : "border-[#f5d6e3] hover:border-[#ea4f93]"
-                    }`}
+                      }`}
                   >
                     <div className="h-28 overflow-hidden bg-gray-50">
                       <img

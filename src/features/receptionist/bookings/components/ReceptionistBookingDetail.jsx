@@ -270,14 +270,14 @@ export function ReceptionistBookingDetail({ booking }) {
                     loading="lazy"
                     referrerPolicy="no-referrer"
                   />
-                  <span className="absolute bottom-1 left-1/2 -translate-x-1/2 rounded-full bg-[linear-gradient(90deg,#ef5b92_0%,#f58b77_100%)] px-2 py-0.5 text-[9px] font-extrabold text-white">
+                  {/* <span className="absolute bottom-1 left-1/2 -translate-x-1/2 rounded-full bg-[linear-gradient(90deg,#ef5b92_0%,#f58b77_100%)] px-2 py-0.5 text-[9px] font-extrabold text-white">
                     VIP
-                  </span>
+                  </span> */}
                 </div>
 
                 <div className="flex-1">
-                  <p className="text-xl font-black text-[#4a3741]">{booking.customerName}</p>
-                  <div className="mt-3 flex flex-wrap gap-2">
+                  <p className="text-xl font-bold text-[#4a3741]">{booking.customerName}</p>
+                  {/* <div className="mt-3 flex flex-wrap gap-2">
                     {["VIP Member", "Sensitive Nails", "Frequent Customer"].map((tag, index) => (
                       <span
                         key={tag}
@@ -293,7 +293,7 @@ export function ReceptionistBookingDetail({ booking }) {
                         {tag}
                       </span>
                     ))}
-                  </div>
+                  </div> */}
 
                   <div className="mt-5 grid gap-4 sm:grid-cols-2">
                     <div className="space-y-3">
@@ -403,7 +403,7 @@ export function ReceptionistBookingDetail({ booking }) {
                 <div className="mt-4 flex items-end justify-between gap-4">
                   <div>
                     <p className="text-sm font-bold text-[#4a3741]">Total Amount</p>
-                    <p className="mt-2 text-[1.8rem] font-black leading-none text-[#eb5b92]">$256.50</p>
+                    <p className="mt-2 text-[1.8rem] font-bold leading-none text-[#eb5b92]">$256.50</p>
                   </div>
                   <div className="text-right text-[11px] text-[#a48796]">
                     <p>Deposit paid $80.00</p>

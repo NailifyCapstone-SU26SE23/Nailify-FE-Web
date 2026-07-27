@@ -265,9 +265,8 @@ export function UpdateQuiz() {
                 (c) => !(c.optionValues && c.optionValues.length)
             );
             if (missingValueIdx !== -1) {
-                errors.choices = `All choices need at least one item selected from ${
-                    LINK_SOURCE_OPTIONS.find((o) => o.value === formData.optionSource)?.label
-                }`;
+                errors.choices = `All choices need at least one item selected from ${LINK_SOURCE_OPTIONS.find((o) => o.value === formData.optionSource)?.label
+                    }`;
             }
         }
 
@@ -340,10 +339,10 @@ export function UpdateQuiz() {
                     <form onSubmit={handleUpdateQuizSubmit} className="rounded-[2rem] border border-white/60 bg-white/60 p-7 shadow-[0_16px_40px_-16px_rgba(224,188,206,0.35)] backdrop-blur-md space-y-6 transition-all duration-300 hover:shadow-[0_24px_48px_-12px_rgba(234,79,147,0.2)] hover:bg-white/80">
                         <header className="flex items-center justify-between border-b border-[#fcecf4] pb-4">
                             <div className="flex items-center gap-3">
-                                <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#fff0f6] text-xs font-black text-[#ea4f93] shadow-[0_4px_10px_rgba(234,79,147,0.15)]">
+                                <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#fff0f6] text-xs font-bold text-[#ea4f93] shadow-[0_4px_10px_rgba(234,79,147,0.15)]">
                                     <Sliders size={14} />
                                 </span>
-                                <h2 className="text-xs font-black uppercase tracking-[0.14em] text-[#3f2034]">
+                                <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-[#3f2034]">
                                     Quiz Settings & Answer Choices
                                 </h2>
                             </div>
@@ -366,11 +365,10 @@ export function UpdateQuiz() {
                                     onChange={handleFormChange}
                                     placeholder="e.g. Which nail style do you like most?"
                                     rows={2}
-                                    className={`w-full resize-none rounded-2xl border bg-[#fffbfc] p-3.5 text-[13px] text-[#4b3345] outline-none transition ${
-                                        formErrors.questionText
+                                    className={`w-full resize-none rounded-2xl border bg-[#fffbfc] p-3.5 text-[13px] text-[#4b3345] outline-none transition ${formErrors.questionText
                                             ? "border-[#d14c84] focus:border-[#d14c84]"
                                             : "border-[#f0dde8] focus:border-[#ea4f93]"
-                                    }`}
+                                        }`}
                                 />
                                 {formErrors.questionText && (
                                     <span className="flex items-center gap-1 text-[11px] font-bold text-[#d14c84]">
@@ -392,11 +390,10 @@ export function UpdateQuiz() {
                                                 type="button"
                                                 key={opt.value}
                                                 onClick={() => handleFormChange({ target: { name: "type", value: opt.value } })}
-                                                className={`flex items-start gap-2.5 rounded-2xl border px-3.5 py-3 text-left transition-all ${
-                                                    active
+                                                className={`flex items-start gap-2.5 rounded-2xl border px-3.5 py-3 text-left transition-all ${active
                                                         ? "border-[#ea4f93] bg-[#fff0f6] shadow-sm"
                                                         : "border-[#f0dde8] bg-[#fffbfc] hover:border-[#f0b8d3]"
-                                                }`}
+                                                    }`}
                                             >
                                                 <CircleDot
                                                     size={15}
@@ -475,11 +472,10 @@ export function UpdateQuiz() {
                                             key={opt}
                                             type="button"
                                             onClick={() => handleFormChange({ target: { name: "status", value: opt } })}
-                                            className={`rounded-full px-4 py-1 text-[11px] font-bold transition-all ${
-                                                formData.status === opt
+                                            className={`rounded-full px-4 py-1 text-[11px] font-bold transition-all ${formData.status === opt
                                                     ? "bg-[#ea4f93] text-white"
                                                     : "text-[#8c6b81] hover:bg-[#fff0f6]"
-                                            }`}
+                                                }`}
                                         >
                                             {opt}
                                         </button>
@@ -491,7 +487,7 @@ export function UpdateQuiz() {
                         {/* Section B: Editable Answer Choices */}
                         <div className="border-t border-[#fcecf4] pt-6 space-y-4">
                             <div className="flex items-center justify-between">
-                                <h3 className="text-xs font-black uppercase tracking-wider text-[#3f2034] flex items-center gap-1.5">
+                                <h3 className="text-xs font-bold uppercase tracking-wider text-[#3f2034] flex items-center gap-1.5">
                                     <ListChecks size={14} className="text-[#ea4f93]" />
                                     Answer Choices
                                 </h3>
@@ -523,7 +519,7 @@ export function UpdateQuiz() {
                                                     className="h-10 w-full rounded-xl border border-[#f0dde8] bg-white px-3.5 text-[12.5px] text-[#4b3345] outline-none transition focus:border-[#ea4f93]"
                                                     required
                                                 />
-                                                
+
                                                 {/* Description Input */}
                                                 <input
                                                     type="text"
@@ -534,9 +530,9 @@ export function UpdateQuiz() {
                                                 />
 
                                                 {/* Linked Values Select / manual key override */}
-                                                 {!formData.optionSource ? null : formData.optionSource === "Color" ? (
+                                                {!formData.optionSource ? null : formData.optionSource === "Color" ? (
                                                     <div className="flex flex-col gap-1">
-                                                        <label className="text-[10px] font-black uppercase tracking-wide text-[#a6869a]">
+                                                        <label className="text-[10px] font-bold uppercase tracking-wide text-[#a6869a]">
                                                             Choose Color Code
                                                         </label>
                                                         <div className="relative flex items-center">
@@ -560,7 +556,7 @@ export function UpdateQuiz() {
                                                     </div>
                                                 ) : (
                                                     <div className="rounded-xl border border-[#f0dde8] bg-white p-2.5">
-                                                        <p className="mb-1.5 text-[9px] font-black uppercase tracking-wide text-[#a6869a]">
+                                                        <p className="mb-1.5 text-[9px] font-bold uppercase tracking-wide text-[#a6869a]">
                                                             Link {LINK_SOURCE_OPTIONS.find((o) => o.value === formData.optionSource)?.label} values
                                                         </p>
                                                         {linkedLoading && (
@@ -640,7 +636,7 @@ export function UpdateQuiz() {
                             <button
                                 type="submit"
                                 disabled={isSavingQuiz}
-                                className="inline-flex h-12 w-full items-center justify-center rounded-full bg-gradient-to-r from-[#ea4f93] to-[#ff7eb3] px-8 text-sm font-black text-white shadow-[0_12px_24px_rgba(234,79,147,0.3)] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_16px_32px_rgba(234,79,147,0.4)] active:scale-95 disabled:opacity-50"
+                                className="inline-flex h-12 w-full items-center justify-center rounded-full bg-gradient-to-r from-[#ea4f93] to-[#ff7eb3] px-8 text-sm font-bold text-white shadow-[0_12px_24px_rgba(234,79,147,0.3)] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_16px_32px_rgba(234,79,147,0.4)] active:scale-95 disabled:opacity-50"
                             >
                                 {isSavingQuiz ? (
                                     <>
@@ -665,7 +661,7 @@ export function UpdateQuiz() {
                 <div className="lg:col-span-5 lg:sticky lg:top-6 flex flex-col gap-4">
                     <div className="flex items-center gap-2 text-[#3f2034]">
                         <Smartphone size={15} className="text-[#ea4f93]" />
-                        <h3 className="text-xs font-black uppercase tracking-[0.14em]">App Live Preview</h3>
+                        <h3 className="text-xs font-bold uppercase tracking-[0.14em]">App Live Preview</h3>
                     </div>
 
                     <div className="relative mx-auto w-full max-w-[300px] rounded-[2.75rem] border-[8px] border-[#321c29] bg-[#321c29] p-1.5 shadow-[0_28px_56px_-18px_rgba(50,28,41,0.4)]">
@@ -673,7 +669,7 @@ export function UpdateQuiz() {
                         <div className="flex min-h-[480px] flex-col justify-between rounded-[2.25rem] bg-white p-5 pt-8">
                             <div className="space-y-5">
                                 <div className="space-y-1.5">
-                                    <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-[#a6869a]">
+                                    <div className="flex items-center justify-between text-[9px] font-bold uppercase tracking-widest text-[#a6869a]">
                                         <span>Style Analysis Step</span>
                                     </div>
                                     <div className="flex gap-1">
@@ -687,7 +683,7 @@ export function UpdateQuiz() {
                                 </div>
 
                                 <div>
-                                    <span className="rounded-full bg-[#fff0f6] px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-[#ea4f93]">
+                                    <span className="rounded-full bg-[#fff0f6] px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-[#ea4f93]">
                                         {formData.categoryKey || "Diagnostic"}
                                     </span>
                                     <h4 className="mt-2.5 font-serif text-[16px] leading-snug text-[#3f2034]">
@@ -707,11 +703,10 @@ export function UpdateQuiz() {
                                                 key={idx}
                                                 type="button"
                                                 onClick={() => handlePreviewSelectToggle(labelText)}
-                                                className={`flex w-full items-center gap-2.5 rounded-2xl border p-2.5 text-left transition-all ${
-                                                    isSelected
+                                                className={`flex w-full items-center gap-2.5 rounded-2xl border p-2.5 text-left transition-all ${isSelected
                                                         ? "border-[#ea4f93] bg-[#fff8fb] shadow-sm"
                                                         : "border-[#f0eef1] bg-[#fafafb] hover:border-[#f0b8d3]"
-                                                }`}
+                                                    }`}
                                             >
                                                 <span className="min-w-0 flex-1">
                                                     <span className={`block truncate text-[11px] font-bold ${isSelected ? "text-[#ea4f93]" : "text-[#4b3c46]"}`}>
@@ -763,7 +758,7 @@ export function UpdateQuiz() {
                         className="fixed top-6 right-6 z-50 flex w-[320px] items-start gap-3 rounded-2xl border border-white/60 bg-white/90 p-4 shadow-[0_20px_40px_-15px_rgba(234,79,147,0.25)] backdrop-blur-xl"
                     >
                         <div className="absolute top-0 bottom-0 left-0 w-1 rounded-l-2xl bg-gradient-to-b from-[#ea4f93] to-[#d14c84]" />
-                        
+
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#fff0f6] text-[#ea4f93] shadow-sm">
                             {notification.type === "error" ? (
                                 <AlertCircle size={16} strokeWidth={2.5} />
@@ -771,9 +766,9 @@ export function UpdateQuiz() {
                                 <Check size={16} strokeWidth={2.5} />
                             )}
                         </div>
-                        
+
                         <div className="flex-1 space-y-0.5 pr-2">
-                            <h4 className="text-[11px] font-black uppercase tracking-wider text-[#3f2034]">
+                            <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#3f2034]">
                                 {notification.type === "error" ? "System Error" : "Success"}
                             </h4>
                             <p className="text-[11.5px] leading-normal text-[#695463]">

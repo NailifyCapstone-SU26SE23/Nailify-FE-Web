@@ -1910,7 +1910,7 @@ export function NailDesignManagementDetailPage() {
                   <span className="inline-flex rounded-full bg-white/70 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#b25784]">
                     Variant Detail
                   </span>
-                  <h3 className="mt-3 text-lg font-black text-[#432744]">
+                  <h3 className="mt-3 text-lg font-bold text-[#432744]">
                     {selectedVariantDetail?.name || "Variant"}
                   </h3>
                   <p className="mt-1 text-sm text-[#9c7089]">

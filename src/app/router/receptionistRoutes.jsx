@@ -14,6 +14,7 @@ import { ReceptionistWalkInBookingCreatePage } from "../../features/receptionist
 import { ReceptionistBreaksPage } from "../../features/core/breaks/pages/ReceptionistBreaksPage";
 import { WalkInQueuePage } from "../../features/manager/bookings/pages/WalkInQueuePage";
 import { ManagerWaitlistPage } from "../../features/manager/bookings/pages/ManagerWaitlistPage";
+import { ChairsPage } from "../../features/core/chairs/pages/ChairsPage";
 import { AuthGuard } from "../../shared/components/guards/AuthGuard";
 import { RoleGuard } from "../../shared/components/guards/RoleGuard";
 import { ROLES } from "../../shared/constants/roles";
@@ -81,6 +82,10 @@ export const receptionistRoutes = [
       {
         path: ROUTES.receptionistBreaks,
         element: <ReceptionistBreaksPage />,
+      },
+      {
+        path: ROUTES.receptionistChairs,
+        element: <ChairsPage />,
       },
     ],
   },

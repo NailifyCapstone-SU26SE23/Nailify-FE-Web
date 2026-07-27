@@ -125,7 +125,12 @@ export function HandTryOnPage() {
             onSaveDraft={handleSaveDraft}
           />
           <UploadView />
-          <TryOnView />
+          <TryOnView
+            currentNailSetId={currentTryOnId}
+            handLandmarkerTask={taskHandle}
+            onReturnToForm={handleReturnToForm}
+            onSaveDraft={handleSaveDraft}
+          />
         </div>
       </main>
     </div>

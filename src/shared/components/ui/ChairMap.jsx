@@ -19,7 +19,7 @@ export default function ChairMap({ chairs = [], renderCell }) {
       {rows.map(row => (
         <div key={row} className="flex gap-4 min-w-max">
           {/* Row Label */}
-          <div className="flex items-center justify-center w-8 font-black text-pink-700 text-lg">
+          <div className="flex items-center justify-center w-8 font-bold text-pink-700 text-lg">
             {row}
           </div>
           {/* Grid Columns */}

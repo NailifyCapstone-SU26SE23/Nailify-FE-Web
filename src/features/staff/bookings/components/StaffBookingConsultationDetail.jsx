@@ -16,11 +16,13 @@ import {
   Clock,
   Map, ChevronDown, ChevronUp
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Table, List, Card, Image } from "antd";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { ReadOnlyNailPreview } from "../../../../shared/components/common/ReadOnlyNailPreview";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
+import { useQuery } from "@tanstack/react-query";
+import { fetchStaffCustomerDetail, fetchLoyaltyTiers } from "../services/staffBookingService";
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -452,7 +454,11 @@ export function StaffBookingConsultationDetail({
   const [isVariantModalOpen, setIsVariantModalOpen] = useState(false);
   const hasSelectedNailDesign = Boolean(
     data.design.variantDetail ||
-    (String(data.design.name || "").trim() && String(data.design.name || "").trim() !== "--"),
+    (
+      String(data.design.name || "").trim() &&
+      String(data.design.name || "").trim() !== "--" &&
+      String(data.design.name || "").trim() !== "Selected design not specified"
+    ),
   );
   const canViewVariantDetail = Boolean(
     data.design.variantDetail &&
@@ -479,6 +485,35 @@ export function StaffBookingConsultationDetail({
   const [customerExpanded, setCustomerExpanded] = useState(true);
   const [bookingExpanded, setBookingExpanded] = useState(true);
 
+  const customerId = data?.customerId || data?.customer?.id || data?.customer?.userId || data?.customer?.customerId;
+
+  const { data: customerData } = useQuery({
+    queryKey: ['customer', customerId],
+    queryFn: async () => {
+      if (!customerId) return null;
+      return await fetchStaffCustomerDetail(customerId);
+    },
+    enabled: !!customerId,
+  });
+
+  const { data: loyaltyTiers } = useQuery({
+    queryKey: ['loyaltyTiers'],
+    queryFn: async () => {
+      return await fetchLoyaltyTiers();
+    }
+  });
+
+  const { customerTier, customerPoints } = useMemo(() => {
+    const points = customerData?.loyaltyPoint || 0;
+    if (!loyaltyTiers?.length) return { customerTier: null, customerPoints: points };
+
+    const tier = loyaltyTiers.find(t =>
+      points >= t.minLifetimePoints &&
+      (t.maxLifetimePoints === null || points <= t.maxLifetimePoints)
+    );
+    return { customerTier: tier, customerPoints: points };
+  }, [customerData, loyaltyTiers]);
+
   return (
     <section className="flex min-h-full flex-col gap-6 bg-slate-50/50 p-2 sm:p-6 lg:p-8  bg-[#fff9fb]
                       bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.55),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.35),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.45),transparent_35%),linear-gradient(to_right,#f3c7db_1px,transparent_1px),linear-gradient(to_bottom,#f3c7db_1px,transparent_1px)]">
@@ -488,7 +523,7 @@ export function StaffBookingConsultationDetail({
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2]">
               <UserRound size={16} className="text-[#ea4f93]" />
             </div>
-            <h2 className="text-sm font-black uppercase tracking-widest text-[#ea4f93]">Customer Information</h2>
+            <h2 className="text-sm font-bold uppercase tracking-widest text-[#ea4f93]">Customer Information</h2>
           </div> */}
           <div className="mb-6 flex items-center justify-between border-b border-[#fdebf3] pb-4">
             <div className="flex items-center gap-3">
@@ -496,7 +531,7 @@ export function StaffBookingConsultationDetail({
                 <UserRound size={16} className="text-[#ea4f93]" />
               </div>
 
-              <h2 className="text-sm font-black uppercase tracking-widest text-[#ea4f93]">
+              <h2 className="text-sm font-bold uppercase tracking-widest text-[#ea4f93]">
                 Customer Information
               </h2>
             </div>
@@ -545,10 +580,24 @@ export function StaffBookingConsultationDetail({
                       <p className="text-2xl font-extrabold text-[#3f2b3f]">{data.customer.name}</p>
                       <p className="mt-1 text-sm text-[#9a7f90]">{data.customer.phone}</p>
                     </div>
-                    <Tag className="border-[#f3ddab] bg-[#fff8df] text-[#d39a1d]">
-                      <Star size={11} className="mr-1 inline-block fill-current" />
-                      {data.customer.memberTier}
-                    </Tag>
+                    {customerTier ? (
+                      <span
+                        className="inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold items-center gap-1"
+                        style={{
+                          backgroundColor: customerTier.backgroundColor + '15',
+                          borderColor: customerTier.backgroundColor + '40',
+                          color: customerTier.backgroundColor
+                        }}
+                      >
+                        <Star size={11} className="fill-current" />
+                        {customerTier.name} ({customerPoints} pts)
+                      </span>
+                    ) : (
+                      <span className="inline-flex rounded-full bg-gray-50 border border-gray-200 px-2.5 py-1 text-[10px] font-bold text-gray-500 items-center gap-1">
+                        <Star size={11} className="fill-current" />
+                        {customerPoints} pts
+                      </span>
+                    )}
                   </div>
 
                   <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -581,27 +630,13 @@ export function StaffBookingConsultationDetail({
           <div className="pointer-events-none absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-gradient-to-tr from-[#ffecd2]/40 to-[#fcb69f]/40 blur-[60px]" />
 
           <div className="relative z-10">
-            {/* <div className="flex flex-row justify-between items-center border-b border-[#fdebf3] pb-4 mb-6">
-              <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2]">
-                  <CalendarClock size={16} className="text-[#ea4f93]" />
-                </div>
-                <h2 className="text-sm font-black uppercase tracking-widest text-[#ea4f93]">Booking Information</h2>
-              </div>
-              <div className="flex items-center gap-2">
-                <Tag className={`m-0 ${getStatusColor(data.statusLabel)}`}>
-                  <Clock size={11} className="mr-1 inline-block fill-current" />
-                  {data.statusLabel}
-                </Tag>
-              </div>
-            </div> */}
             <div className="mb-6 flex items-center justify-between border-b border-[#fdebf3] pb-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2]">
                   <CalendarClock size={16} className="text-[#ea4f93]" />
                 </div>
 
-                <h2 className="text-sm font-black uppercase tracking-widest text-[#ea4f93]">
+                <h2 className="text-sm font-bold uppercase tracking-widest text-[#ea4f93]">
                   Booking Information
                 </h2>
 
@@ -658,11 +693,11 @@ export function StaffBookingConsultationDetail({
                         className="flex h-full flex-col justify-between bg-white p-4 pb-8 md:p-5 md:pb-9"
                         style={{ clipPath: "polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - 20px), 0 100%)" }}
                       >
-                        <div className="text-[10px] font-black text-[#cbb3c0] uppercase tracking-[0.18em]">
+                        <div className="text-[10px] font-bold text-[#cbb3c0] uppercase tracking-[0.18em]">
                           {item.label}
                         </div>
                         <div className="mt-3">
-                          <div className={`text-[15px] font-black tracking-tight ${item.tone === 'success' ? 'text-[#059669]' : 'text-[#3f2a3a]'}`}>
+                          <div className={`text-[15px] font-bold tracking-tight ${item.tone === 'success' ? 'text-[#059669]' : 'text-[#3f2a3a]'}`}>
                             {item.value}
                           </div>
                           <div className="mt-1.5 h-[16px] text-[11px] font-bold text-[#a68b98]">
@@ -692,7 +727,7 @@ export function StaffBookingConsultationDetail({
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2] shadow-inner">
                         <Sparkles size={18} className="text-[#ea4f93]" />
                       </div>
-                      <h2 className="text-sm font-black uppercase tracking-widest text-[#ea4f93]">Current Selected Nail Design</h2>
+                      <h2 className="text-sm font-bold uppercase tracking-widest text-[#ea4f93]">Current Selected Nail Design</h2>
                     </div>
                     {canViewVariantDetail ? (
                       <button
@@ -733,7 +768,7 @@ export function StaffBookingConsultationDetail({
 
                     <div className="flex-1 space-y-6 pt-2">
                       <div>
-                        <h3 className="bg-gradient-to-br from-[#ea4f93] to-[#ff8fbb] bg-clip-text text-3xl md:text-[2.2rem] font-black text-transparent drop-shadow-sm tracking-tight leading-none">
+                        <h3 className="bg-gradient-to-br from-[#ea4f93] to-[#ff8fbb] bg-clip-text text-3xl md:text-[2.2rem] font-bold text-transparent drop-shadow-sm tracking-tight leading-none">
                           {data.design.name}
                         </h3>
                       </div>
@@ -750,7 +785,7 @@ export function StaffBookingConsultationDetail({
                           })
                           .map((item) => (
                             <div key={item.label} className="group">
-                              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#d67b9f] mb-1.5 flex items-center gap-1.5 transition-colors group-hover:text-[#ea4f93]">
+                              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#d67b9f] mb-1.5 flex items-center gap-1.5 transition-colors group-hover:text-[#ea4f93]">
                                 <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-pink-400 to-rose-400 shadow-[0_0_8px_rgba(244,114,182,0.6)]"></span>
                                 {item.label}
                               </p>
@@ -770,7 +805,7 @@ export function StaffBookingConsultationDetail({
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2] shadow-inner">
                     <Search size={18} className="text-[#ea4f93]" />
                   </div>
-                  <h2 className="text-sm font-black uppercase tracking-widest text-[#ea4f93]">Customer Consultation</h2>
+                  <h2 className="text-sm font-bold uppercase tracking-widest text-[#ea4f93]">Customer Consultation</h2>
                 </div>
                 <div className="mt-5 flex flex-col items-center gap-6 text-center">
                   <p className="text-lg font-bold text-[#3f2b3f]">{consultationQuestion}</p>
@@ -822,7 +857,7 @@ export function StaffBookingConsultationDetail({
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2] shadow-inner">
                     <ClipboardCheck size={18} className="text-[#ea4f93]" />
                   </div>
-                  <h2 className="text-sm font-black uppercase tracking-widest text-[#ea4f93]">Final Confirmation Checklist</h2>
+                  <h2 className="text-sm font-bold uppercase tracking-widest text-[#ea4f93]">Final Confirmation Checklist</h2>
                 </div>
                 <div className="mt-5 space-y-3">
                   {data.checklist.map((item) => (

@@ -54,6 +54,11 @@ import {
   updateStaffBooking,
   updateBookingProcedureStatus,
 } from "../services/staffBookingService";
+import {
+  evaluateInterleavingOpportunity,
+  simulateOnsiteAddon,
+  confirmOnsiteAddon,
+} from "../../../manager/bookings/services/bookingProceduresService";
 import { useDispatch, useSelector } from "react-redux";
 import { setServiceSession } from "../../../../store/serviceSessionSlice";
 import { Button, Image, Modal } from "antd";
@@ -64,27 +69,31 @@ const DEFAULT_CUSTOMER_AVATAR =
 
 const STICKY_HEADER_OFFSET_PX = -20;
 
-function SectionTitle({ icon: Icon, title, subtitle }) {
+function SectionTitle({ icon: Icon, title, subtitle, action }) {
   return (
-    <div className="flex items-start gap-3">
-      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fdf2f7] text-[#ea4f93]">
-        <Icon size={18} />
+    <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fdf2f7] text-[#ea4f93]">
+          <Icon size={18} />
+        </div>
+        <div>
+          <h2 className="text-sm font-bold text-gray-900">{title}</h2>
+          {subtitle ? <p className="mt-1 text-xs text-gray-500">{subtitle}</p> : null}
+        </div>
       </div>
-      <div>
-        <h2 className="text-sm font-bold text-gray-900">{title}</h2>
-        {subtitle ? <p className="mt-1 text-xs text-gray-500">{subtitle}</p> : null}
-      </div>
+      {action ? <div>{action}</div> : null}
     </div>
   );
 }
 
 SectionTitle.propTypes = {
+  action: PropTypes.node,
   icon: PropTypes.elementType.isRequired,
   subtitle: PropTypes.string,
   title: PropTypes.string.isRequired,
 };
 
-function ProgressStep({ step, index, isLast, compact = false }) {
+function ProgressStep({ step, index, isLast, isProgressPinned = false }) {
   const stateClasses = {
     active: {
       dot: "border-transparent bg-[image:var(--gradient-accent)] text-white shadow-[0_14px_28px_rgba(236,72,153,0.24)]",
@@ -112,33 +121,41 @@ function ProgressStep({ step, index, isLast, compact = false }) {
   return (
     <div className="relative flex flex-1 flex-col items-center text-center">
       {!isLast ? (
-        <div className={`absolute left-[calc(50%+2rem)] hidden h-[2px] w-[calc(100%-4rem)] xl:block ${compact ? "top-4" : "top-5"}`}>
+        <div className={`absolute left-[calc(50%+2rem)] hidden h-[2px] w-[calc(100%-4rem)] xl:block ${isProgressPinned ? "top-4" : "top-5"}`}>
           <div className={`h-full w-full rounded-full ${lineClassName}`} />
         </div>
       ) : null}
 
       <div
-        className={`relative z-[1] flex items-center justify-center rounded-full border text-sm font-extrabold ${compact ? "h-9 w-9" : "h-10 w-10"} ${tone.dot}`}
+        className={`relative z-[1] flex items-center justify-center rounded-full border text-sm font-extrabold transition-all duration-300 ${
+          isProgressPinned ? "h-9 w-9" : "h-10 w-10"
+        } ${tone.dot}`}
       >
         {step.state === "complete" ? <Check size={18} strokeWidth={3} /> : index + 1}
       </div>
 
-      <div className={compact ? "mt-3" : "mt-4"}>
-        <p className={`${compact ? "text-[0.95rem]" : "text-base"} font-extrabold ${tone.label}`}>{step.label}</p>
-        {!compact ? (
+      <div className={`transition-all duration-300 ${isProgressPinned ? "mt-2" : "mt-4"}`}>
+        <p className={`font-extrabold transition-all duration-300 ${
+          isProgressPinned ? "text-[0.95rem]" : "text-base"
+        } ${tone.label}`}>{step.label}</p>
+        <div className={`grid transition-all duration-300 ease-in-out ${
+          isProgressPinned ? "grid-rows-[0fr] opacity-0 mt-0" : "grid-rows-[1fr] opacity-100 mt-2"
+        }`}>
+          <div className="overflow-hidden flex justify-center">
           <span
-            className={`mt-2 inline-flex rounded-full px-3 py-1 text-[10px] font-bold ${tone.pill}`}
+            className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold ${tone.pill}`}
           >
             {step.statusLabel}
           </span>
-        ) : null}
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
 ProgressStep.propTypes = {
-  compact: PropTypes.bool,
+  isProgressPinned: PropTypes.bool,
   index: PropTypes.number.isRequired,
   isLast: PropTypes.bool.isRequired,
   step: PropTypes.shape({
@@ -256,70 +273,70 @@ function ServiceSummaryValue({ services = [], fallbackValue = "", onOpenProcedur
 
   if (!hasServices) {
     return (
-      <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-4">
-        <p className="break-words text-sm font-semibold leading-6 text-gray-500">{fallbackValue || "--"}</p>
+      <div className="rounded-xl border border-rose-100 bg-rose-50/50 p-4 shadow-xs">
+        <p className="break-words text-sm font-semibold text-slate-500">{fallbackValue || "--"}</p>
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+    <div className="overflow-hidden rounded-2xl border border-[#f4cfdd] bg-white shadow-[0_8px_24px_rgba(236,72,153,0.06)]">
       <div className="overflow-x-auto">
-        <div className={`hidden min-w-[620px] items-center gap-3 border-b border-gray-200 bg-gray-50 px-5 py-3 md:grid ${hasProcedureAction ? "grid-cols-[minmax(220px,1.6fr)_90px_140px_110px_120px]" : "grid-cols-[minmax(220px,1.8fr)_90px_140px_110px]"}`}>
-          <p className="text-xs font-semibold text-gray-500">Service</p>
-          <p className="text-center text-xs font-semibold text-gray-500">Qty</p>
-          <p className="text-center text-xs font-semibold text-gray-500">Price</p>
-          <p className="text-center text-xs font-semibold text-gray-500">Duration</p>
+        <div className={`hidden min-w-[620px] items-center gap-3 border-b border-[#f6d5e3] bg-[linear-gradient(180deg,#fff8fb_0%,#fff0f6_100%)] px-5 py-3 md:grid ${hasProcedureAction ? "grid-cols-[minmax(220px,1.6fr)_90px_140px_110px_120px]" : "grid-cols-[minmax(220px,1.8fr)_90px_140px_110px]"}`}>
+          <p className="text-[11px] font-extrabold uppercase tracking-wider text-[#9e7689]">Service</p>
+          <p className="text-center text-[11px] font-extrabold uppercase tracking-wider text-[#9e7689]">Qty</p>
+          <p className="text-center text-[11px] font-extrabold uppercase tracking-wider text-[#9e7689]">Price</p>
+          <p className="text-center text-[11px] font-extrabold uppercase tracking-wider text-[#9e7689]">Duration</p>
           {hasProcedureAction ? (
-            <p className="text-center text-xs font-semibold text-gray-500">Action</p>
+            <p className="text-center text-[11px] font-extrabold uppercase tracking-wider text-[#9e7689]">Action</p>
           ) : null}
         </div>
 
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-[#f9e5ef]">
           {services.map((service, index) => (
             <div
               key={service.id || `${service.name}-${index}`}
-              className={`px-4 py-4 md:grid md:min-w-[620px] md:items-center md:gap-3 md:px-5 ${hasProcedureAction ? "md:grid-cols-[minmax(220px,1.6fr)_90px_140px_110px_120px]" : "md:grid-cols-[minmax(220px,1.8fr)_90px_140px_110px]"}`}
+              className={`px-4 py-3.5 transition-colors hover:bg-[#fff7fa]/70 md:grid md:min-w-[620px] md:items-center md:gap-3 md:px-5 ${hasProcedureAction ? "md:grid-cols-[minmax(220px,1.6fr)_90px_140px_110px_120px]" : "md:grid-cols-[minmax(220px,1.8fr)_90px_140px_110px]"}`}
             >
               <div className="min-w-0">
-                <p className="text-[11px] font-semibold text-gray-500">
+                <span className="inline-block rounded-md bg-[#fff0f6] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#ea4f93] border border-[#f9cbe0]/60">
                   {service.detailLabel || `Service ${index + 1}`}
-                </p>
-                <p className="mt-1 text-sm font-bold text-gray-900 md:break-words">{service.name || "--"}</p>
+                </span>
+                <p className="mt-1 text-sm font-extrabold text-slate-800 md:break-words">{service.name || "--"}</p>
                 {service.nailServiceName ? (
-                  <p className="mt-1 text-xs font-medium text-gray-500 md:break-words">
+                  <p className="mt-0.5 text-xs font-semibold text-slate-500 md:break-words">
                     Nail service: {service.nailServiceName}
                   </p>
                 ) : null}
               </div>
 
-              <div className="mt-4 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
-                <p className="text-xs font-semibold text-gray-500 md:hidden">Qty</p>
-                <span className="inline-flex rounded-full bg-yellow-100 px-3 py-1 text-[11px] font-semibold text-yellow-700">
+              <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
+                <p className="text-xs font-semibold text-slate-400 md:hidden">Qty</p>
+                <span className="inline-flex items-center justify-center min-w-[28px] rounded-full bg-amber-50 border border-amber-200/80 px-2.5 py-0.5 text-xs font-black text-amber-700 shadow-xs">
                   {service.quantity || 1}
                 </span>
               </div>
 
-              <div className="mt-4 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
-                <p className="text-xs font-semibold text-gray-500 md:hidden">Price</p>
-                <span className="inline-flex rounded-full bg-[#e6fce5] px-3 py-1 text-[11px] font-bold text-[#16975f]">
+              <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
+                <p className="text-xs font-semibold text-slate-400 md:hidden">Price</p>
+                <span className="inline-flex rounded-full bg-emerald-50 border border-emerald-200/80 px-3 py-1 text-xs font-extrabold text-emerald-700 shadow-xs">
                   {service.priceLabel || "--"}
                 </span>
               </div>
 
-              <div className="mt-4 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
-                <p className="text-xs font-semibold text-gray-500 md:hidden">Duration</p>
-                <span className="inline-flex rounded-full bg-blue-100 px-3 py-1 text-[11px] font-semibold text-blue-700">
+              <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
+                <p className="text-xs font-semibold text-slate-400 md:hidden">Duration</p>
+                <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 border border-indigo-200/80 px-3 py-1 text-xs font-extrabold text-indigo-700 shadow-xs">
                   {service.durationLabel || "--"}
                 </span>
               </div>
 
               {hasProcedureAction ? (
-                <div className="mt-4 flex items-center justify-end gap-3 md:mt-0 md:block md:text-center">
+                <div className="mt-3 flex items-center justify-end gap-3 md:mt-0 md:block md:text-center">
                   <button
                     type="button"
                     onClick={() => onOpenProcedures(service)}
-                    className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold text-[#ea4f93] transition hover:bg-gray-50 hover:shadow-sm"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-[#f4b8d3] bg-gradient-to-r from-[#fff0f6] to-[#ffe4ef] px-3.5 py-1.5 text-xs font-extrabold text-[#d82a76] shadow-xs hover:from-[#ffe0ed] hover:to-[#ffd5e5] hover:border-[#e979a9] transition-all hover:scale-[1.02] active:scale-[0.98]"
                   >
                     Procedures
                   </button>
@@ -412,133 +429,92 @@ function SessionSummaryPanel({
   const [summaryExpanded, setSummaryExpanded] = useState(true);
 
   return (
-    <article className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-      <div className="flex items-center justify-between border-b border-[#fdebf3] pb-4">
-        <SectionTitle
-          icon={UserRound}
-          title="Customer Summary"
-          subtitle="Review customer profile and preferences"
-        />
+    <article className="rounded-2xl border border-[#f3d5e2] bg-white p-6 shadow-[0_14px_30px_rgba(236,72,153,0.06)] transition-all duration-300">
+      <SectionTitle
+        icon={UserRound}
+        title="Customer Summary"
+        subtitle="Review customer profile and preferences"
+        action={
+          <button
+            type="button"
+            onClick={() => setSummaryExpanded((prev) => !prev)}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-pink-50 text-pink-400 transition-colors hover:bg-pink-100 hover:text-pink-600"
+          >
+            {summaryExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          </button>
+        }
+      />
 
-        <button
-          type="button"
-          onClick={() => setSummaryExpanded((prev) => !prev)}
-          className="
-        flex h-9 w-9 items-center justify-center
-        rounded-full
-        border border-[#f6d5e2]
-        bg-white/70
-        text-[#ea4f93]
-        transition-all
-        duration-300
-        hover:scale-105
-        hover:bg-[#fff3f8]
-        hover:shadow-md
-      "
-        >
-          {summaryExpanded ? (
-            <ChevronDown size={18} />
-          ) : (
-            <ChevronUp size={18} />
-          )}
-        </button>
+      <div className={`grid transition-all duration-300 ease-in-out ${
+        summaryExpanded ? "grid-rows-[1fr] opacity-100 mt-5" : "grid-rows-[0fr] opacity-0 mt-0"
+      }`}>
+        <div className="overflow-hidden">
+          <div className="rounded-2xl border border-[#f5d6e4] bg-gradient-to-br from-[#fff7fb] via-[#fff2f7] to-[#fffafd] p-5 shadow-xs">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex min-w-0 items-center gap-4">
+            <img crossOrigin="anonymous"
+              src={data.customerAvatar}
+              alt={data.customerName}
+              className="h-16 w-16 rounded-2xl border-2 border-[#f2bfd4] object-cover shadow-sm"
+              loading="lazy"
+              referrerPolicy="no-referrer"
+            />
+            <div className="min-w-0">
+              <p className="truncate text-xl font-extrabold text-slate-800">{data.customerName}</p>
+              <p className="mt-1 text-sm font-semibold text-slate-500">{data.customerPhone || "--"}</p>
+            </div>
+          </div>
+
+          <span
+            className={`inline-flex w-fit items-center rounded-full border px-4 py-2 text-xs font-extrabold shadow-xs ${serviceStatusToneByPhase[phase] || serviceStatusToneByPhase.start}`}
+          >
+            {serviceStatusLabel}
+          </span>
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          <SessionChip icon={UserRound} label={data.staffArtist || "--"} />
+          <SessionChip icon={Clock3} label={`Start: ${data.appointmentTime || "--"}`} />
+          <SessionChip icon={Clock3} label={`Est. Finish: ${data.estimatedFinishTime || "--"}`} />
+        </div>
       </div>
 
-      <div
-        className={`overflow-hidden transition-all duration-500 ease-[cubic-bezier(.22,1,.36,1)] ${summaryExpanded
-          ? "max-h-[2500px] opacity-100"
-          : "max-h-0 opacity-0"
-          }`}
-      >
-        <div
-          className={`mt-4 rounded-xl border border-gray-200 p-5 ${summaryToneByPhase[phase] || summaryToneByPhase.start
-            }`}
-        >
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex min-w-0 items-center gap-4">
-              <img
-                crossOrigin="anonymous"
-                src={data.customerAvatar}
-                alt={data.customerName}
-                className="h-16 w-16 rounded-2xl border border-[#f2bfd4] object-cover"
-                loading="lazy"
-                referrerPolicy="no-referrer"
-              />
+      <div className="mt-6 space-y-5">
+        <div>
+          <ServiceSummaryValue
+            services={Array.isArray(data.serviceBreakdown) ? data.serviceBreakdown : []}
+            fallbackValue={data.serviceLabel}
+            onOpenProcedures={onOpenProcedures}
+          />
+        </div>
 
-              <div className="min-w-0">
-                <p className="truncate text-xl font-extrabold text-[#3f2b3f]">
-                  {data.customerName}
-                </p>
-
-                <p className="mt-1 text-sm text-[#a88a9d]">
-                  {data.customerPhone || "--"}
-                </p>
-              </div>
-            </div>
-
-            <span
-              className={`inline-flex w-fit items-center rounded-full border px-4 py-2 text-xs font-bold ${serviceStatusToneByPhase[phase] ||
-                serviceStatusToneByPhase.start
-                }`}
-            >
-              {serviceStatusLabel}
-            </span>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-xl border border-[#f6dbe7] bg-[#fffafc] p-3.5 shadow-xs">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#bca0ae]">Staff Artist</p>
+            <p className="mt-1 text-sm font-extrabold text-slate-800">{data.staffArtist || "--"}</p>
           </div>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            <SessionChip icon={UserRound} label={data.staffArtist || "--"} />
-            <SessionChip
-              icon={Clock3}
-              label={`Start: ${data.appointmentTime || "--"}`}
-            />
-            <SessionChip
-              icon={Clock3}
-              label={`Est. Finish: ${data.estimatedFinishTime || "--"}`}
-            />
+          <div className="rounded-xl border border-[#f6dbe7] bg-[#fffafc] p-3.5 shadow-xs">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#bca0ae]">Appointment Time</p>
+            <p className="mt-1 text-sm font-extrabold text-slate-800">{data.appointmentTime || "--"}</p>
+          </div>
+          <div className="rounded-xl border border-[#f6dbe7] bg-[#fffafc] p-3.5 shadow-xs">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#bca0ae]">Estimated Finish</p>
+            <p className="mt-1 text-sm font-extrabold text-slate-800">{data.estimatedFinishTime || "--"}</p>
+          </div>
+          <div className="rounded-xl border border-[#f6dbe7] bg-[#fffafc] p-3.5 shadow-xs">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#bca0ae]">Estimated Duration</p>
+            <p className="mt-1 text-sm font-extrabold text-[#ea4f93]">{data.estimatedDuration || "--"}</p>
           </div>
         </div>
 
-        <div className="mt-5 grid gap-5 md:grid-cols-2">
-          <div className="md:col-span-2">
-            <ServiceSummaryValue
-              services={
-                Array.isArray(data.serviceBreakdown)
-                  ? data.serviceBreakdown
-                  : []
-              }
-              fallbackValue={data.serviceLabel}
-              onOpenProcedures={onOpenProcedures}
-            />
+        {hasConfirmedDesign ? (
+          <div className="rounded-xl border border-pink-200 bg-gradient-to-r from-pink-50 to-rose-50 p-4 shadow-xs">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#ea4f93]">Confirmed Design</p>
+            <p className="mt-1 text-sm font-black text-slate-800">{data.designName}</p>
           </div>
-
-          <SummaryValue
-            label="Staff Artist"
-            value={data.staffArtist || "--"}
-          />
-
-          <SummaryValue
-            label="Appointment Time"
-            value={data.appointmentTime || "--"}
-          />
-
-          <SummaryValue
-            label="Estimated Finish"
-            value={data.estimatedFinishTime || "--"}
-          />
-
-          <SummaryValue
-            label="Estimated Duration"
-            value={data.estimatedDuration || "--"}
-            accent={phase === "done"}
-          />
-
-          {hasConfirmedDesign && (
-            <SummaryValue
-              label="Confirmed Design"
-              value={data.designName}
-            />
-          )}
-        </div>
+        ) : null}
+      </div>
+      </div>
       </div>
     </article>
   );
@@ -951,54 +927,86 @@ export function StaffServiceSessionPage() {
       customerPhone: booking.customerPhone,
       customerAvatar: DEFAULT_CUSTOMER_AVATAR,
       serviceLabel: Array.isArray(booking.services) && booking.services.length ? booking.services.join("\n") : booking.service,
-      serviceBreakdown: Array.isArray(booking.bookingItems)
-        ? booking.bookingItems
-          .map((item, index) => {
-            const name = String(item?.serviceName || item?.customerNailName || item?.nailVariantName || "").trim();
+      serviceBreakdown: (() => {
+        const raw = Array.isArray(booking.bookingItems)
+          ? booking.bookingItems
+            .map((item, index) => {
+              const name = String(item?.serviceName || item?.customerNailName || item?.nailVariantName || "").trim();
 
-            if (!name) {
-              return null;
-            }
+              if (!name) {
+                return null;
+              }
 
-            const durationValue = String(item?.duration || "").trim();
-            const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
-            const priceValue = Number(item?.price || item?.finalPrice || 0);
+              const durationValue = String(item?.duration || "").trim();
+              const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
+              const priceValue = Number(item?.price || item?.finalPrice || 0);
 
-            return {
-              id: String(item?.bookingItemId || item?.id || `${name}-${index}`).trim(),
-              name,
-              duration: durationValue ? Number.parseInt(durationValue, 10) || 0 : 0,
-              durationLabel: durationValue || "--",
-              quantity,
-              priceLabel: formatCurrency(priceValue),
-            };
-          })
-          .filter(Boolean)
-        : [],
-      nailServiceBreakdown: Array.isArray(booking.bookingItems)
-        ? booking.bookingItems
-          .map((item, index) => {
-            const name = String(item?.nailVariantName || item?.customerNailName || "").trim();
+              return {
+                id: String(item?.bookingItemId || item?.id || `${name}-${index}`).trim(),
+                name,
+                duration: durationValue ? Number.parseInt(durationValue, 10) || 0 : 0,
+                durationLabel: durationValue || "--",
+                quantity,
+                priceLabel: formatCurrency(priceValue),
+              };
+            })
+            .filter(Boolean)
+          : [];
 
-            if (!name) {
-              return null;
-            }
+        const grouped = [];
+        const map = new Map();
+        raw.forEach((r) => {
+          const key = `${r.name}_${r.priceLabel}_${r.durationLabel}`;
+          if (!map.has(key)) {
+            const copy = { ...r };
+            map.set(key, copy);
+            grouped.push(copy);
+          } else {
+            map.get(key).quantity += r.quantity;
+          }
+        });
+        return grouped;
+      })(),
+      nailServiceBreakdown: (() => {
+        const raw = Array.isArray(booking.bookingItems)
+          ? booking.bookingItems
+            .map((item, index) => {
+              const name = String(item?.nailVariantName || item?.customerNailName || "").trim();
 
-            const durationValue = String(item?.duration || "").trim();
-            const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
-            const priceValue = Number(item?.price || item?.finalPrice || 0);
+              if (!name) {
+                return null;
+              }
 
-            return {
-              id: String(item?.bookingItemId || item?.id || `${name}-${index}`).trim(),
-              name,
-              duration: durationValue ? Number.parseInt(durationValue, 10) || 0 : 0,
-              durationLabel: durationValue || "--",
-              quantity,
-              priceLabel: formatCurrency(priceValue),
-            };
-          })
-          .filter(Boolean)
-        : [],
+              const durationValue = String(item?.duration || "").trim();
+              const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
+              const priceValue = Number(item?.price || item?.finalPrice || 0);
+
+              return {
+                id: String(item?.bookingItemId || item?.id || `${name}-${index}`).trim(),
+                name,
+                duration: durationValue ? Number.parseInt(durationValue, 10) || 0 : 0,
+                durationLabel: durationValue || "--",
+                quantity,
+                priceLabel: formatCurrency(priceValue),
+              };
+            })
+            .filter(Boolean)
+          : [];
+
+        const grouped = [];
+        const map = new Map();
+        raw.forEach((r) => {
+          const key = `${r.name}_${r.priceLabel}_${r.durationLabel}`;
+          if (!map.has(key)) {
+            const copy = { ...r };
+            map.set(key, copy);
+            grouped.push(copy);
+          } else {
+            map.get(key).quantity += r.quantity;
+          }
+        });
+        return grouped;
+      })(),
       priceSummary: {
         serviceRows: Array.isArray(booking.bookingItems)
           ? booking.bookingItems
@@ -1249,7 +1257,7 @@ export function StaffServiceSessionPage() {
   const [isServiceProcedureModalLoading, setIsServiceProcedureModalLoading] = useState(false);
   const [serviceProcedureModalError, setServiceProcedureModalError] = useState("");
   const loadedBookingItemIdRef = useRef("");
-  const progressSentinelRef = useRef(null);
+  const [progressSentinel, setProgressSentinel] = useState(null);
   const [showComparisonView, setShowComparisonView] = useState(false);
   const [isProgressPinned, setIsProgressPinned] = useState(false);
   const [confirmations, setConfirmations] = useState(initialConfirmations);
@@ -1379,13 +1387,16 @@ export function StaffServiceSessionPage() {
       };
     });
   }, [currentStaffArtistId, serviceProcedureList]);
+  const sessionBookingItemKey = useMemo(() => {
+    const rawItems = bookingDetail?.bookingItems || booking?.bookingItems || payload?.bookingItemIds || [];
+    const ids = Array.isArray(rawItems)
+      ? rawItems.map((item) => String(item?.bookingItemId || item?.id || item || "").trim()).filter(Boolean)
+      : [];
+    return [...new Set(ids)].join("|");
+  }, [bookingDetail, booking, payload?.bookingItemIds]);
   const sessionBookingItemIds = useMemo(
-    () => getSessionBookingItemIds(data?.bookingItemIds),
-    [data?.bookingItemIds],
-  );
-  const sessionBookingItemKey = useMemo(
-    () => sessionBookingItemIds.join("|"),
-    [sessionBookingItemIds],
+    () => (sessionBookingItemKey ? sessionBookingItemKey.split("|") : []),
+    [sessionBookingItemKey],
   );
   const phase = !started ? "start" : completed ? "done" : "progress";
 
@@ -1407,7 +1418,7 @@ export function StaffServiceSessionPage() {
    * instead of floating with a gap or sitting underneath it.
    */
   useEffect(() => {
-    const sentinel = progressSentinelRef.current;
+    const sentinel = progressSentinel;
 
     if (!sentinel) {
       return undefined;
@@ -1433,7 +1444,7 @@ export function StaffServiceSessionPage() {
     return () => {
       observer.disconnect();
     };
-  }, []);
+  }, [progressSentinel]);
 
   useEffect(() => {
     return () => {
@@ -1659,15 +1670,16 @@ export function StaffServiceSessionPage() {
   }, []);
 
   // Real-time update for procedures when there's a new notification
+  const latestNotificationId = notifications?.[0]?.id || notifications?.[0]?.createdAt || null;
   useEffect(() => {
-    if (notifications && notifications.length > 0 && phase === "progress") {
+    if (latestNotificationId && phase === "progress") {
       const latestNotification = notifications[0];
-      if (!latestNotification.isRead) {
+      if (latestNotification && !latestNotification.isRead) {
         // Trigger a silent reload to fetch any overlap status changes
         void reloadBookingProcedures(sessionBookingItemIds, { silent: true, showToast: false });
       }
     }
-  }, [notifications, phase, sessionBookingItemIds, reloadBookingProcedures]);
+  }, [latestNotificationId, phase, sessionBookingItemKey, reloadBookingProcedures]);
 
   useEffect(() => {
     let isMounted = true;
@@ -1700,7 +1712,7 @@ export function StaffServiceSessionPage() {
     return () => {
       isMounted = false;
     };
-  }, [sessionBookingItemIds, sessionBookingItemKey]);
+  }, [sessionBookingItemKey]);
 
   const loadServiceProcedureList = useCallback(async (bookingItemId, options = {}) => {
     const normalizedBookingItemId = String(bookingItemId || "").trim();
@@ -1733,7 +1745,7 @@ export function StaffServiceSessionPage() {
   }, []);
 
   useEffect(() => {
-    if (phase !== "progress" || sessionBookingItemIds.length === 0) {
+    if (phase !== "progress" || !sessionBookingItemKey) {
       return undefined;
     }
 
@@ -1779,7 +1791,7 @@ export function StaffServiceSessionPage() {
       isMounted = false;
       window.clearInterval(intervalId);
     };
-  }, [loadServiceProcedureList, phase, reloadBookingProcedures, selectedProcedureService?.bookingItemId, selectedProcedureService?.id, sessionBookingItemIds]);
+  }, [loadServiceProcedureList, phase, reloadBookingProcedures, selectedProcedureService?.bookingItemId, selectedProcedureService?.id, sessionBookingItemKey]);
 
   // eslint-disable-next-line no-unused-vars
   const currentProcedureNote = useMemo(() => {
@@ -2316,6 +2328,31 @@ export function StaffServiceSessionPage() {
     setIsSavingExtraService(true);
 
     try {
+      // Calculate total extra duration from selected services
+      const totalExtraMinutes = normalizedSelectedServices.reduce((sum, [serviceId, qty]) => {
+        const item = serviceCatalog.find((s) => s.serviceId === serviceId);
+        return sum + (Number(item?.duration || 15) * Number(qty));
+      }, 0);
+
+      // Build addonItems array from selected extra services
+      const addonItems = normalizedSelectedServices.flatMap(([serviceId, qty]) => (
+        Array.from({ length: Number(qty) || 1 }, () => ({ serviceId }))
+      ));
+
+      // Run real-time simulation check (BR-03.1)
+      try {
+        const simResult = await simulateOnsiteAddon({
+          bookingId: normalizedBookingId,
+          addonItems,
+        });
+
+        if (simResult?.hasConflict && simResult?.canSplitMultiArtist) {
+          toast.success(`Đã tự động tìm Thợ phụ ${simResult.suggestedSecondaryArtistName || "F"} hỗ trợ công đoạn tiếp theo!`, { icon: "⚡" });
+        }
+      } catch (simErr) {
+        console.warn("On-site addon simulation warning:", simErr?.message);
+      }
+
       const bookingItems = Array.isArray(bookingDetail.bookingItems) ? bookingDetail.bookingItems : [];
       const payloadBookingItems = buildStaffBookingItemsForUpdate(
         bookingItems,
@@ -2653,72 +2690,34 @@ export function StaffServiceSessionPage() {
         </div>
       ) : null}
 
-      <div ref={progressSentinelRef} className="h-px w-full" />
+      <div ref={setProgressSentinel} className="h-[1px] w-full bg-transparent shrink-0 pointer-events-none opacity-0" />
       <article
         style={{ top: `${STICKY_HEADER_OFFSET_PX}px` }}
-        className={`
-                    z-30
-                    rounded-[22px]
-                    border border-[#f3d5e2]
-                    shadow-[0_14px_30px_rgba(236,72,153,0.05)]
-                    xl:sticky
-
-                    transition-all
-                    duration-500
-                    ease-[cubic-bezier(.22,1,.36,1)]
-                    will-change-[padding,background-color,box-shadow,backdrop-filter]
-
-                   ${isProgressPinned
-            ? `
-                    bg-white/90
-                    backdrop-blur-xl
-                    px-4
-                    py-3
-                    shadow-[0_18px_40px_rgba(236,72,153,0.10)]
-                  `
-            : `
-                    bg-white
-                    p-5
-                  `
-          }
-            `}
+        className={`z-30 rounded-[22px] border border-[#f3d5e2] bg-white/95 backdrop-blur-md shadow-[0_14px_30px_rgba(236,72,153,0.08)] xl:sticky transition-all duration-300 ${
+          isProgressPinned ? "px-5 py-3" : "p-5"
+        }`}
       >
-        <div
-          className={`
-                        overflow-hidden
-                        transition-all
-                        duration-500
-                        ease-[cubic-bezier(.22,1,.36,1)]
-                        ${isProgressPinned
-              ? "max-h-0 opacity-0 -translate-y-2"
-              : "max-h-32 opacity-100 translate-y-0 mb-6"
-            }
-                         `} >
+        <div className={`grid transition-all duration-300 ease-in-out ${
+          isProgressPinned ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
+        }`}>
+          <div className="overflow-hidden">
           <SectionTitle
             icon={Sparkles}
             title="Session Progress"
             subtitle="Track the start and completion of the service workflow."
           />
+          </div>
         </div>
-
-        <div
-          className={`
-      flex flex-col gap-5 xl:flex-row
-
-      transition-all
-      duration-500
-      ease-[cubic-bezier(.22,1,.36,1)]
-
-      ${isProgressPinned ? "mt-0" : "mt-6"}
-    `}
-        >
+        <div className={`flex flex-col xl:flex-row transition-all duration-300 ${
+          isProgressPinned ? "mt-0" : "mt-4 gap-5"
+        }`}>
           {progressSteps.map((step, index) => (
             <ProgressStep
               key={step.label}
               step={step}
               index={index}
               isLast={index === progressSteps.length - 1}
-              compact={isProgressPinned}
+              isProgressPinned={isProgressPinned}
             />
           ))}
         </div>
@@ -2894,38 +2893,23 @@ export function StaffServiceSessionPage() {
                   subtitle="Track what is happening during the active session."
                 />
 
-                <div className="mt-5 flex flex-col gap-4">
-                  <div className={`rounded-[18px] border border-[#f2bfd4] bg-[linear-gradient(180deg,#fff8fb_0%,#fff3f8_100%)] p-4 shadow-[0_12px_24px_rgba(236,72,153,0.06)] ${hasConfirmedDesign ? "" : "xl:col-span-2"}`}>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
-                      Current Process
+                <div className="mt-5 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[#f5d6e4] bg-[linear-gradient(180deg,#fff8fb_0%,#fff3f8_100%)] p-4 shadow-xs">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
+                      Session Status
                     </p>
-                    <div className="mt-3">
-                      <ServiceSummaryValue
-                        services={Array.isArray(data.serviceBreakdown) ? data.serviceBreakdown : []}
-                        fallbackValue={data.serviceLabel}
-                      />
-                    </div>
+                    <p className="mt-1 text-base font-extrabold text-slate-800">
+                      {phase === "progress" ? "In Progress" : phase === "done" ? "Completed" : "Ready to Start"}
+                    </p>
                   </div>
-                  {hasConfirmedDesign ? (
-                    <div className="rounded-[18px] border border-[#f2bfd4] bg-[linear-gradient(180deg,#fff8fb_0%,#fff3f8_100%)] p-4 shadow-[0_12px_24px_rgba(236,72,153,0.06)]">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
-                        Nail Service
+                  {data.remainingTime ? (
+                    <div className="text-right">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
+                        Estimated Time
                       </p>
-                      <div className="mt-3">
-                        <ServiceSummaryValue
-                          services={Array.isArray(data.nailServiceBreakdown) ? data.nailServiceBreakdown : []}
-                          fallbackValue={data.designName}
-                        />
-                      </div>
-                      <div className="mt-4 border-t border-[#f7dce8] pt-4">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
-                          Estimate Time
-                        </p>
-                        <p className="mt-2 text-sm font-extrabold text-[#3f2b3f]">{data.remainingTime}</p>
-                      </div>
+                      <p className="mt-1 text-base font-black text-[#ea4f93]">{data.remainingTime}</p>
                     </div>
                   ) : null}
-
                 </div>
 
                 {phase === "progress" ? (

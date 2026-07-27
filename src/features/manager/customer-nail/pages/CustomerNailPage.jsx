@@ -56,12 +56,12 @@ function getStatusTone(status) {
 // 🎨 Parse & render surface effects from config JSON (Backend format)
 function renderSurfaceEffects(surfaceName, effectsConfigJson) {
   const name = (surfaceName || "glossy").toLowerCase();
-  
+
   // Parse config JSON
   let config = {};
   try {
-    config = typeof effectsConfigJson === 'string' 
-      ? JSON.parse(effectsConfigJson) 
+    config = typeof effectsConfigJson === 'string'
+      ? JSON.parse(effectsConfigJson)
       : effectsConfigJson || {};
   } catch (e) {
     console.warn("Failed to parse surface config:", e);
@@ -84,25 +84,25 @@ function renderSurfaceEffects(surfaceName, effectsConfigJson) {
     return (
       <>
         {/* Intense metallic gradient */}
-        <div 
+        <div
           className="pointer-events-none absolute inset-0 h-full w-full bg-[linear-gradient(135deg,rgba(255,255,255,0.75)_0%,rgba(255,255,255,0.15)_40%,rgba(0,0,0,0.25)_65%,rgba(255,255,255,0.5)_100%)] mix-blend-overlay"
           style={{ opacity: reflectivity }}
         />
-        
+
         {/* Chrome highlight - left side */}
-        <div 
+        <div
           className="pointer-events-none absolute left-3 top-4 h-[55%] w-3.5 rounded-full bg-gradient-to-b from-white via-white/85 to-transparent blur-[0.4px]"
           style={{ opacity: metallic * 0.95 }}
         />
-        
+
         {/* Metallic gleam - center */}
-        <div 
+        <div
           className="pointer-events-none absolute left-1/2 top-6 h-[45%] w-[1.5px] -translate-x-1/2 rounded-full bg-gradient-to-b from-white/80 via-white/40 to-transparent blur-[0.2px]"
           style={{ opacity: metallic * 0.9 }}
         />
-        
+
         {/* Mirror reflection - right */}
-        <div 
+        <div
           className="pointer-events-none absolute right-2.5 top-8 h-[38%] w-1.5 rounded-full bg-gradient-to-b from-white/70 to-transparent blur-[0.7px]"
           style={{ opacity: reflectivity * 0.8 }}
         />
@@ -175,23 +175,23 @@ function renderSurfaceEffects(surfaceName, effectsConfigJson) {
       <>
         {/* Base glossy */}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/30 via-white/8 to-black/10 mix-blend-overlay" />
-        
+
         {/* Cat eye magnetic stripe */}
-        <div 
+        <div
           className="pointer-events-none absolute left-1/2 top-1/2 h-[70%] w-[60%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-r from-transparent via-white to-transparent"
-          style={{ 
+          style={{
             opacity: streak * 0.5,
             filter: `blur(4px)`,
             transform: `translate(-50%, -50%) rotate(${angle}deg)`
           }}
         />
-        
+
         {/* Side reflections */}
-        <div 
+        <div
           className="pointer-events-none absolute left-4 top-6 h-[50%] w-1.5 rounded-full bg-white/40 blur-[0.8px]"
           style={{ opacity: streak * 0.6 }}
         />
-        <div 
+        <div
           className="pointer-events-none absolute right-4 top-8 h-[45%] w-1.5 rounded-full bg-white/30 blur-[1px]"
           style={{ opacity: streak * 0.5 }}
         />
@@ -208,15 +208,15 @@ function renderSurfaceEffects(surfaceName, effectsConfigJson) {
     return (
       <>
         {/* Matte diffusion */}
-        <div 
+        <div
           className="pointer-events-none absolute inset-0 h-full w-full bg-white/22 backdrop-blur-[1px]"
           style={{ opacity: Math.max(0.8, opacity * 7) }} // Scale up opacity
         />
-        
+
         {/* Minimal ambient highlight */}
-        <div 
+        <div
           className="pointer-events-none absolute left-4 top-8 h-[28%] w-2 rounded-full bg-white/18"
-          style={{ 
+          style={{
             opacity: opacity * 1.5,
             filter: blur > 0 ? `blur(${blur}px)` : 'blur(1.8px)'
           }}
@@ -347,10 +347,10 @@ function getCardColorStyle(customColor) {
     if (parsed.mode === 'perFinger' && Array.isArray(parsed.fingers)) {
       const firstFinger = parsed.fingers[0];
       if (firstFinger) {
-        const allIdentical = parsed.fingers.every(f => 
-          f.mode === firstFinger.mode && 
-          f.color === firstFinger.color && 
-          f.primaryColor === firstFinger.primaryColor && 
+        const allIdentical = parsed.fingers.every(f =>
+          f.mode === firstFinger.mode &&
+          f.color === firstFinger.color &&
+          f.primaryColor === firstFinger.primaryColor &&
           f.secondaryColor === firstFinger.secondaryColor
         );
 
@@ -372,7 +372,7 @@ function getCardColorStyle(customColor) {
         }
         return f.color || f.primaryColor;
       }).filter(Boolean);
-      
+
       if (colors.length > 0) {
         if (colors.length === 1) return { backgroundColor: colors[0] };
         return { background: `linear-gradient(to right, ${colors.join(', ')})` };
@@ -390,7 +390,7 @@ function StatCard({ title, value, note, icon: Icon, toneClassName }) {
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-[#c08aa4]">{title}</p>
-          <p className="mt-2.5 text-3xl font-black text-[#402542]">{value}</p>
+          <p className="mt-2.5 text-3xl font-bold text-[#402542]">{value}</p>
           <p className="mt-1.5 text-xs text-[#a07c90] group-hover/stat:text-[#ea4f93] transition-colors">{note}</p>
         </div>
         <div className={`flex h-12 w-12 items-center justify-center rounded-2xl text-white shadow-lg transition-transform duration-300 group-hover/stat:scale-110 group-hover/stat:rotate-6 ${toneClassName}`}>
@@ -441,7 +441,7 @@ function CustomerNailCard({ nail }) {
       const parsed = typeof nail.customColor === 'string'
         ? JSON.parse(nail.customColor)
         : nail.customColor;
-      
+
       if (!parsed) return null;
 
       if (parsed.mode === 'solid' && parsed.color) {
@@ -507,7 +507,7 @@ function CustomerNailCard({ nail }) {
         <div className="relative h-[200px] w-[140px] shrink-0 overflow-hidden rounded-[24px] border border-[#f8dce9] bg-gradient-to-b from-[#fffbfd] to-[#fff5f9] shadow-[0_8px_20px_rgba(236,72,153,0.06)] transition-all duration-500 group-hover:border-[#ea4f93]/40 group-hover:shadow-[0_16px_36px_rgba(236,72,153,0.12)] group-hover:scale-[1.02]">
           {/* Soft shadow beneath */}
           <div className="absolute -bottom-2 left-1/2 h-3 w-[70%] -translate-x-1/2 rounded-full bg-[#ea4f93]/15 blur-md" />
-          
+
           {nail.imageUrl ? (
             <img
               src={nail.imageUrl}
@@ -518,12 +518,12 @@ function CustomerNailCard({ nail }) {
             <>
               {/* Base color layer */}
               <div className="absolute inset-0 h-full w-full" style={{ ...maskStyle, ...cardColorStyle }} />
-              
+
               {/* 🎨 Surface Effects from Backend Config - Clipped strictly to nail shape */}
               <div className="absolute inset-0 h-full w-full overflow-hidden" style={maskStyle}>
                 {renderSurfaceEffects(nail.nailSurface?.name, nail.nailSurface?.shaderParam)}
               </div>
-              
+
               {/* Shape mask overlay */}
               <img
                 src={nail.nailShape.imageUrl}
@@ -532,7 +532,7 @@ function CustomerNailCard({ nail }) {
               />
             </>
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-2xl font-black uppercase text-white shadow-inner">
+            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-2xl font-bold uppercase text-white shadow-inner">
               {initials}
             </div>
           )}
@@ -543,7 +543,7 @@ function CustomerNailCard({ nail }) {
           {/* Header: Title + Icons */}
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <h4 className="line-clamp-2 text-xl font-black leading-snug text-[#3f2240] transition-colors duration-300 group-hover:text-[#ea4f93]">
+              <h4 className="line-clamp-2 text-xl font-bold leading-snug text-[#3f2240] transition-colors duration-300 group-hover:text-[#ea4f93]">
                 {nail.name || "Untitled Design"}
               </h4>
               <p className="mt-1 text-xs font-semibold text-[#a988a0]">
@@ -559,13 +559,12 @@ function CustomerNailCard({ nail }) {
 
           {/* Status Message */}
           <div className="mt-3.5 flex items-center gap-2">
-            <span className={`h-2 w-2 rounded-full ${
-              nail.status === "PendingReview" ? "bg-amber-400 animate-pulse" :
-              nail.status === "Approved" ? "bg-emerald-400" :
-              nail.status === "Rejected" ? "bg-rose-400" :
-              "bg-indigo-400"
-            }`} />
-            <p className="text-[10px] font-black uppercase tracking-wider text-[#9b7b92]">{getStatusMessage(nail.status)}</p>
+            <span className={`h-2 w-2 rounded-full ${nail.status === "PendingReview" ? "bg-amber-400 animate-pulse" :
+                nail.status === "Approved" ? "bg-emerald-400" :
+                  nail.status === "Rejected" ? "bg-rose-400" :
+                    "bg-indigo-400"
+              }`} />
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#9b7b92]">{getStatusMessage(nail.status)}</p>
           </div>
 
           {/* Stats with Icons (3 columns) */}
@@ -577,7 +576,7 @@ function CustomerNailCard({ nail }) {
               </div>
               <div className="min-w-0">
                 <p className="text-[9px] font-bold uppercase tracking-wider text-[#c08aa4]">Price</p>
-                <p className="truncate text-xs font-black text-[#ea4f93]">{formatVND(nail.price, nail.status)}</p>
+                <p className="truncate text-xs font-bold text-[#ea4f93]">{formatVND(nail.price, nail.status)}</p>
               </div>
             </div>
 
@@ -588,7 +587,7 @@ function CustomerNailCard({ nail }) {
               </div>
               <div className="min-w-0">
                 <p className="text-[9px] font-bold uppercase tracking-wider text-[#c08aa4]">Duration</p>
-                <p className="truncate text-xs font-black text-[#3f2240]">{formatDuration(nail.duration, nail.status)}</p>
+                <p className="truncate text-xs font-bold text-[#3f2240]">{formatDuration(nail.duration, nail.status)}</p>
               </div>
             </div>
 
@@ -599,7 +598,7 @@ function CustomerNailCard({ nail }) {
               </div>
               <div className="min-w-0">
                 <p className="text-[9px] font-bold uppercase tracking-wider text-[#c08aa4]">Created</p>
-                <p className="truncate text-xs font-black text-[#3f2240]">{formatDate(nail.createdAt)}</p>
+                <p className="truncate text-xs font-bold text-[#3f2240]">{formatDate(nail.createdAt)}</p>
               </div>
             </div>
           </div>
@@ -872,7 +871,7 @@ export function CustomerNailPage() {
                   <Palette size={22} />
                 </div>
                 <div>
-                  <h2 className="text-3xl font-black tracking-tight bg-gradient-to-r from-[#402542] via-[#8a2f4c] to-[#ea4f93] bg-clip-text text-transparent">Customer Nails</h2>
+                  <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-[#402542] via-[#8a2f4c] to-[#ea4f93] bg-clip-text text-transparent">Customer Nails</h2>
                   <p className="text-xs font-semibold text-[#b07a94] mt-0.5">Manage customer nail designs and monitor new requests in real time.</p>
                 </div>
               </div>

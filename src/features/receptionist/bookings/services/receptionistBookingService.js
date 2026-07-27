@@ -356,3 +356,40 @@ export async function getUserById(userId) {
   });
   return unwrapResponse(response, "Failed to load user info.");
 }
+
+export async function fetchSalonChairs(salonId) {
+  const normalizedSalonId = String(salonId || "").trim();
+  if (!normalizedSalonId) throw new Error("Salon ID is required.");
+
+  const response = await axiosClient.get(`/Salons/${normalizedSalonId}/chairs`, {
+    headers: getAuthHeaders(),
+  });
+
+  return unwrapResponse(response, "Failed to load salon chairs.");
+}
+
+export async function fetchAvailableSalonChairs(salonId, params = {}) {
+  const normalizedSalonId = String(salonId || "").trim();
+  if (!normalizedSalonId) throw new Error("Salon ID is required.");
+
+  const response = await axiosClient.get(`/Salons/${normalizedSalonId}/available-chairs`, {
+    headers: getAuthHeaders(),
+    params,
+  });
+
+  return unwrapResponse(response, "Failed to load available salon chairs.");
+}
+
+export async function assignChairToBooking(bookingId, chairId) {
+  const normalizedBookingId = String(bookingId || "").trim();
+  const normalizedChairId = String(chairId || "").trim();
+
+  if (!normalizedBookingId) throw new Error("Booking ID is required.");
+  if (!normalizedChairId) throw new Error("Chair ID is required.");
+
+  const response = await axiosClient.post(`/Bookings/${normalizedBookingId}/assign-chair/${normalizedChairId}`, null, {
+    headers: getAuthHeaders(),
+  });
+
+  return unwrapResponse(response, "Failed to assign chair to booking.");
+}

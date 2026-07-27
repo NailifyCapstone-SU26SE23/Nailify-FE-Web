@@ -43,7 +43,7 @@ export function StaffDetailModal({ staff, onClose, loading }) {
                 />
               ) : (
                 <div
-                  className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${staff.avatarTone} ring-4 ring-white/40 text-xl font-black text-white shadow-lg`}
+                  className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${staff.avatarTone} ring-4 ring-white/40 text-xl font-bold text-white shadow-lg`}
                 >
                   {getStaffInitials(staff.name)}
                 </div>

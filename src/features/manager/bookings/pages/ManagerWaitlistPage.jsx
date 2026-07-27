@@ -138,7 +138,7 @@ function StatCard({ title, value, icon: Icon, gradient, textColor, shadowColor, 
       <div className="flex items-start justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-wider text-[#a88a9f]">{title}</p>
-          <h3 className={`mt-2 text-3xl font-black ${textColor}`}>{value}</h3>
+          <h3 className={`mt-2 text-3xl font-bold ${textColor}`}>{value}</h3>
           <p className="mt-1.5 text-[11px] font-medium text-[#7f6478]">{description}</p>
         </div>
         <div className={`flex h-12 w-12 items-center justify-center rounded-[18px] bg-gradient-to-br ${gradient} ${shadowColor} text-white shadow-lg`}>
@@ -213,23 +213,23 @@ function QueueEntryCard({ item, fallbackPosition, isNext, onOpen, getStatusBadge
             className={`flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-2xl border text-center ${isActive ? "border-[#f7c7da] bg-[#fff4f8] text-[#d83f86]" : "border-[#e5e7eb] bg-[#f9fafb] text-[#64748b]"
               }`}
           >
-            <span className="text-[9px] font-black uppercase leading-none opacity-60">No.</span>
-            <span className="mt-1 text-xl font-black leading-none">{position}</span>
+            <span className="text-[9px] font-bold uppercase leading-none opacity-60">No.</span>
+            <span className="mt-1 text-xl font-bold leading-none">{position}</span>
           </div>
           {isNext && (
-            <span className="hidden rounded-full bg-[#402542] px-2.5 py-1 text-[9px] font-black uppercase text-white lg:inline-flex animate-pulse">
+            <span className="hidden rounded-full bg-[#402542] px-2.5 py-1 text-[9px] font-bold uppercase text-white lg:inline-flex animate-pulse">
               Next to notify
             </span>
           )}
         </div>
 
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ff9ac6] to-[#d83f86] text-sm font-black text-white shadow-sm">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ff9ac6] to-[#d83f86] text-sm font-bold text-white shadow-sm">
             {getCustomerInitials(item.customerName)}
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="truncate text-base font-black text-[#321735]">{item.customerName || "Guest"}</h3>
+              <h3 className="truncate text-base font-bold text-[#321735]">{item.customerName || "Guest"}</h3>
             </div>
             <p className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-[#9b7f92]">
               <UserRound size={13} className="text-[#a88a9f]" />
@@ -240,25 +240,25 @@ function QueueEntryCard({ item, fallbackPosition, isNext, onOpen, getStatusBadge
 
         <div className="grid grid-cols-2 gap-3 rounded-xl bg-[#fff8fb] p-3 text-xs sm:grid-cols-3 lg:grid-cols-1 lg:bg-transparent lg:p-0">
           <div>
-            <p className="font-black uppercase text-[10px] tracking-wider text-[#b38da4]">Requested Time</p>
+            <p className="font-bold uppercase text-[10px] tracking-wider text-[#b38da4]">Requested Time</p>
             <p className="mt-1 flex items-center gap-1.5 font-bold text-[#321735]">
               <Calendar size={13} className="text-[#ea4f93]" />
               {dayjs(item.requestedDate).format("DD MMM")}
             </p>
-            <p className="mt-1 font-black text-[#7e4fe6]">{formatTimeSpan(item.requestedStartTime)}</p>
+            <p className="mt-1 font-bold text-[#7e4fe6]">{formatTimeSpan(item.requestedStartTime)}</p>
           </div>
           <div className="lg:hidden">
-            <p className="font-black uppercase text-[10px] tracking-wider text-[#b38da4]">Duration</p>
-            <p className="mt-1 font-black text-[#321735]">{item.estimatedDuration ? `${item.estimatedDuration}m` : "--"}</p>
+            <p className="font-bold uppercase text-[10px] tracking-wider text-[#b38da4]">Duration</p>
+            <p className="mt-1 font-bold text-[#321735]">{item.estimatedDuration ? `${item.estimatedDuration}m` : "--"}</p>
           </div>
           <div className="lg:hidden">
-            <p className="font-black uppercase text-[10px] tracking-wider text-[#b38da4]">Requested Artist</p>
-            <p className="mt-1 truncate font-black text-[#321735]">{item.preferredNailArtistName || "Unassigned"}</p>
+            <p className="font-bold uppercase text-[10px] tracking-wider text-[#b38da4]">Requested Artist</p>
+            <p className="mt-1 truncate font-bold text-[#321735]">{item.preferredNailArtistName || "Unassigned"}</p>
           </div>
         </div>
 
         <div className="hidden min-w-0 text-sm lg:block">
-          <p className="flex items-center gap-1.5 font-black text-[#321735]">
+          <p className="flex items-center gap-1.5 font-bold text-[#321735]">
             <Scissors size={15} className="text-[#ea4f93]" />
             <span className="truncate">{item.preferredNailArtistName || "Unassigned"}</span>
           </p>
@@ -273,7 +273,7 @@ function QueueEntryCard({ item, fallbackPosition, isNext, onOpen, getStatusBadge
         </div>
 
         <div className="rounded-xl border border-[#f5d0e3] bg-[#fffafd] p-3 text-sm">
-          <p className="mb-2 flex items-center gap-1.5 text-[10px] font-black uppercase text-[#b38da4] tracking-wider">
+          <p className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase text-[#b38da4] tracking-wider">
             <BellRing size={13} className="text-[#ea4f93]" />
             Slot Notification
           </p>
@@ -487,7 +487,7 @@ export function ManagerWaitlistPage() {
           <div className="bg-[#321735] bg-gradient-to-br from-[#3b1c3e] via-[#4d2551] to-[#311734] p-6 text-white relative overflow-hidden">
             <div className="absolute -right-16 -top-16 h-36 w-36 rounded-full bg-pink-500/10 blur-xl" />
             <div className="relative z-10 flex flex-wrap items-center gap-3">
-              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-300/30 bg-emerald-400/20 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-emerald-200">
+              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-300/30 bg-emerald-400/20 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-200">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
                 Automated Waitlist Monitor
               </span>
@@ -496,7 +496,7 @@ export function ManagerWaitlistPage() {
 
             <div className="relative z-10 mt-4 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
               <div>
-                <h1 className="text-3xl font-black tracking-tight text-pink-100">Slot Recovery Waitlist</h1>
+                <h1 className="text-3xl font-bold tracking-tight text-pink-100">Slot Recovery Waitlist</h1>
                 <p className="mt-2 max-w-2xl text-xs leading-5 text-white/70">
                   When a customer cancels a booked appointment, the system will automatically send a priority slot offer to the first eligible customer in the waitlist below.
                 </p>
@@ -504,7 +504,7 @@ export function ManagerWaitlistPage() {
               <button
                 onClick={loadWaitlist}
                 disabled={isLoading}
-                className="inline-flex h-11 w-fit items-center justify-center gap-2 rounded-xl bg-white px-4 text-xs font-black text-[#402542] shadow-md transition hover:bg-pink-50 hover:shadow active:scale-95 disabled:opacity-50"
+                className="inline-flex h-11 w-fit items-center justify-center gap-2 rounded-xl bg-white px-4 text-xs font-bold text-[#402542] shadow-md transition hover:bg-pink-50 hover:shadow active:scale-95 disabled:opacity-50"
               >
                 <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
                 Refresh Waitlist
@@ -513,15 +513,15 @@ export function ManagerWaitlistPage() {
           </div>
 
           <div className="bg-[#fff8fb] p-6 border-l border-[#f5e3ed] flex flex-col justify-between">
-            <p className="text-[10px] font-black uppercase tracking-wider text-[#a77f98]">Next Customer to Receive Slot</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#a77f98]">Next Customer to Receive Slot</p>
             {nextGuest ? (
               <div className="mt-3 flex items-center gap-4 bg-white p-3 rounded-2xl border border-[#fcd5e6] shadow-sm">
                 <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-[#402542] text-white shadow-sm">
-                  <span className="text-[8px] font-black uppercase leading-none opacity-60">No.</span>
-                  <span className="mt-0.5 text-xl font-black leading-none">{getWaitlistPosition(nextGuest, 1)}</span>
+                  <span className="text-[8px] font-bold uppercase leading-none opacity-60">No.</span>
+                  <span className="mt-0.5 text-xl font-bold leading-none">{getWaitlistPosition(nextGuest, 1)}</span>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h2 className="truncate text-base font-black text-[#321735]">{nextGuest.customerName || "Guest"}</h2>
+                  <h2 className="truncate text-base font-bold text-[#321735]">{nextGuest.customerName || "Guest"}</h2>
                   <p className="mt-0.5 text-xs font-bold text-[#ea4f93]">
                     {dayjs(nextGuest.requestedDate).format("DD MMM")} at {formatTimeSpan(nextGuest.requestedStartTime)}
                   </p>
@@ -649,7 +649,7 @@ export function ManagerWaitlistPage() {
       <div className="rounded-2xl border border-[#fbe7ef] bg-white p-6 shadow-sm">
         <div className="mb-5 flex flex-col justify-between gap-3 border-b border-[#fbe7ef] pb-5 md:flex-row md:items-center">
           <div>
-            <h2 className="text-lg font-black text-[#402542]">Slot release queue</h2>
+            <h2 className="text-lg font-bold text-[#402542]">Slot release queue</h2>
             <p className="mt-1 text-xs font-semibold text-[#9b7f92]">
               Showing {sortedList.length} guests waiting for their requested slot to become available.
             </p>

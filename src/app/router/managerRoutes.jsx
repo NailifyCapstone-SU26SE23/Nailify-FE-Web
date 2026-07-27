@@ -16,6 +16,9 @@ import { RoleGuard } from "../../shared/components/guards/RoleGuard";
 import { ROLES } from "../../shared/constants/roles";
 import { ROUTES } from "../../shared/constants/routes";
 import { TransactionManagementPage } from "../../features/manager/transaction-management/pages/TransactionManagementPage";
+import { ManagerSchedulesPage } from "../../features/manager/schedules/pages/ManagerSchedulesPage";
+import { ManagerArtistBreakPage } from "../../features/manager/breaks/pages/ManagerArtistBreakPage";
+import { ChairsPage } from "../../features/core/chairs/pages/ChairsPage";
 
 export const managerRoutes = [
   {
@@ -43,6 +46,14 @@ export const managerRoutes = [
       {
         path: ROUTES.managerBookings,
         element: <ManagerBookingListPage />,
+      },
+      {
+        path: ROUTES.managerSchedules,
+        element: <ManagerSchedulesPage />,
+      },
+      {
+        path: ROUTES.managerBreaks,
+        element: <ManagerArtistBreakPage />,
       },
       {
         path: ROUTES.managerCustomerNails,
@@ -79,6 +90,10 @@ export const managerRoutes = [
       {
         path: ROUTES.managerBookingRatings,
         element: <BookingRatingListPage />,
+      },
+      {
+        path: ROUTES.managerChairs,
+        element: <ChairsPage />,
       },
     ],
   },
