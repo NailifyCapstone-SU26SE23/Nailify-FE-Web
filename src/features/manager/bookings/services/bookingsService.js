@@ -63,7 +63,7 @@ function normalizeBookingPageSize(value, isAdmin = false) {
 }
 
 export async function fetchBookingsBySalonId(salonId, options = {}) {
-  const { pageNumber = 1, pageSize = 10, isAdmin = false } = options;
+  const { pageNumber = 1, pageSize = 10, isAdmin = true } = options;
   const normalizedPageNumber = normalizePageNumber(pageNumber);
   const normalizedPageSize = normalizeBookingPageSize(pageSize, isAdmin);
 

@@ -127,26 +127,23 @@ function ProgressStep({ step, index, isLast, isProgressPinned = false }) {
       ) : null}
 
       <div
-        className={`relative z-[1] flex items-center justify-center rounded-full border text-sm font-extrabold transition-all duration-300 ${
-          isProgressPinned ? "h-9 w-9" : "h-10 w-10"
-        } ${tone.dot}`}
+        className={`relative z-[1] flex items-center justify-center rounded-full border text-sm font-extrabold transition-all duration-300 ${isProgressPinned ? "h-9 w-9" : "h-10 w-10"
+          } ${tone.dot}`}
       >
         {step.state === "complete" ? <Check size={18} strokeWidth={3} /> : index + 1}
       </div>
 
       <div className={`transition-all duration-300 ${isProgressPinned ? "mt-2" : "mt-4"}`}>
-        <p className={`font-extrabold transition-all duration-300 ${
-          isProgressPinned ? "text-[0.95rem]" : "text-base"
-        } ${tone.label}`}>{step.label}</p>
-        <div className={`grid transition-all duration-300 ease-in-out ${
-          isProgressPinned ? "grid-rows-[0fr] opacity-0 mt-0" : "grid-rows-[1fr] opacity-100 mt-2"
-        }`}>
+        <p className={`font-extrabold transition-all duration-300 ${isProgressPinned ? "text-[0.95rem]" : "text-base"
+          } ${tone.label}`}>{step.label}</p>
+        <div className={`grid transition-all duration-300 ease-in-out ${isProgressPinned ? "grid-rows-[0fr] opacity-0 mt-0" : "grid-rows-[1fr] opacity-100 mt-2"
+          }`}>
           <div className="overflow-hidden flex justify-center">
-          <span
-            className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold ${tone.pill}`}
-          >
-            {step.statusLabel}
-          </span>
+            <span
+              className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold ${tone.pill}`}
+            >
+              {step.statusLabel}
+            </span>
           </div>
         </div>
       </div>
@@ -445,76 +442,75 @@ function SessionSummaryPanel({
         }
       />
 
-      <div className={`grid transition-all duration-300 ease-in-out ${
-        summaryExpanded ? "grid-rows-[1fr] opacity-100 mt-5" : "grid-rows-[0fr] opacity-0 mt-0"
-      }`}>
+      <div className={`grid transition-all duration-300 ease-in-out ${summaryExpanded ? "grid-rows-[1fr] opacity-100 mt-5" : "grid-rows-[0fr] opacity-0 mt-0"
+        }`}>
         <div className="overflow-hidden">
           <div className="rounded-2xl border border-[#f5d6e4] bg-gradient-to-br from-[#fff7fb] via-[#fff2f7] to-[#fffafd] p-5 shadow-xs">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex min-w-0 items-center gap-4">
-            <img crossOrigin="anonymous"
-              src={data.customerAvatar}
-              alt={data.customerName}
-              className="h-16 w-16 rounded-2xl border-2 border-[#f2bfd4] object-cover shadow-sm"
-              loading="lazy"
-              referrerPolicy="no-referrer"
-            />
-            <div className="min-w-0">
-              <p className="truncate text-xl font-extrabold text-slate-800">{data.customerName}</p>
-              <p className="mt-1 text-sm font-semibold text-slate-500">{data.customerPhone || "--"}</p>
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex min-w-0 items-center gap-4">
+                <img crossOrigin="anonymous"
+                  src={data.customerAvatar}
+                  alt={data.customerName}
+                  className="h-16 w-16 rounded-2xl border-2 border-[#f2bfd4] object-cover shadow-sm"
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="min-w-0">
+                  <p className="truncate text-xl font-extrabold text-slate-800">{data.customerName}</p>
+                  <p className="mt-1 text-sm font-semibold text-slate-500">{data.customerPhone || "--"}</p>
+                </div>
+              </div>
+
+              <span
+                className={`inline-flex w-fit items-center rounded-full border px-4 py-2 text-xs font-extrabold shadow-xs ${serviceStatusToneByPhase[phase] || serviceStatusToneByPhase.start}`}
+              >
+                {serviceStatusLabel}
+              </span>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <SessionChip icon={UserRound} label={data.staffArtist || "--"} />
+              <SessionChip icon={Clock3} label={`Start: ${data.appointmentTime || "--"}`} />
+              <SessionChip icon={Clock3} label={`Est. Finish: ${data.estimatedFinishTime || "--"}`} />
             </div>
           </div>
 
-          <span
-            className={`inline-flex w-fit items-center rounded-full border px-4 py-2 text-xs font-extrabold shadow-xs ${serviceStatusToneByPhase[phase] || serviceStatusToneByPhase.start}`}
-          >
-            {serviceStatusLabel}
-          </span>
-        </div>
+          <div className="mt-6 space-y-5">
+            <div>
+              <ServiceSummaryValue
+                services={Array.isArray(data.serviceBreakdown) ? data.serviceBreakdown : []}
+                fallbackValue={data.serviceLabel}
+                onOpenProcedures={onOpenProcedures}
+              />
+            </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          <SessionChip icon={UserRound} label={data.staffArtist || "--"} />
-          <SessionChip icon={Clock3} label={`Start: ${data.appointmentTime || "--"}`} />
-          <SessionChip icon={Clock3} label={`Est. Finish: ${data.estimatedFinishTime || "--"}`} />
-        </div>
-      </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-xl border border-[#f6dbe7] bg-[#fffafc] p-3.5 shadow-xs">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#bca0ae]">Staff Artist</p>
+                <p className="mt-1 text-sm font-extrabold text-slate-800">{data.staffArtist || "--"}</p>
+              </div>
+              <div className="rounded-xl border border-[#f6dbe7] bg-[#fffafc] p-3.5 shadow-xs">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#bca0ae]">Appointment Time</p>
+                <p className="mt-1 text-sm font-extrabold text-slate-800">{data.appointmentTime || "--"}</p>
+              </div>
+              <div className="rounded-xl border border-[#f6dbe7] bg-[#fffafc] p-3.5 shadow-xs">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#bca0ae]">Estimated Finish</p>
+                <p className="mt-1 text-sm font-extrabold text-slate-800">{data.estimatedFinishTime || "--"}</p>
+              </div>
+              <div className="rounded-xl border border-[#f6dbe7] bg-[#fffafc] p-3.5 shadow-xs">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#bca0ae]">Estimated Duration</p>
+                <p className="mt-1 text-sm font-extrabold text-[#ea4f93]">{data.estimatedDuration || "--"}</p>
+              </div>
+            </div>
 
-      <div className="mt-6 space-y-5">
-        <div>
-          <ServiceSummaryValue
-            services={Array.isArray(data.serviceBreakdown) ? data.serviceBreakdown : []}
-            fallbackValue={data.serviceLabel}
-            onOpenProcedures={onOpenProcedures}
-          />
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-xl border border-[#f6dbe7] bg-[#fffafc] p-3.5 shadow-xs">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[#bca0ae]">Staff Artist</p>
-            <p className="mt-1 text-sm font-extrabold text-slate-800">{data.staffArtist || "--"}</p>
-          </div>
-          <div className="rounded-xl border border-[#f6dbe7] bg-[#fffafc] p-3.5 shadow-xs">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[#bca0ae]">Appointment Time</p>
-            <p className="mt-1 text-sm font-extrabold text-slate-800">{data.appointmentTime || "--"}</p>
-          </div>
-          <div className="rounded-xl border border-[#f6dbe7] bg-[#fffafc] p-3.5 shadow-xs">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[#bca0ae]">Estimated Finish</p>
-            <p className="mt-1 text-sm font-extrabold text-slate-800">{data.estimatedFinishTime || "--"}</p>
-          </div>
-          <div className="rounded-xl border border-[#f6dbe7] bg-[#fffafc] p-3.5 shadow-xs">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[#bca0ae]">Estimated Duration</p>
-            <p className="mt-1 text-sm font-extrabold text-[#ea4f93]">{data.estimatedDuration || "--"}</p>
+            {hasConfirmedDesign ? (
+              <div className="rounded-xl border border-pink-200 bg-gradient-to-r from-pink-50 to-rose-50 p-4 shadow-xs">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#ea4f93]">Confirmed Design</p>
+                <p className="mt-1 text-sm font-black text-slate-800">{data.designName}</p>
+              </div>
+            ) : null}
           </div>
         </div>
-
-        {hasConfirmedDesign ? (
-          <div className="rounded-xl border border-pink-200 bg-gradient-to-r from-pink-50 to-rose-50 p-4 shadow-xs">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[#ea4f93]">Confirmed Design</p>
-            <p className="mt-1 text-sm font-black text-slate-800">{data.designName}</p>
-          </div>
-        ) : null}
-      </div>
-      </div>
       </div>
     </article>
   );
@@ -2582,7 +2578,7 @@ export function StaffServiceSessionPage() {
               Session Completed
             </p>
             <h1 className="mt-2 text-[2rem] font-black tracking-tight text-[#15803d]">
-              Complete Session Successfully
+              Session completed successfully
             </h1>
             <p className="mt-3 max-w-2xl text-sm text-[#5f8a70]">
               The service session has been finalized. Continue with the handoff actions below or return to the booking list.
@@ -2693,24 +2689,21 @@ export function StaffServiceSessionPage() {
       <div ref={setProgressSentinel} className="h-[1px] w-full bg-transparent shrink-0 pointer-events-none opacity-0" />
       <article
         style={{ top: `${STICKY_HEADER_OFFSET_PX}px` }}
-        className={`z-30 rounded-[22px] border border-[#f3d5e2] bg-white/95 backdrop-blur-md shadow-[0_14px_30px_rgba(236,72,153,0.08)] xl:sticky transition-all duration-300 ${
-          isProgressPinned ? "px-5 py-3" : "p-5"
-        }`}
+        className={`z-30 rounded-[22px] border border-[#f3d5e2] bg-white/95 backdrop-blur-md shadow-[0_14px_30px_rgba(236,72,153,0.08)] xl:sticky transition-all duration-300 ${isProgressPinned ? "px-5 py-3" : "p-5"
+          }`}
       >
-        <div className={`grid transition-all duration-300 ease-in-out ${
-          isProgressPinned ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
-        }`}>
+        <div className={`grid transition-all duration-300 ease-in-out ${isProgressPinned ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
+          }`}>
           <div className="overflow-hidden">
-          <SectionTitle
-            icon={Sparkles}
-            title="Session Progress"
-            subtitle="Track the start and completion of the service workflow."
-          />
+            <SectionTitle
+              icon={Sparkles}
+              title="Session Progress"
+              subtitle="Track the start and completion of the service workflow."
+            />
           </div>
         </div>
-        <div className={`flex flex-col xl:flex-row transition-all duration-300 ${
-          isProgressPinned ? "mt-0" : "mt-4 gap-5"
-        }`}>
+        <div className={`flex flex-col xl:flex-row transition-all duration-300 ${isProgressPinned ? "mt-0" : "mt-4 gap-5"
+          }`}>
           {progressSteps.map((step, index) => (
             <ProgressStep
               key={step.label}

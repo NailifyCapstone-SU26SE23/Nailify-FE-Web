@@ -1344,7 +1344,7 @@ export function StaffManagementPage() {
 
     try {
       setLoadingBookings(true);
-      const result = await fetchBookingsBySalonId(salonId, { pageNumber: 1, pageSize: 1000 });
+      const result = await fetchBookingsBySalonId(salonId, { pageNumber: 1, pageSize: 1000, isAdmin: true });
       const apiBookings = result?.items || (Array.isArray(result) ? result : []);
       setBookings(apiBookings);
     } catch (err) {
