@@ -3,13 +3,16 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  HelpCircle,
   Search,
-  ChevronLeft,
   CalendarDays,
   FileText,
-  AlertCircle,
-  MoreVertical
+  MoreVertical,
+  Sunrise,
+  Sun,
+  Sunset,
+  User,
+  AlertTriangle,
+  Sparkles,
 } from "lucide-react";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
@@ -25,16 +28,15 @@ import {
   managerApproveReschedule,
   managerRejectReschedule,
   managerSuggestTime,
-  fetchUserById
+  fetchUserById,
 } from "../services/bookingsService";
-import { TimePicker } from "../../../../shared/components/ui/TimePicker";
 
 const getManagerSalonId = () => {
   const session = loadAuthSession();
   return session?.user?.salonId || session?.salonId;
 };
 
-// Formatting helpers
+// ---------- Formatting helpers ----------
 function formatDate(dateString) {
   if (!dateString) return "N/A";
   const normalized = String(dateString).trim();
@@ -60,6 +62,108 @@ function formatTime(timeString) {
   return `${displayHours}:${displayMinutes} ${ampm}`;
 }
 
+// ---------- Time-slot generation ----------
+const PERIODS = [
+  { key: "morning", label: "Morning", icon: Sunrise, start: "08:00", end: "11:30" },
+  { key: "afternoon", label: "Afternoon", icon: Sun, start: "12:00", end: "17:30" },
+  { key: "evening", label: "Evening", icon: Sunset, start: "18:00", end: "20:30" },
+];
+
+function generateSlots(start, end, stepMinutes = 30) {
+  const slots = [];
+  let [h, m] = start.split(":").map(Number);
+  const [endH, endM] = end.split(":").map(Number);
+  while (h < endH || (h === endH && m <= endM)) {
+    slots.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+    m += stepMinutes;
+    if (m >= 60) {
+      m -= 60;
+      h += 1;
+    }
+  }
+  return slots;
+}
+
+function periodOfTime(value) {
+  if (!value) return null;
+  const [h] = value.split(":").map(Number);
+  if (h < 12) return "morning";
+  if (h < 18) return "afternoon";
+  return "evening";
+}
+
+// ---------- Period + slot picker (used inside Suggest modal) ----------
+function TimeSlotSelector({ value, onChange }) {
+  const [activePeriod, setActivePeriod] = useState(periodOfTime(value) || "morning");
+
+  useEffect(() => {
+    const p = periodOfTime(value);
+    if (p) setActivePeriod(p);
+  }, [value]);
+
+  const activeSlots = useMemo(() => {
+    const period = PERIODS.find((p) => p.key === activePeriod);
+    return period ? generateSlots(period.start, period.end) : [];
+  }, [activePeriod]);
+
+  return (
+    <div>
+      {/* Period tabs */}
+      <div className="grid grid-cols-3 gap-2 mb-3">
+        {PERIODS.map((p) => {
+          const Icon = p.icon;
+          const isActive = activePeriod === p.key;
+          return (
+            <button
+              type="button"
+              key={p.key}
+              onClick={() => setActivePeriod(p.key)}
+              className={`flex flex-col items-center gap-1 rounded-xl border py-2.5 transition-all duration-200 ${
+                isActive
+                  ? "border-transparent bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-white shadow-[0_8px_18px_rgba(234,79,147,0.28)]"
+                  : "border-[#f3d7e4] bg-white text-[#7f6478] hover:border-[#f0b7cf] hover:bg-[#fff7fb]"
+              }`}
+            >
+              <Icon size={16} />
+              <span className="text-[11px] font-bold">{p.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Slot grid for the active period */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activePeriod}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.18 }}
+          className="grid grid-cols-4 gap-2 rounded-2xl border border-[#f3d7e4] bg-[#fffafc] p-3 max-h-[168px] overflow-y-auto"
+        >
+          {activeSlots.map((slot) => {
+            const isSelected = value === slot;
+            return (
+              <button
+                type="button"
+                key={slot}
+                onClick={() => onChange?.(slot)}
+                className={`rounded-lg py-1.5 text-[11px] font-bold transition-all duration-150 ${
+                  isSelected
+                    ? "bg-[#ea4f93] text-white shadow-sm shadow-[#ea4f93]/30"
+                    : "bg-white text-[#5c4559] border border-[#f1e7ed] hover:border-[#ea4f93] hover:text-[#ea4f93]"
+                }`}
+              >
+                {formatTime(`${slot}:00`)}
+              </button>
+            );
+          })}
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
+}
+
 export function RescheduleBooking() {
   const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
@@ -70,7 +174,7 @@ export function RescheduleBooking() {
 
   // Modal states
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [confirmAction, setConfirmAction] = useState(null); // { type: 'approve' | 'reject', bookingId: string }
+  const [confirmAction, setConfirmAction] = useState(null); // { type: 'approve' | 'reject', booking }
   const [isActionLoading, setIsActionLoading] = useState(false);
 
   // Suggest modal state
@@ -87,7 +191,6 @@ export function RescheduleBooking() {
         throw new Error("No salon ID found in session.");
       }
 
-      // Fetch all bookings for this salon
       const result = await fetchBookingsBySalonId(salonId, { pageNumber: 1, pageSize: 1000 });
       let allBookings = [];
       if (result?.items) {
@@ -96,17 +199,16 @@ export function RescheduleBooking() {
         allBookings = result;
       }
 
-      // Filter: only keep ReschedulePending and RescheduleSuggested
       const filtered = allBookings.filter(
         (b) => b.status === "ReschedulePending" || b.status === "RescheduleSuggested"
       );
 
-      // Fetch customer details for each booking if customer data is missing phone
       const enrichedBookings = await Promise.all(
         filtered.map(async (b) => {
           let phone = b.customerPhone || b.phone || b.customer?.phone || b.customer?.phoneNumber || "";
           let email = b.customerEmail || b.email || b.customer?.email || "";
-          const customerName = b.customerName || (b.customer ? `${b.customer.firstName} ${b.customer.lastName}` : "Unknown Customer");
+          const customerName =
+            b.customerName || (b.customer ? `${b.customer.firstName} ${b.customer.lastName}` : "Unknown Customer");
 
           if (b.customerId && !phone) {
             try {
@@ -141,7 +243,6 @@ export function RescheduleBooking() {
     loadData();
   }, [loadData]);
 
-  // Subscribe to SignalR notifications for booking rescheduling updates
   useEffect(() => {
     const unsubscribe = notificationSignalRService.registerListener((arg1, arg2) => {
       if (
@@ -150,7 +251,6 @@ export function RescheduleBooking() {
         arg1 === "BookingRescheduleAccepted"
       ) {
         console.log("RescheduleBooking: Received booking reschedule event from SignalR:", arg1, arg2);
-        // Refresh bookings silently in the background
         loadData(true);
       }
     });
@@ -164,14 +264,14 @@ export function RescheduleBooking() {
   const handleConfirmAction = async () => {
     if (!confirmAction) return;
     setIsActionLoading(true);
-    const { type, bookingId } = confirmAction;
+    const { type, booking } = confirmAction;
 
     try {
       if (type === "approve") {
-        await managerApproveReschedule(bookingId);
+        await managerApproveReschedule(booking.id);
         toast.success("Reschedule request approved successfully!");
       } else {
-        await managerRejectReschedule(bookingId);
+        await managerRejectReschedule(booking.id);
         toast.success("Reschedule request rejected successfully!");
       }
       setIsConfirmModalOpen(false);
@@ -184,19 +284,16 @@ export function RescheduleBooking() {
     }
   };
 
-  // Open approve confirmation modal
-  const openApproveModal = (bookingId) => {
-    setConfirmAction({ type: "approve", bookingId });
+  const openApproveModal = (booking) => {
+    setConfirmAction({ type: "approve", booking });
     setIsConfirmModalOpen(true);
   };
 
-  // Open reject confirmation modal
-  const openRejectModal = (bookingId) => {
-    setConfirmAction({ type: "reject", bookingId });
+  const openRejectModal = (booking) => {
+    setConfirmAction({ type: "reject", booking });
     setIsConfirmModalOpen(true);
   };
 
-  // Open suggest new time modal
   const openSuggestModal = (booking) => {
     setSelectedBookingForSuggest(booking);
     suggestForm.setFieldsValue({
@@ -207,14 +304,12 @@ export function RescheduleBooking() {
     setIsSuggestModalOpen(true);
   };
 
-  // Submit suggestion
   const handleSuggestSubmit = async (values) => {
     if (!selectedBookingForSuggest) return;
     setIsActionLoading(true);
 
     try {
       const formattedDate = values.suggestedDate.format("YYYY-MM-DD");
-      // Add seconds if not present
       const formattedTime = values.suggestedTime.length === 5 ? `${values.suggestedTime}:00` : values.suggestedTime;
 
       await managerSuggestTime(selectedBookingForSuggest.id, {
@@ -235,7 +330,6 @@ export function RescheduleBooking() {
     }
   };
 
-  // Filters logic
   const filteredBookings = useMemo(() => {
     return bookings.filter((b) => {
       const matchesSearch =
@@ -244,14 +338,12 @@ export function RescheduleBooking() {
         b.serviceName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (b.id && String(b.id).toLowerCase().includes(searchQuery.toLowerCase()));
 
-      const matchesStatus =
-        statusFilter === "All" || b.status === statusFilter;
+      const matchesStatus = statusFilter === "All" || b.status === statusFilter;
 
       return matchesSearch && matchesStatus;
     });
   }, [bookings, searchQuery, statusFilter]);
 
-  // Stats calculation
   const stats = useMemo(() => {
     const total = bookings.length;
     const pending = bookings.filter((b) => b.status === "ReschedulePending").length;
@@ -260,14 +352,12 @@ export function RescheduleBooking() {
     return { total, pending, suggested };
   }, [bookings]);
 
+  const selectedSuggestedTime = Form.useWatch("suggestedTime", suggestForm);
+
   return (
     <section className="flex min-h-[100dvh] flex-col gap-6 bg-[#f9fafb] p-4 lg:p-8">
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-      >
+      <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         <article className="relative overflow-hidden rounded-[28px] border-none bg-gradient-to-br from-[#fff3f8] via-[#fffafb] to-[#fff5fb] p-6 shadow-[0_20px_40px_-15px_rgba(234,79,147,0.12)]">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-4">
@@ -279,11 +369,12 @@ export function RescheduleBooking() {
                   Manager portal
                 </span>
                 <h1 className="text-2xl font-extrabold text-[#2d1b35] mt-1.5 tracking-tight">Reschedule Requests</h1>
-                <p className="text-xs text-[#a88a9f] mt-0.5">Approve, reject, or suggest new times for customer reschedule requests</p>
+                <p className="text-xs text-[#a88a9f] mt-0.5">
+                  Approve, reject, or suggest new times for customer reschedule requests
+                </p>
               </div>
             </div>
 
-            {/* Quick stats */}
             <div className="grid grid-cols-3 gap-3 w-full lg:w-[450px]">
               {[
                 { label: "Total Requests", value: stats.total, color: "text-[#2d1b35] bg-white" },
@@ -313,7 +404,6 @@ export function RescheduleBooking() {
           {/* Filters Bar */}
           <div className="border-b border-[#f5e2ec] bg-gradient-to-b from-[#fff9fb] to-white p-5 lg:p-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              {/* Status Pills */}
               <div className="flex flex-wrap gap-2">
                 {[
                   { value: "All", label: "All Requests", count: bookings.length },
@@ -344,12 +434,8 @@ export function RescheduleBooking() {
                 })}
               </div>
 
-              {/* Search */}
               <div className="relative w-full lg:w-72">
-                <Search
-                  size={15}
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#a88a9f]"
-                />
+                <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#a88a9f]" />
                 <input
                   type="text"
                   placeholder="Search customer, phone, service..."
@@ -378,7 +464,9 @@ export function RescheduleBooking() {
                   <CalendarDays size={24} />
                 </div>
                 <p className="text-sm font-bold text-[#5b4256]">No reschedule requests found</p>
-                <p className="mt-1 text-xs text-[#a88a9f] max-w-xs">There are no requests matching your criteria at this moment.</p>
+                <p className="mt-1 text-xs text-[#a88a9f] max-w-xs">
+                  There are no requests matching your criteria at this moment.
+                </p>
               </div>
             ) : (
               <table className="w-full min-w-[900px] table-fixed text-left">
@@ -405,7 +493,6 @@ export function RescheduleBooking() {
                       : "CU";
                     const isPending = b.status === "ReschedulePending";
 
-                    // Dropdown menu items for the Actions column
                     const actionMenuItems = [
                       {
                         key: "approve",
@@ -415,7 +502,7 @@ export function RescheduleBooking() {
                             Approve
                           </span>
                         ),
-                        onClick: () => openApproveModal(b.id),
+                        onClick: () => openApproveModal(b),
                       },
                       {
                         key: "suggest",
@@ -436,13 +523,12 @@ export function RescheduleBooking() {
                             Reject
                           </span>
                         ),
-                        onClick: () => openRejectModal(b.id),
+                        onClick: () => openRejectModal(b),
                       },
                     ];
 
                     return (
                       <tr key={b.id} className="transition-colors hover:bg-[#fffcfd]">
-                        {/* Customer Column */}
                         <td className="px-5 py-4 align-top">
                           <div className="flex items-center gap-3">
                             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#ffc5de] to-[#ea4f93] text-xs font-bold text-white shadow-sm">
@@ -455,7 +541,6 @@ export function RescheduleBooking() {
                           </div>
                         </td>
 
-                        {/* Current Schedule Column */}
                         <td className="px-5 py-4 align-top text-xs text-[#5c4559]">
                           <div className="flex flex-col gap-1">
                             <div className="flex items-center gap-1.5">
@@ -470,7 +555,6 @@ export function RescheduleBooking() {
                           </div>
                         </td>
 
-                        {/* Reschedule Request Column */}
                         <td className="px-5 py-4 align-top text-xs">
                           <div className="flex flex-col gap-1 rounded-xl bg-indigo-50/50 border border-indigo-100 p-2.5">
                             <div className="flex items-center gap-1.5 text-indigo-700">
@@ -484,7 +568,6 @@ export function RescheduleBooking() {
                           </div>
                         </td>
 
-                        {/* Status & Reason Column */}
                         <td className="px-5 py-4 align-top">
                           <div>
                             {isPending ? (
@@ -508,14 +591,9 @@ export function RescheduleBooking() {
                           </div>
                         </td>
 
-                        {/* Actions Column — dropdown menu */}
                         <td className="px-5 py-4 align-middle text-center">
                           {isPending ? (
-                            <Dropdown
-                              menu={{ items: actionMenuItems }}
-                              trigger={["click"]}
-                              placement="bottomRight"
-                            >
+                            <Dropdown menu={{ items: actionMenuItems }} trigger={["click"]} placement="bottomRight">
                               <button
                                 onClick={(e) => e.preventDefault()}
                                 className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[#f1e7ed] bg-white text-[#7f6478] transition-colors hover:border-[#f0b7cf] hover:bg-[#fff7fb] hover:text-[#ea4f93]"
@@ -525,9 +603,7 @@ export function RescheduleBooking() {
                               </button>
                             </Dropdown>
                           ) : (
-                            <span className="text-[11px] text-[#a88a9f] italic">
-                              Manager suggested alternative time
-                            </span>
+                            <span className="text-[11px] text-[#a88a9f] italic">Manager suggested alternative time</span>
                           )}
                         </td>
                       </tr>
@@ -540,54 +616,105 @@ export function RescheduleBooking() {
         </article>
       </motion.div>
 
-      {/* Confirmation Modal */}
+      {/* Approve / Reject Confirmation Modal */}
       <Modal
         open={isConfirmModalOpen}
         onCancel={() => !isActionLoading && setIsConfirmModalOpen(false)}
         footer={null}
-        closable={!isActionLoading}
+        closable={false}
         centered
-        width={380}
+        width={400}
         styles={{
-          content: { padding: 0, borderRadius: 24, overflow: "hidden" },
+          content: { padding: 0, borderRadius: 28, overflow: "hidden" },
           mask: { backdropFilter: "blur(4px)" },
         }}
       >
-        <div className="p-6 text-center">
-          <div
-            className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full mb-4 ${
-              confirmAction?.type === "approve" ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
-            }`}
-          >
-            {confirmAction?.type === "approve" ? <CheckCircle size={24} /> : <XCircle size={24} />}
-          </div>
-          <h3 className="text-base font-extrabold text-[#2d1b35]">
-            {confirmAction?.type === "approve" ? "Approve Reschedule" : "Reject Reschedule"}
-          </h3>
-          <p className="mt-2 text-xs text-[#a88a9f] leading-relaxed">
-            Are you sure you want to {confirmAction?.type} this booking reschedule request? This action cannot be undone.
-          </p>
-          <div className="mt-6 flex justify-center gap-3">
-            <button
-              disabled={isActionLoading}
-              onClick={() => setIsConfirmModalOpen(false)}
-              className="h-10 min-w-[90px] rounded-xl border border-[#f1e7ed] bg-white text-xs font-bold text-[#7f6478] hover:bg-[#fff9fb] transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              disabled={isActionLoading}
-              onClick={handleConfirmAction}
-              className={`h-10 min-w-[90px] rounded-xl text-xs font-bold text-white shadow-sm transition-all ${
-                confirmAction?.type === "approve"
-                  ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/10"
-                  : "bg-rose-600 hover:bg-rose-700 shadow-rose-600/10"
+        {confirmAction && (
+          <div>
+            {/* Accent header bar */}
+            <div
+              className={`h-1.5 w-full ${
+                confirmAction.type === "approve"
+                  ? "bg-gradient-to-r from-emerald-400 to-emerald-600"
+                  : "bg-gradient-to-r from-rose-400 to-rose-600"
               }`}
-            >
-              {isActionLoading ? "Processing..." : "Confirm"}
-            </button>
+            />
+            <div className="p-6">
+              <div className="flex flex-col items-center text-center">
+                <motion.div
+                  initial={{ scale: 0.6, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: "spring", stiffness: 260, damping: 18 }}
+                  className={`mx-auto flex h-14 w-14 items-center justify-center rounded-full mb-4 ${
+                    confirmAction.type === "approve" ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
+                  }`}
+                >
+                  {confirmAction.type === "approve" ? <CheckCircle size={26} /> : <AlertTriangle size={26} />}
+                </motion.div>
+                <h3 className="text-base font-extrabold text-[#2d1b35]">
+                  {confirmAction.type === "approve" ? "Approve Reschedule" : "Reject Reschedule"}
+                </h3>
+                <p className="mt-1.5 text-xs text-[#a88a9f] leading-relaxed max-w-[280px]">
+                  {confirmAction.type === "approve"
+                    ? "The booking will be moved to the customer's requested time. This cannot be undone."
+                    : "The customer will be notified that their reschedule request was declined."}
+                </p>
+              </div>
+
+              {/* Booking summary card */}
+              <div className="mt-5 rounded-2xl border border-[#f1e7ed] bg-[#fbfafc] p-3.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#ffc5de] to-[#ea4f93] text-white">
+                    <User size={14} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-bold text-[#2d1b35]">{confirmAction.booking?.customerName}</p>
+                    <p className="text-[10px] text-[#a88a9f]">{confirmAction.booking?.serviceName || "Nail Service"}</p>
+                  </div>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
+                  <div className="rounded-xl bg-white border border-[#f1e7ed] px-2.5 py-2">
+                    <p className="text-[9px] font-bold uppercase tracking-wide text-[#c8b0bf]">Current</p>
+                    <p className="mt-0.5 font-semibold text-[#5c4559]">
+                      {formatDate(confirmAction.booking?.bookingDate)}
+                    </p>
+                    <p className="text-[#a88a9f]">{formatTime(confirmAction.booking?.startTime)}</p>
+                  </div>
+                  <div className="rounded-xl bg-indigo-50/60 border border-indigo-100 px-2.5 py-2">
+                    <p className="text-[9px] font-bold uppercase tracking-wide text-indigo-400">Requested</p>
+                    <p className="mt-0.5 font-semibold text-indigo-700">
+                      {formatDate(confirmAction.booking?.suggestedDate || confirmAction.booking?.bookingDate)}
+                    </p>
+                    <p className="text-indigo-500">
+                      {formatTime(confirmAction.booking?.suggestedTime || confirmAction.booking?.startTime)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-center gap-3">
+                <button
+                  disabled={isActionLoading}
+                  onClick={() => setIsConfirmModalOpen(false)}
+                  className="h-10 flex-1 rounded-xl border border-[#f1e7ed] bg-white text-xs font-bold text-[#7f6478] hover:bg-[#fff9fb] transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  disabled={isActionLoading}
+                  onClick={handleConfirmAction}
+                  className={`h-10 flex-1 rounded-xl text-xs font-bold text-white shadow-sm transition-all disabled:opacity-60 ${
+                    confirmAction.type === "approve"
+                      ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/15"
+                      : "bg-rose-600 hover:bg-rose-700 shadow-rose-600/15"
+                  }`}
+                >
+                  {isActionLoading ? "Processing..." : confirmAction.type === "approve" ? "Confirm Approve" : "Confirm Reject"}
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </Modal>
 
       {/* Suggest Time Modal */}
@@ -597,69 +724,87 @@ export function RescheduleBooking() {
         footer={null}
         closable={!isActionLoading}
         centered
-        width={420}
+        width={460}
         styles={{
-          content: { padding: 24, borderRadius: 24 },
+          content: { padding: 0, borderRadius: 28, overflow: "hidden" },
           mask: { backdropFilter: "blur(4px)" },
         }}
-        title={
-          <div className="flex items-center gap-2 border-b border-[#f5e2ec] pb-3">
-            <CalendarDays size={18} className="text-[#ea4f93]" />
-            <span className="text-sm font-black text-[#2d1b35]">Suggest Alternative Time</span>
-          </div>
-        }
       >
-        <Form form={suggestForm} layout="vertical" onFinish={handleSuggestSubmit} className="mt-4">
-          <Form.Item
-            name="suggestedDate"
-            label={<span className="text-xs font-bold text-[#7f6478]">Suggested Date</span>}
-            rules={[{ required: true, message: "Please select a date" }]}
-          >
-            <DatePicker
-              className="h-10 w-full rounded-xl border border-[#f3d7e4] text-xs"
-              minDate={dayjs()}
-              format="YYYY-MM-DD"
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="suggestedTime"
-            label={<span className="text-xs font-bold text-[#7f6478]">Suggested Time</span>}
-            rules={[{ required: true, message: "Please select a time" }]}
-          >
-            <TimePicker className="h-10 w-full rounded-xl border border-[#f3d7e4] text-xs" format="HH:mm" />
-          </Form.Item>
-
-          <Form.Item
-            name="reason"
-            label={<span className="text-xs font-bold text-[#7f6478]">Reason for suggestion</span>}
-            rules={[{ required: true, message: "Please provide a reason" }]}
-          >
-            <Input.TextArea
-              rows={3}
-              placeholder="e.g. Salon is fully booked at requested slot, suggesting a later hour."
-              className="rounded-xl border border-[#f3d7e4] text-xs placeholder:text-[#c8b0bf]"
-            />
-          </Form.Item>
-
-          <div className="mt-6 flex justify-end gap-3 border-t border-[#f5e2ec] pt-4">
-            <button
-              type="button"
-              disabled={isActionLoading}
-              onClick={() => setIsSuggestModalOpen(false)}
-              className="h-10 px-4 rounded-xl border border-[#f1e7ed] bg-white text-xs font-bold text-[#7f6478] hover:bg-[#fff9fb]"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isActionLoading}
-              className="h-10 px-5 rounded-xl bg-[#ea4f93] text-xs font-bold text-white shadow-md shadow-[#ea4f93]/15 hover:bg-[#d93a7e]"
-            >
-              {isActionLoading ? "Submitting..." : "Send Suggestion"}
-            </button>
+        {/* Header */}
+        <div className="bg-gradient-to-br from-[#fff3f8] via-[#fffafb] to-[#fff5fb] px-6 py-5 border-b border-[#f5e2ec]">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-white shadow-[0_8px_18px_rgba(234,79,147,0.3)]">
+              <Sparkles size={18} />
+            </div>
+            <div>
+              <p className="text-sm font-black text-[#2d1b35]">Suggest Alternative Time</p>
+              <p className="text-[11px] text-[#a88a9f]">
+                for {selectedBookingForSuggest?.customerName || "this booking"}
+              </p>
+            </div>
           </div>
-        </Form>
+        </div>
+
+        <div className="px-6 py-5">
+          <Form form={suggestForm} layout="vertical" onFinish={handleSuggestSubmit}>
+            <Form.Item
+              name="suggestedDate"
+              label={<span className="text-xs font-bold text-[#7f6478]">Suggested Date</span>}
+              rules={[{ required: true, message: "Please select a date" }]}
+            >
+              <DatePicker className="h-10 w-full rounded-xl border border-[#f3d7e4] text-xs" minDate={dayjs()} format="YYYY-MM-DD" />
+            </Form.Item>
+
+            <Form.Item
+              name="suggestedTime"
+              label={
+                <div className="flex w-full items-center justify-between">
+                  <span className="text-xs font-bold text-[#7f6478]">Suggested Time</span>
+                  {selectedSuggestedTime && (
+                    <span className="text-[11px] font-bold text-[#ea4f93]">
+                      {formatTime(`${selectedSuggestedTime}:00`)}
+                    </span>
+                  )}
+                </div>
+              }
+              rules={[{ required: true, message: "Please select a time slot" }]}
+            >
+              <TimeSlotSelector />
+            </Form.Item>
+
+            <Form.Item
+              name="reason"
+              label={<span className="text-xs font-bold text-[#7f6478]">Reason for suggestion</span>}
+              rules={[{ required: true, message: "Please provide a reason" }]}
+            >
+              <Input.TextArea
+                rows={3}
+                maxLength={200}
+                showCount
+                placeholder="e.g. Salon is fully booked at requested slot, suggesting a later hour."
+                className="rounded-xl border border-[#f3d7e4] text-xs placeholder:text-[#c8b0bf]"
+              />
+            </Form.Item>
+
+            <div className="mt-5 flex justify-end gap-3 border-t border-[#f5e2ec] pt-4">
+              <button
+                type="button"
+                disabled={isActionLoading}
+                onClick={() => setIsSuggestModalOpen(false)}
+                className="h-10 px-4 rounded-xl border border-[#f1e7ed] bg-white text-xs font-bold text-[#7f6478] hover:bg-[#fff9fb] disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isActionLoading}
+                className="h-10 px-5 rounded-xl bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] text-xs font-bold text-white shadow-md shadow-[#ea4f93]/20 hover:opacity-90 disabled:opacity-60"
+              >
+                {isActionLoading ? "Submitting..." : "Send Suggestion"}
+              </button>
+            </div>
+          </Form>
+        </div>
       </Modal>
     </section>
   );
