@@ -21,6 +21,7 @@ import {
   updateAdminNailSurface,
 } from "../services/nailSurfacesManagementService";
 import { NailSurfacePreview } from "../components/NailSurfacePreview";
+import { NailSurfacePainter } from "../components/NailSurfacePainter";
 import { NailSurfaceShaderBuilder } from "../components/NailSurfaceShaderBuilder";
 import {
   buildSurfacePayload,
@@ -351,14 +352,23 @@ export function NailSurfaceDetailPage() {
             </h2>
 
             <div className="grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
-              <NailSurfacePreview
-                surface={{
-                  ...surface,
-                  ...draft,
-                  price: Number(draft?.price || 0),
-                  duration: Number(draft?.duration || 0),
-                }}
-              />
+              {draft?.painterMode ? (
+                <NailSurfacePainter 
+                  brushType={draft.brushType || 'glossy'} 
+                  brushSize={draft.brushSize || 20}
+                  initialMaskDataUrl={draft.maskDataUrl}
+                  onSave={(dataUrl) => handleFieldChange("maskDataUrl", dataUrl)}
+                />
+              ) : (
+                <NailSurfacePreview
+                  surface={{
+                    ...surface,
+                    ...draft,
+                    price: Number(draft?.price || 0),
+                    duration: Number(draft?.duration || 0),
+                  }}
+                />
+              )}
 
               <div className="rounded-[20px] border border-rose-100 bg-[#fff8fb] p-4">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">

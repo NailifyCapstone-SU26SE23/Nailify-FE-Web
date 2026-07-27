@@ -1,4 +1,4 @@
-import { Sparkles } from "lucide-react";
+import { Sparkles, Paintbrush, Eraser } from "lucide-react";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { SURFACE_PRESET_OPTIONS } from "../utils/surfaceShaderConfig";
 
@@ -114,7 +114,46 @@ export function NailSurfaceShaderBuilder({ formValues, onFieldChange, disabled =
           />
         </div>
 
-        <div className="grid gap-5 md:grid-cols-2">
+        {/* PAINTER MODE UI */}
+        <div className="pt-2">
+          <ToggleField
+            label="Interactive Painter Mode (Draw on Nail!)"
+            checked={Boolean(formValues.painterMode)}
+            onChange={(event) => onFieldChange("painterMode", event.target.checked)}
+          />
+        </div>
+
+        {formValues.painterMode && (
+          <div className="space-y-4 rounded-2xl border border-rose-100 bg-[#fff8fb] p-4 shadow-[inset_0_2px_10px_rgba(234,79,147,0.05)]">
+            <div className="flex items-center gap-3">
+              <button 
+                type="button"
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold transition-all shadow-sm ${formValues.brushType === 'matte' ? 'bg-[#ea4f93] text-white shadow-[#ea4f93]/30' : 'bg-white text-slate-500 border border-rose-100 hover:bg-rose-50'}`}
+                onClick={() => onFieldChange("brushType", "matte")}
+              >
+                <Eraser size={16} /> Matte Brush
+              </button>
+              <button 
+                type="button"
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold transition-all shadow-sm ${formValues.brushType !== 'matte' ? 'bg-[#ea4f93] text-white shadow-[#ea4f93]/30' : 'bg-white text-slate-500 border border-rose-100 hover:bg-rose-50'}`}
+                onClick={() => onFieldChange("brushType", "glossy")}
+              >
+                <Paintbrush size={16} /> Glossy Brush
+              </button>
+            </div>
+            
+            <SliderField
+              label="Brush Radius"
+              min={5}
+              max={100}
+              step={5}
+              value={formValues.brushSize || 20}
+              onChange={(e) => onFieldChange("brushSize", Number(e.target.value))}
+            />
+          </div>
+        )}
+
+        <div className="grid gap-5 md:grid-cols-2 pt-2">
           <SliderField
             label="Shine opacity"
             min="0"
