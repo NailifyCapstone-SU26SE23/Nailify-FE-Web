@@ -8,16 +8,18 @@ import {
   ChevronLeft,
   CalendarDays,
   FileText,
-  AlertCircle
+  AlertCircle,
+  MoreVertical
 } from "lucide-react";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Spin, Alert, DatePicker, Modal, Input, Form } from "antd";
+import { Spin, Alert, DatePicker, Modal, Input, Form, Dropdown } from "antd";
 import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
 
 import { loadAuthSession } from "../../../core/auth/model/authStorage";
+import { notificationSignalRService } from "../../../core/notifications/services/notificationSignalRService";
 import {
   fetchBookingsBySalonId,
   managerApproveReschedule,
@@ -76,8 +78,8 @@ export function RescheduleBooking() {
   const [selectedBookingForSuggest, setSelectedBookingForSuggest] = useState(null);
   const [suggestForm] = Form.useForm();
 
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
+  const loadData = useCallback(async (silent = false) => {
+    if (!silent) setIsLoading(true);
     setError("");
     try {
       const salonId = getManagerSalonId();
@@ -137,6 +139,25 @@ export function RescheduleBooking() {
 
   useEffect(() => {
     loadData();
+  }, [loadData]);
+
+  // Subscribe to SignalR notifications for booking rescheduling updates
+  useEffect(() => {
+    const unsubscribe = notificationSignalRService.registerListener((arg1, arg2) => {
+      if (
+        arg1 === "BookingRescheduleRequested" ||
+        arg1 === "BookingRescheduleDeclined" ||
+        arg1 === "BookingRescheduleAccepted"
+      ) {
+        console.log("RescheduleBooking: Received booking reschedule event from SignalR:", arg1, arg2);
+        // Refresh bookings silently in the background
+        loadData(true);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, [loadData]);
 
   // Handle Approve / Reject Reschedule
@@ -366,7 +387,7 @@ export function RescheduleBooking() {
                   <col className="w-[180px]" />
                   <col className="w-[200px]" />
                   <col className="w-[180px]" />
-                  <col className="w-[160px]" />
+                  <col className="w-[120px]" />
                 </colgroup>
                 <thead>
                   <tr className="border-b border-[#f5e2ec] bg-[#fff8fb] text-[11px] font-bold text-[#a88a9f] uppercase tracking-wider">
@@ -383,6 +404,41 @@ export function RescheduleBooking() {
                       ? b.customerName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
                       : "CU";
                     const isPending = b.status === "ReschedulePending";
+
+                    // Dropdown menu items for the Actions column
+                    const actionMenuItems = [
+                      {
+                        key: "approve",
+                        label: (
+                          <span className="flex items-center gap-2 text-xs font-semibold text-emerald-700">
+                            <CheckCircle size={14} />
+                            Approve
+                          </span>
+                        ),
+                        onClick: () => openApproveModal(b.id),
+                      },
+                      {
+                        key: "suggest",
+                        label: (
+                          <span className="flex items-center gap-2 text-xs font-semibold text-indigo-700">
+                            <Clock size={14} />
+                            Suggest new time
+                          </span>
+                        ),
+                        onClick: () => openSuggestModal(b),
+                      },
+                      { type: "divider" },
+                      {
+                        key: "reject",
+                        label: (
+                          <span className="flex items-center gap-2 text-xs font-semibold text-rose-700">
+                            <XCircle size={14} />
+                            Reject
+                          </span>
+                        ),
+                        onClick: () => openRejectModal(b.id),
+                      },
+                    ];
 
                     return (
                       <tr key={b.id} className="transition-colors hover:bg-[#fffcfd]">
@@ -452,32 +508,22 @@ export function RescheduleBooking() {
                           </div>
                         </td>
 
-                        {/* Actions Column */}
+                        {/* Actions Column — dropdown menu */}
                         <td className="px-5 py-4 align-middle text-center">
                           {isPending ? (
-                            <div className="flex justify-center gap-2">
+                            <Dropdown
+                              menu={{ items: actionMenuItems }}
+                              trigger={["click"]}
+                              placement="bottomRight"
+                            >
                               <button
-                                onClick={() => openApproveModal(b.id)}
-                                className="flex h-8 items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-xs font-bold text-emerald-700 hover:bg-emerald-100 transition-colors shadow-sm"
+                                onClick={(e) => e.preventDefault()}
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[#f1e7ed] bg-white text-[#7f6478] transition-colors hover:border-[#f0b7cf] hover:bg-[#fff7fb] hover:text-[#ea4f93]"
+                                aria-label="Booking actions"
                               >
-                                <CheckCircle size={14} />
-                                Approve
+                                <MoreVertical size={16} />
                               </button>
-                              <button
-                                onClick={() => openRejectModal(b.id)}
-                                className="flex h-8 items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-colors shadow-sm"
-                              >
-                                <XCircle size={14} />
-                                Reject
-                              </button>
-                              <button
-                                onClick={() => openSuggestModal(b)}
-                                className="flex h-8 items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition-colors shadow-sm"
-                              >
-                                <Clock size={14} />
-                                Suggest
-                              </button>
-                            </div>
+                            </Dropdown>
                           ) : (
                             <span className="text-[11px] text-[#a88a9f] italic">
                               Manager suggested alternative time
