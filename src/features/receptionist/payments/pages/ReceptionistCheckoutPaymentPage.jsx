@@ -660,67 +660,75 @@ export function ReceptionistCheckoutPaymentPage() {
           </SummaryCard>
 
           <SummaryCard title="Receipt Preview">
-            <div className="rounded-[20px] border border-[#f3d7e2] bg-white px-5 py-5">
-              <div className="text-center">
-                <p className="text-lg font-bold text-[#cf2e7a]">{salonProfile?.name || booking.salonName || "Nailify Salon"}</p>
-                <p className="mt-1 text-xs text-[#b38a9f]">{salonProfile?.address || "Salon address not available"}</p>
-                <p className="mt-1 text-xs text-[#b38a9f]">{salonProfile?.phone || "--"} | nailify.vn</p>
+            <div className="bg-[#faf8f5] border border-[#e6decb] p-5 rounded-[1.75rem] shadow-[0_8px_24px_rgba(97,76,60,0.03)] relative overflow-hidden text-[#4a3f35] border-t-4 border-t-[#ea4f93]">
+              {/* Dashed edge header */}
+              <div className="text-center pb-3.5 border-b border-dashed border-[#e6decb] space-y-1">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-[#a88a9f]">Nailify Receipt</h3>
+                <div className="font-mono text-[9px] text-[#a88a9f]">
+                  {formatDate(booking.bookingDate)} {completedTime ? `, ${completedTime}` : ""}
+                </div>
               </div>
 
-              <div className="mt-5 space-y-2 border-y border-[#f3d7e2] py-4 text-sm">
-                {[
-
-                  ["Customer", customerDisplayName],
-                  ["Staff Artist", booking.artistName || "--"],
-                  ["Date", formatDate(booking.bookingDate)],
-                  ["Time", completedTime],
-                ].map(([label, value]) => (
-                  <div key={label} className="flex items-center justify-between gap-4">
-                    <span className="text-[#b38a9f]">{label}</span>
-                    <span className="font-medium text-[#412643]">{value}</span>
-                  </div>
-                ))}
+              {/* Customer & Salon Details inside Receipt */}
+              <div className="py-3.5 space-y-2 border-b border-dashed border-[#e6decb] text-xs">
+                <div className="flex justify-between gap-3">
+                  <span className="text-[#a88a9f] shrink-0">Customer</span>
+                  <span className="font-bold text-[#2d1b35] text-right truncate">{customerDisplayName}</span>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <span className="text-[#a88a9f] shrink-0">Salon</span>
+                  <span className="font-bold text-[#ea4f93] text-right truncate">{salonProfile?.name || booking.salonName || "Nailify Salon"}</span>
+                </div>
+                <div className="flex justify-between gap-3 border-t border-dashed border-[#e6decb]/40 pt-2 mt-1.5">
+                  <span className="text-[#a88a9f] shrink-0">Loại thanh toán</span>
+                  <span className="font-bold text-[#2d1b35] text-right">
+                    {paymentStage === "paid" ? "Thanh toán còn lại" : "Thanh toán 100%"}
+                  </span>
+                </div>
               </div>
 
-              <div className="mt-4 space-y-2 text-sm">
-                {billItems.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between gap-4">
-                    <p className="font-medium text-[#412643]">{item.name} (x{item.quantity})</p>
-                    <span className="font-medium text-green-700">{formatCurrency(item.total)}</span>
-                  </div>
-                ))}
-              </div>
+              {/* Billing Breakdown inside Receipt */}
+              <div className="py-3.5 space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-[#a88a9f]">Subtotal</span>
+                  <span className="font-mono font-semibold text-[#2d1b35]">{formatCurrency(subtotalValue)}</span>
+                </div>
 
-              <div className="mt-4 space-y-2 border-t border-[#f3d7e2] pt-4 text-sm">
-                {[
-                  ["Subtotal", formatCurrency(subtotalValue)],
-                  ["Discount", discountValue ? `-${formatCurrency(discountValue)}` : formatCurrency(0)],
-                  ["Deposit Paid", depositValue ? `-${formatCurrency(depositValue)}` : formatCurrency(0)],
-                  ["Total Amount", formatCurrency(totalValue)],
-                  ["Amount Paid", paymentStage === "paid" ? formatCurrency(remainingValue) : formatCurrency(0)],
-                  ["Payment Method", "VNPay QR"],
-                  ["Transaction ID", `VNPAY${String(booking.bookingId || bookingId).replace(/-/g, "").slice(0, 10).toUpperCase()}`],
-                ].map(([label, value]) => (
-                  <div key={label} className="flex items-center justify-between gap-4">
-                    <span className={label === "Amount Paid" ? "font-bold text-[#d54186]" : "text-[#8f7b88]"}>{label}</span>
-                    <span
-                      className={
-                        label === "Total Amount"
-                          ? "font-extrabold text-green-700"
-                          : label === "Discount" || label === "Deposit Paid"
-                            ? "font-medium text-red-700"
-                            : "font-medium text-[#412643]"
-                      }
-                    >
-                      {value}
+                {discountValue > 0 && (
+                  <div className="flex justify-between pl-2.5 text-[11px]">
+                    <span className="text-[#a88a9f] italic">↳ Discount</span>
+                    <span className="font-mono text-emerald-600 font-medium">
+                      -{formatCurrency(discountValue)}
                     </span>
                   </div>
-                ))}
+                )}
+
+                <div className="flex justify-between border-t border-dashed border-[#e6decb] pt-2">
+                  <span className="text-[#a88a9f] font-bold">Total Price</span>
+                  <span className="font-mono font-bold text-[#2d1b35]">{formatCurrency(totalValue)}</span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span className="text-[#a88a9f]">Deposit paid</span>
+                  <span className="font-mono text-[#ea4f93] font-bold">{formatCurrency(depositValue)}</span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span className="text-[#a88a9f]">Remaining balance</span>
+                  <span className="font-mono text-[#2d1b35] font-semibold">{formatCurrency(remainingValue)}</span>
+                </div>
               </div>
 
-              <div className="mt-6 border-t border-[#f3d7e2] pt-4 text-center">
-                <p className="text-sm font-extrabold text-[#cf2e7a]">Thank you for choosing Nailify!</p>
-                <p className="mt-1 text-xs text-[#b38a9f]">Please come back soon. We love you!</p>
+              {/* Barcode footer */}
+              <div className="border-t border-dashed border-[#e6decb] pt-3.5 text-center space-y-1.5">
+                <div className="flex justify-center items-center gap-[2px] opacity-25 h-6 select-none">
+                  {[3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9, 7, 9, 3, 2, 3, 8, 4, 6].map((w, i) => (
+                    <div key={i} className="bg-black h-full" style={{ width: `${w}px` }} />
+                  ))}
+                </div>
+                <div className="text-[9px] uppercase tracking-[0.25em] text-[#a88a9f] font-mono">
+                  Nailify Inc — Thank You
+                </div>
               </div>
             </div>
 
