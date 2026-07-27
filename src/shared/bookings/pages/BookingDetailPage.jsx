@@ -10,6 +10,7 @@ import { BookingHeroCard } from "../components/BookingHeroCard";
 import { BookingSnapshotCard } from "../components/BookingSnapshotCard";
 import { StaffBookingConsultationDetail } from "../../../features/staff/bookings/components/StaffBookingConsultationDetail";
 import { ExtraServiceModal } from "../../../features/staff/bookings/components/ExtraServiceModal";
+import { ServiceProceduresViewerModal } from "../../components/common/ServiceProceduresViewerModal";
 import {
   BOOKING_ROLE_CONFIG,
   getMockBookingById,
@@ -220,7 +221,7 @@ function buildStaffExperienceFromBooking(
   const serviceNames = getUniqueBookingLabels(normalizedItems.map((item) => item.serviceName));
   const variantNames = getUniqueBookingLabels(normalizedItems.map((item) => item.nailVariantName));
   const customerDesignNames = getUniqueBookingLabels(normalizedItems.map((item) => item.customerNailName));
-  const bookingServiceEntries = normalizedItems.flatMap((item, index) => {
+  const rawBookingServiceEntries = normalizedItems.flatMap((item, index) => {
     const bookingItemId = String(item?.bookingItemId || item?.id || "").trim();
     const serviceId = String(item?.serviceId || "").trim();
     const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
@@ -276,6 +277,19 @@ function buildStaffExperienceFromBooking(
     }
 
     return rows;
+  });
+
+  const bookingServiceEntries = [];
+  const serviceEntriesMap = new Map();
+  rawBookingServiceEntries.forEach((entry) => {
+    const key = `${entry.detailLabel}_${entry.name}_${entry.price}_${entry.duration}`;
+    if (!serviceEntriesMap.has(key)) {
+      const copy = { ...entry };
+      serviceEntriesMap.set(key, copy);
+      bookingServiceEntries.push(copy);
+    } else {
+      serviceEntriesMap.get(key).quantity += entry.quantity;
+    }
   });
   const bookingItemsBasePrice = normalizedItems.reduce((sum, item) => {
     const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
@@ -1347,147 +1361,20 @@ export function BookingDetailPage() {
           title="Update Booking Services"
           description="Select extra services to add into the current booking before starting the service session."
         />
-        <Modal
-          open={Boolean(selectedProcedureService)}
-          onCancel={handleCloseServiceProcedures}
-          footer={[
-            <Button key="close-booking-detail-procedure-modal" onClick={handleCloseServiceProcedures}>
-              Close
-            </Button>,
-          ]}
-          centered
-          width={900}
-          title="Service Procedures"
-        >
-          {selectedProcedureService ? (
-            <div className="space-y-5 py-1">
-              <div className="rounded-[18px] border border-[#f4d6e2] bg-[#fffafb] p-4">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div>
-                    <p className="text-[13px] font-extrabold uppercase tracking-[0.16em] text-[#c38ea8]">
-                      Service
-                    </p>
-                    <p className="mt-2 text-lg font-extrabold text-[#4a3741]">
-                      {selectedProcedureService.name || "--"}
-                    </p>
-                    
-                  </div>
-                  <div className="grid gap-2 text-right text-sm">
-                    <div>
-                      <span className="text-[#8f7b88]">Quantity: </span>
-                      <span className="font-bold text-[#4a3741]">{selectedProcedureService.quantity || 1}</span>
-                    </div>
-                    <div>
-                      <span className="text-[#8f7b88]">Duration: </span>
-                      <span className="font-bold text-[#4a3741]">{selectedProcedureService.duration || "--"}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {isServiceProcedureModalLoading ? (
-                <div className="rounded-[18px] border border-[#f4dbe7] bg-white px-4 py-6 text-sm text-[#a88a9d]">
-                  Loading procedure steps...
-                </div>
-              ) : serviceProcedureModalError ? (
-                <div className="rounded-[18px] border border-[#f8d3dc] bg-[#fff5f7] px-4 py-5 text-sm text-[#c9587e]">
-                  {serviceProcedureModalError}
-                </div>
-              ) : serviceProcedureList.length ? (
-                <div className="space-y-3">
-                  {serviceProcedureList
-                    .slice()
-                    .sort((left, right) => (left?.stepOrder ?? 0) - (right?.stepOrder ?? 0))
-                    .map((procedure) => (
-                      <div
-                        key={procedure.bookingProcedureId || `${procedure.procedureId}-${procedure.stepOrder}`}
-                        className="rounded-[18px] border border-[#f4d6e2] bg-white p-4 shadow-[0_10px_22px_rgba(236,72,153,0.04)]"
-                      >
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div>
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="rounded-full bg-[#fff1f6] px-2.5 py-1 text-[10px] font-extrabold text-[#eb5b92]">
-                                Step {procedure.stepOrder ?? "--"}
-                              </span>
-                              <span className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold ${getProcedureStatusTone(procedure.status)}`}>
-                                {procedure.status || "--"}
-                              </span>
-                            </div>
-                            <p className="mt-3 text-base font-extrabold text-[#4a3741]">
-                              {procedure.procedureName || "--"}
-                            </p>
-                            <p className="mt-1 text-sm leading-6 text-[#8f7b88]">
-                              {procedure.description || "No procedure description available."}
-                            </p>
-                          </div>
-                          <div className="grid gap-2 text-right text-xs text-[#8f7b88]">
-                            <span>
-                              {String(procedure.estimatedStartTime || "--").slice(0, 5)} - {String(procedure.estimatedEndTime || "--").slice(0, 5)}
-                            </span>
-                            <span className="font-bold text-[#4a3741]">{procedure.duration ?? 0} min</span>
-                          </div>
-                        </div>
-
-                        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                          <div className="rounded-2xl bg-[#fff7fb] px-3 py-3 flex flex-col items-center justify-between gap-2">
-                            <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
-                              Assigned Artist
-                            </p>
-                            <div className="mt-1 flex items-start justify-between gap-3">
-                              <p className="text-[13px] font-bold text-[#4a3741]">
-                                 {procedure.assignedArtistId ? (procedure.assignedArtistName || "Assigned") : "Unassigned"}
-                              </p>
-                              {!procedure.assignedArtistId && isCheckinBooking ? (
-                                <button
-                                  type="button"
-                                  onClick={() => void handleClaimProcedure(procedure)}
-                                  disabled={claimingProcedureId === procedure.bookingProcedureId}
-                                  className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-3 py-1 text-[10px] font-extrabold text-white shadow-[0_10px_20px_rgba(236,72,153,0.18)] disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                  {claimingProcedureId === procedure.bookingProcedureId ? (
-                                    <LoaderCircle size={12} className="animate-spin" />
-                                  ) : null}
-                                  Claim
-                                </button>
-                              ) : null}
-                            </div>
-                          </div>
-                          <div className="rounded-2xl bg-[#fff7fb] px-3 py-3 flex flex-col items-center justify-between gap-2">
-                            <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
-                              Completed By
-                            </p>
-                            <p className="mt-1 text-[13px] font-bold text-[#4a3741]">
-                              {procedure.completedByName || <span className="text-[#6c6c6c] px-3 py-1 border border-[#0a0909] rounded-2xl bg-gray-100 text-[13px] text-center">Not yet</span>}
-                            </p>
-                          </div>
-                          <div className="rounded-2xl bg-[#fff7fb] px-3 py-3 flex flex-col items-center justify-between gap-2">
-                            <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
-                              Active / Passive
-                            </p>
-                            <p className="mt-1 text-[13px] font-bold text-[#4a3741]">
-                              {procedure.activeDuration ?? 0}m / {procedure.passiveDuration ?? 0}m
-                            </p>
-                          </div>
-                          <div className="rounded-2xl bg-[#fff7fb] px-3 py-3 flex flex-col items-center justify-between gap-2">
-                            <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c38ea8]">
-                              Overlap
-                            </p>
-                            <p className="mt-1 text-[13px] font-bold text-[#4a3741]">
-                               {procedure.canOverlap ? <span className="text-[#28a745] px-3 py-1 border border-[#28a745] rounded-2xl bg-green-100 text-[13px] text-center">Allowed</span> : <span className="text-[#6c6c6c] px-3 py-1 border border-[#0a0909] rounded-2xl bg-gray-100 text-[13px] text-center">Not Allowed</span>}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              ) : (
-                <div className="rounded-[18px] border border-dashed border-[#f1d8e4] bg-[#fffafb] px-4 py-8 text-center text-sm text-[#8f7b88]">
-                  No procedure steps found for this booking item.
-                </div>
-              )}
-            </div>
-          ) : null}
-        </Modal>
+        <ServiceProceduresViewerModal
+          isOpen={Boolean(selectedProcedureService)}
+          onClose={handleCloseServiceProcedures}
+          service={selectedProcedureService ? {
+            name: selectedProcedureService.name,
+            quantity: selectedProcedureService.quantity,
+            durationLabel: selectedProcedureService.duration,
+          } : null}
+          procedures={serviceProcedureList}
+          isLoading={isServiceProcedureModalLoading}
+          error={serviceProcedureModalError}
+          onClaimProcedure={(procedure) => void handleClaimProcedure(procedure)}
+          claimingProcedureId={claimingProcedureId}
+        />
       </>
     );
   }

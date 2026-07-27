@@ -7,21 +7,39 @@ function getAuthHeaders() {
 
   return token
     ? {
-        Authorization: `Bearer ${token}`,
-      }
+      Authorization: `Bearer ${token}`,
+    }
     : {};
 }
 
 export function getSalonId() {
   const session = loadAuthSession();
-  const salonId = session?.user?.salonId || session?.salonId;
-
-  if (!salonId) {
-    throw new Error("Salon ID is not available in the current account profile.");
-  }
-
+  const salonId = session?.user?.salonId || session?.salonId || localStorage.getItem("salonId") || null;
   return salonId;
 }
+
+export async function getSalonIdAsync() {
+  const session = loadAuthSession();
+  let salonId = session?.user?.salonId || session?.salonId || localStorage.getItem("salonId");
+  if (salonId) return salonId;
+
+  try {
+    const response = await axiosClient.get("/Auth/profile", {
+      headers: getAuthHeaders(),
+    });
+    const data = unwrapResponse(response, "Failed to load user profile");
+    salonId = data?.salonId;
+    if (salonId) {
+      localStorage.setItem("salonId", salonId);
+      return salonId;
+    }
+  } catch (e) {
+    console.warn("Failed to fetch salonId from /Auth/profile:", e);
+  }
+  return null;
+}
+
+
 
 function unwrapResponse(response, fallbackMessage) {
   const payload = response?.data;
@@ -61,32 +79,60 @@ function mapRoleToApi(role) {
 
 function normalizeStaffMember(staff) {
   return {
-    ...staff,
-    id: staff?.staffId || staff?.userId || staff?.id || "",
-    userId: staff?.userId || staff?.id || "",
-    staffId: staff?.staffId || "",
-    name:
-      staff?.firstName && staff?.lastName
-        ? `${staff.firstName} ${staff.lastName}`.trim()
-        : staff?.fullName || staff?.name || "Unnamed Staff",
-    role: staff?.role || "Staff_Artist",
+    id: staff?.id || staff?.accountId || staff?.userId || "",
+    nailArtistId: staff?.nailArtistId || staff?.id || "",
+    accountId: staff?.accountId || staff?.userId || staff?.id || "",
+    staffId: staff?.staffId || staff?.id || "",
+    userId: staff?.userId || staff?.accountId || staff?.id || "",
+    fullName: staff?.fullName || staff?.name || (staff?.firstName && staff?.lastName ? `${staff.firstName} ${staff.lastName}` : "Staff Member"),
+    firstName: staff?.firstName || "",
+    lastName: staff?.lastName || "",
     email: staff?.email || "",
+    role: staff?.role || "Staff_Artist",
+    status: staff?.status || "Active",
     phone: staff?.phone || "",
     salonId: staff?.salonId || "",
     avatarUrl: staff?.avatarUrl || "",
   };
 }
 
-export async function fetchNailArtists(salonId) {
-  const id = salonId || getSalonId();
-  const response = await axiosClient.get(`/Users/salon/${id}/staff`, {
-    headers: getAuthHeaders(),
-    params: { role: "Staff_Artist" },
-  });
+export async function fetchNailArtistProfiles(salonId) {
+  try {
+    const id = salonId || getSalonId();
+    if (!id) return [];
+    const response = await axiosClient.get("/NailArtists", {
+      headers: getAuthHeaders(),
+      params: { salonId: id, pageSize: 100 },
+    });
 
-  const data = unwrapResponse(response, "Failed to load nail artists.");
-  const items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
-  return items.map(normalizeStaffMember);
+    const data = unwrapResponse(response, "Failed to load nail artist profiles.");
+    const items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
+    return items.map(normalizeStaffMember);
+  } catch (error) {
+    console.warn("Failed to fetch nail artist profiles from /NailArtists:", error);
+    return [];
+  }
+}
+
+export async function fetchNailArtists(salonId) {
+  try {
+    const id = typeof salonId === "string" ? salonId : salonId?.salonId || getSalonId();
+    if (!id) return [];
+    const profiles = await fetchNailArtistProfiles(id);
+    if (profiles.length > 0) return profiles;
+
+    const response = await axiosClient.get(`/Users/salon/${id}/staff`, {
+      headers: getAuthHeaders(),
+      params: { role: "Staff_Artist" },
+    });
+
+    const data = unwrapResponse(response, "Failed to load nail artists.");
+    const items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
+    return items.map(normalizeStaffMember);
+  } catch (error) {
+    console.warn("Failed to load nail artists with current salon.", error);
+    return [];
+  }
 }
 
 export async function fetchAllSalonStaff(salonId) {
@@ -405,6 +451,22 @@ export async function fetchArtistSchedules(artistId, options = {}) {
   return Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
 }
 
+export async function fetchSchedulesBySalonId(salonId, options = {}) {
+  const normalizedSalonId = String(salonId || getSalonId()).trim();
+  const { startDate, endDate } = options;
+
+  const response = await axiosClient.get(`/Schedules/salon/${normalizedSalonId}`, {
+    headers: getAuthHeaders(),
+    params: {
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
+    },
+  });
+
+  const data = unwrapResponse(response, "Failed to load salon staff schedules.");
+  return Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
+}
+
 export async function fetchSchedules({
   pageNumber = 1,
   pageSize = 100,
@@ -446,4 +508,11 @@ export async function patchSchedule(scheduleId, scheduleData) {
     headers: getAuthHeaders(),
   });
   return unwrapResponse(response, "Failed to update schedule partially.");
+}
+
+export async function deleteSchedule(scheduleId) {
+  const response = await axiosClient.delete(`/Schedules/${scheduleId}`, {
+    headers: getAuthHeaders(),
+  });
+  return unwrapResponse(response, "Failed to delete schedule.");
 }

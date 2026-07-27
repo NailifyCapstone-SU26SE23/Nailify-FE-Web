@@ -493,65 +493,60 @@ export async function fetchSalonWaitlist(salonId, options = {}) {
   }
 }
 
-export async function managerApproveReschedule(bookingId) {
-  const normalizedId = String(bookingId || "").trim();
+export async function managerSuggestTime(bookingId, suggestData) {
+  const normalizedBookingId = String(bookingId || "").trim();
+  if (!normalizedBookingId) throw new Error("Booking ID is required.");
 
-  if (!normalizedId) {
-    throw new Error("Booking ID is required.");
-  }
-
-  console.log("Manager approving reschedule for booking:", normalizedId);
+  console.log("managerSuggestTime - Booking ID:", normalizedBookingId, suggestData);
   try {
-    const response = await axiosClient.post(`/Bookings/${normalizedId}/manager-approve-reschedule`, null, {
-      headers: getAuthHeaders(),
-    });
-
-    return unwrapResponse(response, "Failed to approve reschedule request.");
+    const response = await axiosClient.post(
+      `/Bookings/${normalizedBookingId}/manager-suggest-time`,
+      suggestData,
+      { headers: getAuthHeaders() }
+    );
+    return unwrapResponse(response, "Failed to send reschedule proposal to customer.");
   } catch (error) {
-    const errorMessage = error?.response?.data?.message || error?.message || "Failed to approve reschedule request.";
+    const errorMessage = error?.response?.data?.message || error?.message || "Failed to suggest new time.";
+    console.error("Error suggesting new time:", error?.response?.data || error);
+    throw new Error(errorMessage, { cause: error });
+  }
+}
+
+export async function managerApproveReschedule(bookingId) {
+  const normalizedBookingId = String(bookingId || "").trim();
+  if (!normalizedBookingId) throw new Error("Booking ID is required.");
+
+  console.log("managerApproveReschedule - Booking ID:", normalizedBookingId);
+  try {
+    const response = await axiosClient.post(
+      `/Bookings/${normalizedBookingId}/manager-approve-reschedule`,
+      null,
+      { headers: getAuthHeaders() }
+    );
+    return unwrapResponse(response, "Failed to approve customer's reschedule request.");
+  } catch (error) {
+    const errorMessage = error?.response?.data?.message || error?.message || "Failed to approve reschedule.";
     console.error("Error approving reschedule:", error?.response?.data || error);
     throw new Error(errorMessage, { cause: error });
   }
 }
 
 export async function managerRejectReschedule(bookingId) {
-  const normalizedId = String(bookingId || "").trim();
+  const normalizedBookingId = String(bookingId || "").trim();
+  if (!normalizedBookingId) throw new Error("Booking ID is required.");
 
-  if (!normalizedId) {
-    throw new Error("Booking ID is required.");
-  }
-
-  console.log("Manager rejecting reschedule for booking:", normalizedId);
+  console.log("managerRejectReschedule - Booking ID:", normalizedBookingId);
   try {
-    const response = await axiosClient.post(`/Bookings/${normalizedId}/manager-reject-reschedule`, null, {
-      headers: getAuthHeaders(),
-    });
-
-    return unwrapResponse(response, "Failed to reject reschedule request.");
+    const response = await axiosClient.post(
+      `/Bookings/${normalizedBookingId}/manager-reject-reschedule`,
+      null,
+      { headers: getAuthHeaders() }
+    );
+    return unwrapResponse(response, "Failed to reject customer's reschedule request.");
   } catch (error) {
-    const errorMessage = error?.response?.data?.message || error?.message || "Failed to reject reschedule request.";
+    const errorMessage = error?.response?.data?.message || error?.message || "Failed to reject reschedule.";
     console.error("Error rejecting reschedule:", error?.response?.data || error);
     throw new Error(errorMessage, { cause: error });
   }
 }
 
-export async function managerSuggestTime(bookingId, suggestData) {
-  const normalizedId = String(bookingId || "").trim();
-
-  if (!normalizedId) {
-    throw new Error("Booking ID is required.");
-  }
-
-  console.log("Manager suggesting reschedule time for booking:", normalizedId, suggestData);
-  try {
-    const response = await axiosClient.post(`/Bookings/${normalizedId}/manager-suggest-time`, suggestData, {
-      headers: getAuthHeaders(),
-    });
-
-    return unwrapResponse(response, "Failed to suggest new time for reschedule.");
-  } catch (error) {
-    const errorMessage = error?.response?.data?.message || error?.message || "Failed to suggest new time for reschedule.";
-    console.error("Error suggesting time:", error?.response?.data || error);
-    throw new Error(errorMessage, { cause: error });
-  }
-}

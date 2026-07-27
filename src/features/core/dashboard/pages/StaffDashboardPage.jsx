@@ -446,7 +446,9 @@ export function StaffDashboardPage() {
       },
       {
         label: "Next",
-        value: dashboardData?.nextCustomer || "--",
+        value: typeof dashboardData?.nextCustomer === "object" && dashboardData?.nextCustomer !== null
+          ? (dashboardData.nextCustomer.customerName || "--")
+          : (dashboardData?.nextCustomer || "--"),
         note: "Upcoming customer",
         icon: AlarmClock,
         color: "#8b5cf6",

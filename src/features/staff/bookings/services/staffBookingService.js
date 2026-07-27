@@ -1053,7 +1053,7 @@ function buildServiceSessionBreakdown(items = [], options = {}) {
   const nailVariantDetailMap = options?.nailVariantDetailMap ?? {};
   const customerNailDetailMap = options?.customerNailDetailMap ?? {};
 
-  return normalizedItems.flatMap((item, index) => {
+  const rawRows = normalizedItems.flatMap((item, index) => {
     const bookingItemId = String(item?.bookingItemId || item?.id || "").trim();
     const serviceId = String(item?.serviceId || "").trim();
     const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
@@ -1110,12 +1110,28 @@ function buildServiceSessionBreakdown(items = [], options = {}) {
 
     return rows;
   });
+
+  const groupedRows = [];
+  const map = new Map();
+
+  rawRows.forEach((row) => {
+    const key = `${row.detailLabel}_${row.name}_${row.priceLabel}_${row.durationLabel}`;
+    if (!map.has(key)) {
+      const copy = { ...row };
+      map.set(key, copy);
+      groupedRows.push(copy);
+    } else {
+      map.get(key).quantity += row.quantity;
+    }
+  });
+
+  return groupedRows;
 }
 
 function buildNailServiceSessionBreakdown(items = []) {
   const normalizedItems = Array.isArray(items) ? items : [];
 
-  return normalizedItems
+  const rawItems = normalizedItems
     .map((item, index) => {
       const name = String(item?.nailVariantName || item?.customerNailName || "").trim();
 
@@ -1139,6 +1155,21 @@ function buildNailServiceSessionBreakdown(items = []) {
       };
     })
     .filter(Boolean);
+
+  const grouped = [];
+  const map = new Map();
+  rawItems.forEach((row) => {
+    const key = `${row.name}_${row.priceLabel}_${row.durationLabel}`;
+    if (!map.has(key)) {
+      const copy = { ...row };
+      map.set(key, copy);
+      grouped.push(copy);
+    } else {
+      map.get(key).quantity += row.quantity;
+    }
+  });
+
+  return grouped;
 }
 
 function buildPriceSummaryRows(items = [], discounts = []) {
@@ -1209,11 +1240,11 @@ export function buildStaffServiceSessionPayload(booking, options = {}) {
   const firstNamedItem = items.find((item) => item.serviceName || item.customerNailName || item.nailVariantName);
   const serviceLabel =
     serviceNames.length ? serviceNames.join("\n") :
-    booking?.service ||
-    booking?.uiService ||
-    firstNamedItem?.customerNailName ||
-    firstNamedItem?.nailVariantName ||
-    "--";
+      booking?.service ||
+      booking?.uiService ||
+      firstNamedItem?.customerNailName ||
+      firstNamedItem?.nailVariantName ||
+      "--";
   const currentProcessLabel = [
     serviceNames.length ? serviceNames.join(" | ") : "",
     variantNames[0] || "",
