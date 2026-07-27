@@ -23,6 +23,8 @@ export function NotificationProvider({ children }) {
   // Track the current token to detect login/logout
   const currentTokenRef = useRef(null);
   const isConnectingRef = useRef(false);
+  // Stable ref for the notification handler to avoid stale closures in SignalR callbacks
+  const handleIncomingNotificationRef = useRef(null);
 
   // Save to localStorage when notifications state changes
   useEffect(() => {
@@ -85,6 +87,9 @@ export function NotificationProvider({ children }) {
     ), { duration: 5000 });
   };
 
+  // Keep the ref always pointing to the latest version to avoid stale closures
+  handleIncomingNotificationRef.current = handleIncomingNotification;
+
   // Setup connection monitoring effect
   useEffect(() => {
     const checkAuthAndConnect = async () => {
@@ -101,29 +106,43 @@ export function NotificationProvider({ children }) {
         return;
       }
 
-      // User logged in or token refreshed
+      // User logged in, token changed, or need to reconnect after disconnect
       if (token && token !== currentTokenRef.current) {
         if (isConnectingRef.current) return;
         
-        console.log("NotificationContext: User session detected. Connecting/Reconnecting SignalR.");
+        console.log("NotificationContext: Connecting SignalR...");
         currentTokenRef.current = token;
         isConnectingRef.current = true;
         setConnectionStatus("connecting");
         
         try {
             await notificationSignalRService.stopConnection();
-            await notificationSignalRService.startConnection({
+            const conn = await notificationSignalRService.startConnection({
+                // Use ref to always call the LATEST version of the handler (avoids stale closure)
                 onNotificationReceived: (notification) => {
-                    handleIncomingNotification(notification);
+                    handleIncomingNotificationRef.current?.(notification);
                 },
                 onReconnected: () => {
+                    console.log("NotificationContext: SignalR reconnected.");
                     setConnectionStatus("connected");
                 },
+                // Reset token ref so the polling loop can attempt to reconnect
                 onDisconnected: () => {
+                    console.warn("NotificationContext: SignalR disconnected — will retry.");
                     setConnectionStatus("disconnected");
+                    currentTokenRef.current = null;
                 }
             });
-            setConnectionStatus("connected");
+
+            if (conn) {
+                console.log("NotificationContext: SignalR connection established ✅");
+                setConnectionStatus("connected");
+            } else {
+                // startConnection returned null — silent failure, allow retry
+                console.error("NotificationContext: SignalR connection failed (returned null). Will retry.");
+                setConnectionStatus("disconnected");
+                currentTokenRef.current = null;
+            }
         } catch (error) {
             console.error("SignalR Connection failed:", error);
             setConnectionStatus("disconnected");

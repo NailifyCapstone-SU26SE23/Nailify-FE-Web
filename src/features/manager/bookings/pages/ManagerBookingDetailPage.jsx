@@ -281,12 +281,19 @@ export function ManagerBookingDetailPage() {
       rawBooking.artistId ||
       null;
 
-    // Discount calculation
-    let totalDiscount = rawBooking?.discountAmount || 0;
+    // Discount calculation (handles negative/positive values from API)
+    let totalDiscount = Math.abs(rawBooking?.discount || rawBooking?.discountAmount || 0);
     if (rawBooking?.discounts && Array.isArray(rawBooking.discounts)) {
-      totalDiscount = rawBooking.discounts.reduce((sum, discount) => sum + (discount?.amount || 0), 0);
+      const discountSum = rawBooking.discounts.reduce((sum, d) => sum + Math.abs(d?.amount || 0), 0);
+      if (discountSum > 0) {
+        totalDiscount = discountSum;
+      }
     }
-    const finalPrice = rawBooking?.totalPrice ? (rawBooking.totalPrice - totalDiscount) : 0;
+
+    // Original base price (total price before discount)
+    const basePrice = rawBooking?.price || (rawBooking?.totalPrice ? (rawBooking.totalPrice + totalDiscount) : 0);
+    // Final price the customer pays (totalPrice from API is the final price)
+    const finalPrice = rawBooking?.totalPrice || (basePrice - totalDiscount);
 
     return {
       ...rawBooking,
@@ -306,7 +313,7 @@ export function ManagerBookingDetailPage() {
       depositAmount: rawBooking.depositAmount,
       depositTone: rawBooking.depositAmount ? "text-[#2fa25f]" : "text-[#db8520]",
       status: rawBooking.status || "Pending",
-      totalPrice: rawBooking.totalPrice,
+      totalPrice: basePrice,
       discounts: rawBooking?.discounts,
       discountAmount: totalDiscount,
       discountPercentage: rawBooking?.discountPercentage,
@@ -549,7 +556,13 @@ export function ManagerBookingDetailPage() {
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-widest text-[#a88a9f] mb-3">Check-in Photo</p>
                     <div className="overflow-hidden rounded-[18px] border border-[#f1e7ed] bg-gradient-to-br from-white to-[#fffafb] p-2">
-                      <img src={booking.checkInImageUrl} alt="Check-in" className="max-w-full rounded-lg w-full object-cover" />
+                      <img
+                        crossOrigin="anonymous"
+                        src={booking.checkInImageUrl}
+                        alt="Check-in"
+                        className="max-w-full rounded-lg w-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
                     </div>
                   </div>
                 )}
@@ -560,11 +573,24 @@ export function ManagerBookingDetailPage() {
                       {Array.isArray(booking.checkOutImagesUrl) ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           {booking.checkOutImagesUrl.map((url, idx) => (
-                            <img key={idx} src={url} alt={`Check-out ${idx + 1}`} className="rounded-lg w-full h-40 object-cover" />
+                            <img
+                              key={idx}
+                              crossOrigin="anonymous"
+                              src={url}
+                              alt={`Check-out ${idx + 1}`}
+                              className="rounded-lg w-full h-40 object-cover"
+                              referrerPolicy="no-referrer"
+                            />
                           ))}
                         </div>
                       ) : (
-                        <img src={booking.checkOutImagesUrl} alt="Check-out" className="max-w-full rounded-lg w-full object-cover" />
+                        <img
+                          crossOrigin="anonymous"
+                          src={booking.checkOutImagesUrl}
+                          alt="Check-out"
+                          className="max-w-full rounded-lg w-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
                       )}
                     </div>
                   </div>
@@ -683,18 +709,18 @@ export function ManagerBookingDetailPage() {
           )}
         </div>
 
-        {/* Right Column: Payment & Codes (Sticky) */}
+        {/* Right Column: Payment & codes (Sticky) */}
         <div className="space-y-5 xl:sticky xl:top-5 xl:h-fit">
           <Card>
             <SectionTitle subtitle="Payment information and confirmation codes.">
-              Payment & Codes
+              Payment & codes
             </SectionTitle>
             <div className="space-y-6">
               <div className="grid grid-cols-1 gap-6">
-                <InfoItem label="Deposit Status">
+                <InfoItem label="Deposit status">
                   <span className={booking?.depositTone}>{booking?.deposit}</span>
                 </InfoItem>
-                <InfoItem label="Original Total">{formatVND(booking?.totalPrice)}</InfoItem>
+                <InfoItem label="Total">{formatVND(booking?.totalPrice)}</InfoItem>
                 {booking?.discountAmount > 0 && (
                   <>
                     {booking?.discounts && booking.discounts.length > 0 ? (
@@ -721,7 +747,7 @@ export function ManagerBookingDetailPage() {
                         </span>
                       </InfoItem>
                     )}
-                    <InfoItem label="Final Amount">
+                    <InfoItem label="Final amount">
                       <span className="text-[#ea4f93] font-bold text-lg">
                         {formatVND(booking?.finalPrice)}
                       </span>
@@ -729,25 +755,22 @@ export function ManagerBookingDetailPage() {
                   </>
                 )}
                 {!(booking?.discountAmount > 0) && (
-                  <InfoItem label="Final Amount">{formatVND(booking?.totalPrice)}</InfoItem>
+                  <InfoItem label="Final amount">{formatVND(booking?.totalPrice)}</InfoItem>
                 )}
               </div>
 
               {(booking?.qrCode || booking?.qtCode) && (
-                <div className="pt-4 border-t border-[#f1e7ed]">
-                  <div className="flex items-center gap-2 mb-4">
-                    <ScanQrCode size={16} className="text-[#ea4f93]" />
-                    <p className="text-sm font-semibold text-[#2d1b35]">Confirmation Codes</p>
-                  </div>
+                <div className="pt-3 mt-3 border-t border-[#f5e2ec]">
+                  <p className="text-[11px] font-semibold text-[#a88a9f] mb-3">Confirmation codes</p>
                   <div className="space-y-4">
                     {booking.qrCode && (
                       <motion.div
                         whileHover={{ scale: 1.01 }}
-                        className="rounded-[18px] border border-[#f1e7ed] bg-gradient-to-br from-white to-[#fffafb] p-4 cursor-pointer hover:border-[#ea4f93] hover:shadow-md transition-all duration-300"
+                        className="rounded-[16px] border border-[#f5d6e4] bg-white p-4 cursor-pointer hover:border-[#ea4f93] hover:shadow-md transition-all duration-300"
                         onClick={() => setIsQrExpanded(true)}
                       >
                         <div className="flex items-center justify-between mb-3">
-                          <p className="text-xs font-semibold uppercase tracking-widest text-[#a88a9f]">QR Code</p>
+                          <p className="text-[11px] font-semibold text-[#a88a9f]">QR code</p>
                           <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
@@ -759,9 +782,11 @@ export function ManagerBookingDetailPage() {
                           </motion.button>
                         </div>
                         <img
+                          crossOrigin="anonymous"
                           src={getQrCodeSrc(booking.qrCode)}
                           alt="QR Code"
                           className="max-w-[120px] mx-auto rounded-xl"
+                          referrerPolicy="no-referrer"
                           onError={(e) => {
                             console.error("QR Code image failed to load:", booking.qrCode);
                             e.target.style.display = "none";
@@ -770,8 +795,8 @@ export function ManagerBookingDetailPage() {
                       </motion.div>
                     )}
                     {booking.qtCode && (
-                      <div className="rounded-[18px] border border-[#f1e7ed] bg-gradient-to-br from-white to-[#fffafb] p-4">
-                        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-[#a88a9f]">QT Code</p>
+                      <div className="rounded-[16px] border border-[#f5d6e4] bg-white p-4">
+                        <p className="mb-2 text-[11px] font-semibold text-[#a88a9f]">QT code</p>
                         <p className="break-all text-sm font-medium text-[#2d1b35]">{booking.qtCode}</p>
                       </div>
                     )}
@@ -810,9 +835,11 @@ export function ManagerBookingDetailPage() {
             </motion.button>
           </div>
           <img
+            crossOrigin="anonymous"
             src={getQrCodeSrc(booking?.qrCode)}
             alt="QR Code"
             className="max-w-[280px] mx-auto rounded-[18px]"
+            referrerPolicy="no-referrer"
             onError={(e) => {
               console.error("QR Code image failed to load:", booking?.qrCode);
               e.target.style.display = "none";
