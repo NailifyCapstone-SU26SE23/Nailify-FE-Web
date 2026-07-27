@@ -126,19 +126,19 @@ function RequestCard({ request }) {
         <div className="flex flex-wrap gap-2">
           <div className="flex items-center gap-1 rounded-lg bg-white px-2 py-0.5 border border-[#fce7f3] text-[10px]">
             <span className="font-bold text-[#b87c9b]">Shape (A):</span>
-            <span className="font-black text-[#ea4f93]">{skillReqs.A}★</span>
+            <span className="font-bold text-[#ea4f93]">{skillReqs.A}★</span>
           </div>
           <div className="flex items-center gap-1 rounded-lg bg-white px-2 py-0.5 border border-[#fce7f3] text-[10px]">
             <span className="font-bold text-[#b87c9b]">Coating (B):</span>
-            <span className="font-black text-[#ea4f93]">{skillReqs.B}★</span>
+            <span className="font-bold text-[#ea4f93]">{skillReqs.B}★</span>
           </div>
           <div className="flex items-center gap-1 rounded-lg bg-white px-2 py-0.5 border border-[#fce7f3] text-[10px]">
             <span className="font-bold text-[#b87c9b]">Accessory (C):</span>
-            <span className="font-black text-[#ea4f93]">{skillReqs.C}★</span>
+            <span className="font-bold text-[#ea4f93]">{skillReqs.C}★</span>
           </div>
           <div className="flex items-center gap-1 rounded-lg bg-white px-2 py-0.5 border border-[#fce7f3] text-[10px]">
             <span className="font-bold text-[#b87c9b]">Art (D):</span>
-            <span className="font-black text-[#ea4f93]">{skillReqs.D}★</span>
+            <span className="font-bold text-[#ea4f93]">{skillReqs.D}★</span>
           </div>
         </div>
       </div>

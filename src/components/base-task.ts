@@ -50,6 +50,10 @@ export abstract class BaseTask {
     }
     if (this.worker) {
       this.worker.onmessage = this.handleWorkerMessage.bind(this);
+      this.worker.onerror = (e) => {
+        console.error('Worker error event:', e);
+        this.updateStatus(`Worker load/runtime error: ${e.message || 'failed to load'}`);
+      };
     }
   }
 
@@ -176,6 +180,6 @@ export abstract class BaseTask {
     this.isWorkerReady = false;
   }
 
-  protected onInitializeUI(): void {}
+  protected onInitializeUI(): void { }
   protected abstract getWorkerInitParams(): Record<string, any>;
 }

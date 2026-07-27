@@ -31,11 +31,9 @@ const SALON_PLACEHOLDER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
 function PremiumCard({ className = "", children, padded = true, noHover = false }) {
   return (
     <article
-      className={`relative overflow-hidden rounded-[28px] border border-[#f5e2ec] bg-white ${
-        padded ? "p-6" : ""
-      } shadow-[0_20px_40px_-15px_rgba(0,0,0,0.04)] transition-all duration-500 ease-out ${
-        !noHover ? "hover:-translate-y-1 hover:shadow-[0_20px_45px_rgba(226,93,143,0.06)]" : ""
-      } ${className}`}
+      className={`relative overflow-hidden rounded-[28px] border border-[#f5e2ec] bg-white ${padded ? "p-6" : ""
+        } shadow-[0_20px_40px_-15px_rgba(0,0,0,0.04)] transition-all duration-500 ease-out ${!noHover ? "hover:-translate-y-1 hover:shadow-[0_20px_45px_rgba(226,93,143,0.06)]" : ""
+        } ${className}`}
     >
       {children}
     </article>
@@ -45,7 +43,7 @@ function PremiumCard({ className = "", children, padded = true, noHover = false 
 function SectionHeading({ title, subtitle }) {
   return (
     <div>
-      <h2 className="text-[16px] font-black text-[#2d1b35]">{title}</h2>
+      <h2 className="text-[16px] font-bold text-[#2d1b35]">{title}</h2>
       {subtitle ? (
         <p className="mt-1.5 text-[11px] text-[#a88a9f] leading-relaxed">{subtitle}</p>
       ) : null}
@@ -98,7 +96,7 @@ function BookingCard({ booking, index }) {
             </span>
           </div>
           <div className="min-w-0">
-            <h3 className="text-[16px] font-black text-[#2d1b35] truncate">
+            <h3 className="text-[16px] font-bold text-[#2d1b35] truncate">
               {booking?.customerName || "Unknown Customer"}
             </h3>
             {booking?.customerEmail && (
@@ -156,7 +154,7 @@ function BookingCard({ booking, index }) {
               <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
                 Total
               </p>
-              <p className="font-black text-[18px] text-[#2d1b35]">
+              <p className="font-bold text-[18px] text-[#2d1b35]">
                 ${Number(booking.totalAmount).toLocaleString()}
               </p>
             </div>
@@ -367,7 +365,7 @@ export function AdminSalonBookingDetailPage() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-[#cf3d74]">
+            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">
               {isLoadingSalon ? "Loading..." : salon?.name || "Salon Bookings"}
             </h1>
             <nav className="flex items-center gap-1.5 text-[12px] mt-1">
@@ -534,9 +532,8 @@ export function AdminSalonBookingDetailPage() {
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
           <SectionHeading
             title="Completed Bookings"
-            subtitle={`Showing ${filteredBookings.length} booking${
-              filteredBookings.length !== 1 ? "s" : ""
-            }${searchQuery ? ` • Search: "${searchQuery}"` : ""}`}
+            subtitle={`Showing ${filteredBookings.length} booking${filteredBookings.length !== 1 ? "s" : ""
+              }${searchQuery ? ` • Search: "${searchQuery}"` : ""}`}
           />
           <div className="flex-1 max-w-md">
             <div className="flex w-full items-center gap-3 rounded-full border border-[#f0b7cf] bg-white px-5 py-3 shadow-inner shadow-[#fff0f8]">

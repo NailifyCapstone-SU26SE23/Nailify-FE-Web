@@ -223,7 +223,7 @@ export function NailDesignManagementCategoryPage() {
               <ArrowLeft size={18} />
             </Link>
             <div>
-              <h1 className="text-[26px] font-black tracking-tight text-[#432744]">
+              <h1 className="text-[26px] font-bold tracking-tight text-[#432744]">
                 Nail Design Categories
               </h1>
               <p className="mt-1 text-[12px] text-[#c694ad]">
@@ -254,28 +254,28 @@ export function NailDesignManagementCategoryPage() {
           <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-[#ffe8f2] text-[#ea4f93]">
             <Tag size={18} />
           </div>
-          <p className="text-[28px] font-black text-[#432744]">{summary.total}</p>
+          <p className="text-[28px] font-bold text-[#432744]">{summary.total}</p>
           <p className="mt-1 text-sm font-semibold text-[#8a7082]">Total Categories</p>
         </div>
         <div className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
           <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-[#edfdf4] text-[#16975f]">
             <Sparkles size={18} />
           </div>
-          <p className="text-[28px] font-black text-[#432744]">{summary.active}</p>
+          <p className="text-[28px] font-bold text-[#432744]">{summary.active}</p>
           <p className="mt-1 text-sm font-semibold text-[#8a7082]">Active On Current Page</p>
         </div>
         <div className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
           <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-[#fff4df] text-[#d9871c]">
             <FolderPlus size={18} />
           </div>
-          <p className="text-[28px] font-black text-[#432744]">{summary.draftCount}</p>
+          <p className="text-[28px] font-bold text-[#432744]">{summary.draftCount}</p>
           <p className="mt-1 text-sm font-semibold text-[#8a7082]">Non-Active On Current Page</p>
         </div>
         <div className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
           <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-[#eef4ff] text-[#3f68c9]">
             <Save size={18} />
           </div>
-          <p className="text-[28px] font-black text-[#432744]">{summary.totalTypes}</p>
+          <p className="text-[28px] font-bold text-[#432744]">{summary.totalTypes}</p>
           <p className="mt-1 text-sm font-semibold text-[#8a7082]">Category Types On Page</p>
         </div>
       </section>
@@ -288,7 +288,7 @@ export function NailDesignManagementCategoryPage() {
                 <span className="inline-flex rounded-full bg-white/90 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#ea4f93] shadow-[0_8px_20px_rgba(236,72,153,0.08)]">
                   Catalog Editor
                 </span>
-                <h2 className="mt-3 text-lg font-black text-[#432744]">
+                <h2 className="mt-3 text-lg font-bold text-[#432744]">
                   {editingId ? "Edit Category" : "Add Category"}
                 </h2>
                 <p className="mt-1 text-[12px] leading-5 text-[#a37792]">
@@ -309,7 +309,7 @@ export function NailDesignManagementCategoryPage() {
 
             <div className="mt-5 rounded-[20px] border border-white/80 bg-white/80 p-4 shadow-[0_10px_24px_rgba(236,72,153,0.08)] backdrop-blur">
               <div className="flex items-start gap-3">
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] bg-[linear-gradient(135deg,#ec4899_0%,#f472b6_100%)] text-lg font-black text-white shadow-[0_12px_24px_rgba(236,72,153,0.22)]">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] bg-[linear-gradient(135deg,#ec4899_0%,#f472b6_100%)] text-lg font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.22)]">
                   {previewInitials}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -617,10 +617,10 @@ export function NailDesignManagementCategoryPage() {
         item={
           pendingDeleteCategory
             ? {
-                title: pendingDeleteCategory.name,
-                meta: `${pendingDeleteCategory.status} • ${pendingDeleteCategory.categoryTypeName}`,
-                // note: `Category ID #${pendingDeleteCategory.categoryId}`,
-              }
+              title: pendingDeleteCategory.name,
+              meta: `${pendingDeleteCategory.status} • ${pendingDeleteCategory.categoryTypeName}`,
+              // note: `Category ID #${pendingDeleteCategory.categoryId}`,
+            }
             : null
         }
         warnings={["Delete is not connected to backend, so the API list will not change."]}

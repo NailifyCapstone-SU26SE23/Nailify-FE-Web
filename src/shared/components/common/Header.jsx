@@ -6,6 +6,7 @@ import { useNotifications } from "../../../features/core/notifications/context/N
 import { NotificationDropdown } from "../../../features/core/notifications/components/NotificationDropdown";
 
 export function Header({
+  showBackButton = false,
   backButtonFallbackTo = "/",
   backButtonLabel = "Back",
   backButtonTo = null,
@@ -32,13 +33,15 @@ export function Header({
             </button>
           </div>
           <div className="mb-3 flex items-center gap-3">
-            <div className="hidden md:block">
-              <BackButton
-                fallbackTo={backButtonFallbackTo}
-                label={backButtonLabel}
-                to={backButtonTo}
-              />
-            </div>
+            {showBackButton && (
+              <div className="hidden md:block">
+                <BackButton
+                  fallbackTo={backButtonFallbackTo}
+                  label={backButtonLabel}
+                  to={backButtonTo}
+                />
+              </div>
+            )}
             <h1 className="text-[1.85rem] font-extrabold leading-none text-[#3d2a3a]">
               {title}
             </h1>
@@ -69,14 +72,14 @@ export function Header({
               >
                 <Bell size={18} />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#ea4f93] text-[9px] font-black text-white shadow-[0_4px_8px_rgba(234,79,147,0.4)] animate-pulse">
+                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#ea4f93] text-[9px] font-bold text-white shadow-[0_4px_8px_rgba(234,79,147,0.4)] animate-pulse">
                     {unreadCount > 99 ? "99+" : unreadCount}
                   </span>
                 )}
               </button>
-              <NotificationDropdown 
-                isOpen={isDropdownOpen} 
-                onClose={() => setIsDropdownOpen(false)} 
+              <NotificationDropdown
+                isOpen={isDropdownOpen}
+                onClose={() => setIsDropdownOpen(false)}
               />
             </div>
           </div>
@@ -93,6 +96,7 @@ Header.propTypes = {
   description: PropTypes.string.isRequired,
   onOpenMobileMenu: PropTypes.func.isRequired,
   onLogout: PropTypes.func.isRequired,
+  showBackButton: PropTypes.bool,
   title: PropTypes.string.isRequired,
   todayLabel: PropTypes.string.isRequired,
 };

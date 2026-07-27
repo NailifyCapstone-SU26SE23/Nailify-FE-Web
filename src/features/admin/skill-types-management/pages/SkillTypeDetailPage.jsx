@@ -211,7 +211,7 @@ export function SkillTypeDetailPage() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-[#cf3d74]">Skill Type Detail</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">Skill Type Detail</h1>
             <p className="text-xs font-medium text-slate-400">Review, edit, and delete this skill type from one page.</p>
           </div>
         </div>
@@ -402,10 +402,10 @@ export function SkillTypeDetailPage() {
         item={
           skillType
             ? {
-                title: skillType.name,
-                meta: skillType.status,
-                note: `Skill Type ID: ${skillType.skillTypeId}`,
-              }
+              title: skillType.name,
+              meta: skillType.status,
+              note: `Skill Type ID: ${skillType.skillTypeId}`,
+            }
             : null
         }
         warnings={["Backend delete for this resource changes the status to inactive."]}

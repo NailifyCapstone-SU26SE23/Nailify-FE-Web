@@ -1,7 +1,7 @@
 import { ViewToggle } from './view-toggle';
 import { BaseTask, BaseTaskOptions } from './base-task';
 
-export interface BaseVisionTaskOptions extends BaseTaskOptions {}
+export interface BaseVisionTaskOptions extends BaseTaskOptions { }
 
 export abstract class BaseVisionTask extends BaseTask {
   protected runningMode: 'IMAGE' | 'VIDEO' = 'IMAGE';
@@ -44,7 +44,6 @@ export abstract class BaseVisionTask extends BaseTask {
     switch (type) {
       case 'DETECT_RESULT':
         const { mode, result, inferenceTime } = event.data;
-        this.updateStatus(`Done in ${Math.round(inferenceTime)}ms`);
         this.updateInferenceTime(inferenceTime);
 
         if (mode === 'IMAGE') {
@@ -235,7 +234,13 @@ export abstract class BaseVisionTask extends BaseTask {
 
   protected async enableCam() {
     if (!this.worker || !this.video) return;
-    if (this.video.srcObject) return;
+    if (this.video.srcObject) {
+      if (this.animationFrameId) {
+        cancelAnimationFrame(this.animationFrameId);
+      }
+      this.predictWebcam();
+      return;
+    }
 
     if (this.enableWebcamButton) {
       this.enableWebcamButton.innerText = 'Starting...';

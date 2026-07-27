@@ -288,7 +288,7 @@ export function PromotionCreatePage() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-[#cf3d74]">Add New Promotion</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">Add New Promotion</h1>
             <p className="text-xs font-medium text-slate-400">Create a new promotion campaign for admin management.</p>
           </div>
         </div>
@@ -506,7 +506,7 @@ export function PromotionCreatePage() {
           </PanelCard>
         </div>
 
-        
+
       </div>
 
       <ActionConfirmModal

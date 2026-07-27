@@ -156,7 +156,7 @@ export default function ChairManagementPage() {
             <Armchair size={24} />
           </div>
           <div>
-            <h1 className="text-[24px] font-black tracking-tight text-[#432744]">Chair Management</h1>
+            <h1 className="text-[24px] font-bold tracking-tight text-[#432744]">Chair Management</h1>
             <p className="text-[13px] text-[#a88a9d] font-medium mt-1">Manage physical resources across your salons</p>
           </div>
         </div>
@@ -199,7 +199,7 @@ export default function ChairManagementPage() {
               <Spin size="large" className="text-[#ea4f93]" />
             </div>
           ) : (
-            <ChairMap 
+            <ChairMap
               chairs={chairs}
               renderCell={(cellName, chair) => {
                 if (chair) {
@@ -297,7 +297,7 @@ export default function ChairManagementPage() {
 
       <Modal
         title={
-          <div className="text-lg font-black tracking-tight text-slate-900 flex items-center gap-2">
+          <div className="text-lg font-bold tracking-tight text-slate-900 flex items-center gap-2">
             <Armchair className="text-[#ea4f93]" size={24} />
             Chair Details
           </div>
@@ -319,7 +319,7 @@ export default function ChairManagementPage() {
             </div>
             <div className="flex justify-between items-center border-b border-slate-100 pb-3">
               <span className="text-slate-500 font-medium">Status</span>
-              <span className={`px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider ${getStatusColor(detailChair.status).replace('border-2', '')}`}>
+              <span className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${getStatusColor(detailChair.status).replace('border-2', '')}`}>
                 {detailChair.status}
               </span>
             </div>
