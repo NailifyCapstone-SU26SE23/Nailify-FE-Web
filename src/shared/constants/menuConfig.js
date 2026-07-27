@@ -227,6 +227,26 @@ export const MENU_CONFIG = {
       label: "Chairs",
       to: ROUTES.managerChairs,
       icon: "armchair",
+    },
+    {
+      key: "manager-reschedule",
+      label: "Reschedule",
+      to: ROUTES.managerReschedule,
+      icon: "clock",
+      section: "Main",
+    },
+    {
+      key: "manager-waitlist",
+      label: "Salon Waitlist",
+      to: ROUTES.managerWaitlist,
+      icon: "support",
+      section: "Main",
+    },
+    {
+      key: "manager-queue",
+      label: "Walk-In Queue",
+      to: ROUTES.managerQueue,
+      icon: "users",
       section: "Main",
     },
     {

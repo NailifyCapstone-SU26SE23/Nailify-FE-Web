@@ -314,9 +314,16 @@ export function ManagerBookingDetailPage() {
 
     let totalDiscount = rawBooking?.discountAmount || 0;
     if (rawBooking?.discounts && Array.isArray(rawBooking.discounts)) {
-      totalDiscount = rawBooking.discounts.reduce((sum, discount) => sum + (discount?.amount || 0), 0);
+      const discountSum = rawBooking.discounts.reduce((sum, d) => sum + Math.abs(d?.amount || 0), 0);
+      if (discountSum > 0) {
+        totalDiscount = discountSum;
+      }
     }
-    const finalPrice = rawBooking?.totalPrice ? (rawBooking.totalPrice - totalDiscount) : 0;
+
+    // Original base price (total price before discount)
+    const basePrice = rawBooking?.price || (rawBooking?.totalPrice ? (rawBooking.totalPrice + totalDiscount) : 0);
+    // Final price the customer pays (totalPrice from API is the final price)
+    const finalPrice = rawBooking?.totalPrice || (basePrice - totalDiscount);
 
     return {
       ...rawBooking,
@@ -336,7 +343,7 @@ export function ManagerBookingDetailPage() {
       depositAmount: rawBooking.depositAmount,
       depositTone: rawBooking.depositAmount ? "text-[#059669] font-bold" : "text-[#D97706] font-bold",
       status: rawBooking.status || "Pending",
-      totalPrice: rawBooking.totalPrice,
+      totalPrice: basePrice,
       discounts: rawBooking?.discounts,
       discountAmount: totalDiscount,
       discountPercentage: rawBooking?.discountPercentage,
@@ -938,6 +945,7 @@ export function ManagerBookingDetailPage() {
                           <Maximize2 size={14} />
                         </div>
                         <img
+                          crossOrigin="anonymous"
                           src={getQrCodeSrc(booking.qrCode)}
                           alt="QR Code"
                           className="max-w-[130px] mx-auto rounded-xl shadow-xs"
