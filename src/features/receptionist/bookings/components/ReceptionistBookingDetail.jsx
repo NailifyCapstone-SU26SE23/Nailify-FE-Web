@@ -276,7 +276,7 @@ export function ReceptionistBookingDetail({ booking }) {
                 </div>
 
                 <div className="flex-1">
-                  <p className="text-xl font-black text-[#4a3741]">{booking.customerName}</p>
+                  <p className="text-xl font-bold text-[#4a3741]">{booking.customerName}</p>
                   {/* <div className="mt-3 flex flex-wrap gap-2">
                     {["VIP Member", "Sensitive Nails", "Frequent Customer"].map((tag, index) => (
                       <span
@@ -403,7 +403,7 @@ export function ReceptionistBookingDetail({ booking }) {
                 <div className="mt-4 flex items-end justify-between gap-4">
                   <div>
                     <p className="text-sm font-bold text-[#4a3741]">Total Amount</p>
-                    <p className="mt-2 text-[1.8rem] font-black leading-none text-[#eb5b92]">$256.50</p>
+                    <p className="mt-2 text-[1.8rem] font-bold leading-none text-[#eb5b92]">$256.50</p>
                   </div>
                   <div className="text-right text-[11px] text-[#a48796]">
                     <p>Deposit paid $80.00</p>

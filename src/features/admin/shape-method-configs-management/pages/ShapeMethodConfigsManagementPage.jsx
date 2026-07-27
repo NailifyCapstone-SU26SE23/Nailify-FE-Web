@@ -375,7 +375,7 @@ export function ShapeMethodConfigsManagementPage() {
 
       <header className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-[#432744]">Shape Method Configs</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-[#432744]">Shape Method Configs</h1>
           <p className="mt-1 text-sm font-medium text-[#b58a9f]">Manage configuration and pricing for nail shape methods.</p>
         </div>
 
@@ -459,11 +459,10 @@ export function ShapeMethodConfigsManagementPage() {
                     key={item}
                     type="button"
                     onClick={() => handlePageChange(item)}
-                    className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all ${
-                      item === metaData.currentPage
+                    className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all ${item === metaData.currentPage
                         ? "bg-[#ea4f93] text-white shadow-md"
                         : "text-[#5f4a5c] hover:bg-[#ffe8f2] hover:text-[#ea4f93]"
-                    }`}
+                      }`}
                   >
                     {item}
                   </button>

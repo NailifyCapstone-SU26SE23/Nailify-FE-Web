@@ -402,7 +402,7 @@ export function ReceptionistCheckoutPaymentPage() {
               <ArrowLeft size={14} />
               Back to detail
             </button>
-            <p className="mt-3 text-2xl font-black text-[#412643]">Checkout & Payment</p>
+            <p className="mt-3 text-2xl font-bold text-[#412643]">Checkout & Payment</p>
             <p className="mt-1 text-sm text-[#b38a9f]">Complete customer payment and print receipt.</p>
           </div>
 
@@ -429,13 +429,13 @@ export function ReceptionistCheckoutPaymentPage() {
                     className="h-16 w-16 rounded-[20px] border-2 border-[#f4d6e2] object-cover"
                   />
                 ) : (
-                  <div className="flex h-16 w-16 items-center justify-center rounded-[20px] border-2 border-[#f4d6e2] bg-[linear-gradient(180deg,#ffd6e5_0%,#ef5b94_100%)] text-lg font-black text-white">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-[20px] border-2 border-[#f4d6e2] bg-[linear-gradient(180deg,#ffd6e5_0%,#ef5b94_100%)] text-lg font-bold text-white">
                     {customerInitials}
                   </div>
                 )}
 
                 <div>
-                  <p className="text-xl font-black text-[#4a3741]">{customerDisplayName}</p>
+                  <p className="text-xl font-bold text-[#4a3741]">{customerDisplayName}</p>
                   <p className="mt-1 text-xs text-[#a48796]">{customerProfile?.phone || booking.customerName || "--"}</p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <span className="rounded-full bg-[#fff0c8] px-3 py-1 text-[10px] font-bold text-[#b18211]">
@@ -525,13 +525,13 @@ export function ReceptionistCheckoutPaymentPage() {
             <div className="mt-4 rounded-[16px] border border-[#f3cade] bg-[linear-gradient(90deg,#fff2f7_0%,#ffeaf2_100%)] px-4 py-4">
               <div className="flex items-center justify-between gap-3">
                 <span className="text-sm font-extrabold text-[#d54186]">Remaining Amount</span>
-                <span className="text-2xl font-black text-[#d54186]">{formatCurrency(remainingValue)}</span>
+                <span className="text-2xl font-bold text-[#d54186]">{formatCurrency(remainingValue)}</span>
               </div>
             </div>
 
             <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#f5d7e4] pt-4">
               <span className="text-lg font-extrabold text-[#412643]">Total Amount</span>
-              <span className="text-2xl font-black text-green-700">{formatCurrency(totalValue)}</span>
+              <span className="text-2xl font-bold text-green-700">{formatCurrency(totalValue)}</span>
             </div>
           </SummaryCard>
 
@@ -654,7 +654,7 @@ export function ReceptionistCheckoutPaymentPage() {
                   {isCreatingPayment ? <LoaderCircle size={14} className="animate-spin" /> : null}
                   Checkout with PayOS
                 </button>
-                
+
               </div>
             )}
           </SummaryCard>
@@ -662,7 +662,7 @@ export function ReceptionistCheckoutPaymentPage() {
           <SummaryCard title="Receipt Preview">
             <div className="rounded-[20px] border border-[#f3d7e2] bg-white px-5 py-5">
               <div className="text-center">
-                <p className="text-lg font-black text-[#cf2e7a]">{salonProfile?.name || booking.salonName || "Nailify Salon"}</p>
+                <p className="text-lg font-bold text-[#cf2e7a]">{salonProfile?.name || booking.salonName || "Nailify Salon"}</p>
                 <p className="mt-1 text-xs text-[#b38a9f]">{salonProfile?.address || "Salon address not available"}</p>
                 <p className="mt-1 text-xs text-[#b38a9f]">{salonProfile?.phone || "--"} | nailify.vn</p>
               </div>
@@ -787,7 +787,7 @@ export function ReceptionistCheckoutPaymentPage() {
           <SummaryCard title="Customer Loyalty">
             <div className="rounded-[18px] bg-[linear-gradient(180deg,#fff8e5_0%,#fff3c7_100%)] px-4 py-4 text-center">
               <p className="text-xs font-bold text-[#b18211]">Gold Member</p>
-              <p className="mt-3 text-3xl font-black text-[#d54186]">+63 pts</p>
+              <p className="mt-3 text-3xl font-bold text-[#d54186]">+63 pts</p>
               <p className="mt-1 text-xs text-[#8f7b88]">Earned from this visit</p>
             </div>
             <div className="mt-3 rounded-[16px] border border-[#f3d7e2] bg-[#fffafb] px-4 py-3 text-center text-xs text-[#8f7b88]">

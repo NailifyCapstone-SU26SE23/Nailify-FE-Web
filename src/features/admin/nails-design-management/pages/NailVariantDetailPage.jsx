@@ -483,7 +483,7 @@ export function NailVariantDetailPage() {
             <p className="text-xs text-[#c694ad]">
               Nail Designs / <span className="text-[#ea4f93]">Variant Detail</span>
             </p>
-            <h1 className="mt-2 text-2xl font-black text-[#432744]">{variant.name}</h1>
+            <h1 className="mt-2 text-2xl font-bold text-[#432744]">{variant.name}</h1>
             <p className="mt-1 max-w-3xl text-sm text-[#8c7085]">{variant.description || "--"}</p>
           </div>
           <div className="flex flex-wrap gap-2">

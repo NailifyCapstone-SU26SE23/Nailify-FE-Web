@@ -86,7 +86,7 @@ function getHeaderContent(pathname, menus) {
     case "staff-bookings":
     case "receptionist-bookings":
       return {
-        title: "Booking Management",
+        title: "Bookings",
         description: "Monitor bookings across all Nailify salon locations.",
       };
     case "admin-salons":

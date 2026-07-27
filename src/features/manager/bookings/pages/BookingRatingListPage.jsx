@@ -379,7 +379,7 @@ export function BookingRatingListPage() {
                 </span>
               )}
             </div>
-            <h1 className="text-3xl font-black text-[#2d1b35] tracking-tight md:text-4xl">
+            <h1 className="text-3xl font-bold text-[#2d1b35] tracking-tight md:text-4xl">
               Booking Reviews
             </h1>
             <p className="text-xs md:text-sm text-[#a88a9f] max-w-[65ch] leading-relaxed">
@@ -655,7 +655,7 @@ export function BookingRatingListPage() {
               {/* Signature card: sentiment gauge */}
               <div className="bg-white/80 backdrop-blur-md rounded-[2.25rem] border border-[#f1e7ed]/60 p-6 shadow-[0_12px_32px_rgba(0,0,0,0.02)] space-y-4">
                 <div className="space-y-1">
-                  <h3 className="text-sm font-black text-[#2d1b35]">Rating Summary</h3>
+                  <h3 className="text-sm font-bold text-[#2d1b35]">Rating Summary</h3>
                   <p className="text-[10px] text-[#a88a9f]">Aggregated satisfaction score index.</p>
                 </div>
 
@@ -686,7 +686,7 @@ export function BookingRatingListPage() {
               {/* Sub-criteria indices */}
               <div className="bg-white/80 backdrop-blur-md rounded-[2.25rem] border border-[#f1e7ed]/60 p-6 shadow-[0_12px_32px_rgba(0,0,0,0.02)] space-y-5">
                 <div className="space-y-1">
-                  <h3 className="text-sm font-black text-[#2d1b35]">Satisfaction Indices</h3>
+                  <h3 className="text-sm font-bold text-[#2d1b35]">Satisfaction Indices</h3>
                   <p className="text-[10px] text-[#a88a9f]">Core indicators mapping customer loyalty.</p>
                 </div>
 
@@ -768,7 +768,7 @@ export function BookingRatingListPage() {
       {/* Response Modal */}
       <Modal
         title={
-          <div className="flex items-center gap-2 text-[#2d1b35] font-black text-base">
+          <div className="flex items-center gap-2 text-[#2d1b35] font-bold text-base">
             <MessageSquare size={16} className="text-[#ea4f93]" />
             <span>Respond to Customer Review</span>
           </div>

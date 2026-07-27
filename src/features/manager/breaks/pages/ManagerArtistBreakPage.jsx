@@ -262,7 +262,7 @@ export function ManagerArtistBreakPage() {
             <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1 text-xs font-extrabold text-[#F2D6E3] backdrop-blur-md border border-white/15">
               <Sparkles size={14} className="text-[#C97A9E]" /> Manager Portal • Shift Management
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white flex items-center gap-3">
               <Coffee size={28} className="text-[#C97A9E]" />
               Artist Break Requests
             </h1>
@@ -276,7 +276,7 @@ export function ManagerArtistBreakPage() {
               onClick={() => {
                 setFilterStatus("pending");
               }}
-              className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#C97A9E] to-[#B86B8E] px-4 py-2.5 text-xs font-black text-white shadow-lg shadow-[#C97A9E]/30 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+              className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#C97A9E] to-[#B86B8E] px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#C97A9E]/30 hover:scale-105 active:scale-95 transition-all cursor-pointer"
             >
               <AlertCircle size={15} />
               <span>Review Pending ({stats.pending})</span>
@@ -299,22 +299,21 @@ export function ManagerArtistBreakPage() {
         {/* Pending Card */}
         <div
           onClick={() => setFilterStatus("pending")}
-          className={`group relative overflow-hidden rounded-3xl p-5 transition-all duration-300 cursor-pointer border ${
-            filterStatus === "pending"
+          className={`group relative overflow-hidden rounded-3xl p-5 transition-all duration-300 cursor-pointer border ${filterStatus === "pending"
               ? "bg-gradient-to-br from-amber-500/20 via-amber-500/10 to-amber-500/5 border-amber-400 ring-2 ring-amber-400/50 shadow-xl shadow-amber-500/10"
               : "bg-white border-gray-100 hover:border-amber-300 hover:shadow-lg hover:-translate-y-1"
-          }`}
+            }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-black uppercase tracking-wider text-amber-800 flex items-center gap-1.5">
+            <span className="text-xs font-bold uppercase tracking-wider text-amber-800 flex items-center gap-1.5">
               <span className="flex h-2 w-2 rounded-full bg-amber-500 animate-ping"></span>
               Pending Approval
             </span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-100/80 text-amber-800 font-black text-xs group-hover:scale-110 transition-transform">
+            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-100/80 text-amber-800 font-bold text-xs group-hover:scale-110 transition-transform">
               ⏳
             </div>
           </div>
-          <p className="mt-3 text-3xl font-black text-amber-950 tracking-tight">{stats.pending}</p>
+          <p className="mt-3 text-3xl font-bold text-amber-950 tracking-tight">{stats.pending}</p>
           <div className="mt-2 flex items-center justify-between pt-2 border-t border-amber-100/60">
             <span className="text-[11px] font-semibold text-amber-800">Action required</span>
             <ArrowUpRight size={14} className="text-amber-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
@@ -324,22 +323,21 @@ export function ManagerArtistBreakPage() {
         {/* Approved Card */}
         <div
           onClick={() => setFilterStatus("approved")}
-          className={`group relative overflow-hidden rounded-3xl p-5 transition-all duration-300 cursor-pointer border ${
-            filterStatus === "approved"
+          className={`group relative overflow-hidden rounded-3xl p-5 transition-all duration-300 cursor-pointer border ${filterStatus === "approved"
               ? "bg-gradient-to-br from-emerald-500/20 via-emerald-500/10 to-emerald-500/5 border-emerald-400 ring-2 ring-emerald-400/50 shadow-xl shadow-emerald-500/10"
               : "bg-white border-gray-100 hover:border-emerald-300 hover:shadow-lg hover:-translate-y-1"
-          }`}
+            }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-black uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
               <CheckCircle2 size={13} className="text-emerald-600" />
               Approved Breaks
             </span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-emerald-100/80 text-emerald-800 font-black text-xs group-hover:scale-110 transition-transform">
+            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-emerald-100/80 text-emerald-800 font-bold text-xs group-hover:scale-110 transition-transform">
               🟢
             </div>
           </div>
-          <p className="mt-3 text-3xl font-black text-emerald-950 tracking-tight">{stats.approved}</p>
+          <p className="mt-3 text-3xl font-bold text-emerald-950 tracking-tight">{stats.approved}</p>
           <div className="mt-2 flex items-center justify-between pt-2 border-t border-emerald-100/60">
             <span className="text-[11px] font-semibold text-emerald-800">Approved shift breaks</span>
             <ArrowUpRight size={14} className="text-emerald-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
@@ -349,22 +347,21 @@ export function ManagerArtistBreakPage() {
         {/* Rejected Card */}
         <div
           onClick={() => setFilterStatus("rejected")}
-          className={`group relative overflow-hidden rounded-3xl p-5 transition-all duration-300 cursor-pointer border ${
-            filterStatus === "rejected"
+          className={`group relative overflow-hidden rounded-3xl p-5 transition-all duration-300 cursor-pointer border ${filterStatus === "rejected"
               ? "bg-gradient-to-br from-rose-500/20 via-rose-500/10 to-rose-500/5 border-rose-400 ring-2 ring-rose-400/50 shadow-xl shadow-rose-500/10"
               : "bg-white border-gray-100 hover:border-rose-300 hover:shadow-lg hover:-translate-y-1"
-          }`}
+            }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-black uppercase tracking-wider text-rose-800 flex items-center gap-1.5">
+            <span className="text-xs font-bold uppercase tracking-wider text-rose-800 flex items-center gap-1.5">
               <XCircle size={13} className="text-rose-600" />
               Rejected Requests
             </span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-rose-100/80 text-rose-800 font-black text-xs group-hover:scale-110 transition-transform">
+            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-rose-100/80 text-rose-800 font-bold text-xs group-hover:scale-110 transition-transform">
               🔴
             </div>
           </div>
-          <p className="mt-3 text-3xl font-black text-rose-950 tracking-tight">{stats.rejected}</p>
+          <p className="mt-3 text-3xl font-bold text-rose-950 tracking-tight">{stats.rejected}</p>
           <div className="mt-2 flex items-center justify-between pt-2 border-t border-rose-100/60">
             <span className="text-[11px] font-semibold text-rose-800">Declined requests</span>
             <ArrowUpRight size={14} className="text-rose-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
@@ -374,22 +371,21 @@ export function ManagerArtistBreakPage() {
         {/* Total Card */}
         <div
           onClick={() => setFilterStatus("all")}
-          className={`group relative overflow-hidden rounded-3xl p-5 transition-all duration-300 cursor-pointer border ${
-            filterStatus === "all"
+          className={`group relative overflow-hidden rounded-3xl p-5 transition-all duration-300 cursor-pointer border ${filterStatus === "all"
               ? "bg-gradient-to-br from-[#C97A9E]/25 via-[#C97A9E]/10 to-[#C97A9E]/5 border-[#C97A9E] ring-2 ring-[#C97A9E]/40 shadow-xl shadow-[#C97A9E]/10"
               : "bg-white border-gray-100 hover:border-purple-300 hover:shadow-lg hover:-translate-y-1"
-          }`}
+            }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-black uppercase tracking-wider text-[#9E4D76] flex items-center gap-1.5">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#9E4D76] flex items-center gap-1.5">
               <Sparkles size={13} className="text-[#C97A9E]" />
               Total Requests
             </span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#FAF0F5] text-[#C97A9E] font-black text-xs group-hover:scale-110 transition-transform">
+            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#FAF0F5] text-[#C97A9E] font-bold text-xs group-hover:scale-110 transition-transform">
               📋
             </div>
           </div>
-          <p className="mt-3 text-3xl font-black text-[#221F26] tracking-tight">{stats.total}</p>
+          <p className="mt-3 text-3xl font-bold text-[#221F26] tracking-tight">{stats.total}</p>
           <div className="mt-2 flex items-center justify-between pt-2 border-t border-[#F2D6E3]/60">
             <span className="text-[11px] font-semibold text-[#9E4D76]">All submitted requests</span>
             <ArrowUpRight size={14} className="text-[#C97A9E] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
@@ -405,44 +401,40 @@ export function ManagerArtistBreakPage() {
             <button
               type="button"
               onClick={() => setFilterStatus("all")}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-                filterStatus === "all"
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${filterStatus === "all"
                   ? "bg-white text-[#221F26] shadow-sm scale-102"
                   : "text-gray-500 hover:text-gray-900"
-              }`}
+                }`}
             >
               All ({stats.total})
             </button>
             <button
               type="button"
               onClick={() => setFilterStatus("pending")}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-                filterStatus === "pending"
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${filterStatus === "pending"
                   ? "bg-amber-500 text-white shadow-md shadow-amber-500/30 scale-102"
                   : "text-amber-800 hover:bg-amber-100/60"
-              }`}
+                }`}
             >
               ⏳ Pending ({stats.pending})
             </button>
             <button
               type="button"
               onClick={() => setFilterStatus("approved")}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-                filterStatus === "approved"
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${filterStatus === "approved"
                   ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/30 scale-102"
                   : "text-emerald-800 hover:bg-emerald-100/60"
-              }`}
+                }`}
             >
               🟢 Approved ({stats.approved})
             </button>
             <button
               type="button"
               onClick={() => setFilterStatus("rejected")}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-                filterStatus === "rejected"
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${filterStatus === "rejected"
                   ? "bg-rose-600 text-white shadow-md shadow-rose-600/30 scale-102"
                   : "text-rose-800 hover:bg-rose-100/60"
-              }`}
+                }`}
             >
               🔴 Rejected ({stats.rejected})
             </button>
@@ -539,7 +531,7 @@ export function ManagerArtistBreakPage() {
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-100">
                 <thead className="bg-gradient-to-r from-[#FAF0F5] via-[#FAF5F8] to-[#FAF0F5]">
-                  <tr className="text-left text-[11px] uppercase tracking-wider font-black text-[#8C4368]">
+                  <tr className="text-left text-[11px] uppercase tracking-wider font-bold text-[#8C4368]">
                     <th className="px-6 py-4">Nail Artist</th>
                     <th className="px-6 py-4">Break Date</th>
                     <th className="px-6 py-4">Time Slot & Duration</th>
@@ -564,7 +556,7 @@ export function ManagerArtistBreakPage() {
                         {/* Nail Artist */}
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[#C97A9E] to-[#9E4D76] text-white font-black text-sm shadow-md shadow-[#C97A9E]/20 shrink-0">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[#C97A9E] to-[#9E4D76] text-white font-bold text-sm shadow-md shadow-[#C97A9E]/20 shrink-0">
                               {artistName.charAt(0).toUpperCase()}
                             </div>
                             <div className="flex flex-col min-w-0">
@@ -741,7 +733,7 @@ export function ManagerArtistBreakPage() {
       >
         <div className="p-2 space-y-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center font-black shrink-0 shadow-xs">
+            <div className="w-10 h-10 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center font-bold shrink-0 shadow-xs">
               <XCircle size={22} />
             </div>
             <div>

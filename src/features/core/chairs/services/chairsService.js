@@ -19,4 +19,14 @@ export const chairsService = {
     const response = await axiosClient.get(`/chairs/${chairId}`);
     return response.data?.data || null;
   },
+
+  getSalonBookings: async (salonId, params) => {
+    const response = await axiosClient.get(`/Bookings/salon/${salonId}`, { params });
+    return response.data?.data || { items: [], metaData: {} };
+  },
+
+  assignBookingToChair: async (bookingId, chairId) => {
+    const response = await axiosClient.post(`/Bookings/${bookingId}/assign-chair/${chairId}`);
+    return response.data?.data || null;
+  }
 };

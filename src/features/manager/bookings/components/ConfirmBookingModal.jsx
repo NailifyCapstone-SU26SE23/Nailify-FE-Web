@@ -55,7 +55,7 @@ export function ConfirmBookingModal({
             <Check size={26} className="drop-shadow-md animate-pulse" />
           </div>
           <div>
-            <h2 className="text-xl font-black tracking-tight">Confirm Appointment</h2>
+            <h2 className="text-xl font-bold tracking-tight">Confirm Appointment</h2>
             <p className="mt-1 text-xs text-emerald-100/90 font-medium">Review details and confirm customer's appointment request</p>
           </div>
         </div>
@@ -66,7 +66,7 @@ export function ConfirmBookingModal({
         {/* Booking Details */}
         {Object.keys(booking).length > 0 && (
           <div className="space-y-3 rounded-2xl border border-[#eaf9f2] bg-gradient-to-b from-[#f8fdfb] to-[#f2faf5] p-4 shadow-[0_4px_16px_rgba(47,162,95,0.02)]">
-            <h3 className="text-[10px] font-black uppercase tracking-wider text-[#2fa25f]/80">
+            <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#2fa25f]/80">
               Appointment Details
             </h3>
             <div className="grid grid-cols-2 gap-x-4 gap-y-3 pt-1">
@@ -95,7 +95,7 @@ export function ConfirmBookingModal({
               {booking.totalPrice && (
                 <div className="col-span-2 flex items-center justify-between border-t border-[#e2f5ec] pt-2 mt-1 text-xs">
                   <span className="font-semibold text-[#8e7b89]">Total Value:</span>
-                  <span className="text-base font-black text-[#2fa25f]">{booking.totalPrice}</span>
+                  <span className="text-base font-bold text-[#2fa25f]">{booking.totalPrice}</span>
                 </div>
               )}
             </div>

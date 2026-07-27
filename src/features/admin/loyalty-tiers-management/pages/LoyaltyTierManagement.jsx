@@ -493,7 +493,7 @@ export function LoyaltyTierManagement() {
                                 <Sparkles size={16} />
                             </div>
                             <div>
-                                <h4 className="text-sm font-black text-[#3f2034]">Loyalty System Blueprint</h4>
+                                <h4 className="text-sm font-bold text-[#3f2034]">Loyalty System Blueprint</h4>
                                 <p className="mt-1 text-xs leading-relaxed text-[#7c566f]">
                                     Define rank boundaries using <strong>Min/Max Lifetime Points</strong> thresholds. Member discount rates apply checkout invoice markdowns at reception terminals automatically. Rank order also sets the roman-numeral stamp shown on each card face.
                                 </p>
@@ -568,7 +568,7 @@ export function LoyaltyTierManagement() {
                                                                 backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(255,255,255,0.3) 3px, rgba(255,255,255,0.3) 4px)"
                                                             }} />
                                                         </div>
-                                                        <span className="mt-1.5 text-[8px] font-black uppercase tracking-[0.2em] opacity-80">
+                                                        <span className="mt-1.5 text-[8px] font-bold uppercase tracking-[0.2em] opacity-80">
                                                             Rank {toRoman(tier.sortOrder)}
                                                         </span>
                                                     </div>
@@ -592,7 +592,7 @@ export function LoyaltyTierManagement() {
                                                 </div>
 
                                                 <div>
-                                                    <p className="text-[9px] font-black uppercase tracking-[0.25em] opacity-80">
+                                                    <p className="text-[9px] font-bold uppercase tracking-[0.25em] opacity-80">
                                                         Nailify Membership
                                                     </p>
                                                     <h4 className="nailify-display mt-0.5 truncate text-2xl font-semibold leading-tight">
@@ -612,7 +612,7 @@ export function LoyaltyTierManagement() {
                                                     </div>
                                                     <div className="text-right">
                                                         <span className="text-[8px] font-bold uppercase tracking-widest opacity-70 block">Discount</span>
-                                                        <span className="text-lg font-black">
+                                                        <span className="text-lg font-bold">
                                                             {tier.discountRate > 0 ? `${tier.discountRate}%` : "Standard"}
                                                         </span>
                                                     </div>
@@ -692,7 +692,7 @@ export function LoyaltyTierManagement() {
                         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#fff0f6] text-[#ea4f93] mb-4">
                             <Info size={20} />
                         </div>
-                        <h4 className="text-base font-black text-[#3f2034]">No Loyalty Tiers Match Your Filter</h4>
+                        <h4 className="text-base font-bold text-[#3f2034]">No Loyalty Tiers Match Your Filter</h4>
                         <p className="mt-2 text-sm text-[#8c7484] max-w-sm">
                             Try adjusting your search criteria, clearing your search query, or create a brand new loyalty tier to populate your dashboard.
                         </p>
@@ -766,7 +766,7 @@ export function LoyaltyTierManagement() {
                                     {/* Card Style: live preview mirrors the exact catalog card */}
                                     <div className="flex flex-col gap-4 rounded-3xl border border-[#f5e3ed] bg-[#fffbfc] p-4">
                                         <div className="flex items-center justify-between">
-                                            <label className="text-xs font-black uppercase tracking-wider text-[#7a6473]">
+                                            <label className="text-xs font-bold uppercase tracking-wider text-[#7a6473]">
                                                 Card Style
                                             </label>
                                             <span className="text-[10px] font-bold uppercase tracking-wider text-[#c099b2]">
@@ -793,7 +793,7 @@ export function LoyaltyTierManagement() {
                                                     </div>
                                                 </div>
                                                 <div>
-                                                    <p className="text-[8px] font-black uppercase tracking-[0.2em] opacity-85">
+                                                    <p className="text-[8px] font-bold uppercase tracking-[0.2em] opacity-85">
                                                         Nailify Membership
                                                     </p>
                                                     <h5 className="nailify-display mt-0.5 truncate text-lg font-semibold">
@@ -836,7 +836,7 @@ export function LoyaltyTierManagement() {
 
                                         {/* Custom Background Color */}
                                         <div className="flex flex-col gap-2 border-t border-[#fcecf4] pt-4">
-                                            <label className="text-[11px] font-black uppercase tracking-wider text-[#7a6473]">
+                                            <label className="text-[11px] font-bold uppercase tracking-wider text-[#7a6473]">
                                                 Card Background
                                             </label>
                                             <div className="flex items-center gap-2">
@@ -869,7 +869,7 @@ export function LoyaltyTierManagement() {
 
                                         {/* Custom Text Color */}
                                         <div className="flex flex-col gap-2">
-                                            <label className="text-[11px] font-black uppercase tracking-wider text-[#7a6473]">
+                                            <label className="text-[11px] font-bold uppercase tracking-wider text-[#7a6473]">
                                                 Text Color
                                             </label>
                                             <div className="flex items-center gap-2">
@@ -897,7 +897,7 @@ export function LoyaltyTierManagement() {
 
                                     {/* Tier Name */}
                                     <div className="flex flex-col gap-2">
-                                        <label className="text-xs font-black uppercase tracking-wider text-[#7a6473]">
+                                        <label className="text-xs font-bold uppercase tracking-wider text-[#7a6473]">
                                             Tier Name
                                         </label>
                                         <input
@@ -919,7 +919,7 @@ export function LoyaltyTierManagement() {
                                     {/* Points Range: Min & Max Lifetime Points */}
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="flex flex-col gap-2">
-                                            <label className="text-xs font-black uppercase tracking-wider text-[#7a6473]">
+                                            <label className="text-xs font-bold uppercase tracking-wider text-[#7a6473]">
                                                 Min Lifetime Points
                                             </label>
                                             <input
@@ -939,7 +939,7 @@ export function LoyaltyTierManagement() {
                                         </div>
 
                                         <div className="flex flex-col gap-2">
-                                            <label className="text-xs font-black uppercase tracking-wider text-[#7a6473]">
+                                            <label className="text-xs font-bold uppercase tracking-wider text-[#7a6473]">
                                                 Max Lifetime Points
                                             </label>
                                             <input
@@ -962,7 +962,7 @@ export function LoyaltyTierManagement() {
                                     {/* Discount & Sort Order */}
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="flex flex-col gap-2">
-                                            <label className="text-xs font-black uppercase tracking-wider text-[#7a6473]">
+                                            <label className="text-xs font-bold uppercase tracking-wider text-[#7a6473]">
                                                 Discount Rate (%)
                                             </label>
                                             <div className="relative">
@@ -987,7 +987,7 @@ export function LoyaltyTierManagement() {
                                         </div>
 
                                         <div className="flex flex-col gap-2">
-                                            <label className="text-xs font-black uppercase tracking-wider text-[#7a6473]">
+                                            <label className="text-xs font-bold uppercase tracking-wider text-[#7a6473]">
                                                 Sort Order
                                             </label>
                                             <input
@@ -1003,7 +1003,7 @@ export function LoyaltyTierManagement() {
 
                                     {/* Badge Image Upload */}
                                     <div className="flex flex-col gap-2">
-                                        <label className="text-xs font-black uppercase tracking-wider text-[#7a6473]">
+                                        <label className="text-xs font-bold uppercase tracking-wider text-[#7a6473]">
                                             Badge Image
                                         </label>
                                         <div className="flex items-center gap-3">
@@ -1060,7 +1060,7 @@ export function LoyaltyTierManagement() {
 
                                     {/* Description */}
                                     <div className="flex flex-col gap-2">
-                                        <label className="text-xs font-black uppercase tracking-wider text-[#7a6473]">
+                                        <label className="text-xs font-bold uppercase tracking-wider text-[#7a6473]">
                                             Description
                                         </label>
                                         <textarea

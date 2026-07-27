@@ -923,7 +923,7 @@ export function ManagerBookingListPage() {
             <div className="grid grid-cols-3 gap-2.5 w-full lg:w-[380px]">
               <div className="rounded-2xl border border-white/80 bg-white/90 p-3 shadow-2xs backdrop-blur-md text-center">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">Today</p>
-                <p className="mt-0.5 text-xl font-black text-[#2B182B]">
+                <p className="mt-0.5 text-xl font-bold text-[#2B182B]">
                   {bookings.filter(b => { const d = dayjs(b.bookingDate || b.createdAt); return d.isValid() && d.isSame(dayjs(), "day"); }).length}
                 </p>
                 <p className="text-[9px] text-[#E84F93] font-semibold">Appointments</p>
@@ -931,13 +931,13 @@ export function ManagerBookingListPage() {
 
               <div className="rounded-2xl border border-white/80 bg-white/90 p-3 shadow-2xs backdrop-blur-md text-center">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">In View</p>
-                <p className="mt-0.5 text-xl font-black text-[#2B182B]">{filteredAppointments.length}</p>
+                <p className="mt-0.5 text-xl font-bold text-[#2B182B]">{filteredAppointments.length}</p>
                 <p className="text-[9px] text-[#4F46E5] font-semibold">Bookings</p>
               </div>
 
               <div className="rounded-2xl border border-white/80 bg-white/90 p-3 shadow-2xs backdrop-blur-md text-center">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">Action</p>
-                <p className="mt-0.5 text-xl font-black text-[#D97706]">
+                <p className="mt-0.5 text-xl font-bold text-[#D97706]">
                   {bookings.filter(b => b.status === "Pending" || !(b.nailArtistId || b.staffId || b.staffArtistId || b.artistId)).length}
                 </p>
                 <p className="text-[9px] text-[#D97706] font-semibold">Pending</p>
@@ -1170,7 +1170,7 @@ export function ManagerBookingListPage() {
 
                                 <td className="px-4 py-3.5 align-middle">
                                   <div className="flex min-w-0 items-center gap-2.5">
-                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#FF9EBF] to-[#E84F93] text-xs font-black text-white shadow-sm border border-white">
+                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#FF9EBF] to-[#E84F93] text-xs font-bold text-white shadow-sm border border-white">
                                       {row.initials}
                                     </div>
                                     <div className="min-w-0">
@@ -1319,7 +1319,7 @@ export function ManagerBookingListPage() {
                                   return (
                                     <th key={artistItem.id || displayName} className="min-w-[175px] p-3 text-center border-r border-[#F3E2EC] last:border-r-0">
                                       <div className="flex items-center justify-center gap-1.5 min-w-0">
-                                        <div className={`h-6 w-6 rounded-full shrink-0 flex items-center justify-center text-[10px] text-white font-black ${isUnassigned ? "bg-[#D97706]" : "bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9]"}`}>
+                                        <div className={`h-6 w-6 rounded-full shrink-0 flex items-center justify-center text-[10px] text-white font-bold ${isUnassigned ? "bg-[#D97706]" : "bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9]"}`}>
                                           {initials}
                                         </div>
                                         <span className="truncate" title={displayName}>{displayName}</span>
@@ -1430,7 +1430,7 @@ export function ManagerBookingListPage() {
                                 >
                                   <div className="text-center border-b border-[#F3E2EC] pb-2 mb-2">
                                     <p className="text-[10px] font-bold text-[#9E8497] uppercase">{currentDay.format("ddd")}</p>
-                                    <p className={`text-sm font-black ${currentDay.isSame(dayjs(), "day") ? "text-[#E84F93]" : "text-[#2B182B]"}`}>
+                                    <p className={`text-sm font-bold ${currentDay.isSame(dayjs(), "day") ? "text-[#E84F93]" : "text-[#2B182B]"}`}>
                                       {currentDay.format("D")}
                                     </p>
                                   </div>
@@ -1538,7 +1538,7 @@ export function ManagerBookingListPage() {
                                       {cellDay.format("D")}
                                     </span>
                                     {dayBookings.length > 0 && (
-                                      <span className="rounded-full bg-[#FFF0F6] px-1.5 py-0.5 text-[9px] font-black text-[#E84F93] hover:bg-[#FCE2EE] transition">
+                                      <span className="rounded-full bg-[#FFF0F6] px-1.5 py-0.5 text-[9px] font-bold text-[#E84F93] hover:bg-[#FCE2EE] transition">
                                         {dayBookings.length}
                                       </span>
                                     )}
@@ -1733,7 +1733,7 @@ export function ManagerBookingListPage() {
                 <div className="mt-4 space-y-3.5">
                   {staffWorkloadData.map((staff, i) => (
                     <div key={i} className="flex items-center gap-3">
-                      <div className={`flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br ${staff.tone} text-xs font-black text-white shadow-xs`}>
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br ${staff.tone} text-xs font-bold text-white shadow-xs`}>
                         {staff.name.split(" ").map((p) => p[0]).join("")}
                       </div>
                       <div className="min-w-0 flex-1">
@@ -2004,7 +2004,7 @@ export function ManagerBookingListPage() {
             <div className="p-6 space-y-5">
               <div className="flex items-center justify-between border-b border-[#F3E2EC] pb-4">
                 <div>
-                  <h3 className="text-lg font-black text-[#2B182B] flex items-center gap-2">
+                  <h3 className="text-lg font-bold text-[#2B182B] flex items-center gap-2">
                     <Calendar className="text-[#E84F93]" size={20} />
                     Lịch hẹn ngày {selectedDateForModal.format("DD/MM/YYYY")}
                   </h3>
@@ -2042,7 +2042,7 @@ export function ManagerBookingListPage() {
                     >
                       <div className="space-y-1 min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-black text-sm text-[#2B182B] truncate">{b.customer}</span>
+                          <span className="font-bold text-sm text-[#2B182B] truncate">{b.customer}</span>
                           <StatusPill status={b.status} compact />
                         </div>
                         <p className="text-xs text-[#6B5B68] truncate">{b.service}</p>
@@ -2057,7 +2057,7 @@ export function ManagerBookingListPage() {
                       </div>
 
                       <div className="text-right shrink-0 flex flex-col items-end gap-1.5">
-                        <span className="text-xs font-black text-[#E84F93]">{formatVND(b.totalPrice)}</span>
+                        <span className="text-xs font-bold text-[#E84F93]">{formatVND(b.totalPrice)}</span>
                         <span className="text-[10px] font-bold text-[#8B5CF6] group-hover:underline flex items-center gap-0.5">
                           Chi tiết <ChevronRight size={12} />
                         </span>

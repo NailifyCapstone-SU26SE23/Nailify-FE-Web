@@ -49,13 +49,12 @@ const MonthCard = ({ monthIndex, year, onClick, selected, hasSelectedDays }) => 
       whileTap={!isPastMonth ? { scale: 0.97 } : undefined}
       onClick={onClick}
       disabled={isPastMonth}
-      className={`relative flex flex-col items-center justify-center gap-1.5 rounded-2xl border p-5 text-center transition-all duration-200 ${
-        selected
+      className={`relative flex flex-col items-center justify-center gap-1.5 rounded-2xl border p-5 text-center transition-all duration-200 ${selected
           ? "border-[#ea4f93] bg-[#fff0f6] shadow-[0_10px_20px_rgba(235,90,153,0.12)]"
           : isPastMonth
-          ? "border-[#f5eef2] bg-[#fcf9fb] opacity-45 cursor-not-allowed"
-          : "border-[#f5e3ed] bg-white hover:border-[#eba2c6] hover:bg-[#fffbfc]"
-      }`}
+            ? "border-[#f5eef2] bg-[#fcf9fb] opacity-45 cursor-not-allowed"
+            : "border-[#f5e3ed] bg-white hover:border-[#eba2c6] hover:bg-[#fffbfc]"
+        }`}
     >
       {isCurrentMonth && (
         <span className="absolute right-3 top-3 h-1.5 w-1.5 rounded-full bg-[#ea4f93]" title="Current month" />
@@ -136,13 +135,12 @@ const MonthView = ({ monthIndex, year, onBack, onSelectDay, selectedDays = [] })
               whileTap={!isPast ? { scale: 0.92 } : undefined}
               onClick={() => onSelectDay(day)}
               disabled={isPast}
-              className={`aspect-square rounded-xl text-sm font-bold transition-all ${
-                selectedDays.includes(day)
+              className={`aspect-square rounded-xl text-sm font-bold transition-all ${selectedDays.includes(day)
                   ? "bg-[#ea4f93] text-white shadow-[0_6px_14px_rgba(235,90,153,0.28)]"
                   : isPast
-                  ? "bg-[#f5ebf1] text-[#bda3b3] cursor-not-allowed opacity-50"
-                  : "bg-[#fff6fa] text-[#7a5b6e] hover:bg-[#ffe3f0]"
-              }`}
+                    ? "bg-[#f5ebf1] text-[#bda3b3] cursor-not-allowed opacity-50"
+                    : "bg-[#fff6fa] text-[#7a5b6e] hover:bg-[#ffe3f0]"
+                }`}
             >
               {day}
             </motion.button>
@@ -180,8 +178,8 @@ function getAuthHeaders() {
   const token = session?.accessToken || session?.token;
   return token
     ? {
-        Authorization: `Bearer ${token}`,
-      }
+      Authorization: `Bearer ${token}`,
+    }
     : {};
 }
 
@@ -763,13 +761,11 @@ export default function HolidayClosureModal({
                       return (
                         <div
                           key={id}
-                          className={`relative rounded-2xl p-3 transition-all ${
-                            status === "past" && !isEditingThis ? "opacity-60" : ""
-                          } ${isDeleting ? "opacity-40 pointer-events-none" : ""} ${
-                            isEditingThis
+                          className={`relative rounded-2xl p-3 transition-all ${status === "past" && !isEditingThis ? "opacity-60" : ""
+                            } ${isDeleting ? "opacity-40 pointer-events-none" : ""} ${isEditingThis
                               ? "bg-[#fff0f6] ring-2 ring-[#ea4f93]/40"
                               : ""
-                          }`}
+                            }`}
                         >
                           {/* Timeline dot */}
                           <div
@@ -804,11 +800,10 @@ export default function HolidayClosureModal({
                                 type="button"
                                 disabled={isDeleting}
                                 onClick={() => handleEditOffDate(offDate)}
-                                className={`inline-flex h-6 px-2.5 items-center justify-center gap-1 rounded-full border text-[10px] font-extrabold transition-colors disabled:opacity-50 ${
-                                  isEditingThis
+                                className={`inline-flex h-6 px-2.5 items-center justify-center gap-1 rounded-full border text-[10px] font-extrabold transition-colors disabled:opacity-50 ${isEditingThis
                                     ? "border-[#ea4f93] bg-[#ea4f93] text-white hover:bg-[#e0428a]"
                                     : "border-[#f5cbdc] bg-white text-[#b95d88] hover:bg-[#fff5f8]"
-                                }`}
+                                  }`}
                               >
                                 <Pencil size={10} />
                                 {isEditingThis ? "Editing" : "Edit"}
@@ -929,14 +924,14 @@ export default function HolidayClosureModal({
                 <button
                   type="button"
                   onClick={() => setConfirmDeleteTarget(null)}
-                  className="flex-1 rounded-full border border-[#f5cbdc] bg-white py-2.5 text-xs font-black uppercase tracking-wider text-[#b95d88] transition hover:bg-[#fff5f8] active:scale-[0.98]"
+                  className="flex-1 rounded-full border border-[#f5cbdc] bg-white py-2.5 text-xs font-bold uppercase tracking-wider text-[#b95d88] transition hover:bg-[#fff5f8] active:scale-[0.98]"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={handleConfirmDelete}
-                  className="flex-1 rounded-full bg-[#d14c84] py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-[0_12px_24px_rgba(209,76,132,0.25)] transition hover:bg-[#c23e75] active:scale-[0.98]"
+                  className="flex-1 rounded-full bg-[#d14c84] py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-[0_12px_24px_rgba(209,76,132,0.25)] transition hover:bg-[#c23e75] active:scale-[0.98]"
                 >
                   Remove
                 </button>
@@ -982,11 +977,10 @@ export default function HolidayClosureModal({
                 onClick={() => {
                   setNotificationModal(null);
                 }}
-                className={`mt-6 w-full rounded-full py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-md transition-all active:scale-[0.98] ${
-                  notificationModal.type === "success"
+                className={`mt-6 w-full rounded-full py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-md transition-all active:scale-[0.98] ${notificationModal.type === "success"
                     ? "bg-[#16975f] shadow-[0_12px_24px_rgba(22,151,95,0.25)]"
                     : "bg-[#d14c84] shadow-[0_12px_24px_rgba(209,76,132,0.25)]"
-                }`}
+                  }`}
               >
                 Close
               </button>

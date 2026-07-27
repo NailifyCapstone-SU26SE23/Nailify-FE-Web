@@ -284,7 +284,7 @@ export function NailVariantCreatePage() {
             <p className="text-xs text-[#c694ad]">
               Nail Designs / <span className="text-[#ea4f93]">Add Nail Variant</span>
             </p>
-            <h1 className="mt-2 text-2xl font-black text-[#432744]">Add Nail Variant</h1>
+            <h1 className="mt-2 text-2xl font-bold text-[#432744]">Add Nail Variant</h1>
             <p className="mt-1 text-sm text-[#8c7085]">
               Set up try-on data first if needed. Nothing is persisted until Save.
             </p>

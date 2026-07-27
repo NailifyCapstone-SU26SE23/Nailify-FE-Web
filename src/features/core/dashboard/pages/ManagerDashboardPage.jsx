@@ -576,7 +576,7 @@ export function ManagerDashboardPage() {
                   px-8 py-5
                   md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-[22px] font-black tracking-tight text-slate-900">Manager Dashboard</h1>
+          <h1 className="text-[22px] font-bold tracking-tight text-slate-900">Manager Dashboard</h1>
           <p className="text-[13px] text-slate-500 font-medium">Overview of salon operations</p>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -637,7 +637,7 @@ export function ManagerDashboardPage() {
                       {metric.label}
                     </p>
 
-                    <h2 className="mt-3 text-[30px] font-black tracking-tight text-slate-800">
+                    <h2 className="mt-3 text-[30px] font-bold tracking-tight text-slate-800">
                       {metric.value}
                     </h2>
                   </div>
@@ -819,7 +819,7 @@ function StaffDetailModal({ staff, startDate, endDate, onClose }) {
               {getInitials(`${userDetail?.firstName || ""} ${userDetail?.lastName || ""}`)}
             </Avatar>
             <div>
-              <h3 className="text-[17px] font-black text-slate-800">{userDetail?.firstName} {userDetail?.lastName}</h3>
+              <h3 className="text-[17px] font-bold text-slate-800">{userDetail?.firstName} {userDetail?.lastName}</h3>
               <p className="text-[13px] font-medium text-slate-500">{userDetail?.email}</p>
               <p className="text-[13px] font-medium text-slate-500">{userDetail?.phone || "No phone number"}</p>
             </div>
@@ -830,7 +830,7 @@ function StaffDetailModal({ staff, startDate, endDate, onClose }) {
             <div className="flex flex-col gap-3">
               <div className="flex justify-between items-center pb-3 border-b border-slate-200">
                 <span className="text-[14px] font-semibold text-slate-700">Estimated Earnings</span>
-                <span className="font-black text-emerald-600 text-[18px]">
+                <span className="font-bold text-emerald-600 text-[18px]">
                   {dashboard?.estimatedEarnings ? dashboard.estimatedEarnings.toLocaleString("vi-VN") : "0"} ₫
                 </span>
               </div>

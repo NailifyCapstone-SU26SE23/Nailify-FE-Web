@@ -330,7 +330,7 @@ export function StaffUpdatePage() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-[28px] font-black tracking-tight text-[#cf3d74]">Update Staff</h1>
+            <h1 className="text-[28px] font-bold tracking-tight text-[#cf3d74]">Update Staff</h1>
             <p className="text-[12px] font-medium text-slate-400">
               Update staff information for #{formData.staffId || staffId}
             </p>
@@ -536,7 +536,7 @@ export function StaffUpdatePage() {
                     <User size={14} />
                   </div>
                   <div>
-                    <h3 className="text-[14px] font-black text-slate-800">Profile Preview</h3>
+                    <h3 className="text-[14px] font-bold text-slate-800">Profile Preview</h3>
                     <p className="text-[11px] font-medium text-slate-400">
                       Updated summary for this team member
                     </p>
@@ -544,10 +544,10 @@ export function StaffUpdatePage() {
                 </div>
 
                 <div className="rounded-[24px] border border-rose-100 bg-white p-4 text-center shadow-[0_10px_20px_rgba(226,93,143,0.06)]">
-                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-pink-400 to-rose-300 text-[20px] font-black text-white">
+                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-pink-400 to-rose-300 text-[20px] font-bold text-white">
                     {getStaffInitials(formData.fullName || "NS")}
                   </div>
-                  <h4 className="mt-3 text-[15px] font-black text-slate-800">
+                  <h4 className="mt-3 text-[15px] font-bold text-slate-800">
                     {formData.fullName || "Staff Member"}
                   </h4>
                   <p className="text-[10px] font-semibold text-slate-400">
@@ -561,7 +561,7 @@ export function StaffUpdatePage() {
               </section>
 
               <section className="rounded-[28px] bg-white/65 p-6 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
-                <h3 className="mb-4 text-[14px] font-black text-slate-800">Update Checklist</h3>
+                <h3 className="mb-4 text-[14px] font-bold text-slate-800">Update Checklist</h3>
                 <div className="space-y-3">
                   {STAFF_UPDATE_CHECKLIST.map((item) => (
                     <div

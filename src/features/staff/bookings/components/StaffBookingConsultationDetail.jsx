@@ -455,7 +455,7 @@ export function StaffBookingConsultationDetail({
   const hasSelectedNailDesign = Boolean(
     data.design.variantDetail ||
     (
-      String(data.design.name || "").trim() && 
+      String(data.design.name || "").trim() &&
       String(data.design.name || "").trim() !== "--" &&
       String(data.design.name || "").trim() !== "Selected design not specified"
     ),
@@ -523,7 +523,7 @@ export function StaffBookingConsultationDetail({
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2]">
               <UserRound size={16} className="text-[#ea4f93]" />
             </div>
-            <h2 className="text-sm font-black uppercase tracking-widest text-[#ea4f93]">Customer Information</h2>
+            <h2 className="text-sm font-bold uppercase tracking-widest text-[#ea4f93]">Customer Information</h2>
           </div> */}
           <div className="mb-6 flex items-center justify-between border-b border-[#fdebf3] pb-4">
             <div className="flex items-center gap-3">
@@ -531,7 +531,7 @@ export function StaffBookingConsultationDetail({
                 <UserRound size={16} className="text-[#ea4f93]" />
               </div>
 
-              <h2 className="text-sm font-black uppercase tracking-widest text-[#ea4f93]">
+              <h2 className="text-sm font-bold uppercase tracking-widest text-[#ea4f93]">
                 Customer Information
               </h2>
             </div>
@@ -636,7 +636,7 @@ export function StaffBookingConsultationDetail({
                   <CalendarClock size={16} className="text-[#ea4f93]" />
                 </div>
 
-                <h2 className="text-sm font-black uppercase tracking-widest text-[#ea4f93]">
+                <h2 className="text-sm font-bold uppercase tracking-widest text-[#ea4f93]">
                   Booking Information
                 </h2>
 
@@ -693,11 +693,11 @@ export function StaffBookingConsultationDetail({
                         className="flex h-full flex-col justify-between bg-white p-4 pb-8 md:p-5 md:pb-9"
                         style={{ clipPath: "polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - 20px), 0 100%)" }}
                       >
-                        <div className="text-[10px] font-black text-[#cbb3c0] uppercase tracking-[0.18em]">
+                        <div className="text-[10px] font-bold text-[#cbb3c0] uppercase tracking-[0.18em]">
                           {item.label}
                         </div>
                         <div className="mt-3">
-                          <div className={`text-[15px] font-black tracking-tight ${item.tone === 'success' ? 'text-[#059669]' : 'text-[#3f2a3a]'}`}>
+                          <div className={`text-[15px] font-bold tracking-tight ${item.tone === 'success' ? 'text-[#059669]' : 'text-[#3f2a3a]'}`}>
                             {item.value}
                           </div>
                           <div className="mt-1.5 h-[16px] text-[11px] font-bold text-[#a68b98]">
@@ -727,7 +727,7 @@ export function StaffBookingConsultationDetail({
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2] shadow-inner">
                         <Sparkles size={18} className="text-[#ea4f93]" />
                       </div>
-                      <h2 className="text-sm font-black uppercase tracking-widest text-[#ea4f93]">Current Selected Nail Design</h2>
+                      <h2 className="text-sm font-bold uppercase tracking-widest text-[#ea4f93]">Current Selected Nail Design</h2>
                     </div>
                     {canViewVariantDetail ? (
                       <button
@@ -768,7 +768,7 @@ export function StaffBookingConsultationDetail({
 
                     <div className="flex-1 space-y-6 pt-2">
                       <div>
-                        <h3 className="bg-gradient-to-br from-[#ea4f93] to-[#ff8fbb] bg-clip-text text-3xl md:text-[2.2rem] font-black text-transparent drop-shadow-sm tracking-tight leading-none">
+                        <h3 className="bg-gradient-to-br from-[#ea4f93] to-[#ff8fbb] bg-clip-text text-3xl md:text-[2.2rem] font-bold text-transparent drop-shadow-sm tracking-tight leading-none">
                           {data.design.name}
                         </h3>
                       </div>
@@ -785,7 +785,7 @@ export function StaffBookingConsultationDetail({
                           })
                           .map((item) => (
                             <div key={item.label} className="group">
-                              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#d67b9f] mb-1.5 flex items-center gap-1.5 transition-colors group-hover:text-[#ea4f93]">
+                              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#d67b9f] mb-1.5 flex items-center gap-1.5 transition-colors group-hover:text-[#ea4f93]">
                                 <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-pink-400 to-rose-400 shadow-[0_0_8px_rgba(244,114,182,0.6)]"></span>
                                 {item.label}
                               </p>
@@ -805,7 +805,7 @@ export function StaffBookingConsultationDetail({
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2] shadow-inner">
                     <Search size={18} className="text-[#ea4f93]" />
                   </div>
-                  <h2 className="text-sm font-black uppercase tracking-widest text-[#ea4f93]">Customer Consultation</h2>
+                  <h2 className="text-sm font-bold uppercase tracking-widest text-[#ea4f93]">Customer Consultation</h2>
                 </div>
                 <div className="mt-5 flex flex-col items-center gap-6 text-center">
                   <p className="text-lg font-bold text-[#3f2b3f]">{consultationQuestion}</p>
@@ -857,7 +857,7 @@ export function StaffBookingConsultationDetail({
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2] shadow-inner">
                     <ClipboardCheck size={18} className="text-[#ea4f93]" />
                   </div>
-                  <h2 className="text-sm font-black uppercase tracking-widest text-[#ea4f93]">Final Confirmation Checklist</h2>
+                  <h2 className="text-sm font-bold uppercase tracking-widest text-[#ea4f93]">Final Confirmation Checklist</h2>
                 </div>
                 <div className="mt-5 space-y-3">
                   {data.checklist.map((item) => (

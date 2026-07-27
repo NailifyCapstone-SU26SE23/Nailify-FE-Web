@@ -488,7 +488,7 @@ export function ManagerBookingDetailPage() {
                 <h1 className="text-2xl lg:text-3xl font-extrabold text-[#2B182B] tracking-tight font-serif">
                   Booking Detail
                 </h1>
-                <span className="inline-flex items-center gap-1 rounded-full border border-[#E5C687]/80 bg-gradient-to-r from-[#FFF9EE] to-[#FFF3DC] px-3.5 py-1 text-xs font-black text-[#9E731A] shadow-2xs">
+                <span className="inline-flex items-center gap-1 rounded-full border border-[#E5C687]/80 bg-gradient-to-r from-[#FFF9EE] to-[#FFF3DC] px-3.5 py-1 text-xs font-bold text-[#9E731A] shadow-2xs">
                   #{String(booking?.bookingId || bookingId).slice(0, 8).toUpperCase()}
                 </span>
                 <span className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1 text-xs font-extrabold shadow-2xs ${getStatusTone(booking?.status)}`}>
@@ -601,7 +601,7 @@ export function ManagerBookingDetailPage() {
             <motion.div variants={fadeInUp} className="rounded-[24px] border-2 border-[#6366F1]/50 bg-gradient-to-r from-[#EEF2FF] via-[#F5F3FF] to-[#EEF2FF] p-5 shadow-sm">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                  <span className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-[#4F46E5]">
+                  <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#4F46E5]">
                     <Calendar size={14} /> Customer Requested Reschedule
                   </span>
                   <p className="text-sm font-extrabold text-[#1E1B4B] mt-1">
@@ -912,7 +912,7 @@ export function ManagerBookingDetailPage() {
 
                 <div className="border-t border-[#F3E2EC] pt-3 flex items-center justify-between">
                   <span className="text-xs font-bold text-[#2B182B]">Final Amount:</span>
-                  <span className="text-xl font-black text-[#E84F93]">
+                  <span className="text-xl font-bold text-[#E84F93]">
                     {formatVND(booking?.discountAmount > 0 ? booking.finalPrice : booking.totalPrice)}
                   </span>
                 </div>
@@ -950,7 +950,7 @@ export function ManagerBookingDetailPage() {
                       <div className="rounded-2xl border border-[#F3E2EC] bg-white p-3 flex items-center justify-between shadow-2xs">
                         <div>
                           <p className="text-[10px] font-bold text-[#9E8497] uppercase tracking-wider">QT Check-in Code</p>
-                          <p className="font-mono text-sm font-black text-[#2B182B] tracking-wider mt-0.5">{booking.qtCode}</p>
+                          <p className="font-mono text-sm font-bold text-[#2B182B] tracking-wider mt-0.5">{booking.qtCode}</p>
                         </div>
                         <button
                           type="button"
