@@ -21,6 +21,68 @@ import {
   fetchAdminNailVariantDetail,
   fetchProceduresByVariant,
 } from "../services/nailDesignManagementService";
+import { Canvas } from "@react-three/fiber";
+import { Environment } from "@react-three/drei";
+import * as THREE from "three";
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function parseShaderParam(shaderParam) {
+  const rawValue = String(shaderParam || "").trim();
+  if (!rawValue) return {};
+  try {
+    return JSON.parse(rawValue);
+  } catch {
+    return {};
+  }
+}
+
+function NailSurface3DLayer({ surface }) {
+  if (!surface) return null;
+  const config = parseShaderParam(surface.shaderParam);
+  
+  const textureType = String(config?.texture?.type || "").toLowerCase();
+  const isMatte = textureType.includes("matte") || config?.shine?.enabled === false;
+  const hasChrome = Boolean(config?.metalness?.enabled || config?.mirrorEffect?.enabled);
+  const hasRainbow = Boolean(config?.iridescence?.enabled || config?.holographic?.enabled);
+
+  const roughness = clamp(Number(config?.texture?.roughness ?? (isMatte ? 0.8 : 0.1)), 0, 1);
+  const metalness = hasChrome ? clamp(Number(config?.metalness?.intensity || 0.9), 0, 1) : 0;
+  const clearcoat = isMatte ? 0 : clamp(Number(config?.shine?.opacity || 1), 0, 1);
+  const iridescence = hasRainbow ? clamp(Number(config?.iridescence?.intensity || 0.8), 0, 1) : 0;
+
+  return (
+    <div className="absolute inset-0 h-full w-full pointer-events-none mix-blend-screen">
+      <Canvas 
+        camera={{ position: [0, 0, 5], fov: 40 }}
+        style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
+        gl={{ alpha: true, antialias: true }}
+      >
+        <ambientLight intensity={isMatte ? 0.6 : 0.2} />
+        <directionalLight position={[5, 10, 5]} intensity={1.5} />
+        <directionalLight position={[-5, -10, 5]} intensity={0.5} />
+        <Environment preset="studio" />
+        
+        {/* Generic convex sphere providing 3D curvature. CSS shapeMask clips it to exact nail shape. */}
+        <mesh scale={[1.4, 2.8, 0.6]}>
+          <sphereGeometry args={[1, 64, 64]} />
+          <meshPhysicalMaterial
+            color={new THREE.Color(0x000000)} // Black base becomes 100% transparent via CSS mix-blend-screen
+            roughness={roughness}
+            metalness={metalness}
+            clearcoat={clearcoat}
+            iridescence={iridescence}
+            transparent={true}
+            depthWrite={false}
+          />
+        </mesh>
+      </Canvas>
+    </div>
+  );
+}
+
 
 function isHexColor(value) {
   return /^#(?:[0-9a-f]{3}){1,2}$/i.test(String(value || "").trim());
@@ -263,26 +325,7 @@ function NailVariantHandPreview({ variantDetail }) {
                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/25 via-transparent to-black/10 mix-blend-overlay" />
                     <div className="pointer-events-none absolute left-2.5 top-1.5 h-20 w-1.5 rounded-full bg-white/45 blur-[0.7px]" />
 
-                    {variantDetail?.nailSurface?.name && (() => {
-                      const surfaceName = String(variantDetail.nailSurface.name || "").toLowerCase();
-
-                      if (surfaceName.includes("matte")) {
-                        return <div className="pointer-events-none absolute inset-0 h-full w-full bg-white/12 backdrop-blur-[0.5px]" />;
-                      }
-
-                      if (
-                        surfaceName.includes("chrome") ||
-                        surfaceName.includes("metallic") ||
-                        surfaceName.includes("mirror") ||
-                        surfaceName.includes("cat eye")
-                      ) {
-                        return (
-                          <div className="pointer-events-none absolute inset-0 h-full w-full bg-[linear-gradient(135deg,rgba(255,255,255,0.45)_0%,rgba(255,255,255,0)_50%,rgba(0,0,0,0.15)_100%)] mix-blend-overlay" />
-                        );
-                      }
-
-                      return <div className="pointer-events-none absolute inset-0 h-full w-full bg-[linear-gradient(135deg,rgba(255,255,255,0.3)_0%,rgba(255,255,255,0)_100%)]" />;
-                    })()}
+                    <NailSurface3DLayer surface={variantDetail?.nailSurface} />
 
                     {(variantDetail?.nailComponents || []).filter((item) => {
                       const componentFingerIndex = Number(item?.fingerIndex);

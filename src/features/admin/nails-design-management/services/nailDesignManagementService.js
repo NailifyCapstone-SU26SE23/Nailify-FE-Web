@@ -8,8 +8,8 @@ function getAuthHeaders() {
 
   return token
     ? {
-        Authorization: `Bearer ${token}`,
-      }
+      Authorization: `Bearer ${token}`,
+    }
     : {};
 }
 
@@ -88,8 +88,8 @@ function buildVariantDescription(variant) {
   const surfaceName = String(variant?.nailSurface?.name || "").trim();
   const componentNames = Array.isArray(variant?.nailComponents)
     ? variant.nailComponents
-        .map((item) => String(item?.component?.name || "").trim())
-        .filter(Boolean)
+      .map((item) => String(item?.component?.name || "").trim())
+      .filter(Boolean)
     : [];
 
   if (surfaceName && componentNames.length) {
@@ -128,28 +128,28 @@ function normalizeAdminNailVariantDetail(variant) {
     description: buildVariantDescription(variant),
     nailShape: variant?.nailShape
       ? {
-          nailShapeId: normalizeIntegerId(variant.nailShape.nailShapeId),
-          name: toTitleCase(variant.nailShape.name) || "--",
-          imageUrl: String(variant.nailShape.imageUrl || "").trim(),
-          price: Number(variant.nailShape.price || 0),
-          priceLabel: formatVnd(variant.nailShape.price || 0),
-          duration: Number(variant.nailShape.duration || 0),
-          durationLabel: formatDurationMinutes(Number(variant.nailShape.duration || 0)),
-        }
+        nailShapeId: normalizeIntegerId(variant.nailShape.nailShapeId),
+        name: toTitleCase(variant.nailShape.name) || "--",
+        imageUrl: String(variant.nailShape.imageUrl || "").trim(),
+        price: Number(variant.nailShape.price || 0),
+        priceLabel: formatVnd(variant.nailShape.price || 0),
+        duration: Number(variant.nailShape.duration || 0),
+        durationLabel: formatDurationMinutes(Number(variant.nailShape.duration || 0)),
+      }
       : null,
     nailSurface: variant?.nailSurface
       ? {
-          nailSurfaceId: normalizeIntegerId(variant.nailSurface.nailSurfaceId),
-          name: String(variant.nailSurface.name || "").trim() || "--",
-          shaderParam: String(variant.nailSurface.shaderParam || "").trim(),
-          lightnessOffset: Number(variant.nailSurface.lightnessOffset || 0),
-          saturationOffset: Number(variant.nailSurface.saturationOffset || 0),
-          hueOffset: Number(variant.nailSurface.hueOffset || 0),
-          price: Number(variant.nailSurface.price || 0),
-          priceLabel: formatVnd(variant.nailSurface.price || 0),
-          duration: Number(variant.nailSurface.duration || 0),
-          durationLabel: formatDurationMinutes(Number(variant.nailSurface.duration || 0)),
-        }
+        nailSurfaceId: normalizeIntegerId(variant.nailSurface.nailSurfaceId),
+        name: String(variant.nailSurface.name || "").trim() || "--",
+        shaderParam: String(variant.nailSurface.shaderParam || "").trim(),
+        lightnessOffset: Number(variant.nailSurface.lightnessOffset || 0),
+        saturationOffset: Number(variant.nailSurface.saturationOffset || 0),
+        hueOffset: Number(variant.nailSurface.hueOffset || 0),
+        price: Number(variant.nailSurface.price || 0),
+        priceLabel: formatVnd(variant.nailSurface.price || 0),
+        duration: Number(variant.nailSurface.duration || 0),
+        durationLabel: formatDurationMinutes(Number(variant.nailSurface.duration || 0)),
+      }
       : null,
     nailComponents: nailComponents.map((item, index) => ({
       id: String(item?.nailComponentId || index + 1),
@@ -161,14 +161,14 @@ function normalizeAdminNailVariantDetail(variant) {
       configJson: String(item?.configJson || "").trim(),
       component: item?.component
         ? {
-            componentId: normalizeIntegerId(item.component.componentId),
-            name: String(item.component.name || "").trim() || "--",
-            imageUrl: String(item.component.imageUrl || "").trim(),
-            componentType: String(item.component.componentType || "").trim() || "--",
-            price: Number(item.component.price || 0),
-            priceLabel: formatVnd(item.component.price || 0),
-            duration: Number(item.component.duration || 0),
-          }
+          componentId: normalizeIntegerId(item.component.componentId),
+          name: String(item.component.name || "").trim() || "--",
+          imageUrl: String(item.component.imageUrl || "").trim(),
+          componentType: String(item.component.componentType || "").trim() || "--",
+          price: Number(item.component.price || 0),
+          priceLabel: formatVnd(item.component.price || 0),
+          duration: Number(item.component.duration || 0),
+        }
         : null,
     })),
   };
@@ -402,14 +402,14 @@ export function normalizeAdminNailDesignDetail(design) {
     },
     workflow: normalized.nailVariants.length
       ? normalized.nailVariants.map((variant, index) => [
-          String(variant?.name || "").trim() || `Variant ${index + 1}`,
-          formatDurationMinutes(Number(variant?.duration || 0) || 90),
-          [
-            toTitleCase(variant?.nailShape?.name) || "Shape Setup",
-            String(variant?.nailSurface?.name || "").trim() || "Surface Finish",
-          ],
-          Number(variant?.duration || 0) >= 90 ? "Advanced" : "Moderate",
-        ])
+        String(variant?.name || "").trim() || `Variant ${index + 1}`,
+        formatDurationMinutes(Number(variant?.duration || 0) || 90),
+        [
+          toTitleCase(variant?.nailShape?.name) || "Shape Setup",
+          String(variant?.nailSurface?.name || "").trim() || "Surface Finish",
+        ],
+        Number(variant?.duration || 0) >= 90 ? "Advanced" : "Moderate",
+      ])
       : DEFAULT_NAIL_DESIGN_DETAIL.workflow,
     skills: [
       ["Precision", "Accuracy & Detail", complexity === "Expert" ? 5 : 4, complexity === "Expert" ? "5★ Expert" : "4★ Advanced"],
@@ -625,8 +625,8 @@ export async function createAdminNailDesign(designFormValues) {
 
   const categoryIds = Array.isArray(designFormValues?.categoryIds)
     ? designFormValues.categoryIds
-        .map((value) => normalizeIntegerId(value, -1))
-        .filter((value) => value > 0)
+      .map((value) => normalizeIntegerId(value, -1))
+      .filter((value) => value > 0)
     : [];
 
   categoryIds.forEach((value) => {
@@ -739,13 +739,13 @@ export async function updateAdminNailDesign(designId, designFormValues) {
 
   const categoryIds = Array.isArray(designFormValues?.categoryIds)
     ? designFormValues.categoryIds
-        .map((value) => normalizeIntegerId(value, -1))
-        .filter((value) => value > 0)
+      .map((value) => normalizeIntegerId(value, -1))
+      .filter((value) => value > 0)
     : [];
   const nailVariantIds = Array.isArray(designFormValues?.nailVariantIds)
     ? designFormValues.nailVariantIds
-        .map((value) => normalizeIntegerId(value, -1))
-        .filter((value) => value > 0)
+      .map((value) => normalizeIntegerId(value, -1))
+      .filter((value) => value > 0)
     : [];
   const existingImageUrls = Array.isArray(designFormValues?.existingImageUrls)
     ? designFormValues.existingImageUrls.map((value) => String(value || "").trim()).filter(Boolean)
@@ -795,11 +795,11 @@ export async function assignProceduresToVariant(nailVariantId, procedureSteps) {
 
   const payload = Array.isArray(procedureSteps)
     ? procedureSteps
-        .map((item) => ({
-          procedureId: String(item?.procedureId || "").trim(),
-          stepOrder: normalizeIntegerId(item?.stepOrder),
-        }))
-        .filter((item) => item.procedureId && item.stepOrder > 0)
+      .map((item) => ({
+        procedureId: String(item?.procedureId || "").trim(),
+        stepOrder: normalizeIntegerId(item?.stepOrder),
+      }))
+      .filter((item) => item.procedureId && item.stepOrder > 0)
     : [];
 
   const response = await axiosClient.post(`/Procedures/assign/${normalizedVariantId}`, payload, {
