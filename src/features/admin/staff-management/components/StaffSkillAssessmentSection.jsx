@@ -13,41 +13,42 @@ function SkillRatingCard({ item, onRatingChange, rating }) {
   const normalizedRating = Math.max(0, Math.min(5, Number(rating) || 0));
 
   return (
-    <article className="rounded-[24px] border border-[#f7cadc] bg-[linear-gradient(180deg,#fff9fc_0%,#fffdfd_100%)] p-5 shadow-[0_12px_26px_rgba(236,72,153,0.05)]">
-      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#cf8aa8]">
-        {item.name || item.title}
-      </p>
-      <p className="mt-1 text-[13px] text-[#c07f9e]">{item.description || item.subtitle || "Specialty skill"}</p>
+    <article className="rounded-2xl border border-slate-200 bg-white p-4.5 shadow-2xs hover:border-[#E84F93]/40 transition group">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-900">
+            {item.name || item.title}
+          </p>
+          <p className="mt-0.5 text-[11px] font-medium text-slate-400">{item.description || item.subtitle || "Specialty skill"}</p>
+        </div>
+        <span className="inline-flex rounded-full bg-pink-50 px-2.5 py-0.5 text-[10px] font-extrabold text-[#E84F93] border border-[#F3D6E5]">
+          {normalizedRating}★ {SKILL_LEVEL_LABELS[normalizedRating] ?? "Not rated"}
+        </span>
+      </div>
 
-      <div className="mt-5 flex flex-wrap gap-1.5">
+      <div className="mt-4 flex items-center gap-1.5">
         {[1, 2, 3, 4, 5].map((value) => (
           <button
             key={value}
             type="button"
             onClick={() => onRatingChange(item.id || item.key, value)}
-            className="text-[#ea4f93] transition hover:scale-105"
+            className="p-0.5 text-[#E84F93] transition hover:scale-110 focus:outline-none"
             aria-label={`Set ${item.name || item.title} to ${value} stars`}
           >
             <Star
-              size={16}
+              size={18}
               fill={value <= normalizedRating ? "currentColor" : "none"}
-              className={value <= normalizedRating ? "text-[#ea4f93]" : "text-[#f5c8da]"}
+              className={value <= normalizedRating ? "text-[#E84F93]" : "text-slate-200"}
             />
           </button>
         ))}
       </div>
 
-      <div className="mt-5 h-2 rounded-full bg-[#f3d4e3]">
+      <div className="mt-3.5 h-1.5 rounded-full bg-slate-100 overflow-hidden">
         <div
-          className="h-full rounded-full bg-[linear-gradient(90deg,#e85ab4_0%,#ff8f7b_52%,#ffd34f_100%)]"
+          className="h-full rounded-full bg-gradient-to-r from-[#E84F93] via-[#EC4899] to-[#F43F5E] transition-all duration-300"
           style={{ width: `${(normalizedRating / 5) * 100}%` }}
         />
-      </div>
-
-      <div className="mt-4 flex items-center justify-between gap-3 text-[12px]">
-        <span className="font-black text-[#7b6781]">
-          {normalizedRating}★ {SKILL_LEVEL_LABELS[normalizedRating] ?? "Not rated"}
-        </span>
       </div>
     </article>
   );
@@ -69,20 +70,20 @@ SkillRatingCard.propTypes = {
 
 export function StaffSkillAssessmentSection({ onRatingChange, ratings, skillTypes }) {
   return (
-    <section className="rounded-[28px] bg-white/65 p-5 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
-      <div className="flex items-start gap-3 rounded-[22px] bg-[linear-gradient(180deg,#fffafc_0%,#fffdfd_100%)] p-4">
-        <div className="rounded-[18px] bg-[#fff2f7] p-3 text-[#ea4f93]">
-          <Sparkles size={18} />
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 lg:p-6 shadow-xs">
+      <div className="flex items-center gap-3 border-b border-slate-100 pb-4 mb-5">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-pink-50 text-[#E84F93] border border-[#F3D6E5] shrink-0">
+          <Sparkles size={20} />
         </div>
         <div>
-          <h2 className="text-[18px] font-bold text-slate-800">Skills & Specialties</h2>
-          <p className="mt-1 text-[12px] text-slate-400">
-            Rate each core skill to map the staff member's specialties and current level.
+          <h2 className="text-base font-extrabold text-slate-900 font-serif">Skills & Specialties</h2>
+          <p className="text-xs text-slate-500 font-medium">
+            Rate each core skill to map the staff member's artisan specialties and level.
           </p>
         </div>
       </div>
 
-      <div className="mt-5 grid gap-4 xl:grid-cols-2">
+      <div className="grid gap-3.5 sm:grid-cols-2">
         {skillTypes.map((item) => (
           <SkillRatingCard
             key={item.id}

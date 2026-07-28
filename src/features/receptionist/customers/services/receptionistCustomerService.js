@@ -45,7 +45,7 @@ export async function fetchReceptionistCustomers({ pageNumber = 1, pageSize = 10
 
 export async function fetchReceptionistCustomerDetail(id) {
   try {
-    const response = await axiosClient.get(`/Users/${id}`, {
+    const response = await axiosClient.get(`/Users/customers/${id}`, {
       headers: getAuthHeaders()
     });
 
@@ -60,3 +60,82 @@ export async function fetchReceptionistCustomerDetail(id) {
     throw error;
   }
 }
+
+export async function fetchLoyaltyTiers() {
+  try {
+    const response = await axiosClient.get('/LoyaltyTiers', {
+      headers: getAuthHeaders()
+    });
+
+    const payload = response.data;
+    if (!payload?.isSucceeded) {
+      throw new Error(payload?.message || "Failed to fetch loyalty tiers.");
+    }
+
+    return payload.data;
+  } catch (error) {
+    console.error("Error fetching loyalty tiers:", error);
+    throw error;
+  }
+}
+
+export async function fetchPromotions(pageNumber = 1, pageSize = 10) {
+  try {
+    const response = await axiosClient.get('/Promotions', {
+      params: { pageNumber, pageSize },
+      headers: getAuthHeaders()
+    });
+
+    const payload = response.data;
+    if (!payload?.isSucceeded) {
+      throw new Error(payload?.message || "Failed to fetch promotions.");
+    }
+
+    return payload.data;
+  } catch (error) {
+    console.error("Error fetching promotions:", error);
+    throw error;
+  }
+}
+
+export async function updateReceptionistCustomer(id, data) {
+  try {
+    const response = await axiosClient.put(`/Users/${id}`, data, {
+      headers: getAuthHeaders()
+    });
+
+    const payload = response.data;
+    if (!payload?.isSucceeded) {
+      throw new Error(payload?.message || "Failed to update customer.");
+    }
+
+    return payload.data;
+  } catch (error) {
+    console.error(`Error updating customer (ID: ${id}):`, error);
+    throw error;
+  }
+}
+
+export async function fetchCustomerBookings(salonId, searchKeyword) {
+  try {
+    if (!salonId) return [];
+    const response = await axiosClient.get(`/Bookings/salon/${salonId}`, {
+      headers: getAuthHeaders(),
+      params: {
+        pageNumber: 1,
+        pageSize: 50,
+        search: searchKeyword
+      }
+    });
+
+    const payload = response.data;
+    if (!payload?.isSucceeded) return [];
+
+    const items = payload.data?.items || (Array.isArray(payload.data) ? payload.data : []);
+    return items;
+  } catch (error) {
+    console.error("Error fetching customer bookings:", error);
+    return [];
+  }
+}
+

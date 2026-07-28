@@ -17,7 +17,7 @@ import {
   Quote
 } from "lucide-react";
 import { fetchBookingRatingsBySalonId, fetchUserById } from "../services/bookingsService";
-import { fetchAllSalonStaff } from "../../staff-artist-management/services/nailArtistsService";
+import { fetchAllSalonStaff, getSalonId } from "../../staff-artist-management/services/nailArtistsService";
 import { loadAuthSession } from "../../../../features/core/auth/model/authStorage";
 import { formatDate } from "../../../../shared/utils/formatDate";
 import { Spin, Alert, Select, Modal, DatePicker } from "antd";
@@ -185,8 +185,7 @@ export function BookingRatingListPage() {
 
   // Get manager's salonId
   const salonId = useMemo(() => {
-    const session = loadAuthSession();
-    return session?.user?.salonId || session?.salonId;
+    return getSalonId();
   }, []);
 
   const loadUserNames = async (ratingsList) => {
@@ -380,7 +379,7 @@ export function BookingRatingListPage() {
                 </span>
               )}
             </div>
-            <h1 className="text-3xl font-black text-[#2d1b35] tracking-tight md:text-4xl">
+            <h1 className="text-3xl font-bold text-[#2d1b35] tracking-tight md:text-4xl">
               Booking Reviews
             </h1>
             <p className="text-xs md:text-sm text-[#a88a9f] max-w-[65ch] leading-relaxed">
@@ -445,11 +444,10 @@ export function BookingRatingListPage() {
                         key={score}
                         type="button"
                         onClick={() => setScoreFilter(score)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-0.5 ${
-                          scoreFilter === score
-                            ? "bg-[#ea4f93] text-white shadow-xs"
-                            : "text-[#7f6478] hover:text-[#2d1b35] hover:bg-[#ea4f93]/5"
-                        }`}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-0.5 ${scoreFilter === score
+                          ? "bg-[#ea4f93] text-white shadow-xs"
+                          : "text-[#7f6478] hover:text-[#2d1b35] hover:bg-[#ea4f93]/5"
+                          }`}
                       >
                         {score === "all" ? "All Stars" : `${score}`}
                         {score !== "all" && <Star size={10} className="fill-current" />}
@@ -535,11 +533,10 @@ export function BookingRatingListPage() {
                                   <Star
                                     key={sIndex}
                                     size={15}
-                                    className={`${
-                                      sIndex <= Math.round(score)
-                                        ? "text-amber-400 fill-amber-400"
-                                        : "text-slate-200"
-                                    }`}
+                                    className={`${sIndex <= Math.round(score)
+                                      ? "text-amber-400 fill-amber-400"
+                                      : "text-slate-200"
+                                      }`}
                                   />
                                 ))}
                               </div>
@@ -616,11 +613,10 @@ export function BookingRatingListPage() {
 
                           <button
                             onClick={() => handleOpenReplyModal(rating)}
-                            className={`px-4.5 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-[0.98] ${
-                              isReplied
-                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
-                                : "bg-[#ea4f93] hover:bg-[#ea4f93]/90 text-white shadow-2xs"
-                            }`}
+                            className={`px-4.5 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-[0.98] ${isReplied
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
+                              : "bg-[#ea4f93] hover:bg-[#ea4f93]/90 text-white shadow-2xs"
+                              }`}
                           >
                             <MessageSquare size={12} />
                             {isReplied ? "View Response" : "Respond Feedback"}
@@ -659,7 +655,7 @@ export function BookingRatingListPage() {
               {/* Signature card: sentiment gauge */}
               <div className="bg-white/80 backdrop-blur-md rounded-[2.25rem] border border-[#f1e7ed]/60 p-6 shadow-[0_12px_32px_rgba(0,0,0,0.02)] space-y-4">
                 <div className="space-y-1">
-                  <h3 className="text-sm font-black text-[#2d1b35]">Rating Summary</h3>
+                  <h3 className="text-sm font-bold text-[#2d1b35]">Rating Summary</h3>
                   <p className="text-[10px] text-[#a88a9f]">Aggregated satisfaction score index.</p>
                 </div>
 
@@ -690,7 +686,7 @@ export function BookingRatingListPage() {
               {/* Sub-criteria indices */}
               <div className="bg-white/80 backdrop-blur-md rounded-[2.25rem] border border-[#f1e7ed]/60 p-6 shadow-[0_12px_32px_rgba(0,0,0,0.02)] space-y-5">
                 <div className="space-y-1">
-                  <h3 className="text-sm font-black text-[#2d1b35]">Satisfaction Indices</h3>
+                  <h3 className="text-sm font-bold text-[#2d1b35]">Satisfaction Indices</h3>
                   <p className="text-[10px] text-[#a88a9f]">Core indicators mapping customer loyalty.</p>
                 </div>
 
@@ -756,8 +752,8 @@ export function BookingRatingListPage() {
                     {stats.average >= 4.5
                       ? "Outstanding performance! Your salon is delivering exceptional satisfaction benchmarks — keep it up."
                       : stats.average >= 3.5
-                      ? "Service levels are healthy, but punctuality logs show room for improvement to maximize repeat appointments."
-                      : "Action required — review cleanliness audits and client remarks on service times to re-establish standards."
+                        ? "Service levels are healthy, but punctuality logs show room for improvement to maximize repeat appointments."
+                        : "Action required — review cleanliness audits and client remarks on service times to re-establish standards."
                     }
                   </p>
                 </div>
@@ -772,7 +768,7 @@ export function BookingRatingListPage() {
       {/* Response Modal */}
       <Modal
         title={
-          <div className="flex items-center gap-2 text-[#2d1b35] font-black text-base">
+          <div className="flex items-center gap-2 text-[#2d1b35] font-bold text-base">
             <MessageSquare size={16} className="text-[#ea4f93]" />
             <span>Respond to Customer Review</span>
           </div>

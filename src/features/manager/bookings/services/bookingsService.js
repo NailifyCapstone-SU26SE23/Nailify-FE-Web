@@ -63,7 +63,7 @@ function normalizeBookingPageSize(value, isAdmin = false) {
 }
 
 export async function fetchBookingsBySalonId(salonId, options = {}) {
-  const { pageNumber = 1, pageSize = 10, isAdmin = false } = options;
+  const { pageNumber = 1, pageSize = 10, isAdmin = true } = options;
   const normalizedPageNumber = normalizePageNumber(pageNumber);
   const normalizedPageSize = normalizeBookingPageSize(pageSize, isAdmin);
 
@@ -492,3 +492,61 @@ export async function fetchSalonWaitlist(salonId, options = {}) {
     throw new Error(errorMessage, { cause: error });
   }
 }
+
+export async function managerSuggestTime(bookingId, suggestData) {
+  const normalizedBookingId = String(bookingId || "").trim();
+  if (!normalizedBookingId) throw new Error("Booking ID is required.");
+
+  console.log("managerSuggestTime - Booking ID:", normalizedBookingId, suggestData);
+  try {
+    const response = await axiosClient.post(
+      `/Bookings/${normalizedBookingId}/manager-suggest-time`,
+      suggestData,
+      { headers: getAuthHeaders() }
+    );
+    return unwrapResponse(response, "Failed to send reschedule proposal to customer.");
+  } catch (error) {
+    const errorMessage = error?.response?.data?.message || error?.message || "Failed to suggest new time.";
+    console.error("Error suggesting new time:", error?.response?.data || error);
+    throw new Error(errorMessage, { cause: error });
+  }
+}
+
+export async function managerApproveReschedule(bookingId) {
+  const normalizedBookingId = String(bookingId || "").trim();
+  if (!normalizedBookingId) throw new Error("Booking ID is required.");
+
+  console.log("managerApproveReschedule - Booking ID:", normalizedBookingId);
+  try {
+    const response = await axiosClient.post(
+      `/Bookings/${normalizedBookingId}/manager-approve-reschedule`,
+      null,
+      { headers: getAuthHeaders() }
+    );
+    return unwrapResponse(response, "Failed to approve customer's reschedule request.");
+  } catch (error) {
+    const errorMessage = error?.response?.data?.message || error?.message || "Failed to approve reschedule.";
+    console.error("Error approving reschedule:", error?.response?.data || error);
+    throw new Error(errorMessage, { cause: error });
+  }
+}
+
+export async function managerRejectReschedule(bookingId) {
+  const normalizedBookingId = String(bookingId || "").trim();
+  if (!normalizedBookingId) throw new Error("Booking ID is required.");
+
+  console.log("managerRejectReschedule - Booking ID:", normalizedBookingId);
+  try {
+    const response = await axiosClient.post(
+      `/Bookings/${normalizedBookingId}/manager-reject-reschedule`,
+      null,
+      { headers: getAuthHeaders() }
+    );
+    return unwrapResponse(response, "Failed to reject customer's reschedule request.");
+  } catch (error) {
+    const errorMessage = error?.response?.data?.message || error?.message || "Failed to reject reschedule.";
+    console.error("Error rejecting reschedule:", error?.response?.data || error);
+    throw new Error(errorMessage, { cause: error });
+  }
+}
+

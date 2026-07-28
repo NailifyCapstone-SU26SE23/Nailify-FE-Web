@@ -18,6 +18,9 @@ import {
   AlertCircle,
   Calendar,
   X,
+  Sparkles,
+  Clock,
+  UserCog,
 } from "lucide-react";
 import { Modal, Spin, Alert, DatePicker, Drawer, message, Select, TimePicker as AntdTimePicker } from "antd";
 import { Link } from "react-router-dom";
@@ -41,12 +44,14 @@ import {
   fetchSchedules,
   fetchNailArtistSkills,
   fetchArtistSchedules,
-  createSchedule
+  fetchSchedulesBySalonId,
+  createSchedule,
+  getSalonId,
+  getSalonIdAsync,
 } from "../services/nailArtistsService";
 import { Pagination } from "../../../../shared/components/common/Pagination.jsx";
 import { TimePicker } from "../../../../shared/components/ui/TimePicker.jsx";
 import { StaffAvatar } from "../../../../shared/components/common/StaffAvatar.jsx";
-import { getSalonId } from "../services/nailArtistsService";
 import dayjs from "dayjs";
 
 // Import separated modals
@@ -265,9 +270,9 @@ function buildPerformanceInsights(staffArtists = [], bookings = []) {
     performers,
     mostCompletedStaff: mostCompletedStaff
       ? {
-          name: mostCompletedStaff.name,
-          completed: String(mostCompletedStaff.completedCount),
-        }
+        name: mostCompletedStaff.name,
+        completed: String(mostCompletedStaff.completedCount),
+      }
       : null,
     leastCompletedStaff,
     topCompletedPerformers,
@@ -401,77 +406,92 @@ function StaffArtistCard({ staff, onOpenDrawer }) {
       role="button"
       tabIndex={0}
       aria-label={`View details for ${staff.name}`}
-      className="group flex h-full min-w-0 cursor-pointer flex-col rounded-2xl border border-[#f1e7ed] bg-white p-5 shadow-[0_4px_20px_-8px_rgba(45,27,53,0.1)] transition-colors duration-300 hover:border-[#ea4f93]/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ea4f93]/40 focus-visible:ring-offset-2"
+      className="group flex h-full min-w-0 cursor-pointer flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-all duration-200 hover:border-[#E84F93]/40 hover:shadow-md focus:outline-none"
     >
       <div className="flex items-start gap-4">
-        <StaffAvatar
-          staff={{ ...staff, initials: getStaffInitials(staff.name) }}
-          className="h-14 w-14 shrink-0 rounded-xl object-cover ring-2 ring-[#fff5fa]"
-          fallbackClassName={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${staff.avatarTone} text-base font-bold text-white ring-2 ring-[#fff5fa]`}
-        />
+        {/* Clean Circular Avatar with Green Status Dot */}
+        <div className="relative shrink-0">
+          <StaffAvatar
+            staff={{ ...staff, initials: getStaffInitials(staff.name) }}
+            className="h-14 w-14 rounded-full object-cover ring-2 ring-slate-100 shadow-2xs"
+            fallbackClassName={`flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br ${staff.avatarTone} text-base font-bold text-white ring-2 ring-slate-100 shadow-2xs`}
+          />
+          {staff.status === "Active" && (
+            <span
+              className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full bg-emerald-500 ring-2 ring-white"
+              title="Active Now"
+            />
+          )}
+        </div>
 
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="line-clamp-2 text-[15px] font-bold leading-snug text-[#2d1b35]">
+            <h3 className="line-clamp-1 text-base font-extrabold leading-snug text-slate-900 font-serif">
               {staff.name}
             </h3>
             <StatusPill status={staff.status} />
           </div>
-          <p className="mt-0.5 text-[13px] text-[#a88a9f]">{staff.role}</p>
-          <div className="mt-2 inline-flex items-center gap-1 rounded-md bg-[#fff8fb] px-2 py-0.5">
-            <Star size={12} fill="#fbbf24" className="text-[#fbbf24]" />
-            <span className="text-[12px] font-semibold text-[#2d1b35]">
-              {staff.rating.toFixed(1)}
+          <p className="mt-0.5 text-xs font-semibold text-slate-500">{staff.role}</p>
+
+          {/* Clean Rating Stars with Dark Text */}
+          <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-slate-50 border border-slate-100 px-2.5 py-0.5">
+            <Star size={13} fill="#EAB308" className="text-amber-500 shrink-0" />
+            <span className="text-xs font-extrabold text-slate-900">
+              {staff.rating.toFixed(1)} <span className="text-slate-400 font-normal">/ 5.0</span>
             </span>
           </div>
         </div>
       </div>
 
+      {/* Pastel Skill Pills */}
       <div className="mt-4 flex min-h-[28px] flex-wrap gap-1.5">
         {visibleSkills.length > 0 ? (
           <>
             {visibleSkills.map((skill, index) => (
               <span
                 key={index}
-                className="rounded-md bg-[#fff0f6] px-2.5 py-1 text-[11px] font-medium text-[#ea4f93]"
+                className="rounded-full bg-pink-50 text-[#E84F93] border border-[#F3D6E5] px-3 py-1 text-[11px] font-bold"
               >
                 {skill}
               </span>
             ))}
             {extraSkillsCount > 0 && (
-              <span className="rounded-md bg-[#f5eef2] px-2.5 py-1 text-[11px] font-medium text-[#a88a9f]">
+              <span className="rounded-full bg-slate-100 text-slate-600 px-2.5 py-1 text-[11px] font-bold">
                 +{extraSkillsCount}
               </span>
             )}
           </>
         ) : (
-          <span className="rounded-md border border-dashed border-[#f1c6dd] px-2.5 py-1 text-[11px] text-[#c8a6bb]">
-            Skills are not assigned
+          <span className="rounded-full bg-slate-50 border border-dashed border-slate-200 px-3 py-1 text-[11px] font-medium text-slate-400">
+            Skills not assigned
           </span>
         )}
       </div>
 
-      <div className="mt-4 flex divide-x divide-[#f1e7ed] rounded-xl border border-[#f1e7ed] bg-[#fffafd]">
+      {/* Mini Performance Stats Bar */}
+      <div className="mt-4 flex divide-x divide-slate-100 rounded-xl border border-slate-100 bg-slate-50/60 p-2.5">
         {[
           [Clock3, staff.stats.today, "Today"],
           [CalendarDays, staff.stats.month, "This Month"],
           [TrendingUp, staff.stats.revenue, "Revenue"],
         ].map(([Icon, value, label]) => (
-          <div key={label} className="flex flex-1 flex-col items-center px-2 py-3">
-            <Icon size={14} className="mb-1 text-[#ea4f93]" />
-            <p className="text-sm font-bold text-[#2d1b35]">{value}</p>
-            <p className="mt-0.5 text-[10px] text-[#a88a9f]">{label}</p>
+          <div key={label} className="flex flex-1 flex-col items-center px-1">
+            <Icon size={13} className="mb-0.5 text-[#E84F93]" />
+            <p className="text-xs font-extrabold text-slate-900">{value}</p>
+            <p className="text-[10px] font-medium text-slate-400">{label}</p>
           </div>
         ))}
       </div>
 
+      {/* Action Button: Clean Secondary Outline Button with Icon */}
       <div className="mt-auto pt-4">
         <Link
           to={getManagerStaffUpdateRoute(staff.id)}
           onClick={(event) => event.stopPropagation()}
-          className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] py-2.5 text-[12px] font-semibold text-white shadow-[0_6px_16px_rgba(234,79,147,0.2)] transition hover:opacity-95 active:scale-[0.98]"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-2 px-4 text-xs font-bold text-slate-700 hover:border-[#E84F93] hover:text-[#E84F93] hover:bg-[#FFF0F5]/50 transition-all shadow-2xs"
         >
-          Edit Profile
+          <UserCog size={14} />
+          <span>Edit Profile</span>
         </Link>
       </div>
     </motion.article>
@@ -611,114 +631,67 @@ function pickField(entry, keys) {
 }
 
 function mapSchedulesToTimeline(artists, schedules, startOfWeekDate) {
-  const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const dayKeys = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+  const extractDateStr = (val) => {
+    if (!val) return "";
+    const str = String(val);
+    if (str.length >= 10 && str[4] === '-' && str[7] === '-') {
+      return str.slice(0, 10);
+    }
+    return dayjs(val).format("YYYY-MM-DD");
+  };
 
   return artists.map((artist) => {
-    // Initialize days with "Off"
-    const days = {
-      Mon: { status: "Off" },
-      Tue: { status: "Off" },
-      Wed: { status: "Off" },
-      Thu: { status: "Off" },
-      Fri: { status: "Off" },
-      Sat: { status: "Off" },
-      Sun: { status: "Off" },
-    };
+    const days = {};
 
-    // Filter schedules for this artist
-    const artistSchedules = schedules.filter(s => {
-      const scheduleArtistId = s.artistId || s.nailArtistId || s.staffId || s.userId || s.user?.id;
-      return String(scheduleArtistId) === String(artist.id);
-    });
+    for (let i = 0; i < 7; i++) {
+      const dayDate = startOfWeekDate.add(i, "day");
+      const dateStr = dayDate.format("YYYY-MM-DD");
+      const dayKey = dayKeys[i];
 
-    artistSchedules.forEach((schedule) => {
-      const dateVal = schedule.date || schedule.workDate || schedule.scheduleDate || schedule.day;
-      if (!dateVal) return;
+      // Find matching schedules for this artist on this exact date
+      const daySchedules = (schedules || []).filter((s) => {
+        const sDate = extractDateStr(s.workDate || s.date || s.scheduleDate);
+        if (sDate !== dateStr) return false;
 
-      const scheduleDate = dayjs(dateVal);
-      const rawDay = scheduleDate.day(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-      const dayKey = rawDay === 0 ? "Sun" : dayNames[rawDay - 1];
+        const sNailArtistId = String(s.nailArtistId || s.artistId || s.nailArtist?.nailArtistId || s.nailArtist?.id || "").toLowerCase();
+        const sAccountId = String(s.staffId || s.userId || s.accountId || s.user?.id || s.nailArtist?.accountId || "").toLowerCase();
 
-      const startVal = schedule.shiftStart || schedule.startTime || schedule.start || schedule.from || schedule.checkIn;
-      const endVal = schedule.shiftEnd || schedule.endTime || schedule.end || schedule.to || schedule.checkOut;
-      const statusVal = schedule.status || schedule.scheduleStatus || "Active";
+        const aNailArtistId = String(artist.nailArtistId || artist.id || "").toLowerCase();
+        const aAccountId = String(artist.accountId || artist.staffId || artist.userId || "").toLowerCase();
 
-      const parseTimeToHours = (timeStr) => {
-        if (!timeStr) return 9;
-        const parts = String(timeStr).split(":");
-        const hour = parseInt(parts[0], 10);
-        const min = parts[1] ? parseInt(parts[1], 10) : 0;
-        return hour + min / 60;
-      };
+        return (
+          (sNailArtistId && (sNailArtistId === aNailArtistId || sNailArtistId === aAccountId)) ||
+          (sAccountId && (sAccountId === aNailArtistId || sAccountId === aAccountId))
+        );
+      });
 
-      const formatTime = (hourVal) => {
-        const h = Math.floor(hourVal);
-        const m = Math.round((hourVal - h) * 60);
-        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-      };
+      if (daySchedules.length > 0) {
+        const primarySchedule = daySchedules[0];
+        const statusVal = primarySchedule.status || "Active";
+        const isOff = statusVal.toLowerCase() === "off" || statusVal.toLowerCase() === "leave" || statusVal.toLowerCase() === "inactive";
 
-      const isOffStatus = statusVal.toLowerCase() === "off" || statusVal.toLowerCase() === "leave" || !startVal || !endVal;
+        const labels = daySchedules.map((s) => {
+          const start = s.shiftStart ? String(s.shiftStart).slice(0, 5) : "08:00";
+          const end = s.shiftEnd ? String(s.shiftEnd).slice(0, 5) : "17:00";
+          return `${start} - ${end}`;
+        }).join("\n");
 
-      if (!days[dayKey] || days[dayKey].status === "Off" || days[dayKey].status === "Leave") {
-        if (isOffStatus) {
-          days[dayKey] = {
-            id: schedule.id || schedule.scheduleId,
-            status: statusVal === "Leave" ? "Leave" : "Off",
-            rawSchedule: schedule,
-            schedules: [schedule]
-          };
-        } else {
-          const startHour = parseTimeToHours(startVal);
-          const endHour = parseTimeToHours(endVal);
-          days[dayKey] = {
-            id: schedule.id || schedule.scheduleId,
-            status: statusVal,
-            start: startHour,
-            end: endHour,
-            label: `${formatTime(startHour)} - ${formatTime(endHour)}`,
-            rawSchedule: schedule,
-            schedules: [schedule]
-          };
-        }
+        days[dayKey] = {
+          id: primarySchedule.scheduleId || primarySchedule.id || `sched-${i}`,
+          status: isOff ? (statusVal === "Leave" ? "Leave" : "Off") : statusVal,
+          label: labels || "08:00 - 17:00",
+          rawSchedule: primarySchedule,
+          schedules: daySchedules,
+        };
       } else {
-        // Group multiple active schedules on the same day
-        if (!isOffStatus) {
-          const startHour = parseTimeToHours(startVal);
-          const endHour = parseTimeToHours(endVal);
-
-          if (!days[dayKey].schedules) {
-            days[dayKey].schedules = [days[dayKey].rawSchedule || schedule];
-          }
-          days[dayKey].schedules.push(schedule);
-
-          // Sort chronologically
-          days[dayKey].schedules.sort((a, b) => {
-            const aS = a.shiftStart || a.startTime || a.start || "";
-            const bS = b.shiftStart || b.startTime || b.start || "";
-            return String(aS).localeCompare(String(bS));
-          });
-
-          // Rebuild compound label
-          const labels = days[dayKey].schedules.map((s) => {
-            const st = s.shiftStart || s.startTime || s.start || "";
-            const en = s.shiftEnd || s.endTime || s.end || "";
-            const sh = parseTimeToHours(st);
-            const eh = parseTimeToHours(en);
-            return `${formatTime(sh)} - ${formatTime(eh)}`;
-          });
-
-          days[dayKey].label = labels.join("\n");
-          days[dayKey].status = "Active";
-        }
+        days[dayKey] = { status: "Off" };
       }
-    });
+    }
 
     return {
-      id: artist.id,
-      name: artist.name,
-      avatarTone: artist.avatarTone || "from-[#ff8ebb] to-[#ea4f93]",
-      avatarUrl: artist.avatarUrl,
-      status: artist.status,
+      ...artist,
       days,
     };
   });
@@ -794,14 +767,20 @@ function TimelineSchedule({
         <div className="overflow-x-auto">
           <div className="min-w-[1100px]">
             {/* Header Row */}
-            <div className="flex border-b border-[#f1e7ed] pb-4">
+            <div className="flex border-b border-[#f0e8f0]/80 pb-3 mb-1">
               <div className="w-48 shrink-0" />
-              {weekDays.map((day) => (
-                <div key={day.key} className="flex-1 text-center">
-                  <p className="text-[11px] font-bold text-[#a88a9f]">{day.label}</p>
-                  <p className="text-xs font-semibold text-[#ea4f93]">{day.dateStr}</p>
-                </div>
-              ))}
+              {weekDays.map((day) => {
+                const isToday = day.dateStr === dayjs().format("MMM DD");
+                return (
+                  <div key={day.key} className="flex-1 text-center">
+                    <p className={`text-[10px] font-bold uppercase tracking-widest mb-0.5 ${isToday ? "text-[#ea4f93]" : "text-[#b3a0ae]"}`}>{day.label}</p>
+                    <span className={`inline-flex items-center justify-center rounded-xl px-2 py-0.5 text-[11px] font-extrabold shadow-sm ${isToday
+                      ? "bg-gradient-to-br from-[#ff7ab8] to-[#ea4f93] text-white shadow-[0_2px_8px_rgba(234,79,147,0.3)]"
+                      : "bg-[#f9f3f8] text-[#8d7a8a] border border-[#f0e8f0]"
+                      }`}>{day.dateStr}</span>
+                  </div>
+                );
+              })}
             </div>
 
             {weeklySchedules.length === 0 ? (
@@ -811,17 +790,20 @@ function TimelineSchedule({
               </div>
             ) : (
               weeklySchedules.map((staff) => (
-                <div key={staff.id} className="flex py-4 border-b border-[#f1e7ed] last:border-0 items-center">
+                <div key={staff.id} className="flex py-3 border-b border-[#f6eff5]/90 last:border-0 items-center hover:bg-[#fdf9fc]/60 rounded-xl transition-colors">
                   {/* Staff Info */}
-                  <div className="w-48 shrink-0 flex items-center gap-3 pr-4">
-                    <StaffAvatar
-                      staff={{ ...staff, initials: getStaffInitials(staff.name) }}
-                      className="h-10 w-10 shrink-0 rounded-2xl object-cover ring-2 ring-[#fff5fa]"
-                      fallbackClassName={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${staff.avatarTone} text-[12px] font-bold text-white`}
-                    />
+                  <div className="w-48 shrink-0 flex items-center gap-2.5 pr-3">
+                    <div className="relative shrink-0">
+                      <StaffAvatar
+                        staff={{ ...staff, initials: getStaffInitials(staff.name) }}
+                        className="h-10 w-10 shrink-0 rounded-2xl object-cover ring-2 ring-white shadow-sm"
+                        fallbackClassName={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${staff.avatarTone} text-[12px] font-bold text-white shadow-sm`}
+                      />
+                      <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 border-2 border-white shadow-sm" />
+                    </div>
                     <div className="min-w-0">
-                      <p className="text-[13px] font-bold text-[#2d1b35] truncate">{staff.name}</p>
-                      <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${SCHEDULE_STATUS_STYLES[staff.status] || "bg-gray-100 text-gray-600"}`}>
+                      <p className="text-[12px] font-bold text-[#2d1b35] truncate leading-tight">{staff.name}</p>
+                      <span className={`inline-flex rounded-full px-1.5 py-0.5 text-[9px] font-bold tracking-wide ${SCHEDULE_STATUS_STYLES[staff.status] || "bg-gray-100 text-gray-600"}`}>
                         {staff.status}
                       </span>
                     </div>
@@ -836,47 +818,75 @@ function TimelineSchedule({
 
                     // Extract shift arrays
                     const shiftLabels = !isOff && dayData?.label ? dayData.label.split("\n") : [];
+                    const isSplitShift = shiftLabels.length > 1;
 
-                    let containerClass = "h-[72px] rounded-xl flex flex-col items-center justify-center text-center transition-all duration-300 p-2 ";
+                    // Determine card style
+                    let containerClass = "relative min-h-[84px] rounded-2xl flex flex-col items-center justify-center text-center transition-all duration-200 p-2 group/cell overflow-hidden ";
                     if (hasSchedule) {
                       if (isOff) {
                         if (isLeave) {
-                          containerClass += "bg-gradient-to-br from-[#fffdf9] to-[#fff9ee] border border-[#ffe0b2] text-[#d97706] hover:shadow-sm";
+                          containerClass += "bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200/70 cursor-pointer hover:shadow-md";
                         } else {
-                          containerClass += "bg-[#fafbfc] border border-dashed border-[#e4dbe0] text-[#a88a9f]";
+                          containerClass += "bg-gradient-to-br from-slate-50 to-slate-100/60 border border-slate-200/50 cursor-pointer hover:bg-slate-100";
                         }
                       } else {
-                        // Active working days get a clean pink accent card
-                        containerClass += "bg-white border-l-[3.5px] border-l-[#ea4f93] border-y border-r border-[#f1e7ed] cursor-pointer hover:shadow-md hover:border-[#ea4f93]/40 shadow-sm";
+                        containerClass += "bg-gradient-to-br from-[#edfbf4] to-[#d4f5e2] border border-emerald-200/80 cursor-pointer hover:shadow-lg hover:-translate-y-0.5 shadow-sm";
                       }
                     } else {
-                      // Empty slot (Day Off)
-                      containerClass += "bg-[#fafbfc] border border-dashed border-[#e4dbe0] text-[#b09cb0]/70";
+                      containerClass += "bg-white/70 border border-slate-100 cursor-pointer hover:bg-[#fff8fb] hover:border-rose-200/50 group";
                     }
 
                     return (
-                      <div key={day.key} className="flex-1 px-1">
+                      <div key={day.key} className="flex-1 px-0.5">
                         <div
-                          onClick={() => hasSchedule && onEditSchedule && onEditSchedule(staff, day.key, dayData)}
+                          onClick={() => onEditSchedule && onEditSchedule(staff, day.key, dayData)}
                           className={containerClass}
                         >
+                          {/* Decorative shimmer blob for active cells */}
+                          {!isOff && hasSchedule && (
+                            <div className="pointer-events-none absolute -top-4 -right-4 h-16 w-16 rounded-full bg-emerald-400/10 blur-xl" />
+                          )}
+
                           {isOff ? (
-                            <span className={`text-[10px] font-bold tracking-wide ${isLeave ? "text-[#db8520]" : "text-[#a88a9f]"}`}>
-                              {isLeave ? "On Leave" : "Day Off"}
-                            </span>
+                            <div className="flex flex-col items-center gap-1">
+                              {isLeave ? (
+                                <div className="flex flex-col items-center gap-1">
+                                  <span className="text-[9px] font-bold uppercase tracking-widest text-amber-500">On Leave</span>
+                                  <span className="rounded-full bg-amber-100 border border-amber-200 px-2 py-0.5 text-[8px] font-bold text-amber-600">Approved</span>
+                                </div>
+                              ) : (
+                                <>
+                                  <span className="text-[9px] font-semibold text-slate-300 tracking-wide group-hover/cell:opacity-0 transition-opacity">— Off —</span>
+                                  <span className="absolute inset-0 flex flex-col items-center justify-center text-[9px] font-bold text-[#E84F93] opacity-0 group-hover/cell:opacity-100 transition-opacity bg-pink-50/95 rounded-2xl border border-pink-200/60 gap-1">
+                                    <span className="text-[16px] leading-none">✦</span>
+                                    Assign Shift
+                                  </span>
+                                </>
+                              )}
+                            </div>
                           ) : (
-                            <div className="flex flex-col gap-1 w-full justify-center">
-                              {shiftLabels.map((shift, sIdx) => (
-                                <span
-                                  key={sIdx}
-                                  className="inline-block px-1.5 py-0.5 rounded-md bg-[#ffeaf4] text-[#ea4f93] text-[9px] font-extrabold tracking-tight border border-[#fbd2e8]/40 truncate w-full text-center"
-                                >
-                                  {shift}
+                            <div className="flex flex-col gap-1 w-full justify-center items-center">
+                              {isSplitShift && (
+                                <div className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-violet-500 to-purple-600 px-2 py-0.5 text-[7.5px] font-bold text-white uppercase tracking-widest shadow-sm">
+                                  <span>⚡ Split ({shiftLabels.length})</span>
+                                </div>
+                              )}
+                              <div className="flex flex-col gap-1 w-full">
+                                {shiftLabels.map((shift, sIdx) => (
+                                  <span
+                                    key={sIdx}
+                                    className="inline-flex items-center justify-center gap-1 px-2 py-1 rounded-xl bg-white/90 backdrop-blur-sm text-emerald-800 text-[9.5px] font-extrabold tracking-tight border border-emerald-200/80 shadow-sm w-full text-center"
+                                  >
+                                    <Clock size={9} className="text-emerald-500 shrink-0" />
+                                    <span>{shift}</span>
+                                  </span>
+                                ))}
+                              </div>
+                              {!isSplitShift && (
+                                <span className="text-[7.5px] font-bold text-emerald-600 uppercase tracking-widest block leading-none mt-0.5">
+                                  {dayData?.duration ? `${dayData.duration}h` : dayData?.status || "Active"}
                                 </span>
-                              ))}
-                              <span className="text-[7.5px] font-bold text-[#b39aac] uppercase tracking-wider mt-0.5 block leading-none">
-                                {dayData?.status || "Active"}
-                              </span>
+                              )}
                             </div>
                           )}
                         </div>
@@ -971,33 +981,32 @@ export function StaffManagementPage() {
   const [loadingModalSchedules, setLoadingModalSchedules] = useState(false);
 
   const loadSchedules = useCallback(async () => {
-    if (staffArtists.length === 0) return;
     try {
       setLoadingSchedules(true);
-      const startStr = monday.format("YYYY-MM-DDT00:00:00");
-      const endStr = sunday.format("YYYY-MM-DDT23:59:59");
+      const activeSalonId = salonId || (await getSalonIdAsync()) || getSalonId();
+      if (!activeSalonId) {
+        setSchedules([]);
+        return;
+      }
 
-      const promises = staffArtists.map(async (artist) => {
-        try {
-          const data = await fetchArtistSchedules(artist.id, {
-            startDate: startStr,
-            endDate: endStr
-          });
-          return data || [];
-        } catch (err) {
-          console.error(`Failed to load schedules for artist ${artist.id}:`, err);
-          return [];
-        }
+      const startStr = monday.subtract(1, "day").format("YYYY-MM-DD");
+      const endStr = sunday.add(1, "day").format("YYYY-MM-DD");
+
+      const data = await fetchSchedulesBySalonId(activeSalonId, {
+        startDate: startStr,
+        endDate: endStr,
       });
 
-      const results = await Promise.all(promises);
-      setSchedules(results.flat());
+      const list = Array.isArray(data) ? data : data?.items || [];
+      console.log("Timeline loaded salon schedules:", list);
+      setSchedules(list);
     } catch (err) {
       console.error("Failed to load schedules:", err);
+      setSchedules([]);
     } finally {
       setLoadingSchedules(false);
     }
-  }, [monday, sunday, staffArtists]);
+  }, [salonId, monday, sunday]);
 
   useEffect(() => {
     loadSchedules();
@@ -1245,24 +1254,35 @@ export function StaffManagementPage() {
 
   const mapApiArtistToUiFormat = (apiArtist) => {
     console.log("Mapping API artist:", apiArtist);
+    const fullName =
+      apiArtist.account?.fullName ||
+      (apiArtist.firstName && apiArtist.lastName
+        ? `${apiArtist.firstName} ${apiArtist.lastName}`
+        : apiArtist.fullName || apiArtist.name || "Nail Artist");
+
+    const artistId = apiArtist.nailArtistId || apiArtist.id || apiArtist.staffId || apiArtist.userId;
+    const accountId = apiArtist.accountId || apiArtist.account?.id || apiArtist.userId;
+
     return {
-      id: apiArtist.staffId || apiArtist.userId || apiArtist.id || `artist-${Math.random()}`,
-      name: `${apiArtist.firstName || ""} ${apiArtist.lastName || ""}`.trim() || "Unnamed Artist",
-      role: apiArtist.role || "Nail Artist",
-      rating: apiArtist.averageRating || 4.5,
+      id: artistId,
+      nailArtistId: apiArtist.nailArtistId || apiArtist.id,
+      accountId: accountId,
+      staffId: apiArtist.staffId || apiArtist.id,
+      userId: accountId,
+      name: fullName,
+      role: apiArtist.role || "Staff_Artist",
+      rating: apiArtist.averageRating || apiArtist.rating || 4.5,
       status: apiArtist.status || "Active",
-      skills: [], // Will hold skill objects
+      skills: apiArtist.skills || [],
       stats: {
         today: 0,
         month: 0,
         revenue: "$0",
       },
       avatarTone: "from-[#ff8ebb] to-[#ea4f93]",
-      avatarUrl: apiArtist.avatarUrl || "",
-      email: apiArtist.email || "",
-      phone: apiArtist.phone || "",
-      staffId: apiArtist.staffId || apiArtist.id,
-      userId: apiArtist.userId,
+      avatarUrl: apiArtist.account?.avatarUrl || apiArtist.avatarUrl || "",
+      email: apiArtist.account?.email || apiArtist.email || "",
+      phone: apiArtist.account?.phone || apiArtist.phone || "",
     };
   };
 
@@ -1282,27 +1302,22 @@ export function StaffManagementPage() {
   };
 
   useEffect(() => {
-    try {
-      const id = getSalonId();
-      setSalonId(id);
-    } catch (e) {
-      console.warn("Failed to get salonId:", e);
-    }
-  }, []);
-
-  useEffect(() => {
     const loadNailArtists = async () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await fetchNailArtists();
+
+        const activeSalonId = (await getSalonIdAsync()) || getSalonId();
+        if (activeSalonId) {
+          setSalonId(activeSalonId);
+        }
+
+        const data = await fetchNailArtists(activeSalonId);
         const mappedDataPromises = Array.isArray(data)
           ? data.map(async (apiArtist) => {
             const artist = mapApiArtistToUiFormat(apiArtist);
-            // Fetch skills for this artist
             try {
-              const skills = await fetchNailArtistSkills(apiArtist.staffId || apiArtist.id || apiArtist.userId);
-              // Keep skills as array of objects so we can use them in drawer and card
+              const skills = await fetchNailArtistSkills(apiArtist.nailArtistId || apiArtist.staffId || apiArtist.id || apiArtist.userId);
               artist.skills = skills;
             } catch (err) {
               console.warn("Failed to load skills for artist", artist.id, err);
@@ -1329,7 +1344,7 @@ export function StaffManagementPage() {
 
     try {
       setLoadingBookings(true);
-      const result = await fetchBookingsBySalonId(salonId, { pageNumber: 1, pageSize: 1000 });
+      const result = await fetchBookingsBySalonId(salonId, { pageNumber: 1, pageSize: 1000, isAdmin: true });
       const apiBookings = result?.items || (Array.isArray(result) ? result : []);
       setBookings(apiBookings);
     } catch (err) {
@@ -1447,60 +1462,80 @@ export function StaffManagementPage() {
           <Spin size="large" tip="Loading staff artists..." />
         </div>
       ) : (
-        <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="space-y-5">
-          <motion.div variants={fadeInUp} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            {summaryStats.map((stat) => (
-              <PremiumCard key={stat.label} className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${stat.tone}`}>
-                    <stat.icon size={18} />
+        <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="space-y-6">
+          {/* Luxury Rose Pink Hero Header */}
+          <motion.div variants={fadeInUp}>
+            <div className="relative overflow-hidden rounded-[32px] border border-[#F3D6E5] bg-gradient-to-r from-[#FFF0F5] via-[#FFF6FA] to-[#FFE4EE] p-6 lg:p-8 text-[#2B182B] shadow-[0_15px_40px_rgba(232,79,147,0.12)]">
+              {/* Ambient Glow Elements */}
+              <div className="pointer-events-none absolute -right-20 -top-20 h-96 w-96 rounded-full bg-gradient-to-br from-[#E84F93]/20 via-[#FF75A8]/15 to-transparent blur-3xl" />
+              <div className="pointer-events-none absolute -left-20 -bottom-20 h-96 w-96 rounded-full bg-gradient-to-tr from-[#E5C158]/20 via-[#C99635]/10 to-transparent blur-3xl" />
+
+              <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex items-center gap-4.5">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-[24px] bg-gradient-to-br from-[#F7E7CE] via-[#E5C158] to-[#C99635] text-white shadow-[0_10px_25px_rgba(201,150,53,0.35)] border border-white/60 shrink-0">
+                    <Users size={30} className="drop-shadow-md text-white" />
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-xl font-bold text-[#2d1b35]">{stat.value}</p>
-                    <p className="truncate text-[11px] text-[#8b7382]">{stat.label}</p>
+                  <div>
+                    <div className="inline-flex items-center gap-2 rounded-full border border-[#E84F93]/30 bg-[#E84F93]/10 px-3.5 py-1 text-[11px] font-extrabold text-[#E84F93] backdrop-blur-md shadow-xs">
+                      <Sparkles size={13} className="text-[#E84F93] animate-pulse" />
+                      <span>Salon Staff & Artisan Roster</span>
+                    </div>
+                    <h1 className="text-2xl lg:text-3xl font-extrabold text-[#2B182B] mt-1.5 tracking-tight font-serif">
+                      Staff Artists
+                    </h1>
+                    <p className="mt-1 text-xs lg:text-sm text-[#8C6682] font-semibold leading-relaxed">
+                      Manage staff rosters, artisan profiles, workload performance, and skills
+                    </p>
                   </div>
                 </div>
-              </PremiumCard>
-            ))}
-          </motion.div>
 
-          <motion.div variants={fadeInUp}>
-            <InsightStrip
-              mostCompletedStaff={performanceInsights.mostCompletedStaff}
-              leastCompletedStaff={performanceInsights.leastCompletedStaff}
-              loadingBookings={loadingBookings}
-            />
-          </motion.div>
+                <div className="flex flex-wrap items-center gap-3">
+                  {QUICK_ACTIONS.map((action) => {
+                    const Icon = {
+                      "calendar": CalendarDays,
+                      "award": Award,
+                      "chart": BarChart3,
+                      "arrow": ArrowRightLeft,
+                    }[action.icon] || CalendarDays;
+                    const handler = getActionHandler(action.label);
 
-          <motion.div variants={fadeInUp} className="flex flex-wrap gap-2">
-            {QUICK_ACTIONS.map((action) => {
-              const Icon = {
-                "calendar": CalendarDays,
-                "award": Award,
-                "chart": BarChart3,
-                "arrow": ArrowRightLeft,
-              }[action.icon] || CalendarDays;
-              const handler = getActionHandler(action.label);
+                    return (
+                      <button
+                        key={action.label}
+                        type="button"
+                        onClick={handler}
+                        className="inline-flex items-center gap-2 rounded-full border border-[#F3D6E5] bg-white/90 px-4 py-2.5 text-xs font-extrabold text-[#E84F93] shadow-2xs hover:bg-[#FFF0F5] transition"
+                      >
+                        <Icon size={14} />
+                        <span>{action.label}</span>
+                      </button>
+                    );
+                  })}
+                  <Link
+                    to={ROUTES.managerStaffArtistsCreate}
+                    className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#E84F93] via-[#EC4899] to-[#F43F5E] px-6 py-2.5 text-xs font-bold text-white shadow-[0_10px_25px_rgba(232,79,147,0.35)] hover:shadow-xl transition-all"
+                  >
+                    <UserPlus size={16} />
+                    <span>Add Staff Artist</span>
+                  </Link>
+                </div>
+              </div>
 
-              return (
-                <button
-                  key={action.label}
-                  type="button"
-                  onClick={handler}
-                  className="inline-flex items-center gap-2 rounded-xl border border-[#f1c6dd] bg-white px-4 py-2 text-[11px] font-semibold text-[#ea4f93] transition hover:bg-[#fffafd] active:scale-[0.98]"
-                >
-                  <Icon size={14} />
-                  {action.label}
-                </button>
-              );
-            })}
-            <Link
-              to={ROUTES.managerStaffArtistsCreate}
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] px-4 py-2 text-[11px] font-semibold text-white shadow-[0_6px_16px_rgba(234,79,147,0.2)] transition hover:opacity-95 active:scale-[0.98]"
-            >
-              <UserPlus size={14} />
-              Add Staff Artist
-            </Link>
+              {/* 4 Clean 4-Column KPI Cards */}
+              <div className="grid gap-4 pt-6 mt-6 border-t border-slate-200/60 grid-cols-2 lg:grid-cols-4">
+                {summaryStats.map((stat) => (
+                  <div key={stat.label} className="rounded-2xl border border-slate-200/80 bg-white p-4.5 shadow-2xs hover:border-[#E84F93]/40 transition group">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">{stat.label}</p>
+                      <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${stat.tone} group-hover:scale-105 transition`}>
+                        <stat.icon size={16} />
+                      </div>
+                    </div>
+                    <p className="mt-2.5 text-2xl font-bold text-slate-900 tracking-tight">{stat.value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </motion.div>
 
           <motion.div variants={fadeInUp}>
@@ -1521,8 +1556,8 @@ export function StaffManagementPage() {
                           type="button"
                           onClick={() => { setActiveFilter(filter); setCurrentPage(1); }}
                           className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${isActive
-                              ? "bg-[#ea4f93] text-white shadow-[0_4px_12px_rgba(234,79,147,0.25)]"
-                              : "border border-[#f3d7e4] bg-white text-[#7f6478] hover:border-[#ea4f93]/30 hover:text-[#ea4f93]"
+                            ? "bg-[#ea4f93] text-white shadow-[0_4px_12px_rgba(234,79,147,0.25)]"
+                            : "border border-[#f3d7e4] bg-white text-[#7f6478] hover:border-[#ea4f93]/30 hover:text-[#ea4f93]"
                             }`}
                         >
                           {filter}
@@ -1559,8 +1594,8 @@ export function StaffManagementPage() {
                     onClick={() => { setQuery(""); setSelectedDate(null); setActiveFilter("All"); setCurrentPage(1); }}
                     disabled={!query.trim() && !selectedDate && activeFilter === "All"}
                     className={`h-10 rounded-xl border px-4 text-sm font-semibold transition ${query.trim() || selectedDate || activeFilter !== "All"
-                        ? "border-[#f3d7e4] bg-white text-[#ea4f93] hover:bg-[#fff5fa]"
-                        : "cursor-not-allowed border-[#f5e8ef] bg-[#fffafb] text-[#d6b9c8]"
+                      ? "border-[#f3d7e4] bg-white text-[#ea4f93] hover:bg-[#fff5fa]"
+                      : "cursor-not-allowed border-[#f5e8ef] bg-[#fffafb] text-[#d6b9c8]"
                       }`}
                   >
                     Reset
@@ -1944,13 +1979,12 @@ export function StaffManagementPage() {
                       return (
                         <label
                           key={day.key}
-                          className={`relative flex min-h-[86px] cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border px-1 py-2 text-center transition-all duration-200 ${
-                            hasExisting
-                              ? "cursor-not-allowed border-[#f1e7ed] bg-[#f6f6f6]"
-                              : isChecked
-                                ? "border-[#ea4f93] bg-[#fff5fa] shadow-sm ring-1 ring-[#ea4f93]/25"
-                                : "border-rose-100 bg-white hover:border-rose-200 hover:shadow-sm"
-                          }`}
+                          className={`relative flex min-h-[86px] cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border px-1 py-2 text-center transition-all duration-200 ${hasExisting
+                            ? "cursor-not-allowed border-[#f1e7ed] bg-[#f6f6f6]"
+                            : isChecked
+                              ? "border-[#ea4f93] bg-[#fff5fa] shadow-sm ring-1 ring-[#ea4f93]/25"
+                              : "border-rose-100 bg-white hover:border-rose-200 hover:shadow-sm"
+                            }`}
                         >
                           {hasExisting ? (
                             <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#ece7ea] text-[#a88a9f]">
@@ -1999,8 +2033,8 @@ export function StaffManagementPage() {
                         type="button"
                         onClick={() => setNewShiftStatus(key)}
                         className={`flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-xs font-semibold transition ${isActive
-                            ? `${meta.color} ring-2 ring-offset-1 ring-current`
-                            : "border-[#f1e7ed] bg-white text-[#a88a9f] hover:border-[#ea4f93]/30"
+                          ? `${meta.color} ring-2 ring-offset-1 ring-current`
+                          : "border-[#f1e7ed] bg-white text-[#a88a9f] hover:border-[#ea4f93]/30"
                           }`}
                       >
                         <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
@@ -2071,11 +2105,10 @@ export function StaffManagementPage() {
                                 : [...prev, idx]
                             );
                           }}
-                          className={`rounded-xl border py-1.5 text-center text-[9.5px] font-bold tracking-tight transition-all duration-150 ${
-                            isSelected
-                              ? "border-[#ea4f93] bg-[#fff5fa] text-[#ea4f93] shadow-sm"
-                              : "border-slate-100 bg-[#fafafa] text-slate-500 hover:border-[#ea4f93]/30 hover:bg-[#fffbfc]"
-                          }`}
+                          className={`rounded-xl border py-1.5 text-center text-[9.5px] font-bold tracking-tight transition-all duration-150 ${isSelected
+                            ? "border-[#ea4f93] bg-[#fff5fa] text-[#ea4f93] shadow-sm"
+                            : "border-slate-100 bg-[#fafafa] text-slate-500 hover:border-[#ea4f93]/30 hover:bg-[#fffbfc]"
+                            }`}
                         >
                           {slot.start} - {slot.end}
                         </button>

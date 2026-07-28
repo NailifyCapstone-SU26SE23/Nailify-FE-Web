@@ -202,3 +202,9 @@ export async function createPlacedNailComponent(values: PlacedNailComponentFormV
     configJson: String(item?.configJson ?? values.configJson ?? ''),
   };
 }
+
+export async function deletePlacedNailComponent(id: string | number): Promise<void> {
+  await axiosClient.delete(`/NailComponents/${id}`, {
+    headers: getAuthHeaders(),
+  });
+}

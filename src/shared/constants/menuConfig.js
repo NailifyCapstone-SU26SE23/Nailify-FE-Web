@@ -155,17 +155,17 @@ export const MENU_CONFIG = {
       section: "Main",
     },
     {
-      key: "receptionist-queue",
-      label: "Walk-In Queue",
-      to: ROUTES.receptionistQueue,
-      icon: "users",
-      section: "Main",
-    },
-    {
       key: "receptionist-waitlist",
       label: "Salon Waitlist",
       to: ROUTES.receptionistWaitlist,
       icon: "support",
+      section: "Main",
+    },
+    {
+      key: "receptionist-chairs",
+      label: "Chairs",
+      to: ROUTES.receptionistChairs,
+      icon: "armchair",
       section: "Main",
     },
     {
@@ -208,6 +208,33 @@ export const MENU_CONFIG = {
       section: "Main",
       badge: "16",
     },
+    // {
+    //   key: "manager-waitlist",
+    //   label: "Salon Waitlist",
+    //   to: ROUTES.managerWaitlist,
+    //   icon: "support",
+    //   section: "Main",
+    // },
+    // {
+    //   key: "manager-queue",
+    //   label: "Walk-In Queue",
+    //   to: ROUTES.managerQueue,
+    //   icon: "users",
+    //   section: "Main",
+    // },
+    {
+      key: "manager-chairs",
+      label: "Chairs",
+      to: ROUTES.managerChairs,
+      icon: "armchair",
+    },
+    {
+      key: "manager-reschedule",
+      label: "Reschedule",
+      to: ROUTES.managerReschedule,
+      icon: "clock",
+      section: "Main",
+    },
     {
       key: "manager-waitlist",
       label: "Salon Waitlist",
@@ -232,15 +259,22 @@ export const MENU_CONFIG = {
     {
       key: "manager-schedules",
       label: "Schedules",
+      to: ROUTES.managerSchedules,
       icon: "calendar",
       section: "Main",
-      disabled: true,
     },
     {
       key: "manager-staff",
       label: "Staff Artists",
       to: ROUTES.managerStaffArtists,
       icon: "users",
+      section: "Main",
+    },
+    {
+      key: "manager-breaks",
+      label: "Artist Breaks",
+      to: ROUTES.managerBreaks,
+      icon: "clock",
       section: "Main",
     },
     {
@@ -358,6 +392,13 @@ export const MENU_CONFIG = {
       label: "Nail Shapes",
       to: ROUTES.adminNailShapes,
       icon: "shapes",
+      section: "Main",
+    },
+    {
+      key: "admin-shape-method-configs",
+      label: "Shape Method Configs",
+      to: ROUTES.adminShapeMethodConfigs,
+      icon: "sliders",
       section: "Main",
     },
     {

@@ -334,7 +334,7 @@ export function QuizManagement() {
                                 </div>
                             </div>
                             <div className="mt-4">
-                                <span className="text-3xl font-black font-mono tracking-tight text-[#3f2034]">{item.value}</span>
+                                <span className="text-3xl font-bold font-mono tracking-tight text-[#3f2034]">{item.value}</span>
                                 <p className="mt-1 text-xs text-[#a3909e]">{item.desc}</p>
                             </div>
                         </div>
@@ -361,8 +361,8 @@ export function QuizManagement() {
                                 key={opt}
                                 onClick={() => setStatusFilter(opt)}
                                 className={`rounded-full px-4 py-1 text-xs font-bold transition-all ${statusFilter === opt
-                                        ? "bg-[#ea4f93] text-white"
-                                        : "text-[#8c6b81] hover:bg-[#fff0f6]"
+                                    ? "bg-[#ea4f93] text-white"
+                                    : "text-[#8c6b81] hover:bg-[#fff0f6]"
                                     }`}
                             >
                                 {opt}
@@ -388,7 +388,7 @@ export function QuizManagement() {
                         <span className="flex h-5 w-5 items-center justify-center rounded bg-[#fff0f6] text-xs font-bold text-[#ea4f93]">
                             Q
                         </span>
-                        <h3 className="text-sm font-black uppercase tracking-wider text-[#3f2034]">Assessment Flow Steps</h3>
+                        <h3 className="text-sm font-bold uppercase tracking-wider text-[#3f2034]">Assessment Flow Steps</h3>
                     </div>
 
                     <div className="relative min-h-[350px]">
@@ -414,7 +414,7 @@ export function QuizManagement() {
                                             <div className="flex justify-between items-start gap-4">
                                                 <div>
                                                     <div className="flex items-center gap-2 flex-wrap">
-                                                        <span className="text-[10px] font-black uppercase tracking-widest text-[#ea4f93] bg-[#fff0f6] px-2 py-0.5 rounded-md font-mono">
+                                                        <span className="text-[10px] font-bold uppercase tracking-widest text-[#ea4f93] bg-[#fff0f6] px-2 py-0.5 rounded-md font-mono">
                                                             Step {q.sortOrder}
                                                         </span>
                                                         <span className="text-[10px] font-bold text-[#a6869a] uppercase tracking-wider">
@@ -502,7 +502,7 @@ export function QuizManagement() {
                                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#fff0f6] text-[#ea4f93] mb-4">
                                     <HelpCircle size={20} />
                                 </div>
-                                <h4 className="text-base font-black text-[#3f2034]">No Quiz Elements Found</h4>
+                                <h4 className="text-base font-bold text-[#3f2034]">No Quiz Elements Found</h4>
                                 <p className="mt-2 text-xs text-[#8c7484] max-w-xs">
                                     Try refining your search filter, resetting filters, or configure a diagnostic question.
                                 </p>
@@ -517,7 +517,7 @@ export function QuizManagement() {
                         <span className="flex h-5 w-5 items-center justify-center rounded bg-[#fff0f6] text-xs font-bold text-[#ea4f93]">
                             S
                         </span>
-                        <h3 className="text-sm font-black uppercase tracking-wider text-[#3f2034]">Nail Shapes Recommendation Model</h3>
+                        <h3 className="text-sm font-bold uppercase tracking-wider text-[#3f2034]">Nail Shapes Recommendation Model</h3>
                     </div>
 
                     {/* Shape List Panel */}
@@ -527,8 +527,8 @@ export function QuizManagement() {
                                 key={shape.id}
                                 onClick={() => handleSelectShape(shape)}
                                 className={`flex items-center justify-between rounded-2xl border p-4 text-left transition-all duration-300 ${selectedShape?.id === shape.id
-                                        ? "border-[#ea4f93] bg-white/90 shadow-[0_8px_20px_rgba(234,79,147,0.15)] backdrop-blur-md translate-x-1"
-                                        : "border-white/60 bg-white/40 backdrop-blur-sm hover:border-[#eba2c6]/50 hover:bg-white/80 hover:shadow-md hover:translate-x-1"
+                                    ? "border-[#ea4f93] bg-white/90 shadow-[0_8px_20px_rgba(234,79,147,0.15)] backdrop-blur-md translate-x-1"
+                                    : "border-white/60 bg-white/40 backdrop-blur-sm hover:border-[#eba2c6]/50 hover:bg-white/80 hover:shadow-md hover:translate-x-1"
                                     }`}
                             >
                                 <div>
@@ -545,8 +545,8 @@ export function QuizManagement() {
                         <div className="rounded-[2rem] border border-[#f5e3ed] bg-white p-6 shadow-sm">
                             <div className="flex items-center justify-between border-b border-[#fcecf4] pb-3 mb-4">
                                 <div>
-                                    <span className="text-[9px] font-black uppercase tracking-widest text-[#a6869a] block">Target Diagnostic Style</span>
-                                    <h4 className="text-base font-black text-[#3f2034] mt-0.5">{selectedShape.name}</h4>
+                                    <span className="text-[9px] font-bold uppercase tracking-widest text-[#a6869a] block">Target Diagnostic Style</span>
+                                    <h4 className="text-base font-bold text-[#3f2034] mt-0.5">{selectedShape.name}</h4>
                                 </div>
                                 <button
                                     onClick={() => setIsEditingShape(!isEditingShape)}
@@ -560,7 +560,7 @@ export function QuizManagement() {
                             {isEditingShape ? (
                                 <form onSubmit={handleSaveShape} className="space-y-4">
                                     <div className="flex flex-col gap-1.5">
-                                        <label className="text-[10px] font-black uppercase tracking-wider text-[#7a6473]">Shape Description</label>
+                                        <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a6473]">Shape Description</label>
                                         <textarea
                                             value={shapeEditData.description}
                                             onChange={(e) => setShapeEditData(prev => ({ ...prev, description: e.target.value }))}
@@ -572,7 +572,7 @@ export function QuizManagement() {
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="flex flex-col gap-1.5">
-                                            <label className="text-[10px] font-black uppercase tracking-wider text-[#7a6473]">Upkeep Difficulty</label>
+                                            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a6473]">Upkeep Difficulty</label>
                                             <select
                                                 value={shapeEditData.difficulty}
                                                 onChange={(e) => setShapeEditData(prev => ({ ...prev, difficulty: e.target.value }))}
@@ -585,7 +585,7 @@ export function QuizManagement() {
                                         </div>
 
                                         <div className="flex flex-col gap-1.5">
-                                            <label className="text-[10px] font-black uppercase tracking-wider text-[#7a6473]">Nail Strength Required</label>
+                                            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a6473]">Nail Strength Required</label>
                                             <select
                                                 value={shapeEditData.strengthLevel}
                                                 onChange={(e) => setShapeEditData(prev => ({ ...prev, strengthLevel: e.target.value }))}
@@ -600,7 +600,7 @@ export function QuizManagement() {
                                     </div>
 
                                     <div className="flex flex-col gap-1.5">
-                                        <label className="text-[10px] font-black uppercase tracking-wider text-[#7a6473]">Diagnostic Rules Conditions (Triggers)</label>
+                                        <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a6473]">Diagnostic Rules Conditions (Triggers)</label>
                                         <textarea
                                             value={shapeEditData.rulesSummary}
                                             onChange={(e) => setShapeEditData(prev => ({ ...prev, rulesSummary: e.target.value }))}
@@ -673,7 +673,7 @@ export function QuizManagement() {
                             <div className="no-scrollbar overflow-y-auto flex-1 pb-4">
                                 <div className="flex items-center justify-between border-b border-[#fcecf4] pb-4">
                                     <div>
-                                        <h3 className="text-base font-black text-[#3f2034]">
+                                        <h3 className="text-base font-bold text-[#3f2034]">
                                             {activeQuestionId ? "Modify Diagnostic Question" : "Create Diagnostic Question"}
                                         </h3>
                                         <p className="text-xs text-[#8c7484]">Add options and recommendations mapping</p>
@@ -689,7 +689,7 @@ export function QuizManagement() {
                                 <form onSubmit={handleSaveQuestion} className="mt-5 space-y-4">
                                     {/* Question Text */}
                                     <div className="flex flex-col gap-2">
-                                        <label className="text-xs font-black uppercase tracking-wider text-[#7a6473]">
+                                        <label className="text-xs font-bold uppercase tracking-wider text-[#7a6473]">
                                             Question Text
                                         </label>
                                         <textarea
@@ -711,7 +711,7 @@ export function QuizManagement() {
                                     {/* Sorting Order, Type, and Category Key */}
                                     <div className="grid grid-cols-3 gap-2">
                                         <div className="flex flex-col gap-2">
-                                            <label className="text-xs font-black uppercase tracking-wider text-[#7a6473]">
+                                            <label className="text-xs font-bold uppercase tracking-wider text-[#7a6473]">
                                                 Sort Order
                                             </label>
                                             <input
@@ -725,7 +725,7 @@ export function QuizManagement() {
                                         </div>
 
                                         <div className="flex flex-col gap-2">
-                                            <label className="text-xs font-black uppercase tracking-wider text-[#7a6473]">
+                                            <label className="text-xs font-bold uppercase tracking-wider text-[#7a6473]">
                                                 Select Mode
                                             </label>
                                             <select
@@ -740,7 +740,7 @@ export function QuizManagement() {
                                         </div>
 
                                         <div className="flex flex-col gap-2">
-                                            <label className="text-xs font-black uppercase tracking-wider text-[#7a6473]">
+                                            <label className="text-xs font-bold uppercase tracking-wider text-[#7a6473]">
                                                 Category Key
                                             </label>
                                             <input
@@ -757,7 +757,7 @@ export function QuizManagement() {
                                     {/* Choices configuration */}
                                     <div className="flex flex-col gap-2.5 border-t border-[#fcecf4] pt-4">
                                         <div className="flex justify-between items-center">
-                                            <label className="text-xs font-black uppercase tracking-wider text-[#7a6473]">
+                                            <label className="text-xs font-bold uppercase tracking-wider text-[#7a6473]">
                                                 Choice Options
                                             </label>
                                             <button
@@ -780,7 +780,7 @@ export function QuizManagement() {
                                                 <div key={choiceIdx} className="rounded-2xl border border-[#fcecf4] p-4 bg-[#fffbfc] space-y-3 relative">
                                                     <div className="flex flex-col gap-2.5 pr-6">
                                                         <div className="flex items-center gap-2">
-                                                            <span className="text-[10px] font-black font-mono text-[#c9a7be] shrink-0">Option {choiceIdx + 1}</span>
+                                                            <span className="text-[10px] font-bold font-mono text-[#c9a7be] shrink-0">Option {choiceIdx + 1}</span>
                                                             <input
                                                                 type="text"
                                                                 value={choice.text}
@@ -832,8 +832,8 @@ export function QuizManagement() {
                                                                         type="button"
                                                                         onClick={() => handleChoiceRecommendToggle(choiceIdx, shape.id)}
                                                                         className={`flex items-center justify-center gap-1.5 rounded-lg border py-1.5 text-[10px] font-bold transition-all ${isSelected
-                                                                                ? "border-[#ea4f93] bg-[#fff6fa] text-[#ea4f93]"
-                                                                                : "border-[#fcecf4] bg-white text-[#8e7987] hover:border-[#eba2c6]"
+                                                                            ? "border-[#ea4f93] bg-[#fff6fa] text-[#ea4f93]"
+                                                                            : "border-[#fcecf4] bg-white text-[#8e7987] hover:border-[#eba2c6]"
                                                                             }`}
                                                                     >
                                                                         {isSelected ? <CheckSquare size={10} /> : <div className="h-2.5 w-2.5 border border-[#c9a7be] rounded-sm shrink-0" />}
@@ -873,7 +873,7 @@ export function QuizManagement() {
                         className="fixed top-6 right-6 z-50 flex w-[320px] items-start gap-3 rounded-2xl border border-white/60 bg-white/90 p-4 shadow-[0_20px_40px_-15px_rgba(234,79,147,0.25)] backdrop-blur-xl"
                     >
                         <div className="absolute top-0 bottom-0 left-0 w-1 rounded-l-2xl bg-gradient-to-b from-[#ea4f93] to-[#d14c84]" />
-                        
+
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#fff0f6] text-[#ea4f93] shadow-sm">
                             {notification.type === "error" ? (
                                 <AlertCircle size={16} strokeWidth={2.5} />
@@ -881,9 +881,9 @@ export function QuizManagement() {
                                 <Check size={16} strokeWidth={2.5} />
                             )}
                         </div>
-                        
+
                         <div className="flex-1 space-y-0.5 pr-2">
-                            <h4 className="text-[11px] font-black uppercase tracking-wider text-[#3f2034]">
+                            <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#3f2034]">
                                 {notification.type === "error" ? "System Error" : "Success"}
                             </h4>
                             <p className="text-[11.5px] leading-normal text-[#695463]">

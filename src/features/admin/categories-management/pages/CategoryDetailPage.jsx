@@ -232,7 +232,7 @@ export function CategoryDetailPage() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-[#cf3d74]">Category Detail</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">Category Detail</h1>
             <p className="text-xs font-medium text-slate-400">Review, edit, and delete this category from one page.</p>
           </div>
         </div>
@@ -396,10 +396,10 @@ export function CategoryDetailPage() {
         item={
           category
             ? {
-                title: category.name,
-                meta: `${category.categoryTypeName} | ${category.status}`,
-                note: `Category ID: ${category.categoryId}`,
-              }
+              title: category.name,
+              meta: `${category.categoryTypeName} | ${category.status}`,
+              note: `Category ID: ${category.categoryId}`,
+            }
             : null
         }
         warnings={["Backend delete for this resource changes the status to inactive."]}

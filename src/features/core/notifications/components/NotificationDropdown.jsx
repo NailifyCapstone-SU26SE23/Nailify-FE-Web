@@ -79,9 +79,9 @@ export function NotificationDropdown({ isOpen, onClose }) {
         <div className="border-b border-[#f7dfeb] px-5 py-4 bg-[#fff9fc] flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="font-black text-[#3f2b3f] text-base">Thông báo</h3>
+              <h3 className="font-bold text-[#3f2b3f] text-base">Thông báo</h3>
               {unreadCount > 0 && (
-                <span className="inline-flex items-center justify-center bg-[#ea4f93] text-white text-[10px] font-black h-5 min-w-5 px-1.5 rounded-full shadow-[0_4px_10px_rgba(234,79,147,0.3)]">
+                <span className="inline-flex items-center justify-center bg-[#ea4f93] text-white text-[10px] font-bold h-5 min-w-5 px-1.5 rounded-full shadow-[0_4px_10px_rgba(234,79,147,0.3)]">
                   {unreadCount}
                 </span>
               )}

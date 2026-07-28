@@ -22,6 +22,7 @@ export function BuilderActions({ handLandmarkerTask, onReturnToForm, onSaveDraft
   return (
     <div className="builder-actions">
       <section className="builder-panel builder-layer-panel">
+
         <div className="section-title">Adjust Selected Layer</div>
         <div className="transform-grid">
           <button id="ctrl-up" className="ctrl-btn" type="button">

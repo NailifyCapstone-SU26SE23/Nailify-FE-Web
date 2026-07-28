@@ -80,6 +80,7 @@ export function buildShaderParamFromControls(controls) {
     ...(config.texture || {}),
     type: config?.texture?.type || preset,
     roughness,
+    maskDataUrl: controls?.maskDataUrl || null,
   };
 
   config.shine = {
@@ -191,6 +192,7 @@ export function parseShaderParamToControls(shaderParam, surface = {}) {
     rainbowEnabled: hasRainbow,
     rainbowIntensity: Number(parsed?.rainbow?.intensity ?? parsed?.iridescence?.intensity ?? 0.6),
     roughness: Number(parsed?.texture?.roughness ?? (isMatte ? 0.9 : 0.3)),
+    maskDataUrl: parsed?.texture?.maskDataUrl || null,
     lightnessOffset: String(Number(surface?.lightnessOffset || 0)),
     saturationOffset: String(Number(surface?.saturationOffset || 0)),
     hueOffset: String(Number(surface?.hueOffset || 0)),

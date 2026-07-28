@@ -237,7 +237,7 @@ function BranchCard({ branch, onClick }) {
       <div className="flex flex-1 flex-col space-y-4 p-6">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="truncate text-[16px] font-black text-[#2d1b35]">{branch.name}</p>
+            <p className="truncate text-[16px] font-bold text-[#2d1b35]">{branch.name}</p>
           </div>
           <span className={`shrink-0 rounded-full px-4 py-2 text-[11px] font-bold ${branch.statusColor}`}>
             {branch.status}
@@ -430,7 +430,7 @@ export function SalonManagementPage() {
         // Fetch all managers to match with salons
         const managersData = await fetchAdminUsers({ role: "Manager", pageSize: 1000 });
         setManagers(managersData.items);
-        
+
         // Match managers to salons using the new salonId field
         const enrichedSalons = salonsData.items.map(salon => {
           const matchedManager = managersData.items.find(m => m.salonId === salon.id);
@@ -439,7 +439,7 @@ export function SalonManagementPage() {
             manager: matchedManager ? matchedManager.name : "Unassigned"
           };
         });
-        
+
         setSalons(enrichedSalons);
       } catch (err) {
         console.error("Failed to load salons/managers:", err);
@@ -482,23 +482,23 @@ export function SalonManagementPage() {
   const handleAssignManager = async (formData) => {
     const { managerId, salonId } = formData || assignManagerForm;
     console.log("handleAssignManager called with:", { managerId, salonId });
-    
+
     // Find the selected salon and manager names for the notification
     const selectedSalon = filteredSalons.find(s => s.id === salonId);
     const selectedManager = managers.find(m => m.id === managerId);
-    
+
     setIsAssigning(true);
     try {
       // First fetch the current raw user data
       const rawUser = await fetchRawAdminUserDetail(managerId);
       console.log("Raw user data:", rawUser);
-      
+
       // Send all user data plus updated salonId
       await updateAdminUser(managerId, {
         ...rawUser,
         salonId: salonId
       });
-      
+
       // Show success notification
       setNotificationModal({
         open: true,
@@ -506,7 +506,7 @@ export function SalonManagementPage() {
         title: "Manager Assigned Successfully",
         message: `${selectedManager?.name || "Manager"} has been assigned to ${selectedSalon?.name || "Salon"} successfully!`
       });
-      
+
       setSalonsRefreshKey(current => current + 1);
       setShowAssignManagerModal(false);
       setAssignManagerForm({ salonId: "", managerId: "" });
@@ -514,7 +514,7 @@ export function SalonManagementPage() {
       console.error("Failed to assign manager:", err);
       // Try to get the actual error message from the API response
       const apiErrorMessage = err?.response?.data?.message || err.message;
-      
+
       // Show error notification instead of just setting error state
       setNotificationModal({
         open: true,
@@ -613,10 +613,10 @@ export function SalonManagementPage() {
     setSelectedSlots(prev => {
       const currentSlots = prev[period];
       const isSelected = currentSlots.includes(slot);
-      
+
       return {
         ...prev,
-        [period]: isSelected 
+        [period]: isSelected
           ? currentSlots.filter(s => s !== slot)
           : [...currentSlots, slot]
       };
@@ -787,11 +787,10 @@ export function SalonManagementPage() {
                       whileTap={{ scale: 0.95 }}
                       type="button"
                       onClick={() => setStatusFilter(tab)}
-                      className={`rounded-full px-4 py-2 text-[12px] font-semibold transition-all duration-300 ${
-                        statusFilter === tab
+                      className={`rounded-full px-4 py-2 text-[12px] font-semibold transition-all duration-300 ${statusFilter === tab
                           ? "bg-[#ea4f93] text-white shadow-[0_10px_20px_rgba(226,93,143,0.22)]"
                           : "bg-[#fff5fb] text-[#a88a9f] hover:bg-[#fde7ef] hover:text-[#ea4f93]"
-                      }`}
+                        }`}
                     >
                       {tab}
                     </motion.button>
@@ -1059,11 +1058,10 @@ export function SalonManagementPage() {
                             whileTap={{ scale: 0.95 }}
                             type="button"
                             onClick={() => setBranchControlsPage(page)}
-                            className={`inline-flex h-9 w-9 items-center justify-center rounded-full text-[12px] font-bold transition-all duration-300 ${
-                              branchControlsPage === page
+                            className={`inline-flex h-9 w-9 items-center justify-center rounded-full text-[12px] font-bold transition-all duration-300 ${branchControlsPage === page
                                 ? "bg-[#ea4f93] text-white shadow-[0_8px_16px_rgba(234,79,147,0.25)]"
                                 : "bg-white text-[#ea4f93] hover:bg-[#fff5fb]"
-                            }`}
+                              }`}
                           >
                             {page}
                           </motion.button>
@@ -1143,11 +1141,11 @@ export function SalonManagementPage() {
         item={
           selectedSalon
             ? {
-                image: selectedSalon.image,
-                title: selectedSalon.name,
-                meta: selectedSalon.address,
-                note: `Manager: ${selectedSalon.manager}`,
-              }
+              image: selectedSalon.image,
+              title: selectedSalon.name,
+              meta: selectedSalon.address,
+              note: `Manager: ${selectedSalon.manager}`,
+            }
             : null
         }
         warnings={[
@@ -1180,7 +1178,7 @@ export function SalonManagementPage() {
         onCancel={() => setShowSetHoursModal(false)}
         salonOptions={salonOptions}
       />
-      
+
       <ActionConfirmModal
         open={notificationModal.open}
         intent={notificationModal.success ? "success" : "danger"}

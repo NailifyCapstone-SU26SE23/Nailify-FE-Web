@@ -156,7 +156,7 @@ export function StaffCreatePage() {
     <section className="mx-auto w-full min-w-0 max-w-[1300px] text-slate-700">
       <header className="mb-4 flex flex-col gap-4 rounded-[20px] bg-white/70 px-4 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur sm:mb-5 sm:rounded-[24px] sm:px-5 lg:rounded-[28px] lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
-          <h1 className="text-xl font-black tracking-tight text-[#cf3d74] sm:text-2xl lg:text-[28px]">
+          <h1 className="text-xl font-bold tracking-tight text-[#cf3d74] sm:text-2xl lg:text-[28px]">
             Add New Staff
           </h1>
           <p className="text-[11px] font-medium text-slate-400 sm:text-[12px]">
@@ -358,12 +358,12 @@ export function StaffCreatePage() {
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-pink-400 to-rose-300 text-[28px] font-black text-white">
+                      <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-pink-400 to-rose-300 text-[28px] font-bold text-white">
                         {getStaffInitials(formData.fullName || formData.firstName + " " + formData.lastName || "NS")}
                       </div>
                     )}
                   </div>
-                  <h3 className="text-[15px] font-black text-slate-800 mb-1">
+                  <h3 className="text-[15px] font-bold text-slate-800 mb-1">
                     {formData.fullName || formData.firstName + " " + formData.lastName || "New Staff Member"}
                   </h3>
                   <p className="text-xs text-slate-400 mb-3">

@@ -9,7 +9,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   getAdminNailDesignDetailRoute,
   getAdminNailVariantDetailRoute,
@@ -20,7 +20,78 @@ import {
   assignProceduresToVariant,
   fetchAdminNailVariantDetail,
   fetchProceduresByVariant,
+  fetchAdminNailVariantReferences,
+  updateAdminNailVariant,
 } from "../services/nailDesignManagementService";
+import {
+  buildColorJsonFromTryOn,
+  createVariantNailComponents,
+  findShapeId,
+  findSurfaceId,
+} from "../utils/variantTryOnUtils";
+import { fetchAdminProcedures } from "../../procedures-management/services/proceduresManagementService";
+import { Canvas } from "@react-three/fiber";
+import { Environment } from "@react-three/drei";
+import * as THREE from "three";
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function parseShaderParam(shaderParam) {
+  const rawValue = String(shaderParam || "").trim();
+  if (!rawValue) return {};
+  try {
+    return JSON.parse(rawValue);
+  } catch {
+    return {};
+  }
+}
+
+function NailSurface3DLayer({ surface }) {
+  if (!surface) return null;
+  const config = parseShaderParam(surface.shaderParam);
+
+  const textureType = String(config?.texture?.type || "").toLowerCase();
+  const isMatte = textureType.includes("matte") || config?.shine?.enabled === false;
+  const hasChrome = Boolean(config?.metalness?.enabled || config?.mirrorEffect?.enabled);
+  const hasRainbow = Boolean(config?.iridescence?.enabled || config?.holographic?.enabled);
+
+  const roughness = clamp(Number(config?.texture?.roughness ?? (isMatte ? 0.8 : 0.1)), 0, 1);
+  const metalness = hasChrome ? clamp(Number(config?.metalness?.intensity || 0.9), 0, 1) : 0;
+  const clearcoat = isMatte ? 0 : clamp(Number(config?.shine?.opacity || 1), 0, 1);
+  const iridescence = hasRainbow ? clamp(Number(config?.iridescence?.intensity || 0.8), 0, 1) : 0;
+
+  return (
+    <div className="absolute inset-0 h-full w-full pointer-events-none mix-blend-screen">
+      <Canvas
+        camera={{ position: [0, 0, 5], fov: 40 }}
+        style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
+        gl={{ alpha: true, antialias: true }}
+      >
+        <ambientLight intensity={isMatte ? 0.6 : 0.2} />
+        <directionalLight position={[5, 10, 5]} intensity={1.5} />
+        <directionalLight position={[-5, -10, 5]} intensity={0.5} />
+        <Environment preset="studio" />
+
+        {/* Generic convex sphere providing 3D curvature. CSS shapeMask clips it to exact nail shape. */}
+        <mesh scale={[1.4, 2.8, 0.6]}>
+          <sphereGeometry args={[1, 64, 64]} />
+          <meshPhysicalMaterial
+            color={new THREE.Color(0x000000)} // Black base becomes 100% transparent via CSS mix-blend-screen
+            roughness={roughness}
+            metalness={metalness}
+            clearcoat={clearcoat}
+            iridescence={iridescence}
+            transparent={true}
+            depthWrite={false}
+          />
+        </mesh>
+      </Canvas>
+    </div>
+  );
+}
+
 
 function isHexColor(value) {
   return /^#(?:[0-9a-f]{3}){1,2}$/i.test(String(value || "").trim());
@@ -260,29 +331,6 @@ function NailVariantHandPreview({ variantDetail }) {
                 <div className="relative h-48 w-24 overflow-hidden rounded-t-[32px] rounded-b-[14px] border-2 border-[#fcd5e6] bg-gradient-to-b from-[#fff6f9] to-[#ffeef5] shadow-[0_12px_28px_rgba(236,72,153,0.06)]">
                   <div className="absolute inset-0 h-full w-full" style={shapeMaskStyle}>
                     <div className="absolute inset-0 h-full w-full" style={colorStyle} />
-                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/25 via-transparent to-black/10 mix-blend-overlay" />
-                    <div className="pointer-events-none absolute left-2.5 top-1.5 h-20 w-1.5 rounded-full bg-white/45 blur-[0.7px]" />
-
-                    {variantDetail?.nailSurface?.name && (() => {
-                      const surfaceName = String(variantDetail.nailSurface.name || "").toLowerCase();
-
-                      if (surfaceName.includes("matte")) {
-                        return <div className="pointer-events-none absolute inset-0 h-full w-full bg-white/12 backdrop-blur-[0.5px]" />;
-                      }
-
-                      if (
-                        surfaceName.includes("chrome") ||
-                        surfaceName.includes("metallic") ||
-                        surfaceName.includes("mirror") ||
-                        surfaceName.includes("cat eye")
-                      ) {
-                        return (
-                          <div className="pointer-events-none absolute inset-0 h-full w-full bg-[linear-gradient(135deg,rgba(255,255,255,0.45)_0%,rgba(255,255,255,0)_50%,rgba(0,0,0,0.15)_100%)] mix-blend-overlay" />
-                        );
-                      }
-
-                      return <div className="pointer-events-none absolute inset-0 h-full w-full bg-[linear-gradient(135deg,rgba(255,255,255,0.3)_0%,rgba(255,255,255,0)_100%)]" />;
-                    })()}
 
                     {(variantDetail?.nailComponents || []).filter((item) => {
                       const componentFingerIndex = Number(item?.fingerIndex);
@@ -315,6 +363,8 @@ function NailVariantHandPreview({ variantDetail }) {
                         />
                       );
                     })}
+
+                    <NailSurface3DLayer surface={variantDetail?.nailSurface} />
                   </div>
 
                   {variantDetail?.nailShape?.imageUrl ? (
@@ -343,13 +393,18 @@ function NailVariantHandPreview({ variantDetail }) {
 export function NailVariantDetailPage() {
   const { designId, variantId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [variant, setVariant] = useState(null);
   const [procedures, setProcedures] = useState([]);
+  const [availableProcedures, setAvailableProcedures] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingProcedures, setIsSavingProcedures] = useState(false);
+  const [isSavingTryOn, setIsSavingTryOn] = useState(false);
   const [error, setError] = useState("");
   const [isNotFound, setIsNotFound] = useState(false);
   const colors = extractVariantColors(variant?.colorJson);
+
+  const pendingTryOnConfig = location.state?.tryOnConfig;
 
   useEffect(() => {
     let isMounted = true;
@@ -360,14 +415,18 @@ export function NailVariantDetailPage() {
       setIsNotFound(false);
 
       try {
-        const [detail, loadedProcedures] = await Promise.all([
+        const [detail, loadedProcedures, availableProcsResp] = await Promise.all([
           fetchAdminNailVariantDetail(variantId),
           fetchProceduresByVariant(variantId),
+          fetchAdminProcedures({ pageSize: 100 }),
         ]);
 
-        if (!isMounted) return;
-        setVariant(detail);
-        setProcedures(loadedProcedures);
+        if (isMounted) {
+          setVariant(detail);
+          setProcedures(loadedProcedures);
+          setAvailableProcedures(availableProcsResp?.items || []);
+          setError("");
+        }
       } catch (loadError) {
         if (!isMounted) return;
 
@@ -391,16 +450,29 @@ export function NailVariantDetailPage() {
     };
   }, [variantId]);
 
-  const updateProcedureDraft = (index, value) => {
+  const updateProcedureDraft = (index, field, value) => {
     setProcedures((current) =>
-      current.map((item, itemIndex) =>
-        itemIndex === index
-          ? {
-            ...item,
-            stepOrder: value,
+      current.map((item, itemIndex) => {
+        if (itemIndex !== index) return item;
+
+        if (field === "procedureId") {
+          const selectedProc = availableProcedures.find((p) => p.id === value || p.procedureId === value);
+          if (selectedProc) {
+            return {
+              ...item,
+              procedureId: selectedProc.id || selectedProc.procedureId,
+              name: selectedProc.name,
+              description: selectedProc.description,
+              durationLabel: selectedProc.durationLabel || selectedProc.duration,
+              status: selectedProc.status,
+              isRequired: selectedProc.isRequired,
+            };
           }
-          : item,
-      ),
+          return { ...item, procedureId: value };
+        }
+
+        return { ...item, [field]: value };
+      }),
     );
   };
 
@@ -450,6 +522,48 @@ export function NailVariantDetailPage() {
     });
   };
 
+  const handleSaveTryOn = async () => {
+    if (!pendingTryOnConfig) return;
+    setIsSavingTryOn(true);
+    setError("");
+
+    try {
+      const references = await fetchAdminNailVariantReferences();
+      const nailShapeId = findShapeId(references.shapes, pendingTryOnConfig);
+      const nailSurfaceId = findSurfaceId(references.surfaces, pendingTryOnConfig);
+
+      if (!nailShapeId || !nailSurfaceId) {
+        throw new Error("Nail shape and surface references are required before saving.");
+      }
+
+      await updateAdminNailVariant(variantId, {
+        name: variant.name,
+        nailShapeId,
+        nailSurfaceId,
+        nailDesignId: variant.nailDesignId || Number(designId || 0),
+        imageUrl: variant.imageUrl,
+        colorJson: buildColorJsonFromTryOn(pendingTryOnConfig),
+      });
+
+      await createVariantNailComponents(variantId, pendingTryOnConfig);
+
+      // clear state and reload variant
+      navigate(getAdminNailVariantDetailRoute(designId, variantId), { replace: true });
+
+      const [detail, loadedProcedures] = await Promise.all([
+        fetchAdminNailVariantDetail(variantId),
+        fetchProceduresByVariant(variantId),
+      ]);
+      setVariant(detail);
+      setProcedures(loadedProcedures);
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save Try-On setup");
+    } finally {
+      setIsSavingTryOn(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <section className="flex min-h-full items-center justify-center bg-[#fff7fb] px-4 py-10">
@@ -483,7 +597,7 @@ export function NailVariantDetailPage() {
             <p className="text-xs text-[#c694ad]">
               Nail Designs / <span className="text-[#ea4f93]">Variant Detail</span>
             </p>
-            <h1 className="mt-2 text-2xl font-black text-[#432744]">{variant.name}</h1>
+            <h1 className="mt-2 text-2xl font-bold text-[#432744]">{variant.name}</h1>
             <p className="mt-1 max-w-3xl text-sm text-[#8c7085]">{variant.description || "--"}</p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -526,6 +640,28 @@ export function NailVariantDetailPage() {
       {error ? (
         <div className="rounded-[18px] border border-[#f4bfd2] bg-[#fff1f6] px-5 py-3 text-sm font-semibold text-[#d14c84]">
           {error}
+        </div>
+      ) : null}
+
+      {pendingTryOnConfig && !error ? (
+        <div className="flex items-center justify-between rounded-[18px] border border-[#f4bfd2] bg-[#fff1f6] px-5 py-3">
+          <p className="text-sm font-semibold text-green-700 px-4 py-2 border border-green-400 rounded-full bg-green-100">You have unsaved Try-On changes.</p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => navigate(getAdminNailVariantDetailRoute(designId, variantId), { replace: true })}
+              disabled={isSavingTryOn}
+              className="rounded-full border border-[#f4bfd2] bg-white px-4 py-2 text-xs font-bold text-[#d14c84]"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveTryOn}
+              disabled={isSavingTryOn}
+              className="rounded-full bg-[#d14c84] px-4 py-2 text-xs font-bold text-white shadow"
+            >
+              {isSavingTryOn ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
         </div>
       ) : null}
 
@@ -643,15 +779,31 @@ export function NailVariantDetailPage() {
                         </span>
                         <input
                           value={String(item.stepOrder || index + 1)}
-                          onChange={(event) => updateProcedureDraft(index, event.target.value)}
+                          onChange={(event) => updateProcedureDraft(index, "stepOrder", event.target.value)}
                           className="w-full rounded-2xl border border-[#f4d4e2] bg-white px-4 py-3 text-sm font-semibold text-[#432744] outline-none focus:border-[#ea4f93]"
                         />
                       </label>
-                      <div className="grid gap-2 text-sm md:grid-cols-2">
-                        <span>Name: <b>{item.name || "--"}</b></span>
-                        <span>Duration: <b>{item.durationLabel || "--"}</b></span>
-                        <span>Status: <b>{item.status || "--"}</b></span>
-                        <span>Required: <b>{item.isRequired ? "Yes" : "No"}</b></span>
+                      <div className="flex flex-col gap-2">
+                        <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
+                          Procedure
+                        </span>
+                        <select
+                          value={item.procedureId || ""}
+                          onChange={(e) => updateProcedureDraft(index, "procedureId", e.target.value)}
+                          className="w-full rounded-2xl border border-[#f4d4e2] bg-white px-4 py-3 text-sm font-semibold text-[#432744] outline-none focus:border-[#ea4f93]"
+                        >
+                          <option value="">Select a procedure</option>
+                          {availableProcedures.map((proc) => (
+                            <option key={proc.id || proc.procedureId} value={proc.id || proc.procedureId}>
+                              {proc.name}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="mt-2 grid gap-2 text-sm md:grid-cols-3">
+                          <span>Duration: <b>{item.durationLabel || item.duration || "--"}</b></span>
+                          <span>Status: <b>{item.status || "--"}</b></span>
+                          <span>Required: <b>{item.isRequired ? "Yes" : "No"}</b></span>
+                        </div>
                       </div>
                     </div>
                     {item.description ? <p className="mt-3 text-sm leading-6 text-[#6d5669]">{item.description}</p> : null}
