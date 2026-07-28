@@ -2,6 +2,9 @@ import { HandLandmarkerResult } from '@mediapipe/tasks-vision';
 import { BaseVisionTask } from '@/components/base-vision-task';
 import { getComponent, getNailVariant, getPlacedNailComponents } from '@/services/nailDesign.service';
 import chroma from 'chroma-js';
+import { computeFingerGeometry, FingerGeometry } from './utils/handGeometry';
+import { EMAFilter, EMAFilterPoint, EMAFilterAngle } from './utils/filters';
+import { checkHandDistance, checkImageBlur } from './utils/diagnostics';
 
 interface Decoration {
   id: string;
@@ -73,6 +76,39 @@ class HandLandmarkerTask extends BaseVisionTask {
   private minHandDetectionConfidence = 0.5;
   private minHandPresenceConfidence = 0.5;
   private minTrackingConfidence = 0.5;
+  private filtersInitialized = false;
+  private fingerFilters: Array<{
+    center: EMAFilterPoint;
+    rotation: EMAFilterAngle;
+    width: EMAFilter;
+    height: EMAFilter;
+  }> = [];
+  private latestFingerGeometries: FingerGeometry[] = [];
+
+  private initFilters() {
+    if (this.filtersInitialized) return;
+    this.fingerFilters = Array.from({ length: 5 }, () => ({
+      center: new EMAFilterPoint(0.25),
+      rotation: new EMAFilterAngle(0.25),
+      width: new EMAFilter(0.25),
+      height: new EMAFilter(0.25),
+    }));
+    this.filtersInitialized = true;
+  }
+
+  private resetFilters() {
+    if (!this.filtersInitialized) return;
+    this.fingerFilters.forEach((f) => {
+      f.center.reset();
+      f.rotation.reset();
+      f.width.reset();
+      f.height.reset();
+    });
+  }
+
+  public getLatestFingerGeometries(): FingerGeometry[] {
+    return this.latestFingerGeometries;
+  }
 
   private nailImages: { [key: string]: HTMLImageElement } = {};
   private currentNailSet = {
@@ -169,6 +205,7 @@ class HandLandmarkerTask extends BaseVisionTask {
   }
 
   protected override onInitializeUI() {
+    this.setupCanvasInteractions();
     // Confidence Sliders
     const setupSlider = (id: string, onChange: (val: number) => void) => {
       const input = document.getElementById(id) as HTMLInputElement;
@@ -330,18 +367,8 @@ class HandLandmarkerTask extends BaseVisionTask {
         const targetDec = targetFinger.decorations[this.selectedLayerIndex];
         const decId = targetDec.id;
 
-        if (this.editMode === 'all') {
-          // Sync this property across all fingers for decorations with the same ID
-          this.currentNailSet.nails.forEach((finger) => {
-            const dec = finger.decorations.find((d) => d.id === decId);
-            if (dec) {
-              (dec as any)[property] += delta;
-            }
-          });
-        } else {
-          // Individual edit
-          (targetDec as any)[property] += delta;
-        }
+        // Always apply transform individually
+        (targetDec as any)[property] += delta;
 
         this.triggerRedetection();
       });
@@ -532,8 +559,7 @@ class HandLandmarkerTask extends BaseVisionTask {
 
     // Custom model options for Hand Landmarker
     this.models = {
-      hand_landmarker:
-        'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
+      hand_landmarker: '/hand_landmarker.task',
     };
 
     if (this.modelSelector) {
@@ -571,10 +597,10 @@ class HandLandmarkerTask extends BaseVisionTask {
 
     ctx.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
 
-    if (result.landmarks) {
-      for (const landmarks of result.landmarks) {
-        this.drawLandmarks(ctx, landmarks);
-      }
+    if (result.landmarks && result.landmarks.length > 0) {
+      const landmarks = result.landmarks[0];
+      const score = result.handedness?.[0]?.[0]?.score ?? 0.8;
+      this.drawLandmarks(ctx, landmarks, score);
     }
   }
 
@@ -585,16 +611,47 @@ class HandLandmarkerTask extends BaseVisionTask {
     }
     this.canvasCtx.clearRect(0, 0, this.canvasElement.width, this.canvasElement.height);
 
-    if (result.landmarks) {
-      for (const landmarks of result.landmarks) {
-        this.drawLandmarks(this.canvasCtx, landmarks);
+    const hudStatusContainer = document.getElementById('hud-status-container');
+    const statusMessage = document.getElementById('status-message');
+
+    if (result.landmarks && result.landmarks.length > 0) {
+      const landmarks = result.landmarks[0];
+      const score = result.handedness?.[0]?.[0]?.score ?? 0.8;
+
+      // Diagnostics checks
+      const distCheck = checkHandDistance(landmarks);
+      const isBlurry = checkImageBlur(this.video, landmarks);
+
+      if (hudStatusContainer && statusMessage) {
+        hudStatusContainer.className = 'hud-top-status'; // Reset classes
+        if (isBlurry) {
+          hudStatusContainer.classList.add('status-warning');
+          statusMessage.innerText = 'BLURRY CAMERA';
+        } else if (distCheck === 'TOO_FAR') {
+          hudStatusContainer.classList.add('status-warning');
+          statusMessage.innerText = 'BRING HAND CLOSER';
+        } else if (distCheck === 'TOO_CLOSE') {
+          hudStatusContainer.classList.add('status-warning');
+          statusMessage.innerText = 'MOVE HAND AWAY';
+        } else {
+          hudStatusContainer.classList.add('status-success');
+          statusMessage.innerText = 'READY';
+        }
+      }
+
+      this.drawLandmarks(this.canvasCtx, landmarks, score);
+    } else {
+      this.resetFilters();
+      if (hudStatusContainer && statusMessage) {
+        hudStatusContainer.className = 'hud-top-status status-none';
+        statusMessage.innerText = 'SHOW YOUR HAND';
       }
     }
   }
 
-  private drawLandmarks(ctx: CanvasRenderingContext2D, landmarks: any[]) {
+  private drawLandmarks(ctx: CanvasRenderingContext2D, landmarks: any[], score: number = 0.8) {
     // Skeleton removed as per request
-    this.drawNails(ctx, landmarks);
+    this.drawNails(ctx, landmarks, score);
   }
 
   private async preloadShapes() {
@@ -712,7 +769,10 @@ class HandLandmarkerTask extends BaseVisionTask {
       targets.forEach((nail) => {
         nail.color = config.color ?? nail.color;
         nail.gradient = config.gradient ?? nail.gradient;
-        nail.decorations.push({ ...decoration });
+        nail.decorations.push({ 
+          ...decoration,
+          id: `dec-${Date.now()}-${Math.floor(Math.random() * 10000)}` 
+        });
       });
     }
 
@@ -899,7 +959,12 @@ class HandLandmarkerTask extends BaseVisionTask {
     };
 
     if (this.editMode === 'all') {
-      this.currentNailSet.nails.forEach((nail) => nail.decorations.push({ ...newDecoration }));
+      this.currentNailSet.nails.forEach((nail) => {
+        nail.decorations.push({
+          ...newDecoration,
+          id: `dec-${Date.now()}-${Math.floor(Math.random() * 10000)}`
+        });
+      });
     } else {
       this.currentNailSet.nails[this.selectedFingerIndex].decorations.push(newDecoration);
       this.selectedLayerIndex = this.currentNailSet.nails[this.selectedFingerIndex].decorations.length - 1;
@@ -909,75 +974,83 @@ class HandLandmarkerTask extends BaseVisionTask {
     this.triggerRedetection();
   }
 
-  private drawNails(ctx: CanvasRenderingContext2D, landmarks: any[]) {
-    const fingerTips = [4, 8, 12, 16, 20];
+  private drawNails(ctx: CanvasRenderingContext2D, landmarks: any[], score: number = 0.8) {
     const { shape, length } = this.currentNailSet;
 
-    fingerTips.forEach((tipIndex, i) => {
-      const tip = landmarks[tipIndex];
-      const joint = landmarks[tipIndex - 1];
+    this.initFilters();
+    this.latestFingerGeometries = [];
+
+    for (let i = 0; i < 5; i++) {
+      const geom = computeFingerGeometry(landmarks, i, ctx.canvas.width, ctx.canvas.height, score);
+      if (!geom) continue;
+
+      // Apply EMA filter to make it extremely smooth in video mode
+      if (this.runningMode === 'VIDEO') {
+        const filter = this.fingerFilters[i];
+        geom.center = filter.center.filter(geom.center);
+        geom.rotation = filter.rotation.filter(geom.rotation);
+        geom.width = filter.width.filter(geom.width);
+        geom.height = filter.height.filter(geom.height);
+      }
+
+      this.latestFingerGeometries.push(geom);
+
+      // Hide nail if confidence is too low
+      if (geom.confidence < 0.35) {
+        continue;
+      }
+
       const design = this.currentNailSet.nails[i];
       const { color, decorations, customShape } = design;
 
-      const px = tip.x * ctx.canvas.width;
-      const py = tip.y * ctx.canvas.height;
-      const jx = joint.x * ctx.canvas.width;
-      const jy = joint.y * ctx.canvas.height;
-
-      const angle = Math.atan2(py - jy, px - jx);
-      const fingerLength = Math.hypot(px - jx, py - jy);
-
       ctx.save();
-      ctx.translate(px, py);
-      ctx.rotate(angle + Math.PI / 2);
+      // Translate to nail center and rotate according to finger axis direction
+      ctx.translate(geom.center.x, geom.center.y);
+      ctx.rotate(geom.rotation + Math.PI / 2);
 
-      const baseShapeImg = customShape || this.nailImages[shape];
-      if (!baseShapeImg) {
-        ctx.restore();
-        return;
-      }
+      const baseShapeImg = customShape || this.nailImages[shape.toLowerCase()];
 
-      const nailWidth = fingerLength * 2.0;
-      const nailHeight = fingerLength * 1.2 * length;
-      const nailBottom = fingerLength * 0.75;
-      const totalHeight = nailHeight * 1.5;
-
-      const destRect = {
-        x: -nailWidth / 2,
-        y: nailBottom - totalHeight,
-        w: nailWidth,
-        h: totalHeight,
-      };
-
-      // Layer 1: Base + Color
+      // Layer 1: Base + Color / Gradient / Material
       ctx.save();
       if (!customShape) {
         const offCanvas = document.createElement('canvas');
-        offCanvas.width = nailWidth;
-        offCanvas.height = totalHeight;
+        offCanvas.width = geom.width;
+        offCanvas.height = geom.height;
         const offCtx = offCanvas.getContext('2d')!;
-        offCtx.drawImage(baseShapeImg, 0, 0, nailWidth, totalHeight);
+
+        // Draw shape mask
+        if (baseShapeImg) {
+          offCtx.drawImage(baseShapeImg, 0, 0, geom.width, geom.height);
+        } else {
+          // If shape asset is missing, use beautiful custom canvas path fallback
+          offCtx.translate(geom.width / 2, geom.height / 2);
+          this.drawProceduralNailMask(offCtx, geom.width, geom.height, shape);
+          offCtx.fillStyle = '#ffffff';
+          offCtx.fill();
+          offCtx.translate(-geom.width / 2, -geom.height / 2);
+        }
+
         offCtx.globalCompositeOperation = 'source-in';
 
+        // Apply custom gradient or fallback global gradient
         const grad =
           design.gradient ||
           (this.editMode === 'all' && this.currentNailSet.gradient.enabled ? this.currentNailSet.gradient : null);
-        const materialY = (totalHeight - nailHeight) / 2; // Center the material fill
 
         if (grad && grad.enabled) {
           let fillGrad;
           if (grad.type === 'linear') {
-            fillGrad = offCtx.createLinearGradient(0, materialY, 0, materialY + nailHeight);
+            fillGrad = offCtx.createLinearGradient(0, 0, 0, geom.height);
           } else if (grad.type === 'horizontal') {
-            fillGrad = offCtx.createLinearGradient(0, materialY, nailWidth, materialY);
+            fillGrad = offCtx.createLinearGradient(0, 0, geom.width, 0);
           } else {
             fillGrad = offCtx.createRadialGradient(
-              nailWidth / 2,
-              materialY + nailHeight / 2,
+              geom.width / 2,
+              geom.height / 2,
               0,
-              nailWidth / 2,
-              materialY + nailHeight / 2,
-              nailWidth
+              geom.width / 2,
+              geom.height / 2,
+              geom.width
             );
           }
 
@@ -989,12 +1062,11 @@ class HandLandmarkerTask extends BaseVisionTask {
             fillGrad.addColorStop(1, grad.stops[1]);
           }
           offCtx.fillStyle = fillGrad;
-          offCtx.fillRect(0, materialY, nailWidth, nailHeight);
         } else {
-          // Apply Material Logic to Base Color
+          // Apply Material styling
           const mat = this.getRenderMaterial(this.currentNailSet.material);
           if (mat === 'metallic') {
-            const metallicGrad = offCtx.createLinearGradient(0, materialY, nailWidth, materialY + nailHeight);
+            const metallicGrad = offCtx.createLinearGradient(0, 0, geom.width, geom.height);
             metallicGrad.addColorStop(0, chroma(color).darken(1).hex());
             metallicGrad.addColorStop(0.3, chroma(color).brighten(1).hex());
             metallicGrad.addColorStop(0.5, color);
@@ -1002,7 +1074,7 @@ class HandLandmarkerTask extends BaseVisionTask {
             metallicGrad.addColorStop(1, chroma(color).darken(1.5).hex());
             offCtx.fillStyle = metallicGrad;
           } else if (mat === 'iridescent') {
-            const iriGrad = offCtx.createLinearGradient(0, materialY, nailWidth, materialY + nailHeight);
+            const iriGrad = offCtx.createLinearGradient(0, 0, geom.width, geom.height);
             const scale = chroma.scale(['#ff0000', '#00ff00', '#0000ff', '#ff00ff']).mode('lch').colors(5);
             iriGrad.addColorStop(0, chroma(color).mix(scale[0], 0.3).hex());
             iriGrad.addColorStop(0.5, chroma(color).mix(scale[2], 0.3).hex());
@@ -1013,49 +1085,230 @@ class HandLandmarkerTask extends BaseVisionTask {
           } else {
             offCtx.fillStyle = color;
           }
-          offCtx.fillRect(0, materialY, nailWidth, nailHeight);
         }
+        // Fill canvas region with selected style
+        offCtx.fillRect(0, 0, geom.width, geom.height);
 
-        // Add Dynamic Shine for Standard/Metallic/Iridescent
+        // Add glass shine highlight for realistic material effect
         if (this.getRenderMaterial(this.currentNailSet.material) !== 'matte') {
           offCtx.globalCompositeOperation = 'screen';
-          const shineGrad = offCtx.createLinearGradient(0, 0, nailWidth, 0);
+          const shineGrad = offCtx.createLinearGradient(0, 0, geom.width, 0);
           shineGrad.addColorStop(0, 'rgba(255,255,255,0)');
           shineGrad.addColorStop(0.4, 'rgba(255,255,255,0)');
           shineGrad.addColorStop(0.5, 'rgba(255,255,255,0.4)');
           shineGrad.addColorStop(0.6, 'rgba(255,255,255,0)');
           shineGrad.addColorStop(1, 'rgba(255,255,255,0)');
           offCtx.fillStyle = shineGrad;
-          offCtx.fillRect(0, materialY, nailWidth, nailHeight);
-          offCtx.globalCompositeOperation = 'source-over';
+          offCtx.fillRect(0, 0, geom.width, geom.height);
         }
 
-        ctx.drawImage(offCanvas, destRect.x, destRect.y, destRect.w, destRect.h);
+        ctx.drawImage(offCanvas, -geom.width / 2, -geom.height / 2, geom.width, geom.height);
       } else {
-        ctx.drawImage(baseShapeImg, destRect.x, destRect.y, destRect.w, destRect.h);
+        // Draw custom image shapes as is
+        ctx.drawImage(baseShapeImg, -geom.width / 2, -geom.height / 2, geom.width, geom.height);
       }
       ctx.restore();
 
-      // Render Decoration Stack
+      // Render decorations relative to nail coordinate system
       decorations.forEach((dec) => {
         ctx.save();
-        // Translate relative to nail center/top?
-        // Let's use destRect as base
-        const decX = destRect.x + destRect.w / 2 + dec.x * destRect.w;
-        const decY = destRect.y + destRect.h / 2 + dec.y * destRect.h;
+        const decX = dec.x * geom.width;
+        const decY = dec.y * geom.height;
 
         ctx.translate(decX, decY);
         ctx.rotate((dec.rotation * Math.PI) / 180);
 
-        const decW = destRect.w * dec.scale;
-        const decH = destRect.h * dec.scale;
+        const decW = geom.width * dec.scale;
+        const decH = geom.height * dec.scale;
 
         ctx.drawImage(dec.image, -decW / 2, -decH / 2, decW, decH);
         ctx.restore();
       });
 
       ctx.restore();
-    });
+    }
+  }
+
+  private drawProceduralNailMask(ctx: CanvasRenderingContext2D, w: number, h: number, shapeName: string) {
+    ctx.beginPath();
+    const normalizedShape = shapeName.toLowerCase();
+
+    if (normalizedShape.includes('stiletto')) {
+      // Pointy tip
+      ctx.moveTo(-w / 2, h);
+      ctx.quadraticCurveTo(-w / 2, h * 0.4, 0, 0);
+      ctx.quadraticCurveTo(w / 2, h * 0.4, w / 2, h);
+      ctx.quadraticCurveTo(0, h * 1.05, -w / 2, h);
+    } else if (normalizedShape.includes('almond')) {
+      // Rounded point tip
+      ctx.moveTo(-w / 2, h);
+      ctx.bezierCurveTo(-w / 2, h * 0.4, -w * 0.25, 0, 0, 0);
+      ctx.bezierCurveTo(w * 0.25, 0, w / 2, h * 0.4, w / 2, h);
+      ctx.quadraticCurveTo(0, h * 1.05, -w / 2, h);
+    } else if (normalizedShape.includes('ballerina') || normalizedShape.includes('coffin')) {
+      // Flat top, tapered sides
+      ctx.moveTo(-w / 2, h);
+      ctx.lineTo(-w * 0.28, 0);
+      ctx.lineTo(w * 0.28, 0);
+      ctx.lineTo(w / 2, h);
+      ctx.quadraticCurveTo(0, h * 1.05, -w / 2, h);
+    } else if (normalizedShape.includes('squoval')) {
+      // Slightly rounded square
+      ctx.moveTo(-w / 2, h);
+      ctx.quadraticCurveTo(-w / 2, h * 0.15, -w * 0.38, 0);
+      ctx.lineTo(w * 0.38, 0);
+      ctx.quadraticCurveTo(w / 2, h * 0.15, w / 2, h);
+      ctx.quadraticCurveTo(0, h * 1.05, -w / 2, h);
+    } else {
+      // Default: Round/Oval
+      ctx.moveTo(-w / 2, h);
+      ctx.bezierCurveTo(-w / 2, h * 0.25, -w * 0.45, 0, 0, 0);
+      ctx.bezierCurveTo(w * 0.45, 0, w / 2, h * 0.25, w / 2, h);
+      ctx.quadraticCurveTo(0, h * 1.05, -w / 2, h);
+    }
+    ctx.closePath();
+  }
+
+  private setupCanvasInteractions() {
+    for (let i = 0; i < 5; i++) {
+      const canvas = document.getElementById(`nail-preview-canvas-${i}`) as HTMLCanvasElement;
+      if (!canvas) continue;
+      if ((canvas as any)._hasInteractions) continue;
+      (canvas as any)._hasInteractions = true;
+
+      let isDragging = false;
+      let startMouseX = 0;
+      let startMouseY = 0;
+      let startDecX = 0;
+      let startDecY = 0;
+      let isRotating = false;
+      let startRotation = 0;
+
+      canvas.addEventListener('mousedown', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        // Since canvas uses CSS scaling, clientX/Y needs to be mapped to intrinsic resolution
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const mouseX = (e.clientX - rect.left) * scaleX;
+        const mouseY = (e.clientY - rect.top) * scaleY;
+
+        const { length } = this.currentNailSet;
+        const fingerLength = Math.min(canvas.width * 0.36, canvas.height * 0.32);
+
+        const nailWidth = fingerLength * 2.0;
+        const nailHeight = fingerLength * 1.2 * length;
+        const nailBottom = fingerLength * 0.75;
+        const totalHeight = nailHeight * 1.5;
+
+        const destRect = {
+          x: canvas.width / 2 - nailWidth / 2,
+          y: canvas.height / 2 + canvas.height * 0.16 + nailBottom - totalHeight,
+          w: nailWidth,
+          h: totalHeight,
+        };
+
+        const targetFinger = this.currentNailSet.nails[i];
+
+        let clickedIdx = -1;
+        for (let d = targetFinger.decorations.length - 1; d >= 0; d--) {
+          const dec = targetFinger.decorations[d];
+          const decCenterX = destRect.x + destRect.w / 2 + dec.x * destRect.w;
+          const decCenterY = destRect.y + destRect.h / 2 + dec.y * destRect.h;
+          const decW = destRect.w * dec.scale;
+          const decH = destRect.h * dec.scale;
+
+          // Simple hit test
+          if (mouseX >= decCenterX - decW / 2 && mouseX <= decCenterX + decW / 2 &&
+            mouseY >= decCenterY - decH / 2 && mouseY <= decCenterY + decH / 2) {
+            clickedIdx = d;
+            break;
+          }
+        }
+
+        if (clickedIdx !== -1) {
+          e.stopPropagation();
+          this.selectedFingerIndex = i;
+          this.editMode = 'individual';
+          this.selectedLayerIndex = clickedIdx;
+          this.renderLayersList();
+          this.triggerRedetection();
+
+          isDragging = true;
+          isRotating = e.shiftKey; // shift for rotation
+          startMouseX = e.clientX;
+          startMouseY = e.clientY;
+          startDecX = targetFinger.decorations[clickedIdx].x;
+          startDecY = targetFinger.decorations[clickedIdx].y;
+          startRotation = targetFinger.decorations[clickedIdx].rotation;
+        } else {
+          // Clicked outside decoration
+          if (this.selectedLayerIndex !== -1 && this.selectedFingerIndex === i) {
+            this.selectedLayerIndex = -1;
+            this.renderLayersList();
+            this.triggerRedetection();
+          }
+        }
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const targetFinger = this.currentNailSet.nails[this.selectedFingerIndex];
+        const dec = targetFinger.decorations[this.selectedLayerIndex];
+        if (!dec) return;
+
+        if (isRotating) {
+          const dx = e.clientX - startMouseX;
+          dec.rotation = startRotation + dx;
+        } else {
+          const rect = canvas.getBoundingClientRect();
+          const dx = (e.clientX - startMouseX) / rect.width;
+          const dy = (e.clientY - startMouseY) / rect.height;
+
+          const { length } = this.currentNailSet;
+          const fingerLength = Math.min(canvas.width * 0.36, canvas.height * 0.32);
+          const nailWidth = fingerLength * 2.0;
+          const nailHeight = fingerLength * 1.2 * length;
+          const totalHeight = nailHeight * 1.5;
+
+          dec.x = startDecX + dx * (canvas.width / nailWidth);
+          dec.y = startDecY + dy * (canvas.height / totalHeight);
+        }
+
+        if (this.editMode === 'all') {
+          const decId = dec.id;
+          this.currentNailSet.nails.forEach((finger) => {
+            const d = finger.decorations.find((dd) => dd.id === decId);
+            if (d) {
+              d.x = dec.x;
+              d.y = dec.y;
+              d.rotation = dec.rotation;
+            }
+          });
+        }
+
+        this.triggerRedetection();
+      });
+
+      window.addEventListener('mouseup', () => {
+        isDragging = false;
+        isRotating = false;
+      });
+
+      canvas.addEventListener('wheel', (e) => {
+        if (this.selectedLayerIndex === -1 || i !== this.selectedFingerIndex) return;
+        const targetFinger = this.currentNailSet.nails[this.selectedFingerIndex];
+        const dec = targetFinger.decorations[this.selectedLayerIndex];
+        if (!dec) return;
+
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -0.05 : 0.05;
+        dec.scale = Math.max(0.05, Math.min(3, dec.scale + delta));
+
+
+
+        this.triggerRedetection();
+      }, { passive: false });
+    }
   }
 
   private syncPreviewSelection() {
@@ -1166,6 +1419,7 @@ class HandLandmarkerTask extends BaseVisionTask {
       }
 
       offCtx.fillRect(0, 0, nailWidth, totalHeight);
+
 
       // Add Dynamic Shine
       if (this.getRenderMaterial(this.currentNailSet.material) !== 'matte') {
@@ -1344,6 +1598,7 @@ export type HandLandmarkerTaskHandle = {
   cleanup: () => void;
   getSerializedConfig: () => SerializedNailSet;
   getPendingImageFiles: () => PendingTryOnImageFiles;
+  getLatestFingerGeometries: () => FingerGeometry[];
   loadFromConfig: (config: SerializedNailSet | { configJson?: string }) => Promise<void>;
   loadFromDatabase: (nailSetId: number | string) => Promise<void>;
   saveToDatabase: (nailSetId: number | string) => Promise<void>;
@@ -1355,8 +1610,7 @@ export async function setupHandLandmarker(container: HTMLElement): Promise<HandL
   const task = new HandLandmarkerTask({
     container,
     defaultModelName: 'hand_landmarker',
-    defaultModelUrl:
-      'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
+    defaultModelUrl: '/hand_landmarker.task',
     workerFactory: () => new Worker(new URL('./handLandmarker.worker.ts', import.meta.url), { type: 'module' }),
   });
 
@@ -1365,6 +1619,7 @@ export async function setupHandLandmarker(container: HTMLElement): Promise<HandL
     cleanup: () => task.cleanup(),
     getSerializedConfig: () => task.getSerializedConfig(),
     getPendingImageFiles: () => task.getPendingImageFiles(),
+    getLatestFingerGeometries: () => task.getLatestFingerGeometries(),
     loadFromConfig: (config) => task.loadFromConfig(config),
     loadFromDatabase: (nailSetId) => task.loadFromDatabase(String(nailSetId)),
     saveToDatabase: (nailSetId) => task.saveToDatabase(String(nailSetId)),

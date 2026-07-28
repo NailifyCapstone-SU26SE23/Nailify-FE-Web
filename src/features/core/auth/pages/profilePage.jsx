@@ -323,7 +323,7 @@ export function ProfilePage() {
                   className="h-24 w-24 rounded-[28px] border-4 border-white object-cover shadow-[0_18px_30px_rgba(236,72,153,0.12)]"
                 />
               ) : (
-                <div className="flex h-24 w-24 items-center justify-center rounded-[28px] bg-[linear-gradient(180deg,#ff8ebb_0%,#ea4f93_100%)] text-3xl font-black text-white shadow-[0_18px_30px_rgba(236,72,153,0.16)]">
+                <div className="flex h-24 w-24 items-center justify-center rounded-[28px] bg-[linear-gradient(180deg,#ff8ebb_0%,#ea4f93_100%)] text-3xl font-bold text-white shadow-[0_18px_30px_rgba(236,72,153,0.16)]">
                   {(profile?.fullName || "NU")
                     .split(" ")
                     .filter(Boolean)
@@ -337,7 +337,7 @@ export function ProfilePage() {
                 <div className="inline-flex rounded-full bg-white px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#d94f92] shadow-[0_10px_22px_rgba(236,72,153,0.08)]">
                   {formatRoleLabel(profile?.role)}
                 </div>
-                <h2 className="mt-3 text-[28px] font-black tracking-tight text-[#402542]">
+                <h2 className="mt-3 text-[28px] font-bold tracking-tight text-[#402542]">
                   {profile?.fullName || user?.fullName || "Nailify User"}
                 </h2>
                 <p className="mt-1 text-sm text-[#a07c90]">
@@ -359,7 +359,7 @@ export function ProfilePage() {
         <Card className="p-5 sm:p-6">
           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 className="text-lg font-black text-[#402542]">Account Information</h3>
+              <h3 className="text-lg font-bold text-[#402542]">Account Information</h3>
               <p className="mt-1 text-sm text-[#a07c90]">Manage your personal details shared across the workspace.</p>
             </div>
 
@@ -472,7 +472,7 @@ export function ProfilePage() {
 
         <div className="space-y-5">
           <Card className="p-5 sm:p-6">
-            <h3 className="text-lg font-black text-[#402542]">Salon Assignment</h3>
+            <h3 className="text-lg font-bold text-[#402542]">Salon Assignment</h3>
             <p className="mt-1 text-sm text-[#a07c90]">Branch information loaded from your assigned salon.</p>
 
             {salon ? (
@@ -500,7 +500,7 @@ export function ProfilePage() {
           </Card>
 
           <Card className="p-5 sm:p-6">
-            <h3 className="text-lg font-black text-[#402542]">Operating Hours</h3>
+            <h3 className="text-lg font-bold text-[#402542]">Operating Hours</h3>
             <p className="mt-1 text-sm text-[#a07c90]">The weekly schedule of your current salon branch.</p>
 
             <div className="mt-5 space-y-3">
@@ -535,7 +535,7 @@ export function ProfilePage() {
           </Card>
 
           <Card className="p-5 sm:p-6">
-            <h3 className="text-lg font-black text-[#402542]">Account Actions</h3>
+            <h3 className="text-lg font-bold text-[#402542]">Account Actions</h3>
             <p className="mt-1 text-sm text-[#a07c90]">Use these actions carefully. Deactivation signs you out immediately.</p>
 
             <div className="mt-5 flex flex-col gap-3">

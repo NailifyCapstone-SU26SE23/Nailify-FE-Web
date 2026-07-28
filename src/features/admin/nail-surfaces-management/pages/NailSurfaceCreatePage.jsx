@@ -17,6 +17,7 @@ import {
   formatNailSurfaceDuration,
 } from "../services/nailSurfacesManagementService";
 import { NailSurfacePreview } from "../components/NailSurfacePreview";
+import { NailSurfacePainter } from "../components/NailSurfacePainter";
 import { NailSurfaceShaderBuilder } from "../components/NailSurfaceShaderBuilder";
 import {
   buildSurfacePayload,
@@ -119,7 +120,7 @@ export function NailSurfaceCreatePage() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-[#cf3d74]">Add New Nail Surface</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">Add New Nail Surface</h1>
             <p className="text-xs font-medium text-slate-400">
               Create a new nail surface with shader configuration and pricing.
             </p>
@@ -220,7 +221,16 @@ export function NailSurfaceCreatePage() {
             </h2>
 
             <div className="space-y-4">
-              <NailSurfacePreview surface={formValues} />
+              {formValues.painterMode ? (
+                <NailSurfacePainter 
+                  brushType={formValues.brushType || 'glossy'} 
+                  brushSize={formValues.brushSize || 20}
+                  initialMaskDataUrl={formValues.maskDataUrl}
+                  onSave={(dataUrl) => handleFieldChange("maskDataUrl", dataUrl)}
+                />
+              ) : (
+                <NailSurfacePreview surface={formValues} />
+              )}
 
               <div className="space-y-3 rounded-2xl border border-rose-100 bg-[#fff8fb] p-4">
                 {summaryItems.map(([label, value]) => (

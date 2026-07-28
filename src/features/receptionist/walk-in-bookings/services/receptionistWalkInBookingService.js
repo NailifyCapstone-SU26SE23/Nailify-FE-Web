@@ -33,12 +33,114 @@ export const receptionistWalkInBookingService = {
     }
   },
 
+  getAllNailVariants: async (params = {}) => {
+    try {
+      const response = await axiosClient.get("/NailVariants", {
+        params: { pageSize: 100, ...params }
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching all nail variants:", error);
+      throw error;
+    }
+  },
+
+  getSuggestedArtists: async (payload) => {
+    try {
+      const response = await axiosClient.post("/Bookings/suggested-artists", payload);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching suggested artists:", error);
+      throw error;
+    }
+  },
+
   createBooking: async (payload) => {
     try {
       const response = await axiosClient.post("/Bookings", payload);
       return response.data;
     } catch (error) {
       console.error("Error creating booking:", error);
+      throw error;
+    }
+  },
+
+  createWalkInQueue: async (payload) => {
+    try {
+      const response = await axiosClient.post("/WalkInQueues", payload);
+      return response.data;
+    } catch (error) {
+      console.error("Error creating Walk-In Queue:", error);
+      throw error;
+    }
+  },
+
+  getTodayQueue: async (salonId) => {
+    try {
+      const response = await axiosClient.get(`/WalkInQueues/salon/${salonId}/today`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching today Walk-In Queue:", error);
+      throw error;
+    }
+  },
+
+  callQueue: async (queueId) => {
+    try {
+      const response = await axiosClient.post(`/WalkInQueues/${queueId}/call`);
+      return response.data;
+    } catch (error) {
+      console.error("Error calling queue:", error);
+      throw error;
+    }
+  },
+
+  assignArtistToQueue: async (queueId, payload) => {
+    try {
+      const response = await axiosClient.post(`/WalkInQueues/${queueId}/assign-artist`, payload);
+      return response.data;
+    } catch (error) {
+      console.error("Error assigning artist to queue:", error);
+      throw error;
+    }
+  },
+
+  completeQueue: async (queueId) => {
+    try {
+      const response = await axiosClient.post(`/WalkInQueues/${queueId}/complete`);
+      return response.data;
+    } catch (error) {
+      console.error("Error completing queue:", error);
+      throw error;
+    }
+  },
+
+  markQueueLeft: async (queueId) => {
+    try {
+      const response = await axiosClient.post(`/WalkInQueues/${queueId}/mark-left`);
+      return response.data;
+    } catch (error) {
+      console.error("Error marking queue left:", error);
+      throw error;
+    }
+  },
+
+  prioritizeQueue: async (queueId) => {
+    try {
+      const response = await axiosClient.post(`/WalkInQueues/${queueId}/prioritize`);
+      return response.data;
+    } catch (error) {
+      console.error("Error prioritizing queue:", error);
+      throw error;
+    }
+  },
+
+  convertQueueToBooking: async (queueId, payload = {}) => {
+    try {
+      const response = await axiosClient.post(`/WalkInQueues/${queueId}/convert-to-booking`, payload);
+      return response.data;
+    } catch (error) {
+      console.error("Error converting queue to booking:", error);
       throw error;
     }
   },

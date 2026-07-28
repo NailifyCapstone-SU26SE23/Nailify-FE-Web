@@ -271,7 +271,7 @@ export function ComponentDetailPage() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-[#cf3d74]">Component Detail</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">Component Detail</h1>
             <p className="text-xs font-medium text-slate-400">
               Review, edit, and delete this component from one page.
             </p>
@@ -414,11 +414,10 @@ export function ComponentDetailPage() {
               <label className="space-y-2.5 md:col-span-2">
                 <span className="text-[13px] font-semibold text-slate-600">Preview Image</span>
                 <label
-                  className={`flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-rose-200 px-6 py-8 ${
-                    isEditing
+                  className={`flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-rose-200 px-6 py-8 ${isEditing
                       ? "cursor-pointer bg-gradient-to-br from-[#fffafc] to-[#fff5f9] transition hover:border-rose-300 hover:shadow-[0_8px_24px_rgba(226,93,143,0.12)]"
                       : "bg-gradient-to-br from-[#fffafc] to-[#fff5f9]"
-                  }`}
+                    }`}
                 >
                   {imagePreview ? (
                     <Image
@@ -491,11 +490,11 @@ export function ComponentDetailPage() {
         item={
           component
             ? {
-                image: component.imageUrl || undefined,
-                title: component.name,
-                meta: `${component.componentType} • ${component.priceLabel}`,
-                note: `Component ID: ${component.componentId}`,
-              }
+              image: component.imageUrl || undefined,
+              title: component.name,
+              meta: `${component.componentType} • ${component.priceLabel}`,
+              note: `Component ID: ${component.componentId}`,
+            }
             : null
         }
         warnings={["This action calls the backend delete endpoint and removes the record permanently."]}

@@ -1,6 +1,7 @@
 import axios from "axios";
 import { getErrorMessage } from "../shared/utils/getErrorMessage";
 import { jwtDecode } from "jwt-decode";
+import { AUTH_STORAGE_KEY } from "../features/core/auth/constants/authConstants";
 
 const baseURL = import.meta.env.VITE_API_BASE_URL?.trim();
 
@@ -8,7 +9,7 @@ export const axiosClient = axios.create({
   baseURL: baseURL || "",
 });
 
-// Add a request interceptor to handle Content-Type and Token Expiration
+// Add a request interceptor to handle Content-Type, Token Expiration, and Authorization Header
 axiosClient.interceptors.request.use(
   (config) => {
     // 1. Handle Content-Type
@@ -18,26 +19,32 @@ axiosClient.interceptors.request.use(
       config.headers["Content-Type"] = "application/json";
     }
 
-    // 2. Pre-emptively check token expiration to avoid CORS failures on 401
+    // 2. Pre-emptively check token expiration and ATTACH Authorization Header
     try {
-      const authData = localStorage.getItem("nailify_auth");
+      const authData = localStorage.getItem(AUTH_STORAGE_KEY);
       if (authData) {
         const session = JSON.parse(authData);
-        if (session && session.token) {
-          const decoded = jwtDecode(session.token);
-          const currentTime = Date.now() / 1000;
-          
-          if (decoded.exp && decoded.exp < currentTime) {
-            // Token is expired!
-            localStorage.removeItem("nailify_auth");
-            
-            if (window.location.pathname !== "/login") {
-              window.location.href = "/login?reason=session_expired";
+        const token = session?.token || session?.accessToken || session?.jwt;
+        if (token) {
+          try {
+            const decoded = jwtDecode(token);
+            const currentTime = Date.now() / 1000;
+
+            if (decoded.exp && decoded.exp < currentTime) {
+              // Token is expired!
+              localStorage.removeItem(AUTH_STORAGE_KEY);
+              const loginPath = window.location.pathname.startsWith("/internal") ? "/internal/login" : "/login";
+              if (!window.location.pathname.includes("/login")) {
+                window.location.href = `${loginPath}?reason=session_expired`;
+              }
+              return Promise.reject(new Error("Đã hết hạn token. Vui lòng đăng nhập lại"));
             }
-            
-            // Cancel the request before it fires
-            return Promise.reject(new Error("Đã hết hạn token. Vui lòng đăng nhập lại"));
+          } catch (e) {
+            // Ignore decode errors
           }
+
+          // Attach Bearer Token to Request Headers
+          config.headers["Authorization"] = `Bearer ${token}`;
         }
       }
     } catch (error) {
@@ -60,13 +67,14 @@ axiosClient.interceptors.response.use(
 
     if (isUnauthorized || isTokenError) {
       // Clear token manually to avoid async import issues
-      localStorage.removeItem("nailify_auth");
-      
-      if (window.location.pathname !== "/login") {
-        window.location.href = "/login?reason=session_expired";
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+      const loginPath = window.location.pathname.startsWith("/internal") ? "/internal/login" : "/login";
+      if (!window.location.pathname.includes("/login")) {
+        window.location.href = `${loginPath}?reason=session_expired`;
       }
     }
 
     return Promise.reject(error);
   }
 );
+

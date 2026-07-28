@@ -8,6 +8,7 @@ import {
   Sparkles,
   TimerReset,
   UserRoundCheck,
+  Search,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
@@ -239,20 +240,26 @@ function StatCard({ title, value, note, icon: Icon, toneClassName }) {
 function formatTaskTime(value) {
   if (!value) return "--";
 
-  const directTimeMatch = String(value).match(/^(\d{2}:\d{2})(?::\d{2})?$/);
-  if (directTimeMatch) {
-    return directTimeMatch[1];
+  const rawStr = String(value).trim();
+  if (rawStr === "Đang làm..." || rawStr === "--:--") return rawStr;
+
+  // Match TimeSpan format like "06:19:43.3487340" or "19:22:56.1019770" or "06:19:43" or "06:19"
+  const timeSpanMatch = rawStr.match(/^(\d{1,2}):(\d{2})(?::\d{2})?(?:\.\d+)?$/);
+  if (timeSpanMatch) {
+    const hh = timeSpanMatch[1].padStart(2, "0");
+    const mm = timeSpanMatch[2];
+    return `${hh}:${mm}`;
   }
 
+  // ISO DateTime string or Date object
   const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return String(value);
+  if (!Number.isNaN(parsed.getTime())) {
+    const hh = String(parsed.getHours()).padStart(2, "0");
+    const mm = String(parsed.getMinutes()).padStart(2, "0");
+    return `${hh}:${mm}`;
   }
 
-  return parsed.toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return rawStr;
 }
 
 function getTaskTheme(task) {
@@ -270,11 +277,10 @@ function TaskTabButton({ active, label, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex items-center justify-center rounded-full border px-4 py-2 text-xs font-bold transition ${
-        active
-          ? "border-[#ea4f93] bg-[#fff1f7] text-[#d94f92] shadow-[0_10px_20px_rgba(236,72,153,0.12)]"
-          : "border-[#f3d5e2] bg-white text-[#8f7184] hover:bg-[#fff7fb]"
-      }`}
+      className={`inline-flex items-center justify-center rounded-full border px-4 py-2 text-xs font-bold transition ${active
+        ? "border-[#ea4f93] bg-[#fff1f7] text-[#d94f92] shadow-[0_10px_20px_rgba(236,72,153,0.12)]"
+        : "border-[#f3d5e2] bg-white text-[#8f7184] hover:bg-[#fff7fb]"
+        }`}
     >
       {label}
     </button>
@@ -363,6 +369,8 @@ function mergeTaskWithStatusUpdate(currentTask, updatedTask) {
     assignedArtistName: pickText(updatedTask.assignedArtistName, currentTask.assignedArtistName),
     estimatedStartTime: pickText(updatedTask.estimatedStartTime, currentTask.estimatedStartTime),
     estimatedEndTime: pickText(updatedTask.estimatedEndTime, currentTask.estimatedEndTime),
+    actualStartTime: pickText(updatedTask.actualStartTime, currentTask.actualStartTime),
+    actualEndTime: pickText(updatedTask.actualEndTime, currentTask.actualEndTime),
     bookingId: pickText(updatedTask.bookingId, currentTask.bookingId),
     customerName: pickText(updatedTask.customerName, currentTask.customerName, ["Unknown Customer"]),
     chairName: pickText(updatedTask.chairName, currentTask.chairName),
@@ -388,29 +396,47 @@ function BoardTaskCard({
   secondaryAction,
 }) {
   const theme = getTaskTheme(task);
+  const activeDuration = task.activeDuration ?? task.duration ?? 0;
+  const passiveDuration = task.passiveDuration ?? 0;
+  const hasPassive = passiveDuration > 0;
 
   return (
     <div
       draggable={canDrag && !isUpdating}
       onDragStart={canDrag ? (event) => onDragStart(event, task) : undefined}
       onDragEnd={onDragEnd}
-      className={`rounded-[18px] border p-3 transition ${theme.cardClassName} ${
-        isDragging ? "rotate-[1deg] opacity-60" : "hover:-translate-y-0.5 hover:shadow-[0_14px_28px_rgba(236,72,153,0.12)]"
-      } ${isUpdating ? "cursor-wait opacity-70" : canDrag ? "cursor-grab active:cursor-grabbing" : "cursor-default"}`}
+      className={`rounded-[18px] border p-3.5 transition ${theme.cardClassName} ${isDragging ? "rotate-[1deg] opacity-60" : "hover:-translate-y-0.5 hover:shadow-[0_14px_28px_rgba(236,72,153,0.12)]"
+        } ${isUpdating ? "cursor-wait opacity-70" : canDrag ? "cursor-grab active:cursor-grabbing" : "cursor-default"}`}
     >
+      {/* Prominent Customer & Booking Identifier Header Pill */}
+      <div className="mb-2.5 flex items-center justify-between gap-2 rounded-xl bg-gradient-to-r from-purple-50 via-pink-50 to-purple-50 p-2 border border-purple-200/90 shadow-2xs">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#C97A9E] text-white font-bold text-[10px] shrink-0">
+            👤
+          </span>
+          <span className="font-extrabold text-[#221F26] text-xs truncate">
+            {task.customerName || "Khách Vãng Lai"}
+          </span>
+        </div>
+        <span className="rounded-md bg-white px-2 py-0.5 text-[10px] font-bold text-[#B86B8E] border border-[#F2D6E3] font-mono shrink-0 shadow-2xs">
+          {task.bookingId ? `BK-${String(task.bookingId).slice(-4).toUpperCase()}` : `BK-${task.stepOrder}`}
+        </span>
+      </div>
+
+      {/* Step Badge & Procedure Title */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className={`rounded-full px-2 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] ${theme.chipClassName}`}>
-              Step {task.stepOrder || 0}
+            <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] ${theme.chipClassName}`}>
+              Bước {task.stepOrder || 0}
             </span>
             {task.isMainStep ? (
-              <span className={`rounded-full px-2 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] ${theme.chipClassName}`}>
-                Main
+              <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] ${theme.chipClassName}`}>
+                Chính
               </span>
             ) : null}
           </div>
-          <h3 className="mt-2.5 text-[14px] font-extrabold leading-5 text-[#402542]">{task.procedureName}</h3>
+          <h3 className="mt-2 text-[14px] font-bold leading-5 text-[#402542]">{task.procedureName}</h3>
         </div>
 
         <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${theme.handleClassName}`}>
@@ -418,26 +444,57 @@ function BoardTaskCard({
         </div>
       </div>
 
+      {/* Basic Meta Grid */}
       <div className="mt-3 grid grid-cols-2 gap-2">
-        <MiniInfo label="Customer" value={task.customerName} className={theme.infoClassName} />
-        <MiniInfo label="Chair" value={task.chairName || "--"} className={theme.infoClassName} />
+        <MiniInfo label="Khách hàng" value={task.customerName} className={theme.infoClassName} />
+        <MiniInfo label="Ghế làm" value={task.chairName || "--"} className={theme.infoClassName} />
         <MiniInfo
-          label="Booking Date"
+          label="Ngày làm"
           value={formatDate(task.bookingDate) || "--"}
           className={theme.infoClassName}
         />
         <MiniInfo
-          label="Duration"
+          label="Tổng thời gian"
           value={formatDurationMinutes(task.duration)}
           className={theme.infoClassName}
         />
       </div>
 
-      <div className="mt-2.5 flex items-center justify-between gap-3 text-[10px] font-bold text-[#8f7184]">
-        <span>{formatTaskTime(task.startTime)}</span>
-        <span>{task.canOverlap ? "Overlap OK" : "Sequential step"}</span>
+      {/* Active vs Passive Time Breakdown Bar */}
+      <div className="mt-2.5 space-y-2 border-t pt-2 border-white/60">
+        <div className="flex flex-wrap items-center justify-between gap-1 text-[11px] font-extrabold">
+          <span className="text-[#6D28D9]">⚡ Thao tác: {activeDuration}m</span>
+          {hasPassive && <span className="text-[#0284C7]">⏳ Hơ/Chờ: {passiveDuration}m</span>}
+          {(hasPassive || task.canOverlap) ? (
+            <span className="rounded-full bg-[#ECFDF5] px-2 py-0.5 text-[10px] font-bold text-[#047857] border border-[#A7F3D0]">
+              ✨ Overlap (Rảnh {passiveDuration}m)
+            </span>
+          ) : (
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">
+              🔒 Thợ làm liên tục
+            </span>
+          )}
+        </div>
+
+        {/* Estimated Schedule & Actual Execution Time */}
+        <div className="flex flex-col gap-1.5 text-[10px]">
+          <div className="flex items-center justify-between text-gray-400 font-medium opacity-80">
+            <span>🕒 Dự kiến: {formatTaskTime(task.estimatedStartTime || task.startTime)} - {formatTaskTime(task.estimatedEndTime)}</span>
+          </div>
+          {(task.actualStartTime || task.actualEndTime) && (
+            <div className="flex items-center justify-between rounded-xl bg-gradient-to-r from-emerald-100/90 via-emerald-50 to-teal-50 px-3 py-1.5 text-emerald-950 border border-emerald-300 shadow-2xs">
+              <span className="font-extrabold text-[11px] text-emerald-800 flex items-center gap-1">
+                ⏱️ Thực tế làm:
+              </span>
+              <span className="font-bold text-xs text-emerald-700 tracking-tight">
+                {formatTaskTime(task.actualStartTime)} ~ {task.actualEndTime ? formatTaskTime(task.actualEndTime) : "Đang làm..."}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
+      {/* Footer Row */}
       <div className={`mt-3 flex items-center justify-between gap-3 border-t pt-2.5 ${theme.dividerClassName}`}>
         <div className="min-w-0">
           <p className="truncate text-[11px] font-bold text-[#402542]">
@@ -482,9 +539,8 @@ function BoardColumn({
     <div
       onDragOver={onDragOver}
       onDrop={(event) => onDrop(event, column.key)}
-      className={`flex h-[540px] min-w-[290px] flex-col overflow-hidden rounded-[24px] border p-4 transition ${column.ringClassName} ${column.panelClassName} ${
-        isActiveDropTarget ? "scale-[1.01] shadow-[0_18px_36px_rgba(236,72,153,0.12)]" : ""
-      }`}
+      className={`flex h-[540px] min-w-[290px] flex-col overflow-hidden rounded-[24px] border p-4 transition ${column.ringClassName} ${column.panelClassName} ${isActiveDropTarget ? "scale-[1.01] shadow-[0_18px_36px_rgba(236,72,153,0.12)]" : ""
+        }`}
     >
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
@@ -636,12 +692,19 @@ export function StaffTasksPage() {
       return;
     }
 
+    const nowTimeStr = new Date().toTimeString().slice(0, 8);
     const previousTasks = myTasks;
-    const optimisticTasks = myTasks.map((task) =>
-      task.bookingProcedureId === draggingTask.bookingProcedureId
-        ? { ...task, status: nextStatus }
-        : task,
-    );
+    const optimisticTasks = myTasks.map((task) => {
+      if (task.bookingProcedureId !== draggingTask.bookingProcedureId) return task;
+      const timeUpdates = {};
+      if (nextStatus === "InProgress" && !task.actualStartTime) {
+        timeUpdates.actualStartTime = nowTimeStr;
+      } else if (nextStatus === "Completed") {
+        if (!task.actualStartTime) timeUpdates.actualStartTime = nowTimeStr;
+        timeUpdates.actualEndTime = nowTimeStr;
+      }
+      return { ...task, status: nextStatus, ...timeUpdates };
+    });
 
     try {
       setUpdatingTaskId(draggingTask.bookingProcedureId);
@@ -655,11 +718,18 @@ export function StaffTasksPage() {
       );
 
       setMyTasks((current) => {
-        const mergedMyTasks = current.map((task) =>
-          task.bookingProcedureId === updatedTask.bookingProcedureId
-            ? mergeTaskWithStatusUpdate(task, updatedTask)
-            : task,
-        );
+        const mergedMyTasks = current.map((task) => {
+          if (task.bookingProcedureId !== updatedTask.bookingProcedureId) return task;
+          const merged = mergeTaskWithStatusUpdate(task, updatedTask);
+          const timeUpdates = {};
+          if (nextStatus === "InProgress" && !merged.actualStartTime) {
+            timeUpdates.actualStartTime = nowTimeStr;
+          } else if (nextStatus === "Completed") {
+            if (!merged.actualStartTime) timeUpdates.actualStartTime = task.actualStartTime || nowTimeStr;
+            if (!merged.actualEndTime) timeUpdates.actualEndTime = nowTimeStr;
+          }
+          return { ...merged, ...timeUpdates };
+        });
         const decoratedBoards = decorateTaskBoards(mergedMyTasks, salonTasks);
         setSalonTasks(decoratedBoards.salonTasks);
         return decoratedBoards.myTasks;
@@ -677,7 +747,7 @@ export function StaffTasksPage() {
       setDraggingTask(null);
       setDraggingSource("");
     }
-  }, [draggingSource, draggingTask, myTasks]);
+  }, [draggingSource, draggingTask, myTasks, salonTasks]);
 
   const handleSalonColumnDrop = useCallback(async (event, nextStatus) => {
     event.preventDefault();
@@ -705,12 +775,19 @@ export function StaffTasksPage() {
       return;
     }
 
+    const nowTimeStr = new Date().toTimeString().slice(0, 8);
     const previousTasks = salonTasks;
-    const optimisticTasks = salonTasks.map((task) =>
-      task.bookingProcedureId === draggingTask.bookingProcedureId
-        ? { ...task, status: nextStatus }
-        : task,
-    );
+    const optimisticTasks = salonTasks.map((task) => {
+      if (task.bookingProcedureId !== draggingTask.bookingProcedureId) return task;
+      const timeUpdates = {};
+      if (nextStatus === "InProgress" && !task.actualStartTime) {
+        timeUpdates.actualStartTime = nowTimeStr;
+      } else if (nextStatus === "Completed") {
+        if (!task.actualStartTime) timeUpdates.actualStartTime = nowTimeStr;
+        timeUpdates.actualEndTime = nowTimeStr;
+      }
+      return { ...task, status: nextStatus, ...timeUpdates };
+    });
 
     try {
       setUpdatingTaskId(draggingTask.bookingProcedureId);
@@ -724,11 +801,18 @@ export function StaffTasksPage() {
       );
 
       setSalonTasks((current) => {
-        const mergedSalonTasks = current.map((task) =>
-          task.bookingProcedureId === updatedTask.bookingProcedureId
-            ? mergeTaskWithStatusUpdate(task, updatedTask)
-            : task,
-        );
+        const mergedSalonTasks = current.map((task) => {
+          if (task.bookingProcedureId !== updatedTask.bookingProcedureId) return task;
+          const merged = mergeTaskWithStatusUpdate(task, updatedTask);
+          const timeUpdates = {};
+          if (nextStatus === "InProgress" && !merged.actualStartTime) {
+            timeUpdates.actualStartTime = nowTimeStr;
+          } else if (nextStatus === "Completed") {
+            if (!merged.actualStartTime) timeUpdates.actualStartTime = task.actualStartTime || nowTimeStr;
+            if (!merged.actualEndTime) timeUpdates.actualEndTime = nowTimeStr;
+          }
+          return { ...merged, ...timeUpdates };
+        });
         const decoratedBoards = decorateTaskBoards(myTasks, mergedSalonTasks);
         setMyTasks(decoratedBoards.myTasks);
         return decoratedBoards.salonTasks;
@@ -746,25 +830,62 @@ export function StaffTasksPage() {
       setDraggingTask(null);
       setDraggingSource("");
     }
-  }, [currentStaffArtistId, draggingSource, draggingTask, salonTasks]);
+  }, [currentStaffArtistId, draggingSource, draggingTask, myTasks, salonTasks]);
+
+  const [searchTaskText, setSearchTaskText] = useState("");
+  const [selectedCustomerFilter, setSelectedCustomerFilter] = useState("all");
+
+  const uniqueCustomers = useMemo(() => {
+    const all = [...myTasks, ...salonTasks];
+    const customerMap = new Map();
+    all.forEach((t) => {
+      if (t.customerName && t.customerName !== "Unknown Customer") {
+        const bkCode = t.bookingId ? `BK-${String(t.bookingId).slice(-4).toUpperCase()}` : "";
+        customerMap.set(t.customerName, bkCode ? `${t.customerName} (${bkCode})` : t.customerName);
+      }
+    });
+    return Array.from(customerMap.entries()).map(([name, display]) => ({
+      name,
+      display,
+    }));
+  }, [myTasks, salonTasks]);
+
+  const filterSingleTask = useCallback(
+    (task) => {
+      if (selectedCustomerFilter !== "all" && task.customerName !== selectedCustomerFilter) {
+        return false;
+      }
+      if (searchTaskText.trim()) {
+        const q = searchTaskText.toLowerCase();
+        const cName = String(task.customerName || "").toLowerCase();
+        const pName = String(task.procedureName || "").toLowerCase();
+        const bkId = String(task.bookingId || "").toLowerCase();
+        const chair = String(task.chairName || "").toLowerCase();
+        const code = task.bookingId ? `bk-${String(task.bookingId).slice(-4).toLowerCase()}` : "";
+        return cName.includes(q) || pName.includes(q) || bkId.includes(q) || chair.includes(q) || code.includes(q);
+      }
+      return true;
+    },
+    [selectedCustomerFilter, searchTaskText]
+  );
 
   const myTasksByColumn = useMemo(() => {
     return BOARD_COLUMNS.reduce((groups, column) => {
-      groups[column.key] = myTasks.filter(
-        (task) => normalizeStatusKey(task.status) === column.key,
-      );
+      groups[column.key] = myTasks
+        .filter(filterSingleTask)
+        .filter((task) => normalizeStatusKey(task.status) === column.key);
       return groups;
     }, {});
-  }, [myTasks]);
+  }, [myTasks, filterSingleTask]);
 
   const salonTasksByColumn = useMemo(() => {
     return BOARD_COLUMNS.reduce((groups, column) => {
-      groups[column.key] = salonTasks.filter(
-        (task) => normalizeStatusKey(task.status) === column.key,
-      );
+      groups[column.key] = salonTasks
+        .filter(filterSingleTask)
+        .filter((task) => normalizeStatusKey(task.status) === column.key);
       return groups;
     }, {});
-  }, [salonTasks]);
+  }, [salonTasks, filterSingleTask]);
 
   const stats = useMemo(() => {
     const requiredMyTasks = myTasks.filter((task) => task.isRequired).length;
@@ -860,6 +981,49 @@ export function StaffTasksPage() {
                 <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} />
                 Refresh
               </button>
+            </div>
+          </div>
+
+          {/* Customer & Task Filter Bar */}
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[#f6dce7]/70">
+            <div className="flex items-center gap-2 flex-1 min-w-[240px]">
+              <Search size={14} className="text-[#a07c90] shrink-0" />
+              <input
+                type="text"
+                placeholder="🔍 Tìm tên khách (Đoàn Thành), Mã Booking (BK-108), hoặc tên bước..."
+                value={searchTaskText}
+                onChange={(e) => setSearchTaskText(e.target.value)}
+                className="w-full rounded-xl border border-[#f3d5e2] bg-white px-3 py-1.5 text-xs font-semibold text-[#402542] placeholder-[#a07c90] focus:border-[#C97A9E] focus:outline-none"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-extrabold text-[#6D28D9] shrink-0">👤 Lọc theo Khách:</span>
+              <select
+                value={selectedCustomerFilter}
+                onChange={(e) => setSelectedCustomerFilter(e.target.value)}
+                className="rounded-xl border border-[#f3d5e2] bg-white px-3 py-1.5 text-xs font-bold text-[#402542] focus:border-[#C97A9E] focus:outline-none cursor-pointer"
+              >
+                <option value="all">-- Tất cả khách hàng ({uniqueCustomers.length}) --</option>
+                {uniqueCustomers.map((cust) => (
+                  <option key={cust.name} value={cust.name}>
+                    {cust.display}
+                  </option>
+                ))}
+              </select>
+
+              {(searchTaskText || selectedCustomerFilter !== "all") && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchTaskText("");
+                    setSelectedCustomerFilter("all");
+                  }}
+                  className="rounded-xl bg-gray-100 px-3 py-1.5 text-xs font-bold text-gray-600 hover:bg-gray-200 transition cursor-pointer"
+                >
+                  Xóa lọc
+                </button>
+              )}
             </div>
           </div>
         </div>

@@ -1037,7 +1037,7 @@ export function CustomerNailDetailPage() {
 
         {/* Finger label with interactive state */}
         <span
-          className={`rounded-full border-2 px-4 py-1.5 text-[11px] font-black uppercase tracking-[0.16em] backdrop-blur-sm transition-all duration-500 ${isFingerSelectedWithAccessory
+          className={`rounded-full border-2 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] backdrop-blur-sm transition-all duration-500 ${isFingerSelectedWithAccessory
             ? "border-[#ea4f93] bg-[#ea4f93] text-white shadow-[0_12px_28px_rgba(236,72,153,0.2)] scale-105"
             : "border-[#fce6f3] bg-white/95 text-[#c08aa4] shadow-[0_8px_20px_rgba(236,72,153,0.08)] group-hover:scale-105 group-hover:border-[#ea4f93] group-hover:bg-[#ea4f93] group-hover:text-white"
             }`}
@@ -1069,14 +1069,14 @@ export function CustomerNailDetailPage() {
                   <div className="absolute -inset-0.5 rounded-[32px] bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none" />
                 </div>
               ) : (
-                <div className="flex h-28 w-28 shrink-0 items-center justify-center rounded-[32px] bg-gradient-to-br from-[#ff9ac2] via-[#ea4f93] to-[#c63d79] text-3xl font-black text-white shadow-[0_20px_45px_rgba(234,79,147,0.2)]">
+                <div className="flex h-28 w-28 shrink-0 items-center justify-center rounded-[32px] bg-gradient-to-br from-[#ff9ac2] via-[#ea4f93] to-[#c63d79] text-3xl font-bold text-white shadow-[0_20px_45px_rgba(234,79,147,0.2)]">
                   <Palette size={38} />
                 </div>
               )}
 
               <div className="text-center sm:text-left">
                 <div className="flex flex-wrap justify-center sm:justify-start items-center gap-3">
-                  <h2 className="text-3xl font-black tracking-tight text-[#3f2240]">
+                  <h2 className="text-3xl font-bold tracking-tight text-[#3f2240]">
                     {nail?.name || "Untitled Design"}
                   </h2>
                   <span
@@ -1136,7 +1136,7 @@ export function CustomerNailDetailPage() {
                 <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#d97706]">
                   Price
                 </span>
-                <span className="mt-2 text-base font-black text-[#d97706] truncate">
+                <span className="mt-2 text-base font-bold text-[#d97706] truncate">
                   {formatVND(nail?.price, nail?.status)}
                 </span>
               </div>
@@ -1145,7 +1145,7 @@ export function CustomerNailDetailPage() {
                 <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#7c3aed]">
                   Duration
                 </span>
-                <span className="mt-2 text-base font-black text-[#7c3aed] truncate">
+                <span className="mt-2 text-base font-bold text-[#7c3aed] truncate">
                   {formatDuration(nail?.duration, nail?.status)}
                 </span>
               </div>
@@ -1518,7 +1518,7 @@ export function CustomerNailDetailPage() {
                                     </div>
 
                                     <div className="text-center min-w-0 w-full">
-                                      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#3f2240]">{fingerName}</p>
+                                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#3f2240]">{fingerName}</p>
 
                                       {isGradient ? (
                                         <div className="mt-2.5 flex items-center justify-center gap-1.5 flex-wrap">

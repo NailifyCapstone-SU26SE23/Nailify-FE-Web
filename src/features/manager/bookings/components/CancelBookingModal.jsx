@@ -7,11 +7,11 @@ import { cancelBooking } from "../services/bookingsService";
 import { motion } from "framer-motion";
 
 const CANCEL_REASONS = [
-  { label: "Customer requested", value: "customer_request" },
-  { label: "Staff unavailable", value: "staff_unavailable" },
-  { label: "Salon closed", value: "salon_closed" },
-  { label: "Double booking", value: "double_booking" },
-  { label: "Other", value: "other" },
+  { label: "Customer requested cancellation", value: "customer_request" },
+  { label: "Staff artist unavailable", value: "staff_unavailable" },
+  { label: "Salon closed / Holiday", value: "salon_closed" },
+  { label: "Double booking conflict", value: "double_booking" },
+  { label: "Other reason", value: "other" },
 ];
 
 export function CancelBookingModal({
@@ -78,7 +78,7 @@ export function CancelBookingModal({
       }}
     >
       {/* Header */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-[#db8520] to-[#b36611] px-6 pt-8 pb-10 text-white">
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#db8520] to-[#b36611] px-6 pt-8 pb-10 text-white font-sans">
         <div className="absolute -top-12 -right-12 h-36 w-36 rounded-full bg-white/10 blur-xl"></div>
         <div className="absolute -bottom-8 -left-8 h-24 w-24 rounded-full bg-black/10 blur-lg"></div>
         <div className="relative flex items-center gap-4">
@@ -86,21 +86,21 @@ export function CancelBookingModal({
             <XCircle size={26} className="drop-shadow-md animate-pulse" />
           </div>
           <div>
-            <h2 className="text-xl font-black tracking-tight">Hủy Lịch Hẹn</h2>
-            <p className="mt-1 text-xs text-amber-100/90 font-medium">Hành động này sẽ hủy yêu cầu đặt lịch của khách hàng</p>
+            <h2 className="text-xl font-bold tracking-tight">Cancel Booking</h2>
+            <p className="mt-1 text-xs text-amber-100/90 font-medium">This action will cancel the customer's appointment request</p>
           </div>
         </div>
       </div>
 
       {/* Body */}
-      <div className="-mt-6 rounded-t-[28px] bg-white px-6 pt-8 pb-6 space-y-5 relative z-10">
+      <div className="-mt-6 rounded-t-[28px] bg-white px-6 pt-8 pb-6 space-y-5 relative z-10 font-sans">
         {/* Warning Alert */}
         <div className="flex gap-3 rounded-2xl border border-[#ffecca] bg-[#fffbf4] p-4 shadow-[0_2px_8px_rgba(219,133,32,0.03)]">
           <AlertCircle size={18} className="shrink-0 text-[#db8520] mt-0.5" />
           <div>
-            <p className="text-xs font-extrabold text-[#7c4d16]">Lưu ý quan trọng</p>
+            <p className="text-xs font-extrabold text-[#7c4d16]">Important Notice</p>
             <p className="mt-1 text-xs text-[#a3723b] leading-relaxed font-medium">
-              Việc hủy lịch hẹn sẽ kích hoạt gửi thông báo tự động cho khách hàng và có thể ảnh hưởng đến trải nghiệm dịch vụ của họ.
+              Cancelling an appointment will trigger an automated notification to the customer and may impact their service experience.
             </p>
           </div>
         </div>
@@ -108,23 +108,17 @@ export function CancelBookingModal({
         {/* Booking Details */}
         {Object.keys(booking).length > 0 && (
           <div className="space-y-3 rounded-2xl border border-[#ffdcb5]/60 bg-gradient-to-b from-[#fffcf8] to-[#fff6ec] p-4 shadow-[0_4px_16px_rgba(219,133,32,0.02)]">
-            <h3 className="text-[10px] font-black uppercase tracking-wider text-[#db8520]/80">
-              Chi tiết lịch hẹn
+            <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#db8520]/80">
+              Booking Details
             </h3>
             <div className="grid grid-cols-2 gap-x-4 gap-y-3 pt-1">
-              {booking.bookingId && (
-                <div className="col-span-2 flex items-center justify-between border-b border-[#ffdcb5]/30 pb-2 text-xs">
-                  <span className="font-semibold text-[#8b7282]">Mã lịch hẹn:</span>
-                  <span className="font-extrabold text-[#402542] font-mono">{booking.bookingId}</span>
-                </div>
-              )}
               {booking.customerName && (
                 <div className="flex items-center gap-2.5 text-xs">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#fff0dd] text-[#db8520] shadow-sm">
                     <User size={14} />
                   </div>
                   <div>
-                    <p className="text-[9px] text-[#8e7b89] font-semibold uppercase tracking-wider">Khách hàng</p>
+                    <p className="text-[9px] text-[#8e7b89] font-semibold uppercase tracking-wider">Customer</p>
                     <p className="font-extrabold text-[#402542] text-[13px]">{booking.customerName}</p>
                   </div>
                 </div>
@@ -135,15 +129,15 @@ export function CancelBookingModal({
                     <Clock size={14} />
                   </div>
                   <div>
-                    <p className="text-[9px] text-[#8e7b89] font-semibold uppercase tracking-wider">Thời gian đặt</p>
+                    <p className="text-[9px] text-[#8e7b89] font-semibold uppercase tracking-wider">Time Slot</p>
                     <p className="font-extrabold text-[#402542] text-[13px]">{booking.time} ({booking.date})</p>
                   </div>
                 </div>
               )}
               {booking.totalPrice && (
                 <div className="col-span-2 flex items-center justify-between border-t border-[#ffdcb5]/30 pt-2 mt-1 text-xs">
-                  <span className="font-semibold text-[#8e7b89]">Tổng số tiền:</span>
-                  <span className="text-base font-black text-[#db8520]">{booking.totalPrice}</span>
+                  <span className="font-semibold text-[#8e7b89]">Total Amount:</span>
+                  <span className="text-base font-bold text-[#db8520]">{booking.totalPrice}</span>
                 </div>
               )}
             </div>
@@ -152,13 +146,13 @@ export function CancelBookingModal({
 
         {/* Reason Selection */}
         <div className="space-y-1.5">
-          <label className="text-[10px] font-black uppercase tracking-wider text-[#8b7282]">
-            Lý do hủy đặt lịch <span className="text-[#db8520] font-bold">*</span>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-[#8b7282]">
+            Cancellation Reason <span className="text-[#db8520] font-bold">*</span>
           </label>
           <Select
             value={reason || undefined}
             onChange={setReason}
-            placeholder="Chọn lý do hủy lịch..."
+            placeholder="Select cancellation reason..."
             disabled={isLoading}
             options={CANCEL_REASONS}
             style={{
@@ -169,13 +163,13 @@ export function CancelBookingModal({
 
         {/* Details Field */}
         <div className="space-y-1.5">
-          <label className="text-[10px] font-black uppercase tracking-wider text-[#8b7282]">
-            Chi tiết thêm (Tùy chọn)
+          <label className="text-[10px] font-bold uppercase tracking-wider text-[#8b7282]">
+            Additional Notes (Optional)
           </label>
           <Input.TextArea
             value={details}
             onChange={(e) => setDetails(e.target.value)}
-            placeholder="Cung cấp thêm thông tin chi tiết về việc hủy..."
+            placeholder="Provide additional details regarding this cancellation..."
             rows={3}
             maxLength={300}
             disabled={isLoading}
@@ -192,11 +186,11 @@ export function CancelBookingModal({
 
         {/* Info Box */}
         <div className="space-y-2 rounded-2xl border border-[#ffdcb5]/60 bg-[#fffdfb] p-4 shadow-[0_2px_8px_rgba(219,133,32,0.02)]">
-          <p className="text-xs font-extrabold text-[#7c4d16]">Sau khi hủy:</p>
+          <p className="text-xs font-extrabold text-[#7c4d16]">After cancellation:</p>
           <ul className="space-y-1 text-xs text-[#a3723b] font-medium leading-relaxed">
-            <li>• Khách hàng sẽ nhận được thông báo hủy đặt lịch hẹn</li>
-            <li>• Trạng thái đặt lịch chuyển sang khóa vĩnh viễn (Cancelled)</li>
-            <li>• Số tiền đặt cọc (nếu có) sẽ được xử lý theo chính sách của salon</li>
+            <li>• Customer will receive a cancellation update notification</li>
+            <li>• Booking status will be set to Cancelled permanently</li>
+            <li>• Deposit refunds (if applicable) will follow salon terms</li>
           </ul>
         </div>
 
@@ -208,7 +202,7 @@ export function CancelBookingModal({
           className="text-xs"
         >
           <span className="text-[#7a6176] font-medium">
-            Tôi đã đọc, hiểu rõ và đồng ý <span className="font-extrabold text-[#db8520]">hủy lịch hẹn này</span>
+            I have read, understood, and agree to <span className="font-extrabold text-[#db8520]">cancel this booking</span>
           </span>
         </Checkbox>
 
@@ -221,7 +215,7 @@ export function CancelBookingModal({
             disabled={isLoading}
           >
             <X size={14} />
-            Giữ lại lịch
+            Keep Booking
           </button>
           <button
             type="button"
@@ -234,7 +228,7 @@ export function CancelBookingModal({
             ) : (
               <>
                 <XCircle size={14} />
-                Xác nhận hủy
+                Confirm Cancellation
               </>
             )}
           </button>
