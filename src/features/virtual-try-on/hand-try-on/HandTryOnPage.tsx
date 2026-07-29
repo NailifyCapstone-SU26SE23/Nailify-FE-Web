@@ -4,8 +4,8 @@ import { BuilderView } from './BuilderView';
 import { TryOnView } from './TryOnView';
 import { UploadView } from './UploadView';
 import { useHandLandmarkerTask } from './useHandLandmarkerTask';
-import type { PendingTryOnImageFiles, SerializedNailSet } from '@/features/virtual-try-on/handLandmarkerTask';
-import type { NailDesignFormValues, NailVariantFormValues } from '@/services/nailDesign.service';
+import type { PendingTryOnImageFiles, SerializedNailSet } from '../handLandmarkerTask';
+import type { NailDesignFormValues, NailVariantFormValues } from '../../../services/nailDesign.service';
 import './tryOn.css';
 
 export type TryOnRouteState = {
