@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import type { HandLandmarkerTaskHandle, DecorationData, CanvasLayout } from '../handLandmarkerTask';
+import { RotateCw } from 'lucide-react';
 
 type NailDecorationOverlayProps = {
   fingerIndex: number;
@@ -125,11 +126,15 @@ function DecorationItem({
 
   const initialPosRef = useRef({ x: dec.x, y: dec.y });
 
-  const handlePanStart = useCallback(() => {
+  const handlePanStart = useCallback((e: any) => {
+    const evt = e.nativeEvent || e;
+    if ((evt.target as HTMLElement).closest?.('.decoration-rotate-handle, .decoration-resize-handle')) return;
     initialPosRef.current = { x: dec.x, y: dec.y };
   }, [dec.x, dec.y]);
 
   const handlePan = useCallback((e: any, info: any) => {
+    const evt = e.nativeEvent || e;
+    if ((evt.target as HTMLElement).closest?.('.decoration-rotate-handle, .decoration-resize-handle')) return;
     if (!isSelected || !itemRef.current) return;
     const parent = itemRef.current.parentElement;
     if (!parent) return;
@@ -163,18 +168,74 @@ function DecorationItem({
   const handleResizePanStart = useCallback((e: any) => {
     e.stopPropagation();
     initialScaleRef.current = dec.scale;
-  }, [dec.scale]);
+    initialPosRef.current = { x: dec.x, y: dec.y };
+  }, [dec.scale, dec.x, dec.y]);
 
-  const handleResizePan = useCallback((e: any, info: any) => {
+  const initialRotateRef = useRef({ angle: dec.rotation, startAngle: 0 });
+
+  const getClientCoords = (e: any) => {
+    const evt = e.nativeEvent || e;
+    if (evt.touches && evt.touches.length > 0) {
+      return { x: evt.touches[0].clientX, y: evt.touches[0].clientY };
+    }
+    return { x: evt.clientX || 0, y: evt.clientY || 0 };
+  };
+
+  const handleRotatePanStart = useCallback((e: any) => {
     e.stopPropagation();
-    // Dragging down/right increases scale. Sensitivity: 100px = scale +1.0
-    const scaleDelta = (info.offset.x + info.offset.y) / 100;
-    let newScale = initialScaleRef.current + scaleDelta;
-    newScale = Math.max(0.05, Math.min(4, newScale));
+    if (!itemRef.current) return;
+    const rect = itemRef.current.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const coords = getClientCoords(e);
+    const startAngle = Math.atan2(coords.y - centerY, coords.x - centerX) * (180 / Math.PI);
+    initialRotateRef.current = { angle: dec.rotation, startAngle };
+  }, [dec.rotation]);
+
+  const handleRotatePan = useCallback((e: any) => {
+    e.stopPropagation();
+    if (!itemRef.current) return;
+    const rect = itemRef.current.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
     
-    task.updateDecoration(fingerIndex, idx, { scale: newScale });
+    const coords = getClientCoords(e);
+    const currentAngle = Math.atan2(coords.y - centerY, coords.x - centerX) * (180 / Math.PI);
+    const angleDelta = currentAngle - initialRotateRef.current.startAngle;
+    
+    let newRotation = initialRotateRef.current.angle + angleDelta;
+    newRotation = (newRotation % 360 + 360) % 360;
+    
+    task.updateDecoration(fingerIndex, idx, { rotation: newRotation });
     onRefresh();
   }, [fingerIndex, idx, task, onRefresh]);
+
+  const createResizeHandler = (factorX: number, factorY: number) => (e: any, info: any) => {
+    e.stopPropagation();
+    if (!itemRef.current) return;
+    const parent = itemRef.current.parentElement;
+    if (!parent) return;
+    const parentRect = parent.getBoundingClientRect();
+
+    const dx = info.offset.x;
+    const dy = info.offset.y;
+
+    const scaleDeltaX = (dx / parentRect.width) * (layout.canvasW / layout.destW) * factorX;
+    const scaleDeltaY = (dy / parentRect.height) * (layout.canvasH / layout.destH) * factorY;
+
+    const avgDelta = (scaleDeltaX + scaleDeltaY) / 2;
+
+    let newScale = initialScaleRef.current + avgDelta;
+    newScale = Math.max(0.05, Math.min(4, newScale));
+
+    const actualScaleDelta = newScale - initialScaleRef.current;
+
+    const newX = initialPosRef.current.x + (actualScaleDelta / 2) * factorX;
+    const newY = initialPosRef.current.y + (actualScaleDelta / 2) * factorY;
+
+    task.updateDecoration(fingerIndex, idx, { scale: newScale, x: newX, y: newY });
+    onRefresh();
+  };
 
   return (
     <motion.div
@@ -216,30 +277,65 @@ function DecorationItem({
       />
       {isSelected && (
         <>
+          {[
+            { top: -6, left: -6, cursor: 'nwse-resize', fx: -1, fy: -1 },
+            { top: -6, right: -6, cursor: 'nesw-resize', fx: 1, fy: -1 },
+            { bottom: -6, left: -6, cursor: 'nesw-resize', fx: -1, fy: 1 },
+            { bottom: -6, right: -6, cursor: 'nwse-resize', fx: 1, fy: 1 },
+          ].map((corner, i) => (
+            <motion.div
+              key={i}
+              className="decoration-resize-handle"
+              onPointerDown={(e) => e.stopPropagation()}
+              onPanStart={handleResizePanStart}
+              onPan={createResizeHandler(corner.fx, corner.fy)}
+              style={{
+                position: 'absolute',
+                top: corner.top,
+                bottom: corner.bottom,
+                left: corner.left,
+                right: corner.right,
+                width: 12,
+                height: 12,
+                backgroundColor: '#fff',
+                border: '2px solid var(--tryon-primary, #007f8b)',
+                borderRadius: '50%',
+                cursor: corner.cursor,
+                zIndex: 20,
+                boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+              }}
+              whileHover={{ scale: 1.2 }}
+              whileTap={{ scale: 1.1 }}
+            />
+          ))}
           <motion.div
-            className="decoration-resize-handle"
+            className="decoration-rotate-handle"
             onPointerDown={(e) => e.stopPropagation()}
-            onPanStart={handleResizePanStart}
-            onPan={handleResizePan}
+            onPanStart={handleRotatePanStart}
+            onPan={handleRotatePan}
             style={{
               position: 'absolute',
-              bottom: -6,
-              right: -6,
-              width: 14,
-              height: 14,
+              bottom: -40,
+              left: '50%',
+              marginLeft: -14,
+              width: 28,
+              height: 28,
               backgroundColor: '#fff',
-              border: '2px solid #007f8b',
+              border: '1px solid #ddd',
               borderRadius: '50%',
-              cursor: 'nwse-resize',
+              cursor: 'grab',
               zIndex: 20,
-              boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#555'
             }}
-            whileHover={{ scale: 1.2 }}
-            whileTap={{ scale: 1.1 }}
-          />
-          <div className="decoration-resize-hint">
-            <span>Drag handle to resize</span>
-          </div>
+            whileHover={{ scale: 1.1, color: 'var(--tryon-primary, #007f8b)' }}
+            whileTap={{ scale: 1.05, cursor: 'grabbing' }}
+          >
+            <RotateCw size={16} strokeWidth={2.5} />
+          </motion.div>
         </>
       )}
     </motion.div>
