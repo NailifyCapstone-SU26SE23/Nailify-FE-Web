@@ -1,6 +1,7 @@
 import { BuilderActions } from './BuilderActions';
 import { BuilderControls } from './BuilderControls';
-import type { HandLandmarkerTaskHandle } from '@/features/virtual-try-on/handLandmarkerTask';
+import { NailDecorationOverlay } from './NailDecorationOverlay';
+import type { HandLandmarkerTaskHandle } from '../handLandmarkerTask';
 import { useState } from 'react';
 import { ZoomIn, ZoomOut } from 'lucide-react';
 
@@ -19,19 +20,27 @@ export function BuilderView({ currentNailSetId, handLandmarkerTask, onReturnToFo
     <div id="builder-view" className="view-step active">
       <div className="builder-layout">
         <section className={`builder-preview-row ${isZoomed ? 'zoomed' : ''}`} aria-label="Nail previews">
-          <button 
-            type="button" 
-            className="zoom-toggle-btn" 
+          <button
+            type="button"
+            className="zoom-toggle-btn"
             onClick={() => setIsZoomed(!isZoomed)}
             title="Toggle zoom"
           >
             {isZoomed ? <ZoomOut size={18} /> : <ZoomIn size={18} />}
           </button>
           {previewLabels.map((label, index) => (
-            <button className="nail-preview-card" data-index={index} key={label} type="button">
+            <div className="nail-preview-card" data-index={index} key={label}>
               <span>{label}</span>
-              <canvas id={`nail-preview-canvas-${index}`} width="320" height="420" />
-            </button>
+              <div className="nail-canvas-wrapper">
+                <canvas id={`nail-preview-canvas-${index}`} width="320" height="420" />
+                {handLandmarkerTask && (
+                  <NailDecorationOverlay
+                    fingerIndex={index}
+                    task={handLandmarkerTask}
+                  />
+                )}
+              </div>
+            </div>
           ))}
         </section>
 
