@@ -142,6 +142,7 @@ class HandLandmarkerTask extends BaseVisionTask {
     this.selectedLayerIndex = layerIndex;
     this.renderLayersList();
     this.syncPreviewSelection();
+    this.dispatchDecorationsChanged();
     this.triggerRedetection();
   }
 
@@ -150,6 +151,7 @@ class HandLandmarkerTask extends BaseVisionTask {
       this.selectedLayerIndex = -1;
       this.renderLayersList();
       this.triggerRedetection();
+      this.dispatchDecorationsChanged();
     }
   }
 
@@ -414,7 +416,9 @@ class HandLandmarkerTask extends BaseVisionTask {
     // Finger Selection Listeners
     const previewButtons = document.querySelectorAll('.nail-preview-card');
     previewButtons.forEach((btn) => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', (e) => {
+        if ((e.target as HTMLElement).closest('.decoration-item')) return;
+        
         const nextFingerIndex = parseInt((btn as HTMLElement).dataset.index ?? '0', 10);
         if (this.editMode === 'individual' && this.selectedFingerIndex === nextFingerIndex) {
           this.editMode = 'all';
@@ -427,7 +431,7 @@ class HandLandmarkerTask extends BaseVisionTask {
         this.triggerRedetection();
         this.renderLayersList();
         this.dispatchDecorationsChanged();
-      });
+      }, { signal: this.uiAbortController.signal });
     });
 
     // Transform Listeners
