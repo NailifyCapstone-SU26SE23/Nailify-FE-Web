@@ -403,7 +403,7 @@ export function StaffManagementPage() {
         label: "Total Staff",
         value: staffList.length.toString(),
         icon: Users,
-        iconClassName: "bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93]",
+        iconClassName: "bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-white",
         note: selectedSalon?.name || "All Salons",
         noteClassName: "text-[#c08aa4]",
       },

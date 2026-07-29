@@ -1,6 +1,7 @@
 import {
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Clock3,
   Eye,
   Search,
@@ -327,7 +328,7 @@ function mapBookingForDrawer(rawBooking) {
     artistId,
     deposit: rawBooking.depositAmount ? formatVND(rawBooking.depositAmount) : "Pending",
     depositAmount: rawBooking.depositAmount,
-    depositTone: rawBooking.depositAmount ? "text-[#059669] font-extrabold" : "text-[#D97706] font-bold",
+    depositTone: rawBooking.depositAmount ? "text-[#059669] font-bold" : "text-[#D97706] font-bold",
     status: rawBooking.status || "Pending",
     totalPrice: rawBooking.totalPrice,
     qrCode: rawBooking.qrCode,
@@ -909,7 +910,7 @@ export function ManagerBookingListPage() {
                     <Sparkles size={12} className="text-[#C99635]" />
                     <span>Nailify Salon Manager Portal</span>
                   </div>
-                  <h1 className="text-2xl lg:text-3xl font-extrabold text-[#2B182B] mt-1.5 tracking-tight font-serif">
+                  <h1 className="text-2xl lg:text-3xl font-bold text-[#2B182B] mt-1.5 tracking-tight">
                     Booking Management
                   </h1>
                   <p className="mt-1 text-xs lg:text-sm text-[#9E8497] font-medium leading-relaxed">
@@ -989,7 +990,7 @@ export function ManagerBookingListPage() {
                         </span>
                       </div>
                       <div className="mt-3">
-                        <p className="text-2xl font-extrabold text-[#2B182B] tracking-tight">{stat.value}</p>
+                        <p className="text-2xl font-bold text-[#2B182B] tracking-tight">{stat.value}</p>
                         <p className="text-xs font-semibold text-[#9E8497] mt-0.5">{stat.label}</p>
                       </div>
                     </div>
@@ -1009,19 +1010,51 @@ export function ManagerBookingListPage() {
                         icon={Filter}
                       />
 
+
+                    </div>
+                    <div className="flex flex-nowrap items-center gap-3 overflow-x-auto pb-2 lg:pb-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                      {/* Status Dropdown */}
+                      <div className="shrink-0 flex items-center gap-2.5 rounded-2xl border border-[#F3D6E5] bg-gradient-to-r from-[#FFF0F5] to-[#FFF9FB] px-3.5 py-1.5 shadow-[0_4px_12px_rgba(219,70,117,0.06)] transition-all duration-300 hover:border-[#E84F93]/50 hover:shadow-[0_4px_16px_rgba(219,70,117,0.12)] cursor-pointer group">
+                        <div className="flex items-center gap-1.5 border-r border-[#F3D6E5] pr-3 py-0.5">
+                          <Filter size={14} className="text-[#E84F93]" />
+                          <span className="text-[11px] font-bold text-[#9E8497] uppercase tracking-wider group-hover:text-[#E84F93] transition-colors">Status</span>
+                        </div>
+                        <div className="relative">
+                          <select
+                            value={activeFilter}
+                            onChange={(e) => setActiveFilter(e.target.value)}
+                            className="appearance-none text-xs font-bold text-[#2B182B] bg-transparent outline-none cursor-pointer pr-6 pl-1 w-full hover:text-[#E84F93] transition-colors focus:text-[#E84F93]"
+                          >
+                            {appointmentFilters.map((filter) => {
+                              const count = filter.value === "All"
+                                ? bookings.length
+                                : bookings.filter(b => matchesFilter(b.status, filter.value)).length;
+                              return (
+                                <option key={filter.value} value={filter.value} className="text-sm font-medium text-[#2B182B]">
+                                  {filter.label} ({count})
+                                </option>
+                              );
+                            })}
+                          </select>
+                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-[#9E8497] group-hover:text-[#E84F93] transition-colors">
+                            <ChevronDown size={14} />
+                          </div>
+                        </div>
+                      </div>
+
                       {/* View Switcher Controls */}
-                      <div className="flex items-center gap-1.5 rounded-2xl border border-[#F3D6E5] bg-[#FFF0F5] p-1.5 shadow-2xs">
+                      <div className="flex shrink-0 items-center gap-1 rounded-2xl border border-[#F3D6E5] bg-[#FFF0F5] p-1 shadow-2xs">
                         {[
                           { mode: "table", label: "Table", icon: TableIcon },
-                          { mode: "day", label: "Day View", icon: LayoutGrid },
-                          { mode: "week", label: "Week View", icon: CalendarDays },
-                          { mode: "month", label: "Month View", icon: GridIcon },
+                          { mode: "day", label: "Day", icon: LayoutGrid },
+                          { mode: "week", label: "Week", icon: CalendarDays },
+                          { mode: "month", label: "Month", icon: GridIcon },
                         ].map((btn) => (
                           <button
                             key={btn.mode}
                             type="button"
                             onClick={() => setViewMode(btn.mode)}
-                            className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${viewMode === btn.mode
+                            className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all whitespace-nowrap ${viewMode === btn.mode
                               ? "bg-gradient-to-r from-[#E84F93] to-[#F43F5E] text-white shadow-md"
                               : "text-[#9E8497] hover:bg-white hover:text-[#2B182B]"
                               }`}
@@ -1033,33 +1066,7 @@ export function ManagerBookingListPage() {
                       </div>
                     </div>
 
-                    {/* Status Filter Pills */}
-                    <div className="mt-5 space-y-4">
-                      <div className="flex flex-wrap gap-2">
-                        {appointmentFilters.map((filter) => {
-                          const count = filter.value === "All"
-                            ? bookings.length
-                            : bookings.filter(b => matchesFilter(b.status, filter.value)).length;
-                          const isActive = activeFilter === filter.value;
-                          return (
-                            <motion.button
-                              key={filter.value}
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
-                              onClick={() => setActiveFilter(filter.value)}
-                              className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-bold transition-all duration-200 ${isActive
-                                ? "border-[#E84F93] bg-gradient-to-r from-[#E84F93] to-[#F43F5E] text-white shadow-[0_6px_18px_rgba(234,79,147,0.3)]"
-                                : "border-[#F3D7E4] bg-white text-[#7F6478] hover:border-[#F0B7CF] hover:bg-[#FFF7FB] hover:text-[#E84F93]"
-                                }`}
-                            >
-                              <span>{filter.label}</span>
-                              <span className={`rounded-full px-2 py-0.5 text-[11px] font-extrabold ${isActive ? "bg-white/25 text-white" : "bg-[#FFF0F6] text-[#C86D98]"}`}>
-                                {count}
-                              </span>
-                            </motion.button>
-                          );
-                        })}
-                      </div>
+                    <div className="mt-4 space-y-4">
 
                       {/* Search & Date Controls */}
                       <div className="grid gap-3 pt-1 lg:grid-cols-[minmax(0,1fr)_220px_auto]">
@@ -1143,7 +1150,7 @@ export function ManagerBookingListPage() {
                           <tr className="border-b border-[#F3E2EC] bg-[#FFF5F8] text-[11px] font-bold uppercase tracking-wider text-[#9E8497]">
                             <th className="px-3.5 py-3.5 text-left">Time</th>
                             <th className="px-3.5 py-3.5 text-left">Customer</th>
-                            <th className="px-3.5 py-3.5 text-left">Service & Try-On Design</th>
+                            <th className="px-3.5 py-3.5 text-left">Service & Nail Design</th>
                             <th className="px-3.5 py-3.5 text-left">Nail Artist</th>
                             <th className="px-3.5 py-3.5 text-left">Status</th>
                             <th className="px-3.5 py-3.5 text-center">Actions</th>
@@ -1161,7 +1168,7 @@ export function ManagerBookingListPage() {
                                 onClick={() => handleOpenDrawer(row.id)}
                               >
                                 <td className="px-4 py-3.5 align-middle">
-                                  <p className="text-xs font-extrabold text-[#2B182B] truncate">{row.time}</p>
+                                  <p className="text-xs font-bold text-[#2B182B] truncate" title={row.time}>{row.time}</p>
                                   <div className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-[#9E8497]">
                                     <Clock3 size={11} className="text-[#E84F93]" />
                                     <span>{row.duration}</span>
@@ -1189,7 +1196,7 @@ export function ManagerBookingListPage() {
                                 <td className="px-4 py-3.5 align-middle">
                                   <div className="flex items-center gap-2.5 min-w-0">
                                     {row.thumbnailUrl && (
-                                      <Tooltip title="Click to enlarge Try-On design">
+                                      <Tooltip title="Click to enlarge Nail Design">
                                         <div
                                           className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-[#F3D6E5] bg-[#FFF0F5] cursor-pointer hover:border-[#E84F93] transition group/img"
                                           onClick={(e) => { e.stopPropagation(); setActiveImageModalUrl(row.thumbnailUrl); }}
@@ -1204,7 +1211,7 @@ export function ManagerBookingListPage() {
                                     <div className="min-w-0">
                                       <p className="truncate text-xs font-bold text-[#2B182B]">{row.service}</p>
                                       {row.totalPrice && (
-                                        <p className="mt-0.5 text-[11px] font-extrabold text-[#E84F93]">
+                                        <p className="mt-0.5 text-[11px] font-bold text-[#E84F93]">
                                           {formatVND(row.totalPrice)}
                                         </p>
                                       )}
@@ -1372,7 +1379,7 @@ export function ManagerBookingListPage() {
                                               className={`group relative rounded-xl border p-2.5 cursor-grab active:cursor-grabbing shadow-2xs hover:shadow-md transition-all w-full overflow-hidden ${getCalendarCardStyle(b.status)}`}
                                             >
                                               <div className="flex items-center justify-between mb-1 min-w-0">
-                                                <span className="font-extrabold text-xs truncate" title={b.customer}>{b.customer}</span>
+                                                <span className="font-bold text-xs truncate" title={b.customer}>{b.customer}</span>
                                                 <GripVertical size={14} className="opacity-40 group-hover:opacity-100 transition shrink-0 ml-1" />
                                               </div>
                                               <p className="text-[10px] opacity-80 truncate mb-1" title={b.service}>{b.service}</p>
@@ -1448,7 +1455,7 @@ export function ManagerBookingListPage() {
                                           className={`group relative rounded-xl border p-2 cursor-grab active:cursor-grabbing hover:shadow-md transition-all w-full overflow-hidden ${getCalendarCardStyle(b.status)}`}
                                         >
                                           <div className="flex items-center justify-between min-w-0">
-                                            <p className="text-xs font-extrabold truncate" title={b.customer}>{b.customer}</p>
+                                            <p className="text-xs font-bold truncate" title={b.customer}>{b.customer}</p>
                                             <GripVertical size={12} className="opacity-40 group-hover:opacity-100 shrink-0 ml-1" />
                                           </div>
                                           <p className="text-[10px] opacity-80 truncate mt-0.5" title={b.service}>{b.service}</p>
@@ -1534,7 +1541,7 @@ export function ManagerBookingListPage() {
                                       }
                                     }}
                                   >
-                                    <span className={`font-extrabold ${isToday ? "text-[#E84F93]" : "text-[#2B182B]"}`}>
+                                    <span className={`font-bold ${isToday ? "text-[#E84F93]" : "text-[#2B182B]"}`}>
                                       {cellDay.format("D")}
                                     </span>
                                     {dayBookings.length > 0 && (
@@ -1564,7 +1571,7 @@ export function ManagerBookingListPage() {
                                           setSelectedDateForModal(cellDay);
                                           setIsDayBookingsModalOpen(true);
                                         }}
-                                        className="w-full text-[9px] font-extrabold text-[#E84F93] hover:text-[#D93B7D] text-center py-0.5 rounded bg-[#FFF0F6] hover:bg-[#FCE2EE] transition cursor-pointer"
+                                        className="w-full text-[9px] font-bold text-[#E84F93] hover:text-[#D93B7D] text-center py-0.5 rounded bg-[#FFF0F6] hover:bg-[#FCE2EE] transition cursor-pointer"
                                       >
                                         +{dayBookings.length - 2} more
                                       </button>
@@ -1603,7 +1610,7 @@ export function ManagerBookingListPage() {
                     <div key={i}>
                       <div className="flex items-center justify-between text-xs text-[#9E8497]">
                         <span className="font-bold text-[#2B182B]">{period.label}</span>
-                        <span className="font-extrabold text-[#E84F93]">{period.value}%</span>
+                        <span className="font-bold text-[#E84F93]">{period.value}%</span>
                       </div>
                       <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-[#FAF0F5]">
                         <motion.div
@@ -1640,7 +1647,7 @@ export function ManagerBookingListPage() {
                 <div className="mt-4 space-y-3">
                   <div className="flex items-center justify-between text-xs text-[#9E8497] border-b border-[#F3E2EC] pb-2">
                     <span className="font-bold">Date</span>
-                    <span className="font-extrabold text-[#2B182B]">{scheduleDate.format("MMM D, YYYY")}</span>
+                    <span className="font-bold text-[#2B182B]">{scheduleDate.format("MMM D, YYYY")}</span>
                   </div>
 
                   <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
@@ -1701,7 +1708,7 @@ export function ManagerBookingListPage() {
                                     className={`rounded-xl border ${palette.tone} p-2.5 cursor-pointer hover:shadow-sm transition-all`}
                                     onClick={() => handleOpenDrawer(b.id)}
                                   >
-                                    <p className="text-xs font-extrabold truncate">{b.customerName || b.customer}</p>
+                                    <p className="text-xs font-bold truncate">{b.customerName || b.customer}</p>
                                     <div className="mt-1 flex items-center justify-between text-[10px] font-bold">
                                       <span>{artistName === "Unassigned" ? "Unassigned" : artistName}</span>
                                       <span>{formatDuration(b.totalDuration || 60)}</span>
@@ -1739,7 +1746,7 @@ export function ManagerBookingListPage() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between text-xs">
                           <p className="font-bold text-[#2B182B] truncate">{staff.name}</p>
-                          <p className="font-extrabold text-[#E84F93]">
+                          <p className="font-bold text-[#E84F93]">
                             {staff.filled}/{staff.total} slots
                           </p>
                         </div>
@@ -1771,13 +1778,13 @@ export function ManagerBookingListPage() {
       >
         <div className="bg-white p-6 text-center">
           <div className="flex justify-between items-center mb-3">
-            <p className="text-sm font-bold text-[#2B182B]">Customer Try-On Nail Design</p>
+            <p className="text-sm font-bold text-[#2B182B]">Customer Selected Nail Design</p>
             <button type="button" onClick={() => setActiveImageModalUrl(null)} className="text-[#9E8497] hover:text-[#E84F93]">
               <X size={18} />
             </button>
           </div>
           {activeImageModalUrl && (
-            <img src={activeImageModalUrl} alt="Try-On Design" className="max-w-full max-h-[420px] mx-auto rounded-xl shadow-md border border-[#F3E2EC]" />
+            <img src={activeImageModalUrl} alt="Try-On Design" className="w-[400px] max-h-auto mx-auto rounded-xl shadow-md border border-[#F3E2EC]" />
           )}
         </div>
       </Modal>
@@ -1847,7 +1854,7 @@ export function ManagerBookingListPage() {
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-widest text-white/80">Booking ID</p>
-                  <h2 className="text-xl font-extrabold text-white mt-0.5 tracking-tight">
+                  <h2 className="text-xl font-bold text-white mt-0.5 tracking-tight">
                     #{String(selectedBookingForDrawer.bookingId || selectedBookingForDrawer.id).slice(0, 8).toUpperCase()}
                   </h2>
                 </div>
@@ -1885,7 +1892,7 @@ export function ManagerBookingListPage() {
                   </InfoItem>
                   {(selectedBookingForDrawer.phone || selectedCustomerForDrawer?.phone) && (
                     <InfoItem label="Phone Number">
-                      <span className="font-extrabold text-[#E84F93]">
+                      <span className="font-bold text-[#E84F93]">
                         {selectedCustomerForDrawer?.phone || selectedBookingForDrawer.phone}
                       </span>
                     </InfoItem>
@@ -1921,7 +1928,7 @@ export function ManagerBookingListPage() {
                   </div>
                   <div className="flex items-center justify-between pt-1">
                     <span className="text-xs font-bold text-[#2B182B]">Total Amount:</span>
-                    <span className="text-base font-extrabold text-[#E84F93]">{formatVND(selectedBookingForDrawer.totalPrice)}</span>
+                    <span className="text-base font-bold text-[#E84F93]">{formatVND(selectedBookingForDrawer.totalPrice)}</span>
                   </div>
 
                   {(selectedBookingForDrawer.qrCode || selectedBookingForDrawer.qtCode) && (
@@ -2019,7 +2026,7 @@ export function ManagerBookingListPage() {
                     setSelectedDate(selectedDateForModal);
                     setViewMode("day");
                   }}
-                  className="px-3.5 py-2 text-xs font-extrabold text-white bg-gradient-to-r from-[#E84F93] to-[#D93B7D] rounded-full shadow-xs hover:opacity-90 transition flex items-center gap-1.5 cursor-pointer"
+                  className="px-3.5 py-2 text-xs font-bold text-white bg-gradient-to-r from-[#E84F93] to-[#D93B7D] rounded-full shadow-xs hover:opacity-90 transition flex items-center gap-1.5 cursor-pointer"
                 >
                   <CalendarDays size={14} /> Xem ma trận giờ & thợ
                 </button>

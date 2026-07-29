@@ -1,7 +1,8 @@
-import { CalendarDays, ChevronLeft, ChevronRight, Eye, LoaderCircle, RefreshCcw, Search, SquareCheckBig, UserPlus, UserRound } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Table } from "antd";
+import { CalendarDays, ChevronLeft, ChevronRight, Eye, LoaderCircle, RefreshCcw, Search, SquareCheckBig, UserCheck, UserPlus, UserRound } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import { Table, Modal } from "antd";
 import toast from "react-hot-toast";
+import jsQR from "jsqr";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import { usePagination } from "../../../../shared/hooks/usePagination";
@@ -16,6 +17,7 @@ import {
   fetchReceptionistSalonDetail,
   getReceptionistSalonId,
   manualCheckInReceptionistBooking,
+  verifyReceptionistQrToken,
 } from "../services/receptionistBookingService";
 
 function formatCurrency(value) {
@@ -142,6 +144,26 @@ export function ReceptionistBookingListPage() {
   const [salonName, setSalonName] = useState("Receptionist Booking Management");
   const [salonMeta, setSalonMeta] = useState("Bookings are loaded from salon API.");
   const [assignArtistBooking, setAssignArtistBooking] = useState(null);
+
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [isScannerStarting, setIsScannerStarting] = useState(false);
+  const [isVerifyingQr, setIsVerifyingQr] = useState(false);
+  const [scannerError, setScannerError] = useState("");
+  const [lastScannedCode, setLastScannedCode] = useState("");
+
+  const scannerVideoRef = useRef(null);
+  const scannerCanvasRef = useRef(null);
+  const scannerStreamRef = useRef(null);
+  const scannerFrameRef = useRef(null);
+  const isQrHandledRef = useRef(false);
+  const hasCameraSupport =
+    typeof window !== "undefined" &&
+    window.isSecureContext &&
+    typeof navigator !== "undefined" &&
+    Boolean(navigator.mediaDevices?.getUserMedia);
+  const scannerSupportMessage = hasCameraSupport
+    ? ""
+    : "Camera access requires a secure browser context with webcam support.";
   const loadBookings = useCallback(async () => {
     setIsLoading(true);
     setError("");
@@ -434,6 +456,172 @@ export function ReceptionistBookingListPage() {
     },
   ]), [handleCheckout, handleManualCheckIn, navigate]);
 
+  useEffect(() => {
+    if (!isScannerOpen) {
+      return undefined;
+    }
+
+    if (scannerSupportMessage) {
+      return undefined;
+    }
+
+    let isCancelled = false;
+
+    const stopScanner = () => {
+      if (scannerFrameRef.current) {
+        window.cancelAnimationFrame(scannerFrameRef.current);
+        scannerFrameRef.current = null;
+      }
+
+      const stream = scannerStreamRef.current;
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+        scannerStreamRef.current = null;
+      }
+
+      const videoElement = scannerVideoRef.current;
+      if (videoElement) {
+        videoElement.srcObject = null;
+      }
+    };
+
+    const handleQrDetected = async (rawValue) => {
+      if (!rawValue || isQrHandledRef.current) {
+        return;
+      }
+
+      isQrHandledRef.current = true;
+      setLastScannedCode(rawValue);
+      stopScanner();
+      setIsVerifyingQr(true);
+      setScannerError("");
+
+      try {
+        const booking = await verifyReceptionistQrToken(rawValue);
+        const verifiedBookingId = booking?.bookingId || booking?.id;
+
+        if (!verifiedBookingId) {
+          throw new Error("QR verified but booking ID was not returned.");
+        }
+
+        setIsScannerOpen(false);
+        toast.success(`Check-in verified for ${booking.customerName || "customer"}.`);
+        navigate(getReceptionistBookingDetailRoute(verifiedBookingId));
+      } catch (verificationError) {
+        const message =
+          verificationError instanceof Error
+            ? verificationError.message
+            : "Unable to verify the scanned QR code.";
+        setScannerError(message);
+        toast.error(message);
+        isQrHandledRef.current = false;
+      } finally {
+        if (!isCancelled) {
+          setIsVerifyingQr(false);
+        }
+      }
+    };
+
+    const scanFrame = async () => {
+      if (isCancelled || isQrHandledRef.current || !scannerVideoRef.current) {
+        return;
+      }
+
+      try {
+        const videoElement = scannerVideoRef.current;
+        const canvasElement = scannerCanvasRef.current;
+
+        if (
+          videoElement &&
+          canvasElement &&
+          videoElement.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
+        ) {
+          const width = videoElement.videoWidth;
+          const height = videoElement.videoHeight;
+
+          if (width > 0 && height > 0) {
+            canvasElement.width = width;
+            canvasElement.height = height;
+
+            const context = canvasElement.getContext("2d", { willReadFrequently: true });
+            if (context) {
+              context.drawImage(videoElement, 0, 0, width, height);
+              const imageData = context.getImageData(0, 0, width, height);
+              const decodedQr = jsQR(imageData.data, width, height);
+
+              if (decodedQr?.data) {
+                void handleQrDetected(decodedQr.data);
+                return;
+              }
+            }
+          }
+        }
+      } catch {
+        // Keep scanning; transient frame read errors are expected while the camera warms up.
+      }
+
+      scannerFrameRef.current = window.requestAnimationFrame(() => {
+        void scanFrame();
+      });
+    };
+
+    void (async () => {
+      setIsScannerStarting(true);
+      setIsVerifyingQr(false);
+      setScannerError("");
+      setLastScannedCode("");
+      isQrHandledRef.current = false;
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: {
+              ideal: "environment",
+            },
+          },
+          audio: false,
+        });
+
+        if (isCancelled) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+
+        scannerStreamRef.current = stream;
+
+        const videoElement = scannerVideoRef.current;
+        if (!videoElement) {
+          stopScanner();
+          return;
+        }
+
+        videoElement.srcObject = stream;
+        videoElement.setAttribute("playsinline", "true");
+        await videoElement.play();
+        scannerFrameRef.current = window.requestAnimationFrame(() => {
+          void scanFrame();
+        });
+      } catch (cameraError) {
+        const message =
+          cameraError instanceof Error ? cameraError.message : "Unable to access webcam for QR scanning.";
+        setScannerError(message);
+        toast.error(message);
+      } finally {
+        if (!isCancelled) {
+          setIsScannerStarting(false);
+        }
+      }
+    })();
+
+    return () => {
+      isCancelled = true;
+      stopScanner();
+      setIsScannerStarting(false);
+      setIsVerifyingQr(false);
+      isQrHandledRef.current = false;
+    };
+  }, [isScannerOpen, navigate, scannerSupportMessage]);
+
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -464,14 +652,24 @@ export function ReceptionistBookingListPage() {
             <button
               type="button"
               onClick={() => loadBookings()}
-              className="inline-flex items-center gap-2 rounded-full border border-[#f3cade] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
+              className="inline-flex h-9 items-center gap-2 rounded-full border border-[#f3cade] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
             >
               <RefreshCcw size={14} />
               Refresh
             </button>
+
+            <button
+              type="button"
+              onClick={() => setIsScannerOpen(true)}
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-[#e7dcff] bg-white hover:bg-[#7a57d9] hover:text-white px-4 text-sm font-bold text-[#7a57d9] shadow-[0_10px_24px_rgba(122,87,217,0.1)] whitespace-nowrap"
+            >
+              <UserCheck size={15} />
+              Check-in
+            </button>
+
             <Link
               to={ROUTES.receptionistBookingsCreate}
-              className="inline-flex items-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
+              className="inline-flex h-9 items-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)] hover:bg-[image:var(--gradient-accent-hover)] hover:text-pink-600"
             >
               <UserPlus size={14} />
               Create Walk-in
@@ -581,6 +779,7 @@ export function ReceptionistBookingListPage() {
               >
                 Apply
               </button>
+
               <button
                 type="button"
                 onClick={() => {
@@ -765,6 +964,61 @@ export function ReceptionistBookingListPage() {
           setAssignArtistBooking(null);
         }}
       />
+
+      <Modal
+        open={isScannerOpen}
+        onCancel={() => setIsScannerOpen(false)}
+        footer={null}
+        centered
+        width="min(92vw, 560px)"
+        styles={{
+          body: {
+            padding: 16,
+          },
+        }}
+        title={<span className="text-base font-extrabold text-[#432744]">Customer QR Check-in</span>}
+      >
+        <div className="space-y-4 overflow-hidden">
+          <p className="text-sm text-[#8f7484]">
+            Point the webcam at the customer QR code. The scanned token will be sent to backend
+            `verify-qr` before opening the booking.
+          </p>
+
+          <div className="overflow-hidden rounded-[20px] border border-[#f2d8e4] bg-[#fff7fb]">
+            <div className="relative aspect-[4/3] bg-[#2a1d2b]">
+              <video ref={scannerVideoRef} className="h-full w-full object-cover" muted />
+              <canvas ref={scannerCanvasRef} className="hidden" />
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-4 sm:p-6">
+                <div className="h-full w-full rounded-[24px] border-2 border-dashed border-white/70 shadow-[0_0_0_9999px_rgba(42,29,43,0.18)]" />
+              </div>
+              {isScannerStarting || isVerifyingQr ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-[#2a1d2b]/55 px-4 text-center text-sm font-semibold text-white">
+                  {isScannerStarting ? "Starting camera..." : "Verifying QR check-in..."}
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          {scannerError || scannerSupportMessage ? (
+            <div className="rounded-[18px] border border-[#f5d5df] bg-[#fff1f5] px-4 py-3 text-sm text-[#c44779]">
+              {scannerError || scannerSupportMessage}
+            </div>
+          ) : (
+            <div className="rounded-[18px] border border-[#efe3f8] bg-[#faf6ff] px-4 py-3 text-sm text-[#7a57d9]">
+              {isVerifyingQr ? "Checking token with backend..." : "Waiting for QR code..."}
+            </div>
+          )}
+
+          {lastScannedCode ? (
+            <div className="rounded-[18px] border border-[#f1dde8] bg-white px-4 py-3">
+              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#c49aaf]">
+                Last scanned payload
+              </p>
+              <p className="mt-2 break-all text-sm text-[#5c4557]">{lastScannedCode}</p>
+            </div>
+          ) : null}
+        </div>
+      </Modal>
     </section>
   );
 }

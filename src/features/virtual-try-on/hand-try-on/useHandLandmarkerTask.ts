@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { setupHandLandmarker, type HandLandmarkerTaskHandle } from '@/features/virtual-try-on/handLandmarkerTask';
+import { setupHandLandmarker, type HandLandmarkerTaskHandle } from '../handLandmarkerTask';
 
 export function useHandLandmarkerTask() {
   const containerRef = useRef<HTMLElement | null>(null);

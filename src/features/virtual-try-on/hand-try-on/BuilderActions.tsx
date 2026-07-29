@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { HandLandmarkerTaskHandle } from '@/features/virtual-try-on/handLandmarkerTask';
+import type { HandLandmarkerTaskHandle } from '../handLandmarkerTask';
 
 type BuilderActionsProps = {
   currentNailSetId: string | null;
@@ -22,36 +22,13 @@ export function BuilderActions({ handLandmarkerTask, onReturnToForm, onSaveDraft
   return (
     <div className="builder-actions">
       <section className="builder-panel builder-layer-panel">
-
-        <div className="section-title">Adjust Selected Layer</div>
-        <div className="transform-grid">
-          <button id="ctrl-up" className="ctrl-btn" type="button">
-            <span className="material-icons">expand_less</span>
-          </button>
-          <div className="middle-row">
-            <button id="ctrl-left" className="ctrl-btn" type="button">
-              <span className="material-icons">chevron_left</span>
-            </button>
-            <div className="zoom-controls">
-              <button id="ctrl-zoom-in" className="ctrl-btn" type="button">
-                <span className="material-icons">add</span>
-              </button>
-              <button id="ctrl-zoom-out" className="ctrl-btn" type="button">
-                <span className="material-icons">remove</span>
-              </button>
-            </div>
-            <button id="ctrl-right" className="ctrl-btn" type="button">
-              <span className="material-icons">chevron_right</span>
-            </button>
-          </div>
-          <button id="ctrl-down" className="ctrl-btn" type="button">
-            <span className="material-icons">expand_more</span>
-          </button>
-        </div>
-
         <div className="section-title">Layers</div>
         <div id="layers-list" className="layers-list">
           <div className="empty-layers">No decorations added</div>
+        </div>
+
+        <div className="decoration-instructions">
+          <p>💡 <strong>Drag</strong> to move · <strong>Drag corner</strong> to resize</p>
         </div>
       </section>
 

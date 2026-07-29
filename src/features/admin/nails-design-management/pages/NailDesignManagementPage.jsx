@@ -164,12 +164,13 @@ SmallTag.propTypes = {
 };
 
 function DesignPreview({ design }) {
+  console.log('design', design);
   return (
     <div className="h-52 overflow-hidden rounded-t-[16px] bg-[#f6edf2]">
-      {design.previewImage ? (
+      {design.imageUrl ? (
         <img
           crossOrigin="anonymous"
-          src={design.previewImage}
+          src={design.imageUrl}
           alt={design.uiTitle}
           className="h-full w-full object-cover"
           loading="lazy"

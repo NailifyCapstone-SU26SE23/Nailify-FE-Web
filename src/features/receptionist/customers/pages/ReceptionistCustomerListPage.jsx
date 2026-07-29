@@ -193,7 +193,7 @@ export function ReceptionistCustomerListPage() {
         label: (
           <div className="flex flex-col py-1 border-b border-gray-50 last:border-none min-w-[280px]">
             <div className="flex items-center justify-between gap-2">
-              <span className="font-extrabold text-[#221F26] text-xs">
+              <span className="font-bold text-[#221F26] text-xs">
                 {code}: {name}
               </span>
               <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
@@ -271,55 +271,41 @@ export function ReceptionistCustomerListPage() {
     }
   }, []);
 
-  const loadSuggestedArtists = useCallback(async (svcMap, varMap) => {
+  const loadSuggestedArtists = useCallback(async () => {
     setIsLoadingSuggestedArtists(true);
     try {
       const salonId = getReceptionistSalonId();
-      let bookingItems = [];
 
-      const svcEntries = Object.entries(svcMap || {}).filter(([_, q]) => q > 0);
-      const varEntries = Object.entries(varMap || {}).filter(([_, q]) => q > 0);
+      const res = await receptionistWalkInBookingService.getAvailableArtists(salonId);
+      const allArtists = Array.isArray(res) ? res : res?.data?.items || res?.items || res?.data || [];
 
-      if (svcEntries.length > 0) {
-        svcEntries.forEach(([sId, qty]) => {
-          bookingItems.push({
-            serviceId: sId,
-            nailVariantId: null,
-            quantity: qty,
-          });
-        });
-      }
+      const today = new Date();
+      // Format as YYYY-MM-DD in local time
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      const todayStr = `${year}-${month}-${day}`;
 
-      if (varEntries.length > 0) {
-        varEntries.forEach(([vId, qty]) => {
-          bookingItems.push({
-            serviceId: null,
-            nailVariantId: Number(vId),
-            quantity: qty,
-          });
-        });
-      }
+      const artistsWithSchedulePromises = allArtists.map(async (artist) => {
+        try {
+          const artistId = artist.nailArtistId || artist.id;
+          if (!artistId) return null;
 
-      if (bookingItems.length === 0) {
-        bookingItems = [
-          {
-            serviceId: null,
-            nailVariantId: null,
-            quantity: 1,
-          },
-        ];
-      }
+          const scheduleRes = await receptionistWalkInBookingService.getArtistSchedule(artistId, todayStr, todayStr);
+          const schedules = Array.isArray(scheduleRes) ? scheduleRes : scheduleRes?.data || [];
 
-      const payload = {
-        salonId,
-        bookingDate: new Date().toISOString(),
-        bookingItems,
-      };
+          if (schedules && schedules.length > 0) {
+            return artist;
+          }
+        } catch (err) {
+          console.warn(`Could not fetch schedule for artist ${artist.nailArtistId || artist.id}:`, err);
+        }
+        return null;
+      });
 
-      const res = await receptionistWalkInBookingService.getSuggestedArtists(payload);
-      const items = Array.isArray(res) ? res : res?.data || res?.items || [];
+      const artistsWithSchedule = (await Promise.all(artistsWithSchedulePromises)).filter(Boolean);
 
-      const mapped = items.map((a) => {
+      const mapped = artistsWithSchedule.map((a) => {
         const artist = a.nailArtist || a.artist || a;
         const fullName =
           a.fullName ||
@@ -340,20 +326,8 @@ export function ReceptionistCustomerListPage() {
 
       setSuggestedArtists(mapped);
     } catch (err) {
-      console.warn("Dùng danh sách thợ mặc định salon:", err);
-      const salonId = getReceptionistSalonId();
-      const fallbackRes = await receptionistWalkInBookingService.getAvailableArtists(salonId);
-      const fallbackItems = Array.isArray(fallbackRes)
-        ? fallbackRes
-        : fallbackRes?.data?.items || fallbackRes?.items || fallbackRes?.data || [];
-      const mappedFallback = fallbackItems.map((f) => ({
-        nailArtistId: f.nailArtistId || f.id,
-        fullName: f.account ? `${f.account.firstName || ""} ${f.account.lastName || ""}`.trim() : "Thợ Nail",
-        name: f.account ? `${f.account.firstName || ""} ${f.account.lastName || ""}`.trim() : "Thợ Nail",
-        avatarUrl: f.avatarUrl || "",
-        status: f.status || "Active",
-      }));
-      setSuggestedArtists(mappedFallback);
+      console.error("Lỗi khi lấy danh sách thợ theo lịch:", err);
+      toast.error("Không thể tải danh sách thợ.");
     } finally {
       setIsLoadingSuggestedArtists(false);
     }
@@ -362,9 +336,9 @@ export function ReceptionistCustomerListPage() {
   useEffect(() => {
     if (isWalkInModalOpen) {
       loadModalData();
-      loadSuggestedArtists(selectedServiceMap, selectedVariantMap);
+      loadSuggestedArtists();
     }
-  }, [isWalkInModalOpen, loadModalData, loadSuggestedArtists, selectedServiceMap, selectedVariantMap]);
+  }, [isWalkInModalOpen, loadModalData, loadSuggestedArtists]);
 
   // States for Assign Artist Modal
   const [isAssignArtistModalOpen, setIsAssignArtistModalOpen] = useState(false);
@@ -380,12 +354,38 @@ export function ReceptionistCustomerListPage() {
     try {
       const salonId = getReceptionistSalonId();
       const res = await receptionistWalkInBookingService.getAvailableArtists(salonId);
-      const items = Array.isArray(res)
+      const allArtists = Array.isArray(res)
         ? res
         : res?.data?.items || res?.items || res?.data || [];
-      setAvailableArtists(items);
+
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      const todayStr = `${year}-${month}-${day}`;
+
+      const artistsWithSchedulePromises = allArtists.map(async (artist) => {
+        try {
+          const artistId = artist.nailArtistId || artist.id;
+          if (!artistId) return null;
+          
+          const scheduleRes = await receptionistWalkInBookingService.getArtistSchedule(artistId, todayStr, todayStr);
+          const schedules = Array.isArray(scheduleRes) ? scheduleRes : scheduleRes?.data || [];
+          
+          if (schedules && schedules.length > 0) {
+            return artist;
+          }
+        } catch (err) {
+          console.warn(`Could not fetch schedule for artist ${artist.nailArtistId || artist.id}:`, err);
+        }
+        return null;
+      });
+
+      const artistsWithSchedule = (await Promise.all(artistsWithSchedulePromises)).filter(Boolean);
+      setAvailableArtists(artistsWithSchedule);
     } catch (err) {
       console.error("Lỗi lấy danh sách thợ:", err);
+      toast.error("Không thể tải danh sách thợ làm móng.");
     } finally {
       setIsLoadingArtists(false);
     }
@@ -1399,7 +1399,7 @@ export function ReceptionistCustomerListPage() {
                 <Clock size={20} />
               </span>
               <div>
-                <h3 className="text-base font-extrabold text-[#221F26] tracking-tight">
+                <h3 className="text-base font-bold text-[#221F26] tracking-tight">
                   Check-In Tiếp Đón Khách Vào Sảnh
                 </h3>
                 <p className="text-xs text-gray-500 font-medium mt-0.5">
@@ -1472,9 +1472,9 @@ export function ReceptionistCustomerListPage() {
                               <span className="w-6 h-6 rounded-full bg-purple-100 text-[#C97A9E] font-bold text-[10px] flex items-center justify-center shrink-0">
                                 👤
                               </span>
-                              <span className="font-extrabold text-[#221F26] text-xs truncate">{name}</span>
+                              <span className="font-bold text-[#221F26] text-xs truncate">{name}</span>
                             </div>
-                            <span className="text-[11px] font-extrabold text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md shrink-0">
+                            <span className="text-[11px] font-bold text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md shrink-0">
                               {phone}
                             </span>
                           </div>
@@ -1590,10 +1590,10 @@ export function ReceptionistCustomerListPage() {
                             <span className="w-5 h-5 rounded-md bg-[#FAF0F5] text-[#C97A9E] font-bold text-[10px] flex items-center justify-center shrink-0">
                               💅
                             </span>
-                            <span className="font-extrabold text-[#221F26] text-xs truncate">{name}</span>
+                            <span className="font-bold text-[#221F26] text-xs truncate">{name}</span>
                           </div>
                           {priceStr && (
-                            <span className="text-[10px] font-extrabold text-[#C97A9E] bg-[#FAF0F5] px-2 py-0.5 rounded-full border border-[#F2D6E3] shrink-0 whitespace-nowrap">
+                            <span className="text-[10px] font-bold text-[#C97A9E] bg-[#FAF0F5] px-2 py-0.5 rounded-full border border-[#F2D6E3] shrink-0 whitespace-nowrap">
                               {priceStr}
                             </span>
                           )}
@@ -1618,7 +1618,7 @@ export function ReceptionistCustomerListPage() {
                           className="flex items-center justify-between bg-[#FAF0F5] p-2 rounded-xl border border-[#F2D6E3] gap-2"
                         >
                           <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <span className="text-xs font-extrabold text-[#221F26] truncate">{name}</span>
+                            <span className="text-xs font-bold text-[#221F26] truncate">{name}</span>
                             <span className="text-[10px] font-bold text-[#C97A9E]">
                               {(unitPrice * qty).toLocaleString("vi-VN")}đ
                             </span>
@@ -1705,7 +1705,7 @@ export function ReceptionistCustomerListPage() {
                                 {name.charAt(0).toUpperCase()}
                               </div>
                             )}
-                            <span className="font-extrabold text-[#221F26] text-xs truncate">{name}</span>
+                            <span className="font-bold text-[#221F26] text-xs truncate">{name}</span>
                           </div>
                           <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 shrink-0 whitespace-nowrap">
                             🟢 Đang rảnh
@@ -1729,7 +1729,7 @@ export function ReceptionistCustomerListPage() {
                   <div className="w-6 h-6 rounded-lg bg-emerald-500 text-white flex items-center justify-center font-bold shadow-xs shrink-0">
                     <Clock size={13} />
                   </div>
-                  <span className="font-extrabold text-xs text-emerald-900">
+                  <span className="font-bold text-xs text-emerald-900">
                     {calculatedDuration} phút
                   </span>
                 </div>
@@ -1807,7 +1807,7 @@ export function ReceptionistCustomerListPage() {
                           </div>
 
                           <div className="p-2.5 flex-1 flex flex-col justify-between">
-                            <p className="text-[11px] font-extrabold text-[#221F26] line-clamp-2 leading-snug">
+                            <p className="text-[11px] font-bold text-[#221F26] line-clamp-2 leading-snug">
                               {name}
                             </p>
 
@@ -1936,7 +1936,7 @@ export function ReceptionistCustomerListPage() {
                 <Sparkles size={20} />
               </span>
               <div>
-                <h3 className="text-base font-extrabold text-[#221F26] tracking-tight">
+                <h3 className="text-base font-bold text-[#221F26] tracking-tight">
                   Phân Công Thợ Nail Điều Phối Sảnh
                 </h3>
                 <p className="text-xs text-gray-500 font-medium mt-0.5">
@@ -1955,7 +1955,7 @@ export function ReceptionistCustomerListPage() {
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Khách Hàng Tiếp Đón</p>
-                  <p className="text-sm font-extrabold text-[#221F26]">{selectedQueueGuest.customerName}</p>
+                  <p className="text-sm font-bold text-[#221F26]">{selectedQueueGuest.customerName}</p>
                 </div>
               </div>
               <div className="text-right">
@@ -2014,7 +2014,7 @@ export function ReceptionistCustomerListPage() {
                           {fullName.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <p className="text-xs font-extrabold text-[#221F26]">{fullName}</p>
+                          <p className="text-xs font-bold text-[#221F26]">{fullName}</p>
                           <div className="flex items-center gap-2 mt-0.5">
                             <span className="text-[11px] font-medium text-emerald-600 flex items-center gap-1">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -2054,7 +2054,7 @@ export function ReceptionistCustomerListPage() {
               type="button"
               disabled={isSubmittingAssign || !selectedArtistIdToAssign}
               onClick={handleConfirmAssignArtist}
-              className="px-6 py-2.5 text-xs font-extrabold text-white bg-gradient-to-r from-[#C97A9E] to-[#B86B8E] hover:from-[#B86B8E] hover:to-[#A3597D] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all shadow-md shadow-[#C97A9E]/30 cursor-pointer flex items-center gap-2"
+              className="px-6 py-2.5 text-xs font-bold text-white bg-gradient-to-r from-[#C97A9E] to-[#B86B8E] hover:from-[#B86B8E] hover:to-[#A3597D] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all shadow-md shadow-[#C97A9E]/30 cursor-pointer flex items-center gap-2"
             >
               {isSubmittingAssign ? (
                 <Spin size="small" />

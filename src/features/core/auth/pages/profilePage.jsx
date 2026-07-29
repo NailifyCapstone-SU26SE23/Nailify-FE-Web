@@ -30,22 +30,26 @@ import { useAuth } from "../hooks/useAuth";
 
 function Card({ className = "", children }) {
   return (
-    <article className={`rounded-[24px] border border-[#f6dce7] bg-white shadow-[0_14px_34px_rgba(236,72,153,0.08)] ${className}`}>
-      {children}
+    <article className={`relative overflow-hidden rounded-[32px] border border-white/60 bg-white/40 p-1 shadow-[0_8px_32px_rgba(236,72,153,0.08)] backdrop-blur-2xl transition-all duration-500 hover:shadow-[0_16px_48px_rgba(236,72,153,0.15)] ${className}`}>
+      <div className="absolute inset-0 bg-gradient-to-br from-white/60 to-white/10 pointer-events-none" />
+      <div className="relative z-10 h-full w-full rounded-[28px] bg-white/60 p-6">
+        {children}
+      </div>
     </article>
   );
 }
 
 function Field({ label, value, icon: Icon }) {
   return (
-    <div className="rounded-[18px] border border-[#f5d7e5] bg-[#fff9fb] p-4">
-      <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-[#ea4f93] shadow-[0_8px_18px_rgba(236,72,153,0.08)]">
-          <Icon size={16} />
+    <div className="group relative overflow-hidden rounded-[24px] border border-white/50 bg-white/40 p-4 transition-all duration-300 hover:-translate-y-1 hover:bg-white/60 hover:shadow-[0_12px_30px_rgba(236,72,153,0.12)]">
+      <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-gradient-to-br from-[#ea4f93]/15 to-transparent blur-2xl transition-all duration-500 group-hover:scale-150 group-hover:from-[#ea4f93]/25" />
+      <div className="relative flex items-start gap-4">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-white to-[#fff0f6] text-[#ea4f93] shadow-[inset_0_2px_10px_rgba(255,255,255,1),0_4px_12px_rgba(236,72,153,0.1)] transition-transform duration-300 group-hover:scale-110">
+          <Icon size={20} strokeWidth={2.5} />
         </div>
-        <div className="min-w-0">
-          <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#c08aa4]">{label}</p>
-          <p className="mt-1 break-words text-sm font-bold text-[#402542]">{value || "--"}</p>
+        <div className="min-w-0 pt-1">
+          <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#c08aa4]">{label}</p>
+          <p className="mt-1 break-words text-[15px] font-extrabold text-[#3f2240]">{value || "--"}</p>
         </div>
       </div>
     </div>
@@ -54,10 +58,13 @@ function Field({ label, value, icon: Icon }) {
 
 function InfoTile({ title, value, note }) {
   return (
-    <div className="rounded-[18px] border border-[#f5d7e5] bg-[#fff9fb] p-4">
-      <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#c08aa4]">{title}</p>
-      <p className="mt-2 text-lg font-extrabold text-[#402542]">{value || "--"}</p>
-      <p className="mt-1 text-xs text-[#a07c90]">{note}</p>
+    <div className="group relative overflow-hidden rounded-[24px] border border-white/50 bg-white/40 p-5 transition-all duration-300 hover:bg-white/60 hover:shadow-[0_12px_30px_rgba(236,72,153,0.12)]">
+      <div className="absolute -bottom-6 -right-6 h-28 w-28 rounded-full bg-gradient-to-br from-[#ea4f93]/10 to-transparent blur-2xl transition-all duration-500 group-hover:scale-150 group-hover:from-[#ea4f93]/20" />
+      <div className="relative">
+        <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#c08aa4]">{title}</p>
+        <p className="mt-2 text-2xl font-black tracking-tight text-[#402542] group-hover:text-[#ea4f93] transition-colors">{value || "--"}</p>
+        <p className="mt-1.5 text-[11px] font-medium text-[#a07c90]">{note}</p>
+      </div>
     </div>
   );
 }
@@ -291,274 +298,306 @@ export function ProfilePage() {
   }
 
   return (
-    <section className="mx-auto w-full max-w-[1350px] space-y-5 text-[#402542]">
-      {error ? (
-        <Alert
-          message="Profile Error"
-          description={error}
-          type="error"
-          showIcon
-        />
-      ) : null}
+    <section className="relative mx-auto w-full max-w-[1350px] text-[#402542] min-h-[80vh] p-2">
+      {/* Dynamic Background Elements */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -left-[10%] -top-[10%] h-[500px] w-[500px] rounded-full bg-gradient-to-br from-[#ffd4e4]/40 to-transparent blur-[100px] animate-[pulse_8s_ease-in-out_infinite]" />
+        <div className="absolute -right-[5%] top-[40%] h-[600px] w-[600px] rounded-full bg-gradient-to-bl from-[#e0c3fc]/30 to-transparent blur-[120px] animate-[pulse_12s_ease-in-out_infinite]" />
+      </div>
 
-      {successMessage ? (
-        <Alert
-          message="Profile Updated"
-          description={successMessage}
-          type="success"
-          showIcon
-        />
-      ) : null}
+      <div className="relative z-10 space-y-6">
+        {error ? (
+          <Alert message="Profile Error" description={error} type="error" showIcon className="rounded-[20px] border-none shadow-sm" />
+        ) : null}
 
-      <Card className="overflow-hidden">
-        <div className="bg-[linear-gradient(135deg,#fff7fb_0%,#fff0f6_48%,#ffe6f1_100%)] px-5 py-6 sm:px-6">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center gap-4">
-              {avatarPreview ? (
-                <img
-                  src={avatarPreview}
-                  alt={profile?.fullName || "Profile"}
-                  crossOrigin="anonymous"
-                  referrerPolicy="no-referrer"
-                  className="h-24 w-24 rounded-[28px] border-4 border-white object-cover shadow-[0_18px_30px_rgba(236,72,153,0.12)]"
-                />
-              ) : (
-                <div className="flex h-24 w-24 items-center justify-center rounded-[28px] bg-[linear-gradient(180deg,#ff8ebb_0%,#ea4f93_100%)] text-3xl font-bold text-white shadow-[0_18px_30px_rgba(236,72,153,0.16)]">
-                  {(profile?.fullName || "NU")
-                    .split(" ")
-                    .filter(Boolean)
-                    .slice(0, 2)
-                    .map((part) => part[0]?.toUpperCase() || "")
-                    .join("")}
-                </div>
-              )}
+        {successMessage ? (
+          <Alert message="Profile Updated" description={successMessage} type="success" showIcon className="rounded-[20px] border-none shadow-sm" />
+        ) : null}
 
-              <div>
-                <div className="inline-flex rounded-full bg-white px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#d94f92] shadow-[0_10px_22px_rgba(236,72,153,0.08)]">
-                  {formatRoleLabel(profile?.role)}
-                </div>
-                <h2 className="mt-3 text-[28px] font-bold tracking-tight text-[#402542]">
-                  {profile?.fullName || user?.fullName || "Nailify User"}
-                </h2>
-                <p className="mt-1 text-sm text-[#a07c90]">
-                  {profile?.email || "--"} · Status: {profile?.status || "--"}
-                </p>
-              </div>
-            </div>
+        <Card className="!p-0 border-none shadow-[0_20px_50px_rgba(236,72,153,0.08)]">
+          <div className="relative overflow-hidden bg-[linear-gradient(135deg,rgba(255,242,247,0.8)_0%,rgba(255,249,252,0.8)_50%,rgba(250,245,249,0.8)_100%)] p-8 sm:p-10">
+            {/* Top decorative flares */}
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-[#ff8ebb]/20 via-transparent to-transparent opacity-70 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-[#c4b5fd]/20 via-transparent to-transparent opacity-70 pointer-events-none" />
 
-            <div className="grid gap-3 sm:grid-cols-3">
-              <InfoTile title="Role" value={formatRoleLabel(profile?.role)} note="Current access level" />
-              <InfoTile title="Staff ID" value={profile?.staffId || "--"} note="Only available for staff roles" />
-              <InfoTile title="Salon ID" value={profile?.salonId || "--"} note="Assigned branch reference" />
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_420px]">
-        <Card className="p-5 sm:p-6">
-          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h3 className="text-lg font-bold text-[#402542]">Account Information</h3>
-              <p className="mt-1 text-sm text-[#a07c90]">Manage your personal details shared across the workspace.</p>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {isEditing ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={handleCancelEdit}
-                    className="inline-flex items-center gap-2 rounded-full border border-[#f3d5e2] bg-white px-4 py-2 text-xs font-bold text-[#8f7184] transition hover:bg-[#fff7fb]"
-                  >
-                    <X size={14} />
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSaveProfile}
-                    disabled={!hasChanges || isSaving}
-                    className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(90deg,#ff8ebb_0%,#ea4f93_100%)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    <Save size={14} />
-                    {isSaving ? "Saving..." : "Save Changes"}
-                  </button>
-                </>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setIsEditing(true)}
-                  className="inline-flex items-center gap-2 rounded-full border border-[#f3d5e2] bg-white px-4 py-2 text-xs font-bold text-[#d94f92] transition hover:bg-[#fff7fb]"
-                >
-                  <PencilLine size={14} />
-                  Edit Profile
-                </button>
-              )}
-            </div>
-          </div>
-
-          {isEditing ? (
-            <div className="space-y-5">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="block">
-                  <span className="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#c08aa4]">First Name</span>
-                  <input
-                    value={formValues.firstName}
-                    onChange={(event) => handleInputChange("firstName", event.target.value)}
-                    className="h-12 w-full rounded-[16px] border border-[#f3d5e2] bg-[#fff9fb] px-4 text-sm font-semibold text-[#402542] outline-none transition focus:border-[#ea4f93] focus:bg-white"
-                    placeholder="Enter first name"
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#c08aa4]">Last Name</span>
-                  <input
-                    value={formValues.lastName}
-                    onChange={(event) => handleInputChange("lastName", event.target.value)}
-                    className="h-12 w-full rounded-[16px] border border-[#f3d5e2] bg-[#fff9fb] px-4 text-sm font-semibold text-[#402542] outline-none transition focus:border-[#ea4f93] focus:bg-white"
-                    placeholder="Enter last name"
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#c08aa4]">Email</span>
-                  <input
-                    type="email"
-                    value={formValues.email}
-                    onChange={(event) => handleInputChange("email", event.target.value)}
-                    className="h-12 w-full rounded-[16px] border border-[#f3d5e2] bg-[#fff9fb] px-4 text-sm font-semibold text-[#402542] outline-none transition focus:border-[#ea4f93] focus:bg-white"
-                    placeholder="Enter email"
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#c08aa4]">Phone</span>
-                  <input
-                    value={formValues.phone}
-                    onChange={(event) => handleInputChange("phone", event.target.value)}
-                    className="h-12 w-full rounded-[16px] border border-[#f3d5e2] bg-[#fff9fb] px-4 text-sm font-semibold text-[#402542] outline-none transition focus:border-[#ea4f93] focus:bg-white"
-                    placeholder="Enter phone number"
-                  />
-                </label>
-              </div>
-
-              <label className="flex cursor-pointer items-center justify-between rounded-[18px] border border-dashed border-[#f1bfd7] bg-[#fff8fb] px-4 py-4 transition hover:border-[#ea4f93] hover:bg-white">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[#ea4f93] shadow-[0_8px_18px_rgba(236,72,153,0.08)]">
-                    <Camera size={18} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-[#402542]">Update profile photo</p>
-                    <p className="mt-1 text-xs text-[#a07c90]">Upload a new avatar image for your account.</p>
-                  </div>
-                </div>
-                <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
-                <span className="rounded-full bg-[linear-gradient(90deg,#ff8ebb_0%,#ea4f93_100%)] px-4 py-2 text-xs font-bold text-white">
-                  Choose Image
-                </span>
-              </label>
-            </div>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="First Name" value={profile?.firstName} icon={UserRound} />
-              <Field label="Last Name" value={profile?.lastName} icon={UserRound} />
-              <Field label="Email Address" value={profile?.email} icon={Mail} />
-              <Field label="Phone Number" value={profile?.phone} icon={Phone} />
-              <Field label="Account Status" value={profile?.status} icon={CheckCircle2} />
-              <Field label="Role" value={formatRoleLabel(profile?.role)} icon={Shield} />
-            </div>
-          )}
-        </Card>
-
-        <div className="space-y-5">
-          <Card className="p-5 sm:p-6">
-            <h3 className="text-lg font-bold text-[#402542]">Salon Assignment</h3>
-            <p className="mt-1 text-sm text-[#a07c90]">Branch information loaded from your assigned salon.</p>
-
-            {salon ? (
-              <div className="mt-5 space-y-4">
-                {salon.imageUrl ? (
-                  <img
-                    src={salon.imageUrl}
-                    alt={salon.name}
-                    crossOrigin="anonymous"
-                    referrerPolicy="no-referrer"
-                    className="h-44 w-full rounded-[22px] border border-[#f5d7e5] object-cover"
-                  />
-                ) : null}
-
-                <Field label="Salon Name" value={salon.name} icon={Building2} />
-                <Field label="Address" value={salon.address} icon={MapPin} />
-                <Field label="Phone" value={salon.phone} icon={Phone} />
-                <Field label="Status" value={salon.status} icon={CheckCircle2} />
-              </div>
-            ) : (
-              <div className="mt-5 rounded-[18px] border border-dashed border-[#efcadd] bg-[#fff9fb] px-4 py-6 text-center text-sm font-semibold text-[#a07c90]">
-                This account is not linked to a salon branch.
-              </div>
-            )}
-          </Card>
-
-          <Card className="p-5 sm:p-6">
-            <h3 className="text-lg font-bold text-[#402542]">Operating Hours</h3>
-            <p className="mt-1 text-sm text-[#a07c90]">The weekly schedule of your current salon branch.</p>
-
-            <div className="mt-5 space-y-3">
-              {salon?.operatingHours?.length ? (
-                salon.operatingHours.map((slot) => (
-                  <div
-                    key={`${slot.dayOfWeek}-${slot.dayName}`}
-                    className="flex items-center justify-between rounded-[18px] border border-[#f5d7e5] bg-[#fff9fb] px-4 py-3"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-[#ea4f93] shadow-[0_8px_18px_rgba(236,72,153,0.08)]">
-                        <Clock3 size={16} />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-[#402542]">{slot.dayName}</p>
-                        <p className="text-xs text-[#a07c90]">
-                          {slot.isClosed ? "Closed" : `${formatTimeValue(slot.openTime)} - ${formatTimeValue(slot.closeTime)}`}
-                        </p>
-                      </div>
+            <div className="relative z-10 flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-col sm:flex-row items-center gap-8">
+                <div className="relative group">
+                  <div className="absolute -inset-1 rounded-[38px] bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] opacity-20 blur-xl transition-all duration-500 group-hover:opacity-40 group-hover:blur-2xl" />
+                  {avatarPreview ? (
+                    <img
+                      src={avatarPreview}
+                      alt={profile?.fullName || "Profile"}
+                      crossOrigin="anonymous"
+                      referrerPolicy="no-referrer"
+                      className="relative h-32 w-32 rounded-[32px] border-[4px] border-white/80 object-cover shadow-[0_20px_40px_rgba(236,72,153,0.15)] transition-transform duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="relative flex h-32 w-32 items-center justify-center rounded-[32px] bg-[linear-gradient(135deg,#ff8ebb_0%,#ea4f93_100%)] text-4xl font-black text-white shadow-[0_20px_40px_rgba(236,72,153,0.25)] transition-transform duration-500 group-hover:scale-105">
+                      {(profile?.fullName || "NU")
+                        .split(" ")
+                        .filter(Boolean)
+                        .slice(0, 2)
+                        .map((part) => part[0]?.toUpperCase() || "")
+                        .join("")}
                     </div>
-                    <span className={`rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] ${slot.isClosed ? "bg-[#f3e8ff] text-[#7c3aed]" : "bg-[#eaf9ee] text-[#2fa25f]"}`}>
-                      {slot.isClosed ? "Closed" : "Open"}
+                  )}
+                </div>
+
+                <div className="text-center sm:text-left">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/40 px-3.5 py-1.5 shadow-sm">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#ea4f93] opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-[#ea4f93]"></span>
+                    </span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#ea4f93]">
+                      {formatRoleLabel(profile?.role)}
                     </span>
                   </div>
-                ))
+                  <h2 className="mt-4 text-4xl sm:text-5xl font-black tracking-tight text-[#2b182b] drop-shadow-sm">
+                    {profile?.fullName || user?.fullName || "Nailify User"}
+                  </h2>
+                  <p className="mt-2 text-base font-medium text-[#8f6b80] flex items-center justify-center sm:justify-start gap-2">
+                    <Mail size={14} /> {profile?.email || "--"}
+                    <span className="mx-2 opacity-30">•</span>
+                    <Shield size={14} /> {profile?.status || "--"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:min-w-[480px]">
+                <InfoTile title="Role" value={formatRoleLabel(profile?.role)} note="Access Level" />
+                {/* <InfoTile title="Staff ID" value={profile?.staffId || "N/A"} note="System Ref" />
+                <InfoTile title="Salon ID" value={profile?.salonId || "N/A"} note="Branch Ref" /> */}
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_440px]">
+          {/* Account Information Panel */}
+          <div className="space-y-6">
+            <Card className="!p-8">
+              <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="text-2xl font-black text-[#2b182b] flex items-center gap-2">
+                    <UserRound className="text-[#ea4f93]" size={24} /> Personal Details
+                  </h3>
+                  <p className="mt-1.5 text-sm font-medium text-[#8f6b80]">Manage your identity across the Nailify workspace.</p>
+                </div>
+
+                <div className="flex flex-wrap gap-3">
+                  {isEditing ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleCancelEdit}
+                        className="inline-flex h-11 items-center justify-center gap-2 rounded-[20px] border border-white/60 bg-white/40 px-5 text-sm font-bold text-[#8f7184] shadow-sm transition-all hover:bg-white/80 hover:shadow-md"
+                      >
+                        <X size={16} /> Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveProfile}
+                        disabled={!hasChanges || isSaving}
+                        className="inline-flex h-11 items-center justify-center gap-2 rounded-[20px] bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] px-6 text-sm font-bold text-white shadow-[0_8px_20px_rgba(236,72,153,0.25)] transition-all hover:opacity-90 hover:shadow-[0_12px_28px_rgba(236,72,153,0.35)] disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5"
+                      >
+                        <Save size={16} /> {isSaving ? "Saving..." : "Save Changes"}
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setIsEditing(true)}
+                      className="inline-flex h-11 items-center justify-center gap-2 rounded-[20px] border border-white/60 bg-white/60 px-6 text-sm font-bold text-[#ea4f93] shadow-sm transition-all hover:bg-white hover:shadow-[0_8px_20px_rgba(236,72,153,0.15)] hover:-translate-y-0.5"
+                    >
+                      <PencilLine size={16} /> Edit Profile
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {isEditing ? (
+                <div className="space-y-6">
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    <label className="block group">
+                      <span className="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#c08aa4] group-focus-within:text-[#ea4f93] transition-colors">First Name</span>
+                      <input
+                        value={formValues.firstName}
+                        onChange={(event) => handleInputChange("firstName", event.target.value)}
+                        className="h-14 w-full rounded-[20px] border-2 border-[#f3d5e2]/60 bg-white/50 px-5 text-[15px] font-bold text-[#2b182b] outline-none transition-all focus:border-[#ea4f93] focus:bg-white focus:shadow-[0_8px_20px_rgba(236,72,153,0.1)]"
+                        placeholder="Enter first name"
+                      />
+                    </label>
+
+                    <label className="block group">
+                      <span className="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#c08aa4] group-focus-within:text-[#ea4f93] transition-colors">Last Name</span>
+                      <input
+                        value={formValues.lastName}
+                        onChange={(event) => handleInputChange("lastName", event.target.value)}
+                        className="h-14 w-full rounded-[20px] border-2 border-[#f3d5e2]/60 bg-white/50 px-5 text-[15px] font-bold text-[#2b182b] outline-none transition-all focus:border-[#ea4f93] focus:bg-white focus:shadow-[0_8px_20px_rgba(236,72,153,0.1)]"
+                        placeholder="Enter last name"
+                      />
+                    </label>
+
+                    <label className="block group">
+                      <span className="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#c08aa4] group-focus-within:text-[#ea4f93] transition-colors">Email</span>
+                      <input
+                        type="email"
+                        value={formValues.email}
+                        onChange={(event) => handleInputChange("email", event.target.value)}
+                        className="h-14 w-full rounded-[20px] border-2 border-[#f3d5e2]/60 bg-white/50 px-5 text-[15px] font-bold text-[#2b182b] outline-none transition-all focus:border-[#ea4f93] focus:bg-white focus:shadow-[0_8px_20px_rgba(236,72,153,0.1)]"
+                        placeholder="Enter email"
+                      />
+                    </label>
+
+                    <label className="block group">
+                      <span className="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#c08aa4] group-focus-within:text-[#ea4f93] transition-colors">Phone</span>
+                      <input
+                        value={formValues.phone}
+                        onChange={(event) => handleInputChange("phone", event.target.value)}
+                        className="h-14 w-full rounded-[20px] border-2 border-[#f3d5e2]/60 bg-white/50 px-5 text-[15px] font-bold text-[#2b182b] outline-none transition-all focus:border-[#ea4f93] focus:bg-white focus:shadow-[0_8px_20px_rgba(236,72,153,0.1)]"
+                        placeholder="Enter phone number"
+                      />
+                    </label>
+                  </div>
+
+                  <label className="group flex cursor-pointer items-center justify-between rounded-[24px] border-2 border-dashed border-[#ea4f93]/30 bg-white/40 px-6 py-6 transition-all hover:border-[#ea4f93] hover:bg-white hover:shadow-[0_12px_30px_rgba(236,72,153,0.1)]">
+                    <div className="flex items-center gap-5">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-[20px] bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-white shadow-[0_8px_20px_rgba(236,72,153,0.25)] transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
+                        <Camera size={24} />
+                      </div>
+                      <div>
+                        <p className="text-base font-black text-[#2b182b]">Update Profile Photo</p>
+                        <p className="mt-1 text-sm font-medium text-[#8f6b80]">Upload a high-res image for your avatar.</p>
+                      </div>
+                    </div>
+                    <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+                    <span className="rounded-full bg-white px-5 py-2.5 text-sm font-bold text-[#ea4f93] shadow-sm transition-colors group-hover:bg-[#fff0f6]">
+                      Browse Files
+                    </span>
+                  </label>
+                </div>
               ) : (
-                <div className="rounded-[18px] border border-dashed border-[#efcadd] bg-[#fff9fb] px-4 py-6 text-center text-sm font-semibold text-[#a07c90]">
-                  No operating hours available.
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <Field label="First Name" value={profile?.firstName} icon={UserRound} />
+                  <Field label="Last Name" value={profile?.lastName} icon={UserRound} />
+                  <Field label="Email Address" value={profile?.email} icon={Mail} />
+                  <Field label="Phone Number" value={profile?.phone} icon={Phone} />
+                  <Field label="Account Status" value={profile?.status} icon={CheckCircle2} />
+                  <Field label="Role" value={formatRoleLabel(profile?.role)} icon={Shield} />
                 </div>
               )}
-            </div>
-          </Card>
+            </Card>
 
-          <Card className="p-5 sm:p-6">
-            <h3 className="text-lg font-bold text-[#402542]">Account Actions</h3>
-            <p className="mt-1 text-sm text-[#a07c90]">Use these actions carefully. Deactivation signs you out immediately.</p>
+            <Card className="!p-8">
+              <h3 className="text-xl font-black text-[#2b182b] flex items-center gap-2">
+                <Clock3 className="text-[#ea4f93]" size={22} /> Operating Hours
+              </h3>
 
-            <div className="mt-5 flex flex-col gap-3">
-              <button
-                type="button"
-                onClick={() => navigate(getDashboardRouteByRole(role))}
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-[#f3d5e2] bg-white px-4 py-3 text-sm font-bold text-[#8f7184] transition hover:bg-[#fff7fb]"
-              >
-                <Building2 size={16} />
-                Back To Dashboard
-              </button>
+              <div className="mt-6 space-y-3">
+                {salon?.operatingHours?.length ? (
+                  salon.operatingHours.map((slot) => (
+                    <div
+                      key={`${slot.dayOfWeek}-${slot.dayName}`}
+                      className="group flex items-center justify-between rounded-[20px] border border-white/50 bg-white/40 px-5 py-4 transition-all duration-300 hover:bg-white/70 hover:shadow-sm"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-white text-[#ea4f93] shadow-sm transition-transform duration-300 group-hover:scale-110">
+                          <Clock3 size={18} strokeWidth={2.5} />
+                        </div>
+                        <div>
+                          <p className="text-[15px] font-black text-[#2b182b]">{slot.dayName}</p>
+                          <p className="text-xs font-medium text-[#8f6b80] mt-0.5">
+                            {slot.isClosed ? "Closed" : `${formatTimeValue(slot.openTime)} - ${formatTimeValue(slot.closeTime)}`}
+                          </p>
+                        </div>
+                      </div>
+                      <span className={`rounded-full px-3.5 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] shadow-sm ${slot.isClosed ? "bg-[#f3e8ff] text-[#7c3aed]" : "bg-[#eaf9ee] text-[#2fa25f]"}`}>
+                        {slot.isClosed ? "Closed" : "Open"}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="rounded-[20px] border border-dashed border-[#f5d7e5] bg-white/40 py-6 text-center text-sm font-medium text-[#8f6b80]">
+                    No operating hours available.
+                  </div>
+                )}
+              </div>
+            </Card>
+          </div>
 
-              <button
-                type="button"
-                onClick={handleDeactivateAccount}
-                disabled={isDeactivating}
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-[linear-gradient(90deg,#f87171_0%,#e11d48_100%)] px-4 py-3 text-sm font-bold text-white shadow-[0_12px_24px_rgba(225,29,72,0.18)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <Trash2 size={16} />
-                {isDeactivating ? "Deactivating..." : "Deactivate My Account"}
-              </button>
-            </div>
-          </Card>
+          {/* Right Sidebar */}
+          <div className="space-y-6">
+            <Card className="!p-8">
+              <h3 className="text-2xl font-black text-[#2b182b] flex items-center gap-2">
+                <Building2 className="text-[#ea4f93]" size={24} /> Salon Assignment
+              </h3>
+              <p className="mt-1.5 text-sm font-medium text-[#8f6b80]">Details of your assigned workplace.</p>
+
+              {salon ? (
+                <div className="mt-6 space-y-5">
+                  {salon.imageUrl ? (
+                    <div className="relative group rounded-[24px] overflow-hidden shadow-md">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10" />
+                      <img
+                        src={salon.imageUrl}
+                        alt={salon.name}
+                        crossOrigin="anonymous"
+                        referrerPolicy="no-referrer"
+                        className="h-48 w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      />
+                      <div className="absolute bottom-4 left-5 z-20">
+                        <span className="inline-flex rounded-full bg-white/30 px-2 py-0.5 text-[10px] font-bold text-white mb-1 uppercase tracking-wider">Assigned Branch</span>
+                        <p className="text-lg font-black text-white drop-shadow-md truncate">{salon.name}</p>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <Field label="Salon Name" value={salon.name} icon={Building2} />
+                  <Field label="Address" value={salon.address} icon={MapPin} />
+                  <Field label="Phone" value={salon.phone} icon={Phone} />
+                </div>
+              ) : (
+                <div className="mt-6 flex flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-[#f5d7e5] bg-white/40 py-10 px-6 text-center shadow-sm">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-[20px] bg-[#fff0f6] text-[#ea4f93] shadow-inner mb-4">
+                    <Building2 size={28} />
+                  </div>
+                  <h4 className="text-lg font-bold text-[#2b182b]">Unassigned Account</h4>
+                  <p className="mt-2 text-sm font-medium text-[#8f6b80]">Your profile is not currently linked to any salon branch in the system.</p>
+                </div>
+              )}
+            </Card>
+
+
+
+            <Card className="!p-8">
+              <h3 className="text-xl font-black text-[#2b182b] flex items-center gap-2">
+                <Shield className="text-[#ea4f93]" size={22} /> System Actions
+              </h3>
+              <p className="mt-1.5 text-sm font-medium text-[#8f6b80]">Use these administrative actions carefully.</p>
+
+              <div className="mt-6 flex flex-col gap-3">
+                <button
+                  type="button"
+                  onClick={() => navigate(getDashboardRouteByRole(role))}
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-[20px] border-2 border-white/60 bg-white/60 px-5 text-sm font-bold text-[#2b182b] shadow-sm transition-all hover:bg-white hover:shadow-md hover:-translate-y-0.5"
+                >
+                  <Building2 size={16} /> Return to Dashboard
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleDeactivateAccount}
+                  disabled={isDeactivating}
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-[20px] bg-gradient-to-r from-red-500 to-rose-600 px-5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(225,29,72,0.25)] transition-all hover:opacity-90 hover:shadow-[0_12px_28px_rgba(225,29,72,0.35)] disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5"
+                >
+                  <Trash2 size={16} />
+                  {isDeactivating ? "Deactivating..." : "Deactivate Account"}
+                </button>
+              </div>
+            </Card>
+          </div>
         </div>
       </div>
     </section>

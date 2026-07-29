@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import type { HandLandmarkerTaskHandle } from '@/features/virtual-try-on/handLandmarkerTask';
+import type { HandLandmarkerTaskHandle } from '../handLandmarkerTask';
 
 type TryOnViewProps = {
   currentNailSetId: string | null;

@@ -6,7 +6,7 @@ import {
   type Component,
   type NailShape,
   type NailSurface,
-} from '@/services/nailDesign.service';
+} from '../../../services/nailDesign.service';
 
 /* ─── Curated Professional Nail Color Palette ───────────────────────── */
 const NAIL_COLORS: { hex: string; name: string }[] = [

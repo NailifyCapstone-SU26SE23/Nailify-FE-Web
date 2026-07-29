@@ -426,7 +426,7 @@ export function BookingRatingListPage() {
 
               {/* Search & Filters Command Bar */}
               <div className="flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center bg-white/90 backdrop-blur-sm p-4 rounded-3xl border border-slate-200/75 shadow-[0_8px_30px_rgba(0,0,0,0.01)]">
-                <div className="relative flex-1 max-w-md">
+                {/* <div className="relative flex-1 max-w-md">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]" size={15} />
                   <input
                     type="text"
@@ -435,11 +435,11 @@ export function BookingRatingListPage() {
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300"
                   />
-                </div>
+                </div> */}
 
                 <div className="flex flex-wrap items-center gap-3">
                   <div className="flex items-center gap-1.5 bg-[#fcf9fb] p-1 rounded-2xl border border-[#f1e7ed]">
-                    {["all", "5", "4", "3", "2"].map((score) => (
+                    {["all", "5", "4", "3", "2", "1"].map((score) => (
                       <button
                         key={score}
                         type="button"
@@ -449,7 +449,7 @@ export function BookingRatingListPage() {
                           : "text-[#7f6478] hover:text-[#2d1b35] hover:bg-[#ea4f93]/5"
                           }`}
                       >
-                        {score === "all" ? "All Stars" : `${score}`}
+                        {score === "all" ? "All" : `${score}`}
                         {score !== "all" && <Star size={10} className="fill-current" />}
                       </button>
                     ))}
@@ -477,6 +477,16 @@ export function BookingRatingListPage() {
                     style={{ borderRadius: "0.875rem" }}
                   />
                 </div>
+              </div>
+              <div className="relative flex-1 w-full bg-white">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]" size={15} />
+                <input
+                  type="text"
+                  placeholder="Search by customer name, nail artist, or comment..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="bg-white w-full pl-11 pr-4 py-2.5 rounded-2xl border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300"
+                />
               </div>
 
               {/* Feed List */}
