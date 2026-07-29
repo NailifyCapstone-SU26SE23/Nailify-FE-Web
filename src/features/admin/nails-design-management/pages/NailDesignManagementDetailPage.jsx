@@ -927,7 +927,7 @@ export function NailDesignManagementDetailPage() {
           description: formValues?.heroSubtitle,
           categoryIds: formValues?.categoryIds,
           nailVariantIds: currentVariants.map((variant) => variant.nailVariantId),
-          existingImageUrls: formValues?.imageUrls,
+          existingImageUrls: formValues?.imageUrl ? [formValues.imageUrl] : [],
         });
       }
 

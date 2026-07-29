@@ -302,8 +302,8 @@ export function CreateQuiz() {
                                 placeholder="e.g. Which nail style do you like most?"
                                 rows={2}
                                 className={`w-full resize-none rounded-2xl border bg-[#fffbfc] p-3.5 text-[13px] text-[#4b3345] outline-none transition ${formErrors.questionText
-                                        ? "border-[#d14c84] focus:border-[#d14c84]"
-                                        : "border-[#f0dde8] focus:border-[#ea4f93]"
+                                    ? "border-[#d14c84] focus:border-[#d14c84]"
+                                    : "border-[#f0dde8] focus:border-[#ea4f93]"
                                     }`}
                             />
                             {formErrors.questionText && (
@@ -327,8 +327,8 @@ export function CreateQuiz() {
                                                 key={opt.value}
                                                 onClick={() => handleFormChange({ target: { name: "type", value: opt.value } })}
                                                 className={`flex items-start gap-2.5 rounded-2xl border px-3.5 py-2.5 text-left transition-all ${active
-                                                        ? "border-[#ea4f93] bg-[#fff0f6]"
-                                                        : "border-[#f0dde8] bg-[#fffbfc] hover:border-[#f0b8d3]"
+                                                    ? "border-[#ea4f93] bg-[#fff0f6]"
+                                                    : "border-[#f0dde8] bg-[#fffbfc] hover:border-[#f0b8d3]"
                                                     }`}
                                             >
                                                 <CircleDot
@@ -625,8 +625,8 @@ export function CreateQuiz() {
                                                 type="button"
                                                 onClick={() => handlePreviewSelectToggle(labelText)}
                                                 className={`flex w-full items-center gap-2.5 rounded-2xl border p-2.5 text-left transition-all ${isSelected
-                                                        ? "border-[#ea4f93] bg-[#fff8fb] shadow-sm"
-                                                        : "border-[#f0eef1] bg-[#fafafb] hover:border-[#f0b8d3]"
+                                                    ? "border-[#ea4f93] bg-[#fff8fb] shadow-sm"
+                                                    : "border-[#f0eef1] bg-[#fafafb] hover:border-[#f0b8d3]"
                                                     }`}
                                             >
                                                 <span className="min-w-0 flex-1">

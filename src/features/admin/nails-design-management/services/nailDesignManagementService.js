@@ -267,7 +267,7 @@ const DEFAULT_NAIL_DESIGN_DETAIL = {
 
 export function normalizeAdminNailDesign(design) {
   const categories = Array.isArray(design?.categories) ? design.categories : [];
-  const imageUrls = Array.isArray(design?.imageUrls) ? design.imageUrls.filter(Boolean) : [];
+  const imageUrl = String(design?.imageUrl || "").trim();
   const nailVariants = Array.isArray(design?.nailVariants) ? design.nailVariants : [];
   const minPrice = Number(design?.minPrice || 0);
   const maxPrice = Number(design?.maxPrice || 0);
@@ -280,8 +280,8 @@ export function normalizeAdminNailDesign(design) {
     status: String(design?.status || "").trim() || "Inactive",
     minPrice,
     maxPrice,
-    imageUrls,
-    previewImage: imageUrls[0] || "",
+    imageUrl,
+    previewImage: imageUrl,
     categories,
     categoryNames: categories.map((category) => String(category?.name || "").trim()).filter(Boolean),
     categoryIds: categories.map((category) => Number(category?.categoryId || 0)).filter(Boolean),

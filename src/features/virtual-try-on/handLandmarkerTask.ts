@@ -72,6 +72,13 @@ export type PendingTryOnImageFiles = {
 };
 
 class HandLandmarkerTask extends BaseVisionTask {
+  private uiAbortController = new AbortController();
+
+  public override cleanup() {
+    super.cleanup();
+    this.uiAbortController.abort();
+  }
+
   private numHands = 2;
   private minHandDetectionConfidence = 0.5;
   private minHandPresenceConfidence = 0.5;
@@ -109,6 +116,71 @@ class HandLandmarkerTask extends BaseVisionTask {
   public getLatestFingerGeometries(): FingerGeometry[] {
     return this.latestFingerGeometries;
   }
+
+  // ─── Public API for React (framer-motion overlay) ─────────────
+  public getDecorations(fingerIndex: number): Decoration[] {
+    return this.currentNailSet.nails[fingerIndex]?.decorations ?? [];
+  }
+
+  public updateDecoration(fingerIndex: number, decIndex: number, updates: Partial<Pick<Decoration, 'x' | 'y' | 'scale' | 'rotation'>>) {
+    const dec = this.currentNailSet.nails[fingerIndex]?.decorations[decIndex];
+    if (!dec) return;
+    if (updates.x !== undefined) dec.x = updates.x;
+    if (updates.y !== undefined) dec.y = updates.y;
+    if (updates.scale !== undefined) dec.scale = Math.max(0.05, Math.min(3, updates.scale));
+    if (updates.rotation !== undefined) dec.rotation = updates.rotation;
+    this.triggerRedetection();
+  }
+
+  public getSelectedFingerIndex(): number { return this.selectedFingerIndex; }
+  public getSelectedLayerIndex(): number { return this.selectedLayerIndex; }
+  public getEditMode(): 'all' | 'individual' { return this.editMode; }
+
+  public setSelectedLayer(fingerIndex: number, layerIndex: number) {
+    this.selectedFingerIndex = fingerIndex;
+    this.editMode = 'individual';
+    this.selectedLayerIndex = layerIndex;
+    this.renderLayersList();
+    this.syncPreviewSelection();
+    this.dispatchDecorationsChanged();
+    this.triggerRedetection();
+  }
+
+  public deselectLayer(fingerIndex: number) {
+    if (this.selectedFingerIndex === fingerIndex) {
+      this.selectedLayerIndex = -1;
+      this.renderLayersList();
+      this.triggerRedetection();
+      this.dispatchDecorationsChanged();
+    }
+  }
+
+  /** Returns the pixel rectangle where the nail is drawn on a given preview canvas */
+  public getCanvasLayout(fingerIndex: number): { destX: number; destY: number; destW: number; destH: number; canvasW: number; canvasH: number } | null {
+    const canvas = document.getElementById(`nail-preview-canvas-${fingerIndex}`) as HTMLCanvasElement | null;
+    if (!canvas) return null;
+    const { length } = this.currentNailSet;
+    const fingerLength = Math.min(canvas.width * 0.36, canvas.height * 0.32);
+    const nailWidth = fingerLength * 2.0;
+    const nailHeight = fingerLength * 1.2 * length;
+    const nailBottom = fingerLength * 0.75;
+    const totalHeight = nailHeight * 1.5;
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2 + canvas.height * 0.16;
+    return {
+      destX: centerX - nailWidth / 2,
+      destY: centerY + nailBottom - totalHeight,
+      destW: nailWidth,
+      destH: totalHeight,
+      canvasW: canvas.width,
+      canvasH: canvas.height,
+    };
+  }
+
+  private dispatchDecorationsChanged() {
+    document.dispatchEvent(new CustomEvent('nail-decorations-changed'));
+  }
+  // ─── End Public API ────────────────────────────────────────────
 
   private nailImages: { [key: string]: HTMLImageElement } = {};
   private currentNailSet = {
@@ -186,6 +258,7 @@ class HandLandmarkerTask extends BaseVisionTask {
     this.syncBuilderControls();
     this.renderLayersList();
     this.triggerRedetection();
+    this.dispatchDecorationsChanged();
   }
 
   public async loadFromDatabase(nailSetId: number): Promise<void>;
@@ -336,14 +409,16 @@ class HandLandmarkerTask extends BaseVisionTask {
           });
       }
       this.triggerRedetection();
-    });
+    }, { signal: this.uiAbortController.signal });
 
     this.syncPreviewSelection();
 
     // Finger Selection Listeners
     const previewButtons = document.querySelectorAll('.nail-preview-card');
     previewButtons.forEach((btn) => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', (e) => {
+        if ((e.target as HTMLElement).closest('.decoration-item')) return;
+        
         const nextFingerIndex = parseInt((btn as HTMLElement).dataset.index ?? '0', 10);
         if (this.editMode === 'individual' && this.selectedFingerIndex === nextFingerIndex) {
           this.editMode = 'all';
@@ -355,7 +430,8 @@ class HandLandmarkerTask extends BaseVisionTask {
         this.syncPreviewSelection();
         this.triggerRedetection();
         this.renderLayersList();
-      });
+        this.dispatchDecorationsChanged();
+      }, { signal: this.uiAbortController.signal });
     });
 
     // Transform Listeners
@@ -471,7 +547,7 @@ class HandLandmarkerTask extends BaseVisionTask {
       if (!imageUrl || !componentType) return;
 
       void this.addDecorationFromUrl(imageUrl, componentType, componentId ?? null);
-    });
+    }, { signal: this.uiAbortController.signal });
 
     // Nail Surface Listener
     document.querySelector('.material-grid')?.addEventListener('click', (event) => {
@@ -482,7 +558,7 @@ class HandLandmarkerTask extends BaseVisionTask {
       button.classList.add('active');
       this.currentNailSet.material = button.dataset.material || 'Glossy';
       this.triggerRedetection();
-    });
+    }, { signal: this.uiAbortController.signal });
 
     const handleFileUpload = (id: string, key: Decoration['type'] | 'customShape') => {
       const input = document.getElementById(id) as HTMLInputElement;
@@ -769,9 +845,9 @@ class HandLandmarkerTask extends BaseVisionTask {
       targets.forEach((nail) => {
         nail.color = config.color ?? nail.color;
         nail.gradient = config.gradient ?? nail.gradient;
-        nail.decorations.push({ 
+        nail.decorations.push({
           ...decoration,
-          id: `dec-${Date.now()}-${Math.floor(Math.random() * 10000)}` 
+          id: `dec-${Date.now()}-${Math.floor(Math.random() * 10000)}`
         });
       });
     }
@@ -780,6 +856,7 @@ class HandLandmarkerTask extends BaseVisionTask {
     this.syncBuilderControls();
     this.renderLayersList();
     this.triggerRedetection();
+    this.dispatchDecorationsChanged();
   }
 
   private syncBuilderControls() {
@@ -972,6 +1049,7 @@ class HandLandmarkerTask extends BaseVisionTask {
 
     this.renderLayersList();
     this.triggerRedetection();
+    this.dispatchDecorationsChanged();
   }
 
   private drawNails(ctx: CanvasRenderingContext2D, landmarks: any[], score: number = 0.8) {
@@ -1170,145 +1248,8 @@ class HandLandmarkerTask extends BaseVisionTask {
   }
 
   private setupCanvasInteractions() {
-    for (let i = 0; i < 5; i++) {
-      const canvas = document.getElementById(`nail-preview-canvas-${i}`) as HTMLCanvasElement;
-      if (!canvas) continue;
-      if ((canvas as any)._hasInteractions) continue;
-      (canvas as any)._hasInteractions = true;
-
-      let isDragging = false;
-      let startMouseX = 0;
-      let startMouseY = 0;
-      let startDecX = 0;
-      let startDecY = 0;
-      let isRotating = false;
-      let startRotation = 0;
-
-      canvas.addEventListener('mousedown', (e) => {
-        const rect = canvas.getBoundingClientRect();
-        // Since canvas uses CSS scaling, clientX/Y needs to be mapped to intrinsic resolution
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
-        const mouseX = (e.clientX - rect.left) * scaleX;
-        const mouseY = (e.clientY - rect.top) * scaleY;
-
-        const { length } = this.currentNailSet;
-        const fingerLength = Math.min(canvas.width * 0.36, canvas.height * 0.32);
-
-        const nailWidth = fingerLength * 2.0;
-        const nailHeight = fingerLength * 1.2 * length;
-        const nailBottom = fingerLength * 0.75;
-        const totalHeight = nailHeight * 1.5;
-
-        const destRect = {
-          x: canvas.width / 2 - nailWidth / 2,
-          y: canvas.height / 2 + canvas.height * 0.16 + nailBottom - totalHeight,
-          w: nailWidth,
-          h: totalHeight,
-        };
-
-        const targetFinger = this.currentNailSet.nails[i];
-
-        let clickedIdx = -1;
-        for (let d = targetFinger.decorations.length - 1; d >= 0; d--) {
-          const dec = targetFinger.decorations[d];
-          const decCenterX = destRect.x + destRect.w / 2 + dec.x * destRect.w;
-          const decCenterY = destRect.y + destRect.h / 2 + dec.y * destRect.h;
-          const decW = destRect.w * dec.scale;
-          const decH = destRect.h * dec.scale;
-
-          // Simple hit test
-          if (mouseX >= decCenterX - decW / 2 && mouseX <= decCenterX + decW / 2 &&
-            mouseY >= decCenterY - decH / 2 && mouseY <= decCenterY + decH / 2) {
-            clickedIdx = d;
-            break;
-          }
-        }
-
-        if (clickedIdx !== -1) {
-          e.stopPropagation();
-          this.selectedFingerIndex = i;
-          this.editMode = 'individual';
-          this.selectedLayerIndex = clickedIdx;
-          this.renderLayersList();
-          this.triggerRedetection();
-
-          isDragging = true;
-          isRotating = e.shiftKey; // shift for rotation
-          startMouseX = e.clientX;
-          startMouseY = e.clientY;
-          startDecX = targetFinger.decorations[clickedIdx].x;
-          startDecY = targetFinger.decorations[clickedIdx].y;
-          startRotation = targetFinger.decorations[clickedIdx].rotation;
-        } else {
-          // Clicked outside decoration
-          if (this.selectedLayerIndex !== -1 && this.selectedFingerIndex === i) {
-            this.selectedLayerIndex = -1;
-            this.renderLayersList();
-            this.triggerRedetection();
-          }
-        }
-      });
-
-      window.addEventListener('mousemove', (e) => {
-        if (!isDragging) return;
-        const targetFinger = this.currentNailSet.nails[this.selectedFingerIndex];
-        const dec = targetFinger.decorations[this.selectedLayerIndex];
-        if (!dec) return;
-
-        if (isRotating) {
-          const dx = e.clientX - startMouseX;
-          dec.rotation = startRotation + dx;
-        } else {
-          const rect = canvas.getBoundingClientRect();
-          const dx = (e.clientX - startMouseX) / rect.width;
-          const dy = (e.clientY - startMouseY) / rect.height;
-
-          const { length } = this.currentNailSet;
-          const fingerLength = Math.min(canvas.width * 0.36, canvas.height * 0.32);
-          const nailWidth = fingerLength * 2.0;
-          const nailHeight = fingerLength * 1.2 * length;
-          const totalHeight = nailHeight * 1.5;
-
-          dec.x = startDecX + dx * (canvas.width / nailWidth);
-          dec.y = startDecY + dy * (canvas.height / totalHeight);
-        }
-
-        if (this.editMode === 'all') {
-          const decId = dec.id;
-          this.currentNailSet.nails.forEach((finger) => {
-            const d = finger.decorations.find((dd) => dd.id === decId);
-            if (d) {
-              d.x = dec.x;
-              d.y = dec.y;
-              d.rotation = dec.rotation;
-            }
-          });
-        }
-
-        this.triggerRedetection();
-      });
-
-      window.addEventListener('mouseup', () => {
-        isDragging = false;
-        isRotating = false;
-      });
-
-      canvas.addEventListener('wheel', (e) => {
-        if (this.selectedLayerIndex === -1 || i !== this.selectedFingerIndex) return;
-        const targetFinger = this.currentNailSet.nails[this.selectedFingerIndex];
-        const dec = targetFinger.decorations[this.selectedLayerIndex];
-        if (!dec) return;
-
-        e.preventDefault();
-        const delta = e.deltaY > 0 ? -0.05 : 0.05;
-        dec.scale = Math.max(0.05, Math.min(3, dec.scale + delta));
-
-
-
-        this.triggerRedetection();
-      }, { passive: false });
-    }
+    // Decoration interactions are now handled by framer-motion DOM overlay.
+    // Canvas only needs finger selection via the nail-preview-card click handler.
   }
 
   private syncPreviewSelection() {
@@ -1441,29 +1382,8 @@ class HandLandmarkerTask extends BaseVisionTask {
     }
     ctx.restore();
 
-    // Render Decoration Stack in Preview
-    decorations.forEach((dec, idx) => {
-      ctx.save();
-      const decX = destRect.x + destRect.w / 2 + dec.x * destRect.w;
-      const decY = destRect.y + destRect.h / 2 + dec.y * destRect.h;
-
-      ctx.translate(decX, decY);
-      ctx.rotate((dec.rotation * Math.PI) / 180);
-
-      const decW = destRect.w * dec.scale;
-      const decH = destRect.h * dec.scale;
-
-      ctx.drawImage(dec.image, -decW / 2, -decH / 2, decW, decH);
-
-      // If selected in preview, show a small border or highlight?
-      if (idx === this.selectedLayerIndex) {
-        ctx.strokeStyle = '#007f8b';
-        ctx.lineWidth = 4;
-        ctx.strokeRect(-decW / 2, -decH / 2, decW, decH);
-      }
-
-      ctx.restore();
-    });
+    // Decorations are rendered by framer-motion DOM overlay in builder mode.
+    // We do NOT render decorations on the preview canvas anymore.
 
     ctx.restore();
   }
@@ -1508,11 +1428,13 @@ class HandLandmarkerTask extends BaseVisionTask {
           if (this.selectedLayerIndex === deleteIdx) this.selectedLayerIndex = -1;
           this.renderLayersList();
           this.triggerRedetection();
+          this.dispatchDecorationsChanged();
           return;
         }
         this.selectedLayerIndex = idx;
         this.renderLayersList();
         this.triggerRedetection();
+        this.dispatchDecorationsChanged();
       });
 
       list.appendChild(item);
@@ -1594,6 +1516,25 @@ class HandLandmarkerTask extends BaseVisionTask {
   }
 }
 
+export type DecorationData = {
+  id: string;
+  type: 'gem' | 'sticker' | 'charm' | 'art';
+  imageSrc: string;
+  x: number;
+  y: number;
+  scale: number;
+  rotation: number;
+};
+
+export type CanvasLayout = {
+  destX: number;
+  destY: number;
+  destW: number;
+  destH: number;
+  canvasW: number;
+  canvasH: number;
+};
+
 export type HandLandmarkerTaskHandle = {
   cleanup: () => void;
   getSerializedConfig: () => SerializedNailSet;
@@ -1604,6 +1545,15 @@ export type HandLandmarkerTaskHandle = {
   saveToDatabase: (nailSetId: number | string) => Promise<void>;
   startImageTryOn: () => void;
   startLiveTryOn: () => void;
+  // Framer-motion API
+  getDecorations: (fingerIndex: number) => DecorationData[];
+  updateDecoration: (fingerIndex: number, decIndex: number, updates: Partial<Pick<DecorationData, 'x' | 'y' | 'scale' | 'rotation'>>) => void;
+  getSelectedFingerIndex: () => number;
+  getSelectedLayerIndex: () => number;
+  setSelectedLayer: (fingerIndex: number, layerIndex: number) => void;
+  deselectLayer: (fingerIndex: number) => void;
+  getCanvasLayout: (fingerIndex: number) => CanvasLayout | null;
+  getEditMode: () => 'all' | 'individual';
 };
 
 export async function setupHandLandmarker(container: HTMLElement): Promise<HandLandmarkerTaskHandle> {
@@ -1625,5 +1575,17 @@ export async function setupHandLandmarker(container: HTMLElement): Promise<HandL
     saveToDatabase: (nailSetId) => task.saveToDatabase(String(nailSetId)),
     startImageTryOn: () => task.startImageTryOn(),
     startLiveTryOn: () => task.startLiveTryOn(),
+    // Framer-motion API
+    getDecorations: (fingerIndex) => task.getDecorations(fingerIndex).map(d => ({
+      id: d.id, type: d.type, imageSrc: d.image.src,
+      x: d.x, y: d.y, scale: d.scale, rotation: d.rotation,
+    })),
+    updateDecoration: (fi, di, u) => task.updateDecoration(fi, di, u),
+    getSelectedFingerIndex: () => task.getSelectedFingerIndex(),
+    getSelectedLayerIndex: () => task.getSelectedLayerIndex(),
+    setSelectedLayer: (fi, li) => task.setSelectedLayer(fi, li),
+    deselectLayer: (fi) => task.deselectLayer(fi),
+    getCanvasLayout: (fi) => task.getCanvasLayout(fi),
+    getEditMode: () => task.getEditMode(),
   };
 }

@@ -44,6 +44,7 @@ import {
   manualCheckInReceptionistBooking,
   verifyReceptionistQrToken,
 } from "../../../receptionist/bookings/services/receptionistBookingService";
+import { receptionistWalkInBookingService } from "../../../receptionist/walk-in-bookings/services/receptionistWalkInBookingService";
 import { dashboardService } from "../services/dashboardService";
 import {
   useReceptionistDashboard,
@@ -330,19 +331,91 @@ export function ReceptionistDashboardPage() {
 
   const { data: walkInQueueData } = useWalkInQueue(user?.salonId);
   const { data: waitlistData } = useWaitlist(user?.salonId);
-  const { data: staffArtistsData } = useStaffArtists(user?.salonId);
 
-  const activeStaffItems = staffArtistsData?.items || dashboardData?.liveChairStatus || [];
   const todayStr = selectedDateStr;
+  const [dashboardStaff, setDashboardStaff] = useState([]);
+  const [chairsStatus, setChairsStatus] = useState([]);
 
-  const artistSlotQueries = useQueries({
-    queries: activeStaffItems.map((artist) => ({
-      queryKey: ["artistSlots", artist.staffId || artist.userId, todayStr],
-      queryFn: () => dashboardService.getArtistAvailableSlots(artist.staffId || artist.userId, todayStr),
-      enabled: !!(artist.staffId || artist.userId) && !!todayStr,
-      staleTime: 60 * 1000,
-    })),
-  });
+  useEffect(() => {
+    if (!user?.salonId) return;
+
+    const loadChairs = async () => {
+      try {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const atDate = `${year}-${month}-${day}`;
+
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        const atTime = `${hours}:${minutes}:${seconds}`;
+
+        const data = await dashboardService.getChairsStatus(user.salonId, atDate, atTime);
+        setChairsStatus(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Failed to load chairs status", err);
+      }
+    };
+
+    loadChairs();
+    const intervalId = setInterval(loadChairs, 30000);
+    return () => clearInterval(intervalId);
+  }, [user?.salonId]);
+
+  useEffect(() => {
+    if (!user?.salonId || !todayStr) return;
+
+    const loadStaff = async () => {
+      try {
+        const salonId = user.salonId;
+        const res = await receptionistWalkInBookingService.getAvailableArtists(salonId);
+        const allArtists = Array.isArray(res) ? res : res?.data?.items || res?.items || res?.data || [];
+
+        const staffWithSchedulePromises = allArtists.map(async (artist, idx) => {
+          try {
+            const artistId = artist.nailArtistId || artist.id;
+            if (!artistId) return null;
+
+            const scheduleRes = await receptionistWalkInBookingService.getArtistSchedule(artistId, todayStr, todayStr);
+            const schedules = Array.isArray(scheduleRes) ? scheduleRes : scheduleRes?.data || [];
+
+            const isOffToday = !schedules || schedules.length === 0;
+            return { artist, idx, isOffToday };
+          } catch (err) {
+            console.warn(`Could not fetch schedule for artist ${artist.nailArtistId || artist.id}:`, err);
+          }
+          return { artist, idx, isOffToday: true };
+        });
+
+        const staffWithStatus = (await Promise.all(staffWithSchedulePromises)).filter(Boolean);
+
+        const displayData = staffWithStatus.map((s, index) => {
+          const c = s.artist;
+          const name = c.account
+            ? `${c.account.firstName || ""} ${c.account.lastName || ""}`.trim()
+            : (c.firstName ? `${c.firstName} ${c.lastName}`.trim() : (c.name || "Thợ Nail"));
+
+          const isOffToday = s.isOffToday;
+
+          return [
+            name,
+            getInitials(name),
+            isOffToday ? "Off Today" : "Available",
+            getAvatarTone(index),
+            isOffToday ? "bg-[#ffeaf2] text-[#ef5a95]" : "bg-[#e8f8ed] text-[#30a364]",
+            isOffToday
+          ];
+        });
+
+        setDashboardStaff(displayData);
+      } catch (err) {
+        console.error("Failed to load staff for dashboard", err);
+      }
+    };
+    loadStaff();
+  }, [user?.salonId, todayStr]);
 
   const greetingName = user?.fullName?.split(" ")[0] ?? "Jessica";
 
@@ -817,31 +890,7 @@ export function ReceptionistDashboardPage() {
     `${w.estimatedDuration || w.estimatedWait || 0}m`
   ]);
 
-  const displayStaff = activeStaffItems.map((c, idx) => {
-    const name = c.firstName ? `${c.firstName} ${c.lastName}` : (c.name || "Chair");
-
-    let isBusy = c.isOccupied === true;
-    const artistQuery = artistSlotQueries[idx];
-    const isOffToday = artistQuery?.data?.isOffToday === true;
-
-    if (artistQuery?.data?.busySlots?.length > 0) {
-      const now = new Date();
-      isBusy = artistQuery.data.busySlots.some(slot => {
-        const start = new Date(slot.startTime);
-        const end = new Date(slot.endTime);
-        return now >= start && now <= end;
-      });
-    }
-
-    return [
-      name,
-      getInitials(name),
-      isOffToday ? "Off Today" : (c.status === "Active" && !isBusy ? "Available" : (isBusy ? "Busy" : "Inactive")),
-      getAvatarTone(idx),
-      isOffToday ? "bg-[#ffeaf2] text-[#ef5a95]" : (c.status === "Active" && !isBusy ? "bg-[#e8f8ed] text-[#30a364]" : "bg-[#ffeaf2] text-[#ef5a95]"),
-      isOffToday
-    ];
-  });
+  const displayStaff = dashboardStaff;
 
   const displayArrivals = dashboardData?.upcomingArrivals?.length ?
     dashboardData.upcomingArrivals.map((u, idx) => {
@@ -1108,9 +1157,9 @@ export function ReceptionistDashboardPage() {
       case 'liveChair':
         return (
           <div className="mt-2 flex-1 overflow-auto min-h-0">
-            {dashboardData?.liveChairStatus?.length > 0 ? (
+            {chairsStatus.length > 0 ? (
               <ChairMap
-                chairs={dashboardData.liveChairStatus.map(c => ({ ...c, chairName: c.name }))}
+                chairs={chairsStatus.map(c => ({ ...c, name: c.chairName, currentCustomer: c.occupiedByCustomerName }))}
                 renderCell={(cellName, chair) => {
                   if (chair) {
                     return (
@@ -1123,18 +1172,18 @@ export function ReceptionistDashboardPage() {
                         className="flex flex-col items-center justify-center gap-1 w-[90px] h-[90px] rounded-2xl border-2 transition-all duration-300 bg-[#fff8fb] border-pink-200 shadow-sm hover:shadow-md cursor-pointer hover:scale-105"
                       >
                         <div
-                          className={`mt-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-extrabold text-white ${chair.isOccupied ? "bg-[#eb5b92]" : "bg-[#8e50cf]"}`}
+                          className={`flex shrink-0 items-center justify-center rounded-full text-sm font-extrabold ${chair.isOccupied ? "text-green-400" : "text-[#eb5b92]"}`}
                         >
                           <Armchair size={16} />
                         </div>
-                        <p className="mt-1 text-[11px] font-bold text-[#432744] truncate w-full text-center px-1">{chair.name || "Chair"}</p>
+                        <p className="mt-1 text-[11px] font-bold text-[#432744] truncate w-full text-center px-1">{chair.chairName || "Chair"}</p>
                         {chair.isOccupied ? (
                           <div className="flex flex-col items-center leading-tight">
                             <span className="inline-flex rounded-full bg-[#ffeaf2] px-2 py-0.5 text-[9px] font-bold text-[#ef5a95]">
                               Occupied
                             </span>
                             <span className="text-[9px] text-[#aa8a99] truncate w-20 text-center mt-0.5">
-                              {typeof chair.currentCustomer === 'object' ? chair.currentCustomer?.customerName || 'Customer' : (chair.currentCustomer || 'Customer')}
+                              {chair.occupiedByCustomerName || 'Customer'}
                             </span>
                           </div>
                         ) : (
@@ -1143,7 +1192,7 @@ export function ReceptionistDashboardPage() {
                               Available
                             </span>
                             <span className="text-[9px] text-[#aa8a99] truncate w-20 text-center mt-0.5">
-                              {typeof chair.currentCustomer === 'object' ? chair.currentCustomer?.customerName || '--' : (chair.currentCustomer || '--')}
+                              --
                             </span>
                           </div>
                         )}
@@ -1441,7 +1490,7 @@ export function ReceptionistDashboardPage() {
         {selectedChair && (
           <div className="mt-4 space-y-4 text-sm text-[#584654]">
             <div className="flex justify-between items-center py-2 border-b border-[#f7e0ea]">
-              <span className="font-semibold text-[#aa8a99]">isOccupied</span>
+              <span className="font-semibold text-[#aa8a99]">Currently in use</span>
               <span className={`px-3 py-1 rounded-full text-xs font-bold ${selectedChair.isOccupied ? "bg-pink-50 text-pink-600" : "bg-emerald-50 text-emerald-600"
                 }`}>
                 {selectedChair.isOccupied ? "true" : "false"}
@@ -1453,7 +1502,7 @@ export function ReceptionistDashboardPage() {
                 <UserRound size={18} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-[#aa8a99]">currentCustomer</p>
+                <p className="text-xs font-semibold text-[#aa8a99]">Current Customer</p>
                 <p className="font-bold text-[#432744] text-base truncate">
                   {selectedChair.isOccupied ? (
                     typeof selectedChair.currentCustomer === 'object'
