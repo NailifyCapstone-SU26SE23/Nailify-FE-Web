@@ -65,110 +65,588 @@ function SectionHeading({ title, subtitle }) {
   );
 }
 
-function NailBlueprint({ nail, componentsList }) {
-  const fingers = [
-    { index: 1, name: "Thumb" },
-    { index: 2, name: "Index" },
-    { index: 3, name: "Middle" },
-    { index: 4, name: "Ring" },
-    { index: 5, name: "Pinky" }
-  ];
+function getFingerColorStyle(customColor, fingerIndex) {
+  if (!customColor) return { backgroundColor: '#f3f4f6' };
+  try {
+    const parsed = typeof customColor === 'string'
+      ? (() => {
+        const normalized = customColor.trim();
 
-  let colorData = null;
-  if (nail.customColor) {
-    try {
-      colorData = typeof nail.customColor === "string" ? JSON.parse(nail.customColor) : nail.customColor;
-    } catch (e) {
-      console.error("Color parse error in blueprint:", e);
+        if (!normalized) {
+          return null;
+        }
+
+        if (normalized.startsWith('{') || normalized.startsWith('[')) {
+          return JSON.parse(normalized);
+        }
+
+        return {
+          mode: 'solid',
+          color: normalized,
+        };
+      })()
+      : customColor;
+
+    if (!parsed) {
+      return { backgroundColor: '#f3f4f6' };
     }
+
+    if (parsed.mode === 'solid' && parsed.color) {
+      return { backgroundColor: parsed.color };
+    }
+    if (parsed.mode === 'gradient') {
+      const gradientStops = Array.isArray(parsed.gradient)
+        ? parsed.gradient
+        : Array.isArray(parsed.gradient?.stops)
+          ? parsed.gradient.stops
+          : [];
+
+      if (gradientStops.length > 0) {
+        return { background: `linear-gradient(to top, ${gradientStops.join(', ')})` };
+      }
+    }
+    if (parsed.mode === 'perFinger' && Array.isArray(parsed.fingers)) {
+      const finger = parsed.fingers.find(f => Number(f.fingerIndex) === Number(fingerIndex));
+      if (finger) {
+        if (finger.gradient && finger.gradient.enabled && Array.isArray(finger.gradient.stops)) {
+          return { background: `linear-gradient(to top, ${finger.gradient.stops.join(', ')})` };
+        }
+        // Support both finger.color and finger.primaryColor
+        const solidColor = finger.color || finger.primaryColor || '#f3f4f6';
+        if (finger.mode === 'gradient' && finger.primaryColor && finger.secondaryColor) {
+          return { background: `linear-gradient(to top, ${finger.primaryColor}, ${finger.secondaryColor})` };
+        }
+        return { backgroundColor: solidColor };
+      }
+    }
+
+  } catch (e) {
+    console.error("Error parsing finger color style:", e);
+  }
+  return { backgroundColor: '#f3f4f6' };
+}
+
+function normalizeComponentPosition(value, fallbackPercent = 50) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) {
+    return fallbackPercent;
+  }
+  if (Math.abs(numericValue) <= 1) {
+    return Math.max(0, Math.min(100, 50 + numericValue * 100));
+  }
+  return Math.max(0, Math.min(100, numericValue));
+}
+
+function parseComponentConfig(configJson) {
+  if (!configJson) {
+    return {};
+  }
+  try {
+    return typeof configJson === 'string' ? JSON.parse(configJson) : configJson;
+  } catch {
+    return {};
+  }
+}
+
+function renderSurfaceEffects(surfaceName, effectsConfigJson) {
+  const name = (surfaceName || "glossy").toLowerCase();
+
+  let config = {};
+  try {
+    config = typeof effectsConfigJson === 'string'
+      ? JSON.parse(effectsConfigJson)
+      : effectsConfigJson || {};
+  } catch (e) {
+    config = {};
   }
 
+  // 🪞 CHROME - Ultra metallic mirror
+  if (name.includes("chrome") || name.includes("mirror") || name.includes("tráng gương")) {
+    const reflectivity = config.reflectivity || 0.9;
+    const metallic = config.metallic || 1.0;
+    return (
+      <>
+        {/* Silver metallic base sheen */}
+        <div className="pointer-events-none absolute inset-0" style={{
+          background: `linear-gradient(135deg, rgba(255,255,255,${metallic * 0.7}) 0%, rgba(200,210,220,${metallic * 0.4}) 35%, rgba(80,90,100,${metallic * 0.35}) 65%, rgba(255,255,255,${metallic * 0.6}) 100%)`,
+        }} />
+        {/* Primary chrome streak */}
+        <div className="pointer-events-none absolute" style={{
+          top: '5%', left: '15%', width: '30%', height: '65%',
+          background: `linear-gradient(to bottom, rgba(255,255,255,${reflectivity}) 0%, rgba(255,255,255,${reflectivity * 0.5}) 50%, transparent 100%)`,
+          filter: 'blur(3px)', borderRadius: '50%',
+        }} />
+        {/* Center bright line */}
+        <div className="pointer-events-none absolute" style={{
+          top: '8%', left: '35%', width: '8%', height: '55%',
+          background: `linear-gradient(to bottom, rgba(255,255,255,${metallic}) 0%, rgba(255,255,255,${metallic * 0.3}) 70%, transparent 100%)`,
+          filter: 'blur(1px)', borderRadius: '50%',
+        }} />
+        {/* Right edge reflection */}
+        <div className="pointer-events-none absolute" style={{
+          top: '15%', right: '8%', width: '22%', height: '50%',
+          background: `radial-gradient(ellipse, rgba(220,230,240,${reflectivity * 0.6}) 0%, transparent 70%)`,
+          filter: 'blur(4px)',
+        }} />
+        {/* Bottom dark shadow */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0" style={{
+          height: '35%',
+          background: 'linear-gradient(to top, rgba(0,0,0,0.3) 0%, transparent 100%)',
+        }} />
+      </>
+    );
+  }
+
+  // 🌈 HOLOGRAPHIC - Visible rainbow prism
+  if (name.includes("holographic") || name.includes("holo")) {
+    const intensity = config.intensity || 0.85;
+    return (
+      <>
+        {/* Full rainbow - solid gradient, không dùng rgba */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: `linear-gradient(160deg,
+              hsl(0,100%,65%) 0%,
+              hsl(30,100%,60%) 15%,
+              hsl(55,100%,60%) 28%,
+              hsl(130,80%,55%) 42%,
+              hsl(200,100%,60%) 57%,
+              hsl(260,90%,65%) 72%,
+              hsl(300,90%,65%) 85%,
+              hsl(340,100%,65%) 100%)`,
+            opacity: intensity * 0.75,
+          }}
+        />
+        {/* Iridescent shimmer - diagonal cross */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: `linear-gradient(45deg,
+              hsl(320,100%,70%) 0%,
+              transparent 25%,
+              hsl(190,100%,65%) 45%,
+              transparent 65%,
+              hsl(270,100%,70%) 90%)`,
+            opacity: intensity * 0.45,
+          }}
+        />
+        {/* White specular highlight */}
+        <div
+          className="pointer-events-none absolute"
+          style={{
+            top: '5%', left: '10%', width: '50%', height: '45%',
+            background: 'radial-gradient(ellipse at 30% 25%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.2) 45%, transparent 70%)',
+            filter: 'blur(6px)',
+          }}
+        />
+        {/* Bottom depth */}
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0"
+          style={{
+            height: '25%',
+            background: 'linear-gradient(to top, rgba(0,0,0,0.2) 0%, transparent 100%)',
+          }}
+        />
+      </>
+    );
+  }
+
+  // 😺 CAT EYE - Magnetic vertical streak
+  if (name.includes("cat") || name.includes("cateye") || name.includes("cat-eye")) {
+    const streak = config.streak || 0.8;
+    const angle = config.angle || 90;
+    return (
+      <>
+        {/* Base dark shimmer */}
+        <div className="pointer-events-none absolute inset-0" style={{
+          background: 'linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.12) 100%)',
+        }} />
+        {/* Magnetic cat eye streak */}
+        <div className="pointer-events-none absolute" style={{
+          top: 0, bottom: 0,
+          left: '50%',
+          width: `${streak * 65}%`,
+          transform: `translateX(-50%) rotate(${angle === 90 ? 0 : angle}deg)`,
+          background: `linear-gradient(to right,
+            transparent 0%,
+            rgba(255,255,255,${streak * 0.25}) 25%,
+            rgba(255,255,255,${streak * 0.75}) 50%,
+            rgba(255,255,255,${streak * 0.25}) 75%,
+            transparent 100%)`,
+          filter: 'blur(5px)',
+        }} />
+        {/* Glossy top shine */}
+        <div className="pointer-events-none absolute inset-x-0 top-0" style={{
+          height: '28%',
+          background: `linear-gradient(to bottom, rgba(255,255,255,0.4) 0%, transparent 100%)`,
+        }} />
+        {/* Bottom shadow */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0" style={{
+          height: '25%',
+          background: 'linear-gradient(to top, rgba(0,0,0,0.2) 0%, transparent 100%)',
+        }} />
+      </>
+    );
+  }
+
+  // 🎭 MATTE - Soft flat finish (no shine)
+  if (name.includes("matte") || name.includes("nhám")) {
+    return (
+      <>
+        {/* Matte flat overlay - removes shine, adds softness */}
+        <div className="pointer-events-none absolute inset-0" style={{
+          background: 'rgba(255,255,255,0.18)',
+          backdropFilter: 'blur(0.5px)',
+        }} />
+        {/* Very subtle ambient highlight, no bright spots */}
+        <div className="pointer-events-none absolute inset-x-0 top-0" style={{
+          height: '40%',
+          background: 'linear-gradient(to bottom, rgba(255,255,255,0.1) 0%, transparent 100%)',
+        }} />
+      </>
+    );
+  }
+
+  // ✨ GLOSSY (Default) - Natural shine
+  const shine = config.shine || 0.45;
+  const blur = config.blur || 0;
+  const effectiveBlur = Math.max(4, blur * 20);
+
   return (
-    <div className="rounded-[28px] border border-[#f5cee1] bg-gradient-to-br from-white to-[#fff5fa] p-5 shadow-[0_12px_30px_-4px_rgba(235,112,168,0.05)]">
-      <SectionHeading title="Luxury Custom Nail Blueprint" subtitle="Visual breakdown of color, finish, and applied ornaments per finger." />
-      <div className="mt-5 grid grid-cols-5 gap-2 md:gap-3">
-        {fingers.map((f) => {
-          let fingerStyle = { backgroundColor: "#faf4f6" };
-          let colorLabel = "Base Color";
-          let fingerColor = null;
+    <>
+      {/* 1️⃣ Dark base gradient - tạo 3D depth, visible trên nền trắng */}
+      <div className="pointer-events-none absolute inset-0" style={{
+        background: 'linear-gradient(160deg, rgba(255,255,255,0.1) 0%, rgba(180,180,200,0.1) 40%, rgba(80,80,120,0.15) 75%, rgba(40,40,80,0.2) 100%)',
+      }} />
+      {/* 2️⃣ Main gloss blob - top left */}
+      <div className="pointer-events-none absolute" style={{
+        top: '5%', left: '8%', width: '55%', height: '60%',
+        background: `radial-gradient(ellipse at 28% 25%, rgba(255,255,255,${shine * 0.92}) 0%, rgba(255,255,255,${shine * 0.5}) 40%, transparent 72%)`,
+        filter: `blur(${effectiveBlur}px)`,
+        transform: 'rotate(-12deg)',
+      }} />
+      {/* 3️⃣ Sharp specular line */}
+      <div className="pointer-events-none absolute" style={{
+        top: '10%', left: '18%', width: '16%', height: '52%',
+        background: `linear-gradient(to bottom, rgba(255,255,255,${shine}) 0%, rgba(255,255,255,${shine * 0.55}) 45%, transparent 100%)`,
+        filter: `blur(${Math.max(1.5, effectiveBlur * 0.25)}px)`,
+        borderRadius: '50%',
+      }} />
+      {/* 4️⃣ Top edge sheen */}
+      <div className="pointer-events-none absolute inset-x-0 top-0" style={{
+        height: '32%',
+        background: `linear-gradient(to bottom, rgba(255,255,255,${shine * 0.6}) 0%, transparent 100%)`,
+      }} />
+      {/* 5️⃣ Right subtle reflection */}
+      <div className="pointer-events-none absolute" style={{
+        top: '18%', right: '8%', width: '22%', height: '42%',
+        background: `radial-gradient(ellipse, rgba(255,255,255,${shine * 0.45}) 0%, transparent 70%)`,
+        filter: `blur(${Math.max(3, effectiveBlur * 0.55)}px)`,
+      }} />
+      {/* 6️⃣ Bottom shadow - critical for 3D depth on white nails */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0" style={{
+        height: '35%',
+        background: 'linear-gradient(to top, rgba(60,40,80,0.28) 0%, rgba(60,40,80,0.08) 60%, transparent 100%)',
+      }} />
+      {/* 7️⃣ Right edge shadow for curved look */}
+      <div className="pointer-events-none absolute inset-y-0 right-0" style={{
+        width: '20%',
+        background: 'linear-gradient(to left, rgba(60,40,80,0.15) 0%, transparent 100%)',
+      }} />
+    </>
+  );
+}
 
-          if (colorData) {
-            if (colorData.mode === "solid" && colorData.color) {
-              fingerStyle = { backgroundColor: colorData.color };
-              colorLabel = colorData.color;
-            } else if (colorData.mode === "gradient" && Array.isArray(colorData.gradient)) {
-              fingerStyle = { background: `linear-gradient(to top, ${colorData.gradient.join(", ")})` };
-              colorLabel = "Gradient";
-            } else if (colorData.mode === "perFinger" && Array.isArray(colorData.fingers)) {
-              fingerColor = colorData.fingers.find(fc => Number(fc.fingerIndex) === f.index);
-              if (fingerColor) {
-                if (fingerColor.mode === 'gradient' && fingerColor.primaryColor && fingerColor.secondaryColor) {
-                  fingerStyle = { background: `linear-gradient(to top, ${fingerColor.primaryColor}, ${fingerColor.secondaryColor})` };
-                  colorLabel = `${fingerColor.primaryColor} → ${fingerColor.secondaryColor}`;
-                } else if (fingerColor.gradient && fingerColor.gradient.enabled && Array.isArray(fingerColor.gradient.stops)) {
-                  fingerStyle = { background: `linear-gradient(to top, ${fingerColor.gradient.stops.join(', ')})` };
-                  colorLabel = fingerColor.gradient.stops.join(' → ');
-                } else {
-                  const solidColor = fingerColor.color || fingerColor.primaryColor || "#faf4f6";
-                  fingerStyle = { backgroundColor: solidColor };
-                  colorLabel = solidColor;
-                }
-              }
-            }
-          }
+function NailBlueprint({ nail, componentsList }) {
+  const [selectedComponentId, setSelectedComponentId] = useState(null);
+  
+  const renderNailPreview = (fingerIndex, fingerName) => {
+    const colorStyle = getFingerColorStyle(nail?.customColor, fingerIndex);
 
-          const fingerComponents = componentsList.filter(c => Number(c.fingerIndex) === f.index);
+    const hasZeroIndex = componentsList.some(comp => Number(comp.fingerIndex) === 0);
+    const hasFiveIndex = componentsList.some(comp => Number(comp.fingerIndex) === 5);
+    const isZeroIndexed = hasZeroIndex || (!hasFiveIndex);
 
-          return (
-            <div key={f.index} className="flex flex-col items-center rounded-2xl border border-[#fce6f3] bg-white p-2.5 text-center shadow-[0_4px_12px_rgba(236,72,153,0.02)] transition hover:border-[#ea4f93] hover:shadow-[0_8px_16px_rgba(236,72,153,0.06)]">
-              <span className="text-[9px] font-extrabold uppercase tracking-wider text-[#b68da2]">{f.name}</span>
+    const components = componentsList.filter(comp => {
+      const compIdx = Number(comp.fingerIndex);
+      return isZeroIndexed ? compIdx === (fingerIndex - 1) : compIdx === fingerIndex;
+    });
 
-              {/* Nail Tip Visual representation */}
-              <div className="my-3 relative h-16 w-8 rounded-t-full border border-[#f5cfe3] shadow-inner overflow-hidden" style={fingerStyle}>
-                <div className="absolute top-1 left-1.5 w-1 h-8 rounded-full bg-white/40 blur-[0.5px]" />
-                {fingerComponents.length > 0 && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="flex h-5 w-5 animate-pulse items-center justify-center rounded-full bg-white/95 text-[10px] shadow-md border border-[#ea4f93]/20">
-                      ✨
-                    </span>
-                  </div>
-                )}
-              </div>
+    const isFingerSelectedWithAccessory = selectedComponentId !== null && components.some(comp => {
+      const globalIdx = componentsList.findIndex(c => c.customerNailComponentId === comp.customerNailComponentId);
+      const globalId = comp.customerNailComponentId || globalIdx;
+      return selectedComponentId === globalId;
+    });
 
-              {fingerColor && (fingerColor.mode === 'gradient' || (fingerColor.gradient && fingerColor.gradient.enabled)) ? (
-                <div className="mt-1 flex items-center justify-center gap-0.5 flex-wrap max-w-full">
-                  <span className="h-1.5 w-1.5 rounded-full border border-white shadow-sm shrink-0" style={{ backgroundColor: fingerColor.primaryColor || (fingerColor.gradient?.stops?.[0]) }} />
-                  <span className="font-mono text-[7px] font-bold text-[#ea4f93]">{fingerColor.primaryColor || (fingerColor.gradient?.stops?.[0])}</span>
-                  <span className="text-[6px] text-[#c08aa4] font-bold">→</span>
-                  <span className="h-1.5 w-1.5 rounded-full border border-white shadow-sm shrink-0" style={{ backgroundColor: fingerColor.secondaryColor || (fingerColor.gradient?.stops?.[1]) }} />
-                  <span className="font-mono text-[7px] font-bold text-[#ea4f93]">{fingerColor.secondaryColor || (fingerColor.gradient?.stops?.[1])}</span>
-                </div>
-              ) : (
-                <div className="mt-1 flex items-center justify-center gap-1">
-                  {colorLabel !== "Base Color" && colorLabel !== "Gradient" && colorLabel !== "N/A" && colorLabel.startsWith('#') && (
-                    <span className="h-1.5 w-1.5 rounded-full border border-white shadow-sm shrink-0" style={{ backgroundColor: colorLabel }} />
-                  )}
-                  <span className="text-[8px] font-medium text-[#c08aa4] truncate w-full font-mono" title={colorLabel}>
-                    {colorLabel}
-                  </span>
-                </div>
-              )}
+    const maskStyle = nail?.nailShape?.imageUrl ? {
+      maskImage: `url(${nail.nailShape.imageUrl})`,
+      WebkitMaskImage: `url(${nail.nailShape.imageUrl})`,
+      maskSize: 'contain',
+      WebkitMaskSize: 'contain',
+      maskRepeat: 'no-repeat',
+      WebkitMaskRepeat: 'no-repeat',
+      maskPosition: 'center',
+      WebkitMaskPosition: 'center',
+    } : {};
 
-              {fingerComponents.length > 0 ? (
-                <div className="mt-2 w-full space-y-1">
-                  {fingerComponents.map((item, idx) => (
-                    <div key={idx} className="rounded bg-[#fff0f5] px-1 py-0.5 text-[8px] font-semibold text-[#ea4f93] truncate" title={item.component?.name}>
-                      {item.component?.name || "Decor"}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <span className="mt-2 text-[8px] text-[#d6b2c4] italic">Plain</span>
-              )}
+    // 🎨 Hand proportions - wider to match real almond nail shape
+    const fingerMetrics = {
+      Thumb: { height: 205, width: 140, lift: 30, rotate: -8, hoverLift: -6 },
+      Index: { height: 235, width: 130, lift: 10, rotate: -3, hoverLift: -8 },
+      Middle: { height: 255, width: 135, lift: 0, rotate: 0, hoverLift: -10 },
+      Ring: { height: 235, width: 130, lift: 6, rotate: 3, hoverLift: -8 },
+      Pinky: { height: 190, width: 110, lift: 26, rotate: 7, hoverLift: -6 },
+    };
+    const { height, width, lift, rotate } = fingerMetrics[fingerName] || fingerMetrics.Middle;
+
+    // Default realistic blush-pink base when no custom color
+    const baseColorStyle = nail?.customColor
+      ? colorStyle
+      : { background: 'linear-gradient(to bottom, #fff0f3 0%, #ffd6db 45%, #fecdd3 100%)' };
+
+    return (
+      <div
+        className="group relative flex flex-col items-center gap-2 transition-all duration-700 ease-out"
+        style={{
+          marginBottom: lift,
+          transform: `rotate(${rotate}deg)`,
+        }}
+      >
+        {/* Container with hover lift */}
+        <div
+          className="relative transition-transform duration-700 ease-out group-hover:-translate-y-3"
+          style={{ height, width }}
+        >
+          {/* 🌟 Soft realistic shadow beneath nail */}
+          <div className="absolute -bottom-3 left-1/2 h-4 w-[75%] -translate-x-1/2 rounded-full bg-gradient-radial from-[#ea4f93]/25 via-[#ea4f93]/10 to-transparent blur-lg opacity-60 transition-opacity duration-700 group-hover:opacity-90" />
+
+          {/* 💅 Main nail card (Showcase Display Slot) */}
+          <div
+            className={`relative h-full w-full transition-all duration-500 rounded-[32px] ${isFingerSelectedWithAccessory
+              ? "border border-[#ea4f93] bg-gradient-to-b from-[#fff2f6] to-[#fffbfc] shadow-[0_20px_40px_rgba(236,72,153,0.15)] ring-2 ring-[#ea4f93]/20 scale-[1.02]"
+              : "bg-gradient-to-b from-white/60 to-[#fffafc]/40 shadow-[0_12px_24px_rgba(236,72,153,0.02)] hover:bg-white/80"
+              }`}
+          >
+
+            {/* Base color & texture layer - masked to nail shape */}
+            <div
+              className="absolute inset-0 h-full w-full"
+              style={nail?.nailShape?.imageUrl ? maskStyle : {
+                width: '60%',
+                height: '80%',
+                left: '20%',
+                top: '10%',
+                position: 'absolute',
+                clipPath: 'url(#clip-nail-default)'
+              }}
+            >
+              {/* Layer 1: Base color */}
+              <div className="absolute inset-0 h-full w-full" style={baseColorStyle} />
+
+              {/* Layer 2: Surface Effects - inside mask, clipped to nail shape */}
+              {renderSurfaceEffects(nail?.nailSurface?.name, nail?.nailSurface?.shaderParam)}
             </div>
-          );
-        })}
+
+            {/* Layer 4: Shape mask overlay with depth */}
+            {nail?.nailShape?.imageUrl && (
+              <img
+                src={nail.nailShape.imageUrl}
+                alt="shape mask"
+                className="pointer-events-none absolute inset-0 h-full w-full object-contain mix-blend-multiply opacity-85 transition-opacity duration-500 group-hover:opacity-90"
+              />
+            )}
+
+            {/* Layer 5: Components / ornaments with premium target indicators */}
+            {components.map((comp, idx) => {
+              const item = comp.component || comp.customerComponent;
+              if (!item?.imageUrl) return null;
+
+              const config = parseComponentConfig(comp.configJson);
+              const scale = Number.isFinite(Number(config?.scale)) ? Number(config.scale) : 1;
+              const rotation = Number.isFinite(Number(config?.rotation)) ? Number(config.rotation) : 0;
+              const left = normalizeComponentPosition(comp.posX, 50);
+              const top = normalizeComponentPosition(comp.posY, 50);
+
+              const globalIdx = componentsList.findIndex(c => c.customerNailComponentId === comp.customerNailComponentId);
+              const globalId = comp.customerNailComponentId || globalIdx;
+              const isSelected = selectedComponentId !== null && (
+                selectedComponentId === comp.customerNailComponentId ||
+                (comp.customerNailComponentId === null && globalIdx === selectedComponentId)
+              );
+
+              const displayScale = Math.max(1, scale * 1.25);
+
+              return (
+                <div
+                  key={comp.customerNailComponentId || idx}
+                  className="absolute pointer-events-auto cursor-pointer transition-all duration-300"
+                  style={{
+                    left: `${left}%`,
+                    top: `${top}%`,
+                    transform: `translate(-50%, -50%) scale(${isSelected ? displayScale * 1.15 : displayScale}) rotate(${rotation}deg)`,
+                    width: '42px',
+                    height: '42px',
+                    zIndex: isSelected ? 50 : 30,
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedComponentId(prev => prev === globalId ? null : globalId);
+                    const element = document.getElementById(`component-card-${globalId}`);
+                    if (element) {
+                      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                  }}
+                >
+                  {/* High-fidelity selection indicator */}
+                  {isSelected && (
+                    <>
+                      {/* Rotating dash focus ring */}
+                      <div className="absolute -inset-2.5 rounded-full border border-dashed border-[#ea4f93] animate-[spin_10s_linear_infinite] opacity-90" />
+                      {/* Glowing focus aura */}
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-[#ea4f93]/25 to-[#f472b6]/25 blur-sm scale-110" />
+                      {/* Target dots */}
+                      <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#ea4f93] shadow-[0_0_8px_#ea4f93]" />
+                      <div className="absolute -bottom-3.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#ea4f93] shadow-[0_0_8px_#ea4f93]" />
+                    </>
+                  )}
+
+                  <img
+                    src={item.imageUrl}
+                    alt={item.name}
+                    className={`h-full w-full object-contain transition-all duration-300 ${isSelected
+                      ? "drop-shadow-[0_0_12px_rgba(234,79,147,0.85)] scale-110"
+                      : "drop-shadow-[0_4px_8px_rgba(0,0,0,0.18)] hover:scale-110"
+                      }`}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Finger label with interactive state */}
+        <span
+          className={`rounded-full border-2 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] backdrop-blur-sm transition-all duration-500 ${isFingerSelectedWithAccessory
+            ? "border-[#ea4f93] bg-[#ea4f93] text-white shadow-[0_12px_28px_rgba(236,72,153,0.2)] scale-105"
+            : "border-[#fce6f3] bg-white/95 text-[#c08aa4] shadow-[0_8px_20px_rgba(236,72,153,0.08)] group-hover:scale-105 group-hover:border-[#ea4f93] group-hover:bg-[#ea4f93] group-hover:text-white"
+            }`}
+        >
+          {fingerName}
+        </span>
       </div>
+    );
+  };
+
+  return (
+    <div className="space-y-4">
+      <SectionHeading
+        title="Custom Design Live Preview"
+        subtitle="Interactive 3D preview showing nail shape, color blend, surface texture, and accessories in realistic hand positioning."
+      />
+      {/* Hidden SVG Defs for 3D Nail Shapes */}
+      <svg style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }} aria-hidden="true">
+        <defs>
+          <clipPath id="clip-nail-almond" clipPathUnits="objectBoundingBox">
+            <path d="M 0.22,1 C 0.16,0.65 0.22,0.18 0.5,0.02 C 0.78,0.18 0.84,0.65 0.78,1 Z" />
+          </clipPath>
+          <clipPath id="clip-nail-coffin" clipPathUnits="objectBoundingBox">
+            <path d="M 0.22,1 C 0.2,0.7 0.3,0.2 0.32,0.12 L 0.68,0.12 C 0.7,0.2 0.8,0.7 0.78,1 Z" />
+          </clipPath>
+          <clipPath id="clip-nail-stiletto" clipPathUnits="objectBoundingBox">
+            <path d="M 0.25,1 C 0.22,0.7 0.32,0.2 0.5,0.02 C 0.68,0.2 0.78,0.7 0.75,1 Z" />
+          </clipPath>
+          <clipPath id="clip-nail-square" clipPathUnits="objectBoundingBox">
+            <path d="M 0.22,1 L 0.22,0.15 C 0.22,0.08 0.28,0.02 0.35,0.02 L 0.65,0.02 C 0.72,0.02 0.78,0.08 0.78,0.15 L 0.78,1 Z" />
+          </clipPath>
+          <clipPath id="clip-nail-default" clipPathUnits="objectBoundingBox">
+            <path d="M 0.22,1 C 0.16,0.65 0.22,0.18 0.5,0.02 C 0.78,0.18 0.84,0.65 0.78,1 Z" />
+          </clipPath>
+        </defs>
+      </svg>
+      <div className="relative rounded-[24px] border border-[#f7d7e5] bg-[radial-gradient(circle_at_top,#fffdfd_0%,#fff6fb_58%,#fff2f8_100%)] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+        <div className="flex min-h-[360px] flex-wrap items-center justify-center gap-5 lg:gap-6">
+          {renderNailPreview(1, "Thumb")}
+          {renderNailPreview(2, "Index")}
+          {renderNailPreview(3, "Middle")}
+          {renderNailPreview(4, "Ring")}
+          {renderNailPreview(5, "Pinky")}
+        </div>
+
+        <div className="absolute right-6 top-6 flex flex-col gap-2 rounded-2xl border border-white/70 bg-white/90 p-3 shadow-lg backdrop-blur-sm">
+          <span className="text-[9px] font-bold uppercase tracking-wider text-[#c08aa4]">Design Info</span>
+          <div className="flex items-center gap-2">
+            <span className="rounded-lg bg-[#fff0f8] px-2 py-1 text-[10px] font-bold text-[#ea4f93]">
+              {nail?.nailShape?.name || "Custom"}
+            </span>
+            <span className="rounded-lg bg-[#fff0f8] px-2 py-1 text-[10px] font-bold text-[#ea4f93]">
+              {nail?.nailSurface?.name || "Glossy"}
+            </span>
+          </div>
+          <span className="text-[10px] font-semibold text-[#9c6f87]">
+            {(componentsList || []).length} add-ons
+          </span>
+        </div>
+      </div>
+      
+      {/* Selected Components / Accessories */}
+      {componentsList.length > 0 && (
+        <div className="mt-6">
+          <SectionHeading
+            title="Components & Ornaments"
+            subtitle="Individual stickers, gems, and 3D decors requested. Click any card to highlight it on the nail preview."
+          />
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {componentsList.map((itemComponent, idx) => {
+              const comp = itemComponent.component || itemComponent.customerComponent;
+              if (!comp) return null;
+
+              const globalId = itemComponent.customerNailComponentId || idx;
+              const isCardSelected = selectedComponentId === globalId;
+
+              return (
+                <div
+                  key={itemComponent.customerNailComponentId || idx}
+                  id={`component-card-${globalId}`}
+                  onClick={() => setSelectedComponentId(prev => prev === globalId ? null : globalId)}
+                  className={`rounded-2xl border p-4 flex items-center justify-between gap-3.5 cursor-pointer transition-all duration-300 hover:-translate-y-0.5 hover:border-[#ea4f93] ${isCardSelected
+                    ? "border-[#ea4f93] bg-gradient-to-br from-[#fff2f7] to-[#fffafc] shadow-[0_12px_28px_rgba(236,72,153,0.12)] scale-[1.02]"
+                    : "border-[#f6d4e3] bg-gradient-to-br from-white to-[#fffbfd] shadow-[0_8px_20px_rgba(236,72,153,0.03)]"
+                    }`}
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    {comp.imageUrl ? (
+                      <img
+                        src={comp.imageUrl}
+                        alt={comp.name}
+                        className="h-14 w-14 rounded-xl border border-[#f5c6db] bg-[#fffafc] object-contain p-1 shrink-0"
+                      />
+                    ) : (
+                      <div className="h-14 w-14 rounded-xl bg-pink-100 flex items-center justify-center text-pink-600 text-xs font-bold shrink-0">
+                        Decor
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-[#3f2240] truncate">{comp.name || "Custom Accessory"}</p>
+                      <p className="mt-0.5 text-xs text-[#a37e93]">
+                        Type: {comp.componentType || "Sticker/Gem"} • Finger: {itemComponent.fingerIndex}
+                      </p>
+                      {comp.price ? (
+                        <p className="mt-1 text-xs text-[#ea4f93] font-semibold">+{formatVND(comp.price)}</p>
+                      ) : null}
+                    </div>
+                  </div>
+                  {isCardSelected && (
+                    <span className="rounded-full bg-[#ea4f93] p-1.5 text-white shadow-sm shrink-0 animate-pulse">
+                      <Sparkles size={12} />
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

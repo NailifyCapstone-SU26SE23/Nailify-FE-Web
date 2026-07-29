@@ -171,4 +171,16 @@ export const dashboardService = {
       throw error;
     }
   },
+  getChairsStatus: async (salonId, atDate, atTime) => {
+    try {
+      const response = await axiosClient.get(`/salons/${salonId}/chairs-status`, {
+        params: { atDate, atTime },
+        headers: getAuthHeaders(),
+      });
+      return unwrapResponse(response, "Failed to load chairs status");
+    } catch (error) {
+      console.error("Error fetching chairs status", error);
+      throw error;
+    }
+  },
 };

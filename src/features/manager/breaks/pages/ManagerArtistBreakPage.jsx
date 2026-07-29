@@ -21,6 +21,10 @@ import {
   Coffee,
   MessageSquareText,
   UserCheck,
+  ClipboardList,
+  ClipboardClock,
+  CircleCheck,
+  CircleX,
 } from "lucide-react";
 import { Pagination } from "../../../../shared/components/common/Pagination";
 import { EmptyState } from "../../../../shared/components/common/EmptyState";
@@ -210,7 +214,7 @@ export function ManagerArtistBreakPage() {
       case "đồng ý":
       case "active":
         return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-extrabold text-emerald-700 border border-emerald-200/90 shadow-2xs">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 border border-emerald-200/90 shadow-2xs">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
             Approved
           </span>
@@ -219,7 +223,7 @@ export function ManagerArtistBreakPage() {
       case "từ chối":
       case "không đồng ý":
         return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-3 py-1 text-xs font-extrabold text-rose-700 border border-rose-200/90 shadow-2xs">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700 border border-rose-200/90 shadow-2xs">
             <span className="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
             Rejected
           </span>
@@ -228,7 +232,7 @@ export function ManagerArtistBreakPage() {
       case "chờ duyệt":
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-extrabold text-amber-800 border border-amber-200/90 shadow-2xs">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800 border border-amber-200/90 shadow-2xs">
             <span className="h-2 w-2 rounded-full bg-amber-500 animate-ping"></span>
             Pending
           </span>
@@ -259,7 +263,7 @@ export function ManagerArtistBreakPage() {
 
         <div className="relative z-10 flex flex-wrap items-center justify-between gap-6">
           <div className="space-y-1.5 max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1 text-xs font-extrabold text-[#F2D6E3] backdrop-blur-md border border-white/15">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1 text-xs font-bold text-[#F2D6E3] backdrop-blur-md border border-white/15">
               <Sparkles size={14} className="text-[#C97A9E]" /> Manager Portal • Shift Management
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white flex items-center gap-3">
@@ -296,12 +300,36 @@ export function ManagerArtistBreakPage() {
 
       {/* Luxury KPI Stat Cards Grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Total Card */}
+        <div
+          onClick={() => setFilterStatus("all")}
+          className={`group relative overflow-hidden rounded-3xl p-5 transition-all duration-300 cursor-pointer border ${filterStatus === "all"
+            ? "bg-gradient-to-br from-[#C97A9E]/25 via-[#C97A9E]/10 to-[#C97A9E]/5 border-[#C97A9E] ring-2 ring-[#C97A9E]/40 shadow-xl shadow-[#C97A9E]/10"
+            : "bg-white border-gray-100 hover:border-purple-300 hover:shadow-lg hover:-translate-y-1"
+            }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#9E4D76] flex items-center gap-1.5">
+              <Sparkles size={13} className="text-[#C97A9E]" />
+              Total Requests
+            </span>
+            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#FAF0F5] text-[#C97A9E] font-bold text-xs group-hover:scale-110 transition-transform">
+              <ClipboardList />
+            </div>
+          </div>
+          <p className="mt-3 text-3xl font-bold text-[#221F26] tracking-tight">{stats.total}</p>
+          <div className="mt-2 flex items-center justify-between pt-2 border-t border-[#F2D6E3]/60">
+            <span className="text-[11px] font-semibold text-[#9E4D76]">All submitted requests</span>
+            <ArrowUpRight size={14} className="text-[#C97A9E] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+          </div>
+        </div>
+
         {/* Pending Card */}
         <div
           onClick={() => setFilterStatus("pending")}
           className={`group relative overflow-hidden rounded-3xl p-5 transition-all duration-300 cursor-pointer border ${filterStatus === "pending"
-              ? "bg-gradient-to-br from-amber-500/20 via-amber-500/10 to-amber-500/5 border-amber-400 ring-2 ring-amber-400/50 shadow-xl shadow-amber-500/10"
-              : "bg-white border-gray-100 hover:border-amber-300 hover:shadow-lg hover:-translate-y-1"
+            ? "bg-gradient-to-br from-amber-500/20 via-amber-500/10 to-amber-500/5 border-amber-400 ring-2 ring-amber-400/50 shadow-xl shadow-amber-500/10"
+            : "bg-white border-gray-100 hover:border-amber-300 hover:shadow-lg hover:-translate-y-1"
             }`}
         >
           <div className="flex items-center justify-between">
@@ -310,7 +338,7 @@ export function ManagerArtistBreakPage() {
               Pending Approval
             </span>
             <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-100/80 text-amber-800 font-bold text-xs group-hover:scale-110 transition-transform">
-              ⏳
+              <ClipboardClock />
             </div>
           </div>
           <p className="mt-3 text-3xl font-bold text-amber-950 tracking-tight">{stats.pending}</p>
@@ -324,8 +352,8 @@ export function ManagerArtistBreakPage() {
         <div
           onClick={() => setFilterStatus("approved")}
           className={`group relative overflow-hidden rounded-3xl p-5 transition-all duration-300 cursor-pointer border ${filterStatus === "approved"
-              ? "bg-gradient-to-br from-emerald-500/20 via-emerald-500/10 to-emerald-500/5 border-emerald-400 ring-2 ring-emerald-400/50 shadow-xl shadow-emerald-500/10"
-              : "bg-white border-gray-100 hover:border-emerald-300 hover:shadow-lg hover:-translate-y-1"
+            ? "bg-gradient-to-br from-emerald-500/20 via-emerald-500/10 to-emerald-500/5 border-emerald-400 ring-2 ring-emerald-400/50 shadow-xl shadow-emerald-500/10"
+            : "bg-white border-gray-100 hover:border-emerald-300 hover:shadow-lg hover:-translate-y-1"
             }`}
         >
           <div className="flex items-center justify-between">
@@ -334,7 +362,7 @@ export function ManagerArtistBreakPage() {
               Approved Breaks
             </span>
             <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-emerald-100/80 text-emerald-800 font-bold text-xs group-hover:scale-110 transition-transform">
-              🟢
+              <CircleCheck />
             </div>
           </div>
           <p className="mt-3 text-3xl font-bold text-emerald-950 tracking-tight">{stats.approved}</p>
@@ -348,8 +376,8 @@ export function ManagerArtistBreakPage() {
         <div
           onClick={() => setFilterStatus("rejected")}
           className={`group relative overflow-hidden rounded-3xl p-5 transition-all duration-300 cursor-pointer border ${filterStatus === "rejected"
-              ? "bg-gradient-to-br from-rose-500/20 via-rose-500/10 to-rose-500/5 border-rose-400 ring-2 ring-rose-400/50 shadow-xl shadow-rose-500/10"
-              : "bg-white border-gray-100 hover:border-rose-300 hover:shadow-lg hover:-translate-y-1"
+            ? "bg-gradient-to-br from-rose-500/20 via-rose-500/10 to-rose-500/5 border-rose-400 ring-2 ring-rose-400/50 shadow-xl shadow-rose-500/10"
+            : "bg-white border-gray-100 hover:border-rose-300 hover:shadow-lg hover:-translate-y-1"
             }`}
         >
           <div className="flex items-center justify-between">
@@ -358,7 +386,7 @@ export function ManagerArtistBreakPage() {
               Rejected Requests
             </span>
             <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-rose-100/80 text-rose-800 font-bold text-xs group-hover:scale-110 transition-transform">
-              🔴
+              <CircleX />
             </div>
           </div>
           <p className="mt-3 text-3xl font-bold text-rose-950 tracking-tight">{stats.rejected}</p>
@@ -368,42 +396,20 @@ export function ManagerArtistBreakPage() {
           </div>
         </div>
 
-        {/* Total Card */}
-        <div
-          onClick={() => setFilterStatus("all")}
-          className={`group relative overflow-hidden rounded-3xl p-5 transition-all duration-300 cursor-pointer border ${filterStatus === "all"
-              ? "bg-gradient-to-br from-[#C97A9E]/25 via-[#C97A9E]/10 to-[#C97A9E]/5 border-[#C97A9E] ring-2 ring-[#C97A9E]/40 shadow-xl shadow-[#C97A9E]/10"
-              : "bg-white border-gray-100 hover:border-purple-300 hover:shadow-lg hover:-translate-y-1"
-            }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#9E4D76] flex items-center gap-1.5">
-              <Sparkles size={13} className="text-[#C97A9E]" />
-              Total Requests
-            </span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#FAF0F5] text-[#C97A9E] font-bold text-xs group-hover:scale-110 transition-transform">
-              📋
-            </div>
-          </div>
-          <p className="mt-3 text-3xl font-bold text-[#221F26] tracking-tight">{stats.total}</p>
-          <div className="mt-2 flex items-center justify-between pt-2 border-t border-[#F2D6E3]/60">
-            <span className="text-[11px] font-semibold text-[#9E4D76]">All submitted requests</span>
-            <ArrowUpRight size={14} className="text-[#C97A9E] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-          </div>
-        </div>
+
       </div>
 
       {/* Modern Filter Toolbar & Search Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-gray-200/90 bg-white p-4 shadow-sm">
         <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[300px]">
           {/* Status Filter Segmented Tabs */}
-          <div className="flex items-center gap-1 bg-gray-100/90 p-1.5 rounded-2xl border border-gray-200/50">
+          {/* <div className="flex items-center gap-1 bg-gray-100/90 p-1.5 rounded-2xl border border-gray-200/50">
             <button
               type="button"
               onClick={() => setFilterStatus("all")}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${filterStatus === "all"
-                  ? "bg-white text-[#221F26] shadow-sm scale-102"
-                  : "text-gray-500 hover:text-gray-900"
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${filterStatus === "all"
+                ? "bg-white text-[#221F26] shadow-sm scale-102"
+                : "text-gray-500 hover:text-gray-900"
                 }`}
             >
               All ({stats.total})
@@ -411,34 +417,34 @@ export function ManagerArtistBreakPage() {
             <button
               type="button"
               onClick={() => setFilterStatus("pending")}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${filterStatus === "pending"
-                  ? "bg-amber-500 text-white shadow-md shadow-amber-500/30 scale-102"
-                  : "text-amber-800 hover:bg-amber-100/60"
+              className={`px-3.5 flex items-center gap-1 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${filterStatus === "pending"
+                ? "bg-amber-500 text-white shadow-md shadow-amber-500/30 scale-102"
+                : "text-amber-800 hover:bg-amber-100/60"
                 }`}
             >
-              ⏳ Pending ({stats.pending})
+              <ClipboardClock size={15} /> <span>Pending ({stats.pending})</span>
             </button>
             <button
               type="button"
               onClick={() => setFilterStatus("approved")}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${filterStatus === "approved"
-                  ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/30 scale-102"
-                  : "text-emerald-800 hover:bg-emerald-100/60"
+              className={`px-3.5 flex items-center gap-1 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${filterStatus === "approved"
+                ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/30 scale-102"
+                : "text-emerald-800 hover:bg-emerald-100/60"
                 }`}
             >
-              🟢 Approved ({stats.approved})
+              <CheckCircle2 size={15} /> <span>Approved ({stats.approved})</span>
             </button>
             <button
               type="button"
               onClick={() => setFilterStatus("rejected")}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${filterStatus === "rejected"
-                  ? "bg-rose-600 text-white shadow-md shadow-rose-600/30 scale-102"
-                  : "text-rose-800 hover:bg-rose-100/60"
+              className={`px-3.5 flex items-center gap-1 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${filterStatus === "rejected"
+                ? "bg-rose-600 text-white shadow-md shadow-rose-600/30 scale-102"
+                : "text-rose-800 hover:bg-rose-100/60"
                 }`}
             >
-              🔴 Rejected ({stats.rejected})
+              <CircleX size={15} /> <span>Rejected ({stats.rejected})</span>
             </button>
-          </div>
+          </div> */}
 
           {/* Search Query Input */}
           <div className="relative min-w-[200px] flex-1">
@@ -502,7 +508,7 @@ export function ManagerArtistBreakPage() {
                 setSearchQuery("");
                 setCurrentPage(1);
               }}
-              className="rounded-2xl bg-gray-100 hover:bg-gray-200 px-3.5 py-1.5 text-xs font-extrabold text-gray-700 transition cursor-pointer"
+              className="rounded-2xl bg-gray-100 hover:bg-gray-200 px-3.5 py-1.5 text-xs font-bold text-gray-700 transition cursor-pointer"
             >
               Reset Filters
             </button>
@@ -560,12 +566,12 @@ export function ManagerArtistBreakPage() {
                               {artistName.charAt(0).toUpperCase()}
                             </div>
                             <div className="flex flex-col min-w-0">
-                              <span className="font-extrabold text-[#221F26] text-xs truncate">
+                              <span className="font-bold text-[#221F26] text-xs truncate">
                                 {artistName}
                               </span>
-                              <span className="text-[10px] font-mono text-gray-400 truncate">
+                              {/* <span className="text-[10px] font-mono text-gray-400 truncate">
                                 ID: {String(item.nailArtistBreakId).slice(0, 8)}
-                              </span>
+                              </span> */}
                             </div>
                           </div>
                         </td>
@@ -581,7 +587,7 @@ export function ManagerArtistBreakPage() {
                         {/* Time Slot & Duration */}
                         <td className="px-6 py-4">
                           <div className="flex flex-col gap-1 items-start">
-                            <div className="flex items-center gap-1.5 font-extrabold text-gray-900 bg-purple-50/70 px-3 py-1 rounded-xl border border-purple-100 inline-flex">
+                            <div className="flex items-center gap-1.5 font-bold text-gray-900 bg-purple-50/70 px-3 py-1 rounded-xl border border-purple-100 inline-flex">
                               <Clock3 size={13} className="text-[#C97A9E]" />
                               <span>
                                 {item.startTime?.substring(0, 5)} - {item.endTime?.substring(0, 5)}
@@ -630,7 +636,7 @@ export function ManagerArtistBreakPage() {
                                     setSelectedBreak(item);
                                     setIsApproveModalOpen(true);
                                   }}
-                                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-extrabold text-xs shadow-md shadow-emerald-600/20 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xs shadow-md shadow-emerald-600/20 hover:scale-105 active:scale-95 transition-all cursor-pointer"
                                 >
                                   <Check size={14} strokeWidth={2.5} /> Approve
                                 </button>
@@ -641,13 +647,13 @@ export function ManagerArtistBreakPage() {
                                     setRejectReasonInput("");
                                     setIsRejectModalOpen(true);
                                   }}
-                                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 text-white font-extrabold text-xs shadow-md shadow-rose-600/20 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 text-white font-bold text-xs shadow-md shadow-rose-600/20 hover:scale-105 active:scale-95 transition-all cursor-pointer"
                                 >
                                   <X size={14} strokeWidth={2.5} /> Reject
                                 </button>
                               </>
                             ) : (
-                              <span className="text-[11px] font-extrabold text-gray-400 bg-gray-100 px-2.5 py-1 rounded-lg">
+                              <span className="text-[11px] font-bold text-gray-400 bg-gray-100 px-2.5 py-1 rounded-lg">
                                 Processed
                               </span>
                             )}
@@ -737,7 +743,7 @@ export function ManagerArtistBreakPage() {
               <XCircle size={22} />
             </div>
             <div>
-              <h3 className="text-base font-extrabold text-[#221F26]">Reject Break Request</h3>
+              <h3 className="text-base font-bold text-[#221F26]">Reject Break Request</h3>
               <p className="text-xs text-gray-500 font-medium">
                 Please provide a reason for declining this request.
               </p>
@@ -746,7 +752,7 @@ export function ManagerArtistBreakPage() {
 
           {selectedBreak && (
             <div className="p-3.5 bg-rose-50/70 rounded-2xl border border-rose-200/70 text-xs space-y-1.5">
-              <p className="font-extrabold text-rose-950">
+              <p className="font-bold text-rose-950">
                 Nail Artist: {getArtistName(selectedBreak.nailArtistId)}
               </p>
               <p className="text-rose-800 font-semibold">
@@ -757,7 +763,7 @@ export function ManagerArtistBreakPage() {
           )}
 
           <div className="space-y-1.5">
-            <label className="block text-xs font-extrabold text-[#221F26]">
+            <label className="block text-xs font-bold text-[#221F26]">
               Rejection Reason (Sent to artist):
             </label>
             <Input.TextArea
@@ -777,7 +783,7 @@ export function ManagerArtistBreakPage() {
                 setSelectedBreak(null);
                 setRejectReasonInput("");
               }}
-              className="px-4 py-2 rounded-xl text-xs font-extrabold text-gray-600 bg-gray-100 hover:bg-gray-200 transition cursor-pointer"
+              className="px-4 py-2 rounded-xl text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition cursor-pointer"
             >
               Cancel
             </button>
@@ -785,7 +791,7 @@ export function ManagerArtistBreakPage() {
               type="button"
               onClick={handleRejectConfirm}
               disabled={isActionLoading}
-              className="px-4 py-2 rounded-xl text-xs font-extrabold text-white bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 transition cursor-pointer shadow-md shadow-rose-600/20 inline-flex items-center gap-1.5"
+              className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 transition cursor-pointer shadow-md shadow-rose-600/20 inline-flex items-center gap-1.5"
             >
               {isActionLoading && <Spin size="small" />}
               <span>Confirm Rejection</span>

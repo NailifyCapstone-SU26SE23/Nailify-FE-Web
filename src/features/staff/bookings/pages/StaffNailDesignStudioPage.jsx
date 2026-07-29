@@ -253,7 +253,7 @@ function formatOptionMeta(option) {
 }
 
 function buildDesignTemplateFromApi(item) {
-  const imageUrl = Array.isArray(item?.imageUrls) ? item.imageUrls.find(Boolean) : "";
+  const imageUrl = String(item?.imageUrl || "").trim();
   const categories = Array.isArray(item?.categories) ? item.categories.map((category) => category?.name).filter(Boolean) : [];
   const firstVariant = Array.isArray(item?.nailVariants) ? item.nailVariants[0] : null;
   const duration = Number(firstVariant?.duration || 0);
