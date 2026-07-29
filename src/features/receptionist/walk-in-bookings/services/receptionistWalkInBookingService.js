@@ -157,6 +157,18 @@ export const receptionistWalkInBookingService = {
     }
   },
 
+  getArtistSchedule: async (artistId, startDate, endDate) => {
+    try {
+      const response = await axiosClient.get(`/Schedules/artist/${artistId}`, {
+        params: { startDate, endDate }
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching schedule for artist ${artistId}:`, error);
+      throw error;
+    }
+  },
+
   searchCustomers: async (searchTerm) => {
     try {
       const response = await axiosClient.get("/Users", {

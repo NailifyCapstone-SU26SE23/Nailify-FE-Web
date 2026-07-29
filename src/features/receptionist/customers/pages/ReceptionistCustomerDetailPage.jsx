@@ -196,24 +196,24 @@ export function ReceptionistCustomerDetailPage() {
     return null;
   }, [loyaltyTiers, customerTier]);
 
-  const promotionMessage = useMemo(() => {
-    if (!promotions || promotions.length === 0) return "Tích điểm để nhận nhiều ưu đãi!";
+  // const promotionMessage = useMemo(() => {
+  //   if (!promotions || promotions.length === 0) return "Tích điểm để nhận nhiều ưu đãi!";
 
-    // Tìm khuyến mãi Active phù hợp không phải đền bù
-    const activePromos = promotions.filter(p => p.status === 'Active' && p.situation !== 'Cancelled' && p.situation !== 'Reschedule');
+  //   // Tìm khuyến mãi Active phù hợp không phải đền bù
+  //   const activePromos = promotions.filter(p => p.status === 'Active' && p.situation !== 'Cancelled' && p.situation !== 'Reschedule');
 
-    if (activePromos.length > 0) {
-      const p = activePromos[0];
-      if (p.discountType === 'Percentage') {
-        return `Đủ điều kiện đổi ưu đãi ${p.discountValue}%`;
-      } else if (p.discountType === 'FixedAmount') {
-        return `Đủ điều kiện đổi ưu đãi ${p.discountValue.toLocaleString('vi-VN')}đ`;
-      }
-      return `Đủ điều kiện đổi: ${p.name}`;
-    }
+  //   if (activePromos.length > 0) {
+  //     const p = activePromos[0];
+  //     if (p.discountType === 'Percentage') {
+  //       return `Đủ điều kiện đổi ưu đãi ${p.discountValue}%`;
+  //     } else if (p.discountType === 'FixedAmount') {
+  //       return `Đủ điều kiện đổi ưu đãi ${p.discountValue.toLocaleString('vi-VN')}đ`;
+  //     }
+  //     return `Đủ điều kiện đổi: ${p.name}`;
+  //   }
 
-    return "Tích điểm để nhận nhiều ưu đãi!";
-  }, [promotions]);
+  //   return "Tích điểm để nhận nhiều ưu đãi!";
+  // }, [promotions]);
 
   const handleCreateWalkIn = () => {
     if (!customer) return;
@@ -446,9 +446,9 @@ export function ReceptionistCustomerDetailPage() {
               <p className="text-3xl font-bold text-amber-300">
                 {customer.loyaltyPoint || 0} <span className="text-xs font-extrabold text-white">pts</span>
               </p>
-              <span className="inline-block rounded-full bg-amber-400/20 border border-amber-400/40 px-2.5 py-0.5 text-[9.5px] font-bold text-amber-200">
+              {/* <span className="inline-block rounded-full bg-amber-400/20 border border-amber-400/40 px-2.5 py-0.5 text-[9.5px] font-bold text-amber-200">
                 {promotionMessage}
-              </span>
+              </span> */}
             </div>
           </div>
         </div>

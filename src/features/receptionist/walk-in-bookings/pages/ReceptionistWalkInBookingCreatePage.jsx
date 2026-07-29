@@ -351,7 +351,7 @@ export function ReceptionistWalkInBookingCreatePage() {
                       className="overflow-hidden rounded-[18px] border border-[#f5d6e3] bg-white text-left hover:border-[#ea4f93]"
                     >
                       <div className="h-24 overflow-hidden bg-gray-50">
-                        <img src={design.imageUrls?.[0] || "https://images.unsplash.com/photo-1604902396830-aca29e19b067?auto=format&fit=crop&w=600&q=80"} alt={design.name} className="h-full w-full object-cover" />
+                        <img src={design.imageUrl || "https://images.unsplash.com/photo-1604902396830-aca29e19b067?auto=format&fit=crop&w=600&q=80"} alt={design.name} className="h-full w-full object-cover" />
                       </div>
                       <div className="p-3">
                         <p className="text-sm font-bold text-[#432744] truncate">{design.name}</p>

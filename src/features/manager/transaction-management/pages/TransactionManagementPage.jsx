@@ -14,7 +14,8 @@ import {
   RefreshCw,
   Wallet,
   Calendar,
-  Check
+  Check,
+  CircleCheck
 } from "lucide-react";
 import { formatCurrency } from "../../../../shared/utils/formatCurrency";
 import { Pagination } from "../../../../shared/components/common/Pagination";
@@ -279,12 +280,15 @@ export function TransactionManagementPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Revenue Metric */}
           <div className="relative overflow-hidden rounded-[2.5rem] border border-[#f1e7ed]/60 bg-white/70 backdrop-blur-md p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.02)] border-l-4 border-l-emerald-500/80 transition-all duration-500 hover:-translate-y-1.5 hover:shadow-[0_30px_50px_-15px_rgba(234,79,147,0.06)] group">
-            <span className="absolute top-4 right-4 flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
+            {/* <span className="absolute top-4 right-4 flex h-2 w-2"> */}
+
             <div className="flex justify-between items-start">
               <span className="text-[10px] font-bold uppercase tracking-wider text-[#a88a9f]">Total Revenue</span>
+              <span className="p-2 rounded-xl bg-green-50 text-green-600 transition-colors group-hover:bg-green-100">
+                {/* <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span> */}
+                <CircleCheck size={20} color="#10b981" />
+              </span>
             </div>
             <div className="mt-5">
               <span className="text-3xl md:text-4xl font-mono font-bold text-[#2d1b35] tracking-tight">
@@ -589,12 +593,12 @@ export function TransactionManagementPage() {
                   {renderStatusBadge(selectedTransaction.status)}
                   {bookingDetails && (
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full border ${selectedTransaction.amount === bookingDetails.amountDue
-                        ? "bg-[#fff2f7] text-[#ea4f93] border-[#ea4f93]/20"
-                        : selectedTransaction.amount === bookingDetails.amountPaid
-                          ? "bg-indigo-50 text-indigo-700 border-indigo-500/20"
-                          : selectedTransaction.amount === bookingDetails.totalPrice
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-500/20"
-                            : "bg-slate-50 text-slate-600 border-slate-200"
+                      ? "bg-[#fff2f7] text-[#ea4f93] border-[#ea4f93]/20"
+                      : selectedTransaction.amount === bookingDetails.amountPaid
+                        ? "bg-indigo-50 text-indigo-700 border-indigo-500/20"
+                        : selectedTransaction.amount === bookingDetails.totalPrice
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-500/20"
+                          : "bg-slate-50 text-slate-600 border-slate-200"
                       }`}>
                       {selectedTransaction.amount === bookingDetails.amountDue
                         ? "Đặt cọc (Deposit)"

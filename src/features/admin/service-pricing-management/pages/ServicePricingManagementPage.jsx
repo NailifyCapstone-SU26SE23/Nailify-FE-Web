@@ -13,7 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Table } from "antd";
+import { Table, Tooltip } from "antd";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import { PropTypes } from "../../../../shared/utils/propTypes";
@@ -583,7 +583,13 @@ export function ServicePricingManagementPage() {
       ),
       dataIndex: "name",
       key: "name",
-      render: (value) => <span className="text-sm font-bold text-[#432744]">{value}</span>,
+      render: (value) => (
+        <Tooltip title={value} placement="topLeft">
+          <div className="max-w-[200px] truncate text-sm font-bold text-[#432744]">
+            {value}
+          </div>
+        </Tooltip>
+      ),
     },
     {
       title: (
@@ -738,7 +744,7 @@ export function ServicePricingManagementPage() {
                 dataSource={sortedServices}
                 loading={isLoadingServices}
                 pagination={false}
-                scroll={{ x: 1080 }}
+                scroll={{ x: 800 }}
                 locale={{ emptyText: serviceLoadError || "No services found." }}
               />
 
