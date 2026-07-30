@@ -76,7 +76,7 @@ export function StaffSkillAssessmentSection({ onRatingChange, ratings, skillType
           <Sparkles size={20} />
         </div>
         <div>
-          <h2 className="text-base font-extrabold text-slate-900 font-serif">Skills & Specialties</h2>
+          <h2 className="text-base font-extrabold text-slate-900 ">Skills & Specialties</h2>
           <p className="text-xs text-slate-500 font-medium">
             Rate each core skill to map the staff member's artisan specialties and level.
           </p>

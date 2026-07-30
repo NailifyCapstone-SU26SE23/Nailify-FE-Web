@@ -154,13 +154,13 @@ export const MENU_CONFIG = {
       icon: "clock",
       section: "Main",
     },
-    {
-      key: "receptionist-waitlist",
-      label: "Salon Waitlist",
-      to: ROUTES.receptionistWaitlist,
-      icon: "support",
-      section: "Main",
-    },
+    // {
+    //   key: "receptionist-waitlist",
+    //   label: "Salon Waitlist",
+    //   to: ROUTES.receptionistWaitlist,
+    //   icon: "support",
+    //   section: "Main",
+    // },
     {
       key: "receptionist-chairs",
       label: "Chairs",

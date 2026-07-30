@@ -318,7 +318,7 @@ export function UpdateQuiz() {
                     >
                         <ChevronLeft size={13} strokeWidth={2.5} /> Back to Quiz Management
                     </Link>
-                    <h1 className="mt-2.5 font-serif text-[2rem] leading-tight text-[#3f2034] md:text-[2.4rem]">
+                    <h1 className="mt-2.5  text-[2rem] leading-tight text-[#3f2034] md:text-[2.4rem]">
                         Update Quiz Question
                     </h1>
                     <p className="mt-2 max-w-xl text-sm leading-relaxed text-[#8c7484]">
@@ -686,7 +686,7 @@ export function UpdateQuiz() {
                                     <span className="rounded-full bg-[#fff0f6] px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-[#ea4f93]">
                                         {formData.categoryKey || "Diagnostic"}
                                     </span>
-                                    <h4 className="mt-2.5 font-serif text-[16px] leading-snug text-[#3f2034]">
+                                    <h4 className="mt-2.5  text-[16px] leading-snug text-[#3f2034]">
                                         {formData.questionText.trim() || "What nail style do you prefer?"}
                                     </h4>
                                     <p className="mt-1 text-[10.5px] text-[#8e7987]">

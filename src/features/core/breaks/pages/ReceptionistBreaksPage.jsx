@@ -233,7 +233,7 @@ export function ReceptionistBreaksPage() {
                     <th className="px-5 py-4 font-semibold">Lý do</th>
                     <th className="px-5 py-4 font-semibold">Trạng thái</th>
                     <th className="px-5 py-4 font-semibold">Lý do từ chối</th>
-                    <th className="px-5 py-4 font-semibold text-right">Thao tác</th>
+                    {/* <th className="px-5 py-4 font-semibold text-right">Thao tác</th> */}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#f7ebdf] bg-white">
@@ -267,7 +267,7 @@ export function ReceptionistBreaksPage() {
                       <td className="px-5 py-4 text-xs text-rose-500 italic max-w-xs truncate" title={item.rejectReason}>
                         {item.rejectReason || "-"}
                       </td>
-                      <td className="px-5 py-4 text-right">
+                      {/* <td className="px-5 py-4 text-right">
                         <button
                           onClick={() => openDeleteModal(item)}
                           className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-100 bg-rose-50 text-rose-600 hover:bg-rose-100 transition"
@@ -275,7 +275,7 @@ export function ReceptionistBreaksPage() {
                         >
                           <Trash2 size={13} />
                         </button>
-                      </td>
+                      </td> */}
                     </tr>
                   ))}
                 </tbody>
