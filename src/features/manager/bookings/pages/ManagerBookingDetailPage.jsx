@@ -492,7 +492,7 @@ export function ManagerBookingDetailPage() {
               </button>
 
               <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-2xl lg:text-3xl font-extrabold text-[#2B182B] tracking-tight font-serif">
+                <h1 className="text-2xl lg:text-3xl font-extrabold text-[#2B182B] tracking-tight ">
                   Booking Detail
                 </h1>
                 <span className="inline-flex items-center gap-1 rounded-full border border-[#E5C687]/80 bg-gradient-to-r from-[#FFF9EE] to-[#FFF3DC] px-3.5 py-1 text-xs font-bold text-[#9E731A] shadow-2xs">

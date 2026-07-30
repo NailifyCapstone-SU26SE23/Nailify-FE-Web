@@ -170,6 +170,8 @@ export function ReceptionistBookingListPage() {
 
     try {
       const firstPageResult = await fetchReceptionistBookings({
+        startDate: appliedDateFrom,
+        endDate: appliedDateTo,
         pageNumber: 1,
         pageSize: RECEPTIONIST_BOOKING_FETCH_SIZE,
         includePagination: true,
@@ -183,6 +185,8 @@ export function ReceptionistBookingListPage() {
         for (let pageNumber = 2; pageNumber <= totalPages; pageNumber += 1) {
           remainingPageRequests.push(
             fetchReceptionistBookings({
+              startDate: appliedDateFrom,
+              endDate: appliedDateTo,
               pageNumber,
               pageSize: RECEPTIONIST_BOOKING_FETCH_SIZE,
               includePagination: true,
@@ -206,7 +210,7 @@ export function ReceptionistBookingListPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [appliedDateFrom, appliedDateTo]);
 
   useEffect(() => {
     const timerId = window.setTimeout(() => {
@@ -668,7 +672,8 @@ export function ReceptionistBookingListPage() {
             </button>
 
             <Link
-              to={ROUTES.receptionistBookingsCreate}
+              // to={ROUTES.receptionistBookingsCreate}
+              to={ROUTES.receptionistCustomers}
               className="inline-flex h-9 items-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)] hover:bg-[image:var(--gradient-accent-hover)] hover:text-pink-600"
             >
               <UserPlus size={14} />

@@ -492,7 +492,9 @@ export function ManagerBookingListPage() {
   // Core state
   const [query, setQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
-  const [selectedDate, setSelectedDate] = useState(null);
+  const [dateFrom, setDateFrom] = useState(dayjs());
+  const [dateTo, setDateTo] = useState(dayjs());
+  const [anchorDate, setAnchorDate] = useState(dayjs());
   const [bookings, setBookings] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -560,33 +562,19 @@ export function ManagerBookingListPage() {
       } catch (staffErr) {
         console.warn("Failed to fetch salon staff:", staffErr);
       }
-      const result = await fetchBookingsBySalonId(salonId, { pageNumber: 1, pageSize: 1000 });
+
+      const startParam = dateFrom ? dateFrom.format("YYYY-MM-DD") : undefined;
+      const endParam = dateTo ? dateTo.format("YYYY-MM-DD") : undefined;
+      const result = await fetchBookingsBySalonId(salonId, {
+        pageNumber: 1,
+        pageSize: 1000,
+        startDate: startParam,
+        endDate: endParam
+      });
       let apiBookings = [];
       if (result?.items) apiBookings = result.items;
       else if (Array.isArray(result)) apiBookings = result;
       let uiBookings = apiBookings.map((b, idx) => mapApiBookingToUiFormat(b, idx));
-
-      const customerPromises = uiBookings
-        .filter(booking => booking.customerId && !booking.phone)
-        .map(async (booking) => {
-          try {
-            const customer = await fetchUserById(booking.customerId);
-            return { bookingId: booking.id, customer };
-          } catch (err) {
-            console.warn(`Failed to fetch customer for booking:`, err);
-            return { bookingId: booking.id, customer: null };
-          }
-        });
-
-      const customerResults = await Promise.all(customerPromises);
-
-      uiBookings = uiBookings.map(booking => {
-        const customerResult = customerResults.find(r => r.bookingId === booking.id);
-        if (customerResult?.customer?.phone) {
-          return { ...booking, phone: customerResult.customer.phone };
-        }
-        return booking;
-      });
 
       setBookings(uiBookings);
       setHasLoadedOnce(true);
@@ -596,11 +584,11 @@ export function ManagerBookingListPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [dateFrom, dateTo]);
 
   useEffect(() => {
-    if (!hasLoadedOnce) loadBookings();
-  }, [hasLoadedOnce, loadBookings]);
+    loadBookings();
+  }, [loadBookings]);
 
   // --- Drag & Drop Handlers ---
   const handleDragStart = (e, booking) => {
@@ -765,13 +753,16 @@ export function ManagerBookingListPage() {
           .toLowerCase()
           .includes(normalizedQuery);
       let matchesDate = true;
-      if (selectedDate) {
+      if (dateFrom || dateTo) {
         const bookingDate = dayjs(appointment.bookingDate || appointment.createdAt);
-        matchesDate = bookingDate.isValid() && bookingDate.isSame(selectedDate, "day");
+        if (bookingDate.isValid()) {
+          if (dateFrom && bookingDate.isBefore(dateFrom, "day")) matchesDate = false;
+          if (dateTo && bookingDate.isAfter(dateTo, "day")) matchesDate = false;
+        }
       }
       return matchesQuery && matchesFilter(appointment.status, activeFilter) && matchesDate;
     });
-  }, [activeFilter, query, bookings, selectedDate]);
+  }, [activeFilter, query, bookings, dateFrom, dateTo]);
 
   const paginatedAppointments = useMemo(() => {
     const startIndex = (currentPage - 1) * BOOKING_PAGE_SIZE;
@@ -840,9 +831,46 @@ export function ManagerBookingListPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [query, activeFilter, selectedDate]);
+  }, [query, activeFilter, dateFrom, dateTo]);
 
   // --- Handlers ---
+  const handleViewModeChange = (mode) => {
+    setViewMode(mode);
+    if (mode === "day") {
+      setDateFrom(anchorDate);
+      setDateTo(anchorDate);
+    } else if (mode === "week") {
+      setDateFrom(anchorDate.startOf("week"));
+      setDateTo(anchorDate.endOf("week"));
+    } else if (mode === "month") {
+      setDateFrom(anchorDate.startOf("month"));
+      setDateTo(anchorDate.endOf("month"));
+    } else if (mode === "table") {
+      setDateFrom(anchorDate);
+      setDateTo(anchorDate);
+    }
+  };
+
+  const handleDateFromChange = (newDate) => {
+    if (!newDate) {
+      setDateFrom(null);
+      if (viewMode !== "table") setDateTo(null);
+      return;
+    }
+    setAnchorDate(newDate);
+    if (viewMode === "table") {
+      setDateFrom(newDate);
+    } else if (viewMode === "day") {
+      setDateFrom(newDate);
+      setDateTo(newDate);
+    } else if (viewMode === "week") {
+      setDateFrom(newDate.startOf("week"));
+      setDateTo(newDate.endOf("week"));
+    } else if (viewMode === "month") {
+      setDateFrom(newDate.startOf("month"));
+      setDateTo(newDate.endOf("month"));
+    }
+  };
   const handleOpenDrawer = useCallback(async (bookingId) => {
     setIsDrawerOpen(true);
     setIsLoadingDrawer(true);
@@ -872,7 +900,8 @@ export function ManagerBookingListPage() {
   const handleResetFilters = () => {
     setQuery("");
     setActiveFilter("All");
-    setSelectedDate(null);
+    setDateFrom(null);
+    setDateTo(null);
   };
 
   const handlePageChange = (newPage) => setCurrentPage(newPage);
@@ -1053,7 +1082,7 @@ export function ManagerBookingListPage() {
                           <button
                             key={btn.mode}
                             type="button"
-                            onClick={() => setViewMode(btn.mode)}
+                            onClick={() => handleViewModeChange(btn.mode)}
                             className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all whitespace-nowrap ${viewMode === btn.mode
                               ? "bg-gradient-to-r from-[#E84F93] to-[#F43F5E] text-white shadow-md"
                               : "text-[#9E8497] hover:bg-white hover:text-[#2B182B]"
@@ -1069,7 +1098,7 @@ export function ManagerBookingListPage() {
                     <div className="mt-4 space-y-4">
 
                       {/* Search & Date Controls */}
-                      <div className="grid gap-3 pt-1 lg:grid-cols-[minmax(0,1fr)_220px_auto]">
+                      <div className="grid gap-3 pt-1 lg:grid-cols-[minmax(0,1fr)_150px_150px_auto]">
                         <div className="relative">
                           <span className="mb-1.5 block text-[11px] font-bold text-[#9E8497] uppercase tracking-wider">Search</span>
                           <div className="relative">
@@ -1084,10 +1113,22 @@ export function ManagerBookingListPage() {
                         </div>
 
                         <div>
-                          <span className="mb-1.5 block text-[11px] font-bold text-[#9E8497] uppercase tracking-wider">Booking Date</span>
+                          <span className="mb-1.5 block text-[11px] font-bold text-[#9E8497] uppercase tracking-wider">Date From</span>
                           <DatePicker
-                            value={selectedDate}
-                            onChange={(d) => setSelectedDate(d)}
+                            value={dateFrom}
+                            onChange={handleDateFromChange}
+                            placeholder="Select date"
+                            format="DD/MM/YYYY"
+                            className="h-11 w-full rounded-2xl border border-[#F3D7E4] bg-white px-3 text-xs text-[#2B182B] outline-none transition-all duration-200 hover:border-[#F0B7CF] focus:border-[#E84F93]"
+                            suffixIcon={<Calendar size={15} className="text-[#9E8497]" />}
+                          />
+                        </div>
+                        <div>
+                          <span className="mb-1.5 block text-[11px] font-bold text-[#9E8497] uppercase tracking-wider">Date To</span>
+                          <DatePicker
+                            value={dateTo}
+                            onChange={(d) => setDateTo(d)}
+                            disabled={viewMode !== "table"}
                             placeholder="Select date"
                             format="DD/MM/YYYY"
                             className="h-11 w-full rounded-2xl border border-[#F3D7E4] bg-white px-3 text-xs text-[#2B182B] outline-none transition-all duration-200 hover:border-[#F0B7CF] focus:border-[#E84F93]"
@@ -1097,11 +1138,11 @@ export function ManagerBookingListPage() {
 
                         <div className="flex items-end">
                           <motion.button
-                            whileHover={query.trim() || selectedDate || activeFilter !== "All" ? { scale: 1.02 } : {}}
-                            whileTap={query.trim() || selectedDate || activeFilter !== "All" ? { scale: 0.98 } : {}}
+                            whileHover={query.trim() || dateFrom || dateTo || activeFilter !== "All" ? { scale: 1.02 } : {}}
+                            whileTap={query.trim() || dateFrom || dateTo || activeFilter !== "All" ? { scale: 0.98 } : {}}
                             onClick={handleResetFilters}
-                            disabled={!query.trim() && !selectedDate && activeFilter === "All"}
-                            className={`h-11 rounded-2xl border px-4 text-xs font-bold transition-all duration-200 ${query.trim() || selectedDate || activeFilter !== "All"
+                            disabled={!query.trim() && !dateFrom && !dateTo && activeFilter === "All"}
+                            className={`h-11 rounded-2xl border px-4 text-xs font-bold transition-all duration-200 ${query.trim() || dateFrom || dateTo || activeFilter !== "All"
                               ? "border-[#E84F93] bg-white text-[#E84F93] hover:bg-[#FFF5FA] shadow-xs"
                               : "border-[#F5E8EF] bg-[#FAFAFA] text-[#D6B9C8] cursor-not-allowed"
                               }`}
@@ -1184,10 +1225,10 @@ export function ManagerBookingListPage() {
                                       <p className="truncate text-xs font-bold text-[#2B182B] group-hover:text-[#E84F93] transition-colors">
                                         {row.customer}
                                       </p>
-                                      <p className="mt-0.5 truncate text-[11px] text-[#9E8497] font-medium flex items-center gap-1">
+                                      {/* <p className="mt-0.5 truncate text-[11px] text-[#9E8497] font-medium flex items-center gap-1">
                                         <Phone size={10} className="shrink-0 text-[#C8B0BF]" />
                                         {row.phone || "No phone"}
-                                      </p>
+                                      </p> */}
                                     </div>
                                   </div>
                                 </td>
@@ -1305,7 +1346,7 @@ export function ManagerBookingListPage() {
                             <GripVertical size={16} /> Drag & drop booking cards onto another hour or artist column to reschedule!
                           </span>
                           <span className="font-bold text-[#2B182B]">
-                            {selectedDate ? selectedDate.format("dddd, MMM D, YYYY") : dayjs().format("dddd, MMM D, YYYY")}
+                            {dateFrom ? dateFrom.format("dddd, MMM D, YYYY") : dayjs().format("dddd, MMM D, YYYY")}
                           </span>
                         </div>
 
@@ -1414,7 +1455,7 @@ export function ManagerBookingListPage() {
                         <div className="overflow-x-auto border border-[#F3E2EC] rounded-2xl p-2 scrollbar-thin scrollbar-thumb-[#E84F93]/20">
                           <div className="grid grid-cols-7 gap-2 min-w-[950px]">
                             {[0, 1, 2, 3, 4, 5, 6].map((dayOffset) => {
-                              const currentDay = (selectedDate || dayjs()).startOf("week").add(dayOffset, "day");
+                              const currentDay = (dateFrom || dayjs()).startOf("week").add(dayOffset, "day");
                               const dayKey = currentDay.format("YYYY-MM-DD");
                               const isOver = dragOverTarget === `week-${dayKey}`;
                               const dayBookings = filteredAppointments.filter((b) => {
@@ -1483,7 +1524,7 @@ export function ManagerBookingListPage() {
                             <GripVertical size={16} /> Drag & drop booking cards to another calendar date cell!
                           </span>
                           <span className="font-bold text-[#2B182B]">
-                            {(selectedDate || dayjs()).format("MMMM YYYY")}
+                            {(dateFrom || dayjs()).format("MMMM YYYY")}
                           </span>
                         </div>
 
@@ -1495,7 +1536,7 @@ export function ManagerBookingListPage() {
                           ))}
 
                           {(() => {
-                            const baseMonth = selectedDate || dayjs();
+                            const baseMonth = dateFrom || dayjs();
                             const startOfMonth = baseMonth.startOf("month");
                             const startDayOfWeek = startOfMonth.day();
                             const startDate = startOfMonth.subtract(startDayOfWeek, "day");
@@ -2039,13 +2080,13 @@ export function ManagerBookingListPage() {
                   </p>
                 ) : (
                   modalDayBookings.map((b) => (
-                    <div
+                    <button
                       key={b.id}
                       onClick={() => {
                         setIsDayBookingsModalOpen(false);
                         handleOpenDrawer(b.id);
                       }}
-                      className="group p-3.5 rounded-2xl border border-[#F3E2EC] bg-[#FFFBFD] hover:bg-[#FFF0F6]/60 hover:border-[#E84F93]/40 transition-all cursor-pointer flex items-center justify-between gap-4 shadow-2xs"
+                      className="group p-3.5 rounded-2xl border border-[#F3E2EC] bg-[#FFFBFD] hover:bg-[#FFF0F6]/60 hover:border-[#E84F93]/40 transition-all cursor-pointer flex items-center justify-between gap-4 shadow-2xs w-full text-left"
                     >
                       <div className="space-y-1 min-w-0 flex-1">
                         <div className="flex items-center gap-2">
@@ -2069,7 +2110,9 @@ export function ManagerBookingListPage() {
                           Chi tiết <ChevronRight size={12} />
                         </span>
                       </div>
-                    </div>
+
+                    </button>
+
                   ))
                 )}
               </div>

@@ -438,11 +438,11 @@ export function ManagerSchedulesPage() {
                 <CalendarIcon size={30} className="drop-shadow-md text-white" />
               </div>
               <div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-[#E84F93]/30 bg-[#E84F93]/10 px-3.5 py-1 text-[11px] font-extrabold text-[#E84F93] backdrop-blur-md shadow-xs">
+                <div className="inline-flex items-center gap-2 rounded-full border border-[#E84F93]/30 bg-[#E84F93]/10 px-3.5 py-1 text-[11px] font-bold text-[#E84F93] backdrop-blur-md shadow-xs">
                   <Sparkles size={13} className="text-[#E84F93] animate-pulse" />
                   <span>Salon Staff Rostering & Scheduling</span>
                 </div>
-                <h1 className="text-2xl lg:text-3xl font-extrabold text-[#2B182B] mt-1.5 tracking-tight font-serif">
+                <h1 className="text-2xl lg:text-3xl font-bold text-[#2B182B] mt-1.5 tracking-tight ">
                   Staff Schedules
                 </h1>
                 <p className="mt-1 text-xs lg:text-sm text-[#8C6682] font-semibold leading-relaxed">
@@ -468,7 +468,7 @@ export function ManagerSchedulesPage() {
           <div className="grid gap-3.5 pt-6 mt-6 border-t border-[#F3D6E5] grid-cols-2 md:grid-cols-4">
             <div className="rounded-2xl border border-[#F3D6E5] bg-white/80 p-4 backdrop-blur-md hover:border-[#E84F93] transition shadow-2xs group">
               <div className="flex items-center justify-between">
-                <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497]">Salon Staff</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">Salon Staff</p>
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#E84F93]/15 text-[#E84F93] group-hover:scale-110 transition">
                   <Users size={16} />
                 </div>
@@ -482,7 +482,7 @@ export function ManagerSchedulesPage() {
 
             <div className="rounded-2xl border border-[#F3D6E5] bg-white/80 p-4 backdrop-blur-md hover:border-[#10B981] transition shadow-2xs group">
               <div className="flex items-center justify-between">
-                <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497]">Shifts Today</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">Shifts Today</p>
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#10B981]/15 text-[#10B981] group-hover:scale-110 transition">
                   <UserCheck size={16} />
                 </div>
@@ -493,7 +493,7 @@ export function ManagerSchedulesPage() {
 
             <div className="rounded-2xl border border-[#F3D6E5] bg-white/80 p-4 backdrop-blur-md hover:border-[#6366F1] transition shadow-2xs group">
               <div className="flex items-center justify-between">
-                <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497]">Scheduled Hours</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">Scheduled Hours</p>
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#6366F1]/15 text-[#6366F1] group-hover:scale-110 transition">
                   <Clock size={16} />
                 </div>
@@ -504,7 +504,7 @@ export function ManagerSchedulesPage() {
 
             <div className="rounded-2xl border border-[#F3D6E5] bg-white/80 p-4 backdrop-blur-md hover:border-[#F59E0B] transition shadow-2xs group">
               <div className="flex items-center justify-between">
-                <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497]">Week Span</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">Week Span</p>
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F59E0B]/15 text-[#F59E0B] group-hover:scale-110 transition">
                   <CalendarIcon size={16} />
                 </div>
@@ -534,7 +534,7 @@ export function ManagerSchedulesPage() {
           <button
             type="button"
             onClick={() => setSelectedWeekStart(dayjs().startOf("week").add(1, "day"))}
-            className="rounded-xl border border-[#F3D6E5] bg-gradient-to-r from-[#FFF0F5] to-[#FFE4EE] px-4 py-2 text-xs font-extrabold text-[#E84F93] hover:from-[#FFE4EE] hover:to-[#FFD6E7] transition shadow-2xs flex items-center gap-2"
+            className="rounded-xl border border-[#F3D6E5] bg-gradient-to-r from-[#FFF0F5] to-[#FFE4EE] px-4 py-2 text-xs font-bold text-[#E84F93] hover:from-[#FFE4EE] hover:to-[#FFD6E7] transition shadow-2xs flex items-center gap-2"
           >
             <CalendarIcon size={14} />
             <span>Current Week</span>
@@ -560,7 +560,7 @@ export function ManagerSchedulesPage() {
               }}
               format="[Week of] MMM D, YYYY"
               allowClear={false}
-              className="h-10 rounded-xl border-[#F3D7E4] bg-[#FFFDFE] text-xs font-extrabold text-[#2B182B] hover:border-[#E84F93] focus:border-[#E84F93] transition"
+              className="h-10 rounded-xl border-[#F3D7E4] bg-[#FFFDFE] text-xs font-bold text-[#2B182B] hover:border-[#E84F93] focus:border-[#E84F93] transition"
             />
             <span className="text-xs font-bold text-[#2B182B] hidden xl:inline-block">
               ({selectedWeekStart.format("MMMM D")} – {selectedWeekStart.add(6, "day").format("MMMM D, YYYY")})
@@ -577,7 +577,7 @@ export function ManagerSchedulesPage() {
               setSelectedEmergencyArtist(defaultArtist);
               setIsEmergencyOffModalOpen(true);
             }}
-            className="h-10 rounded-xl border border-[#FECDD3] bg-gradient-to-r from-[#FEF2F2] to-[#FEE2E2] px-3.5 text-xs font-extrabold text-[#E11D48] hover:bg-[#FEE2E2] transition shadow-2xs flex items-center gap-2"
+            className="h-10 rounded-xl border border-[#FECDD3] bg-gradient-to-r from-[#FEF2F2] to-[#FEE2E2] px-3.5 text-xs font-bold text-[#E11D48] hover:bg-[#FEE2E2] transition shadow-2xs flex items-center gap-2"
             title="Manager trigger Emergency Off for artist leave"
           >
             <ShieldAlert size={15} />
@@ -588,7 +588,7 @@ export function ManagerSchedulesPage() {
           <button
             type="button"
             onClick={() => setShowShiftTimes((prev) => !prev)}
-            className={`h-10 rounded-xl border px-3.5 text-xs font-extrabold transition flex items-center gap-2 ${showShiftTimes
+            className={`h-10 rounded-xl border px-3.5 text-xs font-bold transition flex items-center gap-2 ${showShiftTimes
               ? "border-[#E84F93] bg-[#FFF0F5] text-[#E84F93] shadow-2xs"
               : "border-[#F3D7E4] bg-white text-[#9E8497] hover:border-[#F0B7CF]"
               }`}
@@ -619,7 +619,7 @@ export function ManagerSchedulesPage() {
         <button
           type="button"
           onClick={() => setSelectedDayKey("ALL")}
-          className={`rounded-full px-3.5 py-1.5 text-xs font-extrabold transition shrink-0 ${selectedDayKey === "ALL"
+          className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition shrink-0 ${selectedDayKey === "ALL"
             ? "bg-[#2B182B] text-white shadow-xs"
             : "bg-white text-[#8C6682] border border-[#F3D6E5] hover:border-[#E84F93]"
             }`}
@@ -637,7 +637,7 @@ export function ManagerSchedulesPage() {
               key={dayKey}
               type="button"
               onClick={() => setSelectedDayKey(isSelected ? "ALL" : dayKey)}
-              className={`rounded-full px-3.5 py-1.5 text-xs font-extrabold transition flex items-center gap-1.5 shrink-0 ${isSelected
+              className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition flex items-center gap-1.5 shrink-0 ${isSelected
                 ? "bg-gradient-to-r from-[#E84F93] to-[#F43F5E] text-white shadow-xs"
                 : isToday
                   ? "bg-[#FFF0F5] text-[#E84F93] border border-[#E84F93]/30"
@@ -729,7 +729,7 @@ export function ManagerSchedulesPage() {
                             <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-[#10B981]" />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs font-extrabold text-[#2B182B] truncate">{staff.name}</p>
+                            <p className="text-xs font-bold text-[#2B182B] truncate">{staff.name}</p>
                             <p className="text-[10px] text-[#9E8497] font-semibold truncate">{staff.phone || staff.specialty}</p>
                           </div>
                           <button
@@ -855,7 +855,7 @@ export function ManagerSchedulesPage() {
                 <Plus size={22} />
               </div>
               <div>
-                <h3 className="text-lg font-extrabold text-[#2B182B] font-serif tracking-tight">Add Staff Work Shift</h3>
+                <h3 className="text-lg font-bold text-[#2B182B]  tracking-tight">Add Staff Work Shift</h3>
                 <p className="text-xs text-[#9E8497] font-semibold">Assign shift schedule to salon nail artist</p>
               </div>
             </div>
@@ -884,10 +884,10 @@ export function ManagerSchedulesPage() {
                     }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-extrabold flex items-center gap-1">☀️ Morning</span>
+                    <span className="text-[11px] font-bold flex items-center gap-1">☀️ Morning</span>
                     {activePreset === "MORNING" && <Check size={13} className="text-[#3B82F6]" />}
                   </div>
-                  <span className="text-[9px] font-extrabold mt-1 opacity-80">08:00 AM - 04:00 PM</span>
+                  <span className="text-[9px] font-bold mt-1 opacity-80">08:00 AM - 04:00 PM</span>
                 </button>
 
                 <button
@@ -899,10 +899,10 @@ export function ManagerSchedulesPage() {
                     }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-extrabold flex items-center gap-1">🌙 Evening</span>
+                    <span className="text-[11px] font-bold flex items-center gap-1">🌙 Evening</span>
                     {activePreset === "EVENING" && <Check size={13} className="text-[#F59E0B]" />}
                   </div>
-                  <span className="text-[9px] font-extrabold mt-1 opacity-80">12:00 PM - 08:00 PM</span>
+                  <span className="text-[9px] font-bold mt-1 opacity-80">12:00 PM - 08:00 PM</span>
                 </button>
 
                 <button
@@ -914,10 +914,10 @@ export function ManagerSchedulesPage() {
                     }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-extrabold flex items-center gap-1">⭐ Full Day</span>
+                    <span className="text-[11px] font-bold flex items-center gap-1">⭐ Full Day</span>
                     {activePreset === "FULLDAY" && <Check size={13} className="text-[#10B981]" />}
                   </div>
-                  <span className="text-[9px] font-extrabold mt-1 opacity-80">08:00 AM - 11:30 PM</span>
+                  <span className="text-[9px] font-bold mt-1 opacity-80">08:00 AM - 11:30 PM</span>
                 </button>
 
                 <button
@@ -929,10 +929,10 @@ export function ManagerSchedulesPage() {
                     }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-extrabold flex items-center gap-1">⚡ Short</span>
+                    <span className="text-[11px] font-bold flex items-center gap-1">⚡ Short</span>
                     {activePreset === "SHORT" && <Check size={13} className="text-[#8B5CF6]" />}
                   </div>
-                  <span className="text-[9px] font-extrabold mt-1 opacity-80">08:00 AM - 09:00 AM</span>
+                  <span className="text-[9px] font-bold mt-1 opacity-80">08:00 AM - 09:00 AM</span>
                 </button>
               </div>
             </div>
@@ -950,7 +950,7 @@ export function ManagerSchedulesPage() {
                       <div className={`flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br ${s.gradient} text-[10px] font-bold text-white shrink-0`}>
                         {s.initials}
                       </div>
-                      <span className="font-extrabold text-[#2B182B] text-xs">{s.name}</span>
+                      <span className="font-bold text-[#2B182B] text-xs">{s.name}</span>
                       {s.phone && <span className="text-[10px] text-[#9E8497] font-semibold">({s.phone})</span>}
                     </div>
                   ),
@@ -1009,7 +1009,7 @@ export function ManagerSchedulesPage() {
               <button
                 type="button"
                 onClick={() => setIsAddModalOpen(false)}
-                className="rounded-full border border-[#F3D7E4] px-6 py-3 text-xs font-extrabold text-[#2B182B] hover:bg-[#FAF0F5] transition"
+                className="rounded-full border border-[#F3D7E4] px-6 py-3 text-xs font-bold text-[#2B182B] hover:bg-[#FAF0F5] transition"
               >
                 Cancel
               </button>
@@ -1043,7 +1043,7 @@ export function ManagerSchedulesPage() {
                 <Edit3 size={22} />
               </div>
               <div>
-                <h3 className="text-lg font-extrabold text-[#2B182B] font-serif tracking-tight">Edit Staff Work Shift</h3>
+                <h3 className="text-lg font-bold text-[#2B182B]  tracking-tight">Edit Staff Work Shift</h3>
                 <p className="text-xs text-[#9E8497] font-semibold">Modify shift details or hours</p>
               </div>
             </div>
@@ -1072,10 +1072,10 @@ export function ManagerSchedulesPage() {
                     }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-extrabold flex items-center gap-1">☀️ Morning</span>
+                    <span className="text-[11px] font-bold flex items-center gap-1">☀️ Morning</span>
                     {activePreset === "MORNING" && <Check size={13} className="text-[#3B82F6]" />}
                   </div>
-                  <span className="text-[9px] font-extrabold mt-1 opacity-80">08:00 AM - 04:00 PM</span>
+                  <span className="text-[9px] font-bold mt-1 opacity-80">08:00 AM - 04:00 PM</span>
                 </button>
 
                 <button
@@ -1087,10 +1087,10 @@ export function ManagerSchedulesPage() {
                     }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-extrabold flex items-center gap-1">🌙 Evening</span>
+                    <span className="text-[11px] font-bold flex items-center gap-1">🌙 Evening</span>
                     {activePreset === "EVENING" && <Check size={13} className="text-[#F59E0B]" />}
                   </div>
-                  <span className="text-[9px] font-extrabold mt-1 opacity-80">12:00 PM - 08:00 PM</span>
+                  <span className="text-[9px] font-bold mt-1 opacity-80">12:00 PM - 08:00 PM</span>
                 </button>
 
                 <button
@@ -1102,10 +1102,10 @@ export function ManagerSchedulesPage() {
                     }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-extrabold flex items-center gap-1">⭐ Full Day</span>
+                    <span className="text-[11px] font-bold flex items-center gap-1">⭐ Full Day</span>
                     {activePreset === "FULLDAY" && <Check size={13} className="text-[#10B981]" />}
                   </div>
-                  <span className="text-[9px] font-extrabold mt-1 opacity-80">08:00 AM - 11:30 PM</span>
+                  <span className="text-[9px] font-bold mt-1 opacity-80">08:00 AM - 11:30 PM</span>
                 </button>
 
                 <button
@@ -1117,10 +1117,10 @@ export function ManagerSchedulesPage() {
                     }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-extrabold flex items-center gap-1">⚡ Short</span>
+                    <span className="text-[11px] font-bold flex items-center gap-1">⚡ Short</span>
                     {activePreset === "SHORT" && <Check size={13} className="text-[#8B5CF6]" />}
                   </div>
-                  <span className="text-[9px] font-extrabold mt-1 opacity-80">08:00 AM - 09:00 AM</span>
+                  <span className="text-[9px] font-bold mt-1 opacity-80">08:00 AM - 09:00 AM</span>
                 </button>
               </div>
             </div>
@@ -1137,7 +1137,7 @@ export function ManagerSchedulesPage() {
                       <div className={`flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br ${s.gradient} text-[10px] font-bold text-white shrink-0`}>
                         {s.initials}
                       </div>
-                      <span className="font-extrabold text-[#2B182B] text-xs">{s.name}</span>
+                      <span className="font-bold text-[#2B182B] text-xs">{s.name}</span>
                       {s.phone && <span className="text-[10px] text-[#9E8497] font-semibold">({s.phone})</span>}
                     </div>
                   ),
@@ -1195,7 +1195,7 @@ export function ManagerSchedulesPage() {
               <button
                 type="button"
                 onClick={() => setIsEditModalOpen(false)}
-                className="rounded-full border border-[#F3D7E4] px-6 py-3 text-xs font-extrabold text-[#2B182B] hover:bg-[#FAF0F5] transition"
+                className="rounded-full border border-[#F3D7E4] px-6 py-3 text-xs font-bold text-[#2B182B] hover:bg-[#FAF0F5] transition"
               >
                 Cancel
               </button>

@@ -426,7 +426,7 @@ function StaffArtistCard({ staff, onOpenDrawer }) {
 
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="line-clamp-1 text-base font-extrabold leading-snug text-slate-900 font-serif">
+            <h3 className="line-clamp-1 text-base font-extrabold leading-snug text-slate-900 ">
               {staff.name}
             </h3>
             <StatusPill status={staff.status} />
@@ -1480,7 +1480,7 @@ export function StaffManagementPage() {
                       <Sparkles size={13} className="text-[#E84F93] animate-pulse" />
                       <span>Salon Staff & Artisan Roster</span>
                     </div>
-                    <h1 className="text-2xl lg:text-3xl font-extrabold text-[#2B182B] mt-1.5 tracking-tight font-serif">
+                    <h1 className="text-2xl lg:text-3xl font-extrabold text-[#2B182B] mt-1.5 tracking-tight ">
                       Staff Artists
                     </h1>
                     <p className="mt-1 text-xs lg:text-sm text-[#8C6682] font-semibold leading-relaxed">
