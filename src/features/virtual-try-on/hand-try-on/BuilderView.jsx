@@ -49,10 +49,18 @@ export function BuilderView({
                 className={`nail-preview-card ${isActive ? "active" : ""}`}
                 data-index={index}
                 key={label}
-                onClick={() => {
+                onClick={(e) => {
+                  if (
+                    e.target.closest(".decoration-overlay") ||
+                    e.target.closest(".decoration-item")
+                  ) {
+                    return;
+                  }
                   if (handLandmarkerTask) {
                     handLandmarkerTask.setSelectedLayer(index, -1);
-                    document.dispatchEvent(new CustomEvent("nail-decorations-changed"));
+                    document.dispatchEvent(
+                      new CustomEvent("nail-decorations-changed"),
+                    );
                   }
                 }}
               >
