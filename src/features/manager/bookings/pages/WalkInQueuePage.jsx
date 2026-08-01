@@ -38,6 +38,7 @@ import {
   markQueueEntryLeft,
   prioritizeQueueEntry,
 } from "../services/walkInQueueService";
+import toast from "react-hot-toast";
 
 // Helper to load current user's salonId
 const getSalonId = () => {
@@ -197,15 +198,15 @@ export function WalkInQueuePage() {
         }
       } else if (targetStatus === "Done") {
         await completeQueueEntry(item.queueId);
-        message.success(`Đã VNDánh dấu hoàn thành lượt của ${item.guestName || "Guest"}`);
+        toast.success(`Đã VNDánh dấu hoàn thành lượt của ${item.guestName || "Guest"}`);
         loadQueue();
       } else if (targetStatus === "Left") {
         await handleMarkLeft(item.queueId);
       } else if (targetStatus === "Waiting") {
-        message.info("Moved back to lobby successfully.");
+        toast.info("Moved back to lobby successfully.");
       }
     } catch (err) {
-      message.error(err.message || "Không thể thực hiện thao tác kéo thả.");
+      toast.error(err.message || "Không thể thực hiện thao tác kéo thả.");
     }
   };
 
@@ -219,17 +220,17 @@ export function WalkInQueuePage() {
       const item = JSON.parse(dataStr);
 
       if (artistId === "unassigned") {
-        message.warning("Không thể bỏ gán thợ trực tiếp. Vui lòng VNDổi thợ.");
+        toast.warning("Không thể bỏ gán thợ trực tiếp. Vui lòng VNDổi thợ.");
         return;
       }
 
       if (item.assignedNailArtistId === artistId) return;
 
       await assignArtistToQueue(item.queueId, artistId);
-      message.success(`Assigned artist successfully.`);
+      toast.success(`Assigned artist successfully.`);
       loadQueue();
     } catch (err) {
-      message.error(err.message || "Failed to assign artist.");
+      toast.error(err.message || "Failed to assign artist.");
     }
   };
 
@@ -239,10 +240,10 @@ export function WalkInQueuePage() {
       setCallingState(item);
       speakCalling(item.queuePosition, item.guestName || "Walk-in guest");
       await callQueueEntry(item.queueId);
-      message.success(`Called queue number ${item.queuePosition}`);
+      toast.success(`Called queue number ${item.queuePosition}`);
       loadQueue();
     } catch (err) {
-      message.error(err.message || "Failed to call queue number.");
+      toast.error(err.message || "Failed to call queue number.");
     }
   };
 
@@ -250,10 +251,10 @@ export function WalkInQueuePage() {
   const handlePrioritize = async (id) => {
     try {
       await prioritizeQueueEntry(id);
-      message.success("Đã VNDẩy guests hàng lên VNDầu hàng chờ.");
+      toast.success("Đã VNDẩy guests hàng lên VNDầu hàng chờ.");
       loadQueue();
     } catch (err) {
-      message.error(err.message || "Failed to prioritize customer.");
+      toast.error(err.message || "Failed to prioritize customer.");
     }
   };
 
@@ -261,10 +262,10 @@ export function WalkInQueuePage() {
   const handleMarkLeft = async (id) => {
     try {
       await markQueueEntryLeft(id);
-      message.warning("Đã VNDánh dấu guests hàng rời hàng chờ.");
+      toast.warning("Đã VNDánh dấu guests hàng rời hàng chờ.");
       loadQueue();
     } catch (err) {
-      message.error(err.message || "Failed to update status.");
+      toast.error(err.message || "Failed to update status.");
     }
   };
 
@@ -279,11 +280,11 @@ export function WalkInQueuePage() {
     if (!selectedQueueItem) return;
     try {
       await assignArtistToQueue(selectedQueueItem.queueId, artistId);
-      message.success("Assigned artist to customer.");
+      toast.success("Assigned artist to customer.");
       setIsAssignModalOpen(false);
       loadQueue();
     } catch (err) {
-      message.error(err.message || "Failed to assign artist.");
+      toast.error(err.message || "Failed to assign artist.");
     }
   };
 
@@ -291,17 +292,17 @@ export function WalkInQueuePage() {
   const handleCompleteCheckin = async (id) => {
     try {
       await completeQueueEntry(id);
-      message.success("Đã hoàn thành lượt xếp hàng. Guest hàng bắt VNDầu dịch vụ.");
+      toast.success("Đã hoàn thành lượt xếp hàng. Guest hàng bắt VNDầu dịch vụ.");
       loadQueue();
     } catch (err) {
-      message.error(err.message || "Failed to complete queue turn.");
+      toast.error(err.message || "Failed to complete queue turn.");
     }
   };
 
   // Create Walk-in Queue Entry API
   const handleCreateQueueEntry = async () => {
     if (!guestName.trim()) {
-      message.error("Please enter customer name.");
+      toast.error("Please enter customer name.");
       return;
     }
 
@@ -320,12 +321,12 @@ export function WalkInQueuePage() {
 
     try {
       await addToQueue(payload);
-      message.success("Đã VNDăng ký guests hàng vào hàng chờ thành công!");
+      toast.success("Đã VNDăng ký guests hàng vào hàng chờ thành công!");
       setIsAddDrawerOpen(false);
       resetForm();
       loadQueue();
     } catch (err) {
-      message.error(err.message || "Failed to register queue.");
+      toast.error(err.message || "Failed to register queue.");
     }
   };
 
@@ -789,10 +790,10 @@ export function WalkInQueuePage() {
                           onClick={async () => {
                             try {
                               await completeQueueEntry(item.queueId);
-                              message.success("Service completed.");
+                              toast.success("Service completed.");
                               loadQueue();
                             } catch (err) {
-                              message.error(err.message || "Operation failed.");
+                              toast.error(err.message || "Operation failed.");
                             }
                           }}
                           className="w-full bg-[#5b6472] hover:bg-[#474e59] border-none font-bold text-[10px] rounded-xl h-8.5 text-white"

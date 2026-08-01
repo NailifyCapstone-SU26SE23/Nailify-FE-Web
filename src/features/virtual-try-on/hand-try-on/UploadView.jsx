@@ -9,19 +9,24 @@ export function UploadView() {
       </div>
       <div className="upload-flow-content">
         <div className="upload-area" id="hand-upload-area">
-          <input type="file" id="image-upload" accept="image/*" style={{ display: 'none' }} />
+          <input
+            type="file"
+            id="image-upload"
+            accept="image/*"
+            style={{ display: "none" }}
+          />
           <div className="upload-placeholder">
             <span className="material-icons large-icon">cloud_upload</span>
             <p>Drag & Drop or Click to Upload your Hand Photo</p>
           </div>
-          <div className="hand-preview-container" style={{ display: 'none' }}>
+          <div className="hand-preview-container" style={{ display: "none" }}>
             <img crossOrigin="anonymous" id="hand-preview-img" alt="" />
           </div>
         </div>
         <button
           id="btn-start-image-tryon"
           className="action-btn blue"
-          style={{ display: 'none', marginTop: 24, width: 240 }}
+          style={{ display: "none", marginTop: 24, width: 240 }}
         >
           START TRY-ON
         </button>
@@ -29,4 +34,3 @@ export function UploadView() {
     </div>
   );
 }
-

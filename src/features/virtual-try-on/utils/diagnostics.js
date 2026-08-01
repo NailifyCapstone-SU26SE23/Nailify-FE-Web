@@ -1,22 +1,20 @@
-import { Point2D } from './handGeometry';
-
 /**
  * Checks the distance of the hand from the camera.
  * Returns 'TOO_FAR' if the hand is too far away, 'TOO_CLOSE' if too close, and 'OK' otherwise.
  */
-export function checkHandDistance(landmarks: Point2D[]): 'OK' | 'TOO_FAR' | 'TOO_CLOSE' {
-  if (!landmarks || landmarks.length < 21) return 'OK';
+export function checkHandDistance(landmarks) {
+  if (!landmarks || landmarks.length < 21) return "OK";
 
   const wrist = landmarks[0];
   const middleMcp = landmarks[9];
   const distance = Math.hypot(middleMcp.x - wrist.x, middleMcp.y - wrist.y);
 
   if (distance < 0.16) {
-    return 'TOO_FAR';
+    return "TOO_FAR";
   } else if (distance > 0.55) {
-    return 'TOO_CLOSE';
+    return "TOO_CLOSE";
   }
-  return 'OK';
+  return "OK";
 }
 
 /**
@@ -24,10 +22,7 @@ export function checkHandDistance(landmarks: Point2D[]): 'OK' | 'TOO_FAR' | 'TOO
  * Crops the hand region, downsamples it to a tiny 64x64 grid, computes local Sobel-like gradients,
  * and calculates the variance. A low variance flags a blurry image (poor focus, dirty lens, or bad lighting).
  */
-export function checkImageBlur(
-  source: HTMLVideoElement | HTMLCanvasElement | HTMLImageElement,
-  landmarks: Point2D[]
-): boolean {
+export function checkImageBlur(source, landmarks) {
   if (!landmarks || landmarks.length < 21) return false;
 
   let minX = 1.0;
@@ -50,13 +45,15 @@ export function checkImageBlur(
   maxY = Math.min(1, maxY + padY);
 
   const size = 64;
-  const tempCanvas = document.createElement('canvas');
+  const tempCanvas = document.createElement("canvas");
   tempCanvas.width = size;
   tempCanvas.height = size;
-  const ctx = tempCanvas.getContext('2d')!;
+  const ctx = tempCanvas.getContext("2d");
 
-  const srcW = source instanceof HTMLVideoElement ? source.videoWidth : source.width;
-  const srcH = source instanceof HTMLVideoElement ? source.videoHeight : source.height;
+  const srcW =
+    source instanceof HTMLVideoElement ? source.videoWidth : source.width;
+  const srcH =
+    source instanceof HTMLVideoElement ? source.videoHeight : source.height;
 
   if (srcW === 0 || srcH === 0) return false;
 
@@ -84,10 +81,12 @@ export function checkImageBlur(
       const grayVal = (pixels[idx] + pixels[idx + 1] + pixels[idx + 2]) / 3;
 
       const idxRight = (y * size + (x + 1)) * 4;
-      const grayRight = (pixels[idxRight] + pixels[idxRight + 1] + pixels[idxRight + 2]) / 3;
+      const grayRight =
+        (pixels[idxRight] + pixels[idxRight + 1] + pixels[idxRight + 2]) / 3;
 
       const idxDown = ((y + 1) * size + x) * 4;
-      const grayDown = (pixels[idxDown] + pixels[idxDown + 1] + pixels[idxDown + 2]) / 3;
+      const grayDown =
+        (pixels[idxDown] + pixels[idxDown + 1] + pixels[idxDown + 2]) / 3;
 
       const gx = grayRight - grayVal;
       const gy = grayDown - grayVal;

@@ -1,89 +1,74 @@
-export interface Point2D {
-  x: number;
-  y: number;
-  z?: number;
-  visibility?: number;
-}
-
-export interface Vector2D {
-  x: number;
-  y: number;
-}
-
-export interface BoundingBox2D {
-  minX: number;
-  minY: number;
-  maxX: number;
-  maxY: number;
-}
-
-export interface NailROI {
-  polygon: Point2D[];
-  bounds: BoundingBox2D;
-}
-
-export type FingerName = 'thumb' | 'index' | 'middle' | 'ring' | 'pinky';
-export type FitStatus = 'ok' | 'low_confidence' | 'too_wide';
-
-export interface FingerGeometry {
-  handIndex?: number;
-  fingerIndex: number;
-  fingerName: FingerName;
-  tip: Point2D;
-  joint: Point2D;
-  base: Point2D;
-  center: Point2D;
-  axis: Vector2D;
-  normal: Vector2D;
-  rotation: number;
-  width: number;
-  height: number;
-  roi: NailROI;
-  confidence: number;
-  fitStatus: FitStatus;
-}
-
-type FingerSpec = {
-  name: FingerName;
-  tip: number;
-  dip: number;
-  pip: number;
-  mcp: number;
-  widthFactor: number;
-  heightFactor: number;
-};
-
-export const FINGER_SPECS: FingerSpec[] = [
-  { name: 'thumb', tip: 4, dip: 3, pip: 2, mcp: 1, widthFactor: 1.08, heightFactor: 1.45 },
-  { name: 'index', tip: 8, dip: 7, pip: 6, mcp: 5, widthFactor: 0.74, heightFactor: 1.82 },
-  { name: 'middle', tip: 12, dip: 11, pip: 10, mcp: 9, widthFactor: 0.76, heightFactor: 1.88 },
-  { name: 'ring', tip: 16, dip: 15, pip: 14, mcp: 13, widthFactor: 0.72, heightFactor: 1.82 },
-  { name: 'pinky', tip: 20, dip: 19, pip: 18, mcp: 17, widthFactor: 0.68, heightFactor: 1.72 },
+export const FINGER_SPECS = [
+  {
+    name: "thumb",
+    tip: 4,
+    dip: 3,
+    pip: 2,
+    mcp: 1,
+    widthFactor: 1.08,
+    heightFactor: 1.45,
+  },
+  {
+    name: "index",
+    tip: 8,
+    dip: 7,
+    pip: 6,
+    mcp: 5,
+    widthFactor: 0.74,
+    heightFactor: 1.82,
+  },
+  {
+    name: "middle",
+    tip: 12,
+    dip: 11,
+    pip: 10,
+    mcp: 9,
+    widthFactor: 0.76,
+    heightFactor: 1.88,
+  },
+  {
+    name: "ring",
+    tip: 16,
+    dip: 15,
+    pip: 14,
+    mcp: 13,
+    widthFactor: 0.72,
+    heightFactor: 1.82,
+  },
+  {
+    name: "pinky",
+    tip: 20,
+    dip: 19,
+    pip: 18,
+    mcp: 17,
+    widthFactor: 0.68,
+    heightFactor: 1.72,
+  },
 ];
 
-const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
+const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
-const distance = (a: Point2D, b: Point2D) => Math.hypot(a.x - b.x, a.y - b.y);
+const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
-const normalize = (vector: Vector2D): Vector2D => {
+const normalize = (vector) => {
   const len = Math.hypot(vector.x, vector.y);
   if (len < 0.000001) return { x: 0, y: -1 };
   return { x: vector.x / len, y: vector.y / len };
 };
 
-const smoothstep = (edge0: number, edge1: number, value: number) => {
+const smoothstep = (edge0, edge1, value) => {
   const t = clamp((value - edge0) / (edge1 - edge0), 0, 1);
   return t * t * (3 - 2 * t);
 };
 
-const toCanvasPoint = (point: Point2D, width: number, height: number): Point2D => ({
+const toCanvasPoint = (point, width, height) => ({
   x: point.x * width,
   y: point.y * height,
   z: point.z,
   visibility: point.visibility,
 });
 
-const add = (point: Point2D, vector: Vector2D, scale = 1): Point2D => ({
+const add = (point, vector, scale = 1) => ({
   x: point.x + vector.x * scale,
   y: point.y + vector.y * scale,
 });
@@ -91,14 +76,19 @@ const add = (point: Point2D, vector: Vector2D, scale = 1): Point2D => ({
 /**
  * Gets the coordinates of the fingertip.
  */
-export function getFingertip(landmark: Point2D): Point2D {
-  return { x: landmark.x, y: landmark.y, z: landmark.z, visibility: landmark.visibility };
+export function getFingertip(landmark) {
+  return {
+    x: landmark.x,
+    y: landmark.y,
+    z: landmark.z,
+    visibility: landmark.visibility,
+  };
 }
 
 /**
  * Computes the direction vector (axis) of the finger from joint to tip.
  */
-export function getFingerAxis(tip: Point2D, joint: Point2D): Vector2D {
+export function getFingerAxis(tip, joint) {
   return normalize({
     x: tip.x - joint.x,
     y: tip.y - joint.y,
@@ -108,14 +98,14 @@ export function getFingerAxis(tip: Point2D, joint: Point2D): Vector2D {
 /**
  * Calculates the rotation angle of the finger in radians.
  */
-export function getRotationAngle(axis: Vector2D): number {
+export function getRotationAngle(axis) {
   return Math.atan2(axis.y, axis.x);
 }
 
 /**
  * Computes a rotated region of interest around the visible nail zone.
  */
-export function getNailROI(center: Point2D, axis: Vector2D, width: number, height: number): NailROI {
+export function getNailROI(center, axis, width, height) {
   const normalizedAxis = normalize(axis);
   const normal = { x: -normalizedAxis.y, y: normalizedAxis.x };
   const halfWidth = width * 0.62;
@@ -142,11 +132,7 @@ export function getNailROI(center: Point2D, axis: Vector2D, width: number, heigh
 /**
  * Computes a per-finger confidence score from hand score and anatomical consistency.
  */
-export function getFingerConfidence(
-  handScore: number,
-  landmarks: Point2D[],
-  fingerIndex: number // 0: Thumb, 1: Index, 2: Middle, 3: Ring, 4: Pinky
-): number {
+export function getFingerConfidence(handScore, landmarks, fingerIndex) {
   const spec = FINGER_SPECS[fingerIndex];
   if (!spec || !landmarks || landmarks.length < 21) return 0;
 
@@ -157,13 +143,13 @@ export function getFingerConfidence(
   if (!mcp || !pip || !dip || !tip) return 0;
 
   // Calculate 3D vectors between consecutive joints
-  const getVec3D = (p1: Point2D, p2: Point2D) => ({
+  const getVec3D = (p1, p2) => ({
     x: p2.x - p1.x,
     y: p2.y - p1.y,
     z: (p2.z ?? 0) - (p1.z ?? 0),
   });
 
-  const norm = (v: { x: number; y: number; z: number }) => {
+  const norm = (v) => {
     const len = Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
     if (len < 0.000001) return { x: 0, y: 0, z: 0 };
     return { x: v.x / len, y: v.y / len, z: v.z / len };
@@ -190,7 +176,7 @@ export function getFingerConfidence(
   }
 
   // 3D Reach-to-Length ratio
-  const dist3D = (a: Point2D, b: Point2D) => {
+  const dist3D = (a, b) => {
     const dx = a.x - b.x;
     const dy = a.y - b.y;
     const dz = (a.z ?? 0) - (b.z ?? 0);
@@ -201,12 +187,14 @@ export function getFingerConfidence(
   const reachRatio = fullLength > 0 ? reach / fullLength : 0;
 
   const reachConfidence =
-    fingerIndex === 0 ? smoothstep(0.45, 0.75, reachRatio) : smoothstep(0.55, 0.82, reachRatio);
+    fingerIndex === 0
+      ? smoothstep(0.45, 0.75, reachRatio)
+      : smoothstep(0.55, 0.82, reachRatio);
 
   extensionConfidence = Math.min(extensionConfidence, reachConfidence);
 
   // 2D curl check: if tip is closer to MCP than PIP or DIP, it is folded.
-  const dist2D = (a: Point2D, b: Point2D) => Math.hypot(a.x - b.x, a.y - b.y);
+  const dist2D = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
   const dTip = dist2D(tip, mcp);
   const dDip = dist2D(dip, mcp);
   const dPip = dist2D(pip, mcp);
@@ -215,7 +203,7 @@ export function getFingerConfidence(
   }
 
   const visibilityConfidence = [mcp, pip, dip, tip].reduce((score, point) => {
-    if (typeof point.visibility !== 'number') return score;
+    if (typeof point.visibility !== "number") return score;
     return Math.min(score, clamp(point.visibility, 0, 1));
   }, 1);
 
@@ -226,14 +214,21 @@ export function getFingerConfidence(
  * Converts MediaPipe landmarks into all geometry needed by the try-on renderer and later AI service calls.
  */
 export function computeFingerGeometry(
-  landmarks: Point2D[],
-  fingerIndex: number,
-  canvasWidth: number,
-  canvasHeight: number,
-  handScore: number
-): FingerGeometry | null {
+  landmarks,
+  fingerIndex,
+  canvasWidth,
+  canvasHeight,
+  handScore,
+) {
   const spec = FINGER_SPECS[fingerIndex];
-  if (!spec || !landmarks || landmarks.length < 21 || canvasWidth <= 0 || canvasHeight <= 0) return null;
+  if (
+    !spec ||
+    !landmarks ||
+    landmarks.length < 21 ||
+    canvasWidth <= 0 ||
+    canvasHeight <= 0
+  )
+    return null;
 
   const tip = toCanvasPoint(landmarks[spec.tip], canvasWidth, canvasHeight);
   const dip = toCanvasPoint(landmarks[spec.dip], canvasWidth, canvasHeight);
@@ -254,14 +249,21 @@ export function computeFingerGeometry(
   const canvasMin = Math.min(canvasWidth, canvasHeight);
   const distalLength = distance(dip, tip);
   const middleLength = distance(pip, dip);
-  const rawWidth = Math.max(distalLength * 1.25, middleLength * spec.widthFactor);
+  const rawWidth = Math.max(
+    distalLength * 1.25,
+    middleLength * spec.widthFactor,
+  );
   const width = clamp(rawWidth, canvasMin * 0.012, canvasMin * 0.085);
   const height = width * spec.heightFactor;
 
   const center = add(tip, axis, -height * 0.34);
   const confidence = getFingerConfidence(handScore, landmarks, fingerIndex);
-  const fitStatus: FitStatus =
-    confidence < 0.35 ? 'low_confidence' : width > canvasMin * 0.12 ? 'too_wide' : 'ok';
+  const fitStatus =
+    confidence < 0.35
+      ? "low_confidence"
+      : width > canvasMin * 0.12
+        ? "too_wide"
+        : "ok";
 
   return {
     fingerIndex,

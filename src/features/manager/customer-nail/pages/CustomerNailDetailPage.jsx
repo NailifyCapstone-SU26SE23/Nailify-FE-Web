@@ -20,6 +20,7 @@ import { PropTypes } from "../../../../shared/utils/propTypes";
 import { ROUTES } from "../../../../shared/constants/routes";
 import { fetchCustomerNailById, fetchSalonStaff, assignReviewer, managerApproveQuote, managerReject, getManagerSalonId } from "../services/customerNailsService";
 import { fetchNailArtistSkills } from "../../staff-artist-management/services/nailArtistsService";
+import toast from "react-hot-toast";
 
 
 function Card({ className = "", children }) {
@@ -409,13 +410,10 @@ function getFingerColorStyle(customColor, fingerIndex) {
 
 function normalizeComponentPosition(value, fallbackPercent = 50) {
   const numericValue = Number(value);
-  if (!Number.isFinite(numericValue)) {
-    return fallbackPercent;
-  }
-  if (Math.abs(numericValue) <= 1) {
-    return Math.max(0, Math.min(100, 50 + numericValue * 100));
-  }
-  return Math.max(0, Math.min(100, numericValue));
+  if (!Number.isFinite(numericValue)) return fallbackPercent;
+  // posX/posY are offset from center normalized by destW/destH.
+  // Multiply by 50: offset of 1.0 = full nail width away from center
+  return Math.max(0, Math.min(100, 50 + numericValue * 50));
 }
 
 function parseComponentConfig(configJson) {
@@ -481,7 +479,7 @@ function renderNailTip(style, shapeName, sizeClass = "w-12 h-20") {
 const copyToClipboard = (text) => {
   if (!text || text === "N/A") return;
   navigator.clipboard.writeText(text);
-  message.success(`Copied color code: ${text}`);
+  toast.success(`Copied color code: ${text}`);
 };
 
 function ActionButton({
@@ -618,18 +616,18 @@ export function CustomerNailDetailPage() {
 
       // Determine error type for better UX
       if (
-        errorMessage.includes("Token") ||
-        errorMessage.includes("Unauthorized") ||
-        errorMessage.includes("đăng nhập")
+        errortoast.includes("Token") ||
+        errortoast.includes("Unauthorized") ||
+        errortoast.includes("đăng nhập")
       ) {
         setErrorType("auth");
         setError("Token không hợp lệ! Vui lòng đăng nhập lại.");
-      } else if (errorMessage.includes("not found")) {
+      } else if (errortoast.includes("not found")) {
         setErrorType("notfound");
         setError(`Customer nail "${customerNailId}" không tồn tại.`);
       } else if (
-        errorMessage.includes("connect") ||
-        errorMessage.includes("network")
+        errortoast.includes("connect") ||
+        errortoast.includes("network")
       ) {
         setErrorType("network");
         setError("Không thể kết nối đến server. Kiểm tra kết nối internet.");
@@ -691,7 +689,7 @@ export function CustomerNailDetailPage() {
       setStaffList(artistsWithSkills);
     } catch (err) {
       console.error("[Page] Error loading salon staff:", err);
-      message.error(err.message || "Failed to load salon staff.");
+      toast.error(err.message || "Failed to load salon staff.");
     } finally {
       setIsLoadingStaff(false);
     }
@@ -699,14 +697,14 @@ export function CustomerNailDetailPage() {
 
   const handleAssignReviewer = async () => {
     if (!selectedStaff) {
-      message.error("Please select a staff member.");
+      toast.error("Please select a staff member.");
       return;
     }
     try {
       setIsSubmitting(true);
       const staffKey = selectedStaff.staffId || selectedStaff.staffArtistId || selectedStaff.userId || selectedStaff.id;
       await assignReviewer(nail?.customerNailRequestId || customerNailId, staffKey);
-      message.success("Staff assigned successfully!");
+      toast.success("Staff assigned successfully!");
       setIsAssignModalOpen(false);
       if (selectedStaff.skills) {
         setAssignedStaffSkills(selectedStaff.skills);
@@ -730,7 +728,7 @@ export function CustomerNailDetailPage() {
       }));
     } catch (err) {
       console.error("[Page] Error assigning reviewer:", err);
-      message.error(err.message || "Failed to assign staff.");
+      toast.error(err.message || "Failed to assign staff.");
     } finally {
       setIsSubmitting(false);
     }
@@ -738,20 +736,20 @@ export function CustomerNailDetailPage() {
 
   const handleManagerApproveQuote = async () => {
     if (!finalPrice) {
-      message.error("Please enter a final price.");
+      toast.error("Please enter a final price.");
       return;
     }
     try {
       setIsSubmitting(true);
       await managerApproveQuote(nail?.customerNailRequestId || customerNailId, parseFloat(finalPrice), parseFloat(finalDuration) || 0);
-      message.success("Quote approved successfully!");
+      toast.success("Quote approved successfully!");
       setIsApproveModalOpen(false);
       setFinalPrice("");
       setFinalDuration("");
       await loadCustomerNailDetail();
     } catch (err) {
       console.error("[Page] Error approving quote:", err);
-      message.error(err.message || "Failed to approve quote.");
+      toast.error(err.message || "Failed to approve quote.");
     } finally {
       setIsSubmitting(false);
     }
@@ -759,19 +757,19 @@ export function CustomerNailDetailPage() {
 
   const handleManagerReject = async () => {
     if (!rejectReason.trim()) {
-      message.error("Please enter a reject reason.");
+      toast.error("Please enter a reject reason.");
       return;
     }
     try {
       setIsSubmitting(true);
       await managerReject(nail?.customerNailRequestId || customerNailId, rejectReason.trim());
-      message.success("Customer nail rejected successfully!");
+      toast.success("Customer nail rejected successfully!");
       setIsRejectModalOpen(false);
       setRejectReason("");
       await loadCustomerNailDetail();
     } catch (err) {
       console.error("[Page] Error rejecting customer nail:", err);
-      message.error(err.message || "Failed to reject customer nail.");
+      toast.error(err.message || "Failed to reject customer nail.");
     } finally {
       setIsSubmitting(false);
     }
@@ -973,10 +971,11 @@ export function CustomerNailDetailPage() {
               if (!item?.imageUrl) return null;
 
               const config = parseComponentConfig(comp.configJson);
-              const scale = Number.isFinite(Number(config?.scale)) ? Number(config.scale) : 1;
+              const scale = Number.isFinite(Number(config?.scale)) ? Number(config.scale) : 0.25;
               const rotation = Number.isFinite(Number(config?.rotation)) ? Number(config.rotation) : 0;
               const left = normalizeComponentPosition(comp.posX, 50);
               const top = normalizeComponentPosition(comp.posY, 50);
+              const sizePercent = Math.max(10, Math.min(100, scale * 100));
 
               const globalIdx = (nail?.customerNailComponents || []).findIndex(c => c.customerNailComponentId === comp.customerNailComponentId);
               const globalId = comp.customerNailComponentId || globalIdx;
@@ -985,8 +984,6 @@ export function CustomerNailDetailPage() {
                 (comp.customerNailComponentId === null && globalIdx === selectedComponentId)
               );
 
-              const displayScale = Math.max(1, scale * 1.25);
-
               return (
                 <div
                   key={comp.customerNailComponentId || idx}
@@ -994,9 +991,9 @@ export function CustomerNailDetailPage() {
                   style={{
                     left: `${left}%`,
                     top: `${top}%`,
-                    transform: `translate(-50%, -50%) scale(${isSelected ? displayScale * 1.15 : displayScale}) rotate(${rotation}deg)`,
-                    width: '42px',
-                    height: '42px',
+                    width: `${isSelected ? sizePercent * 1.15 : sizePercent}%`,
+                    height: `${isSelected ? sizePercent * 1.15 : sizePercent}%`,
+                    transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
                     zIndex: isSelected ? 50 : 30,
                   }}
                   onClick={(e) => {

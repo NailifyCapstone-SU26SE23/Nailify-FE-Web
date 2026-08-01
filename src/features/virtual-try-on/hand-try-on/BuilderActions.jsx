@@ -1,22 +1,18 @@
-import { useState } from 'react';
-import type { HandLandmarkerTaskHandle } from '../handLandmarkerTask';
+import { useState } from "react";
 
-type BuilderActionsProps = {
-  currentNailSetId: string | null;
-  handLandmarkerTask: HandLandmarkerTaskHandle | null;
-  onReturnToForm: () => void;
-  onSaveDraft?: () => void;
-};
-
-export function BuilderActions({ handLandmarkerTask, onReturnToForm, onSaveDraft }: BuilderActionsProps) {
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+export function BuilderActions({
+  handLandmarkerTask,
+  onReturnToForm,
+  onSaveDraft,
+}) {
+  const [saveStatus, setSaveStatus] = useState("idle");
 
   const handleSave = async () => {
     if (!handLandmarkerTask) return;
 
-    setSaveStatus('saving');
+    setSaveStatus("saving");
     onSaveDraft?.();
-    setSaveStatus('saved');
+    setSaveStatus("saved");
   };
 
   return (
@@ -28,19 +24,22 @@ export function BuilderActions({ handLandmarkerTask, onReturnToForm, onSaveDraft
         </div>
 
         <div className="decoration-instructions">
-          <p>💡 <strong>Drag</strong> to move · <strong>Drag corner</strong> to resize</p>
+          <p>
+            💡 <strong>Drag</strong> to move · <strong>Drag corner</strong> to
+            resize
+          </p>
         </div>
       </section>
 
       <section className="builder-bottom-actions">
         <button
           className="action-btn green"
-          disabled={!handLandmarkerTask || saveStatus === 'saving'}
+          disabled={!handLandmarkerTask || saveStatus === "saving"}
           onClick={() => void handleSave()}
           type="button"
         >
           <span className="material-icons">save</span>
-          {saveStatus === 'saving' ? 'Saving...' : 'Save'}
+          {saveStatus === "saving" ? "Saving..." : "Save"}
         </button>
         <button id="btn-image-flow" className="action-btn blue" type="button">
           <span className="material-icons">image</span>
@@ -50,12 +49,21 @@ export function BuilderActions({ handLandmarkerTask, onReturnToForm, onSaveDraft
           <span className="material-icons">videocam</span>
           Live Try On
         </button>
-        <button className="action-btn neutral" disabled={!handLandmarkerTask} onClick={onReturnToForm} type="button">
+        <button
+          className="action-btn neutral"
+          disabled={!handLandmarkerTask}
+          onClick={onReturnToForm}
+          type="button"
+        >
           <span className="material-icons">arrow_back</span>
           Back
         </button>
-        {saveStatus === 'saved' ? <div className="status-text">Saved to draft</div> : null}
-        {saveStatus === 'error' ? <div className="status-text">Save failed</div> : null}
+        {saveStatus === "saved" ? (
+          <div className="status-text">Saved to draft</div>
+        ) : null}
+        {saveStatus === "error" ? (
+          <div className="status-text">Save failed</div>
+        ) : null}
       </section>
     </div>
   );
