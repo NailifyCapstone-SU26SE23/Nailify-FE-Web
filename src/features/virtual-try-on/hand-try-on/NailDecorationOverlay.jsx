@@ -129,6 +129,7 @@ export function NailDecorationOverlay({ fingerIndex, task }) {
                 task.setSelectedLayer(fingerIndex, idx);
                 refresh();
               }}
+              onClick={(e) => e.stopPropagation()}
             />
           );
         })}
@@ -163,6 +164,7 @@ export function NailDecorationOverlay({ fingerIndex, task }) {
                 task.setSelectedLayer(fingerIndex, idx);
                 refresh();
               }}
+              onClick={(e) => e.stopPropagation()}
             />
           );
         })}
@@ -385,7 +387,7 @@ function DecorationItem({
         height: `${heightPerc}%`,
         cursor: isSelected ? "grab" : "pointer",
         zIndex: isSelected ? 10 : idx,
-        pointerEvents: isSelected ? "auto" : "none",
+        pointerEvents: "auto",
       }}
       animate={{
         x: "-50%",
@@ -396,6 +398,7 @@ function DecorationItem({
       onPanStart={isSelected ? handlePanStart : undefined}
       onPan={isSelected ? handlePan : undefined}
       onPointerDown={handlePointerDown}
+      onClick={(e) => e.stopPropagation()}
       onWheel={handleWheel}
       whileTap={isSelected ? { scale: 1.05 } : undefined}
       whileHover={{ scale: isSelected ? 1.02 : 1 }}

@@ -388,7 +388,12 @@ class HandLandmarkerTask extends BaseVisionTask {
       btn.addEventListener(
         "click",
         (e) => {
-          if (e.target.closest(".decoration-item")) return;
+          if (
+            e.target.closest(".decoration-item") ||
+            e.target.closest(".decoration-overlay")
+          ) {
+            return;
+          }
           const nextFingerIndex = parseInt(btn.dataset.index ?? "0", 10);
           if (
             this.editMode === "individual" &&
