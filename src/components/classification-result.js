@@ -1,22 +1,18 @@
-export interface ClassificationItem {
-  label: string;
-  score: number; // 0.0 to 1.0
-}
-
 export class ClassificationResult {
-  private container: HTMLElement;
-
-  constructor(containerId: string) {
+  constructor(containerId) {
     const el = document.getElementById(containerId);
-    if (!el) throw new Error(`ClassificationResult: container ${containerId} not found`);
+    if (!el)
+      throw new Error(
+        `ClassificationResult: container ${containerId} not found`,
+      );
     this.container = el;
     this.injectStyles();
   }
 
-  private injectStyles() {
-    if (!document.getElementById('classification-result-styles')) {
-      const style = document.createElement('style');
-      style.id = 'classification-result-styles';
+  injectStyles() {
+    if (!document.getElementById("classification-result-styles")) {
+      const style = document.createElement("style");
+      style.id = "classification-result-styles";
       style.textContent = `
         .classification-item {
           display: flex;
@@ -66,19 +62,19 @@ export class ClassificationResult {
     }
   }
 
-  public updateResults(results: ClassificationItem[]) {
-    this.container.innerHTML = '';
+  updateResults(results) {
+    this.container.innerHTML = "";
 
     if (results.length === 0) {
-      results = [{ label: 'No results', score: 0 }];
+      results = [{ label: "No results", score: 0 }];
     }
 
     results.forEach((result) => {
       const scorePercent = Math.round(result.score * 100);
-      const row = document.createElement('div');
-      row.className = 'classification-item';
+      const row = document.createElement("div");
+      row.className = "classification-item";
       row.innerHTML = `
-        <span class="class-name">${result.label || 'Unknown'}</span>
+        <span class="class-name">${result.label || "Unknown"}</span>
         <div class="class-bar-container">
           <div class="class-bar" style="width: ${scorePercent}%"></div>
         </div>
@@ -88,7 +84,7 @@ export class ClassificationResult {
     });
   }
 
-  public clear() {
-    this.container.innerHTML = '';
+  clear() {
+    this.container.innerHTML = "";
   }
 }

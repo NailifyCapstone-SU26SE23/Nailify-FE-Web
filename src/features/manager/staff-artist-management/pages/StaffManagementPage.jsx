@@ -58,6 +58,7 @@ import dayjs from "dayjs";
 import { EditScheduleModal } from "../components/EditScheduleModal";
 import { TransferStaffModal } from "../components/TransferStaffModal";
 import { StaffDetailModal } from "../components/StaffDetailModal";
+import toast from "react-hot-toast";
 
 
 const fadeInUp = {
@@ -1146,7 +1147,7 @@ export function StaffManagementPage() {
 
   const handleCreateShift = async () => {
     if (!selectedStaff?.id) {
-      message.error("No staff selected.");
+      toast.error("No staff selected.");
       return;
     }
 
@@ -1156,12 +1157,12 @@ export function StaffManagementPage() {
     );
 
     if (daysToCreate.length === 0) {
-      message.error("Please select at least one available day.");
+      toast.error("Please select at least one available day.");
       return;
     }
 
     if (isShiftTimeInvalid) {
-      message.error("Please select at least one time slot.");
+      toast.error("Please select at least one time slot.");
       return;
     }
 
@@ -1234,14 +1235,14 @@ export function StaffManagementPage() {
       }
 
       await Promise.all(promises);
-      message.success("New shifts created successfully!");
+      toast.success("New shifts created successfully!");
 
       resetShiftForm();
       setIsCreateShiftModalOpen(false);
       loadSchedules();
     } catch (err) {
       console.error("Failed to create shift:", err);
-      message.error(err.message || "Failed to create shifts.");
+      toast.error(err.message || "Failed to create shifts.");
     } finally {
       setIsCreatingShift(false);
     }

@@ -5,6 +5,7 @@ import { PropTypes } from "../../../../shared/utils/propTypes";
 import { patchSchedule, fetchArtistSchedules, createSchedule, getSalonIdAsync } from "../services/nailArtistsService";
 import { fetchSalonById } from "../../../admin/salon-management/services/salonsService";
 import dayjs from "dayjs";
+import toast from "react-hot-toast";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -395,11 +396,11 @@ export function EditScheduleModal({
   // ── Submit ──────────────────────────────────────────────────────────────────
   const handleSave = async () => {
     if (!selectedStaffId) {
-      message.error("Please select a staff member.");
+      toast.error("Please select a staff member.");
       return;
     }
     if (isTimeInvalid) {
-      message.error("Please select at least one time slot.");
+      toast.error("Please select at least one time slot.");
       return;
     }
 
@@ -484,7 +485,7 @@ export function EditScheduleModal({
       } else {
         daysToProcess = DAYS_OF_WEEK.filter((d) => selectedDays[d.key]);
         if (daysToProcess.length === 0) {
-          message.error("Please select at least one day to update.");
+          toast.error("Please select at least one day to update.");
           return;
         }
       }
@@ -498,14 +499,14 @@ export function EditScheduleModal({
       });
 
       await Promise.all(allOps);
-      message.success(
+      toast.success(
         `Schedules updated for ${daysToProcess.length} day(s).`
       );
       if (onSuccess) onSuccess();
       onClose();
     } catch (err) {
       console.error("Failed to update schedule:", err);
-      message.error(err.message || "Failed to update schedule.");
+      toast.error(err.message || "Failed to update schedule.");
     } finally {
       setLoading(false);
     }

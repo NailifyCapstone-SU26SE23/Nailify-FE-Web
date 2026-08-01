@@ -1,25 +1,10 @@
-export interface ViewOption {
-  label: string;
-  value: string;
-  icon?: string;
-}
-
-export type ViewToggleCallback = (value: string) => void;
-export type ViewToggleStyle = 'pills' | 'tabs';
-
 export class ViewToggle {
-  private container: HTMLElement;
-  private options: ViewOption[];
-  private callback: ViewToggleCallback;
-  private activeValue: string;
-  private customStyle: ViewToggleStyle;
-
   constructor(
-    containerId: string,
-    options: ViewOption[],
-    defaultValue: string,
-    callback: ViewToggleCallback,
-    customStyle: ViewToggleStyle = 'pills'
+    containerId,
+    options,
+    defaultValue,
+    callback,
+    customStyle = "pills",
   ) {
     const element = document.getElementById(containerId);
     if (!element) {
@@ -34,15 +19,16 @@ export class ViewToggle {
     this.render();
   }
 
-  private render() {
-    const containerClass = this.customStyle === 'tabs' ? 'tabs-container' : 'view-tabs';
-    const buttonClass = this.customStyle === 'tabs' ? 'tab-button' : 'view-tab';
+  render() {
+    const containerClass =
+      this.customStyle === "tabs" ? "tabs-container" : "view-tabs";
+    const buttonClass = this.customStyle === "tabs" ? "tab-button" : "view-tab";
 
     this.container.classList.add(containerClass);
-    this.container.innerHTML = '';
+    this.container.innerHTML = "";
 
     this.options.forEach((option) => {
-      const button = document.createElement('button');
+      const button = document.createElement("button");
       button.classList.add(buttonClass);
       button.dataset.value = option.value;
 
@@ -53,10 +39,10 @@ export class ViewToggle {
       }
 
       if (option.value === this.activeValue) {
-        button.classList.add('active');
+        button.classList.add("active");
       }
 
-      button.addEventListener('click', () => {
+      button.addEventListener("click", () => {
         this.setActive(option.value);
       });
 
@@ -64,17 +50,18 @@ export class ViewToggle {
     });
   }
 
-  public setActive(value: string) {
+  setActive(value) {
     const isSame = this.activeValue === value;
     this.activeValue = value;
 
-    const buttonClass = this.customStyle === 'tabs' ? '.tab-button' : '.view-tab';
+    const buttonClass =
+      this.customStyle === "tabs" ? ".tab-button" : ".view-tab";
     const buttons = this.container.querySelectorAll(buttonClass);
     buttons.forEach((btn) => {
-      if ((btn as HTMLElement).dataset.value === value) {
-        btn.classList.add('active');
+      if (btn.dataset.value === value) {
+        btn.classList.add("active");
       } else {
-        btn.classList.remove('active');
+        btn.classList.remove("active");
       }
     });
 

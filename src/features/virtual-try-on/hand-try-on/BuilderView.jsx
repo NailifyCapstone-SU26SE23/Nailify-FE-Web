@@ -1,25 +1,25 @@
-import { BuilderActions } from './BuilderActions';
-import { BuilderControls } from './BuilderControls';
-import { NailDecorationOverlay } from './NailDecorationOverlay';
-import type { HandLandmarkerTaskHandle } from '../handLandmarkerTask';
-import { useState } from 'react';
-import { ZoomIn, ZoomOut } from 'lucide-react';
+import { BuilderActions } from "./BuilderActions";
+import { BuilderControls } from "./BuilderControls";
+import { NailDecorationOverlay } from "./NailDecorationOverlay";
+import { useState } from "react";
+import { ZoomIn, ZoomOut } from "lucide-react";
 
-type BuilderViewProps = {
-  currentNailSetId: string | null;
-  handLandmarkerTask: HandLandmarkerTaskHandle | null;
-  onReturnToForm: () => void;
-  onSaveDraft?: () => void;
-};
-
-export function BuilderView({ currentNailSetId, handLandmarkerTask, onReturnToForm, onSaveDraft }: BuilderViewProps) {
-  const previewLabels = ['Thumb', 'Index', 'Middle', 'Ring', 'Pinky'];
+export function BuilderView({
+  currentNailSetId,
+  handLandmarkerTask,
+  onReturnToForm,
+  onSaveDraft,
+}) {
+  const previewLabels = ["Thumb", "Index", "Middle", "Ring", "Pinky"];
   const [isZoomed, setIsZoomed] = useState(false);
 
   return (
     <div id="builder-view" className="view-step active">
       <div className="builder-layout">
-        <section className={`builder-preview-row ${isZoomed ? 'zoomed' : ''}`} aria-label="Nail previews">
+        <section
+          className={`builder-preview-row ${isZoomed ? "zoomed" : ""}`}
+          aria-label="Nail previews"
+        >
           <button
             type="button"
             className="zoom-toggle-btn"
@@ -32,7 +32,11 @@ export function BuilderView({ currentNailSetId, handLandmarkerTask, onReturnToFo
             <div className="nail-preview-card" data-index={index} key={label}>
               <span>{label}</span>
               <div className="nail-canvas-wrapper">
-                <canvas id={`nail-preview-canvas-${index}`} width="320" height="420" />
+                <canvas
+                  id={`nail-preview-canvas-${index}`}
+                  width="320"
+                  height="420"
+                />
                 {handLandmarkerTask && (
                   <NailDecorationOverlay
                     fingerIndex={index}
