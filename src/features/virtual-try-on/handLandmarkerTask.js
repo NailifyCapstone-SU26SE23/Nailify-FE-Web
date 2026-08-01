@@ -122,6 +122,35 @@ class HandLandmarkerTask extends BaseVisionTask {
     };
   }
 
+  copyCurrentFingerToAll() {
+    const sourceIndex =
+      this.selectedFingerIndex >= 0 ? this.selectedFingerIndex : 0;
+    const sourceFinger = this.currentNailSet.nails[sourceIndex];
+    if (!sourceFinger) return;
+
+    const sourceColor = sourceFinger.color;
+    const sourceGradient = sourceFinger.gradient
+      ? JSON.parse(JSON.stringify(sourceFinger.gradient))
+      : null;
+    const sourceCustomShape = sourceFinger.customShape;
+
+    this.currentNailSet.nails.forEach((nail) => {
+      nail.color = sourceColor;
+      nail.gradient = sourceGradient
+        ? JSON.parse(JSON.stringify(sourceGradient))
+        : null;
+      nail.customShape = sourceCustomShape;
+      nail.decorations = (sourceFinger.decorations || []).map((dec) => ({
+        ...dec,
+        id: Math.random().toString(36).substring(2, 9),
+      }));
+    });
+
+    this.renderLayersList();
+    this.triggerRedetection();
+    this.dispatchDecorationsChanged();
+  }
+
   dispatchDecorationsChanged() {
     document.dispatchEvent(new CustomEvent("nail-decorations-changed"));
   }
@@ -1379,7 +1408,6 @@ class HandLandmarkerTask extends BaseVisionTask {
     const { color, decorations, customShape } =
       this.currentNailSet.nails[fingerIndex];
     const baseShapeImg = customShape || this.nailImages[shape];
-    if (!baseShapeImg) return;
 
     const centerX = previewCanvas.width / 2;
     const centerY = previewCanvas.height / 2;
@@ -1410,7 +1438,18 @@ class HandLandmarkerTask extends BaseVisionTask {
       offCanvas.width = nailWidth;
       offCanvas.height = totalHeight;
       const offCtx = offCanvas.getContext("2d");
-      offCtx.drawImage(baseShapeImg, 0, 0, nailWidth, totalHeight);
+
+      if (baseShapeImg) {
+        offCtx.drawImage(baseShapeImg, 0, 0, nailWidth, totalHeight);
+      } else {
+        offCtx.save();
+        offCtx.translate(nailWidth / 2, 0);
+        this.drawProceduralNailMask(offCtx, nailWidth, totalHeight, shape);
+        offCtx.fillStyle = "#ffffff";
+        offCtx.fill();
+        offCtx.restore();
+      }
+
       offCtx.globalCompositeOperation = "source-in";
 
       const grad =
@@ -1669,6 +1708,10 @@ export async function setupHandLandmarker(container) {
     saveToDatabase: (nailSetId) => task.saveToDatabase(String(nailSetId)),
     startImageTryOn: () => task.startImageTryOn(),
     startLiveTryOn: () => task.startLiveTryOn(),
+    renderPreviewCanvas: (canvas, fingerIndex) =>
+      task.renderPreviewCanvas(canvas, fingerIndex),
+    triggerRedetection: () => task.triggerRedetection(),
+    copyCurrentFingerToAll: () => task.copyCurrentFingerToAll(),
     // Framer-motion API
     getDecorations: (fingerIndex) =>
       task.getDecorations(fingerIndex).map((d) => ({
