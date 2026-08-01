@@ -21,7 +21,6 @@ export function NailDecorationOverlay({ fingerIndex, task }) {
     const handler = () => refresh();
     document.addEventListener("nail-decorations-changed", handler);
 
-    // Poll for selection changes (lightweight — just reads numbers)
     const interval = setInterval(() => {
       const sl = task.getSelectedLayerIndex();
       const sf = task.getSelectedFingerIndex();
@@ -37,7 +36,6 @@ export function NailDecorationOverlay({ fingerIndex, task }) {
     };
   }, [refresh, selectedLayer, selectedFinger, task]);
 
-  // Also refresh when the canvas resizes (e.g. zoom toggle)
   useEffect(() => {
     const resizeObserver = new ResizeObserver(() => {
       setLayout(task.getCanvasLayout(fingerIndex));
@@ -51,36 +49,135 @@ export function NailDecorationOverlay({ fingerIndex, task }) {
 
   if (!layout || decorations.length === 0) return null;
 
-  // The overlay is positioned over the canvas. We need to convert canvas
-  // intrinsic pixel coordinates to CSS percentages.
   const toPercX = (canvasX) => (canvasX / layout.canvasW) * 100;
   const toPercY = (canvasY) => (canvasY / layout.canvasH) * 100;
+
+  const destXPerc = toPercX(layout.destX);
+  const destYPerc = toPercY(layout.destY);
+  const destWPerc = toPercX(layout.destW);
+  const destHPerc = toPercY(layout.destH);
+
+  const isClippedType = (type) => {
+    const t = String(type || "").toLowerCase().trim();
+    return t === "sticker" || t === "art" || t === "1" || t === "3";
+  };
+
+  const maskContainerStyle = layout.shapeImageUrl
+    ? {
+        left: `${destXPerc}%`,
+        top: `${destYPerc}%`,
+        width: `${destWPerc}%`,
+        height: `${destHPerc}%`,
+        maskImage: `url(${layout.shapeImageUrl})`,
+        WebkitMaskImage: `url(${layout.shapeImageUrl})`,
+        maskSize: "100% 100%",
+        WebkitMaskSize: "100% 100%",
+        maskRepeat: "no-repeat",
+        WebkitMaskRepeat: "no-repeat",
+      }
+    : {
+        left: `${destXPerc}%`,
+        top: `${destYPerc}%`,
+        width: `${destWPerc}%`,
+        height: `${destHPerc}%`,
+      };
+
+  const unmaskedContainerStyle = {
+    left: `${destXPerc}%`,
+    top: `${destYPerc}%`,
+    width: `${destWPerc}%`,
+    height: `${destHPerc}%`,
+  };
 
   return (
     <div
       ref={containerRef}
       className="decoration-overlay"
       onPointerDown={(e) => {
-        // If clicking the overlay background (not a decoration), deselect
         if (e.target === containerRef.current) {
           task.deselectLayer(fingerIndex);
           refresh();
         }
       }}
     >
+      {/* Layer 1: Masked artwork layer for Stickers & Art */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={maskContainerStyle}
+      >
+        {decorations.map((dec, idx) => {
+          if (!isClippedType(dec.type)) return null;
+          const isSelected =
+            selectedFinger === fingerIndex && selectedLayer === idx;
+          return (
+            <img
+              key={`masked-${dec.id}`}
+              src={dec.imageSrc}
+              alt={dec.type}
+              draggable={false}
+              className="absolute object-contain select-none cursor-pointer pointer-events-auto"
+              style={{
+                left: `${50 + dec.x * 100}%`,
+                top: `${50 + dec.y * 100}%`,
+                width: `${dec.scale * 100}%`,
+                height: `${dec.scale * 100}%`,
+                transform: `translate(-50%, -50%) rotate(${dec.rotation}deg)`,
+                zIndex: isSelected ? 10 : idx,
+              }}
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                task.setSelectedLayer(fingerIndex, idx);
+                refresh();
+              }}
+            />
+          );
+        })}
+      </div>
+
+      {/* Layer 2: Unmasked artwork layer for Gems & Charms */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={unmaskedContainerStyle}
+      >
+        {decorations.map((dec, idx) => {
+          if (isClippedType(dec.type)) return null;
+          const isSelected =
+            selectedFinger === fingerIndex && selectedLayer === idx;
+          return (
+            <img
+              key={`unmasked-${dec.id}`}
+              src={dec.imageSrc}
+              alt={dec.type}
+              draggable={false}
+              className="absolute object-contain select-none cursor-pointer pointer-events-auto"
+              style={{
+                left: `${50 + dec.x * 100}%`,
+                top: `${50 + dec.y * 100}%`,
+                width: `${dec.scale * 100}%`,
+                height: `${dec.scale * 100}%`,
+                transform: `translate(-50%, -50%) rotate(${dec.rotation}deg)`,
+                zIndex: isSelected ? 10 : idx,
+              }}
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                task.setSelectedLayer(fingerIndex, idx);
+                refresh();
+              }}
+            />
+          );
+        })}
+      </div>
+
+      {/* Layer 3: Interactive Controls & Selection Box */}
       {decorations.map((dec, idx) => {
         const isSelected =
           selectedFinger === fingerIndex && selectedLayer === idx;
-
-        // Calculate center position in percentage
         const centerX = toPercX(
           layout.destX + layout.destW / 2 + dec.x * layout.destW,
         );
         const centerY = toPercY(
           layout.destY + layout.destH / 2 + dec.y * layout.destH,
         );
-
-        // Calculate size in percentage
         const decWPerc = toPercX(layout.destW * dec.scale);
         const decHPerc = toPercY(layout.destH * dec.scale);
 
@@ -119,7 +216,6 @@ function DecorationItem({
   onRefresh,
 }) {
   const itemRef = useRef(null);
-
   const initialPosRef = useRef({ x: dec.x, y: dec.y });
 
   const handlePanStart = useCallback(
@@ -158,7 +254,10 @@ function DecorationItem({
       const newY =
         initialPosRef.current.y + dyNorm * (layout.canvasH / layout.destH);
 
-      task.updateDecoration(fingerIndex, idx, { x: newX, y: newY });
+      const clampedX = Math.max(-0.12, Math.min(0.12, newX));
+      const clampedY = Math.max(-0.38, Math.min(0.32, newY));
+
+      task.updateDecoration(fingerIndex, idx, { x: clampedX, y: clampedY });
       onRefresh();
     },
     [isSelected, fingerIndex, idx, layout, task, onRefresh],
@@ -263,10 +362,13 @@ function DecorationItem({
     const newX = initialPosRef.current.x + (actualScaleDelta / 2) * factorX;
     const newY = initialPosRef.current.y + (actualScaleDelta / 2) * factorY;
 
+    const clampedX = Math.max(-0.12, Math.min(0.12, newX));
+    const clampedY = Math.max(-0.38, Math.min(0.32, newY));
+
     task.updateDecoration(fingerIndex, idx, {
       scale: newScale,
-      x: newX,
-      y: newY,
+      x: clampedX,
+      y: clampedY,
     });
     onRefresh();
   };
@@ -283,6 +385,7 @@ function DecorationItem({
         height: `${heightPerc}%`,
         cursor: isSelected ? "grab" : "pointer",
         zIndex: isSelected ? 10 : idx,
+        pointerEvents: isSelected ? "auto" : "none",
       }}
       animate={{
         x: "-50%",
@@ -297,19 +400,6 @@ function DecorationItem({
       whileTap={isSelected ? { scale: 1.05 } : undefined}
       whileHover={{ scale: isSelected ? 1.02 : 1 }}
     >
-      <img
-        src={dec.imageSrc}
-        alt={dec.type}
-        draggable={false}
-        style={{
-          width: "100%",
-          height: "100%",
-          objectFit: "contain",
-          pointerEvents: "none",
-          userSelect: "none",
-        }}
-      />
-
       {isSelected && (
         <>
           {[

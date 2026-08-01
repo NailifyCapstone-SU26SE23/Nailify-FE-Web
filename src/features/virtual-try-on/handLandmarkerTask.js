@@ -95,13 +95,15 @@ class HandLandmarkerTask extends BaseVisionTask {
     }
   }
 
-  /** Returns the pixel rectangle where the nail is drawn on a given preview canvas */
   getCanvasLayout(fingerIndex) {
     const canvas = document.getElementById(
       `nail-preview-canvas-${fingerIndex}`,
     );
     if (!canvas) return null;
-    const { length } = this.currentNailSet;
+    const { shape, length } = this.currentNailSet;
+    const baseShapeImg = this.nailImages[shape];
+    const shapeImageUrl = baseShapeImg ? baseShapeImg.src : null;
+
     const fingerLength = Math.min(canvas.width * 0.36, canvas.height * 0.32);
     const nailWidth = fingerLength * 2.0;
     const nailHeight = fingerLength * 1.2 * length;
@@ -116,6 +118,7 @@ class HandLandmarkerTask extends BaseVisionTask {
       destH: totalHeight,
       canvasW: canvas.width,
       canvasH: canvas.height,
+      shapeImageUrl,
     };
   }
 
