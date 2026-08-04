@@ -58,6 +58,7 @@ import dayjs from "dayjs";
 import { EditScheduleModal } from "../components/EditScheduleModal";
 import { TransferStaffModal } from "../components/TransferStaffModal";
 import { StaffDetailModal } from "../components/StaffDetailModal";
+import toast from "react-hot-toast";
 
 
 const fadeInUp = {
@@ -426,7 +427,7 @@ function StaffArtistCard({ staff, onOpenDrawer }) {
 
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="line-clamp-1 text-base font-extrabold leading-snug text-slate-900 font-serif">
+            <h3 className="line-clamp-1 text-base font-extrabold leading-snug text-slate-900 ">
               {staff.name}
             </h3>
             <StatusPill status={staff.status} />
@@ -1146,7 +1147,7 @@ export function StaffManagementPage() {
 
   const handleCreateShift = async () => {
     if (!selectedStaff?.id) {
-      message.error("No staff selected.");
+      toast.error("No staff selected.");
       return;
     }
 
@@ -1156,12 +1157,12 @@ export function StaffManagementPage() {
     );
 
     if (daysToCreate.length === 0) {
-      message.error("Please select at least one available day.");
+      toast.error("Please select at least one available day.");
       return;
     }
 
     if (isShiftTimeInvalid) {
-      message.error("Please select at least one time slot.");
+      toast.error("Please select at least one time slot.");
       return;
     }
 
@@ -1234,14 +1235,14 @@ export function StaffManagementPage() {
       }
 
       await Promise.all(promises);
-      message.success("New shifts created successfully!");
+      toast.success("New shifts created successfully!");
 
       resetShiftForm();
       setIsCreateShiftModalOpen(false);
       loadSchedules();
     } catch (err) {
       console.error("Failed to create shift:", err);
-      message.error(err.message || "Failed to create shifts.");
+      toast.error(err.message || "Failed to create shifts.");
     } finally {
       setIsCreatingShift(false);
     }
@@ -1480,7 +1481,7 @@ export function StaffManagementPage() {
                       <Sparkles size={13} className="text-[#E84F93] animate-pulse" />
                       <span>Salon Staff & Artisan Roster</span>
                     </div>
-                    <h1 className="text-2xl lg:text-3xl font-extrabold text-[#2B182B] mt-1.5 tracking-tight font-serif">
+                    <h1 className="text-2xl lg:text-3xl font-extrabold text-[#2B182B] mt-1.5 tracking-tight ">
                       Staff Artists
                     </h1>
                     <p className="mt-1 text-xs lg:text-sm text-[#8C6682] font-semibold leading-relaxed">

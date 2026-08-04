@@ -96,19 +96,35 @@ export async function fetchReceptionistBookings(optionsOrDate) {
   const options = isLegacyDateArg ? { date: optionsOrDate } : optionsOrDate ?? {};
   const {
     date,
+    startDate,
+    endDate,
     includePagination = false,
     pageNumber,
     pageSize,
   } = options;
   const normalizedPageNumber = normalizePageNumber(pageNumber ?? 1);
   const normalizedPageSize = normalizeBookingPageSize(pageSize ?? MAX_BOOKING_PAGE_SIZE);
+
+  const queryParams = {
+    pageNumber: normalizedPageNumber,
+    pageSize: normalizedPageSize,
+  };
+
+  if (startDate) {
+    queryParams.startDate = startDate;
+  } else if (date) {
+    queryParams.startDate = date;
+  }
+
+  if (endDate) {
+    queryParams.endDate = endDate;
+  } else if (date) {
+    queryParams.endDate = date;
+  }
+
   const response = await axiosClient.get(`/Bookings/salon/${salonId}`, {
     headers: getAuthHeaders(),
-    params: {
-      ...(date ? { date } : {}),
-      pageNumber: normalizedPageNumber,
-      pageSize: normalizedPageSize,
-    },
+    params: queryParams,
   });
 
   const data = unwrapResponse(response, "Failed to load salon bookings.");

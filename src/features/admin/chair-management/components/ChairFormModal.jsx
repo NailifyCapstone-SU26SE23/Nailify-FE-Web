@@ -61,7 +61,7 @@ export default function ChairFormModal({
       onClose();
     } catch (error) {
       console.error(error);
-      message.error(error.message || 'Failed to save chair');
+      toast.error(error.message || 'Failed to save chair');
     } finally {
       setLoading(false);
     }

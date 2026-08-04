@@ -22,6 +22,7 @@ import { Pagination } from "../../../../shared/components/common/Pagination";
 import { fetchTransactions, fetchBookingById } from "../services/transactionService";
 import dayjs from "dayjs";
 import { RefundConfirmModal } from "../components/RefundConfirmModal";
+import toast from "react-hot-toast";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 15 },
@@ -186,17 +187,17 @@ export function TransactionManagementPage() {
   const handleCopyLink = (url) => {
     if (!url) return;
     navigator.clipboard.writeText(url);
-    message.success("Payment checkout link copied to clipboard!");
+    toast.success("Payment checkout link copied to clipboard!");
   };
 
   const handleCopyText = (text, label) => {
     if (!text) return;
     navigator.clipboard.writeText(text);
-    message.success(`${label} copied to clipboard!`);
+    toast.success(`${label} copied to clipboard!`);
   };
 
   const handleConfirmRefund = () => {
-    message.info("Tính năng đang được hoàn thiện (This feature is under development)");
+    toast.info("Tính năng đang được hoàn thiện (This feature is under development)");
     setRefundConfirmVisible(false);
   };
 

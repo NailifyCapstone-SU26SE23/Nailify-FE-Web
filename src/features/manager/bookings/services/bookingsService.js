@@ -63,21 +63,23 @@ function normalizeBookingPageSize(value, isAdmin = false) {
 }
 
 export async function fetchBookingsBySalonId(salonId, options = {}) {
-  const { pageNumber = 1, pageSize = 10, isAdmin = true } = options;
+  const { pageNumber = 1, pageSize = 10, isAdmin = true, startDate, endDate } = options;
   const normalizedPageNumber = normalizePageNumber(pageNumber);
   const normalizedPageSize = normalizeBookingPageSize(pageSize, isAdmin);
 
-  console.log("Fetching bookings for salon:", salonId, {
+  const queryParams = {
     pageNumber: normalizedPageNumber,
     pageSize: normalizedPageSize,
-  });
+  };
+
+  if (startDate) queryParams.startDate = startDate;
+  if (endDate) queryParams.endDate = endDate;
+
+  console.log("Fetching bookings for salon:", salonId, queryParams);
   try {
     const response = await axiosClient.get(`/Bookings/salon/${salonId}`, {
       headers: getAuthHeaders(),
-      params: {
-        pageNumber: normalizedPageNumber,
-        pageSize: normalizedPageSize,
-      }
+      params: queryParams
     });
 
     return unwrapResponse(response, "Failed to load bookings.", false, true);

@@ -86,7 +86,7 @@ export function DeleteConfirmModal({
                             {/* Text */}
                             <h2
                                 id="delete-modal-title"
-                                className="mb-2 font-serif text-[1.25rem] leading-snug text-[#3f2034]"
+                                className="mb-2  text-[1.25rem] leading-snug text-[#3f2034]"
                             >
                                 {title}
                             </h2>

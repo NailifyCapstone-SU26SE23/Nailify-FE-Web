@@ -1,22 +1,21 @@
-import { FilesetResolver } from '@mediapipe/tasks-vision';
+import { FilesetResolver } from "@mediapipe/tasks-vision";
 
-export abstract class BaseWorker<T> {
-  protected taskInstance: T | undefined;
-  protected isInitializing = false;
-  protected currentOptions: any = {};
-  protected basePath = '/';
-  protected isProcessing = false;
+export class BaseWorker {
+  isInitializing = false;
+  currentOptions = {};
+  basePath = "/";
+  isProcessing = false;
 
-  protected static async loadWasmModule(basePath: string, fileName: string): Promise<any> {
+  static async loadWasmModule(basePath, fileName) {
     const url = `${basePath}/${fileName}`;
 
     const module = await import(/* @vite-ignore */ url);
     const ModuleFactory = module.default;
 
     const wasmModule = await ModuleFactory({
-      print: (text: string) => console.log('[MediaPipe Debug]:', text),
-      printErr: (text: string) => console.error('[MediaPipe Error]:', text),
-      custom_dbg: (text: string) => console.log('[MediaPipe Debug]:', text),
+      print: (text) => console.log("[MediaPipe Debug]:", text),
+      printErr: (text) => console.error("[MediaPipe Error]:", text),
+      custom_dbg: (text) => console.log("[MediaPipe Debug]:", text),
     });
 
     return wasmModule;
@@ -26,7 +25,7 @@ export abstract class BaseWorker<T> {
     self.onmessage = this.handleMessage.bind(this);
   }
 
-  protected async handleMessage(event: MessageEvent) {
+  async handleMessage(event) {
     const { type } = event.data;
 
     while (this.isProcessing) {
@@ -35,44 +34,47 @@ export abstract class BaseWorker<T> {
     this.isProcessing = true;
 
     try {
-      if (type === 'INIT') {
+      if (type === "INIT") {
         const { modelAssetPath, delegate, baseUrl, ...rest } = event.data;
-        this.basePath = baseUrl || '/';
+        this.basePath = baseUrl || "/";
         this.currentOptions = { modelAssetPath, delegate, ...rest };
 
         await this.initializeBase(event.data);
 
         const payload = this.getInitPayload();
-        self.postMessage({ type: 'INIT_DONE', ...payload });
-      } else if (type === 'SET_OPTIONS') {
+        self.postMessage({ type: "INIT_DONE", ...payload });
+      } else if (type === "SET_OPTIONS") {
         const { type: _type, ...optionsToUpdate } = event.data;
         Object.assign(this.currentOptions, optionsToUpdate);
         await this.updateOptions(optionsToUpdate);
-        self.postMessage({ type: 'OPTIONS_UPDATED' });
-      } else if (type === 'CLEANUP') {
+        self.postMessage({ type: "OPTIONS_UPDATED" });
+      } else if (type === "CLEANUP") {
         if (this.taskInstance) {
-          (this.taskInstance as any).close?.();
+          this.taskInstance.close?.();
           this.taskInstance = undefined;
         }
-        self.postMessage({ type: 'CLEANUP_DONE' });
+        self.postMessage({ type: "CLEANUP_DONE" });
       } else {
         await this.handleCustomMessage(event.data);
       }
-    } catch (error: any) {
-      console.error('Worker Error:', error);
-      self.postMessage({ type: 'ERROR', error: error?.message || String(error) });
+    } catch (error) {
+      console.error("Worker Error:", error);
+      self.postMessage({
+        type: "ERROR",
+        error: error?.message || String(error),
+      });
     } finally {
       this.isProcessing = false;
     }
   }
 
-  private async initializeBase(data: any) {
+  async initializeBase(data) {
     if (this.isInitializing) return;
     this.isInitializing = true;
 
     try {
       if (this.taskInstance) {
-        (this.taskInstance as any).close?.();
+        this.taskInstance.close?.();
         this.taskInstance = undefined;
       }
       await this.initializeTask(data);
@@ -81,13 +83,13 @@ export abstract class BaseWorker<T> {
     }
   }
 
-  protected async loadModelAsset(): Promise<ArrayBuffer> {
+  async loadModelAsset() {
     const response = await fetch(this.currentOptions.modelAssetPath);
     if (!response.ok) {
       throw new Error(`Failed to load model: ${response.statusText}`);
     }
 
-    const contentLength = response.headers.get('content-length');
+    const contentLength = response.headers.get("content-length");
     const total = contentLength ? parseInt(contentLength, 10) : 0;
 
     const reader = response.body?.getReader();
@@ -96,7 +98,7 @@ export abstract class BaseWorker<T> {
     }
 
     let receivedLength = 0;
-    const chunks: Uint8Array[] = [];
+    const chunks = [];
 
     while (true) {
       const { done, value } = await reader.read();
@@ -106,7 +108,11 @@ export abstract class BaseWorker<T> {
       receivedLength += value.length;
 
       if (total > 0) {
-        self.postMessage({ type: 'LOAD_PROGRESS', loaded: receivedLength, total });
+        self.postMessage({
+          type: "LOAD_PROGRESS",
+          loaded: receivedLength,
+          total,
+        });
       }
     }
 
@@ -120,40 +126,42 @@ export abstract class BaseWorker<T> {
     return chunksAll.buffer;
   }
 
-  protected getWasmPath(): string {
-    const formattedBasePath = this.basePath.endsWith('/') ? this.basePath : `${this.basePath}/`;
-    return new URL(`${formattedBasePath}wasm`, self.location.origin).href.replace(/\/$/, '');
+  getWasmPath() {
+    const formattedBasePath = this.basePath.endsWith("/")
+      ? this.basePath
+      : `${this.basePath}/`;
+    return new URL(
+      `${formattedBasePath}wasm`,
+      self.location.origin,
+    ).href.replace(/\/$/, "");
   }
 
-  protected async getVisionFileset() {
+  async getVisionFileset() {
     const wasmPath = this.getWasmPath();
     const fileset = await FilesetResolver.forVisionTasks(wasmPath, true);
     fileset.wasmLoaderPath = `${fileset.wasmLoaderPath}?cb=${Date.now()}`; // Force reload
     return fileset;
   }
 
-  protected async getAudioFileset() {
+  async getAudioFileset() {
     const wasmPath = this.getWasmPath();
     const fileset = await FilesetResolver.forAudioTasks(wasmPath, true);
     fileset.wasmLoaderPath = `${fileset.wasmLoaderPath}?cb=${Date.now()}`; // Force reload
     return fileset;
   }
 
-  protected async getTextFileset() {
+  async getTextFileset() {
     const wasmPath = this.getWasmPath();
     const fileset = await FilesetResolver.forTextTasks(wasmPath, true);
     fileset.wasmLoaderPath = `${fileset.wasmLoaderPath}?cb=${Date.now()}`; // Force reload
     return fileset;
   }
 
-  protected updateOptions(_?: any): Promise<void> {
+  updateOptions(_) {
     return Promise.resolve();
   }
 
-  protected abstract initializeTask(data?: any): Promise<void>;
-  protected abstract handleCustomMessage(data: any): Promise<void>;
-
-  protected getInitPayload(): any {
+  getInitPayload() {
     return {};
   }
 }
