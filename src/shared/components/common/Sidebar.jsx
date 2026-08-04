@@ -134,7 +134,7 @@ export function Sidebar({
             <div className="flex items-center justify-center gap-2 text-center">
               {!collapsed ? <MapPin size={18} className="shrink-0 text-white" /> : null}
               <div className="min-w-0">
-                <p className="truncate text-[1.55rem] font-black leading-none tracking-[0.01em] text-white">
+                <p className="truncate text-[1.55rem] font-bold leading-none tracking-[0.01em] text-white">
                   {collapsed ? "N" : "Nailify"}
                 </p>
                 {!collapsed ? (

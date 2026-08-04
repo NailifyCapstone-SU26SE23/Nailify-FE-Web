@@ -80,77 +80,77 @@ export async function fetchAdminNailSurfaces({
   pageSize = 10,
   name = "",
 } = {}) {
-  const response = await axiosClient.get("/NailSurfaces", {
-    headers: getAuthHeaders(),
-    params: {
-      pageNumber,
-      pageSize,
-      name: name || undefined,
-    },
-  });
+  try {
+    const response = await axiosClient.get("/NailSurfaces", {
+      params: {
+        pageNumber,
+        pageSize,
+        ...(name && { name }),
+      },
+      headers: getAuthHeaders(),
+    });
 
-  const data = unwrapResponse(response, "Failed to load nail surfaces.");
-  const items = Array.isArray(data?.items) ? data.items.map(normalizeAdminNailSurface) : [];
+    const data = unwrapResponse(response, "Failed to fetch nail surfaces.");
 
-  return {
-    items,
-    metaData: normalizeMetaData(data?.metaData, { pageNumber, pageSize }),
-  };
+    return {
+      items: (data?.items || []).map(normalizeAdminNailSurface),
+      metaData: normalizeMetaData(data?.metaData, {
+        pageNumber,
+        pageSize,
+      }),
+    };
+  } catch (error) {
+    console.error("fetchAdminNailSurfaces error:", error);
+    throw error;
+  }
 }
 
 export async function fetchAdminNailSurfaceDetail(surfaceId) {
-  const normalizedSurfaceId = Number(surfaceId || 0);
-
-  if (!Number.isInteger(normalizedSurfaceId) || normalizedSurfaceId <= 0) {
-    throw new Error("Nail surface ID is required.");
-  }
-
-  const response = await axiosClient.get(`/NailSurfaces/${normalizedSurfaceId}`, {
-    headers: getAuthHeaders(),
-  });
-
-  const data = unwrapResponse(response, "Failed to load nail surface detail.");
-  return normalizeAdminNailSurface(data);
-}
-
-function buildNailSurfacePayload(formValues) {
-  return {
-    name: String(formValues?.name || "").trim(),
-    shaderParam: String(formValues?.shaderParam || "").trim(),
-    lightnessOffset: Number(formValues?.lightnessOffset || 0),
-    saturationOffset: Number(formValues?.saturationOffset || 0),
-    hueOffset: Number(formValues?.hueOffset || 0),
-    price: Number(formValues?.price || 0),
-    duration: Number(formValues?.duration || 0),
-  };
-}
-
-export async function createAdminNailSurface(formValues) {
-  const response = await axiosClient.post("/NailSurfaces", buildNailSurfacePayload(formValues), {
-    headers: getAuthHeaders(),
-  });
-
-  const data = unwrapResponse(response, "Failed to create nail surface.");
-  return normalizeAdminNailSurface(data);
-}
-
-export async function updateAdminNailSurface(surfaceId, formValues) {
-  const normalizedSurfaceId = Number(surfaceId || 0);
-
-  if (!Number.isInteger(normalizedSurfaceId) || normalizedSurfaceId <= 0) {
-    throw new Error("Nail surface ID is required.");
-  }
-
-  const response = await axiosClient.put(
-    `/NailSurfaces/${normalizedSurfaceId}`,
-    buildNailSurfacePayload(formValues),
-    {
+  try {
+    const response = await axiosClient.get(`/NailSurfaces/${surfaceId}`, {
       headers: getAuthHeaders(),
-    },
-  );
+    });
 
-  const data = unwrapResponse(response, "Failed to update nail surface.");
-  return normalizeAdminNailSurface(data);
+    const data = unwrapResponse(response, "Failed to fetch nail surface details.");
+    return normalizeAdminNailSurface(data);
+  } catch (error) {
+    console.error("fetchAdminNailSurfaceDetail error:", error);
+    throw error;
+  }
+}
+
+export async function createAdminNailSurface(payload) {
+  try {
+    const response = await axiosClient.post("/NailSurfaces", payload, {
+      headers: getAuthHeaders(),
+    });
+
+    const data = unwrapResponse(response, "Failed to create nail surface.");
+    return normalizeAdminNailSurface(data);
+  } catch (error) {
+    console.error("createAdminNailSurface error:", error);
+    throw error;
+  }
+}
+
+export async function updateAdminNailSurface(surfaceId, payload) {
+  const normalizedSurfaceId = Number(surfaceId || 0);
+
+  if (!Number.isInteger(normalizedSurfaceId) || normalizedSurfaceId <= 0) {
+    throw new Error("Nail surface ID is required.");
+  }
+
+  try {
+    const response = await axiosClient.put(`/NailSurfaces/${normalizedSurfaceId}`, payload, {
+      headers: getAuthHeaders(),
+    });
+
+    const data = unwrapResponse(response, "Failed to update nail surface.");
+    return normalizeAdminNailSurface(data);
+  } catch (error) {
+    console.error("updateAdminNailSurface error:", error);
+    throw error;
+  }
 }
 
 export async function deleteAdminNailSurface(surfaceId) {
@@ -160,9 +160,15 @@ export async function deleteAdminNailSurface(surfaceId) {
     throw new Error("Nail surface ID is required.");
   }
 
-  const response = await axiosClient.delete(`/NailSurfaces/${normalizedSurfaceId}`, {
-    headers: getAuthHeaders(),
-  });
+  try {
+    const response = await axiosClient.delete(`/NailSurfaces/${normalizedSurfaceId}`, {
+      headers: getAuthHeaders(),
+    });
 
-  return unwrapResponse(response, "Failed to delete nail surface.");
+    const data = unwrapResponse(response, "Failed to delete nail surface.");
+    return { isSucceeded: true, data };
+  } catch (error) {
+    console.error("deleteAdminNailSurface error:", error);
+    throw error;
+  }
 }

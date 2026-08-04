@@ -86,7 +86,7 @@ export function CancelBookingModal({
             <XCircle size={26} className="drop-shadow-md animate-pulse" />
           </div>
           <div>
-            <h2 className="text-xl font-black tracking-tight">Cancel Booking</h2>
+            <h2 className="text-xl font-bold tracking-tight">Cancel Booking</h2>
             <p className="mt-1 text-xs text-amber-100/90 font-medium">This action will cancel the customer's appointment request</p>
           </div>
         </div>
@@ -108,7 +108,7 @@ export function CancelBookingModal({
         {/* Booking Details */}
         {Object.keys(booking).length > 0 && (
           <div className="space-y-3 rounded-2xl border border-[#ffdcb5]/60 bg-gradient-to-b from-[#fffcf8] to-[#fff6ec] p-4 shadow-[0_4px_16px_rgba(219,133,32,0.02)]">
-            <h3 className="text-[10px] font-black uppercase tracking-wider text-[#db8520]/80">
+            <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#db8520]/80">
               Booking Details
             </h3>
             <div className="grid grid-cols-2 gap-x-4 gap-y-3 pt-1">
@@ -137,7 +137,7 @@ export function CancelBookingModal({
               {booking.totalPrice && (
                 <div className="col-span-2 flex items-center justify-between border-t border-[#ffdcb5]/30 pt-2 mt-1 text-xs">
                   <span className="font-semibold text-[#8e7b89]">Total Amount:</span>
-                  <span className="text-base font-black text-[#db8520]">{booking.totalPrice}</span>
+                  <span className="text-base font-bold text-[#db8520]">{booking.totalPrice}</span>
                 </div>
               )}
             </div>
@@ -146,7 +146,7 @@ export function CancelBookingModal({
 
         {/* Reason Selection */}
         <div className="space-y-1.5">
-          <label className="text-[10px] font-black uppercase tracking-wider text-[#8b7282]">
+          <label className="text-[10px] font-bold uppercase tracking-wider text-[#8b7282]">
             Cancellation Reason <span className="text-[#db8520] font-bold">*</span>
           </label>
           <Select
@@ -163,7 +163,7 @@ export function CancelBookingModal({
 
         {/* Details Field */}
         <div className="space-y-1.5">
-          <label className="text-[10px] font-black uppercase tracking-wider text-[#8b7282]">
+          <label className="text-[10px] font-bold uppercase tracking-wider text-[#8b7282]">
             Additional Notes (Optional)
           </label>
           <Input.TextArea

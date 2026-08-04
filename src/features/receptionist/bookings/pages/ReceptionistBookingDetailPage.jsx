@@ -1,5 +1,6 @@
 import { Button, Modal, Table, Descriptions, Image, Divider, Timeline, Card, Tag, Badge, List, Avatar, Popover } from "antd";
 import {
+  Armchair,
   Bell,
   Calendar,
   CalendarClock,
@@ -38,19 +39,22 @@ import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 import { AssignReceptionistArtistModal } from "../components/AssignReceptionistArtistModal";
 import { OnsiteAddonModal } from "../../../manager/bookings/components/OnsiteAddonModal";
 import { ProposeRescheduleModal } from "../../../manager/bookings/components/ProposeRescheduleModal";
+import { AssignChairModal } from "../components/AssignChairModal";
 import {
+
   checkoutReceptionistBooking,
   fetchReceptionistBookingDetail,
   fetchReceptionistBookingProcedures,
   fetchReceptionistProcedureAvailableArtists,
-  fetchReceptionistCustomerDetail,
   manualCheckInReceptionistBooking,
   updateReceptionistProcedureArtist,
   getBookingHistories,
   getUserById,
 } from "../services/receptionistBookingService";
+import { fetchReceptionistCustomerDetail, fetchLoyaltyTiers } from "../../customers/services/receptionistCustomerService";
 import { createPayment } from "../../payments/services/receptionistPaymentService";
 import dayjs from "dayjs";
+import { useQuery } from "@tanstack/react-query";
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -244,8 +248,8 @@ function CircularProgressRing({ percent = 65, remainingTime = "45 min" }) {
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-1">
-        <span className="text-sm font-black text-[#2B182B] leading-none">{remainingTime}</span>
-        <span className="text-[9px] font-extrabold text-[#E84F93] mt-1">{percent}% Done</span>
+        <span className="text-sm font-bold text-[#2B182B] leading-none">{remainingTime}</span>
+        <span className="text-[9px] font-bold text-[#E84F93] mt-1">{percent}% Done</span>
       </div>
     </div>
   );
@@ -361,7 +365,7 @@ function DetailCard({ title, subtitle, badge, children, className = "" }) {
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-sm font-extrabold text-[#2B182B] tracking-tight">{title}</h3>
+          <h3 className="text-md font-bold text-pink-600 tracking-tight">{title}</h3>
           {subtitle ? <p className="mt-0.5 text-xs text-[#9E8497] font-medium">{subtitle}</p> : null}
         </div>
         {badge ? (
@@ -388,6 +392,7 @@ export function ReceptionistBookingDetailPage() {
   const [isQrOpen, setIsQrOpen] = useState(false);
   const [isAssignArtistOpen, setIsAssignArtistOpen] = useState(false);
   const [isMoveScheduleOpen, setIsMoveScheduleOpen] = useState(false);
+  const [isAssignChairModalOpen, setIsAssignChairModalOpen] = useState(false);
   const [isOnsiteAddonModalOpen, setIsOnsiteAddonModalOpen] = useState(false);
   const [selectedServiceRow, setSelectedServiceRow] = useState(null);
   const [selectedProcedureRow, setSelectedProcedureRow] = useState(null);
@@ -449,9 +454,15 @@ export function ReceptionistBookingDetailPage() {
         try {
           const data = await fetchReceptionistBookingDetail(bookingId);
           setBooking(data);
-          if (data?.customerId) {
+
+          console.log("Booking Detail Fetched:", data);
+
+          const custId = data?.customerId || data?.customer?.id || data?.customer?.userId || data?.customerUserId;
+          console.log("Extracted Customer ID:", custId);
+
+          if (custId) {
             try {
-              const customerData = await fetchReceptionistCustomerDetail(data.customerId);
+              const customerData = await fetchReceptionistCustomerDetail(custId);
               setCustomerProfile(customerData);
             } catch (customerError) {
               setCustomerProfile(null);
@@ -498,6 +509,29 @@ export function ReceptionistBookingDetailPage() {
     booking?.qrCode ? `data:image/png;base64,${booking.qrCode}` : ""
   ), [booking]);
   const customerDisplayName = getCustomerDisplayName(customerProfile, booking);
+
+  const { data: loyaltyTiers } = useQuery({
+    queryKey: ['loyaltyTiers'],
+    queryFn: async () => {
+      return await fetchLoyaltyTiers();
+    }
+  });
+
+  const { customerTier, customerPoints } = useMemo(() => {
+    if (!customerProfile) return { customerTier: null, customerPoints: 0 };
+    const points = customerProfile.loyaltyPoint || 0;
+    if (!loyaltyTiers?.length) return { customerTier: null, customerPoints: points };
+
+    const tier = loyaltyTiers.find(t =>
+      points >= t.minLifetimePoints &&
+      (t.maxLifetimePoints === null || points <= t.maxLifetimePoints)
+    );
+    return { customerTier: tier, customerPoints: points };
+  }, [customerProfile, loyaltyTiers]);
+
+  console.log("customer", customerTier);
+  console.log("point", customerPoints);
+
   const customerInitials = getCustomerInitials(customerProfile, booking);
   const isSelectedRowNail = isNailBookingItem(selectedServiceRow?.sourceItem);
 
@@ -717,7 +751,7 @@ export function ReceptionistBookingDetailPage() {
       title: "Time",
       dataIndex: "time",
       key: "time",
-      render: (value) => <span className="text-xs font-extrabold text-[#E84F93]">{value}</span>,
+      render: (value) => <span className="text-xs font-bold text-[#E84F93]">{value}</span>,
     },
     {
       title: "Service Name & Design",
@@ -725,11 +759,11 @@ export function ReceptionistBookingDetailPage() {
       render: (_, row) => (
         <div className="flex items-center gap-2">
           {row.count > 1 && (
-            <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full bg-[#FFF0F6] border border-[#F3D7E4] text-[#E84F93] text-[11px] font-black shrink-0 shadow-2xs">
+            <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full bg-[#FFF0F6] border border-[#F3D7E4] text-[#E84F93] text-[11px] font-bold shrink-0 shadow-2xs">
               x{row.count}
             </span>
           )}
-          <p className="text-xs font-black text-[#2B182B]">
+          <p className="text-xs font-bold text-[#2B182B]">
             {row.service ? row.service.replace(/^x\d+\s*/, "") : `Nail service: Christmas Snow Sparkle - Đỏ Nhung Kiều Kỳ`}
           </p>
         </div>
@@ -740,7 +774,7 @@ export function ReceptionistBookingDetailPage() {
       key: "artist",
       render: (_, row) => (
         <div className="flex items-center gap-2">
-          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9] text-[9px] font-black text-white shadow-2xs">
+          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9] text-[9px] font-bold text-white shadow-2xs">
             {(row.artist || "--")
               .split(" ")
               .filter(Boolean)
@@ -763,7 +797,7 @@ export function ReceptionistBookingDetailPage() {
       title: "Price",
       dataIndex: "price",
       key: "price",
-      render: (value) => <span className="text-xs font-black text-[#047857]">{value}</span>,
+      render: (value) => <span className="text-xs font-bold text-[#047857]">{value}</span>,
     },
     {
       title: "Action",
@@ -771,7 +805,7 @@ export function ReceptionistBookingDetailPage() {
       render: (_, row) => (
         <ActionDropdown
           items={getServiceActionItems(row, handleViewService, handleViewProcedures)}
-          buttonClassName="bg-[#FFF0F6] text-[#E84F93] hover:bg-[#E84F93] hover:text-white transition-all font-extrabold rounded-full px-3 py-1 text-xs border border-[#F3D6E5] cursor-pointer shadow-2xs"
+          buttonClassName="bg-[#FFF0F6] text-[#E84F93] hover:bg-[#E84F93] hover:text-white transition-all font-bold rounded-full px-3 py-1 text-xs border border-[#F3D6E5] cursor-pointer shadow-2xs"
           label="Actions"
         />
       ),
@@ -849,13 +883,13 @@ export function ReceptionistBookingDetailPage() {
         onClick: () => void handlePrimaryHeaderAction(),
       },
       {
-        label: "Start Service",
-        subtitle: "Begin session",
-        icon: Sparkles,
+        label: "Assign Chair",
+        subtitle: "Assign to seat",
+        icon: Armchair,
         cardTone: "bg-[linear-gradient(180deg,#f2edff_0%,#e9e1ff_100%)]",
         iconTone: "bg-[#dfd1ff] text-[#8160df]",
         disabled: !actionAvailability.canStartService,
-        onClick: () => handleMockAction("Start Service"),
+        onClick: () => setIsAssignChairModalOpen(true),
       },
       {
         label: "Reassign Artist",
@@ -934,7 +968,7 @@ export function ReceptionistBookingDetailPage() {
   if (error || !booking) {
     return (
       <section className="rounded-[24px] border border-[#f6d8e5] bg-white p-6 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
-        <p className="text-lg font-extrabold text-[#412643]">Booking detail unavailable</p>
+        <p className="text-lg font-bold text-[#412643]">Booking detail unavailable</p>
         <p className="mt-2 text-sm text-[#b38a9f]">{error || "This booking could not be loaded."}</p>
         <div className="mt-4 flex flex-wrap gap-2">
           <button
@@ -963,81 +997,19 @@ export function ReceptionistBookingDetailPage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-xl font-black tracking-tight text-[#2B182B]">Booking Management</h1>
-              <span className="rounded-full bg-[#FFF0F6] border border-[#F3D6E5] px-2.5 py-0.5 text-[10px] font-black text-[#E84F93] uppercase tracking-wider">
+              <h1 className="text-xl font-bold tracking-tight text-[#2B182B]">Booking Details</h1>
+              {/* <span className="rounded-full bg-[#FFF0F6] border border-[#F3D6E5] px-2.5 py-0.5 text-[10px] font-bold text-[#E84F93] uppercase tracking-wider">
                 Real-Time Ops
-              </span>
+              </span> */}
             </div>
             <p className="mt-0.5 text-xs font-medium text-[#9E8497]">Real-time salon operations & customer check-in</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            {/* Date picker pill */}
-            <div className="flex items-center gap-2 rounded-full border border-[#F3E2EC] bg-[#FFF9FB] px-3.5 py-1.5 text-xs font-bold text-[#2B182B] shadow-2xs">
-              <Calendar size={14} className="text-[#E84F93]" />
-              <span>{dayjs(booking?.bookingDate || new Date()).format("MMM D, YYYY")}</span>
-            </div>
-
-            {/* Quick Search input */}
-            <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9E8497]" />
-              <input
-                type="text"
-                placeholder="Search customer..."
-                className="w-40 rounded-full border border-[#F3E2EC] bg-[#FFF9FB] pl-8 pr-3 py-1.5 text-xs font-medium text-[#2B182B] focus:outline-none focus:border-[#E84F93] focus:w-48 transition-all shadow-2xs placeholder:text-[#C8B0BF]"
-              />
-            </div>
-
-            {/* Notification Bell */}
-            <Popover
-              trigger="click"
-              placement="bottomRight"
-              content={
-                <div className="w-80 space-y-3 p-1">
-                  <div className="flex items-center justify-between border-b border-[#F3E2EC] pb-2">
-                    <span className="font-black text-xs text-[#2B182B]">Thông Báo Salon Real-Time</span>
-                    <span className="rounded-full bg-[#FFF0F6] px-2 py-0.5 text-[10px] font-bold text-[#E84F93]">3 mới</span>
-                  </div>
-                  <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                    <div className="p-2.5 rounded-xl bg-[#FFF9FB] border border-[#F3E2EC] text-xs space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-[#2B182B]">Check-in Khách Hàng</span>
-                        <span className="text-[10px] text-[#9E8497]">Vừa xong</span>
-                      </div>
-                      <p className="text-[#6B5B68] text-[11px]">Khách <strong>{customerDisplayName}</strong> đã có mặt và thực hiện check-in.</p>
-                    </div>
-                    <div className="p-2.5 rounded-xl bg-[#FFF9FB] border border-[#F3E2EC] text-xs space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-[#2B182B]">Phân Công Thợ Làm Móng</span>
-                        <span className="text-[10px] text-[#9E8497]">5 phút trước</span>
-                      </div>
-                      <p className="text-[#6B5B68] text-[11px]">Thợ <strong>{booking?.artistName || "Aria Nguyen"}</strong> đã nhận lịch hẹn dịch vụ.</p>
-                    </div>
-                    <div className="p-2.5 rounded-xl bg-[#FFF9FB] border border-[#F3E2EC] text-xs space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-[#2B182B]">Tiền Cọc Đã Nhận</span>
-                        <span className="text-[10px] text-[#9E8497]">15 phút trước</span>
-                      </div>
-                      <p className="text-[#6B5B68] text-[11px]">Khách hàng đã thanh toán 100.000 VNĐ tiền cọc qua MoMo/VNPAY.</p>
-                    </div>
-                  </div>
-                </div>
-              }
-            >
-              <button
-                type="button"
-                className="relative p-2 rounded-full border border-[#F3E2EC] bg-[#FFF9FB] hover:bg-[#FFF0F6] text-[#2B182B] transition cursor-pointer shadow-2xs"
-                title="Notifications"
-              >
-                <Bell size={16} />
-                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-[#10B981] animate-pulse"></span>
-              </button>
-            </Popover>
-
             <button
               type="button"
               onClick={() => setIsQrOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-[#F3E2EC] bg-[#FFF9FB] hover:bg-[#FFF0F6] px-3.5 py-1.5 text-xs font-extrabold text-[#E84F93] transition shadow-2xs cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[#F3E2EC] bg-[#FFF9FB] hover:bg-[#FFF0F6] px-3.5 py-1.5 text-xs font-bold text-[#E84F93] transition shadow-2xs cursor-pointer"
             >
               <QrCode size={14} />
               QR Code
@@ -1048,7 +1020,7 @@ export function ReceptionistBookingDetailPage() {
               type="button"
               onClick={() => void handlePrimaryHeaderAction()}
               disabled={isPrimaryHeaderActionDisabled}
-              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-5 py-2 text-xs font-black text-white shadow-[0_8px_20px_rgba(232,79,147,0.28)] hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-5 py-2 text-xs font-bold text-white shadow-[0_8px_20px_rgba(232,79,147,0.28)] hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isManualCheckInSubmitting || isCheckoutSubmitting ? (
                 <LoaderCircle size={14} className="animate-spin" />
@@ -1080,110 +1052,113 @@ export function ReceptionistBookingDetailPage() {
                       className="h-20 w-20 rounded-[22px] border-2 border-[#E84F93] object-cover shadow-md"
                     />
                   ) : (
-                    <div className="flex h-20 w-20 items-center justify-center rounded-[22px] border-2 border-[#E84F93] bg-gradient-to-br from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] text-xl font-black text-white shadow-md">
+                    <div className="flex h-20 w-20 items-center justify-center rounded-[22px] border-2 border-[#E84F93] bg-gradient-to-br from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] text-xl font-bold text-white shadow-md">
                       {customerInitials}
                     </div>
                   )}
-                  <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-[#F59E0B] to-[#D97706] px-2.5 py-0.5 text-[9px] font-black text-white shadow-xs border border-white uppercase tracking-wider whitespace-nowrap">
-                    VIP
-                  </span>
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2.5 flex-wrap">
-                    <p className="text-xl font-black text-[#2B182B] truncate">{customerDisplayName}</p>
-                    <span className="rounded-full bg-[#FEF3C7] border border-[#FDE68A] px-2.5 py-0.5 text-[10px] font-black text-[#B45309]">
-                      Gold Tier
-                    </span>
-                  </div>
 
-                  {/* Prominent pill tags */}
-                  <div className="mt-2.5 flex flex-wrap gap-1.5">
-                    {(
-                      [
-                        customerProfile?.membershipTierName || booking?.customerMembershipTier || "VIP Member",
-                        customerProfile?.allergies || customerProfile?.skinCondition || null,
-                        customerProfile?.totalVisits ? `${customerProfile.totalVisits} Visits` : null,
-                      ].filter(Boolean).length > 0
-                        ? [
-                          customerProfile?.membershipTierName || booking?.customerMembershipTier || "VIP Member",
-                          customerProfile?.allergies || customerProfile?.skinCondition || null,
-                          customerProfile?.totalVisits ? `${customerProfile.totalVisits} Visits` : null,
-                        ].filter(Boolean)
-                        : ["VIP Member"]
-                    ).map((tag, index) => (
-                      <span
-                        key={tag}
-                        className={[
-                          "rounded-full px-2.5 py-0.5 text-[10px] font-extrabold transition-all",
-                          index === 0
-                            ? "border border-[#F3D6E5] bg-[#FFF0F6] text-[#E84F93]"
-                            : index === 1
-                              ? "border border-[#FDE68A] bg-[#FEF3C7] text-[#B45309]"
-                              : "border border-[#DDD6FE] bg-[#F5F3FF] text-[#6D28D9]",
-                        ].join(" ")}
+                  <div className="flex flex-row justify-between">
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <p className="text-xl font-bold text-[#2B182B] truncate">{customerDisplayName}</p>
+                      {customerTier ? (
+                        <span
+                          className="rounded-full border px-2.5 py-0.5 text-[10px] font-bold flex items-center gap-1"
+                          style={{
+                            backgroundColor: customerTier.backgroundColor + '15',
+                            borderColor: customerTier.backgroundColor + '40',
+                            color: customerTier.backgroundColor
+                          }}
+                        >
+                          <Star size={10} className="fill-current" />
+                          {customerTier.name} ({customerPoints} pts)
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-gray-50 border border-gray-200 px-2.5 py-0.5 text-[10px] font-bold text-gray-500 flex items-center gap-1">
+                          <Star size={10} className="fill-current" />
+                          {customerPoints} pts
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Quick Actions rounded icon buttons */}
+                    <div className="flex items-center gap-2 lg:items-end shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleMockAction("Call Customer")}
+                        title="Call Customer"
+                        className="p-3 rounded-2xl bg-[#FFF0F6] border border-[#F3D6E5] text-[#E84F93] hover:bg-[#E84F93] hover:text-white transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 text-xs font-bold"
                       >
-                        {tag}
-                      </span>
-                    ))}
+                        <Phone size={16} />
+                        <span className="hidden sm:inline lg:hidden">Call</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMockAction("Send SMS / Chat")}
+                        title="Send SMS / Chat"
+                        className="p-3 rounded-2xl bg-[#F5F3FF] border border-[#DDD6FE] text-[#8B5CF6] hover:bg-[#8B5CF6] hover:text-white transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 text-xs font-bold"
+                      >
+                        <MessageCircleMore size={16} />
+                        <span className="hidden sm:inline lg:hidden">SMS</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMockAction("View VTO History")}
+                        title="View VTO Try-On History"
+                        className="p-3 rounded-2xl bg-[#FEF3C7] border border-[#FDE68A] text-[#B45309] hover:bg-[#F59E0B] hover:text-white transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 text-xs font-bold"
+                      >
+                        <Sparkles size={16} />
+                        <span className="hidden sm:inline lg:hidden">VTO</span>
+                      </button>
+                    </div>
                   </div>
 
                   {/* Clean 2-column key-value grid */}
                   <div className="mt-4 grid gap-3 sm:grid-cols-2 bg-[#FFF9FB] p-3.5 rounded-2xl border border-[#F3E2EC]">
                     <div className="space-y-2.5 text-xs">
                       <div>
-                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497]">Phone Number</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">Phone Number</p>
                         <p className="mt-0.5 font-bold text-[#2B182B]">{customerProfile?.phone || booking.customerPhone || "0987 654 321"}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497]">Membership Tier</p>
-                        <p className="mt-0.5 font-extrabold text-[#E84F93]">Gold Member (1,250 pts)</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">Membership Tier</p>
+                        <div className="mt-0.5 font-bold text-[#E84F93]"><div className="flex items-center gap-2.5 flex-wrap">
+                          {customerTier ? (
+                            <span
+                              className="rounded-full border px-2.5 py-0.5 text-[10px] font-bold flex items-center gap-1"
+                              style={{
+                                backgroundColor: customerTier.backgroundColor + '15',
+                                borderColor: customerTier.backgroundColor + '40',
+                                color: customerTier.backgroundColor
+                              }}
+                            >
+                              <Star size={10} className="fill-current" />
+                              {customerTier.name} ({customerPoints} pts)
+                            </span>
+                          ) : (
+                            <span className="rounded-full bg-gray-50 border border-gray-200 px-2.5 py-0.5 text-[10px] font-bold text-gray-500 flex items-center gap-1">
+                              <Star size={10} className="fill-current" />
+                              {customerPoints} pts
+                            </span>
+                          )}
+                        </div></div>
                       </div>
                     </div>
 
                     <div className="space-y-2.5 text-xs">
                       <div>
-                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497]">Email Address</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">Email Address</p>
                         <p className="mt-0.5 font-medium text-[#2B182B] truncate">{customerProfile?.email || booking.customerEmail || "doanthanh@gmail.com"}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497]">Preferred Artist</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">Preferred Artist</p>
                         <p className="mt-0.5 font-bold text-[#8B5CF6]">{booking.artistName || customerProfile?.preferredArtist || "Aria Nguyen"}</p>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-
-              {/* Quick Actions rounded icon buttons */}
-              <div className="flex items-center gap-2 lg:flex-col lg:items-end shrink-0">
-                <button
-                  type="button"
-                  onClick={() => handleMockAction("Call Customer")}
-                  title="Call Customer"
-                  className="p-3 rounded-2xl bg-[#FFF0F6] border border-[#F3D6E5] text-[#E84F93] hover:bg-[#E84F93] hover:text-white transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 text-xs font-extrabold"
-                >
-                  <Phone size={16} />
-                  <span className="hidden sm:inline lg:hidden">Call</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleMockAction("Send SMS / Chat")}
-                  title="Send SMS / Chat"
-                  className="p-3 rounded-2xl bg-[#F5F3FF] border border-[#DDD6FE] text-[#8B5CF6] hover:bg-[#8B5CF6] hover:text-white transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 text-xs font-extrabold"
-                >
-                  <MessageCircleMore size={16} />
-                  <span className="hidden sm:inline lg:hidden">SMS</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleMockAction("View VTO History")}
-                  title="View VTO Try-On History"
-                  className="p-3 rounded-2xl bg-[#FEF3C7] border border-[#FDE68A] text-[#B45309] hover:bg-[#F59E0B] hover:text-white transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 text-xs font-extrabold"
-                >
-                  <Sparkles size={16} />
-                  <span className="hidden sm:inline lg:hidden">VTO</span>
-                </button>
               </div>
             </div>
           </DetailCard>
@@ -1219,7 +1194,7 @@ export function ReceptionistBookingDetailPage() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-[#9E8497]">Promotional Discount:</span>
-                    <span className="font-extrabold text-[#EF4444]">{discount}</span>
+                    <span className="font-bold text-[#EF4444]">{discount}</span>
                   </div>
                   <div className="flex items-center justify-between border-t border-[#F3E2EC] pt-2">
                     <span className="font-medium text-[#9E8497]">Deposit Paid:</span>
@@ -1227,17 +1202,17 @@ export function ReceptionistBookingDetailPage() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-[#9E8497]">Remaining Balance:</span>
-                    <span className="font-extrabold text-[#8B5CF6]">{remainingBalance}</span>
+                    <span className="font-bold text-[#8B5CF6]">{remainingBalance}</span>
                   </div>
                 </div>
 
                 {/* Fresh Emerald Green Highlighted Total */}
                 <div className="border-2 border-emerald-300 pt-3.5 pb-3 px-4 flex items-center justify-between bg-gradient-to-r from-[#ECFDF5] to-[#D1FAE5] rounded-2xl shadow-xs">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-wider text-[#047857]">Total Amount Payable</p>
-                    <p className="text-3xl font-black text-[#047857] leading-none mt-1">{totalAmount}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#047857]">Total Amount Payable</p>
+                    <p className="text-3xl font-bold text-[#047857] leading-none mt-1">{totalAmount}</p>
                   </div>
-                  <span className="rounded-full bg-[#10B981] text-white px-3.5 py-1 text-xs font-black shadow-xs flex items-center gap-1">
+                  <span className="rounded-full bg-[#10B981] text-white px-3.5 py-1 text-xs font-bold shadow-xs flex items-center gap-1">
                     <ShieldCheck size={14} /> PAID
                   </span>
                 </div>
@@ -1248,7 +1223,7 @@ export function ReceptionistBookingDetailPage() {
                   type="button"
                   onClick={() => handleMockAction("Add Payment")}
                   disabled={!actionAvailability.canAddPayment}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-5 py-3.5 text-xs font-black text-white shadow-[0_8px_20px_rgba(232,79,147,0.3)] hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-5 py-3.5 text-xs font-bold text-white shadow-[0_8px_20px_rgba(232,79,147,0.3)] hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <CreditCard size={16} />
                   Add Payment
@@ -1257,7 +1232,7 @@ export function ReceptionistBookingDetailPage() {
                   type="button"
                   onClick={() => handleMockAction("Print Receipt")}
                   disabled={!actionAvailability.canPrintReceipt}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-[#F3E2EC] bg-[#FFF5F8] hover:bg-[#FCE2EE] px-5 py-3.5 text-xs font-extrabold text-[#E84F93] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-[#F3E2EC] bg-[#FFF5F8] hover:bg-[#FCE2EE] px-5 py-3.5 text-xs font-bold text-[#E84F93] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs"
                 >
                   <Printer size={16} />
                   Print Receipt
@@ -1286,7 +1261,7 @@ export function ReceptionistBookingDetailPage() {
                     <span className={`mx-auto flex h-11 w-11 items-center justify-center rounded-2xl shadow-2xs ${item.iconTone}`}>
                       {item.loading ? <LoaderCircle size={18} className="animate-spin" /> : <Icon size={18} />}
                     </span>
-                    <p className="mt-3 text-xs font-black text-[#2B182B]">{item.label}</p>
+                    <p className="mt-3 text-xs font-bold text-[#2B182B]">{item.label}</p>
                     <p className="mt-1 text-[10px] text-[#9E8497] font-medium leading-tight">{item.subtitle}</p>
                   </button>
                 );
@@ -1302,7 +1277,7 @@ export function ReceptionistBookingDetailPage() {
             <div className="flex flex-col items-center">
               <div className="self-stretch flex items-center justify-between pb-2 border-b border-[#F3E2EC]">
                 <span className="font-medium text-xs text-[#9E8497]">Live Status</span>
-                <span className={`rounded-full px-3 py-0.5 text-xs font-black shadow-2xs ${getStatusTone(String(booking.status || ""))}`}>
+                <span className={`rounded-full px-3 py-0.5 text-xs font-bold shadow-2xs ${getStatusTone(String(booking.status || ""))}`}>
                   {booking.status || "Checked In"}
                 </span>
               </div>
@@ -1316,7 +1291,7 @@ export function ReceptionistBookingDetailPage() {
               <div className="self-stretch space-y-2.5 text-xs pt-1">
                 <div className="flex items-center justify-between bg-[#FFF9FB] p-2.5 rounded-xl border border-[#F3E2EC]">
                   <span className="font-medium text-[#9E8497]">Assigned Artist</span>
-                  <span className="font-extrabold text-[#2B182B]">{booking.artistName || "Aria Nguyen"}</span>
+                  <span className="font-bold text-[#2B182B]">{booking.artistName || "Aria Nguyen"}</span>
                 </div>
                 <div className="flex items-center justify-between bg-[#FFF9FB] p-2.5 rounded-xl border border-[#F3E2EC]">
                   <span className="font-medium text-[#9E8497]">Chair / Station</span>
@@ -1337,11 +1312,11 @@ export function ReceptionistBookingDetailPage() {
             <div className="bg-[#FFF9FB] p-3.5 rounded-2xl border border-[#F3E2EC] space-y-2.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-r from-[#E84F93] to-[#8B5CF6] text-xs font-black text-white shadow-2xs">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-r from-[#E84F93] to-[#8B5CF6] text-xs font-bold text-white shadow-2xs">
                     {customerInitials}
                   </div>
                   <div>
-                    <p className="text-xs font-extrabold text-[#2B182B]">{customerDisplayName}</p>
+                    <p className="text-xs font-bold text-[#2B182B]">{customerDisplayName}</p>
                     <p className="text-[10px] text-[#9E8497] font-medium">{formatDate(booking.bookingDate)}</p>
                   </div>
                 </div>
@@ -1366,7 +1341,7 @@ export function ReceptionistBookingDetailPage() {
             {isBookingHistoriesLoading ? (
               <div className="flex justify-center p-8"><LoaderCircle className="animate-spin text-[#E84F93]" /></div>
             ) : bookingHistories.length > 0 ? (
-              <div className="mt-4 flex flex-col">
+              <div className="mt-4 flex flex-col max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                 {[...bookingHistories].reverse().map((history, idx) => (
                   <div key={history.bookingHistoryId || idx} className="flex gap-3" title={dayjs(history.createdAt).format("DD/MM/YYYY HH:mm")}>
                     <div className="w-[100px] shrink-0 pt-0.5 text-right">
@@ -1432,7 +1407,7 @@ export function ReceptionistBookingDetailPage() {
                               <span className="font-bold text-[#2B182B]">
                                 {roleText}
                               </span>{" "}
-                              <span className="font-black text-[#E84F93]">
+                              <span className="font-bold text-[#E84F93]">
                                 "{history.actorName}"
                               </span>{" "}
                               {formattedAction}
@@ -1464,6 +1439,13 @@ export function ReceptionistBookingDetailPage() {
         </aside>
       </div>
 
+      <AssignChairModal
+        isOpen={isAssignChairModalOpen}
+        onClose={() => setIsAssignChairModalOpen(false)}
+        booking={booking}
+        onSuccess={() => handleRefresh()}
+      />
+
       <Modal
         open={Boolean(selectedServiceRow)}
         onCancel={() => setSelectedServiceRow(null)}
@@ -1492,7 +1474,7 @@ export function ReceptionistBookingDetailPage() {
                     <Sparkles size={20} />
                   </div>
                   <div>
-                    <h3 className="text-lg font-black text-[#2B182B] tracking-tight">Chi Tiết Dịch Vụ & Mẫu Móng</h3>
+                    <h3 className="text-lg font-bold text-[#2B182B] tracking-tight">Chi Tiết Dịch Vụ & Mẫu Móng</h3>
                     <p className="text-xs text-[#9E8497] font-medium">Thông tin thực tế dịch vụ và mẫu móng khách chọn</p>
                   </div>
                 </div>
@@ -1508,21 +1490,21 @@ export function ReceptionistBookingDetailPage() {
               {/* Service Hero Banner Card */}
               <div className="mb-5 rounded-2xl border border-[#F3D6E5] bg-gradient-to-r from-[#FFF0F6] via-[#FDF2F8] to-[#F5F3FF] p-5 shadow-xs">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="rounded-full bg-[#E84F93] px-3 py-0.5 text-[10px] font-black uppercase text-white shadow-2xs">
+                  <span className="rounded-full bg-[#E84F93] px-3 py-0.5 text-[10px] font-bold uppercase text-white shadow-2xs">
                     {isNail ? "✨ Dịch Vụ Móng Nail" : "💅 Dịch Vụ Salon"}
                   </span>
-                  <span className="text-xs font-black text-[#E84F93]">
+                  <span className="text-xs font-bold text-[#E84F93]">
                     ⏱️ Thời gian: {selectedServiceRow.duration || "--"}
                   </span>
                 </div>
-                <h3 className="mt-2 text-base font-black text-[#2B182B]">
+                <h3 className="mt-2 text-base font-bold text-[#2B182B]">
                   {item?.serviceName || selectedServiceRow.service || item?.nailVariantName || "Dịch Vụ Làm Móng"}
                 </h3>
               </div>
 
               {/* Metadata Details Unified Single Block Card */}
               <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFF9FB] p-5">
-                <h4 className="text-xs font-black uppercase tracking-wider text-[#E84F93] border-b border-[#F3E2EC] pb-3 mb-3 flex items-center gap-1.5">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[#E84F93] border-b border-[#F3E2EC] pb-3 mb-3 flex items-center gap-1.5">
                   <Sparkles size={14} /> Thông Tin Chi Tiết Dịch Vụ
                 </h4>
 
@@ -1531,7 +1513,7 @@ export function ReceptionistBookingDetailPage() {
                   {Boolean(item?.nailVariantName) && (
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2.5 gap-1">
                       <span className="font-bold text-[#9E8497]">Tên Mẫu Nail</span>
-                      <span className="font-black text-[#2B182B] text-sm sm:text-right">{item.nailVariantName}</span>
+                      <span className="font-bold text-[#2B182B] text-sm sm:text-right">{item.nailVariantName}</span>
                     </div>
                   )}
 
@@ -1539,7 +1521,7 @@ export function ReceptionistBookingDetailPage() {
                   {Boolean(item?.customerNailName) && (
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2.5 gap-1">
                       <span className="font-bold text-[#9E8497]">Mẫu Nail Khách Yêu Cầu</span>
-                      <span className="font-black text-[#2B182B] text-sm sm:text-right">{item.customerNailName}</span>
+                      <span className="font-bold text-[#2B182B] text-sm sm:text-right">{item.customerNailName}</span>
                     </div>
                   )}
 
@@ -1550,7 +1532,7 @@ export function ReceptionistBookingDetailPage() {
                   ) && (
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2.5 gap-1">
                         <span className="font-bold text-[#9E8497]">Tên Dịch Vụ</span>
-                        <span className="font-black text-[#2B182B] sm:text-right">
+                        <span className="font-bold text-[#2B182B] sm:text-right">
                           {item?.serviceName || selectedServiceRow.service || selectedServiceRow.serviceType}
                         </span>
                       </div>
@@ -1560,7 +1542,7 @@ export function ReceptionistBookingDetailPage() {
                   {Boolean(selectedServiceRow.duration) && (
                     <div className="flex items-center justify-between py-2.5">
                       <span className="font-bold text-[#9E8497]">Thời Gian Làm Dự Kiến</span>
-                      <span className="font-black text-[#2B182B]">{selectedServiceRow.duration}</span>
+                      <span className="font-bold text-[#2B182B]">{selectedServiceRow.duration}</span>
                     </div>
                   )}
 
@@ -1568,7 +1550,7 @@ export function ReceptionistBookingDetailPage() {
                   {Boolean(item?.quantity && item.quantity > 1) && (
                     <div className="flex items-center justify-between py-2.5">
                       <span className="font-bold text-[#9E8497]">Số Lượng Suất</span>
-                      <span className="font-black text-[#2B182B]">x{item.quantity}</span>
+                      <span className="font-bold text-[#2B182B]">x{item.quantity}</span>
                     </div>
                   )}
 
@@ -1576,7 +1558,7 @@ export function ReceptionistBookingDetailPage() {
                   {item?.price !== undefined && item?.price !== null && (
                     <div className="flex items-center justify-between py-2.5">
                       <span className="font-bold text-[#9E8497]">Giá Dịch Vụ</span>
-                      <span className="font-black text-[#047857] text-sm">{formatCurrency(item.price)}</span>
+                      <span className="font-bold text-[#047857] text-sm">{formatCurrency(item.price)}</span>
                     </div>
                   )}
 
@@ -1584,7 +1566,7 @@ export function ReceptionistBookingDetailPage() {
                   {Boolean(selectedServiceRow.artist && selectedServiceRow.artist !== "--") && (
                     <div className="flex items-center justify-between py-2.5">
                       <span className="font-bold text-[#9E8497]">Thợ Đảm Nhận</span>
-                      <span className="font-black text-[#6D28D9]">{selectedServiceRow.artist}</span>
+                      <span className="font-bold text-[#6D28D9]">{selectedServiceRow.artist}</span>
                     </div>
                   )}
                 </div>
@@ -1593,13 +1575,13 @@ export function ReceptionistBookingDetailPage() {
               {/* Attached Images Section */}
               {hasImages && (
                 <div className="mt-5">
-                  <h4 className="text-xs font-black uppercase tracking-wider text-[#9E8497] mb-3 text-center flex items-center justify-center gap-1.5">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#9E8497] mb-3 text-center flex items-center justify-center gap-1.5">
                     <span>🖼️</span> <span>Hình Ảnh Mẫu Móng Thực Tế</span>
                   </h4>
                   <div className="flex flex-wrap items-center justify-center gap-6">
                     {sanitizeImageUrl(item?.nailVariantImageUrl) && (
                       <div className="flex flex-col items-center gap-2">
-                        <span className="rounded-full bg-[#FFF0F6] px-3 py-1 text-[10px] font-black text-[#E84F93] border border-[#F3D6E5]">
+                        <span className="rounded-full bg-[#FFF0F6] px-3 py-1 text-[10px] font-bold text-[#E84F93] border border-[#F3D6E5]">
                           Mẫu Nail
                         </span>
                         <div className="overflow-hidden rounded-2xl border-4 border-white shadow-md hover:scale-105 transition-transform duration-300">
@@ -1616,7 +1598,7 @@ export function ReceptionistBookingDetailPage() {
 
                     {sanitizeImageUrl(item?.customerNailImageUrl) && (
                       <div className="flex flex-col items-center gap-2">
-                        <span className="rounded-full bg-[#F5F3FF] px-3 py-1 text-[10px] font-black text-[#6D28D9] border border-[#DDD6FE]">
+                        <span className="rounded-full bg-[#F5F3FF] px-3 py-1 text-[10px] font-bold text-[#6D28D9] border border-[#DDD6FE]">
                           Mẫu Nail Khách Gửi
                         </span>
                         <div className="overflow-hidden rounded-2xl border-4 border-white shadow-md hover:scale-105 transition-transform duration-300">
@@ -1639,7 +1621,7 @@ export function ReceptionistBookingDetailPage() {
                 <button
                   type="button"
                   onClick={() => setSelectedServiceRow(null)}
-                  className="rounded-full border border-[#F3E2EC] bg-[#FFF5F8] hover:bg-[#FCE2EE] px-6 py-2.5 text-xs font-black text-[#2B182B] transition cursor-pointer"
+                  className="rounded-full border border-[#F3E2EC] bg-[#FFF5F8] hover:bg-[#FCE2EE] px-6 py-2.5 text-xs font-bold text-[#2B182B] transition cursor-pointer"
                 >
                   Đóng
                 </button>
@@ -1678,7 +1660,7 @@ export function ReceptionistBookingDetailPage() {
         centered
         width={1020}
         title={
-          <div className="flex items-center gap-2.5 text-[#2B182B] text-base font-black border-b border-[#F3E2EC] pb-3">
+          <div className="flex items-center gap-2.5 text-[#2B182B] text-base font-bold border-b border-[#F3E2EC] pb-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-[#E84F93] to-[#8B5CF6] text-white shadow-xs">
               <ClipboardList size={16} />
             </div>
@@ -1693,14 +1675,14 @@ export function ReceptionistBookingDetailPage() {
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="rounded-full bg-[#E84F93] px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white shadow-2xs">
+                    <span className="rounded-full bg-[#E84F93] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-2xs">
                       Dịch Vụ Chọn
                     </span>
                     <span className="text-xs font-bold text-[#8B5CF6]">
                       {selectedProcedureRow.serviceType !== "--" ? selectedProcedureRow.serviceType : "Nail Treatment"}
                     </span>
                   </div>
-                  <h3 className="mt-1.5 text-lg font-black text-[#2B182B]">
+                  <h3 className="mt-1.5 text-lg font-bold text-[#2B182B]">
                     {selectedProcedureRow.sourceItem?.serviceName ||
                       selectedProcedureRow.service ||
                       selectedProcedureRow.sourceItem?.nailVariantName ||
@@ -1720,7 +1702,7 @@ export function ReceptionistBookingDetailPage() {
                     <span>Số lượng: x{selectedProcedureRow.sourceItem?.quantity ?? 1}</span>
                   </div>
                   {bookingProcedures.length > 0 && (
-                    <div className="flex items-center gap-1.5 rounded-xl border border-[#D1FAE5] bg-[#ECFDF5] px-3 py-1.5 text-xs font-black text-[#047857] shadow-2xs">
+                    <div className="flex items-center gap-1.5 rounded-xl border border-[#D1FAE5] bg-[#ECFDF5] px-3 py-1.5 text-xs font-bold text-[#047857] shadow-2xs">
                       <ShieldCheck size={14} />
                       <span>{bookingProcedures.length} bước dịch vụ</span>
                     </div>
@@ -1775,33 +1757,33 @@ export function ReceptionistBookingDetailPage() {
                         {/* Step Header Bar */}
                         <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between border-b border-[#F8F1F5] pb-2.5">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#E84F93] to-[#D93B7D] px-2.5 py-0.5 text-xs font-black text-white shadow-2xs">
+                            <span className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#E84F93] to-[#D93B7D] px-2.5 py-0.5 text-xs font-bold text-white shadow-2xs">
                               Bước {procedure.stepOrder ?? index + 1}
                             </span>
-                            <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${statusTone}`}>
+                            <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${statusTone}`}>
                               {statusLabel}
                             </span>
                             {procedure.isRequired && (
-                              <span className="rounded-full border border-[#FDE68A] bg-[#FFFBEB] px-2.5 py-0.5 text-[10px] font-black text-[#B45309]">
+                              <span className="rounded-full border border-[#FDE68A] bg-[#FFFBEB] px-2.5 py-0.5 text-[10px] font-bold text-[#B45309]">
                                 Bắt buộc
                               </span>
                             )}
                             {procedure.isMainStep && (
-                              <span className="rounded-full border border-[#DDD6FE] bg-[#F5F3FF] px-2.5 py-0.5 text-[10px] font-black text-[#6D28D9]">
+                              <span className="rounded-full border border-[#DDD6FE] bg-[#F5F3FF] px-2.5 py-0.5 text-[10px] font-bold text-[#6D28D9]">
                                 Bước chính
                               </span>
                             )}
-                            <h4 className="text-sm font-black text-[#2B182B] ml-1">
+                            <h4 className="text-sm font-bold text-[#2B182B] ml-1">
                               {procedure.procedureName || "Chưa đặt tên bước"}
                             </h4>
                           </div>
 
                           {/* Time badge (Estimated Time) */}
                           <div className="flex items-center gap-2 text-xs shrink-0">
-                            <span className="font-extrabold text-[#E84F93]">
+                            <span className="font-bold text-[#E84F93]">
                               🕒 Dự kiến: {String(procedure.estimatedStartTime || "--").slice(0, 5)} - {String(procedure.estimatedEndTime || "--").slice(0, 5)}
                             </span>
-                            <span className="rounded-full bg-[#FFF0F6] px-2.5 py-0.5 text-[11px] font-black text-[#E84F93] border border-[#F3D6E5]">
+                            <span className="rounded-full bg-[#FFF0F6] px-2.5 py-0.5 text-[11px] font-bold text-[#E84F93] border border-[#F3D6E5]">
                               {formatDurationMinutes(procedure.duration || 0)}
                             </span>
                           </div>
@@ -1813,7 +1795,7 @@ export function ReceptionistBookingDetailPage() {
                           <div className="flex items-center justify-between rounded-xl border border-[#F3E2EC] bg-[#FFF9FB] p-2.5 sm:px-3.5">
                             <div className="flex items-center gap-2.5">
                               {hasArtist ? (
-                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#8B5CF6] to-[#C084FC] text-xs font-black text-white shadow-2xs">
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#8B5CF6] to-[#C084FC] text-xs font-bold text-white shadow-2xs">
                                   {(procedure.assignedArtistName || "A")
                                     .split(" ")
                                     .filter(Boolean)
@@ -1829,17 +1811,17 @@ export function ReceptionistBookingDetailPage() {
                               )}
 
                               <div>
-                                <p className="text-[9px] font-black uppercase tracking-wider text-[#9E8497]">Thợ Đảm Nhận</p>
+                                <p className="text-[9px] font-bold uppercase tracking-wider text-[#9E8497]">Thợ Đảm Nhận</p>
                                 <div className="flex items-center gap-2 mt-0.5">
-                                  <span className="text-xs font-black text-[#2B182B]">
+                                  <span className="text-xs font-bold text-[#2B182B]">
                                     {hasArtist ? procedure.assignedArtistName : "Chưa phân công thợ"}
                                   </span>
                                   {hasArtist ? (
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-[#ECFDF5] border border-[#A7F3D0] px-2 py-0.5 text-[9px] font-extrabold text-[#047857]">
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-[#ECFDF5] border border-[#A7F3D0] px-2 py-0.5 text-[9px] font-bold text-[#047857]">
                                       <Check size={9} /> Đã phân công
                                     </span>
                                   ) : (
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-[#FFFBEB] border border-[#FDE68A] px-2 py-0.5 text-[9px] font-extrabold text-[#B45309]">
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-[#FFFBEB] border border-[#FDE68A] px-2 py-0.5 text-[9px] font-bold text-[#B45309]">
                                       Cần chọn thợ
                                     </span>
                                   )}
@@ -1850,7 +1832,7 @@ export function ReceptionistBookingDetailPage() {
                             <button
                               type="button"
                               onClick={() => void handleOpenProcedureArtistPicker(procedure)}
-                              className="inline-flex items-center justify-center gap-1 rounded-full bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-3.5 py-1.5 text-xs font-black text-white shadow-2xs hover:scale-105 active:scale-95 transition cursor-pointer shrink-0 ml-3"
+                              className="inline-flex items-center justify-center gap-1 rounded-full bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:scale-105 active:scale-95 transition cursor-pointer shrink-0 ml-3"
                             >
                               {hasArtist ? <RefreshCcw size={12} /> : <UserPlus size={12} />}
                               <span>{hasArtist ? "Đổi Thợ" : "Phân Công"}</span>
@@ -1859,18 +1841,18 @@ export function ReceptionistBookingDetailPage() {
 
                           {/* Right: Time Breakdown & Overlap Badges */}
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="inline-flex items-center gap-1 rounded-full border border-[#DDD6FE] bg-[#F5F3FF] px-2.5 py-1 text-[11px] font-black text-[#6D28D9]">
+                            <span className="inline-flex items-center gap-1 rounded-full border border-[#DDD6FE] bg-[#F5F3FF] px-2.5 py-1 text-[11px] font-bold text-[#6D28D9]">
                               ⚡ Thao tác: {procedure.activeDuration ?? 0}m
                             </span>
 
                             {hasPassive && (
-                              <span className="inline-flex items-center gap-1 rounded-full border border-[#BAE6FD] bg-[#F0F9FF] px-2.5 py-1 text-[11px] font-black text-[#0284C7]">
+                              <span className="inline-flex items-center gap-1 rounded-full border border-[#BAE6FD] bg-[#F0F9FF] px-2.5 py-1 text-[11px] font-bold text-[#0284C7]">
                                 ⏳ Hơ máy / Chờ: {procedure.passiveDuration}m
                               </span>
                             )}
 
                             {(hasPassive || procedure.canOverlap) ? (
-                              <span className="inline-flex items-center gap-1 rounded-full border border-[#A7F3D0] bg-[#ECFDF5] px-2.5 py-1 text-[11px] font-black text-[#047857]">
+                              <span className="inline-flex items-center gap-1 rounded-full border border-[#A7F3D0] bg-[#ECFDF5] px-2.5 py-1 text-[11px] font-bold text-[#047857]">
                                 ✨ Overlap (Rảnh {procedure.passiveDuration ?? 0}m)
                               </span>
                             ) : (
@@ -1895,7 +1877,7 @@ export function ReceptionistBookingDetailPage() {
                         <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-[#F8F1F5] pt-2 text-[11px]">
                           <div>
                             <span className="font-bold text-[#9E8497]">Thực tế làm: </span>
-                            <span className="font-black text-[#2B182B]">
+                            <span className="font-bold text-[#2B182B]">
                               {(() => {
                                 const startVal = procedure.actualStartTime || procedure.startTime;
                                 const endVal = procedure.actualEndTime || procedure.completedAt;
@@ -1906,7 +1888,7 @@ export function ReceptionistBookingDetailPage() {
                           </div>
                           <div>
                             <span className="font-bold text-[#9E8497]">Người hoàn thành: </span>
-                            <span className="font-black text-[#2B182B]">
+                            <span className="font-bold text-[#2B182B]">
                               {procedure.completedByName || <span className="text-[#9E8497] italic font-normal">Chưa xong</span>}
                             </span>
                           </div>
@@ -1949,7 +1931,7 @@ export function ReceptionistBookingDetailPage() {
         centered
         width={800}
         title={
-          <div className="flex items-center gap-2.5 text-[#2B182B] text-base font-black border-b border-[#F3E2EC] pb-3">
+          <div className="flex items-center gap-2.5 text-[#2B182B] text-base font-bold border-b border-[#F3E2EC] pb-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-[#8B5CF6] to-[#E84F93] text-white shadow-xs">
               <UserCheck size={16} />
             </div>
@@ -1960,8 +1942,8 @@ export function ReceptionistBookingDetailPage() {
         {artistPickerProcedure ? (
           <div className="space-y-5 py-2">
             <div className="rounded-2xl border border-[#F3D6E5] bg-gradient-to-r from-[#FFF0F6] to-[#F5F3FF] p-4">
-              <p className="text-[10px] font-black uppercase tracking-wider text-[#E84F93]">Bước Đang Chọn Phân Công</p>
-              <h3 className="mt-1 text-base font-black text-[#2B182B]">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#E84F93]">Bước Đang Chọn Phân Công</p>
+              <h3 className="mt-1 text-base font-bold text-[#2B182B]">
                 {artistPickerProcedure.procedureName || "--"}
               </h3>
               <p className="mt-1 text-xs font-bold text-[#8B5CF6]">
@@ -1994,7 +1976,7 @@ export function ReceptionistBookingDetailPage() {
                     >
                       <div className="flex flex-col items-center text-center">
                         <div
-                          className={`flex h-14 w-14 items-center justify-center rounded-2xl text-lg font-black text-white shadow-xs ${canAssign
+                          className={`flex h-14 w-14 items-center justify-center rounded-2xl text-lg font-bold text-white shadow-xs ${canAssign
                             ? "bg-gradient-to-tr from-[#E84F93] via-[#D93B7D] to-[#8B5CF6]"
                             : "bg-slate-300"
                             }`}
@@ -2002,14 +1984,14 @@ export function ReceptionistBookingDetailPage() {
                           {artist.name ? artist.name.charAt(0).toUpperCase() : "A"}
                         </div>
 
-                        <h4 className="mt-3 text-sm font-black text-[#2B182B] truncate w-full">
+                        <h4 className="mt-3 text-sm font-bold text-[#2B182B] truncate w-full">
                           {artist.name || "--"}
                         </h4>
 
                         {/* Status Badges */}
                         <div className="mt-2.5 flex flex-wrap justify-center gap-1.5">
                           <span
-                            className={`rounded-full px-2.5 py-0.5 text-[10px] font-black ${artist.isFree
+                            className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${artist.isFree
                               ? "bg-[#ECFDF5] text-[#047857] border border-[#A7F3D0]"
                               : "bg-[#FEF2F2] text-[#991B1B] border border-[#FCA5A5]"
                               }`}
@@ -2023,7 +2005,7 @@ export function ReceptionistBookingDetailPage() {
                         type="button"
                         onClick={() => void handleAssignProcedureArtist(artistPickerProcedure, artist)}
                         disabled={isSubmitting || !canAssign}
-                        className={`mt-4 flex w-full items-center justify-center gap-1.5 rounded-full py-2 text-xs font-black transition-all cursor-pointer ${canAssign
+                        className={`mt-4 flex w-full items-center justify-center gap-1.5 rounded-full py-2 text-xs font-bold transition-all cursor-pointer ${canAssign
                           ? "bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] text-white shadow-[0_4px_12px_rgba(232,79,147,0.25)] hover:scale-[1.02] active:scale-[0.98]"
                           : "bg-slate-200 text-slate-400 cursor-not-allowed"
                           }`}

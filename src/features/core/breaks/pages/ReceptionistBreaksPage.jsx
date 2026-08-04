@@ -2,10 +2,10 @@ import { useEffect, useState, useCallback } from "react";
 import { DatePicker, Spin, Select } from "antd";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
-import { 
-  CalendarDays, 
-  Clock3, 
-  Trash2, 
+import {
+  CalendarDays,
+  Clock3,
+  Trash2,
   RefreshCw,
   UserRound,
   X
@@ -13,10 +13,10 @@ import {
 import { Pagination } from "../../../../shared/components/common/Pagination";
 import { EmptyState } from "../../../../shared/components/common/EmptyState";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
-import { 
-  fetchBreaks, 
-  deleteBreakRequest, 
-  fetchNailArtists 
+import {
+  fetchBreaks,
+  deleteBreakRequest,
+  fetchNailArtists
 } from "../services/breakService";
 
 export function ReceptionistBreaksPage() {
@@ -26,13 +26,13 @@ export function ReceptionistBreaksPage() {
   const [isArtistsLoading, setIsArtistsLoading] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [metaData, setMetaData] = useState(null);
-  
+
   // Filters and Pagination
   const [filterArtistId, setFilterArtistId] = useState(undefined);
   const [filterDate, setFilterDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
-  
+
   // Modals state
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedBreak, setSelectedBreak] = useState(null);
@@ -139,7 +139,7 @@ export function ReceptionistBreaksPage() {
     <div className="space-y-6">
       {/* Header section */}
       <div>
-        <h1 className="text-2xl font-black tracking-tight text-[#3f2b3f]">Danh Sách Xin Nghỉ Phép</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-[#3f2b3f]">Danh Sách Xin Nghỉ Phép</h1>
         <p className="mt-1 text-sm text-[#a88a9d]">
           Xem danh sách lịch xin nghỉ phép giữa ca của thợ nail và thực hiện hủy yêu cầu nếu cần.
         </p>
@@ -215,8 +215,8 @@ export function ReceptionistBreaksPage() {
           <Spin size="large" />
         </div>
       ) : breaks.length === 0 ? (
-        <EmptyState 
-          title="Không tìm thấy yêu cầu nghỉ phép nào" 
+        <EmptyState
+          title="Không tìm thấy yêu cầu nghỉ phép nào"
           description="Không có dữ liệu lịch xin nghỉ phép phù hợp với bộ lọc hiện tại."
         />
       ) : (
@@ -233,7 +233,7 @@ export function ReceptionistBreaksPage() {
                     <th className="px-5 py-4 font-semibold">Lý do</th>
                     <th className="px-5 py-4 font-semibold">Trạng thái</th>
                     <th className="px-5 py-4 font-semibold">Lý do từ chối</th>
-                    <th className="px-5 py-4 font-semibold text-right">Thao tác</th>
+                    {/* <th className="px-5 py-4 font-semibold text-right">Thao tác</th> */}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#f7ebdf] bg-white">
@@ -267,7 +267,7 @@ export function ReceptionistBreaksPage() {
                       <td className="px-5 py-4 text-xs text-rose-500 italic max-w-xs truncate" title={item.rejectReason}>
                         {item.rejectReason || "-"}
                       </td>
-                      <td className="px-5 py-4 text-right">
+                      {/* <td className="px-5 py-4 text-right">
                         <button
                           onClick={() => openDeleteModal(item)}
                           className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-100 bg-rose-50 text-rose-600 hover:bg-rose-100 transition"
@@ -275,7 +275,7 @@ export function ReceptionistBreaksPage() {
                         >
                           <Trash2 size={13} />
                         </button>
-                      </td>
+                      </td> */}
                     </tr>
                   ))}
                 </tbody>
@@ -286,8 +286,8 @@ export function ReceptionistBreaksPage() {
           {/* List for mobile */}
           <div className="grid gap-4 md:hidden">
             {breaks.map((item) => (
-              <div 
-                key={item.nailArtistBreakId} 
+              <div
+                key={item.nailArtistBreakId}
                 className="rounded-[22px] border border-[#f4e4d7] bg-white p-4 space-y-3"
               >
                 <div className="flex items-center justify-between">
@@ -331,7 +331,7 @@ export function ReceptionistBreaksPage() {
           {/* Pagination */}
           {metaData && metaData.totalPages > 1 && (
             <div className="flex justify-end pt-4">
-              <Pagination 
+              <Pagination
                 currentPage={currentPage}
                 totalPages={metaData.totalPages}
                 onPageChange={(page) => setCurrentPage(page)}
@@ -356,17 +356,17 @@ export function ReceptionistBreaksPage() {
         }}
         loading={isActionLoading}
         details={[
-          { 
-            label: "Thợ nail", 
-            value: selectedBreak ? getArtistName(selectedBreak.nailArtistId) : "" 
+          {
+            label: "Thợ nail",
+            value: selectedBreak ? getArtistName(selectedBreak.nailArtistId) : ""
           },
-          { 
-            label: "Ngày nghỉ", 
-            value: selectedBreak ? dayjs(selectedBreak.breakDate).format("DD/MM/YYYY") : "" 
+          {
+            label: "Ngày nghỉ",
+            value: selectedBreak ? dayjs(selectedBreak.breakDate).format("DD/MM/YYYY") : ""
           },
-          { 
-            label: "Thời gian", 
-            value: selectedBreak ? `${selectedBreak.startTime?.substring(0, 5)} - ${selectedBreak.endTime?.substring(0, 5)}` : "" 
+          {
+            label: "Thời gian",
+            value: selectedBreak ? `${selectedBreak.startTime?.substring(0, 5)} - ${selectedBreak.endTime?.substring(0, 5)}` : ""
           }
         ]}
       />

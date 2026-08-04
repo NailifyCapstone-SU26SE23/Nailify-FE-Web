@@ -425,31 +425,7 @@ export function PromotionDetailPage() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-[#cf3d74]">Promotion Detail</h1>
-
-          {promotion.scope !== "All" ? (
-            <PanelCard title="Related Promotions" icon={Tag}>
-              {isLoadingRelatedPromotions ? (
-                <p className="text-sm font-medium text-slate-500">Loading related promotions...</p>
-              ) : relatedPromotions.length > 0 ? (
-                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                  {relatedPromotions.map((item) => (
-                    <Link
-                      key={item.promotionId}
-                      to={getAdminPromotionDetailRoute(item.promotionId)}
-                      className="rounded-2xl border border-rose-100 bg-[#fff8fb] p-4 transition hover:border-[#cf3d74] hover:bg-white"
-                    >
-                      <p className="text-sm font-bold text-slate-800">{item.name}</p>
-                      <p className="mt-1 text-xs text-slate-500">{item.type} · {item.scope}</p>
-                      <p className="mt-2 text-[11px] font-semibold text-rose-500">{item.status || (item.isActive ? "Active" : "Inactive")}</p>
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm font-medium text-slate-500">No related promotions found for this scope.</p>
-              )}
-            </PanelCard>
-          ) : null}
+            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">Promotion Detail</h1>
             <p className="text-xs font-medium text-slate-400">Review, edit, and delete this promotion from one page.</p>
           </div>
         </div>
@@ -740,9 +716,31 @@ export function PromotionDetailPage() {
                 </div>
               )}
             </PanelCard>
-          </div>
 
-         
+            {promotion?.scope && promotion.scope !== "All" ? (
+              <PanelCard title="Related Promotions" icon={Tag}>
+                {isLoadingRelatedPromotions ? (
+                  <p className="text-sm font-medium text-slate-500">Loading related promotions...</p>
+                ) : relatedPromotions.length > 0 ? (
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    {relatedPromotions.map((item) => (
+                      <Link
+                        key={item.promotionId}
+                        to={getAdminPromotionDetailRoute(item.promotionId)}
+                        className="rounded-2xl border border-rose-100 bg-[#fff8fb] p-4 transition hover:border-[#cf3d74] hover:bg-white"
+                      >
+                        <p className="text-sm font-bold text-slate-800">{item.name}</p>
+                        <p className="mt-1 text-xs text-slate-500">{item.type} · {item.scope}</p>
+                        <p className="mt-2 text-[11px] font-semibold text-rose-500">{item.status || (item.isActive ? "Active" : "Inactive")}</p>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm font-medium text-slate-500">No related promotions found for this scope.</p>
+                )}
+              </PanelCard>
+            ) : null}
+          </div>
         </div>
       )}
 
@@ -781,10 +779,10 @@ export function PromotionDetailPage() {
         item={
           promotion
             ? {
-                title: promotion.name,
-                meta: `${promotion.type} · ${promotion.scope}`,
-                note: `Promotion ID: ${promotion.promotionId}`,
-              }
+              title: promotion.name,
+              meta: `${promotion.type} · ${promotion.scope}`,
+              note: `Promotion ID: ${promotion.promotionId}`,
+            }
             : null
         }
       />

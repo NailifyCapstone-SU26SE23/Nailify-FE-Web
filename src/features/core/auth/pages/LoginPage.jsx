@@ -59,7 +59,7 @@ export function LoginPage() {
 
   useEffect(() => {
     if (searchParams.get("reason") === "session_expired") {
-      toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.", { duration: 4000 });
+      toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.", { duration: 4000, id: "session_expired" });
       // Remove the reason param from URL so it doesn't show again on refresh
       setSearchParams(new URLSearchParams());
     }

@@ -248,7 +248,7 @@ export function ProcedureDetailPage() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-[#cf3d74]">Procedure Detail</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">Procedure Detail</h1>
             <p className="text-xs font-medium text-slate-400">
               Review, edit, and delete this standard procedure from one page.
             </p>
@@ -460,10 +460,10 @@ export function ProcedureDetailPage() {
         item={
           procedure
             ? {
-                title: procedure.name,
-                meta: `${procedure.durationLabel} | ${procedure.status}`,
-                
-              }
+              title: procedure.name,
+              meta: `${procedure.durationLabel} | ${procedure.status}`,
+
+            }
             : null
         }
         warnings={["This action calls the backend delete endpoint and removes the record permanently."]}

@@ -52,7 +52,7 @@ function PremiumCard({ className = "", children, noHover = false, padded = true 
 function SectionHeading({ title, subtitle }) {
   return (
     <div>
-      <h2 className="text-[16px] font-black text-[#2d1b35]">{title}</h2>
+      <h2 className="text-[16px] font-bold text-[#2d1b35]">{title}</h2>
       {subtitle ? <p className="mt-1.5 text-[11px] text-[#a88a9f] leading-relaxed">{subtitle}</p> : null}
     </div>
   );
@@ -347,8 +347,8 @@ export function SalonCreatePage() {
           <PremiumCard>
             <div className="mb-6">
               <SectionHeading
-              title="Quick Actions"
-              subtitle="Fast access to frequently used functions"
+                title="Quick Actions"
+                subtitle="Fast access to frequently used functions"
               />
             </div>
             <div className="space-y-3">

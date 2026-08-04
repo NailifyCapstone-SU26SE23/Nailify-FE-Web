@@ -1,4 +1,4 @@
-import { Alert, Spin } from "antd";
+import { Alert, Spin, Tooltip } from "antd";
 import {
   ArrowRight,
   CheckCircle2,
@@ -9,6 +9,14 @@ import {
   TimerReset,
   UserRoundCheck,
   Search,
+  CircleUserRound,
+  X,
+  ChevronDown, ChevronUp,
+  LockKeyhole,
+  Clock,
+  AlarmClock,
+  Zap,
+  Hourglass
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
@@ -214,7 +222,7 @@ function Card({ className = "", children }) {
 function SectionHeading({ title, subtitle }) {
   return (
     <div>
-      <h2 className="text-sm font-extrabold text-[#402542]">{title}</h2>
+      <h2 className="text-sm font-bold text-[#402542]">{title}</h2>
       {subtitle ? <p className="mt-1 text-xs text-[#b07a94]">{subtitle}</p> : null}
     </div>
   );
@@ -226,7 +234,7 @@ function StatCard({ title, value, note, icon: Icon, toneClassName }) {
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#c08aa4]">{title}</p>
-          <p className="mt-2 text-2xl font-extrabold text-[#402542]">{value}</p>
+          <p className="mt-2 text-2xl font-bold text-[#402542]">{value}</p>
           <p className="mt-1 text-xs text-[#a07c90]">{note}</p>
         </div>
         <div className={`flex h-11 w-11 items-center justify-center rounded-2xl text-white shadow-[0_12px_24px_rgba(236,72,153,0.16)] ${toneClassName}`}>
@@ -399,6 +407,7 @@ function BoardTaskCard({
   const activeDuration = task.activeDuration ?? task.duration ?? 0;
   const passiveDuration = task.passiveDuration ?? 0;
   const hasPassive = passiveDuration > 0;
+  const [showDetails, setShowDetails] = useState(false);
 
   return (
     <div
@@ -409,113 +418,161 @@ function BoardTaskCard({
         } ${isUpdating ? "cursor-wait opacity-70" : canDrag ? "cursor-grab active:cursor-grabbing" : "cursor-default"}`}
     >
       {/* Prominent Customer & Booking Identifier Header Pill */}
-      <div className="mb-2.5 flex items-center justify-between gap-2 rounded-xl bg-gradient-to-r from-purple-50 via-pink-50 to-purple-50 p-2 border border-purple-200/90 shadow-2xs">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#C97A9E] text-white font-black text-[10px] shrink-0">
-            👤
-          </span>
-          <span className="font-extrabold text-[#221F26] text-xs truncate">
-            {task.customerName || "Khách Vãng Lai"}
-          </span>
+      <div className="flex flex-row justify-center gap-2 w-full">
+        <div className="w-full mb-2.5 flex items-center justify-between gap-2 rounded-xl bg-gradient-to-r from-purple-50 via-pink-50 to-purple-50 p-2 border border-purple-200/90 shadow-2xs">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-[#C97A9E] font-bold text-[10px] shrink-0">
+              <CircleUserRound size={14} strokeWidth={2.3} />
+            </span>
+            <span className="font-bold text-[#221F26] text-xs truncate">
+              {task.customerName || "Khách Vãng Lai"}
+            </span>
+          </div>
+
         </div>
-        <span className="rounded-md bg-white px-2 py-0.5 text-[10px] font-black text-[#B86B8E] border border-[#F2D6E3] font-mono shrink-0 shadow-2xs">
-          {task.bookingId ? `BK-${String(task.bookingId).slice(-4).toUpperCase()}` : `BK-${task.stepOrder}`}
-        </span>
+        <Tooltip
+          title={showDetails ? "Hide details" : "Show details"}
+          placement="top"
+          color="#262626"
+        >
+          <button
+            type="button"
+            onClick={() => setShowDetails((prev) => !prev)}
+            className="
+      flex h-9 w-9 shrink-0 items-center justify-center
+      rounded-xl
+      border border-white/70
+      bg-white/70
+      text-[#7C3AED]
+      shadow-sm
+      transition-all
+      hover:scale-105
+      hover:bg-white
+      hover:shadow-md
+    "
+          >
+            {showDetails ? (
+              <ChevronUp size={18} />
+            ) : (
+              <ChevronDown size={18} />
+            )}
+          </button>
+        </Tooltip>
       </div>
+
 
       {/* Step Badge & Procedure Title */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] ${theme.chipClassName}`}>
-              Bước {task.stepOrder || 0}
+            <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] ${theme.chipClassName}`}>
+              Step {task.stepOrder || 0}
             </span>
             {task.isMainStep ? (
-              <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] ${theme.chipClassName}`}>
-                Chính
+              <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] ${theme.chipClassName}`}>
+                Main
               </span>
             ) : null}
           </div>
-          <h3 className="mt-2 text-[14px] font-black leading-5 text-[#402542]">{task.procedureName}</h3>
+          <h3 className="mt-2 text-[14px] font-bold leading-5 text-[#402542]">{task.procedureName}</h3>
         </div>
 
-        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${theme.handleClassName}`}>
-          {canDrag ? <GripVertical size={14} /> : <Sparkles size={14} />}
-        </div>
+
       </div>
-
-      {/* Basic Meta Grid */}
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        <MiniInfo label="Khách hàng" value={task.customerName} className={theme.infoClassName} />
-        <MiniInfo label="Ghế làm" value={task.chairName || "--"} className={theme.infoClassName} />
-        <MiniInfo
-          label="Ngày làm"
-          value={formatDate(task.bookingDate) || "--"}
-          className={theme.infoClassName}
-        />
-        <MiniInfo
-          label="Tổng thời gian"
-          value={formatDurationMinutes(task.duration)}
-          className={theme.infoClassName}
-        />
-      </div>
-
-      {/* Active vs Passive Time Breakdown Bar */}
-      <div className="mt-2.5 space-y-2 border-t pt-2 border-white/60">
-        <div className="flex flex-wrap items-center justify-between gap-1 text-[11px] font-extrabold">
-          <span className="text-[#6D28D9]">⚡ Thao tác: {activeDuration}m</span>
-          {hasPassive && <span className="text-[#0284C7]">⏳ Hơ/Chờ: {passiveDuration}m</span>}
-          {(hasPassive || task.canOverlap) ? (
-            <span className="rounded-full bg-[#ECFDF5] px-2 py-0.5 text-[10px] font-black text-[#047857] border border-[#A7F3D0]">
-              ✨ Overlap (Rảnh {passiveDuration}m)
-            </span>
-          ) : (
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">
-              🔒 Thợ làm liên tục
-            </span>
-          )}
+      <div
+        className={`
+                  overflow-hidden
+                  transition-all
+                  duration-300
+                  ${showDetails ? "max-h-[700px] opacity-100 mt-3" : "max-h-0 opacity-0"}
+                `}
+      >
+        {/* Basic Meta Grid */}
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <MiniInfo label="Customer" value={task.customerName} className={theme.infoClassName} />
+          <MiniInfo label="Chair" value={task.chairName || "--"} className={theme.infoClassName} />
+          <MiniInfo
+            label="Date"
+            value={formatDate(task.bookingDate) || "--"}
+            className={theme.infoClassName}
+          />
+          <MiniInfo
+            label="Total Time"
+            value={formatDurationMinutes(task.duration)}
+            className={theme.infoClassName}
+          />
         </div>
 
-        {/* Estimated Schedule & Actual Execution Time */}
-        <div className="flex flex-col gap-1.5 text-[10px]">
-          <div className="flex items-center justify-between text-gray-400 font-medium opacity-80">
-            <span>🕒 Dự kiến: {formatTaskTime(task.estimatedStartTime || task.startTime)} - {formatTaskTime(task.estimatedEndTime)}</span>
+        {/* Active vs Passive Time Breakdown Bar */}
+        <div className="mt-2.5 space-y-2 border-t pt-2 border-white/60">
+          <div className="flex flex-wrap items-center justify-between gap-1 text-[11px] font-bold">
+            <span className="inline-flex items-center gap-1 text-yellow-600">
+              <Zap size={13} strokeWidth={2.5} />
+              Active: {activeDuration}m
+            </span>
+
+            {hasPassive && (
+              <span className="inline-flex items-center gap-1 text-[#0284C7]">
+                <Hourglass size={13} strokeWidth={2.5} />
+                Passive: {passiveDuration}m
+              </span>
+            )}
+            {(hasPassive || task.canOverlap) ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-[#ECFDF5] px-2 py-0.5 text-[10px] font-bold text-[#047857] border border-[#A7F3D0]">
+                <Sparkles size={12} />
+                Overlap ({passiveDuration}m free)
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-600">
+                <LockKeyhole size={12} />
+                Continuous
+              </span>
+            )}
           </div>
-          {(task.actualStartTime || task.actualEndTime) && (
-            <div className="flex items-center justify-between rounded-xl bg-gradient-to-r from-emerald-100/90 via-emerald-50 to-teal-50 px-3 py-1.5 text-emerald-950 border border-emerald-300 shadow-2xs">
-              <span className="font-extrabold text-[11px] text-emerald-800 flex items-center gap-1">
-                ⏱️ Thực tế làm:
-              </span>
-              <span className="font-black text-xs text-emerald-700 tracking-tight">
-                {formatTaskTime(task.actualStartTime)} ~ {task.actualEndTime ? formatTaskTime(task.actualEndTime) : "Đang làm..."}
-              </span>
+
+          {/* Estimated Schedule & Actual Execution Time */}
+          <div className="flex flex-col gap-1.5 text-[10px]">
+            <div className="flex items-center justify-between text-blue-600 font-medium opacity-80">
+              <span className="inline-flex items-center gap-1">
+                <Clock size={12} />
+                Estimated: {formatTaskTime(task.estimatedStartTime || task.startTime)} - {formatTaskTime(task.estimatedEndTime)}</span>
             </div>
-          )}
-        </div>
-      </div>
-
-      {/* Footer Row */}
-      <div className={`mt-3 flex items-center justify-between gap-3 border-t pt-2.5 ${theme.dividerClassName}`}>
-        <div className="min-w-0">
-          <p className="truncate text-[11px] font-bold text-[#402542]">
-            {ownerLabel || getTaskOwnerLabel(task)}
-          </p>
-          <p className="text-[10px] text-[#a07c90]">
-            {isUpdating ? "Updating status..." : footerHint || (canDrag ? "Drag to move this task" : "Claim this task to start")}
-          </p>
+            {(task.actualStartTime || task.actualEndTime) && (
+              <div className="flex items-center justify-center align-center gap-2 rounded-xl bg-gradient-to-r from-emerald-100/90 via-emerald-50 to-teal-50 px-3 py-1.5 text-emerald-950 border border-emerald-300 shadow-2xs">
+                <span className="font-bold text-[11px] text-emerald-800 flex items-center gap-1">
+                  <AlarmClock size={13} /> Actually do:
+                </span>
+                <span className="font-bold text-xs text-emerald-700 tracking-tight">
+                  {formatTaskTime(task.actualStartTime)} ~ {task.actualEndTime ? formatTaskTime(task.actualEndTime) : "Doing..."}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
-          {secondaryAction}
-          {primaryAction || (!secondaryAction && (
-            <Link
-              to={task.bookingId ? getStaffBookingDetailRoute(task.bookingId) : ROUTES.staffBookings}
-              className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#f3d5e2] bg-white px-3 py-1 text-[11px] font-bold text-[#d94f92] transition hover:bg-[#fff5fa]"
-            >
-              View
-              <ArrowRight size={12} />
-            </Link>
-          ))}
+        {/* Footer Row */}
+        <div className={`mt-3 flex items-center justify-between gap-3 border-t pt-2.5 ${theme.dividerClassName}`}>
+          <div className="min-w-0">
+            <p className="truncate text-[11px] font-bold text-[#402542]">
+              {ownerLabel || getTaskOwnerLabel(task)}
+            </p>
+            <p className="text-[10px] text-[#a07c90]">
+              {isUpdating ? "Updating status..." : footerHint || (canDrag ? "Drag to move this task" : "Claim this task to start")}
+            </p>
+          </div>
+
+          <div className="flex shrink-0 items-center gap-2">
+            {secondaryAction}
+            {primaryAction || (!secondaryAction && (
+              <Link
+                to={task.bookingId ? getStaffBookingDetailRoute(task.bookingId) : ROUTES.staffBookings}
+                className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#f3d5e2] bg-white px-3 py-1 text-[11px] font-bold text-[#d94f92] transition hover:bg-[#fff5fa]"
+              >
+                View
+                <ArrowRight size={12} />
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -545,8 +602,8 @@ function BoardColumn({
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <span className={`h-2.5 w-2.5 rounded-full ${column.dotClassName}`} />
-          <h3 className="text-sm font-extrabold text-[#402542]">{column.label}</h3>
-          <span className={`rounded-full px-2 py-1 text-[10px] font-extrabold ${column.badgeClassName}`}>
+          <h3 className="text-sm font-bold text-[#402542]">{column.label}</h3>
+          <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${column.badgeClassName}`}>
             {tasks.length}
           </span>
         </div>
@@ -887,157 +944,281 @@ export function StaffTasksPage() {
     }, {});
   }, [salonTasks, filterSingleTask]);
 
-const stats = useMemo(() => {
-  const requiredMyTasks = myTasks.filter((task) => task.isRequired).length;
-  const overlapReadyTasks = salonTasks.filter((task) => task.canOverlap).length;
+  const stats = useMemo(() => {
+    const requiredMyTasks = myTasks.filter((task) => task.isRequired).length;
+    const overlapReadyTasks = salonTasks.filter((task) => task.canOverlap).length;
 
-  return [
-    {
-      key: "assigned",
-      title: "Assigned",
-      value: myTasks.length,
-      note: "Tasks currently assigned to you",
-      icon: UserRoundCheck,
-      toneClassName: "bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93]",
-    },
-    {
-      key: "claimable",
-      title: "Claimable",
-      value: salonTasks.length,
-      note: "Visible steps in the salon queue",
-      icon: Sparkles,
-      toneClassName: "bg-gradient-to-br from-[#8b5cf6] to-[#7c3aed]",
-    },
-    {
-      key: "required",
-      title: "Required",
-      value: requiredMyTasks,
-      note: "Required steps in your queue",
-      icon: CheckCircle2,
-      toneClassName: "bg-gradient-to-br from-[#34d399] to-[#059669]",
-    },
-    {
-      key: "overlap",
-      title: "Overlap Ready",
-      value: overlapReadyTasks,
-      note: "Claimable tasks that can overlap",
-      icon: Layers3,
-      toneClassName: "bg-gradient-to-br from-[#f59e0b] to-[#d97706]",
-    },
-  ];
-}, [myTasks, salonTasks]);
+    return [
+      {
+        key: "assigned",
+        title: "Assigned",
+        value: myTasks.length,
+        note: "Tasks currently assigned to you",
+        icon: UserRoundCheck,
+        toneClassName: "bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93]",
+      },
+      {
+        key: "claimable",
+        title: "Claimable",
+        value: salonTasks.length,
+        note: "Visible steps in the salon queue",
+        icon: Sparkles,
+        toneClassName: "bg-gradient-to-br from-[#8b5cf6] to-[#7c3aed]",
+      },
+      {
+        key: "required",
+        title: "Required",
+        value: requiredMyTasks,
+        note: "Required steps in your queue",
+        icon: CheckCircle2,
+        toneClassName: "bg-gradient-to-br from-[#34d399] to-[#059669]",
+      },
+      {
+        key: "overlap",
+        title: "Overlap Ready",
+        value: overlapReadyTasks,
+        note: "Claimable tasks that can overlap",
+        icon: Layers3,
+        toneClassName: "bg-gradient-to-br from-[#f59e0b] to-[#d97706]",
+      },
+    ];
+  }, [myTasks, salonTasks]);
 
-return (
-  <section className="mx-auto w-full max-w-[1450px] space-y-5">
-    {error ? (
-      <Alert
-        message="Task Loading Error"
-        description={error}
-        type="error"
-        showIcon
-      />
-    ) : null}
-
-    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-      {stats.map((stat) => (
-        <StatCard
-          key={stat.key}
-          title={stat.title}
-          value={stat.value}
-          note={stat.note}
-          icon={stat.icon}
-          toneClassName={stat.toneClassName}
+  return (
+    <section className="mx-auto w-full max-w-[1450px] space-y-5">
+      {error ? (
+        <Alert
+          message="Task Loading Error"
+          description={error}
+          type="error"
+          showIcon
         />
-      ))}
-    </div>
+      ) : null}
 
-    <Card className="overflow-hidden">
-      <div className="border-b border-[#f6dce7] bg-[linear-gradient(180deg,#fff8fb_0%,#fff3f8_100%)] px-5 py-4 sm:px-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <SectionHeading
-            title="Task Queue"
-            subtitle={
-              activeTab === "my"
-                ? "Drag tasks between columns to update their working status."
-                : "Review the full salon task queue. Locked steps stay visible until earlier required steps are finished."
-            }
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {stats.map((stat) => (
+          <StatCard
+            key={stat.key}
+            title={stat.title}
+            value={stat.value}
+            note={stat.note}
+            icon={stat.icon}
+            toneClassName={stat.toneClassName}
           />
-
-          <div className="flex flex-wrap items-center gap-2">
-            {TASK_TABS.map((tab) => (
-              <TaskTabButton
-                key={tab.key}
-                active={activeTab === tab.key}
-                label={tab.label}
-                onClick={() => setActiveTab(tab.key)}
-              />
-            ))}
-
-            <button
-              type="button"
-              onClick={() => void loadTasks({ silent: true })}
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-[#f3d5e2] bg-white px-4 py-2 text-xs font-bold text-[#8f7184] transition hover:bg-[#fff7fb]"
-            >
-              <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} />
-              Refresh
-            </button>
-          </div>
-        </div>
-
-        {/* Customer & Task Filter Bar */}
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[#f6dce7]/70">
-          <div className="flex items-center gap-2 flex-1 min-w-[240px]">
-            <Search size={14} className="text-[#a07c90] shrink-0" />
-            <input
-              type="text"
-              placeholder="🔍 Tìm tên khách (Đoàn Thành), Mã Booking (BK-108), hoặc tên bước..."
-              value={searchTaskText}
-              onChange={(e) => setSearchTaskText(e.target.value)}
-              className="w-full rounded-xl border border-[#f3d5e2] bg-white px-3 py-1.5 text-xs font-semibold text-[#402542] placeholder-[#a07c90] focus:border-[#C97A9E] focus:outline-none"
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-extrabold text-[#6D28D9] shrink-0">👤 Lọc theo Khách:</span>
-            <select
-              value={selectedCustomerFilter}
-              onChange={(e) => setSelectedCustomerFilter(e.target.value)}
-              className="rounded-xl border border-[#f3d5e2] bg-white px-3 py-1.5 text-xs font-bold text-[#402542] focus:border-[#C97A9E] focus:outline-none cursor-pointer"
-            >
-              <option value="all">-- Tất cả khách hàng ({uniqueCustomers.length}) --</option>
-              {uniqueCustomers.map((cust) => (
-                <option key={cust.name} value={cust.name}>
-                  {cust.display}
-                </option>
-              ))}
-            </select>
-
-            {(searchTaskText || selectedCustomerFilter !== "all") && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSearchTaskText("");
-                  setSelectedCustomerFilter("all");
-                }}
-                className="rounded-xl bg-gray-100 px-3 py-1.5 text-xs font-bold text-gray-600 hover:bg-gray-200 transition cursor-pointer"
-              >
-                Xóa lọc
-              </button>
-            )}
-          </div>
-        </div>
+        ))}
       </div>
 
-      <div className="p-5 sm:p-6">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <Spin size="large" tip="Loading tasks..." />
+      <Card className="overflow-hidden">
+        <div className="border-b border-[#f6dce7] bg-[linear-gradient(180deg,#fff8fb_0%,#fff3f8_100%)] px-5 py-4 sm:px-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <SectionHeading
+              title="Task Queue"
+              subtitle={
+                activeTab === "my"
+                  ? "Drag tasks between columns to update their working status."
+                  : "Review the full salon task queue. Locked steps stay visible until earlier required steps are finished."
+              }
+            />
+
+            <div className="flex flex-wrap items-center gap-2">
+              {TASK_TABS.map((tab) => (
+                <TaskTabButton
+                  key={tab.key}
+                  active={activeTab === tab.key}
+                  label={tab.label}
+                  onClick={() => setActiveTab(tab.key)}
+                />
+              ))}
+
+              <button
+                type="button"
+                onClick={() => void loadTasks({ silent: true })}
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-[#f3d5e2] bg-white px-4 py-2 text-xs font-bold text-[#8f7184] transition hover:bg-[#fff7fb]"
+              >
+                <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} />
+                Refresh
+              </button>
+            </div>
           </div>
-        ) : activeTab === "my" ? (
-          myTasks.length === 0 ? (
+
+          {/* Customer & Task Filter Bar */}
+          <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-[#f6dce7]/70 pt-4">
+
+            {/* Search */}
+            <div className="relative min-w-[320px] flex-1">
+              <Search
+                size={16}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#a07c90]"
+              />
+
+              <input
+                type="text"
+                placeholder="Search customer, booking code, procedure..."
+                value={searchTaskText}
+                onChange={(e) => setSearchTaskText(e.target.value)}
+                className="
+        h-11
+        w-full
+        rounded-xl
+        border border-[#f3d5e2]
+        bg-white
+        pl-10
+        pr-10
+        text-xs
+        font-semibold
+        text-[#402542]
+        placeholder:text-[#a07c90]
+        shadow-sm
+        transition-all
+        focus:border-[#C97A9E]
+        focus:ring-4
+        focus:ring-[#fde7ef]
+        focus:outline-none
+      "
+              />
+
+              {searchTaskText && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTaskText("")}
+                  className="
+          absolute
+          right-3
+          top-1/2
+          -translate-y-1/2
+          flex
+          h-5
+          w-5
+          items-center
+          justify-center
+          rounded-full
+          bg-[#fde7ef]
+          text-[#d94f92]
+          transition
+          hover:bg-[#f9d2e1]
+        "
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+
+            {/* Customer Filter */}
+            <div className="relative shrink-0">
+              <CircleUserRound
+                size={16}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#8b5cf6]"
+              />
+
+              <select
+                value={selectedCustomerFilter}
+                onChange={(e) => setSelectedCustomerFilter(e.target.value)}
+                className="
+                            h-11
+                            appearance-none
+                            rounded-xl
+                            border border-[#edd8f8]
+                            bg-white
+                            pl-10
+                            pr-16
+                            text-xs
+                            font-semibold
+                            text-[#4c1d95]
+                            shadow-sm
+                            transition-all
+                            hover:border-[#c084fc]
+                            focus:border-[#a855f7]
+                            focus:ring-4
+                            focus:ring-[#f3e8ff]
+                            focus:outline-none
+                            cursor-pointer
+                          "
+              >
+                <option value="all">
+                  All Customers ({uniqueCustomers.length})
+                </option>
+
+                {uniqueCustomers.map((cust) => (
+                  <option key={cust.name} value={cust.name}>
+                    {cust.display}
+                  </option>
+                ))}
+              </select>
+
+              {selectedCustomerFilter !== "all" && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedCustomerFilter("all")}
+                  className="
+                              absolute
+                              right-9
+                              top-1/2
+                              -translate-y-1/2
+                              flex
+                              h-5
+                              w-5
+                              items-center
+                              justify-center
+                              rounded-full
+                              bg-red-500
+                              text-red-700
+                              transition
+                              hover:bg-red-200
+                            "
+                >
+                  <X size={12} />
+                </button>
+              )}
+
+              <ChevronDown
+                size={16}
+                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#8b5cf6]"
+              />
+            </div>
+
+          </div>
+        </div>
+
+        <div className="p-5 sm:p-6">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <Spin size="large" tip="Loading tasks..." />
+            </div>
+          ) : activeTab === "my" ? (
+            myTasks.length === 0 ? (
+              <EmptyState
+                title="No assigned tasks"
+                description="You currently do not have any active booking procedures assigned."
+              />
+            ) : (
+              <div className="overflow-x-auto pb-2">
+                <div className="flex min-w-max gap-4">
+                  {BOARD_COLUMNS.map((column) => (
+                    <BoardColumn
+                      key={column.key}
+                      column={column}
+                      tasks={myTasksByColumn[column.key] || []}
+                      isActiveDropTarget={dragOverColumn === column.key}
+                      onDragOver={(event) => {
+                        event.preventDefault();
+                        if (dragOverColumn !== column.key) {
+                          setDragOverColumn(column.key);
+                        }
+                      }}
+                      onDrop={handleMyColumnDrop}
+                      onDragStart={(event, task) => handleDragStart(event, task, "my")}
+                      onDragEnd={handleDragEnd}
+                      draggingTaskId={draggingTask?.bookingProcedureId || ""}
+                      updatingTaskId={updatingTaskId}
+                    />
+                  ))}
+                </div>
+              </div>
+            )
+          ) : salonTasks.length === 0 ? (
             <EmptyState
-              title="No assigned tasks"
-              description="You currently do not have any active booking procedures assigned."
+              title="No salon tasks"
+              description="There are no in-progress booking procedures visible in the salon queue right now."
             />
           ) : (
             <div className="overflow-x-auto pb-2">
@@ -1046,7 +1227,7 @@ return (
                   <BoardColumn
                     key={column.key}
                     column={column}
-                    tasks={myTasksByColumn[column.key] || []}
+                    tasks={salonTasksByColumn[column.key] || []}
                     isActiveDropTarget={dragOverColumn === column.key}
                     onDragOver={(event) => {
                       event.preventDefault();
@@ -1054,128 +1235,98 @@ return (
                         setDragOverColumn(column.key);
                       }
                     }}
-                    onDrop={handleMyColumnDrop}
-                    onDragStart={(event, task) => handleDragStart(event, task, "my")}
+                    onDrop={handleSalonColumnDrop}
+                    onDragStart={(event, task) => handleDragStart(event, task, "salon")}
                     onDragEnd={handleDragEnd}
                     draggingTaskId={draggingTask?.bookingProcedureId || ""}
                     updatingTaskId={updatingTaskId}
+                    emptyText={column.key === "Pending" ? "No salon tasks here" : "No tasks in this status"}
+                    renderTask={(task) => {
+                      const canDrag = canTaskBeDragged(task, currentStaffArtistId);
+                      const isAssigned = isTaskAssigned(task);
+                      const isAssignedToCurrentArtist = isTaskAssignedToCurrentArtist(
+                        task,
+                        currentStaffArtistId,
+                      );
+                      const isBlockedBySequence =
+                        Boolean(task?.isBlockedBySequence) && normalizeStatusKey(task?.status) === "Pending";
+                      const isClaimable =
+                        column.key === "Pending" &&
+                        !isAssigned &&
+                        !isBlockedBySequence;
+
+                      return (
+                        <BoardTaskCard
+                          key={task.bookingProcedureId}
+                          task={task}
+                          onDragStart={(event, currentTask) => handleDragStart(event, currentTask, "salon")}
+                          onDragEnd={handleDragEnd}
+                          isDragging={draggingTask?.bookingProcedureId === task.bookingProcedureId}
+                          isUpdating={updatingTaskId === task.bookingProcedureId}
+                          canDrag={canDrag}
+                          ownerLabel={
+                            isAssigned
+                              ? getTaskOwnerLabel(task, "Assigned")
+                              : "Unassigned"
+                          }
+                          footerHint={
+                            isBlockedBySequence
+                              ? "Claim follows the booking step order"
+                              : canDrag
+                                ? "Drag to move this task"
+                                : isAssignedToCurrentArtist
+                                  ? "Claim this task before updating status"
+                                  : isAssigned
+                                    ? "Only the staff who claimed this step can move it"
+                                    : "Claim this task before updating status"
+                          }
+                          primaryAction={
+                            isClaimable ? (
+                              <button
+                                type="button"
+                                onClick={() => void handleClaimTask(task)}
+                                disabled={claimingTaskId === task.bookingProcedureId}
+                                className="inline-flex shrink-0 items-center justify-center gap-1 rounded-full bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] px-3 py-1 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                {claimingTaskId === task.bookingProcedureId ? "Claiming..." : "Claim"}
+                              </button>
+                            ) : undefined
+                          }
+                          secondaryAction={
+                            <Link
+                              to={task.bookingId ? getStaffBookingDetailRoute(task.bookingId) : ROUTES.staffBookings}
+                              className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#f3d5e2] bg-white px-3 py-1 text-[11px] font-bold text-[#d94f92] transition hover:bg-[#fff5fa]"
+                            >
+                              View
+                              <ArrowRight size={12} />
+                            </Link>
+                          }
+                        />
+                      );
+                    }}
                   />
                 ))}
               </div>
             </div>
-          )
-        ) : salonTasks.length === 0 ? (
-          <EmptyState
-            title="No salon tasks"
-            description="There are no in-progress booking procedures visible in the salon queue right now."
-          />
-        ) : (
-          <div className="overflow-x-auto pb-2">
-            <div className="flex min-w-max gap-4">
-              {BOARD_COLUMNS.map((column) => (
-                <BoardColumn
-                  key={column.key}
-                  column={column}
-                  tasks={salonTasksByColumn[column.key] || []}
-                  isActiveDropTarget={dragOverColumn === column.key}
-                  onDragOver={(event) => {
-                    event.preventDefault();
-                    if (dragOverColumn !== column.key) {
-                      setDragOverColumn(column.key);
-                    }
-                  }}
-                  onDrop={handleSalonColumnDrop}
-                  onDragStart={(event, task) => handleDragStart(event, task, "salon")}
-                  onDragEnd={handleDragEnd}
-                  draggingTaskId={draggingTask?.bookingProcedureId || ""}
-                  updatingTaskId={updatingTaskId}
-                  emptyText={column.key === "Pending" ? "No salon tasks here" : "No tasks in this status"}
-                  renderTask={(task) => {
-                    const canDrag = canTaskBeDragged(task, currentStaffArtistId);
-                    const isAssigned = isTaskAssigned(task);
-                    const isAssignedToCurrentArtist = isTaskAssignedToCurrentArtist(
-                      task,
-                      currentStaffArtistId,
-                    );
-                    const isBlockedBySequence =
-                      Boolean(task?.isBlockedBySequence) && normalizeStatusKey(task?.status) === "Pending";
-                    const isClaimable =
-                      column.key === "Pending" &&
-                      !isAssigned &&
-                      !isBlockedBySequence;
+          )}
+        </div>
+      </Card>
 
-                    return (
-                      <BoardTaskCard
-                        key={task.bookingProcedureId}
-                        task={task}
-                        onDragStart={(event, currentTask) => handleDragStart(event, currentTask, "salon")}
-                        onDragEnd={handleDragEnd}
-                        isDragging={draggingTask?.bookingProcedureId === task.bookingProcedureId}
-                        isUpdating={updatingTaskId === task.bookingProcedureId}
-                        canDrag={canDrag}
-                        ownerLabel={
-                          isAssigned
-                            ? getTaskOwnerLabel(task, "Assigned")
-                            : "Unassigned"
-                        }
-                        footerHint={
-                          isBlockedBySequence
-                            ? "Claim follows the booking step order"
-                            : canDrag
-                              ? "Drag to move this task"
-                              : isAssignedToCurrentArtist
-                                ? "Claim this task before updating status"
-                                : isAssigned
-                                  ? "Only the staff who claimed this step can move it"
-                                  : "Claim this task before updating status"
-                        }
-                        primaryAction={
-                          isClaimable ? (
-                            <button
-                              type="button"
-                              onClick={() => void handleClaimTask(task)}
-                              disabled={claimingTaskId === task.bookingProcedureId}
-                              className="inline-flex shrink-0 items-center justify-center gap-1 rounded-full bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] px-3 py-1 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              {claimingTaskId === task.bookingProcedureId ? "Claiming..." : "Claim"}
-                            </button>
-                          ) : undefined
-                        }
-                        secondaryAction={
-                          <Link
-                            to={task.bookingId ? getStaffBookingDetailRoute(task.bookingId) : ROUTES.staffBookings}
-                            className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#f3d5e2] bg-white px-3 py-1 text-[11px] font-bold text-[#d94f92] transition hover:bg-[#fff5fa]"
-                          >
-                            View
-                            <ArrowRight size={12} />
-                          </Link>
-                        }
-                      />
-                    );
-                  }}
-                />
-              ))}
+      <Card className="p-5 sm:p-6">
+        <div className="flex items-start gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#f5b455_0%,#db8520_100%)] text-white shadow-[0_12px_24px_rgba(219,133,32,0.18)]">
+            <TimerReset size={18} />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-sm font-bold text-[#402542]">How this screen works</h3>
+            <div className="mt-3 grid gap-3 md:grid-cols-3">
+              <MiniInfo label="My Tasks" value="Drag a card into another column to update its real status." />
+              <MiniInfo label="Salon Tasks" value="All salon steps stay visible, but blocked pending steps cannot be claimed until the earlier required step is done." />
+              <MiniInfo label="No Add Button" value="This board only reflects backend booking procedures, no manual task creation." />
             </div>
           </div>
-        )}
-      </div>
-    </Card>
-
-    <Card className="p-5 sm:p-6">
-      <div className="flex items-start gap-3">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#f5b455_0%,#db8520_100%)] text-white shadow-[0_12px_24px_rgba(219,133,32,0.18)]">
-          <TimerReset size={18} />
         </div>
-        <div className="min-w-0">
-          <h3 className="text-sm font-extrabold text-[#402542]">How this screen works</h3>
-          <div className="mt-3 grid gap-3 md:grid-cols-3">
-            <MiniInfo label="My Tasks" value="Drag a card into another column to update its real status." />
-            <MiniInfo label="Salon Tasks" value="All salon steps stay visible, but blocked pending steps cannot be claimed until the earlier required step is done." />
-            <MiniInfo label="No Add Button" value="This board only reflects backend booking procedures, no manual task creation." />
-          </div>
-        </div>
-      </div>
-    </Card>
-  </section>
-);
+      </Card>
+    </section>
+  );
 }

@@ -34,12 +34,14 @@ export const ROUTES = {
   receptionistCustomersCreate: "/receptionist/customers/create",
   receptionistCustomerDetail: "/receptionist/customers/:id",
   receptionistBreaks: "/receptionist/breaks",
+  receptionistChairs: "/receptionist/chairs",
 
   // Manager routes
   managerRoot: "/manager",
   managerDashboard: "/manager/dashboard",
   managerProfile: "/manager/profile",
   managerBookings: "/manager/bookings",
+  managerReschedule: "/manager/reschedule",
   managerBookingsCreate: "/manager/bookings/create",
   managerBookingDetail: "/manager/bookings/:bookingId",
   managerStaffArtists: "/manager/staff-artists",
@@ -53,6 +55,7 @@ export const ROUTES = {
   managerWaitlist: "/manager/waitlist",
   managerQueue: "/manager/queue",
   managerBreaks: "/manager/breaks",
+  managerChairs: "/manager/chairs",
   receptionistQueue: "/receptionist/queue",
   receptionistWaitlist: "/receptionist/waitlist",
 
@@ -81,6 +84,9 @@ export const ROUTES = {
   adminNailShapes: "/admin/nail-shapes",
   adminNailShapesCreate: "/admin/nail-shapes/create",
   adminNailShapeDetail: "/admin/nail-shapes/:shapeId",
+  adminShapeMethodConfigs: "/admin/shape-method-configs",
+  adminShapeMethodConfigsCreate: "/admin/shape-method-configs/create",
+  adminShapeMethodConfigDetail: "/admin/shape-method-configs/:configId",
   adminNailSurfaces: "/admin/nail-surfaces",
   adminNailSurfacesCreate: "/admin/nail-surfaces/create",
   adminNailSurfaceDetail: "/admin/nail-surfaces/:surfaceId",

@@ -59,11 +59,10 @@ export function SalonSaveResultModal({
       <div>
         {/* Header Strip */}
         <div
-          className={`px-6 py-5 text-white ${
-            isSuccess
+          className={`px-6 py-5 text-white ${isSuccess
               ? "bg-[linear-gradient(135deg,#10b981_0%,#059669_100%)]"
               : "bg-[linear-gradient(135deg,#f43f5e_0%,#e11d48_100%)]"
-          }`}
+            }`}
         >
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-3">
@@ -95,11 +94,10 @@ export function SalonSaveResultModal({
         {/* Content */}
         <div className="space-y-4 px-6 py-6 text-center">
           <div
-            className={`rounded-[22px] border p-5 ${
-              isSuccess
+            className={`rounded-[22px] border p-5 ${isSuccess
                 ? "border-emerald-100 bg-[#f4fffb] text-emerald-900"
                 : "border-rose-100 bg-[#fff7fa] text-rose-900"
-            }`}
+              }`}
           >
             <p className="text-sm font-bold">
               {isSuccess ? successDescription : failureDescription}
@@ -116,7 +114,7 @@ export function SalonSaveResultModal({
             <button
               type="button"
               onClick={onFailureClose}
-              className="w-full rounded-full bg-[#d14c84] py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-[0_12px_24px_rgba(209,76,132,0.25)] transition hover:bg-[#c23e75] active:scale-[0.98]"
+              className="w-full rounded-full bg-[#d14c84] py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-[0_12px_24px_rgba(209,76,132,0.25)] transition hover:bg-[#c23e75] active:scale-[0.98]"
             >
               Close
             </button>

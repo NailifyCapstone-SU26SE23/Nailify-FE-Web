@@ -14,13 +14,15 @@ import {
   RefreshCw,
   Wallet,
   Calendar,
-  Check
+  Check,
+  CircleCheck
 } from "lucide-react";
 import { formatCurrency } from "../../../../shared/utils/formatCurrency";
 import { Pagination } from "../../../../shared/components/common/Pagination";
 import { fetchTransactions, fetchBookingById } from "../services/transactionService";
 import dayjs from "dayjs";
 import { RefundConfirmModal } from "../components/RefundConfirmModal";
+import toast from "react-hot-toast";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 15 },
@@ -82,7 +84,7 @@ export function TransactionManagementPage() {
     setError(null);
     try {
       const data = await fetchTransactions({ pageNumber: currentPage, pageSize });
-      
+
       if (data && data.items && data.items.length > 0) {
         const enrichedItems = await Promise.all(
           data.items.map(async (tx) => {
@@ -99,7 +101,7 @@ export function TransactionManagementPage() {
         );
         data.items = enrichedItems;
       }
-      
+
       setTransactionsData(data);
     } catch (err) {
       setError(err.message || "Failed to fetch transactions.");
@@ -168,8 +170,8 @@ export function TransactionManagementPage() {
     const pendingItems = allItems.filter(t => t.status?.toLowerCase() === "pending");
 
     const totalRevenue = paidItems.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
-    const successRate = allItems.length > 0 
-      ? Math.round((paidItems.length / allItems.length) * 100) 
+    const successRate = allItems.length > 0
+      ? Math.round((paidItems.length / allItems.length) * 100)
       : 0;
 
     return {
@@ -185,17 +187,17 @@ export function TransactionManagementPage() {
   const handleCopyLink = (url) => {
     if (!url) return;
     navigator.clipboard.writeText(url);
-    message.success("Payment checkout link copied to clipboard!");
+    toast.success("Payment checkout link copied to clipboard!");
   };
 
   const handleCopyText = (text, label) => {
     if (!text) return;
     navigator.clipboard.writeText(text);
-    message.success(`${label} copied to clipboard!`);
+    toast.success(`${label} copied to clipboard!`);
   };
 
   const handleConfirmRefund = () => {
-    message.info("Tính năng đang được hoàn thiện (This feature is under development)");
+    toast.info("Tính năng đang được hoàn thiện (This feature is under development)");
     setRefundConfirmVisible(false);
   };
 
@@ -248,7 +250,7 @@ export function TransactionManagementPage() {
       <div className="absolute top-[300px] left-[-100px] -z-10 h-[450px] w-[450px] rounded-full bg-gradient-to-tr from-[#ffa26f]/4 to-transparent blur-3xl pointer-events-none" />
 
       <div className="max-w-[1400px] mx-auto space-y-8">
-        
+
         {/* Asymmetric Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/60 pb-6">
           <div className="space-y-1.5">
@@ -258,14 +260,14 @@ export function TransactionManagementPage() {
               </span>
               <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#ea4f93]">Manager Portal</span>
             </div>
-            <h1 className="text-3xl font-black text-[#2d1b35] tracking-tight md:text-4xl">
+            <h1 className="text-3xl font-bold text-[#2d1b35] tracking-tight md:text-4xl">
               Transactions History
             </h1>
             <p className="text-xs md:text-sm text-[#a88a9f] max-w-[65ch] leading-relaxed">
               Track and audit all payments processed for customer bookings. Access checkout links and dynamic pay codes.
             </p>
           </div>
-          
+
           <button
             onClick={handleRefresh}
             className="flex self-start md:self-auto items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4.5 py-3 text-xs font-bold text-[#2d1b35] shadow-[0_4px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_20px_rgba(234,79,147,0.08)] hover:border-[#ea4f93]/30 transition-all duration-300 active:scale-[0.98]"
@@ -279,12 +281,15 @@ export function TransactionManagementPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Revenue Metric */}
           <div className="relative overflow-hidden rounded-[2.5rem] border border-[#f1e7ed]/60 bg-white/70 backdrop-blur-md p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.02)] border-l-4 border-l-emerald-500/80 transition-all duration-500 hover:-translate-y-1.5 hover:shadow-[0_30px_50px_-15px_rgba(234,79,147,0.06)] group">
-            <span className="absolute top-4 right-4 flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
+            {/* <span className="absolute top-4 right-4 flex h-2 w-2"> */}
+
             <div className="flex justify-between items-start">
               <span className="text-[10px] font-bold uppercase tracking-wider text-[#a88a9f]">Total Revenue</span>
+              <span className="p-2 rounded-xl bg-green-50 text-green-600 transition-colors group-hover:bg-green-100">
+                {/* <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span> */}
+                <CircleCheck size={20} color="#10b981" />
+              </span>
             </div>
             <div className="mt-5">
               <span className="text-3xl md:text-4xl font-mono font-bold text-[#2d1b35] tracking-tight">
@@ -342,8 +347,8 @@ export function TransactionManagementPage() {
               className="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300"
             />
             {searchQuery && (
-              <button 
-                onClick={() => setSearchQuery("")} 
+              <button
+                onClick={() => setSearchQuery("")}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-[#a88a9f] hover:text-[#2d1b35]"
               >
                 <X size={13} />
@@ -400,8 +405,8 @@ export function TransactionManagementPage() {
                 type="warning"
                 showIcon
                 action={
-                  <button 
-                    onClick={loadTransactions} 
+                  <button
+                    onClick={loadTransactions}
                     className="px-3.5 py-2 bg-white border border-rose-200 rounded-xl text-xs font-bold text-rose-700 transition hover:bg-rose-50"
                   >
                     Retry
@@ -466,7 +471,7 @@ export function TransactionManagementPage() {
                         {/* Customer */}
                         <td className="px-6 py-5.5">
                           <div className="flex items-center gap-3">
-                            <div className={`flex h-9 w-9 items-center justify-center rounded-full font-black text-xs shrink-0 shadow-xs ${getAvatarColor(tx.customerName)}`}>
+                            <div className={`flex h-9 w-9 items-center justify-center rounded-full font-bold text-xs shrink-0 shadow-xs ${getAvatarColor(tx.customerName)}`}>
                               {getInitials(tx.customerName)}
                             </div>
                             <div className="min-w-0">
@@ -560,7 +565,7 @@ export function TransactionManagementPage() {
             </span>
             <div className="text-left">
               <span className="text-[10px] text-[#a88a9f] font-bold uppercase tracking-wider block leading-none mb-1">Receipt Detail</span>
-              <span className="font-mono text-sm font-black text-[#2d1b35]">
+              <span className="font-mono text-sm font-bold text-[#2d1b35]">
                 #{selectedTransaction?.orderCode || "N/A"}
               </span>
             </div>
@@ -588,26 +593,25 @@ export function TransactionManagementPage() {
                 <div className="flex justify-center items-center gap-2">
                   {renderStatusBadge(selectedTransaction.status)}
                   {bookingDetails && (
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full border ${
-                      selectedTransaction.amount === bookingDetails.amountDue
-                        ? "bg-[#fff2f7] text-[#ea4f93] border-[#ea4f93]/20"
-                        : selectedTransaction.amount === bookingDetails.amountPaid
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full border ${selectedTransaction.amount === bookingDetails.amountDue
+                      ? "bg-[#fff2f7] text-[#ea4f93] border-[#ea4f93]/20"
+                      : selectedTransaction.amount === bookingDetails.amountPaid
                         ? "bg-indigo-50 text-indigo-700 border-indigo-500/20"
                         : selectedTransaction.amount === bookingDetails.totalPrice
-                        ? "bg-emerald-50 text-emerald-700 border-emerald-500/20"
-                        : "bg-slate-50 text-slate-600 border-slate-200"
-                    }`}>
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-500/20"
+                          : "bg-slate-50 text-slate-600 border-slate-200"
+                      }`}>
                       {selectedTransaction.amount === bookingDetails.amountDue
                         ? "Đặt cọc (Deposit)"
                         : selectedTransaction.amount === bookingDetails.amountPaid
-                        ? "Thanh toán còn lại"
-                        : selectedTransaction.amount === bookingDetails.totalPrice
-                        ? "Thanh toán 100%"
-                        : "Thanh toán"}
+                          ? "Thanh toán còn lại"
+                          : selectedTransaction.amount === bookingDetails.totalPrice
+                            ? "Thanh toán 100%"
+                            : "Thanh toán"}
                     </span>
                   )}
                 </div>
-                <h2 className="text-4xl font-mono font-black text-[#2d1b35] tracking-tight">
+                <h2 className="text-4xl font-mono font-bold text-[#2d1b35] tracking-tight">
                   {formatCurrency(selectedTransaction.amount)}
                 </h2>
                 <p className="text-xs text-[#a88a9f]">
@@ -642,10 +646,10 @@ export function TransactionManagementPage() {
                         {selectedTransaction.amount === bookingDetails.amountDue
                           ? "Đặt cọc (Deposit)"
                           : selectedTransaction.amount === bookingDetails.amountPaid
-                          ? "Thanh toán còn lại"
-                          : selectedTransaction.amount === bookingDetails.totalPrice
-                          ? "Thanh toán 100%"
-                          : "Thanh toán đơn hàng"}
+                            ? "Thanh toán còn lại"
+                            : selectedTransaction.amount === bookingDetails.totalPrice
+                              ? "Thanh toán 100%"
+                              : "Thanh toán đơn hàng"}
                       </span>
                     </div>
                   )}

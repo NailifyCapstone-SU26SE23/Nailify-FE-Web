@@ -45,7 +45,7 @@ export async function fetchReceptionistCustomers({ pageNumber = 1, pageSize = 10
 
 export async function fetchReceptionistCustomerDetail(id) {
   try {
-    const response = await axiosClient.get(`/Users/${id}`, {
+    const response = await axiosClient.get(`/Users/customers/${id}`, {
       headers: getAuthHeaders()
     });
 
@@ -57,6 +57,43 @@ export async function fetchReceptionistCustomerDetail(id) {
     return payload.data;
   } catch (error) {
     console.error(`Error fetching customer detail (ID: ${id}):`, error);
+    throw error;
+  }
+}
+
+export async function fetchLoyaltyTiers() {
+  try {
+    const response = await axiosClient.get('/LoyaltyTiers', {
+      headers: getAuthHeaders()
+    });
+
+    const payload = response.data;
+    if (!payload?.isSucceeded) {
+      throw new Error(payload?.message || "Failed to fetch loyalty tiers.");
+    }
+
+    return payload.data;
+  } catch (error) {
+    console.error("Error fetching loyalty tiers:", error);
+    throw error;
+  }
+}
+
+export async function fetchPromotions(pageNumber = 1, pageSize = 10) {
+  try {
+    const response = await axiosClient.get('/Promotions', {
+      params: { pageNumber, pageSize },
+      headers: getAuthHeaders()
+    });
+
+    const payload = response.data;
+    if (!payload?.isSucceeded) {
+      throw new Error(payload?.message || "Failed to fetch promotions.");
+    }
+
+    return payload.data;
+  } catch (error) {
+    console.error("Error fetching promotions:", error);
     throw error;
   }
 }

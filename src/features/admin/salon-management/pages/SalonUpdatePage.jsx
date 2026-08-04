@@ -66,7 +66,7 @@ function PremiumCard({ className = "", children, noHover = false, padded = true 
 function SectionHeading({ title, subtitle }) {
   return (
     <div>
-      <h2 className="text-[16px] font-black text-[#2d1b35]">{title}</h2>
+      <h2 className="text-[16px] font-bold text-[#2d1b35]">{title}</h2>
       {subtitle ? <p className="mt-1.5 text-[11px] text-[#a88a9f] leading-relaxed">{subtitle}</p> : null}
     </div>
   );
@@ -106,7 +106,7 @@ export function SalonUpdatePage() {
       setIsNotFound(false);
       try {
         const salon = await fetchAdminSalonDetail(salonId);
-        
+
         if (!isMounted) {
           return;
         }
@@ -427,11 +427,10 @@ export function SalonUpdatePage() {
                           whileTap={{ scale: 0.98 }}
                           type="button"
                           onClick={() => handleInputChange("status", option.value)}
-                          className={`rounded-[16px] px-4 py-3.5 text-center text-sm font-bold transition-all duration-300 ${
-                            formData.status === option.value
+                          className={`rounded-[16px] px-4 py-3.5 text-center text-sm font-bold transition-all duration-300 ${formData.status === option.value
                               ? `${option.color} shadow-lg`
                               : "bg-[#fff8fb] text-[#a88a9f] hover:text-[#2d1b35] hover:bg-[#fff5fb] border border-[#f1e7ed]"
-                          }`}
+                            }`}
                         >
                           {option.label}
                         </motion.button>

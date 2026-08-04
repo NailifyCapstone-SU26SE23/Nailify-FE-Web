@@ -16,7 +16,7 @@ function SkillRatingCard({ item, onRatingChange, rating }) {
     <article className="rounded-2xl border border-slate-200 bg-white p-4.5 shadow-2xs hover:border-[#E84F93]/40 transition group">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="text-xs font-black uppercase tracking-wider text-slate-900">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-900">
             {item.name || item.title}
           </p>
           <p className="mt-0.5 text-[11px] font-medium text-slate-400">{item.description || item.subtitle || "Specialty skill"}</p>
@@ -76,7 +76,7 @@ export function StaffSkillAssessmentSection({ onRatingChange, ratings, skillType
           <Sparkles size={20} />
         </div>
         <div>
-          <h2 className="text-base font-extrabold text-slate-900 font-serif">Skills & Specialties</h2>
+          <h2 className="text-base font-extrabold text-slate-900 ">Skills & Specialties</h2>
           <p className="text-xs text-slate-500 font-medium">
             Rate each core skill to map the staff member's artisan specialties and level.
           </p>

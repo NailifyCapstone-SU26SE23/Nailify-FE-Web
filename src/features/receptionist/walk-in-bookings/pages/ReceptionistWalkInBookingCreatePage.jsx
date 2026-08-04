@@ -234,7 +234,7 @@ export function ReceptionistWalkInBookingCreatePage() {
       <div className="rounded-[24px] border border-[#f3d7e3] bg-white px-4 py-4 shadow-[0_12px_28px_rgba(236,72,153,0.05)] sm:px-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h1 className="text-2xl font-black text-[#412643]">Walk-in Customer Booking</h1>
+            <h1 className="text-2xl font-bold text-[#412643]">Walk-in Customer Booking</h1>
             <p className="mt-1 text-sm text-[#c092a8]">Create booking and check-in for walk-in customers</p>
           </div>
         </div>
@@ -351,7 +351,7 @@ export function ReceptionistWalkInBookingCreatePage() {
                       className="overflow-hidden rounded-[18px] border border-[#f5d6e3] bg-white text-left hover:border-[#ea4f93]"
                     >
                       <div className="h-24 overflow-hidden bg-gray-50">
-                        <img src={design.imageUrls?.[0] || "https://images.unsplash.com/photo-1604902396830-aca29e19b067?auto=format&fit=crop&w=600&q=80"} alt={design.name} className="h-full w-full object-cover" />
+                        <img src={design.imageUrl || "https://images.unsplash.com/photo-1604902396830-aca29e19b067?auto=format&fit=crop&w=600&q=80"} alt={design.name} className="h-full w-full object-cover" />
                       </div>
                       <div className="p-3">
                         <p className="text-sm font-bold text-[#432744] truncate">{design.name}</p>

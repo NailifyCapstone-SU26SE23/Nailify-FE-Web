@@ -164,12 +164,13 @@ SmallTag.propTypes = {
 };
 
 function DesignPreview({ design }) {
+  console.log('design', design);
   return (
     <div className="h-52 overflow-hidden rounded-t-[16px] bg-[#f6edf2]">
-      {design.previewImage ? (
+      {design.imageUrl ? (
         <img
           crossOrigin="anonymous"
-          src={design.previewImage}
+          src={design.imageUrl}
           alt={design.uiTitle}
           className="h-full w-full object-cover"
           loading="lazy"
@@ -445,67 +446,70 @@ export function NailDesignManagementPage() {
               </div>
             ) : (
               normalizedDesigns.map((design) => (
-                <article
-                  key={design.id}
-                  className="overflow-hidden rounded-[18px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(236,72,153,0.12)]"
-                >
-                  <Link to={getAdminNailDesignDetailRoute(design.id)} className="block">
-                    <DesignPreview design={design} />
-                  </Link>
-                  <div className="p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <Link
-                          to={getAdminNailDesignDetailRoute(design.id)}
-                          className="font-extrabold text-[#432744] transition hover:text-[#ea4f93]"
-                        >
-                          {design.uiTitle}
-                        </Link>
+                <Link
+                  to={getAdminNailDesignDetailRoute(design.id)}>
+                  <article
+                    key={design.id}
+                    className="overflow-hidden rounded-[18px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(236,72,153,0.12)]"
+                  >
+                    <Link to={getAdminNailDesignDetailRoute(design.id)} className="block">
+                      <DesignPreview design={design} />
+                    </Link>
+                    <div className="p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <Link
+                            to={getAdminNailDesignDetailRoute(design.id)}
+                            className="font-extrabold text-[#432744] transition hover:text-[#ea4f93]"
+                          >
+                            {design.uiTitle}
+                          </Link>
+                        </div>
+                        <p className="text-sm font-extrabold text-[#432744]">{design.uiPrice}</p>
                       </div>
-                      <p className="text-sm font-extrabold text-[#432744]">{design.uiPrice}</p>
-                    </div>
 
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {design.uiTags.map((tag, index) => (
-                        <SmallTag
-                          key={`${design.id}-${tag}`}
-                          className={
-                            [
-                              "bg-[#ffe7ef] text-[#ea4f93]",
-                              "bg-[#f5ecff] text-[#8b5cf6]",
-                              "bg-[#fff4df] text-[#d9871c]",
-                            ][index % 3]
-                          }
-                        >
-                          {tag}
-                        </SmallTag>
-                      ))}
-                      {design.uiTones.map((tag) => (
-                        <SmallTag key={`${design.id}-${tag}`} className="bg-[#fff7fb] text-[#c694ad]">
-                          {tag}
-                        </SmallTag>
-                      ))}
-                    </div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {design.uiTags.map((tag, index) => (
+                          <SmallTag
+                            key={`${design.id}-${tag}`}
+                            className={
+                              [
+                                "bg-[#ffe7ef] text-[#ea4f93]",
+                                "bg-[#f5ecff] text-[#8b5cf6]",
+                                "bg-[#fff4df] text-[#d9871c]",
+                              ][index % 3]
+                            }
+                          >
+                            {tag}
+                          </SmallTag>
+                        ))}
+                        {design.uiTones.map((tag) => (
+                          <SmallTag key={`${design.id}-${tag}`} className="bg-[#fff7fb] text-[#c694ad]">
+                            {tag}
+                          </SmallTag>
+                        ))}
+                      </div>
 
-                    <div className="mt-4 flex items-center justify-between gap-3">
-                      <SmallTag className={design.uiStatusTone}>{design.uiStatus}</SmallTag>
-                      <div className="flex gap-2">
-                        <Link
-                          to={getAdminNailDesignDetailRoute(design.id)}
-                          className="rounded-full border border-[#f4c6da] bg-white px-3 py-1.5 text-[10px] font-bold text-[#8c7085]"
-                        >
-                          View
-                        </Link>
-                        <Link
-                          to={getAdminNailDesignDetailRoute(design.id)}
-                          className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93]"
-                        >
-                          Edit
-                        </Link>
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <SmallTag className={design.uiStatusTone}>{design.uiStatus}</SmallTag>
+                        <div className="flex gap-2">
+                          <Link
+                            to={getAdminNailDesignDetailRoute(design.id)}
+                            className="rounded-full border border-[#f4c6da] bg-white px-3 py-1.5 text-[10px] font-bold text-[#8c7085]"
+                          >
+                            View
+                          </Link>
+                          <Link
+                            to={getAdminNailDesignDetailRoute(design.id)}
+                            className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93]"
+                          >
+                            Edit
+                          </Link>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </article>
+                  </article>
+                </Link>
               ))
             )}
           </div>
