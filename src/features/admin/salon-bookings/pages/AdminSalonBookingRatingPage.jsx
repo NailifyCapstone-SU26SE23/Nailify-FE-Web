@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { 
-  Star, 
-  MessageSquare, 
-  User, 
-  Sparkles, 
-  Calendar, 
-  Image as ImageIcon, 
-  Search, 
+import {
+  Star,
+  MessageSquare,
+  User,
+  Sparkles,
+  Calendar,
+  Image as ImageIcon,
+  Search,
   RotateCcw,
   TrendingUp,
   Smile,
@@ -81,16 +81,16 @@ export function AdminSalonBookingRatingPage() {
   const [salons, setSalons] = useState([]);
   const [loadingSalons, setLoadingSalons] = useState(true);
   const [salonsError, setSalonsError] = useState(null);
-  
+
   // Selection state
   const [selectedSalon, setSelectedSalon] = useState(null);
-  
+
   // Ratings list and lookup states
   const [ratings, setRatings] = useState([]);
   const [loadingRatings, setLoadingRatings] = useState(false);
   const [ratingsError, setRatingsError] = useState(null);
   const [usersMap, setUsersMap] = useState({});
-  
+
   // Background metrics caching per salon
   const [salonMetrics, setSalonMetrics] = useState({});
   const [loadingMetrics, setLoadingMetrics] = useState(false);
@@ -132,7 +132,7 @@ export function AdminSalonBookingRatingPage() {
           try {
             const data = await fetchBookingRatingsBySalonId(salon.id);
             const items = data || [];
-            const average = items.length > 0 
+            const average = items.length > 0
               ? Number((items.reduce((sum, r) => sum + (r.overallScore || 0), 0) / items.length).toFixed(1))
               : 0;
             metricsMap[salon.id] = {
@@ -367,7 +367,7 @@ export function AdminSalonBookingRatingPage() {
       <div className="absolute bottom-10 left-[-100px] -z-10 h-[450px] w-[450px] rounded-full bg-gradient-to-tr from-[#ffa26f]/4 to-transparent blur-3xl pointer-events-none" />
 
       <div className="max-w-[1400px] mx-auto space-y-8">
-        
+
         {/* Page Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/60 pb-6">
           <div className="space-y-1.5">
@@ -377,11 +377,11 @@ export function AdminSalonBookingRatingPage() {
               </span>
               <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#ea4f93]">Admin Control Panel</span>
             </div>
-            <h1 className="text-3xl font-black text-[#2d1b35] tracking-tight md:text-4xl">
+            <h1 className="text-3xl font-bold text-[#2d1b35] tracking-tight md:text-4xl">
               Salons Feedback Audit
             </h1>
             <p className="text-xs md:text-sm text-[#a88a9f] max-w-[65ch] leading-relaxed">
-              {selectedSalon 
+              {selectedSalon
                 ? `Auditing satisfaction indices and customer feedback cards for ${selectedSalon.name}.`
                 : "Select a salon branch below to audit customer review history and service quality scores."
               }
@@ -412,7 +412,7 @@ export function AdminSalonBookingRatingPage() {
                   </span>
                   <div>
                     <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider block">Network Branches</span>
-                    <span className="text-2xl font-black text-[#2d1b35]">{salons.length}</span>
+                    <span className="text-2xl font-bold text-[#2d1b35]">{salons.length}</span>
                   </div>
                 </div>
 
@@ -423,7 +423,7 @@ export function AdminSalonBookingRatingPage() {
                   </span>
                   <div>
                     <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider block">Audited Reviews</span>
-                    <span className="text-2xl font-black text-[#2d1b35]">
+                    <span className="text-2xl font-bold text-[#2d1b35]">
                       {loadingMetrics ? <Spin size="small" /> : `${totalNetworkReviews} logs`}
                     </span>
                   </div>
@@ -464,11 +464,10 @@ export function AdminSalonBookingRatingPage() {
                       key={st}
                       type="button"
                       onClick={() => setSalonStatusFilter(st)}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold capitalize transition-all duration-200 ${
-                        salonStatusFilter === st
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold capitalize transition-all duration-200 ${salonStatusFilter === st
                           ? "bg-[#ea4f93] text-white shadow-xs"
                           : "text-[#7f6478] hover:text-[#2d1b35] hover:bg-[#ea4f93]/5"
-                      }`}
+                        }`}
                     >
                       {st}
                     </button>
@@ -506,8 +505,8 @@ export function AdminSalonBookingRatingPage() {
                   type="warning"
                   showIcon
                   action={
-                    <button 
-                      onClick={loadSalons} 
+                    <button
+                      onClick={loadSalons}
                       className="px-3.5 py-2 bg-white border border-rose-200 rounded-xl text-xs font-bold text-rose-700 transition hover:bg-rose-50"
                     >
                       Retry
@@ -522,7 +521,7 @@ export function AdminSalonBookingRatingPage() {
                 <p className="mt-1 text-xs text-[#a88a9f] max-w-[40ch]">No branches match your current search query or filter selection.</p>
               </div>
             ) : (
-              <motion.div 
+              <motion.div
                 variants={staggerContainer}
                 initial="hidden"
                 animate="visible"
@@ -549,18 +548,17 @@ export function AdminSalonBookingRatingPage() {
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#ea4f93]/5 to-[#ffa26f]/5 text-[#ea4f93] font-black text-2xl">
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#ea4f93]/5 to-[#ffa26f]/5 text-[#ea4f93] font-bold text-2xl">
                               {getInitials(salon.name)}
                             </div>
                           )}
-                          
-                          <span className={`absolute top-3 right-3 text-[10px] font-bold px-2.5 py-1 rounded-full border shadow-xs ${
-                            salon.status === "Active" || salon.status === "Open"
+
+                          <span className={`absolute top-3 right-3 text-[10px] font-bold px-2.5 py-1 rounded-full border shadow-xs ${salon.status === "Active" || salon.status === "Open"
                               ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                               : salon.status === "Busy"
-                              ? "bg-amber-50 text-amber-700 border-amber-200"
-                              : "bg-slate-50 text-slate-600 border-slate-200"
-                          }`}>
+                                ? "bg-amber-50 text-amber-700 border-amber-200"
+                                : "bg-slate-50 text-slate-600 border-slate-200"
+                            }`}>
                             {salon.status || "Active"}
                           </span>
 
@@ -571,7 +569,7 @@ export function AdminSalonBookingRatingPage() {
 
                         {/* Salon Details */}
                         <div className="space-y-2.5">
-                          <h3 className="text-base font-black text-[#2d1b35] group-hover:text-[#ea4f93] transition-colors leading-tight">
+                          <h3 className="text-base font-bold text-[#2d1b35] group-hover:text-[#ea4f93] transition-colors leading-tight">
                             {salon.name}
                           </h3>
                           <div className="space-y-1 text-xs text-[#a88a9f] pb-3 border-b border-slate-100">
@@ -601,9 +599,9 @@ export function AdminSalonBookingRatingPage() {
                                 </span>
                               </div>
                               <div className="w-full bg-[#fcf9fb] h-1.5 rounded-full overflow-hidden border border-[#f1e7ed]">
-                                <div 
-                                  className="bg-gradient-to-r from-[#ea4f93] to-[#ffa26f] h-full rounded-full transition-all duration-500" 
-                                  style={{ width: `${isMetricLoading || metric.count === 0 ? 0 : (metric.average / 5) * 100}%` }} 
+                                <div
+                                  className="bg-gradient-to-r from-[#ea4f93] to-[#ffa26f] h-full rounded-full transition-all duration-500"
+                                  style={{ width: `${isMetricLoading || metric.count === 0 ? 0 : (metric.average / 5) * 100}%` }}
                                 />
                               </div>
                             </div>
@@ -633,7 +631,7 @@ export function AdminSalonBookingRatingPage() {
         ) : (
           /* STATE 2: Salon reviews audits */
           <div className="space-y-6">
-            
+
             {loadingRatings ? (
               <div className="flex flex-col items-center justify-center py-32 bg-white/40 backdrop-blur-xs rounded-[2.5rem] border border-slate-200/60 shadow-xs">
                 <Spin size="large" />
@@ -647,8 +645,8 @@ export function AdminSalonBookingRatingPage() {
                   type="warning"
                   showIcon
                   action={
-                    <button 
-                      onClick={loadReviewsForSelectedSalon} 
+                    <button
+                      onClick={loadReviewsForSelectedSalon}
                       className="px-3.5 py-2 bg-white border border-rose-200 rounded-xl text-xs font-bold text-rose-700 transition hover:bg-rose-50"
                     >
                       Retry
@@ -658,7 +656,7 @@ export function AdminSalonBookingRatingPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-10 gap-8 items-start">
-                
+
                 {/* Left column: reviews list (7 cols) */}
                 <div className="lg:col-span-7 space-y-6">
                   {/* Reviews search & filters bar */}
@@ -681,11 +679,10 @@ export function AdminSalonBookingRatingPage() {
                             key={score}
                             type="button"
                             onClick={() => setReviewScoreFilter(score)}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-0.5 ${
-                              reviewScoreFilter === score
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-0.5 ${reviewScoreFilter === score
                                 ? "bg-[#ea4f93] text-white shadow-xs"
                                 : "text-[#7f6478] hover:text-[#2d1b35] hover:bg-[#ea4f93]/5"
-                            }`}
+                              }`}
                           >
                             {score === "all" ? "All" : `${score}`}
                             {score !== "all" && <Star size={10} className="fill-current" />}
@@ -725,7 +722,7 @@ export function AdminSalonBookingRatingPage() {
                       <p className="mt-1 text-xs text-[#a88a9f] max-w-[40ch]">No customer feedback matches your search filters.</p>
                     </div>
                   ) : (
-                    <motion.div 
+                    <motion.div
                       variants={staggerContainer}
                       initial="hidden"
                       animate="visible"
@@ -737,7 +734,7 @@ export function AdminSalonBookingRatingPage() {
                         const score = rating.overallScore || 5;
                         const dateFormatted = formatDate(rating.createdAt);
                         const artistName = rating.nailArtistName || usersMap[rating.nailArtistId]?.name || "Nail Artist";
-                        
+
                         // Check if there is an operational comment response in the API/mock
                         const responseContent = rating.commentResponse || "Cảm ơn quý khách đã tin tưởng và đánh giá dịch vụ của tiệm. Chúng tôi luôn ghi nhận ý kiến để nâng cấp chất lượng tốt hơn nữa.";
 
@@ -760,7 +757,7 @@ export function AdminSalonBookingRatingPage() {
                                   {getInitials(cName)}
                                 </div>
                               )}
-                              
+
                               <div className="space-y-1">
                                 <h4 className="text-base font-bold text-[#2d1b35] leading-tight">{cName}</h4>
                                 <p className="text-xs text-[#a88a9f] font-semibold leading-none">
@@ -772,11 +769,10 @@ export function AdminSalonBookingRatingPage() {
                                     <Star
                                       key={sIndex}
                                       size={15}
-                                      className={`${
-                                        sIndex <= Math.round(score)
+                                      className={`${sIndex <= Math.round(score)
                                           ? "text-amber-400 fill-amber-400"
                                           : "text-slate-200"
-                                      }`}
+                                        }`}
                                     />
                                   ))}
                                 </div>
@@ -875,21 +871,20 @@ export function AdminSalonBookingRatingPage() {
                   {/* Rating summary details */}
                   <div className="bg-white/80 backdrop-blur-md rounded-[2.25rem] border border-[#f1e7ed]/60 p-6 shadow-[0_12px_32px_rgba(0,0,0,0.02)] space-y-6">
                     <div className="space-y-1">
-                      <h3 className="text-sm font-black text-[#2d1b35]">Rating Summary</h3>
+                      <h3 className="text-sm font-bold text-[#2d1b35]">Rating Summary</h3>
                       <p className="text-[10px] text-[#a88a9f]">Aggregated satisfaction score index.</p>
                     </div>
 
                     <div className="flex items-baseline gap-2">
-                      <span className="text-5xl font-black text-[#2d1b35] tracking-tight">{activeSalonStats.average}</span>
+                      <span className="text-5xl font-bold text-[#2d1b35] tracking-tight">{activeSalonStats.average}</span>
                       <div className="space-y-1">
                         <div className="flex items-center gap-0.5 text-amber-400">
                           {[1, 2, 3, 4, 5].map((sIndex) => (
                             <Star
                               key={sIndex}
                               size={12}
-                              className={`${
-                                sIndex <= Math.round(activeSalonStats.average) ? "fill-current" : "text-slate-200"
-                              }`}
+                              className={`${sIndex <= Math.round(activeSalonStats.average) ? "fill-current" : "text-slate-200"
+                                }`}
                             />
                           ))}
                         </div>
@@ -908,9 +903,9 @@ export function AdminSalonBookingRatingPage() {
                             <span className="w-3 font-mono font-bold">{stars}</span>
                             <Star size={10} className="text-amber-400 fill-amber-400 shrink-0" />
                             <div className="flex-1 bg-[#fcf9fb] h-1.5 rounded-full overflow-hidden border border-[#f1e7ed]">
-                              <div 
-                                className="bg-amber-400 h-full rounded-full transition-all duration-500" 
-                                style={{ width: `${percent}%` }} 
+                              <div
+                                className="bg-amber-400 h-full rounded-full transition-all duration-500"
+                                style={{ width: `${percent}%` }}
                               />
                             </div>
                             <span className="w-6 text-right font-mono font-bold text-slate-400">{count}</span>
@@ -923,7 +918,7 @@ export function AdminSalonBookingRatingPage() {
                   {/* Sub-criteria indices */}
                   <div className="bg-white/80 backdrop-blur-md rounded-[2.25rem] border border-[#f1e7ed]/60 p-6 shadow-[0_12px_32px_rgba(0,0,0,0.02)] space-y-5">
                     <div className="space-y-1">
-                      <h3 className="text-sm font-black text-[#2d1b35]">Satisfaction Indices</h3>
+                      <h3 className="text-sm font-bold text-[#2d1b35]">Satisfaction Indices</h3>
                       <p className="text-[10px] text-[#a88a9f]">Core indicators mapping customer loyalty.</p>
                     </div>
 
@@ -938,9 +933,9 @@ export function AdminSalonBookingRatingPage() {
                           <span className="font-mono text-[#ea4f93]">{activeSalonStats.quality}/5</span>
                         </div>
                         <div className="w-full bg-[#fcf9fb] h-1.5 rounded-full overflow-hidden border border-[#f1e7ed]">
-                          <div 
-                            className="bg-gradient-to-r from-[#ea4f93] to-[#ffa26f] h-full rounded-full transition-all duration-500" 
-                            style={{ width: `${(activeSalonStats.quality / 5) * 100}%` }} 
+                          <div
+                            className="bg-gradient-to-r from-[#ea4f93] to-[#ffa26f] h-full rounded-full transition-all duration-500"
+                            style={{ width: `${(activeSalonStats.quality / 5) * 100}%` }}
                           />
                         </div>
                       </div>
@@ -955,9 +950,9 @@ export function AdminSalonBookingRatingPage() {
                           <span className="font-mono text-amber-500">{activeSalonStats.punctuality}/5</span>
                         </div>
                         <div className="w-full bg-[#fcf9fb] h-1.5 rounded-full overflow-hidden border border-[#f1e7ed]">
-                          <div 
-                            className="bg-gradient-to-r from-amber-400 to-amber-500 h-full rounded-full transition-all duration-500" 
-                            style={{ width: `${(activeSalonStats.punctuality / 5) * 100}%` }} 
+                          <div
+                            className="bg-gradient-to-r from-amber-400 to-amber-500 h-full rounded-full transition-all duration-500"
+                            style={{ width: `${(activeSalonStats.punctuality / 5) * 100}%` }}
                           />
                         </div>
                       </div>
@@ -972,9 +967,9 @@ export function AdminSalonBookingRatingPage() {
                           <span className="font-mono text-emerald-500">{activeSalonStats.cleanliness}/5</span>
                         </div>
                         <div className="w-full bg-[#fcf9fb] h-1.5 rounded-full overflow-hidden border border-[#f1e7ed]">
-                          <div 
-                            className="bg-gradient-to-r from-emerald-400 to-emerald-500 h-full rounded-full transition-all duration-500" 
-                            style={{ width: `${(activeSalonStats.cleanliness / 5) * 100}%` }} 
+                          <div
+                            className="bg-gradient-to-r from-emerald-400 to-emerald-500 h-full rounded-full transition-all duration-500"
+                            style={{ width: `${(activeSalonStats.cleanliness / 5) * 100}%` }}
                           />
                         </div>
                       </div>
@@ -989,11 +984,11 @@ export function AdminSalonBookingRatingPage() {
                     <div className="space-y-1">
                       <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Auditing Notes</h4>
                       <p className="text-xs text-slate-200 leading-relaxed font-medium">
-                        {activeSalonStats.average >= 4.5 
-                          ? "This salon branch maintains exemplary quality metrics chain-wide. No interventions required." 
-                          : activeSalonStats.average >= 3.5 
-                          ? "Branch customer support reviews are stable. Recommend monitoring staff scheduling slots closely." 
-                          : "Critical warning: Service quality averages are sub-optimal. Recommend issuing salon operations audit directive immediately."
+                        {activeSalonStats.average >= 4.5
+                          ? "This salon branch maintains exemplary quality metrics chain-wide. No interventions required."
+                          : activeSalonStats.average >= 3.5
+                            ? "Branch customer support reviews are stable. Recommend monitoring staff scheduling slots closely."
+                            : "Critical warning: Service quality averages are sub-optimal. Recommend issuing salon operations audit directive immediately."
                         }
                       </p>
                     </div>

@@ -69,7 +69,7 @@ export function ServiceProceduresViewerModal({
               <Check size={20} />
             </div>
             <div>
-              <h3 className="text-lg font-black text-[#2B182B] tracking-tight">Quy Trình Các Bước Làm Móng</h3>
+              <h3 className="text-lg font-bold text-[#2B182B] tracking-tight">Quy Trình Các Bước Làm Móng</h3>
               <p className="text-xs text-[#9E8497] font-medium">Chi tiết thời gian thao tác, hơ máy/chờ và phân công thợ theo từng bước</p>
             </div>
           </div>
@@ -87,14 +87,14 @@ export function ServiceProceduresViewerModal({
             {/* Service Summary Banner Card */}
             <div className="rounded-2xl border border-[#F3D6E5] bg-gradient-to-r from-[#FFF0F6] via-[#FDF2F8] to-[#F5F3FF] p-4 shadow-2xs flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <span className="text-[9px] font-black uppercase tracking-wider text-[#E84F93]">Dịch Vụ Chọn</span>
-                <h4 className="text-base font-black text-[#2B182B]">{service.name || "--"}</h4>
+                <span className="text-[9px] font-bold uppercase tracking-wider text-[#E84F93]">Dịch Vụ Chọn</span>
+                <h4 className="text-base font-bold text-[#2B182B]">{service.name || "--"}</h4>
               </div>
               <div className="flex items-center gap-3 text-xs">
                 <span className="rounded-xl border border-[#F3E2EC] bg-white px-3 py-1.5 font-bold text-[#2B182B]">
                   Số lượng: x{service.quantity || 1}
                 </span>
-                <span className="rounded-xl border border-[#F3E2EC] bg-white px-3 py-1.5 font-black text-[#E84F93]">
+                <span className="rounded-xl border border-[#F3E2EC] bg-white px-3 py-1.5 font-bold text-[#E84F93]">
                   ⏱️ Tổng thời gian: {service.durationLabel || "--"}
                 </span>
               </div>
@@ -144,18 +144,18 @@ export function ServiceProceduresViewerModal({
                       {/* Step Header Bar */}
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-[#F8F1F5] pb-2.5">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#E84F93] to-[#D93B7D] px-2.5 py-0.5 text-xs font-black text-white shadow-2xs">
+                          <span className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#E84F93] to-[#D93B7D] px-2.5 py-0.5 text-xs font-bold text-white shadow-2xs">
                             Bước {procedure.stepOrder ?? index + 1}
                           </span>
-                          <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${statusTone}`}>
+                          <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${statusTone}`}>
                             {statusLabel}
                           </span>
                           {procedure.isRequired && (
-                            <span className="rounded-full border border-[#FDE68A] bg-[#FFFBEB] px-2 py-0.5 text-[10px] font-black text-[#B45309]">
+                            <span className="rounded-full border border-[#FDE68A] bg-[#FFFBEB] px-2 py-0.5 text-[10px] font-bold text-[#B45309]">
                               Bắt buộc
                             </span>
                           )}
-                          <h4 className="text-sm font-black text-[#2B182B] ml-1">
+                          <h4 className="text-sm font-bold text-[#2B182B] ml-1">
                             {procedure.procedureName || procedure.label || "Chưa đặt tên bước"}
                           </h4>
                         </div>
@@ -165,7 +165,7 @@ export function ServiceProceduresViewerModal({
                           <span className="font-extrabold text-[#E84F93]">
                             🕒 Dự kiến: {formatTimeOnly(procedure.estimatedStartTime)} - {formatTimeOnly(procedure.estimatedEndTime)}
                           </span>
-                          <span className="rounded-full bg-[#FFF0F6] px-2.5 py-0.5 text-[11px] font-black text-[#E84F93] border border-[#F3D6E5]">
+                          <span className="rounded-full bg-[#FFF0F6] px-2.5 py-0.5 text-[11px] font-bold text-[#E84F93] border border-[#F3D6E5]">
                             {procedure.duration ?? 0} min
                           </span>
                         </div>
@@ -176,7 +176,7 @@ export function ServiceProceduresViewerModal({
                         {/* Left: Thợ Đảm Nhận & Actions */}
                         <div className="flex items-center justify-between rounded-xl border border-[#F3E2EC] bg-[#FFF9FB] p-2.5 sm:px-3.5">
                           <div className="flex items-center gap-2.5">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#8B5CF6] to-[#C084FC] text-xs font-black text-white shadow-2xs">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#8B5CF6] to-[#C084FC] text-xs font-bold text-white shadow-2xs">
                               {(procedure.assignedArtistName || "A")
                                 .split(" ")
                                 .filter(Boolean)
@@ -187,8 +187,8 @@ export function ServiceProceduresViewerModal({
                             </div>
 
                             <div>
-                              <p className="text-[9px] font-black uppercase tracking-wider text-[#9E8497]">Thợ Đảm Nhận</p>
-                              <p className="text-xs font-black text-[#2B182B]">
+                              <p className="text-[9px] font-bold uppercase tracking-wider text-[#9E8497]">Thợ Đảm Nhận</p>
+                              <p className="text-xs font-bold text-[#2B182B]">
                                 {hasArtist ? procedure.assignedArtistName : "Chưa phân công thợ"}
                               </p>
                             </div>
@@ -203,7 +203,7 @@ export function ServiceProceduresViewerModal({
                                 onClaimProcedure(procedure);
                               }}
                               disabled={claimingProcedureId === procedure.bookingProcedureId}
-                              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#E84F93] to-[#8B5CF6] px-4 py-1.5 text-xs font-black text-white shadow-2xs hover:scale-105 transition cursor-pointer disabled:opacity-50"
+                              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#E84F93] to-[#8B5CF6] px-4 py-1.5 text-xs font-bold text-white shadow-2xs hover:scale-105 transition cursor-pointer disabled:opacity-50"
                             >
                               {claimingProcedureId === procedure.bookingProcedureId && (
                                 <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white" />
@@ -218,12 +218,12 @@ export function ServiceProceduresViewerModal({
                                 onCompleteProcedure(procedure);
                               }}
                               disabled={procedureStatusUpdates && procedureStatusUpdates[procedure.bookingProcedureId]}
-                              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#10B981] to-[#059669] px-4 py-1.5 text-xs font-black text-white shadow-2xs hover:scale-105 transition cursor-pointer disabled:opacity-50"
+                              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#10B981] to-[#059669] px-4 py-1.5 text-xs font-bold text-white shadow-2xs hover:scale-105 transition cursor-pointer disabled:opacity-50"
                             >
                               <span>Hoàn Thành Bước</span>
                             </button>
                           ) : procedure.isBlocked ? (
-                            <span className="inline-flex rounded-full bg-[#FFFBEB] border border-[#FDE68A] px-3 py-1 text-[10px] font-black text-[#B45309]">
+                            <span className="inline-flex rounded-full bg-[#FFFBEB] border border-[#FDE68A] px-3 py-1 text-[10px] font-bold text-[#B45309]">
                               Chờ bước trước
                             </span>
                           ) : null}
@@ -231,18 +231,18 @@ export function ServiceProceduresViewerModal({
 
                         {/* Right: Time Breakdown & Overlap Badges */}
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="inline-flex items-center gap-1 rounded-full border border-[#DDD6FE] bg-[#F5F3FF] px-2.5 py-1 text-[11px] font-black text-[#6D28D9]">
+                          <span className="inline-flex items-center gap-1 rounded-full border border-[#DDD6FE] bg-[#F5F3FF] px-2.5 py-1 text-[11px] font-bold text-[#6D28D9]">
                             ⚡ Thao tác trực tiếp: {procedure.activeDuration ?? 0}m
                           </span>
 
                           {hasPassive && (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-[#BAE6FD] bg-[#F0F9FF] px-2.5 py-1 text-[11px] font-black text-[#0284C7]">
+                            <span className="inline-flex items-center gap-1 rounded-full border border-[#BAE6FD] bg-[#F0F9FF] px-2.5 py-1 text-[11px] font-bold text-[#0284C7]">
                               ⏳ Hơ máy / Chờ khô: {procedure.passiveDuration}m
                             </span>
                           )}
 
                           {(hasPassive || procedure.canOverlap) ? (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-[#A7F3D0] bg-[#ECFDF5] px-2.5 py-1 text-[11px] font-black text-[#047857]">
+                            <span className="inline-flex items-center gap-1 rounded-full border border-[#A7F3D0] bg-[#ECFDF5] px-2.5 py-1 text-[11px] font-bold text-[#047857]">
                               ✨ Overlap (Rảnh {procedure.passiveDuration ?? 0}m)
                             </span>
                           ) : (
@@ -267,13 +267,13 @@ export function ServiceProceduresViewerModal({
                       <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-[#F8F1F5] pt-2 text-[11px]">
                         <div>
                           <span className="font-bold text-[#9E8497]">Thực tế làm: </span>
-                          <span className="font-black text-[#2B182B]">
+                          <span className="font-bold text-[#2B182B]">
                             {formatTimeOnly(procedure.actualStartTime || procedure.startTime)} ~ {formatTimeOnly(procedure.actualEndTime || procedure.completedAt)}
                           </span>
                         </div>
                         <div>
                           <span className="font-bold text-[#9E8497]">Người hoàn thành: </span>
-                          <span className="font-black text-[#2B182B]">
+                          <span className="font-bold text-[#2B182B]">
                             {procedure.completedByName || <span className="text-[#9E8497] italic font-normal">Chưa xong</span>}
                           </span>
                         </div>
@@ -293,7 +293,7 @@ export function ServiceProceduresViewerModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-full border border-[#F3E2EC] bg-[#FFF5F8] hover:bg-[#FCE2EE] px-6 py-2.5 text-xs font-black text-[#2B182B] transition cursor-pointer"
+                className="rounded-full border border-[#F3E2EC] bg-[#FFF5F8] hover:bg-[#FCE2EE] px-6 py-2.5 text-xs font-bold text-[#2B182B] transition cursor-pointer"
               >
                 Đóng
               </button>

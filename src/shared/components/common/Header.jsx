@@ -72,14 +72,14 @@ export function Header({
               >
                 <Bell size={18} />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#ea4f93] text-[9px] font-black text-white shadow-[0_4px_8px_rgba(234,79,147,0.4)] animate-pulse">
+                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#ea4f93] text-[9px] font-bold text-white shadow-[0_4px_8px_rgba(234,79,147,0.4)] animate-pulse">
                     {unreadCount > 99 ? "99+" : unreadCount}
                   </span>
                 )}
               </button>
-              <NotificationDropdown 
-                isOpen={isDropdownOpen} 
-                onClose={() => setIsDropdownOpen(false)} 
+              <NotificationDropdown
+                isOpen={isDropdownOpen}
+                onClose={() => setIsDropdownOpen(false)}
               />
             </div>
           </div>

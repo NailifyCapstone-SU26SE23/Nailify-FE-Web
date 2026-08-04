@@ -102,8 +102,8 @@ export function TransactionOverviewPage() {
             const items = data.items || [];
             const paidItems = items.filter(t => t.status?.toLowerCase() === "paid");
             const totalRevenue = paidItems.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
-            const successRate = items.length > 0 
-              ? Math.round((paidItems.length / items.length) * 100) 
+            const successRate = items.length > 0
+              ? Math.round((paidItems.length / items.length) * 100)
               : 0;
             metricsMap[salon.id] = {
               txCount: items.length,
@@ -287,8 +287,8 @@ export function TransactionOverviewPage() {
     const pendingItems = allItems.filter(t => t.status?.toLowerCase() === "pending");
 
     const totalRevenue = paidItems.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
-    const successRate = allItems.length > 0 
-      ? Math.round((paidItems.length / allItems.length) * 100) 
+    const successRate = allItems.length > 0
+      ? Math.round((paidItems.length / allItems.length) * 100)
       : 0;
 
     return {
@@ -356,7 +356,7 @@ export function TransactionOverviewPage() {
       <div className="absolute top-[300px] left-[-100px] -z-10 h-[450px] w-[450px] rounded-full bg-gradient-to-tr from-[#ffa26f]/4 to-transparent blur-3xl pointer-events-none" />
 
       <div className="max-w-[1400px] mx-auto space-y-8">
-        
+
         {/* Page Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/60 pb-6">
           <div className="space-y-1.5">
@@ -366,12 +366,12 @@ export function TransactionOverviewPage() {
               </span>
               <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#ea4f93]">Admin Audit Portal</span>
             </div>
-            <h1 className="text-3xl font-black text-[#2d1b35] tracking-tight md:text-4xl">
+            <h1 className="text-3xl font-bold text-[#2d1b35] tracking-tight md:text-4xl">
               Transactions Overview
             </h1>
             <p className="text-xs md:text-sm text-[#a88a9f] max-w-[65ch] leading-relaxed">
-              {selectedSalon 
-                ? `Auditing transaction logs and receipt details for ${selectedSalon.name}.` 
+              {selectedSalon
+                ? `Auditing transaction logs and receipt details for ${selectedSalon.name}.`
                 : "Select a salon branch below to monitor and audit customer transaction history."
               }
             </p>
@@ -401,7 +401,7 @@ export function TransactionOverviewPage() {
                   </span>
                   <div>
                     <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider block">Network Salons</span>
-                    <span className="text-2xl font-black text-[#2d1b35]">{salons.length}</span>
+                    <span className="text-2xl font-bold text-[#2d1b35]">{salons.length}</span>
                   </div>
                 </div>
 
@@ -429,7 +429,7 @@ export function TransactionOverviewPage() {
                   </span>
                   <div>
                     <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider block">Audited Logs</span>
-                    <span className="text-2xl font-black text-[#2d1b35]">
+                    <span className="text-2xl font-bold text-[#2d1b35]">
                       {loadingMetrics ? (
                         <Spin size="small" />
                       ) : (
@@ -481,11 +481,10 @@ export function TransactionOverviewPage() {
                       key={st}
                       type="button"
                       onClick={() => setSalonStatusFilter(st)}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold capitalize transition-all duration-200 ${
-                        salonStatusFilter === st
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold capitalize transition-all duration-200 ${salonStatusFilter === st
                           ? "bg-[#ea4f93] text-white shadow-xs"
                           : "text-[#7f6478] hover:text-[#2d1b35] hover:bg-[#ea4f93]/5"
-                      }`}
+                        }`}
                     >
                       {st}
                     </button>
@@ -524,8 +523,8 @@ export function TransactionOverviewPage() {
                   type="warning"
                   showIcon
                   action={
-                    <button 
-                      onClick={loadSalons} 
+                    <button
+                      onClick={loadSalons}
                       className="px-3.5 py-2 bg-white border border-rose-200 rounded-xl text-xs font-bold text-rose-700 transition hover:bg-rose-50"
                     >
                       Retry
@@ -540,7 +539,7 @@ export function TransactionOverviewPage() {
                 <p className="mt-1 text-xs text-[#a88a9f] max-w-[40ch]">No branches match your current search query or filter selection.</p>
               </div>
             ) : (
-              <motion.div 
+              <motion.div
                 variants={staggerContainer}
                 initial="hidden"
                 animate="visible"
@@ -567,18 +566,17 @@ export function TransactionOverviewPage() {
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#ea4f93]/5 to-[#ffa26f]/5 text-[#ea4f93] font-black text-2xl">
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#ea4f93]/5 to-[#ffa26f]/5 text-[#ea4f93] font-bold text-2xl">
                               {getInitials(salon.name)}
                             </div>
                           )}
-                          
-                          <span className={`absolute top-3 right-3 text-[10px] font-bold px-2.5 py-1 rounded-full border shadow-xs ${
-                            salon.status === "Active" || salon.status === "Open"
+
+                          <span className={`absolute top-3 right-3 text-[10px] font-bold px-2.5 py-1 rounded-full border shadow-xs ${salon.status === "Active" || salon.status === "Open"
                               ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                               : salon.status === "Busy"
-                              ? "bg-amber-50 text-amber-700 border-amber-200"
-                              : "bg-slate-50 text-slate-600 border-slate-200"
-                          }`}>
+                                ? "bg-amber-50 text-amber-700 border-amber-200"
+                                : "bg-slate-50 text-slate-600 border-slate-200"
+                            }`}>
                             {salon.status || "Active"}
                           </span>
 
@@ -589,7 +587,7 @@ export function TransactionOverviewPage() {
 
                         {/* Salon Details */}
                         <div className="space-y-2.5">
-                          <h3 className="text-base font-black text-[#2d1b35] group-hover:text-[#ea4f93] transition-colors leading-tight">
+                          <h3 className="text-base font-bold text-[#2d1b35] group-hover:text-[#ea4f93] transition-colors leading-tight">
                             {salon.name}
                           </h3>
                           <div className="space-y-1 text-xs text-[#a88a9f] pb-3 border-b border-slate-100">
@@ -626,9 +624,9 @@ export function TransactionOverviewPage() {
                                 </span>
                               </div>
                               <div className="w-full bg-[#fcf9fb] h-1.5 rounded-full overflow-hidden border border-[#f1e7ed]">
-                                <div 
-                                  className="bg-gradient-to-r from-[#ea4f93] to-[#ffa26f] h-full rounded-full transition-all duration-500" 
-                                  style={{ width: `${isMetricLoading || salonMetric.txCount === 0 ? 0 : salonMetric.successRate}%` }} 
+                                <div
+                                  className="bg-gradient-to-r from-[#ea4f93] to-[#ffa26f] h-full rounded-full transition-all duration-500"
+                                  style={{ width: `${isMetricLoading || salonMetric.txCount === 0 ? 0 : salonMetric.successRate}%` }}
                                 />
                               </div>
                             </div>
@@ -668,7 +666,7 @@ export function TransactionOverviewPage() {
         ) : (
           /* STATE 2: Transactions list audit for selected Salon */
           <div className="space-y-8">
-            
+
             {/* Bento Metrics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Total Revenue */}
@@ -736,8 +734,8 @@ export function TransactionOverviewPage() {
                   className="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300"
                 />
                 {searchQuery && (
-                  <button 
-                    onClick={() => setSearchQuery("")} 
+                  <button
+                    onClick={() => setSearchQuery("")}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-[#a88a9f] hover:text-[#2d1b35]"
                   >
                     <X size={13} />
@@ -794,8 +792,8 @@ export function TransactionOverviewPage() {
                     type="warning"
                     showIcon
                     action={
-                      <button 
-                        onClick={loadTransactions} 
+                      <button
+                        onClick={loadTransactions}
                         className="px-3.5 py-2 bg-white border border-rose-200 rounded-xl text-xs font-bold text-rose-700 transition hover:bg-rose-50"
                       >
                         Retry
@@ -860,7 +858,7 @@ export function TransactionOverviewPage() {
                             {/* Customer */}
                             <td className="px-6 py-5.5">
                               <div className="flex items-center gap-3">
-                                <div className={`flex h-9 w-9 items-center justify-center rounded-full font-black text-xs shrink-0 shadow-xs ${getAvatarColor(tx.customerName)}`}>
+                                <div className={`flex h-9 w-9 items-center justify-center rounded-full font-bold text-xs shrink-0 shadow-xs ${getAvatarColor(tx.customerName)}`}>
                                   {getInitials(tx.customerName)}
                                 </div>
                                 <div className="min-w-0">
@@ -956,7 +954,7 @@ export function TransactionOverviewPage() {
             </span>
             <div className="text-left">
               <span className="text-[10px] text-[#a88a9f] font-bold uppercase tracking-wider block leading-none mb-1">Audit Receipt Details</span>
-              <span className="font-mono text-sm font-black text-[#2d1b35]">
+              <span className="font-mono text-sm font-bold text-[#2d1b35]">
                 #{selectedTransaction?.orderCode || "N/A"}
               </span>
             </div>
@@ -984,26 +982,25 @@ export function TransactionOverviewPage() {
                 <div className="flex justify-center items-center gap-2">
                   {renderStatusBadge(selectedTransaction.status)}
                   {bookingDetails && (
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full border ${
-                      selectedTransaction.amount === bookingDetails.amountDue
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full border ${selectedTransaction.amount === bookingDetails.amountDue
                         ? "bg-[#fff2f7] text-[#ea4f93] border-[#ea4f93]/20"
                         : selectedTransaction.amount === bookingDetails.amountPaid
-                        ? "bg-indigo-50 text-indigo-700 border-indigo-500/20"
-                        : selectedTransaction.amount === bookingDetails.totalPrice
-                        ? "bg-emerald-50 text-emerald-700 border-emerald-500/20"
-                        : "bg-slate-50 text-slate-600 border-slate-200"
-                    }`}>
+                          ? "bg-indigo-50 text-indigo-700 border-indigo-500/20"
+                          : selectedTransaction.amount === bookingDetails.totalPrice
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-500/20"
+                            : "bg-slate-50 text-slate-600 border-slate-200"
+                      }`}>
                       {selectedTransaction.amount === bookingDetails.amountDue
                         ? "Đặt cọc (Deposit)"
                         : selectedTransaction.amount === bookingDetails.amountPaid
-                        ? "Thanh toán còn lại"
-                        : selectedTransaction.amount === bookingDetails.totalPrice
-                        ? "Thanh toán 100%"
-                        : "Thanh toán"}
+                          ? "Thanh toán còn lại"
+                          : selectedTransaction.amount === bookingDetails.totalPrice
+                            ? "Thanh toán 100%"
+                            : "Thanh toán"}
                     </span>
                   )}
                 </div>
-                <h2 className="text-4xl font-mono font-black text-[#2d1b35] tracking-tight">
+                <h2 className="text-4xl font-mono font-bold text-[#2d1b35] tracking-tight">
                   {formatCurrency(selectedTransaction.amount)}
                 </h2>
                 <p className="text-xs text-[#a88a9f]">
@@ -1038,10 +1035,10 @@ export function TransactionOverviewPage() {
                         {selectedTransaction.amount === bookingDetails.amountDue
                           ? "Đặt cọc (Deposit)"
                           : selectedTransaction.amount === bookingDetails.amountPaid
-                          ? "Thanh toán còn lại"
-                          : selectedTransaction.amount === bookingDetails.totalPrice
-                          ? "Thanh toán 100%"
-                          : "Thanh toán đơn hàng"}
+                            ? "Thanh toán còn lại"
+                            : selectedTransaction.amount === bookingDetails.totalPrice
+                              ? "Thanh toán 100%"
+                              : "Thanh toán đơn hàng"}
                       </span>
                     </div>
                   )}

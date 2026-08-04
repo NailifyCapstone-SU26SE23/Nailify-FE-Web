@@ -96,19 +96,35 @@ export async function fetchReceptionistBookings(optionsOrDate) {
   const options = isLegacyDateArg ? { date: optionsOrDate } : optionsOrDate ?? {};
   const {
     date,
+    startDate,
+    endDate,
     includePagination = false,
     pageNumber,
     pageSize,
   } = options;
   const normalizedPageNumber = normalizePageNumber(pageNumber ?? 1);
   const normalizedPageSize = normalizeBookingPageSize(pageSize ?? MAX_BOOKING_PAGE_SIZE);
+
+  const queryParams = {
+    pageNumber: normalizedPageNumber,
+    pageSize: normalizedPageSize,
+  };
+
+  if (startDate) {
+    queryParams.startDate = startDate;
+  } else if (date) {
+    queryParams.startDate = date;
+  }
+
+  if (endDate) {
+    queryParams.endDate = endDate;
+  } else if (date) {
+    queryParams.endDate = date;
+  }
+
   const response = await axiosClient.get(`/Bookings/salon/${salonId}`, {
     headers: getAuthHeaders(),
-    params: {
-      ...(date ? { date } : {}),
-      pageNumber: normalizedPageNumber,
-      pageSize: normalizedPageSize,
-    },
+    params: queryParams,
   });
 
   const data = unwrapResponse(response, "Failed to load salon bookings.");
@@ -355,4 +371,41 @@ export async function getUserById(userId) {
     headers: getAuthHeaders(),
   });
   return unwrapResponse(response, "Failed to load user info.");
+}
+
+export async function fetchSalonChairs(salonId) {
+  const normalizedSalonId = String(salonId || "").trim();
+  if (!normalizedSalonId) throw new Error("Salon ID is required.");
+
+  const response = await axiosClient.get(`/Salons/${normalizedSalonId}/chairs`, {
+    headers: getAuthHeaders(),
+  });
+
+  return unwrapResponse(response, "Failed to load salon chairs.");
+}
+
+export async function fetchAvailableSalonChairs(salonId, params = {}) {
+  const normalizedSalonId = String(salonId || "").trim();
+  if (!normalizedSalonId) throw new Error("Salon ID is required.");
+
+  const response = await axiosClient.get(`/Salons/${normalizedSalonId}/available-chairs`, {
+    headers: getAuthHeaders(),
+    params,
+  });
+
+  return unwrapResponse(response, "Failed to load available salon chairs.");
+}
+
+export async function assignChairToBooking(bookingId, chairId) {
+  const normalizedBookingId = String(bookingId || "").trim();
+  const normalizedChairId = String(chairId || "").trim();
+
+  if (!normalizedBookingId) throw new Error("Booking ID is required.");
+  if (!normalizedChairId) throw new Error("Chair ID is required.");
+
+  const response = await axiosClient.post(`/Bookings/${normalizedBookingId}/assign-chair/${normalizedChairId}`, null, {
+    headers: getAuthHeaders(),
+  });
+
+  return unwrapResponse(response, "Failed to assign chair to booking.");
 }

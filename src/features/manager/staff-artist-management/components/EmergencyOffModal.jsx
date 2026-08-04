@@ -194,9 +194,9 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
               </span>
             </div>
             <div>
-              <h3 className="text-lg font-black text-[#2B182B] tracking-tight flex items-center gap-2">
+              <h3 className="text-lg font-bold text-[#2B182B] tracking-tight flex items-center gap-2">
                 Emergency Off Duty
-                <span className="rounded-md bg-[#FFE4E6] px-2 py-0.5 text-[10px] font-black text-[#E11D48] uppercase tracking-wider">
+                <span className="rounded-md bg-[#FFE4E6] px-2 py-0.5 text-[10px] font-bold text-[#E11D48] uppercase tracking-wider">
                   BR-05
                 </span>
               </h3>
@@ -216,7 +216,7 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
         {resultSummary ? (
           <div className="space-y-5 font-sans animate-fadeIn">
             <div className="rounded-2xl border border-[#6EE7B7] bg-gradient-to-br from-[#ECFDF5] to-[#D1FAE5] p-4.5 text-xs text-[#065F46] shadow-2xs">
-              <div className="flex items-center gap-2 font-black text-base text-[#047857] mb-1.5">
+              <div className="flex items-center gap-2 font-bold text-base text-[#047857] mb-1.5">
                 <CheckCircle2 size={20} className="text-[#10B981]" /> Xử Lý Sự Cố Khẩn Cấp Hoàn Tất
               </div>
               <p className="text-xs leading-relaxed text-[#047857]">
@@ -228,24 +228,24 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
             {/* 3 Metric Tiles */}
             <div className="grid grid-cols-3 gap-3 text-center">
               <div className="rounded-2xl border border-[#C7D2FE] bg-gradient-to-b from-[#EEF2FF] to-[#E0E7FF] p-3.5 shadow-2xs">
-                <p className="text-2xl font-black text-[#3730A3]">{resultSummary.autoReassignedCount || 0}</p>
-                <p className="text-[10px] font-black uppercase text-[#4338CA] mt-1 flex items-center justify-center gap-1">
+                <p className="text-2xl font-bold text-[#3730A3]">{resultSummary.autoReassignedCount || 0}</p>
+                <p className="text-[10px] font-bold uppercase text-[#4338CA] mt-1 flex items-center justify-center gap-1">
                   <UserCheck size={13} /> Re-assigned
                 </p>
                 <p className="text-[9.5px] text-[#6366F1] mt-0.5 font-medium">Chuyển sang Thợ khác đủ Skill</p>
               </div>
 
               <div className="rounded-2xl border border-[#FDE68A] bg-gradient-to-b from-[#FFFBEB] to-[#FEF3C7] p-3.5 shadow-2xs">
-                <p className="text-2xl font-black text-[#92400E]">{resultSummary.rescheduleSuggestedCount || 0}</p>
-                <p className="text-[10px] font-black uppercase text-[#B45309] mt-1 flex items-center justify-center gap-1">
+                <p className="text-2xl font-bold text-[#92400E]">{resultSummary.rescheduleSuggestedCount || 0}</p>
+                <p className="text-[10px] font-bold uppercase text-[#B45309] mt-1 flex items-center justify-center gap-1">
                   <RefreshCw size={13} /> Reschedule Proposal
                 </p>
                 <p className="text-[9.5px] text-[#D97706] mt-0.5 font-medium">Đề xuất lùi giờ + Voucher 15%</p>
               </div>
 
               <div className="rounded-2xl border border-[#FECDD3] bg-gradient-to-b from-[#FEF2F2] to-[#FFE4E6] p-3.5 shadow-2xs">
-                <p className="text-2xl font-black text-[#991B1B]">{resultSummary.cancelledAndRefundedCount || 0}</p>
-                <p className="text-[10px] font-black uppercase text-[#E11D48] mt-1 flex items-center justify-center gap-1">
+                <p className="text-2xl font-bold text-[#991B1B]">{resultSummary.cancelledAndRefundedCount || 0}</p>
+                <p className="text-[10px] font-bold uppercase text-[#E11D48] mt-1 flex items-center justify-center gap-1">
                   <XCircle size={13} /> Auto Cancel
                 </p>
                 <p className="text-[9.5px] text-[#E11D48] mt-0.5 font-medium">Hoàn 100% Cọc + Voucher 20%</p>
@@ -256,7 +256,7 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
               <button
                 type="button"
                 onClick={handleClose}
-                className="rounded-full bg-gradient-to-r from-[#E84F93] to-[#F43F5E] px-7 py-2.5 text-xs font-black text-white shadow-md hover:shadow-lg transition cursor-pointer"
+                className="rounded-full bg-gradient-to-r from-[#E84F93] to-[#F43F5E] px-7 py-2.5 text-xs font-bold text-white shadow-md hover:shadow-lg transition cursor-pointer"
               >
                 Hoàn Tất & Đóng
               </button>
@@ -267,7 +267,7 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
           <div className="space-y-4 relative z-10">
             {/* 1. Artist Selection Dropdown */}
             <div>
-              <label className="block text-xs font-black text-[#2B182B] uppercase tracking-wider mb-1.5 flex items-center justify-between">
+              <label className="block text-xs font-bold text-[#2B182B] uppercase tracking-wider mb-1.5 flex items-center justify-between">
                 <span className="flex items-center gap-1.5 text-[#E11D48]">
                   <User size={14} /> Chọn Thợ Nail Áp Dụng Nghỉ Khẩn Cấp
                 </span>
@@ -300,7 +300,7 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
             {currentSelectedArtist && (
               <div className="rounded-2xl border border-[#FECDD3] bg-gradient-to-r from-[#FEF2F2] via-[#FFF1F2] to-[#FFE4E6] p-3.5 text-xs text-[#2B182B] flex items-center justify-between shadow-2xs">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#E11D48] to-[#991B1B] text-xs font-black text-white shadow-xs border border-white/60">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#E11D48] to-[#991B1B] text-xs font-bold text-white shadow-xs border border-white/60">
                     {artistInitials}
                   </div>
                   <div>
@@ -317,7 +317,7 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
                     </p>
                   </div>
                 </div>
-                <span className="rounded-full bg-gradient-to-r from-[#E11D48] to-[#BE123C] px-3 py-1 text-[10px] font-black text-white uppercase tracking-wider shadow-2xs whitespace-nowrap">
+                <span className="rounded-full bg-gradient-to-r from-[#E11D48] to-[#BE123C] px-3 py-1 text-[10px] font-bold text-white uppercase tracking-wider shadow-2xs whitespace-nowrap">
                   Emergency Mode
                 </span>
               </div>
@@ -326,7 +326,7 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
             {/* 2. Date Picker */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-black text-[#2B182B] uppercase tracking-wider mb-1.5 flex items-center gap-1 text-[#2B182B]">
+                <label className="block text-xs font-bold text-[#2B182B] uppercase tracking-wider mb-1.5 flex items-center gap-1 text-[#2B182B]">
                   <Calendar size={14} className="text-[#E11D48]" /> Ngày nghỉ khẩn cấp
                 </label>
                 <DatePicker
@@ -339,7 +339,7 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
 
               {/* Status Badge Info */}
               <div>
-                <label className="block text-xs font-black text-[#2B182B] uppercase tracking-wider mb-1.5 flex items-center gap-1 text-[#2B182B]">
+                <label className="block text-xs font-bold text-[#2B182B] uppercase tracking-wider mb-1.5 flex items-center gap-1 text-[#2B182B]">
                   <Info size={14} className="text-[#E84F93]" /> Phạm vi áp dụng
                 </label>
                 <div className="h-10 rounded-xl border border-[#F3E2EC] bg-[#FFF9FB] px-3 flex items-center justify-between text-xs text-[#5C4559]">
@@ -353,7 +353,7 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
 
             {/* 3. Reason Input + Presets */}
             <div>
-              <label className="block text-xs font-black text-[#2B182B] uppercase tracking-wider mb-1.5 flex items-center gap-1">
+              <label className="block text-xs font-bold text-[#2B182B] uppercase tracking-wider mb-1.5 flex items-center gap-1">
                 <AlertTriangle size={14} className="text-[#E11D48]" /> Lý do nghỉ đột xuất
               </label>
               <Input.TextArea
@@ -384,7 +384,7 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
 
             {/* 4. Automated Process Explanation */}
             <div className="rounded-2xl border border-[#FCD34D] bg-gradient-to-r from-[#FFFBEB] via-[#FFFDF5] to-[#FFFBEB] p-3.5 text-xs text-[#B45309] shadow-2xs">
-              <div className="flex items-center gap-1.5 font-black text-xs text-[#92400E] mb-1">
+              <div className="flex items-center gap-1.5 font-bold text-xs text-[#92400E] mb-1">
                 <Clock size={15} className="text-[#D97706]" />
                 <span>Quy trình Tự động Phân bổ (Re-assignment Engine):</span>
               </div>
@@ -406,7 +406,7 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
               <button
                 type="button"
                 onClick={handleClose}
-                className="rounded-full border border-[#F3D7E4] px-5 py-2.5 text-xs font-black text-[#2B182B] hover:bg-[#FAF0F5] transition cursor-pointer"
+                className="rounded-full border border-[#F3D7E4] px-5 py-2.5 text-xs font-bold text-[#2B182B] hover:bg-[#FAF0F5] transition cursor-pointer"
               >
                 Hủy
               </button>
@@ -414,7 +414,7 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
                 type="button"
                 onClick={handleSubmit}
                 disabled={loading || !currentSelectedArtist}
-                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#E11D48] via-[#BE123C] to-[#991B1B] px-6 py-2.5 text-xs font-black text-white shadow-md hover:shadow-lg transition cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#E11D48] via-[#BE123C] to-[#991B1B] px-6 py-2.5 text-xs font-bold text-white shadow-md hover:shadow-lg transition cursor-pointer disabled:opacity-50"
               >
                 <ShieldAlert size={16} />
                 {loading ? "Đang xử lý khẩn cấp..." : "Kích Hoạt Emergency Off"}

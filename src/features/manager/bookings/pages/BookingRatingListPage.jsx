@@ -379,7 +379,7 @@ export function BookingRatingListPage() {
                 </span>
               )}
             </div>
-            <h1 className="text-3xl font-black text-[#2d1b35] tracking-tight md:text-4xl">
+            <h1 className="text-3xl font-bold text-[#2d1b35] tracking-tight md:text-4xl">
               Booking Reviews
             </h1>
             <p className="text-xs md:text-sm text-[#a88a9f] max-w-[65ch] leading-relaxed">
@@ -426,7 +426,7 @@ export function BookingRatingListPage() {
 
               {/* Search & Filters Command Bar */}
               <div className="flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center bg-white/90 backdrop-blur-sm p-4 rounded-3xl border border-slate-200/75 shadow-[0_8px_30px_rgba(0,0,0,0.01)]">
-                <div className="relative flex-1 max-w-md">
+                {/* <div className="relative flex-1 max-w-md">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]" size={15} />
                   <input
                     type="text"
@@ -435,11 +435,11 @@ export function BookingRatingListPage() {
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300"
                   />
-                </div>
+                </div> */}
 
                 <div className="flex flex-wrap items-center gap-3">
                   <div className="flex items-center gap-1.5 bg-[#fcf9fb] p-1 rounded-2xl border border-[#f1e7ed]">
-                    {["all", "5", "4", "3", "2"].map((score) => (
+                    {["all", "5", "4", "3", "2", "1"].map((score) => (
                       <button
                         key={score}
                         type="button"
@@ -449,7 +449,7 @@ export function BookingRatingListPage() {
                           : "text-[#7f6478] hover:text-[#2d1b35] hover:bg-[#ea4f93]/5"
                           }`}
                       >
-                        {score === "all" ? "All Stars" : `${score}`}
+                        {score === "all" ? "All" : `${score}`}
                         {score !== "all" && <Star size={10} className="fill-current" />}
                       </button>
                     ))}
@@ -477,6 +477,16 @@ export function BookingRatingListPage() {
                     style={{ borderRadius: "0.875rem" }}
                   />
                 </div>
+              </div>
+              <div className="relative flex-1 w-full bg-white">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]" size={15} />
+                <input
+                  type="text"
+                  placeholder="Search by customer name, nail artist, or comment..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="bg-white w-full pl-11 pr-4 py-2.5 rounded-2xl border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300"
+                />
               </div>
 
               {/* Feed List */}
@@ -655,7 +665,7 @@ export function BookingRatingListPage() {
               {/* Signature card: sentiment gauge */}
               <div className="bg-white/80 backdrop-blur-md rounded-[2.25rem] border border-[#f1e7ed]/60 p-6 shadow-[0_12px_32px_rgba(0,0,0,0.02)] space-y-4">
                 <div className="space-y-1">
-                  <h3 className="text-sm font-black text-[#2d1b35]">Rating Summary</h3>
+                  <h3 className="text-sm font-bold text-[#2d1b35]">Rating Summary</h3>
                   <p className="text-[10px] text-[#a88a9f]">Aggregated satisfaction score index.</p>
                 </div>
 
@@ -686,7 +696,7 @@ export function BookingRatingListPage() {
               {/* Sub-criteria indices */}
               <div className="bg-white/80 backdrop-blur-md rounded-[2.25rem] border border-[#f1e7ed]/60 p-6 shadow-[0_12px_32px_rgba(0,0,0,0.02)] space-y-5">
                 <div className="space-y-1">
-                  <h3 className="text-sm font-black text-[#2d1b35]">Satisfaction Indices</h3>
+                  <h3 className="text-sm font-bold text-[#2d1b35]">Satisfaction Indices</h3>
                   <p className="text-[10px] text-[#a88a9f]">Core indicators mapping customer loyalty.</p>
                 </div>
 
@@ -768,7 +778,7 @@ export function BookingRatingListPage() {
       {/* Response Modal */}
       <Modal
         title={
-          <div className="flex items-center gap-2 text-[#2d1b35] font-black text-base">
+          <div className="flex items-center gap-2 text-[#2d1b35] font-bold text-base">
             <MessageSquare size={16} className="text-[#ea4f93]" />
             <span>Respond to Customer Review</span>
           </div>

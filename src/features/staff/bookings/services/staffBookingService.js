@@ -457,6 +457,22 @@ export function buildStaffBookingItemsForUpdate(existingBookingItems = [], selec
   return payloadItems;
 }
 
+export async function fetchLoyaltyTiers() {
+  try {
+    const response = await axiosClient.get('/LoyaltyTiers', {
+      headers: getAuthHeaders()
+    });
+    const payload = response.data;
+    if (!payload?.isSucceeded) {
+      throw new Error(payload?.message || "Failed to fetch loyalty tiers.");
+    }
+    return payload.data;
+  } catch (error) {
+    console.error("Error fetching loyalty tiers:", error);
+    throw error;
+  }
+}
+
 export async function updateStaffBooking(bookingId, payload) {
   const normalizedBookingId = String(bookingId || "").trim();
 
@@ -806,7 +822,7 @@ export async function fetchStaffCustomerDetail(userId) {
     throw new Error("Customer user ID is required.");
   }
 
-  const response = await axiosClient.get(`/Users/${normalizedUserId}`, {
+  const response = await axiosClient.get(`/Users/customers/${normalizedUserId}`, {
     headers: getAuthHeaders(),
   });
 
@@ -827,6 +843,7 @@ export async function fetchStaffCustomerDetail(userId) {
     role: String(data?.role || "").trim(),
     salonId: String(data?.salonId || "").trim(),
     staffId: String(data?.staffId || "").trim(),
+    loyaltyPoint: Number(data?.loyaltyPoint || 0),
   };
 }
 

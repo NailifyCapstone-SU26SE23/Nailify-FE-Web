@@ -307,18 +307,12 @@ function getFingerAlignmentClass(fingerName) {
   }
 }
 
-function normalizeComponentPosition(value, fallbackPercent) {
+function normalizeComponentPosition(value, fallbackPercent = 50) {
   const numericValue = Number(value);
-
-  if (!Number.isFinite(numericValue)) {
-    return fallbackPercent;
-  }
-
-  if (Math.abs(numericValue) <= 1) {
-    return Math.max(0, Math.min(100, 50 + numericValue * 100));
-  }
-
-  return Math.max(0, Math.min(100, numericValue));
+  if (!Number.isFinite(numericValue)) return fallbackPercent;
+  // posX/posY are offset from center normalized by destW/destH.
+  // Multiply by 50: offset of 1.0 = full nail width away from center
+  return Math.max(0, Math.min(100, 50 + numericValue * 50));
 }
 
 function parseComponentConfig(configJson) {
@@ -368,8 +362,8 @@ function NailVariantHandPreview({ variantDetail, compact = false, showShapeOverl
     ? "absolute -inset-1 rounded-t-[24px] rounded-b-[12px] bg-gradient-to-t from-[#ea4f93]/15 to-[#ffb8d9]/5 opacity-25 blur-sm transition duration-500 group-hover:opacity-50 group-hover:blur-md"
     : "absolute -inset-1 rounded-t-[36px] rounded-b-[18px] bg-gradient-to-t from-[#ea4f93]/15 to-[#ffb8d9]/5 opacity-30 blur-md transition duration-500 group-hover:opacity-60 group-hover:blur-lg";
   const nailShellClassName = compact
-    ? "relative h-24 w-12 overflow-hidden rounded-t-[18px] rounded-b-[10px] border border-[#fcd5e6] bg-gradient-to-b from-[#fff6f9] to-[#ffeef5] shadow-[0_8px_18px_rgba(236,72,153,0.06)] transition-all duration-300 group-hover:scale-105 group-hover:border-[#ea4f93]"
-    : "relative h-48 w-24 overflow-hidden rounded-t-[32px] rounded-b-[14px] border-2 border-[#fcd5e6] bg-gradient-to-b from-[#fff6f9] to-[#ffeef5] shadow-[0_12px_28px_rgba(236,72,153,0.06)] transition-all duration-300 group-hover:scale-105 group-hover:border-[#ea4f93]";
+    ? "relative overflow-hidden rounded-t-[18px] rounded-b-[10px] border border-[#fcd5e6] bg-gradient-to-b from-[#fff6f9] to-[#ffeef5] shadow-[0_8px_18px_rgba(236,72,153,0.06)] transition-all duration-300 group-hover:scale-105 group-hover:border-[#ea4f93]"
+    : "relative overflow-hidden rounded-t-[32px] rounded-b-[14px] border-2 border-[#fcd5e6] bg-gradient-to-b from-[#fff6f9] to-[#ffeef5] shadow-[0_12px_28px_rgba(236,72,153,0.06)] transition-all duration-300 group-hover:scale-105 group-hover:border-[#ea4f93]";
   const glossClassName = compact
     ? "pointer-events-none absolute left-1.5 top-1 h-10 w-1 rounded-full bg-white/45 blur-[0.6px]"
     : "pointer-events-none absolute left-2.5 top-1.5 h-20 w-1.5 animate-pulse rounded-full bg-white/45 blur-[0.7px]";
@@ -397,8 +391,20 @@ function NailVariantHandPreview({ variantDetail, compact = false, showShapeOverl
               <div className="relative group">
                 <div className={fingerGlowClassName} />
 
-                <div className={nailShellClassName}>
-                  <div className="absolute inset-0 h-full w-full" style={shapeMaskStyle}>
+                <div 
+                  className={nailShellClassName}
+                  style={compact ? { width: '48px', height: '63px' } : { width: '96px', height: '126px' }}
+                >
+                  <div 
+                    className="absolute" 
+                    style={{
+                      left: '14%',
+                      top: '37.2%',
+                      width: '72%',
+                      height: '49.37%',
+                      ...shapeMaskStyle
+                    }}
+                  >
                     <div className="absolute inset-0 h-full w-full" style={colorStyle} />
                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/30 via-transparent to-black/10 mix-blend-overlay" />
                     <div className={glossClassName} />
@@ -434,10 +440,10 @@ function NailVariantHandPreview({ variantDetail, compact = false, showShapeOverl
                       }
 
                       const config = parseComponentConfig(componentItem.configJson);
-                      const scale = Number.isFinite(Number(config?.scale)) ? Number(config.scale) : 1;
+                      const scale = Number.isFinite(Number(config?.scale)) ? Number(config.scale) : 0.25;
                       const rotation = Number.isFinite(Number(config?.rotation)) ? Number(config.rotation) : 0;
-                      const left = normalizeComponentPosition(componentItem?.posX, 50);
-                      const top = normalizeComponentPosition(componentItem?.posY, 50);
+                      const left = 50 + Number(componentItem?.posX || 0) * 100;
+                      const top = 50 + Number(componentItem?.posY || 0) * 100;
 
                       return (
                         <img
@@ -445,12 +451,14 @@ function NailVariantHandPreview({ variantDetail, compact = false, showShapeOverl
                           crossOrigin="anonymous"
                           src={component.imageUrl}
                           alt={component.name || "component"}
-                          className={componentSizeClassName}
+                          className="pointer-events-none absolute object-contain drop-shadow-[0_4px_8px_rgba(234,79,147,0.18)]"
                           referrerPolicy="no-referrer"
                           style={{
                             left: `${left}%`,
                             top: `${top}%`,
-                            transform: `translate(-50%, -50%) scale(${Math.max(1, scale * 1.25)}) rotate(${rotation}deg)`,
+                            width: `${scale * 100}%`,
+                            height: `${scale * 100}%`,
+                            transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
                           }}
                         />
                       );
@@ -458,13 +466,23 @@ function NailVariantHandPreview({ variantDetail, compact = false, showShapeOverl
                   </div>
 
                   {showShapeOverlay && variantDetail?.nailShape?.imageUrl ? (
-                    <img
-                      crossOrigin="anonymous"
-                      src={variantDetail.nailShape.imageUrl}
-                      alt="shape mask"
-                      className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-80 mix-blend-multiply"
-                      referrerPolicy="no-referrer"
-                    />
+                    <div 
+                      className="pointer-events-none absolute"
+                      style={{
+                        left: '14%',
+                        top: '37.2%',
+                        width: '72%',
+                        height: '49.37%',
+                      }}
+                    >
+                      <img
+                        crossOrigin="anonymous"
+                        src={variantDetail.nailShape.imageUrl}
+                        alt="shape mask"
+                        className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-80 mix-blend-multiply"
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
                   ) : null}
                 </div>
               </div>
@@ -927,7 +945,7 @@ export function NailDesignManagementDetailPage() {
           description: formValues?.heroSubtitle,
           categoryIds: formValues?.categoryIds,
           nailVariantIds: currentVariants.map((variant) => variant.nailVariantId),
-          existingImageUrls: formValues?.imageUrls,
+          existingImageUrls: formValues?.imageUrl ? [formValues.imageUrl] : [],
         });
       }
 
@@ -1910,7 +1928,7 @@ export function NailDesignManagementDetailPage() {
                   <span className="inline-flex rounded-full bg-white/70 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#b25784]">
                     Variant Detail
                   </span>
-                  <h3 className="mt-3 text-lg font-black text-[#432744]">
+                  <h3 className="mt-3 text-lg font-bold text-[#432744]">
                     {selectedVariantDetail?.name || "Variant"}
                   </h3>
                   <p className="mt-1 text-sm text-[#9c7089]">

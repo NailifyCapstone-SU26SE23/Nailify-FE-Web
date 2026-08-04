@@ -438,11 +438,11 @@ export function ManagerSchedulesPage() {
                 <CalendarIcon size={30} className="drop-shadow-md text-white" />
               </div>
               <div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-[#E84F93]/30 bg-[#E84F93]/10 px-3.5 py-1 text-[11px] font-extrabold text-[#E84F93] backdrop-blur-md shadow-xs">
+                <div className="inline-flex items-center gap-2 rounded-full border border-[#E84F93]/30 bg-[#E84F93]/10 px-3.5 py-1 text-[11px] font-bold text-[#E84F93] backdrop-blur-md shadow-xs">
                   <Sparkles size={13} className="text-[#E84F93] animate-pulse" />
                   <span>Salon Staff Rostering & Scheduling</span>
                 </div>
-                <h1 className="text-2xl lg:text-3xl font-extrabold text-[#2B182B] mt-1.5 tracking-tight font-serif">
+                <h1 className="text-2xl lg:text-3xl font-bold text-[#2B182B] mt-1.5 tracking-tight ">
                   Staff Schedules
                 </h1>
                 <p className="mt-1 text-xs lg:text-sm text-[#8C6682] font-semibold leading-relaxed">
@@ -456,7 +456,7 @@ export function ManagerSchedulesPage() {
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.96 }}
                 onClick={() => handleOpenAddModal()}
-                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#E84F93] via-[#EC4899] to-[#F43F5E] px-6 py-3 text-xs font-black text-white shadow-[0_10px_25px_rgba(232,79,147,0.35)] hover:shadow-xl transition-all"
+                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#E84F93] via-[#EC4899] to-[#F43F5E] px-6 py-3 text-xs font-bold text-white shadow-[0_10px_25px_rgba(232,79,147,0.35)] hover:shadow-xl transition-all"
               >
                 <Plus size={17} />
                 <span>Add Shift Schedule</span>
@@ -468,12 +468,12 @@ export function ManagerSchedulesPage() {
           <div className="grid gap-3.5 pt-6 mt-6 border-t border-[#F3D6E5] grid-cols-2 md:grid-cols-4">
             <div className="rounded-2xl border border-[#F3D6E5] bg-white/80 p-4 backdrop-blur-md hover:border-[#E84F93] transition shadow-2xs group">
               <div className="flex items-center justify-between">
-                <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497]">Salon Staff</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">Salon Staff</p>
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#E84F93]/15 text-[#E84F93] group-hover:scale-110 transition">
                   <Users size={16} />
                 </div>
               </div>
-              <p className="mt-2 text-2xl font-black text-[#2B182B]">{staffList.length}</p>
+              <p className="mt-2 text-2xl font-bold text-[#2B182B]">{staffList.length}</p>
               <div className="flex items-center gap-1.5 mt-1">
                 <span className="h-2 w-2 rounded-full bg-[#10B981] animate-pulse" />
                 <span className="text-[10px] text-[#8C6682] font-semibold">Active Nail Artists</span>
@@ -482,34 +482,34 @@ export function ManagerSchedulesPage() {
 
             <div className="rounded-2xl border border-[#F3D6E5] bg-white/80 p-4 backdrop-blur-md hover:border-[#10B981] transition shadow-2xs group">
               <div className="flex items-center justify-between">
-                <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497]">Shifts Today</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">Shifts Today</p>
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#10B981]/15 text-[#10B981] group-hover:scale-110 transition">
                   <UserCheck size={16} />
                 </div>
               </div>
-              <p className="mt-2 text-2xl font-black text-[#059669]">{activeTodayCount}</p>
+              <p className="mt-2 text-2xl font-bold text-[#059669]">{activeTodayCount}</p>
               <p className="text-[10px] text-[#8C6682] font-semibold mt-1">Staff On Duty Today</p>
             </div>
 
             <div className="rounded-2xl border border-[#F3D6E5] bg-white/80 p-4 backdrop-blur-md hover:border-[#6366F1] transition shadow-2xs group">
               <div className="flex items-center justify-between">
-                <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497]">Scheduled Hours</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">Scheduled Hours</p>
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#6366F1]/15 text-[#6366F1] group-hover:scale-110 transition">
                   <Clock size={16} />
                 </div>
               </div>
-              <p className="mt-2 text-2xl font-black text-[#4F46E5]">{totalWeeklyHours}h</p>
+              <p className="mt-2 text-2xl font-bold text-[#4F46E5]">{totalWeeklyHours}h</p>
               <p className="text-[10px] text-[#8C6682] font-semibold mt-1">Total Hours This Week</p>
             </div>
 
             <div className="rounded-2xl border border-[#F3D6E5] bg-white/80 p-4 backdrop-blur-md hover:border-[#F59E0B] transition shadow-2xs group">
               <div className="flex items-center justify-between">
-                <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497]">Week Span</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">Week Span</p>
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F59E0B]/15 text-[#F59E0B] group-hover:scale-110 transition">
                   <CalendarIcon size={16} />
                 </div>
               </div>
-              <p className="mt-2 text-xs font-black text-[#B45309] py-1">
+              <p className="mt-2 text-xs font-bold text-[#B45309] py-1">
                 {selectedWeekStart.format("MMM D")} – {selectedWeekStart.add(6, "day").format("MMM D, YYYY")}
               </p>
               <p className="text-[10px] text-[#8C6682] font-semibold">7-Day Weekly Roster</p>
@@ -534,7 +534,7 @@ export function ManagerSchedulesPage() {
           <button
             type="button"
             onClick={() => setSelectedWeekStart(dayjs().startOf("week").add(1, "day"))}
-            className="rounded-xl border border-[#F3D6E5] bg-gradient-to-r from-[#FFF0F5] to-[#FFE4EE] px-4 py-2 text-xs font-extrabold text-[#E84F93] hover:from-[#FFE4EE] hover:to-[#FFD6E7] transition shadow-2xs flex items-center gap-2"
+            className="rounded-xl border border-[#F3D6E5] bg-gradient-to-r from-[#FFF0F5] to-[#FFE4EE] px-4 py-2 text-xs font-bold text-[#E84F93] hover:from-[#FFE4EE] hover:to-[#FFD6E7] transition shadow-2xs flex items-center gap-2"
           >
             <CalendarIcon size={14} />
             <span>Current Week</span>
@@ -560,9 +560,9 @@ export function ManagerSchedulesPage() {
               }}
               format="[Week of] MMM D, YYYY"
               allowClear={false}
-              className="h-10 rounded-xl border-[#F3D7E4] bg-[#FFFDFE] text-xs font-extrabold text-[#2B182B] hover:border-[#E84F93] focus:border-[#E84F93] transition"
+              className="h-10 rounded-xl border-[#F3D7E4] bg-[#FFFDFE] text-xs font-bold text-[#2B182B] hover:border-[#E84F93] focus:border-[#E84F93] transition"
             />
-            <span className="text-xs font-black text-[#2B182B] hidden xl:inline-block">
+            <span className="text-xs font-bold text-[#2B182B] hidden xl:inline-block">
               ({selectedWeekStart.format("MMMM D")} – {selectedWeekStart.add(6, "day").format("MMMM D, YYYY")})
             </span>
           </div>
@@ -577,7 +577,7 @@ export function ManagerSchedulesPage() {
               setSelectedEmergencyArtist(defaultArtist);
               setIsEmergencyOffModalOpen(true);
             }}
-            className="h-10 rounded-xl border border-[#FECDD3] bg-gradient-to-r from-[#FEF2F2] to-[#FEE2E2] px-3.5 text-xs font-extrabold text-[#E11D48] hover:bg-[#FEE2E2] transition shadow-2xs flex items-center gap-2"
+            className="h-10 rounded-xl border border-[#FECDD3] bg-gradient-to-r from-[#FEF2F2] to-[#FEE2E2] px-3.5 text-xs font-bold text-[#E11D48] hover:bg-[#FEE2E2] transition shadow-2xs flex items-center gap-2"
             title="Manager trigger Emergency Off for artist leave"
           >
             <ShieldAlert size={15} />
@@ -588,7 +588,7 @@ export function ManagerSchedulesPage() {
           <button
             type="button"
             onClick={() => setShowShiftTimes((prev) => !prev)}
-            className={`h-10 rounded-xl border px-3.5 text-xs font-extrabold transition flex items-center gap-2 ${showShiftTimes
+            className={`h-10 rounded-xl border px-3.5 text-xs font-bold transition flex items-center gap-2 ${showShiftTimes
               ? "border-[#E84F93] bg-[#FFF0F5] text-[#E84F93] shadow-2xs"
               : "border-[#F3D7E4] bg-white text-[#9E8497] hover:border-[#F0B7CF]"
               }`}
@@ -612,14 +612,14 @@ export function ManagerSchedulesPage() {
 
       {/* Day Focus Filter Bar */}
       <motion.div variants={fadeInUp} className="flex items-center gap-2 overflow-x-auto pb-1">
-        <span className="text-[11px] font-black uppercase text-[#9E8497] tracking-wider mr-1 flex items-center gap-1.5 shrink-0">
+        <span className="text-[11px] font-bold uppercase text-[#9E8497] tracking-wider mr-1 flex items-center gap-1.5 shrink-0">
           <Filter size={13} className="text-[#E84F93]" />
           <span>Focus Day:</span>
         </span>
         <button
           type="button"
           onClick={() => setSelectedDayKey("ALL")}
-          className={`rounded-full px-3.5 py-1.5 text-xs font-extrabold transition shrink-0 ${selectedDayKey === "ALL"
+          className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition shrink-0 ${selectedDayKey === "ALL"
             ? "bg-[#2B182B] text-white shadow-xs"
             : "bg-white text-[#8C6682] border border-[#F3D6E5] hover:border-[#E84F93]"
             }`}
@@ -637,7 +637,7 @@ export function ManagerSchedulesPage() {
               key={dayKey}
               type="button"
               onClick={() => setSelectedDayKey(isSelected ? "ALL" : dayKey)}
-              className={`rounded-full px-3.5 py-1.5 text-xs font-extrabold transition flex items-center gap-1.5 shrink-0 ${isSelected
+              className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition flex items-center gap-1.5 shrink-0 ${isSelected
                 ? "bg-gradient-to-r from-[#E84F93] to-[#F43F5E] text-white shadow-xs"
                 : isToday
                   ? "bg-[#FFF0F5] text-[#E84F93] border border-[#E84F93]/30"
@@ -664,7 +664,7 @@ export function ManagerSchedulesPage() {
             <thead>
               <tr className="bg-gradient-to-r from-[#FFF5F8] via-[#FFF9FB] to-[#FFF5F8] text-xs font-bold text-[#2B182B] border-b border-[#F3E2EC]">
                 <th className="w-64 p-4.5 text-left border-r border-[#F3E2EC]">
-                  <div className="flex items-center gap-2 text-[#2B182B] font-black uppercase text-[11px] tracking-wider">
+                  <div className="flex items-center gap-2 text-[#2B182B] font-bold uppercase text-[11px] tracking-wider">
                     <Users size={15} className="text-[#E84F93]" />
                     <span>Staff Artist ({filteredStaff.length})</span>
                   </div>
@@ -686,15 +686,15 @@ export function ManagerSchedulesPage() {
                         }`}
                       title="Click to focus on this day"
                     >
-                      <p className={`text-[10px] uppercase font-black tracking-widest ${isToday || isSelected ? "text-[#E84F93]" : "text-[#9E8497]"}`}>
+                      <p className={`text-[10px] uppercase font-bold tracking-widest ${isToday || isSelected ? "text-[#E84F93]" : "text-[#9E8497]"}`}>
                         {d.format("ddd")}
                       </p>
                       <div className="flex items-center justify-center gap-1.5 mt-1">
-                        <span className={`text-base font-black ${isToday || isSelected ? "text-[#E84F93]" : "text-[#2B182B]"}`}>
+                        <span className={`text-base font-bold ${isToday || isSelected ? "text-[#E84F93]" : "text-[#2B182B]"}`}>
                           {d.format("MMM D")}
                         </span>
                         {isToday && (
-                          <span className="rounded-full bg-gradient-to-r from-[#E84F93] to-[#F43F5E] px-2 py-0.5 text-[9px] font-black text-white uppercase tracking-wider shadow-2xs">
+                          <span className="rounded-full bg-gradient-to-r from-[#E84F93] to-[#F43F5E] px-2 py-0.5 text-[9px] font-bold text-white uppercase tracking-wider shadow-2xs">
                             Today
                           </span>
                         )}
@@ -724,12 +724,12 @@ export function ManagerSchedulesPage() {
                       {/* Staff Profile Cell */}
                       <td className="p-4 align-middle border-r border-[#F3E2EC] bg-[#FFFCFD] group/staff">
                         <div className="flex items-center gap-3">
-                          <div className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${staff.gradient} text-xs font-black text-white shadow-sm ring-2 ${staff.ring} border border-white/60`}>
+                          <div className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${staff.gradient} text-xs font-bold text-white shadow-sm ring-2 ${staff.ring} border border-white/60`}>
                             {staff.initials}
                             <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-[#10B981]" />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs font-extrabold text-[#2B182B] truncate">{staff.name}</p>
+                            <p className="text-xs font-bold text-[#2B182B] truncate">{staff.name}</p>
                             <p className="text-[10px] text-[#9E8497] font-semibold truncate">{staff.phone || staff.specialty}</p>
                           </div>
                           <button
@@ -768,7 +768,7 @@ export function ManagerSchedulesPage() {
                                   className="w-full h-[65px] rounded-2xl border border-dashed border-transparent hover:border-[#F3D6E5] hover:bg-[#FFF0F5]/70 text-transparent hover:text-[#E84F93] transition flex flex-col items-center justify-center gap-1 group cursor-pointer"
                                 >
                                   <Plus size={15} className="opacity-0 group-hover:opacity-100 transition text-[#E84F93]" />
-                                  <span className="text-[10px] font-black opacity-0 group-hover:opacity-100 transition">
+                                  <span className="text-[10px] font-bold opacity-0 group-hover:opacity-100 transition">
                                     + Assign Shift
                                   </span>
                                 </button>
@@ -787,7 +787,7 @@ export function ManagerSchedulesPage() {
                                         <div className="flex items-center justify-between mb-1.5">
                                           <div className="flex items-center gap-1.5">
                                             <span className={`h-2 w-2 rounded-full ${theme.dot} animate-pulse`} />
-                                            <span className="text-[11px] font-black tracking-tight">
+                                            <span className="text-[11px] font-bold tracking-tight">
                                               {formatTimeSpan(s.shiftStart)} – {formatTimeSpan(s.shiftEnd)}
                                             </span>
                                           </div>
@@ -795,7 +795,7 @@ export function ManagerSchedulesPage() {
                                       )}
 
                                       <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-black/5">
-                                        <span className={`inline-flex items-center gap-1 rounded-md ${theme.badgeBg} px-2 py-0.5 text-[9px] font-black`}>
+                                        <span className={`inline-flex items-center gap-1 rounded-md ${theme.badgeBg} px-2 py-0.5 text-[9px] font-bold`}>
                                           <IconComponent size={10} />
                                           {theme.label}
                                         </span>
@@ -855,7 +855,7 @@ export function ManagerSchedulesPage() {
                 <Plus size={22} />
               </div>
               <div>
-                <h3 className="text-lg font-extrabold text-[#2B182B] font-serif tracking-tight">Add Staff Work Shift</h3>
+                <h3 className="text-lg font-bold text-[#2B182B]  tracking-tight">Add Staff Work Shift</h3>
                 <p className="text-xs text-[#9E8497] font-semibold">Assign shift schedule to salon nail artist</p>
               </div>
             </div>
@@ -871,7 +871,7 @@ export function ManagerSchedulesPage() {
           <div className="p-6 space-y-5 text-xs font-bold text-[#2B182B]">
             {/* Quick Shift Presets */}
             <div>
-              <label className="block mb-2 text-[#9E8497] uppercase text-[10px] tracking-widest font-black">
+              <label className="block mb-2 text-[#9E8497] uppercase text-[10px] tracking-widest font-bold">
                 Select Shift Preset
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -884,10 +884,10 @@ export function ManagerSchedulesPage() {
                     }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-extrabold flex items-center gap-1">☀️ Morning</span>
+                    <span className="text-[11px] font-bold flex items-center gap-1">☀️ Morning</span>
                     {activePreset === "MORNING" && <Check size={13} className="text-[#3B82F6]" />}
                   </div>
-                  <span className="text-[9px] font-extrabold mt-1 opacity-80">08:00 AM - 04:00 PM</span>
+                  <span className="text-[9px] font-bold mt-1 opacity-80">08:00 AM - 04:00 PM</span>
                 </button>
 
                 <button
@@ -899,10 +899,10 @@ export function ManagerSchedulesPage() {
                     }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-extrabold flex items-center gap-1">🌙 Evening</span>
+                    <span className="text-[11px] font-bold flex items-center gap-1">🌙 Evening</span>
                     {activePreset === "EVENING" && <Check size={13} className="text-[#F59E0B]" />}
                   </div>
-                  <span className="text-[9px] font-extrabold mt-1 opacity-80">12:00 PM - 08:00 PM</span>
+                  <span className="text-[9px] font-bold mt-1 opacity-80">12:00 PM - 08:00 PM</span>
                 </button>
 
                 <button
@@ -914,10 +914,10 @@ export function ManagerSchedulesPage() {
                     }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-extrabold flex items-center gap-1">⭐ Full Day</span>
+                    <span className="text-[11px] font-bold flex items-center gap-1">⭐ Full Day</span>
                     {activePreset === "FULLDAY" && <Check size={13} className="text-[#10B981]" />}
                   </div>
-                  <span className="text-[9px] font-extrabold mt-1 opacity-80">08:00 AM - 11:30 PM</span>
+                  <span className="text-[9px] font-bold mt-1 opacity-80">08:00 AM - 11:30 PM</span>
                 </button>
 
                 <button
@@ -929,17 +929,17 @@ export function ManagerSchedulesPage() {
                     }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-extrabold flex items-center gap-1">⚡ Short</span>
+                    <span className="text-[11px] font-bold flex items-center gap-1">⚡ Short</span>
                     {activePreset === "SHORT" && <Check size={13} className="text-[#8B5CF6]" />}
                   </div>
-                  <span className="text-[9px] font-extrabold mt-1 opacity-80">08:00 AM - 09:00 AM</span>
+                  <span className="text-[9px] font-bold mt-1 opacity-80">08:00 AM - 09:00 AM</span>
                 </button>
               </div>
             </div>
 
             {/* Select Staff Artist with Rich Options */}
             <div>
-              <label className="block mb-1.5 text-[#9E8497] uppercase text-[10px] tracking-widest font-black">Select Staff Artist</label>
+              <label className="block mb-1.5 text-[#9E8497] uppercase text-[10px] tracking-widest font-bold">Select Staff Artist</label>
               <Select
                 value={formArtistId}
                 onChange={(val) => setFormArtistId(val)}
@@ -947,10 +947,10 @@ export function ManagerSchedulesPage() {
                 options={staffList.map((s) => ({
                   label: (
                     <div className="flex items-center gap-2.5 py-0.5">
-                      <div className={`flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br ${s.gradient} text-[10px] font-black text-white shrink-0`}>
+                      <div className={`flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br ${s.gradient} text-[10px] font-bold text-white shrink-0`}>
                         {s.initials}
                       </div>
-                      <span className="font-extrabold text-[#2B182B] text-xs">{s.name}</span>
+                      <span className="font-bold text-[#2B182B] text-xs">{s.name}</span>
                       {s.phone && <span className="text-[10px] text-[#9E8497] font-semibold">({s.phone})</span>}
                     </div>
                   ),
@@ -960,7 +960,7 @@ export function ManagerSchedulesPage() {
             </div>
 
             <div>
-              <label className="block mb-1.5 text-[#9E8497] uppercase text-[10px] tracking-widest font-black">Work Date</label>
+              <label className="block mb-1.5 text-[#9E8497] uppercase text-[10px] tracking-widest font-bold">Work Date</label>
               <DatePicker
                 value={formWorkDate}
                 onChange={(d) => d && setFormWorkDate(d)}
@@ -972,7 +972,7 @@ export function ManagerSchedulesPage() {
             {/* Custom Clean Time Selects */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block mb-1.5 text-[#9E8497] uppercase text-[10px] tracking-widest font-black">Shift Start Time</label>
+                <label className="block mb-1.5 text-[#9E8497] uppercase text-[10px] tracking-widest font-bold">Shift Start Time</label>
                 <Select
                   value={formStartTimeStr}
                   onChange={(val) => setFormStartTimeStr(val)}
@@ -982,7 +982,7 @@ export function ManagerSchedulesPage() {
               </div>
 
               <div>
-                <label className="block mb-1.5 text-[#9E8497] uppercase text-[10px] tracking-widest font-black">Shift End Time</label>
+                <label className="block mb-1.5 text-[#9E8497] uppercase text-[10px] tracking-widest font-bold">Shift End Time</label>
                 <Select
                   value={formEndTimeStr}
                   onChange={(val) => setFormEndTimeStr(val)}
@@ -993,7 +993,7 @@ export function ManagerSchedulesPage() {
             </div>
 
             <div>
-              <label className="block mb-1.5 text-[#9E8497] uppercase text-[10px] tracking-widest font-black">Shift Status</label>
+              <label className="block mb-1.5 text-[#9E8497] uppercase text-[10px] tracking-widest font-bold">Shift Status</label>
               <Select
                 value={formStatus}
                 onChange={(val) => setFormStatus(val)}
@@ -1009,7 +1009,7 @@ export function ManagerSchedulesPage() {
               <button
                 type="button"
                 onClick={() => setIsAddModalOpen(false)}
-                className="rounded-full border border-[#F3D7E4] px-6 py-3 text-xs font-extrabold text-[#2B182B] hover:bg-[#FAF0F5] transition"
+                className="rounded-full border border-[#F3D7E4] px-6 py-3 text-xs font-bold text-[#2B182B] hover:bg-[#FAF0F5] transition"
               >
                 Cancel
               </button>
@@ -1017,7 +1017,7 @@ export function ManagerSchedulesPage() {
                 type="button"
                 onClick={handleCreateScheduleSubmit}
                 disabled={isSubmitting}
-                className="rounded-full bg-gradient-to-r from-[#E84F93] via-[#EC4899] to-[#F43F5E] px-7 py-3 text-xs font-black text-white shadow-md hover:shadow-lg transition"
+                className="rounded-full bg-gradient-to-r from-[#E84F93] via-[#EC4899] to-[#F43F5E] px-7 py-3 text-xs font-bold text-white shadow-md hover:shadow-lg transition"
               >
                 {isSubmitting ? "Saving..." : "Create Shift Schedule"}
               </button>
@@ -1043,7 +1043,7 @@ export function ManagerSchedulesPage() {
                 <Edit3 size={22} />
               </div>
               <div>
-                <h3 className="text-lg font-extrabold text-[#2B182B] font-serif tracking-tight">Edit Staff Work Shift</h3>
+                <h3 className="text-lg font-bold text-[#2B182B]  tracking-tight">Edit Staff Work Shift</h3>
                 <p className="text-xs text-[#9E8497] font-semibold">Modify shift details or hours</p>
               </div>
             </div>
@@ -1059,7 +1059,7 @@ export function ManagerSchedulesPage() {
           <div className="p-6 space-y-5 text-xs font-bold text-[#2B182B]">
             {/* Quick Shift Presets */}
             <div>
-              <label className="block mb-2 text-[#9E8497] uppercase text-[10px] tracking-widest font-black">
+              <label className="block mb-2 text-[#9E8497] uppercase text-[10px] tracking-widest font-bold">
                 Select Shift Preset
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -1072,10 +1072,10 @@ export function ManagerSchedulesPage() {
                     }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-extrabold flex items-center gap-1">☀️ Morning</span>
+                    <span className="text-[11px] font-bold flex items-center gap-1">☀️ Morning</span>
                     {activePreset === "MORNING" && <Check size={13} className="text-[#3B82F6]" />}
                   </div>
-                  <span className="text-[9px] font-extrabold mt-1 opacity-80">08:00 AM - 04:00 PM</span>
+                  <span className="text-[9px] font-bold mt-1 opacity-80">08:00 AM - 04:00 PM</span>
                 </button>
 
                 <button
@@ -1087,10 +1087,10 @@ export function ManagerSchedulesPage() {
                     }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-extrabold flex items-center gap-1">🌙 Evening</span>
+                    <span className="text-[11px] font-bold flex items-center gap-1">🌙 Evening</span>
                     {activePreset === "EVENING" && <Check size={13} className="text-[#F59E0B]" />}
                   </div>
-                  <span className="text-[9px] font-extrabold mt-1 opacity-80">12:00 PM - 08:00 PM</span>
+                  <span className="text-[9px] font-bold mt-1 opacity-80">12:00 PM - 08:00 PM</span>
                 </button>
 
                 <button
@@ -1102,10 +1102,10 @@ export function ManagerSchedulesPage() {
                     }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-extrabold flex items-center gap-1">⭐ Full Day</span>
+                    <span className="text-[11px] font-bold flex items-center gap-1">⭐ Full Day</span>
                     {activePreset === "FULLDAY" && <Check size={13} className="text-[#10B981]" />}
                   </div>
-                  <span className="text-[9px] font-extrabold mt-1 opacity-80">08:00 AM - 11:30 PM</span>
+                  <span className="text-[9px] font-bold mt-1 opacity-80">08:00 AM - 11:30 PM</span>
                 </button>
 
                 <button
@@ -1117,16 +1117,16 @@ export function ManagerSchedulesPage() {
                     }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-extrabold flex items-center gap-1">⚡ Short</span>
+                    <span className="text-[11px] font-bold flex items-center gap-1">⚡ Short</span>
                     {activePreset === "SHORT" && <Check size={13} className="text-[#8B5CF6]" />}
                   </div>
-                  <span className="text-[9px] font-extrabold mt-1 opacity-80">08:00 AM - 09:00 AM</span>
+                  <span className="text-[9px] font-bold mt-1 opacity-80">08:00 AM - 09:00 AM</span>
                 </button>
               </div>
             </div>
 
             <div>
-              <label className="block mb-1.5 text-[#9E8497] uppercase text-[10px] tracking-widest font-black">Staff Artist</label>
+              <label className="block mb-1.5 text-[#9E8497] uppercase text-[10px] tracking-widest font-bold">Staff Artist</label>
               <Select
                 value={formArtistId}
                 onChange={(val) => setFormArtistId(val)}
@@ -1134,10 +1134,10 @@ export function ManagerSchedulesPage() {
                 options={staffList.map((s) => ({
                   label: (
                     <div className="flex items-center gap-2.5 py-0.5">
-                      <div className={`flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br ${s.gradient} text-[10px] font-black text-white shrink-0`}>
+                      <div className={`flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br ${s.gradient} text-[10px] font-bold text-white shrink-0`}>
                         {s.initials}
                       </div>
-                      <span className="font-extrabold text-[#2B182B] text-xs">{s.name}</span>
+                      <span className="font-bold text-[#2B182B] text-xs">{s.name}</span>
                       {s.phone && <span className="text-[10px] text-[#9E8497] font-semibold">({s.phone})</span>}
                     </div>
                   ),
@@ -1147,7 +1147,7 @@ export function ManagerSchedulesPage() {
             </div>
 
             <div>
-              <label className="block mb-1.5 text-[#9E8497] uppercase text-[10px] tracking-widest font-black">Work Date</label>
+              <label className="block mb-1.5 text-[#9E8497] uppercase text-[10px] tracking-widest font-bold">Work Date</label>
               <DatePicker
                 value={formWorkDate}
                 onChange={(d) => d && setFormWorkDate(d)}
@@ -1158,7 +1158,7 @@ export function ManagerSchedulesPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block mb-1.5 text-[#9E8497] uppercase text-[10px] tracking-widest font-black">Shift Start Time</label>
+                <label className="block mb-1.5 text-[#9E8497] uppercase text-[10px] tracking-widest font-bold">Shift Start Time</label>
                 <Select
                   value={formStartTimeStr}
                   onChange={(val) => setFormStartTimeStr(val)}
@@ -1168,7 +1168,7 @@ export function ManagerSchedulesPage() {
               </div>
 
               <div>
-                <label className="block mb-1.5 text-[#9E8497] uppercase text-[10px] tracking-widest font-black">Shift End Time</label>
+                <label className="block mb-1.5 text-[#9E8497] uppercase text-[10px] tracking-widest font-bold">Shift End Time</label>
                 <Select
                   value={formEndTimeStr}
                   onChange={(val) => setFormEndTimeStr(val)}
@@ -1179,7 +1179,7 @@ export function ManagerSchedulesPage() {
             </div>
 
             <div>
-              <label className="block mb-1.5 text-[#9E8497] uppercase text-[10px] tracking-widest font-black">Shift Status</label>
+              <label className="block mb-1.5 text-[#9E8497] uppercase text-[10px] tracking-widest font-bold">Shift Status</label>
               <Select
                 value={formStatus}
                 onChange={(val) => setFormStatus(val)}
@@ -1195,7 +1195,7 @@ export function ManagerSchedulesPage() {
               <button
                 type="button"
                 onClick={() => setIsEditModalOpen(false)}
-                className="rounded-full border border-[#F3D7E4] px-6 py-3 text-xs font-extrabold text-[#2B182B] hover:bg-[#FAF0F5] transition"
+                className="rounded-full border border-[#F3D7E4] px-6 py-3 text-xs font-bold text-[#2B182B] hover:bg-[#FAF0F5] transition"
               >
                 Cancel
               </button>
@@ -1203,7 +1203,7 @@ export function ManagerSchedulesPage() {
                 type="button"
                 onClick={handleEditScheduleSubmit}
                 disabled={isSubmitting}
-                className="rounded-full bg-gradient-to-r from-[#E84F93] via-[#EC4899] to-[#F43F5E] px-7 py-3 text-xs font-black text-white shadow-md hover:shadow-lg transition"
+                className="rounded-full bg-gradient-to-r from-[#E84F93] via-[#EC4899] to-[#F43F5E] px-7 py-3 text-xs font-bold text-white shadow-md hover:shadow-lg transition"
               >
                 {isSubmitting ? "Updating..." : "Update Shift Schedule"}
               </button>

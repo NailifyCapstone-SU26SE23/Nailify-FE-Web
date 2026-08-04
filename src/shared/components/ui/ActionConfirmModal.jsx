@@ -116,7 +116,7 @@ export function ActionConfirmModal({
                 <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] ${palette.badgeClassName}`}>
                   Confirm Action
                 </span>
-                <h3 className="mt-3 text-lg font-black">{title}</h3>
+                <h3 className="mt-3 text-lg font-bold">{title}</h3>
                 {subtitle ? <p className="mt-1 text-sm text-white/78">{subtitle}</p> : null}
               </div>
             </div>

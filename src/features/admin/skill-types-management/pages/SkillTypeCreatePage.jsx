@@ -88,7 +88,7 @@ export function SkillTypeCreatePage() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-[#cf3d74]">Add New Skill Type</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">Add New Skill Type</h1>
             <p className="text-xs font-medium text-slate-400">Create a new skill type for admin management.</p>
           </div>
         </div>

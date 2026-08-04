@@ -2,13 +2,13 @@ import { useEffect, useState, useCallback } from "react";
 import { DatePicker, Spin } from "antd";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
-import { 
-  CalendarDays, 
-  Clock3, 
-  Plus, 
-  Trash2, 
-  Edit2, 
-  X, 
+import {
+  CalendarDays,
+  Clock3,
+  Plus,
+  Trash2,
+  Edit2,
+  X,
   AlertTriangle,
   RefreshCw,
   Sparkles
@@ -16,12 +16,12 @@ import {
 import { Pagination } from "../../../../shared/components/common/Pagination";
 import { EmptyState } from "../../../../shared/components/common/EmptyState";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
-import { 
-  fetchBreaks, 
-  createBreakRequest, 
-  updateBreakRequest, 
-  deleteBreakRequest, 
-  getStaffArtistId 
+import {
+  fetchBreaks,
+  createBreakRequest,
+  updateBreakRequest,
+  deleteBreakRequest,
+  getStaffArtistId
 } from "../services/breakService";
 
 export function StaffBreaksPage() {
@@ -29,17 +29,17 @@ export function StaffBreaksPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [metaData, setMetaData] = useState(null);
-  
+
   // Filters and Pagination
   const [filterDate, setFilterDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
-  
+
   // Modals state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  
+
   // Selected break for Edit/Delete
   const [selectedBreak, setSelectedBreak] = useState(null);
 
@@ -95,7 +95,7 @@ export function StaffBreaksPage() {
       setIsActionLoading(true);
       const artistId = getStaffArtistId();
       const breakDateIso = dayjs(formDate).startOf("day").toISOString();
-      
+
       await createBreakRequest({
         nailArtistId: artistId,
         breakDate: breakDateIso,
@@ -106,13 +106,13 @@ export function StaffBreaksPage() {
 
       toast.success("Break request submitted successfully!");
       setIsCreateOpen(false);
-      
+
       // Reset form
       setFormDate(dayjs().format("YYYY-MM-DD"));
       setFormStartTime("09:00");
       setFormEndTime("10:00");
       setFormReason("");
-      
+
       loadBreaks();
     } catch (error) {
       toast.error(error.message || "Failed to submit break request.");
@@ -223,7 +223,7 @@ export function StaffBreaksPage() {
       {/* Header section */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-[#3f2b3f]">Yêu Cầu Nghỉ Phép</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-[#3f2b3f]">Yêu Cầu Nghỉ Phép</h1>
           <p className="mt-1 text-sm text-[#a88a9d]">
             Gửi yêu cầu nghỉ đột xuất, việc riêng giữa ca và xem lịch sử của bạn.
           </p>
@@ -283,8 +283,8 @@ export function StaffBreaksPage() {
           <Spin size="large" />
         </div>
       ) : breaks.length === 0 ? (
-        <EmptyState 
-          title="Không tìm thấy yêu cầu nghỉ phép nào" 
+        <EmptyState
+          title="Không tìm thấy yêu cầu nghỉ phép nào"
           description="Hãy click vào nút 'Gửi yêu cầu nghỉ' phía trên để xin nghỉ phép giữa ca."
         />
       ) : (
@@ -358,8 +358,8 @@ export function StaffBreaksPage() {
           {/* List for mobile */}
           <div className="grid gap-4 md:hidden">
             {breaks.map((item) => (
-              <div 
-                key={item.nailArtistBreakId} 
+              <div
+                key={item.nailArtistBreakId}
                 className="rounded-[22px] border border-[#f4e4d7] bg-white p-4 space-y-3"
               >
                 <div className="flex items-center justify-between">
@@ -378,7 +378,7 @@ export function StaffBreaksPage() {
                     <p className="text-xs text-rose-500 italic"><span className="font-semibold">Từ chối:</span> {item.rejectReason}</p>
                   )}
                 </div>
-                
+
                 {(String(item.status || "").toLowerCase() === "pending" || String(item.status || "").toLowerCase() === "chờ duyệt") && (
                   <div className="flex items-center gap-2 pt-2 border-t border-[#f7ebdf]">
                     <button
@@ -404,7 +404,7 @@ export function StaffBreaksPage() {
           {/* Pagination */}
           {metaData && metaData.totalPages > 1 && (
             <div className="flex justify-end pt-4">
-              <Pagination 
+              <Pagination
                 currentPage={currentPage}
                 totalPages={metaData.totalPages}
                 onPageChange={(page) => setCurrentPage(page)}
@@ -435,8 +435,8 @@ export function StaffBreaksPage() {
             <form onSubmit={handleCreateSubmit} className="min-h-0 flex-1 overflow-y-auto px-6 py-5 space-y-4">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-[0.08em] text-[#69708a] mb-2">Ngày xin nghỉ</label>
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   value={formDate}
                   onChange={(e) => setFormDate(e.target.value)}
                   min={dayjs().format("YYYY-MM-DD")}
@@ -448,8 +448,8 @@ export function StaffBreaksPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-[0.08em] text-[#69708a] mb-2">Từ giờ</label>
-                  <input 
-                    type="time" 
+                  <input
+                    type="time"
                     value={formStartTime}
                     onChange={(e) => setFormStartTime(e.target.value)}
                     required
@@ -458,8 +458,8 @@ export function StaffBreaksPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-[0.08em] text-[#69708a] mb-2">Đến giờ</label>
-                  <input 
-                    type="time" 
+                  <input
+                    type="time"
                     value={formEndTime}
                     onChange={(e) => setFormEndTime(e.target.value)}
                     required
@@ -470,7 +470,7 @@ export function StaffBreaksPage() {
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-[0.08em] text-[#69708a] mb-2">Lý do nghỉ</label>
-                <textarea 
+                <textarea
                   rows={3}
                   value={formReason}
                   onChange={(e) => setFormReason(e.target.value)}
@@ -529,8 +529,8 @@ export function StaffBreaksPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-[0.08em] text-[#69708a] mb-2">Từ giờ</label>
-                  <input 
-                    type="time" 
+                  <input
+                    type="time"
                     value={formStartTime}
                     onChange={(e) => setFormStartTime(e.target.value)}
                     required
@@ -539,8 +539,8 @@ export function StaffBreaksPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-[0.08em] text-[#69708a] mb-2">Đến giờ</label>
-                  <input 
-                    type="time" 
+                  <input
+                    type="time"
                     value={formEndTime}
                     onChange={(e) => setFormEndTime(e.target.value)}
                     required
@@ -551,7 +551,7 @@ export function StaffBreaksPage() {
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-[0.08em] text-[#69708a] mb-2">Lý do nghỉ</label>
-                <textarea 
+                <textarea
                   rows={3}
                   value={formReason}
                   onChange={(e) => setFormReason(e.target.value)}
@@ -601,13 +601,13 @@ export function StaffBreaksPage() {
         }}
         loading={isActionLoading}
         details={[
-          { 
-            label: "Ngày nghỉ", 
-            value: selectedBreak ? dayjs(selectedBreak.breakDate).format("DD/MM/YYYY") : "" 
+          {
+            label: "Ngày nghỉ",
+            value: selectedBreak ? dayjs(selectedBreak.breakDate).format("DD/MM/YYYY") : ""
           },
-          { 
-            label: "Thời gian", 
-            value: selectedBreak ? `${selectedBreak.startTime?.substring(0, 5)} - ${selectedBreak.endTime?.substring(0, 5)}` : "" 
+          {
+            label: "Thời gian",
+            value: selectedBreak ? `${selectedBreak.startTime?.substring(0, 5)} - ${selectedBreak.endTime?.substring(0, 5)}` : ""
           }
         ]}
       />

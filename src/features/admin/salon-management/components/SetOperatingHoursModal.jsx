@@ -269,7 +269,7 @@ export default function SetOperatingHoursModal({
                 <span className="inline-flex rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] bg-white/18 text-white">
                   Hours
                 </span>
-                <h3 className="mt-3 text-lg font-black">Set Operating Hours</h3>
+                <h3 className="mt-3 text-lg font-bold">Set Operating Hours</h3>
                 <p className="mt-1 text-sm text-white/78">
                   Update opening and closing hours for a salon
                 </p>
@@ -345,28 +345,25 @@ export default function SetOperatingHoursModal({
                               }
                             }}
                             disabled={!selectedSalonId}
-                            className={`w-full flex items-center gap-3 rounded-[16px] border px-4 py-3 text-left transition-all ${
-                              selectedSalonId
+                            className={`w-full flex items-center gap-3 rounded-[16px] border px-4 py-3 text-left transition-all ${selectedSalonId
                                 ? "border-[#f0b7cf] bg-white hover:bg-[#fff9fb] hover:border-[#ea4f93]"
                                 : "border-slate-200 bg-slate-50 cursor-not-allowed opacity-60"
-                            }`}
+                              }`}
                           >
                             <div
-                              className={`h-9 w-9 rounded-full flex items-center justify-center ${
-                                selectedSalonId
+                              className={`h-9 w-9 rounded-full flex items-center justify-center ${selectedSalonId
                                   ? "bg-gradient-to-r from-[#fde7ef] to-[#fff5fb] text-[#ea4f93]"
                                   : "bg-slate-200 text-slate-400"
-                              }`}
+                                }`}
                             >
                               <Icon size={18} />
                             </div>
                             <div className="flex-1">
                               <h5
-                                className={`text-[13px] font-extrabold ${
-                                  selectedSalonId
+                                className={`text-[13px] font-extrabold ${selectedSalonId
                                     ? "text-[#2d1b35]"
                                     : "text-slate-400"
-                                }`}
+                                  }`}
                               >
                                 {label}
                               </h5>
@@ -425,11 +422,10 @@ export default function SetOperatingHoursModal({
                             whileTap={{ scale: 0.98 }}
                             type="button"
                             onClick={() => handleToggleSlot(activePeriod, slot)}
-                            className={`flex items-center justify-center gap-2 rounded-full px-3 py-2 text-[11px] font-semibold transition-all ${
-                              selectedSlots[activePeriod].includes(slot)
+                            className={`flex items-center justify-center gap-2 rounded-full px-3 py-2 text-[11px] font-semibold transition-all ${selectedSlots[activePeriod].includes(slot)
                                 ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
                                 : "bg-gray-100 text-gray-400 border border-gray-200"
-                            }`}
+                              }`}
                           >
                             <Clock3 size={14} />
                             {slot}
@@ -504,7 +500,7 @@ export default function SetOperatingHoursModal({
                   <button
                     type="button"
                     onClick={() => setNotificationModal(null)}
-                    className="mt-6 w-full rounded-full py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-md bg-[#d14c84] shadow-[0_12px_24px_rgba(209,76,132,0.25)] transition-all active:scale-[0.98]"
+                    className="mt-6 w-full rounded-full py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-md bg-[#d14c84] shadow-[0_12px_24px_rgba(209,76,132,0.25)] transition-all active:scale-[0.98]"
                   >
                     Close
                   </button>

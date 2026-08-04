@@ -61,7 +61,7 @@ export default function ChairFormModal({
       onClose();
     } catch (error) {
       console.error(error);
-      message.error(error.message || 'Failed to save chair');
+      toast.error(error.message || 'Failed to save chair');
     } finally {
       setLoading(false);
     }
@@ -70,7 +70,7 @@ export default function ChairFormModal({
   return (
     <Modal
       title={
-        <div className="text-lg font-black tracking-tight text-slate-900">
+        <div className="text-lg font-bold tracking-tight text-slate-900">
           {chair ? "Edit Chair" : "Add New Chair"}
         </div>
       }

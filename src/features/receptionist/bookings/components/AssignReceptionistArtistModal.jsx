@@ -16,14 +16,26 @@ function getArtistName(artist) {
   return String(artist?.fullName || "").trim() || "Unknown artist";
 }
 
+// function getArtistInitials(artist) {
+//   return getArtistName(artist)
+//     .split(" ")
+//     .filter(Boolean)
+//     .slice(0, 2)
+//     .map((part) => part[0])
+//     .join("")
+//     .toUpperCase() || "NA";
+// }
+
 function getArtistInitials(artist) {
-  return getArtistName(artist)
+  const parts = getArtistName(artist)
     .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase() || "NA";
+    .filter(Boolean);
+
+  if (!parts.length) return "NA";
+
+  return parts.length === 1
+    ? parts[0][0].toUpperCase()
+    : `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 }
 
 export function AssignReceptionistArtistModal({
@@ -99,6 +111,14 @@ export function AssignReceptionistArtistModal({
     }
   };
 
+  const [imageErrors, setImageErrors] = useState({});
+  const handleImageError = (artistId) => {
+    setImageErrors((prev) => ({
+      ...prev,
+      [artistId]: true,
+    }));
+  };
+
   return (
     <Modal
       open={open}
@@ -121,7 +141,7 @@ export function AssignReceptionistArtistModal({
               <UserCheck size={22} />
             </div>
             <div>
-              <h3 className="text-lg font-black text-[#2B182B] tracking-tight">Phân Công / Đổi Thợ Làm Móng</h3>
+              <h3 className="text-lg font-bold text-[#2B182B] tracking-tight">Phân Công / Đổi Thợ Làm Móng</h3>
               <p className="text-xs text-[#9E8497] font-medium">Chọn thợ làm móng chính đảm nhận cho đơn đặt lịch này</p>
             </div>
           </div>
@@ -139,10 +159,10 @@ export function AssignReceptionistArtistModal({
           <div className="flex items-center gap-2">
             <Sparkles size={16} className="text-[#E84F93]" />
             <span className="font-bold text-[#9E8497]">Thợ Đang Được Phân Công:</span>
-            <span className="font-black text-[#2B182B] text-sm">{currentArtistName || "Chưa phân công thợ nào"}</span>
+            <span className="font-bold text-[#2B182B] text-sm">{currentArtistName || "Chưa phân công thợ nào"}</span>
           </div>
           {currentArtistName && (
-            <span className="rounded-full bg-[#ECFDF5] border border-[#A7F3D0] px-2.5 py-0.5 text-[10px] font-black text-[#047857]">
+            <span className="rounded-full bg-[#ECFDF5] border border-[#A7F3D0] px-2.5 py-0.5 text-[10px] font-bold text-[#047857]">
               Hiện Tại
             </span>
           )}
@@ -174,25 +194,26 @@ export function AssignReceptionistArtistModal({
                     : "border-[#F3E2EC] bg-white hover:border-[#E84F93]/50 hover:bg-[#FFF9FB] hover:shadow-xs"
                     }`}
                 >
-                  {artist?.avatarUrl ? (
+                  {artist?.avatarUrl && !imageErrors[artistId] ? (
                     <img
                       crossOrigin="anonymous"
                       src={artist.avatarUrl}
                       alt={getArtistName(artist)}
+                      onError={() => handleImageError(artistId)}
                       className="h-13 w-13 rounded-2xl object-cover border-2 border-white shadow-xs shrink-0"
                     />
                   ) : (
-                    <div className="flex h-13 w-13 items-center justify-center rounded-2xl bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9] text-base font-black text-white shadow-xs shrink-0">
+                    <div className="flex h-13 w-13 items-center justify-center rounded-2xl bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9] text-base font-bold text-white shadow-xs shrink-0">
                       {getArtistInitials(artist)}
                     </div>
                   )}
 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="truncate text-sm font-black text-[#2B182B]">
+                      <p className="truncate text-sm font-bold text-[#2B182B]">
                         {getArtistName(artist)}
                       </p>
-                      <span className="rounded-full bg-[#ECFDF5] border border-[#A7F3D0] px-2.5 py-0.5 text-[10px] font-black text-[#047857] shrink-0">
+                      <span className="rounded-full bg-[#ECFDF5] border border-[#A7F3D0] px-2.5 py-0.5 text-[10px] font-bold text-[#047857] shrink-0">
                         {artist?.status || "Sẵn sàng"}
                       </span>
                     </div>
@@ -203,7 +224,7 @@ export function AssignReceptionistArtistModal({
                         artist.skills.map((skill, index) => (
                           <span
                             key={`${skill?.skillTypeName || "skill"}-${index}`}
-                            className="inline-flex items-center gap-1 rounded-full bg-[#FEF3C7] border border-[#FDE68A] px-2 py-0.5 text-[10px] font-black text-[#B45309]"
+                            className="inline-flex items-center gap-1 rounded-full bg-[#FEF3C7] border border-[#FDE68A] px-2 py-0.5 text-[10px] font-bold text-[#B45309]"
                           >
                             <Star size={9} className="fill-current" />
                             {skill?.skillTypeName || "Skill"} Lv.{skill?.level ?? 0}
@@ -238,7 +259,7 @@ export function AssignReceptionistArtistModal({
         {selectedArtist && (
           <div className="mt-4 rounded-xl border border-[#E84F93]/30 bg-[#FFF0F6] px-4 py-2.5 text-xs flex items-center justify-between">
             <span className="font-bold text-[#9E8497]">Đã chọn thợ:</span>
-            <span className="font-black text-[#E84F93] text-sm">{getArtistName(selectedArtist)}</span>
+            <span className="font-bold text-[#E84F93] text-sm">{getArtistName(selectedArtist)}</span>
           </div>
         )}
 
@@ -247,7 +268,7 @@ export function AssignReceptionistArtistModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-[#F3E2EC] bg-[#FFF5F8] hover:bg-[#FCE2EE] px-5 py-2.5 text-xs font-black text-[#2B182B] transition cursor-pointer"
+            className="rounded-full border border-[#F3E2EC] bg-[#FFF5F8] hover:bg-[#FCE2EE] px-5 py-2.5 text-xs font-bold text-[#2B182B] transition cursor-pointer"
           >
             Hủy Bỏ
           </button>
@@ -255,7 +276,7 @@ export function AssignReceptionistArtistModal({
             type="button"
             onClick={() => void handleAssign()}
             disabled={!selectedArtistId || isSubmitting}
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-6 py-2.5 text-xs font-black text-white shadow-[0_4px_12px_rgba(232,79,147,0.25)] hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-6 py-2.5 text-xs font-bold text-white shadow-[0_4px_12px_rgba(232,79,147,0.25)] hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
               <LoaderCircle size={15} className="animate-spin" />
