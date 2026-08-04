@@ -1,46 +1,50 @@
-import { HandLandmarker, HandLandmarkerResult } from '@mediapipe/tasks-vision';
+import { HandLandmarker } from "@mediapipe/tasks-vision";
 
-import { BaseWorker } from './baseWorker';
+import { BaseWorker } from "./baseWorker";
 
-class HandLandmarkerWorker extends BaseWorker<HandLandmarker> {
-  protected async initializeTask(): Promise<void> {
+class HandLandmarkerWorker extends BaseWorker {
+  async initializeTask() {
     const vision = await this.getVisionFileset();
     const modelBuffer = await this.loadModelAsset();
 
     this.taskInstance = await HandLandmarker.createFromOptions(vision, {
       baseOptions: {
         modelAssetBuffer: new Uint8Array(modelBuffer),
-        delegate: this.currentOptions.delegate === 'GPU' ? 'GPU' : 'CPU',
+        delegate: this.currentOptions.delegate === "GPU" ? "GPU" : "CPU",
       },
       numHands: this.currentOptions.numHands || 2,
-      minHandDetectionConfidence: this.currentOptions.minHandDetectionConfidence || 0.5,
-      minHandPresenceConfidence: this.currentOptions.minHandPresenceConfidence || 0.5,
+      minHandDetectionConfidence:
+        this.currentOptions.minHandDetectionConfidence || 0.5,
+      minHandPresenceConfidence:
+        this.currentOptions.minHandPresenceConfidence || 0.5,
       minTrackingConfidence: this.currentOptions.minTrackingConfidence || 0.5,
       runningMode: this.currentOptions.runningMode,
     });
   }
 
-  protected async updateOptions(): Promise<void> {
+  async updateOptions() {
     if (this.taskInstance) {
       await this.taskInstance.setOptions({
         numHands: this.currentOptions.numHands,
-        minHandDetectionConfidence: this.currentOptions.minHandDetectionConfidence,
-        minHandPresenceConfidence: this.currentOptions.minHandPresenceConfidence,
+        minHandDetectionConfidence:
+          this.currentOptions.minHandDetectionConfidence,
+        minHandPresenceConfidence:
+          this.currentOptions.minHandPresenceConfidence,
         minTrackingConfidence: this.currentOptions.minTrackingConfidence,
         runningMode: this.currentOptions.runningMode,
       });
     }
   }
 
-  protected async handleCustomMessage(data: any): Promise<void> {
-    if (data.type === 'DETECT_IMAGE' || data.type === 'DETECT_VIDEO') {
+  async handleCustomMessage(data) {
+    if (data.type === "DETECT_IMAGE" || data.type === "DETECT_VIDEO") {
       const { bitmap, timestampMs } = data;
-      const requiredMode = data.type === 'DETECT_IMAGE' ? 'IMAGE' : 'VIDEO';
+      const requiredMode = data.type === "DETECT_IMAGE" ? "IMAGE" : "VIDEO";
 
       if (!this.taskInstance) {
-        console.warn('HandLandmarker not initialized yet.');
+        console.warn("HandLandmarker not initialized yet.");
         bitmap.close();
-        self.postMessage({ type: 'DETECT_ERROR', error: 'Not initialized' });
+        self.postMessage({ type: "DETECT_ERROR", error: "Not initialized" });
         return;
       }
 
@@ -50,18 +54,21 @@ class HandLandmarkerWorker extends BaseWorker<HandLandmarker> {
       }
 
       const startTimeMs = performance.now();
-      let result: HandLandmarkerResult;
+      let result;
 
       try {
-        if (requiredMode === 'VIDEO') {
+        if (requiredMode === "VIDEO") {
           result = this.taskInstance.detectForVideo(bitmap, timestampMs);
         } else {
           result = this.taskInstance.detect(bitmap);
         }
-      } catch (e: any) {
-        console.error('Worker detection error:', e);
+      } catch (e) {
+        console.error("Worker detection error:", e);
         bitmap.close();
-        self.postMessage({ type: 'DETECT_ERROR', error: e.message || 'Detection failed' });
+        self.postMessage({
+          type: "DETECT_ERROR",
+          error: e.message || "Detection failed",
+        });
         return;
       }
 
@@ -69,7 +76,7 @@ class HandLandmarkerWorker extends BaseWorker<HandLandmarker> {
       bitmap.close();
 
       self.postMessage({
-        type: 'DETECT_RESULT',
+        type: "DETECT_RESULT",
         mode: requiredMode,
         result: result,
         inferenceTime: inferenceTime,

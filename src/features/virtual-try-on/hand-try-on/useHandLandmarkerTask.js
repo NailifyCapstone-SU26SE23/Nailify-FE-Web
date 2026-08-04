@@ -1,13 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
-import { setupHandLandmarker, type HandLandmarkerTaskHandle } from '../handLandmarkerTask';
+import { useEffect, useRef, useState } from "react";
+import { setupHandLandmarker } from "../handLandmarkerTask";
 
 export function useHandLandmarkerTask() {
-  const containerRef = useRef<HTMLElement | null>(null);
-  const [taskHandle, setTaskHandle] = useState<HandLandmarkerTaskHandle | null>(null);
+  const containerRef = useRef(null);
+  const [taskHandle, setTaskHandle] = useState(null);
 
   useEffect(() => {
     const container = containerRef.current;
-    let activeTaskHandle: HandLandmarkerTaskHandle | null = null;
+    let activeTaskHandle = null;
     let disposed = false;
 
     if (container) {

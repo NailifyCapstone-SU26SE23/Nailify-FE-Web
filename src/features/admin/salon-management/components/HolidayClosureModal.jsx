@@ -5,6 +5,7 @@ import { Calendar, X, ChevronLeft, Check, AlertCircle, Clock, CalendarCheck2, Hi
 import { Form, Select, Input, message } from "antd";
 import { axiosClient } from "../../../../lib/axiosClient";
 import { loadAuthSession } from "../../../core/auth/model/authStorage";
+import toast from "react-hot-toast";
 
 const MONTH_NAMES = [
   "January",
@@ -50,10 +51,10 @@ const MonthCard = ({ monthIndex, year, onClick, selected, hasSelectedDays }) => 
       onClick={onClick}
       disabled={isPastMonth}
       className={`relative flex flex-col items-center justify-center gap-1.5 rounded-2xl border p-5 text-center transition-all duration-200 ${selected
-          ? "border-[#ea4f93] bg-[#fff0f6] shadow-[0_10px_20px_rgba(235,90,153,0.12)]"
-          : isPastMonth
-            ? "border-[#f5eef2] bg-[#fcf9fb] opacity-45 cursor-not-allowed"
-            : "border-[#f5e3ed] bg-white hover:border-[#eba2c6] hover:bg-[#fffbfc]"
+        ? "border-[#ea4f93] bg-[#fff0f6] shadow-[0_10px_20px_rgba(235,90,153,0.12)]"
+        : isPastMonth
+          ? "border-[#f5eef2] bg-[#fcf9fb] opacity-45 cursor-not-allowed"
+          : "border-[#f5e3ed] bg-white hover:border-[#eba2c6] hover:bg-[#fffbfc]"
         }`}
     >
       {isCurrentMonth && (
@@ -136,10 +137,10 @@ const MonthView = ({ monthIndex, year, onBack, onSelectDay, selectedDays = [] })
               onClick={() => onSelectDay(day)}
               disabled={isPast}
               className={`aspect-square rounded-xl text-sm font-bold transition-all ${selectedDays.includes(day)
-                  ? "bg-[#ea4f93] text-white shadow-[0_6px_14px_rgba(235,90,153,0.28)]"
-                  : isPast
-                    ? "bg-[#f5ebf1] text-[#bda3b3] cursor-not-allowed opacity-50"
-                    : "bg-[#fff6fa] text-[#7a5b6e] hover:bg-[#ffe3f0]"
+                ? "bg-[#ea4f93] text-white shadow-[0_6px_14px_rgba(235,90,153,0.28)]"
+                : isPast
+                  ? "bg-[#f5ebf1] text-[#bda3b3] cursor-not-allowed opacity-50"
+                  : "bg-[#fff6fa] text-[#7a5b6e] hover:bg-[#ffe3f0]"
                 }`}
             >
               {day}
@@ -418,11 +419,11 @@ export default function HolidayClosureModal({
 
   const handleScheduleClosure = async () => {
     if (!selectedSalonId) {
-      message.error("Please select a salon first.");
+      toast.error("Please select a salon first.");
       return;
     }
     if (selectedDays.length === 0) {
-      message.error("Please select at least one day off.");
+      toast.error("Please select at least one day off.");
       return;
     }
 
@@ -435,7 +436,7 @@ export default function HolidayClosureModal({
     });
 
     if (hasPastDay) {
-      message.error("Cannot schedule closures for days in the past.");
+      toast.error("Cannot schedule closures for days in the past.");
       return;
     }
 
@@ -801,8 +802,8 @@ export default function HolidayClosureModal({
                                 disabled={isDeleting}
                                 onClick={() => handleEditOffDate(offDate)}
                                 className={`inline-flex h-6 px-2.5 items-center justify-center gap-1 rounded-full border text-[10px] font-extrabold transition-colors disabled:opacity-50 ${isEditingThis
-                                    ? "border-[#ea4f93] bg-[#ea4f93] text-white hover:bg-[#e0428a]"
-                                    : "border-[#f5cbdc] bg-white text-[#b95d88] hover:bg-[#fff5f8]"
+                                  ? "border-[#ea4f93] bg-[#ea4f93] text-white hover:bg-[#e0428a]"
+                                  : "border-[#f5cbdc] bg-white text-[#b95d88] hover:bg-[#fff5f8]"
                                   }`}
                               >
                                 <Pencil size={10} />
@@ -978,8 +979,8 @@ export default function HolidayClosureModal({
                   setNotificationModal(null);
                 }}
                 className={`mt-6 w-full rounded-full py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-md transition-all active:scale-[0.98] ${notificationModal.type === "success"
-                    ? "bg-[#16975f] shadow-[0_12px_24px_rgba(22,151,95,0.25)]"
-                    : "bg-[#d14c84] shadow-[0_12px_24px_rgba(209,76,132,0.25)]"
+                  ? "bg-[#16975f] shadow-[0_12px_24px_rgba(22,151,95,0.25)]"
+                  : "bg-[#d14c84] shadow-[0_12px_24px_rgba(209,76,132,0.25)]"
                   }`}
               >
                 Close

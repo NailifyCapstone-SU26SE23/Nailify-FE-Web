@@ -1,17 +1,14 @@
-import { Point2D } from './handGeometry';
-
 /**
  * Exponential Moving Average (EMA) filter for scalar values.
  */
 export class EMAFilter {
-  private alpha: number;
-  private value: number | null = null;
+  value = null;
 
-  constructor(alpha: number = 0.25) {
+  constructor(alpha = 0.25) {
     this.alpha = alpha;
   }
 
-  public filter(newValue: number): number {
+  filter(newValue) {
     if (this.value === null) {
       this.value = newValue;
     } else {
@@ -20,7 +17,7 @@ export class EMAFilter {
     return this.value;
   }
 
-  public reset(): void {
+  reset() {
     this.value = null;
   }
 }
@@ -29,14 +26,13 @@ export class EMAFilter {
  * Exponential Moving Average (EMA) filter for 2D points.
  */
 export class EMAFilterPoint {
-  private alpha: number;
-  private point: Point2D | null = null;
+  point = null;
 
-  constructor(alpha: number = 0.25) {
+  constructor(alpha = 0.25) {
     this.alpha = alpha;
   }
 
-  public filter(newPoint: Point2D): Point2D {
+  filter(newPoint) {
     if (this.point === null) {
       this.point = { ...newPoint };
     } else {
@@ -46,7 +42,7 @@ export class EMAFilterPoint {
     return { x: this.point.x, y: this.point.y };
   }
 
-  public reset(): void {
+  reset() {
     this.point = null;
   }
 }
@@ -56,14 +52,13 @@ export class EMAFilterPoint {
  * Corrects wrap-around boundary issues between -PI and PI to prevent 360-degree spinning artifacts.
  */
 export class EMAFilterAngle {
-  private alpha: number;
-  private value: number | null = null;
+  value = null;
 
-  constructor(alpha: number = 0.25) {
+  constructor(alpha = 0.25) {
     this.alpha = alpha;
   }
 
-  public filter(newAngle: number): number {
+  filter(newAngle) {
     if (this.value === null) {
       this.value = newAngle;
       return this.value;
@@ -83,7 +78,7 @@ export class EMAFilterAngle {
     return this.value;
   }
 
-  public reset(): void {
+  reset() {
     this.value = null;
   }
 }

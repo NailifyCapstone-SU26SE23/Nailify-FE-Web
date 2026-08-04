@@ -13,6 +13,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { fetchCustomerNailRequestById, staffSubmitArtistQuote } from "../../../manager/customer-nail/services/customerNailsService";
+import toast from "react-hot-toast";
 
 function getStatusTone(status) {
   switch (status) {
@@ -128,13 +129,10 @@ function getFingerColorStyle(customColor, fingerIndex) {
 
 function normalizeComponentPosition(value, fallbackPercent = 50) {
   const numericValue = Number(value);
-  if (!Number.isFinite(numericValue)) {
-    return fallbackPercent;
-  }
-  if (Math.abs(numericValue) <= 1) {
-    return Math.max(0, Math.min(100, 50 + numericValue * 100));
-  }
-  return Math.max(0, Math.min(100, numericValue));
+  if (!Number.isFinite(numericValue)) return fallbackPercent;
+  // posX/posY are offset from center normalized by destW/destH.
+  // Multiply by 50: offset of 1.0 = full nail width away from center
+  return Math.max(0, Math.min(100, 50 + numericValue * 50));
 }
 
 function parseComponentConfig(configJson) {
@@ -360,7 +358,7 @@ function renderSurfaceEffects(surfaceName, effectsConfigJson) {
 
 function NailBlueprint({ nail, componentsList }) {
   const [selectedComponentId, setSelectedComponentId] = useState(null);
-  
+
   const renderNailPreview = (fingerIndex, fingerName) => {
     const colorStyle = getFingerColorStyle(nail?.customColor, fingerIndex);
 
@@ -463,10 +461,11 @@ function NailBlueprint({ nail, componentsList }) {
               if (!item?.imageUrl) return null;
 
               const config = parseComponentConfig(comp.configJson);
-              const scale = Number.isFinite(Number(config?.scale)) ? Number(config.scale) : 1;
+              const scale = Number.isFinite(Number(config?.scale)) ? Number(config.scale) : 0.25;
               const rotation = Number.isFinite(Number(config?.rotation)) ? Number(config.rotation) : 0;
               const left = normalizeComponentPosition(comp.posX, 50);
               const top = normalizeComponentPosition(comp.posY, 50);
+              const sizePercent = Math.max(10, Math.min(100, scale * 100));
 
               const globalIdx = componentsList.findIndex(c => c.customerNailComponentId === comp.customerNailComponentId);
               const globalId = comp.customerNailComponentId || globalIdx;
@@ -475,8 +474,6 @@ function NailBlueprint({ nail, componentsList }) {
                 (comp.customerNailComponentId === null && globalIdx === selectedComponentId)
               );
 
-              const displayScale = Math.max(1, scale * 1.25);
-
               return (
                 <div
                   key={comp.customerNailComponentId || idx}
@@ -484,9 +481,9 @@ function NailBlueprint({ nail, componentsList }) {
                   style={{
                     left: `${left}%`,
                     top: `${top}%`,
-                    transform: `translate(-50%, -50%) scale(${isSelected ? displayScale * 1.15 : displayScale}) rotate(${rotation}deg)`,
-                    width: '42px',
-                    height: '42px',
+                    width: `${isSelected ? sizePercent * 1.15 : sizePercent}%`,
+                    height: `${isSelected ? sizePercent * 1.15 : sizePercent}%`,
+                    transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
                     zIndex: isSelected ? 50 : 30,
                   }}
                   onClick={(e) => {
@@ -588,7 +585,7 @@ function NailBlueprint({ nail, componentsList }) {
           </span>
         </div>
       </div>
-      
+
       {/* Selected Components / Accessories */}
       {componentsList.length > 0 && (
         <div className="mt-6">
@@ -763,22 +760,22 @@ export function StaffCustomerNailReviewPage() {
 
   const handleSubmitQuote = async () => {
     if (!quotedPrice || Number(quotedPrice) <= 0) {
-      message.error("Please enter a valid price estimate.");
+      toast.error("Please enter a valid price estimate.");
       return;
     }
     if (!quotedDuration || Number(quotedDuration) <= 0) {
-      message.error("Please enter a valid duration estimate.");
+      toast.error("Please enter a valid duration estimate.");
       return;
     }
 
     try {
       setIsSubmitting(true);
       await staffSubmitArtistQuote(customerNailId, Number(quotedPrice), Number(quotedDuration));
-      message.success("Estimation submitted to Manager successfully!");
+      toast.success("Estimation submitted to Manager successfully!");
       navigate("/staff/customer-nails");
     } catch (err) {
       console.error("Error submitting quote:", err);
-      message.error(err.message || "Failed to submit quote.");
+      toast.error(err.message || "Failed to submit quote.");
     } finally {
       setIsSubmitting(false);
     }
