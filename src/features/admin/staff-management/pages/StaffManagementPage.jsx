@@ -151,7 +151,7 @@ function StaffCard({ staff, onClick }) {
         </div>
         {staff.hasScheduleToday && (
           <span className="mt-2 inline-flex rounded-full bg-green-100 px-2 py-1 text-[11px] font-semibold text-green-700">
-            {language === "vi" ? "Có lịch hôm nay" : "Working Today"}
+            {t("adminStaffManagement.workingToday")}
           </span>
         )}
       </div>
@@ -189,7 +189,7 @@ function ScheduleEntryRow({ entry }) {
   const status = pickField(entry, ["status", "scheduleStatus"]);
 
   // Format date nicely
-  const { language } = useLanguage();
+  const { t, language } = useLanguage();
   const formattedDate = useMemo(() => {
     if (!date) return "—";
     try {
@@ -251,13 +251,7 @@ function ScheduleEntryRow({ entry }) {
         {status && (
           <span className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-3 py-1 text-[11px] font-semibold ${getStatusColor()}`}>
             {getStatusIcon()}
-            {language === "vi"
-              ? (status.toLowerCase().includes("active") || status.toLowerCase().includes("working")
-                ? "Đang làm việc"
-                : (status.toLowerCase().includes("leave") || status.toLowerCase().includes("off")
-                  ? "Nghỉ phép"
-                  : status))
-              : status
+            {(status.toLowerCase().includes("active") || status.toLowerCase().includes("working") ? t("adminStaffManagement.workingToday") : (status.toLowerCase().includes("leave") || status.toLowerCase().includes("off") ? t("adminStaffManagement.onLeave") : status))
             }
           </span>
         )}
@@ -368,10 +362,10 @@ export function StaffManagementPage() {
   const itemsPerPage = 6;
 
   const roleOptions = [
-    { value: ALL_ROLES_VALUE, label: language === "vi" ? "Tất cả vai trò" : "All Roles" },
-    { value: "Staff_Artist", label: language === "vi" ? "Nhân viên làm móng" : "Staff Artist" },
-    { value: "Manager", label: language === "vi" ? "Quản lý" : "Manager" },
-    { value: "Receptionist", label: language === "vi" ? "Lễ tân" : "Receptionist" },
+    { value: ALL_ROLES_VALUE, label: t("adminStaffManagement.allRoles") },
+    { value: "Staff_Artist", label: t("adminStaffManagement.staffArtist") },
+    { value: "Manager", label: t("adminStaffManagement.manager") },
+    { value: "Receptionist", label: t("adminStaffManagement.receptionist") },
   ];
 
   const loadSalons = useCallback(async () => {
@@ -517,12 +511,12 @@ export function StaffManagementPage() {
                   {t("menus.admin-staff") || "Staff Management"}
                 </h1>
                 <p className="text-sm text-[#a6869a]">
-                  {language === "vi" ? "Quản lý nhân viên chi nhánh và thành viên nhóm" : "Manage salon staff and team members"}
+                  {t("adminStaffManagement.manageStaffDesc")}
                 </p>
               </div>
             </div>
             <p className="mt-4 text-sm leading-relaxed text-[#8b7382]">
-              {language === "vi" ? "Xem và quản lý các thành viên nhân viên cho từng địa điểm salon" : "View and manage staff members for each salon location"}
+              {t("adminStaffManagement.viewManageStaffDesc")}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -531,14 +525,14 @@ export function StaffManagementPage() {
               className="inline-flex items-center gap-2 rounded-2xl border border-[#f0d9e8] bg-white px-4 py-2.5 text-xs font-semibold text-[#ea4f93] shadow-md hover:shadow-lg hover:border-[#ea4f93] transition duration-200"
             >
               <Download size={16} />
-              {language === "vi" ? "Xuất file" : "Export"}
+              {t("adminStaffManagement.export")}
             </button>
             <Link
               to={ROUTES.adminStaffCreate}
               className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#ea4f93] to-[#ff8ebb] px-4 py-2.5 text-xs font-semibold text-white shadow-lg hover:shadow-xl transition duration-200"
             >
               <Plus size={16} />
-              {language === "vi" ? "Thêm nhân viên" : "Add Staff"}
+              {t("adminStaffManagement.addStaff")}
             </Link>
           </div>
         </div>
@@ -556,15 +550,15 @@ export function StaffManagementPage() {
         <Card className="p-0">
           <div className="flex flex-col gap-4 border-b border-[#f0d9e8] bg-gradient-to-b from-[#fff9fb] to-[#fffafb] p-6 lg:flex-row lg:items-center lg:justify-between">
             <SectionHeading
-              title={language === "vi" ? "Nhân viên Chi nhánh" : "Salon Staff"}
-              subtitle={language === "vi" ? `${filteredStaff.length} nhân viên` : `${filteredStaff.length} staff member${filteredStaff.length !== 1 ? "s" : ""}`}
+              title={t("adminStaffManagement.salonStaff")}
+              subtitle={filteredStaff.length === 1 ? t("adminStaffManagement.staffCountSingle", { count: 1 }) : t("adminStaffManagement.staffCount", { count: filteredStaff.length })}
             />
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <div className="flex items-center gap-2">
                 <Building2 size={16} className="text-[#a88a9f]" />
                 <Select
                   style={{ width: 250 }}
-                  placeholder={language === "vi" ? "Chọn chi nhánh" : "Select a salon"}
+                  placeholder={t("adminStaffManagement.selectSalon")}
                   value={selectedSalonId}
                   onChange={setSelectedSalonId}
                   options={salons.map(s => ({ label: s.name, value: s.id }))}
@@ -573,7 +567,7 @@ export function StaffManagementPage() {
               </div>
               <Select
                 style={{ width: 180 }}
-                placeholder={language === "vi" ? "Chọn vai trò" : "Select role"}
+                placeholder={t("adminStaffManagement.selectRole")}
                 value={selectedRole}
                 onChange={setSelectedRole}
                 options={roleOptions.map((option) => ({
@@ -590,7 +584,7 @@ export function StaffManagementPage() {
                 <input
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder={language === "vi" ? "Tìm kiếm nhân viên..." : "Search staff..."}
+                  placeholder={t("adminStaffManagement.searchStaffPlaceholder")}
                   className="h-10 w-full rounded-full border border-[#f0d9e8] bg-white pl-9 pr-4 text-xs text-[#5c4158] outline-none transition placeholder:text-[#d198b0] focus:border-[#ea4f93] focus:ring-2 focus:ring-[#ea4f93]/20"
                 />
               </label>
@@ -613,8 +607,8 @@ export function StaffManagementPage() {
                 </div>
                 <p className="text-sm text-[#8b7382]">
                   {selectedSalonId
-                    ? (language === "vi" ? "Không tìm thấy nhân viên nào cho chi nhánh này" : "No staff found for this salon")
-                    : (language === "vi" ? "Vui lòng chọn chi nhánh để xem nhân viên" : "Select a salon to view staff")}
+                    ? (t("adminStaffManagement.noStaffFound"))
+                    : (t("adminStaffManagement.selectSalonToView"))}
                 </p>
               </div>
             ) : (
@@ -692,7 +686,7 @@ export function StaffManagementPage() {
                     />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold uppercase tracking-widest text-white/85">
-                        {language === "vi" ? "Chi tiết Nhân viên" : "Staff Details"}
+                        {t("adminStaffManagement.staffDetails")}
                       </p>
                       <h2 className="text-xl font-bold text-white mt-1 truncate">
                         {selectedStaff.firstName || ''} {selectedStaff.lastName || ''}
@@ -725,26 +719,26 @@ export function StaffManagementPage() {
                 {/* Personal Information */}
                 <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f0d9e8]">
                   <h3 className="text-sm font-bold text-[#2d1b35] mb-4">
-                    {language === "vi" ? "Thông tin cá nhân" : "Personal Information"}
+                    {t("adminStaffManagement.personalInfo")}
                   </h3>
                   <div className="space-y-4">
-                    <InfoItem label={language === "vi" ? "Tên" : "First Name"}>{selectedStaff.firstName || '-'}</InfoItem>
-                    <InfoItem label={language === "vi" ? "Họ" : "Last Name"}>{selectedStaff.lastName || '-'}</InfoItem>
+                    <InfoItem label={t("adminStaffManagement.firstName")}>{selectedStaff.firstName || '-'}</InfoItem>
+                    <InfoItem label={t("adminStaffManagement.lastName")}>{selectedStaff.lastName || '-'}</InfoItem>
                     <InfoItem label="Email">{selectedStaff.email || '-'}</InfoItem>
-                    <InfoItem label={language === "vi" ? "Số điện thoại" : "Phone Number"}>{selectedStaff.phone || '-'}</InfoItem>
+                    <InfoItem label={t("adminStaffManagement.phoneNumber")}>{selectedStaff.phone || '-'}</InfoItem>
                   </div>
                 </div>
 
                 {/* Account Information */}
                 <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f0d9e8]">
                   <h3 className="text-sm font-bold text-[#2d1b35] mb-4">
-                    {language === "vi" ? "Thông tin tài khoản" : "Account Information"}
+                    {t("adminStaffManagement.accountInfo")}
                   </h3>
                   <div className="space-y-4">
-                    <InfoItem label={language === "vi" ? "Vai trò" : "Role"}>{selectedStaff.role || '-'}</InfoItem>
+                    <InfoItem label={t("adminStaffManagement.role")}>{selectedStaff.role || '-'}</InfoItem>
                     <InfoItem label={language === "vi" ? "Trạng thái" : "Status"}>
                       <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold bg-[#eaf9ee] text-[#2fa25f]">
-                        {language === "vi" && (selectedStaff.status === 'Active' || !selectedStaff.status) ? "Đang hoạt động" : selectedStaff.status || 'Active'}
+                        {selectedStaff.status === 'Active' || !selectedStaff.status ? t("adminStaffManagement.workingToday") : selectedStaff.status}
                       </span>
                     </InfoItem>
                   </div>
@@ -754,7 +748,7 @@ export function StaffManagementPage() {
                 {(selectedStaff.role === 'Staff_Artist' || selectedStaff.role === 'NAIL_ARTIST') && (
                   <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f0d9e8]">
                     <h3 className="text-sm font-bold text-[#2d1b35] mb-4">
-                      {language === "vi" ? "Kỹ năng & Chuyên môn" : "Skills & Specialties"}
+                      {t("adminStaffManagement.skillsSpecialties")}
                     </h3>
                     {isLoadingSkills ? (
                       <div className="flex justify-center py-4">
@@ -778,7 +772,7 @@ export function StaffManagementPage() {
                       </div>
                     ) : (
                       <p className="text-xs text-[#a88a9f]">
-                        {language === "vi" ? "Chưa được phân bổ kỹ năng" : "No skills assigned yet"}
+                        {t("adminStaffManagement.noSkillsAssigned")}
                       </p>
                     )}
                   </div>
@@ -790,7 +784,7 @@ export function StaffManagementPage() {
                     <div className="mb-4 flex items-center gap-2">
                       <CalendarDays size={16} className="text-[#ea4f93]" />
                       <h3 className="text-sm font-bold text-[#2d1b35]">
-                        {language === "vi" ? "Lịch làm việc" : "Working Schedule"}
+                        {t("adminStaffManagement.workingSchedule")}
                       </h3>
                     </div>
                     {isLoadingSchedule ? (
@@ -805,7 +799,7 @@ export function StaffManagementPage() {
                       </div>
                     ) : (
                       <p className="text-xs text-[#a88a9f]">
-                        {language === "vi" ? "Chưa có lịch làm việc" : "No schedule available"}
+                        {t("adminStaffManagement.noScheduleAvailable")}
                       </p>
                     )}
                   </div>
@@ -821,7 +815,7 @@ export function StaffManagementPage() {
                     className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-violet-500 bg-white px-4 py-3 text-xs font-bold text-violet-600 shadow-lg transition-all hover:bg-violet-50 hover:border-violet-600 hover:scale-[1.02]"
                   >
                     <Edit3 size={14} />
-                    {language === "vi" ? "Cập nhật hồ sơ" : "Update Profile"}
+                    {t("adminStaffManagement.updateProfile")}
                   </Link>
                 </div>
               </div>

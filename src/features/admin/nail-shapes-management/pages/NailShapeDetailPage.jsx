@@ -52,7 +52,7 @@ function validateForm(formValues, language) {
 export function NailShapeDetailPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { language } = useLanguage();
+  const { t, language } = useLanguage();
   const { shapeId } = useParams();
   const [shape, setShape] = useState(null);
   const [draft, setDraft] = useState(null);
@@ -107,30 +107,30 @@ export function NailShapeDetailPage() {
       if (editingConfig) {
         const updatedConfig = await updateAdminShapeMethodConfig(editingConfig.shapeMethodConfigId, payload);
         setConfigs((prev) => prev.map(c => c.shapeMethodConfigId === updatedConfig.shapeMethodConfigId ? updatedConfig : c));
-        toast.success(language === "vi" ? "Cập nhật cấu hình thành công" : "Config updated successfully", { id: toastId });
+        toast.success(t("adminNailShapesManagement.configUpdatedSuccessfully"), { id: toastId });
       } else {
         const newConfig = await createAdminShapeMethodConfig(payload);
         setConfigs((prev) => [...prev, newConfig]);
-        toast.success(language === "vi" ? "Tạo cấu hình thành công" : "Config created successfully", { id: toastId });
+        toast.success(t("adminNailShapesManagement.configCreatedSuccessfully"), { id: toastId });
       }
 
       setIsConfigModalVisible(false);
     } catch (error) {
       if (error.name === 'ValidationError') return;
-      toast.error(error instanceof Error ? error.message : (language === "vi" ? "Lưu cấu hình thất bại." : "Failed to save config."));
+      toast.error(error instanceof Error ? error.message : (t("adminNailShapesManagement.failedToSaveConfig")));
     } finally {
       setIsSavingConfig(false);
     }
   };
 
   const handleDeleteConfig = async (configId) => {
-    const toastId = toast.loading(language === "vi" ? "Đang xóa cấu hình..." : "Deleting config...");
+    const toastId = toast.loading(t("adminNailShapesManagement.deletingConfig"));
     try {
       await deleteAdminShapeMethodConfig(configId);
       setConfigs((prev) => prev.filter((c) => c.shapeMethodConfigId !== configId));
-      toast.success(language === "vi" ? "Xóa cấu hình thành công" : "Config deleted successfully", { id: toastId });
+      toast.success(t("adminNailShapesManagement.configDeletedSuccessfully"), { id: toastId });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : (language === "vi" ? "Xóa cấu hình thất bại." : "Failed to delete config."), { id: toastId });
+      toast.error(error instanceof Error ? error.message : (t("adminNailShapesManagement.failedToDeleteConfig")), { id: toastId });
     }
   };
 
@@ -177,7 +177,7 @@ export function NailShapeDetailPage() {
           return;
         }
 
-        setError(loadError instanceof Error ? loadError.message : (language === "vi" ? "Tải chi tiết dáng móng thất bại." : "Failed to load nail shape detail."));
+        setError(loadError instanceof Error ? loadError.message : (t("adminNailShapesManagement.failedToLoadNailShapeDetail")));
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -199,10 +199,10 @@ export function NailShapeDetailPage() {
     }
 
     return [
-      [language === "vi" ? "Mã Dáng Móng" : "Shape ID", String(shape.nailShapeId)],
-      [language === "vi" ? "Tên Dáng Móng" : "Shape Name", draft.name || "--"],
-      [language === "vi" ? "Giá cả" : "Price", draft.price ? formatNailShapeCurrency(draft.price) : "--"],
-      [language === "vi" ? "Thời lượng" : "Duration", draft.duration ? formatNailShapeDuration(draft.duration) : "--"],
+      [t("adminNailShapesManagement.shapeId"), String(shape.nailShapeId)],
+      [t("adminNailShapesManagement.shapeName"), draft.name || "--"],
+      [t("adminNailShapesManagement.price"), draft.price ? formatNailShapeCurrency(draft.price) : "--"],
+      [t("adminNailShapesManagement.duration"), draft.duration ? formatNailShapeDuration(draft.duration) : "--"],
     ];
   }, [draft, shape]);
 
@@ -299,7 +299,7 @@ export function NailShapeDetailPage() {
       setIsEditing(false);
       toast.success(language === "vi" ? `Đã cập nhật dáng móng ${updatedShape.name} thành công.` : `${updatedShape.name} updated successfully.`);
     } catch (saveError) {
-      const message = saveError instanceof Error ? saveError.message : (language === "vi" ? "Cập nhật dáng móng thất bại." : "Failed to update nail shape.");
+      const message = saveError instanceof Error ? saveError.message : (t("adminNailShapesManagement.failedToUpdateNailShape"));
       setError(message);
       toast.error(message);
     } finally {
@@ -324,7 +324,7 @@ export function NailShapeDetailPage() {
         },
       });
     } catch (deleteError) {
-      const message = deleteError instanceof Error ? deleteError.message : (language === "vi" ? "Xóa dáng móng thất bại." : "Failed to delete nail shape.");
+      const message = deleteError instanceof Error ? deleteError.message : (t("adminNailShapesManagement.failedToDeleteNailShape"));
       toast.error(message);
     } finally {
       setIsDeleting(false);
@@ -347,9 +347,9 @@ export function NailShapeDetailPage() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">{language === "vi" ? "Chi Tiết Dáng Móng" : "Nail Shape Detail"}</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">{t("adminNailShapesManagement.nailShapeDetail")}</h1>
             <p className="text-xs font-medium text-slate-400">
-              {language === "vi" ? "Xem, chỉnh sửa và xóa dáng móng này tại một trang." : "Review, edit, and delete this nail shape from one page."}
+              {t("adminNailShapesManagement.reviewEditAndDeleteThisNailSha")}
             </p>
           </div>
         </div>
@@ -362,7 +362,7 @@ export function NailShapeDetailPage() {
             className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Trash2 size={14} />
-            {language === "vi" ? "Xóa Dáng Móng" : "Delete Shape"}
+            {t("adminNailShapesManagement.deleteShape")}
           </button>
           {isEditing ? (
             <>
@@ -372,7 +372,7 @@ export function NailShapeDetailPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
               >
                 <X size={14} />
-                {language === "vi" ? "Hủy" : "Cancel"}
+                {t("adminNailShapesManagement.cancel")}
               </button>
               <button
                 type="button"
@@ -380,7 +380,7 @@ export function NailShapeDetailPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
               >
                 <Save size={14} />
-                {language === "vi" ? "Lưu Thay Đổi" : "Save Changes"}
+                {t("adminNailShapesManagement.saveChanges")}
               </button>
             </>
           ) : (
@@ -391,7 +391,7 @@ export function NailShapeDetailPage() {
               className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Pencil size={14} />
-              {language === "vi" ? "Chỉnh sửa Dáng Móng" : "Edit Shape"}
+              {t("adminNailShapesManagement.editShape")}
             </button>
           )}
         </div>
@@ -411,19 +411,19 @@ export function NailShapeDetailPage() {
 
       {isLoading ? (
         <div className="flex min-h-[320px] items-center justify-center rounded-[24px] bg-white/80 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
-          <div className="text-center text-sm text-slate-600">{language === "vi" ? "Đang tải chi tiết dáng móng..." : "Loading nail shape details..."}</div>
+          <div className="text-center text-sm text-slate-600">{t("adminNailShapesManagement.loadingNailShapeDetails")}</div>
         </div>
       ) : (
         <div className="grid gap-4">
           <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
             <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
               <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
-              {language === "vi" ? "Thông Tin Dáng Móng" : "Nail Shape Information"}
+              {t("adminNailShapesManagement.nailShapeInformation")}
             </h2>
 
             <div className="grid gap-5 md:grid-cols-2">
               <label className="space-y-2.5">
-                <span className="text-[13px] font-semibold text-slate-600">{language === "vi" ? "Tên Dáng Móng" : "Shape Name"}</span>
+                <span className="text-[13px] font-semibold text-slate-600">{t("adminNailShapesManagement.shapeName")}</span>
                 <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                   <Shapes size={14} className="shrink-0 text-rose-300" />
                   <input
@@ -437,7 +437,7 @@ export function NailShapeDetailPage() {
               </label>
 
               <label className="space-y-2.5">
-                <span className="text-[13px] font-semibold text-slate-600">{language === "vi" ? "Giá cả" : "Price"}</span>
+                <span className="text-[13px] font-semibold text-slate-600">{t("adminNailShapesManagement.price")}</span>
                 <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                   <Wallet size={14} className="shrink-0 text-rose-300" />
                   <input
@@ -453,7 +453,7 @@ export function NailShapeDetailPage() {
               </label>
 
               <label className="space-y-2.5 md:col-span-2">
-                <span className="text-[13px] font-semibold text-slate-600">{language === "vi" ? "Thời lượng" : "Duration"}</span>
+                <span className="text-[13px] font-semibold text-slate-600">{t("adminNailShapesManagement.duration")}</span>
                 <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                   <Clock3 size={14} className="shrink-0 text-rose-300" />
                   <input
@@ -469,7 +469,7 @@ export function NailShapeDetailPage() {
               </label>
 
               <label className="space-y-2.5 md:col-span-2">
-                <span className="text-[13px] font-semibold text-slate-600">{language === "vi" ? "Hình Ảnh Xem Trước" : "Preview Image"}</span>
+                <span className="text-[13px] font-semibold text-slate-600">{t("adminNailShapesManagement.previewImage")}</span>
                 <label
                   className={`flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-rose-200 px-6 py-8 ${isEditing
                     ? "cursor-pointer bg-gradient-to-br from-[#fffafc] to-[#fff5f9] transition hover:border-rose-300 hover:shadow-[0_8px_24px_rgba(226,93,143,0.12)]"
@@ -491,7 +491,7 @@ export function NailShapeDetailPage() {
                       </div>
                       <div className="text-center">
                         <p className="text-base font-semibold text-slate-700">
-                          {isEditing ? (language === "vi" ? "Bấm để tải ảnh dáng móng lên" : "Click to upload shape image") : (language === "vi" ? "Chưa có hình ảnh xem trước" : "No preview image")}
+                          {isEditing ? (t("adminNailShapesManagement.clickToUploadShapeImage")) : (t("adminNailShapesManagement.noPreviewImage"))}
                         </p>
                         <p className="mt-1 text-xs text-slate-400">PNG, JPG up to 5MB</p>
                       </div>
@@ -512,14 +512,14 @@ export function NailShapeDetailPage() {
 
           <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-100 md:p-8">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-slate-800">{language === "vi" ? "Cấu Hình Phương Pháp" : "Shape Method Configs"}</h2>
+              <h2 className="text-lg font-bold text-slate-800">{t("adminNailShapesManagement.shapeMethodConfigs")}</h2>
               <Button
                 type="primary"
                 icon={<Plus size={16} />}
                 onClick={() => handleOpenConfigModal()}
                 className="bg-rose-500 hover:bg-rose-600 border-none rounded-full px-5 shadow-md shadow-rose-200"
               >
-                {language === "vi" ? "Thêm Cấu Hình" : "Add Config"}
+                {t("adminNailShapesManagement.addConfig")}
               </Button>
             </div>
             <Table
@@ -529,25 +529,25 @@ export function NailShapeDetailPage() {
               loading={isLoadingConfigs}
               columns={[
                 {
-                  title: language === "vi" ? "Tên" : "Name",
+                  title: t("adminNailShapesManagement.name"),
                   dataIndex: 'name',
                   key: 'name',
                   render: (text) => <span className="font-semibold text-slate-700">{text}</span>
                 },
                 {
-                  title: language === "vi" ? "Giá" : "Price",
+                  title: t("adminNailShapesManagement.price"),
                   dataIndex: 'price',
                   key: 'price',
                   render: (val) => <span className="text-emerald-600 font-medium">{formatNailShapeCurrency(val)}</span>
                 },
                 {
-                  title: language === "vi" ? "Thời gian" : "Duration",
+                  title: t("adminNailShapesManagement.duration"),
                   dataIndex: 'duration',
                   key: 'duration',
                   render: (val) => <span className="text-blue-600 font-medium">{formatNailShapeDuration(val)}</span>
                 },
                 {
-                  title: language === "vi" ? "Trạng thái" : "Status",
+                  title: t("adminNailShapesManagement.status"),
                   dataIndex: 'status',
                   key: 'status',
                   render: (val) => (
@@ -557,7 +557,7 @@ export function NailShapeDetailPage() {
                   )
                 },
                 {
-                  title: language === "vi" ? "Thao tác" : "Actions",
+                  title: t("adminNailShapesManagement.actions"),
                   key: 'actions',
                   align: 'right',
                   render: (_, record) => (
@@ -569,11 +569,11 @@ export function NailShapeDetailPage() {
                         className="text-slate-500 hover:text-blue-600"
                       />
                       <Popconfirm
-                        title={language === "vi" ? "Xóa Cấu Hình" : "Delete Config"}
-                        description={language === "vi" ? "Bạn có chắc chắn muốn xóa cấu hình này?" : "Are you sure you want to delete this config?"}
+                        title={t("adminNailShapesManagement.deleteConfig")}
+                        description={t("adminNailShapesManagement.areYouSureYouWantToDeleteThisC")}
                         onConfirm={() => handleDeleteConfig(record.shapeMethodConfigId)}
-                        okText={language === "vi" ? "Có" : "Yes"}
-                        cancelText={language === "vi" ? "Không" : "No"}
+                        okText={t("adminNailShapesManagement.yes")}
+                        cancelText={t("adminNailShapesManagement.no")}
                         okButtonProps={{ danger: true }}
                       >
                         <Button type="text" danger icon={<Trash2 size={16} />} />
@@ -592,30 +592,30 @@ export function NailShapeDetailPage() {
       <ActionConfirmModal
         open={showSaveConfirm}
         intent="success"
-        title={language === "vi" ? "Lưu Thay Đổi Dáng Móng" : "Save Nail Shape Changes"}
-        subtitle={language === "vi" ? "Hành động này sẽ cập nhật dáng móng trên hệ thống." : "This will update the nail shape in backend."}
-        description={language === "vi" ? "Xác nhận để lưu các thay đổi mới nhất cho dáng móng này." : "Confirm to save the latest changes to this nail shape."}
-        confirmText={language === "vi" ? "Lưu Thay Đổi" : "Save Changes"}
-        cancelText={language === "vi" ? "Xem lại" : "Review Again"}
+        title={t("adminNailShapesManagement.saveNailShapeChanges")}
+        subtitle={t("adminNailShapesManagement.thisWillUpdateTheNailShapeInBa")}
+        description={t("adminNailShapesManagement.confirmToSaveTheLatestChangesT")}
+        confirmText={t("adminNailShapesManagement.saveChanges")}
+        cancelText={t("adminNailShapesManagement.reviewAgain")}
         confirmIcon={Save}
         loading={isSaving}
         onConfirm={handleSave}
         onCancel={() => !isSaving && setShowSaveConfirm(false)}
-        highlights={[draft?.name || shape?.name || (language === "vi" ? "Dáng móng" : "Nail shape")]}
+        highlights={[draft?.name || shape?.name || (t("adminNailShapesManagement.nailShape"))]}
         details={[
-          { label: language === "vi" ? "Giá cả" : "Price", value: draft?.price ? formatNailShapeCurrency(draft.price) : "--" },
-          { label: language === "vi" ? "Thời lượng" : "Duration", value: draft?.duration ? formatNailShapeDuration(draft.duration) : "--" },
+          { label: t("adminNailShapesManagement.price"), value: draft?.price ? formatNailShapeCurrency(draft.price) : "--" },
+          { label: t("adminNailShapesManagement.duration"), value: draft?.duration ? formatNailShapeDuration(draft.duration) : "--" },
         ]}
       />
 
       <ActionConfirmModal
         open={showDeleteConfirm}
         intent="danger"
-        title={language === "vi" ? "Xóa Dáng Móng" : "Delete Nail Shape"}
-        subtitle={language === "vi" ? "Hành động này sẽ xóa vĩnh viễn dáng móng khỏi hệ thống." : "This will permanently remove the nail shape from backend."}
+        title={t("adminNailShapesManagement.deleteNailShape")}
+        subtitle={t("adminNailShapesManagement.thisWillPermanentlyRemoveTheNa")}
         description={language === "vi" ? `Bạn chuẩn bị xóa ${shape?.name || "dáng móng này"}. Hành động này không thể hoàn tác.` : `You are about to delete ${shape?.name || "this nail shape"}. This action cannot be undone.`}
-        confirmText={language === "vi" ? "Xóa Dáng Móng" : "Delete Shape"}
-        cancelText={language === "vi" ? "Giữ lại" : "Keep Shape"}
+        confirmText={t("adminNailShapesManagement.deleteShape")}
+        cancelText={t("adminNailShapesManagement.keepShape")}
         confirmIcon={Trash2}
         loading={isDeleting}
         onConfirm={handleDelete}
@@ -626,17 +626,17 @@ export function NailShapeDetailPage() {
               image: shape.imageUrl || undefined,
               title: shape.name,
               meta: `${shape.priceLabel} • ${shape.durationLabel}`,
-              note: (language === "vi" ? "Mã dáng móng: " : "Shape ID: ") + shape.nailShapeId,
+              note: (t("adminNailShapesManagement.shapeId1")) + shape.nailShapeId,
             }
             : null
         }
-        warnings={[language === "vi" ? "Hành động này gọi API xóa và xóa bản ghi vĩnh viễn." : "This action calls the backend delete endpoint and removes the record permanently."]}
+        warnings={[t("adminNailShapesManagement.thisActionCallsTheBackendDelet")]}
       />
 
       <Modal
         title={
           <h3 className="text-lg font-bold text-slate-800">
-            {editingConfig ? (language === "vi" ? "Chỉnh Sửa Cấu Hình" : "Edit Shape Method Config") : (language === "vi" ? "Thêm Cấu Hình" : "Add Shape Method Config")}
+            {editingConfig ? (t("adminNailShapesManagement.editShapeMethodConfig")) : (t("adminNailShapesManagement.addShapeMethodConfig"))}
           </h3>
         }
         open={isConfigModalVisible}
@@ -653,8 +653,8 @@ export function NailShapeDetailPage() {
         >
           <Form.Item
             name="name"
-            label={<span className="text-sm font-semibold text-slate-700">{language === "vi" ? "Tên" : "Name"}</span>}
-            rules={[{ required: true, message: language === "vi" ? "Vui lòng nhập tên" : "Please enter a name" }]}
+            label={<span className="text-sm font-semibold text-slate-700">{t("adminNailShapesManagement.name")}</span>}
+            rules={[{ required: true, message: t("adminNailShapesManagement.pleaseEnterAName") }]}
           >
             <Input className="rounded-xl border-slate-200 py-2 hover:border-rose-300 focus:border-rose-400 focus:ring-rose-100" />
           </Form.Item>
@@ -662,8 +662,8 @@ export function NailShapeDetailPage() {
           <div className="grid grid-cols-2 gap-4">
             <Form.Item
               name="price"
-              label={<span className="text-sm font-semibold text-slate-700">{language === "vi" ? "Giá (VND)" : "Price (VND)"}</span>}
-              rules={[{ required: true, message: language === "vi" ? "Vui lòng nhập giá" : "Please enter price" }]}
+              label={<span className="text-sm font-semibold text-slate-700">{t("adminNailShapesManagement.priceVnd")}</span>}
+              rules={[{ required: true, message: t("adminNailShapesManagement.pleaseEnterPrice") }]}
             >
               <InputNumber
                 className="w-full rounded-xl border-slate-200 hover:border-rose-300 focus:border-rose-400 focus:ring-rose-100"
@@ -676,8 +676,8 @@ export function NailShapeDetailPage() {
 
             <Form.Item
               name="duration"
-              label={<span className="text-sm font-semibold text-slate-700">{language === "vi" ? "Thời gian (phút)" : "Duration (mins)"}</span>}
-              rules={[{ required: true, message: language === "vi" ? "Vui lòng nhập thời gian" : "Please enter duration" }]}
+              label={<span className="text-sm font-semibold text-slate-700">{t("adminNailShapesManagement.durationMins")}</span>}
+              rules={[{ required: true, message: t("adminNailShapesManagement.pleaseEnterDuration") }]}
             >
               <InputNumber
                 className="w-full rounded-xl border-slate-200 hover:border-rose-300 focus:border-rose-400 focus:ring-rose-100"
@@ -688,7 +688,7 @@ export function NailShapeDetailPage() {
 
           <Form.Item
             name="status"
-            label={<span className="text-sm font-semibold text-slate-700">{language === "vi" ? "Trạng thái Hoạt động" : "Status Active"}</span>}
+            label={<span className="text-sm font-semibold text-slate-700">{t("adminNailShapesManagement.statusActive")}</span>}
             valuePropName="checked"
           >
             <Switch />
@@ -700,7 +700,7 @@ export function NailShapeDetailPage() {
               disabled={isSavingConfig}
               className="rounded-full px-6 font-semibold"
             >
-              {language === "vi" ? "Hủy" : "Cancel"}
+              {t("adminNailShapesManagement.cancel")}
             </Button>
             <Button
               type="primary"
@@ -708,7 +708,7 @@ export function NailShapeDetailPage() {
               loading={isSavingConfig}
               className="rounded-full bg-rose-500 px-6 font-semibold shadow-md shadow-rose-200 hover:bg-rose-600"
             >
-              {language === "vi" ? "Lưu Cấu Hình" : "Save Config"}
+              {t("adminNailShapesManagement.saveConfig")}
             </Button>
           </div>
         </Form>

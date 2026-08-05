@@ -94,7 +94,7 @@ function formatPriceVND(value) {
   return `${Number(value || 0).toLocaleString("vi-VN")} VND`;
 }
 
-function normalizeDesign(design, index) {
+function normalizeDesign(design, index, t) {
   const preview = getPreviewMeta(index);
   const tags = Array.isArray(design.categoryNames) ? design.categoryNames : [];
   const hasTryOnAsset = Boolean(design.previewImage);
@@ -108,14 +108,14 @@ function normalizeDesign(design, index) {
     uiTitle: design.name || preview.title,
     uiTags: tags.length ? tags.slice(0, 3) : preview.tags,
     uiTones: [
-      design.status === "Active" 
-        ? (language === "vi" ? "Hoạt động" : "Active") 
-        : (language === "vi" ? "Ngừng hoạt động" : "Inactive")
+      design.status === "Active"
+        ? (t("adminNailsDesignManagement.active"))
+        : (t("adminNailsDesignManagement.inactive"))
     ],
     uiPrice: price,
-    uiStatus: hasTryOnAsset 
-      ? (language === "vi" ? "Có thể thử móng" : "Try-On Ready") 
-      : (language === "vi" ? "Không thể thử móng" : "No Try-On"),
+    uiStatus: hasTryOnAsset
+      ? (t("adminNailsDesignManagement.tryonReady"))
+      : (t("adminNailsDesignManagement.noTryon")),
     uiStatusTone: hasTryOnAsset ? "bg-[#e7fbf4] text-[#23b68b]" : "bg-[#fff0f5] text-[#eb5a99]",
     uiTagsAll: tags,
     initials: design.name
@@ -204,7 +204,7 @@ DesignPreview.propTypes = {
 };
 
 export function NailDesignManagementPage() {
-  const { language } = useLanguage();
+  const { t, language } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
@@ -283,37 +283,37 @@ export function NailDesignManagementPage() {
   }, [debouncedQuery, metaData.currentPage, metaData.pageSize]);
 
   const normalizedDesigns = useMemo(
-    () => designs.map((design, index) => normalizeDesign(design, index)),
-    [designs],
+    () => designs.map((design, index) => normalizeDesign(design, index, t)),
+    [designs, t],
   );
 
   const summaryCards = useMemo(
     () => [
       {
-        label: language === "vi" ? "Tổng số Thiết kế" : "Total Designs",
+        label: t("adminNailsDesignManagement.totalDesigns"),
         value: metaData.totalItems.toLocaleString(),
-        note: `${metaData.totalPages} ${language === "vi" ? "trang" : "pages"}`,
+        note: `${metaData.totalPages} ${t("adminNailsDesignManagement.pages")}`,
         icon: Tag,
         iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
       },
       {
-        label: language === "vi" ? "Thiết kế Hoạt động" : "Active Designs",
+        label: t("adminNailsDesignManagement.activeDesigns"),
         value: normalizedDesigns.filter((design) => design.status === "Active").length.toLocaleString(),
-        note: language === "vi" ? "Trên trang hiện tại" : "On current page",
+        note: t("adminNailsDesignManagement.onCurrentPage"),
         icon: WandSparkles,
         iconClassName: "bg-[#f3ebff] text-[#8b5cf6]",
       },
       {
-        label: language === "vi" ? "Có thể thử móng" : "Try-On Ready",
+        label: t("adminNailsDesignManagement.tryonReady"),
         value: normalizedDesigns.filter((design) => design.previewImage).length.toLocaleString(),
-        note: language === "vi" ? "Có ảnh xem trước" : "Has preview image",
+        note: t("adminNailsDesignManagement.hasPreviewImage"),
         icon: Sparkles,
         iconClassName: "bg-[#e7fbf4] text-[#23b68b]",
       },
       {
-        label: language === "vi" ? "Mẫu Phổ biến Nhất" : "Most Popular Style",
+        label: t("adminNailsDesignManagement.mostPopularStyle"),
         value: normalizedDesigns[0]?.uiTitle || "--",
-        note: language === "vi" ? "Nổi bật trên trang" : "Current page highlight",
+        note: t("adminNailsDesignManagement.currentPageHighlight"),
         icon: Star,
         iconClassName: "bg-[#fff4df] text-[#f5a623]",
       },
@@ -362,28 +362,28 @@ export function NailDesignManagementPage() {
             className={toolbarButtonClassName}
           >
             <Tag size={13} className="mr-1.5 shrink-0" />
-            {language === "vi" ? "Quản lý Thẻ" : "Manage Tags"}
+            {t("adminNailsDesignManagement.manageTags")}
           </button>
           <Link
             to={getAdminNailDesignCategoriesRoute()}
             className={toolbarButtonClassName}
           >
             <Plus size={13} className="mr-1.5 shrink-0" />
-            {language === "vi" ? "Thêm Danh mục" : "Add Category"}
+            {t("adminNailsDesignManagement.addCategory")}
           </Link>
           <button
             type="button"
             className={toolbarButtonClassName}
           >
             <Upload size={13} className="mr-1.5 shrink-0" />
-            {language === "vi" ? "Tải lên Tài nguyên Thử móng" : "Upload Try-On Asset"}
+            {t("adminNailsDesignManagement.uploadTryonAsset")}
           </button>
           <Link
             to={ROUTES.adminNailDesignsCreate}
             className={primaryToolbarButtonClassName}
           >
             <Plus size={13} className="mr-1.5 shrink-0" />
-            {language === "vi" ? "Thêm Thiết kế" : "Add Design"}
+            {t("adminNailsDesignManagement.addDesign")}
           </Link>
         </div>
       </div>
@@ -399,7 +399,7 @@ export function NailDesignManagementPage() {
           <div className="mb-3 flex items-center justify-between gap-3">
             <div>
               <h3 className="text-sm font-extrabold text-[#432744]">
-                {language === "vi" ? "Bộ sưu tập Mẫu móng" : "Design Gallery"}
+                {t("adminNailsDesignManagement.designGallery")}
               </h3>
               <p className="mt-1 text-[11px] text-[#c694ad]">
                 {language === "vi"
@@ -413,13 +413,13 @@ export function NailDesignManagementPage() {
                 type="button"
                 className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93]"
               >
-                {language === "vi" ? "Lọc" : "Filter"}
+                {t("adminNailsDesignManagement.filter")}
               </button>
               <button
                 type="button"
                 className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93]"
               >
-                {language === "vi" ? "Sắp xếp" : "Sort"}
+                {t("adminNailsDesignManagement.sort")}
               </button>
             </div>
           </div>
@@ -444,7 +444,7 @@ export function NailDesignManagementPage() {
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder={language === "vi" ? "Tìm kiếm mẫu thiết kế, danh mục, thẻ..." : "Search designs, categories, tags..."}
+              placeholder={t("adminNailsDesignManagement.searchDesignsCategoriesTags")}
               className="h-10 w-full rounded-full border border-[#f5d7e4] bg-[#fff9fc] pl-10 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
             />
           </label>
@@ -454,7 +454,7 @@ export function NailDesignManagementPage() {
               <div className="col-span-full rounded-[18px] border border-[#f8dce8] bg-[#fffafb] px-5 py-10">
                 <div className="flex items-center justify-center gap-3 text-sm text-[#b38a9f]">
                   <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
-                  {language === "vi" ? "Đang tải các mẫu thiết kế..." : "Loading nail designs..."}
+                  {t("adminNailsDesignManagement.loadingNailDesigns")}
                 </div>
               </div>
             ) : (
@@ -510,13 +510,13 @@ export function NailDesignManagementPage() {
                             to={getAdminNailDesignDetailRoute(design.id)}
                             className="rounded-full border border-[#f4c6da] bg-white px-3 py-1.5 text-[10px] font-bold text-[#8c7085]"
                           >
-                            {language === "vi" ? "Xem" : "View"}
+                            {t("adminNailsDesignManagement.view")}
                           </Link>
                           <Link
                             to={getAdminNailDesignDetailRoute(design.id)}
                             className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93]"
                           >
-                            {language === "vi" ? "Sửa" : "Edit"}
+                            {t("adminNailsDesignManagement.edit")}
                           </Link>
                         </div>
                       </div>
@@ -529,7 +529,7 @@ export function NailDesignManagementPage() {
 
           {!isLoading && normalizedDesigns.length === 0 ? (
             <div className="mt-4 rounded-[16px] border border-[#f8dce8] bg-[#fffafb] px-5 py-8 text-center text-sm text-[#8a7082]">
-              {language === "vi" ? "Không có mẫu thiết kế nào khớp với tìm kiếm." : "No nail designs matched the current search."}
+              {t("adminNailsDesignManagement.noNailDesignsMatchedTheCurrent")}
             </div>
           ) : null}
 
@@ -594,7 +594,7 @@ export function NailDesignManagementPage() {
         <aside className="space-y-4">
           <section className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
             <h3 className="text-sm font-extrabold text-[#432744]">
-              {language === "vi" ? "Thiết kế Thịnh hành" : "Trending Designs"}
+              {t("adminNailsDesignManagement.trendingDesigns")}
             </h3>
             <div className="mt-4 space-y-4">
               {TRENDING_DESIGNS.map(([name, meta], index) => {
@@ -616,14 +616,14 @@ export function NailDesignManagementPage() {
 
           <section className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
             <h3 className="text-sm font-extrabold text-[#432744]">
-              {language === "vi" ? "Thiếu tài nguyên Thử móng" : "Missing Try-On Assets"}
+              {t("adminNailsDesignManagement.missingTryonAssets")}
             </h3>
             <div className="mt-4 space-y-3">
               {MISSING_TRY_ON.map((name) => (
                 <div key={name} className="flex items-center justify-between gap-3">
                   <span className="text-sm font-medium text-[#6b5668]">{name}</span>
                   <SmallTag className="bg-[#ffe7ef] text-[#ea4f93]">
-                    {language === "vi" ? "Cần tải lên" : "Upload Needed"}
+                    {t("adminNailsDesignManagement.uploadNeeded")}
                   </SmallTag>
                 </div>
               ))}
@@ -632,13 +632,13 @@ export function NailDesignManagementPage() {
               type="button"
               className="mt-4 w-full rounded-full bg-[image:var(--gradient-accent)] px-4 py-2.5 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
             >
-              {language === "vi" ? "Tải lên Hàng loạt Tài nguyên" : "Bulk Upload Assets"}
+              {t("adminNailsDesignManagement.bulkUploadAssets")}
             </button>
           </section>
 
           <section className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
             <h3 className="text-sm font-extrabold text-[#432744]">
-              {language === "vi" ? "Thẻ Phổ biến" : "Popular Tags"}
+              {t("adminNailsDesignManagement.popularTags")}
             </h3>
             <div className="mt-4 flex flex-wrap gap-2">
               {POPULAR_TAGS.map(([tag, tone]) => (
@@ -651,7 +651,7 @@ export function NailDesignManagementPage() {
 
           <section className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
             <h3 className="text-sm font-extrabold text-[#432744]">
-              {language === "vi" ? "Gợi ý theo Mùa" : "Seasonal Suggestions"}
+              {t("adminNailsDesignManagement.seasonalSuggestions")}
             </h3>
             <div className="mt-4 space-y-4">
               {SEASONAL_SUGGESTIONS.map(([name, collection, badge, tone]) => {

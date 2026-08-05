@@ -368,7 +368,7 @@ export function TransactionOverviewPage() {
                 <Wallet size={18} className="stroke-[2]" />
               </span>
               <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#ea4f93]">
-                {language === "vi" ? "Cổng Kiểm Toán Admin" : "Admin Audit Portal"}
+                {t("adminTransactions.adminAuditPortal")}
               </span>
             </div>
             <h1 className="text-3xl font-bold text-[#2d1b35] tracking-tight md:text-4xl">
@@ -376,8 +376,8 @@ export function TransactionOverviewPage() {
             </h1>
             <p className="text-xs md:text-sm text-[#a88a9f] max-w-[65ch] leading-relaxed">
               {selectedSalon
-                ? (language === "vi" ? `Đang kiểm toán lịch sử giao dịch và biên lai cho ${selectedSalon.name}.` : `Auditing transaction logs and receipt details for ${selectedSalon.name}.`)
-                : (language === "vi" ? "Vui lòng chọn một chi nhánh salon bên dưới để theo dõi và kiểm toán lịch sử giao dịch của khách hàng." : "Select a salon branch below to monitor and audit customer transaction history.")
+                ? (t("adminTransactions.auditingLogsFor", { name: selectedSalon.name }))
+                : (t("adminTransactions.selectSalonToAudit"))
               }
             </p>
           </div>
@@ -388,7 +388,7 @@ export function TransactionOverviewPage() {
               className="flex self-start md:self-auto items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4.5 py-3 text-xs font-bold text-[#2d1b35] shadow-[0_4px_12px_rgba(0,0,0,0.03)] hover:border-[#ea4f93]/30 transition-all duration-300 active:scale-[0.98]"
             >
               <ArrowLeft size={13} />
-              {language === "vi" ? "Quay lại Danh sách" : "Back to Salons"}
+              {t("adminTransactions.backToSalons")}
             </button>
           )}
         </div>
@@ -406,7 +406,7 @@ export function TransactionOverviewPage() {
                   </span>
                   <div>
                     <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider block">
-                      {language === "vi" ? "Chi nhánh Mạng lưới" : "Network Salons"}
+                      {t("adminTransactions.networkSalons")}
                     </span>
                     <span className="text-2xl font-bold text-[#2d1b35]">{salons.length}</span>
                   </div>
@@ -419,7 +419,7 @@ export function TransactionOverviewPage() {
                   </span>
                   <div>
                     <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider block">
-                      {language === "vi" ? "Doanh thu Mạng lưới" : "Network Revenue"}
+                      {t("adminTransactions.networkRevenue")}
                     </span>
                     <span className="text-2xl font-mono font-bold text-[#2d1b35]">
                       {loadingMetrics ? (
@@ -438,13 +438,13 @@ export function TransactionOverviewPage() {
                   </span>
                   <div>
                     <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider block">
-                      {language === "vi" ? "Bản ghi Kiểm toán" : "Audited Logs"}
+                      {t("adminTransactions.auditedLogs")}
                     </span>
                     <span className="text-2xl font-bold text-[#2d1b35]">
                       {loadingMetrics ? (
                         <Spin size="small" />
                       ) : (
-                        language === "vi" ? `${totalTxLogs} tệp` : `${totalTxLogs} files`
+                        t("adminTransactions.filesCount", { count: totalTxLogs })
                       )}
                     </span>
                   </div>
@@ -457,7 +457,7 @@ export function TransactionOverviewPage() {
                   </span>
                   <div>
                     <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider block">
-                      {language === "vi" ? "Tỷ lệ Thành công TB" : "Avg Success Rate"}
+                      {t("adminTransactions.avgSuccessRate")}
                     </span>
                     <span className="text-2xl font-mono font-bold text-[#2d1b35]">
                       {loadingMetrics ? (
@@ -478,7 +478,7 @@ export function TransactionOverviewPage() {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]" size={15} />
                 <input
                   type="text"
-                  placeholder={language === "vi" ? "Tìm kiếm chi nhánh theo tên, địa chỉ..." : "Search salons by name, address..."}
+                  placeholder={t("adminTransactions.searchSalons")}
                   value={salonSearchQuery}
                   onChange={(e) => setSalonSearchQuery(e.target.value)}
                   className="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300"
@@ -510,7 +510,7 @@ export function TransactionOverviewPage() {
                 {/* Sort Option dropdown */}
                 <div className="flex items-center gap-2 self-end md:self-auto">
                   <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider">
-                    {language === "vi" ? "Sắp xếp:" : "Sort:"}
+                    {t("adminTransactions.sort")}
                   </span>
                   <Select
                     value={salonSortOption}
@@ -518,9 +518,9 @@ export function TransactionOverviewPage() {
                     className="w-36 h-10 select-premium-antd"
                     popupClassName="select-premium-dropdown"
                     options={[
-                      { value: "name", label: language === "vi" ? "Tên chi nhánh" : "Name" },
-                      { value: "rating", label: language === "vi" ? "Đánh giá" : "Rating" },
-                      { value: "revenue", label: language === "vi" ? "Doanh thu" : "Revenue" }
+                      { value: "name", label: t("adminTransactions.salonName") },
+                      { value: "rating", label: t("adminTransactions.rating") },
+                      { value: "revenue", label: t("adminTransactions.revenue") }
                     ]}
                     style={{ borderRadius: "0.875rem" }}
                   />
@@ -532,13 +532,13 @@ export function TransactionOverviewPage() {
               <div className="flex flex-col items-center justify-center py-32 bg-white/40 backdrop-blur-xs rounded-3xl border border-slate-200/60 shadow-xs">
                 <Spin size="large" />
                 <p className="mt-4 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] animate-pulse">
-                  {language === "vi" ? "Đang tải danh sách chi nhánh..." : "Loading salons..."}
+                  {t("adminTransactions.loadingSalons")}
                 </p>
               </div>
             ) : salonsError ? (
               <div className="p-6 bg-rose-50/50 rounded-3xl border border-rose-100">
                 <Alert
-                  message={language === "vi" ? "Tải danh sách chi nhánh thất bại" : "Failed to load salons list"}
+                  message={t("adminTransactions.loadSalonsFailed")}
                   description={salonsError}
                   type="warning"
                   showIcon
@@ -547,7 +547,7 @@ export function TransactionOverviewPage() {
                       onClick={loadSalons}
                       className="px-3.5 py-2 bg-white border border-rose-200 rounded-xl text-xs font-bold text-rose-700 transition hover:bg-rose-50"
                     >
-                      {language === "vi" ? "Thử lại" : "Retry"}
+                      {t("adminTransactions.retry")}
                     </button>
                   }
                 />
@@ -556,10 +556,10 @@ export function TransactionOverviewPage() {
               <div className="flex flex-col items-center justify-center py-24 text-center bg-white rounded-3xl border border-slate-200/60 shadow-xs">
                 <Store size={36} className="text-[#a88a9f] mb-3 stroke-[1.2]" />
                 <h3 className="text-sm font-bold text-[#2d1b35]">
-                  {language === "vi" ? "Không tìm thấy chi nhánh nào" : "No Salons Found"}
+                  {t("adminTransactions.noSalonsFound")}
                 </h3>
                 <p className="mt-1 text-xs text-[#a88a9f] max-w-[40ch]">
-                  {language === "vi" ? "Không có chi nhánh nào khớp với từ khóa tìm kiếm hoặc bộ lọc hiện tại." : "No branches match your current search query or filter selection."}
+                  {t("adminTransactions.noBranchesMatch")}
                 </p>
               </div>
             ) : (
@@ -608,7 +608,7 @@ export function TransactionOverviewPage() {
                           </span>
 
                           <div className="absolute bottom-3 left-3 bg-[#2d1b35]/70 backdrop-blur-xs px-2.5 py-1 rounded-lg text-[10px] font-bold text-white flex items-center gap-1 shadow-sm">
-                            ★ {salon.rating || "4.8"} ({salon.reviews || "120"} {language === "vi" ? "đánh giá" : "reviews"})
+                            ★ {salon.rating || "4.8"} ({salon.reviews || "120"} {t("adminTransactions.reviews")})
                           </div>
                         </div>
 
@@ -630,7 +630,7 @@ export function TransactionOverviewPage() {
                             )}
                             <div className="flex items-center gap-2">
                               <Clock size={12} className="shrink-0 text-slate-400" />
-                              <span>{salon.hours || (language === "vi" ? "Không có thông tin giờ hoạt động" : "Operating hours not listed")}</span>
+                              <span>{salon.hours || (t("adminTransactions.hoursNotListed"))}</span>
                             </div>
                           </div>
 
@@ -639,7 +639,7 @@ export function TransactionOverviewPage() {
                             {/* Miniature success rate bar */}
                             <div className="space-y-1">
                               <div className="flex justify-between text-[10px] font-bold text-[#7f6478]">
-                                <span>{language === "vi" ? "Tỷ lệ kiểm toán thành công" : "Audit Success Rate"}</span>
+                                <span>{t("adminTransactions.auditSuccessRate")}</span>
                                 <span className="font-mono text-[#ea4f93]">
                                   {isMetricLoading ? (
                                     <Spin size="small" className="scale-75" />
@@ -662,7 +662,7 @@ export function TransactionOverviewPage() {
                             <div className="grid grid-cols-2 gap-4">
                               <div>
                                 <span className="text-[9px] uppercase tracking-wider text-[#a88a9f] block mb-0.5">
-                                  {language === "vi" ? "DT kiểm toán" : "Audited Rev"}
+                                  {t("adminTransactions.auditedRev")}
                                 </span>
                                 <span className="font-mono text-xs font-bold text-[#2d1b35]">
                                   {isMetricLoading ? "..." : formatCurrency(salonMetric.totalRevenue)}
@@ -670,10 +670,10 @@ export function TransactionOverviewPage() {
                               </div>
                               <div>
                                 <span className="text-[9px] uppercase tracking-wider text-[#a88a9f] block mb-0.5">
-                                  {language === "vi" ? "Số bản ghi" : "Volume Logs"}
+                                  {t("adminTransactions.volumeLogs")}
                                 </span>
                                 <span className="font-mono text-xs font-bold text-[#2d1b35]">
-                                  {isMetricLoading ? "..." : (language === "vi" ? `${salonMetric.txCount} tệp` : `${salonMetric.txCount} files`)}
+                                  {isMetricLoading ? "..." : (t("adminTransactions.filesCount", { count: salonMetric.txCount }))}
                                 </span>
                               </div>
                             </div>
@@ -683,7 +683,7 @@ export function TransactionOverviewPage() {
                       </div>
 
                       <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-[#ea4f93]">
-                        <span>{language === "vi" ? "Xem Lịch sử Giao dịch" : "Review Transactions"}</span>
+                        <span>{t("adminTransactions.reviewTransactions")}</span>
                         <span className="h-8 w-8 rounded-full bg-[#ea4f93]/10 text-[#ea4f93] flex items-center justify-center group-hover:bg-[#ea4f93] group-hover:text-white transition-colors duration-300 shadow-2xs">
                           →
                         </span>
@@ -708,7 +708,7 @@ export function TransactionOverviewPage() {
                 </span>
                 <div className="flex justify-between items-start">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[#a88a9f]">
-                    {language === "vi" ? "Doanh thu Chi nhánh chọn" : "Selected Salon Revenue"}
+                    {t("adminTransactions.selectedSalonRevenue")}
                   </span>
                 </div>
                 <div className="mt-5">
@@ -716,7 +716,7 @@ export function TransactionOverviewPage() {
                     {formatCurrency(metrics.totalRevenue)}
                   </span>
                   <p className="mt-2 text-xs text-[#a88a9f]">
-                    {language === "vi" ? "Tổng doanh thu giao dịch đã hoàn tất kiểm toán" : "Total audited Paid transactions"}
+                    {t("adminTransactions.totalAuditedPaid")}
                   </p>
                 </div>
               </div>
@@ -725,7 +725,7 @@ export function TransactionOverviewPage() {
               <div className="relative overflow-hidden rounded-[2.5rem] border border-[#f1e7ed]/60 bg-white/70 backdrop-blur-md p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.02)] border-l-4 border-l-indigo-500/80">
                 <div className="flex justify-between items-start">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[#a88a9f]">
-                    {language === "vi" ? "Tỷ lệ Giao dịch Thành công" : "Transaction Success Rate"}
+                    {t("adminTransactions.transactionSuccessRate")}
                   </span>
                   <span className="p-2 rounded-xl bg-indigo-50 text-indigo-600">
                     <CreditCard size={15} />
@@ -748,7 +748,7 @@ export function TransactionOverviewPage() {
               <div className="relative overflow-hidden rounded-[2.5rem] border border-[#f1e7ed]/60 bg-white/70 backdrop-blur-md p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.02)] border-l-4 border-l-amber-500/80">
                 <div className="flex justify-between items-start">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[#a88a9f]">
-                    {language === "vi" ? "Giao dịch Đang xử lý" : "Pending Payments"}
+                    {t("adminTransactions.pendingPayments")}
                   </span>
                   <span className="p-2 rounded-xl bg-amber-50 text-amber-600">
                     <Clock3 size={15} />
@@ -759,7 +759,7 @@ export function TransactionOverviewPage() {
                     {metrics.pendingCount}
                   </span>
                   <p className="mt-2 text-xs text-[#a88a9f]">
-                    {language === "vi" ? "Số giao dịch thanh toán chưa quyết toán" : "Unsettled payment checkout records"}
+                    {t("adminTransactions.unsettledRecords")}
                   </p>
                 </div>
               </div>
@@ -772,7 +772,7 @@ export function TransactionOverviewPage() {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]" size={15} />
                 <input
                   type="text"
-                  placeholder={language === "vi" ? "Tìm theo khách hàng, mã đơn hàng..." : "Search by customer, order code..."}
+                  placeholder={t("adminTransactions.searchTransactions")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300"
@@ -790,7 +790,7 @@ export function TransactionOverviewPage() {
               {/* Status Dropdown */}
               <div className="flex items-center gap-3 self-end sm:self-auto">
                 <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider">
-                  {language === "vi" ? "Trạng thái:" : "Status:"}
+                  {t("adminTransactions.statusLabel")}
                 </span>
                 <Select
                   value={statusFilter}
@@ -798,11 +798,11 @@ export function TransactionOverviewPage() {
                   className="w-40 h-11 select-premium-antd"
                   popupClassName="select-premium-dropdown"
                   options={[
-                    { value: "all", label: language === "vi" ? "Tất cả trạng thái" : "All Statuses" },
-                    { value: "paid", label: language === "vi" ? "Đã thanh toán" : "Paid" },
-                    { value: "pending", label: language === "vi" ? "Chờ xử lý" : "Pending" },
-                    { value: "expired", label: language === "vi" ? "Hết hạn" : "Expired" },
-                    { value: "canceled", label: language === "vi" ? "Đã hủy" : "Canceled" }
+                    { value: "all", label: t("adminTransactions.allStatuses") },
+                    { value: "paid", label: t("adminTransactions.paid") },
+                    { value: "pending", label: t("adminTransactions.pending") },
+                    { value: "expired", label: t("adminTransactions.expired") },
+                    { value: "canceled", label: t("adminTransactions.canceled") }
                   ]}
                   style={{
                     borderRadius: "1rem",
@@ -823,7 +823,7 @@ export function TransactionOverviewPage() {
                 >
                   <Spin size="large" />
                   <p className="mt-4 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] animate-pulse">
-                    {language === "vi" ? "Đang tải lịch sử giao dịch..." : "Loading transaction logs..."}
+                    {t("adminTransactions.loadingLogs")}
                   </p>
                 </motion.div>
               ) : transactionsError ? (
@@ -835,7 +835,7 @@ export function TransactionOverviewPage() {
                   className="p-6 bg-rose-50/50 rounded-3xl border border-rose-100"
                 >
                   <Alert
-                    message={language === "vi" ? "Cảnh báo Lấy Giao dịch" : "Transaction Fetch Warning"}
+                    message={t("adminTransactions.fetchWarning")}
                     description={transactionsError}
                     type="warning"
                     showIcon
@@ -844,7 +844,7 @@ export function TransactionOverviewPage() {
                         onClick={loadTransactions}
                         className="px-3.5 py-2 bg-white border border-rose-200 rounded-xl text-xs font-bold text-rose-700 transition hover:bg-rose-50"
                       >
-                        {language === "vi" ? "Thử lại" : "Retry"}
+                        {t("adminTransactions.retry")}
                       </button>
                     }
                   />
@@ -861,10 +861,10 @@ export function TransactionOverviewPage() {
                     <AlertCircle size={30} className="stroke-[1.5]" />
                   </div>
                   <h3 className="text-sm font-bold text-[#2d1b35]">
-                    {language === "vi" ? "Không tìm thấy giao dịch nào" : "No Transactions Found"}
+                    {t("adminTransactions.noTransactions")}
                   </h3>
                   <p className="mt-1 text-xs text-[#a88a9f] max-w-[40ch] leading-relaxed">
-                    {language === "vi" ? "Không có lịch sử giao dịch nào được ghi nhận khớp với bộ lọc cho chi nhánh này." : "No transactions logs recorded matching filters for this salon branch."}
+                    {t("adminTransactions.noLogsMatch")}
                   </p>
                 </motion.div>
               ) : (
@@ -880,16 +880,16 @@ export function TransactionOverviewPage() {
                       <thead>
                         <tr className="border-b border-slate-100 bg-slate-50/75">
                           <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[12%]">
-                            {language === "vi" ? "Mã đơn hàng" : "Order Code"}
+                            {t("adminTransactions.orderCode")}
                           </th>
                           <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[20%]">
-                            {language === "vi" ? "Khách hàng & Chi nhánh" : "Customer & Location"}
+                            {t("adminTransactions.customerLocation")}
                           </th>
                           <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[12%]">
-                            {language === "vi" ? "Tổng cộng" : "Total Price"}
+                            {t("adminTransactions.totalPrice")}
                           </th>
                           <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[14%]">
-                            {language === "vi" ? "Tiền đặt cọc" : "Deposit Paid"}
+                            {t("adminTransactions.depositPaid")}
                           </th>
                           <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[14%]">
                             {language === "vi" ? "Còn lại phải trả" : "Remaining Balance"}
@@ -898,7 +898,7 @@ export function TransactionOverviewPage() {
                             {language === "vi" ? "Ngày tạo" : "Created At"}
                           </th>
                           <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[10%]">
-                            {language === "vi" ? "Trạng thái" : "Status"}
+                            {t("adminTransactions.status")}
                           </th>
                           <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] text-right w-[3%]">
                             {language === "vi" ? "Hành động" : "Actions"}
@@ -1156,7 +1156,7 @@ export function TransactionOverviewPage() {
 
                       <div className="flex justify-between border-t border-dashed border-[#e6decb] pt-2">
                         <span className="text-[#a88a9f] font-bold">
-                          {language === "vi" ? "Tổng cộng" : "Total Price"}
+                          {t("adminTransactions.totalPrice")}
                         </span>
                         <span className="font-mono font-bold text-[#2d1b35]">{formatCurrency(bookingDetails.totalPrice)}</span>
                       </div>
@@ -1210,7 +1210,7 @@ export function TransactionOverviewPage() {
 
                 {selectedTransaction.paidAt && (
                   <div className="flex justify-between text-xs">
-                    <span className="text-[#a88a9f]">{language === "vi" ? "Đã thanh toán" : "Paid"}</span>
+                    <span className="text-[#a88a9f]">{t("adminTransactions.paid")}</span>
                     <span className="text-[#2fa25f] font-semibold">{dayjs(selectedTransaction.paidAt).format("DD MMM YYYY, HH:mm:ss")}</span>
                   </div>
                 )}

@@ -46,7 +46,7 @@ function Pill({ children, tone = "bg-[#fff1f7] text-[#ea4f93]" }) {
 
 export function NailDesignManagementCategoryPage() {
   const navigate = useNavigate();
-  const { language } = useLanguage();
+  const { t, language } = useLanguage();
   const [categories, setCategories] = useState([]);
   const [draft, setDraft] = useState(emptyDraft);
   const [editingId, setEditingId] = useState(null);
@@ -103,7 +103,7 @@ export function NailDesignManagementCategoryPage() {
         }
 
         setCategories([]);
-        setError(loadError instanceof Error ? loadError.message : (language === "vi" ? "Tải danh sách danh mục thất bại." : "Failed to load categories."));
+        setError(loadError instanceof Error ? loadError.message : (t("adminNailsDesignManagement.failedToLoadCategories")));
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -170,7 +170,7 @@ export function NailDesignManagementCategoryPage() {
     const normalizedName = draft.name.trim();
 
     if (!normalizedName) {
-      setFlashMessage(language === "vi" ? "Tên danh mục là bắt buộc." : "Category name is required.");
+      setFlashMessage(t("adminNailsDesignManagement.categoryNameIsRequired"));
       return;
     }
 
@@ -199,21 +199,21 @@ export function NailDesignManagementCategoryPage() {
 
   const handleDelete = () => {
     setPendingDeleteId(null);
-    setFlashMessage(language === "vi" ? "API xóa danh mục chưa được kết nối." : "Category delete API is not connected yet.");
+    setFlashMessage(t("adminNailsDesignManagement.categoryDeleteApiIsNotConnecte"));
   };
 
   const handleToggleStatus = (category) => {
     setFlashMessage(
-      language === "vi" 
-        ? `Thay đổi trạng thái cho ${category.name} chưa được kết nối với API.` 
+      language === "vi"
+        ? `Thay đổi trạng thái cho ${category.name} chưa được kết nối với API.`
         : `Status change for ${category.name} is not connected to API yet.`
     );
   };
 
   const pendingDeleteCategory = categories.find((item) => item.id === pendingDeleteId) ?? null;
-  const previewName = draft.name.trim() || (language === "vi" ? "Danh mục mới" : "New category");
+  const previewName = draft.name.trim() || (t("adminNailsDesignManagement.newCategory"));
   const previewDescription =
-    draft.description.trim() || (language === "vi" ? "Mô tả danh mục ngắn sẽ xuất hiện ở đây cho quản trị viên." : "A short catalog description will appear here for admins.");
+    draft.description.trim() || (t("adminNailsDesignManagement.aShortCatalogDescriptionWillAp"));
   const previewInitials = buildCategoryInitials(previewName);
   const descriptionLength = draft.description.trim().length;
 
@@ -230,10 +230,10 @@ export function NailDesignManagementCategoryPage() {
             </Link>
             <div>
               <h1 className="text-[26px] font-bold tracking-tight text-[#432744]">
-                {language === "vi" ? "Danh mục Thiết kế Mẫu móng" : "Nail Design Categories"}
+                {t("adminNailsDesignManagement.nailDesignCategories")}
               </h1>
               <p className="mt-1 text-[12px] text-[#c694ad]">
-                {language === "vi" ? "Danh sách danh mục được tải từ API GET /Categories." : "Category list is loaded from API `GET /Categories`."}
+                {t("adminNailsDesignManagement.categoryListIsLoadedFromApiGet")}
               </p>
             </div>
           </div>
@@ -243,13 +243,13 @@ export function NailDesignManagementCategoryPage() {
               onClick={() => navigate(ROUTES.adminNailDesigns)}
               className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
             >
-              {language === "vi" ? "Quay lại Thiết kế" : "Back To Designs"}
+              {t("adminNailsDesignManagement.backToDesigns")}
             </button>
             <Link
               to={ROUTES.adminNailDesignsCreate}
               className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
             >
-              {language === "vi" ? "Thêm Thiết kế" : "Add Design"}
+              {t("adminNailsDesignManagement.addDesign")}
             </Link>
           </div>
         </div>
@@ -262,7 +262,7 @@ export function NailDesignManagementCategoryPage() {
           </div>
           <p className="text-[28px] font-bold text-[#432744]">{summary.total}</p>
           <p className="mt-1 text-sm font-semibold text-[#8a7082]">
-            {language === "vi" ? "Tổng số Danh mục" : "Total Categories"}
+            {t("adminNailsDesignManagement.totalCategories")}
           </p>
         </div>
         <div className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
@@ -271,7 +271,7 @@ export function NailDesignManagementCategoryPage() {
           </div>
           <p className="text-[28px] font-bold text-[#432744]">{summary.active}</p>
           <p className="mt-1 text-sm font-semibold text-[#8a7082]">
-            {language === "vi" ? "Hoạt động trên Trang hiện tại" : "Active On Current Page"}
+            {t("adminNailsDesignManagement.activeOnCurrentPage")}
           </p>
         </div>
         <div className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
@@ -280,7 +280,7 @@ export function NailDesignManagementCategoryPage() {
           </div>
           <p className="text-[28px] font-bold text-[#432744]">{summary.draftCount}</p>
           <p className="mt-1 text-sm font-semibold text-[#8a7082]">
-            {language === "vi" ? "Không hoạt động trên Trang hiện tại" : "Non-Active On Current Page"}
+            {t("adminNailsDesignManagement.nonactiveOnCurrentPage")}
           </p>
         </div>
         <div className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
@@ -289,7 +289,7 @@ export function NailDesignManagementCategoryPage() {
           </div>
           <p className="text-[28px] font-bold text-[#432744]">{summary.totalTypes}</p>
           <p className="mt-1 text-sm font-semibold text-[#8a7082]">
-            {language === "vi" ? "Loại Danh mục trên Trang" : "Category Types On Page"}
+            {t("adminNailsDesignManagement.categoryTypesOnPage")}
           </p>
         </div>
       </section>
@@ -300,18 +300,16 @@ export function NailDesignManagementCategoryPage() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <span className="inline-flex rounded-full bg-white/90 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#ea4f93] shadow-[0_8px_20px_rgba(236,72,153,0.08)]">
-                  {language === "vi" ? "Trình chỉnh sửa Danh mục" : "Catalog Editor"}
+                  {t("adminNailsDesignManagement.catalogEditor")}
                 </span>
                 <h2 className="mt-3 text-lg font-bold text-[#432744]">
-                  {editingId 
-                    ? (language === "vi" ? "Chỉnh sửa Danh mục" : "Edit Category") 
-                    : (language === "vi" ? "Thêm Danh mục" : "Add Category")
+                  {editingId
+                    ? (t("adminNailsDesignManagement.editCategory"))
+                    : (t("adminNailsDesignManagement.addCategory"))
                   }
                 </h2>
                 <p className="mt-1 text-[12px] leading-5 text-[#a37792]">
-                  {language === "vi"
-                    ? "Giao diện biểu mẫu có sẵn, nhưng API tạo/cập nhật/xóa danh mục chưa được kết nối."
-                    : "Form UI is available, but create/update/delete category APIs are not connected yet."
+                  {t("adminNailsDesignManagement.formUiIsAvailableButCreateupda")
                   }
                 </p>
               </div>
@@ -338,7 +336,7 @@ export function NailDesignManagementCategoryPage() {
                       {previewName}
                     </p>
                     <Pill tone="bg-[#fff1f7] text-[#ea4f93]">
-                      {editingId ? (language === "vi" ? "Đang chỉnh sửa" : "Editing") : (language === "vi" ? "Bản thảo Mới" : "New Draft")}
+                      {editingId ? (t("adminNailsDesignManagement.editing")) : (t("adminNailsDesignManagement.newDraft"))}
                     </Pill>
                   </div>
                   <p className="mt-2 text-sm leading-6 text-[#8a7082]">{previewDescription}</p>
@@ -347,29 +345,29 @@ export function NailDesignManagementCategoryPage() {
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
                 <div className="rounded-[16px] border border-[#f9dfeb] bg-[#fff9fc] px-3 py-3">
                   <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#c694ad]">
-                    {language === "vi" ? "Trạng thái" : "Status"}
+                    {t("adminNailsDesignManagement.status")}
                   </p>
                   <p className="mt-1 text-sm font-bold text-[#432744]">
-                    {editingId 
-                      ? (language === "vi" ? "Sẵn sàng cập nhật" : "Ready to update") 
-                      : (language === "vi" ? "Sẵn sàng tạo mới" : "Ready to create")
+                    {editingId
+                      ? (t("adminNailsDesignManagement.readyToUpdate"))
+                      : (t("adminNailsDesignManagement.readyToCreate"))
                     }
                   </p>
                 </div>
                 <div className="rounded-[16px] border border-[#f9dfeb] bg-[#fff9fc] px-3 py-3">
                   <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#c694ad]">
-                    {language === "vi" ? "Độ dài tên" : "Name length"}
+                    {t("adminNailsDesignManagement.nameLength")}
                   </p>
                   <p className="mt-1 text-sm font-bold text-[#432744]">
-                    {draft.name.trim().length || 0} {language === "vi" ? "ký tự" : "chars"}
+                    {draft.name.trim().length || 0} {t("adminNailsDesignManagement.chars")}
                   </p>
                 </div>
                 <div className="rounded-[16px] border border-[#f9dfeb] bg-[#fff9fc] px-3 py-3">
                   <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#c694ad]">
-                    {language === "vi" ? "Mô tả" : "Description"}
+                    {t("adminNailsDesignManagement.description")}
                   </p>
                   <p className="mt-1 text-sm font-bold text-[#432744]">
-                    {descriptionLength} {language === "vi" ? "ký tự" : "chars"}
+                    {descriptionLength} {t("adminNailsDesignManagement.chars")}
                   </p>
                 </div>
               </div>
@@ -380,16 +378,16 @@ export function NailDesignManagementCategoryPage() {
             <label className="block">
               <div className="mb-2 flex items-center justify-between gap-2">
                 <span className="block text-[12px] font-bold text-[#8a7082]">
-                  {language === "vi" ? "Tên Danh mục" : "Category Name"}
+                  {t("adminNailsDesignManagement.categoryName")}
                 </span>
                 <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#c694ad]">
-                  {language === "vi" ? "Bắt buộc" : "Required"}
+                  {t("adminNailsDesignManagement.required")}
                 </span>
               </div>
               <input
                 value={draft.name}
                 onChange={(event) => handleDraftChange("name", event.target.value)}
-                placeholder={language === "vi" ? "Ví dụ: Ánh kim lấp lánh" : "Ex: Glitter Luxe"}
+                placeholder={t("adminNailsDesignManagement.exGlitterLuxe")}
                 className="h-12 w-full rounded-2xl border border-[#f5d7e4] bg-[#fff9fc] px-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4] focus:bg-white"
               />
             </label>
@@ -397,16 +395,16 @@ export function NailDesignManagementCategoryPage() {
             <label className="block">
               <div className="mb-2 flex items-center justify-between gap-2">
                 <span className="block text-[12px] font-bold text-[#8a7082]">
-                  {language === "vi" ? "Mô tả" : "Description"}
+                  {t("adminNailsDesignManagement.description")}
                 </span>
                 <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#c694ad]">
-                  {language === "vi" ? "Tùy chọn" : "Optional"}
+                  {t("adminNailsDesignManagement.optional")}
                 </span>
               </div>
               <textarea
                 value={draft.description}
                 onChange={(event) => handleDraftChange("description", event.target.value)}
-                placeholder={language === "vi" ? "Mô tả ngắn dành cho quản trị viên và bán hàng." : "Short description for admins and merchandising."}
+                placeholder={t("adminNailsDesignManagement.shortDescriptionForAdminsAndMe")}
                 rows={5}
                 className="w-full rounded-2xl border border-[#f5d7e4] bg-[#fff9fc] px-4 py-3 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4] focus:bg-white"
               />
@@ -414,12 +412,10 @@ export function NailDesignManagementCategoryPage() {
 
             <div className="rounded-[18px] border border-dashed border-[#f3c9dd] bg-[#fff8fb] px-4 py-3">
               <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#c694ad]">
-                {language === "vi" ? "Mẹo viết" : "Writing tip"}
+                {t("adminNailsDesignManagement.writingTip")}
               </p>
               <p className="mt-1 text-sm leading-6 text-[#8a7082]">
-                {language === "vi"
-                  ? "Sử dụng tên ngắn gọn với chủ đề trực quan mạnh mẽ, sau đó mô tả tâm trạng của bộ sưu tập hoặc nhóm danh mục."
-                  : "Use short names with a strong visual theme, then describe the collection mood or catalog grouping."
+                {t("adminNailsDesignManagement.useShortNamesWithAStrongVisual")
                 }
               </p>
             </div>
@@ -430,9 +426,9 @@ export function NailDesignManagementCategoryPage() {
                 className="inline-flex items-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2.5 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
               >
                 <Save size={13} className="mr-1.5" />
-                {editingId 
-                  ? (language === "vi" ? "Lưu Danh mục" : "Save Category") 
-                  : (language === "vi" ? "Tạo Danh mục" : "Create Category")
+                {editingId
+                  ? (t("adminNailsDesignManagement.saveCategory"))
+                  : (t("adminNailsDesignManagement.createCategory"))
                 }
               </button>
               <button
@@ -441,7 +437,7 @@ export function NailDesignManagementCategoryPage() {
                 className="inline-flex items-center rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
               >
                 <X size={13} className="mr-1.5" />
-                {language === "vi" ? "Đặt lại" : "Reset"}
+                {t("adminNailsDesignManagement.reset")}
               </button>
             </div>
           </form>
@@ -451,16 +447,14 @@ export function NailDesignManagementCategoryPage() {
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
               <h2 className="text-sm font-extrabold text-[#432744]">
-                {language === "vi" ? "Danh sách Danh mục" : "Category List"}
+                {t("adminNailsDesignManagement.categoryList")}
               </h2>
               <p className="mt-1 text-[11px] text-[#c694ad]">
-                {language === "vi" 
-                  ? "Được tải từ API với phân trang và bộ lọc tên."
-                  : "Loaded from API with pagination and name filter."
+                {t("adminNailsDesignManagement.loadedFromApiWithPaginationAnd")
                 }
               </p>
             </div>
-            <Pill>{metaData.totalItems} {language === "vi" ? "mục" : "items"}</Pill>
+            <Pill>{metaData.totalItems} {t("adminNailsDesignManagement.items")}</Pill>
           </div>
 
           {flashMessage ? (
@@ -483,7 +477,7 @@ export function NailDesignManagementCategoryPage() {
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder={language === "vi" ? "Tìm kiếm danh mục theo tên..." : "Search categories by name..."}
+              placeholder={t("adminNailsDesignManagement.searchCategoriesByName")}
               className="h-10 w-full rounded-full border border-[#f5d7e4] bg-[#fff9fc] pl-10 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
             />
           </label>
@@ -493,7 +487,7 @@ export function NailDesignManagementCategoryPage() {
               <div className="rounded-[18px] border border-[#f8dce8] bg-[#fffafb] px-5 py-10">
                 <div className="flex items-center justify-center gap-3 text-sm text-[#b38a9f]">
                   <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
-                  {language === "vi" ? "Đang tải các danh mục..." : "Loading categories..."}
+                  {t("adminNailsDesignManagement.loadingCategories")}
                 </div>
               </div>
             ) : categories.length ? (
@@ -513,9 +507,9 @@ export function NailDesignManagementCategoryPage() {
                               : "bg-[#fff7e7] text-[#cc8a16]"
                           }
                         >
-                          {category.status === "Active" 
-                            ? (language === "vi" ? "Hoạt động" : "Active") 
-                            : (language === "vi" ? "Ngừng hoạt động" : "Inactive")
+                          {category.status === "Active"
+                            ? (t("adminNailsDesignManagement.active"))
+                            : (t("adminNailsDesignManagement.inactive"))
                           }
                         </Pill>
                         <Pill tone="bg-[#eef4ff] text-[#3f68c9]">{category.categoryTypeName}</Pill>
@@ -534,7 +528,7 @@ export function NailDesignManagementCategoryPage() {
                         onClick={() => handleToggleStatus(category)}
                         className="rounded-full border border-[#f4c6da] bg-white px-3 py-1.5 text-[10px] font-bold text-[#8c7085]"
                       >
-                        {language === "vi" ? "Đổi Trạng thái" : "Toggle Status"}
+                        {t("adminNailsDesignManagement.toggleStatus")}
                       </button>
                       <button
                         type="button"
@@ -542,7 +536,7 @@ export function NailDesignManagementCategoryPage() {
                         className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93]"
                       >
                         <PencilLine size={12} className="mr-1 inline" />
-                        {language === "vi" ? "Sửa" : "Edit"}
+                        {t("adminNailsDesignManagement.edit")}
                       </button>
                       <button
                         type="button"
@@ -550,7 +544,7 @@ export function NailDesignManagementCategoryPage() {
                         className="rounded-full border border-[#f9d0dc] bg-white px-3 py-1.5 text-[10px] font-bold text-[#d14c84]"
                       >
                         <Trash2 size={12} className="mr-1 inline" />
-                        {language === "vi" ? "Xóa" : "Delete"}
+                        {t("adminNailsDesignManagement.delete")}
                       </button>
                     </div>
                   </div>
@@ -558,7 +552,7 @@ export function NailDesignManagementCategoryPage() {
               ))
             ) : (
               <div className="rounded-[18px] border border-[#f8dce8] bg-[#fffafb] px-5 py-10 text-center text-sm text-[#8a7082]">
-                {language === "vi" ? "Không tìm thấy danh mục nào." : "No categories found."}
+                {t("adminNailsDesignManagement.noCategoriesFound")}
               </div>
             )}
           </div>
@@ -625,37 +619,37 @@ export function NailDesignManagementCategoryPage() {
       <ActionConfirmModal
         open={showSubmitConfirm}
         intent="success"
-        title={editingId ? (language === "vi" ? "Lưu Thay Đổi Danh Mục" : "Save Category Changes") : (language === "vi" ? "Tạo Danh Mục" : "Create Category")}
-        subtitle={language === "vi" ? "API tạo/cập nhật danh mục chưa được kết nối." : "Category create/update API is not connected yet."}
+        title={editingId ? (t("adminNailsDesignManagement.saveCategoryChanges")) : (t("adminNailsDesignManagement.createCategory"))}
+        subtitle={t("adminNailsDesignManagement.categoryCreateupdateApiIsNotCo")}
         description={
           editingId
-            ? (language === "vi" ? "Xác nhận cập nhật nhãn danh mục và mô tả mới nhất." : "Confirm to stage the latest category label and description changes.")
-            : (language === "vi" ? "Xác nhận tạo bản thảo danh mục này." : "Confirm to stage this category draft.")
+            ? (t("adminNailsDesignManagement.confirmToStageTheLatestCategor"))
+            : (t("adminNailsDesignManagement.confirmToStageThisCategoryDraf"))
         }
-        confirmText={editingId ? (language === "vi" ? "Lưu Danh Mục" : "Save Category") : (language === "vi" ? "Tạo Danh Mục" : "Create Category")}
-        cancelText={language === "vi" ? "Xem lại" : "Review Again"}
+        confirmText={editingId ? (t("adminNailsDesignManagement.saveCategory")) : (t("adminNailsDesignManagement.createCategory"))}
+        cancelText={t("adminNailsDesignManagement.reviewAgain")}
         confirmIcon={Save}
         onConfirm={() => {
           setShowSubmitConfirm(false);
           applyDraftChanges();
         }}
         onCancel={() => setShowSubmitConfirm(false)}
-        highlights={[draft.name || (language === "vi" ? "Đang chờ tên danh mục" : "Category name pending"), editingId ? (language === "vi" ? "Chế độ sửa" : "Edit mode") : (language === "vi" ? "Chế độ tạo" : "Create mode")]}
+        highlights={[draft.name || (t("adminNailsDesignManagement.categoryNamePending")), editingId ? (t("adminNailsDesignManagement.editMode")) : (t("adminNailsDesignManagement.createMode"))]}
         details={[
-          { label: language === "vi" ? "Mô tả" : "Description", value: draft.description || (language === "vi" ? "Không có mô tả nào được nhập" : "No description entered") },
-          { label: language === "vi" ? "Phạm vi" : "Catalog Scope", value: language === "vi" ? "Danh mục thiết kế móng" : "Nail design categories" },
+          { label: t("adminNailsDesignManagement.description"), value: draft.description || (t("adminNailsDesignManagement.noDescriptionEntered")) },
+          { label: t("adminNailsDesignManagement.catalogScope"), value: t("adminNailsDesignManagement.nailDesignCategories1") },
         ]}
-        warnings={[language === "vi" ? "Danh sách bên phải chỉ được tải từ API. Biểu mẫu này chưa lưu vào cơ sở dữ liệu." : "The list on the right is loaded from API only. This form does not persist to backend yet."]}
+        warnings={[t("adminNailsDesignManagement.theListOnTheRightIsLoadedFromA")]}
       />
 
       <ActionConfirmModal
         open={Boolean(pendingDeleteCategory)}
         intent="danger"
-        title={language === "vi" ? "Xóa Danh Mục" : "Delete Category"}
-        subtitle={language === "vi" ? "API xóa danh mục chưa được kết nối." : "Category delete API is not connected yet."}
+        title={t("adminNailsDesignManagement.deleteCategory")}
+        subtitle={t("adminNailsDesignManagement.categoryDeleteApiIsNotConnecte")}
         description={language === "vi" ? `Bạn sắp xóa danh mục ${pendingDeleteCategory?.name ?? ""}.` : `You are about to delete ${pendingDeleteCategory?.name ?? "this category"}.`}
-        confirmText={language === "vi" ? "Xóa Danh Mục" : "Delete Category"}
-        cancelText={language === "vi" ? "Giữ lại" : "Keep Category"}
+        confirmText={t("adminNailsDesignManagement.deleteCategory")}
+        cancelText={t("adminNailsDesignManagement.keepCategory")}
         confirmIcon={Trash2}
         onConfirm={handleDelete}
         onCancel={() => setPendingDeleteId(null)}
@@ -663,12 +657,12 @@ export function NailDesignManagementCategoryPage() {
           pendingDeleteCategory
             ? {
               title: pendingDeleteCategory.name,
-              meta: `${pendingDeleteCategory.status === "Active" ? (language === "vi" ? "Hoạt động" : "Active") : (language === "vi" ? "Ngừng hoạt động" : "Inactive")} • ${pendingDeleteCategory.categoryTypeName}`,
+              meta: `${pendingDeleteCategory.status === "Active" ? (t("adminNailsDesignManagement.active")) : (t("adminNailsDesignManagement.inactive"))} • ${pendingDeleteCategory.categoryTypeName}`,
               // note: `Category ID #${pendingDeleteCategory.categoryId}`,
             }
             : null
         }
-        warnings={[language === "vi" ? "Hành động xóa chưa kết nối với máy chủ, do đó danh sách API sẽ không thay đổi." : "Delete is not connected to backend, so the API list will not change."]}
+        warnings={[t("adminNailsDesignManagement.deleteIsNotConnectedToBackendS")]}
       />
     </section>
   );

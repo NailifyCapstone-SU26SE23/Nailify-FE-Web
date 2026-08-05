@@ -130,7 +130,7 @@ export function StaffCreatePage() {
       setShowSaveModal(false);
       setSaveResult({
         success: false,
-        message: error?.response?.data?.message || error?.message || (language === "vi" ? "Tạo nhân viên thất bại." : "Failed to create staff member."),
+        message: error?.response?.data?.message || error?.message || (t("adminStaffManagement.staffAddFailed")),
       });
     }
   };
@@ -161,7 +161,7 @@ export function StaffCreatePage() {
       <header className="mb-4 flex flex-col gap-4 rounded-[20px] bg-white/70 px-4 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur sm:mb-5 sm:rounded-[24px] sm:px-5 lg:rounded-[28px] lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           <h1 className="text-xl font-bold tracking-tight text-[#cf3d74] sm:text-2xl lg:text-[28px]">
-            {language === "vi" ? "Thêm Nhân Viên Mới" : "Add New Staff"}
+            {t("adminStaffManagement.addNewStaff")}
           </h1>
           <p className="text-[11px] font-medium text-slate-400 sm:text-[12px]">
             {language === "vi" ? "Tạo hồ sơ nhân viên mới, phân công chi nhánh, vai trò và lịch làm việc" : "Create a new staff profile, assign salon, role, and weekly schedule"}
@@ -175,7 +175,7 @@ export function StaffCreatePage() {
             className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
           >
             <X size={14} />
-            {language === "vi" ? "Hủy bỏ" : "Cancel"}
+            {t("adminStaffManagement.cancel")}
           </button>
           <button
             type="button"
@@ -183,7 +183,7 @@ export function StaffCreatePage() {
             className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
           >
             <Save size={14} />
-            {language === "vi" ? "Lưu lại" : "Save Staff"}
+            {t("adminStaffManagement.saveStaff")}
           </button>
         </div>
       </header>
@@ -193,13 +193,13 @@ export function StaffCreatePage() {
           <div className="rounded-[28px] bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur border border-rose-50">
             <h2 className="mb-6 text-[20px] font-bold text-slate-800 flex items-center gap-2">
               <div className="h-1.5 w-12 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]"></div>
-              {language === "vi" ? "Thông tin Nhân viên" : "Staff Details"}
+              {t("adminStaffManagement.staffDetails")}
             </h2>
 
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-2">
                 <span className="text-[13px] font-semibold text-slate-600">
-                  {language === "vi" ? "Tên" : "First Name"} <span className="text-rose-500">*</span>
+                  {t("adminStaffManagement.firstName")} <span className="text-rose-500">*</span>
                 </span>
                 <div className={inputWrapperClassName}>
                   <User size={14} className="shrink-0 text-rose-300" />
@@ -207,7 +207,7 @@ export function StaffCreatePage() {
                     type="text"
                     value={formData.firstName}
                     onChange={(event) => handleInputChange("firstName", event.target.value)}
-                    placeholder={language === "vi" ? "Nhập tên" : "Enter first name"}
+                    placeholder={t("adminStaffManagement.enterFirstName")}
                     className={inputClassName}
                     required
                   />
@@ -216,7 +216,7 @@ export function StaffCreatePage() {
 
               <div className="space-y-2">
                 <span className="text-[13px] font-semibold text-slate-600">
-                  {language === "vi" ? "Họ" : "Last Name"} <span className="text-rose-500">*</span>
+                  {t("adminStaffManagement.lastName")} <span className="text-rose-500">*</span>
                 </span>
                 <div className={inputWrapperClassName}>
                   <User size={14} className="shrink-0 text-rose-300" />
@@ -224,7 +224,7 @@ export function StaffCreatePage() {
                     type="text"
                     value={formData.lastName}
                     onChange={(event) => handleInputChange("lastName", event.target.value)}
-                    placeholder={language === "vi" ? "Nhập họ" : "Enter last name"}
+                    placeholder={t("adminStaffManagement.enterLastName")}
                     className={inputClassName}
                     required
                   />
@@ -250,7 +250,7 @@ export function StaffCreatePage() {
 
               <div className="space-y-2">
                 <span className="text-[13px] font-semibold text-slate-600">
-                  {language === "vi" ? "Số điện thoại" : "Phone Number"} <span className="text-rose-500">*</span>
+                  {t("adminStaffManagement.phoneNumber")} <span className="text-rose-500">*</span>
                 </span>
                 <div className={inputWrapperClassName}>
                   <Phone size={14} className="shrink-0 text-rose-300" />
@@ -267,7 +267,7 @@ export function StaffCreatePage() {
 
               <div className="space-y-2">
                 <span className="text-[13px] font-semibold text-slate-600">
-                  {language === "vi" ? "Vai trò" : "Role"}
+                  {t("adminStaffManagement.role")}
                 </span>
                 <Select
                   value={formData.role}
@@ -276,7 +276,7 @@ export function StaffCreatePage() {
                     const roleLabelMap = { Staff_Artist: "Nhân viên làm móng", Manager: "Quản lý", Receptionist: "Lễ tân" };
                     return {
                       value: option.value,
-                      label: language === "vi" ? roleLabelMap[option.value] || option.label : option.label,
+                      label: t("adminStaffManagement." + (option.value === "Staff_Artist" ? "staffArtist" : option.value === "Manager" ? "manager" : "receptionist")),
                     };
                   })}
                   className="w-full"
@@ -286,7 +286,7 @@ export function StaffCreatePage() {
 
               <div className="space-y-2">
                 <span className="text-[13px] font-semibold text-slate-600">
-                  {language === "vi" ? "Chi nhánh phân bổ" : "Assigned Salon"}
+                  {t("adminStaffManagement.assignedSalon")}
                 </span>
                 <Select
                   value={formData.salonId}
@@ -306,7 +306,7 @@ export function StaffCreatePage() {
 
               <div className="space-y-2 md:col-span-2">
                 <span className="text-[13px] font-semibold text-slate-600">
-                  {language === "vi" ? "Ảnh đại diện" : "Avatar"}
+                  {t("adminStaffManagement.avatar")}
                 </span>
                 <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-rose-200 bg-gradient-to-br from-[#fffafc] to-[#fff5f9] px-6 py-8 cursor-pointer transition-all duration-300 hover:border-rose-300 hover:bg-gradient-to-br hover:from-[#fff8fb] hover:to-[#fff1f6] hover:shadow-[0_8px_24px_rgba(226,93,143,0.12)]">
                   {imagePreview ? (
@@ -330,8 +330,8 @@ export function StaffCreatePage() {
                         <Upload size={28} />
                       </div>
                       <div className="text-center">
-                        <p className="text-base font-semibold text-slate-700">{language === "vi" ? "Nhấn vào đây để tải ảnh đại diện lên" : "Click to upload staff avatar"}</p>
-                        <p className="text-xs text-slate-400 mt-1">{language === "vi" ? "Chấp nhận PNG, JPG lên đến 5MB" : "PNG, JPG up to 5MB"}</p>
+                        <p className="text-base font-semibold text-slate-700">{t("adminStaffManagement.clickUploadAvatar")}</p>
+                        <p className="text-xs text-slate-400 mt-1">{t("adminStaffManagement.uploadFormat")}</p>
                       </div>
                       <input
                         type="file"
@@ -351,7 +351,7 @@ export function StaffCreatePage() {
           <div className="rounded-[28px] bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur border border-rose-50">
             <h2 className="mb-6 text-[20px] font-bold text-slate-800 flex items-center gap-2">
               <div className="h-1.5 w-12 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]"></div>
-              {language === "vi" ? "Xem trước hồ sơ" : "Profile Preview"}
+              {t("adminStaffManagement.profilePreview")}
             </h2>
 
             <div className="space-y-4">
@@ -374,7 +374,7 @@ export function StaffCreatePage() {
                     {formData.fullName || formData.firstName + " " + formData.lastName || (language === "vi" ? "Nhân viên mới" : "New Staff Member")}
                   </h3>
                   <p className="text-xs text-slate-400 mb-3">
-                    {selectedRole ? (language === "vi" ? { Staff_Artist: "Nhân viên làm móng", Manager: "Quản lý", Receptionist: "Lễ tân" }[selectedRole.value] || selectedRole.label : selectedRole.label) : (language === "vi" ? "Vai trò" : "Role")} · #{formData.staffId || "NF-NEW"}
+                    {selectedRole ? (t("adminStaffManagement." + (selectedRole.value === "Staff_Artist" ? "staffArtist" : selectedRole.value === "Manager" ? "manager" : "receptionist"))) : (t("adminStaffManagement.role"))} · #{formData.staffId || "NF-NEW"}
                   </p>
                   <p className="text-[11px] font-medium text-slate-400 text-center">
                     {language === "vi" ? "Chi nhánh phân bổ:" : "Assigned Salon:"}{" "}
@@ -446,7 +446,7 @@ export function StaffCreatePage() {
         onCancel={() => !isSaving && setShowSaveModal(false)}
         highlights={[formData.fullName || formData.firstName + " " + formData.lastName || (language === "vi" ? "Nhân viên mới" : "New staff member"), language === "vi" ? { Staff_Artist: "Nhân viên làm móng", Manager: "Quản lý", Receptionist: "Lễ tân" }[formData.role] || formData.role : formData.role]}
         details={[
-          { label: language === "vi" ? "Chi nhánh phân bổ" : "Assigned Salon", value: formData.assignedSalon || (language === "vi" ? "Chưa chọn chi nhánh" : "No salon selected") },
+          { label: t("adminStaffManagement.assignedSalon"), value: formData.assignedSalon || (language === "vi" ? "Chưa chọn chi nhánh" : "No salon selected") },
         ]}
       />
 

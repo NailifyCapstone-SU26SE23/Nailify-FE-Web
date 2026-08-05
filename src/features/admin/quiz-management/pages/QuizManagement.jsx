@@ -132,7 +132,7 @@ export function QuizManagement() {
             );
         } catch (err) {
             console.error(err);
-            showNotification(err instanceof Error ? err.message : (language === "vi" ? "Cập nhật trạng thái thất bại." : "Failed to update status."), "error");
+            showNotification(err instanceof Error ? err.message : (t("adminQuizManagement.failedToUpdateStatus")), "error");
         } finally {
             setIsLoading(false);
         }
@@ -151,11 +151,11 @@ export function QuizManagement() {
         try {
             await deleteQuizQuestion(deleteTarget.id);
             setQuestions(prev => prev.filter(q => q.id !== deleteTarget.id));
-            showNotification(language === "vi" ? "Xóa câu hỏi thành công." : "Question removed successfully.");
+            showNotification(t("adminQuizManagement.questionRemovedSuccessfully"));
             if (activeQuestionId === deleteTarget.id) handleCancelForm();
         } catch (err) {
             console.error(err);
-            showNotification(err instanceof Error ? err.message : (language === "vi" ? "Xóa câu hỏi thất bại." : "Failed to delete question."), "error");
+            showNotification(err instanceof Error ? err.message : (t("adminQuizManagement.failedToDeleteQuestion")), "error");
         } finally {
             setIsDeleting(false);
             setDeleteTarget(null);
@@ -310,10 +310,10 @@ export function QuizManagement() {
             setShapes(prev => prev.map(s => s.id === selectedShape.id ? updated : s));
             setSelectedShape(updated);
             setIsEditingShape(false);
-            showNotification(language === "vi" ? "Cập nhật quy tắc đề xuất thành công." : "Recommendation rules updated successfully.");
+            showNotification(t("adminQuizManagement.recommendationRulesUpdatedSucc"));
         } catch (err) {
             console.error(err);
-            showNotification(language === "vi" ? "Cập nhật quy tắc thất bại." : "Failed to update rules.", "error");
+            showNotification(t("adminQuizManagement.failedToUpdateRules"), "error");
         } finally {
             setIsLoading(false);
         }
@@ -325,28 +325,28 @@ export function QuizManagement() {
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 {[
                     { 
-                      label: language === "vi" ? "Bài Trắc Nghiệm Đã Xong" : "Completed Quizzes", 
+                      label: t("adminQuizManagement.completedQuizzes"), 
                       value: "4,924", 
                       icon: FileText, 
-                      desc: language === "vi" ? "Các đánh giá đã tính toán" : "Evaluations calculated" 
+                      desc: t("adminQuizManagement.evaluationsCalculated") 
                     },
                     { 
-                      label: language === "vi" ? "Các Bước Chẩn Đoán" : "Diagnostic Steps", 
+                      label: t("adminQuizManagement.diagnosticSteps"), 
                       value: activeQuestionsCount, 
                       icon: Sliders, 
-                      desc: language === "vi" ? "Các câu hỏi hoạt động trong luồng" : "Active questions in flow" 
+                      desc: t("adminQuizManagement.activeQuestionsInFlow") 
                     },
                     { 
-                      label: language === "vi" ? "Dáng Móng Đã Đăng Ký" : "Registered Shapes", 
+                      label: t("adminQuizManagement.registeredShapes"), 
                       value: shapes.length, 
                       icon: Layers, 
-                      desc: language === "vi" ? "Các kiểu dáng móng đề xuất mục tiêu" : "Target recommendation styles" 
+                      desc: t("adminQuizManagement.targetRecommendationStyles") 
                     },
                     { 
-                      label: language === "vi" ? "Tỷ Lệ Hoàn Thành" : "Completion Rate", 
+                      label: t("adminQuizManagement.completionRate"), 
                       value: "96.4%", 
                       icon: TrendingUp, 
-                      desc: language === "vi" ? "Độ chính xác tiến trình trắc nghiệm" : "Quiz progression accuracy" 
+                      desc: t("adminQuizManagement.quizProgressionAccuracy") 
                     }
                 ].map((item, idx) => {
                     const Icon = item.icon;
@@ -376,7 +376,7 @@ export function QuizManagement() {
                         <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#c099b2]" />
                         <input
                             type="text"
-                            placeholder={language === "vi" ? "Tìm kiếm câu hỏi..." : "Search quiz queries..."}
+                            placeholder={t("adminQuizManagement.searchQuizQueries")}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="h-11 w-full rounded-full border border-[#f5d7e4] bg-white/90 pl-11 pr-4 text-sm text-[#4b3345] outline-none transition placeholder:text-[#c0a8b9] focus:border-[#ef6bb4] focus:bg-white"
@@ -406,7 +406,7 @@ export function QuizManagement() {
                     className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-[#ea4f93] to-[#ff7eb3] px-6 text-sm font-extrabold text-white shadow-[0_8px_20px_rgba(234,79,147,0.3)] transition-all duration-300 hover:scale-105 hover:shadow-[0_12px_28px_rgba(234,79,147,0.4)] active:scale-95"
                 >
                     <Plus size={15} className="mr-2" />
-                    {language === "vi" ? "Tạo Câu hỏi" : "Create Question"}
+                    {t("adminQuizManagement.createQuestion")}
                 </Link>
             </div>
 
@@ -419,7 +419,7 @@ export function QuizManagement() {
                             Q
                         </span>
                         <h3 className="text-sm font-bold uppercase tracking-wider text-[#3f2034]">
-                          {language === "vi" ? "Các bước Khảo sát Chẩn đoán" : "Assessment Flow Steps"}
+                          {t("adminQuizManagement.assessmentFlowSteps")}
                         </h3>
                     </div>
 
@@ -450,7 +450,7 @@ export function QuizManagement() {
                                                             {language === "vi" ? `Bước ${q.sortOrder}` : `Step ${q.sortOrder}`}
                                                         </span>
                                                         <span className="text-[10px] font-bold text-[#a6869a] uppercase tracking-wider">
-                                                            {q.type === "SingleSelect" ? (language === "vi" ? "Chọn một" : "Single Select") : (language === "vi" ? "Chọn nhiều" : "Multiple Select")}
+                                                            {q.type === "SingleSelect" ? (t("adminQuizManagement.singleSelect")) : (t("adminQuizManagement.multipleSelect"))}
                                                         </span>
                                                         {q.categoryKey && (
                                                             <span className="text-[10px] font-bold text-[#8c6b81] bg-[#fdf2f7] px-2 py-0.5 rounded-md border border-[#fbe4ee]">
@@ -482,14 +482,14 @@ export function QuizManagement() {
                                                     <button
                                                         onClick={() => handleStartEdit(q)}
                                                         className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#f3cade] bg-white text-[#c95b90] hover:bg-[#fff0f6] transition-colors active:scale-[0.98]"
-                                                        title={language === "vi" ? "Chỉnh sửa bước" : "Edit step details"}
+                                                        title={t("adminQuizManagement.editStepDetails")}
                                                     >
                                                         <Edit3 size={11} />
                                                     </button>
                                                     <button
                                                         onClick={() => handleDeleteQuestion(q.id)}
                                                         className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#ffe0e6] bg-white text-[#d14c84] hover:bg-[#fff0f3] transition-colors active:scale-[0.98]"
-                                                        title={language === "vi" ? "Xóa bước" : "Remove step"}
+                                                        title={t("adminQuizManagement.removeStep")}
                                                     >
                                                         <Trash2 size={11} />
                                                     </button>
@@ -499,7 +499,7 @@ export function QuizManagement() {
                                             {/* Choice Option cards */}
                                             <div className="mt-4 border-t border-[#fcecf4] pt-4">
                                                 <p className="text-[10px] font-extrabold uppercase tracking-widest text-[#a6869a] mb-2">
-                                                  {language === "vi" ? "Tùy Chọn Đã Cấu Hình" : "Configured Options"}
+                                                  {t("adminQuizManagement.configuredOptions")}
                                                 </p>
                                                 <div className="flex flex-col gap-2">
                                                     {q.choices.map((choice, cIdx) => (
@@ -542,12 +542,10 @@ export function QuizManagement() {
                                     <HelpCircle size={20} />
                                 </div>
                                 <h4 className="text-base font-bold text-[#3f2034]">
-                                  {language === "vi" ? "Không Tìm Thấy Câu Hỏi Khảo Sát Nào" : "No Quiz Elements Found"}
+                                  {t("adminQuizManagement.noQuizElementsFound")}
                                 </h4>
                                 <p className="mt-2 text-xs text-[#8c7484] max-w-xs">
-                                  {language === "vi" 
-                                    ? "Vui lòng thử điều chỉnh bộ lọc tìm kiếm, đặt lại bộ lọc hoặc cấu hình một câu hỏi chẩn đoán mới." 
-                                    : "Try refining your search filter, resetting filters, or configure a diagnostic question."
+                                  {t("adminQuizManagement.tryRefiningYourSearchFilterRes")
                                   }
                                 </p>
                             </motion.div>
@@ -562,7 +560,7 @@ export function QuizManagement() {
                             S
                         </span>
                         <h3 className="text-sm font-bold uppercase tracking-wider text-[#3f2034]">
-                          {language === "vi" ? "Mô hình Đề xuất Dáng móng" : "Nail Shapes Recommendation Model"}
+                          {t("adminQuizManagement.nailShapesRecommendationModel")}
                         </h3>
                     </div>
 
@@ -592,7 +590,7 @@ export function QuizManagement() {
                             <div className="flex items-center justify-between border-b border-[#fcecf4] pb-3 mb-4">
                                 <div>
                                     <span className="text-[9px] font-bold uppercase tracking-widest text-[#a6869a] block">
-                                      {language === "vi" ? "Kiểu dáng Chẩn đoán Mục tiêu" : "Target Diagnostic Style"}
+                                      {t("adminQuizManagement.targetDiagnosticStyle")}
                                     </span>
                                     <h4 className="text-base font-bold text-[#3f2034] mt-0.5">{selectedShape.name}</h4>
                                 </div>
@@ -603,8 +601,8 @@ export function QuizManagement() {
                                     <Sliders size={11} />
                                     <span>
                                       {isEditingShape 
-                                        ? (language === "vi" ? "Hủy" : "Cancel") 
-                                        : (language === "vi" ? "Cấu hình Quy tắc" : "Configure Rules")
+                                        ? (t("adminQuizManagement.cancel")) 
+                                        : (t("adminQuizManagement.configureRules"))
                                       }
                                     </span>
                                 </button>
@@ -614,7 +612,7 @@ export function QuizManagement() {
                                 <form onSubmit={handleSaveShape} className="space-y-4">
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a6473]">
-                                          {language === "vi" ? "Mô tả dáng móng" : "Shape Description"}
+                                          {t("adminQuizManagement.shapeDescription")}
                                         </label>
                                         <textarea
                                             value={shapeEditData.description}
@@ -628,39 +626,39 @@ export function QuizManagement() {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="flex flex-col gap-1.5">
                                             <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a6473]">
-                                              {language === "vi" ? "Độ khó chăm sóc" : "Upkeep Difficulty"}
+                                              {t("adminQuizManagement.upkeepDifficulty")}
                                             </label>
                                             <select
                                                 value={shapeEditData.difficulty}
                                                 onChange={(e) => setShapeEditData(prev => ({ ...prev, difficulty: e.target.value }))}
                                                 className="h-10 w-full rounded-xl border border-[#f5d7e4] bg-[#fffbfc] px-3 text-xs text-[#4b3345] outline-none focus:border-[#ef6bb4]"
                                             >
-                                                <option value="Low">{language === "vi" ? "Bảo dưỡng thấp" : "Low Maintenance"}</option>
-                                                <option value="Medium">{language === "vi" ? "Bảo dưỡng trung bình" : "Medium Maintenance"}</option>
-                                                <option value="High">{language === "vi" ? "Bảo dưỡng cao" : "High Upkeep"}</option>
+                                                <option value="Low">{t("adminQuizManagement.lowMaintenance")}</option>
+                                                <option value="Medium">{t("adminQuizManagement.mediumMaintenance")}</option>
+                                                <option value="High">{t("adminQuizManagement.highUpkeep")}</option>
                                             </select>
                                         </div>
 
                                         <div className="flex flex-col gap-1.5">
                                             <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a6473]">
-                                              {language === "vi" ? "Độ khỏe móng yêu cầu" : "Nail Strength Required"}
+                                              {t("adminQuizManagement.nailStrengthRequired")}
                                             </label>
                                             <select
                                                 value={shapeEditData.strengthLevel}
                                                 onChange={(e) => setShapeEditData(prev => ({ ...prev, strengthLevel: e.target.value }))}
                                                 className="h-10 w-full rounded-xl border border-[#f5d7e4] bg-[#fffbfc] px-3 text-xs text-[#4b3345] outline-none focus:border-[#ef6bb4]"
                                             >
-                                                <option value="Flexible">{language === "vi" ? "Móng Mỏng / Dễ uốn" : "Thin / Flexible"}</option>
-                                                <option value="Moderate">{language === "vi" ? "Móng Bình thường" : "Moderate / Normal"}</option>
-                                                <option value="Excellent">{language === "vi" ? "Móng Khỏe / Chỉ móng Acrylic" : "Strong / Acrylics Only"}</option>
-                                                <option value="High Required">{language === "vi" ? "Yêu cầu móng rất khỏe" : "High Required"}</option>
+                                                <option value="Flexible">{t("adminQuizManagement.thinFlexible")}</option>
+                                                <option value="Moderate">{t("adminQuizManagement.moderateNormal")}</option>
+                                                <option value="Excellent">{t("adminQuizManagement.strongAcrylicsOnly")}</option>
+                                                <option value="High Required">{t("adminQuizManagement.highRequired")}</option>
                                             </select>
                                         </div>
                                     </div>
 
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a6473]">
-                                          {language === "vi" ? "Điều kiện quy tắc chẩn đoán (Trình kích hoạt)" : "Diagnostic Rules Conditions (Triggers)"}
+                                          {t("adminQuizManagement.diagnosticRulesConditionsTrigg")}
                                         </label>
                                         <textarea
                                             value={shapeEditData.rulesSummary}
@@ -675,7 +673,7 @@ export function QuizManagement() {
                                         type="submit"
                                         className="w-full inline-flex h-10 items-center justify-center rounded-xl bg-[#ea4f93] text-xs font-bold text-white shadow-md hover:bg-[#d14c84] transition-colors active:scale-[0.98]"
                                     >
-                                        {language === "vi" ? "Lưu Cấu hình Quy tắc" : "Save Rules Configuration"}
+                                        {t("adminQuizManagement.saveRulesConfiguration")}
                                     </button>
                                 </form>
                             ) : (
@@ -685,7 +683,7 @@ export function QuizManagement() {
                                     <div className="grid grid-cols-2 gap-4 border-t border-[#fcecf4] pt-4">
                                         <div>
                                             <span className="text-[9px] font-bold uppercase tracking-widest text-[#a6869a] block">
-                                              {language === "vi" ? "Độ khó Chăm sóc" : "Upkeep Difficulty"}
+                                              {t("adminQuizManagement.upkeepDifficulty")}
                                             </span>
                                             <span className="inline-flex mt-1 rounded-md bg-[#fff0f6] px-2 py-0.5 text-[10px] font-extrabold text-[#c95b90]">
                                                 {selectedShape.difficulty}
@@ -693,7 +691,7 @@ export function QuizManagement() {
                                         </div>
                                         <div>
                                             <span className="text-[9px] font-bold uppercase tracking-widest text-[#a6869a] block">
-                                              {language === "vi" ? "Độ khỏe móng" : "Nail Strength"}
+                                              {t("adminQuizManagement.nailStrength")}
                                             </span>
                                             <span className="inline-flex mt-1 rounded-md bg-[#fff0f6] px-2 py-0.5 text-[10px] font-extrabold text-[#c95b90]">
                                                 {selectedShape.strengthLevel}
@@ -703,7 +701,7 @@ export function QuizManagement() {
 
                                     <div className="border-t border-[#fcecf4] pt-4 bg-[#fffafc] rounded-xl p-3 border border-[#fbebf2]">
                                         <span className="text-[9px] font-bold uppercase tracking-widest text-[#ea4f93] flex items-center gap-1">
-                                            <Sparkles size={10} /> {language === "vi" ? "Quy tắc Mô hình Đề xuất" : "Model Targeting Rules"}
+                                            <Sparkles size={10} /> {t("adminQuizManagement.modelTargetingRules")}
                                         </span>
                                         <p className="mt-1.5 leading-relaxed text-[#6c485f] font-medium">{selectedShape.rulesSummary}</p>
                                     </div>
@@ -740,12 +738,12 @@ export function QuizManagement() {
                                     <div>
                                         <h3 className="text-base font-bold text-[#3f2034]">
                                             {activeQuestionId 
-                                              ? (language === "vi" ? "Chỉnh sửa Câu hỏi Chẩn đoán" : "Modify Diagnostic Question") 
-                                              : (language === "vi" ? "Tạo Câu hỏi Chẩn đoán" : "Create Diagnostic Question")
+                                              ? (t("adminQuizManagement.modifyDiagnosticQuestion")) 
+                                              : (t("adminQuizManagement.createDiagnosticQuestion"))
                                             }
                                         </h3>
                                         <p className="text-xs text-[#8c7484]">
-                                          {language === "vi" ? "Thêm các tùy chọn và liên kết đề xuất" : "Add options and recommendations mapping"}
+                                          {t("adminQuizManagement.addOptionsAndRecommendationsMa")}
                                         </p>
                                     </div>
                                     <button
@@ -760,7 +758,7 @@ export function QuizManagement() {
                                     {/* Question Text */}
                                     <div className="flex flex-col gap-2">
                                         <label className="text-xs font-bold uppercase tracking-wider text-[#7a6473]">
-                                            {language === "vi" ? "Nội dung Câu hỏi" : "Question Text"}
+                                            {t("adminQuizManagement.questionText")}
                                         </label>
                                         <textarea
                                             name="questionText"
@@ -782,7 +780,7 @@ export function QuizManagement() {
                                     <div className="grid grid-cols-3 gap-2">
                                         <div className="flex flex-col gap-2">
                                             <label className="text-xs font-bold uppercase tracking-wider text-[#7a6473]">
-                                                {language === "vi" ? "Thứ tự" : "Sort Order"}
+                                                {t("adminQuizManagement.sortOrder")}
                                             </label>
                                             <input
                                                 type="number"
@@ -796,7 +794,7 @@ export function QuizManagement() {
 
                                         <div className="flex flex-col gap-2">
                                             <label className="text-xs font-bold uppercase tracking-wider text-[#7a6473]">
-                                                {language === "vi" ? "Chế độ Chọn" : "Select Mode"}
+                                                {t("adminQuizManagement.selectMode")}
                                             </label>
                                             <select
                                                 name="type"
@@ -804,14 +802,14 @@ export function QuizManagement() {
                                                 onChange={handleFormChange}
                                                 className="h-10 w-full rounded-2xl border border-[#f5d7e4] bg-[#fffbfc] px-3 text-xs text-[#4b3345] outline-none focus:border-[#ef6bb4] transition"
                                             >
-                                                <option value="SingleSelect">{language === "vi" ? "Chọn một" : "Single Select"}</option>
-                                                <option value="MultiSelect">{language === "vi" ? "Chọn nhiều" : "Multiple Select"}</option>
+                                                <option value="SingleSelect">{t("adminQuizManagement.singleSelect")}</option>
+                                                <option value="MultiSelect">{t("adminQuizManagement.multipleSelect")}</option>
                                             </select>
                                         </div>
 
                                         <div className="flex flex-col gap-2">
                                             <label className="text-xs font-bold uppercase tracking-wider text-[#7a6473]">
-                                                {language === "vi" ? "Khóa Danh mục" : "Category Key"}
+                                                {t("adminQuizManagement.categoryKey")}
                                             </label>
                                             <input
                                                 type="text"
@@ -828,14 +826,14 @@ export function QuizManagement() {
                                     <div className="flex flex-col gap-2.5 border-t border-[#fcecf4] pt-4">
                                         <div className="flex justify-between items-center">
                                             <label className="text-xs font-bold uppercase tracking-wider text-[#7a6473]">
-                                                {language === "vi" ? "Tùy chọn Câu trả lời" : "Choice Options"}
+                                                {t("adminQuizManagement.choiceOptions")}
                                             </label>
                                             <button
                                                 type="button"
                                                 onClick={handleAddChoice}
                                                 className="inline-flex h-7 px-2.5 items-center justify-center gap-1.5 rounded-full border border-[#f3cade] bg-white text-[10px] font-extrabold text-[#c95b90] hover:bg-[#fff0f6] transition-all"
                                             >
-                                                <Plus size={10} /> {language === "vi" ? "Thêm Tùy chọn" : "Add Option"}
+                                                <Plus size={10} /> {t("adminQuizManagement.addOption")}
                                             </button>
                                         </div>
 
@@ -857,7 +855,7 @@ export function QuizManagement() {
                                                                 type="text"
                                                                 value={choice.text}
                                                                 onChange={(e) => handleChoiceFieldChange(choiceIdx, "text", e.target.value)}
-                                                                placeholder={language === "vi" ? "Nhãn (Tên hiển thị) Ví dụ: Tối giản" : "Label (Tên hiển thị) e.g., Tối giản"}
+                                                                placeholder={t("adminQuizManagement.labelTnHinThEgTiGin")}
                                                                 className="flex-1 h-9 rounded-xl border border-[#f5d7e4] bg-white px-3 text-xs text-[#4b3345] outline-none focus:border-[#ef6bb4] transition"
                                                             />
                                                         </div>
@@ -874,7 +872,7 @@ export function QuizManagement() {
                                                                 type="text"
                                                                 value={choice.description}
                                                                 onChange={(e) => handleChoiceFieldChange(choiceIdx, "description", e.target.value)}
-                                                                placeholder={language === "vi" ? "Mô tả (Description)" : "Description (Mô tả)"}
+                                                                placeholder={t("adminQuizManagement.descriptionMT")}
                                                                 className="h-8 rounded-lg border border-[#fcecf4] bg-white px-2.5 text-[11px] text-[#4b3345] outline-none focus:border-[#ef6bb4] transition"
                                                             />
                                                         </div>
@@ -886,7 +884,7 @@ export function QuizManagement() {
                                                             type="button"
                                                             onClick={() => handleRemoveChoice(choiceIdx)}
                                                             className="absolute right-2 top-2 h-6 w-6 inline-flex items-center justify-center text-[#d14c84] hover:bg-[#fff0f3] rounded-full transition-colors"
-                                                            title={language === "vi" ? "Xóa tùy chọn" : "Delete choice option"}
+                                                            title={t("adminQuizManagement.deleteChoiceOption")}
                                                         >
                                                             <X size={12} />
                                                         </button>
@@ -895,7 +893,7 @@ export function QuizManagement() {
                                                     {/* Recommended Shapes checkboxes grid */}
                                                     <div>
                                                         <p className="text-[9px] font-extrabold uppercase tracking-widest text-[#a6869a] mb-1.5">
-                                                          {language === "vi" ? "Dáng móng đề xuất" : "Recommends shapes"}
+                                                          {t("adminQuizManagement.recommendsShapes")}
                                                         </p>
                                                         <div className="grid grid-cols-3 gap-2">
                                                             {shapes.map((shape) => {
@@ -926,7 +924,7 @@ export function QuizManagement() {
                                         type="submit"
                                         className="w-full inline-flex h-11 items-center justify-center rounded-2xl bg-[#ea4f93] text-xs font-bold text-white shadow-md hover:bg-[#d14c84] transition-colors active:scale-[0.98]"
                                     >
-                                        {language === "vi" ? "Lưu Phần tử Chẩn đoán" : "Save Diagnostic Element"}
+                                        {t("adminQuizManagement.saveDiagnosticElement")}
                                     </button>
                                 </form>
                             </div>
@@ -970,8 +968,8 @@ export function QuizManagement() {
                                 <div className="flex-1 space-y-0.5 pr-2">
                                     <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#3f2034]">
                                         {notification.type === "error" 
-                                          ? (language === "vi" ? "Lỗi Hệ Thống" : "System Error") 
-                                          : (language === "vi" ? "Thành Công" : "Success")
+                                          ? (t("adminQuizManagement.systemError")) 
+                                          : (t("adminQuizManagement.success"))
                                         }
                                     </h4>
                                     <p className="text-[11.5px] leading-normal text-[#695463]">
@@ -995,7 +993,7 @@ export function QuizManagement() {
                 <DeleteConfirmModal
                     isOpen={!!deleteTarget}
                     isDeleting={isDeleting}
-                    title={language === "vi" ? "Xóa Câu hỏi Trắc nghiệm" : "Delete Quiz Question"}
+                    title={t("adminQuizManagement.deleteQuizQuestion")}
                     description={
                         deleteTarget
                             ? (language === "vi" 

@@ -1,3 +1,4 @@
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ArrowLeft, LoaderCircle, Save, Sliders, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -12,6 +13,7 @@ import {
 import { fetchAdminNailShapes } from "../../nail-shapes-management/services/nailShapesManagementService";
 
 export function ShapeMethodConfigDetailPage() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { configId } = useParams();
 
@@ -51,7 +53,7 @@ export function ShapeMethodConfigDetailPage() {
         });
       } catch (error) {
         if (isMounted) {
-          toast.error(error instanceof Error ? error.message : "Failed to load shape method config details.");
+          toast.error(error instanceof Error ? error.message : t("adminShapeMethodConfigs.loadDetailFailed"));
           navigate(ROUTES.adminShapeMethodConfigs, { replace: true });
         }
       } finally {
@@ -80,17 +82,17 @@ export function ShapeMethodConfigDetailPage() {
 
   const validate = () => {
     const newErrors = {};
-    if (!String(draft.name || "").trim()) newErrors.name = "Name is required.";
-    if (!draft.nailShapeId) newErrors.nailShapeId = "Nail shape is required.";
+    if (!String(draft.name || "").trim()) newErrors.name = t("adminShapeMethodConfigs.nameRequired");
+    if (!draft.nailShapeId) newErrors.nailShapeId = t("adminShapeMethodConfigs.shapeRequired");
 
     const priceNum = Number(draft.price);
     if (!draft.price || isNaN(priceNum) || priceNum < 0) {
-      newErrors.price = "Price must be a valid positive number.";
+      newErrors.price = t("adminShapeMethodConfigs.priceInvalid");
     }
 
     const durationNum = Number(draft.duration);
     if (!draft.duration || isNaN(durationNum) || durationNum <= 0) {
-      newErrors.duration = "Duration must be greater than 0.";
+      newErrors.duration = t("adminShapeMethodConfigs.durationInvalid");
     }
 
     setErrors(newErrors);
@@ -102,7 +104,7 @@ export function ShapeMethodConfigDetailPage() {
     if (!validate() || isSaving) return;
 
     setIsSaving(true);
-    const toastId = toast.loading("Updating shape method config...");
+    const toastId = toast.loading(t("adminShapeMethodConfigs.updatingConfig"));
 
     try {
       const updatedData = await updateAdminShapeMethodConfig(configId, {
@@ -121,9 +123,9 @@ export function ShapeMethodConfigDetailPage() {
         duration: updatedData.duration,
         status: updatedData.status,
       });
-      toast.success("Shape method config updated successfully.", { id: toastId });
+      toast.success(t("adminShapeMethodConfigs.updateSuccess"), { id: toastId });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update config.", { id: toastId });
+      toast.error(error instanceof Error ? error.message : t("adminShapeMethodConfigs.updateFailed"), { id: toastId });
     } finally {
       setIsSaving(false);
     }
@@ -133,17 +135,17 @@ export function ShapeMethodConfigDetailPage() {
     if (isDeleting) return;
 
     setIsDeleting(true);
-    const toastId = toast.loading("Deleting shape method config...");
+    const toastId = toast.loading(t("adminShapeMethodConfigs.deletingConfig"));
 
     try {
       await deleteAdminShapeMethodConfig(configId);
-      toast.success("Config deleted successfully.", { id: toastId });
+      toast.success(t("adminShapeMethodConfigs.deleteSuccess"), { id: toastId });
       navigate(ROUTES.adminShapeMethodConfigs, {
         replace: true,
-        state: { flashMessage: "Shape method config deleted successfully." },
+        state: { flashMessage: t("adminShapeMethodConfigs.deleteFlashSuccess") },
       });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to delete config.", { id: toastId });
+      toast.error(error instanceof Error ? error.message : t("adminShapeMethodConfigs.deleteFailed"), { id: toastId });
       setIsDeleting(false);
       setShowDeleteModal(false);
     }
@@ -166,7 +168,7 @@ export function ShapeMethodConfigDetailPage() {
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="flex items-center gap-3 text-[#cd98b1]">
           <LoaderCircle size={24} className="animate-spin text-[#ea4f93]" />
-          <span className="font-semibold tracking-wide">Loading config details...</span>
+          <span className="font-semibold tracking-wide">{t("adminShapeMethodConfigs.loadingConfigDetails")}</span>
         </div>
       </div>
     );
@@ -184,7 +186,7 @@ export function ShapeMethodConfigDetailPage() {
           className="inline-flex items-center gap-2 text-sm font-semibold text-[#cd98b1] transition-colors hover:text-[#ea4f93]"
         >
           <ArrowLeft size={16} />
-          Back to Configs
+          {t("adminShapeMethodConfigs.backToConfigs")}
         </Link>
         <button
           type="button"
@@ -192,7 +194,7 @@ export function ShapeMethodConfigDetailPage() {
           className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-red-200 bg-red-50 px-4 text-xs font-bold text-red-600 transition-colors hover:bg-red-100 hover:text-red-700"
         >
           <Trash2 size={14} />
-          Delete Config
+          {t("adminShapeMethodConfigs.deleteConfig")}
         </button>
       </div>
 
@@ -203,8 +205,8 @@ export function ShapeMethodConfigDetailPage() {
               <Sliders size={24} />
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-[#432744]">Config Details</h1>
-              <p className="mt-1 text-sm font-medium text-[#b58a9f]">Update shape method config information</p>
+              <h1 className="text-2xl font-bold tracking-tight text-[#432744]">{t("adminShapeMethodConfigs.configDetails")}</h1>
+              <p className="mt-1 text-sm font-medium text-[#b58a9f]">{t("adminShapeMethodConfigs.configDetailsDesc")}</p>
             </div>
           </div>
 
@@ -218,7 +220,7 @@ export function ShapeMethodConfigDetailPage() {
             <div className="space-y-6">
               <div>
                 <label htmlFor="name" className="mb-2 block text-sm font-bold text-[#5f4a5c]">
-                  Method Name <span className="text-[#ea4f93]">*</span>
+                  {t("adminShapeMethodConfigs.methodName")} <span className="text-[#ea4f93]">*</span>
                 </label>
                 <input
                   id="name"
@@ -236,7 +238,7 @@ export function ShapeMethodConfigDetailPage() {
 
               <div>
                 <label htmlFor="nailShapeId" className="mb-2 block text-sm font-bold text-[#5f4a5c]">
-                  Nail Shape <span className="text-[#ea4f93]">*</span>
+                  {t("adminShapeMethodConfigs.nailShape")} <span className="text-[#ea4f93]">*</span>
                 </label>
                 <select
                   id="nailShapeId"
@@ -249,7 +251,7 @@ export function ShapeMethodConfigDetailPage() {
                       : "border-[#f4dbe7] focus:border-[#ea4f93] focus:ring-[#ea4f93]/10"
                     }`}
                 >
-                  <option value="">Select a nail shape...</option>
+                  <option value="">{t("adminShapeMethodConfigs.selectNailShape")}</option>
                   {nailShapes.map((shape) => (
                     <option key={shape.nailShapeId} value={shape.nailShapeId}>
                       {shape.name}
@@ -262,7 +264,7 @@ export function ShapeMethodConfigDetailPage() {
               <div className="grid gap-6 sm:grid-cols-2">
                 <div>
                   <label htmlFor="price" className="mb-2 block text-sm font-bold text-[#5f4a5c]">
-                    Price (VND) <span className="text-[#ea4f93]">*</span>
+                    {t("adminShapeMethodConfigs.priceVnd")} <span className="text-[#ea4f93]">*</span>
                   </label>
                   <input
                     id="price"
@@ -282,7 +284,7 @@ export function ShapeMethodConfigDetailPage() {
 
                 <div>
                   <label htmlFor="duration" className="mb-2 block text-sm font-bold text-[#5f4a5c]">
-                    Duration (Mins) <span className="text-[#ea4f93]">*</span>
+                    {t("adminShapeMethodConfigs.durationMins")} <span className="text-[#ea4f93]">*</span>
                   </label>
                   <input
                     id="duration"
@@ -303,7 +305,7 @@ export function ShapeMethodConfigDetailPage() {
 
             <div className="space-y-6 lg:border-l lg:border-[#fdebf3] lg:pl-8">
               <div>
-                <label className="mb-3 block text-sm font-bold text-[#5f4a5c]">Status</label>
+                <label className="mb-3 block text-sm font-bold text-[#5f4a5c]">{t("adminShapeMethodConfigs.status")}</label>
                 <div className="flex gap-4">
                   <label className="flex cursor-pointer items-center gap-2">
                     <input
@@ -314,7 +316,7 @@ export function ShapeMethodConfigDetailPage() {
                       onChange={handleChange}
                       className="text-[#ea4f93] focus:ring-[#ea4f93]"
                     />
-                    <span className="text-sm font-semibold text-[#432744]">Active</span>
+                    <span className="text-sm font-semibold text-[#432744]">{t("adminShapeMethodConfigs.active")}</span>
                   </label>
                   <label className="flex cursor-pointer items-center gap-2">
                     <input
@@ -325,7 +327,7 @@ export function ShapeMethodConfigDetailPage() {
                       onChange={handleChange}
                       className="text-[#ea4f93] focus:ring-[#ea4f93]"
                     />
-                    <span className="text-sm font-semibold text-[#432744]">Inactive</span>
+                    <span className="text-sm font-semibold text-[#432744]">{t("adminShapeMethodConfigs.inactive")}</span>
                   </label>
                 </div>
               </div>
@@ -350,7 +352,7 @@ export function ShapeMethodConfigDetailPage() {
               }}
               className="inline-flex h-11 items-center justify-center rounded-full px-6 text-sm font-bold text-[#5f4a5c] transition-colors hover:bg-[#fce9f2] hover:text-[#ea4f93]"
             >
-              Discard Changes
+              {t("adminShapeMethodConfigs.discardChanges")}
             </button>
           )}
 
@@ -362,12 +364,12 @@ export function ShapeMethodConfigDetailPage() {
             {isSaving ? (
               <>
                 <LoaderCircle size={16} className="animate-spin" />
-                Saving...
+                {t("adminShapeMethodConfigs.saving")}
               </>
             ) : (
               <>
                 <Save size={16} />
-                Save Changes
+                {t("adminShapeMethodConfigs.saveChanges")}
               </>
             )}
           </button>
@@ -377,10 +379,10 @@ export function ShapeMethodConfigDetailPage() {
       {showDeleteModal && (
         <ActionConfirmModal
           isOpen
-          title="Delete Config"
-          description={`Are you sure you want to delete "${config.name}"? This action cannot be undone.`}
-          confirmLabel="Delete"
-          cancelLabel="Cancel"
+          title={t("adminShapeMethodConfigs.deleteConfigTitle")}
+          description={t("adminShapeMethodConfigs.deleteConfirmDesc", { name: config.name })}
+          confirmLabel={t("adminShapeMethodConfigs.delete")}
+          cancelLabel={t("adminShapeMethodConfigs.cancel")}
           icon={Trash2}
           isDestructive
           isLoading={isDeleting}

@@ -250,19 +250,19 @@ function BranchCard({ branch, onClick }) {
         <div className="space-y-3 text-[13px] text-[#5b4256]">
           <div className="flex items-center gap-2">
             <MapPin size={16} className="shrink-0 text-[#ea4f93]" />
-            <span className="truncate">{language === "vi" ? "Địa chỉ:" : "Address:"} {branch.address}</span>
+            <span className="truncate">{t("adminSalonManagement.address1")} {branch.address}</span>
           </div>
           <div className="flex items-center gap-2">
             <UserRound size={16} className="shrink-0 text-[#ea4f93]" />
-            <span className="truncate">{language === "vi" ? "Quản lý:" : "Manager:"} {branch.manager}</span>
+            <span className="truncate">{t("adminSalonManagement.manager1")} {branch.manager}</span>
           </div>
           <div className="flex items-center gap-2">
             <Phone size={16} className="shrink-0 text-[#ea4f93]" />
-            <span className="truncate">{language === "vi" ? "Số điện thoại:" : "Phone:"} {branch.phone}</span>
+            <span className="truncate">{t("adminSalonManagement.phone")} {branch.phone}</span>
           </div>
           <div className="flex items-center gap-2">
             <Clock3 size={16} className="shrink-0 text-[#ea4f93]" />
-            <span className="truncate">{language === "vi" ? "Giờ làm việc:" : "Hours:"} {branch.hours}</span>
+            <span className="truncate">{t("adminSalonManagement.hours")} {branch.hours}</span>
           </div>
         </div>
         <div className="mt-auto flex items-center justify-between border-t border-[#f5e2ec] pt-4">
@@ -670,19 +670,19 @@ export function SalonManagementPage() {
   const getSalonActionItems = (salon) => [
     {
       key: "view",
-      label: language === "vi" ? "Xem chi nhánh" : "View Salon",
+      label: t("adminSalonManagement.viewSalon"),
       icon: Eye,
       onSelect: () => handleViewSalon(salon),
     },
     {
       key: "edit",
-      label: language === "vi" ? "Chỉnh sửa chi nhánh" : "Edit Salon",
+      label: t("adminSalonManagement.editSalon"),
       icon: Pencil,
       onSelect: () => handleUpdateSalon(salon),
     },
     {
       key: "delete",
-      label: language === "vi" ? "Xóa chi nhánh" : "Delete Salon",
+      label: t("adminSalonManagement.deleteSalon"),
       icon: Trash2,
       className: "text-[#d14c84]",
       onSelect: () => handleDeleteSalon(salon),
@@ -797,8 +797,8 @@ export function SalonManagementPage() {
             <PremiumCard className="p-6">
               <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <SectionHeading
-                  title={language === "vi" ? "Tổng quan chi nhánh" : "Branch Overview"}
-                  subtitle={language === "vi" ? "Thông tin nhanh về các chi nhánh phù hợp bộ lọc của bạn" : "Snapshot cards for the branches matching your current filters"}
+                  title={t("adminSalonManagement.branchOverview")}
+                  subtitle={t("adminSalonManagement.snapshotCardsForTheBranchesMat")}
                 />
                 <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em]">
                   {SALON_STATUS_FILTERS.map((tab) => (
@@ -813,7 +813,7 @@ export function SalonManagementPage() {
                         : "bg-[#fff5fb] text-[#a88a9f] hover:bg-[#fde7ef] hover:text-[#ea4f93]"
                         }`}
                     >
-                      {tab === "All" ? (language === "vi" ? "Tất cả" : "All") : tab === "Active" ? (language === "vi" ? "Đang hoạt động" : "Active") : tab === "Inactive" ? (language === "vi" ? "Ngừng hoạt động" : "Inactive") : (language === "vi" ? "Bận" : "Busy")}
+                      {tab === "All" ? (t("adminSalonManagement.all")) : tab === "Active" ? (t("adminSalonManagement.active")) : tab === "Inactive" ? (t("adminSalonManagement.inactive")) : (t("adminSalonManagement.busy"))}
                     </motion.button>
                   ))}
                 </div>
@@ -873,9 +873,9 @@ export function SalonManagementPage() {
                 </div>
               ) : (
                 <div className="rounded-[28px] border border-dashed border-[#f0b7cf] bg-white px-8 py-12 text-center">
-                  <p className="text-[16px] font-bold text-[#2d1b35]">{language === "vi" ? "Không có chi nhánh nào phù hợp bộ lọc" : "No branches matched your filters"}</p>
+                  <p className="text-[16px] font-bold text-[#2d1b35]">{t("adminSalonManagement.noBranchesMatchedYourFilters")}</p>
                   <p className="mt-2 text-[13px] font-medium text-[#a88a9f]">
-                    {language === "vi" ? "Thử tìm kiếm từ khóa khác hoặc đổi trạng thái bộ lọc." : "Try a different keyword or switch the status tab."}
+                    {t("adminSalonManagement.tryADifferentKeywordOrSwitchTh")}
                   </p>
                 </div>
               )}
@@ -886,7 +886,7 @@ export function SalonManagementPage() {
               <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <SectionHeading
-                    title={language === "vi" ? "Quản lý chi nhánh" : "Branch Controls"}
+                    title={t("adminSalonManagement.branchControls")}
                     subtitle={language === "vi"
                       ? `Hiển thị ${filteredSalons.length} trên ${salons.length} chi nhánh${searchTerm ? ` • Tìm kiếm: "${searchTerm}"` : ""}${statusFilter !== "All" ? ` • Trạng thái: ${statusFilter === "Active" ? "Đang hoạt động" : statusFilter === "Inactive" ? "Ngừng hoạt động" : "Bận"}` : ""}`
                       : `Showing ${filteredSalons.length} of ${salons.length} salons${searchTerm ? ` • Search: "${searchTerm}"` : ""}${statusFilter !== "All" ? ` • Status: ${statusFilter}` : ""}`}
@@ -898,7 +898,7 @@ export function SalonManagementPage() {
                       <Search size={18} className="text-[#ea4f93]" />
                       <input
                         type="text"
-                        placeholder={language === "vi" ? "Tìm kiếm chi nhánh..." : "Search salons..."}
+                        placeholder={t("adminSalonManagement.searchSalons")}
                         value={searchTerm}
                         onChange={(event) => setSearchTerm(event.target.value)}
                         className="w-full bg-transparent text-[13px] text-[#2d1b35] outline-none placeholder:text-[#c8b0bf]"
@@ -921,16 +921,16 @@ export function SalonManagementPage() {
                         className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#ea4f93] to-[#cf3d74] px-6 py-3 text-[15px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition-all duration-300 hover:opacity-90"
                       >
                         <Plus size={20} />
-                        {language === "vi" ? "Thêm chi nhánh" : "Add Salon"}
+                        {t("adminSalonManagement.addSalon")}
                       </Link>
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center justify-end gap-3">
                     <SmallActionButton onClick={() => setShowAssignManagerModal(true)}>
-                      {language === "vi" ? "Phân bổ quản lý" : "Assign Manager"}
+                      {t("adminSalonManagement.assignManager")}
                     </SmallActionButton>
                     <SmallActionButton onClick={() => setShowHolidayClosureModal(true)}>
-                      {language === "vi" ? "Đóng cửa nghỉ lễ" : "Holiday Closure"}
+                      {t("adminSalonManagement.holidayClosure")}
                     </SmallActionButton>
                     <SmallActionButton onClick={() => {
                       setActivePeriod(null);
@@ -942,7 +942,7 @@ export function SalonManagementPage() {
                       setSelectedSalonId(null);
                       setShowSetHoursModal(true);
                     }}>
-                      {language === "vi" ? "Cài đặt giờ" : "Set Hours"}
+                      {t("adminSalonManagement.setHours")}
                     </SmallActionButton>
                   </div>
                 </div>
@@ -952,14 +952,14 @@ export function SalonManagementPage() {
                   <table className="w-full text-left">
                     <thead className="bg-[#fff9fb]">
                       <tr className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#a88a9f]">
-                        <th className="px-4 py-4 w-16">{language === "vi" ? "Ảnh" : "Avatar"}</th>
-                        <th className="px-4 py-4">{language === "vi" ? "Chi nhánh" : "Salon"}</th>
-                        <th className="px-4 py-4">{language === "vi" ? "Địa chỉ" : "Address"}</th>
-                        <th className="px-4 py-4">{language === "vi" ? "Quản lý" : "Manager"}</th>
-                        <th className="px-4 py-4">{language === "vi" ? "Nhân viên" : "Staff"}</th>
-                        <th className="px-4 py-4">{language === "vi" ? "Giờ mở cửa" : "Hours"}</th>
-                        <th className="px-4 py-4">{language === "vi" ? "Trạng thái" : "Status"}</th>
-                        <th className="px-4 py-4 text-right">{language === "vi" ? "Thao tác" : "Actions"}</th>
+                        <th className="px-4 py-4 w-16">{t("adminSalonManagement.avatar")}</th>
+                        <th className="px-4 py-4">{t("adminSalonManagement.salon")}</th>
+                        <th className="px-4 py-4">{t("adminSalonManagement.address")}</th>
+                        <th className="px-4 py-4">{t("adminSalonManagement.manager")}</th>
+                        <th className="px-4 py-4">{t("adminSalonManagement.staff")}</th>
+                        <th className="px-4 py-4">{t("adminSalonManagement.hours1")}</th>
+                        <th className="px-4 py-4">{t("adminSalonManagement.status")}</th>
+                        <th className="px-4 py-4 text-right">{t("adminSalonManagement.actions")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1015,7 +1015,7 @@ export function SalonManagementPage() {
                             </td>
                             <td className="px-4 py-4">
                               <div className="flex items-center justify-end gap-1.5">
-                                <Tooltip title={language === "vi" ? "Xem chi nhánh" : "View Salon"}>
+                                <Tooltip title={t("adminSalonManagement.viewSalon")}>
                                   <motion.button
                                     whileHover={{ scale: 1.08 }}
                                     whileTap={{ scale: 0.95 }}
@@ -1027,7 +1027,7 @@ export function SalonManagementPage() {
                                     <Eye size={14} />
                                   </motion.button>
                                 </Tooltip>
-                                <Tooltip title={language === "vi" ? "Chỉnh sửa chi nhánh" : "Edit Salon"}>
+                                <Tooltip title={t("adminSalonManagement.editSalon")}>
                                   <motion.button
                                     whileHover={{ scale: 1.08 }}
                                     whileTap={{ scale: 0.95 }}
@@ -1039,7 +1039,7 @@ export function SalonManagementPage() {
                                     <Pencil size={14} />
                                   </motion.button>
                                 </Tooltip>
-                                <Tooltip title={language === "vi" ? "Xóa chi nhánh" : "Delete Salon"}>
+                                <Tooltip title={t("adminSalonManagement.deleteSalon")}>
                                   <motion.button
                                     whileHover={{ scale: 1.08 }}
                                     whileTap={{ scale: 0.95 }}
