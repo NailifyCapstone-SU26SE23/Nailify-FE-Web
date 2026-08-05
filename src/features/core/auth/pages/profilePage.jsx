@@ -1,3 +1,4 @@
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { Alert, Spin } from "antd";
 import {
   Building2,
@@ -69,17 +70,17 @@ function InfoTile({ title, value, note }) {
   );
 }
 
-function formatRoleLabel(role) {
+function formatRoleLabel(role, t) {
   switch (String(role || "").toLowerCase()) {
     case "admin":
-      return "Admin";
+      return t("superAdmin") || "Admin";
     case "manager":
-      return "Salon Manager";
+      return t("salonManager") || "Salon Manager";
     case "receptionist":
-      return "Receptionist";
+      return t("receptionist") || "Receptionist";
     case "staff_artist":
     case "staff":
-      return "Staff Artist";
+      return t("nailArtist") || "Staff Artist";
     default:
       return role || "--";
   }
@@ -111,6 +112,7 @@ function getDashboardRouteByRole(role) {
 }
 
 export function ProfilePage() {
+  const { t } = useLanguage();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user, logout, role } = useAuth();
@@ -159,7 +161,7 @@ export function ProfilePage() {
       }
     } catch (err) {
       console.error("Failed to load profile data:", err);
-      setError(err?.message || "Failed to load profile.");
+      setError(err?.message || t("profile.loadFailed"));
     } finally {
       setIsLoading(false);
     }
@@ -232,7 +234,7 @@ export function ProfilePage() {
       setProfile(updatedProfile);
       hydrateForm(updatedProfile);
       setIsEditing(false);
-      setSuccessMessage("Profile updated successfully.");
+      setSuccessMessage(t("profile.updateSuccess"));
 
       const session = loadAuthSession();
       dispatch(
@@ -262,14 +264,14 @@ export function ProfilePage() {
       }
     } catch (err) {
       console.error("Failed to update profile:", err);
-      setError(err?.message || "Failed to update profile.");
+      setError(err?.message || t("profile.updateFailed"));
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleDeactivateAccount = async () => {
-    const confirmed = window.confirm("Deactivate this account? You will be signed out immediately.");
+    const confirmed = window.confirm(t("profile.confirmDeactivate"));
 
     if (!confirmed) {
       return;
@@ -283,7 +285,7 @@ export function ProfilePage() {
       navigate(ROUTES.login, { replace: true });
     } catch (err) {
       console.error("Failed to deactivate profile:", err);
-      setError(err?.message || "Failed to deactivate account.");
+      setError(err?.message || t("profile.deactivateFailed"));
     } finally {
       setIsDeactivating(false);
     }
@@ -292,7 +294,7 @@ export function ProfilePage() {
   if (isLoading) {
     return (
       <section className="flex min-h-[420px] items-center justify-center">
-        <Spin size="large" tip="Loading profile..." />
+        <Spin size="large" tip={t("profile.loadingProfile")} />
       </section>
     );
   }
@@ -307,11 +309,11 @@ export function ProfilePage() {
 
       <div className="relative z-10 space-y-6">
         {error ? (
-          <Alert message="Profile Error" description={error} type="error" showIcon className="rounded-[20px] border-none shadow-sm" />
+          <Alert message={t("profile.profileError")} description={error} type="error" showIcon className="rounded-[20px] border-none shadow-sm" />
         ) : null}
 
         {successMessage ? (
-          <Alert message="Profile Updated" description={successMessage} type="success" showIcon className="rounded-[20px] border-none shadow-sm" />
+          <Alert message={t("profile.profileUpdated")} description={successMessage} type="success" showIcon className="rounded-[20px] border-none shadow-sm" />
         ) : null}
 
         <Card className="!p-0 border-none shadow-[0_20px_50px_rgba(236,72,153,0.08)]">
@@ -351,7 +353,7 @@ export function ProfilePage() {
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-[#ea4f93]"></span>
                     </span>
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#ea4f93]">
-                      {formatRoleLabel(profile?.role)}
+                      {formatRoleLabel(profile?.role, t)}
                     </span>
                   </div>
                   <h2 className="mt-4 text-4xl sm:text-5xl font-black tracking-tight text-[#2b182b] drop-shadow-sm">
@@ -366,7 +368,7 @@ export function ProfilePage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:min-w-[480px]">
-                <InfoTile title="Role" value={formatRoleLabel(profile?.role)} note="Access Level" />
+                <InfoTile title={t("profile.role")} value={formatRoleLabel(profile?.role, t)} note={t("profile.accessLevel")} />
                 {/* <InfoTile title="Staff ID" value={profile?.staffId || "N/A"} note="System Ref" />
                 <InfoTile title="Salon ID" value={profile?.salonId || "N/A"} note="Branch Ref" /> */}
               </div>
@@ -381,9 +383,9 @@ export function ProfilePage() {
               <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h3 className="text-2xl font-black text-[#2b182b] flex items-center gap-2">
-                    <UserRound className="text-[#ea4f93]" size={24} /> Personal Details
+                    <UserRound className="text-[#ea4f93]" size={24} /> {t("profile.profileDetails")}
                   </h3>
-                  <p className="mt-1.5 text-sm font-medium text-[#8f6b80]">Manage your identity across the Nailify workspace.</p>
+                  <p className="mt-1.5 text-sm font-medium text-[#8f6b80]">{t("profile.profileDetailsDesc")}</p>
                 </div>
 
                 <div className="flex flex-wrap gap-3">
@@ -394,7 +396,7 @@ export function ProfilePage() {
                         onClick={handleCancelEdit}
                         className="inline-flex h-11 items-center justify-center gap-2 rounded-[20px] border border-white/60 bg-white/40 px-5 text-sm font-bold text-[#8f7184] shadow-sm transition-all hover:bg-white/80 hover:shadow-md"
                       >
-                        <X size={16} /> Cancel
+                        <X size={16} /> {t("profile.cancel")}
                       </button>
                       <button
                         type="button"
@@ -402,7 +404,7 @@ export function ProfilePage() {
                         disabled={!hasChanges || isSaving}
                         className="inline-flex h-11 items-center justify-center gap-2 rounded-[20px] bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] px-6 text-sm font-bold text-white shadow-[0_8px_20px_rgba(236,72,153,0.25)] transition-all hover:opacity-90 hover:shadow-[0_12px_28px_rgba(236,72,153,0.35)] disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5"
                       >
-                        <Save size={16} /> {isSaving ? "Saving..." : "Save Changes"}
+                        <Save size={16} /> {isSaving ? t("profile.saving") : t("profile.saveChanges")}
                       </button>
                     </>
                   ) : (
@@ -411,7 +413,7 @@ export function ProfilePage() {
                       onClick={() => setIsEditing(true)}
                       className="inline-flex h-11 items-center justify-center gap-2 rounded-[20px] border border-white/60 bg-white/60 px-6 text-sm font-bold text-[#ea4f93] shadow-sm transition-all hover:bg-white hover:shadow-[0_8px_20px_rgba(236,72,153,0.15)] hover:-translate-y-0.5"
                     >
-                      <PencilLine size={16} /> Edit Profile
+                      <PencilLine size={16} /> {t("profile.editProfile")}
                     </button>
                   )}
                 </div>
@@ -421,43 +423,43 @@ export function ProfilePage() {
                 <div className="space-y-6">
                   <div className="grid gap-5 sm:grid-cols-2">
                     <label className="block group">
-                      <span className="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#c08aa4] group-focus-within:text-[#ea4f93] transition-colors">First Name</span>
+                      <span className="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#c08aa4] group-focus-within:text-[#ea4f93] transition-colors">{t("profile.firstName")}</span>
                       <input
                         value={formValues.firstName}
                         onChange={(event) => handleInputChange("firstName", event.target.value)}
                         className="h-14 w-full rounded-[20px] border-2 border-[#f3d5e2]/60 bg-white/50 px-5 text-[15px] font-bold text-[#2b182b] outline-none transition-all focus:border-[#ea4f93] focus:bg-white focus:shadow-[0_8px_20px_rgba(236,72,153,0.1)]"
-                        placeholder="Enter first name"
+                        placeholder={t("profile.enterFirstName")}
                       />
                     </label>
 
                     <label className="block group">
-                      <span className="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#c08aa4] group-focus-within:text-[#ea4f93] transition-colors">Last Name</span>
+                      <span className="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#c08aa4] group-focus-within:text-[#ea4f93] transition-colors">{t("profile.lastName")}</span>
                       <input
                         value={formValues.lastName}
                         onChange={(event) => handleInputChange("lastName", event.target.value)}
                         className="h-14 w-full rounded-[20px] border-2 border-[#f3d5e2]/60 bg-white/50 px-5 text-[15px] font-bold text-[#2b182b] outline-none transition-all focus:border-[#ea4f93] focus:bg-white focus:shadow-[0_8px_20px_rgba(236,72,153,0.1)]"
-                        placeholder="Enter last name"
+                        placeholder={t("profile.enterLastName")}
                       />
                     </label>
 
                     <label className="block group">
-                      <span className="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#c08aa4] group-focus-within:text-[#ea4f93] transition-colors">Email</span>
+                      <span className="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#c08aa4] group-focus-within:text-[#ea4f93] transition-colors">{t("profile.email")}</span>
                       <input
                         type="email"
                         value={formValues.email}
                         onChange={(event) => handleInputChange("email", event.target.value)}
                         className="h-14 w-full rounded-[20px] border-2 border-[#f3d5e2]/60 bg-white/50 px-5 text-[15px] font-bold text-[#2b182b] outline-none transition-all focus:border-[#ea4f93] focus:bg-white focus:shadow-[0_8px_20px_rgba(236,72,153,0.1)]"
-                        placeholder="Enter email"
+                        placeholder={t("profile.enterEmail")}
                       />
                     </label>
 
                     <label className="block group">
-                      <span className="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#c08aa4] group-focus-within:text-[#ea4f93] transition-colors">Phone</span>
+                      <span className="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#c08aa4] group-focus-within:text-[#ea4f93] transition-colors">{t("profile.phone")}</span>
                       <input
                         value={formValues.phone}
                         onChange={(event) => handleInputChange("phone", event.target.value)}
                         className="h-14 w-full rounded-[20px] border-2 border-[#f3d5e2]/60 bg-white/50 px-5 text-[15px] font-bold text-[#2b182b] outline-none transition-all focus:border-[#ea4f93] focus:bg-white focus:shadow-[0_8px_20px_rgba(236,72,153,0.1)]"
-                        placeholder="Enter phone number"
+                        placeholder={t("profile.enterPhone")}
                       />
                     </label>
                   </div>
@@ -468,31 +470,31 @@ export function ProfilePage() {
                         <Camera size={24} />
                       </div>
                       <div>
-                        <p className="text-base font-black text-[#2b182b]">Update Profile Photo</p>
-                        <p className="mt-1 text-sm font-medium text-[#8f6b80]">Upload a high-res image for your avatar.</p>
+                        <p className="text-base font-black text-[#2b182b]">{t("profile.updatePhoto")}</p>
+                        <p className="mt-1 text-sm font-medium text-[#8f6b80]">{t("profile.updatePhotoDesc")}</p>
                       </div>
                     </div>
                     <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
                     <span className="rounded-full bg-white px-5 py-2.5 text-sm font-bold text-[#ea4f93] shadow-sm transition-colors group-hover:bg-[#fff0f6]">
-                      Browse Files
+                      {t("profile.browseFiles")}
                     </span>
                   </label>
                 </div>
               ) : (
                 <div className="grid gap-5 sm:grid-cols-2">
-                  <Field label="First Name" value={profile?.firstName} icon={UserRound} />
-                  <Field label="Last Name" value={profile?.lastName} icon={UserRound} />
-                  <Field label="Email Address" value={profile?.email} icon={Mail} />
-                  <Field label="Phone Number" value={profile?.phone} icon={Phone} />
-                  <Field label="Account Status" value={profile?.status} icon={CheckCircle2} />
-                  <Field label="Role" value={formatRoleLabel(profile?.role)} icon={Shield} />
+                  <Field label={t("profile.firstName")} value={profile?.firstName} icon={UserRound} />
+                  <Field label={t("profile.lastName")} value={profile?.lastName} icon={UserRound} />
+                  <Field label={t("profile.email")} value={profile?.email} icon={Mail} />
+                  <Field label={t("profile.phone")} value={profile?.phone} icon={Phone} />
+                  <Field label={t("profile.status")} value={profile?.status} icon={CheckCircle2} />
+                  <Field label={t("profile.role")} value={formatRoleLabel(profile?.role, t)} icon={Shield} />
                 </div>
               )}
             </Card>
 
             <Card className="!p-8">
               <h3 className="text-xl font-black text-[#2b182b] flex items-center gap-2">
-                <Clock3 className="text-[#ea4f93]" size={22} /> Operating Hours
+                <Clock3 className="text-[#ea4f93]" size={22} /> {t("profile.operatingHours")}
               </h3>
 
               <div className="mt-6 space-y-3">
@@ -509,18 +511,18 @@ export function ProfilePage() {
                         <div>
                           <p className="text-[15px] font-black text-[#2b182b]">{slot.dayName}</p>
                           <p className="text-xs font-medium text-[#8f6b80] mt-0.5">
-                            {slot.isClosed ? "Closed" : `${formatTimeValue(slot.openTime)} - ${formatTimeValue(slot.closeTime)}`}
+                            {slot.isClosed ? t("profile.closed") : `${formatTimeValue(slot.openTime)} - ${formatTimeValue(slot.closeTime)}`}
                           </p>
                         </div>
                       </div>
                       <span className={`rounded-full px-3.5 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] shadow-sm ${slot.isClosed ? "bg-[#f3e8ff] text-[#7c3aed]" : "bg-[#eaf9ee] text-[#2fa25f]"}`}>
-                        {slot.isClosed ? "Closed" : "Open"}
+                        {slot.isClosed ? t("profile.closed") : "Open"}
                       </span>
                     </div>
                   ))
                 ) : (
                   <div className="rounded-[20px] border border-dashed border-[#f5d7e5] bg-white/40 py-6 text-center text-sm font-medium text-[#8f6b80]">
-                    No operating hours available.
+                    {t("profile.noOperatingHours")}
                   </div>
                 )}
               </div>
@@ -531,9 +533,9 @@ export function ProfilePage() {
           <div className="space-y-6">
             <Card className="!p-8">
               <h3 className="text-2xl font-black text-[#2b182b] flex items-center gap-2">
-                <Building2 className="text-[#ea4f93]" size={24} /> Salon Assignment
+                <Building2 className="text-[#ea4f93]" size={24} /> {t("profile.salonAssignment")}
               </h3>
-              <p className="mt-1.5 text-sm font-medium text-[#8f6b80]">Details of your assigned workplace.</p>
+              <p className="mt-1.5 text-sm font-medium text-[#8f6b80]">{t("profile.salonAssignmentDesc")}</p>
 
               {salon ? (
                 <div className="mt-6 space-y-5">
@@ -548,23 +550,23 @@ export function ProfilePage() {
                         className="h-48 w-full object-cover transition-transform duration-700 group-hover:scale-110"
                       />
                       <div className="absolute bottom-4 left-5 z-20">
-                        <span className="inline-flex rounded-full bg-white/30 px-2 py-0.5 text-[10px] font-bold text-white mb-1 uppercase tracking-wider">Assigned Branch</span>
+                        <span className="inline-flex rounded-full bg-white/30 px-2 py-0.5 text-[10px] font-bold text-white mb-1 uppercase tracking-wider">{t("profile.assignedBranch")}</span>
                         <p className="text-lg font-black text-white drop-shadow-md truncate">{salon.name}</p>
                       </div>
                     </div>
                   ) : null}
 
-                  <Field label="Salon Name" value={salon.name} icon={Building2} />
-                  <Field label="Address" value={salon.address} icon={MapPin} />
-                  <Field label="Phone" value={salon.phone} icon={Phone} />
+                  <Field label={t("profile.salonName")} value={salon.name} icon={Building2} />
+                  <Field label={t("profile.address")} value={salon.address} icon={MapPin} />
+                  <Field label={t("profile.phone")} value={salon.phone} icon={Phone} />
                 </div>
               ) : (
                 <div className="mt-6 flex flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-[#f5d7e5] bg-white/40 py-10 px-6 text-center shadow-sm">
                   <div className="flex h-16 w-16 items-center justify-center rounded-[20px] bg-[#fff0f6] text-[#ea4f93] shadow-inner mb-4">
                     <Building2 size={28} />
                   </div>
-                  <h4 className="text-lg font-bold text-[#2b182b]">Unassigned Account</h4>
-                  <p className="mt-2 text-sm font-medium text-[#8f6b80]">Your profile is not currently linked to any salon branch in the system.</p>
+                  <h4 className="text-lg font-bold text-[#2b182b]">{t("profile.unassignedAccount")}</h4>
+                  <p className="mt-2 text-sm font-medium text-[#8f6b80]">{t("profile.unassignedAccountDesc")}</p>
                 </div>
               )}
             </Card>
@@ -573,9 +575,9 @@ export function ProfilePage() {
 
             <Card className="!p-8">
               <h3 className="text-xl font-black text-[#2b182b] flex items-center gap-2">
-                <Shield className="text-[#ea4f93]" size={22} /> System Actions
+                <Shield className="text-[#ea4f93]" size={22} /> {t("profile.systemActions")}
               </h3>
-              <p className="mt-1.5 text-sm font-medium text-[#8f6b80]">Use these administrative actions carefully.</p>
+              <p className="mt-1.5 text-sm font-medium text-[#8f6b80]">{t("profile.systemActionsDesc")}</p>
 
               <div className="mt-6 flex flex-col gap-3">
                 <button
@@ -583,7 +585,7 @@ export function ProfilePage() {
                   onClick={() => navigate(getDashboardRouteByRole(role))}
                   className="inline-flex h-12 items-center justify-center gap-2 rounded-[20px] border-2 border-white/60 bg-white/60 px-5 text-sm font-bold text-[#2b182b] shadow-sm transition-all hover:bg-white hover:shadow-md hover:-translate-y-0.5"
                 >
-                  <Building2 size={16} /> Return to Dashboard
+                  <Building2 size={16} /> {t("profile.returnToDashboard")}
                 </button>
 
                 <button
@@ -593,7 +595,7 @@ export function ProfilePage() {
                   className="inline-flex h-12 items-center justify-center gap-2 rounded-[20px] bg-gradient-to-r from-red-500 to-rose-600 px-5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(225,29,72,0.25)] transition-all hover:opacity-90 hover:shadow-[0_12px_28px_rgba(225,29,72,0.35)] disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5"
                 >
                   <Trash2 size={16} />
-                  {isDeactivating ? "Deactivating..." : "Deactivate Account"}
+                  {isDeactivating ? t("profile.deactivating") : t("profile.deactivateAccount")}
                 </button>
               </div>
             </Card>

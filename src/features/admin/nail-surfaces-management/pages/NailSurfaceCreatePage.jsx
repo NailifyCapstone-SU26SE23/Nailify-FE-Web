@@ -49,7 +49,7 @@ function validateForm(formValues, language) {
 
 export function NailSurfaceCreatePage() {
   const navigate = useNavigate();
-  const { language } = useLanguage();
+  const { t, language } = useLanguage();
   const [formValues, setFormValues] = useState(createEmptyForm);
   const [formError, setFormError] = useState("");
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -58,10 +58,10 @@ export function NailSurfaceCreatePage() {
 
   const summaryItems = useMemo(
     () => [
-      [language === "vi" ? "Tên Bề Mặt" : "Surface Name", formValues.name || "--"],
-      [language === "vi" ? "Loại Bề Mặt" : "Surface Type", formValues.surfacePreset || "--"],
-      [language === "vi" ? "Giá cả" : "Price", formValues.price ? formatNailSurfaceCurrency(formValues.price) : "--"],
-      [language === "vi" ? "Thời lượng" : "Duration", formValues.duration ? formatNailSurfaceDuration(formValues.duration) : "--"],
+      [t("adminNailSurfacesManagement.surfaceName"), formValues.name || "--"],
+      [t("adminNailSurfacesManagement.surfaceType"), formValues.surfacePreset || "--"],
+      [t("adminNailSurfacesManagement.price"), formValues.price ? formatNailSurfaceCurrency(formValues.price) : "--"],
+      [t("adminNailSurfacesManagement.duration"), formValues.duration ? formatNailSurfaceDuration(formValues.duration) : "--"],
     ],
     [formValues.duration, formValues.name, formValues.price, formValues.surfacePreset, language],
   );
@@ -103,7 +103,7 @@ export function NailSurfaceCreatePage() {
         },
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : (language === "vi" ? "Tạo bề mặt móng thất bại." : "Failed to create nail surface.");
+      const message = error instanceof Error ? error.message : (t("adminNailSurfacesManagement.failedToCreateNailSurface"));
       setFormError(message);
       toast.error(message);
     } finally {
@@ -123,9 +123,9 @@ export function NailSurfaceCreatePage() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">{language === "vi" ? "Thêm Bề Mặt Móng Mới" : "Add New Nail Surface"}</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">{t("adminNailSurfacesManagement.addNewNailSurface")}</h1>
             <p className="text-xs font-medium text-slate-400">
-              {language === "vi" ? "Tạo bề mặt móng mới với cấu hình shader và giá cả." : "Create a new nail surface with shader configuration and pricing."}
+              {t("adminNailSurfacesManagement.createANewNailSurfaceWithShade")}
             </p>
           </div>
         </div>
@@ -137,7 +137,7 @@ export function NailSurfaceCreatePage() {
             className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
           >
             <X size={14} />
-            {language === "vi" ? "Hủy" : "Cancel"}
+            {t("adminNailSurfacesManagement.cancel")}
           </button>
           <button
             type="button"
@@ -145,7 +145,7 @@ export function NailSurfaceCreatePage() {
             className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
           >
             <Save size={14} />
-            {language === "vi" ? "Lưu Bề Mặt" : "Save Surface"}
+            {t("adminNailSurfacesManagement.saveSurface")}
           </button>
         </div>
       </header>
@@ -161,26 +161,26 @@ export function NailSurfaceCreatePage() {
           <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
             <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
               <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
-              {language === "vi" ? "Chi Tiết Bề Mặt Móng" : "Nail Surface Details"}
+              {t("adminNailSurfacesManagement.nailSurfaceDetails")}
             </h2>
 
             <div className="grid gap-5 md:grid-cols-2">
               <label className="space-y-2.5">
-                <span className="text-[13px] font-semibold text-slate-600">{language === "vi" ? "Tên Bề Mặt" : "Surface Name"}</span>
+                <span className="text-[13px] font-semibold text-slate-600">{t("adminNailSurfacesManagement.surfaceName")}</span>
                 <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                   <Layers3 size={14} className="shrink-0 text-rose-300" />
                   <input
                     type="text"
                     value={formValues.name}
                     onChange={(event) => handleFieldChange("name", event.target.value)}
-                    placeholder={language === "vi" ? "Nhập tên bề mặt móng" : "Enter nail surface name"}
+                    placeholder={t("adminNailSurfacesManagement.enterNailSurfaceName")}
                     className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none placeholder:text-rose-300"
                   />
                 </div>
               </label>
 
               <label className="space-y-2.5">
-                <span className="text-[13px] font-semibold text-slate-600">{language === "vi" ? "Giá cả" : "Price"}</span>
+                <span className="text-[13px] font-semibold text-slate-600">{t("adminNailSurfacesManagement.price")}</span>
                 <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                   <Wallet size={14} className="shrink-0 text-rose-300" />
                   <input
@@ -196,7 +196,7 @@ export function NailSurfaceCreatePage() {
               </label>
 
               <label className="space-y-2.5">
-                <span className="text-[13px] font-semibold text-slate-600">{language === "vi" ? "Thời lượng" : "Duration"}</span>
+                <span className="text-[13px] font-semibold text-slate-600">{t("adminNailSurfacesManagement.duration")}</span>
                 <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                   <Clock3 size={14} className="shrink-0 text-rose-300" />
                   <input
@@ -205,7 +205,7 @@ export function NailSurfaceCreatePage() {
                     step="1"
                     value={formValues.duration}
                     onChange={(event) => handleFieldChange("duration", event.target.value)}
-                    placeholder={language === "vi" ? "Phút" : "Minutes"}
+                    placeholder={t("adminNailSurfacesManagement.minutes")}
                     className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none placeholder:text-rose-300"
                   />
                 </div>
@@ -220,13 +220,13 @@ export function NailSurfaceCreatePage() {
           <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
             <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
               <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
-              {language === "vi" ? "Xem trước" : "Preview"}
+              {t("adminNailSurfacesManagement.preview")}
             </h2>
 
             <div className="space-y-4">
               {formValues.painterMode ? (
-                <NailSurfacePainter 
-                  brushType={formValues.brushType || 'glossy'} 
+                <NailSurfacePainter
+                  brushType={formValues.brushType || 'glossy'}
                   brushSize={formValues.brushSize || 20}
                   initialMaskDataUrl={formValues.maskDataUrl}
                   onSave={(dataUrl) => handleFieldChange("maskDataUrl", dataUrl)}
@@ -251,33 +251,33 @@ export function NailSurfaceCreatePage() {
       <ActionConfirmModal
         open={showCancelConfirm}
         intent="warning"
-        title={language === "vi" ? "Hủy Tạo Bề Mặt Móng" : "Cancel Nail Surface Creation"}
-        subtitle={language === "vi" ? "Bạn đang rời khỏi biểu mẫu mà không lưu." : "You are leaving this form without saving."}
-        description={language === "vi" ? "Tất cả chi tiết bề mặt móng chưa lưu sẽ bị hủy." : "All unsaved nail surface details will be discarded."}
-        confirmText={language === "vi" ? "Hủy thay đổi" : "Discard Changes"}
-        cancelText={language === "vi" ? "Tiếp tục chỉnh sửa" : "Keep Editing"}
+        title={t("adminNailSurfacesManagement.cancelNailSurfaceCreation")}
+        subtitle={t("adminNailSurfacesManagement.youAreLeavingThisFormWithoutSa")}
+        description={t("adminNailSurfacesManagement.allUnsavedNailSurfaceDetailsWi")}
+        confirmText={t("adminNailSurfacesManagement.discardChanges")}
+        cancelText={t("adminNailSurfacesManagement.keepEditing")}
         confirmIcon={X}
         onConfirm={() => navigate(ROUTES.adminNailSurfaces)}
         onCancel={() => setShowCancelConfirm(false)}
-        warnings={[language === "vi" ? "Bề mặt móng mới này chưa được tạo." : "This new nail surface has not been created yet."]}
+        warnings={[t("adminNailSurfacesManagement.thisNewNailSurfaceHasNotBeenCr")]}
       />
 
       <ActionConfirmModal
         open={showSaveConfirm}
         intent="success"
-        title={language === "vi" ? "Lưu Bề Mặt Móng Mới" : "Save New Nail Surface"}
-        subtitle={language === "vi" ? "Hành động này sẽ tạo bề mặt móng trên hệ thống." : "This will create the nail surface in backend."}
-        description={language === "vi" ? "Xác nhận để thêm bề mặt móng vào danh mục quản trị." : "Confirm to add this nail surface to the admin catalog."}
-        confirmText={language === "vi" ? "Tạo Bề Mặt" : "Create Surface"}
-        cancelText={language === "vi" ? "Xem lại" : "Review Again"}
+        title={t("adminNailSurfacesManagement.saveNewNailSurface")}
+        subtitle={t("adminNailSurfacesManagement.thisWillCreateTheNailSurfaceIn")}
+        description={t("adminNailSurfacesManagement.confirmToAddThisNailSurfaceToT")}
+        confirmText={t("adminNailSurfacesManagement.createSurface")}
+        cancelText={t("adminNailSurfacesManagement.reviewAgain")}
         confirmIcon={Save}
         loading={isSaving}
         onConfirm={handleCreateSurface}
         onCancel={() => !isSaving && setShowSaveConfirm(false)}
-        highlights={[formValues.name || (language === "vi" ? "Bề mặt móng mới" : "New nail surface")]}
+        highlights={[formValues.name || (t("adminNailSurfacesManagement.newNailSurface"))]}
         details={[
-          { label: language === "vi" ? "Loại Bề Mặt" : "Surface Type", value: formValues.surfacePreset || "--" },
-          { label: language === "vi" ? "Giá cả" : "Price", value: formValues.price ? formatNailSurfaceCurrency(formValues.price) : "--" },
+          { label: t("adminNailSurfacesManagement.surfaceType"), value: formValues.surfacePreset || "--" },
+          { label: t("adminNailSurfacesManagement.price"), value: formValues.price ? formatNailSurfaceCurrency(formValues.price) : "--" },
         ]}
       />
     </section>

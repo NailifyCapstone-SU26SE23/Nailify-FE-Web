@@ -384,7 +384,7 @@ export function AdminSalonBookingRatingPage() {
               </span>
             </div>
             <h1 className="text-3xl font-bold text-[#2d1b35] tracking-tight md:text-4xl">
-              {t("admin-reviews") || "Salons Feedback Audit"}
+              {t("menus.admin-reviews") || "Salons Feedback Audit"}
             </h1>
             <p className="text-xs md:text-sm text-[#a88a9f] max-w-[65ch] leading-relaxed">
               {selectedSalon
@@ -471,8 +471,8 @@ export function AdminSalonBookingRatingPage() {
                       type="button"
                       onClick={() => setSalonStatusFilter(st)}
                       className={`px-3.5 py-1.5 rounded-xl text-xs font-bold capitalize transition-all duration-200 ${salonStatusFilter === st
-                          ? "bg-[#ea4f93] text-white shadow-xs"
-                          : "text-[#7f6478] hover:text-[#2d1b35] hover:bg-[#ea4f93]/5"
+                        ? "bg-[#ea4f93] text-white shadow-xs"
+                        : "text-[#7f6478] hover:text-[#2d1b35] hover:bg-[#ea4f93]/5"
                         }`}
                     >
                       {st === "all" ? (isVi ? "Tất cả" : "all") : st === "active" ? (isVi ? "Hoạt động" : "active") : st === "busy" ? (isVi ? "Bận" : "busy") : (isVi ? "Đóng cửa" : "closed")}
@@ -560,10 +560,10 @@ export function AdminSalonBookingRatingPage() {
                           )}
 
                           <span className={`absolute top-3 right-3 text-[10px] font-bold px-2.5 py-1 rounded-full border shadow-xs ${salon.status === "Active" || salon.status === "Open"
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                              : salon.status === "Busy"
-                                ? "bg-amber-50 text-amber-700 border-amber-200"
-                                : "bg-slate-50 text-slate-600 border-slate-200"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            : salon.status === "Busy"
+                              ? "bg-amber-50 text-amber-700 border-amber-200"
+                              : "bg-slate-50 text-slate-600 border-slate-200"
                             }`}>
                             {salon.status || "Active"}
                           </span>
@@ -686,8 +686,8 @@ export function AdminSalonBookingRatingPage() {
                             type="button"
                             onClick={() => setReviewScoreFilter(score)}
                             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-0.5 ${reviewScoreFilter === score
-                                ? "bg-[#ea4f93] text-white shadow-xs"
-                                : "text-[#7f6478] hover:text-[#2d1b35] hover:bg-[#ea4f93]/5"
+                              ? "bg-[#ea4f93] text-white shadow-xs"
+                              : "text-[#7f6478] hover:text-[#2d1b35] hover:bg-[#ea4f93]/5"
                               }`}
                           >
                             {score === "all" ? (isVi ? "Tất cả" : "All") : `${score}`}
@@ -776,8 +776,8 @@ export function AdminSalonBookingRatingPage() {
                                       key={sIndex}
                                       size={15}
                                       className={`${sIndex <= Math.round(score)
-                                          ? "text-amber-400 fill-amber-400"
-                                          : "text-slate-200"
+                                        ? "text-amber-400 fill-amber-400"
+                                        : "text-slate-200"
                                         }`}
                                     />
                                   ))}

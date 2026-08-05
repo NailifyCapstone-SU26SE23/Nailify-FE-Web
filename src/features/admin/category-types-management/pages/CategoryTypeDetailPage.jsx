@@ -1,3 +1,4 @@
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ArrowLeft, FolderTree, Pencil, Plus, Save, ShieldCheck, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
@@ -12,19 +13,20 @@ import {
   updateAdminCategoryType,
 } from "../services/categoryTypesManagementService";
 
-function validateForm(formValues) {
+function validateForm(formValues, t) {
   if (!String(formValues.name || "").trim()) {
-    return "Category type name is required.";
+    return t("adminCategoryTypes.nameRequired");
   }
 
   if (!String(formValues.status || "").trim()) {
-    return "Status is required.";
+    return t("adminCategoryTypes.statusRequired");
   }
 
   return "";
 }
 
 export function CategoryTypeDetailPage() {
+  const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const { categoryTypeId } = useParams();
@@ -77,7 +79,7 @@ export function CategoryTypeDetailPage() {
           return;
         }
 
-        setError(loadError instanceof Error ? loadError.message : "Failed to load category type detail.");
+        setError(loadError instanceof Error ? loadError.message : t("adminCategoryTypes.loadDetailFailed"));
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -98,10 +100,10 @@ export function CategoryTypeDetailPage() {
     }
 
     return [
-      ["Category Type ID", String(categoryType.categoryTypeId)],
-      ["Status", draft.status || "--"],
-      ["Categories Count", String(categoryType.categoriesCount)],
-      ["Categories", categoryType.categoriesLabel],
+      [t("adminCategoryTypes.categoryTypeIdLabel"), String(categoryType.categoryTypeId)],
+      [t("adminCategoryTypes.status"), draft.status || "--"],
+      [t("adminCategoryTypes.categoriesCountLabel"), String(categoryType.categoriesCount)],
+      [t("adminCategoryTypes.categoriesLabel"), categoryType.categoriesLabel],
     ];
   }, [categoryType, draft]);
 
@@ -143,7 +145,7 @@ export function CategoryTypeDetailPage() {
   };
 
   const handleRequestSave = () => {
-    const validationError = validateForm(draft);
+    const validationError = validateForm(draft, t);
 
     if (validationError) {
       setError(validationError);
@@ -168,9 +170,9 @@ export function CategoryTypeDetailPage() {
         status: updatedCategoryType.status,
       });
       setIsEditing(false);
-      toast.success(`${updatedCategoryType.name} updated successfully.`);
+      toast.success(t("adminCategoryTypes.updateSuccess", { name: updatedCategoryType.name }));
     } catch (saveError) {
-      const message = saveError instanceof Error ? saveError.message : "Failed to update category type.";
+      const message = saveError instanceof Error ? saveError.message : t("adminCategoryTypes.updateFailed");
       setError(message);
       toast.error(message);
     } finally {
@@ -188,14 +190,14 @@ export function CategoryTypeDetailPage() {
 
     try {
       await deleteAdminCategoryType(categoryType.categoryTypeId);
-      toast.success(`${categoryType.name} deleted successfully.`);
+      toast.success(t("adminCategoryTypes.deleteSuccess", { name: categoryType.name }));
       navigate(ROUTES.adminCategoryTypes, {
         state: {
-          flashMessage: `${categoryType.name} has been deleted successfully.`,
+          flashMessage: t("adminCategoryTypes.deleteFlashSuccess", { name: categoryType.name }),
         },
       });
     } catch (deleteError) {
-      const message = deleteError instanceof Error ? deleteError.message : "Failed to delete category type.";
+      const message = deleteError instanceof Error ? deleteError.message : t("adminCategoryTypes.deleteFailed");
       toast.error(message);
     } finally {
       setIsDeleting(false);
@@ -217,7 +219,7 @@ export function CategoryTypeDetailPage() {
     const normalizedName = String(newCategoryName || "").trim();
 
     if (!normalizedName) {
-      setCreateCategoryError("Category name is required.");
+      setCreateCategoryError(t("adminCategoryTypes.categoryNameRequired"));
       return;
     }
 
@@ -233,9 +235,9 @@ export function CategoryTypeDetailPage() {
       setShowCreateCategoryModal(false);
       setNewCategoryName("");
       setCreateCategoryError("");
-      toast.success(`${createdCategory.name} created successfully.`);
+      toast.success(t("adminCategoryTypes.createCategorySuccess", { name: createdCategory.name }));
     } catch (createError) {
-      const message = createError instanceof Error ? createError.message : "Failed to create category.";
+      const message = createError instanceof Error ? createError.message : t("adminCategoryTypes.createCategoryFailed");
       setCreateCategoryError(message);
       toast.error(message);
     } finally {
@@ -258,8 +260,8 @@ export function CategoryTypeDetailPage() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">Category Type Detail</h1>
-            <p className="text-xs font-medium text-slate-400">Review, edit, and delete this category type from one page.</p>
+            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">{t("adminCategoryTypes.categoryTypeDetail")}</h1>
+            <p className="text-xs font-medium text-slate-400">{t("adminCategoryTypes.categoryTypeDetailDesc")}</p>
           </div>
         </div>
 
@@ -271,7 +273,7 @@ export function CategoryTypeDetailPage() {
             className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Trash2 size={14} />
-            Delete Category Type
+            {t("adminCategoryTypes.deleteCategoryType")}
           </button>
           {isEditing ? (
             <>
@@ -281,7 +283,7 @@ export function CategoryTypeDetailPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
               >
                 <X size={14} />
-                Cancel
+                {t("adminCategoryTypes.cancel")}
               </button>
               <button
                 type="button"
@@ -289,7 +291,7 @@ export function CategoryTypeDetailPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
               >
                 <Save size={14} />
-                Save Changes
+                {t("adminCategoryTypes.saveChanges")}
               </button>
             </>
           ) : (
@@ -300,7 +302,7 @@ export function CategoryTypeDetailPage() {
               className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Pencil size={14} />
-              Edit Category Type
+              {t("adminCategoryTypes.editCategoryType")}
             </button>
           )}
         </div>
@@ -320,19 +322,19 @@ export function CategoryTypeDetailPage() {
 
       {isLoading ? (
         <div className="flex min-h-[320px] items-center justify-center rounded-[24px] bg-white/80 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
-          <div className="text-center text-sm text-slate-600">Loading category type details...</div>
+          <div className="text-center text-sm text-slate-600">{t("adminCategoryTypes.loadingDetails")}</div>
         </div>
       ) : (
         <div className="grid gap-4 ">
           <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
             <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
               <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
-              Category Type Information
+              {t("adminCategoryTypes.categoryTypeInformation")}
             </h2>
 
             <div className="grid gap-5">
               <label className="space-y-2.5">
-                <span className="text-[13px] font-semibold text-slate-600">Category Type Name</span>
+                <span className="text-[13px] font-semibold text-slate-600">{t("adminCategoryTypes.categoryTypeName")}</span>
                 <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                   <FolderTree size={14} className="shrink-0 text-rose-300" />
                   <input
@@ -346,7 +348,7 @@ export function CategoryTypeDetailPage() {
               </label>
 
               <label className="space-y-2.5">
-                <span className="text-[13px] font-semibold text-slate-600">Status</span>
+                <span className="text-[13px] font-semibold text-slate-600">{t("adminCategoryTypes.status")}</span>
                 <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                   <ShieldCheck size={14} className="shrink-0 text-rose-300" />
                   <select
@@ -366,14 +368,14 @@ export function CategoryTypeDetailPage() {
 
               <div className="rounded-2xl border border-rose-100 bg-[#fff8fb] p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-[13px] font-semibold text-slate-600">Nested Categories</p>
+                  <p className="text-[13px] font-semibold text-slate-600">{t("adminCategoryTypes.nestedCategories")}</p>
                   <button
                     type="button"
                     onClick={handleOpenCreateCategoryModal}
                     className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.22)] transition hover:opacity-95"
                   >
                     <Plus size={13} />
-                    Add Category
+                    {t("adminCategoryTypes.addCategory")}
                   </button>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -387,7 +389,7 @@ export function CategoryTypeDetailPage() {
                       </span>
                     ))
                   ) : (
-                    <span className="text-sm text-slate-400">No categories assigned.</span>
+                    <span className="text-sm text-slate-400">{t("adminCategoryTypes.noCategoriesAssigned")}</span>
                   )}
                 </div>
               </div>
@@ -400,11 +402,11 @@ export function CategoryTypeDetailPage() {
       <ActionConfirmModal
         open={showSaveConfirm}
         intent="success"
-        title="Save Category Type Changes"
-        subtitle="This will update the category type in backend."
-        description="Confirm to save the latest changes to this category type."
-        confirmText="Save Changes"
-        cancelText="Review Again"
+        title={t("adminCategoryTypes.saveChangesTitle")}
+        subtitle={t("adminCategoryTypes.saveChangesSubtitle")}
+        description={t("adminCategoryTypes.saveChangesDesc")}
+        confirmText={t("adminCategoryTypes.saveChanges")}
+        cancelText={t("adminCategoryTypes.reviewAgain")}
         confirmIcon={Save}
         loading={isSaving}
         onConfirm={handleSave}
@@ -416,11 +418,11 @@ export function CategoryTypeDetailPage() {
       <ActionConfirmModal
         open={showDeleteConfirm}
         intent="danger"
-        title="Delete Category Type"
-        subtitle="This will set the category type status to inactive in backend."
-        description={`You are about to delete ${categoryType?.name || "this category type"}.`}
-        confirmText="Delete Category Type"
-        cancelText="Keep Category Type"
+        title={t("adminCategoryTypes.deleteCategoryTypeTitle")}
+        subtitle={t("adminCategoryTypes.deleteConfirmSubtitle")}
+        description={t("adminCategoryTypes.deleteConfirmDesc", { name: categoryType?.name || "this category type" })}
+        confirmText={t("adminCategoryTypes.deleteCategoryType")}
+        cancelText={t("adminCategoryTypes.keepCategoryType")}
         confirmIcon={Trash2}
         loading={isDeleting}
         onConfirm={handleDelete}
@@ -434,7 +436,7 @@ export function CategoryTypeDetailPage() {
             }
             : null
         }
-        warnings={["Backend delete for this resource changes the status to inactive."]}
+        warnings={[t("adminCategoryTypes.deleteWarning")]}
       />
 
       {showCreateCategoryModal ? (
@@ -442,9 +444,9 @@ export function CategoryTypeDetailPage() {
           <div className="w-full max-w-lg rounded-[24px] border border-[#f6d8e6] bg-white shadow-[0_28px_80px_rgba(93,28,63,0.18)]">
             <div className="flex items-start justify-between gap-3 border-b border-[#f6dbe7] px-6 py-5">
               <div>
-                <h3 className="text-lg font-extrabold text-[#432744]">Add Nested Category</h3>
+                <h3 className="text-lg font-extrabold text-[#432744]">{t("adminCategoryTypes.addNestedCategoryTitle")}</h3>
                 <p className="mt-1 text-sm text-[#b1859d]">
-                  Create a new category under {categoryType?.name || "this category type"}.
+                  {t("adminCategoryTypes.addNestedCategoryDesc", { name: categoryType?.name || "this category type" })}
                 </p>
               </div>
               <button
@@ -477,7 +479,7 @@ export function CategoryTypeDetailPage() {
                         setCreateCategoryError("");
                       }
                     }}
-                    placeholder="Enter category name"
+                    placeholder={t("adminCategoryTypes.categoryNamePlaceholder")}
                     className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none placeholder:text-rose-300"
                   />
                 </div>
@@ -502,7 +504,7 @@ export function CategoryTypeDetailPage() {
                   }}
                   className="rounded-full border border-[#f4d5e3] px-4 py-2 text-sm font-bold text-[#8a7082]"
                 >
-                  Cancel
+                  {t("adminProcedures.cancel")}
                 </button>
                 <button
                   type="button"
@@ -510,7 +512,7 @@ export function CategoryTypeDetailPage() {
                   disabled={isCreatingCategory}
                   className="rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-5 py-2 text-sm font-bold text-white disabled:opacity-70"
                 >
-                  {isCreatingCategory ? "Creating..." : "Create Category"}
+                  {isCreatingCategory ? t("adminCategoryTypes.creating") : t("adminCategoryTypes.createCategory")}
                 </button>
               </div>
             </div>

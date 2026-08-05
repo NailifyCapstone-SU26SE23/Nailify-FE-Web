@@ -1,3 +1,4 @@
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   ArrowLeft,
   Clock3,
@@ -32,27 +33,28 @@ function createEmptyForm() {
   };
 }
 
-function validateForm(formValues) {
+function validateForm(formValues, t) {
   if (!String(formValues.name || "").trim()) {
-    return "Component name is required.";
+    return t("adminComponents.nameRequired");
   }
 
   if (!String(formValues.componentType || "").trim()) {
-    return "Component type is required.";
+    return t("adminComponents.typeRequired");
   }
 
   if (Number(formValues.price) < 0 || Number.isNaN(Number(formValues.price))) {
-    return "Price must be a valid number.";
+    return t("adminComponents.priceInvalid");
   }
 
   if (Number(formValues.duration) < 0 || Number.isNaN(Number(formValues.duration))) {
-    return "Duration must be a valid number.";
+    return t("adminComponents.durationInvalid");
   }
 
   return "";
 }
 
 export function ComponentCreatePage() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [formValues, setFormValues] = useState(createEmptyForm);
   const [imagePreview, setImagePreview] = useState("");
@@ -63,10 +65,10 @@ export function ComponentCreatePage() {
 
   const summaryItems = useMemo(
     () => [
-      ["Component Name", formValues.name || "--"],
-      ["Type", formValues.componentType || "--"],
-      ["Price", formValues.price ? formatComponentCurrency(formValues.price) : "--"],
-      ["Duration", formValues.duration ? formatComponentDuration(formValues.duration) : "--"],
+      [t("adminComponents.componentName"), formValues.name || "--"],
+      [t("adminComponents.type"), formValues.componentType || "--"],
+      [t("adminComponents.price"), formValues.price ? formatComponentCurrency(formValues.price) : "--"],
+      [t("adminComponents.duration"), formValues.duration ? formatComponentDuration(formValues.duration) : "--"],
     ],
     [formValues.componentType, formValues.duration, formValues.name, formValues.price],
   );
@@ -94,7 +96,7 @@ export function ComponentCreatePage() {
   };
 
   const handleSubmitRequest = () => {
-    const validationError = validateForm(formValues);
+    const validationError = validateForm(formValues, t);
 
     if (validationError) {
       setFormError(validationError);
@@ -114,14 +116,14 @@ export function ComponentCreatePage() {
         duration: Number(formValues.duration),
       });
 
-      toast.success(`${createdComponent.name} created successfully.`);
+      toast.success(t("adminComponents.createSuccess", { name: createdComponent.name }));
       navigate(getAdminComponentDetailRoute(createdComponent.componentId), {
         state: {
-          flashMessage: `${createdComponent.name} has been created successfully.`,
+          flashMessage: t("adminComponents.createFlashSuccess", { name: createdComponent.name }),
         },
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to create component.";
+      const message = error instanceof Error ? error.message : t("adminComponents.createFailed");
       setFormError(message);
       toast.error(message);
     } finally {
@@ -141,9 +143,9 @@ export function ComponentCreatePage() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">Add New Component</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">{t("adminComponents.addNewComponent")}</h1>
             <p className="text-xs font-medium text-slate-400">
-              Create a new nail component and upload its preview image.
+              {t("adminComponents.addNewComponentDesc")}
             </p>
           </div>
         </div>
@@ -155,7 +157,7 @@ export function ComponentCreatePage() {
             className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
           >
             <X size={14} />
-            Cancel
+            {t("adminComponents.cancel")}
           </button>
           <button
             type="button"
@@ -163,7 +165,7 @@ export function ComponentCreatePage() {
             className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
           >
             <Save size={14} />
-            Save Component
+            {t("adminComponents.saveComponent")}
           </button>
         </div>
       </header>
@@ -178,26 +180,26 @@ export function ComponentCreatePage() {
         <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
           <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
             <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
-            Component Details
+            {t("adminComponents.componentDetails")}
           </h2>
 
           <div className="grid gap-5 md:grid-cols-2">
             <label className="space-y-2.5">
-              <span className="text-[13px] font-semibold text-slate-600">Component Name</span>
+              <span className="text-[13px] font-semibold text-slate-600">{t("adminComponents.componentName")}</span>
               <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                 <Shapes size={14} className="shrink-0 text-rose-300" />
                 <input
                   type="text"
                   value={formValues.name}
                   onChange={(event) => handleFieldChange("name", event.target.value)}
-                  placeholder="Enter component name"
+                  placeholder={t("adminComponents.enterComponentName")}
                   className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none placeholder:text-rose-300"
                 />
               </div>
             </label>
 
             <label className="space-y-2.5">
-              <span className="text-[13px] font-semibold text-slate-600">Component Type</span>
+              <span className="text-[13px] font-semibold text-slate-600">{t("adminComponents.componentType")}</span>
               <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                 <Gem size={14} className="shrink-0 text-rose-300" />
                 <select
@@ -224,7 +226,7 @@ export function ComponentCreatePage() {
                   step="1000"
                   value={formValues.price}
                   onChange={(event) => handleFieldChange("price", event.target.value)}
-                  placeholder="0"
+                  placeholder={t("adminComponents.pricePlaceholder")}
                   className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none placeholder:text-rose-300"
                 />
               </div>
@@ -240,14 +242,14 @@ export function ComponentCreatePage() {
                   step="1"
                   value={formValues.duration}
                   onChange={(event) => handleFieldChange("duration", event.target.value)}
-                  placeholder="Minutes"
+                  placeholder={t("adminComponents.minutes")}
                   className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none placeholder:text-rose-300"
                 />
               </div>
             </label>
 
             <label className="space-y-2.5 md:col-span-2">
-              <span className="text-[13px] font-semibold text-slate-600">Preview Image</span>
+              <span className="text-[13px] font-semibold text-slate-600">{t("adminComponents.previewImage")}</span>
               <label className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-rose-200 bg-gradient-to-br from-[#fffafc] to-[#fff5f9] px-6 py-8 transition hover:border-rose-300 hover:shadow-[0_8px_24px_rgba(226,93,143,0.12)]">
                 {imagePreview ? (
                   <Image
@@ -262,8 +264,8 @@ export function ComponentCreatePage() {
                       <Upload size={28} />
                     </div>
                     <div className="text-center">
-                      <p className="text-base font-semibold text-slate-700">Click to upload component image</p>
-                      <p className="mt-1 text-xs text-slate-400">PNG, JPG up to 5MB</p>
+                      <p className="text-base font-semibold text-slate-700">{t("adminComponents.clickUploadImage")}</p>
+                      <p className="mt-1 text-xs text-slate-400">{t("adminComponents.uploadFormat")}</p>
                     </div>
                   </>
                 )}
@@ -282,7 +284,7 @@ export function ComponentCreatePage() {
           <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
             <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
               <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
-              Preview
+              {t("adminComponents.preview")}
             </h2>
 
             <div className="space-y-4">
@@ -292,7 +294,7 @@ export function ComponentCreatePage() {
                 ) : (
                   <div className="text-center text-sm font-medium text-slate-400">
                     <ImageIcon size={24} className="mx-auto mb-3 text-rose-300" />
-                    No image selected
+                    {t("adminComponents.noImageSelected")}
                   </div>
                 )}
               </div>
@@ -313,11 +315,11 @@ export function ComponentCreatePage() {
       <ActionConfirmModal
         open={showCancelConfirm}
         intent="warning"
-        title="Cancel Component Creation"
-        subtitle="You are leaving this form without saving."
-        description="All unsaved component details will be discarded."
-        confirmText="Discard Changes"
-        cancelText="Keep Editing"
+        title={t("adminComponents.cancelCreateTitle")}
+        subtitle={t("adminComponents.cancelCreateSubtitle")}
+        description={t("adminComponents.cancelCreateDesc")}
+        confirmText={t("adminComponents.discardChanges")}
+        cancelText={t("adminComponents.keepEditing")}
         confirmIcon={X}
         onConfirm={() => navigate(ROUTES.adminComponents)}
         onCancel={() => setShowCancelConfirm(false)}
@@ -327,11 +329,11 @@ export function ComponentCreatePage() {
       <ActionConfirmModal
         open={showSaveConfirm}
         intent="success"
-        title="Save New Component"
-        subtitle="This will create the component in backend."
-        description="Confirm to add this component to the admin catalog."
-        confirmText="Create Component"
-        cancelText="Review Again"
+        title={t("adminComponents.saveNewComponentTitle")}
+        subtitle={t("adminComponents.saveNewComponentSubtitle")}
+        description={t("adminComponents.saveNewComponentDesc")}
+        confirmText={t("adminComponents.createComponent")}
+        cancelText={t("adminComponents.reviewAgain")}
         confirmIcon={Save}
         loading={isSaving}
         onConfirm={handleCreateComponent}

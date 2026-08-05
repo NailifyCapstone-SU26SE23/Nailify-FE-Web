@@ -369,7 +369,7 @@ export function AdminSalonBookingDetailPage() {
           </Link>
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">
-              {isLoadingSalon ? (language === "vi" ? "Đang tải..." : "Loading...") : salon?.name || "Salon Bookings"}
+              {isLoadingSalon ? (t("adminSalonBookings.loading")) : salon?.name || "Salon Bookings"}
             </h1>
             <nav className="flex items-center gap-1.5 text-[12px] mt-1">
               <Link
@@ -389,7 +389,7 @@ export function AdminSalonBookingDetailPage() {
               </Link>
               <ChevronRight size={10} className="text-slate-300" />
               <span className="text-[#ea4f93] font-bold">
-                {isLoadingSalon ? (language === "vi" ? "Đang tải..." : "Loading...") : salon?.name || "Salon"}
+                {isLoadingSalon ? (t("adminSalonBookings.loading")) : salon?.name || "Salon"}
               </span>
             </nav>
           </div>
@@ -433,7 +433,7 @@ export function AdminSalonBookingDetailPage() {
           <PremiumCard>
             <SectionHeading
               title={t(`adminDashboard.widgets.revenueTrend`)}
-              subtitle={language === "vi" ? "Doanh thu từ các đơn đặt chỗ đã hoàn tất theo thời gian" : "Revenue from completed bookings over time"}
+              subtitle={t("adminSalonBookings.revenueFromCompletedBookingsOv")}
             />
             {isLoadingBookings ? (
               <div className="h-64 bg-[#fde7ef] rounded-2xl animate-pulse mt-6" />
@@ -486,8 +486,8 @@ export function AdminSalonBookingDetailPage() {
           <div>
             <PremiumCard>
               <SectionHeading
-                title={language === "vi" ? "Thống kê nhanh" : "Quick Stats"}
-                subtitle={language === "vi" ? "Thông tin chính về chi nhánh" : "Key information about the salon"}
+                title={t("adminSalonBookings.quickStats")}
+                subtitle={t("adminSalonBookings.keyInformationAboutTheSalon")}
               />
               <div className="mt-6 space-y-5">
                 {isLoadingSalon ? (
@@ -501,7 +501,7 @@ export function AdminSalonBookingDetailPage() {
                   <>
                     <div>
                       <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 mb-2">
-                        {language === "vi" ? "Điện thoại chi nhánh" : "Salon Phone"}
+                        {t("adminSalonBookings.salonPhone")}
                       </p>
                       <p className="text-[14px] font-bold text-[#2d1b35]">
                         {salon?.phone || "--"}
@@ -509,7 +509,7 @@ export function AdminSalonBookingDetailPage() {
                     </div>
                     <div>
                       <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 mb-2">
-                        {language === "vi" ? "Giờ hoạt động" : "Operating Hours"}
+                        {t("adminSalonBookings.operatingHours")}
                       </p>
                       <p className="text-[13px] font-medium text-[#5b4256]">
                         {salon?.hours || "--"}
@@ -517,7 +517,7 @@ export function AdminSalonBookingDetailPage() {
                     </div>
                     <div>
                       <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 mb-2">
-                        {language === "vi" ? "Địa chỉ" : "Location"}
+                        {t("adminSalonBookings.location")}
                       </p>
                       <p className="text-[13px] font-medium text-[#5b4256] truncate">
                         {salon?.address || "--"}
@@ -534,7 +534,7 @@ export function AdminSalonBookingDetailPage() {
       <PremiumCard>
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
           <SectionHeading
-            title={language === "vi" ? "Lịch hẹn đã hoàn thành" : "Completed Bookings"}
+            title={t("adminSalonBookings.completedBookings")}
             subtitle={
               language === "vi"
                 ? `Hiển thị ${filteredBookings.length} lịch hẹn${searchQuery ? ` • Tìm kiếm: "${searchQuery}"` : ""}`
@@ -545,7 +545,7 @@ export function AdminSalonBookingDetailPage() {
             <div className="flex w-full items-center gap-3 rounded-full border border-[#f0b7cf] bg-white px-5 py-3 shadow-inner shadow-[#fff0f8]">
               <Search size={18} className="text-[#ea4f93]" />
               <Input
-                placeholder={language === "vi" ? "Tìm theo tên khách hàng, email hoặc số điện thoại..." : "Search customer name, email, or phone..."}
+                placeholder={t("adminSalonBookings.searchCustomerNameEmailOrPhone")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 variant="borderless"
@@ -574,11 +574,11 @@ export function AdminSalonBookingDetailPage() {
               description={
                 <div>
                   <p className="text-[#5b4256] text-sm font-medium">
-                    {language === "vi" ? "Không tìm thấy lịch hẹn nào đã hoàn thành" : "No completed bookings found"}
+                    {t("adminSalonBookings.noCompletedBookingsFound")}
                   </p>
                   {searchQuery && (
                     <p className="text-[#a88a9f] text-xs mt-1">
-                      {language === "vi" ? "Thử tìm kiếm với từ khóa khác" : "Try a different search term"}
+                      {t("adminSalonBookings.tryADifferentSearchTerm")}
                     </p>
                   )}
                 </div>

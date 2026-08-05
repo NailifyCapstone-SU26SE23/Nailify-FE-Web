@@ -48,21 +48,21 @@ const antdPinkTheme = {
 export function UpdateQuiz() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { language } = useLanguage();
+    const { t, language } = useLanguage();
 
     const [isLoading, setIsLoading] = useState(true);
     const [isSavingQuiz, setIsSavingQuiz] = useState(false);
 
     const typeOptions = useMemo(() => [
-        { value: "SingleSelect", label: language === "vi" ? "Chọn Một" : "Single Choice", hint: language === "vi" ? "Khách hàng chỉ chọn được một phương án" : "Customer can select only one option" },
-        { value: "MultiSelect", label: language === "vi" ? "Chọn Nhiều" : "Multiple Choice", hint: language === "vi" ? "Khách hàng có thể chọn nhiều phương án" : "Customer can select multiple options" }
+        { value: "SingleSelect", label: t("adminQuizManagement.singleChoice"), hint: t("adminQuizManagement.customerCanSelectOnlyOneOption") },
+        { value: "MultiSelect", label: t("adminQuizManagement.multipleChoice"), hint: t("adminQuizManagement.customerCanSelectMultipleOptio") }
     ], [language]);
 
     const linkSourceOptions = useMemo(() => [
-        { value: "NailShape", label: language === "vi" ? "Dáng móng" : "Nail Shape", hint: language === "vi" ? "Chọn từ danh sách Dáng móng — các ID được dùng để chấm điểm dáng móng" : "Pick from the NailShape list — IDs used to score shape matches" },
-        { value: "NailSurface", label: language === "vi" ? "Bề mặt móng" : "Nail Surface", hint: language === "vi" ? "Chọn từ danh sách Bề mặt móng — các ID được dùng để chấm điểm bề mặt" : "Pick from the NailSurface list — IDs used to score surface matches" },
-        { value: "Color", label: language === "vi" ? "Màu sắc" : "Color", hint: language === "vi" ? "Gán mã màu hex để gợi ý tông màu phù hợp" : "Assign color hex codes to recommend shade matches" },
-        { value: "Category", label: language === "vi" ? "Danh mục" : "Category", hint: language === "vi" ? "Chọn từ Danh mục (được nhóm theo Loại danh mục)" : "Pick from Categories (grouped by Category Type)" }
+        { value: "NailShape", label: t("adminQuizManagement.nailShape"), hint: t("adminQuizManagement.pickFromTheNailshapeListIdsUse") },
+        { value: "NailSurface", label: t("adminQuizManagement.nailSurface"), hint: t("adminQuizManagement.pickFromTheNailsurfaceListIdsU") },
+        { value: "Color", label: t("adminQuizManagement.color"), hint: t("adminQuizManagement.assignColorHexCodesToRecommend") },
+        { value: "Category", label: t("adminQuizManagement.category"), hint: t("adminQuizManagement.pickFromCategoriesGroupedByCat") }
     ], [language]);
 
     // Question form state
@@ -97,7 +97,7 @@ export function UpdateQuiz() {
                 const allQuestions = await fetchQuizQuestions();
                 const q = allQuestions.find((item) => item.id === id);
                 if (!q) {
-                    showNotification(language === "vi" ? "Không tìm thấy câu hỏi." : "Question not found.", "error");
+                    showNotification(t("adminQuizManagement.questionNotFound"), "error");
                     return;
                 }
 
@@ -120,7 +120,7 @@ export function UpdateQuiz() {
             } catch (err) {
                 console.error(err);
                 if (!cancelled) {
-                    showNotification(err instanceof Error ? err.message : (language === "vi" ? "Tải thông tin câu hỏi thất bại." : "Failed to load question details."), "error");
+                    showNotification(err instanceof Error ? err.message : (t("adminQuizManagement.failedToLoadQuestionDetails")), "error");
                 }
             } finally {
                 if (!cancelled) setIsLoading(false);
@@ -150,7 +150,7 @@ export function UpdateQuiz() {
             .catch((err) => {
                 if (!cancelled) {
                     setLinkedOptions([]);
-                    setLinkedError(err instanceof Error ? err.message : (language === "vi" ? "Không thể tải danh sách dữ liệu liên kết." : "Could not load the linked data list."));
+                    setLinkedError(err instanceof Error ? err.message : (t("adminQuizManagement.couldNotLoadTheLinkedDataList")));
                 }
             })
             .finally(() => {
@@ -243,7 +243,7 @@ export function UpdateQuiz() {
 
     const handleRemoveChoice = (idx) => {
         if (formData.choices.length <= 2) {
-            showNotification(language === "vi" ? "Một câu hỏi cần ít nhất hai tùy chọn câu trả lời." : "A question needs at least two choices.", "error");
+            showNotification(t("adminQuizManagement.aQuestionNeedsAtLeastTwoChoice"), "error");
             return;
         }
         setFormData((prev) => ({
@@ -281,9 +281,9 @@ export function UpdateQuiz() {
             );
             if (missingValueIdx !== -1) {
                 const sourceLabel = linkSourceOptions.find((o) => o.value === formData.optionSource)?.label;
-                errors.choices = isVi 
-                  ? `Tất cả câu trả lời cần ít nhất một mục được chọn từ ${sourceLabel}`
-                  : `All choices need at least one item selected from ${sourceLabel}`;
+                errors.choices = isVi
+                    ? `Tất cả câu trả lời cần ít nhất một mục được chọn từ ${sourceLabel}`
+                    : `All choices need at least one item selected from ${sourceLabel}`;
             }
         }
 
@@ -319,7 +319,7 @@ export function UpdateQuiz() {
         return (
             <div className="flex min-h-[400px] flex-col items-center justify-center gap-4 text-[#8c7484]">
                 <RefreshCw className="h-8 w-8 animate-spin text-[#ea4f93]" />
-                <p className="text-xs font-bold">{language === "vi" ? "Đang tải thông tin câu hỏi..." : "Loading quiz details..."}</p>
+                <p className="text-xs font-bold">{t("adminQuizManagement.loadingQuizDetails")}</p>
             </div>
         );
     }
@@ -333,21 +333,19 @@ export function UpdateQuiz() {
                         to={ROUTES.adminQuiz}
                         className="inline-flex items-center gap-1.5 text-xs font-bold text-[#c95b90] transition hover:text-[#d14c84]"
                     >
-                        <ChevronLeft size={13} strokeWidth={2.5} /> {language === "vi" ? "Quay lại Quản lý Câu hỏi" : "Back to Quiz Management"}
+                        <ChevronLeft size={13} strokeWidth={2.5} /> {t("adminQuizManagement.backToQuizManagement")}
                     </Link>
-                    <h1 className="mt-2.5  text-[2rem] leading-tight text-[#3f2034] md:text-[2.4rem]">
-                        {language === "vi" ? "Cập nhật Câu hỏi Khảo sát" : "Update Quiz Question"}
+                    <h1 className="font-bold mt-2.5  text-[2rem] leading-tight text-[#3f2034] md:text-[2.4rem]">
+                        {t("adminQuizManagement.updateQuizQuestion")}
                     </h1>
                     <p className="mt-2 max-w-xl text-sm leading-relaxed text-[#8c7484]">
-                        {language === "vi" 
-                          ? "Chỉnh sửa thuộc tính cốt lõi của câu hỏi hoặc cập nhật danh sách tùy chọn trả lời của nó. Các thay đổi sẽ cập nhật hệ thống đề xuất ngay lập tức."
-                          : "Modify the core question properties or update its answer choices list. Changes will update the recommender system immediately."
+                        {t("adminQuizManagement.modifyTheCoreQuestionPropertie")
                         }
                     </p>
                 </div>
                 <div className="flex items-center gap-2 rounded-full border border-[#f3cade] bg-white px-4 py-2 text-[11px] font-bold text-[#a6869a] shrink-0">
                     <ListChecks size={14} className="text-[#ea4f93]" />
-                    {filledChoiceCount}/{formData.choices.length} {language === "vi" ? "tùy chọn đã nhập" : "choices filled"}
+                    {filledChoiceCount}/{formData.choices.length} {t("adminQuizManagement.choicesFilled")}
                 </div>
             </div>
 
@@ -363,11 +361,11 @@ export function UpdateQuiz() {
                                     <Sliders size={14} />
                                 </span>
                                 <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-[#3f2034]">
-                                    {language === "vi" ? "Cấu hình Khảo sát & Các Tùy chọn" : "Quiz Settings & Answer Choices"}
+                                    {t("adminQuizManagement.quizSettingsAnswerChoices")}
                                 </h2>
                             </div>
                             <span className="rounded-full bg-[#fdf5f9] border border-[#fbcce0] px-3 py-1 text-[10px] font-extrabold text-[#ea4f93] uppercase">
-                                {language === "vi" ? "Cấu hình Cập nhật Cốt lõi" : "Core Update Settings"}
+                                {t("adminQuizManagement.coreUpdateSettings")}
                             </span>
                         </header>
 
@@ -376,14 +374,14 @@ export function UpdateQuiz() {
                             {/* Question Text */}
                             <div className="flex flex-col gap-2">
                                 <label htmlFor="questionText" className="text-[11px] font-bold uppercase tracking-wide text-[#7a6473]">
-                                    {language === "vi" ? "Nội dung Câu hỏi" : "Question Text"}
+                                    {t("adminQuizManagement.questionText")}
                                 </label>
                                 <textarea
                                     id="questionText"
                                     name="questionText"
                                     value={formData.questionText}
                                     onChange={handleFormChange}
-                                    placeholder={language === "vi" ? "Ví dụ: Kiểu dáng móng nào bạn yêu thích nhất?" : "e.g. Which nail style do you like most?"}
+                                    placeholder={t("adminQuizManagement.egWhichNailStyleDoYouLikeMost")}
                                     rows={2}
                                     className={`w-full resize-none rounded-2xl border bg-[#fffbfc] p-3.5 text-[13px] text-[#4b3345] outline-none transition ${formErrors.questionText
                                         ? "border-[#d14c84] focus:border-[#d14c84]"
@@ -400,7 +398,7 @@ export function UpdateQuiz() {
                             {/* Answer Type */}
                             <div className="flex flex-col gap-2">
                                 <span className="text-[11px] font-bold uppercase tracking-wide text-[#7a6473]">
-                                    {language === "vi" ? "Loại Lựa chọn Câu trả lời" : "Answer Selection Type"}
+                                    {t("adminQuizManagement.answerSelectionType")}
                                 </span>
                                 <div className="grid grid-cols-2 gap-2.5">
                                     {typeOptions.map((opt) => {
@@ -435,13 +433,13 @@ export function UpdateQuiz() {
                             <div className="flex flex-col gap-2">
                                 <label htmlFor="optionSource" className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-[#7a6473]">
                                     <Link2 size={12} className="text-[#ea4f93]" />
-                                    {language === "vi" ? "Nguồn Câu Trả Lời Liên Kết" : "Linked Answer Source"}
+                                    {t("adminQuizManagement.linkedAnswerSource")}
                                 </label>
                                 <ConfigProvider theme={antdPinkTheme}>
                                     <Select
                                         id="optionSource"
                                         value={formData.optionSource || undefined}
-                                        placeholder={language === "vi" ? "Chọn nguồn câu trả lời liên kết..." : "Select a linked answer source..."}
+                                        placeholder={t("adminQuizManagement.selectALinkedAnswerSource")}
                                         allowClear
                                         size="large"
                                         style={{ width: "100%" }}
@@ -457,18 +455,18 @@ export function UpdateQuiz() {
                             {formData.optionSource === "Category" && (
                                 <div className="flex flex-col gap-2">
                                     <label htmlFor="categoryKey" className="text-[11px] font-bold uppercase tracking-wide text-[#7a6473]">
-                                        {language === "vi" ? "Nhóm Danh mục" : "Category Group"}
+                                        {t("adminQuizManagement.categoryGroup")}
                                     </label>
                                     <ConfigProvider theme={antdPinkTheme}>
                                         <Select
                                             id="categoryKey"
                                             value={formData.categoryKey || undefined}
-                                            placeholder={linkedLoading ? (language === "vi" ? "Đang tải nhóm danh mục..." : "Loading category groups...") : (language === "vi" ? "Chọn một nhóm danh mục..." : "Select a category group...")}
+                                            placeholder={linkedLoading ? (t("adminQuizManagement.loadingCategoryGroups")) : (t("adminQuizManagement.selectACategoryGroup"))}
                                             size="large"
                                             style={{ width: "100%" }}
                                             loading={linkedLoading}
                                             disabled={linkedLoading || categoryTypeChoices.length === 0}
-                                            notFoundContent={linkedLoading ? (language === "vi" ? "Đang tải..." : "Loading...") : (language === "vi" ? "Không có dữ liệu" : "No category groups found")}
+                                            notFoundContent={linkedLoading ? (t("adminQuizManagement.loading")) : (t("adminQuizManagement.noCategoryGroupsFound"))}
                                             onChange={(value) =>
                                                 handleFormChange({ target: { name: "categoryKey", value } })
                                             }
@@ -484,7 +482,7 @@ export function UpdateQuiz() {
                             {/* Active Status */}
                             <div className="flex flex-col gap-2">
                                 <label htmlFor="status" className="text-[11px] font-bold uppercase tracking-wide text-[#7a6473]">
-                                    {language === "vi" ? "Trạng thái" : "Status"}
+                                    {t("adminQuizManagement.status")}
                                 </label>
                                 <div className="flex rounded-full border border-[#f5d7e4] bg-white p-1 shrink-0 w-max">
                                     {["Active", "Inactive"].map((opt) => (
@@ -497,9 +495,9 @@ export function UpdateQuiz() {
                                                 : "text-[#8c6b81] hover:bg-[#fff0f6]"
                                                 }`}
                                         >
-                                            {language === "vi" 
-                                              ? { Active: "Hoạt động", Inactive: "Ngừng hoạt động" }[opt] || opt 
-                                              : opt
+                                            {language === "vi"
+                                                ? { Active: "Hoạt động", Inactive: "Ngừng hoạt động" }[opt] || opt
+                                                : opt
                                             }
                                         </button>
                                     ))}
@@ -512,7 +510,7 @@ export function UpdateQuiz() {
                             <div className="flex items-center justify-between">
                                 <h3 className="text-xs font-bold uppercase tracking-wider text-[#3f2034] flex items-center gap-1.5">
                                     <ListChecks size={14} className="text-[#ea4f93]" />
-                                    {language === "vi" ? "Các Tùy Chọn Câu Trả Lời" : "Answer Choices"}
+                                    {t("adminQuizManagement.answerChoices")}
                                 </h3>
                             </div>
 
@@ -538,7 +536,7 @@ export function UpdateQuiz() {
                                                     type="text"
                                                     value={choice.text}
                                                     onChange={(e) => handleChoiceFieldChange(idx, "text", e.target.value)}
-                                                    placeholder={language === "vi" ? "Nhãn hiển thị, ví dụ: Tối giản" : "Display label, e.g. Minimalist"}
+                                                    placeholder={t("adminQuizManagement.displayLabelEgMinimalist")}
                                                     className="h-10 w-full rounded-xl border border-[#f0dde8] bg-white px-3.5 text-[12.5px] text-[#4b3345] outline-none transition focus:border-[#ea4f93]"
                                                     required
                                                 />
@@ -548,7 +546,7 @@ export function UpdateQuiz() {
                                                     type="text"
                                                     value={choice.description || ""}
                                                     onChange={(e) => handleChoiceFieldChange(idx, "description", e.target.value)}
-                                                    placeholder={language === "vi" ? "Mô tả bổ sung (tùy chọn)" : "Additional description (optional)"}
+                                                    placeholder={t("adminQuizManagement.additionalDescriptionOptional")}
                                                     className="h-10 w-full rounded-xl border border-[#f0dde8] bg-white px-3.5 text-[12px] text-[#4b3345] outline-none transition focus:border-[#ea4f93]"
                                                 />
 
@@ -556,7 +554,7 @@ export function UpdateQuiz() {
                                                 {!formData.optionSource ? null : formData.optionSource === "Color" ? (
                                                     <div className="flex flex-col gap-1">
                                                         <label className="text-[10px] font-bold uppercase tracking-wide text-[#a6869a]">
-                                                            {language === "vi" ? "Chọn Mã Màu" : "Choose Color Code"}
+                                                            {t("adminQuizManagement.chooseColorCode")}
                                                         </label>
                                                         <div className="relative flex items-center">
                                                             <input
@@ -580,16 +578,16 @@ export function UpdateQuiz() {
                                                 ) : (
                                                     <div className="rounded-xl border border-[#f0dde8] bg-white p-2.5">
                                                         <p className="mb-1.5 text-[9px] font-bold uppercase tracking-wide text-[#a6869a]">
-                                                            {language === "vi" ? "Liên kết giá trị " : "Link "} {linkSourceOptions.find((o) => o.value === formData.optionSource)?.label}
+                                                            {t("adminQuizManagement.link")} {linkSourceOptions.find((o) => o.value === formData.optionSource)?.label}
                                                         </p>
                                                         {linkedLoading && (
-                                                            <p className="text-[10px] text-[#a6869a]">{language === "vi" ? "Đang tải..." : "Loading..."}</p>
+                                                            <p className="text-[10px] text-[#a6869a]">{t("adminQuizManagement.loading")}</p>
                                                         )}
                                                         {linkedError && (
                                                             <p className="text-[10px] font-bold text-[#d14c84]">{linkedError}</p>
                                                         )}
                                                         {!linkedLoading && !linkedError && categoryFilteredOptions.length === 0 && (
-                                                            <p className="text-[10px] text-[#a6869a]">{language === "vi" ? "Không có dữ liệu tham chiếu." : "No reference data available."}</p>
+                                                            <p className="text-[10px] text-[#a6869a]">{t("adminQuizManagement.noReferenceDataAvailable")}</p>
                                                         )}
                                                         {!linkedLoading && !linkedError && categoryFilteredOptions.length > 0 && (
                                                             <div className="max-h-32 space-y-0.5 overflow-y-auto pr-1">
@@ -633,7 +631,7 @@ export function UpdateQuiz() {
                                                     type="button"
                                                     onClick={() => handleRemoveChoice(idx)}
                                                     className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#c9a7be] transition-colors hover:bg-[#fff0f3] hover:text-[#d14c84]"
-                                                    title={language === "vi" ? "Xóa tùy chọn" : "Remove choice"}
+                                                    title={t("adminQuizManagement.removeChoice")}
                                                 >
                                                     <X size={14} />
                                                 </button>
@@ -649,7 +647,7 @@ export function UpdateQuiz() {
                                     onClick={handleAddChoice}
                                     className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-[#ea4f93]/40 bg-[#fff0f6]/50 py-4 text-xs font-bold text-[#ea4f93] transition-all duration-300 hover:border-[#ea4f93] hover:bg-[#fff0f6] hover:shadow-[0_8px_16px_rgba(234,79,147,0.12)] active:scale-[0.98]"
                                 >
-                                    <Plus size={13} /> {language === "vi" ? "Thêm Tùy chọn" : "Add Choice"}
+                                    <Plus size={13} /> {t("adminQuizManagement.addChoice")}
                                 </button>
                             </div>
                         </div>
@@ -667,12 +665,12 @@ export function UpdateQuiz() {
                                             <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" strokeOpacity="0.3" />
                                             <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
                                         </svg>
-                                        {language === "vi" ? "Đang lưu câu hỏi & tùy chọn..." : "Saving Quiz & choices..."}
+                                        {t("adminQuizManagement.savingQuizChoices")}
                                     </>
                                 ) : (
                                     <>
                                         <Save size={14} strokeWidth={2.5} />
-                                        {language === "vi" ? "Cập nhật Câu hỏi Khảo sát" : "Update Quiz Question"}
+                                        {t("adminQuizManagement.updateQuizQuestion")}
                                     </>
                                 )}
                             </button>
@@ -685,7 +683,7 @@ export function UpdateQuiz() {
                     <div className="flex items-center gap-2 text-[#3f2034]">
                         <Smartphone size={15} className="text-[#ea4f93]" />
                         <h3 className="text-xs font-bold uppercase tracking-[0.14em]">
-                          {language === "vi" ? "Xem trước Trực tiếp trên App" : "App Live Preview"}
+                            {t("adminQuizManagement.appLivePreview")}
                         </h3>
                     </div>
 
@@ -695,7 +693,7 @@ export function UpdateQuiz() {
                             <div className="space-y-5">
                                 <div className="space-y-1.5">
                                     <div className="flex items-center justify-between text-[9px] font-bold uppercase tracking-widest text-[#a6869a]">
-                                        <span>{language === "vi" ? "Bước Phân Tích Phong Cách" : "Style Analysis Step"}</span>
+                                        <span>{t("adminQuizManagement.styleAnalysisStep")}</span>
                                     </div>
                                     <div className="flex gap-1">
                                         {[0, 1, 2, 3].map((i) => (
@@ -709,15 +707,15 @@ export function UpdateQuiz() {
 
                                 <div>
                                     <span className="rounded-full bg-[#fff0f6] px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-[#ea4f93]">
-                                        {formData.categoryKey || (language === "vi" ? "Chẩn đoán" : "Diagnostic")}
+                                        {formData.categoryKey || (t("adminQuizManagement.diagnostic"))}
                                     </span>
                                     <h4 className="mt-2.5  text-[16px] leading-snug text-[#3f2034]">
-                                        {formData.questionText.trim() || (language === "vi" ? "Kiểu dáng móng nào bạn yêu thích nhất?" : "What nail style do you prefer?")}
+                                        {formData.questionText.trim() || (t("adminQuizManagement.whatNailStyleDoYouPrefer"))}
                                     </h4>
                                     <p className="mt-1 text-[10.5px] text-[#8e7987]">
-                                        {formData.type === "SingleSelect" 
-                                          ? (language === "vi" ? "Chọn một tùy chọn bên dưới." : "Select one option below.") 
-                                          : (language === "vi" ? "Bạn có thể chọn nhiều tùy chọn." : "You can select multiple options.")}
+                                        {formData.type === "SingleSelect"
+                                            ? (t("adminQuizManagement.selectOneOptionBelow"))
+                                            : (t("adminQuizManagement.youCanSelectMultipleOptions"))}
                                     </p>
                                 </div>
 
@@ -762,15 +760,13 @@ export function UpdateQuiz() {
                                 type="button"
                                 className="mt-4 flex h-10 items-center justify-center rounded-xl bg-[#3f2034] text-[11px] font-bold text-white transition-opacity active:opacity-90"
                             >
-                                {language === "vi" ? "Tiếp tục" : "Continue"}
+                                {t("adminQuizManagement.continue")}
                             </button>
                         </div>
                     </div>
 
                     <p className="mx-auto max-w-[260px] text-center text-[10.5px] leading-relaxed text-[#a6869a]">
-                        {language === "vi" 
-                          ? "Bản xem trước trực tiếp cập nhật theo thời gian thực khi bạn chỉnh sửa biểu mẫu bên trái."
-                          : "Live preview updates in real time as you edit the form on the left."}
+                        {t("adminQuizManagement.livePreviewUpdatesInRealTimeAs")}
                     </p>
                 </div>
             </div>
@@ -798,9 +794,9 @@ export function UpdateQuiz() {
 
                         <div className="flex-1 space-y-0.5 pr-2">
                             <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#3f2034]">
-                                {notification.type === "error" 
-                                  ? (language === "vi" ? "Lỗi Hệ Thống" : "System Error") 
-                                  : (language === "vi" ? "Thành Công" : "Success")
+                                {notification.type === "error"
+                                    ? (t("adminQuizManagement.systemError"))
+                                    : (t("adminQuizManagement.success"))
                                 }
                             </h4>
                             <p className="text-[11.5px] leading-normal text-[#695463]">

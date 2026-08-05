@@ -33,7 +33,7 @@ export default function ChairManagementPage() {
           setSelectedSalonId(data[0].salonId || data[0].id);
         }
       } catch (error) {
-        toast.error("Failed to load salons");
+        toast.error(t("adminChairs.failedToLoadSalons"));
       }
     };
     loadSalons();
@@ -51,7 +51,7 @@ export default function ChairManagementPage() {
       setChairs(response.items || []);
     } catch (error) {
       console.error(error);
-      toast.error("Failed to load chairs");
+      toast.error(t("adminChairs.failedToLoadChairs"));
     } finally {
       setLoading(false);
     }
@@ -66,10 +66,10 @@ export default function ChairManagementPage() {
   const handleDelete = async (chairId) => {
     try {
       await chairManagementService.deleteChair(chairId);
-      toast.success("Chair deleted successfully");
+      toast.success(t("adminChairs.chairDeletedSuccess"));
       loadChairs(selectedSalonId);
     } catch (error) {
-      toast.error(error.message || "Failed to delete chair");
+      toast.error(error.message || t("adminChairs.failedToDeleteChair"));
     }
   };
 
@@ -129,7 +129,7 @@ export default function ChairManagementPage() {
     // Check if target cell already has a chair
     const isOccupied = chairs.some(c => c.chairName?.trim().toUpperCase() === targetCellName.toUpperCase());
     if (isOccupied) {
-      toast.warning(`Position ${targetCellName} is already occupied!`);
+      toast.warning(t("adminChairs.positionOccupied", { name: targetCellName }));
       return;
     }
 
@@ -140,16 +140,15 @@ export default function ChairManagementPage() {
         chairName: targetCellName,
         status: chair.status,
       });
-      toast.success(`Chair moved to ${targetCellName}`);
+      toast.success(t("adminChairs.chairMovedSuccess", { name: targetCellName }));
       loadChairs(selectedSalonId);
     } catch (error) {
       console.error(error);
-      toast.error(error.message || "Failed to move chair");
+      toast.error(error.message || t("adminChairs.failedToMoveChair"));
       setLoading(false);
     }
   };
 
-  const isVi = language === "vi";
 
   return (
     <div className="flex min-h-screen flex-col bg-[#fff9fb] text-slate-800 font-sans bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.15),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.15),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.15),transparent_35%)]">
@@ -161,10 +160,10 @@ export default function ChairManagementPage() {
           </div>
           <div>
             <h1 className="text-[24px] font-bold tracking-tight text-[#432744]">
-              {t("menus.admin-chairs") || "Chair Management"}
+              {t("adminChairs.title")}
             </h1>
             <p className="text-[13px] text-[#a88a9d] font-medium mt-1">
-              {isVi ? "Quản lý tài nguyên ghế làm móng tại các chi nhánh" : "Manage physical resources across your salons"}
+              {t("adminChairs.description")}
             </p>
           </div>
         </div>
@@ -177,7 +176,7 @@ export default function ChairManagementPage() {
               style={{ width: 220, height: 20 }}
               bordered={false}
               className="font-semibold text-[#432744] [&_.ant-select-selection-item]:text-[#432744]"
-              placeholder={isVi ? "Chọn chi nhánh" : "Select a salon"}
+              placeholder={t("adminChairs.selectSalon")}
             >
               {salons.map(salon => (
                 <Option key={salon.salonId || salon.id} value={salon.salonId || salon.id}>{salon.name}</Option>
@@ -190,7 +189,7 @@ export default function ChairManagementPage() {
             onClick={() => openCreateModal()}
             className="flex h-11 items-center justify-center rounded-2xl border-none bg-[linear-gradient(180deg,#f25b99_0%,#d92f7b_100%)] px-6 font-bold text-white shadow-[0_10px_20px_rgba(236,72,153,0.25)] transition-all hover:scale-105 hover:shadow-[0_14px_28px_rgba(236,72,153,0.35)]"
           >
-            {isVi ? "Thêm ghế" : "Add Chair"}
+            {t("adminChairs.addChair")}
           </Button>
         </div>
       </div>
@@ -200,7 +199,7 @@ export default function ChairManagementPage() {
           {salons.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <Building2 size={48} className="text-slate-200 mb-4" />
-              <p className="text-slate-500 font-medium">{isVi ? "Không có chi nhánh nào khả dụng. Vui lòng tạo chi nhánh trước." : "No salons available. Please create a salon first."}</p>
+              <p className="text-slate-500 font-medium">{t("adminChairs.noSalonsAvailable")}</p>
             </div>
           ) : loading ? (
             <div className="flex justify-center items-center h-64">
@@ -225,7 +224,7 @@ export default function ChairManagementPage() {
 
                       {/* Hover Actions */}
                       <div className="absolute inset-0 bg-white/95 backdrop-blur-sm flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 scale-95 group-hover:scale-100">
-                        <Tooltip title={isVi ? "Xem" : "View"}>
+                        <Tooltip title={t("adminChairs.view")}>
                           <Button
                             type="text"
                             size="small"
@@ -234,7 +233,7 @@ export default function ChairManagementPage() {
                             onClick={() => openDetailModal(chair)}
                           />
                         </Tooltip>
-                        <Tooltip title={isVi ? "Sửa" : "Edit"}>
+                        <Tooltip title={t("adminChairs.edit")}>
                           <Button
                             type="text"
                             size="small"
@@ -244,18 +243,18 @@ export default function ChairManagementPage() {
                           />
                         </Tooltip>
                         <Popconfirm
-                          title={isVi ? "Xóa ghế" : "Delete Chair"}
-                          description={isVi ? "Bạn có chắc muốn xóa chiếc ghế này?" : "Are you sure you want to delete this chair?"}
+                          title={t("adminChairs.deleteConfirmTitle")}
+                          description={t("adminChairs.deleteConfirmDesc")}
                           onConfirm={(e) => {
                             e.stopPropagation();
                             handleDelete(chair.chairId);
                           }}
-                          okText={isVi ? "Có" : "Yes"}
-                          cancelText={isVi ? "Không" : "No"}
+                          okText={t("adminChairs.yes")}
+                          cancelText={t("adminChairs.no")}
                           okButtonProps={{ danger: true, className: 'rounded-lg font-semibold' }}
                           cancelButtonProps={{ className: 'rounded-lg font-semibold' }}
                         >
-                          <Tooltip title={isVi ? "Xóa" : "Delete"}>
+                          <Tooltip title={t("adminChairs.delete")}>
                             <Button
                               type="text"
                               size="small"
@@ -282,7 +281,7 @@ export default function ChairManagementPage() {
                         <Plus size={18} strokeWidth={3} />
                       </div>
                       <span className="text-[11px] font-bold text-slate-400 group-hover:text-pink-500 mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-                        {isVi ? `Thêm ${cellName}` : `Add ${cellName}`}
+                        {t("adminChairs.addPosition", { name: cellName })}
                       </span>
                     </div>
                   );
@@ -307,14 +306,14 @@ export default function ChairManagementPage() {
         title={
           <div className="text-lg font-bold tracking-tight text-slate-900 flex items-center gap-2">
             <Armchair className="text-[#ea4f93]" size={24} />
-            {isVi ? "Chi tiết Ghế" : "Chair Details"}
+            {t("adminChairs.chairDetails")}
           </div>
         }
         open={!!detailChair}
         onCancel={() => setDetailChair(null)}
         footer={[
           <Button key="close" onClick={() => setDetailChair(null)} className="rounded-xl border-slate-200 font-semibold">
-            {isVi ? "Đóng" : "Close"}
+            {t("adminChairs.close")}
           </Button>
         ]}
         className="[&_.ant-modal-content]:rounded-2xl [&_.ant-modal-content]:p-6"
@@ -322,20 +321,17 @@ export default function ChairManagementPage() {
         {detailChair && (
           <div className="mt-6 flex flex-col gap-4">
             <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <span className="text-slate-500 font-medium">{isVi ? "Tên ghế" : "Chair Name"}</span>
+              <span className="text-slate-500 font-medium">{t("adminChairs.chairName")}</span>
               <span className="font-bold text-slate-800 text-base">{detailChair.chairName}</span>
             </div>
             <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <span className="text-slate-500 font-medium">{isVi ? "Trạng thái" : "Status"}</span>
+              <span className="text-slate-500 font-medium">{t("adminChairs.status")}</span>
               <span className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${getStatusColor(detailChair.status).replace('border-2', '')}`}>
-                {isVi 
-                  ? (detailChair.status === 'Active' ? "Đang hoạt động" : detailChair.status === 'Maintenance' ? "Bảo trì" : detailChair.status)
-                  : detailChair.status
-                }
+                {detailChair.status === 'Active' ? t("adminChairs.active") : detailChair.status === 'Maintenance' ? t("adminChairs.maintenance") : t("adminChairs.inactive")}
               </span>
             </div>
             <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <span className="text-slate-500 font-medium">{isVi ? "Chi nhánh" : "Salon"}</span>
+              <span className="text-slate-500 font-medium">{t("adminChairs.salon")}</span>
               <span className="font-bold text-slate-800">{detailChair.salonName}</span>
             </div>
           </div>

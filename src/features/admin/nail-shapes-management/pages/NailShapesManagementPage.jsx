@@ -115,7 +115,7 @@ function sortShapes(items, sortValue) {
 export function NailShapesManagementPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { language } = useLanguage();
+  const { t, language } = useLanguage();
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [priceFilter, setPriceFilter] = useState("");
@@ -183,7 +183,7 @@ export function NailShapesManagementPage() {
         }
 
         setShapes([]);
-        setError(loadError instanceof Error ? loadError.message : (language === "vi" ? "Không thể tải danh sách dáng móng." : "Failed to load nail shapes."));
+        setError(loadError instanceof Error ? loadError.message : (t("adminNailShapesManagement.failedToLoadNailShapes")));
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -206,30 +206,30 @@ export function NailShapesManagementPage() {
 
     return [
       {
-        label: language === "vi" ? "Tổng dáng móng" : "Total Shapes",
+        label: t("adminNailShapesManagement.totalShapes"),
         value: metaData.totalItems.toLocaleString(),
         note: language === "vi" ? `${metaData.totalPages} trang` : `${metaData.totalPages} pages`,
         icon: Shapes,
         iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
       },
       {
-        label: language === "vi" ? "Mục hiển thị" : "Visible Items",
+        label: t("adminNailShapesManagement.visibleItems"),
         value: shapes.length.toLocaleString(),
-        note: language === "vi" ? "Trang hiện tại" : "Current page",
+        note: t("adminNailShapesManagement.currentPage"),
         icon: Sparkles,
         iconClassName: "bg-[#fff4df] text-[#d9871c]",
       },
       {
-        label: language === "vi" ? "Giá TB" : "Avg Price",
+        label: t("adminNailShapesManagement.avgPrice"),
         value: formatNailShapeCurrency(averagePrice),
-        note: language === "vi" ? "Trang hiện tại" : "Current page",
+        note: t("adminNailShapesManagement.currentPage"),
         icon: Wallet,
         iconClassName: "bg-[#f3ebff] text-[#8b5cf6]",
       },
       {
-        label: language === "vi" ? "Thời gian TB" : "Avg Duration",
+        label: t("adminNailShapesManagement.avgDuration"),
         value: formatNailShapeDuration(averageDuration),
-        note: language === "vi" ? "Trang hiện tại" : "Current page",
+        note: t("adminNailShapesManagement.currentPage"),
         icon: TimerReset,
         iconClassName: "bg-[#e7fbf4] text-[#20ab77]",
       },
@@ -292,7 +292,7 @@ export function NailShapesManagementPage() {
       {
         title: (
           <SortableHeader
-            label={language === "vi" ? "Dáng móng" : "Shape"}
+            label={t("adminNailShapesManagement.shape")}
             sortKey="shape"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -311,7 +311,7 @@ export function NailShapesManagementPage() {
       {
         title: (
           <SortableHeader
-            label={language === "vi" ? "Giá" : "Price"}
+            label={t("adminNailShapesManagement.price")}
             sortKey="price"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -324,7 +324,7 @@ export function NailShapesManagementPage() {
       {
         title: (
           <SortableHeader
-            label={language === "vi" ? "Thời gian" : "Duration"}
+            label={t("adminNailShapesManagement.duration")}
             sortKey="duration"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -335,26 +335,26 @@ export function NailShapesManagementPage() {
         render: (value) => <span className="text-sm text-[#6b5668]">{value}</span>,
       },
       {
-        title: language === "vi" ? "Thao tác" : "Actions",
+        title: t("adminNailShapesManagement.actions"),
         key: "actions",
         render: (_, shape) => (
           <ActionDropdown
             items={[
               {
                 key: "view",
-                label: language === "vi" ? "Xem chi tiết" : "View Detail",
+                label: t("adminNailShapesManagement.viewDetail"),
                 icon: Eye,
                 onSelect: () => navigate(getAdminNailShapeDetailRoute(shape.nailShapeId)),
               },
               {
                 key: "edit",
-                label: language === "vi" ? "Chỉnh sửa dáng móng" : "Edit Shape",
+                label: t("adminNailShapesManagement.editShape"),
                 icon: Pencil,
                 onSelect: () => navigate(getAdminNailShapeDetailRoute(shape.nailShapeId), { state: { startInEdit: true } }),
               },
               {
                 key: "delete",
-                label: language === "vi" ? "Xóa dáng móng" : "Delete Shape",
+                label: t("adminNailShapesManagement.deleteShape"),
                 icon: Trash2,
                 className: "text-[#d14c84]",
                 onSelect: () => setDeleteTarget(shape),
@@ -363,8 +363,7 @@ export function NailShapesManagementPage() {
           />
         ),
       },
-    ],
-    [navigate, selectedSort],
+    ], [navigate, selectedSort, t],
   );
 
   const handleDeleteShape = async () => {
@@ -393,7 +392,7 @@ export function NailShapesManagementPage() {
       setShapes(response.items);
       setMetaData(response.metaData);
     } catch (deleteError) {
-      toast.error(deleteError instanceof Error ? deleteError.message : (language === "vi" ? "Xóa dáng móng thất bại." : "Failed to delete nail shape."));
+      toast.error(deleteError instanceof Error ? deleteError.message : (t("adminNailShapesManagement.failedToDeleteNailShape")));
     } finally {
       setIsDeleting(false);
     }
@@ -431,7 +430,7 @@ export function NailShapesManagementPage() {
                 <input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder={language === "vi" ? "Tìm kiếm dáng móng theo tên..." : "Search nail shape by name..."}
+                  placeholder={t("adminNailShapesManagement.searchNailShapeByName")}
                   className="h-10 w-full rounded-full border border-[#f4d7e5] bg-[#fffafc] pl-11 pr-4 text-sm text-[#5b4658] outline-none placeholder:text-[#d4a1b8] focus:border-[#ea4f93]"
                 />
               </label>
@@ -447,7 +446,7 @@ export function NailShapesManagementPage() {
                 className="inline-flex h-10 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
               >
                 <Search size={14} className="mr-2 shrink-0" />
-                {language === "vi" ? "Tìm kiếm" : "Search"}
+                {t("adminNailShapesManagement.search")}
               </button>
             </div>
 
@@ -456,9 +455,9 @@ export function NailShapesManagementPage() {
               onChange={(event) => setPriceFilter(event.target.value)}
               className="h-10 rounded-full border border-[#f4d7e5] bg-[#fffafc] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
             >
-              <option value="">{language === "vi" ? "Tất cả mức giá" : "All pricing"}</option>
-              <option value="free">{language === "vi" ? "Miễn phí" : "Free shapes"}</option>
-              <option value="priced">{language === "vi" ? "Có trả phí" : "Priced shapes"}</option>
+              <option value="">{t("adminNailShapesManagement.allPricing")}</option>
+              <option value="free">{t("adminNailShapesManagement.freeShapes")}</option>
+              <option value="priced">{t("adminNailShapesManagement.pricedShapes")}</option>
             </select>
           </div>
 
@@ -467,16 +466,16 @@ export function NailShapesManagementPage() {
             className="inline-flex items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
           >
             <Plus size={13} className="mr-1.5 shrink-0" />
-            {language === "vi" ? "Thêm Dáng Móng" : "Add Nail Shape"}
+            {t("adminNailShapesManagement.addNailShape")}
           </Link>
         </div>
 
         <section className="overflow-hidden rounded-[20px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
           <div className="border-b border-[#f6dbe7] px-5 py-4">
-            <h2 className="text-sm font-extrabold text-[#432744]">{language === "vi" ? "Dáng Móng" : "Nail Shapes"}</h2>
+            <h2 className="text-sm font-extrabold text-[#432744]">{t("adminNailShapesManagement.nailShapes")}</h2>
             <p className="mt-1 text-[11px] font-medium text-[#c694ad]">
-              {language === "vi" 
-                ? `Đang hiển thị ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} trên ${metaData.totalItems} dáng móng` 
+              {language === "vi"
+                ? `Đang hiển thị ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} trên ${metaData.totalItems} dáng móng`
                 : `Showing ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} of ${metaData.totalItems} nail shapes`
               }
             </p>
@@ -492,13 +491,13 @@ export function NailShapesManagementPage() {
             }}
             pagination={false}
             scroll={{ x: 920 }}
-            locale={{ emptyText: error || (language === "vi" ? "Không tìm thấy dáng móng nào." : "No nail shapes found.") }}
+            locale={{ emptyText: error || (t("adminNailShapesManagement.noNailShapesFound")) }}
           />
 
           <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-[11px] text-[#c694ad]">
-              {language === "vi" 
-                ? `Đang hiển thị ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} trên ${metaData.totalItems} dáng móng` 
+              {language === "vi"
+                ? `Đang hiển thị ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} trên ${metaData.totalItems} dáng móng`
                 : `Showing ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} of ${metaData.totalItems} nail shapes`
               }
             </p>
@@ -529,8 +528,8 @@ export function NailShapesManagementPage() {
                     setMetaData((current) => ({ ...current, currentPage: item }));
                   }}
                   className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md px-2 text-[11px] ${item === metaData.currentPage
-                      ? "bg-[#ea4f93] font-bold text-white"
-                      : "border border-[#f3cade] bg-white font-medium text-[#b9849f]"
+                    ? "bg-[#ea4f93] font-bold text-white"
+                    : "border border-[#f3cade] bg-white font-medium text-[#b9849f]"
                     } disabled:cursor-default disabled:opacity-100`}
                 >
                   {item}
@@ -558,11 +557,11 @@ export function NailShapesManagementPage() {
         <ActionConfirmModal
           open
           intent="danger"
-          title={language === "vi" ? "Xóa Dáng Móng" : "Delete Nail Shape"}
-          subtitle={language === "vi" ? "Hành động này sẽ xóa vĩnh viễn dáng móng khỏi máy chủ." : "This will permanently remove the nail shape from backend."}
+          title={t("adminNailShapesManagement.deleteNailShape")}
+          subtitle={t("adminNailShapesManagement.thisWillPermanentlyRemoveTheNa")}
           description={language === "vi" ? `Bạn chuẩn bị xóa dáng móng ${deleteTarget.name}. Hành động này không thể hoàn tác.` : `You are about to delete ${deleteTarget.name}. This action cannot be undone.`}
-          confirmText={language === "vi" ? "Xóa Dáng Móng" : "Delete Shape"}
-          cancelText={language === "vi" ? "Giữ lại" : "Keep Shape"}
+          confirmText={t("adminNailShapesManagement.deleteShape")}
+          cancelText={t("adminNailShapesManagement.keepShape")}
           confirmIcon={Trash2}
           loading={isDeleting}
           onConfirm={handleDeleteShape}
@@ -571,9 +570,9 @@ export function NailShapesManagementPage() {
             image: deleteTarget.imageUrl || undefined,
             title: deleteTarget.name,
             meta: `${deleteTarget.priceLabel} • ${deleteTarget.durationLabel}`,
-            note: (language === "vi" ? "Mã dáng móng: " : "Shape ID: ") + deleteTarget.nailShapeId,
+            note: (t("adminNailShapesManagement.shapeId1")) + deleteTarget.nailShapeId,
           }}
-          warnings={[language === "vi" ? "Hành động này gọi đến API xóa của hệ thống để xóa bản ghi dáng móng này." : "This action calls the backend delete endpoint and removes this nail shape record."]}
+          warnings={[t("adminNailShapesManagement.thisActionCallsTheBackendDelet1")]}
         />
       ) : null}
     </>

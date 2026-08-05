@@ -392,12 +392,12 @@ function NailVariantHandPreview({ variantDetail, compact = false, showShapeOverl
               <div className="relative group">
                 <div className={fingerGlowClassName} />
 
-                <div 
+                <div
                   className={nailShellClassName}
                   style={compact ? { width: '48px', height: '63px' } : { width: '96px', height: '126px' }}
                 >
-                  <div 
-                    className="absolute" 
+                  <div
+                    className="absolute"
                     style={{
                       left: '14%',
                       top: '37.2%',
@@ -467,7 +467,7 @@ function NailVariantHandPreview({ variantDetail, compact = false, showShapeOverl
                   </div>
 
                   {showShapeOverlay && variantDetail?.nailShape?.imageUrl ? (
-                    <div 
+                    <div
                       className="pointer-events-none absolute"
                       style={{
                         left: '14%',
@@ -696,7 +696,7 @@ const PRICING_DICT = {
 export function NailDesignManagementDetailPage() {
   const { designId } = useParams();
   const navigate = useNavigate();
-  const { language } = useLanguage();
+  const { t, language } = useLanguage();
   const heroSectionRef = useRef(null);
   const customerProfileRef = useRef(null);
   const designComponentsRef = useRef(null);
@@ -779,7 +779,7 @@ export function NailDesignManagementDetailPage() {
       <section className="flex min-h-full items-center justify-center bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)] px-4 py-10">
         <div className="flex items-center gap-3 rounded-[18px] border border-[#f8dce8] bg-white px-5 py-4 text-sm text-[#b38a9f] shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
           <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
-          {language === "vi" ? "Đang tải thông tin thiết kế mẫu móng..." : "Loading nail design detail..."}
+          {t("adminNailsDesignManagement.loadingNailDesignDetail")}
         </div>
       </section>
     );
@@ -1110,13 +1110,13 @@ export function NailDesignManagementDetailPage() {
   };
 
   const summaryRows = [
-    [language === "vi" ? "Trạng thái Thiết kế" : "Design Status", formValues.designStatus === "Active" ? (language === "vi" ? "Hoạt động" : "Active") : formValues.designStatus],
-    [language === "vi" ? "Có thể Thử móng" : "Try-On Ready", formValues.tryOnReady ? (language === "vi" ? "Có" : "Yes") : (language === "vi" ? "Không" : "No")],
-    [language === "vi" ? "Độ phức tạp" : "Complexity", formValues.complexity === "Medium" ? (language === "vi" ? "Trung bình" : "Medium") : formValues.complexity === "High" ? (language === "vi" ? "Cao" : "High") : (language === "vi" ? "Thấp" : "Low")],
-    [language === "vi" ? "Thời gian Dự kiến" : "Est. Duration", formatDurationLabel(formValues.estimatedDuration)],
-    [language === "vi" ? "Dáng móng" : "Nail Shape", formValues.nailShape],
-    [language === "vi" ? "Độ dài móng" : "Nail Length", formValues.nailLength],
-    [language === "vi" ? "Giá Đề xuất" : "Suggested Price", formValues.suggestedPrice],
+    [t("adminNailsDesignManagement.designStatus"), formValues.designStatus === "Active" ? (t("adminNailsDesignManagement.active")) : formValues.designStatus],
+    [t("adminNailsDesignManagement.tryonReady"), formValues.tryOnReady ? (t("adminNailsDesignManagement.yes")) : (t("adminNailsDesignManagement.no"))],
+    [t("adminNailsDesignManagement.complexity"), formValues.complexity === "Medium" ? (t("adminNailsDesignManagement.medium")) : formValues.complexity === "High" ? (t("adminNailsDesignManagement.high")) : (t("adminNailsDesignManagement.low"))],
+    [t("adminNailsDesignManagement.estDuration"), formatDurationLabel(formValues.estimatedDuration)],
+    [t("adminNailsDesignManagement.nailShape"), formValues.nailShape],
+    [t("adminNailsDesignManagement.nailLength"), formValues.nailLength],
+    [t("adminNailsDesignManagement.suggestedPrice"), formValues.suggestedPrice],
   ];
   const apiCategoryRows = Array.isArray(formValues.categories) ? formValues.categories : [];
 
@@ -1156,21 +1156,19 @@ export function NailDesignManagementDetailPage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-xs text-[#c694ad]">
-              {language === "vi" ? "Thiết kế Mẫu móng / " : "Nail Designs / "}<span className="text-[#ea4f93]">{formValues.breadcrumbsLabel}</span>
+              {t("adminNailsDesignManagement.nailDesigns")}<span className="text-[#ea4f93]">{formValues.breadcrumbsLabel}</span>
             </p>
             <h2 className="mt-1 text-[1.7rem] font-extrabold text-[#432744]">
-              {language === "vi" ? "Chi tiết Thiết kế Mẫu móng" : "Nail Design Detail"}
+              {t("adminNailsDesignManagement.nailDesignDetail")}
             </h2>
             <p className="mt-1 text-sm text-[#c694ad]">
-              {language === "vi" 
-                ? "Xem và chỉnh sửa chi tiết thiết kế, quy trình và gợi ý AI. Giá cả được giữ cố định." 
-                : "View and edit design details, workflow, and AI recommendation profile. Pricing stays locked."
+              {t("adminNailsDesignManagement.viewAndEditDesignDetailsWorkfl")
               }
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <span className="inline-flex rounded-full bg-[#eaf9ee] px-4 py-2 text-xs font-bold text-[#2fa25f]">
-              {formValues.designStatus === "Active" ? (language === "vi" ? "Hoạt động" : "Active") : (language === "vi" ? "Ngừng hoạt động" : "Inactive")}
+              {formValues.designStatus === "Active" ? (t("adminNailsDesignManagement.active")) : (t("adminNailsDesignManagement.inactive"))}
             </span>
             {isEditing ? (
               <>
@@ -1180,7 +1178,7 @@ export function NailDesignManagementDetailPage() {
                   disabled={isSavingVariants || isDeletingVariant}
                   className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.2)]"
                 >
-                  {isSavingVariants ? (language === "vi" ? "Đang lưu..." : "Saving...") : (language === "vi" ? "Lưu Thay Đổi" : "Save Changes")}
+                  {isSavingVariants ? (t("adminNailsDesignManagement.saving")) : (t("adminNailsDesignManagement.saveChanges"))}
                 </button>
                 <button
                   type="button"
@@ -1188,7 +1186,7 @@ export function NailDesignManagementDetailPage() {
                   disabled={isSavingVariants || isDeletingVariant}
                   className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#7e6075]"
                 >
-                  {language === "vi" ? "Hủy" : "Cancel"}
+                  {t("adminNailsDesignManagement.cancel")}
                 </button>
               </>
             ) : (
@@ -1199,17 +1197,17 @@ export function NailDesignManagementDetailPage() {
                   className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
                 >
                   <PencilLine size={13} className="mr-1.5 inline" />
-                  {language === "vi" ? "Chỉnh sửa Thiết kế" : "Edit Design"}
+                  {t("adminNailsDesignManagement.editDesign")}
                 </button>
                 <button
                   type="button"
                   onClick={() =>
-                    setFlashMessage(language === "vi" ? "Hoàn thành mô phỏng nhân bản. Một thiết kế bản sao sẽ được tạo trong quy trình thực tế." : "Mock duplicate completed. A cloned design would be created in a real flow.")
+                    setFlashMessage(t("adminNailsDesignManagement.mockDuplicateCompletedAClonedD"))
                   }
                   className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.2)]"
                 >
                   <Copy size={13} className="mr-1.5 inline" />
-                  {language === "vi" ? "Nhân bản Thiết kế" : "Duplicate Design"}
+                  {t("adminNailsDesignManagement.duplicateDesign")}
                 </button>
               </>
             )}
@@ -1297,9 +1295,9 @@ export function NailDesignManagementDetailPage() {
 
                 <div className="mt-5 grid gap-3 sm:grid-cols-3">
                   {[
-                    [language === "vi" ? "Điểm Phổ biến" : "Popularity Score", formValues.popularityScore],
-                    [language === "vi" ? "Tỷ lệ Đặt lịch" : "Booking Rate", formValues.bookingRate],
-                    [language === "vi" ? "Đánh giá Khách hàng" : "Customer Rating", formValues.customerRating],
+                    [t("adminNailsDesignManagement.popularityScore"), formValues.popularityScore],
+                    [t("adminNailsDesignManagement.bookingRate"), formValues.bookingRate],
+                    [t("adminNailsDesignManagement.customerRating"), formValues.customerRating],
                   ].map(([label, value]) => (
                     <div key={label} className="rounded-[18px] bg-[#fff3f8] px-4 py-4">
                       <p className="text-xs font-semibold text-[#c694ad]">{label}</p>
@@ -1312,31 +1310,31 @@ export function NailDesignManagementDetailPage() {
           </article>
 
           <SectionCard
-            title={language === "vi" ? "Ánh xạ Chi tiết API" : "API Detail Mapping"}
-            subtitle={language === "vi" ? "Các trường được ánh xạ trực tiếp từ GET /api/NailDesigns/{id}." : "Fields mapped directly from GET /api/NailDesigns/{id}."}
+            title={t("adminNailsDesignManagement.apiDetailMapping")}
+            subtitle={t("adminNailsDesignManagement.fieldsMappedDirectlyFromGetApi")}
             icon={<Eye size={18} />}
           >
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
 
               <div className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c694ad]">{language === "vi" ? "Tên" : "Name"}</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c694ad]">{t("adminNailsDesignManagement.name")}</p>
                 <p className="mt-3 text-sm font-extrabold text-[#432744]">{formatApiValue(formValues.name)}</p>
               </div>
               <div className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c694ad]">{language === "vi" ? "Trạng thái" : "Status"}</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c694ad]">{t("adminNailsDesignManagement.status")}</p>
                 <p className="mt-3 text-sm font-extrabold text-[#432744]">
-                  {formValues.status === "Active" ? (language === "vi" ? "Hoạt động" : "Active") : (language === "vi" ? "Ngừng hoạt động" : "Inactive")}
+                  {formValues.status === "Active" ? (t("adminNailsDesignManagement.active")) : (t("adminNailsDesignManagement.inactive"))}
                 </p>
               </div>
               <div className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c694ad]">{language === "vi" ? "Biến thể" : "Variants"}</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c694ad]">{t("adminNailsDesignManagement.variants")}</p>
                 <p className="mt-3 text-sm font-extrabold text-[#432744]">{formatApiValue(formValues.variantCount)}</p>
               </div>
             </div>
 
             <div className="mt-4 grid gap-4 ">
               <div className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c694ad]">{language === "vi" ? "Mô tả" : "Description"}</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c694ad]">{t("adminNailsDesignManagement.description")}</p>
                 <p className="mt-3 whitespace-pre-line text-sm leading-6 text-[#6d5669]">
                   {formatApiValue(formValues.description)}
                 </p>
@@ -1347,15 +1345,15 @@ export function NailDesignManagementDetailPage() {
             <div className="mt-4 grid gap-4 lg:grid-cols-2">
               <div className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c694ad]">{language === "vi" ? "Danh mục" : "Categories"}</p>
-                  <Pill tone="purple">{apiCategoryRows.length} {language === "vi" ? "danh mục" : "item(s)"}</Pill>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c694ad]">{t("adminNailsDesignManagement.categories")}</p>
+                  <Pill tone="purple">{apiCategoryRows.length} {t("adminNailsDesignManagement.items1")}</Pill>
                 </div>
                 <div className="mt-4 space-y-3">
                   {apiCategoryRows.length ? apiCategoryRows.map((category) => (
                     <div key={category.id || category.categoryId} className="rounded-[16px] border border-[#f1d7e3] bg-white p-4">
                       <p className="text-sm font-bold text-[#432744]">{formatApiValue(category.name)}</p>
-                      <p className="mt-1 text-xs text-[#8c7085]">{language === "vi" ? "Loại danh mục: " : "Category Type: "}{formatApiValue(category.categoryTypeName)}</p>
-                      <p className="mt-1 text-xs text-[#8c7085]">{language === "vi" ? "Trạng thái: " : "Status: "}{category.status === "Active" ? (language === "vi" ? "Hoạt động" : "Active") : (language === "vi" ? "Ngừng hoạt động" : "Inactive")}</p>
+                      <p className="mt-1 text-xs text-[#8c7085]">{t("adminNailsDesignManagement.categoryType")}{formatApiValue(category.categoryTypeName)}</p>
+                      <p className="mt-1 text-xs text-[#8c7085]">{t("adminNailsDesignManagement.status1")}{category.status === "Active" ? (t("adminNailsDesignManagement.active")) : (t("adminNailsDesignManagement.inactive"))}</p>
                     </div>
                   )) : (
                     <div className="rounded-[16px] border border-dashed border-[#f3c9dd] bg-white px-4 py-4 text-sm text-[#8c7085]">
@@ -1365,7 +1363,7 @@ export function NailDesignManagementDetailPage() {
                 </div>
               </div>
               <div className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c694ad]">{language === "vi" ? "Khoảng giá" : "Price Range"}</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c694ad]">{t("adminNailsDesignManagement.priceRange")}</p>
                 <p className="mt-3 text-sm font-extrabold text-[#432744]">
                   {formatApiValue(formValues.suggestedPrice === "0 VND" ? null : `${formValues.suggestedPrice}`)}
                 </p>
@@ -1382,7 +1380,7 @@ export function NailDesignManagementDetailPage() {
           </SectionCard>
 
           <SectionCard
-            title={language === "vi" ? "Hồ sơ Phù hợp Khách hàng" : "Customer Matching Profile"}
+            title={t("adminNailsDesignManagement.customerMatchingProfile")}
 
             icon={<Sparkles size={18} />}
             sectionId="customer-profile-section"
@@ -1418,9 +1416,9 @@ export function NailDesignManagementDetailPage() {
                         })}
                       </div>
                       <p className="text-[11px] text-[#b2879f]">
-                        {values.length > 0 
-                          ? (language === "vi" ? `Đã chọn ${values.length} thẻ` : `Selected ${values.length} tags`) 
-                          : (language === "vi" ? "Chọn một hoặc nhiều thẻ" : "Select one or more tags")
+                        {values.length > 0
+                          ? (language === "vi" ? `Đã chọn ${values.length} thẻ` : `Selected ${values.length} tags`)
+                          : (t("adminNailsDesignManagement.selectOneOrMoreTags"))
                         }
                       </p>
                     </div>
@@ -1439,8 +1437,8 @@ export function NailDesignManagementDetailPage() {
           </SectionCard>
 
           <SectionCard
-            title={language === "vi" ? "Thành phần Thiết kế" : "Design Components"}
-            subtitle={language === "vi" ? "Cấu trúc cốt lõi và phong cách thiết kế" : "Core structure and styling decisions"}
+            title={t("adminNailsDesignManagement.designComponents")}
+            subtitle={t("adminNailsDesignManagement.coreStructureAndStylingDecisio")}
             icon={<Settings2 size={18} />}
             sectionId="design-components-section"
             sectionRef={designComponentsRef}
@@ -1469,8 +1467,8 @@ export function NailDesignManagementDetailPage() {
           </SectionCard>
 
           <SectionCard
-            title={language === "vi" ? "Biến thể Thiết kế" : "Design Variants"}
-            subtitle={language === "vi" ? "Các biến thể có các phụ kiện và bề mặt móng khác nhau" : "Design variations have different accessories"}
+            title={t("adminNailsDesignManagement.designVariants")}
+            subtitle={t("adminNailsDesignManagement.designVariationsHaveDifferentA")}
             icon={<Copy size={18} />}
             sectionId="design-variants-section"
             sectionRef={designVariantsRef}
@@ -1483,7 +1481,7 @@ export function NailDesignManagementDetailPage() {
                 className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
               >
                 <Plus size={13} className="mr-1.5 inline" />
-                {language === "vi" ? "Thêm Biến thể Móng" : "Add Nail Variant"}
+                {t("adminNailsDesignManagement.addNailVariant")}
               </button>
             </div>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -1501,14 +1499,14 @@ export function NailDesignManagementDetailPage() {
                   {isEditing ? (
                     <div className="mt-3 space-y-3">
                       <div>
-                        <InputLabel>{language === "vi" ? "Tên Biến thể" : "Variant Name"}</InputLabel>
+                        <InputLabel>{t("adminNailsDesignManagement.variantName")}</InputLabel>
                         <EditInput
                           value={variant.name}
                           onChange={handleVariantFieldChange(index, "name")}
                         />
                       </div>
                       <div>
-                        <InputLabel>{language === "vi" ? "Mô tả" : "Description"}</InputLabel>
+                        <InputLabel>{t("adminNailsDesignManagement.description")}</InputLabel>
                         <EditTextarea
                           disabled
                           value={variant.description}
@@ -1516,15 +1514,13 @@ export function NailDesignManagementDetailPage() {
                           rows={3}
                         />
                         <p className="mt-1 text-[11px] text-[#b2879f]">
-                          {language === "vi" 
-                            ? "Mô tả được kết xuất từ bề mặt và phụ kiện, không được API này lưu trữ." 
-                            : "Description is derived from surface and accessories, not persisted by this API."
+                          {t("adminNailsDesignManagement.descriptionIsDerivedFromSurfac")
                           }
                         </p>
                       </div>
                       <div className="grid gap-3 sm:grid-cols-2">
                         <div>
-                          <InputLabel>{language === "vi" ? "Cấp độ" : "Level"}</InputLabel>
+                          <InputLabel>{t("adminNailsDesignManagement.level")}</InputLabel>
                           <EditSelect
                             disabled
                             value={variant.level}
@@ -1533,7 +1529,7 @@ export function NailDesignManagementDetailPage() {
                           />
                         </div>
                         <div>
-                          <InputLabel>{language === "vi" ? "Thời gian" : "Duration"}</InputLabel>
+                          <InputLabel>{t("adminNailsDesignManagement.duration")}</InputLabel>
                           <EditInput
                             className="disabled:cursor-not-allowed disabled:bg-[#f9f1f5] disabled:text-[#b2879f]"
                             disabled
@@ -1543,7 +1539,7 @@ export function NailDesignManagementDetailPage() {
                         </div>
                       </div>
                       <div>
-                        <InputLabel>{language === "vi" ? "URL Hình ảnh" : "Image URL"}</InputLabel>
+                        <InputLabel>{t("adminNailsDesignManagement.imageUrl")}</InputLabel>
                         <EditInput
                           value={variant.imageUrl}
                           onChange={handleVariantFieldChange(index, "imageUrl")}
@@ -1570,7 +1566,7 @@ export function NailDesignManagementDetailPage() {
                       onClick={() => void handleViewVariant(variant)}
                       className="flex-1 rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-2 text-xs font-bold text-[#ea4f93]"
                     >
-                      {language === "vi" ? "Xem" : "View"}
+                      {t("adminNailsDesignManagement.view")}
                     </button>
                     <button
                       type="button"
@@ -1591,7 +1587,7 @@ export function NailDesignManagementDetailPage() {
                         : "border-[#f4c6da] bg-white text-[#8c7085]"
                         }`}
                     >
-                      {isEditing ? (language === "vi" ? "Xóa" : "Delete") : (language === "vi" ? "Sửa" : "Edit")}
+                      {isEditing ? (t("adminNailsDesignManagement.delete")) : (t("adminNailsDesignManagement.edit"))}
                     </button>
                   </div>
                 </div>
@@ -1600,7 +1596,7 @@ export function NailDesignManagementDetailPage() {
           </SectionCard>
 
           <SectionCard
-            title={language === "vi" ? "Chi tiết Giá & Chi phí" : "Pricing & Cost Breakdown"}
+            title={t("adminNailsDesignManagement.pricingCostBreakdown")}
             subtitle=""
             icon={<CircleDollarSign size={18} />}
             sectionId="pricing-section"
@@ -1611,7 +1607,7 @@ export function NailDesignManagementDetailPage() {
               <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
-                    <p className="font-bold text-[#432744]">{language === "vi" ? "Chi phí Nguyên liệu" : "Material Costs"}</p>
+                    <p className="font-bold text-[#432744]">{t("adminNailsDesignManagement.materialCosts")}</p>
                     <div className="mt-4 space-y-3">
                       {formValues.pricing.materialCosts.map(([label, value]) => (
                         <div key={label} className="flex items-center justify-between gap-3 text-sm">
@@ -1622,7 +1618,7 @@ export function NailDesignManagementDetailPage() {
                     </div>
                   </div>
                   <div>
-                    <p className="font-bold text-[#432744]">{language === "vi" ? "Giá Dịch vụ" : "Service Pricing"}</p>
+                    <p className="font-bold text-[#432744]">{t("adminNailsDesignManagement.servicePricing")}</p>
                     <div className="mt-4 space-y-3">
                       {formValues.pricing.servicePricing.map(([label, value]) => (
                         <div key={label} className="flex items-center justify-between gap-3 text-sm">
@@ -1637,7 +1633,7 @@ export function NailDesignManagementDetailPage() {
 
               <div className="space-y-4">
                 <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
-                  <p className="font-bold text-[#432744]">{language === "vi" ? "Tóm tắt" : "Summary"}</p>
+                  <p className="font-bold text-[#432744]">{t("adminNailsDesignManagement.summary")}</p>
                   <div className="mt-4 space-y-3 text-sm">
                     {formValues.pricing.summary.map(([label, value], index) => (
                       <div key={label} className="flex items-center justify-between gap-3">
@@ -1652,7 +1648,7 @@ export function NailDesignManagementDetailPage() {
                   </div>
                 </div>
                 <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
-                  <p className="font-bold text-[#432744]">{language === "vi" ? "So sánh Giá" : "Price Comparison"}</p>
+                  <p className="font-bold text-[#432744]">{t("adminNailsDesignManagement.priceComparison")}</p>
                   <div className="mt-4 space-y-3 text-sm">
                     {formValues.pricing.comparison.map(([label, value]) => (
                       <div key={label} className="flex items-center justify-between gap-3">
@@ -1671,7 +1667,7 @@ export function NailDesignManagementDetailPage() {
 
         <aside className="space-y-4">
           <SectionCard
-            title={language === "vi" ? "Tóm tắt Nhanh" : "Quick Summary"}
+            title={t("adminNailsDesignManagement.quickSummary")}
             subtitle=""
             icon={<Sparkles size={18} />}
             sectionId="quick-summary-section"
@@ -1681,7 +1677,7 @@ export function NailDesignManagementDetailPage() {
             {isEditing ? (
               <div className="space-y-3">
                 <div>
-                  <InputLabel>{language === "vi" ? "Trạng thái Thiết kế" : "Design Status"}</InputLabel>
+                  <InputLabel>{t("adminNailsDesignManagement.designStatus")}</InputLabel>
                   <EditSelect
                     value={formValues.designStatus}
                     onChange={handleChange("designStatus")}
@@ -1689,18 +1685,18 @@ export function NailDesignManagementDetailPage() {
                   />
                 </div>
                 <div>
-                  <InputLabel>{language === "vi" ? "Có thể Thử móng" : "Try-On Ready"}</InputLabel>
+                  <InputLabel>{t("adminNailsDesignManagement.tryonReady")}</InputLabel>
                   <select
                     value={String(formValues.tryOnReady)}
                     onChange={handleBooleanChange("tryOnReady")}
                     className="h-11 w-full rounded-2xl border border-[#f4d4e2] bg-[#fffdfd] px-4 text-sm text-[#432744] outline-none transition focus:border-[#ef6bb4]"
                   >
-                    <option value="true">{language === "vi" ? "Có" : "Yes"}</option>
-                    <option value="false">{language === "vi" ? "Không" : "No"}</option>
+                    <option value="true">{t("adminNailsDesignManagement.yes")}</option>
+                    <option value="false">{t("adminNailsDesignManagement.no")}</option>
                   </select>
                 </div>
                 <div>
-                  <InputLabel>{language === "vi" ? "Độ phức tạp" : "Complexity"}</InputLabel>
+                  <InputLabel>{t("adminNailsDesignManagement.complexity")}</InputLabel>
                   <EditSelect
                     value={formValues.complexity}
                     onChange={handleChange("complexity")}
@@ -1708,7 +1704,7 @@ export function NailDesignManagementDetailPage() {
                   />
                 </div>
                 <div>
-                  <InputLabel>{language === "vi" ? "Thời gian Dự kiến" : "Est. Duration"}</InputLabel>
+                  <InputLabel>{t("adminNailsDesignManagement.estDuration")}</InputLabel>
                   <EditSelect
                     value={formValues.estimatedDuration}
                     onChange={handleChange("estimatedDuration")}
@@ -1716,7 +1712,7 @@ export function NailDesignManagementDetailPage() {
                   />
                 </div>
                 <div>
-                  <InputLabel>{language === "vi" ? "Dáng móng" : "Nail Shape"}</InputLabel>
+                  <InputLabel>{t("adminNailsDesignManagement.nailShape")}</InputLabel>
                   <EditSelect
                     value={formValues.nailShape}
                     onChange={handleChange("nailShape")}
@@ -1724,7 +1720,7 @@ export function NailDesignManagementDetailPage() {
                   />
                 </div>
                 <div>
-                  <InputLabel>{language === "vi" ? "Độ dài móng" : "Nail Length"}</InputLabel>
+                  <InputLabel>{t("adminNailsDesignManagement.nailLength")}</InputLabel>
                   <EditSelect
                     value={formValues.nailLength}
                     onChange={handleChange("nailLength")}
@@ -1732,7 +1728,7 @@ export function NailDesignManagementDetailPage() {
                   />
                 </div>
                 <div className="rounded-[16px] border border-dashed border-[#f3c9dd] bg-[#fff8fb] px-4 py-3 text-xs text-[#8c7085]">
-                  {language === "vi" ? "Giá gợi ý vẫn được khóa trong chế độ chỉnh sửa." : "Suggested price remains locked in edit mode."}
+                  {t("adminNailsDesignManagement.suggestedPriceRemainsLockedInE")}
                 </div>
               </div>
             ) : (
@@ -1749,13 +1745,13 @@ export function NailDesignManagementDetailPage() {
             )}
           </SectionCard>
 
-          <SectionCard title={language === "vi" ? "Hiệu suất" : "Performance"} subtitle="" icon={<BarChart3 size={18} />}>
+          <SectionCard title={t("adminNailsDesignManagement.performance")} subtitle="" icon={<BarChart3 size={18} />}>
             <div className="grid grid-cols-2 gap-3">
               {[
-                ["342", language === "vi" ? "Tổng Lượt Đặt" : "Total Bookings"],
-                ["218", language === "vi" ? "Yêu thích" : "Favorites"],
-                ["4.6★", language === "vi" ? "Đánh giá TB" : "Avg Rating"],
-                ["61%", language === "vi" ? "Tỷ lệ quay lại" : "Repeat Rate"],
+                ["342", t("adminNailsDesignManagement.totalBookings")],
+                ["218", t("adminNailsDesignManagement.favorites")],
+                ["4.6★", t("adminNailsDesignManagement.avgRating")],
+                ["61%", t("adminNailsDesignManagement.repeatRate")],
               ].map(([value, label]) => (
                 <div key={label} className="rounded-[18px] bg-[#fff3f8] px-4 py-4 text-center">
                   <p className="text-2xl font-extrabold text-[#ea4f93]">{value}</p>
@@ -1765,7 +1761,7 @@ export function NailDesignManagementDetailPage() {
             </div>
           </SectionCard>
 
-          <SectionCard title={language === "vi" ? "Hành động Nhanh" : "Quick Actions"} subtitle="" icon={<Settings2 size={18} />}>
+          <SectionCard title={t("adminNailsDesignManagement.quickActions")} subtitle="" icon={<Settings2 size={18} />}>
             <div className="space-y-2">
               <button
                 type="button"
@@ -1778,7 +1774,7 @@ export function NailDesignManagementDetailPage() {
                   }`}
               >
                 <PencilLine size={13} className="mr-1.5 inline" />
-                {language === "vi" ? "Chỉnh sửa Thiết kế" : "Edit Design"}
+                {t("adminNailsDesignManagement.editDesign")}
               </button>
               <button
                 type="button"
@@ -1791,7 +1787,7 @@ export function NailDesignManagementDetailPage() {
                   }`}
               >
                 <Copy size={13} className="mr-1.5 inline" />
-                {language === "vi" ? "Thêm Biến thể" : "Add Variant"}
+                {t("adminNailsDesignManagement.addVariant")}
               </button>
               <button
                 type="button"
@@ -1802,7 +1798,7 @@ export function NailDesignManagementDetailPage() {
                   }`}
               >
                 <CircleDollarSign size={13} className="mr-1.5 inline" />
-                {language === "vi" ? "Cập nhật Giá" : "Update Price"}
+                {t("adminNailsDesignManagement.updatePrice")}
               </button>
               <button
                 type="button"
@@ -1813,7 +1809,7 @@ export function NailDesignManagementDetailPage() {
                   }`}
               >
                 <Upload size={13} className="mr-1.5 inline" />
-                {language === "vi" ? "Tải lên tài nguyên" : "Upload Media"}
+                {t("adminNailsDesignManagement.uploadMedia")}
               </button>
               <button
                 type="button"
@@ -1829,14 +1825,14 @@ export function NailDesignManagementDetailPage() {
                   }`}
               >
                 <Trash2 size={13} className="mr-1.5 inline" />
-                {language === "vi" ? "Lưu trữ Thiết kế" : "Archive Design"}
+                {t("adminNailsDesignManagement.archiveDesign")}
               </button>
             </div>
           </SectionCard>
 
           <SectionCard
-            title={language === "vi" ? "Xem trước Khách hàng" : "Customer Preview"}
-            subtitle={language === "vi" ? "Cách khách hàng thấy thiết kế này" : "How customers see this design"}
+            title={t("adminNailsDesignManagement.customerPreview")}
+            subtitle={t("adminNailsDesignManagement.howCustomersSeeThisDesign")}
             icon={<Eye size={18} />}
             sectionId="customer-preview-section"
             sectionRef={customerPreviewRef}
@@ -1864,7 +1860,7 @@ export function NailDesignManagementDetailPage() {
               type="button"
               className="mt-4 w-full rounded-full bg-[image:var(--gradient-accent)] px-4 py-2.5 text-xs font-bold text-white"
             >
-              {language === "vi" ? "Thử móng Ảo" : "Try On Virtually"}
+              {t("adminNailsDesignManagement.tryOnVirtually")}
             </button>
           </SectionCard>
         </aside>
@@ -1873,50 +1869,50 @@ export function NailDesignManagementDetailPage() {
       <ActionConfirmModal
         open={showSaveConfirm}
         intent="success"
-        title={language === "vi" ? "Lưu Thay Đổi Thiết Kế" : "Save Design Changes"}
-        subtitle={language === "vi" ? "Các thay đổi về mẫu móng và biến thể được đồng bộ hóa với máy chủ khi được các API hiện tại hỗ trợ." : "Nail design and variant edits are synced to backend when supported by the current APIs."}
-        description={language === "vi" ? "Xác nhận cập nhật thiết kế móng hiện tại và bất kỳ biến thể nào đã thay đổi với các giá trị được API hỗ trợ mới nhất." : "Confirm to update the current nail design and any changed variants with the latest API-supported values."}
-        confirmText={language === "vi" ? "Lưu Thay Đổi" : "Save Changes"}
-        cancelText={language === "vi" ? "Xem lại" : "Review Again"}
+        title={t("adminNailsDesignManagement.saveDesignChanges")}
+        subtitle={t("adminNailsDesignManagement.nailDesignAndVariantEditsAreSy")}
+        description={t("adminNailsDesignManagement.confirmToUpdateTheCurrentNailD")}
+        confirmText={t("adminNailsDesignManagement.saveChanges")}
+        cancelText={t("adminNailsDesignManagement.reviewAgain")}
         confirmIcon={Sparkles}
         width={520}
         loading={isSavingVariants}
         onConfirm={handleSave}
         onCancel={() => setShowSaveConfirm(false)}
-        highlights={[formValues.name || (language === "vi" ? "Chi tiết thiết kế" : "Design detail"), formValues.designStatus || (language === "vi" ? "Đang chờ trạng thái" : "Status pending"), formValues.complexity || (language === "vi" ? "Đang chờ độ phức tạp" : "Complexity pending")]}
+        highlights={[formValues.name || (t("adminNailsDesignManagement.designDetail")), formValues.designStatus || (t("adminNailsDesignManagement.statusPending")), formValues.complexity || (t("adminNailsDesignManagement.complexityPending"))]}
         details={[
-          { label: language === "vi" ? "Giá Đề xuất" : "Suggested Price", value: formValues.suggestedPrice || (language === "vi" ? "Chưa nhập giá" : "No price entered") },
-          { label: language === "vi" ? "Thời Gian Dự Kiến" : "Est. Duration", value: formValues.estimatedDuration || (language === "vi" ? "Chưa nhập thời gian" : "No duration entered") },
+          { label: t("adminNailsDesignManagement.suggestedPrice"), value: formValues.suggestedPrice || (t("adminNailsDesignManagement.noPriceEntered")) },
+          { label: t("adminNailsDesignManagement.estDuration"), value: formValues.estimatedDuration || (t("adminNailsDesignManagement.noDurationEntered")) },
         ]}
-        warnings={[language === "vi" ? "Màn hình này hiện sẽ lưu các thay đổi thiết kế qua PUT /api/NailDesigns/{id} và các thay đổi biến thể qua PUT /api/NailVariants/{id}." : "This screen now persists design edits through PUT /api/NailDesigns/{id} and variant edits through PUT /api/NailVariants/{id}."]}
+        warnings={[t("adminNailsDesignManagement.thisScreenNowPersistsDesignEdi")]}
       />
 
       <ActionConfirmModal
         open={showCancelConfirm}
         intent="warning"
-        title={language === "vi" ? "Hủy Các Thay Đổi Thiết Kế" : "Discard Design Edits"}
-        subtitle={language === "vi" ? "Bạn sắp rời khỏi chế độ chỉnh sửa mà không lưu." : "You are about to leave edit mode without saving."}
-        description={language === "vi" ? "Các bản cập nhật chưa lưu cho thiết kế móng này sẽ bị hủy." : "Unsaved updates to this nail design will be discarded."}
-        confirmText={language === "vi" ? "Hủy Thay Đổi" : "Discard Changes"}
-        cancelText={language === "vi" ? "Tiếp tục Chỉnh sửa" : "Keep Editing"}
+        title={t("adminNailsDesignManagement.discardDesignEdits")}
+        subtitle={t("adminNailsDesignManagement.youAreAboutToLeaveEditModeWith")}
+        description={t("adminNailsDesignManagement.unsavedUpdatesToThisNailDesign")}
+        confirmText={t("adminNailsDesignManagement.discardChanges")}
+        cancelText={t("adminNailsDesignManagement.keepEditing")}
         confirmIcon={X}
         onConfirm={handleCancelEdit}
         onCancel={() => setShowCancelConfirm(false)}
         details={[
-          { label: language === "vi" ? "Chế độ Chỉnh sửa" : "Editing Mode", value: language === "vi" ? "Chi tiết thiết kế móng" : "Nail design detail" },
-          { label: language === "vi" ? "Kết quả" : "Result", value: language === "vi" ? "Khôi phục về các giá trị đã tải gần nhất" : "Revert to last loaded values" },
+          { label: t("adminNailsDesignManagement.editingMode"), value: t("adminNailsDesignManagement.nailDesignDetail1") },
+          { label: t("adminNailsDesignManagement.result"), value: t("adminNailsDesignManagement.revertToLastLoadedValues") },
         ]}
-        warnings={[language === "vi" ? "Các chỉnh sửa không có giá hiện tại chưa được lưu trên màn hình này sẽ bị mất. Giá cả vẫn là chỉ đọc." : "Current unsaved non-pricing edits on this screen will be lost. Pricing remains read-only."]}
+        warnings={[t("adminNailsDesignManagement.currentUnsavedNonpricingEditsO")]}
       />
 
       <ActionConfirmModal
         open={Boolean(pendingDeleteVariant)}
         intent="danger"
-        title={language === "vi" ? "Xóa Biến Thể" : "Delete Variant"}
-        subtitle={language === "vi" ? "Hành động này sẽ gọi DELETE /api/NailVariants/{id}." : "This action will call DELETE /api/NailVariants/{id}."}
+        title={t("adminNailsDesignManagement.deleteVariant")}
+        subtitle={t("adminNailsDesignManagement.thisActionWillCallDeleteApinai")}
         description={language === "vi" ? `Bạn sắp xóa biến thể ${pendingDeleteVariant?.name ?? "này"}.` : `You are about to delete ${pendingDeleteVariant?.name ?? "this variant"}.`}
-        confirmText={language === "vi" ? "Xóa Biến Thể" : "Delete Variant"}
-        cancelText={language === "vi" ? "Giữ lại Biến thể" : "Keep Variant"}
+        confirmText={t("adminNailsDesignManagement.deleteVariant")}
+        cancelText={t("adminNailsDesignManagement.keepVariant")}
         confirmIcon={Trash2}
         loading={isDeletingVariant}
         onConfirm={handleDeleteVariant}
@@ -1927,11 +1923,11 @@ export function NailDesignManagementDetailPage() {
               title: pendingDeleteVariant.name,
               image: pendingDeleteVariant.imageUrl || formValues.previewImage || DESIGN_PREVIEW_IMAGE,
               meta: pendingDeleteVariant.level,
-              note: pendingDeleteVariant.description || (language === "vi" ? "Biến thể đã chọn sẽ bị xóa khỏi thiết kế này." : "Selected variant will be removed from this design."),
+              note: pendingDeleteVariant.description || (t("adminNailsDesignManagement.selectedVariantWillBeRemovedFr")),
             }
             : null
         }
-        warnings={[language === "vi" ? "Hành động này sẽ xóa vĩnh viễn biến thể khỏi máy chủ nếu cuộc gọi API thành công." : "This permanently removes the variant from backend if the API call succeeds."]}
+        warnings={[t("adminNailsDesignManagement.thisPermanentlyRemovesTheVaria")]}
       />
 
       <Modal
@@ -1954,13 +1950,13 @@ export function NailDesignManagementDetailPage() {
                 </div>
                 <div>
                   <span className="inline-flex rounded-full bg-white/70 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#b25784]">
-                    {language === "vi" ? "Chi Tiết Biến Thể" : "Variant Detail"}
+                    {t("adminNailsDesignManagement.variantDetail")}
                   </span>
                   <h3 className="mt-3 text-lg font-bold text-[#432744]">
-                    {selectedVariantDetail?.name || (language === "vi" ? "Biến thể" : "Variant")}
+                    {selectedVariantDetail?.name || (t("adminNailsDesignManagement.variant"))}
                   </h3>
                   <p className="mt-1 text-sm text-[#9c7089]">
-                    {language === "vi" ? "Dữ liệu được tải từ GET /api/NailVariants/{id}." : "Data loaded from `GET /api/NailVariants/{id}`."}
+                    {t("adminNailsDesignManagement.dataLoadedFromGetApinailvarian")}
                   </p>
                 </div>
               </div>
@@ -1979,7 +1975,7 @@ export function NailDesignManagementDetailPage() {
           {isLoadingVariantDetail && selectedVariantDetail?.isPlaceholder ? (
             <div className="flex items-center gap-3 px-6 py-8 text-sm text-[#8c7085]">
               <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
-              {language === "vi" ? "Đang tải chi tiết biến thể móng..." : "Loading nail variant detail..."}
+              {t("adminNailsDesignManagement.loadingNailVariantDetail")}
             </div>
           ) : (
             <div className="space-y-5 px-6 py-5">
@@ -1995,8 +1991,8 @@ export function NailDesignManagementDetailPage() {
               <div className="space-y-4">
                 <div className="grid gap-3 sm:grid-cols-2">
                   {[
-                    [language === "vi" ? "Giá cả" : "Price", selectedVariantDetail?.priceLabel || "N/A"],
-                    [language === "vi" ? "Thời gian thực hiện" : "Duration", selectedVariantDetail?.durationLabel || "N/A"],
+                    [t("adminNailsDesignManagement.price"), selectedVariantDetail?.priceLabel || "N/A"],
+                    [t("adminNailsDesignManagement.duration"), selectedVariantDetail?.durationLabel || "N/A"],
                   ].map(([label, value]) => (
                     <div key={label} className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
@@ -2009,7 +2005,7 @@ export function NailDesignManagementDetailPage() {
 
                 <div className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
-                    {language === "vi" ? "Mô tả" : "Description"}
+                    {t("adminNailsDesignManagement.description")}
                   </p>
                   <p className="mt-2 text-sm leading-6 text-[#6d5669]">
                     {formatApiValue(selectedVariantDetail?.description)}
@@ -2019,23 +2015,23 @@ export function NailDesignManagementDetailPage() {
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
-                  <p className="font-bold text-[#432744]">{language === "vi" ? "Dáng Móng" : "Nail Shape"}</p>
+                  <p className="font-bold text-[#432744]">{t("adminNailsDesignManagement.nailShape")}</p>
                   <div className="mt-4 space-y-3 text-sm">
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-[#8c7085]">{language === "vi" ? "Tên" : "Name"}</span>
+                      <span className="text-[#8c7085]">{t("adminNailsDesignManagement.name")}</span>
                       <span className="font-semibold text-[#432744]">
                         {formatApiValue(selectedVariantDetail?.nailShape?.name)}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-[#8c7085]">{language === "vi" ? "Giá" : "Price"}</span>
+                      <span className="text-[#8c7085]">{t("adminNailsDesignManagement.price")}</span>
                       <span className="font-semibold text-[#432744]">
                         {selectedVariantDetail?.nailShape?.priceLabel || "N/A"}
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-[#8c7085]">{language === "vi" ? "Thời gian" : "Duration"}</span>
+                      <span className="text-[#8c7085]">{t("adminNailsDesignManagement.duration")}</span>
                       <span className="font-semibold text-[#432744]">
                         {selectedVariantDetail?.nailShape?.durationLabel || "N/A"}
                       </span>
@@ -2044,23 +2040,23 @@ export function NailDesignManagementDetailPage() {
                 </div>
 
                 <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
-                  <p className="font-bold text-[#432744]">{language === "vi" ? "Bề Mặt Móng" : "Nail Surface"}</p>
+                  <p className="font-bold text-[#432744]">{t("adminNailsDesignManagement.nailSurface")}</p>
                   <div className="mt-4 space-y-3 text-sm">
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-[#8c7085]">{language === "vi" ? "Tên" : "Name"}</span>
+                      <span className="text-[#8c7085]">{t("adminNailsDesignManagement.name")}</span>
                       <span className="font-semibold text-[#432744]">
                         {formatApiValue(selectedVariantDetail?.nailSurface?.name)}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-[#8c7085]">{language === "vi" ? "Giá" : "Price"}</span>
+                      <span className="text-[#8c7085]">{t("adminNailsDesignManagement.price")}</span>
                       <span className="font-semibold text-[#432744]">
                         {selectedVariantDetail?.nailSurface?.priceLabel || "N/A"}
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-[#8c7085]">{language === "vi" ? "Thời gian" : "Duration"}</span>
+                      <span className="text-[#8c7085]">{t("adminNailsDesignManagement.duration")}</span>
                       <span className="font-semibold text-[#432744]">
                         {selectedVariantDetail?.nailSurface?.durationLabel || "N/A"}
                       </span>
@@ -2070,7 +2066,7 @@ export function NailDesignManagementDetailPage() {
               </div>
 
               <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
-                <p className="font-bold text-[#432744]">{language === "vi" ? "Xem trước Màu sắc" : "Color Preview"}</p>
+                <p className="font-bold text-[#432744]">{t("adminNailsDesignManagement.colorPreview")}</p>
                 {extractVariantColors(selectedVariantDetail?.colorJson).length > 0 ? (
                   <div className="mt-4 flex flex-wrap gap-3">
                     {extractVariantColors(selectedVariantDetail?.colorJson).length > 1 ? (
@@ -2081,7 +2077,7 @@ export function NailDesignManagementDetailPage() {
                             backgroundImage: `linear-gradient(135deg, ${extractVariantColors(selectedVariantDetail?.colorJson).join(", ")})`,
                           }}
                         />
-                        <p className="mt-3 text-center text-[11px] font-bold text-[#6d5669]">{language === "vi" ? "Phối màu Gradient" : "Gradient Mix"}</p>
+                        <p className="mt-3 text-center text-[11px] font-bold text-[#6d5669]">{t("adminNailsDesignManagement.gradientMix")}</p>
                       </div>
                     ) : null}
                     {extractVariantColors(selectedVariantDetail?.colorJson).map((color) => (
@@ -2107,7 +2103,7 @@ export function NailDesignManagementDetailPage() {
               <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="font-bold text-[#432744]">{language === "vi" ? "Quy Trình Thực Hiện" : "Procedure Steps"}</p>
+                    <p className="font-bold text-[#432744]">{t("adminNailsDesignManagement.procedureSteps")}</p>
 
                   </div>
                   <div className="flex gap-2">
@@ -2118,7 +2114,7 @@ export function NailDesignManagementDetailPage() {
                       className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#ea4f93]"
                     >
                       <Plus size={13} className="mr-1.5 inline" />
-                      {language === "vi" ? "Thêm Bước" : "Add Step"}
+                      {t("adminNailsDesignManagement.addStep")}
                     </button>
                     <button
                       type="button"
@@ -2127,7 +2123,7 @@ export function NailDesignManagementDetailPage() {
                       className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white"
                     >
                       <Save size={13} className="mr-1.5 inline" />
-                      {isSavingVariantProcedures ? (language === "vi" ? "Đang lưu..." : "Saving...") : (language === "vi" ? "Lưu Các Bước" : "Save Steps")}
+                      {isSavingVariantProcedures ? (t("adminNailsDesignManagement.saving")) : (t("adminNailsDesignManagement.saveSteps"))}
                     </button>
                   </div>
                 </div>
@@ -2135,7 +2131,7 @@ export function NailDesignManagementDetailPage() {
                 {isLoadingVariantProcedures ? (
                   <div className="mt-4 flex items-center gap-3 text-sm text-[#8c7085]">
                     <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
-                    {language === "vi" ? "Đang tải cấu hình quy trình..." : "Loading procedure configuration..."}
+                    {t("adminNailsDesignManagement.loadingProcedureConfiguration")}
                   </div>
                 ) : variantProcedureDraft.length ? (
                   <div className="mt-4 space-y-3">
@@ -2147,7 +2143,7 @@ export function NailDesignManagementDetailPage() {
                         <div className="grid gap-3 md:grid-cols-[110px_minmax(0,1fr)_auto]">
                           <label className="space-y-2">
                             <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
-                              {language === "vi" ? "Thứ tự bước" : "Step Order"}
+                              {t("adminNailsDesignManagement.stepOrder")}
                             </span>
                             <EditInput
                               value={String(item.stepOrder || index + 1)}
@@ -2162,25 +2158,25 @@ export function NailDesignManagementDetailPage() {
                             disabled={isSavingVariantProcedures}
                             className="self-end rounded-full border border-[#f3b1c7] bg-[#fff2f6] px-4 py-2 text-xs font-bold text-[#d14c84]"
                           >
-                            {language === "vi" ? "Xóa" : "Remove"}
+                            {t("adminNailsDesignManagement.remove")}
                           </button>
                         </div>
                         <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
                           <div>
-                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">{language === "vi" ? "Tên" : "Name"}</p>
+                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.name")}</p>
                             <p className="mt-1 font-semibold text-[#432744]">{item.name || "--"}</p>
                           </div>
                           <div>
-                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">{language === "vi" ? "Thời gian" : "Duration"}</p>
+                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.duration")}</p>
                             <p className="mt-1 font-semibold text-[#432744]">{item.durationLabel || "--"}</p>
                           </div>
                           <div>
-                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">{language === "vi" ? "Trạng thái" : "Status"}</p>
+                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.status")}</p>
                             <p className="mt-1 font-semibold text-[#432744]">{item.status || "--"}</p>
                           </div>
                           <div>
-                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">{language === "vi" ? "Bắt buộc" : "Required"}</p>
-                            <p className="mt-1 font-semibold text-[#432744]">{item.isRequired ? (language === "vi" ? "Có" : "Yes") : (language === "vi" ? "Không" : "No")}</p>
+                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.required")}</p>
+                            <p className="mt-1 font-semibold text-[#432744]">{item.isRequired ? (t("adminNailsDesignManagement.yes")) : (t("adminNailsDesignManagement.no"))}</p>
                           </div>
                         </div>
                         {item.description ? (
@@ -2191,7 +2187,7 @@ export function NailDesignManagementDetailPage() {
                   </div>
                 ) : (
                   <div className="mt-4 rounded-[16px] border border-dashed border-[#f3c9dd] bg-white px-4 py-4 text-sm text-[#8c7085]">
-                    {language === "vi" ? "Chưa có quy trình nào được cấu hình cho biến thể này. Thêm hàng và lưu để gọi POST /api/Procedures/assign/{nailVariantId}." : "No procedures configured for this variant yet. Add rows and save to call POST /api/Procedures/assign/{nailVariantId}."}
+                    {t("adminNailsDesignManagement.noProceduresConfiguredForThisV")}
                   </div>
                 )}
               </div>

@@ -309,10 +309,10 @@ export function SalonDetailPage() {
         <motion.div variants={fadeInUp} className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
             <h1 className=" text-[32px] font-bold text-[#3f2034]">
-              {salonDetail?.name || (language === "vi" ? "Chi tiết Chi nhánh" : "Salon Detail")}
+              {salonDetail?.name || (t("adminSalonManagement.salonDetail"))}
             </h1>
             <p className="mt-1 text-sm text-[#a6869a]">
-              {language === "vi" ? "Xem thông tin và quản lý chi nhánh salon này" : "Review branch information and manage this salon"}
+              {t("adminSalonManagement.reviewBranchInformationAndMana")}
             </p>
           </div>
 
@@ -326,7 +326,7 @@ export function SalonDetailPage() {
               className="inline-flex items-center justify-center gap-2 rounded-full border border-[#f1e7ed] bg-white px-5 py-2.5 text-[12px] font-bold text-[#ea4f93] transition-all duration-300 hover:bg-[#fff8fb] disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Trash2 size={16} />
-              {language === "vi" ? "Xóa" : "Delete"}
+              {t("adminSalonManagement.delete")}
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -337,7 +337,7 @@ export function SalonDetailPage() {
               className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#ea4f93] to-[#d6376f] px-6 py-2.5 text-[12px] font-bold text-white shadow-[0_12px_24px_rgba(234,79,147,0.32)] transition-all duration-300 hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Pencil size={16} />
-              {language === "vi" ? "Chỉnh sửa" : "Edit Salon"}
+              {t("adminSalonManagement.editSalon")}
             </motion.button>
           </div>
         </motion.div>
@@ -414,7 +414,7 @@ export function SalonDetailPage() {
                               }}
                             >
                               <Eye size={16} className="text-[#ea4f93]" />
-                              <span className="text-[14px] font-semibold text-[#2d1b35]">{language === "vi" ? "Xem ảnh" : "View Avatar"}</span>
+                              <span className="text-[14px] font-semibold text-[#2d1b35]">{t("adminSalonManagement.viewAvatar")}</span>
                             </motion.button>
                             <div className="h-px bg-[#f1e7ed]" />
                             <motion.button
@@ -427,7 +427,7 @@ export function SalonDetailPage() {
                               }}
                             >
                               <Upload size={16} className="text-[#ea4f93]" />
-                              <span className="text-[14px] font-semibold text-[#2d1b35]">{language === "vi" ? "Cập nhật ảnh" : "Update Avatar"}</span>
+                              <span className="text-[14px] font-semibold text-[#2d1b35]">{t("adminSalonManagement.updateAvatar")}</span>
                             </motion.button>
                           </motion.div>
                         )}
@@ -487,7 +487,7 @@ export function SalonDetailPage() {
                       <span className="text-[13px] font-semibold text-[#2d1b35]">{language === "vi" ? daysMap[day.key] || day.label : day.label}</span>
                       {isClosed ? (
                         <span className="rounded-full bg-[#fdeceb] px-3 py-1 text-[11px] font-bold text-[#c94b4b]">
-                          {language === "vi" ? "Đóng cửa" : "Closed"}
+                          {t("adminSalonManagement.closed")}
                         </span>
                       ) : (
                         <span className="flex items-center gap-1.5 text-[13px] font-medium text-[#a88a9f]">
@@ -505,22 +505,22 @@ export function SalonDetailPage() {
           <aside className="space-y-6 lg:sticky lg:top-6 lg:self-start">
             {/* Management Snapshot */}
             <PremiumCard noHover>
-              <h3 className="mb-4 text-[14px] font-bold text-[#2d1b35]">{language === "vi" ? "Tóm tắt quản lý" : "Management Snapshot"}</h3>
+              <h3 className="mb-4 text-[14px] font-bold text-[#2d1b35]">{t("adminSalonManagement.managementSnapshot")}</h3>
               <div className="space-y-3">
                 <motion.div variants={fadeInUp} className="flex items-center justify-between gap-3 rounded-[16px] bg-[#fff8fb] px-4 py-3">
-                  <span className="text-[12px] font-semibold text-[#a88a9f]">{language === "vi" ? "Tên chi nhánh" : "Salon Name"}</span>
+                  <span className="text-[12px] font-semibold text-[#a88a9f]">{t("adminSalonManagement.salonName")}</span>
                   <span className="max-w-[160px] truncate text-right text-[13px] font-medium text-[#2d1b35]">{salonDetail.name}</span>
                 </motion.div>
                 <motion.div variants={fadeInUp} className="flex items-center justify-between gap-3 rounded-[16px] bg-[#fff8fb] px-4 py-3">
-                  <span className="text-[12px] font-semibold text-[#a88a9f]">{language === "vi" ? "Quản lý" : "Manager"}</span>
-                  <span className="max-w-[160px] truncate text-right text-[13px] font-medium text-[#2d1b35]">{salonDetail.manager === "Unassigned" ? (language === "vi" ? "Chưa phân bổ" : "Unassigned") : salonDetail.manager}</span>
+                  <span className="text-[12px] font-semibold text-[#a88a9f]">{t("adminSalonManagement.manager")}</span>
+                  <span className="max-w-[160px] truncate text-right text-[13px] font-medium text-[#2d1b35]">{salonDetail.manager === "Unassigned" ? (t("adminSalonManagement.unassigned")) : salonDetail.manager}</span>
                 </motion.div>
                 <motion.div variants={fadeInUp} className="flex items-center justify-between gap-3 rounded-[16px] bg-[#fff8fb] px-4 py-3">
-                  <span className="text-[12px] font-semibold text-[#a88a9f]">{language === "vi" ? "Số lượng nhân viên" : "Staff Amount"}</span>
+                  <span className="text-[12px] font-semibold text-[#a88a9f]">{t("adminSalonManagement.staffAmount")}</span>
                   <span className="text-right text-[13px] font-medium text-[#2d1b35]">{salonDetail.staff}</span>
                 </motion.div>
                 <motion.div variants={fadeInUp} className="flex items-center justify-between gap-3 rounded-[16px] bg-[#fff8fb] px-4 py-3">
-                  <span className="text-[12px] font-semibold text-[#a88a9f]">{language === "vi" ? "Trạng thái" : "Status"}</span>
+                  <span className="text-[12px] font-semibold text-[#a88a9f]">{t("adminSalonManagement.status")}</span>
                   <span className="text-right text-[13px] font-medium text-[#2d1b35]">{language === "vi" && salonDetail.status === "Active" ? "Đang hoạt động" : salonDetail.status}</span>
                 </motion.div>
               </div>
@@ -528,9 +528,9 @@ export function SalonDetailPage() {
 
             {/* Description */}
             <PremiumCard noHover>
-              <h3 className="mb-4 text-[14px] font-bold text-[#2d1b35]">{language === "vi" ? "Mô tả chi tiết" : "Description"}</h3>
+              <h3 className="mb-4 text-[14px] font-bold text-[#2d1b35]">{t("adminSalonManagement.description")}</h3>
               <p className="whitespace-pre-line text-[13px] leading-relaxed text-[#a88a9f]">
-                {salonDetail?.description || (language === "vi" ? "Chưa có mô tả chi tiết." : "No description available yet.")}
+                {salonDetail?.description || (t("adminSalonManagement.noDescriptionAvailableYet"))}
               </p>
             </PremiumCard>
           </aside>
@@ -540,11 +540,11 @@ export function SalonDetailPage() {
       <ActionConfirmModal
         open={showDeleteModal}
         intent="danger"
-        title={language === "vi" ? "Xóa Chi nhánh" : "Delete Salon"}
-        subtitle={language === "vi" ? "API xóa chi nhánh chưa được kết nối." : "Delete salon API is not connected yet."}
+        title={t("adminSalonManagement.deleteSalon")}
+        subtitle={t("adminSalonManagement.deleteSalonApiIsNotConnectedYe")}
         description={language === "vi" ? `Bạn đang chuẩn bị xóa chi nhánh ${salonDetail?.name ?? "này"}.` : `You are about to delete ${salonDetail?.name ?? "this salon"}.`}
-        confirmText={language === "vi" ? "Đóng" : "Close"}
-        cancelText={language === "vi" ? "Hủy" : "Cancel"}
+        confirmText={t("adminSalonManagement.close")}
+        cancelText={t("adminSalonManagement.cancel")}
         confirmIcon={Trash2}
         onConfirm={handleDeleteSalon}
         onCancel={() => setShowDeleteModal(false)}
@@ -554,7 +554,7 @@ export function SalonDetailPage() {
               image: salonDetail.image,
               title: salonDetail.name,
               meta: salonDetail.address,
-              note: `${language === "vi" ? "Quản lý:" : "Manager:"} ${salonDetail.manager === "Unassigned" ? (language === "vi" ? "Chưa phân bổ" : "Unassigned") : salonDetail.manager}`,
+              note: `${t("adminSalonManagement.manager1")} ${salonDetail.manager === "Unassigned" ? (t("adminSalonManagement.unassigned")) : salonDetail.manager}`,
             }
             : null
         }
@@ -587,7 +587,7 @@ export function SalonDetailPage() {
                 <X size={16} />
               </button>
               <div className="mb-4 text-center">
-                <h3 className="text-[20px] font-bold text-[#2d1b35]">{language === "vi" ? "Ảnh đại diện chi nhánh" : "Salon Avatar"}</h3>
+                <h3 className="text-[20px] font-bold text-[#2d1b35]">{t("adminSalonManagement.salonAvatar")}</h3>
               </div>
               <div className="flex justify-center">
                 <motion.img
@@ -634,7 +634,7 @@ export function SalonDetailPage() {
                 <X size={16} />
               </button>
               <div className="mb-6">
-                <h3 className="text-[20px] font-bold text-[#2d1b35]">{language === "vi" ? "Cập nhật ảnh đại diện" : "Update Avatar"}</h3>
+                <h3 className="text-[20px] font-bold text-[#2d1b35]">{t("adminSalonManagement.updateAvatar")}</h3>
                 <p className="mt-2 text-[13px] text-[#a88a9f]">
                   {language === "vi" ? `Tải lên ảnh mới cho chi nhánh ${salonDetail?.name || ""}` : `Upload a new image for ${salonDetail?.name || "this salon"}`}
                 </p>
@@ -653,7 +653,7 @@ export function SalonDetailPage() {
                       onClick={() => setSelectedImage(null)}
                       className="text-[13px] font-semibold text-[#ea4f93]"
                     >
-                      {language === "vi" ? "Đổi ảnh khác" : "Change image"}
+                      {t("adminSalonManagement.changeImage")}
                     </button>
                   </div>
                 ) : (
@@ -662,8 +662,8 @@ export function SalonDetailPage() {
                       <Upload size={28} />
                     </div>
                     <div className="text-center">
-                      <p className="text-[14px] font-semibold text-[#2d1b35]">{language === "vi" ? "Nhấn vào đây để chọn file" : "Click to choose an image"}</p>
-                      <p className="mt-1 text-[11px] text-[#a88a9f]">{language === "vi" ? "Hỗ trợ định dạng PNG hoặc JPG" : "PNG or JPG files supported"}</p>
+                      <p className="text-[14px] font-semibold text-[#2d1b35]">{t("adminSalonManagement.clickToChooseAnImage")}</p>
+                      <p className="mt-1 text-[11px] text-[#a88a9f]">{t("adminSalonManagement.pngOrJpgFilesSupported")}</p>
                     </div>
                     <input
                       type="file"
@@ -683,7 +683,7 @@ export function SalonDetailPage() {
                     }}
                     className="flex-1 rounded-full border border-[#f1e7ed] bg-white px-4 py-3 text-[14px] font-bold text-[#2d1b35] hover:bg-[#fff8fb] transition-all"
                   >
-                    {language === "vi" ? "Hủy bỏ" : "Cancel"}
+                    {t("adminSalonManagement.cancel")}
                   </button>
                   <button
                     type="button"
@@ -694,7 +694,7 @@ export function SalonDetailPage() {
                     {isUploading ? (
                       <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
                     ) : (
-                      language === "vi" ? "Lưu lại" : "Save"
+                      t("adminSalonManagement.save")
                     )}
                   </button>
                 </div>

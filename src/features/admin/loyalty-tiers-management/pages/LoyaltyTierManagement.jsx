@@ -322,7 +322,7 @@ export function LoyaltyTierManagement() {
             showNotification(statusMsg);
         } catch (err) {
             console.error(err);
-            showNotification(err instanceof Error ? err.message : (language === "vi" ? "Cập nhật trạng thái thất bại." : "Failed to update status."), "error");
+            showNotification(err instanceof Error ? err.message : (t("adminLoyaltyTiersManagement.failedToUpdateStatus")), "error");
         } finally {
             setUpdatingStatusTierId(null);
         }
@@ -386,13 +386,13 @@ export function LoyaltyTierManagement() {
                 <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
                     <div>
                         <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#c9799f]">
-                            {language === "vi" ? "Nailify · Chương trình Thành viên" : "Nailify · Membership Program"}
+                            {t("adminLoyaltyTiersManagement.nailifyMembershipProgram")}
                         </span>
                         <h1 className="mt-1 text-4xl font-bold tracking-tight text-[#3f2034]">
                             {t("menus.admin-loyalty-tiers") || "Loyalty Tier Catalog"}
                         </h1>
                         <p className="mt-1 text-sm text-[#8c7484]">
-                            {language === "vi" ? "Mỗi cấp bậc bên dưới được hiển thị chính xác như thẻ thành viên vật lý mà khách hàng sở hữu." : "Every rank below is rendered exactly as the physical membership card customers hold."}
+                            {t("adminLoyaltyTiersManagement.everyRankBelowIsRenderedExactl")}
                         </p>
                     </div>
 
@@ -401,16 +401,16 @@ export function LoyaltyTierManagement() {
                         className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-6 text-sm font-bold text-white shadow-[0_10px_20px_rgba(235,90,153,0.18)] transition-all hover:opacity-95 active:scale-[0.98]"
                     >
                         <Plus size={15} className="mr-2" />
-                        {language === "vi" ? "Tạo Cấp độ thành viên" : "Create Loyalty Tier"}
+                        {t("adminLoyaltyTiersManagement.createLoyaltyTier")}
                     </button>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-x-8 gap-y-3 rounded-2xl bg-white/70 px-5 py-3 border border-[#f5e3ed]">
                     {[
-                        { label: language === "vi" ? "Thành viên đã tham gia" : "Members enrolled", value: totalMembers.toLocaleString(), icon: Users },
-                        { label: language === "vi" ? "Cấp độ hoạt động" : "Active tiers", value: activeTiersCount, icon: Layers },
-                        { label: language === "vi" ? "Giảm giá cao nhất" : "Top discount", value: `${maxDiscount}%`, icon: Percent },
-                        { label: language === "vi" ? "Giảm giá trung bình" : "Average discount", value: `${averageDiscount}%`, icon: TrendingUp }
+                        { label: t("adminLoyaltyTiersManagement.membersEnrolled"), value: totalMembers.toLocaleString(), icon: Users },
+                        { label: t("adminLoyaltyTiersManagement.activeTiers"), value: activeTiersCount, icon: Layers },
+                        { label: t("adminLoyaltyTiersManagement.topDiscount"), value: `${maxDiscount}%`, icon: Percent },
+                        { label: t("adminLoyaltyTiersManagement.averageDiscount"), value: `${averageDiscount}%`, icon: TrendingUp }
                     ].map((item, idx, arr) => {
                         const Icon = item.icon;
                         return (
@@ -438,7 +438,7 @@ export function LoyaltyTierManagement() {
                         <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#c099b2]" />
                         <input
                             type="text"
-                            placeholder={language === "vi" ? "Tìm kiếm cấp độ..." : "Search loyalty tiers..."}
+                            placeholder={t("adminLoyaltyTiersManagement.searchLoyaltyTiers")}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="h-11 w-full rounded-full border border-[#f5d7e4] bg-white/90 pl-11 pr-4 text-sm text-[#4b3345] outline-none transition placeholder:text-[#c0a8b9] focus:border-[#ef6bb4] focus:bg-white"
@@ -449,7 +449,7 @@ export function LoyaltyTierManagement() {
                         <Award size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#c099b2]" />
                         <input
                             type="number"
-                            placeholder={language === "vi" ? "Điểm..." : "Points..."}
+                            placeholder={t("adminLoyaltyTiersManagement.points")}
                             value={pointsFilter}
                             onChange={(e) => setPointsFilter(e.target.value)}
                             className="h-11 w-full rounded-full border border-[#f5d7e4] bg-white/90 pl-11 pr-4 text-sm text-[#4b3345] outline-none transition placeholder:text-[#c0a8b9] focus:border-[#ef6bb4] focus:bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -498,7 +498,7 @@ export function LoyaltyTierManagement() {
                             </div>
                             <div>
                                 <h4 className="text-sm font-bold text-[#3f2034]">
-                                    {language === "vi" ? "Sơ đồ hệ thống khách hàng thân thiết" : "Loyalty System Blueprint"}
+                                    {t("adminLoyaltyTiersManagement.loyaltySystemBlueprint")}
                                 </h4>
                                 <p className="mt-1 text-xs leading-relaxed text-[#7c566f]">
                                     {language === "vi"
@@ -602,7 +602,7 @@ export function LoyaltyTierManagement() {
 
                                                 <div>
                                                     <p className="text-[9px] font-bold uppercase tracking-[0.25em] opacity-80">
-                                                        {language === "vi" ? "Thành viên Nailify" : "Nailify Membership"}
+                                                        {t("adminLoyaltyTiersManagement.nailifyMembership")}
                                                     </p>
                                                     <h4 className="mt-0.5 truncate text-2xl font-semibold leading-tight">
                                                         {tier.name}
@@ -615,18 +615,18 @@ export function LoyaltyTierManagement() {
                                                 <div className="flex items-end justify-between">
                                                     <div>
                                                         <span className="text-[8px] font-bold uppercase tracking-widest opacity-70 block">
-                                                            {language === "vi" ? "Ngưỡng điểm" : "Threshold"}
+                                                            {t("adminLoyaltyTiersManagement.threshold")}
                                                         </span>
                                                         <span className="nailify-mono text-xs font-bold">
-                                                            {tier.minLifetimePoints.toLocaleString()}–{tier.maxLifetimePoints.toLocaleString()} {language === "vi" ? "điểm" : "pts"}
+                                                            {tier.minLifetimePoints.toLocaleString()}–{tier.maxLifetimePoints.toLocaleString()} {t("adminLoyaltyTiersManagement.pts")}
                                                         </span>
                                                     </div>
                                                     <div className="text-right">
                                                         <span className="text-[8px] font-bold uppercase tracking-widest opacity-70 block">
-                                                            {language === "vi" ? "Giảm giá" : "Discount"}
+                                                            {t("adminLoyaltyTiersManagement.discount")}
                                                         </span>
                                                         <span className="text-lg font-bold">
-                                                            {tier.discountRate > 0 ? `${tier.discountRate}%` : (language === "vi" ? "Tiêu chuẩn" : "Standard")}
+                                                            {tier.discountRate > 0 ? `${tier.discountRate}%` : (t("adminLoyaltyTiersManagement.standard"))}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -638,7 +638,7 @@ export function LoyaltyTierManagement() {
                                             <div className="flex items-center gap-3 text-[11px] font-semibold text-[#8c7484]">
                                                 <span className="inline-flex items-center">
                                                     <Users size={12} className="mr-1 text-[#c9a7be]" />
-                                                    {getMockMemberCount(tier.name)} {language === "vi" ? "thành viên" : "members"}
+                                                    {getMockMemberCount(tier.name)} {t("adminLoyaltyTiersManagement.members")}
                                                 </span>
                                             </div>
 
@@ -678,7 +678,7 @@ export function LoyaltyTierManagement() {
                                                     }}
                                                     disabled={updatingStatusTierId === tier.id}
                                                     className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#f3cade] bg-white text-[#c95b90] hover:bg-[#fff0f6] transition-colors active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    title={language === "vi" ? "Chỉnh sửa cấp độ" : "Edit tier details"}
+                                                    title={t("adminLoyaltyTiersManagement.editTierDetails")}
                                                 >
                                                     <Edit3 size={11} />
                                                 </button>
@@ -690,7 +690,7 @@ export function LoyaltyTierManagement() {
                                                     }}
                                                     disabled={updatingStatusTierId === tier.id}
                                                     className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#ffe0e6] bg-white text-[#d14c84] hover:bg-[#fff0f3] transition-colors active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    title={language === "vi" ? "Xóa cấp độ" : "Delete tier"}
+                                                    title={t("adminLoyaltyTiersManagement.deleteTier")}
                                                 >
                                                     <Trash2 size={11} />
                                                 </button>
@@ -711,12 +711,10 @@ export function LoyaltyTierManagement() {
                             <Info size={20} />
                         </div>
                         <h4 className="text-base font-bold text-[#3f2034]">
-                            {language === "vi" ? "Không tìm thấy cấp độ thành viên nào" : "No Loyalty Tiers Match Your Filter"}
+                            {t("adminLoyaltyTiersManagement.noLoyaltyTiersMatchYourFilter")}
                         </h4>
                         <p className="mt-2 text-sm text-[#8c7484] max-w-sm">
-                            {language === "vi"
-                                ? "Vui lòng thử điều chỉnh tiêu chí tìm kiếm, xóa từ khóa tìm kiếm hoặc tạo một cấp độ thành viên mới."
-                                : "Try adjusting your search criteria, clearing your search query, or create a brand new loyalty tier to populate your dashboard."
+                            {t("adminLoyaltyTiersManagement.tryAdjustingYourSearchCriteria")
                             }
                         </p>
                         <div className="flex gap-2">
@@ -729,14 +727,14 @@ export function LoyaltyTierManagement() {
                                 className="mt-5 inline-flex items-center justify-center gap-1.5 rounded-full border border-[#f5cbdc] bg-[#fff5f9] px-4 py-2 text-xs font-bold text-[#c03478] hover:bg-[#ffd9e7] transition-all"
                             >
                                 <RefreshCw size={12} />
-                                {language === "vi" ? "Đặt lại bộ lọc" : "Reset Filters"}
+                                {t("adminLoyaltyTiersManagement.resetFilters")}
                             </button>
                             <button
                                 onClick={loadData}
                                 className="mt-5 inline-flex items-center justify-center gap-1.5 rounded-full border border-[#f5cbdc] bg-[#fff5f9] px-4 py-2 text-xs font-bold text-[#c03478] hover:bg-[#ffd9e7] transition-all"
                             >
                                 <RefreshCw size={12} />
-                                {language === "vi" ? "Tải lại dữ liệu" : "Reload API"}
+                                {t("adminLoyaltyTiersManagement.reloadApi")}
                             </button>
                         </div>
                     </motion.div>
@@ -774,12 +772,12 @@ export function LoyaltyTierManagement() {
                                     <div>
                                         <h3 className="text-2xl font-semibold text-[#3f2034]">
                                             {activeTierId
-                                                ? (language === "vi" ? "Chỉnh sửa Cấp độ thành viên" : "Modify Loyalty Tier")
-                                                : (language === "vi" ? "Tạo Cấp độ thành viên" : "Create Loyalty Tier")
+                                                ? (t("adminLoyaltyTiersManagement.modifyLoyaltyTier"))
+                                                : (t("adminLoyaltyTiersManagement.createLoyaltyTier"))
                                             }
                                         </h3>
                                         <p className="text-xs text-[#8c7484]">
-                                            {language === "vi" ? "Cấu hình quy tắc và mặt in của thẻ thành viên" : "Configure rules and the card's printed face"}
+                                            {t("adminLoyaltyTiersManagement.configureRulesAndTheCardsPrint")}
                                         </p>
                                     </div>
                                     <button
@@ -795,10 +793,10 @@ export function LoyaltyTierManagement() {
                                     <div className="flex flex-col gap-4 rounded-3xl border border-[#f5e3ed] bg-[#fffbfc] p-4">
                                         <div className="flex items-center justify-between">
                                             <label className="text-xs font-bold uppercase tracking-wider text-[#7a6473]">
-                                                {language === "vi" ? "Kiểu thiết kế thẻ" : "Card Style"}
+                                                {t("adminLoyaltyTiersManagement.cardStyle")}
                                             </label>
                                             <span className="text-[10px] font-bold uppercase tracking-wider text-[#c099b2]">
-                                                {language === "vi" ? "Xem trước" : "Live preview"}
+                                                {t("adminLoyaltyTiersManagement.livePreview")}
                                             </span>
                                         </div>
 
@@ -822,17 +820,17 @@ export function LoyaltyTierManagement() {
                                                 </div>
                                                 <div>
                                                     <p className="text-[8px] font-bold uppercase tracking-[0.2em] opacity-85">
-                                                        {language === "vi" ? "Thành viên Nailify" : "Nailify Membership"}
+                                                        {t("adminLoyaltyTiersManagement.nailifyMembership")}
                                                     </p>
                                                     <h5 className="mt-0.5 truncate text-lg font-semibold">
-                                                        {formData.name || (language === "vi" ? "Tên Cấp độ" : "Tier Name")}
+                                                        {formData.name || (t("adminLoyaltyTiersManagement.tierName"))}
                                                     </h5>
                                                 </div>
                                                 <div className="flex items-center justify-between text-[9px] font-bold uppercase tracking-widest opacity-85">
                                                     <span>
                                                         {formData.discountRate > 0
                                                             ? (language === "vi" ? `Giảm ${formData.discountRate}%` : `${formData.discountRate}% off`)
-                                                            : (language === "vi" ? "Tiêu chuẩn" : "Standard")
+                                                            : (t("adminLoyaltyTiersManagement.standard"))
                                                         }
                                                     </span>
                                                     <span>{language === "vi" ? `Cấp ${toRoman(formData.sortOrder)}` : `Rank ${toRoman(formData.sortOrder)}`}</span>
@@ -875,7 +873,7 @@ export function LoyaltyTierManagement() {
                                         {/* Custom Background Color */}
                                         <div className="flex flex-col gap-2 border-t border-[#fcecf4] pt-4">
                                             <label className="text-[11px] font-bold uppercase tracking-wider text-[#7a6473]">
-                                                {language === "vi" ? "Màu nền thẻ" : "Card Background"}
+                                                {t("adminLoyaltyTiersManagement.cardBackground")}
                                             </label>
                                             <div className="flex items-center gap-2">
                                                 <label className="relative h-11 w-11 shrink-0 cursor-pointer overflow-hidden rounded-xl border border-[#f5d7e4] shadow-inner">
@@ -908,7 +906,7 @@ export function LoyaltyTierManagement() {
                                         {/* Custom Text Color */}
                                         <div className="flex flex-col gap-2">
                                             <label className="text-[11px] font-bold uppercase tracking-wider text-[#7a6473]">
-                                                {language === "vi" ? "Màu sắc chữ" : "Text Color"}
+                                                {t("adminLoyaltyTiersManagement.textColor")}
                                             </label>
                                             <div className="flex items-center gap-2">
                                                 <label className="relative h-11 w-11 shrink-0 cursor-pointer overflow-hidden rounded-xl border border-[#f5d7e4] shadow-inner">
@@ -936,14 +934,14 @@ export function LoyaltyTierManagement() {
                                     {/* Tier Name */}
                                     <div className="flex flex-col gap-2">
                                         <label className="text-xs font-bold uppercase tracking-wider text-[#7a6473]">
-                                            {language === "vi" ? "Tên cấp độ" : "Tier Name"}
+                                            {t("adminLoyaltyTiersManagement.tierName")}
                                         </label>
                                         <input
                                             type="text"
                                             name="name"
                                             value={formData.name}
                                             onChange={handleInputChange}
-                                            placeholder={language === "vi" ? "Ví dụ: Đồng, Vàng, Kim cương VIP" : "e.g., Bronze, Gold, Diamond VIP"}
+                                            placeholder={t("adminLoyaltyTiersManagement.egBronzeGoldDiamondVip")}
                                             className={`h-11 w-full rounded-2xl border bg-[#fffbfc] px-4 text-sm text-[#4b3345] outline-none transition ${formErrors.name ? "border-[#d14c84] focus:border-[#d14c84]" : "border-[#f5d7e4] focus:border-[#ef6bb4]"
                                                 }`}
                                         />
@@ -958,7 +956,7 @@ export function LoyaltyTierManagement() {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="flex flex-col gap-2">
                                             <label className="text-xs font-bold uppercase tracking-wider text-[#7a6473]">
-                                                {language === "vi" ? "Điểm tối thiểu" : "Min Lifetime Points"}
+                                                {t("adminLoyaltyTiersManagement.minLifetimePoints")}
                                             </label>
                                             <input
                                                 type="number"
@@ -978,7 +976,7 @@ export function LoyaltyTierManagement() {
 
                                         <div className="flex flex-col gap-2">
                                             <label className="text-xs font-bold uppercase tracking-wider text-[#7a6473]">
-                                                {language === "vi" ? "Điểm tối đa" : "Max Lifetime Points"}
+                                                {t("adminLoyaltyTiersManagement.maxLifetimePoints")}
                                             </label>
                                             <input
                                                 type="number"
@@ -1001,7 +999,7 @@ export function LoyaltyTierManagement() {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="flex flex-col gap-2">
                                             <label className="text-xs font-bold uppercase tracking-wider text-[#7a6473]">
-                                                {language === "vi" ? "Tỷ lệ giảm giá (%)" : "Discount Rate (%)"}
+                                                {t("adminLoyaltyTiersManagement.discountRate1")}
                                             </label>
                                             <div className="relative">
                                                 <input
@@ -1042,7 +1040,7 @@ export function LoyaltyTierManagement() {
                                     {/* Badge Image Upload */}
                                     <div className="flex flex-col gap-2">
                                         <label className="text-xs font-bold uppercase tracking-wider text-[#7a6473]">
-                                            {language === "vi" ? "Huy hiệu Cấp độ" : "Badge Image"}
+                                            {t("adminLoyaltyTiersManagement.badgeImage")}
                                         </label>
                                         <div className="flex items-center gap-3">
                                             <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-[#f0c2d9] bg-[#fff6fa]">
@@ -1056,7 +1054,7 @@ export function LoyaltyTierManagement() {
                                                         <button
                                                             type="button"
                                                             onClick={handleRemoveImage}
-                                                            title={language === "vi" ? "Xóa ảnh" : "Remove image"}
+                                                            title={t("adminLoyaltyTiersManagement.removeImage")}
                                                             className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#d14c84] text-white shadow-sm transition-colors hover:bg-[#b93a70]"
                                                         >
                                                             <X size={10} />
@@ -1077,8 +1075,8 @@ export function LoyaltyTierManagement() {
                                                 <span className="flex flex-col">
                                                     <span className="text-xs font-bold text-[#c95b90]">
                                                         {formData.imageUrl
-                                                            ? (language === "vi" ? "Thay thế ảnh huy hiệu" : "Replace badge image")
-                                                            : (language === "vi" ? "Tải lên ảnh huy hiệu" : "Upload badge image")
+                                                            ? (t("adminLoyaltyTiersManagement.replaceBadgeImage"))
+                                                            : (t("adminLoyaltyTiersManagement.uploadBadgeImage"))
                                                         }
                                                     </span>
                                                     <span className="text-[10px] text-[#a6869a]">PNG hoặc JPG, tối đa 5MB</span>
@@ -1102,13 +1100,13 @@ export function LoyaltyTierManagement() {
                                     {/* Description */}
                                     <div className="flex flex-col gap-2">
                                         <label className="text-xs font-bold uppercase tracking-wider text-[#7a6473]">
-                                            {language === "vi" ? "Mô tả" : "Description"}
+                                            {t("adminLoyaltyTiersManagement.description")}
                                         </label>
                                         <textarea
                                             name="description"
                                             value={formData.description}
                                             onChange={handleInputChange}
-                                            placeholder={language === "vi" ? "Tóm tắt các thông số của cấp độ thành viên." : "Summarize the tier parameters."}
+                                            placeholder={t("adminLoyaltyTiersManagement.summarizeTheTierParameters")}
                                             rows="2"
                                             className="w-full rounded-2xl border border-[#f5d7e4] bg-[#fffbfc] p-3 text-sm text-[#4b3345] outline-none transition focus:border-[#ef6bb4] resize-none"
                                         />
@@ -1131,10 +1129,10 @@ export function LoyaltyTierManagement() {
                                                 <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.3" />
                                                 <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
                                             </svg>
-                                            {language === "vi" ? "Đang lưu..." : "Saving..."}
+                                            {t("adminLoyaltyTiersManagement.saving")}
                                         </>
                                     ) : (
-                                        language === "vi" ? "Lưu Cài đặt Cấp độ" : "Save Tier Settings"
+                                        t("adminLoyaltyTiersManagement.saveTierSettings")
                                     )}
                                 </button>
 
@@ -1144,7 +1142,7 @@ export function LoyaltyTierManagement() {
                                     disabled={isSaving}
                                     className="inline-flex h-11 items-center justify-center rounded-full border border-[#f5cbdc] bg-white px-5 text-sm font-bold text-[#b95d88] hover:bg-[#fff5f8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    {language === "vi" ? "Hủy" : "Cancel"}
+                                    {t("adminLoyaltyTiersManagement.cancel")}
                                 </button>
                             </div>
                         </motion.div>
@@ -1174,7 +1172,7 @@ export function LoyaltyTierManagement() {
             <DeleteConfirmModal
                 isOpen={!!deleteTarget}
                 isDeleting={isDeleting}
-                title={language === "vi" ? "Xóa Cấp độ thành viên" : "Delete Loyalty Tier"}
+                title={t("adminLoyaltyTiersManagement.deleteLoyaltyTier")}
                 description={
                     deleteTarget
                         ? (language === "vi"
