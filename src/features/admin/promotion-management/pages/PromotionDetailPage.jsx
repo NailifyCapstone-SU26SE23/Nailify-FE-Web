@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ROUTES, getAdminPromotionDetailRoute } from "../../../../shared/constants/routes";
 import {
   deleteAdminPromotion,
@@ -55,49 +56,49 @@ function toApiDateTime(value) {
   return parsed.toISOString();
 }
 
-function validateForm(formValues) {
+function validateForm(formValues, t) {
   if (!String(formValues.name || "").trim()) {
-    return "Promotion name is required.";
+    return t("promotionDetail.validations.nameRequired");
   }
 
   if (!String(formValues.description || "").trim()) {
-    return "Promotion description is required.";
+    return t("promotionDetail.validations.descRequired");
   }
 
   if (!String(formValues.type || "").trim()) {
-    return "Promotion type is required.";
+    return t("promotionDetail.validations.typeRequired");
   }
 
   if (!String(formValues.scope || "").trim()) {
-    return "Promotion scope is required.";
+    return t("promotionDetail.validations.scopeRequired");
   }
 
   if (!String(formValues.discountType || "").trim()) {
-    return "Discount type is required.";
+    return t("promotionDetail.validations.discountTypeRequired");
   }
 
   if (!(Number(formValues.discountValue) > 0)) {
-    return "Discount value must be greater than 0.";
+    return t("promotionDetail.validations.discountValueGreaterZero");
   }
 
   if (!formValues.startDate || !formValues.endDate) {
-    return "Start date and end date are required.";
+    return t("promotionDetail.validations.dateRequired");
   }
 
   if (new Date(formValues.startDate).getTime() >= new Date(formValues.endDate).getTime()) {
-    return "End date must be later than start date.";
+    return t("promotionDetail.validations.endDateLater");
   }
 
   if (formValues.scope === "Category" && !Number(formValues.categoryId)) {
-    return "Category is required for category-scoped promotions.";
+    return t("promotionDetail.validations.categoryRequired");
   }
 
   if (formValues.scope === "CategoryType" && !Number(formValues.categoryTypeId)) {
-    return "Category type is required for category-type-scoped promotions.";
+    return t("promotionDetail.validations.categoryTypeRequired");
   }
 
   if (formValues.scope === "NailDesign" && !Number(formValues.nailDesignId)) {
-    return "Nail design is required for nail-design-scoped promotions.";
+    return t("promotionDetail.validations.nailDesignRequired");
   }
 
   return "";
@@ -149,6 +150,7 @@ export function PromotionDetailPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { promotionId } = useParams();
+  const { language, t } = useLanguage();
   const [promotion, setPromotion] = useState(null);
   const [draft, setDraft] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -351,7 +353,7 @@ export function PromotionDetailPage() {
   };
 
   const handleRequestSave = () => {
-    const validationError = validateForm(draft);
+    const validationError = validateForm(draft, t);
 
     if (validationError) {
       setError(validationError);
@@ -379,7 +381,7 @@ export function PromotionDetailPage() {
       setDraft(mapPromotionToDraft(updatedPromotion));
       setImagePreview(updatedPromotion.imageUrl || "");
       setIsEditing(false);
-      toast.success(`${updatedPromotion.name} updated successfully.`);
+      toast.success(t("promotionDetail.messages.updateSuccess"));
     } catch (saveError) {
       const message = saveError instanceof Error ? saveError.message : "Failed to update promotion.";
       setError(message);
@@ -399,10 +401,10 @@ export function PromotionDetailPage() {
 
     try {
       await deleteAdminPromotion(promotion.promotionId);
-      toast.success(`${promotion.name} deleted successfully.`);
+      toast.success(t("promotionDetail.messages.deleteSuccess"));
       navigate(ROUTES.adminPromotions, {
         state: {
-          flashMessage: `${promotion.name} has been deleted successfully.`,
+          flashMessage: t("promotionDetail.messages.deleteSuccess"),
         },
       });
     } catch (deleteError) {
@@ -425,8 +427,15 @@ export function PromotionDetailPage() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">Promotion Detail</h1>
-            <p className="text-xs font-medium text-slate-400">Review, edit, and delete this promotion from one page.</p>
+            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">
+              {isEditing ? t("promotionDetail.editTitle") : t("promotionDetail.title")}
+            </h1>
+            <p className="text-xs font-medium text-slate-400">
+              {isEditing 
+                ? (language === "vi" ? "Chỉnh sửa thông tin khuyến mãi tại đây." : "Edit the promotion details below.")
+                : (language === "vi" ? "Xem, sửa và xóa chương trình khuyến mãi từ trang này." : "Review, edit, and delete this promotion from one page.")
+              }
+            </p>
           </div>
         </div>
 
@@ -438,7 +447,7 @@ export function PromotionDetailPage() {
             className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Trash2 size={14} />
-            Delete Promotion
+            {t("promotionDetail.deleteBtn")}
           </button>
           {isEditing ? (
             <>
@@ -448,7 +457,7 @@ export function PromotionDetailPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
               >
                 <X size={14} />
-                Cancel
+                {t("promotionDetail.messages.cancel")}
               </button>
               <button
                 type="button"
@@ -456,7 +465,7 @@ export function PromotionDetailPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
               >
                 <Save size={14} />
-                Save Changes
+                {t("promotionDetail.saveBtn")}
               </button>
             </>
           ) : (
@@ -467,7 +476,7 @@ export function PromotionDetailPage() {
               className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Pencil size={14} />
-              Edit Promotion
+              {t("promotionDetail.editTitle")}
             </button>
           )}
         </div>

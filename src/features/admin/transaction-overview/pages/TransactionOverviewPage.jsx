@@ -22,6 +22,7 @@ import { Pagination } from "../../../../shared/components/common/Pagination";
 import { fetchAdminSalons } from "../../salon-management/services/salonManagementService";
 import { fetchTransactions, fetchBookingById } from "../../../manager/transaction-management/services/transactionService";
 import dayjs from "dayjs";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 15 },
@@ -65,6 +66,7 @@ const getAvatarColor = (name) => {
 
 // Dynamic salon metrics are fetched via API in background
 export function TransactionOverviewPage() {
+  const { t, language } = useLanguage();
   // Salons selection state
   const [salons, setSalons] = useState([]);
   const [loadingSalons, setLoadingSalons] = useState(true);
@@ -310,26 +312,27 @@ export function TransactionOverviewPage() {
 
   const renderStatusBadge = (status) => {
     const normStatus = String(status || "").toLowerCase();
+    const isVi = language === "vi";
     switch (normStatus) {
       case "paid":
         return (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-500/20 px-2.5 py-1 text-xs font-semibold text-emerald-700">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            Paid
+            {isVi ? "Đã thanh toán" : "Paid"}
           </span>
         );
       case "pending":
         return (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-500/20 px-2.5 py-1 text-xs font-semibold text-amber-700">
             <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-bounce"></span>
-            Pending
+            {isVi ? "Chờ xử lý" : "Pending"}
           </span>
         );
       case "expired":
         return (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-600">
             <span className="h-1.5 w-1.5 rounded-full bg-slate-400"></span>
-            Expired
+            {isVi ? "Hết hạn" : "Expired"}
           </span>
         );
       case "canceled":
@@ -337,7 +340,7 @@ export function TransactionOverviewPage() {
         return (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 border border-rose-500/20 px-2.5 py-1 text-xs font-semibold text-rose-700">
             <span className="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
-            Canceled
+            {isVi ? "Đã hủy" : "Canceled"}
           </span>
         );
       default:
@@ -364,15 +367,17 @@ export function TransactionOverviewPage() {
               <span className="p-2 rounded-xl bg-[#ea4f93]/10 text-[#ea4f93]">
                 <Wallet size={18} className="stroke-[2]" />
               </span>
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#ea4f93]">Admin Audit Portal</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#ea4f93]">
+                {language === "vi" ? "Cổng Kiểm Toán Admin" : "Admin Audit Portal"}
+              </span>
             </div>
             <h1 className="text-3xl font-bold text-[#2d1b35] tracking-tight md:text-4xl">
-              Transactions Overview
+              {t("menus.admin-transactions") || "Transactions Overview"}
             </h1>
             <p className="text-xs md:text-sm text-[#a88a9f] max-w-[65ch] leading-relaxed">
               {selectedSalon
-                ? `Auditing transaction logs and receipt details for ${selectedSalon.name}.`
-                : "Select a salon branch below to monitor and audit customer transaction history."
+                ? (language === "vi" ? `Đang kiểm toán lịch sử giao dịch và biên lai cho ${selectedSalon.name}.` : `Auditing transaction logs and receipt details for ${selectedSalon.name}.`)
+                : (language === "vi" ? "Vui lòng chọn một chi nhánh salon bên dưới để theo dõi và kiểm toán lịch sử giao dịch của khách hàng." : "Select a salon branch below to monitor and audit customer transaction history.")
               }
             </p>
           </div>
@@ -383,7 +388,7 @@ export function TransactionOverviewPage() {
               className="flex self-start md:self-auto items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4.5 py-3 text-xs font-bold text-[#2d1b35] shadow-[0_4px_12px_rgba(0,0,0,0.03)] hover:border-[#ea4f93]/30 transition-all duration-300 active:scale-[0.98]"
             >
               <ArrowLeft size={13} />
-              Back to Salons
+              {language === "vi" ? "Quay lại Danh sách" : "Back to Salons"}
             </button>
           )}
         </div>
@@ -400,7 +405,9 @@ export function TransactionOverviewPage() {
                     <Store size={20} />
                   </span>
                   <div>
-                    <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider block">Network Salons</span>
+                    <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider block">
+                      {language === "vi" ? "Chi nhánh Mạng lưới" : "Network Salons"}
+                    </span>
                     <span className="text-2xl font-bold text-[#2d1b35]">{salons.length}</span>
                   </div>
                 </div>
@@ -411,7 +418,9 @@ export function TransactionOverviewPage() {
                     <Wallet size={20} />
                   </span>
                   <div>
-                    <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider block">Network Revenue</span>
+                    <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider block">
+                      {language === "vi" ? "Doanh thu Mạng lưới" : "Network Revenue"}
+                    </span>
                     <span className="text-2xl font-mono font-bold text-[#2d1b35]">
                       {loadingMetrics ? (
                         <Spin size="small" />
@@ -428,12 +437,14 @@ export function TransactionOverviewPage() {
                     <CreditCard size={20} />
                   </span>
                   <div>
-                    <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider block">Audited Logs</span>
+                    <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider block">
+                      {language === "vi" ? "Bản ghi Kiểm toán" : "Audited Logs"}
+                    </span>
                     <span className="text-2xl font-bold text-[#2d1b35]">
                       {loadingMetrics ? (
                         <Spin size="small" />
                       ) : (
-                        `${totalTxLogs} files`
+                        language === "vi" ? `${totalTxLogs} tệp` : `${totalTxLogs} files`
                       )}
                     </span>
                   </div>
@@ -445,7 +456,9 @@ export function TransactionOverviewPage() {
                     <AlertCircle size={20} />
                   </span>
                   <div>
-                    <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider block">Avg Success Rate</span>
+                    <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider block">
+                      {language === "vi" ? "Tỷ lệ Thành công TB" : "Avg Success Rate"}
+                    </span>
                     <span className="text-2xl font-mono font-bold text-[#2d1b35]">
                       {loadingMetrics ? (
                         <Spin size="small" />
@@ -465,7 +478,7 @@ export function TransactionOverviewPage() {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]" size={15} />
                 <input
                   type="text"
-                  placeholder="Search salons by name, address..."
+                  placeholder={language === "vi" ? "Tìm kiếm chi nhánh theo tên, địa chỉ..." : "Search salons by name, address..."}
                   value={salonSearchQuery}
                   onChange={(e) => setSalonSearchQuery(e.target.value)}
                   className="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300"
@@ -486,23 +499,28 @@ export function TransactionOverviewPage() {
                           : "text-[#7f6478] hover:text-[#2d1b35] hover:bg-[#ea4f93]/5"
                         }`}
                     >
-                      {st}
+                      {language === "vi" 
+                        ? { all: "Tất cả", active: "Đang hoạt động", busy: "Bận", closed: "Đóng cửa" }[st] || st 
+                        : st
+                      }
                     </button>
                   ))}
                 </div>
 
                 {/* Sort Option dropdown */}
                 <div className="flex items-center gap-2 self-end md:self-auto">
-                  <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider">Sort:</span>
+                  <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider">
+                    {language === "vi" ? "Sắp xếp:" : "Sort:"}
+                  </span>
                   <Select
                     value={salonSortOption}
                     onChange={(val) => setSalonSortOption(val)}
                     className="w-36 h-10 select-premium-antd"
                     popupClassName="select-premium-dropdown"
                     options={[
-                      { value: "name", label: "Name" },
-                      { value: "rating", label: "Rating" },
-                      { value: "revenue", label: "Revenue" }
+                      { value: "name", label: language === "vi" ? "Tên chi nhánh" : "Name" },
+                      { value: "rating", label: language === "vi" ? "Đánh giá" : "Rating" },
+                      { value: "revenue", label: language === "vi" ? "Doanh thu" : "Revenue" }
                     ]}
                     style={{ borderRadius: "0.875rem" }}
                   />
@@ -513,12 +531,14 @@ export function TransactionOverviewPage() {
             {loadingSalons ? (
               <div className="flex flex-col items-center justify-center py-32 bg-white/40 backdrop-blur-xs rounded-3xl border border-slate-200/60 shadow-xs">
                 <Spin size="large" />
-                <p className="mt-4 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] animate-pulse">Loading salons...</p>
+                <p className="mt-4 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] animate-pulse">
+                  {language === "vi" ? "Đang tải danh sách chi nhánh..." : "Loading salons..."}
+                </p>
               </div>
             ) : salonsError ? (
               <div className="p-6 bg-rose-50/50 rounded-3xl border border-rose-100">
                 <Alert
-                  message="Failed to load salons list"
+                  message={language === "vi" ? "Tải danh sách chi nhánh thất bại" : "Failed to load salons list"}
                   description={salonsError}
                   type="warning"
                   showIcon
@@ -527,7 +547,7 @@ export function TransactionOverviewPage() {
                       onClick={loadSalons}
                       className="px-3.5 py-2 bg-white border border-rose-200 rounded-xl text-xs font-bold text-rose-700 transition hover:bg-rose-50"
                     >
-                      Retry
+                      {language === "vi" ? "Thử lại" : "Retry"}
                     </button>
                   }
                 />
@@ -535,8 +555,12 @@ export function TransactionOverviewPage() {
             ) : filteredSalons.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-24 text-center bg-white rounded-3xl border border-slate-200/60 shadow-xs">
                 <Store size={36} className="text-[#a88a9f] mb-3 stroke-[1.2]" />
-                <h3 className="text-sm font-bold text-[#2d1b35]">No Salons Found</h3>
-                <p className="mt-1 text-xs text-[#a88a9f] max-w-[40ch]">No branches match your current search query or filter selection.</p>
+                <h3 className="text-sm font-bold text-[#2d1b35]">
+                  {language === "vi" ? "Không tìm thấy chi nhánh nào" : "No Salons Found"}
+                </h3>
+                <p className="mt-1 text-xs text-[#a88a9f] max-w-[40ch]">
+                  {language === "vi" ? "Không có chi nhánh nào khớp với từ khóa tìm kiếm hoặc bộ lọc hiện tại." : "No branches match your current search query or filter selection."}
+                </p>
               </div>
             ) : (
               <motion.div
@@ -577,11 +601,14 @@ export function TransactionOverviewPage() {
                                 ? "bg-amber-50 text-amber-700 border-amber-200"
                                 : "bg-slate-50 text-slate-600 border-slate-200"
                             }`}>
-                            {salon.status || "Active"}
+                            {language === "vi" 
+                              ? ({ Active: "Hoạt động", Open: "Mở cửa", Busy: "Bận", Closed: "Đóng cửa" }[salon.status] || salon.status || "Hoạt động") 
+                              : (salon.status || "Active")
+                            }
                           </span>
 
                           <div className="absolute bottom-3 left-3 bg-[#2d1b35]/70 backdrop-blur-xs px-2.5 py-1 rounded-lg text-[10px] font-bold text-white flex items-center gap-1 shadow-sm">
-                            ★ {salon.rating || "4.8"} ({salon.reviews || "120"} reviews)
+                            ★ {salon.rating || "4.8"} ({salon.reviews || "120"} {language === "vi" ? "đánh giá" : "reviews"})
                           </div>
                         </div>
 
@@ -603,7 +630,7 @@ export function TransactionOverviewPage() {
                             )}
                             <div className="flex items-center gap-2">
                               <Clock size={12} className="shrink-0 text-slate-400" />
-                              <span>{salon.hours || "Operating hours not listed"}</span>
+                              <span>{salon.hours || (language === "vi" ? "Không có thông tin giờ hoạt động" : "Operating hours not listed")}</span>
                             </div>
                           </div>
 
@@ -612,7 +639,7 @@ export function TransactionOverviewPage() {
                             {/* Miniature success rate bar */}
                             <div className="space-y-1">
                               <div className="flex justify-between text-[10px] font-bold text-[#7f6478]">
-                                <span>Audit Success Rate</span>
+                                <span>{language === "vi" ? "Tỷ lệ kiểm toán thành công" : "Audit Success Rate"}</span>
                                 <span className="font-mono text-[#ea4f93]">
                                   {isMetricLoading ? (
                                     <Spin size="small" className="scale-75" />
@@ -634,15 +661,19 @@ export function TransactionOverviewPage() {
                             {/* Quick stats columns */}
                             <div className="grid grid-cols-2 gap-4">
                               <div>
-                                <span className="text-[9px] uppercase tracking-wider text-[#a88a9f] block mb-0.5">Audited Rev</span>
+                                <span className="text-[9px] uppercase tracking-wider text-[#a88a9f] block mb-0.5">
+                                  {language === "vi" ? "DT kiểm toán" : "Audited Rev"}
+                                </span>
                                 <span className="font-mono text-xs font-bold text-[#2d1b35]">
                                   {isMetricLoading ? "..." : formatCurrency(salonMetric.totalRevenue)}
                                 </span>
                               </div>
                               <div>
-                                <span className="text-[9px] uppercase tracking-wider text-[#a88a9f] block mb-0.5">Volume Logs</span>
+                                <span className="text-[9px] uppercase tracking-wider text-[#a88a9f] block mb-0.5">
+                                  {language === "vi" ? "Số bản ghi" : "Volume Logs"}
+                                </span>
                                 <span className="font-mono text-xs font-bold text-[#2d1b35]">
-                                  {isMetricLoading ? "..." : `${salonMetric.txCount} files`}
+                                  {isMetricLoading ? "..." : (language === "vi" ? `${salonMetric.txCount} tệp` : `${salonMetric.txCount} files`)}
                                 </span>
                               </div>
                             </div>
@@ -652,7 +683,7 @@ export function TransactionOverviewPage() {
                       </div>
 
                       <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-[#ea4f93]">
-                        <span>Review Transactions</span>
+                        <span>{language === "vi" ? "Xem Lịch sử Giao dịch" : "Review Transactions"}</span>
                         <span className="h-8 w-8 rounded-full bg-[#ea4f93]/10 text-[#ea4f93] flex items-center justify-center group-hover:bg-[#ea4f93] group-hover:text-white transition-colors duration-300 shadow-2xs">
                           →
                         </span>
@@ -676,20 +707,26 @@ export function TransactionOverviewPage() {
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                 </span>
                 <div className="flex justify-between items-start">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#a88a9f]">Selected Salon Revenue</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#a88a9f]">
+                    {language === "vi" ? "Doanh thu Chi nhánh chọn" : "Selected Salon Revenue"}
+                  </span>
                 </div>
                 <div className="mt-5">
                   <span className="text-3xl md:text-4xl font-mono font-bold text-[#2d1b35] tracking-tight">
                     {formatCurrency(metrics.totalRevenue)}
                   </span>
-                  <p className="mt-2 text-xs text-[#a88a9f]">Total audited Paid transactions</p>
+                  <p className="mt-2 text-xs text-[#a88a9f]">
+                    {language === "vi" ? "Tổng doanh thu giao dịch đã hoàn tất kiểm toán" : "Total audited Paid transactions"}
+                  </p>
                 </div>
               </div>
 
               {/* Success Rate */}
               <div className="relative overflow-hidden rounded-[2.5rem] border border-[#f1e7ed]/60 bg-white/70 backdrop-blur-md p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.02)] border-l-4 border-l-indigo-500/80">
                 <div className="flex justify-between items-start">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#a88a9f]">Transaction Success Rate</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#a88a9f]">
+                    {language === "vi" ? "Tỷ lệ Giao dịch Thành công" : "Transaction Success Rate"}
+                  </span>
                   <span className="p-2 rounded-xl bg-indigo-50 text-indigo-600">
                     <CreditCard size={15} />
                   </span>
@@ -699,7 +736,10 @@ export function TransactionOverviewPage() {
                     {metrics.successRate}%
                   </span>
                   <p className="mt-2 text-xs text-[#a88a9f]">
-                    {metrics.paidCount} of {metrics.totalCount} transaction logs
+                    {language === "vi" 
+                      ? `${metrics.paidCount} trên tổng số ${metrics.totalCount} bản ghi` 
+                      : `${metrics.paidCount} of ${metrics.totalCount} transaction logs`
+                    }
                   </p>
                 </div>
               </div>
@@ -707,7 +747,9 @@ export function TransactionOverviewPage() {
               {/* Pending Count */}
               <div className="relative overflow-hidden rounded-[2.5rem] border border-[#f1e7ed]/60 bg-white/70 backdrop-blur-md p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.02)] border-l-4 border-l-amber-500/80">
                 <div className="flex justify-between items-start">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#a88a9f]">Pending Payments</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#a88a9f]">
+                    {language === "vi" ? "Giao dịch Đang xử lý" : "Pending Payments"}
+                  </span>
                   <span className="p-2 rounded-xl bg-amber-50 text-amber-600">
                     <Clock3 size={15} />
                   </span>
@@ -716,7 +758,9 @@ export function TransactionOverviewPage() {
                   <span className="text-3xl md:text-4xl font-mono font-bold text-[#2d1b35] tracking-tight">
                     {metrics.pendingCount}
                   </span>
-                  <p className="mt-2 text-xs text-[#a88a9f]">Unsettled payment checkout records</p>
+                  <p className="mt-2 text-xs text-[#a88a9f]">
+                    {language === "vi" ? "Số giao dịch thanh toán chưa quyết toán" : "Unsettled payment checkout records"}
+                  </p>
                 </div>
               </div>
             </div>
@@ -728,7 +772,7 @@ export function TransactionOverviewPage() {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]" size={15} />
                 <input
                   type="text"
-                  placeholder="Search by customer, order code..."
+                  placeholder={language === "vi" ? "Tìm theo khách hàng, mã đơn hàng..." : "Search by customer, order code..."}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300"
@@ -745,18 +789,20 @@ export function TransactionOverviewPage() {
 
               {/* Status Dropdown */}
               <div className="flex items-center gap-3 self-end sm:self-auto">
-                <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider">Status:</span>
+                <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider">
+                  {language === "vi" ? "Trạng thái:" : "Status:"}
+                </span>
                 <Select
                   value={statusFilter}
                   onChange={(val) => setStatusFilter(val)}
                   className="w-40 h-11 select-premium-antd"
                   popupClassName="select-premium-dropdown"
                   options={[
-                    { value: "all", label: "All Statuses" },
-                    { value: "paid", label: "Paid" },
-                    { value: "pending", label: "Pending" },
-                    { value: "expired", label: "Expired" },
-                    { value: "canceled", label: "Canceled" }
+                    { value: "all", label: language === "vi" ? "Tất cả trạng thái" : "All Statuses" },
+                    { value: "paid", label: language === "vi" ? "Đã thanh toán" : "Paid" },
+                    { value: "pending", label: language === "vi" ? "Chờ xử lý" : "Pending" },
+                    { value: "expired", label: language === "vi" ? "Hết hạn" : "Expired" },
+                    { value: "canceled", label: language === "vi" ? "Đã hủy" : "Canceled" }
                   ]}
                   style={{
                     borderRadius: "1rem",
@@ -776,7 +822,9 @@ export function TransactionOverviewPage() {
                   className="flex flex-col items-center justify-center py-24 bg-white rounded-3xl border border-slate-200/60 shadow-xs"
                 >
                   <Spin size="large" />
-                  <p className="mt-4 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] animate-pulse">Loading transaction logs...</p>
+                  <p className="mt-4 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] animate-pulse">
+                    {language === "vi" ? "Đang tải lịch sử giao dịch..." : "Loading transaction logs..."}
+                  </p>
                 </motion.div>
               ) : transactionsError ? (
                 <motion.div
@@ -787,7 +835,7 @@ export function TransactionOverviewPage() {
                   className="p-6 bg-rose-50/50 rounded-3xl border border-rose-100"
                 >
                   <Alert
-                    message="Transaction Fetch Warning"
+                    message={language === "vi" ? "Cảnh báo Lấy Giao dịch" : "Transaction Fetch Warning"}
                     description={transactionsError}
                     type="warning"
                     showIcon
@@ -796,7 +844,7 @@ export function TransactionOverviewPage() {
                         onClick={loadTransactions}
                         className="px-3.5 py-2 bg-white border border-rose-200 rounded-xl text-xs font-bold text-rose-700 transition hover:bg-rose-50"
                       >
-                        Retry
+                        {language === "vi" ? "Thử lại" : "Retry"}
                       </button>
                     }
                   />
@@ -812,9 +860,11 @@ export function TransactionOverviewPage() {
                   <div className="p-4 rounded-full bg-slate-50 text-[#a88a9f] mb-4">
                     <AlertCircle size={30} className="stroke-[1.5]" />
                   </div>
-                  <h3 className="text-sm font-bold text-[#2d1b35]">No Transactions Found</h3>
+                  <h3 className="text-sm font-bold text-[#2d1b35]">
+                    {language === "vi" ? "Không tìm thấy giao dịch nào" : "No Transactions Found"}
+                  </h3>
                   <p className="mt-1 text-xs text-[#a88a9f] max-w-[40ch] leading-relaxed">
-                    No transactions logs recorded matching filters for this salon branch.
+                    {language === "vi" ? "Không có lịch sử giao dịch nào được ghi nhận khớp với bộ lọc cho chi nhánh này." : "No transactions logs recorded matching filters for this salon branch."}
                   </p>
                 </motion.div>
               ) : (
@@ -829,14 +879,30 @@ export function TransactionOverviewPage() {
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="border-b border-slate-100 bg-slate-50/75">
-                          <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[12%]">Order Code</th>
-                          <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[20%]">Customer & Location</th>
-                          <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[12%]">Total Price</th>
-                          <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[14%]">Deposit Paid</th>
-                          <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[14%]">Remaining Balance</th>
-                          <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[15%]">Created At</th>
-                          <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[10%]">Status</th>
-                          <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] text-right w-[3%]">Actions</th>
+                          <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[12%]">
+                            {language === "vi" ? "Mã đơn hàng" : "Order Code"}
+                          </th>
+                          <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[20%]">
+                            {language === "vi" ? "Khách hàng & Chi nhánh" : "Customer & Location"}
+                          </th>
+                          <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[12%]">
+                            {language === "vi" ? "Tổng cộng" : "Total Price"}
+                          </th>
+                          <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[14%]">
+                            {language === "vi" ? "Tiền đặt cọc" : "Deposit Paid"}
+                          </th>
+                          <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[14%]">
+                            {language === "vi" ? "Còn lại phải trả" : "Remaining Balance"}
+                          </th>
+                          <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[15%]">
+                            {language === "vi" ? "Ngày tạo" : "Created At"}
+                          </th>
+                          <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[10%]">
+                            {language === "vi" ? "Trạng thái" : "Status"}
+                          </th>
+                          <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] text-right w-[3%]">
+                            {language === "vi" ? "Hành động" : "Actions"}
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
@@ -907,7 +973,7 @@ export function TransactionOverviewPage() {
                                   setSelectedTransaction(tx);
                                   setModalVisible(true);
                                 }}
-                                title="View transaction receipt details"
+                                title={language === "vi" ? "Xem chi tiết biên lai giao dịch" : "View transaction receipt details"}
                                 className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-[#7f6478] hover:text-white hover:bg-[#ea4f93] hover:border-[#ea4f93] shadow-xs transition-all duration-300 active:scale-95"
                               >
                                 <Eye size={13} className="stroke-[2]" />
@@ -923,7 +989,10 @@ export function TransactionOverviewPage() {
                   {transactionsData.totalPages > 1 && (
                     <div className="flex justify-between items-center px-6 py-4.5 border-t border-slate-100 bg-slate-50/30">
                       <span className="text-xs text-[#a88a9f]">
-                        Showing <span className="font-bold text-[#2d1b35]">{processedTransactions.length}</span> items
+                        {language === "vi" 
+                          ? <span>Đang hiển thị <span className="font-bold text-[#2d1b35]">{processedTransactions.length}</span> mục</span>
+                          : <span>Showing <span className="font-bold text-[#2d1b35]">{processedTransactions.length}</span> items</span>
+                        }
                       </span>
                       <Pagination
                         currentPage={currentPage}
@@ -953,7 +1022,9 @@ export function TransactionOverviewPage() {
               <Wallet size={16} className="stroke-[2]" />
             </span>
             <div className="text-left">
-              <span className="text-[10px] text-[#a88a9f] font-bold uppercase tracking-wider block leading-none mb-1">Audit Receipt Details</span>
+              <span className="text-[10px] text-[#a88a9f] font-bold uppercase tracking-wider block leading-none mb-1">
+                {language === "vi" ? "Chi tiết Biên lai Kiểm toán" : "Audit Receipt Details"}
+              </span>
               <span className="font-mono text-sm font-bold text-[#2d1b35]">
                 #{selectedTransaction?.orderCode || "N/A"}
               </span>
@@ -985,18 +1056,18 @@ export function TransactionOverviewPage() {
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full border ${selectedTransaction.amount === bookingDetails.amountDue
                         ? "bg-[#fff2f7] text-[#ea4f93] border-[#ea4f93]/20"
                         : selectedTransaction.amount === bookingDetails.amountPaid
-                          ? "bg-indigo-50 text-indigo-700 border-indigo-500/20"
-                          : selectedTransaction.amount === bookingDetails.totalPrice
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-500/20"
-                            : "bg-slate-50 text-slate-600 border-slate-200"
+                           ? "bg-indigo-50 text-indigo-700 border-indigo-500/20"
+                           : selectedTransaction.amount === bookingDetails.totalPrice
+                             ? "bg-emerald-50 text-emerald-700 border-emerald-500/20"
+                             : "bg-slate-50 text-slate-600 border-slate-200"
                       }`}>
                       {selectedTransaction.amount === bookingDetails.amountDue
-                        ? "Đặt cọc (Deposit)"
+                        ? (language === "vi" ? "Đặt cọc (Deposit)" : "Deposit")
                         : selectedTransaction.amount === bookingDetails.amountPaid
-                          ? "Thanh toán còn lại"
+                          ? (language === "vi" ? "Thanh toán còn lại" : "Remaining balance")
                           : selectedTransaction.amount === bookingDetails.totalPrice
-                            ? "Thanh toán 100%"
-                            : "Thanh toán"}
+                            ? (language === "vi" ? "Thanh toán 100%" : "Full payment")
+                            : (language === "vi" ? "Thanh toán" : "Payment")}
                     </span>
                   )}
                 </div>
@@ -1004,7 +1075,7 @@ export function TransactionOverviewPage() {
                   {formatCurrency(selectedTransaction.amount)}
                 </h2>
                 <p className="text-xs text-[#a88a9f]">
-                  Order code <span className="font-mono font-bold text-[#2d1b35]">#{selectedTransaction.orderCode}</span>
+                  {language === "vi" ? "Mã đơn hàng" : "Order code"} <span className="font-mono font-bold text-[#2d1b35]">#{selectedTransaction.orderCode}</span>
                 </p>
               </div>
 
@@ -1012,7 +1083,9 @@ export function TransactionOverviewPage() {
               <div className="bg-[#faf8f5] border border-[#e6decb] p-5 rounded-[1.75rem] shadow-[0_8px_24px_rgba(97,76,60,0.03)] relative overflow-hidden text-[#4a3f35] border-t-4 border-t-[#ea4f93]">
                 {/* Torn paper top border */}
                 <div className="text-center pb-3.5 border-b border-dashed border-[#e6decb] space-y-1">
-                  <h3 className="text-xs font-bold uppercase tracking-widest text-[#a88a9f]">Nailify Receipt</h3>
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-[#a88a9f]">
+                    {language === "vi" ? "Hóa đơn Nailify" : "Nailify Receipt"}
+                  </h3>
                   <div className="font-mono text-[9px] text-[#a88a9f]">
                     {dayjs(selectedTransaction.createdAt).format("DD MMM YYYY, HH:mm")}
                   </div>
@@ -1021,24 +1094,24 @@ export function TransactionOverviewPage() {
                 {/* Customer & Salon Details inside Receipt */}
                 <div className="py-3.5 space-y-2 border-b border-dashed border-[#e6decb] text-xs">
                   <div className="flex justify-between gap-3">
-                    <span className="text-[#a88a9f] shrink-0">Customer</span>
+                    <span className="text-[#a88a9f] shrink-0">{language === "vi" ? "Khách hàng" : "Customer"}</span>
                     <span className="font-bold text-[#2d1b35] text-right truncate">{selectedTransaction.customerName}</span>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <span className="text-[#a88a9f] shrink-0">Salon</span>
+                    <span className="text-[#a88a9f] shrink-0">{language === "vi" ? "Chi nhánh" : "Salon"}</span>
                     <span className="font-bold text-[#ea4f93] text-right truncate">{selectedTransaction.salonName || "Nailify Salon"}</span>
                   </div>
                   {bookingDetails && (
                     <div className="flex justify-between gap-3 border-t border-dashed border-[#e6decb]/40 pt-2 mt-1.5">
-                      <span className="text-[#a88a9f] shrink-0">Loại thanh toán</span>
+                      <span className="text-[#a88a9f] shrink-0">{language === "vi" ? "Loại thanh toán" : "Payment Type"}</span>
                       <span className="font-bold text-[#2d1b35] text-right">
                         {selectedTransaction.amount === bookingDetails.amountDue
-                          ? "Đặt cọc (Deposit)"
+                          ? (language === "vi" ? "Đặt cọc (Deposit)" : "Deposit")
                           : selectedTransaction.amount === bookingDetails.amountPaid
-                            ? "Thanh toán còn lại"
+                            ? (language === "vi" ? "Thanh toán còn lại" : "Remaining balance")
                             : selectedTransaction.amount === bookingDetails.totalPrice
-                              ? "Thanh toán 100%"
-                              : "Thanh toán đơn hàng"}
+                              ? (language === "vi" ? "Thanh toán 100%" : "Full payment")
+                              : (language === "vi" ? "Thanh toán đơn hàng" : "Order Payment")}
                       </span>
                     </div>
                   )}
@@ -1053,7 +1126,9 @@ export function TransactionOverviewPage() {
                   ) : bookingDetails ? (
                     <div className="space-y-2 text-xs">
                       <div className="flex justify-between">
-                        <span className="text-[#a88a9f]">Subtotal</span>
+                        <span className="text-[#a88a9f]">
+                          {language === "vi" ? "Tạm tính" : "Subtotal"}
+                        </span>
                         <span className="font-mono font-semibold text-[#2d1b35]">{formatCurrency(bookingDetails.price)}</span>
                       </div>
 
@@ -1069,7 +1144,9 @@ export function TransactionOverviewPage() {
                       ) : (
                         bookingDetails.discount !== 0 && (
                           <div className="flex justify-between">
-                            <span className="text-[#a88a9f]">Discount (Promo & Loyalty)</span>
+                            <span className="text-[#a88a9f]">
+                              {language === "vi" ? "Giảm giá (Khuyến mãi & Khách thân thiết)" : "Discount (Promo & Loyalty)"}
+                            </span>
                             <span className="font-mono text-emerald-600 font-medium">
                               {bookingDetails.discount > 0 ? "-" : ""}{formatCurrency(Math.abs(bookingDetails.discount))}
                             </span>
@@ -1078,25 +1155,31 @@ export function TransactionOverviewPage() {
                       )}
 
                       <div className="flex justify-between border-t border-dashed border-[#e6decb] pt-2">
-                        <span className="text-[#a88a9f] font-bold">Total Price</span>
+                        <span className="text-[#a88a9f] font-bold">
+                          {language === "vi" ? "Tổng cộng" : "Total Price"}
+                        </span>
                         <span className="font-mono font-bold text-[#2d1b35]">{formatCurrency(bookingDetails.totalPrice)}</span>
                       </div>
 
                       <div className="flex justify-between">
-                        <span className="text-[#a88a9f]">Deposit paid</span>
+                        <span className="text-[#a88a9f]">
+                          {language === "vi" ? "Đã đặt cọc" : "Deposit paid"}
+                        </span>
                         <span className="font-mono text-[#ea4f93] font-bold">{formatCurrency(bookingDetails.amountDue)}</span>
                       </div>
 
                       <div className="flex justify-between">
-                        <span className="text-[#a88a9f]">Remaining balance</span>
+                        <span className="text-[#a88a9f]">
+                          {language === "vi" ? "Còn lại phải trả" : "Remaining balance"}
+                        </span>
                         <span className="font-mono text-[#2d1b35] font-semibold">{formatCurrency(bookingDetails.amountPaid)}</span>
                       </div>
                     </div>
                   ) : (
                     <p className="text-xs text-[#a88a9f] italic text-center py-2">
                       {selectedTransaction.bookingId
-                        ? `Could not load details for booking #${selectedTransaction.bookingId.slice(0, 8)}`
-                        : "No linked booking for this transaction."}
+                        ? (language === "vi" ? `Không thể tải chi tiết cho lịch đặt #${selectedTransaction.bookingId.slice(0, 8)}` : `Could not load details for booking #${selectedTransaction.bookingId.slice(0, 8)}`)
+                        : (language === "vi" ? "Không có lịch đặt nào liên kết với giao dịch này." : "No linked booking for this transaction.")}
                     </p>
                   )}
                 </div>
@@ -1109,30 +1192,32 @@ export function TransactionOverviewPage() {
                     ))}
                   </div>
                   <div className="text-[9px] uppercase tracking-[0.25em] text-[#a88a9f] font-mono">
-                    Nailify Inc — Thank You
+                    {language === "vi" ? "Nailify Inc — Xin Cảm Ơn" : "Nailify Inc — Thank You"}
                   </div>
                 </div>
               </div>
 
               {/* Timeline */}
               <div className="bg-white rounded-2xl border border-slate-200/60 p-4 space-y-2.5 shadow-xs">
-                <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#ea4f93]">Timeline</h4>
+                <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#ea4f93]">
+                  {language === "vi" ? "Mốc thời gian" : "Timeline"}
+                </h4>
 
                 <div className="flex justify-between text-xs">
-                  <span className="text-[#a88a9f]">Created</span>
+                  <span className="text-[#a88a9f]">{language === "vi" ? "Khởi tạo" : "Created"}</span>
                   <span className="text-[#2d1b35] font-medium">{dayjs(selectedTransaction.createdAt).format("DD MMM YYYY, HH:mm:ss")}</span>
                 </div>
 
                 {selectedTransaction.paidAt && (
                   <div className="flex justify-between text-xs">
-                    <span className="text-[#a88a9f]">Paid</span>
+                    <span className="text-[#a88a9f]">{language === "vi" ? "Đã thanh toán" : "Paid"}</span>
                     <span className="text-[#2fa25f] font-semibold">{dayjs(selectedTransaction.paidAt).format("DD MMM YYYY, HH:mm:ss")}</span>
                   </div>
                 )}
 
                 {selectedTransaction.expiresAt && !selectedTransaction.paidAt && (
                   <div className="flex justify-between text-xs">
-                    <span className="text-[#a88a9f]">Expires</span>
+                    <span className="text-[#a88a9f]">{language === "vi" ? "Hết hạn" : "Expires"}</span>
                     <span className="text-[#db8520] font-semibold">{dayjs(selectedTransaction.expiresAt).format("DD MMM YYYY, HH:mm:ss")}</span>
                   </div>
                 )}
@@ -1142,10 +1227,12 @@ export function TransactionOverviewPage() {
               <div className="bg-white rounded-2xl p-4 text-xs text-[#7f6478] space-y-1.5 border border-[#f1e7ed]">
                 <div className="flex items-center gap-1.5 font-bold text-[#2d1b35]">
                   <AlertCircle size={14} className="text-[#ea4f93]" />
-                  <span>Nailify Transaction Policy</span>
+                  <span>
+                    {language === "vi" ? "Chính sách Giao dịch Nailify" : "Nailify Transaction Policy"}
+                  </span>
                 </div>
                 <p className="leading-relaxed text-[#7f6478]">
-                  {selectedTransaction.policy || "All payments processed via third-party PayOS/VietQR gateways. Standard booking reservation refund policies apply according to Nailify Branch guidelines."}
+                  {selectedTransaction.policy || (language === "vi" ? "Tất cả các khoản thanh toán được xử lý qua cổng PayOS/VietQR của bên thứ ba. Chính sách hoàn tiền đặt cọc tiêu chuẩn áp dụng theo hướng dẫn của chi nhánh Nailify." : "All payments processed via third-party PayOS/VietQR gateways. Standard booking reservation refund policies apply according to Nailify Branch guidelines.")}
                 </p>
               </div>
 
@@ -1154,7 +1241,7 @@ export function TransactionOverviewPage() {
                 onClick={() => setModalVisible(false)}
                 className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 rounded-xl transition active:scale-[0.98]"
               >
-                Close Audit Details
+                {language === "vi" ? "Đóng Chi Tiết Kiểm Toán" : "Close Audit Details"}
               </button>
 
             </div>

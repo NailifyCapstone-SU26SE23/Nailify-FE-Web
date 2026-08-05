@@ -21,9 +21,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { ROUTES, getAdminStaffUpdateRoute } from "../../../../shared/constants/routes";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { Pagination } from "../../../../shared/components/common/Pagination";
 import { fetchAdminSalons } from "../../salon-management/services/salonManagementService";
-import { fetchSalonStaff, fetchArtistSchedule } from "../services/staffManagementService";
+import { fetchSalonStaff, fetchArtistSchedule, fetchTodaySchedules } from "../services/staffManagementService";
 import { fetchUserById } from "../../../manager/bookings/services/bookingsService";
 import { fetchNailArtistSkills } from "../../../manager/staff-artist-management/services/nailArtistsService";
 
@@ -131,6 +132,7 @@ StaffAvatar.propTypes = {
 };
 
 function StaffCard({ staff, onClick }) {
+  const { t, language } = useLanguage();
   return (
     <div
       onClick={onClick}
@@ -147,6 +149,11 @@ function StaffCard({ staff, onClick }) {
           <p className="text-xs text-[#a88a9f] truncate">{staff.role}</p>
           {staff.phone && <p className="mt-1 text-xs text-[#8b7382] truncate">{staff.phone}</p>}
         </div>
+        {staff.hasScheduleToday && (
+          <span className="mt-2 inline-flex rounded-full bg-green-100 px-2 py-1 text-[11px] font-semibold text-green-700">
+            {language === "vi" ? "Có lịch hôm nay" : "Working Today"}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -182,12 +189,13 @@ function ScheduleEntryRow({ entry }) {
   const status = pickField(entry, ["status", "scheduleStatus"]);
 
   // Format date nicely
+  const { language } = useLanguage();
   const formattedDate = useMemo(() => {
     if (!date) return "—";
     try {
       const d = new Date(date);
       if (!isNaN(d.getTime())) {
-        return d.toLocaleDateString("en-US", {
+        return d.toLocaleDateString(language === "vi" ? "vi-VN" : "en-US", {
           weekday: "short",
           month: "short",
           day: "numeric",
@@ -198,7 +206,7 @@ function ScheduleEntryRow({ entry }) {
       // Ignore
     }
     return date;
-  }, [date]);
+  }, [date, language]);
 
   const getStatusColor = () => {
     const lowerStatus = status?.toLowerCase() || "";
@@ -243,7 +251,14 @@ function ScheduleEntryRow({ entry }) {
         {status && (
           <span className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-3 py-1 text-[11px] font-semibold ${getStatusColor()}`}>
             {getStatusIcon()}
-            {status}
+            {language === "vi"
+              ? (status.toLowerCase().includes("active") || status.toLowerCase().includes("working")
+                ? "Đang làm việc"
+                : (status.toLowerCase().includes("leave") || status.toLowerCase().includes("off")
+                  ? "Nghỉ phép"
+                  : status))
+              : status
+            }
           </span>
         )}
       </div>
@@ -256,6 +271,7 @@ ScheduleEntryRow.propTypes = {
 };
 
 export function StaffManagementPage() {
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [loadingSalons, setLoadingSalons] = useState(true);
   const [loadingStaff, setLoadingStaff] = useState(false);
@@ -276,6 +292,29 @@ export function StaffManagementPage() {
   const [isLoadingSkills, setIsLoadingSkills] = useState(false);
   const [staffSchedule, setStaffSchedule] = useState([]);
   const [isLoadingSchedule, setIsLoadingSchedule] = useState(false);
+
+  const [todaySchedules, setTodaySchedules] = useState([]);
+  const [loadingTodaySchedules, setLoadingTodaySchedules] = useState(false);
+
+  // const availableTodayCount = useMemo(() => {
+  //   return new Set(
+  //     todaySchedules
+  //       .filter(s => s.salonId === selectedSalonId)
+  //       .map(s => s.nailArtistId)
+  //   ).size;
+  // }, [todaySchedules, selectedSalonId]);
+
+
+  const todayArtistIds = useMemo(() => {
+    return new Set(todaySchedules.map(s => s.nailArtistId));
+  }, [todaySchedules]);
+
+  const availableTodayCount = useMemo(() => {
+    return staffList.filter(staff =>
+      staff.role === "Staff_Artist" &&
+      todayArtistIds.has(staff.staffId)
+    ).length;
+  }, [staffList, todayArtistIds]);
 
   // Handle opening staff detail drawer
   const handleOpenDrawer = useCallback(async (userId) => {
@@ -329,10 +368,10 @@ export function StaffManagementPage() {
   const itemsPerPage = 6;
 
   const roleOptions = [
-    { value: ALL_ROLES_VALUE, label: "Tất cả" },
-    { value: "Staff_Artist", label: "Staff Artist" },
-    { value: "Manager", label: "Manager" },
-    { value: "Receptionist", label: "Receptionist" },
+    { value: ALL_ROLES_VALUE, label: language === "vi" ? "Tất cả vai trò" : "All Roles" },
+    { value: "Staff_Artist", label: language === "vi" ? "Nhân viên làm móng" : "Staff Artist" },
+    { value: "Manager", label: language === "vi" ? "Quản lý" : "Manager" },
+    { value: "Receptionist", label: language === "vi" ? "Lễ tân" : "Receptionist" },
   ];
 
   const loadSalons = useCallback(async () => {
@@ -396,43 +435,64 @@ export function StaffManagementPage() {
     );
   }, [staffList, searchQuery]);
 
+
   const stats = useMemo(() => {
     const selectedSalon = salons.find(s => s.id === selectedSalonId);
+    const isVi = language === "vi";
     return [
       {
-        label: "Total Staff",
+        label: isVi ? "Tổng số nhân viên" : "Total Staff",
         value: staffList.length.toString(),
         icon: Users,
         iconClassName: "bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-white",
-        note: selectedSalon?.name || "All Salons",
+        note: selectedSalon?.name || (isVi ? "Tất cả chi nhánh" : "All Salons"),
         noteClassName: "text-[#c08aa4]",
       },
       {
-        label: "Available Today",
-        value: "--",
+        label: isVi ? "Sẵn sàng hôm nay" : "Available Today",
+        value: availableTodayCount,
         icon: CheckCircle2,
         iconClassName: "bg-[#eaf9ee] text-[#2fa25f]",
-        note: "Current status",
+        note: isVi ? "Trạng thái hiện tại" : "Current status",
         noteClassName: "text-[#c08aa4]",
       },
       {
-        label: "Average Rating",
-        value: "--",
+        label: isVi ? "Đánh giá trung bình" : "Average Rating",
+        value: selectedSalon?.avgRating?.toFixed(2) || 0,
         icon: Star,
         iconClassName: "bg-[#fff8e1] text-[#f59e0b]",
-        note: "Customer satisfaction",
+        note: isVi ? "Sự hài lòng khách hàng" : "Customer satisfaction",
         noteClassName: "text-[#2fa25f]",
       },
       {
-        label: "On Leave",
-        value: "--",
+        label: isVi ? "Đang nghỉ phép" : "On Leave",
+        value: selectedSalon?.onLeaveStaffCount || 0,
         icon: Clock3,
         iconClassName: "bg-[#fff0f8] text-[#ea4f93]",
-        note: "Staff on leave",
+        note: isVi ? "Nhân viên nghỉ phép" : "Staff on leave",
         noteClassName: "text-[#c08aa4]",
       },
     ];
-  }, [salons, selectedSalonId, staffList]);
+  }, [salons, selectedSalonId, staffList, language]);
+
+  const loadTodaySchedules = useCallback(async () => {
+    try {
+      setLoadingTodaySchedules(true);
+
+      const schedules = await fetchTodaySchedules();
+      setTodaySchedules(schedules);
+    } catch (err) {
+      console.error(err);
+      setTodaySchedules([]);
+    } finally {
+      setLoadingTodaySchedules(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadTodaySchedules();
+  }, [loadTodaySchedules]);
+
 
   return (
     <section className="flex min-h-full flex-col gap-4">
@@ -453,12 +513,16 @@ export function StaffManagementPage() {
                 <Users size={28} />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-[#2d1b35]">Staff Management</h1>
-                <p className="text-sm text-[#a88a9f]">Manage salon staff and team members</p>
+                <h1 className="text-3xl font-bold text-[#2d1b35]">
+                  {t("menus.admin-staff") || "Staff Management"}
+                </h1>
+                <p className="text-sm text-[#a6869a]">
+                  {language === "vi" ? "Quản lý nhân viên chi nhánh và thành viên nhóm" : "Manage salon staff and team members"}
+                </p>
               </div>
             </div>
             <p className="mt-4 text-sm leading-relaxed text-[#8b7382]">
-              View and manage staff members for each salon location
+              {language === "vi" ? "Xem và quản lý các thành viên nhân viên cho từng địa điểm salon" : "View and manage staff members for each salon location"}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -467,14 +531,14 @@ export function StaffManagementPage() {
               className="inline-flex items-center gap-2 rounded-2xl border border-[#f0d9e8] bg-white px-4 py-2.5 text-xs font-semibold text-[#ea4f93] shadow-md hover:shadow-lg hover:border-[#ea4f93] transition duration-200"
             >
               <Download size={16} />
-              Export
+              {language === "vi" ? "Xuất file" : "Export"}
             </button>
             <Link
               to={ROUTES.adminStaffCreate}
               className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#ea4f93] to-[#ff8ebb] px-4 py-2.5 text-xs font-semibold text-white shadow-lg hover:shadow-xl transition duration-200"
             >
               <Plus size={16} />
-              Add Staff
+              {language === "vi" ? "Thêm nhân viên" : "Add Staff"}
             </Link>
           </div>
         </div>
@@ -492,15 +556,15 @@ export function StaffManagementPage() {
         <Card className="p-0">
           <div className="flex flex-col gap-4 border-b border-[#f0d9e8] bg-gradient-to-b from-[#fff9fb] to-[#fffafb] p-6 lg:flex-row lg:items-center lg:justify-between">
             <SectionHeading
-              title="Salon Staff"
-              subtitle={`${filteredStaff.length} staff member${filteredStaff.length !== 1 ? "s" : ""}`}
+              title={language === "vi" ? "Nhân viên Chi nhánh" : "Salon Staff"}
+              subtitle={language === "vi" ? `${filteredStaff.length} nhân viên` : `${filteredStaff.length} staff member${filteredStaff.length !== 1 ? "s" : ""}`}
             />
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <div className="flex items-center gap-2">
                 <Building2 size={16} className="text-[#a88a9f]" />
                 <Select
                   style={{ width: 250 }}
-                  placeholder="Select a salon"
+                  placeholder={language === "vi" ? "Chọn chi nhánh" : "Select a salon"}
                   value={selectedSalonId}
                   onChange={setSelectedSalonId}
                   options={salons.map(s => ({ label: s.name, value: s.id }))}
@@ -509,7 +573,7 @@ export function StaffManagementPage() {
               </div>
               <Select
                 style={{ width: 180 }}
-                placeholder="Chọn vai trò"
+                placeholder={language === "vi" ? "Chọn vai trò" : "Select role"}
                 value={selectedRole}
                 onChange={setSelectedRole}
                 options={roleOptions.map((option) => ({
@@ -526,7 +590,7 @@ export function StaffManagementPage() {
                 <input
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="Search staff..."
+                  placeholder={language === "vi" ? "Tìm kiếm nhân viên..." : "Search staff..."}
                   className="h-10 w-full rounded-full border border-[#f0d9e8] bg-white pl-9 pr-4 text-xs text-[#5c4158] outline-none transition placeholder:text-[#d198b0] focus:border-[#ea4f93] focus:ring-2 focus:ring-[#ea4f93]/20"
                 />
               </label>
@@ -548,16 +612,28 @@ export function StaffManagementPage() {
                   <Users size={32} className="text-[#ea4f93]" />
                 </div>
                 <p className="text-sm text-[#8b7382]">
-                  {selectedSalonId ? "No staff found for this salon" : "Select a salon to view staff"}
+                  {selectedSalonId
+                    ? (language === "vi" ? "Không tìm thấy nhân viên nào cho chi nhánh này" : "No staff found for this salon")
+                    : (language === "vi" ? "Vui lòng chọn chi nhánh để xem nhân viên" : "Select a salon to view staff")}
                 </p>
               </div>
             ) : (
               <>
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                  {filteredStaff.map((staff) => (
+                  {/* {filteredStaff.map((staff) => (
                     <StaffCard
                       key={staff.id}
                       staff={staff}
+                      onClick={() => handleOpenDrawer(staff.userId || staff.id)}
+                    />
+                  ))} */}
+                  {filteredStaff.map((staff) => (
+                    <StaffCard
+                      key={staff.id}
+                      staff={{
+                        ...staff,
+                        hasScheduleToday: todayArtistIds.has(staff.staffId),
+                      }}
                       onClick={() => handleOpenDrawer(staff.userId || staff.id)}
                     />
                   ))}
@@ -615,7 +691,9 @@ export function StaffManagementPage() {
                       fallbackClassName="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-white text-2xl font-bold border-2 border-white/30 flex-shrink-0"
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold uppercase tracking-widest text-white/85">Staff Details</p>
+                      <p className="text-xs font-semibold uppercase tracking-widest text-white/85">
+                        {language === "vi" ? "Chi tiết Nhân viên" : "Staff Details"}
+                      </p>
                       <h2 className="text-xl font-bold text-white mt-1 truncate">
                         {selectedStaff.firstName || ''} {selectedStaff.lastName || ''}
                       </h2>
@@ -646,23 +724,27 @@ export function StaffManagementPage() {
               <div className="flex-1 overflow-y-auto p-6 space-y-6">
                 {/* Personal Information */}
                 <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f0d9e8]">
-                  <h3 className="text-sm font-bold text-[#2d1b35] mb-4">Personal Information</h3>
+                  <h3 className="text-sm font-bold text-[#2d1b35] mb-4">
+                    {language === "vi" ? "Thông tin cá nhân" : "Personal Information"}
+                  </h3>
                   <div className="space-y-4">
-                    <InfoItem label="First Name">{selectedStaff.firstName || '-'}</InfoItem>
-                    <InfoItem label="Last Name">{selectedStaff.lastName || '-'}</InfoItem>
+                    <InfoItem label={language === "vi" ? "Tên" : "First Name"}>{selectedStaff.firstName || '-'}</InfoItem>
+                    <InfoItem label={language === "vi" ? "Họ" : "Last Name"}>{selectedStaff.lastName || '-'}</InfoItem>
                     <InfoItem label="Email">{selectedStaff.email || '-'}</InfoItem>
-                    <InfoItem label="Phone Number">{selectedStaff.phone || '-'}</InfoItem>
+                    <InfoItem label={language === "vi" ? "Số điện thoại" : "Phone Number"}>{selectedStaff.phone || '-'}</InfoItem>
                   </div>
                 </div>
 
                 {/* Account Information */}
                 <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f0d9e8]">
-                  <h3 className="text-sm font-bold text-[#2d1b35] mb-4">Account Information</h3>
+                  <h3 className="text-sm font-bold text-[#2d1b35] mb-4">
+                    {language === "vi" ? "Thông tin tài khoản" : "Account Information"}
+                  </h3>
                   <div className="space-y-4">
-                    <InfoItem label="Role">{selectedStaff.role || '-'}</InfoItem>
-                    <InfoItem label="Status">
+                    <InfoItem label={language === "vi" ? "Vai trò" : "Role"}>{selectedStaff.role || '-'}</InfoItem>
+                    <InfoItem label={language === "vi" ? "Trạng thái" : "Status"}>
                       <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold bg-[#eaf9ee] text-[#2fa25f]">
-                        {selectedStaff.status || 'Active'}
+                        {language === "vi" && (selectedStaff.status === 'Active' || !selectedStaff.status) ? "Đang hoạt động" : selectedStaff.status || 'Active'}
                       </span>
                     </InfoItem>
                   </div>
@@ -671,7 +753,9 @@ export function StaffManagementPage() {
                 {/* Skills Section (for Nail Artists) */}
                 {(selectedStaff.role === 'Staff_Artist' || selectedStaff.role === 'NAIL_ARTIST') && (
                   <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f0d9e8]">
-                    <h3 className="text-sm font-bold text-[#2d1b35] mb-4">Skills & Specialties</h3>
+                    <h3 className="text-sm font-bold text-[#2d1b35] mb-4">
+                      {language === "vi" ? "Kỹ năng & Chuyên môn" : "Skills & Specialties"}
+                    </h3>
                     {isLoadingSkills ? (
                       <div className="flex justify-center py-4">
                         <Spin size="small" />
@@ -693,7 +777,9 @@ export function StaffManagementPage() {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-xs text-[#a88a9f]">No skills assigned yet</p>
+                      <p className="text-xs text-[#a88a9f]">
+                        {language === "vi" ? "Chưa được phân bổ kỹ năng" : "No skills assigned yet"}
+                      </p>
                     )}
                   </div>
                 )}
@@ -703,7 +789,9 @@ export function StaffManagementPage() {
                   <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f0d9e8]">
                     <div className="mb-4 flex items-center gap-2">
                       <CalendarDays size={16} className="text-[#ea4f93]" />
-                      <h3 className="text-sm font-bold text-[#2d1b35]">Working Schedule</h3>
+                      <h3 className="text-sm font-bold text-[#2d1b35]">
+                        {language === "vi" ? "Lịch làm việc" : "Working Schedule"}
+                      </h3>
                     </div>
                     {isLoadingSchedule ? (
                       <div className="flex justify-center py-4">
@@ -716,7 +804,9 @@ export function StaffManagementPage() {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-xs text-[#a88a9f]">No schedule available</p>
+                      <p className="text-xs text-[#a88a9f]">
+                        {language === "vi" ? "Chưa có lịch làm việc" : "No schedule available"}
+                      </p>
                     )}
                   </div>
                 )}
@@ -731,7 +821,7 @@ export function StaffManagementPage() {
                     className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-violet-500 bg-white px-4 py-3 text-xs font-bold text-violet-600 shadow-lg transition-all hover:bg-violet-50 hover:border-violet-600 hover:scale-[1.02]"
                   >
                     <Edit3 size={14} />
-                    Update Profile
+                    {language === "vi" ? "Cập nhật hồ sơ" : "Update Profile"}
                   </Link>
                 </div>
               </div>

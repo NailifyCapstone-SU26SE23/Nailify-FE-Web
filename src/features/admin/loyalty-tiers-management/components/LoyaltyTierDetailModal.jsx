@@ -16,8 +16,10 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { fetchLoyaltyTierDetail } from "../services/loyaltyTiersManagementService";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose }) {
+  const { language } = useLanguage();
   const [tier, setTier] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -32,7 +34,7 @@ export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose }) {
           setTier(detail);
         } catch (err) {
           console.error("Failed to load loyalty tier detail:", err);
-          setError(err instanceof Error ? err.message : "Failed to load loyalty tier details.");
+          setError(err instanceof Error ? err.message : (language === "vi" ? "Tải thông tin chi tiết cấp độ thành viên thất bại." : "Failed to load loyalty tier details."));
         } finally {
           setIsLoading(false);
         }
@@ -101,8 +103,12 @@ export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose }) {
               <Award size={18} />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-[#3f2034] leading-tight">Loyalty Tier Details</h3>
-              <p className="text-[11px] font-semibold text-[#a08998]">System Configuration & Member Perks</p>
+              <h3 className="text-lg font-bold text-[#3f2034] leading-tight">
+                {language === "vi" ? "Chi tiết Cấp độ thành viên" : "Loyalty Tier Details"}
+              </h3>
+              <p className="text-[11px] font-semibold text-[#a08998]">
+                {language === "vi" ? "Cấu hình Hệ thống & Đặc quyền Thành viên" : "System Configuration & Member Perks"}
+              </p>
             </div>
           </div>
 
@@ -125,7 +131,7 @@ export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose }) {
                 onClick={onClose}
                 className="mt-4 rounded-full bg-[#ea4f93] px-6 py-2 text-xs font-bold text-white shadow-sm"
               >
-                Close
+                {language === "vi" ? "Đóng" : "Close"}
               </button>
             </div>
           ) : tier ? (
@@ -147,10 +153,12 @@ export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose }) {
                 <div className="relative z-10 flex justify-between items-start">
                   <div>
                     <span className="text-[9px] font-bold uppercase tracking-[0.25em] opacity-85">
-                      Nailify VIP Program
+                      {language === "vi" ? "Chương trình Nailify VIP" : "Nailify VIP Program"}
                     </span>
                     <h4 className="mt-3 text-2xl font-bold tracking-tight">{tier.name}</h4>
-                    <p className="mt-1 text-[11px] opacity-90 max-w-[240px] truncate">{tier.description || "Active Club Member"}</p>
+                    <p className="mt-1 text-[11px] opacity-90 max-w-[240px] truncate">
+                      {tier.description || (language === "vi" ? "Thành viên hoạt động" : "Active Club Member")}
+                    </p>
                   </div>
 
                   {/* Badge image thumbnail */}
@@ -169,15 +177,19 @@ export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose }) {
 
                 <div className="relative z-10 mt-6 flex justify-between items-end">
                   <div>
-                    <span className="text-[8px] font-bold uppercase tracking-widest opacity-80 block">Points Threshold</span>
+                    <span className="text-[8px] font-bold uppercase tracking-widest opacity-80 block">
+                      {language === "vi" ? "Ngưỡng điểm tích lũy" : "Points Threshold"}
+                    </span>
                     <span className="text-sm font-bold font-mono mt-0.5 block">
-                      {tier.minLifetimePoints.toLocaleString()} - {tier.maxLifetimePoints.toLocaleString()} pts
+                      {tier.minLifetimePoints.toLocaleString()} - {tier.maxLifetimePoints.toLocaleString()} {language === "vi" ? "điểm" : "pts"}
                     </span>
                   </div>
                   <div className="text-right">
-                    <span className="text-[8px] font-bold uppercase tracking-widest opacity-80 block">Discount Benefit</span>
+                    <span className="text-[8px] font-bold uppercase tracking-widest opacity-80 block">
+                      {language === "vi" ? "Quyền lợi Giảm giá" : "Discount Benefit"}
+                    </span>
                     <span className="text-xl font-bold mt-0.5 block">
-                      {tier.discountRate > 0 ? `${tier.discountRate}% OFF` : "Standard Rates"}
+                      {tier.discountRate > 0 ? (language === "vi" ? `Giảm ${tier.discountRate}%` : `${tier.discountRate}% OFF`) : (language === "vi" ? "Giá Tiêu chuẩn" : "Standard Rates")}
                     </span>
                   </div>
                 </div>
@@ -192,8 +204,12 @@ export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose }) {
                     <Lock size={14} />
                   </div>
                   <div>
-                    <span className="text-[9px] font-bold uppercase text-[#a08998] block">Required Min</span>
-                    <span className="text-xs font-bold font-mono text-[#3f2034]">{tier.minLifetimePoints.toLocaleString()} pts</span>
+                    <span className="text-[9px] font-bold uppercase text-[#a08998] block">
+                      {language === "vi" ? "Tối thiểu Yêu cầu" : "Required Min"}
+                    </span>
+                    <span className="text-xs font-bold font-mono text-[#3f2034]">
+                      {tier.minLifetimePoints.toLocaleString()} {language === "vi" ? "điểm" : "pts"}
+                    </span>
                   </div>
                 </div>
 
@@ -203,8 +219,12 @@ export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose }) {
                     <ChevronRight size={14} />
                   </div>
                   <div>
-                    <span className="text-[9px] font-bold uppercase text-[#a08998] block">Required Max</span>
-                    <span className="text-xs font-bold font-mono text-[#3f2034]">{tier.maxLifetimePoints.toLocaleString()} pts</span>
+                    <span className="text-[9px] font-bold uppercase text-[#a08998] block">
+                      {language === "vi" ? "Tối đa Yêu cầu" : "Required Max"}
+                    </span>
+                    <span className="text-xs font-bold font-mono text-[#3f2034]">
+                      {tier.maxLifetimePoints.toLocaleString()} {language === "vi" ? "điểm" : "pts"}
+                    </span>
                   </div>
                 </div>
 
@@ -214,8 +234,12 @@ export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose }) {
                     <Percent size={14} />
                   </div>
                   <div>
-                    <span className="text-[9px] font-bold uppercase text-[#a08998] block">Discount Rate</span>
-                    <span className="text-xs font-bold text-[#3f2034]">{tier.discountRate}% Markdown</span>
+                    <span className="text-[9px] font-bold uppercase text-[#a08998] block">
+                      {language === "vi" ? "Tỷ lệ Giảm giá" : "Discount Rate"}
+                    </span>
+                    <span className="text-xs font-bold text-[#3f2034]">
+                      {language === "vi" ? `Giảm ${tier.discountRate}%` : `${tier.discountRate}% Markdown`}
+                    </span>
                   </div>
                 </div>
 
@@ -225,8 +249,12 @@ export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose }) {
                     <Layers size={14} />
                   </div>
                   <div>
-                    <span className="text-[9px] font-bold uppercase text-[#a08998] block">Sort Priority</span>
-                    <span className="text-xs font-bold text-[#3f2034]">Level Rank #{tier.sortOrder}</span>
+                    <span className="text-[9px] font-bold uppercase text-[#a08998] block">
+                      {language === "vi" ? "Thứ tự Ưu tiên" : "Sort Priority"}
+                    </span>
+                    <span className="text-xs font-bold text-[#3f2034]">
+                      {language === "vi" ? `Hạng Cấp độ #${tier.sortOrder}` : `Level Rank #${tier.sortOrder}`}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -240,9 +268,16 @@ export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose }) {
                     <CheckCircle2 size={14} />
                   </div>
                   <div>
-                    <span className="text-[9px] font-bold uppercase text-[#a08998] block">Status</span>
+                    <span className="text-[9px] font-bold uppercase text-[#a08998] block">
+                      {language === "vi" ? "Trạng thái" : "Status"}
+                    </span>
                     <span className={`text-xs font-bold ${tier.status === "Active" ? "text-green-600" : "text-red-500"
-                      }`}>{tier.status}</span>
+                      }`}>
+                      {language === "vi" 
+                        ? (tier.status === "Active" ? "Hoạt động" : "Ngừng hoạt động") 
+                        : tier.status
+                      }
+                    </span>
                   </div>
                 </div>
 
@@ -252,8 +287,12 @@ export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose }) {
                     <Users size={14} />
                   </div>
                   <div>
-                    <span className="text-[9px] font-bold uppercase text-[#a08998] block">Total Members</span>
-                    <span className="text-xs font-bold text-[#3f2034]">{getMockMemberCount(tier.name)} Active</span>
+                    <span className="text-[9px] font-bold uppercase text-[#a08998] block">
+                      {language === "vi" ? "Tổng số Thành viên" : "Total Members"}
+                    </span>
+                    <span className="text-xs font-bold text-[#3f2034]">
+                      {getMockMemberCount(tier.name)} {language === "vi" ? "Hoạt động" : "Active"}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -264,7 +303,7 @@ export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose }) {
                   <div className="flex items-center gap-2 mb-2 text-[#7e6074]">
                     <Clock size={13} className="text-[#a08998]" />
                     <span className="text-[10px] font-bold uppercase tracking-wider text-[#a08998]">
-                      Tier Description / Rule Note
+                      {language === "vi" ? "Mô tả Cấp độ / Ghi chú Quy tắc" : "Tier Description / Rule Note"}
                     </span>
                   </div>
                   <p className="text-xs leading-relaxed text-[#7c6374]">
@@ -279,7 +318,7 @@ export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose }) {
                   onClick={onClose}
                   className="w-full inline-flex h-11 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] text-white font-extrabold text-xs shadow-[0_8px_18px_rgba(235,90,153,0.18)] active:scale-[0.98] transition-transform cursor-pointer"
                 >
-                  Dismiss Details
+                  {language === "vi" ? "Đóng Chi Tiết" : "Dismiss Details"}
                 </button>
               </div>
             </div>
