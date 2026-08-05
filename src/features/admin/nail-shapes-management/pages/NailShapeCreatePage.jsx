@@ -11,6 +11,7 @@ import {
 import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useNavigate } from "react-router-dom";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ROUTES, getAdminNailShapeDetailRoute } from "../../../../shared/constants/routes";
 import {
@@ -28,17 +29,18 @@ function createEmptyForm() {
   };
 }
 
-function validateForm(formValues) {
+function validateForm(formValues, language) {
+  const isVi = language === "vi";
   if (!String(formValues.name || "").trim()) {
-    return "Nail shape name is required.";
+    return isVi ? "Tên dáng móng là bắt buộc." : "Nail shape name is required.";
   }
 
   if (Number(formValues.price) < 0 || Number.isNaN(Number(formValues.price))) {
-    return "Price must be a valid number.";
+    return isVi ? "Giá phải là một số hợp lệ." : "Price must be a valid number.";
   }
 
   if (Number(formValues.duration) <= 0 || Number.isNaN(Number(formValues.duration))) {
-    return "Duration must be greater than 0.";
+    return isVi ? "Thời lượng phải lớn hơn 0." : "Duration must be greater than 0.";
   }
 
   return "";
@@ -46,6 +48,7 @@ function validateForm(formValues) {
 
 export function NailShapeCreatePage() {
   const navigate = useNavigate();
+  const { language } = useLanguage();
   const [formValues, setFormValues] = useState(createEmptyForm);
   const [imagePreview, setImagePreview] = useState("");
   const [formError, setFormError] = useState("");
@@ -55,12 +58,12 @@ export function NailShapeCreatePage() {
 
   const summaryItems = useMemo(
     () => [
-      ["Shape Name", formValues.name || "--"],
-      ["Price", formValues.price ? formatNailShapeCurrency(formValues.price) : "--"],
-      ["Duration", formValues.duration ? formatNailShapeDuration(formValues.duration) : "--"],
-      ["Image", formValues.image ? formValues.image.name : "Not selected"],
+      [language === "vi" ? "Tên Dáng Móng" : "Shape Name", formValues.name || "--"],
+      [language === "vi" ? "Giá cả" : "Price", formValues.price ? formatNailShapeCurrency(formValues.price) : "--"],
+      [language === "vi" ? "Thời lượng" : "Duration", formValues.duration ? formatNailShapeDuration(formValues.duration) : "--"],
+      [language === "vi" ? "Hình ảnh" : "Image", formValues.image ? formValues.image.name : (language === "vi" ? "Chưa chọn" : "Not selected")],
     ],
-    [formValues.duration, formValues.image, formValues.name, formValues.price],
+    [formValues.duration, formValues.image, formValues.name, formValues.price, language],
   );
 
   const handleFieldChange = (field, value) => {
@@ -86,7 +89,7 @@ export function NailShapeCreatePage() {
   };
 
   const handleSubmitRequest = () => {
-    const validationError = validateForm(formValues);
+    const validationError = validateForm(formValues, language);
 
     if (validationError) {
       setFormError(validationError);
@@ -106,14 +109,14 @@ export function NailShapeCreatePage() {
         duration: Number(formValues.duration),
       });
 
-      toast.success(`${createdShape.name} created successfully.`);
+      toast.success(language === "vi" ? `Đã tạo dáng móng ${createdShape.name} thành công.` : `${createdShape.name} created successfully.`);
       navigate(getAdminNailShapeDetailRoute(createdShape.nailShapeId), {
         state: {
-          flashMessage: `${createdShape.name} has been created successfully.`,
+          flashMessage: language === "vi" ? `Dáng móng ${createdShape.name} đã được tạo thành công.` : `${createdShape.name} has been created successfully.`,
         },
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to create nail shape.";
+      const message = error instanceof Error ? error.message : (language === "vi" ? "Tạo dáng móng thất bại." : "Failed to create nail shape.");
       setFormError(message);
       toast.error(message);
     } finally {
@@ -133,9 +136,9 @@ export function NailShapeCreatePage() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">Add New Nail Shape</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">{language === "vi" ? "Thêm Dáng Móng Mới" : "Add New Nail Shape"}</h1>
             <p className="text-xs font-medium text-slate-400">
-              Create a new nail shape and upload its preview image.
+              {language === "vi" ? "Tạo dáng móng mới và tải lên hình ảnh xem trước." : "Create a new nail shape and upload its preview image."}
             </p>
           </div>
         </div>
@@ -147,7 +150,7 @@ export function NailShapeCreatePage() {
             className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
           >
             <X size={14} />
-            Cancel
+            {language === "vi" ? "Hủy" : "Cancel"}
           </button>
           <button
             type="button"
@@ -155,7 +158,7 @@ export function NailShapeCreatePage() {
             className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
           >
             <Save size={14} />
-            Save Shape
+            {language === "vi" ? "Lưu Dáng Móng" : "Save Shape"}
           </button>
         </div>
       </header>
@@ -170,26 +173,26 @@ export function NailShapeCreatePage() {
         <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
           <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
             <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
-            Nail Shape Details
+            {language === "vi" ? "Chi Tiết Dáng Móng" : "Nail Shape Details"}
           </h2>
 
           <div className="grid gap-5 md:grid-cols-2">
             <label className="space-y-2.5">
-              <span className="text-[13px] font-semibold text-slate-600">Shape Name</span>
+              <span className="text-[13px] font-semibold text-slate-600">{language === "vi" ? "Tên Dáng Móng" : "Shape Name"}</span>
               <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                 <Shapes size={14} className="shrink-0 text-rose-300" />
                 <input
                   type="text"
                   value={formValues.name}
                   onChange={(event) => handleFieldChange("name", event.target.value)}
-                  placeholder="Enter nail shape name"
+                  placeholder={language === "vi" ? "Nhập tên dáng móng" : "Enter nail shape name"}
                   className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none placeholder:text-rose-300"
                 />
               </div>
             </label>
 
             <label className="space-y-2.5">
-              <span className="text-[13px] font-semibold text-slate-600">Price</span>
+              <span className="text-[13px] font-semibold text-slate-600">{language === "vi" ? "Giá cả" : "Price"}</span>
               <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                 <Wallet size={14} className="shrink-0 text-rose-300" />
                 <input
@@ -205,7 +208,7 @@ export function NailShapeCreatePage() {
             </label>
 
             <label className="space-y-2.5 md:col-span-2">
-              <span className="text-[13px] font-semibold text-slate-600">Duration</span>
+              <span className="text-[13px] font-semibold text-slate-600">{language === "vi" ? "Thời lượng" : "Duration"}</span>
               <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                 <Clock3 size={14} className="shrink-0 text-rose-300" />
                 <input
@@ -214,14 +217,14 @@ export function NailShapeCreatePage() {
                   step="1"
                   value={formValues.duration}
                   onChange={(event) => handleFieldChange("duration", event.target.value)}
-                  placeholder="Minutes"
+                  placeholder={language === "vi" ? "Số phút" : "Minutes"}
                   className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none placeholder:text-rose-300"
                 />
               </div>
             </label>
 
             <label className="space-y-2.5 md:col-span-2">
-              <span className="text-[13px] font-semibold text-slate-600">Preview Image</span>
+              <span className="text-[13px] font-semibold text-slate-600">{language === "vi" ? "Hình Ảnh Xem Trước" : "Preview Image"}</span>
               <label className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-rose-200 bg-gradient-to-br from-[#fffafc] to-[#fff5f9] px-6 py-8 transition hover:border-rose-300 hover:shadow-[0_8px_24px_rgba(226,93,143,0.12)]">
                 {imagePreview ? (
                   <img
@@ -237,7 +240,7 @@ export function NailShapeCreatePage() {
                       <Upload size={28} />
                     </div>
                     <div className="text-center">
-                      <p className="text-base font-semibold text-slate-700">Click to upload shape image</p>
+                      <p className="text-base font-semibold text-slate-700">{language === "vi" ? "Bấm để tải ảnh dáng móng lên" : "Click to upload shape image"}</p>
                       <p className="mt-1 text-xs text-slate-400">PNG, JPG up to 5MB</p>
                     </div>
                   </>
@@ -257,7 +260,7 @@ export function NailShapeCreatePage() {
           <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
             <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
               <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
-              Preview
+              {language === "vi" ? "Xem trước" : "Preview"}
             </h2>
 
             <div className="space-y-4">
@@ -273,7 +276,7 @@ export function NailShapeCreatePage() {
                 ) : (
                   <div className="text-center text-sm font-medium text-slate-400">
                     <ImageIcon size={24} className="mx-auto mb-3 text-rose-300" />
-                    No image selected
+                    {language === "vi" ? "Chưa chọn hình ảnh" : "No image selected"}
                   </div>
                 )}
               </div>
@@ -294,33 +297,33 @@ export function NailShapeCreatePage() {
       <ActionConfirmModal
         open={showCancelConfirm}
         intent="warning"
-        title="Cancel Nail Shape Creation"
-        subtitle="You are leaving this form without saving."
-        description="All unsaved nail shape details will be discarded."
-        confirmText="Discard Changes"
-        cancelText="Keep Editing"
+        title={language === "vi" ? "Hủy Tạo Dáng Móng" : "Cancel Nail Shape Creation"}
+        subtitle={language === "vi" ? "Bạn đang rời biểu mẫu mà không lưu." : "You are leaving this form without saving."}
+        description={language === "vi" ? "Tất cả thông tin dáng móng chưa lưu sẽ bị hủy." : "All unsaved nail shape details will be discarded."}
+        confirmText={language === "vi" ? "Hủy Thay Đổi" : "Discard Changes"}
+        cancelText={language === "vi" ? "Tiếp tục Chỉnh sửa" : "Keep Editing"}
         confirmIcon={X}
         onConfirm={() => navigate(ROUTES.adminNailShapes)}
         onCancel={() => setShowCancelConfirm(false)}
-        warnings={["This new nail shape has not been created yet."]}
+        warnings={[language === "vi" ? "Dáng móng mới này chưa được tạo." : "This new nail shape has not been created yet."]}
       />
 
       <ActionConfirmModal
         open={showSaveConfirm}
         intent="success"
-        title="Save New Nail Shape"
-        subtitle="This will create the nail shape in backend."
-        description="Confirm to add this nail shape to the admin catalog."
-        confirmText="Create Shape"
-        cancelText="Review Again"
+        title={language === "vi" ? "Lưu Dáng Móng Mới" : "Save New Nail Shape"}
+        subtitle={language === "vi" ? "Hành động này sẽ tạo dáng móng mới trên hệ thống." : "This will create the nail shape in backend."}
+        description={language === "vi" ? "Xác nhận để thêm dáng móng này vào danh mục quản lý." : "Confirm to add this nail shape to the admin catalog."}
+        confirmText={language === "vi" ? "Tạo Dáng Móng" : "Create Shape"}
+        cancelText={language === "vi" ? "Xem lại" : "Review Again"}
         confirmIcon={Save}
         loading={isSaving}
         onConfirm={handleCreateShape}
         onCancel={() => !isSaving && setShowSaveConfirm(false)}
-        highlights={[formValues.name || "New nail shape"]}
+        highlights={[formValues.name || (language === "vi" ? "Dáng móng mới" : "New nail shape")]}
         details={[
-          { label: "Price", value: formValues.price ? formatNailShapeCurrency(formValues.price) : "--" },
-          { label: "Duration", value: formValues.duration ? formatNailShapeDuration(formValues.duration) : "--" },
+          { label: language === "vi" ? "Giá cả" : "Price", value: formValues.price ? formatNailShapeCurrency(formValues.price) : "--" },
+          { label: language === "vi" ? "Thời lượng" : "Duration", value: formValues.duration ? formatNailShapeDuration(formValues.duration) : "--" },
         ]}
       />
     </section>

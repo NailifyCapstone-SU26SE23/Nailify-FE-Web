@@ -17,6 +17,7 @@ import womanHandImg from "../../../../shared/assets/images/womanHand.png";
 import toast from "react-hot-toast";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   getAdminNailDesignDetailRoute,
   getAdminNailVariantDetailRoute,
@@ -829,6 +830,7 @@ function NailVariantHandPreview({ variantDetail }) {
 export function NailVariantDetailPage() {
   const { designId, variantId } = useParams();
   const navigate = useNavigate();
+  const { language } = useLanguage();
   const location = useLocation();
   const [variant, setVariant] = useState(null);
   const [procedures, setProcedures] = useState([]);
@@ -870,7 +872,7 @@ export function NailVariantDetailPage() {
         if (statusCode === 404) {
           setIsNotFound(true);
         } else {
-          setError(loadError instanceof Error ? loadError.message : "Failed to load nail variant detail.");
+          setError(loadError instanceof Error ? loadError.message : (language === "vi" ? "Tải chi tiết biến thể mẫu móng thất bại." : "Failed to load nail variant detail."));
         }
       } finally {
         if (isMounted) {
@@ -944,7 +946,7 @@ export function NailVariantDetailPage() {
       );
       setProcedures(await fetchProceduresByVariant(variant.nailVariantId));
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Failed to save procedure steps.");
+      setError(saveError instanceof Error ? saveError.message : (language === "vi" ? "Lưu các bước quy trình thất bại." : "Failed to save procedure steps."));
     } finally {
       setIsSavingProcedures(false);
     }
@@ -969,7 +971,7 @@ export function NailVariantDetailPage() {
       const nailSurfaceId = findSurfaceId(references.surfaces, pendingTryOnConfig);
 
       if (!nailShapeId || !nailSurfaceId) {
-        throw new Error("Nail shape and surface references are required before saving.");
+        throw new Error(language === "vi" ? "Yêu cầu các tham chiếu dáng móng và bề mặt móng trước khi lưu." : "Nail shape and surface references are required before saving.");
       }
 
       await updateAdminNailVariant(variantId, {
@@ -1005,7 +1007,7 @@ export function NailVariantDetailPage() {
       <section className="flex min-h-full items-center justify-center bg-[#fff7fb] px-4 py-10">
         <div className="flex items-center gap-3 rounded-[18px] border border-[#f8dce8] bg-white px-5 py-4 text-sm text-[#b38a9f]">
           <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
-          Loading nail variant detail...
+          {language === "vi" ? "Đang tải thông tin chi tiết biến thể móng..." : "Loading nail variant detail..."}
         </div>
       </section>
     );
@@ -1019,7 +1021,7 @@ export function NailVariantDetailPage() {
     return (
       <section className="flex min-h-full items-center justify-center bg-[#fff7fb] px-4 py-10">
         <div className="rounded-[18px] border border-[#f8dce8] bg-white px-5 py-4 text-sm font-medium text-[#d14c84]">
-          {error || "Failed to load nail variant detail."}
+          {error || (language === "vi" ? "Tải chi tiết biến thể mẫu móng thất bại." : "Failed to load nail variant detail.")}
         </div>
       </section>
     );
@@ -1031,7 +1033,7 @@ export function NailVariantDetailPage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-xs text-[#c694ad]">
-              Nail Designs / <span className="text-[#ea4f93]">Variant Detail</span>
+              {language === "vi" ? "Thiết kế Mẫu móng / " : "Nail Designs / "}<span className="text-[#ea4f93]">{language === "vi" ? "Chi tiết Biến thể" : "Variant Detail"}</span>
             </p>
             <h1 className="mt-2 text-2xl font-bold text-[#432744]">{variant.name}</h1>
             <p className="mt-1 max-w-3xl text-sm text-[#8c7085]">{variant.description || "--"}</p>
@@ -1043,7 +1045,7 @@ export function NailVariantDetailPage() {
               className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#8c7085]"
             >
               <ArrowLeft size={14} className="mr-1.5 inline" />
-              Back to Design
+              {language === "vi" ? "Quay lại Thiết kế" : "Back to Design"}
             </button>
             <button
               type="button"
@@ -1051,7 +1053,7 @@ export function NailVariantDetailPage() {
               className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
             >
               <Sparkles size={14} className="mr-1.5 inline" />
-              Set Up Try On
+              {language === "vi" ? "Thiết lập Thử móng" : "Set Up Try On"}
             </button>
             <button
               type="button"
@@ -1059,7 +1061,7 @@ export function NailVariantDetailPage() {
               className="rounded-full bg-[#4a72d8] px-4 py-2 text-xs font-bold text-white"
             >
               <Image size={14} className="mr-1.5 inline" />
-              Photo Try On
+              {language === "vi" ? "Thử qua Ảnh" : "Photo Try On"}
             </button>
             <button
               type="button"
@@ -1067,7 +1069,7 @@ export function NailVariantDetailPage() {
               className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white"
             >
               <Camera size={14} className="mr-1.5 inline" />
-              Live Try On
+              {language === "vi" ? "Thử Trực tiếp" : "Live Try On"}
             </button>
           </div>
         </div>
@@ -1081,21 +1083,23 @@ export function NailVariantDetailPage() {
 
       {pendingTryOnConfig && !error ? (
         <div className="flex items-center justify-between rounded-[18px] border border-[#f4bfd2] bg-[#fff1f6] px-5 py-3">
-          <p className="text-sm font-semibold text-green-700 px-4 py-2 border border-green-400 rounded-full bg-green-100">You have unsaved Try-On changes.</p>
+          <p className="text-sm font-semibold text-green-700 px-4 py-2 border border-green-400 rounded-full bg-green-100">
+            {language === "vi" ? "Bạn có thay đổi Thử móng chưa lưu." : "You have unsaved Try-On changes."}
+          </p>
           <div className="flex gap-2">
             <button
               onClick={() => navigate(getAdminNailVariantDetailRoute(designId, variantId), { replace: true })}
               disabled={isSavingTryOn}
               className="rounded-full border border-[#f4bfd2] bg-white px-4 py-2 text-xs font-bold text-[#d14c84]"
             >
-              Cancel
+              {language === "vi" ? "Hủy" : "Cancel"}
             </button>
             <button
               onClick={handleSaveTryOn}
               disabled={isSavingTryOn}
               className="rounded-full bg-[#d14c84] px-4 py-2 text-xs font-bold text-white shadow"
             >
-              {isSavingTryOn ? "Saving..." : "Save Changes"}
+              {isSavingTryOn ? (language === "vi" ? "Đang lưu..." : "Saving...") : (language === "vi" ? "Lưu Thay Đổi" : "Save Changes")}
             </button>
           </div>
         </div>
@@ -1103,14 +1107,14 @@ export function NailVariantDetailPage() {
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="space-y-4">
-          <DetailCard title="Variant Overview">
+          <DetailCard title={language === "vi" ? "Tổng quan Biến thể" : "Variant Overview"}>
             <div className="space-y-5">
               <NailVariantHandPreview variantDetail={variant} />
 
               <div className="grid gap-3 sm:grid-cols-2">
                 {[
-                  ["Price", variant.priceLabel || "--"],
-                  ["Duration", variant.durationLabel || "--"],
+                  [language === "vi" ? "Giá cả" : "Price", variant.priceLabel || "--"],
+                  [language === "vi" ? "Thời gian" : "Duration", variant.durationLabel || "--"],
                 ].map(([label, value]) => (
                   <div key={label} className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">{label}</p>
@@ -1121,12 +1125,12 @@ export function NailVariantDetailPage() {
 
               <div className="grid gap-4 lg:grid-cols-2">
                 <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-5">
-                  <h3 className="text-sm font-extrabold uppercase tracking-[0.08em] text-[#c694ad]">Nail Shape</h3>
+                  <h3 className="text-sm font-extrabold uppercase tracking-[0.08em] text-[#c694ad]">{language === "vi" ? "Dáng Móng" : "Nail Shape"}</h3>
                   <div className="mt-4 space-y-3">
                     {[
-                      ["Name", variant.nailShape?.name || "--"],
-                      ["Price", variant.nailShape?.priceLabel || "--"],
-                      ["Duration", variant.nailShape?.durationLabel || "--"],
+                      [language === "vi" ? "Tên" : "Name", variant.nailShape?.name || "--"],
+                      [language === "vi" ? "Giá" : "Price", variant.nailShape?.priceLabel || "--"],
+                      [language === "vi" ? "Thời gian" : "Duration", variant.nailShape?.durationLabel || "--"],
                     ].map(([label, value]) => (
                       <div key={label} className="rounded-[16px] border border-[#f3dce7] bg-white px-4 py-3">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">{label}</p>
@@ -1137,12 +1141,12 @@ export function NailVariantDetailPage() {
                 </div>
 
                 <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-5">
-                  <h3 className="text-sm font-extrabold uppercase tracking-[0.08em] text-[#c694ad]">Nail Surface</h3>
+                  <h3 className="text-sm font-extrabold uppercase tracking-[0.08em] text-[#c694ad]">{language === "vi" ? "Bề Mặt Móng" : "Nail Surface"}</h3>
                   <div className="mt-4 space-y-3">
                     {[
-                      ["Name", variant.nailSurface?.name || "--"],
-                      ["Price", variant.nailSurface?.priceLabel || "--"],
-                      ["Duration", variant.nailSurface?.durationLabel || "--"],
+                      [language === "vi" ? "Tên" : "Name", variant.nailSurface?.name || "--"],
+                      [language === "vi" ? "Giá" : "Price", variant.nailSurface?.priceLabel || "--"],
+                      [language === "vi" ? "Thời gian" : "Duration", variant.nailSurface?.durationLabel || "--"],
                     ].map(([label, value]) => (
                       <div key={label} className="rounded-[16px] border border-[#f3dce7] bg-white px-4 py-3">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">{label}</p>
@@ -1179,9 +1183,9 @@ export function NailVariantDetailPage() {
             )}
           </DetailCard> */}
 
-          <DetailCard title="Procedure Steps">
+          <DetailCard title={language === "vi" ? "Quy Trình Thực Hiện" : "Procedure Steps"}>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-[#8c7085]">Step order is initialized from the current variant procedure response.</p>
+              <p className="text-sm text-[#8c7085]">{language === "vi" ? "Thứ tự bước được khởi tạo từ danh sách quy trình biến thể hiện tại." : "Step order is initialized from the current variant procedure response."}</p>
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -1190,7 +1194,7 @@ export function NailVariantDetailPage() {
                   className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#ea4f93]"
                 >
                   <Plus size={13} className="mr-1.5 inline" />
-                  Add Step
+                  {language === "vi" ? "Thêm Bước" : "Add Step"}
                 </button>
                 <button
                   type="button"
@@ -1199,7 +1203,7 @@ export function NailVariantDetailPage() {
                   className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white"
                 >
                   <Save size={13} className="mr-1.5 inline" />
-                  {isSavingProcedures ? "Saving..." : "Save Steps"}
+                  {isSavingProcedures ? (language === "vi" ? "Đang lưu..." : "Saving...") : (language === "vi" ? "Lưu Các Bước" : "Save Steps")}
                 </button>
               </div>
             </div>
@@ -1211,7 +1215,7 @@ export function NailVariantDetailPage() {
                     <div className="grid gap-3 md:grid-cols-[110px_minmax(0,1fr)]">
                       <label className="space-y-2">
                         <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
-                          Step Order
+                          {language === "vi" ? "Thứ tự" : "Step Order"}
                         </span>
                         <input
                           value={String(item.stepOrder || index + 1)}
@@ -1221,14 +1225,14 @@ export function NailVariantDetailPage() {
                       </label>
                       <div className="flex flex-col gap-2">
                         <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
-                          Procedure
+                          {language === "vi" ? "Quy trình" : "Procedure"}
                         </span>
                         <select
                           value={item.procedureId || ""}
                           onChange={(e) => updateProcedureDraft(index, "procedureId", e.target.value)}
                           className="w-full rounded-2xl border border-[#f4d4e2] bg-white px-4 py-3 text-sm font-semibold text-[#432744] outline-none focus:border-[#ea4f93]"
                         >
-                          <option value="">Select a procedure</option>
+                          <option value="">{language === "vi" ? "Chọn một quy trình" : "Select a procedure"}</option>
                           {availableProcedures.map((proc) => (
                             <option key={proc.id || proc.procedureId} value={proc.id || proc.procedureId}>
                               {proc.name}
@@ -1236,9 +1240,9 @@ export function NailVariantDetailPage() {
                           ))}
                         </select>
                         <div className="mt-2 grid gap-2 text-sm md:grid-cols-3">
-                          <span>Duration: <b>{item.durationLabel || item.duration || "--"}</b></span>
-                          <span>Status: <b>{item.status || "--"}</b></span>
-                          <span>Required: <b>{item.isRequired ? "Yes" : "No"}</b></span>
+                          <span>{language === "vi" ? "Thời gian" : "Duration"}: <b>{item.durationLabel || item.duration || "--"}</b></span>
+                          <span>{language === "vi" ? "Trạng thái" : "Status"}: <b>{item.status || "--"}</b></span>
+                          <span>{language === "vi" ? "Bắt buộc" : "Required"}: <b>{item.isRequired ? (language === "vi" ? "Có" : "Yes") : (language === "vi" ? "Không" : "No")}</b></span>
                         </div>
                       </div>
                     </div>
@@ -1248,19 +1252,19 @@ export function NailVariantDetailPage() {
               </div>
             ) : (
               <div className="mt-4 rounded-[16px] border border-dashed border-[#f3c9dd] bg-[#fffafb] px-4 py-4 text-sm text-[#8c7085]">
-                No procedures configured for this variant yet.
+                {language === "vi" ? "Chưa cấu hình quy trình nào cho biến thể này." : "No procedures configured for this variant yet."}
               </div>
             )}
           </DetailCard>
         </div>
 
         <aside className="space-y-4">
-          <DetailCard title="Try-On">
+          <DetailCard title={language === "vi" ? "Thử móng Ảo" : "Try-On"}>
             <div className="space-y-3">
               {[
-                ["Set Up Try On", "Tune nail shape, color, finish, and layers.", undefined, Eye],
-                ["Photo Try On", "Apply this variant on an uploaded hand image.", "image", Image],
-                ["Live Try On", "Apply this variant using the camera.", "live", Camera],
+                [language === "vi" ? "Thiết lập Thử móng" : "Set Up Try On", language === "vi" ? "Điều chỉnh dáng móng, màu sắc, bề mặt và các lớp phủ." : "Tune nail shape, color, finish, and layers.", undefined, Eye],
+                [language === "vi" ? "Thử qua Ảnh" : "Photo Try On", language === "vi" ? "Áp dụng biến thể này trên ảnh bàn tay tải lên." : "Apply this variant on an uploaded hand image.", "image", Image],
+                [language === "vi" ? "Thử Trực tiếp" : "Live Try On", language === "vi" ? "Áp dụng biến thể này qua camera trực tiếp." : "Apply this variant using the camera.", "live", Camera],
               ].map(([label, note, mode, Icon]) => (
                 <button
                   key={label}
@@ -1280,7 +1284,7 @@ export function NailVariantDetailPage() {
             </div>
           </DetailCard>
 
-          <DetailCard title="Color Preview">
+          <DetailCard title={language === "vi" ? "Xem trước Màu sắc" : "Color Preview"}>
             {colors.length > 0 ? (
               <div className="flex flex-wrap gap-3">
                 {colors.length > 1 ? (
@@ -1289,7 +1293,7 @@ export function NailVariantDetailPage() {
                       className="h-16 rounded-[14px] border border-white shadow-inner"
                       style={{ backgroundImage: `linear-gradient(135deg, ${colors.join(", ")})` }}
                     />
-                    <p className="mt-3 text-center text-[11px] font-bold text-[#6d5669]">Gradient Mix</p>
+                    <p className="mt-3 text-center text-[11px] font-bold text-[#6d5669]">{language === "vi" ? "Phối màu Gradient" : "Gradient Mix"}</p>
                   </div>
                 ) : null}
                 {colors.map((color) => (

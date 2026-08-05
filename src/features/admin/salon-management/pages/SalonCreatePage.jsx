@@ -11,6 +11,7 @@ import { motion } from "framer-motion";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { SalonSaveResultModal } from "../components/SalonSaveResultModal";
 import { ROUTES } from "../../../../shared/constants/routes";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   createSalon,
 } from "../services/salonsService";
@@ -59,6 +60,7 @@ function SectionHeading({ title, subtitle }) {
 }
 
 export function SalonCreatePage() {
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
@@ -100,15 +102,15 @@ export function SalonCreatePage() {
     event.preventDefault();
     setFormError("");
     if (!formData.salonName.trim()) {
-      setFormError("Salon name is required");
+      setFormError(language === "vi" ? "Vui lòng nhập tên chi nhánh" : "Salon name is required");
       return;
     }
     if (!formData.address.trim()) {
-      setFormError("Address is required");
+      setFormError(language === "vi" ? "Vui lòng nhập địa chỉ" : "Address is required");
       return;
     }
     if (!formData.phone.trim()) {
-      setFormError("Phone number is required");
+      setFormError(language === "vi" ? "Vui lòng nhập số điện thoại" : "Phone number is required");
       return;
     }
     setShowSaveModal(true);
@@ -120,7 +122,7 @@ export function SalonCreatePage() {
       if (!formData.salonName.trim()) {
         setSaveResult({
           success: false,
-          message: "Salon name is required",
+          message: language === "vi" ? "Vui lòng nhập tên chi nhánh" : "Salon name is required",
         });
         setShowSaveModal(false);
         return;
@@ -179,19 +181,17 @@ export function SalonCreatePage() {
       variants={staggerContainer}
       className="mx-auto w-full min-w-0 max-w-[1300px]"
     >
-      <style>{`
-        .nailify-display { font-family: "Cormorant Garamond", serif; }
-      `}</style>
+
       <motion.header
         variants={fadeInUp}
         className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
       >
         <div className="min-w-0">
-          <h1 className="nailify-display text-[32px] font-semibold text-[#3f2034]">
-            Add New Salon
+          <h1 className=" text-[32px] font-semibold text-[#3f2034]">
+            {language === "vi" ? "Thêm Chi nhánh Mới" : "Add New Salon"}
           </h1>
           <p className="mt-1 text-sm text-[#a6869a]">
-            Create a new salon branch in the system
+            {language === "vi" ? "Tạo một chi nhánh salon mới trên hệ thống" : "Create a new salon branch in the system"}
           </p>
         </div>
 
@@ -204,7 +204,7 @@ export function SalonCreatePage() {
             className="inline-flex items-center justify-center gap-2 rounded-full border border-[#f1e7ed] bg-white px-5 py-2.5 text-[12px] font-bold text-[#ea4f93] transition-all duration-300 hover:bg-[#fff8fb]"
           >
             <X size={16} />
-            Cancel
+            {language === "vi" ? "Hủy bỏ" : "Cancel"}
           </motion.button>
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -214,7 +214,7 @@ export function SalonCreatePage() {
             className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#ea4f93] to-[#cf3d74] px-6 py-2.5 text-[12px] font-bold text-white shadow-[0_12px_24px_rgba(234,79,147,0.32)] transition-all duration-300 hover:opacity-95"
           >
             <Save size={16} />
-            Create Salon
+            {language === "vi" ? "Lưu lại" : "Create Salon"}
           </motion.button>
         </div>
       </motion.header>
@@ -232,8 +232,8 @@ export function SalonCreatePage() {
           <PremiumCard>
             <div className="mb-6">
               <SectionHeading
-                title="Salon Details"
-                subtitle="Fill in the basic salon information"
+                title={language === "vi" ? "Thông tin Chi nhánh" : "Salon Details"}
+                subtitle={language === "vi" ? "Vui lòng nhập các thông tin cơ bản cho chi nhánh mới" : "Fill in the basic salon information"}
               />
             </div>
 
@@ -245,7 +245,7 @@ export function SalonCreatePage() {
             >
               <motion.label variants={fadeInUp} className="space-y-2.5 md:col-span-2">
                 <span className="text-[13px] font-semibold text-[#2d1b35]">
-                  Salon Name <span className="text-[#ea4f93]">*</span>
+                  {language === "vi" ? "Tên chi nhánh" : "Salon Name"} <span className="text-[#ea4f93]">*</span>
                 </span>
                 <div className={inputWrapperClassName}>
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93]">
@@ -255,7 +255,7 @@ export function SalonCreatePage() {
                     type="text"
                     value={formData.salonName}
                     onChange={(event) => handleInputChange("salonName", event.target.value)}
-                    placeholder="Enter salon name"
+                    placeholder={language === "vi" ? "Nhập tên chi nhánh" : "Enter salon name"}
                     className={inputClassName}
                     required
                   />
@@ -264,7 +264,7 @@ export function SalonCreatePage() {
 
               <motion.label variants={fadeInUp} className="space-y-2.5">
                 <span className="text-[13px] font-semibold text-[#2d1b35]">
-                  Phone Number <span className="text-[#ea4f93]">*</span>
+                  {language === "vi" ? "Số điện thoại" : "Phone Number"} <span className="text-[#ea4f93]">*</span>
                 </span>
                 <div className={inputWrapperClassName}>
                   <Phone size={14} className="shrink-0 text-[#ea4f93]" />
@@ -272,7 +272,7 @@ export function SalonCreatePage() {
                     type="tel"
                     value={formData.phone}
                     onChange={(event) => handleInputChange("phone", event.target.value)}
-                    placeholder="Enter phone number"
+                    placeholder={language === "vi" ? "Nhập số điện thoại" : "Enter phone number"}
                     className={inputClassName}
                     required
                   />
@@ -281,14 +281,14 @@ export function SalonCreatePage() {
 
               <motion.label variants={fadeInUp} className="space-y-2.5 md:col-span-2">
                 <span className="text-[13px] font-semibold text-[#2d1b35]">
-                  Address <span className="text-[#ea4f93]">*</span>
+                  {language === "vi" ? "Địa chỉ" : "Address"} <span className="text-[#ea4f93]">*</span>
                 </span>
                 <div className={`${inputWrapperClassName} items-start`}>
                   <MapPin size={14} className="mt-0.5 shrink-0 text-[#ea4f93]" />
                   <textarea
                     value={formData.address}
                     onChange={(event) => handleInputChange("address", event.target.value)}
-                    placeholder="Full address including city and zip code"
+                    placeholder={language === "vi" ? "Nhập địa chỉ đầy đủ (số nhà, đường, quận/huyện, tỉnh/thành phố)" : "Full address including city and zip code"}
                     className={`${inputClassName} resize-none`}
                     rows={3}
                     required
@@ -298,7 +298,7 @@ export function SalonCreatePage() {
 
               <motion.label variants={fadeInUp} className="space-y-2 md:col-span-2">
                 <span className="text-[13px] font-semibold text-[#2d1b35]">
-                  Salon Image
+                  {language === "vi" ? "Ảnh chi nhánh" : "Salon Image"}
                 </span>
                 <div className="flex flex-col items-center justify-center gap-3 rounded-[16px] border border-dashed border-[#f0b7cf] bg-[#fff8fb] px-6 py-8 cursor-pointer transition-all duration-300 hover:border-[#ea4f93] hover:bg-[#fff5f9] hover:shadow-[0_8px_24px_rgba(234,79,147,0.12)]">
                   {imagePreview ? (
@@ -326,8 +326,8 @@ export function SalonCreatePage() {
                         <Upload size={28} />
                       </div>
                       <div className="text-center">
-                        <p className="text-base font-semibold text-[#2d1b35]">Click to upload salon image</p>
-                        <p className="text-xs text-[#a88a9f] mt-1">PNG, JPG up to 5MB</p>
+                        <p className="text-base font-semibold text-[#2d1b35]">{language === "vi" ? "Nhập để tải lên ảnh chi nhánh" : "Click to upload salon image"}</p>
+                        <p className="text-xs text-[#a88a9f] mt-1">{language === "vi" ? "Chấp nhận định dạng PNG, JPG lên đến 5MB" : "PNG, JPG up to 5MB"}</p>
                       </div>
                       <input
                         type="file"
@@ -347,8 +347,8 @@ export function SalonCreatePage() {
           <PremiumCard>
             <div className="mb-6">
               <SectionHeading
-                title="Quick Actions"
-                subtitle="Fast access to frequently used functions"
+                title={language === "vi" ? "Thao tác nhanh" : "Quick Actions"}
+                subtitle={language === "vi" ? "Truy cập nhanh các tính năng thường dùng" : "Fast access to frequently used functions"}
               />
             </div>
             <div className="space-y-3">
@@ -360,7 +360,7 @@ export function SalonCreatePage() {
                 className="flex w-full items-center justify-center gap-2.5 rounded-[16px] border border-[#fecdd3] bg-[#fff0f0] px-4 py-3.5 text-[13px] font-bold text-[#d14c84] transition-all duration-300 hover:shadow-[0_4px_16px_rgba(209,76,132,0.15)]"
               >
                 <X size={16} />
-                Discard Changes
+                {language === "vi" ? "Hủy bỏ thay đổi" : "Discard Changes"}
               </motion.button>
             </div>
           </PremiumCard>
@@ -368,23 +368,23 @@ export function SalonCreatePage() {
           <PremiumCard>
             <div className="mb-6">
               <SectionHeading
-                title="Preview"
-                subtitle="Summary of salon details"
+                title={language === "vi" ? "Xem trước" : "Preview"}
+                subtitle={language === "vi" ? "Tóm tắt thông tin chi nhánh" : "Summary of salon details"}
               />
             </div>
             <div className="space-y-4">
               <div className="rounded-[16px] border border-[#f1e7ed] bg-[#fff8fb] p-5">
                 <div className="mb-4 flex items-center justify-between gap-2">
-                  <h3 className="text-[15px] font-bold text-[#2d1b35]">Salon Summary</h3>
+                  <h3 className="text-[15px] font-bold text-[#2d1b35]">{language === "vi" ? "Tóm tắt chi nhánh" : "Salon Summary"}</h3>
                 </div>
                 <div className="space-y-3 text-[13px] text-[#5b4256]">
                   <div className="flex justify-between gap-3">
-                    <span className="font-semibold text-[#2d1b35]">Name:</span>
-                    <span className="text-right font-medium text-[#2d1b35]">{formData.salonName || "Not set"}</span>
+                    <span className="font-semibold text-[#2d1b35]">{language === "vi" ? "Tên chi nhánh:" : "Name:"}</span>
+                    <span className="text-right font-medium text-[#2d1b35]">{formData.salonName || (language === "vi" ? "Chưa nhập" : "Not set")}</span>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <span className="font-semibold text-[#2d1b35]">Phone:</span>
-                    <span className="text-right font-medium text-[#2d1b35]">{formData.phone || "Not set"}</span>
+                    <span className="font-semibold text-[#2d1b35]">{language === "vi" ? "Số điện thoại:" : "Phone:"}</span>
+                    <span className="text-right font-medium text-[#2d1b35]">{formData.phone || (language === "vi" ? "Chưa nhập" : "Not set")}</span>
                   </div>
                 </div>
               </div>
@@ -396,48 +396,49 @@ export function SalonCreatePage() {
       <ActionConfirmModal
         open={showCancelModal}
         intent="warning"
-        title="Cancel Salon Creation"
-        subtitle="You are leaving this form without saving."
-        description="All unsaved salon details will be discarded if you cancel now."
-        confirmText="Yes, Cancel"
-        cancelText="Keep Editing"
+        title={language === "vi" ? "Hủy Tạo Chi Nhánh" : "Cancel Salon Creation"}
+        subtitle={language === "vi" ? "Bạn đang thoát khỏi biểu mẫu mà không lưu lại." : "You are leaving this form without saving."}
+        description={language === "vi" ? "Tất cả thông tin chi nhánh đã nhập sẽ bị mất nếu bạn hủy lúc này." : "All unsaved salon details will be discarded if you cancel now."}
+        confirmText={language === "vi" ? "Có, Hủy bỏ" : "Yes, Cancel"}
+        cancelText={language === "vi" ? "Tiếp tục sửa" : "Keep Editing"}
         confirmIcon={X}
         onConfirm={handleConfirmCancel}
         onCancel={() => setShowCancelModal(false)}
         details={[
-          { label: "Draft Status", value: "Not saved yet" },
-          { label: "Next Step", value: "Return to salon list" },
+          { label: language === "vi" ? "Trạng thái nháp" : "Draft Status", value: language === "vi" ? "Chưa lưu lại" : "Not saved yet" },
+          { label: language === "vi" ? "Bước tiếp theo" : "Next Step", value: language === "vi" ? "Quay lại danh sách chi nhánh" : "Return to salon list" },
         ]}
-        warnings={[
-          "Salon name, address, and phone number in this draft will be lost.",
-          "You will need to re-enter the information if you start again later.",
-        ]}
+        warnings={
+          language === "vi"
+            ? ["Tên chi nhánh, địa chỉ và số điện thoại bản nháp sẽ bị mất.", "Bạn sẽ cần nhập lại thông tin nếu tạo mới sau này."]
+            : ["Salon name, address, and phone number in this draft will be lost.", "You will need to re-enter the information if you start again later."]
+        }
       />
 
       <ActionConfirmModal
         open={showSaveModal}
         intent="success"
-        title="Save New Salon"
-        subtitle="This will create the salon in the system."
-        description="Confirm to add this branch and make it available in salon management."
-        confirmText="Save Salon"
-        cancelText="Review Again"
+        title={language === "vi" ? "Lưu Chi Nhánh Mới" : "Save New Salon"}
+        subtitle={language === "vi" ? "Thao tác này sẽ tạo chi nhánh trên hệ thống." : "This will create the salon in the system."}
+        description={language === "vi" ? "Xác nhận để thêm chi nhánh này và hiển thị trong danh mục quản lý." : "Confirm to add this branch and make it available in salon management."}
+        confirmText={language === "vi" ? "Lưu chi nhánh" : "Save Salon"}
+        cancelText={language === "vi" ? "Xem lại" : "Review Again"}
         confirmIcon={Save}
         loading={isSaving}
         onConfirm={handleConfirmSave}
         onCancel={() => !isSaving && setShowSaveModal(false)}
-        highlights={[formData.salonName || "New salon"]}
+        highlights={[formData.salonName || (language === "vi" ? "Chi nhánh mới" : "New salon")]}
         details={[
-          { label: "Address", value: formData.address || "No address entered" },
+          { label: language === "vi" ? "Địa chỉ" : "Address", value: formData.address || (language === "vi" ? "Chưa nhập địa chỉ" : "No address entered") },
         ]}
       />
 
       <SalonSaveResultModal
         result={saveResult}
-        successTitle="Create Successful"
-        failureTitle="Create Failed"
-        successDescription="The salon has been created successfully."
-        failureDescription="Unable to create the salon."
+        successTitle={language === "vi" ? "Tạo Thành Công" : "Create Successful"}
+        failureTitle={language === "vi" ? "Tạo Thất Bại" : "Create Failed"}
+        successDescription={language === "vi" ? "Chi nhánh đã được thêm thành công." : "The salon has been created successfully."}
+        failureDescription={language === "vi" ? "Có lỗi xảy ra khi tạo chi nhánh." : "Unable to create the salon."}
         onFailureClose={handleCloseResultModal}
         onSuccessComplete={handleSuccessComplete}
       />

@@ -16,6 +16,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { Table } from "antd";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
@@ -114,6 +115,7 @@ function sortShapes(items, sortValue) {
 export function NailShapesManagementPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { language } = useLanguage();
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [priceFilter, setPriceFilter] = useState("");
@@ -181,7 +183,7 @@ export function NailShapesManagementPage() {
         }
 
         setShapes([]);
-        setError(loadError instanceof Error ? loadError.message : "Failed to load nail shapes.");
+        setError(loadError instanceof Error ? loadError.message : (language === "vi" ? "Không thể tải danh sách dáng móng." : "Failed to load nail shapes."));
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -204,30 +206,30 @@ export function NailShapesManagementPage() {
 
     return [
       {
-        label: "Total Shapes",
+        label: language === "vi" ? "Tổng dáng móng" : "Total Shapes",
         value: metaData.totalItems.toLocaleString(),
-        note: `${metaData.totalPages} pages`,
+        note: language === "vi" ? `${metaData.totalPages} trang` : `${metaData.totalPages} pages`,
         icon: Shapes,
         iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
       },
       {
-        label: "Visible Items",
+        label: language === "vi" ? "Mục hiển thị" : "Visible Items",
         value: shapes.length.toLocaleString(),
-        note: "Current page",
+        note: language === "vi" ? "Trang hiện tại" : "Current page",
         icon: Sparkles,
         iconClassName: "bg-[#fff4df] text-[#d9871c]",
       },
       {
-        label: "Avg Price",
+        label: language === "vi" ? "Giá TB" : "Avg Price",
         value: formatNailShapeCurrency(averagePrice),
-        note: "Current page",
+        note: language === "vi" ? "Trang hiện tại" : "Current page",
         icon: Wallet,
         iconClassName: "bg-[#f3ebff] text-[#8b5cf6]",
       },
       {
-        label: "Avg Duration",
+        label: language === "vi" ? "Thời gian TB" : "Avg Duration",
         value: formatNailShapeDuration(averageDuration),
-        note: "Current page",
+        note: language === "vi" ? "Trang hiện tại" : "Current page",
         icon: TimerReset,
         iconClassName: "bg-[#e7fbf4] text-[#20ab77]",
       },
@@ -290,7 +292,7 @@ export function NailShapesManagementPage() {
       {
         title: (
           <SortableHeader
-            label="Shape"
+            label={language === "vi" ? "Dáng móng" : "Shape"}
             sortKey="shape"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -309,7 +311,7 @@ export function NailShapesManagementPage() {
       {
         title: (
           <SortableHeader
-            label="Price"
+            label={language === "vi" ? "Giá" : "Price"}
             sortKey="price"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -322,7 +324,7 @@ export function NailShapesManagementPage() {
       {
         title: (
           <SortableHeader
-            label="Duration"
+            label={language === "vi" ? "Thời gian" : "Duration"}
             sortKey="duration"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -333,26 +335,26 @@ export function NailShapesManagementPage() {
         render: (value) => <span className="text-sm text-[#6b5668]">{value}</span>,
       },
       {
-        title: "Actions",
+        title: language === "vi" ? "Thao tác" : "Actions",
         key: "actions",
         render: (_, shape) => (
           <ActionDropdown
             items={[
               {
                 key: "view",
-                label: "View Detail",
+                label: language === "vi" ? "Xem chi tiết" : "View Detail",
                 icon: Eye,
                 onSelect: () => navigate(getAdminNailShapeDetailRoute(shape.nailShapeId)),
               },
               {
                 key: "edit",
-                label: "Edit Shape",
+                label: language === "vi" ? "Chỉnh sửa dáng móng" : "Edit Shape",
                 icon: Pencil,
                 onSelect: () => navigate(getAdminNailShapeDetailRoute(shape.nailShapeId), { state: { startInEdit: true } }),
               },
               {
                 key: "delete",
-                label: "Delete Shape",
+                label: language === "vi" ? "Xóa dáng móng" : "Delete Shape",
                 icon: Trash2,
                 className: "text-[#d14c84]",
                 onSelect: () => setDeleteTarget(shape),
@@ -375,7 +377,7 @@ export function NailShapesManagementPage() {
     try {
       await deleteAdminNailShape(deleteTarget.nailShapeId);
       setDeleteTarget(null);
-      toast.success(`${deleteTarget.name} deleted successfully.`);
+      toast.success(language === "vi" ? `Đã xóa dáng móng ${deleteTarget.name} thành công.` : `${deleteTarget.name} deleted successfully.`);
 
       const shouldMoveBack = shapes.length === 1 && metaData.currentPage > 1;
       setMetaData((current) => ({
@@ -391,7 +393,7 @@ export function NailShapesManagementPage() {
       setShapes(response.items);
       setMetaData(response.metaData);
     } catch (deleteError) {
-      toast.error(deleteError instanceof Error ? deleteError.message : "Failed to delete nail shape.");
+      toast.error(deleteError instanceof Error ? deleteError.message : (language === "vi" ? "Xóa dáng móng thất bại." : "Failed to delete nail shape."));
     } finally {
       setIsDeleting(false);
     }
@@ -429,7 +431,7 @@ export function NailShapesManagementPage() {
                 <input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search nail shape by name..."
+                  placeholder={language === "vi" ? "Tìm kiếm dáng móng theo tên..." : "Search nail shape by name..."}
                   className="h-10 w-full rounded-full border border-[#f4d7e5] bg-[#fffafc] pl-11 pr-4 text-sm text-[#5b4658] outline-none placeholder:text-[#d4a1b8] focus:border-[#ea4f93]"
                 />
               </label>
@@ -445,7 +447,7 @@ export function NailShapesManagementPage() {
                 className="inline-flex h-10 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
               >
                 <Search size={14} className="mr-2 shrink-0" />
-                Search
+                {language === "vi" ? "Tìm kiếm" : "Search"}
               </button>
             </div>
 
@@ -454,9 +456,9 @@ export function NailShapesManagementPage() {
               onChange={(event) => setPriceFilter(event.target.value)}
               className="h-10 rounded-full border border-[#f4d7e5] bg-[#fffafc] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
             >
-              <option value="">All pricing</option>
-              <option value="free">Free shapes</option>
-              <option value="priced">Priced shapes</option>
+              <option value="">{language === "vi" ? "Tất cả mức giá" : "All pricing"}</option>
+              <option value="free">{language === "vi" ? "Miễn phí" : "Free shapes"}</option>
+              <option value="priced">{language === "vi" ? "Có trả phí" : "Priced shapes"}</option>
             </select>
           </div>
 
@@ -465,15 +467,18 @@ export function NailShapesManagementPage() {
             className="inline-flex items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
           >
             <Plus size={13} className="mr-1.5 shrink-0" />
-            Add Nail Shape
+            {language === "vi" ? "Thêm Dáng Móng" : "Add Nail Shape"}
           </Link>
         </div>
 
         <section className="overflow-hidden rounded-[20px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
           <div className="border-b border-[#f6dbe7] px-5 py-4">
-            <h2 className="text-sm font-extrabold text-[#432744]">Nail Shapes</h2>
+            <h2 className="text-sm font-extrabold text-[#432744]">{language === "vi" ? "Dáng Móng" : "Nail Shapes"}</h2>
             <p className="mt-1 text-[11px] font-medium text-[#c694ad]">
-              Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} nail shapes
+              {language === "vi" 
+                ? `Đang hiển thị ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} trên ${metaData.totalItems} dáng móng` 
+                : `Showing ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} of ${metaData.totalItems} nail shapes`
+              }
             </p>
           </div>
 
@@ -487,12 +492,15 @@ export function NailShapesManagementPage() {
             }}
             pagination={false}
             scroll={{ x: 920 }}
-            locale={{ emptyText: error || "No nail shapes found." }}
+            locale={{ emptyText: error || (language === "vi" ? "Không tìm thấy dáng móng nào." : "No nail shapes found.") }}
           />
 
           <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-[11px] text-[#c694ad]">
-              Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} nail shapes
+              {language === "vi" 
+                ? `Đang hiển thị ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} trên ${metaData.totalItems} dáng móng` 
+                : `Showing ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} of ${metaData.totalItems} nail shapes`
+              }
             </p>
             <div className="flex items-center gap-1">
               <button
@@ -550,11 +558,11 @@ export function NailShapesManagementPage() {
         <ActionConfirmModal
           open
           intent="danger"
-          title="Delete Nail Shape"
-          subtitle="This will permanently remove the nail shape from backend."
-          description={`You are about to delete ${deleteTarget.name}. This action cannot be undone.`}
-          confirmText="Delete Shape"
-          cancelText="Keep Shape"
+          title={language === "vi" ? "Xóa Dáng Móng" : "Delete Nail Shape"}
+          subtitle={language === "vi" ? "Hành động này sẽ xóa vĩnh viễn dáng móng khỏi máy chủ." : "This will permanently remove the nail shape from backend."}
+          description={language === "vi" ? `Bạn chuẩn bị xóa dáng móng ${deleteTarget.name}. Hành động này không thể hoàn tác.` : `You are about to delete ${deleteTarget.name}. This action cannot be undone.`}
+          confirmText={language === "vi" ? "Xóa Dáng Móng" : "Delete Shape"}
+          cancelText={language === "vi" ? "Giữ lại" : "Keep Shape"}
           confirmIcon={Trash2}
           loading={isDeleting}
           onConfirm={handleDeleteShape}
@@ -563,9 +571,9 @@ export function NailShapesManagementPage() {
             image: deleteTarget.imageUrl || undefined,
             title: deleteTarget.name,
             meta: `${deleteTarget.priceLabel} • ${deleteTarget.durationLabel}`,
-            note: `Shape ID: ${deleteTarget.nailShapeId}`,
+            note: (language === "vi" ? "Mã dáng móng: " : "Shape ID: ") + deleteTarget.nailShapeId,
           }}
-          warnings={["This action calls the backend delete endpoint and removes this nail shape record."]}
+          warnings={[language === "vi" ? "Hành động này gọi đến API xóa của hệ thống để xóa bản ghi dáng móng này." : "This action calls the backend delete endpoint and removes this nail shape record."]}
         />
       ) : null}
     </>

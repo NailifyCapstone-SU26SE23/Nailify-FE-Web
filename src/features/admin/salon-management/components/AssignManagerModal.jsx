@@ -69,7 +69,7 @@ export default function AssignManagerModal({
       }}
     >
       <style>{`
-        .nailify-display { font-family: "Cormorant Garamond", "Times New Roman", serif; }
+       
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .assign-manager-scrollbar::-webkit-scrollbar {
           width: 6px;
@@ -99,7 +99,7 @@ export default function AssignManagerModal({
                 <span className="inline-flex rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] bg-white/20 text-white">
                   Management
                 </span>
-                <h3 className="nailify-display mt-3 text-2xl font-semibold">Assign Salon Manager</h3>
+                <h3 className=" mt-3 text-2xl font-semibold">Assign Salon Manager</h3>
                 <p className="mt-1 text-sm text-white/85">
                   Select a salon and manager to assign
                 </p>
@@ -132,203 +132,199 @@ export default function AssignManagerModal({
               </p>
             </div>
 
-          <div className="space-y-4">
-            <AnimatePresence mode="wait">
-              {!assignManagerForm.salonId ? (
-                <motion.div
-                  key="salon-list"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 10 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <p className="text-xs font-extrabold uppercase tracking-widest text-[#9a5f7f] mb-3">
-                    Select Salon
-                  </p>
-                  {isLoading ? (
-                    <div className="flex items-center justify-center py-6">
-                      <Spin tip="Loading salons..." size="large" />
-                    </div>
-                  ) : (
-                    <div className="grid gap-3 md:grid-cols-2">
-                      {filteredSalons.length === 0 ? (
-                        <div className="col-span-full text-center py-10 text-[#a67f98]">
-                          <MapPin size={40} className="mx-auto mb-2 opacity-50" />
-                          <p className="text-base">No salons available right now.</p>
-                        </div>
-                      ) : (
-                        filteredSalons.map((salon) => {
-                          const isSelected = assignManagerForm.salonId === salon.id;
-                          return (
-                            <motion.div
-                              key={salon.id}
-                              whileHover={{ scale: 1.02, y: -2 }}
-                              whileTap={{ scale: 0.98 }}
-                              onClick={() => {
-                                console.log("Selected salon:", salon);
-                                setAssignManagerForm((prev) => ({
-                                  ...prev,
-                                  salonId: salon.id,
-                                }));
-                              }}
-                              className={`cursor-pointer rounded-[24px] border p-4 transition-all duration-300 ${
-                                isSelected
+            <div className="space-y-4">
+              <AnimatePresence mode="wait">
+                {!assignManagerForm.salonId ? (
+                  <motion.div
+                    key="salon-list"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 10 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <p className="text-xs font-extrabold uppercase tracking-widest text-[#9a5f7f] mb-3">
+                      Select Salon
+                    </p>
+                    {isLoading ? (
+                      <div className="flex items-center justify-center py-6">
+                        <Spin tip="Loading salons..." size="large" />
+                      </div>
+                    ) : (
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {filteredSalons.length === 0 ? (
+                          <div className="col-span-full text-center py-10 text-[#a67f98]">
+                            <MapPin size={40} className="mx-auto mb-2 opacity-50" />
+                            <p className="text-base">No salons available right now.</p>
+                          </div>
+                        ) : (
+                          filteredSalons.map((salon) => {
+                            const isSelected = assignManagerForm.salonId === salon.id;
+                            return (
+                              <motion.div
+                                key={salon.id}
+                                whileHover={{ scale: 1.02, y: -2 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => {
+                                  console.log("Selected salon:", salon);
+                                  setAssignManagerForm((prev) => ({
+                                    ...prev,
+                                    salonId: salon.id,
+                                  }));
+                                }}
+                                className={`cursor-pointer rounded-[24px] border p-4 transition-all duration-300 ${isSelected
                                   ? "border-[#ea4f93] bg-gradient-to-br from-[#fff5fb] to-white shadow-[0_10px_25px_rgba(236,72,153,0.12)]"
                                   : "border-[#f0cfe1] bg-gradient-to-br from-white to-[#fffafd] hover:border-[#ea4f93] hover:shadow-[0_10px_25px_rgba(236,72,153,0.12)]"
-                              }`}
-                            >
-                              <div className="flex items-start gap-3">
-                                <motion.div
-                                  whileHover={{ scale: 1.08 }}
-                                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl overflow-hidden shadow-[0_4px_12px ${
-                                    isSelected
+                                  }`}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <motion.div
+                                    whileHover={{ scale: 1.08 }}
+                                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl overflow-hidden shadow-[0_4px_12px ${isSelected
                                       ? "shadow-[0_4px_12px_rgba(234,79,147,0.3)]"
                                       : "shadow-[0_4px_12px_rgba(139,92,246,0.2)]"
-                                  }`}
-                                >
-                                  <img
-                                    crossOrigin="anonymous"
-                                    src={salon.imageUrl || salon.image || SALON_PLACEHOLDER_IMAGE}
-                                    alt={salon.name}
-                                    className="h-full w-full object-cover"
-                                    referrerPolicy="no-referrer"
-                                    onError={(e) => {
-                                      e.currentTarget.onerror = null;
-                                      e.currentTarget.src = SALON_PLACEHOLDER_IMAGE;
-                                    }}
-                                  />
-                                </motion.div>
-                                <div className="min-w-0 flex-1">
-                                  <p className="text-sm font-extrabold text-[#3d1f3f] truncate">
-                                    {salon.name}
-                                  </p>
-                                  <div className="mt-2 flex items-center gap-2 text-xs text-[#7f6478]">
-                                    <MapPin size={12} className="text-[#b88ca8]" />
-                                    <span className="truncate">{salon.address}</span>
+                                      }`}
+                                  >
+                                    <img
+                                      crossOrigin="anonymous"
+                                      src={salon.imageUrl || salon.image || SALON_PLACEHOLDER_IMAGE}
+                                      alt={salon.name}
+                                      className="h-full w-full object-cover"
+                                      referrerPolicy="no-referrer"
+                                      onError={(e) => {
+                                        e.currentTarget.onerror = null;
+                                        e.currentTarget.src = SALON_PLACEHOLDER_IMAGE;
+                                      }}
+                                    />
+                                  </motion.div>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-sm font-extrabold text-[#3d1f3f] truncate">
+                                      {salon.name}
+                                    </p>
+                                    <div className="mt-2 flex items-center gap-2 text-xs text-[#7f6478]">
+                                      <MapPin size={12} className="text-[#b88ca8]" />
+                                      <span className="truncate">{salon.address}</span>
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            </motion.div>
-                          );
-                        })
-                      )}
+                              </motion.div>
+                            );
+                          })
+                        )}
+                      </div>
+                    )}
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="manager-list"
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <div className="mb-4 flex items-center justify-between">
+                      <p className="text-xs font-extrabold uppercase tracking-widest text-[#9a5f7f]">
+                        Select Manager
+                      </p>
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        type="button"
+                        onClick={() => {
+                          setAssignManagerForm((prev) => ({
+                            ...prev,
+                            salonId: "",
+                            managerId: "",
+                          }));
+                        }}
+                        className="px-3 py-1.5 text-xs font-extrabold text-[#9a5f7f] hover:text-[#ea4f93] bg-[#fff0f8] rounded-full transition-all duration-200 hover:bg-[#fde7f3]"
+                      >
+                        ← Change salon
+                      </motion.button>
                     </div>
-                  )}
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="manager-list"
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <div className="mb-4 flex items-center justify-between">
-                    <p className="text-xs font-extrabold uppercase tracking-widest text-[#9a5f7f]">
-                      Select Manager
-                    </p>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      type="button"
-                      onClick={() => {
-                        setAssignManagerForm((prev) => ({
-                          ...prev,
-                          salonId: "",
-                          managerId: "",
-                        }));
-                      }}
-                      className="px-3 py-1.5 text-xs font-extrabold text-[#9a5f7f] hover:text-[#ea4f93] bg-[#fff0f8] rounded-full transition-all duration-200 hover:bg-[#fde7f3]"
-                    >
-                      ← Change salon
-                    </motion.button>
-                  </div>
-                  {isManagersLoading ? (
-                    <div className="flex items-center justify-center py-6">
-                      <Spin tip="Loading managers..." size="large" />
-                    </div>
-                  ) : (
-                    <div className="grid gap-3 md:grid-cols-2">
-                      {managers.length === 0 ? (
-                        <div className="col-span-full text-center py-10 text-[#a67f98]">
-                          <Users size={40} className="mx-auto mb-2 opacity-50" />
-                          <p className="text-base">No managers available right now.</p>
-                        </div>
-                      ) : (
-                        managers.map((manager) => {
-                          const isSelected = assignManagerForm.managerId === manager.id;
-                          return (
-                            <motion.div
-                              key={manager.id}
-                              whileHover={{ scale: 1.02, y: -2 }}
-                              whileTap={{ scale: 0.98 }}
-                              onClick={() => {
-                                console.log("Selected manager:", manager);
-                                setAssignManagerForm((prev) => ({
-                                  ...prev,
-                                  managerId: manager.id,
-                                }));
-                              }}
-                              className={`cursor-pointer rounded-[24px] border p-4 transition-all duration-300 ${
-                                isSelected
+                    {isManagersLoading ? (
+                      <div className="flex items-center justify-center py-6">
+                        <Spin tip="Loading managers..." size="large" />
+                      </div>
+                    ) : (
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {managers.length === 0 ? (
+                          <div className="col-span-full text-center py-10 text-[#a67f98]">
+                            <Users size={40} className="mx-auto mb-2 opacity-50" />
+                            <p className="text-base">No managers available right now.</p>
+                          </div>
+                        ) : (
+                          managers.map((manager) => {
+                            const isSelected = assignManagerForm.managerId === manager.id;
+                            return (
+                              <motion.div
+                                key={manager.id}
+                                whileHover={{ scale: 1.02, y: -2 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => {
+                                  console.log("Selected manager:", manager);
+                                  setAssignManagerForm((prev) => ({
+                                    ...prev,
+                                    managerId: manager.id,
+                                  }));
+                                }}
+                                className={`cursor-pointer rounded-[24px] border p-4 transition-all duration-300 ${isSelected
                                   ? "border-[#ea4f93] bg-gradient-to-br from-[#fff5fb] to-white shadow-[0_10px_25px_rgba(236,72,153,0.12)]"
                                   : "border-[#f0cfe1] bg-gradient-to-br from-white to-[#fffafd] hover:border-[#ea4f93] hover:shadow-[0_10px_25px_rgba(236,72,153,0.12)]"
-                              }`}
-                            >
-                              <div className="flex items-start gap-3">
-                                <motion.div
-                                  whileHover={{ scale: 1.08 }}
-                                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-base font-extrabold text-white shadow-[0_4px_12px ${
-                                    isSelected
+                                  }`}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <motion.div
+                                    whileHover={{ scale: 1.08 }}
+                                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-base font-extrabold text-white shadow-[0_4px_12px ${isSelected
                                       ? "bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93]"
                                       : "bg-gradient-to-br from-[#d6c1ff] to-[#8b5cf6]"
-                                  }`}
-                                >
-                                  {manager.name
-                                    .split(" ")
-                                    .filter(Boolean)
-                                    .slice(0, 2)
-                                    .map((n) => n[0])
-                                    .join("")
-                                    .toUpperCase()}
-                                </motion.div>
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-2 min-w-0">
-                                    <p className="min-w-0 flex-1 truncate text-sm font-extrabold text-[#3d1f3f]">
-                                      {manager.name}
-                                    </p>
-                                    <span className="inline-flex shrink-0 items-center rounded-full bg-[#fde7f3] px-2.5 py-0.5 text-[10px] font-extrabold text-[#e1447f]">
-                                      {manager.role}
-                                    </span>
-                                  </div>
-                                  <div className="mt-2 space-y-1.5">
-                                    <div className="flex items-center gap-2 text-xs text-[#7f6478]">
-                                      <Mail size={12} className="text-[#b88ca8]" />
-                                      <span className="truncate">
-                                        {manager.email && manager.email !== "--" ? manager.email : "No email"}
+                                      }`}
+                                  >
+                                    {manager.name
+                                      .split(" ")
+                                      .filter(Boolean)
+                                      .slice(0, 2)
+                                      .map((n) => n[0])
+                                      .join("")
+                                      .toUpperCase()}
+                                  </motion.div>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <p className="min-w-0 flex-1 truncate text-sm font-extrabold text-[#3d1f3f]">
+                                        {manager.name}
+                                      </p>
+                                      <span className="inline-flex shrink-0 items-center rounded-full bg-[#fde7f3] px-2.5 py-0.5 text-[10px] font-extrabold text-[#e1447f]">
+                                        {manager.role}
                                       </span>
                                     </div>
-                                    <div className="flex items-center gap-2 text-xs text-[#7f6478]">
-                                      <Phone size={12} className="text-[#b88ca8]" />
-                                      <span className="truncate">
-                                        {manager.phone && manager.phone !== "--" ? manager.phone : "No phone"}
-                                      </span>
+                                    <div className="mt-2 space-y-1.5">
+                                      <div className="flex items-center gap-2 text-xs text-[#7f6478]">
+                                        <Mail size={12} className="text-[#b88ca8]" />
+                                        <span className="truncate">
+                                          {manager.email && manager.email !== "--" ? manager.email : "No email"}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center gap-2 text-xs text-[#7f6478]">
+                                        <Phone size={12} className="text-[#b88ca8]" />
+                                        <span className="truncate">
+                                          {manager.phone && manager.phone !== "--" ? manager.phone : "No phone"}
+                                        </span>
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
-                              </div>
-                            </motion.div>
-                          );
-                        })
-                      )}
-                    </div>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
+                              </motion.div>
+                            );
+                          })
+                        )}
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
-      </div>
 
         {/* Custom premium footer buttons */}
         <div className="flex flex-col-reverse gap-2 border-t border-[#f5e3ed] bg-white px-6 py-4 sm:flex-row sm:justify-end">
