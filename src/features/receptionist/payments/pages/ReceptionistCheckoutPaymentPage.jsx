@@ -19,6 +19,7 @@ import { Table, Radio } from "antd";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import toast from "react-hot-toast";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   ROUTES,
   getReceptionistBookingDetailRoute,
@@ -120,6 +121,7 @@ function PaymentStatusRow({ label, subtitle, dotClassName, isActive }) {
 }
 
 export function ReceptionistCheckoutPaymentPage() {
+  const { t, language } = useLanguage();
   const { bookingId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -232,19 +234,19 @@ export function ReceptionistCheckoutPaymentPage() {
         const status = response?.data?.status || response?.status;
         if (status === "PAID") {
           setPaymentStage("paid");
-          toast.success("Payment completed successfully.");
+          toast.success(language === "vi" ? "Thanh toán thành công." : "Payment completed successfully.");
 
           try {
             await checkoutReceptionistBooking(bookingId);
             localStorage.removeItem("pendingPaymentBookingId");
-            toast.success("Booking checked out successfully.");
+            toast.success(t("receptionist.bookings.checkoutSuccess") || "Booking checked out successfully.");
             navigate(`${ROUTES.paymentSuccess}?orderCode=${paymentInfo.orderCode}`);
           } catch (checkoutErr) {
-            toast.error(checkoutErr instanceof Error ? checkoutErr.message : "Failed to check out booking automatically.");
+            toast.error(checkoutErr instanceof Error ? checkoutErr.message : (language === "vi" ? "Không thể tự động hoàn tất thanh toán lịch hẹn." : "Failed to check out booking automatically."));
           }
         } else if (status === "CANCELLED") {
           setPaymentStage("cancelled");
-          toast.error("Payment was cancelled.");
+          toast.error(language === "vi" ? "Thanh toán đã bị hủy." : "Payment was cancelled.");
           navigate(`${ROUTES.paymentCancel}?orderCode=${paymentInfo.orderCode}`);
         }
       } catch (err) {
@@ -302,9 +304,9 @@ export function ReceptionistCheckoutPaymentPage() {
       setPaymentInfo(res?.data || res);
       setSecondsRemaining(598);
       setPaymentStage("awaiting");
-      toast.success("Payment session created.");
+      toast.success(language === "vi" ? "Đã tạo phiên thanh toán." : "Payment session created.");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create payment link.");
+      toast.error(err instanceof Error ? err.message : (language === "vi" ? "Tạo liên kết thanh toán thất bại." : "Failed to create payment link."));
     } finally {
       setIsCreatingPayment(false);
     }
@@ -314,9 +316,9 @@ export function ReceptionistCheckoutPaymentPage() {
     try {
       await checkoutReceptionistBooking(bookingId);
       setPaymentStage("paid");
-      toast.success("Payment confirmed and booking checked out successfully.");
+      toast.success(t("receptionist.bookings.checkoutSuccess") || "Payment confirmed and booking checked out successfully.");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to checkout booking.");
+      toast.error(err instanceof Error ? err.message : (language === "vi" ? "Không thể hoàn tất thanh toán đơn hàng." : "Failed to checkout booking."));
     }
   };
 
@@ -326,15 +328,15 @@ export function ReceptionistCheckoutPaymentPage() {
         setIsCancellingPayment(true);
         await cancelPayment(paymentInfo.orderCode);
         setPaymentStage("cancelled");
-        toast.success("Payment cancelled successfully.");
+        toast.success(language === "vi" ? "Đã hủy thanh toán thành công." : "Payment cancelled successfully.");
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Failed to cancel payment link.");
+        toast.error(err instanceof Error ? err.message : (language === "vi" ? "Không thể hủy liên kết thanh toán." : "Failed to cancel payment link."));
       } finally {
         setIsCancellingPayment(false);
       }
     } else {
       setPaymentStage("cancelled");
-      toast.success("Payment marked as cancelled in UI.");
+      toast.success(language === "vi" ? "Đã đánh dấu hủy thanh toán trên giao diện." : "Payment marked as cancelled in UI.");
     }
   };
 
@@ -352,21 +354,21 @@ export function ReceptionistCheckoutPaymentPage() {
         localStorage.setItem("pendingPaymentBookingId", bookingId);
         window.location.href = paymentUrl;
       } else {
-        toast.error("Payment link not found.");
+        toast.error(language === "vi" ? "Không tìm thấy liên kết thanh toán." : "Payment link not found.");
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "An error occurred while creating payment.");
+      toast.error(err instanceof Error ? err.message : (language === "vi" ? "Đã xảy ra lỗi khi tạo thanh toán." : "An error occurred while creating payment."));
     } finally {
       setIsCreatingPayment(false);
     }
-  }, [bookingId]);
+  }, [bookingId, language]);
 
   if (isLoading) {
     return (
       <section className="flex min-h-[50vh] items-center justify-center rounded-[24px] bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
         <div className="flex items-center gap-3 text-sm font-medium text-[#b38a9f]">
           <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
-          Loading checkout payment...
+          {t("receptionist.common.loading") || "Loading checkout payment..."}
         </div>
       </section>
     );
@@ -375,14 +377,14 @@ export function ReceptionistCheckoutPaymentPage() {
   if (error || !booking) {
     return (
       <section className="rounded-[24px] border border-[#f6d8e5] bg-white p-6 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
-        <p className="text-lg font-extrabold text-[#412643]">Checkout payment unavailable</p>
-        <p className="mt-2 text-sm text-[#b38a9f]">{error || "This checkout could not be loaded."}</p>
+        <p className="text-lg font-extrabold text-[#412643]">{t("receptionist.payments.checkoutTitle") || "Checkout payment unavailable"}</p>
+        <p className="mt-2 text-sm text-[#b38a9f]">{error || (language === "vi" ? "Đơn thanh toán này không thể tải." : "This checkout could not be loaded.")}</p>
         <div className="mt-4 flex flex-wrap gap-2">
           <Link
             to={ROUTES.receptionistBookings}
             className="inline-flex items-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white"
           >
-            Back to bookings
+            {t("receptionist.payments.backToBookings") || "Back to bookings"}
           </Link>
         </div>
       </section>
@@ -400,10 +402,10 @@ export function ReceptionistCheckoutPaymentPage() {
               className="inline-flex items-center gap-2 rounded-full border border-[#f3cade] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
             >
               <ArrowLeft size={14} />
-              Back to detail
+              {t("receptionist.common.back") || "Back to detail"}
             </button>
-            <p className="mt-3 text-2xl font-bold text-[#412643]">Checkout & Payment</p>
-            <p className="mt-1 text-sm text-[#b38a9f]">Complete customer payment and print receipt.</p>
+            <p className="mt-3 text-2xl font-bold text-[#412643]">{t("receptionist.payments.checkoutTitle") || "Checkout & Payment"}</p>
+            <p className="mt-1 text-sm text-[#b38a9f]">{t("receptionist.payments.checkoutDesc") || "Complete customer payment and print receipt."}</p>
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -411,7 +413,13 @@ export function ReceptionistCheckoutPaymentPage() {
               #{String(booking.bookingId || bookingId).slice(-8).toUpperCase()}
             </span>
             <span className={`inline-flex items-center rounded-full px-4 py-2 text-xs font-bold ${paymentBadgeClassName}`}>
-              {paymentBadge}
+              {paymentStage === "paid"
+                ? (t("receptionist.dashboard.statusDone") || "Paid")
+                : paymentStage === "processing"
+                ? (language === "vi" ? "Đang xử lý" : "Processing")
+                : paymentStage === "cancelled"
+                ? (language === "vi" ? "Đã hủy" : "Cancelled")
+                : (language === "vi" ? "Đang chờ thanh toán" : "Awaiting Payment")}
             </span>
           </div>
         </div>
@@ -419,7 +427,7 @@ export function ReceptionistCheckoutPaymentPage() {
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.72fr)_300px]">
         <div className="space-y-4">
-          <SummaryCard title="Customer & Booking Summary">
+          <SummaryCard title={t("receptionist.payments.customerInfo") || "Customer & Booking Summary"}>
             <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex items-start gap-4">
                 {customerProfile?.avatarUrl ? (
@@ -439,10 +447,10 @@ export function ReceptionistCheckoutPaymentPage() {
                   <p className="mt-1 text-xs text-[#a48796]">{customerProfile?.phone || booking.customerName || "--"}</p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <span className="rounded-full bg-[#fff0c8] px-3 py-1 text-[10px] font-bold text-[#b18211]">
-                      Gold Member
+                      {language === "vi" ? "Thành viên Vàng" : "Gold Member"}
                     </span>
                     <span className="rounded-full bg-[#e8f8ef] px-3 py-1 text-[10px] font-bold text-[#1f9d61]">
-                      Service Completed
+                      {t("receptionist.dashboard.statusDone") || "Service Completed"}
                     </span>
                   </div>
                 </div>
@@ -450,15 +458,15 @@ export function ReceptionistCheckoutPaymentPage() {
 
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">Staff Artist</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">{t("receptionist.bookings.artist") || "Staff Artist"}</p>
                   <p className="mt-1 text-xs font-bold text-[#4a3741]">{booking.artistName || "--"}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">Chair</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">{t("receptionist.bookings.assignChairTitle") || "Chair"}</p>
                   <p className="mt-1 text-xs font-bold text-[#4a3741]">Chair 03</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">Completed</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">{t("receptionist.dashboard.statusDone") || "Completed"}</p>
                   <p className="mt-1 text-xs font-bold text-[#4a3741]">{completedTime}</p>
                 </div>
 
@@ -466,7 +474,7 @@ export function ReceptionistCheckoutPaymentPage() {
             </div>
           </SummaryCard>
 
-          <SummaryCard title="Bill Details">
+          <SummaryCard title={t("receptionist.payments.summaryTitle") || "Bill Details"}>
             <div className="overflow-hidden rounded-[20px] border border-[#f5d7e4]">
               <Table
                 dataSource={billItems}
@@ -474,7 +482,7 @@ export function ReceptionistCheckoutPaymentPage() {
                 rowKey="id"
                 columns={[
                   {
-                    title: <span className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#c38ea8]">Service</span>,
+                    title: <span className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#c38ea8]">{t("receptionist.payments.services") || "Service"}</span>,
                     key: 'service',
                     render: (_, record) => (
                       <div>
@@ -483,19 +491,19 @@ export function ReceptionistCheckoutPaymentPage() {
                     ),
                   },
                   {
-                    title: <span className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#c38ea8]">Duration</span>,
+                    title: <span className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#c38ea8]">{t("receptionist.bookings.duration") || "Duration"}</span>,
                     dataIndex: 'duration',
                     key: 'duration',
                     render: (text) => <span className="text-sm text-[#8f7b88]">{text}</span>,
                   },
                   {
-                    title: <span className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#c38ea8]">Qty</span>,
+                    title: <span className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#c38ea8]">{language === "vi" ? "SL" : "Qty"}</span>,
                     dataIndex: 'quantity',
                     key: 'quantity',
                     render: (text) => <span className="text-sm font-bold text-[#8f7b88]">x{text}</span>,
                   },
                   {
-                    title: <span className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#c38ea8]">Price</span>,
+                    title: <span className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#c38ea8]">{t("receptionist.bookings.price") || "Price"}</span>,
                     key: 'price',
                     align: 'right',
                     render: (_, record) => (
@@ -509,13 +517,13 @@ export function ReceptionistCheckoutPaymentPage() {
 
             <div className="mt-4 space-y-3 text-sm">
               {[
-                ["Subtotal", formatCurrency(subtotalValue)],
-                ["Discount / Voucher", discountValue ? `-${formatCurrency(discountValue)}` : formatCurrency(0)],
-                ["Deposit Paid", depositValue ? `-${formatCurrency(depositValue)}` : formatCurrency(0)],
+                [t("receptionist.payments.subtotal") || "Subtotal", formatCurrency(subtotalValue)],
+                [t("receptionist.payments.promotion") || "Discount / Voucher", discountValue ? `-${formatCurrency(discountValue)}` : formatCurrency(0)],
+                [t("receptionist.payments.deposit") || "Deposit Paid", depositValue ? `-${formatCurrency(depositValue)}` : formatCurrency(0)],
               ].map(([label, value]) => (
                 <div key={label} className="flex items-center justify-between gap-3">
                   <span className="text-[#8f7b88]">{label}</span>
-                  <span className={`font-bold ${label === "Discount / Voucher" && discountValue ? "text-[#df4e86]" : "text-[#4a3741]"}`}>
+                  <span className={`font-bold ${label === (t("receptionist.payments.promotion") || "Discount / Voucher") && discountValue ? "text-[#df4e86]" : "text-[#4a3741]"}`}>
                     {value}
                   </span>
                 </div>
@@ -524,18 +532,18 @@ export function ReceptionistCheckoutPaymentPage() {
 
             <div className="mt-4 rounded-[16px] border border-[#f3cade] bg-[linear-gradient(90deg,#fff2f7_0%,#ffeaf2_100%)] px-4 py-4">
               <div className="flex items-center justify-between gap-3">
-                <span className="text-sm font-extrabold text-[#d54186]">Remaining Amount</span>
+                <span className="text-sm font-extrabold text-[#d54186]">{t("receptionist.payments.totalAmount") || "Remaining Amount"}</span>
                 <span className="text-2xl font-bold text-[#d54186]">{formatCurrency(remainingValue)}</span>
               </div>
             </div>
 
             <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#f5d7e4] pt-4">
-              <span className="text-lg font-extrabold text-[#412643]">Total Amount</span>
+              <span className="text-lg font-extrabold text-[#412643]">{t("receptionist.bookings.price") || "Total Amount"}</span>
               <span className="text-2xl font-bold text-green-700">{formatCurrency(totalValue)}</span>
             </div>
           </SummaryCard>
 
-          <SummaryCard title="Payment Method">
+          <SummaryCard title={t("receptionist.payments.payMethod") || "Payment Method"}>
             <div className="mb-4 w-fit">
               <Radio.Group
                 value={paymentMethod}
@@ -572,7 +580,7 @@ export function ReceptionistCheckoutPaymentPage() {
                         PayOS
                       </p>
                       <p className="text-xs text-[#8d6a7b]">
-                        Scan QR to pay
+                        {language === "vi" ? "Quét QR thanh toán" : "Scan QR to pay"}
                       </p>
                     </div>
                   </div>
@@ -604,10 +612,10 @@ export function ReceptionistCheckoutPaymentPage() {
 
                     <div className="text-left">
                       <p className="font-bold text-[#412643]">
-                        Cash
+                        {language === "vi" ? "Tiền mặt" : "Cash"}
                       </p>
                       <p className="text-xs text-[#8d6a7b]">
-                        Pay at salon
+                        {language === "vi" ? "Thanh toán tại salon" : "Pay at salon"}
                       </p>
                     </div>
                   </div>
@@ -618,25 +626,27 @@ export function ReceptionistCheckoutPaymentPage() {
             {paymentMethod === 'cod' && (
               <div className="flex flex-col items-center justify-center p-6 border border-[#f3cade] rounded-[20px] bg-[#fffafb] mt-4">
                 <CircleDollarSign size={48} className="text-[#ea4f93] mb-4" />
-                <p className="text-lg font-bold text-[#412643]">Pay with Cash</p>
+                <p className="text-lg font-bold text-[#412643]">{language === "vi" ? "Thanh toán bằng Tiền mặt" : "Pay with Cash"}</p>
                 <p className="text-sm text-[#b38a9f] text-center mb-6 max-w-sm">
-                  Please collect {formatCurrency(totalValue)} from the customer before completing the checkout.
+                  {language === "vi"
+                    ? `Vui lòng thu đúng số tiền ${formatCurrency(totalValue)} từ khách hàng trước khi hoàn thành thanh toán.`
+                    : `Please collect ${formatCurrency(totalValue)} from the customer before completing the checkout.`}
                 </p>
                 <button
                   type="button"
                   onClick={async () => {
                     try {
                       await checkoutReceptionistBooking(bookingId);
-                      toast.success("Booking checked out successfully.");
+                      toast.success(t("receptionist.bookings.checkoutSuccess") || "Booking checked out successfully.");
                       navigate(`${ROUTES.paymentSuccess}?orderCode=COD-${bookingId}`);
                     } catch (checkoutErr) {
-                      toast.error(checkoutErr instanceof Error ? checkoutErr.message : "Failed to check out booking.");
+                      toast.error(checkoutErr instanceof Error ? checkoutErr.message : (language === "vi" ? "Thanh toán thất bại." : "Failed to check out booking."));
                     }
                   }}
                   className="inline-flex w-full max-w-xs items-center justify-center gap-2 rounded-xl bg-[linear-gradient(90deg,#cf3d82_0%,#ef5b92_100%)] px-4 py-3 text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(235,91,146,0.22)]"
                 >
                   <Check size={18} />
-                  Complete Checkout
+                  {t("receptionist.dashboard.checkoutBtn") || "Complete Checkout"}
                 </button>
               </div>
             )}
@@ -652,18 +662,18 @@ export function ReceptionistCheckoutPaymentPage() {
                   className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1888f3] px-2 py-3 text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(24,136,243,0.22)] disabled:opacity-50"
                 >
                   {isCreatingPayment ? <LoaderCircle size={14} className="animate-spin" /> : null}
-                  Checkout with PayOS
+                  {language === "vi" ? "Thanh toán qua PayOS" : "Checkout with PayOS"}
                 </button>
 
               </div>
             )}
           </SummaryCard>
 
-          <SummaryCard title="Receipt Preview">
+          <SummaryCard title={t("receptionist.payments.invoiceTitle") || "Receipt Preview"}>
             <div className="bg-[#faf8f5] border border-[#e6decb] p-5 rounded-[1.75rem] shadow-[0_8px_24px_rgba(97,76,60,0.03)] relative overflow-hidden text-[#4a3f35] border-t-4 border-t-[#ea4f93]">
               {/* Dashed edge header */}
               <div className="text-center pb-3.5 border-b border-dashed border-[#e6decb] space-y-1">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-[#a88a9f]">Nailify Receipt</h3>
+                <h3 className="text-xs font-bold uppercase tracking-widest text-[#a88a9f]">{language === "vi" ? "Hóa đơn Nailify" : "Nailify Receipt"}</h3>
                 <div className="font-mono text-[9px] text-[#a88a9f]">
                   {formatDate(booking.bookingDate)} {completedTime ? `, ${completedTime}` : ""}
                 </div>
@@ -672,17 +682,17 @@ export function ReceptionistCheckoutPaymentPage() {
               {/* Customer & Salon Details inside Receipt */}
               <div className="py-3.5 space-y-2 border-b border-dashed border-[#e6decb] text-xs">
                 <div className="flex justify-between gap-3">
-                  <span className="text-[#a88a9f] shrink-0">Customer</span>
+                  <span className="text-[#a88a9f] shrink-0">{t("receptionist.bookings.customer") || "Customer"}</span>
                   <span className="font-bold text-[#2d1b35] text-right truncate">{customerDisplayName}</span>
                 </div>
                 <div className="flex justify-between gap-3">
-                  <span className="text-[#a88a9f] shrink-0">Salon</span>
+                  <span className="text-[#a88a9f] shrink-0">{t("receptionist.bookings.salon") || "Salon"}</span>
                   <span className="font-bold text-[#ea4f93] text-right truncate">{salonProfile?.name || booking.salonName || "Nailify Salon"}</span>
                 </div>
                 <div className="flex justify-between gap-3 border-t border-dashed border-[#e6decb]/40 pt-2 mt-1.5">
-                  <span className="text-[#a88a9f] shrink-0">Loại thanh toán</span>
+                  <span className="text-[#a88a9f] shrink-0">{t("receptionist.payments.payMethod") || "Payment Method"}</span>
                   <span className="font-bold text-[#2d1b35] text-right">
-                    {paymentStage === "paid" ? "Thanh toán còn lại" : "Thanh toán 100%"}
+                    {paymentStage === "paid" ? (language === "vi" ? "Thanh toán còn lại" : "Remaining balance") : (language === "vi" ? "Thanh toán 100%" : "Full payment")}
                   </span>
                 </div>
               </div>
@@ -690,13 +700,13 @@ export function ReceptionistCheckoutPaymentPage() {
               {/* Billing Breakdown inside Receipt */}
               <div className="py-3.5 space-y-2 text-xs">
                 <div className="flex justify-between">
-                  <span className="text-[#a88a9f]">Subtotal</span>
+                  <span className="text-[#a88a9f]">{t("receptionist.payments.subtotal") || "Subtotal"}</span>
                   <span className="font-mono font-semibold text-[#2d1b35]">{formatCurrency(subtotalValue)}</span>
                 </div>
 
                 {discountValue > 0 && (
                   <div className="flex justify-between pl-2.5 text-[11px]">
-                    <span className="text-[#a88a9f] italic">↳ Discount</span>
+                    <span className="text-[#a88a9f] italic">↳ {t("receptionist.payments.promotion") || "Discount"}</span>
                     <span className="font-mono text-emerald-600 font-medium">
                       -{formatCurrency(discountValue)}
                     </span>
@@ -704,17 +714,17 @@ export function ReceptionistCheckoutPaymentPage() {
                 )}
 
                 <div className="flex justify-between border-t border-dashed border-[#e6decb] pt-2">
-                  <span className="text-[#a88a9f] font-bold">Total Price</span>
+                  <span className="text-[#a88a9f] font-bold">{t("receptionist.bookings.price") || "Total Price"}</span>
                   <span className="font-mono font-bold text-[#2d1b35]">{formatCurrency(totalValue)}</span>
                 </div>
 
                 <div className="flex justify-between">
-                  <span className="text-[#a88a9f]">Deposit paid</span>
+                  <span className="text-[#a88a9f]">{t("receptionist.payments.deposit") || "Deposit paid"}</span>
                   <span className="font-mono text-[#ea4f93] font-bold">{formatCurrency(depositValue)}</span>
                 </div>
 
                 <div className="flex justify-between">
-                  <span className="text-[#a88a9f]">Remaining balance</span>
+                  <span className="text-[#a88a9f]">{t("receptionist.payments.totalAmount") || "Remaining balance"}</span>
                   <span className="font-mono text-[#2d1b35] font-semibold">{formatCurrency(remainingValue)}</span>
                 </div>
               </div>
@@ -727,7 +737,7 @@ export function ReceptionistCheckoutPaymentPage() {
                   ))}
                 </div>
                 <div className="text-[9px] uppercase tracking-[0.25em] text-[#a88a9f] font-mono">
-                  Nailify Inc — Thank You
+                  {language === "vi" ? "Nailify Inc — Xin cảm ơn quý khách" : "Nailify Inc — Thank You"}
                 </div>
               </div>
             </div>
@@ -735,19 +745,19 @@ export function ReceptionistCheckoutPaymentPage() {
             <div className="mt-4 grid gap-3 md:grid-cols-3">
               <button
                 type="button"
-                onClick={() => toast.success("Print bill is ready in UI.")}
+                onClick={() => toast.success(language === "vi" ? "In hóa đơn đã sẵn sàng trong giao diện." : "Print bill is ready in UI.")}
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-[linear-gradient(90deg,#cf3d82_0%,#ef5b92_100%)] px-4 py-3 text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(235,91,146,0.22)]"
               >
                 <Printer size={14} />
-                Print Bill
+                {t("receptionist.payments.printReceipt") || "Print Bill"}
               </button>
               <button
                 type="button"
-                onClick={() => toast.success("Receipt send flow is ready for payment API integration.")}
+                onClick={() => toast.success(language === "vi" ? "Chức năng gửi hóa đơn đã sẵn sàng để tích hợp API thanh toán." : "Receipt send flow is ready for payment API integration.")}
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#f3d7e2] bg-white px-4 py-3 text-sm font-extrabold text-[#d54186]"
               >
                 <Mail size={14} />
-                Send Receipt to Customer
+                {language === "vi" ? "Gửi hóa đơn cho khách" : "Send Receipt to Customer"}
               </button>
               <Link
                 to={ROUTES.receptionistBookings}
@@ -757,7 +767,7 @@ export function ReceptionistCheckoutPaymentPage() {
                   }`}
               >
                 <ShieldCheck size={14} />
-                Finish Checkout
+                {t("receptionist.dashboard.checkoutBtn") || "Finish Checkout"}
               </Link>
             </div>
           </SummaryCard>
@@ -770,17 +780,17 @@ export function ReceptionistCheckoutPaymentPage() {
                 <Receipt size={18} />
               </div>
               <div>
-                <p className="text-base font-extrabold text-[#412643]">Checkout Status</p>
-                <p className="mt-1 text-xs text-[#b38a9f]">Booking is completed, waiting for payment confirmation.</p>
+                <p className="text-base font-extrabold text-[#412643]">{language === "vi" ? "Trạng thái thanh toán" : "Checkout Status"}</p>
+                <p className="mt-1 text-xs text-[#b38a9f]">{language === "vi" ? "Lịch hẹn đã xong, đang chờ xác nhận thanh toán." : "Booking is completed, waiting for payment confirmation."}</p>
               </div>
             </div>
 
             <div className="mt-5 space-y-3 text-sm">
               {[
-                ["Booking", "Completed", "bg-[#e8f8ef] text-[#1f9d61]"],
-                ["Payment", paymentBadge, paymentBadgeClassName],
-                ["Receipt", paymentStage === "paid" ? "Ready" : "Not Printed", paymentStage === "paid" ? "bg-[#e8f8ef] text-[#1f9d61]" : "bg-[#fff1f6] text-[#d54186]"],
-                ["Staff Artist", booking.artistName || "--", ""],
+                [t("receptionist.bookings.title") || "Booking", t("receptionist.dashboard.statusDone") || "Completed", "bg-[#e8f8ef] text-[#1f9d61]"],
+                [t("receptionist.payments.payMethod") || "Payment", paymentStage === "paid" ? (t("receptionist.dashboard.statusDone") || "Paid") : paymentBadge, paymentBadgeClassName],
+                [language === "vi" ? "Hóa đơn" : "Receipt", paymentStage === "paid" ? (language === "vi" ? "Sẵn sàng" : "Ready") : (language === "vi" ? "Chưa in" : "Not Printed"), paymentStage === "paid" ? "bg-[#e8f8ef] text-[#1f9d61]" : "bg-[#fff1f6] text-[#d54186]"],
+                [t("receptionist.bookings.artist") || "Staff Artist", booking.artistName || "--", ""],
               ].map(([label, value, className]) => (
                 <div key={label} className="flex items-center justify-between gap-3">
                   <span className="text-[#8f7b88]">{label}</span>
@@ -792,29 +802,29 @@ export function ReceptionistCheckoutPaymentPage() {
             </div>
           </SummaryCard>
 
-          <SummaryCard title="Customer Loyalty">
+          <SummaryCard title={language === "vi" ? "Điểm tích lũy" : "Customer Loyalty"}>
             <div className="rounded-[18px] bg-[linear-gradient(180deg,#fff8e5_0%,#fff3c7_100%)] px-4 py-4 text-center">
-              <p className="text-xs font-bold text-[#b18211]">Gold Member</p>
+              <p className="text-xs font-bold text-[#b18211]">{language === "vi" ? "Thành viên Vàng" : "Gold Member"}</p>
               <p className="mt-3 text-3xl font-bold text-[#d54186]">+63 pts</p>
-              <p className="mt-1 text-xs text-[#8f7b88]">Earned from this visit</p>
+              <p className="mt-1 text-xs text-[#8f7b88]">{language === "vi" ? "Tích lũy từ lượt xem này" : "Earned from this visit"}</p>
             </div>
             <div className="mt-3 rounded-[16px] border border-[#f3d7e2] bg-[#fffafb] px-4 py-3 text-center text-xs text-[#8f7b88]">
-              Available voucher: 50,000 off next visit
+              {language === "vi" ? "Voucher khả dụng: Giảm 50.000đ cho lần đến tiếp theo" : "Available voucher: 50,000 off next visit"}
             </div>
           </SummaryCard>
 
-          <SummaryCard title="Next Actions">
+          <SummaryCard title={language === "vi" ? "Hành động tiếp theo" : "Next Actions"}>
             <div className="space-y-3">
               {[
-                ["Print Bill", Printer],
-                ["Request Review", Sparkles],
-                ["Book Next Appointment", Clock3],
-                ["View Customer History", Phone],
+                [t("receptionist.payments.printReceipt") || "Print Bill", Printer],
+                [language === "vi" ? "Yêu cầu đánh giá" : "Request Review", Sparkles],
+                [language === "vi" ? "Đặt lịch hẹn tiếp theo" : "Book Next Appointment", Clock3],
+                [language === "vi" ? "Xem lịch sử khách hàng" : "View Customer History", Phone],
               ].map(([label, Icon]) => (
                 <button
                   key={label}
                   type="button"
-                  onClick={() => toast.success(`${label} is ready in UI.`)}
+                  onClick={() => toast.success(language === "vi" ? `Chức năng ${label} đã sẵn sàng.` : `${label} is ready in UI.`)}
                   className="inline-flex w-full items-center gap-2 rounded-xl border border-[#f3d7e2] bg-[#fffafb] px-4 py-3 text-sm font-extrabold text-[#d54186]"
                 >
                   <Icon size={14} />
@@ -824,15 +834,15 @@ export function ReceptionistCheckoutPaymentPage() {
             </div>
           </SummaryCard>
 
-          <SummaryCard title="Support Notes">
+          <SummaryCard title={language === "vi" ? "Ghi chú hỗ trợ" : "Support Notes"}>
             <div className="rounded-[18px] border border-[#f3d7e2] bg-[#fffafb] px-4 py-4 text-xs leading-6 text-[#8f7b88]">
               <p>
-                <span className="font-extrabold text-[#d54186]">QR Payment Failed?</span>
-                {" "}Refresh the QR code or use manual payment confirmation until payment API is available.
+                <span className="font-extrabold text-[#d54186]">{language === "vi" ? "Thanh toán QR thất bại?" : "QR Payment Failed?"}</span>
+                {" "}{language === "vi" ? "Làm mới mã QR hoặc xác nhận thanh toán thủ công cho đến khi API thanh toán sẵn sàng." : "Refresh the QR code or use manual payment confirmation until payment API is available."}
               </p>
               <p className="mt-3">
-                <span className="font-extrabold text-[#d54186]">Receipt:</span>
-                {" "}Keep the receipt printable. Send a digital copy by SMS or email if requested.
+                <span className="font-extrabold text-[#d54186]">{language === "vi" ? "Hóa đơn:" : "Receipt:"}</span>
+                {" "}{language === "vi" ? "Giữ hóa đơn để in. Gửi bản sao số qua SMS hoặc email nếu được yêu cầu." : "Keep the receipt printable. Send a digital copy by SMS or email if requested."}
               </p>
             </div>
           </SummaryCard>

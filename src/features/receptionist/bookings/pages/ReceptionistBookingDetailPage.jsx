@@ -33,6 +33,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ROUTES, getReceptionistBookingCheckoutRoute } from "../../../../shared/constants/routes";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
@@ -383,6 +384,7 @@ function DetailCard({ title, subtitle, badge, children, className = "" }) {
 }
 
 export function ReceptionistBookingDetailPage() {
+  const { t, language } = useLanguage();
   const { bookingId } = useParams();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
@@ -607,7 +609,7 @@ export function ReceptionistBookingDetailPage() {
     () => getReceptionistActionAvailability(booking?.status),
     [booking?.status],
   );
-  const primaryHeaderAction = actionAvailability.canCheckout ? "Checkout" : "Check In";
+  const primaryHeaderAction = actionAvailability.canCheckout ? (t("receptionist.dashboard.checkoutBtn") || "Checkout") : (t("receptionist.dashboard.checkinBtn") || "Check In");
   const isPrimaryHeaderActionDisabled =
     actionAvailability.canCheckout
       ? isCheckoutSubmitting
@@ -872,8 +874,8 @@ export function ReceptionistBookingDetailPage() {
   const receptionistActionCenterItems = useMemo(
     () => [
       {
-        label: actionAvailability.canCheckout ? "Checkout" : "Check In",
-        subtitle: actionAvailability.canCheckout ? "Collect payment and finalize" : "Manual arrival check-in",
+        label: actionAvailability.canCheckout ? (t("receptionist.dashboard.checkoutBtn") || "Checkout") : (t("receptionist.dashboard.checkinBtn") || "Check In"),
+        subtitle: actionAvailability.canCheckout ? (t("receptionist.payments.checkoutDesc") || "Collect payment and finalize") : (t("receptionist.bookings.manualCheckInBtn") || "Manual arrival check-in"),
         icon: actionAvailability.canCheckout ? CreditCard : SquareCheckBig,
         cardTone: "bg-[linear-gradient(180deg,#fff1f6_0%,#ffe6f0_100%)]",
         iconTone: "bg-[#ffdcea] text-[#eb5b92]",
@@ -883,8 +885,8 @@ export function ReceptionistBookingDetailPage() {
         onClick: () => void handlePrimaryHeaderAction(),
       },
       {
-        label: "Assign Chair",
-        subtitle: "Assign to seat",
+        label: t("receptionist.bookings.assignChairTitle") || "Assign Chair",
+        subtitle: t("receptionist.bookings.assignToSeat") || "Assign to seat",
         icon: Armchair,
         cardTone: "bg-[linear-gradient(180deg,#f2edff_0%,#e9e1ff_100%)]",
         iconTone: "bg-[#dfd1ff] text-[#8160df]",
@@ -892,8 +894,8 @@ export function ReceptionistBookingDetailPage() {
         onClick: () => setIsAssignChairModalOpen(true),
       },
       {
-        label: "Reassign Artist",
-        subtitle: "Change staff",
+        label: t("receptionist.bookings.reassignArtist") || "Reassign Artist",
+        subtitle: t("receptionist.bookings.changeStaff") || "Change staff",
         icon: UserRound,
         cardTone: "bg-[linear-gradient(180deg,#fff8df_0%,#fff0bf_100%)]",
         iconTone: "bg-[#ffe6a1] text-[#d8a01c]",
@@ -901,8 +903,8 @@ export function ReceptionistBookingDetailPage() {
         onClick: () => setIsAssignArtistOpen(true),
       },
       {
-        label: "Move Schedule",
-        subtitle: "Reschedule time",
+        label: t("receptionist.bookings.moveSchedule") || "Move Schedule",
+        subtitle: t("receptionist.bookings.rescheduleTime") || "Reschedule time",
         icon: CalendarClock,
         cardTone: "bg-[linear-gradient(180deg,#ebf7ff_0%,#dff1ff_100%)]",
         iconTone: "bg-[#cfe8fb] text-[#4391c9]",
@@ -910,8 +912,8 @@ export function ReceptionistBookingDetailPage() {
         onClick: () => setIsMoveScheduleOpen(true),
       },
       {
-        label: "Add Service",
-        subtitle: "Extra treatment",
+        label: t("receptionist.bookings.addService") || "Add Service",
+        subtitle: t("receptionist.bookings.extraTreatment") || "Extra treatment",
         icon: Sparkles,
         cardTone: "bg-[linear-gradient(180deg,#e6f8ef_0%,#d8f2e5_100%)]",
         iconTone: "bg-[#cdeedb] text-[#2da466]",
@@ -919,8 +921,8 @@ export function ReceptionistBookingDetailPage() {
         onClick: () => setIsOnsiteAddonModalOpen(true),
       },
       {
-        label: "Complete Booking",
-        subtitle: "Finalize session",
+        label: t("receptionist.bookings.completeBooking") || "Complete Booking",
+        subtitle: t("receptionist.bookings.finalizeSession") || "Finalize session",
         icon: CheckCircle2,
         cardTone: "bg-[linear-gradient(180deg,#f2edff_0%,#ebe3ff_100%)]",
         iconTone: "bg-[#ddd2ff] text-[#8260df]",
@@ -928,8 +930,8 @@ export function ReceptionistBookingDetailPage() {
         onClick: () => handleMockAction("Complete Booking"),
       },
       {
-        label: "Cancel Booking",
-        subtitle: "Void appointment",
+        label: t("receptionist.bookings.cancelBooking") || "Cancel Booking",
+        subtitle: t("receptionist.bookings.voidAppointment") || "Void appointment",
         icon: XCircle,
         cardTone: "bg-[linear-gradient(180deg,#fff1f1_0%,#ffe9e9_100%)]",
         iconTone: "bg-[#ffd8d8] text-[#ef6b6b]",
@@ -937,8 +939,8 @@ export function ReceptionistBookingDetailPage() {
         onClick: () => handleMockAction("Cancel Booking"),
       },
       {
-        label: "Send Invoice",
-        subtitle: "Email to client",
+        label: t("receptionist.bookings.sendInvoice") || "Send Invoice",
+        subtitle: t("receptionist.bookings.emailToClient") || "Email to client",
         icon: ReceiptText,
         cardTone: "bg-[linear-gradient(180deg,#fff9eb_0%,#fff2cd_100%)]",
         iconTone: "bg-[#ffe7ae] text-[#d19a15]",
@@ -977,13 +979,13 @@ export function ReceptionistBookingDetailPage() {
             className="inline-flex items-center gap-2 rounded-full border border-[#f3cade] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
           >
             <RefreshCcw size={14} />
-            Retry
+            {t("receptionist.common.retry") || "Retry"}
           </button>
           <Link
             to={ROUTES.receptionistBookings}
             className="inline-flex items-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white"
           >
-            Back to bookings
+            {t("receptionist.payments.backToBookings") || "Back to bookings"}
           </Link>
         </div>
       </section>
@@ -997,12 +999,9 @@ export function ReceptionistBookingDetailPage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-xl font-bold tracking-tight text-[#2B182B]">Booking Details</h1>
-              {/* <span className="rounded-full bg-[#FFF0F6] border border-[#F3D6E5] px-2.5 py-0.5 text-[10px] font-bold text-[#E84F93] uppercase tracking-wider">
-                Real-Time Ops
-              </span> */}
+              <h1 className="text-xl font-bold tracking-tight text-[#2B182B]">{t("receptionist.bookings.title") || "Booking Details"}</h1>
             </div>
-            <p className="mt-0.5 text-xs font-medium text-[#9E8497]">Real-time salon operations & customer check-in</p>
+            <p className="mt-0.5 text-xs font-medium text-[#9E8497]">{t("receptionist.bookings.desc") || "Real-time salon operations & customer check-in"}</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -1012,7 +1011,7 @@ export function ReceptionistBookingDetailPage() {
               className="inline-flex items-center gap-1.5 rounded-full border border-[#F3E2EC] bg-[#FFF9FB] hover:bg-[#FFF0F6] px-3.5 py-1.5 text-xs font-bold text-[#E84F93] transition shadow-2xs cursor-pointer"
             >
               <QrCode size={14} />
-              QR Code
+              {t("receptionist.dashboard.scanQr") || "QR Code"}
             </button>
 
             {/* Primary Gradient Quick Check-In Button */}
@@ -1037,7 +1036,7 @@ export function ReceptionistBookingDetailPage() {
         <div className="space-y-5">
           {/* 2. CUSTOMER OVERVIEW CARD (TOP-LEFT) */}
           <DetailCard
-            title="Customer Overview"
+            title={t("receptionist.payments.customerInfo") || "Customer Overview"}
             badge={booking.status || null}
           >
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
@@ -1119,11 +1118,11 @@ export function ReceptionistBookingDetailPage() {
                   <div className="mt-4 grid gap-3 sm:grid-cols-2 bg-[#FFF9FB] p-3.5 rounded-2xl border border-[#F3E2EC]">
                     <div className="space-y-2.5 text-xs">
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">Phone Number</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">{t("profile.phone") || "Phone Number"}</p>
                         <p className="mt-0.5 font-bold text-[#2B182B]">{customerProfile?.phone || booking.customerPhone || "0987 654 321"}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">Membership Tier</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">{t("receptionist.customers.tier") || "Membership Tier"}</p>
                         <div className="mt-0.5 font-bold text-[#E84F93]"><div className="flex items-center gap-2.5 flex-wrap">
                           {customerTier ? (
                             <span
@@ -1149,11 +1148,11 @@ export function ReceptionistBookingDetailPage() {
 
                     <div className="space-y-2.5 text-xs">
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">Email Address</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">{t("profile.email") || "Email Address"}</p>
                         <p className="mt-0.5 font-medium text-[#2B182B] truncate">{customerProfile?.email || booking.customerEmail || "doanthanh@gmail.com"}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">Preferred Artist</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">{t("receptionist.bookings.artist") || "Preferred Artist"}</p>
                         <p className="mt-0.5 font-bold text-[#8B5CF6]">{booking.artistName || customerProfile?.preferredArtist || "Aria Nguyen"}</p>
                       </div>
                     </div>
@@ -1165,9 +1164,9 @@ export function ReceptionistBookingDetailPage() {
 
           {/* 3. APPOINTMENT & SERVICE DETAILS (CENTER BLOCK) */}
           <DetailCard
-            title="Appointment & Service Details"
-            subtitle="Scheduled treatments & selected nail designs"
-            badge={`${serviceRows.length || 0} Services`}
+            title={t("receptionist.bookings.title") || "Appointment & Service Details"}
+            subtitle={t("receptionist.bookings.desc") || "Scheduled treatments & selected nail designs"}
+            badge={language === "vi" ? `${serviceRows.length || 0} Dịch vụ` : `${serviceRows.length || 0} Services`}
           >
             <Table
               rowKey="id"
@@ -1175,33 +1174,33 @@ export function ReceptionistBookingDetailPage() {
               dataSource={serviceRows}
               pagination={false}
               scroll={{ x: 860 }}
-              locale={{ emptyText: "No appointment services available." }}
+              locale={{ emptyText: t("receptionist.bookings.noBookings") || "No appointment services available." }}
             />
           </DetailCard>
 
           {/* 5. FINANCIAL & PAYMENT SUMMARY (BOTTOM BLOCK) */}
           <DetailCard
-            title="Financial & Payment Summary"
-            subtitle="Itemized price breakdown, deposit, and total balance"
+            title={t("receptionist.payments.summaryTitle") || "Financial & Payment Summary"}
+            subtitle={t("receptionist.payments.checkoutDesc") || "Itemized price breakdown, deposit, and total balance"}
             badge="API Validated"
           >
             <div className="grid gap-5 lg:grid-cols-[1fr_240px]">
               <div className="bg-[#FFF9FB] p-4 rounded-2xl border border-[#F3E2EC] space-y-3">
                 <div className="space-y-2 text-xs">
                   <div className="flex items-center justify-between">
-                    <span className="font-medium text-[#9E8497]">Itemized Service Price:</span>
+                    <span className="font-medium text-[#9E8497]">{t("receptionist.payments.subtotal") || "Itemized Service Price"}:</span>
                     <span className="font-bold text-[#2B182B]">{price}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="font-medium text-[#9E8497]">Promotional Discount:</span>
+                    <span className="font-medium text-[#9E8497]">{t("receptionist.payments.promotion") || "Promotional Discount"}:</span>
                     <span className="font-bold text-[#EF4444]">{discount}</span>
                   </div>
                   <div className="flex items-center justify-between border-t border-[#F3E2EC] pt-2">
-                    <span className="font-medium text-[#9E8497]">Deposit Paid:</span>
+                    <span className="font-medium text-[#9E8497]">{t("receptionist.payments.deposit") || "Deposit Paid"}:</span>
                     <span className="font-bold text-[#2B182B]">{depositPaid}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="font-medium text-[#9E8497]">Remaining Balance:</span>
+                    <span className="font-medium text-[#9E8497]">{t("receptionist.payments.totalAmount") || "Remaining Balance"}:</span>
                     <span className="font-bold text-[#8B5CF6]">{remainingBalance}</span>
                   </div>
                 </div>
@@ -1209,11 +1208,11 @@ export function ReceptionistBookingDetailPage() {
                 {/* Fresh Emerald Green Highlighted Total */}
                 <div className="border-2 border-emerald-300 pt-3.5 pb-3 px-4 flex items-center justify-between bg-gradient-to-r from-[#ECFDF5] to-[#D1FAE5] rounded-2xl shadow-xs">
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#047857]">Total Amount Payable</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#047857]">{t("receptionist.payments.totalAmount") || "Total Amount Payable"}</p>
                     <p className="text-3xl font-bold text-[#047857] leading-none mt-1">{totalAmount}</p>
                   </div>
                   <span className="rounded-full bg-[#10B981] text-white px-3.5 py-1 text-xs font-bold shadow-xs flex items-center gap-1">
-                    <ShieldCheck size={14} /> PAID
+                    <ShieldCheck size={14} /> {language === "vi" ? "ĐÃ THANH TOÁN" : "PAID"}
                   </span>
                 </div>
               </div>
@@ -1226,7 +1225,7 @@ export function ReceptionistBookingDetailPage() {
                   className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-5 py-3.5 text-xs font-bold text-white shadow-[0_8px_20px_rgba(232,79,147,0.3)] hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <CreditCard size={16} />
-                  Add Payment
+                  {t("receptionist.payments.checkoutTitle") || "Add Payment"}
                 </button>
                 <button
                   type="button"
@@ -1235,7 +1234,7 @@ export function ReceptionistBookingDetailPage() {
                   className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-[#F3E2EC] bg-[#FFF5F8] hover:bg-[#FCE2EE] px-5 py-3.5 text-xs font-bold text-[#E84F93] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs"
                 >
                   <Printer size={16} />
-                  Print Receipt
+                  {t("receptionist.payments.printReceipt") || "Print Receipt"}
                 </button>
               </div>
             </div>
@@ -1243,8 +1242,8 @@ export function ReceptionistBookingDetailPage() {
 
           {/* 6. RECEPTIONIST QUICK ACTION CENTER (BOTTOM GRID) */}
           <DetailCard
-            title="Receptionist Quick Action Center"
-            subtitle="Interactive operational controls for this customer session"
+            title={t("receptionist.bookings.actions") || "Receptionist Quick Action Center"}
+            subtitle={t("receptionist.bookings.desc") || "Interactive operational controls for this customer session"}
           >
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {receptionistActionCenterItems.map((item) => {
@@ -1273,10 +1272,10 @@ export function ReceptionistBookingDetailPage() {
         {/* SIDEBAR RIGHT COLUMN */}
         <aside className="space-y-5">
           {/* QUICK STATUS & LIVE TRACKER (TOP-RIGHT) */}
-          <DetailCard title="Quick Status & Live Tracker">
+          <DetailCard title={t("receptionist.common.status") || "Quick Status & Live Tracker"}>
             <div className="flex flex-col items-center">
               <div className="self-stretch flex items-center justify-between pb-2 border-b border-[#F3E2EC]">
-                <span className="font-medium text-xs text-[#9E8497]">Live Status</span>
+                <span className="font-medium text-xs text-[#9E8497]">{t("receptionist.common.status") || "Live Status"}</span>
                 <span className={`rounded-full px-3 py-0.5 text-xs font-bold shadow-2xs ${getStatusTone(String(booking.status || ""))}`}>
                   {booking.status || "Checked In"}
                 </span>
@@ -1290,15 +1289,15 @@ export function ReceptionistBookingDetailPage() {
 
               <div className="self-stretch space-y-2.5 text-xs pt-1">
                 <div className="flex items-center justify-between bg-[#FFF9FB] p-2.5 rounded-xl border border-[#F3E2EC]">
-                  <span className="font-medium text-[#9E8497]">Assigned Artist</span>
+                  <span className="font-medium text-[#9E8497]">{t("receptionist.bookings.artist") || "Assigned Artist"}</span>
                   <span className="font-bold text-[#2B182B]">{booking.artistName || "Aria Nguyen"}</span>
                 </div>
                 <div className="flex items-center justify-between bg-[#FFF9FB] p-2.5 rounded-xl border border-[#F3E2EC]">
-                  <span className="font-medium text-[#9E8497]">Chair / Station</span>
+                  <span className="font-medium text-[#9E8497]">{t("receptionist.bookings.assignChairTitle") || "Chair / Station"}</span>
                   <span className="font-bold text-[#8B5CF6]">Station #03</span>
                 </div>
                 <div className="flex items-center justify-between bg-[#FFF9FB] p-2.5 rounded-xl border border-[#F3E2EC]">
-                  <span className="font-medium text-[#9E8497]">Check-in Time</span>
+                  <span className="font-medium text-[#9E8497]">{t("receptionist.bookings.time") || "Check-in Time"}</span>
                   <span className="font-bold text-[#2B182B]">
                     {["CheckedIn", "In Progress", "ServiceCompleted", "Completed"].includes(String(booking.status || "")) ? formatTime(booking.startTime) : "10:00 AM"}
                   </span>
@@ -1308,7 +1307,7 @@ export function ReceptionistBookingDetailPage() {
           </DetailCard>
 
           {/* CUSTOMER REVIEW WIDGET */}
-          <DetailCard title="Customer Review Widget">
+          <DetailCard title={t("receptionist.common.feedback") || "Customer Review Widget"}>
             <div className="bg-[#FFF9FB] p-3.5 rounded-2xl border border-[#F3E2EC] space-y-2.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">

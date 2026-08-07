@@ -24,7 +24,7 @@ function validateForm(formValues, t) {
 }
 
 export function SkillTypeDetailPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const { skillTypeId } = useParams();

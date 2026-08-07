@@ -19,6 +19,7 @@ import toast from "react-hot-toast";
 import dayjs from "dayjs";
 import { triggerEmergencyOff } from "../../bookings/services/bookingProceduresService";
 import { fetchNailArtists, getSalonId, getSalonIdAsync } from "../services/nailArtistsService";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 const REASON_PRESETS = [
   "Bị sốt đột xuất 08:00 sáng.",
@@ -28,6 +29,7 @@ const REASON_PRESETS = [
 ];
 
 export function EmergencyOffModal({ open, onClose, artist, artists = [], onSuccess }) {
+  const { t, language } = useLanguage();
   const [offDate, setOffDate] = useState(dayjs());
   const [reason, setReason] = useState("Bị sốt đột xuất 08:00 sáng.");
   const [loading, setLoading] = useState(false);
@@ -120,11 +122,11 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
   const handleSubmit = async () => {
     const targetArtistId = currentSelectedArtist?.nailArtistId || currentSelectedArtist?.id;
     if (!targetArtistId) {
-      toast.error("Vui lòng chọn Thợ móng áp dụng nghỉ khẩn cấp.");
+      toast.error(language === 'vi' ? "Vui lòng chọn Thợ móng áp dụng nghỉ khẩn cấp." : "Please select a Staff Artist for Emergency Off.");
       return;
     }
     if (!offDate) {
-      toast.error("Vui lòng chọn ngày nghỉ khẩn cấp.");
+      toast.error(language === 'vi' ? "Vui lòng chọn ngày nghỉ khẩn cấp." : "Please select an Emergency Off date.");
       return;
     }
 
@@ -137,11 +139,11 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
         reason: reason.trim() || "Sự cố sức khỏe khẩn cấp.",
       });
       setResultSummary(res);
-      toast.success("Kích hoạt lịch nghỉ khẩn cấp & Tự động phân bổ lại thành công!", { icon: "🚨" });
+      toast.success(language === 'vi' ? "Kích hoạt lịch nghỉ khẩn cấp & Tự động phân bổ lại thành công!" : "Emergency Off activated & Auto-reassignment successful!", { icon: "🚨" });
       if (onSuccess) onSuccess();
     } catch (err) {
       console.error("Emergency Off failed:", err);
-      toast.error(err.message || "Không thể kích hoạt nghỉ khẩn cấp.");
+      toast.error(err.message || (language === 'vi' ? "Không thể kích hoạt nghỉ khẩn cấp." : "Failed to activate Emergency Off."));
     } finally {
       setLoading(false);
     }
@@ -195,12 +197,12 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
             </div>
             <div>
               <h3 className="text-lg font-bold text-[#2B182B] tracking-tight flex items-center gap-2">
-                Emergency Off Duty
-                <span className="rounded-md bg-[#FFE4E6] px-2 py-0.5 text-[10px] font-bold text-[#E11D48] uppercase tracking-wider">
+                {language === 'vi' ? "Nghỉ khẩn cấp" : "Emergency Off Duty"}
+                {/* <span className="rounded-md bg-[#FFE4E6] px-2 py-0.5 text-[10px] font-bold text-[#E11D48] uppercase tracking-wider">
                   BR-05
-                </span>
+                </span> */}
               </h3>
-              <p className="text-xs text-[#9E8497] font-medium">Kích hoạt chế độ Tạm nghỉ Khẩn cấp cho Thợ Nail</p>
+              <p className="text-xs text-[#9E8497] font-medium">{language === 'vi' ? "Kích hoạt chế độ Tạm nghỉ Khẩn cấp cho Thợ Nail" : "Activate Emergency Off Duty Mode for Staff Artists"}</p>
             </div>
           </div>
           <button
@@ -217,10 +219,10 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
           <div className="space-y-5 font-sans animate-fadeIn">
             <div className="rounded-2xl border border-[#6EE7B7] bg-gradient-to-br from-[#ECFDF5] to-[#D1FAE5] p-4.5 text-xs text-[#065F46] shadow-2xs">
               <div className="flex items-center gap-2 font-bold text-base text-[#047857] mb-1.5">
-                <CheckCircle2 size={20} className="text-[#10B981]" /> Xử Lý Sự Cố Khẩn Cấp Hoàn Tất
+                <CheckCircle2 size={20} className="text-[#10B981]" /> {language === 'vi' ? "Xử Lý Sự Cố Khẩn Cấp Hoàn Tất" : "Emergency Off Duty Processing Completed"}
               </div>
               <p className="text-xs leading-relaxed text-[#047857]">
-                Hệ thống đã tự động quét và phân bổ lại toàn bộ <strong>{resultSummary.totalAffectedBookings || 0} đơn hàng</strong> bị ảnh hưởng của thợ <strong>{artistName}</strong> vào ngày{" "}
+                {language === "vi" ? "Hệ thống đã tự động quét và phân bổ lại toàn bộ" : "The system has automatically scanned and reassigned all"} <strong>{resultSummary.totalAffectedBookings || 0} đơn hàng</strong>{language === "vi" ? " bị ảnh hưởng của thợ" : " affected orders of staff"} <strong>{artistName}</strong> vào ngày{" "}
                 <span className="font-extrabold">{dayjs(resultSummary.offDate).format("DD/MM/YYYY")}</span>.
               </p>
             </div>
@@ -230,25 +232,25 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
               <div className="rounded-2xl border border-[#C7D2FE] bg-gradient-to-b from-[#EEF2FF] to-[#E0E7FF] p-3.5 shadow-2xs">
                 <p className="text-2xl font-bold text-[#3730A3]">{resultSummary.autoReassignedCount || 0}</p>
                 <p className="text-[10px] font-bold uppercase text-[#4338CA] mt-1 flex items-center justify-center gap-1">
-                  <UserCheck size={13} /> Re-assigned
+                  <UserCheck size={13} /> {language === 'vi' ? "Phân bổ lại" : "Re-assigned"}
                 </p>
-                <p className="text-[9.5px] text-[#6366F1] mt-0.5 font-medium">Chuyển sang Thợ khác đủ Skill</p>
+                <p className="text-[9.5px] text-[#6366F1] mt-0.5 font-medium">{language === 'vi' ? "Chuyển sang Thợ khác đủ Skill" : "Re-assigned to Other Staff"}</p>
               </div>
 
               <div className="rounded-2xl border border-[#FDE68A] bg-gradient-to-b from-[#FFFBEB] to-[#FEF3C7] p-3.5 shadow-2xs">
                 <p className="text-2xl font-bold text-[#92400E]">{resultSummary.rescheduleSuggestedCount || 0}</p>
                 <p className="text-[10px] font-bold uppercase text-[#B45309] mt-1 flex items-center justify-center gap-1">
-                  <RefreshCw size={13} /> Reschedule Proposal
+                  <RefreshCw size={13} /> {language === 'vi' ? "Đề xuất lùi giờ" : "Reschedule Proposal"}
                 </p>
-                <p className="text-[9.5px] text-[#D97706] mt-0.5 font-medium">Đề xuất lùi giờ + Voucher 15%</p>
+                <p className="text-[9.5px] text-[#D97706] mt-0.5 font-medium">{language === 'vi' ? "Đề xuất lùi giờ + Voucher 15%" : "Reschedule + 15% Voucher"}</p>
               </div>
 
               <div className="rounded-2xl border border-[#FECDD3] bg-gradient-to-b from-[#FEF2F2] to-[#FFE4E6] p-3.5 shadow-2xs">
                 <p className="text-2xl font-bold text-[#991B1B]">{resultSummary.cancelledAndRefundedCount || 0}</p>
                 <p className="text-[10px] font-bold uppercase text-[#E11D48] mt-1 flex items-center justify-center gap-1">
-                  <XCircle size={13} /> Auto Cancel
+                  <XCircle size={13} /> {language === 'vi' ? "Hủy & Hoàn Tiền" : "Auto Cancel"}
                 </p>
-                <p className="text-[9.5px] text-[#E11D48] mt-0.5 font-medium">Hoàn 100% Cọc + Voucher 20%</p>
+                <p className="text-[9.5px] text-[#E11D48] mt-0.5 font-medium">{language === 'vi' ? "Hoàn 100% Cọc + Voucher 20%" : "Full Refund + 20% Voucher"}</p>
               </div>
             </div>
 
@@ -258,7 +260,7 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
                 onClick={handleClose}
                 className="rounded-full bg-gradient-to-r from-[#E84F93] to-[#F43F5E] px-7 py-2.5 text-xs font-bold text-white shadow-md hover:shadow-lg transition cursor-pointer"
               >
-                Hoàn Tất & Đóng
+                {language === 'vi' ? "Hoàn Tất & Đóng" : "Complete & Close"}
               </button>
             </div>
           </div>
@@ -269,10 +271,10 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
             <div>
               <label className="block text-xs font-bold text-[#2B182B] uppercase tracking-wider mb-1.5 flex items-center justify-between">
                 <span className="flex items-center gap-1.5 text-[#E11D48]">
-                  <User size={14} /> Chọn Thợ Nail Áp Dụng Nghỉ Khẩn Cấp
+                  <User size={14} /> {language === 'vi' ? "Chọn Thợ Nail Áp Dụng Nghỉ Khẩn Cấp" : "Select Artist for Emergency Off"}
                 </span>
                 <span className="text-[10px] font-bold text-[#9E8497] capitalize">
-                  ({combinedArtists.length} thợ trong danh sách)
+                  ({combinedArtists.length} {language === 'vi' ? "thợ trong danh sách" : "artists in list"} )
                 </span>
               </label>
               <Select
@@ -280,13 +282,13 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
                 loading={loadingArtists}
                 value={selectedArtistId || undefined}
                 onChange={(val) => setSelectedArtistId(val)}
-                placeholder="-- Chọn Thợ Nail --"
+                placeholder={language === 'vi' ? "-- Chọn Thợ Nail --" : "-- Select Artist --"}
                 optionFilterProp="label"
                 className="w-full h-11 text-xs"
                 popupMatchSelectWidth={false}
                 options={combinedArtists.map((a) => {
                   const aId = String(a.nailArtistId || a.id);
-                  const aName = a.fullName || a.name || a.artistName || "Thợ Nail";
+                  const aName = a.fullName || a.name || a.artistName || "Nail Artist";
                   const aPhone = a.phone ? ` • ${a.phone}` : "";
                   return {
                     value: aId,
@@ -313,12 +315,12 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
                       )}
                     </p>
                     <p className="text-[11px] text-[#E11D48] font-medium mt-0.5">
-                      Chuyên môn: <span className="font-bold">{artistSkillsStr}</span>
+                      {language === 'vi' ? "Chuyên môn: " : "Specialty: "}<span className="font-bold">{artistSkillsStr}</span>
                     </p>
                   </div>
                 </div>
                 <span className="rounded-full bg-gradient-to-r from-[#E11D48] to-[#BE123C] px-3 py-1 text-[10px] font-bold text-white uppercase tracking-wider shadow-2xs whitespace-nowrap">
-                  Emergency Mode
+                  {language === 'vi' ? "Chế độ khẩn cấp" : "Emergency Mode"}
                 </span>
               </div>
             )}
@@ -327,7 +329,7 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-bold text-[#2B182B] uppercase tracking-wider mb-1.5 flex items-center gap-1 text-[#2B182B]">
-                  <Calendar size={14} className="text-[#E11D48]" /> Ngày nghỉ khẩn cấp
+                  <Calendar size={14} className="text-[#E11D48]" /> {language === 'vi' ? "Ngày nghỉ khẩn cấp" : "Emergency Date"}
                 </label>
                 <DatePicker
                   value={offDate}
@@ -340,12 +342,12 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
               {/* Status Badge Info */}
               <div>
                 <label className="block text-xs font-bold text-[#2B182B] uppercase tracking-wider mb-1.5 flex items-center gap-1 text-[#2B182B]">
-                  <Info size={14} className="text-[#E84F93]" /> Phạm vi áp dụng
+                  <Info size={14} className="text-[#E84F93]" /> {language === 'vi' ? "Phạm vi áp dụng" : "Scope"}
                 </label>
                 <div className="h-10 rounded-xl border border-[#F3E2EC] bg-[#FFF9FB] px-3 flex items-center justify-between text-xs text-[#5C4559]">
-                  <span className="font-bold text-[11px]">Cả ngày nghỉ (Full Off)</span>
+                  <span className="font-bold text-[11px]">{language === 'vi' ? "Cả ngày nghỉ (Full Off)" : "Full Day Off"}</span>
                   <span className="rounded-md bg-[#FFE4E6] text-[#E11D48] px-2 py-0.5 text-[10px] font-extrabold">
-                    Tất cả ca trong ngày
+                    {language === 'vi' ? "Tất cả ca trong ngày" : "All Shifts"}
                   </span>
                 </div>
               </div>
@@ -354,20 +356,20 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
             {/* 3. Reason Input + Presets */}
             <div>
               <label className="block text-xs font-bold text-[#2B182B] uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                <AlertTriangle size={14} className="text-[#E11D48]" /> Lý do nghỉ đột xuất
+                <AlertTriangle size={14} className="text-[#E11D48]" /> {language === 'vi' ? "Lý do nghỉ đột xuất" : "Reason"}
               </label>
               <Input.TextArea
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 rows={2}
-                placeholder="Nhập lý do sự cố (sốt đột xuất, lý do cá nhân khẩn cấp...)"
+                placeholder={language === 'vi' ? "Nhập lý do sự cố (sốt đột xuất, lý do cá nhân khẩn cấp...)" : "Reason"}
                 className="rounded-xl border-[#F3D7E4] text-xs font-medium focus:border-[#E84F93]"
               />
 
               {/* Quick Preset Reason Tags */}
               <div className="flex flex-wrap items-center gap-1.5 mt-2">
                 <span className="text-[10px] font-bold text-[#9E8497] flex items-center gap-1">
-                  <Sparkles size={11} className="text-[#E84F93]" /> Chọn nhanh:
+                  <Sparkles size={11} className="text-[#E84F93]" /> {language === 'vi' ? "Chọn nhanh:" : "Quick Select:"}
                 </span>
                 {REASON_PRESETS.map((preset) => (
                   <button
@@ -386,17 +388,17 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
             <div className="rounded-2xl border border-[#FCD34D] bg-gradient-to-r from-[#FFFBEB] via-[#FFFDF5] to-[#FFFBEB] p-3.5 text-xs text-[#B45309] shadow-2xs">
               <div className="flex items-center gap-1.5 font-bold text-xs text-[#92400E] mb-1">
                 <Clock size={15} className="text-[#D97706]" />
-                <span>Quy trình Tự động Phân bổ (Re-assignment Engine):</span>
+                <span>{language === 'vi' ? "Quy trình Tự động Phân bổ (Re-assignment Engine):" : "Re-assignment Engine:"}</span>
               </div>
               <ul className="space-y-1 text-[11px] text-[#B45309] font-medium pl-5 list-disc leading-relaxed">
                 <li>
-                  <strong className="text-[#92400E]">Bước 1:</strong> Tự động điều chuyển lịch hẹn cho Thợ khả dụng cùng khung giờ có đủ Skill Matrix.
+                  <strong className="text-[#92400E]">{language === 'vi' ? "Bước 1:" : "Step 1:"}</strong> {language === 'vi' ? "Tự động điều chuyển lịch hẹn cho Thợ khả dụng cùng khung giờ có đủ Skill Matrix." : "Auto-transfer bookings to available staff with sufficient Skill Matrix."}
                 </li>
                 <li>
-                  <strong className="text-[#92400E]">Bước 2:</strong> Đề xuất lùi/tiến giờ (+/-30-60p) + Voucher 15% bồi thường nếu thợ rảnh khung giờ khác.
+                  <strong className="text-[#92400E]">{language === 'vi' ? "Bước 2:" : "Step 2:"}</strong> {language === 'vi' ? "Đề xuất lùi/tiến giờ (+/-30-60p) + Voucher 15% bồi thường nếu thợ rảnh khung giờ khác." : "Recommend adjusting time (+/-30-60p) + 15% voucher if other shifts are available."}
                 </li>
                 <li>
-                  <strong className="text-[#92400E]">Bước 3:</strong> Tự động Hủy đơn + Hoàn 100% Cọc + Voucher 20% + Đưa khách vào Waitlist nếu kín thợ.
+                  <strong className="text-[#92400E]">{language === 'vi' ? "Bước 3:" : "Step 3:"}</strong> {language === 'vi' ? "Tự động Hủy đơn + Hoàn 100% Cọc + Voucher 20% + Đưa khách vào Waitlist nếu kín thợ." : "Auto-cancel order + 100% refund + 20% voucher + Add to waitlist if full."}
                 </li>
               </ul>
             </div>
@@ -408,7 +410,7 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
                 onClick={handleClose}
                 className="rounded-full border border-[#F3D7E4] px-5 py-2.5 text-xs font-bold text-[#2B182B] hover:bg-[#FAF0F5] transition cursor-pointer"
               >
-                Hủy
+                {language === 'vi' ? "Hủy" : "Cancel"}
               </button>
               <button
                 type="button"
@@ -417,7 +419,7 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
                 className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#E11D48] via-[#BE123C] to-[#991B1B] px-6 py-2.5 text-xs font-bold text-white shadow-md hover:shadow-lg transition cursor-pointer disabled:opacity-50"
               >
                 <ShieldAlert size={16} />
-                {loading ? "Đang xử lý khẩn cấp..." : "Kích Hoạt Emergency Off"}
+                {loading ? (language === 'vi' ? "Đang xử lý khẩn cấp..." : "Processing Emergency Off...") : (language === 'vi' ? "Xác Nhận Nghỉ Khẩn Cấp" : "Confirm Emergency Off")}
               </button>
             </div>
           </div>

@@ -6,7 +6,6 @@ import {
   ClipboardCheck,
   Clock3,
   FilePenLine,
-  // Image,
   ImageUp,
   Play,
   Plus,
@@ -63,6 +62,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { setServiceSession } from "../../../../store/serviceSessionSlice";
 import { Button, Image, Modal } from "antd";
 import { useNotifications } from "../../../core/notifications/context/NotificationContext";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 const DEFAULT_CUSTOMER_AVATAR =
   "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=140&q=80";
@@ -424,13 +424,13 @@ function SessionSummaryPanel({
   };
 
   const [summaryExpanded, setSummaryExpanded] = useState(true);
-
+  const { language } = useLanguage();
   return (
     <article className="rounded-2xl border border-[#f3d5e2] bg-white p-6 shadow-[0_14px_30px_rgba(236,72,153,0.06)] transition-all duration-300">
       <SectionTitle
         icon={UserRound}
-        title="Customer Summary"
-        subtitle="Review customer profile and preferences"
+        title={language === "vi" ? "Tóm tắt thông tin khách hàng" : "Customer Summary"}
+        subtitle={language === "vi" ? "Xem thông tin và sở thích của khách hàng" : "Review customer profile and preferences"}
         action={
           <button
             type="button"
@@ -486,26 +486,26 @@ function SessionSummaryPanel({
 
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-xl border border-[#f6dbe7] bg-[#fffafc] p-3.5 shadow-xs">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#bca0ae]">Staff Artist</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#bca0ae]">{language === "vi" ? "Nhân viên thực hiện" : "Staff Artist"}</p>
                 <p className="mt-1 text-sm font-extrabold text-slate-800">{data.staffArtist || "--"}</p>
               </div>
               <div className="rounded-xl border border-[#f6dbe7] bg-[#fffafc] p-3.5 shadow-xs">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#bca0ae]">Appointment Time</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#bca0ae]">{language === "vi" ? "Thời gian bắt đầu" : "Appointment Time"}</p>
                 <p className="mt-1 text-sm font-extrabold text-slate-800">{data.appointmentTime || "--"}</p>
               </div>
               <div className="rounded-xl border border-[#f6dbe7] bg-[#fffafc] p-3.5 shadow-xs">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#bca0ae]">Estimated Finish</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#bca0ae]">{language === "vi" ? "Thời gian dự kiến hoàn thành" : "Estimated Finish"}</p>
                 <p className="mt-1 text-sm font-extrabold text-slate-800">{data.estimatedFinishTime || "--"}</p>
               </div>
               <div className="rounded-xl border border-[#f6dbe7] bg-[#fffafc] p-3.5 shadow-xs">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#bca0ae]">Estimated Duration</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#bca0ae]">{language === "vi" ? "Thời gian dự kiến" : "Estimated Duration"}</p>
                 <p className="mt-1 text-sm font-extrabold text-[#ea4f93]">{data.estimatedDuration || "--"}</p>
               </div>
             </div>
 
             {hasConfirmedDesign ? (
               <div className="rounded-xl border border-pink-200 bg-gradient-to-r from-pink-50 to-rose-50 p-4 shadow-xs">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#ea4f93]">Confirmed Design</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#ea4f93]">{language === "vi" ? "Thiết kế đã xác nhận" : "Confirmed Design"}</p>
                 <p className="mt-1 text-sm font-black text-slate-800">{data.designName}</p>
               </div>
             ) : null}
@@ -720,13 +720,14 @@ function isServiceSessionFinalizedStatus(status) {
   return normalizedStatus === "servicecompleted";
 }
 
-function buildProcedureStepMeta(procedure) {
-  const assignedArtistName = String(procedure?.assignedArtistName || "").trim() || "Unassigned";
+function buildProcedureStepMeta(procedure, language = "en") {
+  const isVi = language === "vi";
+  const assignedArtistName = String(procedure?.assignedArtistName || "").trim() || (isVi ? "Chưa phân công" : "Unassigned");
   const estimatedStartTime = formatTimeValue(procedure?.estimatedStartTime) || "--";
   const estimatedEndTime = formatTimeValue(procedure?.estimatedEndTime) || "--";
   const duration = Number(procedure?.duration || 0);
 
-  return `Artist: ${assignedArtistName} | Duration: ${duration} min | Time: ${estimatedStartTime} - ${estimatedEndTime}`;
+  return `${isVi ? "Thợ:" : "Artist:"} ${assignedArtistName} | ${isVi ? "Thời lượng:" : "Duration:"} ${duration} ${isVi ? "phút" : "min"} | ${isVi ? "Thời gian:" : "Time:"} ${estimatedStartTime} - ${estimatedEndTime}`;
 }
 
 function getSessionBookingItemIds(value) {
@@ -744,6 +745,8 @@ export function StaffServiceSessionPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { bookingId } = useParams();
+  const { language } = useLanguage();
+  const isVi = language === "vi";
   const booking = getMockBookingById(bookingId);
   const { notifications } = useNotifications();
   const payload = location.state?.serviceSession;
@@ -1170,37 +1173,41 @@ export function StaffServiceSessionPage() {
     () =>
       createRemotePhotoState(
         bookingDetail?.checkInImageUrl,
-        "Before service photo",
-        data?.beforePhotoTimestamp || "Uploaded",
+        isVi ? "Ảnh trước khi làm" : "Before service photo",
+        data?.beforePhotoTimestamp || (isVi ? "Đã tải lên" : "Uploaded"),
       ),
-    [bookingDetail?.checkInImageUrl, data?.beforePhotoTimestamp],
+    [bookingDetail?.checkInImageUrl, data?.beforePhotoTimestamp, isVi],
   );
   const serverAfterPhoto = useMemo(
     () =>
       createRemotePhotoState(
         bookingDetail?.checkOutImagesUrl,
-        "After service photo",
-        data?.completedAt || "Uploaded",
+        isVi ? "Ảnh sau khi làm" : "After service photo",
+        data?.completedAt || (isVi ? "Đã tải lên" : "Uploaded"),
       ),
-    [bookingDetail?.checkOutImagesUrl, data?.completedAt],
+    [bookingDetail?.checkOutImagesUrl, data?.completedAt, isVi],
   );
   const initialConfirmations = useMemo(
     () =>
       persistedSession?.confirmations ??
       (data?.confirmations ?? []).map((label, index) => ({
-        label,
+        label: label === "Before photo uploaded" ? (isVi ? "Đã tải ảnh trước khi làm" : label)
+          : label === "Price confirmed" ? (isVi ? "Đã xác nhận giá" : label)
+            : label === "Service design confirmed" ? (isVi ? "Đã xác nhận thiết kế" : label)
+              : label === "Customer identity confirmed" ? (isVi ? "Đã xác nhận danh tính khách" : label)
+                : label,
         checked: persistedSession?.started ?? payload?.started ? true : index < 3,
       })),
-    [data?.confirmations, payload?.started, persistedSession?.confirmations, persistedSession?.started],
+    [data?.confirmations, payload?.started, persistedSession?.confirmations, persistedSession?.started, isVi],
   );
   const initialCompletionChecks = useMemo(
     () =>
       persistedSession?.completionChecks ?? [
-        { label: "Service completed", checked: true },
-        { label: "Customer reviewed final nails", checked: true },
-        { label: "After photo uploaded", checked: Boolean(serverAfterPhoto || payload?.afterPhoto) },
+        { label: isVi ? "Đã hoàn thành dịch vụ" : "Service completed", checked: true },
+        { label: isVi ? "Khách đã kiểm tra móng" : "Customer reviewed final nails", checked: true },
+        { label: isVi ? "Đã tải ảnh sau khi làm" : "After photo uploaded", checked: Boolean(serverAfterPhoto || payload?.afterPhoto) },
       ],
-    [payload?.afterPhoto, persistedSession?.completionChecks, serverAfterPhoto],
+    [payload?.afterPhoto, persistedSession?.completionChecks, serverAfterPhoto, isVi],
   );
 
   const [showStartConfirm, setShowStartConfirm] = useState(false);
@@ -1263,21 +1270,49 @@ export function StaffServiceSessionPage() {
   const effectiveAfterPhoto = afterPhoto ?? serverAfterPhoto;
   const displayConfirmations = useMemo(
     () =>
-      confirmations.map((item) =>
-        item.label === "Before photo uploaded" && effectiveBeforePhoto
-          ? { ...item, checked: true }
-          : item,
-      ),
-    [confirmations, effectiveBeforePhoto],
+      confirmations.map((item) => {
+        const baseLabel = item.label;
+        const translatedLabel =
+          baseLabel === "Before photo uploaded" || baseLabel === "Đã tải ảnh trước khi làm"
+            ? (isVi ? "Đã tải ảnh trước khi làm" : "Before photo uploaded")
+            : baseLabel === "Price confirmed" || baseLabel === "Đã xác nhận giá"
+            ? (isVi ? "Đã xác nhận giá" : "Price confirmed")
+            : baseLabel === "Service design confirmed" || baseLabel === "Đã xác nhận thiết kế"
+            ? (isVi ? "Đã xác nhận thiết kế" : "Service design confirmed")
+            : baseLabel === "Customer identity confirmed" || baseLabel === "Đã xác nhận danh tính khách"
+            ? (isVi ? "Đã xác nhận danh tính khách" : "Customer identity confirmed")
+            : baseLabel;
+
+        const isBeforePhotoUploaded = baseLabel === "Before photo uploaded" || baseLabel === "Đã tải ảnh trước khi làm";
+        return {
+          ...item,
+          label: translatedLabel,
+          checked: isBeforePhotoUploaded && effectiveBeforePhoto ? true : item.checked,
+        };
+      }),
+    [confirmations, effectiveBeforePhoto, isVi],
   );
   const displayCompletionChecks = useMemo(
     () =>
-      completionChecks.map((item) =>
-        item.label === "After photo uploaded" && effectiveAfterPhoto
-          ? { ...item, checked: true }
-          : item,
-      ),
-    [completionChecks, effectiveAfterPhoto],
+      completionChecks.map((item) => {
+        const baseLabel = item.label;
+        const translatedLabel =
+          baseLabel === "Service completed" || baseLabel === "Đã hoàn thành dịch vụ"
+            ? (isVi ? "Đã hoàn thành dịch vụ" : "Service completed")
+            : baseLabel === "Customer reviewed final nails" || baseLabel === "Khách đã kiểm tra móng"
+            ? (isVi ? "Khách đã kiểm tra móng" : "Customer reviewed final nails")
+            : baseLabel === "After photo uploaded" || baseLabel === "Đã tải ảnh sau khi làm"
+            ? (isVi ? "Đã tải ảnh sau khi làm" : "After photo uploaded")
+            : baseLabel;
+
+        const isAfterPhotoUploaded = baseLabel === "After photo uploaded" || baseLabel === "Đã tải ảnh sau khi làm";
+        return {
+          ...item,
+          label: translatedLabel,
+          checked: isAfterPhotoUploaded && effectiveAfterPhoto ? true : item.checked,
+        };
+      }),
+    [completionChecks, effectiveAfterPhoto, isVi],
   );
 
   const procedureChecklist = useMemo(() => {
@@ -1327,7 +1362,7 @@ export function StaffServiceSessionPage() {
         return {
           ...procedure,
           checked: ["completed", "done"].includes(normalizedStatus),
-          label: hasStepOrder ? `Step ${procedure.stepOrder}: ${procedureName}` : procedureName,
+          label: hasStepOrder ? `${isVi ? "Bước" : "Step"} ${procedure.stepOrder}: ${procedureName}` : procedureName,
           statusLabel: String(procedure.status || "").trim() || "--",
           canClaim: isPendingStatus && !isBlocked && !isAssignedToAnyone,
           canComplete: (isInProgressStatus || (isPendingStatus && assignedArtistId === currentStaffArtistId)) && isAssignedToCurrentArtist && !isBlocked,
@@ -1336,7 +1371,7 @@ export function StaffServiceSessionPage() {
           isAssignedToCurrentArtist,
         };
       });
-  }, [bookingProcedures, currentStaffArtistId]);
+  }, [bookingProcedures, currentStaffArtistId, isVi]);
   const modalProcedureList = useMemo(() => {
     if (serviceProcedureList.length === 0) {
       return [];
@@ -1396,23 +1431,6 @@ export function StaffServiceSessionPage() {
   );
   const phase = !started ? "start" : completed ? "done" : "progress";
 
-  /**
-   * FIXED: Sticky-pin detection for the "Session Progress" card.
-   *
-   * Previously this used a scroll listener + requestAnimationFrame that
-   * read scrollTop on every scroll event. Combined with the header's
-   * padding change (p-5 -> px-4 py-3), each scroll tick could trigger a
-   * layout recalculation, which is what caused the jank/stutter.
-   *
-   * IntersectionObserver does not run on every scroll frame - the
-   * browser notifies us only when the sentinel crosses the observed
-   * boundary, so there's no per-frame layout thrashing.
-   *
-   * `rootMargin` top value must be the NEGATIVE of the height of the
-   * fixed header that sits above this page (see STICKY_HEADER_OFFSET_PX).
-   * That's what keeps the sticky card flush against that outer header
-   * instead of floating with a gap or sitting underneath it.
-   */
   useEffect(() => {
     const sentinel = progressSentinel;
 
@@ -1815,12 +1833,12 @@ export function StaffServiceSessionPage() {
 
     const procedureName = String(activeProcedure.procedureName || "").trim();
     const hasStepOrder = Number.isFinite(activeProcedure.stepOrder);
-    const baseLabel = procedureName && hasStepOrder ? `Step ${activeProcedure.stepOrder}: ${procedureName}` : "";
+    const baseLabel = procedureName && hasStepOrder ? `${isVi ? "Bước" : "Step"} ${activeProcedure.stepOrder}: ${procedureName}` : "";
 
     return activeProcedure.description
       ? `${baseLabel || fallbackNote} - ${activeProcedure.description}`
       : baseLabel || fallbackNote;
-  }, [bookingProcedures, data?.stepNote]);
+  }, [bookingProcedures, data?.stepNote, isVi]);
 
   const procedureStepSummary = useMemo(
     () => {
@@ -1832,11 +1850,11 @@ export function StaffServiceSessionPage() {
         canTick: Boolean(procedure.canComplete),
         isUpdating: Boolean(procedureStatusUpdates[procedure.bookingProcedureId]),
         label: procedure.label,
-        artist: String(procedure.assignedArtistName || "").trim() || "Unassigned",
+        artist: String(procedure.assignedArtistName || "").trim() || (isVi ? "Chưa phân công" : "Unassigned"),
         duration: Number(procedure.duration || 0),
         time: `${formatTimeValue(procedure.estimatedStartTime) || "--"} - ${formatTimeValue(procedure.estimatedEndTime) || "--"}`,
         actualTime: `${formatTimeValue(procedure.actualStartTime) || "--"} - ${formatTimeValue(procedure.actualEndTime) || "--"}`,
-        note: buildProcedureStepMeta(procedure),
+        note: buildProcedureStepMeta(procedure, language),
         stepNumber: Number.isFinite(procedure.stepOrder) ? procedure.stepOrder : index + 1,
         status: String(procedure.status || "").trim(),
         statusLabel: String(procedure.statusLabel || procedure.status || "").trim() || "--",
@@ -1850,7 +1868,7 @@ export function StaffServiceSessionPage() {
         isLast: index === procedureChecklist.length - 1,
       }));
     },
-    [procedureChecklist, procedureStatusUpdates],
+    [procedureChecklist, procedureStatusUpdates, language, isVi],
   );
 
   const resolvedProcedureLoadError = procedureLoadError && !bookingProcedures.length ? procedureLoadError : "";
@@ -1874,19 +1892,19 @@ export function StaffServiceSessionPage() {
     phase === "progress" || procedureChecklist.length > 0 || Boolean(resolvedProcedureLoadError);
   const summarySectionConfig = {
     start: {
-      title: "Customer & Booking Summary",
-      subtitle: "Final service context before the session starts.",
-      statusLabel: "Ready To Start",
+      title: isVi ? "Tóm tắt khách hàng & lịch hẹn" : "Customer & Booking Summary",
+      subtitle: isVi ? "Thông tin dịch vụ cuối cùng trước khi phiên bắt đầu." : "Final service context before the session starts.",
+      statusLabel: isVi ? "Sẵn sàng bắt đầu" : "Ready To Start",
     },
     progress: {
-      title: "Current Session Overview",
-      subtitle: "Live customer context while the service is running.",
-      statusLabel: "Session In Progress",
+      title: isVi ? "Tổng quan phiên hiện tại" : "Current Session Overview",
+      subtitle: isVi ? "Thông tin khách hàng trực tiếp khi đang làm dịch vụ." : "Live customer context while the service is running.",
+      statusLabel: isVi ? "Phiên đang thực hiện" : "Session In Progress",
     },
     done: {
-      title: "Customer & Service Summary",
-      subtitle: "Final service context before closing this session.",
-      statusLabel: "Final Review",
+      title: isVi ? "Tóm tắt khách hàng & dịch vụ" : "Customer & Service Summary",
+      subtitle: isVi ? "Thông tin dịch vụ cuối cùng trước khi đóng phiên." : "Final service context before closing this session.",
+      statusLabel: isVi ? "Đánh giá cuối cùng" : "Final Review",
     },
   };
 
@@ -1928,9 +1946,9 @@ export function StaffServiceSessionPage() {
         ),
       );
       await reloadBookingProcedures(sessionBookingItemIds, { showToast: false });
-      toast.success("Procedure claimed successfully.");
+      toast.success(isVi ? "Nhận quy trình thành công." : "Procedure claimed successfully.");
     } catch (error) {
-      const message = getErrorMessage(error, "Failed to claim procedure.");
+      const message = getErrorMessage(error, isVi ? "Nhận quy trình thất bại." : "Failed to claim procedure.");
       toast.error(message);
     } finally {
       setProcedureStatusUpdates((current) => ({
@@ -1962,9 +1980,9 @@ export function StaffServiceSessionPage() {
         reloadBookingProcedures(sessionBookingItemIds, { showToast: false, silent: true }),
         loadServiceProcedureList(bookingItemId, { showToast: false, silent: true }),
       ]);
-      toast.success("Procedure claimed successfully.");
+      toast.success(isVi ? "Nhận quy trình thành công." : "Procedure claimed successfully.");
     } catch (error) {
-      const message = getErrorMessage(error, "Failed to claim procedure.");
+      const message = getErrorMessage(error, isVi ? "Nhận quy trình thất bại." : "Failed to claim procedure.");
       toast.error(message);
     } finally {
       setClaimingProcedureId("");
@@ -2002,9 +2020,9 @@ export function StaffServiceSessionPage() {
         ),
       );
       await reloadBookingProcedures(sessionBookingItemIds, { showToast: false });
-      toast.success(`Procedure marked as ${normalizedNextStatus}.`);
+      toast.success(isVi ? `Quy trình được đổi thành ${normalizedNextStatus}.` : `Procedure marked as ${normalizedNextStatus}.`);
     } catch (error) {
-      const message = getErrorMessage(error, "Failed to update procedure status.");
+      const message = getErrorMessage(error, isVi ? "Cập nhật trạng thái thất bại." : "Failed to update procedure status.");
       toast.error(message);
     } finally {
       setProcedureStatusUpdates((current) => ({
@@ -2106,11 +2124,11 @@ export function StaffServiceSessionPage() {
       setStarted(true);
       setBeforePhoto(refreshedBeforePhoto);
       setFlashMessage(
-        "Service session started successfully.",
+        isVi ? "Dịch vụ đã bắt đầu thành công." : "Service session started successfully.",
       );
-      toast.success("Service started successfully.");
+      toast.success(isVi ? "Dịch vụ đã bắt đầu." : "Service started successfully.");
     } catch (error) {
-      const message = getErrorMessage(error, "Failed to upload before-service image and start service.");
+      const message = getErrorMessage(error, isVi ? "Tải ảnh hoặc bắt đầu dịch vụ thất bại." : "Failed to upload before-service image and start service.");
       toast.error(message);
     } finally {
       setIsStartingService(false);
@@ -2129,7 +2147,7 @@ export function StaffServiceSessionPage() {
     }
 
     if (!areAllProceduresCompleted) {
-      toast.error("All procedure steps must be completed before marking the service as done.");
+      toast.error(isVi ? "Mọi quy trình phải được hoàn thành trước." : "All procedure steps must be completed before marking the service as done.");
       return;
     }
 
@@ -2143,11 +2161,11 @@ export function StaffServiceSessionPage() {
     try {
       setCompleted(true);
       setFlashMessage(
-        "Service marked as done. Upload the after-service photo and complete the final review.",
+        isVi ? "Dịch vụ đã xong. Vui lòng tải ảnh sau khi làm và hoàn thành xác nhận." : "Service marked as done. Upload the after-service photo and complete the final review.",
       );
-      toast.success("Service moved to final review.");
+      toast.success(isVi ? "Dịch vụ chờ hoàn tất." : "Service moved to final review.");
     } catch (error) {
-      const message = getErrorMessage(error, "Failed to move the service to final review.");
+      const message = getErrorMessage(error, isVi ? "Chuyển trạng thái thất bại." : "Failed to move the service to final review.");
       toast.error(message);
     } finally {
       setIsMarkingServiceDone(false);
@@ -2163,17 +2181,17 @@ export function StaffServiceSessionPage() {
       setCompleted(true);
       setIsSessionFinalized(true);
       setShowCompleteConfirm(false);
-      toast.error("This service session has already been completed.");
+      toast.error(isVi ? "Dịch vụ này đã được hoàn thành rồi." : "This service session has already been completed.");
       return;
     }
 
     if (!afterPhoto?.file) {
-      toast.error("Select the after-service photo again before completing the session.");
+      toast.error(isVi ? "Vui lòng chọn ảnh sau khi làm trước khi hoàn tất." : "Select the after-service photo again before completing the session.");
       return;
     }
 
     if (!areAllProceduresCompleted) {
-      toast.error("All procedure steps must be completed before completing the session.");
+      toast.error(isVi ? "Tất cả các bước phải hoàn tất trước khi đóng." : "All procedure steps must be completed before completing the session.");
       return;
     }
 
@@ -2250,11 +2268,11 @@ export function StaffServiceSessionPage() {
       setShowCompleteConfirm(false);
       setAfterPhoto(refreshedAfterPhoto);
       setFlashMessage(
-        "Service completed successfully. The booking is ready for payment and history archiving.",
+        isVi ? "Hoàn thành phiên dịch vụ. Lịch hẹn sẵn sàng thanh toán." : "Service completed successfully. The booking is ready for payment and history archiving.",
       );
-      toast.success("Service completed successfully.");
+      toast.success(isVi ? "Hoàn thành dịch vụ thành công." : "Service completed successfully.");
     } catch (error) {
-      const message = getErrorMessage(error, "Failed to complete the service session.");
+      const message = getErrorMessage(error, isVi ? "Lỗi hoàn thành phiên dịch vụ." : "Failed to complete the service session.");
       toast.error(message);
     } finally {
       setProcedureStatusUpdates({});
@@ -2279,7 +2297,7 @@ export function StaffServiceSessionPage() {
     const bookingItemId = String(service?.bookingItemId || service?.id || "").trim();
 
     if (!bookingItemId) {
-      toast.error("Booking item ID is not available for this service.");
+      toast.error(isVi ? "Không tìm thấy hạng mục cho dịch vụ này." : "Booking item ID is not available for this service.");
       return;
     }
 
@@ -2379,18 +2397,14 @@ export function StaffServiceSessionPage() {
           return quantity > 1 ? `${matchedService.name} x${quantity}` : matchedService.name;
         })
         .filter(Boolean);
-      setFlashMessage(
-        selectedServiceNames.length
-          ? `${selectedServiceNames.join(", ")} ${selectedServiceNames.length > 1 ? "have" : "has"} been added to this booking.`
-          : "Extra services have been added to this booking.",
-      );
-      toast.success(
-        normalizedSelectedServices.length
-          ? `Added ${normalizedSelectedServices.length} service type${normalizedSelectedServices.length > 1 ? "s" : ""} to the booking.`
-          : "Extra services added successfully.",
-      );
+      setFlashMessage(selectedServiceNames.length
+        ? (isVi ? `Đã thêm dịch vụ: ${selectedServiceNames.join(", ")}.` : `${selectedServiceNames.join(", ")} ${selectedServiceNames.length > 1 ? "have" : "has"} been added to this booking.`)
+        : (isVi ? "Đã thêm dịch vụ vào lịch hẹn." : "Extra services have been added to this booking."));
+      toast.success(normalizedSelectedServices.length
+        ? (isVi ? `Đã thêm ${normalizedSelectedServices.length} loại dịch vụ.` : `Added ${normalizedSelectedServices.length} service type${normalizedSelectedServices.length > 1 ? "s" : ""} to the booking.`)
+        : (isVi ? "Thêm dịch vụ thành công." : "Extra services added successfully."));
     } catch (error) {
-      const message = getErrorMessage(error, "Failed to add extra service.");
+      const message = getErrorMessage(error, isVi ? "Thêm dịch vụ thất bại." : "Failed to add extra service.");
       toast.error(message);
     } finally {
       setIsSavingExtraService(false);
@@ -2399,7 +2413,7 @@ export function StaffServiceSessionPage() {
 
   const handleOpenComparison = () => {
     if (!canOpenComparison) {
-      handleSessionAction("Upload both before and after photos to prepare the comparison view.");
+      handleSessionAction(isVi ? "Cần có ảnh trước và sau khi làm để xem đối chiếu." : "Upload both before and after photos to prepare the comparison view.");
       return;
     }
 
@@ -2408,7 +2422,7 @@ export function StaffServiceSessionPage() {
   };
 
   const handleRequestCustomerReview = () => {
-    toast.success("Customer review request sent successfully.");
+    toast.success(isVi ? "Đã gửi yêu cầu đánh giá cho khách." : "Customer review request sent successfully.");
     setFlashMessage("");
   };
 
@@ -2427,13 +2441,13 @@ export function StaffServiceSessionPage() {
         <div className="max-h-[92vh] overflow-y-auto px-5 py-5 sm:px-7 sm:py-7">
           <div className="pr-14">
             <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#c990ab]">
-              Final Result Review
+              {isVi ? "Đánh giá kết quả" : "Final Result Review"}
             </p>
             <h2 className="mt-2 text-2xl font-black tracking-tight text-[#3f2b3f]">
-              Before & After Comparison
+              {isVi ? "Đối Chiếu Trước & Sau" : "Before & After Comparison"}
             </h2>
             <p className="mt-2 max-w-2xl text-sm text-[#8f7286]">
-              Review the service transformation in one place before checkout handoff.
+              {isVi ? "Kiểm tra sự thay đổi trước khi thanh toán." : "Review the service transformation in one place before checkout handoff."}
             </p>
           </div>
 
@@ -2442,10 +2456,10 @@ export function StaffServiceSessionPage() {
               <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
                 <div>
                   <p className="text-xs font-semibold text-gray-500">
-                    Before service
+                    {isVi ? "Trước khi làm" : "Before service"}
                   </p>
                   <p className="mt-1 text-sm font-bold text-gray-900">
-                    Original design
+                    {isVi ? "Tình trạng gốc" : "Original design"}
                   </p>
                 </div>
                 <span className="rounded-full bg-[#fff1f7] px-3 py-1 text-[10px] font-bold text-[#ea4f93]">
@@ -2461,7 +2475,7 @@ export function StaffServiceSessionPage() {
                   />
                 ) : (
                   <div className="flex h-[280px] items-center justify-center rounded-[22px] border border-dashed border-[#f2bfd4] bg-white px-6 text-center text-sm text-[#a88a9d] sm:h-[360px]">
-                    Before-service photo is not available.
+                    {isVi ? "Ảnh trước khi làm chưa khả dụng." : "Before-service photo is not available."}
                   </div>
                 )}
               </div>
@@ -2471,10 +2485,10 @@ export function StaffServiceSessionPage() {
               <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
                 <div>
                   <p className="text-xs font-semibold text-gray-500">
-                    After service
+                    {isVi ? "Sau khi làm" : "After service"}
                   </p>
                   <p className="mt-1 text-sm font-bold text-gray-900">
-                    Final design
+                    {isVi ? "Hoàn thiện" : "Final design"}
                   </p>
                 </div>
                 <span className="rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold text-emerald-600">
@@ -2490,7 +2504,7 @@ export function StaffServiceSessionPage() {
                   />
                 ) : (
                   <div className="flex h-[280px] items-center justify-center rounded-[22px] border border-dashed border-[#f2bfd4] bg-white px-6 text-center text-sm text-[#a88a9d] sm:h-[360px]">
-                    After-service photo is not available.
+                    {isVi ? "Ảnh sau khi làm chưa khả dụng." : "After-service photo is not available."}
                   </div>
                 )}
               </div>
@@ -2500,19 +2514,19 @@ export function StaffServiceSessionPage() {
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             <div className="rounded-[22px] border border-[#f3d5e2] bg-white px-5 py-4">
               <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#b68aa2]">
-                Customer
+                {isVi ? "Khách hàng" : "Customer"}
               </p>
               <p className="mt-2 text-base font-extrabold text-[#3f2b3f]">{data.customerName}</p>
             </div>
             <div className="rounded-[22px] border border-[#f3d5e2] bg-white px-5 py-4">
               <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#b68aa2]">
-                Service
+                {isVi ? "Dịch vụ" : "Service"}
               </p>
               <p className="mt-2 text-base font-extrabold text-[#3f2b3f]">{data.serviceLabel}</p>
             </div>
             <div className="rounded-[22px] border border-[#f3d5e2] bg-white px-5 py-4">
               <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#b68aa2]">
-                Design
+                {isVi ? "Thiết kế" : "Design"}
               </p>
               <p className="mt-2 text-base font-extrabold text-[#3f2b3f]">
                 {hasConfirmedDesign ? data.designName : "N/A"}
@@ -2526,7 +2540,7 @@ export function StaffServiceSessionPage() {
               onClick={() => setShowComparisonView(false)}
               className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-[#f2bfd4] bg-white px-5 py-3 text-sm font-bold text-[#8a6179] transition hover:bg-[#fff7fb]"
             >
-              Close
+              {isVi ? "Đóng" : "Close"}
             </button>
             <button
               type="button"
@@ -2540,7 +2554,7 @@ export function StaffServiceSessionPage() {
               }
               className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-[image:var(--gradient-accent)] px-5 py-3 text-sm font-bold text-white shadow-[0_16px_28px_rgba(236,72,153,0.24)]"
             >
-              Go to Checkout
+              {isVi ? "Chuyển tới thanh toán" : "Go to Checkout"}
             </button>
           </div>
         </div>
@@ -2550,18 +2564,18 @@ export function StaffServiceSessionPage() {
 
   const progressSteps = [
     {
-      label: "Start",
-      statusLabel: started ? "Complete" : "Active",
+      label: isVi ? "Bắt đầu" : "Start",
+      statusLabel: started ? (isVi ? "Hoàn thành" : "Complete") : (isVi ? "Chưa xong" : "Active"),
       state: started ? "complete" : "active",
     },
     {
-      label: "In Progress",
-      statusLabel: completed ? "Complete" : started ? "Active" : "Not Yet",
+      label: isVi ? "Trong quá trình" : "In Progress",
+      statusLabel: completed ? (isVi ? "Hoàn thành" : "Complete") : started ? (isVi ? "Đang tiến hành" : "Active") : (isVi ? "Chưa tới" : "Not Yet"),
       state: completed ? "complete" : started ? "active" : "upcoming",
     },
     {
-      label: "Done",
-      statusLabel: completed ? "Active" : "Not Yet",
+      label: isVi ? "Hoàn thành" : "Done",
+      statusLabel: completed ? (isVi ? "Đang tiến hành" : "Active") : (isVi ? "Chưa tới" : "Not Yet"),
       state: completed ? "active" : "upcoming",
     },
   ];
@@ -2575,20 +2589,20 @@ export function StaffServiceSessionPage() {
               <CheckCircle2 size={30} strokeWidth={2.6} />
             </span>
             <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.18em] text-[#16975f]">
-              Session Completed
+              {isVi ? "Phiên đã hoàn thành" : "Session Completed"}
             </p>
             <h1 className="mt-2 text-[2rem] font-black tracking-tight text-[#15803d]">
-              Session completed successfully
+              {isVi ? "Dịch vụ đã hoàn tất thành công" : "Session completed successfully"}
             </h1>
             <p className="mt-3 max-w-2xl text-sm text-[#5f8a70]">
-              The service session has been finalized. Continue with the handoff actions below or return to the booking list.
+              {isVi ? "Có thể tiếp tục các bước tiếp theo bên dưới hoặc trở về danh sách lịch hẹn." : "The service session has been finalized. Continue with the handoff actions below or return to the booking list."}
             </p>
             <button
               type="button"
               onClick={() => navigate(ROUTES.staffBookings)}
               className="mt-5 inline-flex min-h-11 items-center justify-center rounded-2xl border border-[#b7e6c8] bg-white px-5 py-3 text-sm font-bold text-[#16975f] transition hover:bg-[#f3fff7]"
             >
-              Back to Booking List
+              {isVi ? "Quay lại danh sách" : "Back to Booking List"}
             </button>
           </div>
         </article>
@@ -2596,8 +2610,8 @@ export function StaffServiceSessionPage() {
         <article className="rounded-[26px] border border-[#f3d5e2] bg-white p-6 shadow-[0_18px_40px_rgba(236,72,153,0.06)]">
           <SectionTitle
             icon={Sparkles}
-            title="Next Step"
-            subtitle="Handoff actions after the staff session is finished."
+            title={isVi ? "Bước tiếp theo" : "Next Step"}
+            subtitle={isVi ? "Các hành động sau khi hoàn thành dịch vụ." : "Handoff actions after the staff session is finished."}
           />
 
           <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -2617,8 +2631,8 @@ export function StaffServiceSessionPage() {
                 <Receipt size={19} />
               </span>
               <span>
-                <span className="block text-base font-extrabold text-[#3f2b3f]">Go to Checkout</span>
-                <span className="mt-1 block text-sm text-[#a88a9d]">Proceed from staff handoff to payment review.</span>
+                <span className="block text-base font-extrabold text-[#3f2b3f]">{isVi ? "Thanh toán" : "Go to Checkout"}</span>
+                <span className="mt-1 block text-sm text-[#a88a9d]">{isVi ? "Chuyển tới quy trình thanh toán." : "Proceed from staff handoff to payment review."}</span>
               </span>
             </button>
 
@@ -2631,26 +2645,10 @@ export function StaffServiceSessionPage() {
                 <ClipboardCheck size={19} />
               </span>
               <span>
-                <span className="block text-base font-extrabold text-[#3f2b3f]">Request Customer Review</span>
-                <span className="mt-1 block text-sm text-[#a88a9d]">Send the final review prompt to the customer profile.</span>
+                <span className="block text-base font-extrabold text-[#3f2b3f]">{isVi ? "Yêu cầu đánh giá" : "Request Customer Review"}</span>
+                <span className="mt-1 block text-sm text-[#a88a9d]">{isVi ? "Gửi thông báo yêu cầu đánh giá cho khách." : "Send the final review prompt to the customer profile."}</span>
               </span>
             </button>
-
-            {/* <button
-              type="button"
-              onClick={() =>
-                handleSessionAction("Completed design can now be saved to the customer history archive.")
-              }
-              className="flex min-h-24 items-start gap-4 rounded-[24px] border border-[#f2bfd4] bg-[#fff7fb] px-5 py-5 text-left transition hover:bg-[#fff2f8]"
-            >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
-                <Sparkles size={19} />
-              </span>
-              <span>
-                <span className="block text-base font-extrabold text-[#3f2b3f]">Save Design to History</span>
-                <span className="mt-1 block text-sm text-[#a88a9d]">Archive this final result to the customer profile.</span>
-              </span>
-            </button> */}
 
             <button
               type="button"
@@ -2665,8 +2663,8 @@ export function StaffServiceSessionPage() {
                 <Camera size={19} />
               </span>
               <span>
-                <span className="block text-base font-extrabold text-[#3f2b3f]">Compare Before & After</span>
-                <span className="mt-1 block text-sm text-[#a88a9d]">Open the side-by-side transformation view after both photos are uploaded.</span>
+                <span className="block text-base font-extrabold text-[#3f2b3f]">{isVi ? "Đối chiếu ảnh" : "Compare Before & After"}</span>
+                <span className="mt-1 block text-sm text-[#a88a9d]">{isVi ? "Xem ảnh trước và sau khi làm dịch vụ." : "Open the side-by-side transformation view after both photos are uploaded."}</span>
               </span>
             </button>
           </div>
@@ -2697,8 +2695,8 @@ export function StaffServiceSessionPage() {
           <div className="overflow-hidden">
             <SectionTitle
               icon={Sparkles}
-              title="Session Progress"
-              subtitle="Track the start and completion of the service workflow."
+              title={isVi ? "Tiến độ dịch vụ" : "Session Progress"}
+              subtitle={isVi ? "Theo dõi quá trình bắt đầu và hoàn thiện." : "Track the start and completion of the service workflow."}
             />
           </div>
         </div>
@@ -2736,8 +2734,8 @@ export function StaffServiceSessionPage() {
               <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={Camera}
-                  title="Before-Service Photo Upload"
-                  subtitle="Save a before photo as proof before the nail service starts."
+                  title={isVi ? "Tải lên ảnh trước khi làm" : "Before-Service Photo Upload"}
+                  subtitle={isVi ? "Lưu lại ảnh làm bằng chứng trước khi thao tác." : "Save a before photo as proof before the nail service starts."}
                 />
 
                 <label className="mt-5 block cursor-pointer rounded-[22px] border-2 border-dashed border-[#f2bfd4] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f8_100%)] px-6 py-10 text-center transition hover:border-[#ea4f93] hover:bg-[#fff6fa]">
@@ -2751,12 +2749,20 @@ export function StaffServiceSessionPage() {
                     <ImageUp size={28} />
                   </div>
                   <h3 className="mt-5 text-base font-extrabold text-[#3f2b3f]">
-                    Upload hand photo before service
+                    {isVi ? "Tải ảnh tay trước khi làm" : "Upload hand photo before service"}
                   </h3>
                   <p className="mt-2 text-sm leading-6 text-[#a88a9d]">
-                    This photo will be saved as proof before the nail service starts.
-                    <br />
-                    Drag and drop your file here, or click to browse.
+                    {isVi ? (
+                      <>
+                        Bức ảnh này sẽ được lưu lại làm bằng chứng tình trạng móng lúc ban đầu.<br />
+                        Kéo thả file vào đây, hoặc click để duyệt file.
+                      </>
+                    ) : (
+                      <>
+                        This photo will be saved as proof before the nail service starts.<br />
+                        Drag and drop your file here, or click to browse.
+                      </>
+                    )}
                   </p>
                   <div className="mt-4 flex items-center justify-center gap-2">
                     <span className="rounded-full bg-[#ffe6ef] px-3 py-1 text-[10px] font-bold text-[#ea4f93]">
@@ -2768,20 +2774,19 @@ export function StaffServiceSessionPage() {
                   </div>
                   <span className="mt-6 inline-flex items-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-5 py-3 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.22)]">
                     <Upload size={14} />
-                    Upload Before Photo
+                    {isVi ? "Tải ảnh lên" : "Upload Before Photo"}
                   </span>
                 </label>
 
                 <div className="mt-6 border-t border-[#f8e6ef] pt-5">
                   <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
-                    Uploaded Preview
+                    {isVi ? "Bản xem trước" : "Uploaded Preview"}
                   </p>
                   {effectiveBeforePhoto ? (
                     <div className="mt-4 flex items-center gap-4 rounded-[20px] border border-[#f2bfd4] bg-[#fff8fb] p-4">
                       <Image crossOrigin="anonymous"
                         src={effectiveBeforePhoto.previewUrl}
                         alt={effectiveBeforePhoto.fileName}
-                        // className="h-20 w-20 rounded-2xl border border-[#f2bfd4] object-cover"
                         style={{ width: "80px", height: "80px", borderRadius: "16px", objectFit: "cover", border: "1px solid #f2bfd4" }}
                       />
                       <div className="min-w-0 flex-1">
@@ -2789,17 +2794,17 @@ export function StaffServiceSessionPage() {
                           {effectiveBeforePhoto.fileName}
                         </p>
                         <p className="mt-1 text-xs text-[#a88a9d]">
-                          Uploaded at {effectiveBeforePhoto.uploadedAt} - Today
+                          {isVi ? `Đã tải lên lúc ${effectiveBeforePhoto.uploadedAt} - Hôm nay` : `Uploaded at ${effectiveBeforePhoto.uploadedAt} - Today`}
                         </p>
                         <span className="mt-3 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-bold text-emerald-600">
                           <CheckCircle2 size={12} />
-                          Before Photo Uploaded
+                          {isVi ? "Đã tải ảnh lên" : "Before Photo Uploaded"}
                         </span>
                       </div>
                     </div>
                   ) : (
                     <div className="mt-4 rounded-[18px] border border-[#f4dbe7] bg-[#fffafb] px-4 py-4 text-sm text-[#a88a9d]">
-                      No before-service photo uploaded yet.
+                      {isVi ? "Chưa có ảnh nào được tải lên." : "No before-service photo uploaded yet."}
                     </div>
                   )}
                 </div>
@@ -2808,8 +2813,8 @@ export function StaffServiceSessionPage() {
               <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={ShieldCheck}
-                  title="Service Start Confirmation"
-                  subtitle="Complete these checks before beginning the live service."
+                  title={isVi ? "Xác nhận bắt đầu" : "Service Start Confirmation"}
+                  subtitle={isVi ? "Hoàn thiện các kiểm tra trước khi tiến hành." : "Complete these checks before beginning the live service."}
                 />
                 <div className="mt-5 space-y-3">
                   {displayConfirmations.map((item) => (
@@ -2832,7 +2837,7 @@ export function StaffServiceSessionPage() {
                     }`}
                 >
                   <Play size={16} />
-                  Start Service
+                  {isVi ? "Bắt đầu làm" : "Start Service"}
                 </button>
               </article>
             </>
@@ -2851,8 +2856,8 @@ export function StaffServiceSessionPage() {
               <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={Camera}
-                  title="Before Photo Preview"
-                  subtitle="This image was uploaded before the service started."
+                  title={isVi ? "Ảnh trước khi làm" : "Before Photo Preview"}
+                  subtitle={isVi ? "Hình ảnh đã tải lên trước khi làm dịch vụ." : "This image was uploaded before the service started."}
                 />
 
                 <div className="mt-5 overflow-hidden rounded-[22px] border border-[#f2bfd4] bg-[#fff7fb]">
@@ -2865,15 +2870,15 @@ export function StaffServiceSessionPage() {
                       />
                       <span className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/90 px-3 py-1 text-[10px] font-bold text-emerald-700 backdrop-blur">
                         <CheckCircle2 size={12} />
-                        Before Photo Uploaded
+                        {isVi ? "Đã tải ảnh lên" : "Before Photo Uploaded"}
                       </span>
                       <span className="absolute bottom-4 right-4 rounded-full bg-white/90 px-3 py-1 text-[10px] font-semibold text-[#866f80] backdrop-blur">
-                        Uploaded {effectiveBeforePhoto.uploadedAt ?? data.beforePhotoTimestamp}
+                        {isVi ? "Đã tải lên lúc " : "Uploaded "} {effectiveBeforePhoto.uploadedAt ?? data.beforePhotoTimestamp}
                       </span>
                     </div>
                   ) : (
                     <div className="flex h-[260px] items-center justify-center px-6 text-center text-sm text-[#a88a9d]">
-                      Before-service photo is not available yet.
+                      {isVi ? "Không có ảnh trước khi làm." : "Before-service photo is not available yet."}
                     </div>
                   )}
                 </div>
@@ -2882,23 +2887,23 @@ export function StaffServiceSessionPage() {
               <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={Sparkles}
-                  title="Current Service Status"
-                  subtitle="Track what is happening during the active session."
+                  title={isVi ? "Trạng thái dịch vụ" : "Current Service Status"}
+                  subtitle={isVi ? "Theo dõi các việc đang diễn ra." : "Track what is happening during the active session."}
                 />
 
                 <div className="mt-5 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[#f5d6e4] bg-[linear-gradient(180deg,#fff8fb_0%,#fff3f8_100%)] p-4 shadow-xs">
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
-                      Session Status
+                      {isVi ? "Trạng thái" : "Session Status"}
                     </p>
                     <p className="mt-1 text-base font-extrabold text-slate-800">
-                      {phase === "progress" ? "In Progress" : phase === "done" ? "Completed" : "Ready to Start"}
+                      {phase === "progress" ? (isVi ? "Đang tiến hành" : "In Progress") : phase === "done" ? (isVi ? "Đã hoàn thành" : "Completed") : (isVi ? "Sẵn sàng" : "Ready to Start")}
                     </p>
                   </div>
                   {data.remainingTime ? (
                     <div className="text-right">
                       <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
-                        Estimated Time
+                        {isVi ? "Thời gian dự kiến" : "Estimated Time"}
                       </p>
                       <p className="mt-1 text-base font-black text-[#ea4f93]">{data.remainingTime}</p>
                     </div>
@@ -2908,24 +2913,24 @@ export function StaffServiceSessionPage() {
                 {phase === "progress" ? (
                   <div className="mt-3 rounded-[22px] border border-[#f4cfdd] bg-[linear-gradient(180deg,#fffdfd_0%,#fff8f2_100%)] px-4 py-4 shadow-[0_14px_28px_rgba(236,72,153,0.05)]">
                     <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
-                      Procedure Steps
+                      {isVi ? "Quy trình thực hiện" : "Procedure Steps"}
                     </p>
                     {isLoadingProcedures ? (
                       <div className="mt-4 rounded-[18px] border border-[#f4dbe7] bg-white px-4 py-4 text-sm text-[#a88a9d]">
-                        Loading procedure steps...
+                        {isVi ? "Đang tải quy trình..." : "Loading procedure steps..."}
                       </div>
                     ) : procedureStepSummary.length > 0 ? (
                       <div className="mt-4 overflow-x-auto rounded-xl border border-[#f4dbe7]">
                         <table className="w-full text-left text-sm whitespace-nowrap">
                           <thead className="bg-[#fdf4f8] text-[#b59aab] uppercase tracking-wider text-[10px]">
                             <tr>
-                              <th className="px-4 py-3 font-bold">Step</th>
-                              <th className="px-4 py-3 font-bold">Procedure</th>
-                              <th className="px-4 py-3 font-bold">Artist</th>
-                              <th className="px-4 py-3 font-bold">Duration & Time</th>
-                              <th className="px-4 py-3 font-bold">Start & End Time</th>
-                              <th className="px-4 py-3 font-bold">Status</th>
-                              <th className="px-4 py-3 font-bold text-center">Action</th>
+                              <th className="px-4 py-3 font-bold">{isVi ? "Bước" : "Step"}</th>
+                              <th className="px-4 py-3 font-bold">{isVi ? "Quy trình" : "Procedure"}</th>
+                              <th className="px-4 py-3 font-bold">{isVi ? "Thợ" : "Artist"}</th>
+                              <th className="px-4 py-3 font-bold">{isVi ? "Thời lượng & Hẹn" : "Duration & Time"}</th>
+                              <th className="px-4 py-3 font-bold">{isVi ? "Thực tế" : "Start & End Time"}</th>
+                              <th className="px-4 py-3 font-bold">{isVi ? "Trạng thái" : "Status"}</th>
+                              <th className="px-4 py-3 font-bold text-center">{isVi ? "Thao tác" : "Action"}</th>
                             </tr>
                           </thead>
                           <tbody className="bg-white">
@@ -2958,8 +2963,8 @@ export function StaffServiceSessionPage() {
                                     <span className="rounded bg-purple-100 px-2 py-0.5 text-sm font-bold text-purple-900">{procedure.time}</span>
                                     <span className="mt-1 text-[11px] font-semibold text-green-500">
                                       {procedure.duration >= 60
-                                        ? `${Math.floor(procedure.duration / 60)}h${procedure.duration % 60 > 0 ? ` ${procedure.duration % 60}m` : ""}`
-                                        : `${procedure.duration} min`}
+                                        ? `${Math.floor(procedure.duration / 60)}${isVi ? "giờ" : "h"}${procedure.duration % 60 > 0 ? ` ${procedure.duration % 60}${isVi ? "phút" : "m"}` : ""}`
+                                        : `${procedure.duration} ${isVi ? "phút" : "min"}`}
                                     </span>
                                   </div>
                                 </td>
@@ -2979,7 +2984,7 @@ export function StaffServiceSessionPage() {
                                       type="button"
                                       onClick={() => void handleUpdateProcedureStatus(procedure, "Completed")}
                                       disabled={procedure.isUpdating}
-                                      title="Mark this procedure as completed"
+                                      title={isVi ? "Đánh dấu bước này hoàn tất" : "Mark this procedure as completed"}
                                       className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#cfead9] bg-[#f3fcf6] text-[#249a5c] shadow-[0_4px_10px_rgba(36,154,92,0.12)] transition hover:bg-[#eaf8f0] disabled:cursor-not-allowed disabled:opacity-60"
                                     >
                                       {procedure.isUpdating ? (
@@ -2997,7 +3002,7 @@ export function StaffServiceSessionPage() {
                       </div>
                     ) : (
                       <div className="mt-4 rounded-[18px] border border-[#f4dbe7] bg-white px-4 py-4 text-sm text-[#a88a9d]">
-                        {resolvedProcedureLoadError || "No procedure steps found for this booking item."}
+                        {resolvedProcedureLoadError || (isVi ? "Không tìm thấy quy trình nào." : "No procedure steps found for this booking item.")}
                       </div>
                     )}
                   </div>
@@ -3007,21 +3012,21 @@ export function StaffServiceSessionPage() {
               <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={Play}
-                  title="Live Session Actions"
-                  subtitle="Quick controls while the appointment is in progress."
+                  title={isVi ? "Thao tác trực tiếp" : "Live Session Actions"}
+                  subtitle={isVi ? "Các tùy chọn nhanh khi đang làm dịch vụ." : "Quick controls while the appointment is in progress."}
                 />
 
                 <div className="mt-5 grid gap-3 md:grid-cols-2">
                   <ActionGhostButton
                     icon={Plus}
-                    label="Add Extra Service"
+                    label={isVi ? "Thêm dịch vụ phụ" : "Add Extra Service"}
                     onClick={handleOpenExtraServiceModal}
                   />
                   <ActionGhostButton
                     icon={FilePenLine}
-                    label="Add Session Note"
+                    label={isVi ? "Ghi chú" : "Add Session Note"}
                     onClick={() =>
-                      handleSessionAction("Use the staff notes area below to record the latest session update.")
+                      handleSessionAction(isVi ? "Ghi lại lưu ý đặc biệt cho phiên làm móng này ở mục bên dưới." : "Use the staff notes area below to record the latest session update.")
                     }
                   />
                 </div>
@@ -3036,7 +3041,7 @@ export function StaffServiceSessionPage() {
                     }`}
                 >
                   <CheckCircle2 size={16} />
-                  {isMarkingServiceDone ? "Opening Final Review..." : "Mark Service as Done"}
+                  {isMarkingServiceDone ? (isVi ? "Đang mở đánh giá..." : "Opening Final Review...") : (isVi ? "Đánh dấu là đã xong" : "Mark Service as Done")}
                 </button>
               </article>
 
@@ -3057,8 +3062,8 @@ export function StaffServiceSessionPage() {
               <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={Camera}
-                  title="After-Service Photo Upload"
-                  subtitle="Upload the final photo as proof after the service is finished."
+                  title={isVi ? "Ảnh sau khi làm" : "After-Service Photo Upload"}
+                  subtitle={isVi ? "Tải lên kết quả móng cuối cùng." : "Upload the final photo as proof after the service is finished."}
                 />
 
                 <label className="mt-5 block cursor-pointer rounded-[22px] border-2 border-dashed border-[#f2bfd4] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f8_100%)] px-6 py-10 text-center transition hover:border-[#ea4f93] hover:bg-[#fff6fa]">
@@ -3072,12 +3077,21 @@ export function StaffServiceSessionPage() {
                     <ImageUp size={26} />
                   </div>
                   <h3 className="mt-5 text-base font-extrabold text-[#3f2b3f]">
-                    Upload completed nail photo
+                    {isVi ? "Tải ảnh hoàn thiện" : "Upload completed nail photo"}
                   </h3>
                   <p className="mt-2 text-sm leading-6 text-[#a88a9d]">
-                    This photo will be saved as proof after the service is finished.
-                    <br />
-                    Drag and drop your file here or click to browse.
+                    {isVi ? (
+                      <>
+                        Bức ảnh này sẽ lưu làm thành quả của dịch vụ.<br />
+                        Kéo thả hoặc click để chọn ảnh.
+                      </>
+                    ) : (
+                      <>
+                        This photo will be saved as proof after the service is finished.
+                        <br />
+                        Drag and drop your file here or click to browse.
+                      </>
+                    )}
                   </p>
                   <div className="mt-4 flex items-center justify-center gap-2">
                     <span className="rounded-full bg-[#f0e8ff] px-3 py-1 text-[10px] font-bold text-[#6b46c1]">
@@ -3089,20 +3103,19 @@ export function StaffServiceSessionPage() {
                   </div>
                   <span className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[image:var(--gradient-accent)] px-5 py-3 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.22)]">
                     <Upload size={14} />
-                    Upload After Photo
+                    {isVi ? "Tải ảnh sau khi làm" : "Upload After Photo"}
                   </span>
                 </label>
 
                 <div className="mt-6 border-t border-[#f8e6ef] pt-5">
                   <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#ea4f93]">
-                    Preview - After Photo
+                    {isVi ? "Xem trước kết quả" : "Preview - After Photo"}
                   </p>
                   {effectiveAfterPhoto ? (
                     <div className="mt-4 flex items-center gap-4 rounded-[20px] border border-[#f2bfd4] bg-[#fff8fb] p-4">
                       <Image crossOrigin="anonymous"
                         src={effectiveAfterPhoto.previewUrl}
                         alt={effectiveAfterPhoto.fileName}
-                        // className="h-20 w-20 rounded-2xl border border-[#f2bfd4] object-cover"
                         style={{ width: "80px", height: "80px", borderRadius: "16px", objectFit: "cover", border: "1px solid #f2bfd4" }}
                       />
                       <div className="min-w-0 flex-1">
@@ -3110,17 +3123,17 @@ export function StaffServiceSessionPage() {
                           {effectiveAfterPhoto.fileName}
                         </p>
                         <p className="mt-1 text-xs text-[#a88a9d]">
-                          Uploaded at {effectiveAfterPhoto.uploadedAt} - {effectiveAfterPhoto.fileSizeLabel ?? "2.4 MB"}
+                          {isVi ? `Tải lên lúc ${effectiveAfterPhoto.uploadedAt} - ` : `Uploaded at ${effectiveAfterPhoto.uploadedAt} - `} {effectiveAfterPhoto.fileSizeLabel ?? "2.4 MB"}
                         </p>
                         <span className="mt-3 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-bold text-emerald-600">
                           <CheckCircle2 size={12} />
-                          After Photo Uploaded
+                          {isVi ? "Ảnh đã được tải lên" : "After Photo Uploaded"}
                         </span>
                       </div>
                     </div>
                   ) : (
                     <div className="mt-4 rounded-[18px] border border-[#f4dbe7] bg-[#fffafb] px-4 py-4 text-sm text-[#a88a9d]">
-                      No after-service photo uploaded yet.
+                      {isVi ? "Chưa tải lên ảnh sau khi làm." : "No after-service photo uploaded yet."}
                     </div>
                   )}
                 </div>
@@ -3129,8 +3142,8 @@ export function StaffServiceSessionPage() {
               <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={ClipboardCheck}
-                  title="Completion Confirmation"
-                  subtitle="Review the final checks before closing the booking."
+                  title={isVi ? "Xác nhận kết thúc" : "Completion Confirmation"}
+                  subtitle={isVi ? "Kiểm tra kỹ trước khi chốt lịch." : "Review the final checks before closing the booking."}
                 />
 
                 <div className="mt-5 space-y-3">
@@ -3147,7 +3160,7 @@ export function StaffServiceSessionPage() {
                 {shouldShowProcedureChecklist ? (
                   <div className="mt-5 rounded-[18px] border border-[#f2bfd4] bg-[#fff6fa] p-4">
                     <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
-                      Nail Procedure
+                      {isVi ? "Quy trình đã làm" : "Nail Procedure"}
                     </p>
                     <div className="mt-4 space-y-3">
                       {procedureChecklist.length > 0 ? (
@@ -3177,7 +3190,7 @@ export function StaffServiceSessionPage() {
                                     }}
                                     className="inline-flex min-h-8 items-center justify-center rounded-full border border-[#d9c8ff] bg-[#f4efff] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#7c63d8] transition hover:bg-[#eee6ff] disabled:cursor-not-allowed disabled:opacity-60"
                                   >
-                                    Claim
+                                    {isVi ? "Nhận" : "Claim"}
                                   </button>
                                 ) : null}
                                 {procedure.canComplete ? (
@@ -3190,12 +3203,12 @@ export function StaffServiceSessionPage() {
                                     }}
                                     className="inline-flex min-h-8 items-center justify-center rounded-full border border-[#cfead9] bg-[#f3fcf6] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#249a5c] transition hover:bg-[#eaf9ef] disabled:cursor-not-allowed disabled:opacity-60"
                                   >
-                                    Complete
+                                    {isVi ? "Hoàn thành" : "Complete"}
                                   </button>
                                 ) : null}
                                 {procedure.isBlocked ? (
                                   <span className="inline-flex min-h-8 items-center justify-center rounded-full border border-[#f6d9b8] bg-[#fff7ed] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#dd8a12]">
-                                    Blocked
+                                    {isVi ? "Đang khóa" : "Blocked"}
                                   </span>
                                 ) : null}
                                 {procedure.canSkip ? (
@@ -3208,7 +3221,7 @@ export function StaffServiceSessionPage() {
                                     }}
                                     className="inline-flex min-h-8 items-center justify-center rounded-full border border-[#f4c7d9] bg-[#fff4f8] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#d95a95] transition hover:bg-[#ffe8f2] disabled:cursor-not-allowed disabled:opacity-60"
                                   >
-                                    Skip
+                                    {isVi ? "Bỏ qua" : "Skip"}
                                   </button>
                                 ) : null}
                               </div>
@@ -3223,37 +3236,21 @@ export function StaffServiceSessionPage() {
                     </div>
                   </div>
                 ) : null}
-
-                {/* {hasConfirmedDesign ? (
-                  <div className="mt-4 rounded-xl border border-[#f2bfd4] bg-white px-4 py-4">
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-                        <Sparkles size={18} />
-                      </div>
-                      <div>
-                        <p className="text-sm font-extrabold text-[#3f2b3f]">Save Design to History</p>
-                        <p className="mt-1 text-xs text-[#a88a9d]">
-                          Archive this completed design into the customer profile.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ) : null} */}
               </article>
 
               <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={Receipt}
-                  title="Final Service Summary"
-                  subtitle="Review the amount before handing over to payment flow."
+                  title={isVi ? "Chi phí tạm tính" : "Final Service Summary"}
+                  subtitle={isVi ? "Rà soát lại để đảm bảo tính đúng tiền." : "Review the amount before handing over to payment flow."}
                 />
 
                 <div className="mt-5 overflow-hidden rounded-[18px] border border-[#f4dbe7] bg-[#fffafb]">
                   <div className="hidden grid-cols-[120px_minmax(0,1fr)_88px_140px] items-center gap-3 border-b border-[#f8dce8] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f7_100%)] px-5 py-3 md:grid">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">Type</p>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">Item</p>
-                    <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">Qty</p>
-                    <p className="text-right text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">Amount</p>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">{isVi ? "Loại" : "Type"}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">{isVi ? "Mục" : "Item"}</p>
+                    <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">{isVi ? "SL" : "Qty"}</p>
+                    <p className="text-right text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">{isVi ? "Thành tiền" : "Amount"}</p>
                   </div>
 
                   <div className="divide-y divide-[#f9dfeb] text-sm">
@@ -3263,7 +3260,7 @@ export function StaffServiceSessionPage() {
                         className="px-4 py-4 md:grid md:grid-cols-[120px_minmax(0,1fr)_88px_140px] md:items-center md:gap-3 md:px-5"
                       >
                         <div className="flex items-center justify-between gap-3 md:block">
-                          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab] md:hidden">Type</p>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab] md:hidden">{isVi ? "Loại" : "Type"}</p>
                           <span className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-bold 
                           ${item.type === "Discount"
                               ? "border-emerald-200 bg-emerald-50 text-emerald-600"
@@ -3273,25 +3270,25 @@ export function StaffServiceSessionPage() {
                               ? "border-yellow-200 bg-yellow-50 text-yellow-600"
                               : "border-[#f2bfd4] bg-white text-[#ea4f93]"
                             }`}>
-                            {item.type}
+                            {item.type === "Service" && isVi ? "Dịch vụ" : item.type === "Nail Service" && isVi ? "Mẫu móng" : item.type === "Discount" && isVi ? "Giảm giá" : item.type}
                           </span>
                         </div>
 
                         <div className="mt-3 min-w-0 md:mt-0">
-                          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab] md:hidden">Item</p>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab] md:hidden">{isVi ? "Mục" : "Item"}</p>
                           <p className="mt-1 break-words font-bold text-[#3f2b3f] md:mt-0">{item.label}</p>
                           {item.meta ? <p className="mt-1 text-xs text-[#a88a9d]">{item.meta}</p> : null}
                         </div>
 
                         <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
-                          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab] md:hidden">Qty</p>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab] md:hidden">{isVi ? "SL" : "Qty"}</p>
                           <span className="inline-flex rounded-full border border-[#f6dbe7] bg-white px-3 py-1 text-[11px] font-bold text-[#6f5c6b]">
                             {item.qty}
                           </span>
                         </div>
 
                         <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-right">
-                          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab] md:hidden">Amount</p>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab] md:hidden">{isVi ? "Thành tiền" : "Amount"}</p>
                           <span className={`font-bold ${item.type === "Discount" ? "text-red-600" : "text-green-700"}`}>
                             {item.amount}
                           </span>
@@ -3303,9 +3300,10 @@ export function StaffServiceSessionPage() {
 
                 <div className="mt-4 border-t border-[#f5d9e6]" />
                 <div className="mt-4 flex items-center justify-between gap-3">
-                  <span className="text-sm font-extrabold text-[#3f2b3f]">Total Price</span>
+                  <span className="text-sm font-extrabold text-[#3f2b3f]">{isVi ? "Tổng tiền" : "Total Price"}</span>
                   <span className="text-base font-extrabold text-green-700">{data.totalPrice}</span>
                 </div>
+
 
                 <button
                   type="button"
@@ -3317,15 +3315,15 @@ export function StaffServiceSessionPage() {
                     }`}
                 >
                   <CheckCircle2 size={16} />
-                  {isCompletingSession ? "Completing Session..." : "Complete Session"}
+                  {isCompletingSession ? (isVi ? "Đang hoàn tất..." : "Completing Session...") : (isVi ? "Hoàn thành phiên" : "Complete Session")}
                 </button>
               </article>
 
               <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={Sparkles}
-                  title="Next Step"
-                  subtitle="Handoff actions after the staff session is finished."
+                  title={isVi ? "Bước tiếp theo" : "Next Step"}
+                  subtitle={isVi ? "Các hành động sau khi hoàn thành dịch vụ." : "Handoff actions after the staff session is finished."}
                 />
 
                 <div className="mt-5 grid gap-3 md:grid-cols-3">
@@ -3345,8 +3343,8 @@ export function StaffServiceSessionPage() {
                       <Receipt size={18} />
                     </span>
                     <span>
-                      <span className="block text-sm font-extrabold text-[#3f2b3f]">Go to Checkout</span>
-                      <span className="mt-1 block text-xs text-[#a88a9d]">Proceed from staff handoff to payment review.</span>
+                      <span className="block text-sm font-extrabold text-[#3f2b3f]">{isVi ? "Thanh toán" : "Go to Checkout"}</span>
+                      <span className="mt-1 block text-xs text-[#a88a9d]">{isVi ? "Chuyển tới quy trình thanh toán." : "Proceed from staff handoff to payment review."}</span>
                     </span>
                   </button>
 
@@ -3359,26 +3357,10 @@ export function StaffServiceSessionPage() {
                       <ClipboardCheck size={18} />
                     </span>
                     <span>
-                      <span className="block text-sm font-extrabold text-[#3f2b3f]">Request Customer Review</span>
-                      <span className="mt-1 block text-xs text-[#a88a9d]">Send the final review prompt to the customer profile.</span>
+                      <span className="block text-sm font-extrabold text-[#3f2b3f]">{isVi ? "Yêu cầu đánh giá" : "Request Customer Review"}</span>
+                      <span className="mt-1 block text-xs text-[#a88a9d]">{isVi ? "Gửi thông báo yêu cầu đánh giá cho khách." : "Send the final review prompt to the customer profile."}</span>
                     </span>
                   </button>
-
-                  {/* <button
-                    type="button"
-                    onClick={() =>
-                      handleSessionAction("Completed design can now be saved to the customer history archive.")
-                    }
-                    className="flex min-h-20 items-start gap-3 rounded-2xl border border-[#f2bfd4] bg-[#fff7fb] px-4 py-4 text-left transition hover:bg-[#fff2f8]"
-                  >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-                      <Sparkles size={18} />
-                    </span>
-                    <span>
-                      <span className="block text-sm font-extrabold text-[#3f2b3f]">Save Design to History</span>
-                      <span className="mt-1 block text-xs text-[#a88a9d]">Archive this final result to the customer profile.</span>
-                    </span>
-                  </button> */}
 
                   <button
                     type="button"
@@ -3393,9 +3375,9 @@ export function StaffServiceSessionPage() {
                       <Camera size={18} />
                     </span>
                     <span>
-                      <span className="block text-sm font-extrabold text-[#3f2b3f]">Compare Before & After</span>
+                      <span className="block text-sm font-extrabold text-[#3f2b3f]">{isVi ? "Đối chiếu trước & sau" : "Compare Before & After"}</span>
                       <span className="mt-1 block text-xs text-[#a88a9d]">
-                        Open the side-by-side transformation view after both photos are uploaded.
+                        {isVi ? "Xem ảnh trước và sau khi làm dịch vụ." : "Open the side-by-side transformation view after both photos are uploaded."}
                       </span>
                     </span>
                   </button>
@@ -3408,27 +3390,23 @@ export function StaffServiceSessionPage() {
         <aside className={`space-y-4 self-start xl:sticky xl:top-0 ${phase === "done" || phase === "start" ? "hidden" : ""}`}>
           {phase === "start" ? (
             <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
-              <SectionTitle icon={Clock3} title="Session Snapshot" />
+              <SectionTitle icon={Clock3} title={isVi ? "Tóm tắt phiên" : "Session Snapshot"} />
               <div className="mt-4 space-y-3 text-sm">
-                {/* <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
-                  <span className="text-[11px] text-[#a88a9d]">Booking Code</span>
-                  <span className="font-extrabold text-[#3f2b3f]">#{data.bookingCode}</span>
-                </div> */}
                 <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
-                  <span className="text-[11px] text-[#a88a9d]">Design Status</span>
+                  <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tình trạng thiết kế" : "Design Status"}</span>
                   <span className="font-extrabold text-[#ea4f93]">{data.designName}</span>
                 </div>
                 <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
-                  <span className="text-[11px] text-[#a88a9d]">Estimated Total</span>
+                  <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tổng tiền dự tính" : "Estimated Total"}</span>
                   <span className="font-extrabold text-[#3f2b3f]">{data.totalPrice}</span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-[11px] text-[#a88a9d]">Photo Status</span>
+                  <span className="text-[11px] text-[#a88a9d]">{isVi ? "Trạng thái ảnh" : "Photo Status"}</span>
                   <span
                     className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${effectiveBeforePhoto ? "bg-emerald-50 text-emerald-600" : "bg-[#fff5ef] text-[#d9871c]"
                       }`}
                   >
-                    {effectiveBeforePhoto ? "Uploaded" : "Pending"}
+                    {effectiveBeforePhoto ? (isVi ? "Đã tải lên" : "Uploaded") : (isVi ? "Chưa có" : "Pending")}
                   </span>
                 </div>
               </div>
@@ -3438,68 +3416,45 @@ export function StaffServiceSessionPage() {
               <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={Sparkles}
-                  title="Service Details"
-                  subtitle="Confirmed design context for the active booking."
+                  title={isVi ? "Chi tiết dịch vụ" : "Service Details"}
+                  subtitle={isVi ? "Thông tin thiết kế đã xác nhận cho lịch hẹn này." : "Confirmed design context for the active booking."}
                 />
                 <div className="mt-4 space-y-3 text-sm">
-                  {/* <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
-                    <span className="text-[11px] text-[#a88a9d]">Booking Code</span>
-                    <span className="font-extrabold text-[#3f2b3f]">#{data.bookingCode}</span>
-                  </div> */}
                   {hasConfirmedDesign ? (
                     <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
-                      <span className="text-[11px] text-[#a88a9d]">Confirmed Design</span>
+                      <span className="text-[11px] text-[#a88a9d]">{isVi ? "Thiết kế đã xác nhận" : "Confirmed Design"}</span>
                       <span className="text-right font-extrabold text-[#ea4f93]">{data.designName}</span>
                     </div>
                   ) : null}
                   <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
-                    <span className="text-[11px] text-[#a88a9d]">Duration</span>
+                    <span className="text-[11px] text-[#a88a9d]">{isVi ? "Thời gian" : "Duration"}</span>
                     <span className="font-extrabold text-[#3f2b3f]">{data.appointmentTime} - {data.estimatedFinishTime}</span>
                   </div>
                   <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
-                    <span className="text-[11px] text-[#a88a9d]">Estimated Total</span>
+                    <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tổng tiền dự tính" : "Estimated Total"}</span>
                     <span className="font-extrabold text-[#3f2b3f]">{data.totalPrice}</span>
                   </div>
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-[11px] text-[#a88a9d]">Status</span>
+                    <span className="text-[11px] text-[#a88a9d]">{isVi ? "Trạng thái" : "Status"}</span>
                     <span className="rounded-full border border-rose-200 bg-[#fff1f7] px-2.5 py-1 text-[10px] font-bold text-[#d65b92]">
-                      In Progress
+                      {isVi ? "Đang tiến hành" : "In Progress"}
                     </span>
                   </div>
                 </div>
               </article>
 
-              {/* <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
-                <SectionTitle
-                  icon={ShieldCheck}
-                  title="Customer Notes"
-                  subtitle="Important reminders from the consultation stage."
-                />
-                <div className="mt-4 space-y-3">
-                  {(data.customerNotes ?? []).map((note) => (
-                    <div
-                      key={note}
-                      className="flex items-start gap-3 rounded-[14px] border border-[#f6dbe8] bg-[#fff7fb] px-3 py-3 text-sm text-[#866f80]"
-                    >
-                      <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[#ea4f93]" />
-                      <span>{note}</span>
-                    </div>
-                  ))}
-                </div>
-              </article> */}
-
               <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={Camera}
-                  title="Next Action"
-                  subtitle="Common next steps while finishing the session."
+                  title={isVi ? "Thao tác tiếp theo" : "Next Action"}
+                  subtitle={isVi ? "Các bước tiếp theo khuyên dùng để hoàn tất phiên." : "Common next steps while finishing the session."}
                 />
                 <div className="mt-4 space-y-3">
                   <ActionGhostButton
                     icon={Camera}
-                    label="Upload After Photo"
+                    label={isVi ? "Tải ảnh sau khi làm" : "Upload After Photo"}
                     onClick={() =>
-                      handleSessionAction("After-photo upload is the next recommended step for this session.")
+                      handleSessionAction(isVi ? "Tải lên ảnh móng hoàn thiện là thao tác khuyên dùng kế tiếp." : "After-photo upload is the next recommended step for this session.")
                     }
                   />
                   <button
@@ -3512,11 +3467,11 @@ export function StaffServiceSessionPage() {
                       }`}
                   >
                     <CheckCircle2 size={15} />
-                    Complete Session
+                    {isVi ? "Hoàn thành phiên" : "Complete Session"}
                   </button>
                   <ActionGhostButton
                     icon={Sparkles}
-                    label="Compare Before & After"
+                    label={isVi ? "Đối chiếu trước & sau" : "Compare Before & After"}
                     onClick={handleOpenComparison}
                   />
                 </div>
@@ -3529,42 +3484,42 @@ export function StaffServiceSessionPage() {
       <ActionConfirmModal
         open={showStartConfirm}
         intent="success"
-        title="Start Service Session"
-        subtitle="This will begin the live service flow for the current booking."
-        description="Confirm that the before photo is uploaded and all final checks are completed before starting service."
-        confirmText="Start Service"
-        cancelText="Review Again"
+        title={isVi ? "Bắt đầu làm dịch vụ" : "Start Service Session"}
+        subtitle={isVi ? "Tiến hành làm đẹp cho khách hàng ngay bây giờ." : "This will begin the live service flow for the current booking."}
+        description={isVi ? "Đảm bảo đã tải lên ảnh ban đầu và kiểm tra yêu cầu của khách." : "Confirm that the before photo is uploaded and all final checks are completed before starting service."}
+        confirmText={isVi ? "Bắt đầu" : "Start Service"}
+        cancelText={isVi ? "Xem lại" : "Review Again"}
         confirmIcon={Play}
         onConfirm={handleStartService}
         onCancel={() => setShowStartConfirm(false)}
         highlights={[data.customerName, data.serviceLabel, data.chair]}
         details={[
-          { label: "Appointment", value: data.appointmentTime },
-          { label: "Estimated Duration", value: data.estimatedDuration },
+          { label: isVi ? "Lịch hẹn" : "Appointment", value: data.appointmentTime },
+          { label: isVi ? "Thời gian làm dự kiến" : "Estimated Duration", value: data.estimatedDuration },
         ]}
         warnings={[
-          "Once started, this session should proceed with the confirmed service design and price.",
+          isVi ? "Khi đã bấm nút này, tiến trình làm móng chính thức được ghi nhận vào hệ thống." : "Once started, this session should proceed with the confirmed service design and price.",
         ]}
       />
 
       <ActionConfirmModal
         open={showCompleteConfirm}
         intent="success"
-        title="Complete Service Session"
-        subtitle="This will close the staff session and prepare the booking for payment."
-        description="Confirm that the after-service photo is uploaded and the customer has reviewed the final result."
-        confirmText="Complete Session"
-        cancelText="Review Again"
+        title={isVi ? "Xác nhận kết thúc dịch vụ" : "Complete Service Session"}
+        subtitle={isVi ? "Hành động này sẽ kết thúc phiên làm việc của thợ móng và chuyển sang trạng thái thanh toán." : "This will close the staff session and prepare the booking for payment."}
+        description={isVi ? "Đảm bảo đã tải lên ảnh sau khi làm và khách đã xác nhận hài lòng." : "Confirm that the after-service photo is uploaded and the customer has reviewed the final result."}
+        confirmText={isVi ? "Hoàn tất" : "Complete Session"}
+        cancelText={isVi ? "Xem lại" : "Review Again"}
         confirmIcon={CheckCircle2}
         onConfirm={handleCompleteSession}
         onCancel={() => setShowCompleteConfirm(false)}
         highlights={[data.customerName, data.serviceLabel, data.totalAmount]}
         details={[
-          { label: "Completed At", value: data.completedAt },
-          { label: "Remaining Balance", value: data.remainingBalance },
+          { label: isVi ? "Hoàn thành lúc" : "Completed At", value: data.completedAt },
+          { label: isVi ? "Số tiền còn lại" : "Remaining Balance", value: data.remainingBalance },
         ]}
         warnings={[
-          "Completing this session should only happen after the final photo and completion checks are done.",
+          isVi ? "Đảm bảo ảnh sau khi làm và các kiểm tra quy trình đã hoàn tất chính xác." : "Completing this session should only happen after the final photo and completion checks are done.",
         ]}
       />
 
@@ -3612,8 +3567,8 @@ export function StaffServiceSessionPage() {
           setServiceCatalogPage(page);
         }}
         onConfirm={handleAddExtraService}
-        title="Update Booking Services"
-        description="Select extra services to add into the current booking before starting the service session."
+        title={isVi ? "Cập nhật dịch vụ làm thêm" : "Update Booking Services"}
+        description={isVi ? "Thêm nhanh dịch vụ phát sinh vào lịch của khách." : "Select extra services to add into the current booking before starting the service session."}
       />
 
       <ServiceProceduresViewerModal

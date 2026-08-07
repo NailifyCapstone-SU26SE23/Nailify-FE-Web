@@ -37,17 +37,18 @@ import { Table, Spin, Modal, Input, Select, Tag } from "antd";
 import toast from "react-hot-toast";
 
 import { ROUTES } from "../../../../shared/constants/routes";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { fetchReceptionistCustomers } from "../services/receptionistCustomerService";
 import { receptionistWalkInBookingService } from "../../walk-in-bookings/services/receptionistWalkInBookingService";
 import { getReceptionistSalonId } from "../../bookings/services/receptionistBookingService";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import { AssignChairModal } from "../../bookings/components/AssignChairModal";
 
-function formatDate(dateString) {
-  if (!dateString) return "Chưa cập nhật";
+function formatDate(dateString, language) {
+  if (!dateString) return language === "vi" ? "Chưa cập nhật" : "Not updated";
   const date = new Date(dateString);
-  if (isNaN(date.getTime()) || date.getFullYear() < 2000) return "Chưa cập nhật";
-  return new Intl.DateTimeFormat("vi-VN", {
+  if (isNaN(date.getTime()) || date.getFullYear() < 2000) return language === "vi" ? "Chưa cập nhật" : "Not updated";
+  return new Intl.DateTimeFormat(language === "vi" ? "vi-VN" : "en-US", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -73,32 +74,32 @@ function getAvatarGradient(userId) {
   return gradients[charCode % gradients.length];
 }
 
-function getStatusBadge(status) {
+function getStatusBadge(status, language) {
   const norm = String(status || "").trim().toLowerCase();
   switch (norm) {
     case "active":
     case "current":
       return {
-        label: "Hoạt động",
+        label: language === "vi" ? "Hoạt động" : "Active",
         tone: "bg-emerald-50 text-emerald-700 border-emerald-200",
         dot: "bg-emerald-500",
       };
     case "prospective":
       return {
-        label: "Tiềm năng",
+        label: language === "vi" ? "Tiềm năng" : "Prospective",
         tone: "bg-purple-50 text-purple-700 border-purple-200",
         dot: "bg-purple-500",
       };
     case "inactive":
     case "non-active":
       return {
-        label: "Tạm khóa",
+        label: language === "vi" ? "Tạm khóa" : "Inactive",
         tone: "bg-gray-100 text-gray-600 border-gray-200",
         dot: "bg-gray-400",
       };
     default:
       return {
-        label: "Hoạt động",
+        label: language === "vi" ? "Hoạt động" : "Active",
         tone: "bg-emerald-50 text-emerald-700 border-emerald-200",
         dot: "bg-emerald-500",
       };
@@ -106,6 +107,7 @@ function getStatusBadge(status) {
 }
 
 export function ReceptionistCustomerListPage() {
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [mainWorkspaceTab, setMainWorkspaceTab] = useState("directory");
   const [viewMode, setViewMode] = useState("grid");
@@ -402,7 +404,7 @@ export function ReceptionistCustomerListPage() {
   const handleConfirmAssignArtist = async () => {
     if (!selectedQueueGuest) return;
     if (!selectedArtistIdToAssign) {
-      toast.error("Vui lòng chọn thợ làm móng.");
+      toast.error(language === "vi" ? "Vui lòng chọn thợ làm móng." : "Please select a nail artist.");
       return;
     }
 
@@ -416,9 +418,9 @@ export function ReceptionistCustomerListPage() {
       if (autoSeatAfterAssign) {
         setAssignChairGuest(selectedQueueGuest);
         setIsAssignChairModalOpen(true);
-        toast.success(`Đã phân công thợ cho ${selectedQueueGuest.customerName}. Vui lòng chọn ghế!`);
+        toast.success(language === "vi" ? `Đã phân công thợ cho ${selectedQueueGuest.customerName}. Vui lòng chọn ghế!` : `Assigned artist to ${selectedQueueGuest.customerName}. Please select a chair!`);
       } else {
-        toast.success(`Đã phân công thợ cho khách ${selectedQueueGuest.customerName}!`);
+        toast.success(language === "vi" ? `Đã phân công thợ cho khách ${selectedQueueGuest.customerName}!` : `Assigned artist to guest ${selectedQueueGuest.customerName}!`);
       }
 
       setIsAssignArtistModalOpen(false);
@@ -426,8 +428,8 @@ export function ReceptionistCustomerListPage() {
       setSelectedArtistIdToAssign(null);
       await loadWalkInQueue();
     } catch (err) {
-      const errMsg = err?.response?.data?.message || err?.message || "Không thể phân công thợ.";
-      toast.error(`Lỗi: ${errMsg}`);
+      const errMsg = err?.response?.data?.message || err?.message || (language === "vi" ? "Không thể phân công thợ." : "Failed to assign artist.");
+      toast.error(language === "vi" ? `Lỗi: ${errMsg}` : `Error: ${errMsg}`);
     } finally {
       setIsSubmittingAssign(false);
     }
@@ -453,11 +455,11 @@ export function ReceptionistCustomerListPage() {
       setTotalPages(data.metaData?.totalPages || 1);
       setTotalItems(data.metaData?.totalItems || 0);
     } catch (error) {
-      toast.error("Không thể tải danh sách khách hàng.");
+      toast.error(language === "vi" ? "Không thể tải danh sách khách hàng." : "Failed to load customers list.");
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, pageSize, debouncedSearch]);
+  }, [currentPage, pageSize, debouncedSearch, language]);
 
   useEffect(() => {
     loadData();
@@ -467,7 +469,7 @@ export function ReceptionistCustomerListPage() {
     if (id) {
       navigate(ROUTES.receptionistCustomerDetail.replace(":id", id));
     } else {
-      toast.error("Khách vãng lai chưa tạo tài khoản app.");
+      toast.error(language === "vi" ? "Khách vãng lai chưa tạo tài khoản app." : "Walk-in guest has not created an app account.");
     }
   };
 
@@ -484,7 +486,7 @@ export function ReceptionistCustomerListPage() {
     if (found) {
       navigate(ROUTES.receptionistCustomerDetail.replace(":id", found.userId));
     } else {
-      toast.error("Khách vãng lai chưa có tài khoản trên hệ thống.");
+      toast.error(language === "vi" ? "Khách vãng lai chưa có tài khoản trên hệ thống." : "Walk-in guest does not have an account on the system.");
     }
   };
 
@@ -572,16 +574,16 @@ export function ReceptionistCustomerListPage() {
         foundUserId = appCust.userId;
         entryTypeLabel = "app_user";
       } else {
-        toast.error("Vui lòng chọn tài khoản khách hàng trên app.");
+        toast.error(language === "vi" ? "Vui lòng chọn tài khoản khách hàng trên app." : "Please select an app customer account.");
         return;
       }
     } else if (walkInTab === "new_guest") {
       if (!walkInName.trim()) {
-        toast.error("Vui lòng nhập tên khách hàng.");
+        toast.error(language === "vi" ? "Vui lòng nhập tên khách hàng." : "Please enter the customer name.");
         return;
       }
       finalCustomerName = walkInName.trim();
-      finalPhone = walkInPhone.trim() || "Chưa có SĐT";
+      finalPhone = walkInPhone.trim() || (language === "vi" ? "Chưa có SĐT" : "No Phone");
       entryTypeLabel = "new_guest";
     } else if (walkInTab === "late_arrival") {
       finalCustomerName = "Trần Bảo Ngọc (Trễ 18 phút)";
@@ -634,7 +636,7 @@ export function ReceptionistCustomerListPage() {
         customerId: foundUserId,
         originalBookingId: walkInTab === "late_arrival" ? selectedLateBookingId : null,
         guestName: finalCustomerName,
-        guestPhone: finalPhone !== "Chưa có SĐT" ? finalPhone : null,
+        guestPhone: finalPhone !== (language === "vi" ? "Chưa có SĐT" : "No Phone") ? finalPhone : null,
         requestNote: requestNoteText,
         assignedNailArtistId: selectedArtistIdForWalkIn || null,
         bookingItems: bookingItemsPayload,
@@ -649,7 +651,7 @@ export function ReceptionistCustomerListPage() {
       }
 
       const assignedArtistObj = suggestedArtists.find(a => (a.nailArtistId || a.id || a.userId) === selectedArtistIdForWalkIn);
-      const assignedArtistName = assignedArtistObj ? assignedArtistObj.name : "Chưa phân công";
+      const assignedArtistName = assignedArtistObj ? assignedArtistObj.name : (language === "vi" ? "Chưa phân công" : "Unassigned");
 
       const newGuest = {
         id: createdQueueId || `W-0${walkInGuests.length + 1}`,
@@ -662,9 +664,9 @@ export function ReceptionistCustomerListPage() {
         serviceName: requestNoteText,
         assignedArtist: assignedArtistName,
         assignedNailArtistId: selectedArtistIdForWalkIn || null,
-        duration: `${calculatedDuration} phút`,
+        duration: language === "vi" ? `${calculatedDuration} phút` : `${calculatedDuration} mins`,
         status: "lobby",
-        checkInTime: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+        checkInTime: new Date().toLocaleTimeString(language === "vi" ? "vi-VN" : "en-US", { hour: "2-digit", minute: "2-digit" }),
         userId: foundUserId,
       };
 
@@ -675,15 +677,15 @@ export function ReceptionistCustomerListPage() {
       await loadWalkInQueue();
 
       if (walkInTab === "new_guest" && autoCreateAccount) {
-        toast.success(`Đã tự động khởi tạo tài khoản & thêm ${newGuest.customerName} vào Sảnh chờ!`);
+        toast.success(language === "vi" ? `Đã tự động khởi tạo tài khoản & thêm ${newGuest.customerName} vào Sảnh chờ!` : `Auto-created account & added ${newGuest.customerName} to the Lobby!`);
       } else if (walkInTab === "late_arrival") {
-        toast.success(`Đã chuyển lịch hẹn trễ ${selectedLateBookingId} vào Sảnh chờ Walk-In!`);
+        toast.success(language === "vi" ? `Đã chuyển lịch hẹn trễ ${selectedLateBookingId} vào Sảnh chờ Walk-In!` : `Moved late appointment ${selectedLateBookingId} to the Walk-In Queue!`);
       } else {
-        toast.success(`Đã check-in khách App ${newGuest.customerName} vào Sảnh chờ!`);
+        toast.success(language === "vi" ? `Đã check-in khách App ${newGuest.customerName} vào Sảnh chờ!` : `Checked-in app guest ${newGuest.customerName} to the Lobby!`);
       }
     } catch (err) {
       console.error(err);
-      toast.error("Có lỗi xảy ra khi tiếp đón khách.");
+      toast.error(language === "vi" ? "Có lỗi xảy ra khi tiếp đón khách." : "An error occurred while checking in guest.");
     } finally {
       setIsSubmittingWalkIn(false);
     }
@@ -716,22 +718,22 @@ export function ReceptionistCustomerListPage() {
       try {
         if (newStatus === "called") {
           await receptionistWalkInBookingService.callQueue(actualQueueId);
-          toast.success(`Đã phát loa gọi ${targetGuest?.customerName || "khách"} lên quầy tư vấn!`);
+          toast.success(language === "vi" ? `Đã phát loa gọi ${targetGuest?.customerName || "khách"} lên quầy tư vấn!` : `Called ${targetGuest?.customerName || "guest"} to the consultation counter!`);
         } else if (newStatus === "completed") {
           await receptionistWalkInBookingService.completeQueue(actualQueueId);
-          toast.success(`Đã hoàn thành lượt xếp hàng cho ${targetGuest?.customerName || "khách"}!`);
+          toast.success(language === "vi" ? `Đã hoàn thành lượt xếp hàng cho ${targetGuest?.customerName || "khách"}!` : `Completed queue entry for ${targetGuest?.customerName || "guest"}!`);
         } else {
-          toast.success("Đã chuyển trạng thái lượt chờ!");
+          toast.success(language === "vi" ? "Đã chuyển trạng thái lượt chờ!" : "Queue status updated successfully!");
         }
         await loadWalkInQueue();
       } catch (err) {
-        const errMsg = err?.response?.data?.message || err?.message || "Không thể thực hiện thao tác.";
-        toast.error(`Lỗi: ${errMsg}`);
+        const errMsg = err?.response?.data?.message || err?.message || (language === "vi" ? "Không thể thực hiện thao tác." : "Failed to update status.");
+        toast.error(language === "vi" ? `Lỗi: ${errMsg}` : `Error: ${errMsg}`);
         console.warn("Backend status update API error:", err);
         await loadWalkInQueue();
       }
     } else {
-      toast.success("Đã chuyển trạng thái lượt chờ!");
+      toast.success(language === "vi" ? "Đã chuyển trạng thái lượt chờ!" : "Queue status updated successfully!");
     }
   };
 
@@ -740,7 +742,7 @@ export function ReceptionistCustomerListPage() {
     const actualQueueId = assignChairGuest.queueId || assignChairGuest.id;
     try {
       await receptionistWalkInBookingService.convertQueueToBooking(actualQueueId);
-      toast.success(`Đã tạo đơn Booking & chuyển khách vào ghế ${selectedChair?.chairName || ""}!`);
+      toast.success(language === "vi" ? `Đã tạo đơn Booking & chuyển khách vào ghế ${selectedChair?.chairName || ""}!` : `Created booking and assigned guest to chair ${selectedChair?.chairName || ""}!`);
 
       setWalkInGuests((prev) =>
         prev.map((g) => (g.id === assignChairGuest.id || g.queueId === assignChairGuest.id ? { ...g, status: "in_service" } : g))
@@ -750,8 +752,8 @@ export function ReceptionistCustomerListPage() {
       setAssignChairGuest(null);
       await loadWalkInQueue();
     } catch (err) {
-      const errMsg = err?.response?.data?.message || err?.message || "Không thể thực hiện thao tác.";
-      toast.error(`Lỗi: ${errMsg}`);
+      const errMsg = err?.response?.data?.message || err?.message || (language === "vi" ? "Không thể thực hiện thao tác." : "Failed to update status.");
+      toast.error(language === "vi" ? `Lỗi: ${errMsg}` : `Error: ${errMsg}`);
       console.warn("Backend status update API error:", err);
       await loadWalkInQueue();
     }
@@ -776,36 +778,36 @@ export function ReceptionistCustomerListPage() {
     ).length;
     return [
       {
-        label: "Tổng Khách Hàng",
+        label: language === "vi" ? "Tổng Khách Hàng" : "Total Customers",
         value: totalItems || customers.length,
-        subtext: "Hồ sơ lưu trữ tại salon",
+        subtext: language === "vi" ? "Hồ sơ lưu trữ tại salon" : "Stored profiles at salon",
         icon: Users,
       },
       {
-        label: "Khách Hoạt Động",
+        label: language === "vi" ? "Khách Hoạt Động" : "Active Customers",
         value: activeCount || Math.ceil((totalItems || customers.length) * 0.85),
-        subtext: "Đã làm dịch vụ gần đây",
+        subtext: language === "vi" ? "Đã làm dịch vụ gần đây" : "Serviced recently",
         icon: UserCheck,
       },
       {
-        label: "Hàng Chờ Walk-In",
+        label: language === "vi" ? "Hàng Chờ Walk-In" : "Walk-in Queue",
         value: walkInGuests.filter((g) => g.status !== "completed").length,
-        subtext: "Lượt khách trong ngày",
+        subtext: language === "vi" ? "Lượt khách trong ngày" : "Daily check-ins",
         icon: Clock,
       },
       {
-        label: "Thành Viên VIP",
+        label: language === "vi" ? "Thành Viên VIP" : "VIP Members",
         value: Math.ceil((totalItems || customers.length || 1) * 0.4),
-        subtext: "Chương trình tích điểm",
+        subtext: language === "vi" ? "Chương trình tích điểm" : "Loyalty rewards program",
         icon: Crown,
       },
     ];
-  }, [customers, totalItems, walkInGuests]);
+  }, [customers, totalItems, walkInGuests, language]);
 
   const columns = useMemo(
     () => [
       {
-        title: "Khách Hàng",
+        title: t("receptionist.bookings.customer") || "Khách Hàng",
         key: "name",
         render: (_, record) => {
           return (
@@ -829,7 +831,7 @@ export function ReceptionistCustomerListPage() {
                 <span className="font-bold text-[#221F26] block text-xs leading-tight hover:text-[#C97A9E] transition-colors">
                   {record.firstName} {record.lastName}
                 </span>
-                <span className="text-[11px] text-gray-500 font-medium">{record.phone || "Chưa có SĐT"}</span>
+                <span className="text-[11px] text-gray-500 font-medium">{record.phone || (language === "vi" ? "Chưa có SĐT" : "No Phone")}</span>
               </div>
             </div>
           );
@@ -842,11 +844,11 @@ export function ReceptionistCustomerListPage() {
         render: (val) => <span className="text-gray-600 text-xs font-medium">{val || "--"}</span>,
       },
       {
-        title: "Trạng Thái",
+        title: t("receptionist.common.status") || "Trạng Thái",
         dataIndex: "status",
         key: "status",
         render: (val) => {
-          const badge = getStatusBadge(val);
+          const badge = getStatusBadge(val, language);
           return (
             <span
               className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${badge.tone}`}
@@ -858,13 +860,13 @@ export function ReceptionistCustomerListPage() {
         },
       },
       {
-        title: "Ngày Đăng Ký",
+        title: language === "vi" ? "Ngày Đăng Ký" : "Date Registered",
         dataIndex: "createdAt",
         key: "createdAt",
-        render: (val) => <span className="text-gray-500 text-xs font-medium">{formatDate(val)}</span>,
+        render: (val) => <span className="text-gray-500 text-xs font-medium">{formatDate(val, language)}</span>,
       },
       {
-        title: "Thao Tác",
+        title: t("receptionist.bookings.actions") || "Thao Tác",
         key: "action",
         render: (_, record) => (
           <div className="flex items-center gap-2">
@@ -873,20 +875,20 @@ export function ReceptionistCustomerListPage() {
               onClick={() => handleViewDetail(record.userId)}
               className="px-3 py-1 rounded-lg text-xs font-bold text-gray-600 hover:text-[#C97A9E] bg-gray-50 hover:bg-[#FAF0F5] border border-gray-200 transition cursor-pointer"
             >
-              View Profile
+              {language === "vi" ? "Xem hồ sơ" : "View Profile"}
             </button>
             <button
               type="button"
               onClick={() => handleCreateWalkInBooking(record)}
               className="px-3 py-1 rounded-lg text-xs font-bold text-white bg-[#C97A9E] hover:bg-[#B86B8E] transition shadow-xs cursor-pointer"
             >
-              Đặt Lịch
+              {language === "vi" ? "Đặt lịch" : "Book"}
             </button>
           </div>
         ),
       },
     ],
-    []
+    [language, t]
   );
 
   return (
@@ -894,13 +896,13 @@ export function ReceptionistCustomerListPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-xs">
         <div>
           <h1 className="text-xl font-bold text-[#221F26] tracking-tight flex items-center gap-2">
-            Customer Management
+            {language === "vi" ? "Quản lý Khách Hàng" : "Customer Management"}
             <span className="text-[11px] font-bold text-[#C97A9E] bg-[#FAF0F5] border border-[#F2D6E3] px-2.5 py-0.5 rounded-full">
-              Reception Desk
+              {language === "vi" ? "Quầy Tiếp Tân" : "Reception Desk"}
             </span>
           </h1>
           <p className="text-xs text-gray-500 font-medium mt-0.5">
-            Quản lý hồ sơ khách hàng & điều phối sảnh chờ Walk-In trực quan.
+            {language === "vi" ? "Quản lý hồ sơ khách hàng & điều phối sảnh chờ Walk-In trực quan." : "Manage customer profiles and coordinate walk-in lobby intuitively."}
           </p>
         </div>
 
@@ -915,7 +917,7 @@ export function ReceptionistCustomerListPage() {
                 }`}
             >
               <Users size={14} />
-              Customer Directory
+              {language === "vi" ? "Danh Bạ Khách Hàng" : "Customer Directory"}
             </button>
             <button
               type="button"
@@ -926,7 +928,7 @@ export function ReceptionistCustomerListPage() {
                 }`}
             >
               <Clock size={14} />
-              Live Walk-In Queue
+              {language === "vi" ? "Hàng Chờ Walk-In" : "Live Walk-In Queue"}
               <span className="ml-1 px-1.5 py-0.2 rounded-full bg-[#FAF0F5] text-[#C97A9E] text-[10px] border border-[#F2D6E3]">
                 {walkInGuests.length}
               </span>
@@ -970,9 +972,9 @@ export function ReceptionistCustomerListPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-100">
             <div className="flex items-center gap-2">
               {[
-                { id: "all", label: "Tất cả khách hàng" },
-                { id: "active", label: "Hoạt động" },
-                { id: "prospective", label: "Tiềm năng" },
+                { id: "all", label: language === "vi" ? "Tất cả khách hàng" : "All Customers" },
+                { id: "active", label: language === "vi" ? "Hoạt động" : "Active" },
+                { id: "prospective", label: language === "vi" ? "Tiềm năng" : "Prospective" },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -992,7 +994,7 @@ export function ReceptionistCustomerListPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
                 <input
                   type="text"
-                  placeholder="Tìm theo tên, SĐT, Email..."
+                  placeholder={language === "vi" ? "Tìm theo tên, SĐT, Email..." : "Search by name, phone, email..."}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-9 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-[#221F26] placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-[#C97A9E] transition"
@@ -1021,28 +1023,28 @@ export function ReceptionistCustomerListPage() {
                 className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gray-900 hover:bg-black text-white text-xs font-bold transition shadow-xs"
               >
                 <UserPlus size={14} />
-                Thêm Khách
+                {language === "vi" ? "Thêm Khách" : "Add Guest"}
               </Link>
             </div>
           </div>
 
           {isLoading && (
             <div className="flex min-h-[300px] items-center justify-center">
-              <Spin tip="Đang nạp hồ sơ khách hàng..." />
+              <Spin tip={language === "vi" ? "Đang nạp hồ sơ khách hàng..." : "Loading customer directory..."} />
             </div>
           )}
 
           {!isLoading && filteredCustomers.length === 0 && (
             <div className="py-16 text-center text-gray-400 space-y-2">
               <UserCircle size={40} className="mx-auto opacity-40 text-[#C97A9E]" />
-              <p className="text-sm font-bold text-gray-600">Không tìm thấy khách hàng phù hợp</p>
+              <p className="text-sm font-bold text-gray-600">{language === "vi" ? "Không tìm thấy khách hàng phù hợp" : "No matching customers found"}</p>
             </div>
           )}
 
           {viewMode === "grid" && filteredCustomers.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {filteredCustomers.map((c) => {
-                const badge = getStatusBadge(c.status);
+                const badge = getStatusBadge(c.status, language);
                 return (
                   <div
                     key={c.userId}
@@ -1070,7 +1072,7 @@ export function ReceptionistCustomerListPage() {
                           <h3 className="font-bold text-[#221F26] text-sm hover:text-[#C97A9E] transition">
                             {c.firstName} {c.lastName}
                           </h3>
-                          <p className="text-[11px] text-gray-500 font-medium">{c.phone || "Chưa có SĐT"}</p>
+                          <p className="text-[11px] text-gray-500 font-medium">{c.phone || (language === "vi" ? "Chưa có SĐT" : "No Phone")}</p>
                         </div>
                       </div>
 
@@ -1088,7 +1090,7 @@ export function ReceptionistCustomerListPage() {
                         }}
                         className="text-[11px] font-bold text-gray-500 hover:text-[#C97A9E] hover:underline"
                       >
-                        View Profile
+                        {language === "vi" ? "Xem hồ sơ" : "View Profile"}
                       </button>
 
                       <button
@@ -1099,7 +1101,7 @@ export function ReceptionistCustomerListPage() {
                         }}
                         className="px-3 py-1 rounded-lg bg-[#FAF0F5] hover:bg-[#C97A9E] text-[#B86B8E] hover:text-white text-xs font-bold border border-[#F2D6E3] transition"
                       >
-                        Đặt Lịch
+                        {language === "vi" ? "Đặt Lịch" : "Book"}
                       </button>
                     </div>
                   </div>
@@ -1134,10 +1136,10 @@ export function ReceptionistCustomerListPage() {
               </span>
               <div>
                 <h4 className="text-xs font-bold text-[#221F26] uppercase tracking-wider">
-                  Bảng Điều Phối Lượt Chờ Sảnh (Live Dispatch Kanban)
+                  {language === "vi" ? "Bảng Điều Phối Lượt Chờ Sảnh (Live Dispatch Kanban)" : "Live Dispatch Kanban Board"}
                 </h4>
                 <p className="text-[11px] text-gray-500">
-                  Điều phối tiến trình làm móng của khách vãng lai và gọi loa trực tiếp.
+                  {language === "vi" ? "Điều phối tiến trình làm móng của khách vãng lai và gọi loa trực tiếp." : "Coordinate walk-in nail service progress and call audio speaker."}
                 </p>
               </div>
             </div>
@@ -1148,7 +1150,7 @@ export function ReceptionistCustomerListPage() {
             <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-3 shadow-xs">
               <div className="flex items-center justify-between border-b border-gray-100 pb-2.5">
                 <h4 className="text-xs font-bold text-[#221F26] uppercase tracking-wider flex items-center gap-1.5">
-                  <Clock size={14} className="text-[#C97A9E]" /> Chờ dịch vụ (Waiting)
+                  <Clock size={14} className="text-[#C97A9E]" /> {language === "vi" ? "Chờ dịch vụ (Waiting)" : "Waiting"}
                 </h4>
                 <span className="px-2 py-0.5 text-[10px] font-bold bg-gray-100 text-gray-600 rounded-md">
                   {walkInGuests.filter((g) => g.status === "lobby" || g.status === "waiting").length}
@@ -1158,7 +1160,7 @@ export function ReceptionistCustomerListPage() {
               <div className="space-y-3 min-h-[320px]">
                 {walkInGuests.filter((g) => g.status === "lobby" || g.status === "waiting").length === 0 ? (
                   <div className="py-12 text-center text-xs font-medium text-gray-400 border border-dashed border-gray-200 rounded-xl">
-                    Chưa có khách chờ ở sảnh
+                    {language === "vi" ? "Chưa có khách chờ ở sảnh" : "No customers waiting in lobby"}
                   </div>
                 ) : (
                   walkInGuests
@@ -1176,17 +1178,17 @@ export function ReceptionistCustomerListPage() {
                               </span>
                               {g.entryType === "app_user" && (
                                 <span className="text-[9px] font-bold text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded-md border border-purple-200 flex items-center gap-1">
-                                  <Smartphone size={10} /> Khách App
+                                  <Smartphone size={10} /> {language === "vi" ? "Khách App" : "App User"}
                                 </span>
                               )}
                               {g.entryType === "late_arrival" && (
                                 <span className="text-[9px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-md border border-amber-200 flex items-center gap-1">
-                                  <AlertTriangle size={10} /> Trễ 15p
+                                  <AlertTriangle size={10} /> {language === "vi" ? "Trễ 15p" : "Late 15m"}
                                 </span>
                               )}
                               {g.entryType === "new_guest" && (
                                 <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-200">
-                                  Vãng Lai
+                                  {language === "vi" ? "Vãng Lai" : "Walk-in"}
                                 </span>
                               )}
                             </div>
@@ -1204,7 +1206,7 @@ export function ReceptionistCustomerListPage() {
                           </p>
                           <p className="text-gray-500 font-medium flex items-center gap-1.5">
                             <User size={13} className="text-gray-400 shrink-0" />
-                            <span>Thợ: {g.assignedArtist}</span>
+                            <span>{language === "vi" ? "Thợ: " : "Artist: "}{g.assignedArtist}</span>
                           </p>
                         </div>
 
@@ -1214,16 +1216,16 @@ export function ReceptionistCustomerListPage() {
                             onClick={() => handleOpenGuestProfile(g)}
                             className="px-2 py-1 text-[10px] font-bold text-gray-500 hover:text-[#C97A9E] hover:bg-[#FAF0F5] border border-gray-200 rounded-lg transition cursor-pointer"
                           >
-                            <Eye size={15} /> View
+                            <Eye size={15} /> {language === "vi" ? "Xem" : "View"}
                           </button>
                           <div className="flex items-center gap-1">
-                            {(g.assignedArtist === "Chưa phân công" || !g.assignedNailArtistId) && (
+                            {(g.assignedArtist === "Chưa phân công" || g.assignedArtist === "Unassigned" || !g.assignedNailArtistId) && (
                               <button
                                 type="button"
                                 onClick={() => handleOpenAssignModal(g, false)}
                                 className="px-2 py-1 text-[10px] font-bold text-white bg-[#C97A9E] hover:bg-[#B86B8E] rounded-lg transition shadow-xs cursor-pointer flex items-center gap-0.5"
                               >
-                                <UserCheck size={15} /> Phân Thợ
+                                <UserCheck size={15} /> {language === "vi" ? "Phân Thợ" : "Assign Staff"}
                               </button>
                             )}
                             <button
@@ -1231,14 +1233,14 @@ export function ReceptionistCustomerListPage() {
                               onClick={() => handleMoveGuestStatus(g.id, "called")}
                               className="px-2 py-1 text-[10px] font-bold text-[#C97A9E] bg-[#FAF0F5] hover:bg-[#C97A9E] hover:text-white border border-[#F2D6E3] rounded-lg transition cursor-pointer flex items-center gap-0.5"
                             >
-                              <Volume2 size={15} /> Gọi Loa
+                              <Volume2 size={15} /> {language === "vi" ? "Gọi Loa" : "Call Audio"}
                             </button>
                             <button
                               type="button"
                               onClick={() => handleMoveGuestStatus(g.id, "in_service")}
                               className="px-2.5 py-1 text-[10px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition cursor-pointer flex items-center gap-0.5"
                             >
-                              <Armchair size={15} />  Vào Ghế
+                              <Armchair size={15} /> {language === "vi" ? "Vào Ghế" : "Seat Client"}
                             </button>
                           </div>
                         </div>
@@ -1252,7 +1254,7 @@ export function ReceptionistCustomerListPage() {
             <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-3 shadow-xs">
               <div className="flex items-center justify-between border-b border-gray-100 pb-2.5">
                 <h4 className="text-xs font-bold text-[#221F26] uppercase tracking-wider flex items-center gap-1.5">
-                  <Volume2 size={14} className="text-amber-500" /> Tại quầy (Called)
+                  <Volume2 size={14} className="text-amber-500" /> {language === "vi" ? "Tại quầy (Called)" : "Called"}
                 </h4>
                 <span className="px-2 py-0.5 text-[10px] font-bold bg-amber-50 text-amber-700 rounded-md">
                   {walkInGuests.filter((g) => g.status === "called").length}
@@ -1262,7 +1264,7 @@ export function ReceptionistCustomerListPage() {
               <div className="space-y-3 min-h-[320px]">
                 {walkInGuests.filter((g) => g.status === "called").length === 0 ? (
                   <div className="py-12 text-center text-xs font-medium text-gray-400 border border-dashed border-gray-200 rounded-xl">
-                    Chưa có khách tại quầy tư vấn
+                    {language === "vi" ? "Chưa có khách tại quầy tư vấn" : "No customers at consultation counter"}
                   </div>
                 ) : (
                   walkInGuests
@@ -1291,7 +1293,7 @@ export function ReceptionistCustomerListPage() {
                           </p>
                           <p className="text-gray-500 font-medium flex items-center gap-1.5">
                             <User size={13} className="text-gray-400 shrink-0" />
-                            <span>Thợ: {g.assignedArtist}</span>
+                            <span>{language === "vi" ? "Thợ: " : "Artist: "}{g.assignedArtist}</span>
                           </p>
                         </div>
 
@@ -1301,16 +1303,16 @@ export function ReceptionistCustomerListPage() {
                             onClick={() => handleOpenGuestProfile(g)}
                             className="px-2.5 py-1 text-[10px] font-bold text-white bg-gray-500 hover:bg-blue-500 rounded-lg transition shadow-xs cursor-pointer flex items-center gap-0.5"
                           >
-                            <Eye size={15} /> View
+                            <Eye size={15} /> {language === "vi" ? "Xem" : "View"}
                           </button>
                           <div className="flex items-center gap-1">
-                            {(g.assignedArtist === "Chưa phân công" || !g.assignedNailArtistId) && (
+                            {(g.assignedArtist === "Chưa phân công" || g.assignedArtist === "Unassigned" || !g.assignedNailArtistId) && (
                               <button
                                 type="button"
                                 onClick={() => handleOpenAssignModal(g, false)}
                                 className="px-2.5 py-1 text-[10px] font-bold text-white bg-[#C97A9E] hover:bg-[#B86B8E] rounded-lg transition shadow-xs cursor-pointer flex items-center gap-0.5"
                               >
-                                <UserCheck size={15} /> Phân Thợ
+                                <UserCheck size={15} /> {language === "vi" ? "Phân Thợ" : "Assign Staff"}
                               </button>
                             )}
                             <button
@@ -1318,7 +1320,7 @@ export function ReceptionistCustomerListPage() {
                               onClick={() => handleMoveGuestStatus(g.id, "in_service")}
                               className="px-2.5 py-1 text-[10px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition shadow-xs cursor-pointer flex items-center gap-0.5"
                             >
-                              <Armchair size={15} /> Vào Ghế
+                              <Armchair size={15} /> {language === "vi" ? "Vào Ghế" : "Seat Client"}
                             </button>
                           </div>
                         </div>
@@ -1332,7 +1334,7 @@ export function ReceptionistCustomerListPage() {
             <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-3 shadow-xs">
               <div className="flex items-center justify-between border-b border-gray-100 pb-2.5">
                 <h4 className="text-xs font-bold text-[#221F26] uppercase tracking-wider flex items-center gap-1.5">
-                  <CheckCircle2 size={14} className="text-blue-500" /> Hoàn thành (Done)
+                  <CheckCircle2 size={14} className="text-blue-500" /> {language === "vi" ? "Hoàn thành (Done)" : "Completed"}
                 </h4>
                 <span className="px-2 py-0.5 text-[10px] font-bold bg-blue-50 text-blue-700 rounded-md">
                   {walkInGuests.filter((g) => g.status === "completed" || g.status === "done").length}
@@ -1342,7 +1344,7 @@ export function ReceptionistCustomerListPage() {
               <div className="space-y-3 min-h-[320px]">
                 {walkInGuests.filter((g) => g.status === "completed" || g.status === "done").length === 0 ? (
                   <div className="py-12 text-center text-xs font-medium text-gray-400 border border-dashed border-gray-200 rounded-xl">
-                    Chưa có lượt hoàn thành
+                    {language === "vi" ? "Chưa có lượt hoàn thành" : "No completed slots yet"}
                   </div>
                 ) : (
                   walkInGuests
@@ -1355,18 +1357,18 @@ export function ReceptionistCustomerListPage() {
                         <div className="flex items-start justify-between">
                           <h5 className="font-bold text-[#221F26] text-sm">{g.customerName}</h5>
                           <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
-                            Hoàn tất
+                            {language === "vi" ? "Hoàn tất" : "Completed"}
                           </span>
                         </div>
                         <p className="text-xs text-gray-500 font-medium">{g.nailDesign}</p>
-                        <p className="text-[11px] text-gray-400">Thợ làm: {g.assignedArtist}</p>
+                        <p className="text-[11px] text-gray-400">{language === "vi" ? "Thợ làm: " : "Artist: "}{g.assignedArtist}</p>
                         <div className="pt-2 border-t border-gray-100">
                           <button
                             type="button"
                             onClick={() => handleOpenGuestProfile(g)}
                             className="px-2.5 py-1 text-[11px] font-bold text-gray-500 hover:text-[#C97A9E] hover:bg-[#FAF0F5] border border-gray-200 rounded-lg transition cursor-pointer"
                           >
-                            View Profile
+                            {language === "vi" ? "Xem hồ sơ" : "View Profile"}
                           </button>
                         </div>
                       </div>
@@ -1400,10 +1402,10 @@ export function ReceptionistCustomerListPage() {
               </span>
               <div>
                 <h3 className="text-base font-bold text-[#221F26] tracking-tight">
-                  Check-In Tiếp Đón Khách Vào Sảnh
+                  {language === "vi" ? "Check-In Tiếp Đón Khách Vào Sảnh" : "Walk-in Queue Check-In"}
                 </h3>
                 <p className="text-xs text-gray-500 font-medium mt-0.5">
-                  Tự động khởi tạo hồ sơ & gợi ý thợ nail đủ kỹ năng (Skill Match)
+                  {language === "vi" ? "Tự động khởi tạo hồ sơ & gợi ý thợ nail đủ kỹ năng (Skill Match)" : "Auto-create profiles & suggest nail artists (Skill Match)"}
                 </p>
               </div>
             </div>
@@ -1418,7 +1420,7 @@ export function ReceptionistCustomerListPage() {
                   : "text-gray-600 hover:text-[#C97A9E]"
                   }`}
               >
-                <Smartphone size={13} /> Khách Có App
+                <Smartphone size={13} /> {language === "vi" ? "Khách Có App" : "App Member"}
               </button>
               <button
                 type="button"
@@ -1428,7 +1430,7 @@ export function ReceptionistCustomerListPage() {
                   : "text-gray-600 hover:text-[#C97A9E]"
                   }`}
               >
-                <UserPlus size={13} /> Khách Mới
+                <UserPlus size={13} /> {language === "vi" ? "Khách Mới" : "New Customer"}
               </button>
               <button
                 type="button"
@@ -1438,7 +1440,7 @@ export function ReceptionistCustomerListPage() {
                   : "text-gray-600 hover:text-[#C97A9E]"
                   }`}
               >
-                <AlertTriangle size={13} /> Khách Trễ 15p
+                <AlertTriangle size={13} /> {language === "vi" ? "Khách Trễ 15p" : "Late Guest"}
               </button>
             </div>
           </div>
@@ -1450,19 +1452,19 @@ export function ReceptionistCustomerListPage() {
               {walkInTab === "app_user" && (
                 <div className="space-y-2 p-3.5 bg-[#FAF8FA] rounded-2xl border border-gray-200">
                   <label className="block text-xs font-bold text-[#221F26]">
-                    Chọn Tài Khoản Khách Hàng App
+                    {language === "vi" ? "Chọn Tài Khoản Khách Hàng App" : "Select App Customer Account"}
                   </label>
                   <Select
                     showSearch
                     value={selectedAppCustomerId || (customers[0]?.userId || "")}
                     onChange={(val) => setSelectedAppCustomerId(val)}
                     className="w-full text-xs font-medium"
-                    placeholder="Tìm tên hoặc SĐT tài khoản..."
+                    placeholder={language === "vi" ? "Tìm tên hoặc SĐT tài khoản..." : "Search name or phone..."}
                     optionLabelProp="display"
                     popupMatchSelectWidth={false}
                     options={customers.map((c) => {
                       const name = `${c.firstName || ""} ${c.lastName || ""}`.trim() || "Khách Hàng";
-                      const phone = c.phone || "Chưa có SĐT";
+                      const phone = c.phone || (language === "vi" ? "Chưa có SĐT" : "No Phone");
                       return {
                         value: c.userId,
                         display: `👤 ${name} - ${phone}`,
@@ -1483,7 +1485,7 @@ export function ReceptionistCustomerListPage() {
                     })}
                   />
                   <p className="text-[11px] text-gray-500">
-                    ✓ Khách hàng sẽ được tích điểm thành viên tự động.
+                    {language === "vi" ? "✓ Khách hàng sẽ được tích điểm thành viên tự động." : "✓ Customer will automatically earn loyalty points."}
                   </p>
                 </div>
               )}
@@ -1492,24 +1494,24 @@ export function ReceptionistCustomerListPage() {
                 <div className="space-y-3 p-3.5 bg-[#FAF8FA] rounded-2xl border border-gray-200">
                   <div>
                     <label className="block text-xs font-bold text-[#221F26] mb-1">
-                      Tên Khách Hàng *
+                      {language === "vi" ? "Tên Khách Hàng *" : "Customer Name *"}
                     </label>
                     <Input
                       value={walkInName}
                       onChange={(e) => setWalkInName(e.target.value)}
-                      placeholder="Nhập tên khách vãng lai..."
+                      placeholder={language === "vi" ? "Nhập tên khách vãng lai..." : "Enter guest name..."}
                       className="rounded-xl border-gray-200 text-xs font-medium py-1.5"
                     />
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-[#221F26] mb-1">
-                      Số Điện Thoại
+                      {language === "vi" ? "Số Điện Thoại" : "Phone Number"}
                     </label>
                     <Input
                       value={walkInPhone}
                       onChange={(e) => setWalkInPhone(e.target.value)}
-                      placeholder="Nhập số điện thoại..."
+                      placeholder={language === "vi" ? "Nhập số điện thoại..." : "Enter phone number..."}
                       className="rounded-xl border-gray-200 text-xs font-medium py-1.5"
                     />
                   </div>
@@ -1523,7 +1525,7 @@ export function ReceptionistCustomerListPage() {
                       className="rounded border-gray-300 text-[#C97A9E] focus:ring-[#C97A9E]"
                     />
                     <label htmlFor="autoAcc" className="text-xs font-semibold text-gray-700 cursor-pointer">
-                      Tự động khởi tạo tài khoản thành viên mới
+                      {language === "vi" ? "Tự động khởi tạo tài khoản thành viên mới" : "Auto-create a new member account"}
                     </label>
                   </div>
                 </div>
@@ -1532,7 +1534,7 @@ export function ReceptionistCustomerListPage() {
               {walkInTab === "late_arrival" && (
                 <div className="space-y-2 p-3.5 bg-amber-50/60 rounded-2xl border border-amber-200">
                   <label className="block text-xs font-bold text-amber-900">
-                    Chọn Lịch Đặt Trước Tới Trễ ≥ 15 Phút
+                    {language === "vi" ? "Chọn Lịch Đặt Trước Tới Trễ ≥ 15 Phút" : "Select Pre-booked Appointment Late ≥ 15 mins"}
                   </label>
                   <Select
                     value={selectedLateBookingId}
@@ -1546,14 +1548,16 @@ export function ReceptionistCustomerListPage() {
                         setWalkInPhone(foundLate.guestPhone || "");
                       }
                     }}
-                    placeholder="-- chọn khách đặt trước tới trễ --"
+                    placeholder={language === "vi" ? "-- chọn khách đặt trước tới trễ --" : "-- select late appointment --"}
                     className="w-full text-xs font-medium"
                     optionLabelProp="display"
                     popupMatchSelectWidth={false}
                     options={lateArrivalOptions}
                   />
                   <p className="text-[11px] text-amber-800 font-medium">
-                    ⚠️ Tự động chuyển lịch trễ xuống hàng chờ sảnh với ghi chú: &quot;Khách hàng đến muộn -&gt; Tự động chuyển xuống hàng chờ.&quot;
+                    {language === "vi"
+                      ? "⚠️ Tự động chuyển lịch trễ xuống hàng chờ sảnh với ghi chú: \"Khách hàng đến muộn -> Tự động chuyển xuống hàng chờ.\""
+                      : "⚠️ Automatically move late appointments to lobby queue with notes: \"Customer arrived late -> Auto-moved to queue.\""}
                   </p>
                 </div>
               )}
@@ -1561,8 +1565,8 @@ export function ReceptionistCustomerListPage() {
               {/* Select Dịch Vụ kèm Quản lý Số lượng (x2, x3) */}
               <div className="space-y-2">
                 <label className="block text-xs font-bold text-[#221F26] flex items-center justify-between">
-                  <span>Hạng Mục Dịch Vụ</span>
-                  <span className="text-[10px] text-[#C97A9E] font-medium">Chọn & chỉnh số lượng</span>
+                  <span>{language === "vi" ? "Hạng Mục Dịch Vụ" : "Service Categories"}</span>
+                  <span className="text-[10px] text-[#C97A9E] font-medium">{language === "vi" ? "Chọn & chỉnh số lượng" : "Select & adjust quantities"}</span>
                 </label>
                 <Select
                   value={null}
@@ -1573,7 +1577,7 @@ export function ReceptionistCustomerListPage() {
                       [val]: (prev[val] || 0) + 1,
                     }));
                   }}
-                  placeholder="+ Thêm dịch vụ vào danh sách..."
+                  placeholder={language === "vi" ? "+ Thêm dịch vụ vào danh sách..." : "+ Add service to list..."}
                   className="w-full text-xs font-medium"
                   optionLabelProp="display"
                   popupMatchSelectWidth={false}
@@ -1583,7 +1587,7 @@ export function ReceptionistCustomerListPage() {
                     const priceStr = s.price ? `${(s.price || 0).toLocaleString("vi-VN")}đ` : "";
                     return {
                       value: sId,
-                      display: `+ Thêm: ${name}`,
+                      display: language === "vi" ? `+ Thêm: ${name}` : `+ Add: ${name}`,
                       label: (
                         <div className="flex items-center justify-between w-full py-1.5 px-1 gap-3 border-b border-gray-50 last:border-none min-w-[260px]">
                           <div className="flex items-center gap-2 min-w-0">
@@ -1676,13 +1680,13 @@ export function ReceptionistCustomerListPage() {
               {/* Select Phân Công Thợ (Chỉ hiển thị Thợ đang rảnh, KHÔNG hiển thị Skill) */}
               <div>
                 <label className="block text-xs font-bold text-[#221F26] mb-1 flex items-center justify-between">
-                  <span>Phân Công Thợ (Đang rảnh)</span>
+                  <span>{language === "vi" ? "Phân Công Thợ (Đang rảnh)" : "Assign Artist (Available)"}</span>
                   {isLoadingSuggestedArtists && <Spin size="small" />}
                 </label>
                 <Select
                   value={selectedArtistIdForWalkIn}
                   onChange={(val) => setSelectedArtistIdForWalkIn(val)}
-                  placeholder="-- chọn thợ đang rảnh --"
+                  placeholder={language === "vi" ? "-- chọn thợ đang rảnh --" : "-- select available artist --"}
                   className="w-full text-xs font-medium"
                   optionLabelProp="display"
                   popupMatchSelectWidth={false}
@@ -1694,7 +1698,7 @@ export function ReceptionistCustomerListPage() {
 
                     return {
                       value: artistId,
-                      display: `🟢 ${name} (Đang rảnh)`,
+                      display: language === "vi" ? `🟢 ${name} (Đang rảnh)` : `🟢 ${name} (Available)`,
                       label: (
                         <div className="flex items-center justify-between w-full py-1.5 px-1 gap-3 border-b border-gray-50 last:border-none min-w-[220px]">
                           <div className="flex items-center gap-2.5 min-w-0">
@@ -1708,7 +1712,7 @@ export function ReceptionistCustomerListPage() {
                             <span className="font-bold text-[#221F26] text-xs truncate">{name}</span>
                           </div>
                           <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 shrink-0 whitespace-nowrap">
-                            🟢 Đang rảnh
+                            {language === "vi" ? "🟢 Đang rảnh" : "🟢 Available"}
                           </span>
                         </div>
                       ),
@@ -1720,9 +1724,9 @@ export function ReceptionistCustomerListPage() {
               {/* Thời Gian Dự Kiến */}
               <div>
                 <label className="block text-xs font-bold text-[#221F26] mb-1 flex items-center justify-between">
-                  <span>Thời Gian Phục Vụ Dự Kiến</span>
+                  <span>{language === "vi" ? "Thời Gian Phục Vụ Dự Kiến" : "Estimated Service Duration"}</span>
                   <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
-                    ⚡ Tự động tính toán
+                    {language === "vi" ? "⚡ Tự động tính toán" : "⚡ Auto-calculated"}
                   </span>
                 </label>
                 <div className="flex items-center gap-2.5 p-2 px-3 bg-gradient-to-r from-emerald-50 via-teal-50/60 to-emerald-50 border border-emerald-200/90 rounded-xl shadow-2xs">
@@ -1730,7 +1734,7 @@ export function ReceptionistCustomerListPage() {
                     <Clock size={13} />
                   </div>
                   <span className="font-bold text-xs text-emerald-900">
-                    {calculatedDuration} phút
+                    {calculatedDuration} {language === "vi" ? "phút" : "mins"}
                   </span>
                 </div>
               </div>
@@ -1741,17 +1745,17 @@ export function ReceptionistCustomerListPage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold uppercase tracking-wider text-[#221F26] flex items-center gap-1.5">
-                    <Sparkles size={14} className="text-[#C97A9E]" /> Vùng Chọn Mẫu Móng Visual (Nail Variants)
+                    <Sparkles size={14} className="text-[#C97A9E]" /> {language === "vi" ? "Vùng Chọn Mẫu Móng Visual (Nail Variants)" : "Visual Nail Variants Selection"}
                   </label>
                   <span className="text-[11px] font-bold text-[#C97A9E] bg-[#FAF0F5] px-2.5 py-0.5 rounded-full border border-[#F2D6E3]">
-                    {filteredNailVariants.length}/{dbNailVariants.length} mẫu
+                    {language === "vi" ? `${filteredNailVariants.length}/${dbNailVariants.length} mẫu` : `${filteredNailVariants.length}/${dbNailVariants.length} designs`}
                   </span>
                 </div>
 
                 {/* Clean Full-Width Search Input */}
                 <Input
                   prefix={<Search size={14} className="text-gray-400 mr-1" />}
-                  placeholder="Tìm kiếm mẫu móng theo tên hoặc giá..."
+                  placeholder={language === "vi" ? "Tìm kiếm mẫu móng theo tên hoặc giá..." : "Search nail designs by name or price..."}
                   value={variantSearchQuery}
                   onChange={(e) => setVariantSearchQuery(e.target.value)}
                   allowClear
@@ -1763,7 +1767,7 @@ export function ReceptionistCustomerListPage() {
               <div className="max-h-[360px] overflow-y-auto pr-1 custom-scrollbar">
                 {filteredNailVariants.length === 0 ? (
                   <div className="py-16 text-center text-xs font-medium text-gray-400 border border-dashed border-gray-200 rounded-2xl">
-                    {variantSearchQuery ? "Không tìm thấy mẫu móng phù hợp" : "Đang tải danh sách mẫu móng thực tế từ Database..."}
+                    {variantSearchQuery ? (language === "vi" ? "Không tìm thấy mẫu móng phù hợp" : "No matching nail designs found") : (language === "vi" ? "Đang tải danh sách mẫu móng thực tế từ Database..." : "Loading nail designs from Database...")}
                   </div>
                 ) : (
                   <div className="grid grid-cols-3 gap-3">
@@ -1859,7 +1863,7 @@ export function ReceptionistCustomerListPage() {
                                   }}
                                   className="text-[10px] font-bold text-[#C97A9E] bg-[#FAF0F5] px-2 py-0.5 rounded-md hover:bg-[#C97A9E] hover:text-white transition cursor-pointer"
                                 >
-                                  + Chọn
+                                  {language === "vi" ? "+ Chọn" : "+ Select"}
                                 </button>
                               )}
                             </div>
@@ -1878,14 +1882,16 @@ export function ReceptionistCustomerListPage() {
             <div className="flex items-center gap-2 min-w-0 flex-wrap">
               {totalCalculatedPrice > 0 ? (
                 <div className="flex items-center gap-2.5 bg-[#FAF0F5] px-3.5 py-1.5 rounded-xl border border-[#F2D6E3] text-xs font-bold text-[#C97A9E]">
-                  <span>✨ Tổng dịch vụ & mẫu móng:</span>
+                  <span>{language === "vi" ? "✨ Tổng dịch vụ & mẫu móng:" : "✨ Total services & variants:"}</span>
                   <span className="font-bold text-[#B86B8E] text-sm">
                     {totalCalculatedPrice.toLocaleString("vi-VN")}đ
                   </span>
                 </div>
               ) : (
                 <span className="text-xs text-gray-400 font-medium">
-                  💡 Chọn dịch vụ hoặc mẫu móng để tính tổng tiền & gợi ý thợ rảnh
+                  {language === "vi" 
+                    ? "💡 Chọn dịch vụ hoặc mẫu móng để tính tổng tiền & gợi ý thợ rảnh" 
+                    : "💡 Select services or variants to calculate total price & suggest free artists"}
                 </span>
               )}
             </div>
@@ -1896,7 +1902,7 @@ export function ReceptionistCustomerListPage() {
                 onClick={() => setIsWalkInModalOpen(false)}
                 className="px-4 py-2.5 text-xs font-bold text-gray-500 hover:text-gray-800 hover:bg-gray-200/60 rounded-xl transition cursor-pointer"
               >
-                Hủy
+                {t("receptionist.common.cancel") || "Hủy"}
               </button>
               <button
                 type="button"
@@ -1905,7 +1911,7 @@ export function ReceptionistCustomerListPage() {
                 className="px-7 py-2.5 text-xs font-bold text-white bg-gradient-to-r from-[#C97A9E] to-[#B86B8E] hover:from-[#B86B8E] hover:to-[#A3597D] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all shadow-md shadow-[#C97A9E]/30 cursor-pointer flex items-center gap-2"
               >
                 <Plus size={16} />
-                {isSubmittingWalkIn ? "Đang xử lý..." : "Xác Nhận Check-In"}
+                {isSubmittingWalkIn ? (language === "vi" ? "Đang xử lý..." : "Processing...") : (language === "vi" ? "Xác Nhận Check-In" : "Confirm Check-In")}
               </button>
             </div>
           </div>
@@ -1937,10 +1943,10 @@ export function ReceptionistCustomerListPage() {
               </span>
               <div>
                 <h3 className="text-base font-bold text-[#221F26] tracking-tight">
-                  Phân Công Thợ Nail Điều Phối Sảnh
+                  {language === "vi" ? "Phân Công Thợ Nail Điều Phối Sảnh" : "Assign Nail Artist for Queue"}
                 </h3>
                 <p className="text-xs text-gray-500 font-medium mt-0.5">
-                  Chọn thợ phù hợp để đảm bảo thời gian phục vụ tốt nhất
+                  {language === "vi" ? "Chọn thợ phù hợp để đảm bảo thời gian phục vụ tốt nhất" : "Select suitable artist to ensure best service timing"}
                 </p>
               </div>
             </div>
@@ -1954,13 +1960,13 @@ export function ReceptionistCustomerListPage() {
                   {selectedQueueGuest.customerName.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Khách Hàng Tiếp Đón</p>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{language === "vi" ? "Khách Hàng Tiếp Đón" : "Customer Checking In"}</p>
                   <p className="text-sm font-bold text-[#221F26]">{selectedQueueGuest.customerName}</p>
                 </div>
               </div>
               <div className="text-right">
                 <span className="inline-flex items-center gap-1 text-xs font-bold text-[#C97A9E] bg-white px-3 py-1 rounded-xl border border-[#F2D6E3] shadow-2xs">
-                  <Scissors size={13} /> {selectedQueueGuest.nailDesign || "Dịch vụ làm móng"}
+                  <Scissors size={13} /> {selectedQueueGuest.nailDesign || (language === "vi" ? "Dịch vụ làm móng" : "Nail Service")}
                 </span>
               </div>
             </div>
@@ -1970,21 +1976,21 @@ export function ReceptionistCustomerListPage() {
           <div className="px-6 py-4">
             <div className="flex items-center justify-between mb-2.5">
               <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
-                <UserCheck size={14} className="text-[#C97A9E]" /> Chọn Thợ Làm Móng (Salon Artist)
+                <UserCheck size={14} className="text-[#C97A9E]" /> {language === "vi" ? "Chọn Thợ Làm Móng (Salon Artist)" : "Select Nail Artist (Salon Artist)"}
               </label>
               <span className="text-[11px] font-bold text-[#C97A9E] bg-[#FAF0F5] px-2 py-0.5 rounded-md border border-[#F2D6E3]">
-                {availableArtists.length} thợ sẵn sàng
+                {language === "vi" ? `${availableArtists.length} thợ sẵn sàng` : `${availableArtists.length} artists ready`}
               </span>
             </div>
 
             {isLoadingArtists ? (
               <div className="py-10 text-center space-y-2">
                 <Spin size="large" />
-                <p className="text-xs font-medium text-gray-500">Đang tải danh sách thợ làm móng sảnh...</p>
+                <p className="text-xs font-medium text-gray-500">{language === "vi" ? "Đang tải danh sách thợ làm móng sảnh..." : "Loading lobby nail artists..."}</p>
               </div>
             ) : availableArtists.length === 0 ? (
               <div className="py-8 text-center text-xs font-medium text-gray-400 border border-dashed border-gray-200 rounded-2xl">
-                Hiện chưa có thợ làm móng nào hoạt động tại chi nhánh.
+                {language === "vi" ? "Hiện chưa có thợ làm móng nào hoạt động tại chi nhánh." : "There are currently no active nail artists at this salon branch."}
               </div>
             ) : (
               <div className="space-y-2.5 max-h-[260px] overflow-y-auto pr-1">
@@ -2018,9 +2024,9 @@ export function ReceptionistCustomerListPage() {
                           <div className="flex items-center gap-2 mt-0.5">
                             <span className="text-[11px] font-medium text-emerald-600 flex items-center gap-1">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                              🟢 Đang sẵn sàng
+                              {language === "vi" ? "🟢 Đang sẵn sàng" : "🟢 Ready"}
                             </span>
-                            <span className="text-[10px] text-gray-400 font-medium">| Thợ Salon</span>
+                            <span className="text-[10px] text-gray-400 font-medium">{language === "vi" ? "| Thợ Salon" : "| Salon Artist"}</span>
                           </div>
                         </div>
                       </div>
@@ -2048,7 +2054,7 @@ export function ReceptionistCustomerListPage() {
               onClick={() => setIsAssignArtistModalOpen(false)}
               className="px-4 py-2 text-xs font-bold text-gray-500 hover:text-gray-800 hover:bg-gray-200/60 rounded-xl transition cursor-pointer"
             >
-              Hủy
+              {t("receptionist.common.cancel") || "Hủy"}
             </button>
             <button
               type="button"
@@ -2060,11 +2066,11 @@ export function ReceptionistCustomerListPage() {
                 <Spin size="small" />
               ) : autoSeatAfterAssign ? (
                 <>
-                  <CheckCircle2 size={16} /> Xác Nhận Phân Thợ & Vào Ghế
+                  <CheckCircle2 size={16} /> {language === "vi" ? "Xác Nhận Phân Thợ & Vào Ghế" : "Confirm Artist & Seat Client"}
                 </>
               ) : (
                 <>
-                  <CheckCircle2 size={16} /> Xác Nhận Phân Thợ
+                  <CheckCircle2 size={16} /> {language === "vi" ? "Xác Nhận Phân Thợ" : "Confirm Assign Artist"}
                 </>
               )}
             </button>

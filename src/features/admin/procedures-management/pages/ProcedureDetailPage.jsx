@@ -45,7 +45,7 @@ function validateForm(formValues, t) {
 }
 
 export function ProcedureDetailPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const { procedureId } = useParams();

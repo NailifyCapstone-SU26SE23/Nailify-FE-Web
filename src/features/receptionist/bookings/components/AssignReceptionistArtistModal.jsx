@@ -7,6 +7,7 @@ import {
   assignReceptionistArtistToBooking,
   fetchAvailableArtistsForReceptionist,
 } from "../services/receptionistBookingService";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 function getArtistKey(artist) {
   return String(artist?.nailArtistId || "").trim();
@@ -45,6 +46,7 @@ export function AssignReceptionistArtistModal({
   onClose,
   open,
 }) {
+  const { t, language } = useLanguage();
   const [artists, setArtists] = useState([]);
   const [selectedArtistId, setSelectedArtistId] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -70,7 +72,7 @@ export function AssignReceptionistArtistModal({
       } catch (error) {
         if (!isCancelled) {
           setArtists([]);
-          toast.error(error instanceof Error ? error.message : "Failed to load available artists.");
+          toast.error(error instanceof Error ? error.message : (t("receptionist.bookings.assignArtistFailed") || "Failed to load available artists."));
         }
       } finally {
         if (!isCancelled) {
@@ -93,7 +95,7 @@ export function AssignReceptionistArtistModal({
 
   const handleAssign = async () => {
     if (!selectedArtistId) {
-      toast.error("Vui lòng chọn thợ làm móng.");
+      toast.error(t("receptionist.bookings.selectArtistError") || "Vui lòng chọn thợ làm móng.");
       return;
     }
 
@@ -101,11 +103,11 @@ export function AssignReceptionistArtistModal({
 
     try {
       const updatedBooking = await assignReceptionistArtistToBooking(bookingId, selectedArtistId);
-      toast.success("Phân công thợ thành công.");
+      toast.success(t("receptionist.bookings.assignArtistSuccess") || "Phân công thợ thành công.");
       onAssigned?.(updatedBooking);
       onClose();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Không thể phân công thợ.");
+      toast.error(error instanceof Error ? error.message : (t("receptionist.bookings.assignArtistFailed") || "Không thể phân công thợ."));
     } finally {
       setIsSubmitting(false);
     }
@@ -141,8 +143,8 @@ export function AssignReceptionistArtistModal({
               <UserCheck size={22} />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-[#2B182B] tracking-tight">Phân Công / Đổi Thợ Làm Móng</h3>
-              <p className="text-xs text-[#9E8497] font-medium">Chọn thợ làm móng chính đảm nhận cho đơn đặt lịch này</p>
+              <h3 className="text-lg font-bold text-[#2B182B] tracking-tight">{t("receptionist.bookings.assignArtistTitle") || "Phân Công / Đổi Thợ Làm Móng"}</h3>
+              <p className="text-xs text-[#9E8497] font-medium">{t("receptionist.bookings.assignArtistDesc") || "Chọn thợ làm móng chính đảm nhận cho đơn đặt lịch này"}</p>
             </div>
           </div>
           <button
@@ -158,12 +160,12 @@ export function AssignReceptionistArtistModal({
         <div className="mb-5 rounded-2xl border border-[#F3D6E5] bg-gradient-to-r from-[#FFF5FA] to-[#F5F3FF] p-4 text-xs shadow-2xs flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles size={16} className="text-[#E84F93]" />
-            <span className="font-bold text-[#9E8497]">Thợ Đang Được Phân Công:</span>
-            <span className="font-bold text-[#2B182B] text-sm">{currentArtistName || "Chưa phân công thợ nào"}</span>
+            <span className="font-bold text-[#9E8497]">{t("receptionist.bookings.currentlyAssigned") || "Thợ Đang Được Phân Công:"}</span>
+            <span className="font-bold text-[#2B182B] text-sm">{currentArtistName || (t("receptionist.bookings.unassigned") || "Chưa phân công thợ nào")}</span>
           </div>
           {currentArtistName && (
             <span className="rounded-full bg-[#ECFDF5] border border-[#A7F3D0] px-2.5 py-0.5 text-[10px] font-bold text-[#047857]">
-              Hiện Tại
+              {t("receptionist.bookings.currentBadge") || "Hiện Tại"}
             </span>
           )}
         </div>
@@ -172,11 +174,11 @@ export function AssignReceptionistArtistModal({
         {isLoading ? (
           <div className="flex min-h-[240px] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-[#F3D6E5] bg-[#FFF9FB] p-8">
             <LoaderCircle size={28} className="animate-spin text-[#E84F93]" />
-            <p className="text-xs font-bold text-[#2B182B]">Đang tải danh sách thợ khả dụng...</p>
+            <p className="text-xs font-bold text-[#2B182B]">{t("receptionist.bookings.loadingArtists") || "Đang tải danh sách thợ khả dụng..."}</p>
           </div>
         ) : artists.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-[#F3D6E5] bg-[#FFF9FB] p-8 text-center text-xs font-bold text-[#9E8497]">
-            Không tìm thấy thợ nào khả dụng cho đơn đặt lịch này.
+            {t("receptionist.bookings.noAvailableArtists") || "Không tìm thấy thợ nào khả dụng cho đơn đặt lịch này."}
           </div>
         ) : (
           <div className="grid gap-3.5 md:grid-cols-2 max-h-[50vh] overflow-y-auto pr-1">
@@ -214,7 +216,7 @@ export function AssignReceptionistArtistModal({
                         {getArtistName(artist)}
                       </p>
                       <span className="rounded-full bg-[#ECFDF5] border border-[#A7F3D0] px-2.5 py-0.5 text-[10px] font-bold text-[#047857] shrink-0">
-                        {artist?.status || "Sẵn sàng"}
+                        {artist?.status || (t("receptionist.bookings.ready") || "Sẵn sàng")}
                       </span>
                     </div>
 
@@ -258,7 +260,7 @@ export function AssignReceptionistArtistModal({
         {/* Selected Artist Confirmation Box */}
         {selectedArtist && (
           <div className="mt-4 rounded-xl border border-[#E84F93]/30 bg-[#FFF0F6] px-4 py-2.5 text-xs flex items-center justify-between">
-            <span className="font-bold text-[#9E8497]">Đã chọn thợ:</span>
+            <span className="font-bold text-[#9E8497]">{t("receptionist.bookings.selectedArtistLabel") || "Đã chọn thợ:"}</span>
             <span className="font-bold text-[#E84F93] text-sm">{getArtistName(selectedArtist)}</span>
           </div>
         )}
@@ -270,7 +272,7 @@ export function AssignReceptionistArtistModal({
             onClick={onClose}
             className="rounded-full border border-[#F3E2EC] bg-[#FFF5F8] hover:bg-[#FCE2EE] px-5 py-2.5 text-xs font-bold text-[#2B182B] transition cursor-pointer"
           >
-            Hủy Bỏ
+            {t("receptionist.common.cancel") || "Hủy Bỏ"}
           </button>
           <button
             type="button"
@@ -283,7 +285,7 @@ export function AssignReceptionistArtistModal({
             ) : (
               <UserCheck size={15} />
             )}
-            <span>{isSubmitting ? "Đang Phân Công..." : "Xác Nhận Phân Công Thợ"}</span>
+            <span>{isSubmitting ? (t("receptionist.bookings.assigning") || "Đang Phân Công...") : (t("receptionist.bookings.confirmAssignArtist") || "Xác Nhận Phân Công Thợ")}</span>
           </button>
         </div>
       </div>

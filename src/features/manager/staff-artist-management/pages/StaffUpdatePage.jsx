@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { StaffSaveResultModal } from "../components/StaffSaveResultModal";
 import { ROUTES } from "../../../../shared/constants/routes";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   fetchNailArtistById,
   fetchNailArtistSkills,
@@ -55,6 +56,7 @@ function getStaffInitials(fullName) {
 
 // ── Main page ──────────────────────────────────────────────────────────────────
 export function StaffUpdatePage() {
+  const { t, language } = useLanguage();
   const { staffId } = useParams();
   const navigate = useNavigate();
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -372,10 +374,10 @@ export function StaffUpdatePage() {
       <header className="mb-4 flex flex-col gap-4 rounded-[20px] bg-white/70 px-4 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur sm:mb-5 sm:rounded-[24px] sm:px-5 lg:rounded-[28px] lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           <h1 className="text-xl font-bold tracking-tight text-[#cf3d74] sm:text-2xl lg:text-[28px]">
-            Update Artist
+            {language === "vi" ? "Cập nhật thông tin nhân viên" : "Update Artist"}
           </h1>
           <p className="text-[11px] font-medium text-slate-400 sm:text-[12px]">
-            Update nail artist profile and skill ratings for{" "}
+            {language === "vi" ? "Cập nhật thông tin cá nhân và đánh giá kỹ năng cho" : "Update nail artist profile and skill ratings for"}{" "}
             <span className="font-bold text-[#eb5b92]">
               {[formData.firstName, formData.lastName].filter(Boolean).join(" ")}
             </span>
@@ -389,7 +391,7 @@ export function StaffUpdatePage() {
             className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
           >
             <X size={14} />
-            Cancel
+            {t("manager.common.cancel")}
           </button>
           <button
             type="button"
@@ -397,7 +399,7 @@ export function StaffUpdatePage() {
             className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
           >
             <Save size={14} />
-            Save Artist
+            {t("manager.common.save") || "Save Artist"}
           </button>
         </div>
       </header>
@@ -410,13 +412,13 @@ export function StaffUpdatePage() {
           <div className="rounded-[24px] bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
             <h2 className="mb-5 text-[18px] font-bold text-slate-800 sm:text-[20px] flex items-center gap-2">
               <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
-              Artist Details
+              {language === "vi" ? "Thông tin chi tiết nghệ sĩ" : "Artist Details"}
             </h2>
 
             <div className="grid gap-5 md:grid-cols-2">
               <label className="space-y-2.5">
                 <span className="text-[13px] font-semibold text-slate-600">
-                  First Name <span className="text-rose-500">*</span>
+                  {language === "vi" ? "Tên" : "First Name"} <span className="text-rose-500">*</span>
                 </span>
                 <div className={inputWrapperClassName}>
                   <User size={14} className="shrink-0 text-rose-300" />
@@ -424,7 +426,7 @@ export function StaffUpdatePage() {
                     type="text"
                     value={formData.firstName}
                     onChange={(e) => handleInputChange("firstName", e.target.value)}
-                    placeholder="Enter first name"
+                    placeholder={language === "vi" ? "Nhập tên" : "Enter first name"}
                     className={inputClassName}
                     required
                   />
@@ -433,7 +435,7 @@ export function StaffUpdatePage() {
 
               <label className="space-y-2.5">
                 <span className="text-[13px] font-semibold text-slate-600">
-                  Last Name <span className="text-rose-500">*</span>
+                  {language === "vi" ? "Họ" : "Last Name"} <span className="text-rose-500">*</span>
                 </span>
                 <div className={inputWrapperClassName}>
                   <User size={14} className="shrink-0 text-rose-300" />
@@ -441,7 +443,7 @@ export function StaffUpdatePage() {
                     type="text"
                     value={formData.lastName}
                     onChange={(e) => handleInputChange("lastName", e.target.value)}
-                    placeholder="Enter last name"
+                    placeholder={language === "vi" ? "Nhập họ" : "Enter last name"}
                     className={inputClassName}
                     required
                   />
@@ -465,7 +467,7 @@ export function StaffUpdatePage() {
 
               <label className="space-y-2.5">
                 <span className="text-[13px] font-semibold text-slate-600">
-                  Phone Number
+                  {language === "vi" ? "Số điện thoại" : "Phone"}
                 </span>
                 <div className={inputWrapperClassName}>
                   <Phone size={14} className="shrink-0 text-rose-300" />
@@ -473,7 +475,7 @@ export function StaffUpdatePage() {
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => handleInputChange("phone", e.target.value)}
-                    placeholder="+84 912 345 678"
+                    placeholder={language === "vi" ? "Nhập số điện thoại" : "Enter phone number"}
                     className={inputClassName}
                   />
                 </div>
@@ -481,7 +483,7 @@ export function StaffUpdatePage() {
 
               <label className="space-y-2.5">
                 <span className="text-[13px] font-semibold text-slate-600">
-                  Job Title / Role
+                  {language === "vi" ? "Chức vụ / Vai trò" : "Job Title / Role"}
                 </span>
                 <div className={inputWrapperClassName}>
                   <input
@@ -495,7 +497,7 @@ export function StaffUpdatePage() {
 
               <label className="space-y-2 md:col-span-2">
                 <span className="text-[13px] font-semibold text-slate-600">
-                  Avatar
+                  {language === "vi" ? "Ảnh đại diện" : "Avatar"}
                 </span>
                 <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-rose-200 bg-gradient-to-br from-[#fffafc] to-[#fff5f9] px-6 py-8 cursor-pointer transition-all duration-300 hover:border-rose-300 hover:bg-gradient-to-br hover:from-[#fff8fb] hover:to-[#fff1f6] hover:shadow-[0_8px_24px_rgba(226,93,143,0.12)]">
                   {imagePreview ? (
@@ -519,7 +521,7 @@ export function StaffUpdatePage() {
                         <Upload size={28} />
                       </div>
                       <div className="text-center">
-                        <p className="text-base font-semibold text-slate-700">Click to upload artist avatar</p>
+                        <p className="text-base font-semibold text-slate-700">{language === "vi" ? "Nhấn để tải lên" : "Click to upload artist avatar"}</p>
                         <p className="text-xs text-slate-400 mt-1">PNG, JPG up to 5MB</p>
                       </div>
                       <input
@@ -551,7 +553,7 @@ export function StaffUpdatePage() {
           <div className="rounded-[24px] bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
             <h2 className="mb-5 text-[18px] font-bold text-slate-800 sm:text-[20px] flex items-center gap-2">
               <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
-              Profile Preview
+              {language === "vi" ? "Xem trước hồ sơ" : "Profile Preview"}
             </h2>
 
             <div className="space-y-4">
@@ -574,7 +576,7 @@ export function StaffUpdatePage() {
                     {[formData.firstName, formData.lastName].filter(Boolean).join(" ") || "Artist"}
                   </h3>
                   <p className="text-xs text-slate-400 mb-3">
-                    Nail Artist
+                    {language === "vi" ? "Nhân viên làm móng" : "Nail Artist"}
                   </p>
                   <div className="flex flex-wrap justify-center gap-1.5 mb-3">
                     {specialties.slice(0, 3).map((item) => (
@@ -597,11 +599,11 @@ export function StaffUpdatePage() {
       <ActionConfirmModal
         open={showCancelModal}
         intent="warning"
-        title="Cancel Artist Update"
-        subtitle="You are leaving this artist form without saving changes."
-        description="The artist profile updates have not been saved yet. Leave this page only if you want to discard the changes."
-        confirmText="Leave Page"
-        cancelText="Keep Editing"
+        title={language === "vi" ? "Hủy cập nhật nghệ sĩ" : "Cancel Artist Update"}
+        subtitle={language === "vi" ? "Bạn đang rời khỏi biểu mẫu nghệ sĩ mà không lưu thay đổi." : "You are leaving this artist form without saving changes."}
+        description={language === "vi" ? "Các thay đổi trong hồ sơ nghệ sĩ chưa được lưu. Chỉ rời khỏi trang này nếu bạn muốn hủy các thay đổi." : "The artist profile updates have not been saved yet. Leave this page only if you want to discard the changes."}
+        confirmText={language === "vi" ? "Rời khỏi trang" : "Leave Page"}
+        cancelText={language === "vi" ? "Tiếp tục chỉnh sửa" : "Keep Editing"}
         confirmIcon={X}
         onConfirm={handleConfirmCancel}
         onCancel={() => setShowCancelModal(false)}
@@ -618,11 +620,11 @@ export function StaffUpdatePage() {
       <ActionConfirmModal
         open={showSaveModal}
         intent="success"
-        title="Save Artist Changes"
-        subtitle="This will update the profile and save to database."
-        description="Confirm to update this artist profile."
-        confirmText="Save Artist"
-        cancelText="Review Again"
+        title={language === "vi" ? "Lưu thay đổi nghệ sĩ" : "Save Artist Changes"}
+        subtitle={language === "vi" ? "Điều này sẽ cập nhật hồ sơ và lưu vào cơ sở dữ liệu." : "This will update the profile and save to database."}
+        description={language === "vi" ? "Xác nhận để cập nhật hồ sơ nghệ sĩ này." : "Confirm to update this artist profile."}
+        confirmText={language === "vi" ? "Lưu nghệ sĩ" : "Save Artist"}
+        cancelText={language === "vi" ? "Xem lại" : "Review Again"}
         confirmIcon={Save}
         loading={isSaving}
         onConfirm={handleConfirmSave}
@@ -632,10 +634,10 @@ export function StaffUpdatePage() {
 
       <StaffSaveResultModal
         result={saveResult}
-        successTitle="Update Successful"
-        failureTitle="Update Failed"
-        successDescription="The artist has been updated successfully."
-        failureDescription="Unable to update the artist."
+        successTitle={language === "vi" ? "Cập nhật thành công" : "Update Successful"}
+        failureTitle={language === "vi" ? "Cập nhật thất bại" : "Update Failed"}
+        successDescription={language === "vi" ? "Nghệ sĩ đã được cập nhật thành công." : "The artist has been updated successfully."}
+        failureDescription={language === "vi" ? "Không thể cập nhật nghệ sĩ." : "Unable to update the artist."}
         onFailureClose={() => setSaveResult(null)}
         onSuccessComplete={handleSuccessComplete}
       />

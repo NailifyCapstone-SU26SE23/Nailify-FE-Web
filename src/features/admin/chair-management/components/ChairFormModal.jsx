@@ -15,7 +15,7 @@ export default function ChairFormModal({
   salons = [],
   onSuccess
 }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
 

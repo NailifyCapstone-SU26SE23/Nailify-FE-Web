@@ -20,6 +20,7 @@ import { useNavigate } from "react-router-dom";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { StaffSaveResultModal } from "../components/StaffSaveResultModal";
 import { ROUTES } from "../../../../shared/constants/routes";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   createNailArtist,
   fetchSkillTypes,
@@ -72,6 +73,7 @@ function getStaffInitials(fullName) {
 
 // ── Main page ──────────────────────────────────────────────────────────────────
 export function StaffCreatePage() {
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
@@ -241,7 +243,7 @@ export function StaffCreatePage() {
       <header className="mb-4 flex flex-col gap-4 rounded-[20px] bg-white/70 px-4 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur sm:mb-5 sm:rounded-[24px] sm:px-5 lg:rounded-[28px] lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           <h1 className="text-xl font-bold tracking-tight text-[#cf3d74] sm:text-2xl lg:text-[28px]">
-            Add New Artist
+            {t("manager.staff.addStaff") || "Add New Artist"}
           </h1>
           <p className="text-[11px] font-medium text-slate-400 sm:text-[12px]">
             Create a new nail artist profile and assign skill ratings
@@ -255,7 +257,7 @@ export function StaffCreatePage() {
             className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
           >
             <X size={14} />
-            Cancel
+            {t("manager.common.cancel")}
           </button>
           <button
             type="button"
@@ -263,7 +265,7 @@ export function StaffCreatePage() {
             className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
           >
             <Save size={14} />
-            Save Artist
+            {t("manager.common.save") || "Save Artist"}
           </button>
         </div>
       </header>
@@ -276,13 +278,13 @@ export function StaffCreatePage() {
           <div className="rounded-[24px] bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
             <h2 className="mb-5 text-[18px] font-bold text-slate-800 sm:text-[20px] flex items-center gap-2">
               <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
-              Artist Details
+              {t("manager.staff.artistDetails") || "Artist Details"}
             </h2>
 
             <div className="grid gap-5 md:grid-cols-2">
               <label className="space-y-2.5">
                 <span className="text-[13px] font-semibold text-slate-600">
-                  First Name <span className="text-rose-500">*</span>
+                  {t("manager.staff.firstName") || "First Name"} <span className="text-rose-500">*</span>
                 </span>
                 <div className={inputWrapperClassName}>
                   <User size={14} className="shrink-0 text-rose-300" />
@@ -290,7 +292,7 @@ export function StaffCreatePage() {
                     type="text"
                     value={formData.firstName}
                     onChange={(e) => handleInputChange("firstName", e.target.value)}
-                    placeholder="Enter first name"
+                    placeholder={t("manager.staff.firstName")}
                     className={inputClassName}
                     required
                   />
@@ -299,7 +301,7 @@ export function StaffCreatePage() {
 
               <label className="space-y-2.5">
                 <span className="text-[13px] font-semibold text-slate-600">
-                  Last Name <span className="text-rose-500">*</span>
+                  {t("manager.staff.lastName") || "Last Name"} <span className="text-rose-500">*</span>
                 </span>
                 <div className={inputWrapperClassName}>
                   <User size={14} className="shrink-0 text-rose-300" />
@@ -307,7 +309,7 @@ export function StaffCreatePage() {
                     type="text"
                     value={formData.lastName}
                     onChange={(e) => handleInputChange("lastName", e.target.value)}
-                    placeholder="Enter last name"
+                    placeholder={t("manager.staff.lastName")}
                     className={inputClassName}
                     required
                   />
@@ -333,7 +335,7 @@ export function StaffCreatePage() {
 
               <label className="space-y-2.5">
                 <span className="text-[13px] font-semibold text-slate-600">
-                  Phone Number
+                  {t("manager.common.phone")}
                 </span>
                 <div className={inputWrapperClassName}>
                   <Phone size={14} className="shrink-0 text-rose-300" />
@@ -349,7 +351,7 @@ export function StaffCreatePage() {
 
               <label className="space-y-2.5">
                 <span className="text-[13px] font-semibold text-slate-600">
-                  Password <span className="text-rose-500">*</span>
+                  {t("manager.staff.password") || "Password"} <span className="text-rose-500">*</span>
                 </span>
                 <div className={inputWrapperClassName}>
                   <Lock size={14} className="shrink-0 text-rose-300" />
@@ -366,7 +368,7 @@ export function StaffCreatePage() {
 
               <label className="space-y-2.5">
                 <span className="text-[13px] font-semibold text-slate-600">
-                  Job Title / Role
+                  {t("adminStaffManagement.roleTableHead") || "Job Title / Role"}
                 </span>
                 <div className={inputWrapperClassName}>
                   <input
@@ -404,7 +406,7 @@ export function StaffCreatePage() {
                         <Upload size={28} />
                       </div>
                       <div className="text-center">
-                        <p className="text-base font-semibold text-slate-700">Click to upload artist avatar</p>
+                        <p className="text-base font-semibold text-slate-700">{t("manager.staff.clickUpload") || "Click to upload artist avatar"}</p>
                         <p className="text-xs text-slate-400 mt-1">PNG, JPG up to 5MB</p>
                       </div>
                       <input

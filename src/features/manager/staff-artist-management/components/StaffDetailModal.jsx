@@ -5,8 +5,10 @@ import { Link } from "react-router-dom";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { getManagerStaffUpdateRoute } from "../../../../shared/constants/routes";
 import { getStaffInitials, STAFF_STATUS_STYLES } from "../services/mockStaffArtists";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 export function StaffDetailModal({ staff, onClose, loading }) {
+  const { language } = useLanguage();
   const avgPerDay =
     staff?.stats?.month && staff.stats.month > 0
       ? (staff.stats.month / 26).toFixed(1)
@@ -27,7 +29,7 @@ export function StaffDetailModal({ staff, onClose, loading }) {
     >
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Spin size="large" tip="Loading artist detail..." />
+          <Spin size="large" tip={language === "vi" ? "Đang tải chi tiết nghệ sĩ..." : "Loading artist detail..."} />
         </div>
       ) : staff && (
         <>
@@ -67,9 +69,9 @@ export function StaffDetailModal({ staff, onClose, loading }) {
           <div className="-mt-6 space-y-4 rounded-[24px] bg-white px-6 pt-6 pb-6">
             <div className="grid grid-cols-3 gap-3">
               {[
-                { label: "Today", value: staff.stats?.today ?? "—", sub: "bookings" },
-                { label: "This Month", value: staff.stats?.month ?? "—", sub: "bookings" },
-                { label: "Revenue", value: staff.stats?.revenue ?? "—", sub: "total" },
+                { label: language === "vi" ? "Hôm nay" : "Today", value: staff.stats?.today ?? "—", sub: language === "vi" ? "đơn" : "bookings" },
+                { label: language === "vi" ? "Tháng này" : "This Month", value: staff.stats?.month ?? "—", sub: language === "vi" ? "đơn" : "bookings" },
+                { label: language === "vi" ? "Doanh thu" : "Revenue", value: staff.stats?.revenue ?? "—", sub: language === "vi" ? "tổng" : "total" },
               ].map(({ label, value, sub }) => (
                 <div
                   key={label}
@@ -84,23 +86,23 @@ export function StaffDetailModal({ staff, onClose, loading }) {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-[14px] border border-[#f1e7ed] bg-[#fffafd] px-4 py-3">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9a5f7f]">Avg / Work Day</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9a5f7f]">{language === "vi" ? "Trung bình mỗi ngày" : "Avg / Work Day"}</p>
                 <p className="mt-1 text-[16px] font-extrabold text-[#2d1b35]">{avgPerDay}</p>
-                <p className="text-[9px] text-[#9a5f7f]">bookings per day</p>
+                <p className="text-[9px] text-[#9a5f7f]">{language === "vi" ? "đơn" : "bookings"} per day</p>
               </div>
               <div className="rounded-[14px] border border-[#f1e7ed] bg-[#fffafd] px-4 py-3">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9a5f7f]">Rating</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9a5f7f]">{language === "vi" ? "Đánh giá" : "Rating"}</p>
                 <div className="mt-1 flex items-center gap-1.5">
                   <Star size={14} fill="#fbbf24" className="text-[#fbbf24]" />
                   <p className="text-[16px] font-extrabold text-[#2d1b35]">{staff.rating?.toFixed(1) ?? "—"}</p>
                 </div>
-                <p className="text-[9px] text-[#9a5f7f]">customer rating</p>
+                <p className="text-[9px] text-[#9a5f7f]">{language === "vi" ? "Đánh giá từ khách hàng" : "Customer rating"}</p>
               </div>
             </div>
 
             {(staff.email || staff.phone) && (
               <div className="space-y-2 rounded-[14px] border border-[#f1e7ed] bg-[#fffafd] px-4 py-3">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9a5f7f]">Contact</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9a5f7f]">{language === "vi" ? "Thông tin liên hệ" : "Contact"}</p>
                 {staff.email && (
                   <div className="flex items-center gap-2 text-[13px] text-[#7f6478]">
                     <Mail size={14} className="text-[#ea4f93]" />
@@ -119,7 +121,7 @@ export function StaffDetailModal({ staff, onClose, loading }) {
             {staff.skills?.length > 0 && (
               <div>
                 <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9a5f7f]">
-                  Skills & Specialties
+                  {language === "vi" ? "Kỹ năng và chuyên môn" : "Skills & Specialties"}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {staff.skills.map((skill) => {
@@ -142,14 +144,14 @@ export function StaffDetailModal({ staff, onClose, loading }) {
                 to={getManagerStaffUpdateRoute(staff.id)}
                 className="flex-1 rounded-full bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] py-2.5 text-center text-[12px] font-bold text-white shadow-[0_10px_22px_rgba(234,79,147,0.22)] transition hover:opacity-95"
               >
-                Edit Profile
+                {language === "vi" ? "Chỉnh sửa thông tin" : "Edit Profile"}
               </Link>
               <button
                 type="button"
                 onClick={onClose}
                 className="flex-1 rounded-full border border-[#f1c6dd] bg-white py-2.5 text-[12px] font-bold text-[#ea4f93] transition hover:bg-[#fffafd]"
               >
-                Close
+                {language === "vi" ? "Đóng" : "Close"}
               </button>
             </div>
           </div>
