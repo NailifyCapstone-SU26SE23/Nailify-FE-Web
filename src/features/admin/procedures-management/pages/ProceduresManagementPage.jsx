@@ -45,7 +45,7 @@ function MetricCard({ item }) {
 }
 
 function ProcedureStatusBadge({ status }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const toneMap = {
     Active: "bg-[#e7fbf4] text-[#159669]",
     Inactive: "bg-[#fff1f5] text-[#d14c84]",
@@ -62,7 +62,7 @@ function ProcedureStatusBadge({ status }) {
 }
 
 function ProcedureRequiredBadge({ isRequired }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   return (
     <span
       className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${isRequired ? "bg-[#fff4df] text-[#d9871c]" : "bg-[#f3ebff] text-[#7e4fe6]"

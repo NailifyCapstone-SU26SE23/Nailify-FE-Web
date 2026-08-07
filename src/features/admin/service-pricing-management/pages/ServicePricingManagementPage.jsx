@@ -386,7 +386,7 @@ function sortServices(items, sortValue) {
 }
 
 export function ServicePricingManagementPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [services, setServices] = useState([]);
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");

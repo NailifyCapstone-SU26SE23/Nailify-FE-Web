@@ -1,35 +1,30 @@
 import {
   AlarmClock,
   CalendarDays,
-  CircleDollarSign,
   ClipboardList,
   Clock,
   DollarSign,
   Eye,
   FileText,
   LoaderCircle,
-  MessageSquareText,
   Play,
   Quote,
   RefreshCcw,
-  Sparkles,
   SquareCheckBig,
   Star,
-  Trophy,
   User,
   GripHorizontal,
   Pin,
   PinOff,
   EyeOff,
   RotateCcw,
-  LayoutDashboard,
   Settings2,
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
 import { buildAvatarDataUrl } from "../../../../shared/utils/avatar";
 import { useEffect, useMemo, useState, useRef } from "react";
-import { Table, Tag, Rate, DatePicker, Segmented, Dropdown, Button, Tooltip } from "antd";
+import { Table, Rate, DatePicker, Segmented, Dropdown, Button, Tooltip } from "antd";
 import ReactECharts from "echarts-for-react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
@@ -45,16 +40,17 @@ import {
 import {
   buildStaffServiceSessionPayload,
   fetchStaffBookings,
-  formatCurrency,
   formatTimeValue,
   getStaffSessionUser,
   normalizeStaffBooking,
   startStaffBookingService,
 } from "../../../staff/bookings/services/staffBookingService";
 import { useStaffDashboard, useStaffSkills } from "../hooks/useAdminDashboard";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 const DEFAULT_BOOKING_PAGE_SIZE = 10;
 
+// 1. CỐ ĐỊNH DATA TIẾNG ANH (Không dịch ở đây để tránh lỗi lưu vào localStorage)
 const defaultWidgets = [
   { id: 'todaysSchedule', title: 'Today\'s Schedule', visible: true, pinned: false },
   { id: 'myScheduleOutline', title: 'My Schedule Outline', visible: true, pinned: false },
@@ -80,6 +76,22 @@ Card.propTypes = {
 };
 
 function WidgetWrapper({ id, widget, onPin, onHide, onDragStart, onDragOver, onDrop, onDragEnter, children, isPinned, className = "" }) {
+  // 2. GỌI HOOK BÊN TRONG COMPONENT WIDGETWRAPPER
+  const { t, language } = useLanguage();
+
+  // Tạo một hàm nhỏ để dịch động tiêu đề dựa vào ID của widget
+  const getWidgetTitle = (id, fallback) => {
+    const titles = {
+      todaysSchedule: language === "vi" ? "Lịch hôm nay" : "Today's Schedule",
+      myScheduleOutline: language === "vi" ? "Lịch của tôi" : "My Schedule Outline",
+      recentFeedback: language === "vi" ? "Đánh giá gần đây" : "Recent Feedback",
+      earningsTracker: language === "vi" ? "Theo dõi thu nhập" : "Earnings Tracker",
+      serviceTimeEfficiency: language === "vi" ? "Hiệu quả thời gian" : "Service Time Efficiency",
+      skillOverview: language === "vi" ? "Tổng quan kỹ năng" : "Skill Overview"
+    };
+    return t(`staff.dashboard.widgets.${id}`) || titles[id] || fallback;
+  };
+
   return (
     <div
       draggable={!isPinned}
@@ -97,20 +109,23 @@ function WidgetWrapper({ id, widget, onPin, onHide, onDragStart, onDragOver, onD
                 <GripHorizontal size={18} />
               </div>
             )}
-            <h3 className={`font-extrabold text-[#432744] ${isPinned ? 'text-base' : 'text-sm'}`}>{widget.title}</h3>
+            {/* IN TITLE ĐÃ ĐƯỢC DỊCH RA MÀN HÌNH */}
+            <h3 className={`font-extrabold text-[#432744] ${isPinned ? 'text-base' : 'text-sm'}`}>
+              {getWidgetTitle(id, widget.title)}
+            </h3>
           </div>
           <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={() => onPin(id)}
               className="p-1.5 text-[#c28ca6] hover:text-[#ea4f93] hover:bg-[#fff1f5] rounded-md transition-colors"
-              title={isPinned ? "Unpin widget" : "Pin to top"}
+              title={isPinned ? (language === "vi" ? "Bỏ ghim" : "Unpin widget") : (language === "vi" ? "Ghim lên đầu" : "Pin to top")}
             >
               {isPinned ? <PinOff size={16} /> : <Pin size={16} />}
             </button>
             <button
               onClick={() => onHide(id)}
               className="p-1.5 text-[#c28ca6] hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
-              title="Hide widget"
+              title={language === "vi" ? "Ẩn tiện ích" : "Hide widget"}
             >
               <EyeOff size={16} />
             </button>
@@ -134,6 +149,7 @@ WidgetWrapper.propTypes = {
   onDragEnter: PropTypes.func,
   children: PropTypes.node,
   isPinned: PropTypes.bool,
+  className: PropTypes.string,
 };
 
 function formatDate(value) {
@@ -190,7 +206,6 @@ function MetricCard({ item }) {
   const Icon = item.icon;
   const color = item.color || '#10b981';
 
-  // Safely extract string from value/note in case backend returns an object
   const safeStr = (val) => {
     if (val === null || val === undefined) return '';
     if (typeof val === 'object') return val.customerName || JSON.stringify(val);
@@ -245,21 +260,6 @@ function StatusChip({ label, className }) {
   );
 }
 
-function Panel({ title, icon: Icon, children, action }) {
-  return (
-    <section className="overflow-hidden rounded-[20px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_26px_rgba(236,72,153,0.06)]">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-        <div className="flex min-w-0 items-center gap-2">
-          {Icon ? <Icon size={14} className="text-[#ea4f93]" /> : null}
-          <h3 className="min-w-0 text-sm font-extrabold text-[#432744]">{title}</h3>
-        </div>
-        {action}
-      </div>
-      <div className="mt-4">{children}</div>
-    </section>
-  );
-}
-
 function MobileBookingCard({ booking, actions }) {
   return (
     <article className="w-full min-w-0 rounded-[18px] border border-[#f8dce8] bg-[#fff9fc] p-4">
@@ -304,6 +304,10 @@ function MobileBookingCard({ booking, actions }) {
 
 export function StaffDashboardPage() {
   const navigate = useNavigate();
+
+  // 3. GỌI HOOK BÊN TRONG FUNCTION COMPONENT CHÍNH
+  const { t, language } = useLanguage();
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [bookings, setBookings] = useState([]);
@@ -318,7 +322,10 @@ export function StaffDashboardPage() {
     firstRowOnPage: 0,
     lastRowOnPage: 0,
   });
+
   const sessionUser = getStaffSessionUser();
+  const greetingName = sessionUser?.fullName || sessionUser?.email || (language === "vi" ? "Thợ Nail" : "Artist");
+
   const [dateRange, setDateRange] = useState([dayjs(), dayjs()]);
   const [filterMode, setFilterMode] = useState("Day");
 
@@ -382,7 +389,7 @@ export function StaffDashboardPage() {
           return;
         }
 
-        const message = loadError instanceof Error ? loadError.message : "Failed to load today's bookings.";
+        const message = loadError instanceof Error ? loadError.message : (language === "vi" ? "Không thể tải lịch hẹn hôm nay." : "Failed to load today's bookings.");
         setError(message);
         toast.error(message);
       } finally {
@@ -397,7 +404,7 @@ export function StaffDashboardPage() {
     return () => {
       isMounted = false;
     };
-  }, [bookingPagination.currentPage, bookingPagination.pageSize, startDate, endDate, sessionUser?.staffId]);
+  }, [bookingPagination.currentPage, bookingPagination.pageSize, startDate, endDate, sessionUser?.staffId, language]);
 
   const sortedBookings = useMemo(
     () => [...bookings].sort((left, right) => left.bookingTime.localeCompare(right.bookingTime)),
@@ -413,51 +420,52 @@ export function StaffDashboardPage() {
     [currentBooking, sortedBookings],
   );
 
+  // 4. DỊCH DỮ LIỆU ĐƯỢC TÍNH TOÁN BÊN TRONG useMemo
   const metrics = useMemo(() => {
     return [
       {
-        label: "Pending",
+        label: language === 'vi' ? 'Đang chờ' : 'Pending',
         value: dashboardData?.remainingAppointmentsCount || 0,
-        note: "Remaining today",
+        note: language === 'vi' ? 'Còn lại trong ngày' : 'Remaining today',
         icon: CalendarDays,
         color: "#ec4899",
       },
       {
-        label: "Completed",
+        label: language === 'vi' ? 'Hoàn thành' : 'Completed',
         value: dashboardData?.completedAppointmentsCount || 0,
-        note: "Appointments done",
+        note: language === 'vi' ? 'Đã phục vụ xong' : 'Appointments done',
         icon: ClipboardList,
         color: "#10b981",
       },
       {
-        label: "Earnings",
+        label: language === 'vi' ? 'Thu nhập' : 'Earnings',
         value: dashboardData?.estimatedEarnings ? dashboardData.estimatedEarnings.toLocaleString() : "0",
         unit: "₫",
-        note: "Estimated total",
+        note: language === 'vi' ? 'Tổng dự tính' : 'Estimated total',
         icon: DollarSign,
         color: "#0ea5e9",
       },
       {
-        label: "Rating",
+        label: language === 'vi' ? 'Đánh giá' : 'Rating',
         value: dashboardData?.averageRatingScore || 0,
-        note: "Average score",
+        note: language === 'vi' ? 'Điểm trung bình' : 'Average score',
         icon: Star,
         color: "#f59e0b",
       },
       {
-        label: "Next",
+        label: language === 'vi' ? 'Kế tiếp' : 'Next',
         value: typeof dashboardData?.nextCustomer === "object" && dashboardData?.nextCustomer !== null
           ? (dashboardData.nextCustomer.customerName || "--")
           : (dashboardData?.nextCustomer || "--"),
-        note: "Upcoming customer",
+        note: language === 'vi' ? 'Khách sắp tới' : 'Upcoming customer',
         icon: AlarmClock,
         color: "#8b5cf6",
       },
     ];
-  }, [dashboardData]);
+  }, [dashboardData, language]);
 
   const getEmptyTimeLabels = () => {
-    if (!startDate || !endDate) return { labels: ['No Data'], data: [0] };
+    if (!startDate || !endDate) return { labels: [language === 'vi' ? 'Trống' : 'No Data'], data: [0] };
     const start = dayjs(startDate);
     const end = dayjs(endDate);
     const diff = end.diff(start, 'day');
@@ -484,7 +492,7 @@ export function StaffDashboardPage() {
     }
 
     if (labels.length === 0) {
-      labels = ['No Data'];
+      labels = [language === 'vi' ? 'Trống' : 'No Data'];
       data = [0];
     }
     return { labels, data };
@@ -514,7 +522,7 @@ export function StaffDashboardPage() {
         }
       ]
     };
-  }, [dashboardData, startDate, endDate]);
+  }, [dashboardData, startDate, endDate, language]);
 
   const serviceTimeOption = useMemo(() => {
     const hasData = dashboardData?.serviceTimeEfficiency?.labels?.length > 0;
@@ -529,7 +537,7 @@ export function StaffDashboardPage() {
       yAxis: {
         type: 'value',
         max: (val) => val.max === 0 ? 60 : null,
-        axisLabel: { formatter: '{value} mins' }
+        axisLabel: { formatter: language === "vi" ? '{value} phút' : '{value} mins' }
       },
       series: [
         {
@@ -539,7 +547,7 @@ export function StaffDashboardPage() {
         }
       ]
     };
-  }, [dashboardData, startDate, endDate]);
+  }, [dashboardData, startDate, endDate, language]);
 
   const skillRadarOption = useMemo(() => {
     if (!staffSkillsData || staffSkillsData.length === 0) return {};
@@ -548,7 +556,7 @@ export function StaffDashboardPage() {
         trigger: 'item'
       },
       legend: {
-        data: ['Skill Level'],
+        data: [language === 'vi' ? 'Cấp độ kỹ năng' : 'Skill Level'],
         bottom: 0
       },
       radar: {
@@ -560,12 +568,12 @@ export function StaffDashboardPage() {
       },
       series: [
         {
-          name: 'Skills',
+          name: language === 'vi' ? 'Kỹ năng' : 'Skills',
           type: 'radar',
           data: [
             {
               value: staffSkillsData.map(skill => skill.level),
-              name: 'Skill Level',
+              name: language === 'vi' ? 'Cấp độ kỹ năng' : 'Skill Level',
               areaStyle: {
                 color: 'rgba(234, 79, 147, 0.2)'
               },
@@ -580,7 +588,7 @@ export function StaffDashboardPage() {
         }
       ]
     };
-  }, [staffSkillsData]);
+  }, [staffSkillsData, language]);
 
   const handleDragStart = (e, id) => {
     e.dataTransfer.effectAllowed = "move";
@@ -636,7 +644,7 @@ export function StaffDashboardPage() {
   const handleResetLayout = () => {
     setWidgets(defaultWidgets);
     localStorage.removeItem('staffDashboardWidgets');
-    toast.success("Dashboard layout reset to default");
+    toast.success(language === "vi" ? "Đã đặt lại bố cục mặc định" : "Dashboard layout reset to default");
   };
 
   const pinnedWidgets = widgets.filter(w => w.pinned && w.visible);
@@ -649,7 +657,7 @@ export function StaffDashboardPage() {
           <div className="w-full">
             <div className="mb-3 flex items-center justify-between">
               <StatusChip
-                label={`${bookingPagination.totalItems} bookings`}
+                label={language === "vi" ? `${bookingPagination.totalItems} Lịch hẹn` : `${bookingPagination.totalItems} bookings`}
                 className="border border-[#f6d3e3] bg-[#fff1f6] text-[#b48aa0]"
               />
             </div>
@@ -657,7 +665,7 @@ export function StaffDashboardPage() {
               {isLoading ? (
                 <div className="flex min-h-[300px] items-center justify-center gap-3 text-sm text-[#b38a9f]">
                   <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
-                  Loading today&apos;s schedule...
+                  {language === "vi" ? "Đang tải lịch hôm nay..." : "Loading today's schedule..."}
                 </div>
               ) : (
                 <>
@@ -671,7 +679,7 @@ export function StaffDashboardPage() {
                     ))}
                     {!sortedBookings.length ? (
                       <div className="px-4 py-10 text-center text-sm text-[#8a7082]">
-                        No bookings found for today.
+                        {language === "vi" ? "Không tìm thấy lịch hẹn nào." : "No bookings found for today."}
                       </div>
                     ) : null}
                     {bookingPagination.totalPages > 1 ? (
@@ -687,10 +695,10 @@ export function StaffDashboardPage() {
                           disabled={!bookingPagination.hasPrevious}
                           className="rounded-xl border border-[#f2bfd4] bg-white px-3 py-2 text-xs font-bold text-[#ea4f93] disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          Previous
+                          {language === "vi" ? "Trước" : "Previous"}
                         </button>
                         <span className="text-xs font-bold text-[#866f80]">
-                          Page {bookingPagination.currentPage}/{bookingPagination.totalPages}
+                          {language === "vi" ? "Trang" : "Page"} {bookingPagination.currentPage}/{bookingPagination.totalPages}
                         </span>
                         <button
                           type="button"
@@ -703,7 +711,7 @@ export function StaffDashboardPage() {
                           disabled={!bookingPagination.hasNext}
                           className="rounded-xl border border-[#f2bfd4] bg-white px-3 py-2 text-xs font-bold text-[#ea4f93] disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          Next
+                          {language === "vi" ? "Tiếp" : "Next"}
                         </button>
                       </div>
                     ) : null}
@@ -717,7 +725,7 @@ export function StaffDashboardPage() {
                       pagination={tablePagination}
                       onChange={handleTableChange}
                       scroll={{ x: 980 }}
-                      locale={{ emptyText: "No bookings found for today." }}
+                      locale={{ emptyText: language === "vi" ? "Không có lịch hẹn nào." : "No bookings found for today." }}
                     />
                   </div>
                 </>
@@ -730,7 +738,7 @@ export function StaffDashboardPage() {
           <ReactECharts option={earningsOption} style={{ height: isPinned ? '380px' : '280px', width: '100%' }} opts={{ renderer: 'svg' }} />
         ) : (
           <div className="flex h-full min-h-[280px] items-center justify-center text-sm text-[#aa8a99]">
-            {isDashboardLoading ? <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" /> : "No earnings data"}
+            {isDashboardLoading ? <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" /> : (language === "vi" ? "Chưa có dữ liệu thu nhập" : "No earnings data")}
           </div>
         );
       case 'serviceTimeEfficiency':
@@ -738,7 +746,7 @@ export function StaffDashboardPage() {
           <ReactECharts option={serviceTimeOption} style={{ height: isPinned ? '380px' : '280px', width: '100%' }} opts={{ renderer: 'svg' }} />
         ) : (
           <div className="flex h-full min-h-[280px] items-center justify-center text-sm text-[#aa8a99]">
-            {isDashboardLoading ? <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" /> : "No efficiency data"}
+            {isDashboardLoading ? <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" /> : (language === "vi" ? "Chưa có dữ liệu hiệu suất" : "No efficiency data")}
           </div>
         );
       case 'skillOverview':
@@ -746,7 +754,7 @@ export function StaffDashboardPage() {
           <ReactECharts option={skillRadarOption} style={{ height: isPinned ? '380px' : '280px', width: '100%' }} opts={{ renderer: 'svg' }} />
         ) : (
           <div className="flex h-full min-h-[280px] items-center justify-center text-sm text-[#aa8a99]">
-            {isSkillsLoading ? <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" /> : "No skills data"}
+            {isSkillsLoading ? <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" /> : (language === "vi" ? "Chưa có dữ liệu kỹ năng" : "No skills data")}
           </div>
         );
       case 'recentFeedback':
@@ -775,11 +783,11 @@ export function StaffDashboardPage() {
                       <Quote className="text-slate-200 fill-slate-200" size={48} />
                       <div className="mt-2">
                         <h4 className={`text-lg font-bold ${currentBg.replace('bg-', 'text-')}`}>{fb.customerName}</h4>
-                        <p className="text-xs font-medium text-slate-500">Client Name</p>
+                        <p className="text-xs font-medium text-slate-500">{language === "vi" ? "Khách hàng" : "Client Name"}</p>
                       </div>
                     </div>
                     <p className="mt-4 text-sm font-medium italic text-slate-600 line-clamp-3 min-h-[60px]">
-                      {fb.comment || "No comment provided."}
+                      {fb.comment || (language === "vi" ? "Không có lời bình luận." : "No comment provided.")}
                     </p>
                     <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
                       <Rate disabled defaultValue={fb.score} className={`text-[16px] ${currentBg.replace('bg-', 'text-')}`} />
@@ -791,7 +799,7 @@ export function StaffDashboardPage() {
             </div>
           </div>
         ) : (
-          <p className="text-sm text-[#8a7082] p-4">No recent feedback available.</p>
+          <p className="text-sm text-[#8a7082] p-4">{language === "vi" ? "Không có đánh giá gần đây." : "No recent feedback available."}</p>
         );
       case 'myScheduleOutline':
         return dashboardData?.mySchedule && dashboardData.mySchedule.length > 0 ? (
@@ -829,9 +837,9 @@ export function StaffDashboardPage() {
                     placement="topLeft"
                     title={
                       <div className="text-xs">
-                        <div><strong className="text-[#ea4f93]">Type:</strong> {scheduleItem.type}</div>
-                        {scheduleItem.type === 'Booking' && <div><strong className="text-[#ea4f93]">Customer:</strong> {scheduleItem.customerName}</div>}
-                        <div><strong className="text-[#ea4f93]">Duration:</strong> {scheduleItem.durationMinutes} min</div>
+                        <div><strong className="text-[#ea4f93]">{language === "vi" ? "Loại:" : "Type:"}</strong> {scheduleItem.type}</div>
+                        {scheduleItem.type === 'Booking' && <div><strong className="text-[#ea4f93]">{language === "vi" ? "Khách hàng:" : "Customer:"}</strong> {scheduleItem.customerName}</div>}
+                        <div><strong className="text-[#ea4f93]">{language === "vi" ? "Thời lượng:" : "Duration:"}</strong> {scheduleItem.durationMinutes} {language === "vi" ? "phút" : "min"}</div>
                       </div>
                     }
                   >
@@ -853,7 +861,7 @@ export function StaffDashboardPage() {
             </div>
           </div>
         ) : (
-          <p className="text-sm text-[#8a7082] p-4">No schedule items available for selected dates.</p>
+          <p className="text-sm text-[#8a7082] p-4">{language === "vi" ? "Không có lịch trình trong thời gian này." : "No schedule items available for selected dates."}</p>
         );
       default:
         return null;
@@ -886,26 +894,26 @@ export function StaffDashboardPage() {
     const startService = async () => {
       try {
         const updatedBooking = await startStaffBookingService(booking.id);
-        toast.success("Service started successfully.");
+        toast.success(language === "vi" ? "Bắt đầu dịch vụ thành công." : "Service started successfully.");
         openServiceSession(updatedBooking);
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Failed to start service.";
+        const message = error instanceof Error ? error.message : (language === "vi" ? "Lỗi khi bắt đầu dịch vụ." : "Failed to start service.");
         toast.error(message);
       }
     };
 
     if (isInProgressBooking) {
       return [
-        { key: "view", label: "View Booking", icon: Eye, onSelect: () => navigate(detailRoute) },
+        { key: "view", label: language === "vi" ? "Xem lịch hẹn" : "View Booking", icon: Eye, onSelect: () => navigate(detailRoute) },
         {
           key: "continue",
-          label: "Continue Service",
+          label: language === "vi" ? "Tiếp tục làm" : "Continue Service",
           icon: Play,
           onSelect: () => void openServiceSession(),
         },
         {
           key: "notes",
-          label: "View Notes",
+          label: language === "vi" ? "Ghi chú" : "View Notes",
           icon: FileText,
           onSelect: () => setSelectedStaffNotesBooking(booking),
         },
@@ -913,11 +921,11 @@ export function StaffDashboardPage() {
     }
 
     return [
-      { key: "view", label: "View Booking", icon: Eye, onSelect: () => navigate(detailRoute) },
+      { key: "view", label: language === "vi" ? "Xem lịch hẹn" : "View Booking", icon: Eye, onSelect: () => navigate(detailRoute) },
       ...(!isCancelledBooking && !isPendingBooking && !isCompletedBooking && !isServiceCompletedBooking
         ? [{
           key: "start",
-          label: "Start Service",
+          label: language === "vi" ? "Bắt đầu làm" : "Start Service",
           icon: Play,
           onSelect: () => void startService(),
         }]
@@ -925,21 +933,20 @@ export function StaffDashboardPage() {
       ...(!isCancelledBooking && !isPendingBooking && !isCheckedInBooking && !isCompletedBooking && !isServiceCompletedBooking
         ? [{
           key: "complete",
-          label: "Complete Service",
+          label: language === "vi" ? "Hoàn thành" : "Complete Service",
           icon: SquareCheckBig,
           onSelect: () => navigate(detailRoute, { state: { staffAction: "complete" } }),
         }]
         : []),
       {
         key: "notes",
-        label: "View Notes",
+        label: language === "vi" ? "Ghi chú" : "View Notes",
         icon: FileText,
         onSelect: () => setSelectedStaffNotesBooking(booking),
       },
     ];
   };
 
-  const greetingName = sessionUser?.fullName || sessionUser?.email || "Artist";
   const tablePagination = useMemo(
     () => ({
       current: bookingPagination.currentPage,
@@ -947,10 +954,11 @@ export function StaffDashboardPage() {
       total: bookingPagination.totalItems,
       showSizeChanger: true,
       pageSizeOptions: ["5", "10", "20", "50"],
-      showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} bookings`,
+      showTotal: (total, range) => language === "vi" ? `${range[0]}-${range[1]} của ${total} lịch hẹn` : `${range[0]}-${range[1]} of ${total} bookings`,
     }),
-    [bookingPagination.currentPage, bookingPagination.pageSize, bookingPagination.totalItems],
+    [bookingPagination.currentPage, bookingPagination.pageSize, bookingPagination.totalItems, language],
   );
+
   const handleTableChange = (pagination) => {
     const nextPage = Number(pagination?.current || 1);
     const nextPageSize = Number(pagination?.pageSize || DEFAULT_BOOKING_PAGE_SIZE);
@@ -964,7 +972,7 @@ export function StaffDashboardPage() {
 
   const bookingColumns = useMemo(() => ([
     {
-      title: "Date & Time",
+      title: language === "vi" ? "Ngày & Giờ" : "Date & Time",
       key: "time",
       render: (_, booking) => (
         <div className="flex flex-col">
@@ -974,7 +982,7 @@ export function StaffDashboardPage() {
       ),
     },
     {
-      title: "Customer",
+      title: language === "vi" ? "Khách hàng" : "Customer",
       key: "customer",
       render: (_, booking) => (
         <div className="flex items-center gap-3">
@@ -989,41 +997,37 @@ export function StaffDashboardPage() {
       ),
     },
     {
-      title: "Price",
+      title: language === "vi" ? "Giá" : "Price",
       key: "price",
       render: (_, booking) => <span className="font-bold text-[#ea4f93]">{booking.totalPriceLabel || "--"}</span>,
     },
     {
-      title: "Status",
+      title: language === "vi" ? "Trạng thái" : "Status",
       dataIndex: "status",
       key: "status",
       render: (value) => <StatusChip label={value} className={getStatusTone(value)} />,
     },
     {
-      title: "Action",
+      title: language === "vi" ? "Hành động" : "Action",
       key: "action",
       render: (_, booking) => <ActionDropdown items={getActionItems(booking)} />,
     },
-  ]), [getActionItems]);
+  ]), [getActionItems, language]);
 
   const hiddenWidgets = widgets.filter(w => !w.visible);
-
-  const toggleHide = (id) => {
-    setWidgets(prev => prev.map(w => w.id === id ? { ...w, visible: !w.visible } : w));
-  };
 
   const layoutMenuProps = {
     items: [
       ...hiddenWidgets.map((w) => ({
         key: `restore-${w.id}`,
-        label: `Show ${w.title}`,
+        label: language === "vi" ? `Hiển thị ${w.title}` : `Show ${w.title}`,
         icon: <Eye size={16} />,
         onClick: () => toggleHide(w.id),
       })),
       hiddenWidgets.length > 0 ? { type: 'divider' } : null,
       {
         key: 'reset',
-        label: 'Reset Layout',
+        label: language === "vi" ? 'Đặt lại bố cục' : 'Reset Layout',
         icon: <RotateCcw size={16} />,
         onClick: handleResetLayout,
         danger: true,
@@ -1035,7 +1039,6 @@ export function StaffDashboardPage() {
     <>
       <div className="flex min-h-screen flex-col bg-slate-50 text-slate-800 font-sans">
         {/* Header & Controls */}
-        {/* <div className="flex flex-col gap-4 bg-white px-8 py-5 shadow-sm border-b border-slate-200 md:flex-row md:items-center md:justify-between z-50 sticky top-0"> */}
         <div
           className="
                   sticky top-0 z-50
@@ -1047,13 +1050,20 @@ export function StaffDashboardPage() {
                   px-8 py-5
                   md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-[22px] font-bold tracking-tight text-slate-900">Good morning, {greetingName}!</h1>
-            <p className="text-[13px] text-slate-500 font-medium">Welcome to your dashboard overview.</p>
+            <h1 className="text-[22px] font-bold tracking-tight text-slate-900">
+              {language === "vi"
+                ? (new Date().getHours() < 12 ? `Chào buổi sáng, ${greetingName}!` : `Chào buổi chiều, ${greetingName}!`)
+                : `Good ${new Date().getHours() < 12 ? 'morning' : 'afternoon'}, ${greetingName}!`
+              }
+            </h1>
+            <p className="text-[13px] text-slate-500 font-medium">
+              {language === "vi" ? "Chào mừng bạn đến với trang tổng quan." : "Welcome to your dashboard overview."}
+            </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <Dropdown menu={layoutMenuProps} trigger={['click']} placement="bottomRight">
               <Button icon={<Settings2 size={16} className="text-slate-500" />} className="border-slate-200 font-medium text-slate-700 bg-white shadow-sm">
-                Customize
+                {language === "vi" ? "Tùy chỉnh" : "Customize"}
               </Button>
             </Dropdown>
             <button
@@ -1062,10 +1072,16 @@ export function StaffDashboardPage() {
               className="inline-flex h-[32px] items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-1 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
             >
               <RefreshCcw size={16} />
-              Refresh
+              {language === "vi" ? "Làm mới" : "Refresh"}
             </button>
             <Segmented
-              options={['Day', 'Week', 'Month', 'Year', 'Custom']}
+              options={[
+                { label: language === "vi" ? "Ngày" : "Day", value: "Day" },
+                { label: language === "vi" ? "Tuần" : "Week", value: "Week" },
+                { label: language === "vi" ? "Tháng" : "Month", value: "Month" },
+                { label: language === "vi" ? "Năm" : "Year", value: "Year" },
+                { label: language === "vi" ? "Tùy chọn" : "Custom", value: "Custom" }
+              ]}
               value={filterMode}
               onChange={(val) => {
                 setFilterMode(val);
@@ -1161,4 +1177,3 @@ export function StaffDashboardPage() {
     </>
   );
 }
-

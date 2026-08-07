@@ -1,6 +1,7 @@
 import { X, Check, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { receptionistWalkInBookingService } from "./../services/receptionistWalkInBookingService";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 function formatVND(amount) {
   if (!amount) return "0 VND";
@@ -13,6 +14,7 @@ export function NailVariantSelectionModal({
   nailDesign,
   onSelectVariant,
 }) {
+  const { t, language } = useLanguage();
   const [selectedVariantId, setSelectedVariantId] = useState(null);
   const [variants, setVariants] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -47,9 +49,9 @@ export function NailVariantSelectionModal({
       >
         <div className="flex items-center justify-between border-b border-[#f5d6e3] px-6 py-4">
           <div>
-            <h2 className="text-lg font-bold text-[#412643]">Select Nail Variant</h2>
+            <h2 className="text-lg font-bold text-[#412643]">{language === "vi" ? "Chọn Biến Thể Móng" : "Select Nail Variant"}</h2>
             <p className="mt-1 text-sm text-[#c092a8]">
-              Choose a specific variant for {nailDesign.name}
+              {language === "vi" ? `Lựa chọn biến thể chi tiết cho ${nailDesign.name}` : `Choose a specific variant for ${nailDesign.name}`}
             </p>
           </div>
           <button
@@ -65,11 +67,11 @@ export function NailVariantSelectionModal({
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-12 text-[#b48ca0]">
               <Loader2 className="mb-4 h-8 w-8 animate-spin text-[#ea4f93]" />
-              <p>Loading variants...</p>
+              <p>{language === "vi" ? "Đang tải biến thể..." : "Loading variants..."}</p>
             </div>
           ) : variants.length === 0 ? (
             <div className="text-center text-[#b48ca0]">
-              No variants available for this design.
+              {language === "vi" ? "Không có biến thể nào khả dụng cho mẫu này." : "No variants available for this design."}
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
@@ -94,7 +96,7 @@ export function NailVariantSelectionModal({
                     </div>
                     <div className="p-3">
                       <p className="text-sm font-bold text-[#432744]">
-                        {variant.name || "Standard"}
+                        {variant.name || (language === "vi" ? "Tiêu chuẩn" : "Standard")}
                       </p>
                       <p className="mt-1 text-xs font-bold text-[#ea4f93]">
                         {formatVND(variant.price)}
@@ -116,17 +118,17 @@ export function NailVariantSelectionModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-[#f3d0de] bg-white px-5 py-2.5 text-sm font-bold text-[#ea4f93] hover:bg-[#fff4f8]"
+            className="rounded-xl border border-[#f3d0de] bg-white px-5 py-2.5 text-sm font-bold text-[#ea4f93] hover:bg-[#fff4f8] cursor-pointer"
           >
-            Cancel
+            {language === "vi" ? "Hủy" : "Cancel"}
           </button>
           <button
             type="button"
             onClick={handleConfirm}
             disabled={!selectedVariantId}
-            className="rounded-xl bg-[image:var(--gradient-accent)] px-6 py-2.5 text-sm font-bold text-white shadow-[0_8px_16px_rgba(236,72,153,0.15)] disabled:opacity-50"
+            className="rounded-xl bg-[image:var(--gradient-accent)] px-6 py-2.5 text-sm font-bold text-white shadow-[0_8px_16px_rgba(236,72,153,0.15)] disabled:opacity-50 cursor-pointer"
           >
-            Confirm Selection
+            {language === "vi" ? "Xác Nhận Lựa Chọn" : "Confirm Selection"}
           </button>
         </div>
       </div>

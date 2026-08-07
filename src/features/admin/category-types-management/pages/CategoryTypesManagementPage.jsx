@@ -44,7 +44,7 @@ function MetricCard({ item }) {
 }
 
 function CategoryTypeStatusBadge({ status }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const normalizedStatus = String(status || "").toLowerCase();
   const isStatusActive = normalizedStatus === "active";
   const className = isStatusActive
@@ -289,10 +289,10 @@ export function CategoryTypesManagementPage() {
         key: "categoryType",
         render: (_, categoryType) => (
           <div className="flex items-center gap-3">
-            
+
             <div>
               <p className="text-sm font-bold text-[#432744]">{categoryType.name}</p>
-             
+
             </div>
           </div>
         ),
@@ -509,11 +509,10 @@ export function CategoryTypesManagementPage() {
 
                     setMetaData((current) => ({ ...current, currentPage: item }));
                   }}
-                  className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md px-2 text-[11px] ${
-                    item === metaData.currentPage
+                  className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md px-2 text-[11px] ${item === metaData.currentPage
                       ? "bg-[#ea4f93] font-bold text-white"
                       : "border border-[#f3cade] bg-white font-medium text-[#b9849f]"
-                  } disabled:cursor-default disabled:opacity-100`}
+                    } disabled:cursor-default disabled:opacity-100`}
                 >
                   {item}
                 </button>

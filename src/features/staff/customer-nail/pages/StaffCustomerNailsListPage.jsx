@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getStaffArtistId } from "../../bookings/services/staffBookingService";
 import { fetchCustomerNailRequests, fetchStaffCustomerNailRequests } from "../../../manager/customer-nail/services/customerNailsService";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 function Card({ className = "", children }) {
   return (
@@ -78,7 +79,7 @@ function StatCard({ title, value, note, icon: Icon, toneClassName }) {
   );
 }
 
-function RequestCard({ request }) {
+function RequestCard({ request, language }) {
   const nail = request.customerNail || request;
   const initials = nail.name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() || "CN";
   const statusLabel = request.status || nail.status || "Assigned";
@@ -121,23 +122,23 @@ function RequestCard({ request }) {
       <div className="mt-4 rounded-xl bg-[#fff0f6]/60 border border-[#fbdde9] p-2.5">
         <p className="text-[9px] font-extrabold uppercase tracking-wider text-[#b87c9b] mb-1.5 flex items-center gap-1">
           <Sparkles size={10} className="text-[#ea4f93]" />
-          Skill Requirements (Complexity A-D)
+          {language === "vi" ? "Yêu cầu kỹ năng (Phức tạp A-D)" : "Skill Requirements (Complexity A-D)"}
         </p>
         <div className="flex flex-wrap gap-2">
           <div className="flex items-center gap-1 rounded-lg bg-white px-2 py-0.5 border border-[#fce7f3] text-[10px]">
-            <span className="font-bold text-[#b87c9b]">Shape (A):</span>
+            <span className="font-bold text-[#b87c9b]">{language === "vi" ? "Hình dạng (A):" : "Shape (A):"}</span>
             <span className="font-bold text-[#ea4f93]">{skillReqs.A}★</span>
           </div>
           <div className="flex items-center gap-1 rounded-lg bg-white px-2 py-0.5 border border-[#fce7f3] text-[10px]">
-            <span className="font-bold text-[#b87c9b]">Coating (B):</span>
+            <span className="font-bold text-[#b87c9b]">{language === "vi" ? "Phong cách (B):" : "Coating (B):"}</span>
             <span className="font-bold text-[#ea4f93]">{skillReqs.B}★</span>
           </div>
           <div className="flex items-center gap-1 rounded-lg bg-white px-2 py-0.5 border border-[#fce7f3] text-[10px]">
-            <span className="font-bold text-[#b87c9b]">Accessory (C):</span>
+            <span className="font-bold text-[#b87c9b]">{language === "vi" ? "Phụ kiện (C):" : "Accessory (C):"}</span>
             <span className="font-bold text-[#ea4f93]">{skillReqs.C}★</span>
           </div>
           <div className="flex items-center gap-1 rounded-lg bg-white px-2 py-0.5 border border-[#fce7f3] text-[10px]">
-            <span className="font-bold text-[#b87c9b]">Art (D):</span>
+            <span className="font-bold text-[#b87c9b]">{language === "vi" ? "Nghệ thuật (D):" : "Art (D):"}</span>
             <span className="font-bold text-[#ea4f93]">{skillReqs.D}★</span>
           </div>
         </div>
@@ -145,15 +146,15 @@ function RequestCard({ request }) {
 
       <div className="mt-4 grid grid-cols-3 gap-2.5">
         <div className="rounded-[16px] border border-[#f5cee1] bg-white/70 p-2.5 text-center">
-          <p className="text-[9px] font-bold uppercase tracking-wider text-[#c08aa4]">Estimate Price</p>
+          <p className="text-[9px] font-bold uppercase tracking-wider text-[#c08aa4]">{language === "vi" ? "Giá ước tính" : "Estimate Price"}</p>
           <p className="mt-0.5 text-xs font-bold text-[#ea4f93]">{formatVND(request.price || nail.price)}</p>
         </div>
         <div className="rounded-[16px] border border-[#f5cee1] bg-white/70 p-2.5 text-center">
-          <p className="text-[9px] font-bold uppercase tracking-wider text-[#c08aa4]">Duration</p>
+          <p className="text-[9px] font-bold uppercase tracking-wider text-[#c08aa4]">{language === "vi" ? "Thời lượng" : "Duration"}</p>
           <p className="mt-0.5 text-xs font-bold text-[#3f2240]">{formatDuration(request.duration || nail.duration)}</p>
         </div>
         <div className="rounded-[16px] border border-[#f5cee1] bg-white/70 p-2.5 text-center">
-          <p className="text-[9px] font-bold uppercase tracking-wider text-[#c08aa4]">Assigned</p>
+          <p className="text-[9px] font-bold uppercase tracking-wider text-[#c08aa4]">{language === "vi" ? "Đã phân công" : "Assigned"}</p>
           <p className="mt-0.5 text-[10px] font-bold text-[#3f2240] truncate">
             {formatDate(request.createdAt || nail.createdAt)}
           </p>
@@ -173,7 +174,7 @@ function RequestCard({ request }) {
         </span>
 
         <span className="flex items-center gap-1 text-[11px] font-bold text-[#ea4f93] transition-all group-hover:gap-1.5">
-          {statusLabel === "Assigned" ? "Start Review" : "View Review"}
+          {statusLabel === "Assigned" ? (language === "vi" ? "Bắt đầu đánh giá" : "Start Review") : (language === "vi" ? "Xem đánh giá" : "View Review")}
           <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
         </span>
       </div>
@@ -189,6 +190,7 @@ export function StaffCustomerNailsListPage() {
   const [error, setError] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
+  const { language } = useLanguage();
 
   const staffArtistId = useMemo(() => {
     try {
@@ -200,7 +202,7 @@ export function StaffCustomerNailsListPage() {
 
   const loadRequests = useCallback(async (options = {}) => {
     if (!staffArtistId) {
-      setError("Please log in as a Staff Artist to view assigned reviews.");
+      setError(language === "vi" ? "Vui lòng đăng nhập với vai trò Thợ Nail để xem đơn hàng được phân công." : "Please log in as a Staff Artist to view assigned reviews.");
       setIsLoading(false);
       return;
     }
@@ -218,7 +220,7 @@ export function StaffCustomerNailsListPage() {
       setRequests(data || []);
     } catch (err) {
       console.error("Failed to load custom nail requests:", err);
-      setError(err.message || "Failed to load custom nail requests.");
+      setError(err.message || (language === "vi" ? "Không tải được yêu cầu thiết kế." : "Failed to load custom nail requests."));
     } finally {
       if (silent) {
         setIsRefreshing(false);
@@ -255,35 +257,35 @@ export function StaffCustomerNailsListPage() {
 
     return [
       {
-        title: "Total Assigned",
+        title: language === "vi" ? "Tổng được phân công" : "Total Assigned",
         value: total,
-        note: "All tasks assigned to you",
+        note: language === "vi" ? "Tất cả nhiệm vụ được giao cho bạn" : "All tasks assigned to you",
         icon: Sparkles,
         toneClassName: "bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93]",
       },
       {
-        title: "Pending Review",
+        title: language === "vi" ? "Chờ đánh giá" : "Pending Review",
         value: pending,
-        note: "Needs your quote/estimation",
+        note: language === "vi" ? "Cần báo giá / ước tính của bạn" : "Needs your quote/estimation",
         icon: Clock3,
         toneClassName: "bg-gradient-to-br from-[#f5b455] to-[#db8520]",
       },
       {
-        title: "Reviewed / Quoted",
+        title: language === "vi" ? "Đã xét / Báo giá" : "Reviewed / Quoted",
         value: reviewed,
-        note: "Estimate submitted to manager",
+        note: language === "vi" ? "Ước tính đã gửi cho quản lý" : "Estimate submitted to manager",
         icon: Eye,
         toneClassName: "bg-gradient-to-br from-[#7c8cff] to-[#4755b8]",
       },
       {
-        title: "Approved / Completed",
+        title: language === "vi" ? "Được duyệt / Hoàn thành" : "Approved / Completed",
         value: approved,
-        note: "Approved by manager & customer",
+        note: language === "vi" ? "Được quản lý & khách hàng duyệt" : "Approved by manager & customer",
         icon: CheckCircle2,
         toneClassName: "bg-gradient-to-br from-[#5dd18d] to-[#2fa25f]",
       },
     ];
-  }, [requests]);
+  }, [requests, language]);
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
@@ -351,8 +353,8 @@ export function StaffCustomerNailsListPage() {
                   <Palette size={22} />
                 </div>
                 <div>
-                  <h2 className="text-3xl font-extrabold text-[#402542]">Custom Review Requests</h2>
-                  <p className="text-sm text-[#b07a94]">Review customer designs, formulate pricing estimates, and draft quotes.</p>
+                  <h2 className="text-3xl font-extrabold text-[#402542]">{language === "vi" ? "Yêu cầu thiết kế tùy chỉnh" : "Custom Review Requests"}</h2>
+                  <p className="text-sm text-[#b07a94]">{language === "vi" ? "Xem thiết kế của khách hàng, lêp giá ước tính và lập báo giá." : "Review customer designs, formulate pricing estimates, and draft quotes."}</p>
                 </div>
               </div>
             </div>
@@ -362,7 +364,7 @@ export function StaffCustomerNailsListPage() {
                 : "bg-white/80 text-[#9b7b8f]"
                 }`}>
                 <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} />
-                {isRefreshing ? "Refreshing..." : "Auto refresh active"}
+                {isRefreshing ? (language === "vi" ? "Đang làm mới..." : "Refreshing...") : (language === "vi" ? "Tự động làm mới" : "Auto refresh active")}
               </div>
             </div>
           </div>
@@ -377,8 +379,8 @@ export function StaffCustomerNailsListPage() {
         <Card className="p-0">
           <div className="border-b border-[#f6dce7] p-6">
             <SectionHeading
-              title="Assigned Workboard"
-              subtitle={`${requests.length} designs assigned to you for valuation.`}
+              title={language === "vi" ? "Bảng công việc được phân công" : "Assigned Workboard"}
+              subtitle={language === "vi" ? `${requests.length} thiết kế được giao cho bạn để định giá.` : `${requests.length} designs assigned to you for valuation.`}
             />
           </div>
 
@@ -388,7 +390,7 @@ export function StaffCustomerNailsListPage() {
                 <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#fff0f8]">
                   <Palette size={32} className="text-[#ea4f93]" />
                 </div>
-                <p className="text-sm text-[#c08aa4]">You don't have any custom review requests assigned yet.</p>
+                <p className="text-sm text-[#c08aa4]">{language === "vi" ? "Bạn chưa được giao yêu cầu thiết kế nào." : "You don't have any custom review requests assigned yet."}</p>
               </div>
             ) : (
               <>
@@ -399,7 +401,7 @@ export function StaffCustomerNailsListPage() {
                       to={`/staff/customer-nails/${request.customerNailRequestId || request.customerNailId || request.id}`}
                       className="block"
                     >
-                      <RequestCard request={request} />
+                      <RequestCard request={request} language={language} />
                     </Link>
                   ))}
                 </div>

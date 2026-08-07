@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { EmptyState } from "../../../../shared/components/common/EmptyState";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 const INITIAL_NOTIFICATIONS = [
   {
@@ -135,20 +136,20 @@ function getTypeMeta(type) {
   }
 }
 
-function formatRelativeStatus(item) {
+function formatRelativeStatus(item, language) {
   if (item.messageType === "WaitlistPromoted" && item.deadlineAt) {
-    return `Confirm before ${item.deadlineAt}`;
+    return language === "vi" ? `Xác nhận trước ${item.deadlineAt}` : `Confirm before ${item.deadlineAt}`;
   }
 
   if (item.messageType === "WaitlistExpired") {
-    return "Reservation window expired";
+    return language === "vi" ? "Thời gian giữ chỗ đã hết hạn" : "Reservation window expired";
   }
 
   if (item.messageType === "BookingAutoCancelled") {
-    return "Appointment auto-cancelled";
+    return language === "vi" ? "Lịch hẹn đã bị tự động hủy" : "Appointment auto-cancelled";
   }
 
-  return item.clearedAt ? `Cleared at ${item.clearedAt}` : "Cleared";
+  return item.clearedAt ? (language === "vi" ? `Đã xóa lúc ${item.clearedAt}` : `Cleared at ${item.clearedAt}`) : (language === "vi" ? "Đã xóa" : "Cleared");
 }
 
 function StatCard({ title, value, note, icon: Icon, toneClassName }) {
@@ -184,7 +185,7 @@ function FilterButton({ active, label, onClick }) {
   );
 }
 
-function NotificationCard({ item, onClear }) {
+function NotificationCard({ item, onClear, language }) {
   const meta = getTypeMeta(item.messageType);
   const Icon = meta.icon;
 
@@ -222,22 +223,22 @@ function NotificationCard({ item, onClear }) {
 
         <div className="w-full shrink-0 lg:w-[280px]">
           <div className="rounded-[20px] border border-white/90 bg-white/80 p-4">
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c08aa4]">Operational Status</p>
-            <p className="mt-2 text-sm font-extrabold text-[#402542]">{formatRelativeStatus(item)}</p>
-            {item.deadlineAt ? (
-              <div className="mt-4 flex items-center gap-2 text-xs font-semibold text-[#d6851d]">
-                <Clock3 size={14} />
-                Reserved for 15 minutes
-              </div>
-            ) : null}
-            <button
-              type="button"
-              onClick={() => onClear(item.id)}
-              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-[#f2bfd4] bg-white px-4 py-3 text-sm font-bold text-[#d94f92] transition hover:bg-[#fff5f8]"
-            >
-              <Trash2 size={15} />
-              Clear Item
-            </button>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c08aa4]">{language === "vi" ? "Trạng thái vận hành" : "Operational Status"}</p>
+              <p className="mt-2 text-sm font-extrabold text-[#402542]">{formatRelativeStatus(item, language)}</p>
+              {item.deadlineAt ? (
+                <div className="mt-4 flex items-center gap-2 text-xs font-semibold text-[#d6851d]">
+                  <Clock3 size={14} />
+                  {language === "vi" ? "Giữ chỗ trong 15 phút" : "Reserved for 15 minutes"}
+                </div>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => onClear(item.id)}
+                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-[#f2bfd4] bg-white px-4 py-3 text-sm font-bold text-[#d94f92] transition hover:bg-[#fff5f8]"
+              >
+                <Trash2 size={15} />
+                {language === "vi" ? "Xóa mục này" : "Clear Item"}
+              </button>
           </div>
         </div>
       </div>
@@ -257,6 +258,15 @@ function InfoPill({ label, value }) {
 export function StaffWaittingPage() {
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
   const [activeFilter, setActiveFilter] = useState("All");
+  const { language } = useLanguage();
+
+  const FILTERS = [
+    { key: "All", label: language === "vi" ? "Tất cả" : "All" },
+    { key: "WaitlistPromoted", label: language === "vi" ? "Đã nâng hạng" : "Promoted" },
+    { key: "WaitlistExpired", label: language === "vi" ? "Hết hạn" : "Expired" },
+    { key: "BookingAutoCancelled", label: language === "vi" ? "Tự động hủy" : "Auto Cancelled" },
+    { key: "Cleared", label: language === "vi" ? "Đã xóa" : "Cleared" },
+  ];
 
   const filteredNotifications = useMemo(() => {
     if (activeFilter === "All") {
@@ -278,35 +288,35 @@ export function StaffWaittingPage() {
 
     return [
       {
-        title: "Promoted Alerts",
+        title: language === "vi" ? "Thông báo nâng hạng" : "Promoted Alerts",
         value: promoted,
-        note: "Waitlist guests notified",
+        note: language === "vi" ? "Khách hàng trong hàng chờ đã được thông báo" : "Waitlist guests notified",
         icon: BellRing,
         toneClassName: "bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93]",
       },
       {
-        title: "Expired Windows",
+        title: language === "vi" ? "Cửa sổ đã hết hạn" : "Expired Windows",
         value: expired,
-        note: "15-minute confirmations missed",
+        note: language === "vi" ? "Xác nhận 15 phút bị bỏ lỡ" : "15-minute confirmations missed",
         icon: AlarmClockOff,
         toneClassName: "bg-gradient-to-br from-[#f5b455] to-[#db8520]",
       },
       {
-        title: "Auto Cancelled",
+        title: language === "vi" ? "Tự động hủy" : "Auto Cancelled",
         value: autoCancelled,
-        note: "Late bookings closed by job",
+        note: language === "vi" ? "Lịch hẹn trễ bị đóng bởi Job" : "Late bookings closed by job",
         icon: CalendarClock,
         toneClassName: "bg-gradient-to-br from-[#ff8a9b] to-[#e45870]",
       },
       {
-        title: "Cleared Records",
+        title: language === "vi" ? "Bản ghi đã xóa" : "Cleared Records",
         value: cleared,
-        note: "Items hidden from active queue",
+        note: language === "vi" ? "Mục ẩn khỏi hàng đợi hiện tại" : "Items hidden from active queue",
         icon: CheckCheck,
         toneClassName: "bg-gradient-to-br from-[#5dd18d] to-[#2fa25f]",
       },
     ];
-  }, [notifications]);
+  }, [notifications, language]);
 
   const handleClearItem = (id) => {
     setNotifications((current) =>
@@ -358,9 +368,9 @@ export function StaffWaittingPage() {
                 <Send size={22} />
               </div>
               <div>
-                <h1 className="text-3xl font-extrabold text-[#402542]">Staff Waitlist Notification Board</h1>
+                <h1 className="text-3xl font-extrabold text-[#402542]">{language === "vi" ? "Bảng thông báo hàng chờ" : "Staff Waitlist Notification Board"}</h1>
                 <p className="text-sm text-[#b07a94]">
-                  Mock UI for waitlist promotion, expiration, booking auto-cancellation, and cleared records.
+                  {language === "vi" ? "Giao diện mô phỏng cho việc nâng hạng, hết hạn, tự động hủy lịch và xoá bản ghi." : "Mock UI for waitlist promotion, expiration, booking auto-cancellation, and cleared records."}
                 </p>
               </div>
             </div>
@@ -378,7 +388,7 @@ export function StaffWaittingPage() {
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-[#f2bfd4] bg-white px-4 py-3 text-sm font-bold text-[#d94f92] transition hover:bg-[#fff4f8]"
             >
               <RefreshCw size={16} />
-              Restore Mock Data
+              {language === "vi" ? "Khôi phục dữ liệu" : "Restore Mock Data"}
             </button>
             <button
               type="button"
@@ -386,7 +396,7 @@ export function StaffWaittingPage() {
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(135deg,#ff8ebb_0%,#ea4f93_100%)] px-4 py-3 text-sm font-bold text-white shadow-[0_14px_28px_rgba(236,72,153,0.22)]"
             >
               <Eraser size={16} />
-              Clear All Data
+              {language === "vi" ? "Xóa tất cả" : "Clear All Data"}
             </button>
           </div>
         </div>
@@ -401,13 +411,13 @@ export function StaffWaittingPage() {
       <Card className="p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <SectionHeading
-            title="Notification Queue"
-            subtitle={`${filteredNotifications.length} item(s) in the current view.`}
+            title={language === "vi" ? "Hàng đợi thông báo" : "Notification Queue"}
+            subtitle={language === "vi" ? `${filteredNotifications.length} mục trong tầm nhìn hiện tại.` : `${filteredNotifications.length} item(s) in the current view.`}
           />
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-2 rounded-full bg-[#fff4f8] px-3 py-2 text-xs font-bold text-[#d94f92]">
               <Filter size={14} />
-              Filter
+              {language === "vi" ? "Lọc" : "Filter"}
             </span>
             {FILTERS.map((filter) => (
               <FilterButton
@@ -423,13 +433,13 @@ export function StaffWaittingPage() {
         <div className="mt-5">
           {filteredNotifications.length === 0 ? (
             <EmptyState
-              title="No notifications in this view"
-              description="Use Restore Mock Data to repopulate the board, or switch the active filter."
+              title={language === "vi" ? "Không có thông báo trong khu vực này" : "No notifications in this view"}
+              description={language === "vi" ? "Dùng 'Khôi phục dữ liệu' để nạp lại, hoặc chuyển bộ lọc." : "Use Restore Mock Data to repopulate the board, or switch the active filter."}
             />
           ) : (
             <div className="space-y-4">
               {filteredNotifications.map((item) => (
-                <NotificationCard key={item.id} item={item} onClear={handleClearItem} />
+                <NotificationCard key={item.id} item={item} onClear={handleClearItem} language={language} />
               ))}
             </div>
           )}
@@ -438,24 +448,24 @@ export function StaffWaittingPage() {
 
       <Card className="p-6">
         <SectionHeading
-          title="Event Mapping"
-          subtitle="Quick reference between backend events and UI message types."
+          title={language === "vi" ? "Bản đồ sự kiện" : "Event Mapping"}
+          subtitle={language === "vi" ? "Tham chiếu nhanh giữa các sự kiện backend và loại tin nhắn UI." : "Quick reference between backend events and UI message types."}
         />
         <div className="mt-5 grid gap-4 lg:grid-cols-3">
           <TimelineBlock
             icon={Sparkles}
-            title="A. WaitlistPromoted"
-            text="Triggered when SlotFreedEvent finds the next waitlist guest and moves them to Notified with a 15-minute confirmation window."
+            title={language === "vi" ? "A. Nâng hạng hàng chờ" : "A. WaitlistPromoted"}
+            text={language === "vi" ? "Kích hoạt khi SlotFreedEvent tìm khách hàng tiếp theo trong hàng chờ và chuyển sang trạng thái Đã thông báo với cửa sổ xác nhận 15 phút." : "Triggered when SlotFreedEvent finds the next waitlist guest and moves them to Notified with a 15-minute confirmation window."}
           />
           <TimelineBlock
             icon={Clock3}
-            title="B. WaitlistExpired"
-            text="Triggered by Hangfire when a promoted guest does not confirm within 15 minutes, then the hold is marked Expired."
+            title={language === "vi" ? "B. Hết hạn hàng chờ" : "B. WaitlistExpired"}
+            text={language === "vi" ? "Kích hoạt bởi Hangfire khi khách được nâng hạng không xác nhận trong 15 phút, giữ chỗ sẽ bị đánh dấu Hết hạn." : "Triggered by Hangfire when a promoted guest does not confirm within 15 minutes, then the hold is marked Expired."}
           />
           <TimelineBlock
             icon={CalendarClock}
-            title="C. BookingAutoCancelled"
-            text="Triggered by BookingJobExecutor.cs when a booking is more than 15 minutes late and still has no check-in."
+            title={language === "vi" ? "C. Lịch hẹn tự động hủy" : "C. BookingAutoCancelled"}
+            text={language === "vi" ? "Kích hoạt bởi BookingJobExecutor.cs khi lịch hẹn trễ hơn 15 phút mà không có check-in." : "Triggered by BookingJobExecutor.cs when a booking is more than 15 minutes late and still has no check-in."}
           />
         </div>
       </Card>

@@ -26,7 +26,7 @@ function validateForm(formValues, t) {
 }
 
 export function CategoryTypeDetailPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const { categoryTypeId } = useParams();

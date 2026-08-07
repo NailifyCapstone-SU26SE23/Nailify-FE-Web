@@ -4,8 +4,10 @@ import toast from "react-hot-toast";
 import ChairMap from "../../../../shared/components/ui/ChairMap";
 import { fetchSalonChairs, fetchAvailableSalonChairs, assignChairToBooking } from "../services/receptionistBookingService";
 import { Armchair } from "lucide-react";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 export function AssignChairModal({ isOpen, onClose, booking, onSuccess, onAssign }) {
+  const { t, language } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [chairs, setChairs] = useState([]);
@@ -44,7 +46,7 @@ export function AssignChairModal({ isOpen, onClose, booking, onSuccess, onAssign
       setAvailableChairIds(new Set(availableChairs.map(c => c.chairId)));
 
     } catch (error) {
-      toast.error("Failed to load chairs.");
+      toast.error(t("receptionist.bookings.loadChairsFailed") || "Failed to load chairs.");
     } finally {
       setLoading(false);
     }
@@ -59,12 +61,12 @@ export function AssignChairModal({ isOpen, onClose, booking, onSuccess, onAssign
         await onAssign(selectedChair);
       } else if (booking?.bookingId) {
         await assignChairToBooking(booking.bookingId, selectedChair.chairId);
-        toast.success("Chair assigned successfully!");
+        toast.success(t("receptionist.bookings.assignChairSuccess") || "Chair assigned successfully!");
       }
       if (onSuccess) onSuccess();
       onClose();
     } catch (error) {
-      toast.error(error.message || "Failed to assign chair");
+      toast.error(error.message || t("receptionist.bookings.assignChairFailed") || "Failed to assign chair");
     } finally {
       setSubmitting(false);
     }
@@ -94,7 +96,7 @@ export function AssignChairModal({ isOpen, onClose, booking, onSuccess, onAssign
     }
 
     return (
-      <Tooltip key={cellName} title={!isAvailable ? "Ghế đã có khách" : "Ghế trống"}>
+      <Tooltip key={cellName} title={!isAvailable ? (t("receptionist.bookings.chairOccupied") || "Ghế đã có khách") : (t("receptionist.bookings.chairAvailable") || "Ghế trống")}>
         <div
           className={`${baseClasses} ${stateClasses}`}
           onClick={() => {
@@ -117,7 +119,7 @@ export function AssignChairModal({ isOpen, onClose, booking, onSuccess, onAssign
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-pink-100 text-pink-600">
             <Armchair size={16} />
           </span>
-          Assign Chair
+          {t("receptionist.bookings.assignChairTitle") || "Assign Chair"}
         </div>
       }
       open={isOpen}
@@ -129,7 +131,12 @@ export function AssignChairModal({ isOpen, onClose, booking, onSuccess, onAssign
       className="rounded-2xl"
     >
       <div className="mt-2 text-sm text-gray-600 mb-6">
-        <p>Vui lòng chọn ghế trống cho khách hàng <strong>{booking?.customerName}</strong> lúc <strong>{booking?.startTime ? booking.startTime.substring(0, 5) : "--"}</strong></p>
+        <p>
+          {t("receptionist.bookings.pleaseSelectChair", {
+            name: booking?.customerName || "",
+            time: booking?.startTime ? booking.startTime.substring(0, 5) : "--"
+          }) || `Vui lòng chọn ghế trống cho khách hàng ${booking?.customerName} lúc ${booking?.startTime ? booking.startTime.substring(0, 5) : "--"}`}
+        </p>
       </div>
 
       <div className="relative min-h-[300px]">
@@ -148,21 +155,21 @@ export function AssignChairModal({ isOpen, onClose, booking, onSuccess, onAssign
         <div className="flex gap-4">
           <div className="flex items-center gap-2">
             <div className="h-4 w-4 rounded bg-emerald-50 border border-emerald-200"></div>
-            <span className="text-xs font-medium text-gray-600">Còn trống</span>
+            <span className="text-xs font-medium text-gray-600">{t("receptionist.bookings.available") || "Còn trống"}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="h-4 w-4 rounded bg-gray-100 border border-gray-200"></div>
-            <span className="text-xs font-medium text-gray-600">Đã bận</span>
+            <span className="text-xs font-medium text-gray-600">{t("receptionist.bookings.occupied") || "Đã bận"}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="h-4 w-4 rounded bg-pink-50 border border-pink-500"></div>
-            <span className="text-xs font-medium text-gray-600">Đang chọn</span>
+            <span className="text-xs font-medium text-gray-600">{t("receptionist.bookings.selected") || "Đang chọn"}</span>
           </div>
         </div>
 
         <div className="flex gap-3">
           <Button onClick={onClose} className="rounded-xl font-semibold">
-            Cancel
+            {t("receptionist.common.cancel") || "Cancel"}
           </Button>
           <Button
             type="primary"
@@ -171,7 +178,7 @@ export function AssignChairModal({ isOpen, onClose, booking, onSuccess, onAssign
             loading={submitting}
             className="!bg-[#ea4f93] hover:!bg-[#d63d7e] border-none !font-semibold !rounded-xl !shadow-sm !shadow-pink-200/50"
           >
-            Confirm Assignment
+            {t("receptionist.bookings.confirmAssignment") || "Confirm Assignment"}
           </Button>
         </div>
       </div>

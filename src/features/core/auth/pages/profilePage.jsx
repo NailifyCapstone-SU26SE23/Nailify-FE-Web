@@ -112,7 +112,7 @@ function getDashboardRouteByRole(role) {
 }
 
 export function ProfilePage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user, logout, role } = useAuth();

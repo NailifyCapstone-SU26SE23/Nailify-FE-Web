@@ -39,6 +39,7 @@ import {
   prioritizeQueueEntry,
 } from "../services/walkInQueueService";
 import toast from "react-hot-toast";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 // Helper to load current user's salonId
 const getSalonId = () => {
@@ -48,11 +49,11 @@ const getSalonId = () => {
 
 // Queue status definitions and metadata
 const STATUS_META = {
-  Waiting: { label: "Waiting", color: "#d89b1d", bg: "bg-[#fffdf9] text-[#d89b1d] border-[#fbe9c7]" },
-  Called: { label: "At Counter", color: "#3b82f6", bg: "bg-[#fffdf9] text-[#3b82f6] border-[#d2e4f7]" },
-  InService: { label: "In Service", color: "#22a06b", bg: "bg-[#fffdf9] text-[#22a06b] border-[#c8ebd3]" },
-  Done: { label: "Completed", color: "#5b6472", bg: "bg-[#fffdf9] text-[#5b6472] border-[#e0e0e0]" },
-  Left: { label: "Absent / Left", color: "#e56b6f", bg: "bg-[#fffdf9] text-[#e56b6f] border-[#fbc9c9]" },
+  Waiting: { label: "Waiting", labelVi: "Đang chờ", color: "#d89b1d", bg: "bg-[#fffdf9] text-[#d89b1d] border-[#fbe9c7]" },
+  Called: { label: "At Counter", labelVi: "Tại quầy", color: "#3b82f6", bg: "bg-[#fffdf9] text-[#3b82f6] border-[#d2e4f7]" },
+  InService: { label: "In Service", labelVi: "Đang phục vụ", color: "#22a06b", bg: "bg-[#fffdf9] text-[#22a06b] border-[#c8ebd3]" },
+  Done: { label: "Completed", labelVi: "Hoàn thành", color: "#5b6472", bg: "bg-[#fffdf9] text-[#5b6472] border-[#e0e0e0]" },
+  Left: { label: "Absent / Left", labelVi: "Vắng mặt / Rời đi", color: "#e56b6f", bg: "bg-[#fffdf9] text-[#e56b6f] border-[#fbc9c9]" },
 };
 
 // Standard timeline time slots for calendar view (08:00 - 21:00)
@@ -62,6 +63,7 @@ const TIME_SLOTS = [
 ];
 
 export function WalkInQueuePage() {
+  const { t, language } = useLanguage();
   const [queueData, setQueueData] = useState([]);
   const [staffList, setStaffList] = useState([]);
   const [servicesList, setServicesList] = useState([]);
@@ -99,7 +101,7 @@ export function WalkInQueuePage() {
   // Load active queue data
   const loadQueue = useCallback(async () => {
     if (!salonId) {
-      setError("Salon ID is not configured. Please log in again.");
+      setError(language === "vi" ? "Mã Salon không được cấu hình. Vui lòng đăng nhập lại." : "Salon ID is not configured. Please log in again.");
       return;
     }
     setIsLoading(true);
@@ -109,11 +111,11 @@ export function WalkInQueuePage() {
       setQueueData(data || []);
     } catch (err) {
       console.error(err);
-      setError(err.message || "Failed to load walk-in queue data.");
+      setError(err.message || (language === "vi" ? "Không thể tải dữ liệu hàng chờ." : "Failed to load walk-in queue data."));
     } finally {
       setIsLoading(false);
     }
-  }, [salonId]);
+  }, [salonId, language]);
 
   // Load salon staff
   const loadStaff = useCallback(async () => {
@@ -152,9 +154,11 @@ export function WalkInQueuePage() {
   const speakCalling = (ticketNumber, customerName) => {
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
-      const messageText = `Calling customer number ${ticketNumber}, ${customerName}, VNDến quầy lễ tân VNDể nhận phục vụ.`;
+      const messageText = language === "vi"
+        ? `Mời khách hàng số ${ticketNumber}, ${customerName}, đến quầy lễ tân để được phục vụ.`
+        : `Calling customer number ${ticketNumber}, ${customerName}, please step to the counter.`;
       const utterance = new SpeechSynthesisUtterance(messageText);
-      utterance.lang = "vi-VN";
+      utterance.lang = language === "vi" ? "vi-VN" : "en-US";
       utterance.rate = 0.9;
       window.speechSynthesis.speak(utterance);
     }
@@ -198,15 +202,15 @@ export function WalkInQueuePage() {
         }
       } else if (targetStatus === "Done") {
         await completeQueueEntry(item.queueId);
-        toast.success(`Đã VNDánh dấu hoàn thành lượt của ${item.guestName || "Guest"}`);
+        toast.success(language === "vi" ? `Đã đánh dấu hoàn thành lượt của ${item.guestName || "Khách"}` : `Marked turn completed for ${item.guestName || "Guest"}`);
         loadQueue();
       } else if (targetStatus === "Left") {
         await handleMarkLeft(item.queueId);
       } else if (targetStatus === "Waiting") {
-        toast.info("Moved back to lobby successfully.");
+        toast.info(language === "vi" ? "Đã chuyển khách về sảnh chờ thành công." : "Moved back to lobby successfully.");
       }
     } catch (err) {
-      toast.error(err.message || "Không thể thực hiện thao tác kéo thả.");
+      toast.error(err.message || (language === "vi" ? "Không thể thực hiện thao tác kéo thả." : "Failed to perform drag and drop operation."));
     }
   };
 
@@ -220,17 +224,17 @@ export function WalkInQueuePage() {
       const item = JSON.parse(dataStr);
 
       if (artistId === "unassigned") {
-        toast.warning("Không thể bỏ gán thợ trực tiếp. Vui lòng VNDổi thợ.");
+        toast.warning(language === "vi" ? "Không thể bỏ gán thợ trực tiếp. Vui lòng đổi thợ." : "Cannot directly unassign artist. Please change artist.");
         return;
       }
 
       if (item.assignedNailArtistId === artistId) return;
 
       await assignArtistToQueue(item.queueId, artistId);
-      toast.success(`Assigned artist successfully.`);
+      toast.success(language === "vi" ? "Phân bổ thợ nail thành công." : "Assigned artist successfully.");
       loadQueue();
     } catch (err) {
-      toast.error(err.message || "Failed to assign artist.");
+      toast.error(err.message || (language === "vi" ? "Không thể phân bổ thợ." : "Failed to assign artist."));
     }
   };
 
@@ -240,10 +244,10 @@ export function WalkInQueuePage() {
       setCallingState(item);
       speakCalling(item.queuePosition, item.guestName || "Walk-in guest");
       await callQueueEntry(item.queueId);
-      toast.success(`Called queue number ${item.queuePosition}`);
+      toast.success(language === "vi" ? `Đã gọi số thứ tự ${item.queuePosition}` : `Called queue number ${item.queuePosition}`);
       loadQueue();
     } catch (err) {
-      toast.error(err.message || "Failed to call queue number.");
+      toast.error(err.message || (language === "vi" ? "Không thể gọi số thứ tự." : "Failed to call queue number."));
     }
   };
 
@@ -251,10 +255,10 @@ export function WalkInQueuePage() {
   const handlePrioritize = async (id) => {
     try {
       await prioritizeQueueEntry(id);
-      toast.success("Đã VNDẩy guests hàng lên VNDầu hàng chờ.");
+      toast.success(language === "vi" ? "Đã đẩy khách hàng lên đầu hàng chờ." : "Moved customer to front of queue.");
       loadQueue();
     } catch (err) {
-      toast.error(err.message || "Failed to prioritize customer.");
+      toast.error(err.message || (language === "vi" ? "Không thể ưu tiên khách hàng." : "Failed to prioritize customer."));
     }
   };
 
@@ -262,10 +266,10 @@ export function WalkInQueuePage() {
   const handleMarkLeft = async (id) => {
     try {
       await markQueueEntryLeft(id);
-      toast.warning("Đã VNDánh dấu guests hàng rời hàng chờ.");
+      toast.warning(language === "vi" ? "Đã đánh dấu khách hàng rời hàng chờ." : "Marked customer as left.");
       loadQueue();
     } catch (err) {
-      toast.error(err.message || "Failed to update status.");
+      toast.error(err.message || (language === "vi" ? "Không thể cập nhật trạng thái." : "Failed to update status."));
     }
   };
 
@@ -280,11 +284,11 @@ export function WalkInQueuePage() {
     if (!selectedQueueItem) return;
     try {
       await assignArtistToQueue(selectedQueueItem.queueId, artistId);
-      toast.success("Assigned artist to customer.");
+      toast.success(language === "vi" ? "Đã gán thợ nail phục vụ." : "Assigned artist to customer.");
       setIsAssignModalOpen(false);
       loadQueue();
     } catch (err) {
-      toast.error(err.message || "Failed to assign artist.");
+      toast.error(err.message || (language === "vi" ? "Không thể phân bổ thợ." : "Failed to assign artist."));
     }
   };
 
@@ -292,17 +296,17 @@ export function WalkInQueuePage() {
   const handleCompleteCheckin = async (id) => {
     try {
       await completeQueueEntry(id);
-      toast.success("Đã hoàn thành lượt xếp hàng. Guest hàng bắt VNDầu dịch vụ.");
+      toast.success(language === "vi" ? "Đã hoàn thành check-in. Bắt đầu phục vụ khách hàng." : "Completed check-in. Starting service for customer.");
       loadQueue();
     } catch (err) {
-      toast.error(err.message || "Failed to complete queue turn.");
+      toast.error(err.message || (language === "vi" ? "Không thể hoàn thành check-in." : "Failed to complete queue turn."));
     }
   };
 
   // Create Walk-in Queue Entry API
   const handleCreateQueueEntry = async () => {
     if (!guestName.trim()) {
-      toast.error("Please enter customer name.");
+      toast.error(language === "vi" ? "Vui lòng nhập tên khách hàng." : "Please enter customer name.");
       return;
     }
 
@@ -321,12 +325,12 @@ export function WalkInQueuePage() {
 
     try {
       await addToQueue(payload);
-      toast.success("Đã VNDăng ký guests hàng vào hàng chờ thành công!");
+      toast.success(language === "vi" ? "Đã đăng ký khách hàng vào hàng chờ thành công!" : "Registered customer to queue successfully!");
       setIsAddDrawerOpen(false);
       resetForm();
       loadQueue();
     } catch (err) {
-      toast.error(err.message || "Failed to register queue.");
+      toast.error(err.message || (language === "vi" ? "Không thể đăng ký hàng chờ." : "Failed to register queue."));
     }
   };
 
@@ -416,11 +420,11 @@ export function WalkInQueuePage() {
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
             <h1 className="text-xl font-bold text-[#2f2430] tracking-tight flex items-center gap-2">
-              Salon Lobby Queue
+              {language === "vi" ? "Sảnh Hàng Chờ Walk-In" : "Salon Lobby Queue"}
               <Sparkle size={16} className="text-[#e85d9b] fill-[#e85d9b] animate-spin" style={{ animationDuration: '6s' }} />
             </h1>
             <p className="text-[11px] text-[#7d6d78] mt-1 font-semibold max-w-xl">
-              Coordinate service order and quickly assign nail artists for daily walk-in customers.
+              {language === "vi" ? "Điều phối lượt phục vụ và phân bổ thợ nail nhanh chóng cho khách hàng vãng lai trong ngày." : "Coordinate service order and quickly assign nail artists for daily walk-in customers."}
             </p>
           </div>
 
@@ -435,7 +439,7 @@ export function WalkInQueuePage() {
                   }`}
               >
                 <LayoutGrid size={13} />
-                Drag-and-Drop Board
+                {language === "vi" ? "Bảng Kéo Thả" : "Drag-and-Drop Board"}
               </button>
               <button
                 onClick={() => setViewMode("timeline")}
@@ -445,7 +449,7 @@ export function WalkInQueuePage() {
                   }`}
               >
                 <Calendar size={13} />
-                Allocation Schedule
+                {language === "vi" ? "Lịch Phân Bổ" : "Allocation Schedule"}
               </button>
             </div>
 
@@ -453,14 +457,14 @@ export function WalkInQueuePage() {
               type="primary"
               icon={<Plus size={14} />}
               onClick={() => setIsAddDrawerOpen(true)}
-              className="h-10 rounded-xl bg-[#e85d9b] hover:bg-[#d84b8a] border-none font-bold text-white shadow-sm transition-all"
+              className="h-10 rounded-xl bg-[#e85d9b] hover:bg-[#d84b8a] border-none font-bold text-white shadow-sm transition-all cursor-pointer"
             >
-              Add Guest
+              {language === "vi" ? "Thêm Khách" : "Add Guest"}
             </Button>
             <button
               onClick={loadQueue}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#e2e8f0] bg-[#fffdf9] text-[#7d6d78] hover:text-[#e85d9b] hover:bg-gray-50 transition-all shadow-sm"
-              title="Reload data"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#e2e8f0] bg-[#fffdf9] text-[#7d6d78] hover:text-[#e85d9b] hover:bg-gray-50 transition-all shadow-sm cursor-pointer"
+              title={language === "vi" ? "Tải lại dữ liệu" : "Reload data"}
             >
               <RotateCw size={14} className={isLoading ? "animate-spin" : ""} />
             </button>
@@ -480,7 +484,7 @@ export function WalkInQueuePage() {
               <div className="space-y-2">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-pink-300">
                   <span className="h-1.5 w-1.5 rounded-full bg-[#e85d9b] animate-pulse" />
-                  Loa Call Guest
+                  {language === "vi" ? "Loa Gọi Khách Hàng" : "Loa Call Guest"}
                 </span>
 
                 {lastCalledEntry ? (
@@ -492,14 +496,14 @@ export function WalkInQueuePage() {
                       {lastCalledEntry.guestName}
                     </p>
                     <p className="mt-1 text-[10px] text-white/60 font-medium">
-                      Called at: {dayjs(lastCalledEntry.calledTime).format("HH:mm")}
+                      {language === "vi" ? "Gọi lúc" : "Called at"}: {dayjs(lastCalledEntry.calledTime).format("HH:mm")}
                     </p>
                   </div>
                 ) : (
                   <div>
-                    <h3 className="text-sm font-bold text-white/70">No numbers called yet</h3>
+                    <h3 className="text-sm font-bold text-white/70">{language === "vi" ? "Chưa có lượt nào được gọi" : "No numbers called yet"}</h3>
                     <p className="text-[10px] text-white/50 mt-1 max-w-sm">
-                      Bấm nút "Call" trên card guests ở cột Sảnh Chờ VNDể mời guests.
+                      {language === "vi" ? 'Bấm nút "Gọi" trên thẻ khách hàng ở cột Sảnh Chờ để gọi số vào quầy.' : 'Bấm nút "Call" trên card guests ở cột Sảnh Chờ VNDể mời guests.'}
                     </p>
                   </div>
                 )}
@@ -511,15 +515,15 @@ export function WalkInQueuePage() {
                     type="primary"
                     icon={<Volume2 size={13} />}
                     onClick={() => speakCalling(lastCalledEntry.queuePosition, lastCalledEntry.guestName)}
-                    className="rounded-xl h-9.5 bg-[#e85d9b] hover:bg-[#d84b8a] border-none font-bold text-white text-xs shadow-sm"
+                    className="rounded-xl h-9.5 bg-[#e85d9b] hover:bg-[#d84b8a] border-none font-bold text-white text-xs shadow-sm cursor-pointer"
                   >
-                    Recall
+                    {language === "vi" ? "Gọi Lại" : "Recall"}
                   </Button>
                   <Button
                     onClick={() => openAssignArtist(lastCalledEntry)}
-                    className="rounded-xl h-9.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs"
+                    className="rounded-xl h-9.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs cursor-pointer"
                   >
-                    Assign
+                    {language === "vi" ? "Phân Việc" : "Assign"}
                   </Button>
                 </div>
               )}
@@ -529,34 +533,34 @@ export function WalkInQueuePage() {
           {/* Core Numbers */}
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl bg-[#fffdf9] p-3 border border-[#e2e8f0] flex flex-col justify-between h-18 transition hover:bg-gray-50/50">
-              <span className="text-[9px] font-bold uppercase text-[#7d6d78] tracking-wider">Waiting</span>
+              <span className="text-[9px] font-bold uppercase text-[#7d6d78] tracking-wider">{language === "vi" ? "Đang chờ" : "Waiting"}</span>
               <div className="flex items-baseline gap-1">
                 <span className="text-xl font-bold text-[#d89b1d]">{stats.waiting}</span>
-                <span className="text-[9px] text-[#7d6d78] font-bold"> guests</span>
+                <span className="text-[9px] text-[#7d6d78] font-bold"> {language === "vi" ? "khách" : "guests"}</span>
               </div>
             </div>
 
             <div className="rounded-xl bg-[#fffdf9] p-3 border border-[#e2e8f0] flex flex-col justify-between h-18 transition hover:bg-gray-50/50">
-              <span className="text-[9px] font-bold uppercase text-[#7d6d78] tracking-wider">At counter</span>
+              <span className="text-[9px] font-bold uppercase text-[#7d6d78] tracking-wider">{language === "vi" ? "Tại quầy" : "At counter"}</span>
               <div className="flex items-baseline gap-1">
                 <span className="text-xl font-bold text-[#3b82f6]">{stats.called}</span>
-                <span className="text-[9px] text-[#7d6d78] font-bold"> guests</span>
+                <span className="text-[9px] text-[#7d6d78] font-bold"> {language === "vi" ? "khách" : "guests"}</span>
               </div>
             </div>
 
             <div className="rounded-xl bg-[#fffdf9] p-3 border border-[#e2e8f0] flex flex-col justify-between h-18 transition hover:bg-gray-50/50">
-              <span className="text-[9px] font-bold uppercase text-[#7d6d78] tracking-wider">In service</span>
+              <span className="text-[9px] font-bold uppercase text-[#7d6d78] tracking-wider">{language === "vi" ? "Đang làm" : "In service"}</span>
               <div className="flex items-baseline gap-1">
                 <span className="text-xl font-bold text-[#22a06b]">{stats.servicing}</span>
-                <span className="text-[9px] text-[#7d6d78] font-bold"> tables</span>
+                <span className="text-[9px] text-[#7d6d78] font-bold"> {language === "vi" ? "bàn" : "tables"}</span>
               </div>
             </div>
 
             <div className="rounded-xl bg-[#fffdf9] p-3 border border-[#e2e8f0] flex flex-col justify-between h-18 transition hover:bg-gray-50/50">
-              <span className="text-[9px] font-bold uppercase text-[#e85d9b] tracking-wider">Avg Wait</span>
+              <span className="text-[9px] font-bold uppercase text-[#e85d9b] tracking-wider">{language === "vi" ? "Chờ trung bình" : "Avg Wait"}</span>
               <div className="flex items-baseline gap-1">
                 <span className="text-xl font-bold text-[#e85d9b]">~{stats.avgWait}</span>
-                <span className="text-[9px] text-[#e85d9b] font-bold"> mins</span>
+                <span className="text-[9px] text-[#e85d9b] font-bold"> {language === "vi" ? "phút" : "mins"}</span>
               </div>
             </div>
           </div>
@@ -568,7 +572,7 @@ export function WalkInQueuePage() {
       {/* Filter / Search Bar */}
       <div className="max-w-md">
         <Input
-          placeholder="Tìm kiếm guests hàng bằng tên hoặc số VNDiện thoại..."
+          placeholder={language === "vi" ? "Tìm kiếm khách hàng bằng tên hoặc số điện thoại..." : "Search customer by phone number or name..."}
           prefix={<Search size={16} className="text-[#a08497]" />}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -580,7 +584,7 @@ export function WalkInQueuePage() {
       {isLoading ? (
         <div className="flex h-96 flex-col items-center justify-center gap-4 text-center">
           <Spin size="large" className="pink-spin" />
-          <p className="text-sm font-semibold text-[#a88a9f]">Syncing queue data...</p>
+          <p className="text-sm font-semibold text-[#a88a9f]">{language === "vi" ? "Đang đồng bộ hàng chờ..." : "Syncing queue data..."}</p>
         </div>
       ) : viewMode === "kanban" ? (
         /* ==================== KANBAN BOARD WITH DRAG & DROP ==================== */
@@ -595,16 +599,16 @@ export function WalkInQueuePage() {
             <div className="flex items-center justify-between border-b border-[#e2d5c5]/20 pb-3 mb-4">
               <div className="flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#d89b1d]" />
-                <h3 className="font-extrabold text-[#2f2430] text-xs uppercase tracking-wider">Lobby ({waitingEntries.length})</h3>
+                <h3 className="font-extrabold text-[#2f2430] text-xs uppercase tracking-wider">{language === "vi" ? `Sảnh Chờ (${waitingEntries.length})` : `Lobby (${waitingEntries.length})`}</h3>
               </div>
-              <span className="rounded-full bg-[#d89b1d]/10 px-2 py-0.5 text-[9px] font-bold uppercase text-[#d89b1d] border border-[#d89b1d]/20">Waiting</span>
+              <span className="rounded-full bg-[#d89b1d]/10 px-2 py-0.5 text-[9px] font-bold uppercase text-[#d89b1d] border border-[#d89b1d]/20">{language === "vi" ? "Chờ phục vụ" : "Waiting"}</span>
             </div>
 
             <div className="flex-1 space-y-4 overflow-y-auto max-h-[620px] pr-1 scrollbar-thin">
               {waitingEntries.length === 0 ? (
                 <div className="flex h-40 flex-col items-center justify-center text-center text-gray-400 border border-dashed border-gray-200/60 rounded-2xl bg-gray-50/10">
                   <Users size={16} className="opacity-20 mb-1" />
-                  <p className="text-[10px] font-bold text-gray-400">Kéo thả guests về chờ</p>
+                  <p className="text-[10px] font-bold text-gray-400">{language === "vi" ? "Kéo thả khách về chờ" : "Drag-and-drop guest to wait"}</p>
                 </div>
               ) : (
                 waitingEntries.map((item) => (
@@ -621,24 +625,24 @@ export function WalkInQueuePage() {
                           type="primary"
                           icon={<Play size={11} />}
                           onClick={() => handleCall(item)}
-                          className="flex-1 bg-[#e85d9b] hover:bg-[#d84b8a] border-none font-bold text-[10px] rounded-xl h-8.5 shadow-sm text-white"
+                          className="flex-1 bg-[#e85d9b] hover:bg-[#d84b8a] border-none font-bold text-[10px] rounded-xl h-8.5 shadow-sm text-white cursor-pointer"
                         >
-                          Call
+                          {language === "vi" ? "Gọi vào" : "Call"}
                         </Button>
                         <Button
                           size="small"
                           icon={<ArrowUp size={11} />}
                           onClick={() => handlePrioritize(item.queueId)}
-                          title="Đẩy lên VNDầu"
-                          className="border-gray-200 text-gray-500 hover:border-pink-300 hover:text-[#e85d9b] h-8.5 w-8.5 flex items-center justify-center rounded-xl"
+                          title={language === "vi" ? "Đẩy lên đầu" : "Prioritize"}
+                          className="border-gray-200 text-gray-500 hover:border-pink-300 hover:text-[#e85d9b] h-8.5 w-8.5 flex items-center justify-center rounded-xl cursor-pointer"
                         />
                         <Button
                           size="small"
                           danger
                           icon={<XCircle size={11} />}
                           onClick={() => handleMarkLeft(item.queueId)}
-                          title="Guest left"
-                          className="border-rose-100 bg-rose-50/50 hover:bg-rose-100 text-rose-600 h-8.5 w-8.5 flex items-center justify-center rounded-xl"
+                          title={language === "vi" ? "Khách rời đi" : "Guest left"}
+                          className="border-rose-100 bg-rose-50/50 hover:bg-rose-100 text-rose-600 h-8.5 w-8.5 flex items-center justify-center rounded-xl cursor-pointer"
                         />
                       </div>
                     }
@@ -657,16 +661,16 @@ export function WalkInQueuePage() {
             <div className="flex items-center justify-between border-b border-[#d2e4f7]/20 pb-3 mb-4">
               <div className="flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#3b82f6]" />
-                <h3 className="font-extrabold text-[#2f2430] text-xs uppercase tracking-wider">At Counter ({calledEntries.length})</h3>
+                <h3 className="font-extrabold text-[#2f2430] text-xs uppercase tracking-wider">{language === "vi" ? `Tại Quầy (${calledEntries.length})` : `At Counter (${calledEntries.length})`}</h3>
               </div>
-              <span className="rounded-full bg-[#3b82f6]/10 px-2 py-0.5 text-[9px] font-bold uppercase text-[#3b82f6] border border-[#3b82f6]/20">Called</span>
+              <span className="rounded-full bg-[#3b82f6]/10 px-2 py-0.5 text-[9px] font-bold uppercase text-[#3b82f6] border border-[#3b82f6]/20">{language === "vi" ? "Đã gọi số" : "Called"}</span>
             </div>
 
             <div className="flex-1 space-y-4 overflow-y-auto max-h-[620px] pr-1 scrollbar-thin">
               {calledEntries.length === 0 ? (
                 <div className="flex h-40 flex-col items-center justify-center text-center text-gray-400 border border-dashed border-gray-200/60 rounded-2xl bg-gray-50/10">
                   <User size={16} className="opacity-20 mb-1" />
-                  <p className="text-[10px] font-bold text-gray-400">Drag guest to counter</p>
+                  <p className="text-[10px] font-bold text-gray-400">{language === "vi" ? "Kéo thả khách vào quầy" : "Drag guest to counter"}</p>
                 </div>
               ) : (
                 calledEntries.map((item) => (
@@ -685,32 +689,32 @@ export function WalkInQueuePage() {
                               type="primary"
                               icon={<Play size={11} />}
                               onClick={() => handleCompleteCheckin(item.queueId)}
-                              className="w-full bg-[#22a06b] hover:bg-[#1b8557] border-none font-bold text-[10px] rounded-xl h-8.5 shadow-sm text-white"
+                              className="w-full bg-[#22a06b] hover:bg-[#1b8557] border-none font-bold text-[10px] rounded-xl h-8.5 shadow-sm text-white cursor-pointer"
                             >
-                              Serve now
+                              {language === "vi" ? "Làm dịch vụ ngay" : "Serve now"}
                             </Button>
                             <div className="flex gap-2">
                               <Button
                                 size="small"
                                 onClick={() => openAssignArtist(item)}
-                                className="flex-1 border-[#e2e8f0] text-[#7d6d78] hover:border-[#e85d9b] hover:text-[#e85d9b] rounded-xl h-8 text-[10px] font-bold"
+                                className="flex-1 border-[#e2e8f0] text-[#7d6d78] hover:border-[#e85d9b] hover:text-[#e85d9b] rounded-xl h-8 text-[10px] font-bold cursor-pointer"
                               >
-                                Change artist
+                                {language === "vi" ? "Đổi thợ nail" : "Change artist"}
                               </Button>
                               <Button
                                 size="small"
                                 icon={<Volume2 size={11} />}
                                 onClick={() => speakCalling(item.queuePosition, item.guestName)}
-                                title="Re-announce"
-                                className="border-[#e2e8f0] text-[#7d6d78] hover:border-[#e85d9b] hover:text-[#e85d9b] h-8 w-8 flex items-center justify-center rounded-xl"
+                                title={language === "vi" ? "Gọi lại loa" : "Re-announce"}
+                                className="border-[#e2e8f0] text-[#7d6d78] hover:border-[#e85d9b] hover:text-[#e85d9b] h-8 w-8 flex items-center justify-center rounded-xl cursor-pointer"
                               />
                               <Button
                                 size="small"
                                 danger
                                 icon={<XCircle size={11} />}
                                 onClick={() => handleMarkLeft(item.queueId)}
-                                title="Absent"
-                                className="border-[#fee2e2] bg-[#fff8f8] text-[#e56b6f] h-8 w-8 flex items-center justify-center rounded-xl"
+                                title={language === "vi" ? "Vắng mặt" : "Absent"}
+                                className="border-[#fee2e2] bg-[#fff8f8] text-[#e56b6f] h-8 w-8 flex items-center justify-center rounded-xl cursor-pointer"
                               />
                             </div>
                           </>
@@ -720,27 +724,27 @@ export function WalkInQueuePage() {
                               size="small"
                               type="primary"
                               onClick={() => openAssignArtist(item)}
-                              className="w-full bg-[#e85d9b] hover:bg-[#d84b8a] border-none font-bold text-[10px] rounded-xl h-8.5 shadow-sm text-white"
+                              className="w-full bg-[#e85d9b] hover:bg-[#d84b8a] border-none font-bold text-[10px] rounded-xl h-8.5 shadow-sm text-white cursor-pointer"
                             >
-                              Assign artist
+                              {language === "vi" ? "Phân bổ thợ nail" : "Assign artist"}
                             </Button>
                             <div className="flex gap-2">
                               <Button
                                 size="small"
                                 icon={<Volume2 size={11} />}
                                 onClick={() => speakCalling(item.queuePosition, item.guestName)}
-                                title="Announce"
-                                className="flex-1 border-[#e2e8f0] text-[#7d6d78] hover:border-[#e85d9b] hover:text-[#e85d9b] h-8 flex items-center justify-center gap-1.5 rounded-xl font-bold text-[10px]"
+                                title={language === "vi" ? "Gọi loa" : "Announce"}
+                                className="flex-1 border-[#e2e8f0] text-[#7d6d78] hover:border-[#e85d9b] hover:text-[#e85d9b] h-8 flex items-center justify-center gap-1.5 rounded-xl font-bold text-[10px] cursor-pointer"
                               >
-                                <Volume2 size={11} /> Announce
+                                <Volume2 size={11} /> {language === "vi" ? "Gọi loa" : "Announce"}
                               </Button>
                               <Button
                                 size="small"
                                 danger
                                 icon={<XCircle size={11} />}
                                 onClick={() => handleMarkLeft(item.queueId)}
-                                title="Absent"
-                                className="border-[#fee2e2] bg-[#fff8f8] text-[#e56b6f] h-8 w-8 flex items-center justify-center rounded-xl"
+                                title={language === "vi" ? "Vắng mặt" : "Absent"}
+                                className="border-[#fee2e2] bg-[#fff8f8] text-[#e56b6f] h-8 w-8 flex items-center justify-center rounded-xl cursor-pointer"
                               />
                             </div>
                           </>
@@ -762,16 +766,16 @@ export function WalkInQueuePage() {
             <div className="flex items-center justify-between border-b border-[#c8ebd3]/20 pb-3 mb-4">
               <div className="flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#22a06b]" />
-                <h3 className="font-extrabold text-[#2f2430] text-xs uppercase tracking-wider">In Service ({inServiceEntries.length})</h3>
+                <h3 className="font-extrabold text-[#2f2430] text-xs uppercase tracking-wider">{language === "vi" ? `Đang Phục Vụ (${inServiceEntries.length})` : `In Service (${inServiceEntries.length})`}</h3>
               </div>
-              <span className="rounded-full bg-[#22a06b]/10 px-2 py-0.5 text-[9px] font-bold uppercase text-[#22a06b] border border-[#22a06b]/20">In Service</span>
+              <span className="rounded-full bg-[#22a06b]/10 px-2 py-0.5 text-[9px] font-bold uppercase text-[#22a06b] border border-[#22a06b]/20">{language === "vi" ? "Đang phục vụ" : "In Service"}</span>
             </div>
 
             <div className="flex-1 space-y-4 overflow-y-auto max-h-[620px] pr-1 scrollbar-thin">
               {inServiceEntries.length === 0 ? (
                 <div className="flex h-40 flex-col items-center justify-center text-center text-gray-400 border border-dashed border-gray-200/60 rounded-2xl bg-gray-50/10">
                   <Clock size={16} className="opacity-20 mb-1" />
-                  <p className="text-[10px] font-bold text-gray-400">Drag customer when seated</p>
+                  <p className="text-[10px] font-bold text-gray-400">{language === "vi" ? "Kéo thả khách khi đã ngồi làm" : "Drag customer when seated"}</p>
                 </div>
               ) : (
                 inServiceEntries.map((item) => (
@@ -790,15 +794,15 @@ export function WalkInQueuePage() {
                           onClick={async () => {
                             try {
                               await completeQueueEntry(item.queueId);
-                              toast.success("Service completed.");
+                              toast.success(language === "vi" ? "Đã hoàn thành dịch vụ." : "Service completed.");
                               loadQueue();
                             } catch (err) {
-                              toast.error(err.message || "Operation failed.");
+                              toast.error(err.message || (language === "vi" ? "Thao tác thất bại." : "Operation failed."));
                             }
                           }}
-                          className="w-full bg-[#5b6472] hover:bg-[#474e59] border-none font-bold text-[10px] rounded-xl h-8.5 text-white"
+                          className="w-full bg-[#5b6472] hover:bg-[#474e59] border-none font-bold text-[10px] rounded-xl h-8.5 text-white cursor-pointer"
                         >
-                          Complete Service
+                          {language === "vi" ? "Hoàn Thành Dịch Vụ" : "Complete Service"}
                         </Button>
                       </div>
                     }
@@ -817,16 +821,16 @@ export function WalkInQueuePage() {
             <div className="flex items-center justify-between border-b border-[#e2e8f0]/20 pb-3 mb-4">
               <div className="flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#5b6472]" />
-                <h3 className="font-extrabold text-[#2f2430] text-xs uppercase tracking-wider">Completed ({doneEntries.length})</h3>
+                <h3 className="font-extrabold text-[#2f2430] text-xs uppercase tracking-wider">{language === "vi" ? `Hoàn Thành (${doneEntries.length})` : `Completed (${doneEntries.length})`}</h3>
               </div>
-              <span className="rounded-full bg-[#5b6472]/10 px-2 py-0.5 text-[9px] font-bold uppercase text-[#5b6472] border border-[#5b6472]/20">Done</span>
+              <span className="rounded-full bg-[#5b6472]/10 px-2 py-0.5 text-[9px] font-bold uppercase text-[#5b6472] border border-[#5b6472]/20">{language === "vi" ? "Xong" : "Done"}</span>
             </div>
 
             <div className="flex-1 space-y-4 overflow-y-auto max-h-[620px] pr-1 scrollbar-thin">
               {doneEntries.length === 0 ? (
                 <div className="flex h-40 flex-col items-center justify-center text-center text-gray-400 border border-dashed border-gray-200/60 rounded-2xl bg-gray-50/10">
                   <Check size={16} className="opacity-20 mb-1" />
-                  <p className="text-[10px] font-bold text-gray-400">Completion history</p>
+                  <p className="text-[10px] font-bold text-gray-400">{language === "vi" ? "Lịch sử khách hoàn thành" : "Completion history"}</p>
                 </div>
               ) : (
                 doneEntries.map((item) => (
@@ -851,16 +855,16 @@ export function WalkInQueuePage() {
             <div className="flex items-center justify-between border-b border-[#fee2e2]/25 pb-3 mb-4">
               <div className="flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#e56b6f]" />
-                <h3 className="font-extrabold text-[#2f2430] text-xs uppercase tracking-wider">Absent / Left ({leftEntries.length})</h3>
+                <h3 className="font-extrabold text-[#2f2430] text-xs uppercase tracking-wider">{language === "vi" ? `Vắng / Rời Đi (${leftEntries.length})` : `Absent / Left (${leftEntries.length})`}</h3>
               </div>
-              <span className="rounded-full bg-[#e56b6f]/10 px-2 py-0.5 text-[9px] font-bold uppercase text-[#e56b6f] border border-[#e56b6f]/20">Left</span>
+              <span className="rounded-full bg-[#e56b6f]/10 px-2 py-0.5 text-[9px] font-bold uppercase text-[#e56b6f] border border-[#e56b6f]/20">{language === "vi" ? "Đã rời đi" : "Left"}</span>
             </div>
 
             <div className="flex-1 space-y-4 overflow-y-auto max-h-[620px] pr-1 scrollbar-thin">
               {leftEntries.length === 0 ? (
                 <div className="flex h-40 flex-col items-center justify-center text-center text-gray-400 border border-dashed border-gray-200/60 rounded-2xl bg-gray-50/10">
                   <XCircle size={16} className="opacity-20 mb-1" />
-                  <p className="text-[10px] font-bold text-gray-400">Customer left/cancelled</p>
+                  <p className="text-[10px] font-bold text-gray-400">{language === "vi" ? "Khách hàng rời đi/hủy" : "Customer left/cancelled"}</p>
                 </div>
               ) : (
                 leftEntries.map((item) => (
@@ -886,24 +890,24 @@ export function WalkInQueuePage() {
               <div>
                 <h3 className="text-base font-bold text-[#2f2430] flex items-center gap-2">
                   <Calendar size={18} className="text-[#e85d9b]" />
-                  Today's Staff Allocation Schedule
+                  {language === "vi" ? "Lịch Trình Phân Bổ Nhân Viên Hôm Nay" : "Today's Staff Allocation Schedule"}
                 </h3>
                 <p className="text-[11px] text-[#7d6d78] mt-0.5 font-medium">
-                  Drag and drop customer cards from <b>Unassigned</b> or between artists to reassign directly.
+                  {language === "vi" ? "Kéo thả các thẻ khách hàng từ ô Chưa Phân Bổ hoặc giữa các thợ nail để đổi phân việc trực tiếp." : "Drag and drop customer cards from Unassigned or between artists to reassign directly."}
                 </p>
               </div>
               <div className="flex gap-2.5">
                 <span className="rounded-full bg-[#d89b1d]/10 px-3 py-1 text-[9px] font-bold uppercase text-[#d89b1d] border border-[#d89b1d]/20 shadow-sm flex items-center gap-1.5">
                   <span className="h-1 w-1 rounded-full bg-[#d89b1d] animate-pulse" />
-                  Waiting
+                  {language === "vi" ? "Đang chờ" : "Waiting"}
                 </span>
                 <span className="rounded-full bg-[#3b82f6]/10 px-3 py-1 text-[9px] font-bold uppercase text-[#3b82f6] border border-[#3b82f6]/20 shadow-sm flex items-center gap-1.5">
                   <span className="h-1 w-1 rounded-full bg-[#3b82f6]" />
-                  Called
+                  {language === "vi" ? "Tại quầy" : "Called"}
                 </span>
                 <span className="rounded-full bg-[#22a06b]/10 px-3 py-1 text-[9px] font-bold uppercase text-[#22a06b] border border-[#22a06b]/20 shadow-sm flex items-center gap-1.5">
                   <span className="h-1 w-1 rounded-full bg-[#22a06b] animate-ping" />
-                  In Service
+                  {language === "vi" ? "Đang làm" : "In Service"}
                 </span>
               </div>
             </div>
@@ -914,16 +918,16 @@ export function WalkInQueuePage() {
               {/* Vertical Header - Artist Names (Fixed Roster Panel look) */}
               <div className="divide-y divide-gray-100 border-r border-[#e2e8f0] bg-[#fffdf9]">
                 <div className="h-14 flex items-center px-4 font-bold text-[#2f2430] text-[10px] uppercase tracking-wider bg-gray-50/50 border-b border-[#e2e8f0]">
-                  Nail Artist
+                  {language === "vi" ? "Thợ Nail Phụ Trách" : "Nail Artist"}
                 </div>
 
                 {/* Row for Unassigned / Queue Pool */}
                 <div className="h-32 flex flex-col justify-center px-4 bg-gradient-to-br from-[#fcf8f0] to-[#fffdf9]">
                   <p className="font-bold text-[#d89b1d] text-xs flex items-center gap-1.5">
                     <span className="h-1.5 w-1.5 rounded-full bg-[#d89b1d] animate-ping" />
-                    Unassigned
+                    {language === "vi" ? "Chưa phân bổ" : "Unassigned"}
                   </p>
-                  <p className="text-[10px] text-[#7d6d78] mt-1 font-semibold">Walk-in customers waiting</p>
+                  <p className="text-[10px] text-[#7d6d78] mt-1 font-semibold">{language === "vi" ? "Khách vãng lai đang chờ" : "Walk-in customers waiting"}</p>
                 </div>
 
                 {/* Rows for each Nail Artist */}
@@ -962,7 +966,7 @@ export function WalkInQueuePage() {
                         >
                           <span>{slot}</span>
                           {isPeak && !isCurrentHour && (
-                            <span className="text-[7px] text-[#d89b1d] font-bold mt-0.5">Peak</span>
+                            <span className="text-[7px] text-[#d89b1d] font-bold mt-0.5">{language === "vi" ? "Cao điểm" : "Peak"}</span>
                           )}
                           {isCurrentHour && (
                             <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#e85d9b]" />
@@ -1003,7 +1007,7 @@ export function WalkInQueuePage() {
 
                   {/* 2. Rows for Nail Artists with Drop listeners */}
                   {staffList.map((artist) => (
-                    <div key={artist.staffId} className="h-32 flex divide-x divide-gray-100 bg-[#fffdf9]">
+                     <div key={artist.staffId} className="h-32 flex divide-x divide-gray-100 bg-[#fffdf9]">
                       {TIME_SLOTS.map((slot) => {
                         const artistHourEntries = filteredQueue.filter(
                           (x) => x.assignedNailArtistId === artist.staffId && getEntryHour(x) === slot
@@ -1050,7 +1054,7 @@ export function WalkInQueuePage() {
             <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-pink-100 text-[#ea4f93] shadow-sm">
               <Plus size={16} />
             </span>
-            <span className="font-bold text-[#321735] text-base">Register Walk-in Guest</span>
+            <span className="font-bold text-[#321735] text-base">{language === "vi" ? "Đăng Ký Khách Walk-In" : "Register Walk-in Guest"}</span>
           </div>
         }
         placement="right"
@@ -1066,10 +1070,10 @@ export function WalkInQueuePage() {
         <div className="space-y-6">
           <div className="space-y-2">
             <label className="text-xs font-bold uppercase text-[#9b7f92] tracking-wider">
-              Customer Name <span className="text-red-500">*</span>
+              {language === "vi" ? "Tên Khách Hàng" : "Customer Name"} <span className="text-red-500">*</span>
             </label>
             <Input
-              placeholder="Enter customer name"
+              placeholder={language === "vi" ? "Nhập tên khách hàng" : "Enter customer name"}
               value={guestName}
               onChange={(e) => setGuestName(e.target.value)}
               className="h-11 rounded-xl focus:border-[#ea4f93] hover:border-[#ea4f93]"
@@ -1077,9 +1081,9 @@ export function WalkInQueuePage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-bold uppercase text-[#9b7f92] tracking-wider">Phone Number</label>
+            <label className="text-xs font-bold uppercase text-[#9b7f92] tracking-wider">{language === "vi" ? "Số Điện Thoại" : "Phone Number"}</label>
             <Input
-              placeholder="Enter phone number (optional)"
+              placeholder={language === "vi" ? "Nhập số điện thoại (tùy chọn)" : "Enter phone number (optional)"}
               value={guestPhone}
               onChange={(e) => setGuestPhone(e.target.value)}
               className="h-11 rounded-xl focus:border-[#ea4f93] hover:border-[#ea4f93]"
@@ -1087,27 +1091,27 @@ export function WalkInQueuePage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-bold uppercase text-[#9b7f92] tracking-wider block">Customer Category</label>
+            <label className="text-xs font-bold uppercase text-[#9b7f92] tracking-wider block">{language === "vi" ? "Phân Loại Khách Hàng" : "Customer Category"}</label>
             <div className="flex gap-4">
               <button
                 type="button"
                 onClick={() => setIsLateArrival(false)}
-                className={`flex-1 py-3 px-4 rounded-xl border text-xs font-extrabold text-center transition-all ${!isLateArrival
+                className={`flex-1 py-3 px-4 rounded-xl border text-xs font-extrabold text-center transition-all cursor-pointer ${!isLateArrival
                   ? "border-[#ea4f93] bg-[#fff5f9] text-[#ea4f93] font-bold shadow-sm"
                   : "border-gray-200 bg-white text-gray-500 hover:border-pink-200"
                   }`}
               >
-                Walk-in
+                {language === "vi" ? "Khách Vãng Lai (Walk-in)" : "Walk-in"}
               </button>
               <button
                 type="button"
                 onClick={() => setIsLateArrival(true)}
-                className={`flex-1 py-3 px-4 rounded-xl border text-xs font-extrabold text-center transition-all ${isLateArrival
+                className={`flex-1 py-3 px-4 rounded-xl border text-xs font-extrabold text-center transition-all cursor-pointer ${isLateArrival
                   ? "border-[#ea4f93] bg-[#fff5f9] text-[#ea4f93] font-bold shadow-sm"
                   : "border-gray-200 bg-white text-gray-500 hover:border-pink-200"
                   }`}
               >
-                Late Customer (&gt;15 mins)
+                {language === "vi" ? "Khách Trễ Hẹn (>15')" : "Late Customer (>15 mins)"}
               </button>
             </div>
           </div>
@@ -1126,9 +1130,9 @@ export function WalkInQueuePage() {
             />
             <div className="max-h-[180px] overflow-y-auto border border-[#f3d9e8] rounded-xl p-2 space-y-1.5 bg-gray-50/50 scrollbar-thin">
               {isServicesLoading ? (
-                <div className="text-center py-4 text-xs text-[#a88a9f] font-semibold">Loading services...</div>
+                <div className="text-center py-4 text-xs text-[#a88a9f] font-semibold">{language === "vi" ? "Đang tải danh sách dịch vụ..." : "Loading services..."}</div>
               ) : filteredServices.length === 0 ? (
-                <div className="text-center py-4 text-xs text-[#a88a9f] font-semibold">No services found</div>
+                <div className="text-center py-4 text-xs text-[#a88a9f] font-semibold">{language === "vi" ? "Không tìm thấy dịch vụ nào" : "No services found"}</div>
               ) : (
                 filteredServices.map((service) => {
                   const isSelected = selectedServices.some((s) => s.serviceId === service.serviceId);
@@ -1155,9 +1159,9 @@ export function WalkInQueuePage() {
 
           {/* Artist selector */}
           <div className="space-y-2">
-            <label className="text-xs font-bold uppercase text-[#9b7f92] tracking-wider block">Select preferred artist (Optional)</label>
+            <label className="text-xs font-bold uppercase text-[#9b7f92] tracking-wider block">{language === "vi" ? "Chọn Thợ Nail Yêu Cầu (Tùy chọn)" : "Select preferred artist (Optional)"}</label>
             <Select
-              placeholder="Select an artist"
+              placeholder={language === "vi" ? "Chọn thợ nail" : "Select an artist"}
               allowClear
               value={selectedArtistId}
               onChange={(val) => setSelectedArtistId(val)}
@@ -1173,9 +1177,9 @@ export function WalkInQueuePage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-bold uppercase text-[#9b7f92] tracking-wider block">Requests / Notes</label>
+            <label className="text-xs font-bold uppercase text-[#9b7f92] tracking-wider block">{language === "vi" ? "Yêu Cầu Đặc Biệt / Ghi Chú" : "Requests / Notes"}</label>
             <Input.TextArea
-              placeholder="Enter special requests (e.g., acrylics, complex gel art...)"
+              placeholder={language === "vi" ? "Nhập yêu cầu đặc biệt (VD: vẽ gel phức tạp, đắp bột...)" : "Enter special requests (e.g., acrylics, complex gel art...)"}
               value={requestNote}
               onChange={(e) => setRequestNote(e.target.value)}
               rows={3}
@@ -1187,14 +1191,14 @@ export function WalkInQueuePage() {
             <div className="rounded-2xl bg-[#fff5fa] p-4 border border-[#fbe1ef] text-xs space-y-2">
               <p className="font-bold text-[#ea4f93] flex items-center gap-1">
                 <Sparkles size={12} />
-                Selected Services Info
+                {language === "vi" ? "Thông Tin Dịch Vụ Đã Chọn" : "Selected Services Info"}
               </p>
               <div className="flex justify-between text-[#806579] font-medium">
-                <span>Estimated total duration:</span>
-                <span className="font-bold text-[#321735]">{totalEstDuration} mins</span>
+                <span>{language === "vi" ? "Tổng thời gian dự kiến:" : "Estimated total duration:"}</span>
+                <span className="font-bold text-[#321735]">{totalEstDuration} {language === "vi" ? "phút" : "mins"}</span>
               </div>
               <div className="flex justify-between text-[#806579] font-medium">
-                <span>Estimated total price:</span>
+                <span>{language === "vi" ? "Tổng chi phí dự kiến:" : "Estimated total price:"}</span>
                 <span className="font-bold text-[#ea4f93] text-sm">
                   {totalEstPrice.toLocaleString("vi-VN")} VND
                 </span>
@@ -1208,16 +1212,16 @@ export function WalkInQueuePage() {
                 setIsAddDrawerOpen(false);
                 resetForm();
               }}
-              className="flex-1 h-11 rounded-xl font-bold border-gray-250 text-gray-500 hover:text-pink-600 hover:border-pink-300"
+              className="flex-1 h-11 rounded-xl font-bold border-gray-250 text-gray-500 hover:text-pink-600 hover:border-pink-300 cursor-pointer"
             >
-              Cancel
+              {language === "vi" ? "Hủy" : "Cancel"}
             </Button>
             <Button
               type="primary"
               onClick={handleCreateQueueEntry}
-              className="flex-1 h-11 rounded-xl bg-gradient-to-r from-[#ea4f93] to-[#cc437a] border-none font-bold text-white shadow-md shadow-pink-200"
+              className="flex-1 h-11 rounded-xl bg-gradient-to-r from-[#ea4f93] to-[#cc437a] border-none font-bold text-white shadow-md shadow-pink-200 cursor-pointer"
             >
-              Register to Lobby
+              {language === "vi" ? "Đăng Ký Vào Hàng Chờ" : "Register to Lobby"}
             </Button>
           </div>
         </div>
@@ -1228,7 +1232,7 @@ export function WalkInQueuePage() {
         title={
           <div className="flex items-center gap-2">
             <Award size={16} className="text-[#ea4f93]" />
-            <span className="font-bold text-[#321735]">Assign Nail Artist</span>
+            <span className="font-bold text-[#321735]">{language === "vi" ? "Phân Bổ Thợ Nail Phục Vụ" : "Assign Nail Artist"}</span>
           </div>
         }
         open={isAssignModalOpen}
@@ -1240,7 +1244,7 @@ export function WalkInQueuePage() {
         {selectedQueueItem && (
           <div className="space-y-4 py-2">
             <div className="rounded-2xl bg-gradient-to-tr from-[#fff7fb] to-[#fffbfc] p-4 border border-[#f3d9e8] text-xs">
-              <p className="text-[#9b7f92] font-semibold">Assigned Customer:</p>
+              <p className="text-[#9b7f92] font-semibold">{language === "vi" ? "Khách Hàng Được Chỉ Định:" : "Assigned Customer:"}</p>
               <p className="font-bold text-[#321735] text-sm mt-1 flex items-center gap-2">
                 <span className="flex h-5 w-5 items-center justify-center rounded bg-[#ea4f93] text-white text-[9px]">
                   #{selectedQueueItem.queuePosition}
@@ -1250,7 +1254,7 @@ export function WalkInQueuePage() {
             </div>
 
             <p className="text-[10px] font-bold uppercase text-[#9b7f92] tracking-widest">
-              Salon's Artist List
+              {language === "vi" ? "Danh Sách Thợ Nail Của Salon" : "Salon's Artist List"}
             </p>
 
             <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1 scrollbar-thin">
@@ -1259,7 +1263,7 @@ export function WalkInQueuePage() {
                   <Spin size="small" />
                 </div>
               ) : staffList.length === 0 ? (
-                <p className="text-xs text-gray-400 text-center py-4 font-semibold">No active artists found.</p>
+                <p className="text-xs text-gray-400 text-center py-4 font-semibold">{language === "vi" ? "Không tìm thấy thợ nail nào đang hoạt động." : "No active artists found."}</p>
               ) : (
                 staffList.map((artist) => (
                   <button
@@ -1299,6 +1303,7 @@ export function WalkInQueuePage() {
 
 // Draggable Kanban Card
 function DraggableCard({ item, onDragStart, onDragEnd, isDragging, extraActions }) {
+  const { language } = useLanguage();
   return (
     <div
       draggable
@@ -1327,11 +1332,11 @@ function DraggableCard({ item, onDragStart, onDragEnd, isDragging, extraActions 
           <div className="mt-3 space-y-1">
             <p className="text-[10px] text-[#7d6d78] flex items-center gap-1.5 font-normal">
               <Phone size={10} className="text-[#7d6d78] opacity-75" />
-              {item.guestPhone || "No Phone"}
+              {language === "vi" ? "SĐT" : "Phone"}: {item.guestPhone || (language === "vi" ? "Chưa có" : "No Phone")}
             </p>
             <p className="text-[10px] text-[#7d6d78] flex items-center gap-1.5 font-normal">
               <Clock size={10} className="text-[#7d6d78] opacity-75" />
-              Arrival: <span className="text-[#2f2430] font-semibold">{dayjs(item.arrivalTime).format("HH:mm")}</span>
+              {language === "vi" ? "Đến lúc" : "Arrival"}: <span className="text-[#2f2430] font-semibold">{dayjs(item.arrivalTime).format("HH:mm")}</span>
             </p>
           </div>
 
@@ -1344,21 +1349,21 @@ function DraggableCard({ item, onDragStart, onDragEnd, isDragging, extraActions 
           {item.assignedNailArtistName && (
             <div className="mt-3 flex items-center gap-1.5 text-[9px] font-bold text-[#22a06b] bg-[#22a06b]/10 border border-[#22a06b]/15 px-2 py-0.5 rounded-lg w-max max-w-full shadow-sm">
               <span className="h-1 w-1 rounded-full bg-[#22a06b] animate-pulse" />
-              <span className="truncate">Artist: {item.assignedNailArtistName}</span>
+              <span className="truncate">{language === "vi" ? "Thợ nail" : "Artist"}: {item.assignedNailArtistName}</span>
             </div>
           )}
 
           {item.status === "Waiting" && item.estimatedWait !== null && (
             <div className="mt-3 flex items-center gap-1.5 text-[9px] text-[#d89b1d] font-bold bg-[#d89b1d]/10 border border-[#d89b1d]/15 px-2 py-0.5 rounded-lg w-max shadow-sm">
               <Clock size={10} className="text-[#d89b1d]" />
-              <span>Wait: {item.estimatedWait} mins</span>
+              <span>{language === "vi" ? `Chờ: ${item.estimatedWait} phút` : `Wait: ${item.estimatedWait} mins`}</span>
             </div>
           )}
         </div>
 
         <div className="shrink-0">
           {item.isLateArrival ? (
-            <span className="bg-red-50 text-[#e56b6f] border border-red-100 text-[8px] font-bold uppercase px-1.5 py-0.5 rounded shadow-sm">Late 15m+</span>
+            <span className="bg-red-50 text-[#e56b6f] border border-red-100 text-[8px] font-bold uppercase px-1.5 py-0.5 rounded shadow-sm">{language === "vi" ? "Trễ 15p+" : "Late 15m+"}</span>
           ) : (
             <span className="bg-[#f5f1ed] text-[#7d6d78] border border-[#e2e8f0] text-[8px] font-bold uppercase px-1.5 py-0.5 rounded shadow-sm">Walk-in</span>
           )}
@@ -1372,6 +1377,7 @@ function DraggableCard({ item, onDragStart, onDragEnd, isDragging, extraActions 
 
 // Compact Draggable Timeline Pill for Calendar cells
 function TimelinePill({ item, onDragStart, onDragEnd, onCallClick, onAssignClick }) {
+  const { language } = useLanguage();
   const statusColors = {
     Waiting: "from-[#fffdf9] to-[#fffcf3] text-[#d89b1d] border-[#fbe9c7] shadow-[0_2px_8px_rgba(216,155,29,0.05)]",
     Called: "from-[#fffdf9] to-[#f4f7fc] text-[#3b82f6] border-[#d2e4f7] shadow-[0_2px_8px_rgba(59,130,246,0.05)]",
@@ -1396,7 +1402,7 @@ function TimelinePill({ item, onDragStart, onDragEnd, onCallClick, onAssignClick
       </div>
 
       <p className="text-[9px] text-[#7d6d78] mt-1.5 font-medium">
-        Arrival: {dayjs(item.arrivalTime).format("HH:mm")}
+        {language === "vi" ? "Đến lúc" : "Arrival"}: {dayjs(item.arrivalTime).format("HH:mm")}
       </p>
 
       {/* Mini Actions for instant clicking in calendar view */}
@@ -1406,7 +1412,7 @@ function TimelinePill({ item, onDragStart, onDragEnd, onCallClick, onAssignClick
             onClick={onCallClick}
             className="flex-1 bg-[#fffdf9] text-[#e85d9b] hover:bg-[#fff5f9] py-1 border border-[#e2e8f0] rounded-lg font-bold text-[8px] transition-all shadow-sm cursor-pointer"
           >
-            Call
+            {language === "vi" ? "Gọi vào" : "Call"}
           </button>
         )}
         {!item.assignedNailArtistId && (item.status === "Waiting" || item.status === "Called") && (

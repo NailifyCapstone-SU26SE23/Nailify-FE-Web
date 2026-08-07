@@ -1,5 +1,6 @@
 import { Sparkles, Star } from "lucide-react";
 import { PropTypes } from "../../../../shared/utils/propTypes";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 const SKILL_LEVEL_LABELS = {
   1: "Beginner",
@@ -69,6 +70,8 @@ SkillRatingCard.propTypes = {
 };
 
 export function StaffSkillAssessmentSection({ onRatingChange, ratings, skillTypes }) {
+  const { language } = useLanguage();
+
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5 lg:p-6 shadow-xs">
       <div className="flex items-center gap-3 border-b border-slate-100 pb-4 mb-5">
@@ -76,9 +79,9 @@ export function StaffSkillAssessmentSection({ onRatingChange, ratings, skillType
           <Sparkles size={20} />
         </div>
         <div>
-          <h2 className="text-base font-extrabold text-slate-900 ">Skills & Specialties</h2>
+          <h2 className="text-base font-extrabold text-slate-900 ">{language === "vi" ? "Kỹ năng và chuyên môn" : "Skills & Specialties"}</h2>
           <p className="text-xs text-slate-500 font-medium">
-            Rate each core skill to map the staff member's artisan specialties and level.
+            {language === "vi" ? "Đánh giá từng kỹ năng cốt lõi để xác định chuyên môn và trình độ của nhân viên." : "Rate each core skill to map the staff member's artisan specialties and level."}
           </p>
         </div>
       </div>

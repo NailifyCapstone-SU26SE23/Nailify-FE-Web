@@ -90,7 +90,7 @@ function StarRating({ level = 0, max = 5 }) {
 }
 
 export function UserManagementDetailPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const { userId } = useParams();
@@ -202,14 +202,14 @@ export function UserManagementDetailPage() {
       [field]: nextValue,
       ...(field === "firstName" || field === "lastName"
         ? {
-            name: [
-              field === "firstName" ? nextValue : current.firstName,
-              field === "lastName" ? nextValue : current.lastName,
-            ]
-              .filter(Boolean)
-              .join(" ")
-              .trim(),
-          }
+          name: [
+            field === "firstName" ? nextValue : current.firstName,
+            field === "lastName" ? nextValue : current.lastName,
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .trim(),
+        }
         : {}),
     }));
   };
@@ -217,7 +217,7 @@ export function UserManagementDetailPage() {
   const displayName =
     [formValues.firstName, formValues.lastName].filter(Boolean).join(" ").trim() ||
     formValues.name ||
-    "User profile";
+    t("userManagement.detail.userProfile");
   const normalizedRole = String(formValues.rawRole || formValues.role || "").trim().toLowerCase();
   const shouldShowSalonDetail = ["staff_artist", "manager", "receptionist"].includes(normalizedRole) && Boolean(salonDetail);
   const shouldShowSkills = normalizedRole === "staff_artist";
@@ -248,7 +248,7 @@ export function UserManagementDetailPage() {
       key: "status",
       render: (value) => (
         <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getScheduleStatusClass(value)}`}>
-          {value || "Unknown"}
+          {value || t("userManagement.detail.unknown")}
         </span>
       ),
     },
@@ -520,12 +520,12 @@ export function UserManagementDetailPage() {
         confirmIcon={Save}
         onConfirm={handleSave}
         onCancel={() => setShowSaveConfirm(false)}
-        highlights={[displayName, formValues.role || "Role pending", formValues.status || "Status pending"]}
+        highlights={[displayName, formValues.role || t("userManagement.detail.rolePending"), formValues.status || t("userManagement.detail.statusPendingShort")]}
         details={[
           { label: t("userManagement.detail.email"), value: formValues.email || t("userManagement.detail.emailNotSet") },
-          { label: t("userManagement.detail.status"), value: formValues.status || "Not set" },
+          { label: t("userManagement.detail.status"), value: formValues.status || t("userManagement.detail.notSet") },
         ]}
-        warnings={["Only email, first name, last name, phone, and status are sent to the update API."]}
+        warnings={[t("userManagement.detail.saveWarning")]}
       />
 
       <ActionConfirmModal
@@ -540,10 +540,10 @@ export function UserManagementDetailPage() {
         onConfirm={handleCancelEdit}
         onCancel={() => setShowCancelConfirm(false)}
         details={[
-          { label: "Editing Mode", value: "User profile detail" },
-          { label: "Result", value: "Revert to last loaded values" },
+          { label: t("userManagement.detail.editModeLabel"), value: t("userManagement.detail.editModeValue") },
+          { label: t("userManagement.detail.resultLabel"), value: t("userManagement.detail.resultValue") },
         ]}
-        warnings={["Any unsaved changes to this user will be lost immediately."]}
+        warnings={[t("userManagement.detail.discardWarning")]}
       />
 
       <ActionConfirmModal
@@ -558,9 +558,9 @@ export function UserManagementDetailPage() {
         onConfirm={handleDelete}
         onCancel={() => setShowDeleteConfirm(false)}
         item={{
-          title: displayName || "User account",
-          meta: `${formValues.role || "Role pending"} | ${formValues.branch || "Branch pending"}`,
-          note: formValues.email || "No email entered",
+          title: displayName || t("userManagement.detail.userProfile"),
+          meta: `${formValues.role || t("userManagement.detail.rolePending")} | ${formValues.branch || t("userManagement.detail.branchPending")}`,
+          note: formValues.email || t("userManagement.detail.noEmailEntered"),
         }}
         warnings={[t("userManagement.detail.softDeleteWarning")]}
       />
