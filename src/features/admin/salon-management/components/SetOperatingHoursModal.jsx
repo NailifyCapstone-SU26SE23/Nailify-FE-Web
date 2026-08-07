@@ -346,14 +346,14 @@ export default function SetOperatingHoursModal({
                             }}
                             disabled={!selectedSalonId}
                             className={`w-full flex items-center gap-3 rounded-[16px] border px-4 py-3 text-left transition-all ${selectedSalonId
-                                ? "border-[#f0b7cf] bg-white hover:bg-[#fff9fb] hover:border-[#ea4f93]"
-                                : "border-slate-200 bg-slate-50 cursor-not-allowed opacity-60"
+                              ? "border-[#f0b7cf] bg-white hover:bg-[#fff9fb] hover:border-[#ea4f93]"
+                              : "border-slate-200 bg-slate-50 cursor-not-allowed opacity-60"
                               }`}
                           >
                             <div
                               className={`h-9 w-9 rounded-full flex items-center justify-center ${selectedSalonId
-                                  ? "bg-gradient-to-r from-[#fde7ef] to-[#fff5fb] text-[#ea4f93]"
-                                  : "bg-slate-200 text-slate-400"
+                                ? "bg-gradient-to-r from-[#fde7ef] to-[#fff5fb] text-[#ea4f93]"
+                                : "bg-slate-200 text-slate-400"
                                 }`}
                             >
                               <Icon size={18} />
@@ -361,8 +361,8 @@ export default function SetOperatingHoursModal({
                             <div className="flex-1">
                               <h5
                                 className={`text-[13px] font-extrabold ${selectedSalonId
-                                    ? "text-[#2d1b35]"
-                                    : "text-slate-400"
+                                  ? "text-[#2d1b35]"
+                                  : "text-slate-400"
                                   }`}
                               >
                                 {label}
@@ -423,8 +423,8 @@ export default function SetOperatingHoursModal({
                             type="button"
                             onClick={() => handleToggleSlot(activePeriod, slot)}
                             className={`flex items-center justify-center gap-2 rounded-full px-3 py-2 text-[11px] font-semibold transition-all ${selectedSlots[activePeriod].includes(slot)
-                                ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
-                                : "bg-gray-100 text-gray-400 border border-gray-200"
+                              ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                              : "bg-gray-100 text-gray-400 border border-gray-200"
                               }`}
                           >
                             <Clock3 size={14} />
@@ -489,7 +489,7 @@ export default function SetOperatingHoursModal({
                   </div>
                 )}
 
-                <h4 className="nailify-display text-xl font-semibold text-[#3f2034]">
+                <h4 className=" text-xl font-semibold text-[#3f2034]">
                   {notificationModal.type === "success" ? "Success" : "Something went wrong"}
                 </h4>
                 <p className="mt-2 px-2 text-sm leading-relaxed text-[#8c7484]">

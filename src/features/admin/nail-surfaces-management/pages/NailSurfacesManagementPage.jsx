@@ -16,6 +16,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { Table } from "antd";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
@@ -102,6 +103,7 @@ function sortSurfaces(items, sortValue) {
 export function NailSurfacesManagementPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t, language } = useLanguage();
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selectedSort, setSelectedSort] = useState("surface-asc");
@@ -168,7 +170,7 @@ export function NailSurfacesManagementPage() {
         }
 
         setSurfaces([]);
-        setError(loadError instanceof Error ? loadError.message : "Failed to load nail surfaces.");
+        setError(loadError instanceof Error ? loadError.message : (t("adminNailSurfacesManagement.failedToLoadNailSurfaces")));
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -192,30 +194,30 @@ export function NailSurfacesManagementPage() {
 
     return [
       {
-        label: "Total Surfaces",
+        label: t("adminNailSurfacesManagement.totalSurfaces"),
         value: metaData.totalItems.toLocaleString(),
-        note: `${metaData.totalPages} pages`,
+        note: language === "vi" ? `${metaData.totalPages} trang` : `${metaData.totalPages} pages`,
         icon: Layers3,
         iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
       },
       {
-        label: "Visible Items",
+        label: t("adminNailSurfacesManagement.visibleItems"),
         value: surfaces.length.toLocaleString(),
-        note: "Current page",
+        note: t("adminNailSurfacesManagement.currentPage"),
         icon: Sparkles,
         iconClassName: "bg-[#fff4df] text-[#d9871c]",
       },
       {
-        label: "Avg Price",
+        label: t("adminNailSurfacesManagement.avgPrice"),
         value: formatNailSurfaceCurrency(averagePrice),
-        note: "Current page",
+        note: t("adminNailSurfacesManagement.currentPage"),
         icon: Wallet,
         iconClassName: "bg-[#f3ebff] text-[#8b5cf6]",
       },
       {
-        label: "Shader Types",
+        label: t("adminNailSurfacesManagement.shaderTypes"),
         value: uniqueShaders.size.toLocaleString(),
-        note: averageDuration ? `Avg ${formatNailSurfaceDuration(averageDuration)}` : "Current page",
+        note: averageDuration ? ((t("adminNailSurfacesManagement.avg")) + formatNailSurfaceDuration(averageDuration)) : (t("adminNailSurfacesManagement.currentPage")),
         icon: WandSparkles,
         iconClassName: "bg-[#e7fbf4] text-[#20ab77]",
       },
@@ -273,7 +275,7 @@ export function NailSurfacesManagementPage() {
       {
         title: (
           <SortableHeader
-            label="Surface"
+            label={t("adminNailSurfacesManagement.surface")}
             sortKey="surface"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -285,7 +287,7 @@ export function NailSurfacesManagementPage() {
             <SurfaceBadge surface={surface} />
             <div>
               <p className="text-sm font-bold text-[#432744]">{surface.name}</p>
-             
+
             </div>
           </div>
         ),
@@ -306,7 +308,7 @@ export function NailSurfacesManagementPage() {
       {
         title: (
           <SortableHeader
-            label="Price"
+            label={t("adminNailSurfacesManagement.price")}
             sortKey="price"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -319,7 +321,7 @@ export function NailSurfacesManagementPage() {
       {
         title: (
           <SortableHeader
-            label="Duration"
+            label={t("adminNailSurfacesManagement.duration")}
             sortKey="duration"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -330,20 +332,20 @@ export function NailSurfacesManagementPage() {
         render: (value) => <span className="text-sm text-[#6b5668]">{value}</span>,
       },
       {
-        title: "Actions",
+        title: t("adminNailSurfacesManagement.actions"),
         key: "actions",
         render: (_, surface) => (
           <ActionDropdown
             items={[
               {
                 key: "view",
-                label: "View Detail",
+                label: t("adminNailSurfacesManagement.viewDetail"),
                 icon: Eye,
                 onSelect: () => navigate(getAdminNailSurfaceDetailRoute(surface.nailSurfaceId)),
               },
               {
                 key: "edit",
-                label: "Edit Surface",
+                label: t("adminNailSurfacesManagement.editSurface"),
                 icon: Pencil,
                 onSelect: () =>
                   navigate(getAdminNailSurfaceDetailRoute(surface.nailSurfaceId), {
@@ -352,7 +354,7 @@ export function NailSurfacesManagementPage() {
               },
               {
                 key: "delete",
-                label: "Delete Surface",
+                label: t("adminNailSurfacesManagement.deleteSurface"),
                 icon: Trash2,
                 className: "text-[#d14c84]",
                 onSelect: () => setDeleteTarget(surface),
@@ -361,8 +363,7 @@ export function NailSurfacesManagementPage() {
           />
         ),
       },
-    ],
-    [navigate, selectedSort],
+    ], [navigate, selectedSort, t],
   );
 
   const handleDeleteSurface = async () => {
@@ -375,7 +376,7 @@ export function NailSurfacesManagementPage() {
     try {
       await deleteAdminNailSurface(deleteTarget.nailSurfaceId);
       setDeleteTarget(null);
-      toast.success(`${deleteTarget.name} deleted successfully.`);
+      toast.success(language === "vi" ? `Đã xóa ${deleteTarget.name} thành công.` : `${deleteTarget.name} deleted successfully.`);
 
       const shouldMoveBack = surfaces.length === 1 && metaData.currentPage > 1;
       const targetPage = shouldMoveBack ? Math.max(metaData.currentPage - 1, 1) : metaData.currentPage;
@@ -388,7 +389,7 @@ export function NailSurfacesManagementPage() {
       setSurfaces(response.items);
       setMetaData(response.metaData);
     } catch (deleteError) {
-      toast.error(deleteError instanceof Error ? deleteError.message : "Failed to delete nail surface.");
+      toast.error(deleteError instanceof Error ? deleteError.message : (t("adminNailSurfacesManagement.failedToDeleteNailSurface")));
     } finally {
       setIsDeleting(false);
     }
@@ -426,7 +427,7 @@ export function NailSurfacesManagementPage() {
                 <input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search nail surface by name..."
+                  placeholder={t("adminNailSurfacesManagement.searchNailSurfaceByName")}
                   className="h-10 w-full rounded-full border border-[#f4d7e5] bg-[#fffafc] pl-11 pr-4 text-sm text-[#5b4658] outline-none placeholder:text-[#d4a1b8] focus:border-[#ea4f93]"
                 />
               </label>
@@ -442,7 +443,7 @@ export function NailSurfacesManagementPage() {
                 className="inline-flex h-10 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
               >
                 <Search size={14} className="mr-2 shrink-0" />
-                Search
+                {t("adminNailSurfacesManagement.search")}
               </button>
             </div>
 
@@ -465,15 +466,15 @@ export function NailSurfacesManagementPage() {
             className="inline-flex items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)] w-45"
           >
             <Plus size={13} className="mr-1.5 shrink-0" />
-            Add Nail Surface
+            {t("adminNailSurfacesManagement.addNailSurface")}
           </Link>
         </div>
 
         <section className="overflow-hidden rounded-[20px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
           <div className="border-b border-[#f6dbe7] px-5 py-4">
-            <h2 className="text-sm font-extrabold text-[#432744]">Nail Surfaces</h2>
+            <h2 className="text-sm font-extrabold text-[#432744]">{t("adminNailSurfacesManagement.nailSurfaces")}</h2>
             <p className="mt-1 text-[11px] font-medium text-[#c694ad]">
-              Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} nail surfaces
+              {language === "vi" ? `Hiển thị ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} trên ${metaData.totalItems} bề mặt móng` : `Showing ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} of ${metaData.totalItems} nail surfaces`}
             </p>
           </div>
 
@@ -487,12 +488,12 @@ export function NailSurfacesManagementPage() {
             }}
             pagination={false}
             scroll={{ x: 980 }}
-            locale={{ emptyText: error || "No nail surfaces found." }}
+            locale={{ emptyText: error || (t("adminNailSurfacesManagement.noNailSurfacesFound")) }}
           />
 
           <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-[11px] text-[#c694ad]">
-              Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} nail surfaces
+              {language === "vi" ? `Hiển thị ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} trên ${metaData.totalItems} bề mặt móng` : `Showing ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} of ${metaData.totalItems} nail surfaces`}
             </p>
             <div className="flex items-center gap-1">
               <button
@@ -520,11 +521,10 @@ export function NailSurfacesManagementPage() {
 
                     setMetaData((current) => ({ ...current, currentPage: item }));
                   }}
-                  className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md px-2 text-[11px] ${
-                    item === metaData.currentPage
+                  className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md px-2 text-[11px] ${item === metaData.currentPage
                       ? "bg-[#ea4f93] font-bold text-white"
                       : "border border-[#f3cade] bg-white font-medium text-[#b9849f]"
-                  } disabled:cursor-default disabled:opacity-100`}
+                    } disabled:cursor-default disabled:opacity-100`}
                 >
                   {item}
                 </button>
@@ -551,11 +551,11 @@ export function NailSurfacesManagementPage() {
         <ActionConfirmModal
           open
           intent="danger"
-          title="Delete Nail Surface"
-          subtitle="This will permanently remove the nail surface from backend."
-          description={`You are about to delete ${deleteTarget.name}. This action cannot be undone.`}
-          confirmText="Delete Surface"
-          cancelText="Keep Surface"
+          title={t("adminNailSurfacesManagement.deleteNailSurface")}
+          subtitle={t("adminNailSurfacesManagement.thisWillPermanentlyRemoveTheNa")}
+          description={language === "vi" ? `Bạn chuẩn bị xóa ${deleteTarget.name}. Hành động này không thể hoàn tác.` : `You are about to delete ${deleteTarget.name}. This action cannot be undone.`}
+          confirmText={t("adminNailSurfacesManagement.deleteSurface")}
+          cancelText={t("adminNailSurfacesManagement.keepSurface")}
           confirmIcon={Trash2}
           loading={isDeleting}
           onConfirm={handleDeleteSurface}
@@ -563,9 +563,9 @@ export function NailSurfacesManagementPage() {
           item={{
             title: deleteTarget.name,
             meta: `${deleteTarget.shaderParam} • ${deleteTarget.priceLabel}`,
-            note: `Surface ID: ${deleteTarget.nailSurfaceId}`,
+            note: (t("adminNailSurfacesManagement.surfaceId")) + deleteTarget.nailSurfaceId,
           }}
-          warnings={["This action calls the backend delete endpoint and removes this nail surface record."]}
+          warnings={[t("adminNailSurfacesManagement.thisActionCallsTheBackendDelet1")]}
         />
       ) : null}
     </>

@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   ROUTES,
   getAdminNailDesignCategoriesRoute,
@@ -93,7 +94,7 @@ function formatPriceVND(value) {
   return `${Number(value || 0).toLocaleString("vi-VN")} VND`;
 }
 
-function normalizeDesign(design, index) {
+function normalizeDesign(design, index, t) {
   const preview = getPreviewMeta(index);
   const tags = Array.isArray(design.categoryNames) ? design.categoryNames : [];
   const hasTryOnAsset = Boolean(design.previewImage);
@@ -106,9 +107,15 @@ function normalizeDesign(design, index) {
     ...design,
     uiTitle: design.name || preview.title,
     uiTags: tags.length ? tags.slice(0, 3) : preview.tags,
-    uiTones: [design.status || "Inactive"],
+    uiTones: [
+      design.status === "Active"
+        ? (t("adminNailsDesignManagement.active"))
+        : (t("adminNailsDesignManagement.inactive"))
+    ],
     uiPrice: price,
-    uiStatus: hasTryOnAsset ? "Try-On Ready" : "No Try-On",
+    uiStatus: hasTryOnAsset
+      ? (t("adminNailsDesignManagement.tryonReady"))
+      : (t("adminNailsDesignManagement.noTryon")),
     uiStatusTone: hasTryOnAsset ? "bg-[#e7fbf4] text-[#23b68b]" : "bg-[#fff0f5] text-[#eb5a99]",
     uiTagsAll: tags,
     initials: design.name
@@ -197,6 +204,7 @@ DesignPreview.propTypes = {
 };
 
 export function NailDesignManagementPage() {
+  const { t, language } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
@@ -275,42 +283,42 @@ export function NailDesignManagementPage() {
   }, [debouncedQuery, metaData.currentPage, metaData.pageSize]);
 
   const normalizedDesigns = useMemo(
-    () => designs.map((design, index) => normalizeDesign(design, index)),
-    [designs],
+    () => designs.map((design, index) => normalizeDesign(design, index, t)),
+    [designs, t],
   );
 
   const summaryCards = useMemo(
     () => [
       {
-        label: "Total Designs",
+        label: t("adminNailsDesignManagement.totalDesigns"),
         value: metaData.totalItems.toLocaleString(),
-        note: `${metaData.totalPages} pages`,
+        note: `${metaData.totalPages} ${t("adminNailsDesignManagement.pages")}`,
         icon: Tag,
         iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
       },
       {
-        label: "Active Designs",
+        label: t("adminNailsDesignManagement.activeDesigns"),
         value: normalizedDesigns.filter((design) => design.status === "Active").length.toLocaleString(),
-        note: "On current page",
+        note: t("adminNailsDesignManagement.onCurrentPage"),
         icon: WandSparkles,
         iconClassName: "bg-[#f3ebff] text-[#8b5cf6]",
       },
       {
-        label: "Try-On Ready",
+        label: t("adminNailsDesignManagement.tryonReady"),
         value: normalizedDesigns.filter((design) => design.previewImage).length.toLocaleString(),
-        note: "Has preview image",
+        note: t("adminNailsDesignManagement.hasPreviewImage"),
         icon: Sparkles,
         iconClassName: "bg-[#e7fbf4] text-[#23b68b]",
       },
       {
-        label: "Most Popular Style",
+        label: t("adminNailsDesignManagement.mostPopularStyle"),
         value: normalizedDesigns[0]?.uiTitle || "--",
-        note: "Current page highlight",
+        note: t("adminNailsDesignManagement.currentPageHighlight"),
         icon: Star,
         iconClassName: "bg-[#fff4df] text-[#f5a623]",
       },
     ],
-    [metaData.totalItems, metaData.totalPages, normalizedDesigns],
+    [metaData.totalItems, metaData.totalPages, normalizedDesigns, language],
   );
 
   const paginationItems = useMemo(() => {
@@ -354,28 +362,28 @@ export function NailDesignManagementPage() {
             className={toolbarButtonClassName}
           >
             <Tag size={13} className="mr-1.5 shrink-0" />
-            Manage Tags
+            {t("adminNailsDesignManagement.manageTags")}
           </button>
           <Link
             to={getAdminNailDesignCategoriesRoute()}
             className={toolbarButtonClassName}
           >
             <Plus size={13} className="mr-1.5 shrink-0" />
-            Add Category
+            {t("adminNailsDesignManagement.addCategory")}
           </Link>
           <button
             type="button"
             className={toolbarButtonClassName}
           >
             <Upload size={13} className="mr-1.5 shrink-0" />
-            Upload Try-On Asset
+            {t("adminNailsDesignManagement.uploadTryonAsset")}
           </button>
           <Link
             to={ROUTES.adminNailDesignsCreate}
             className={primaryToolbarButtonClassName}
           >
             <Plus size={13} className="mr-1.5 shrink-0" />
-            Add Design
+            {t("adminNailsDesignManagement.addDesign")}
           </Link>
         </div>
       </div>
@@ -390,9 +398,14 @@ export function NailDesignManagementPage() {
         <div>
           <div className="mb-3 flex items-center justify-between gap-3">
             <div>
-              <h3 className="text-sm font-extrabold text-[#432744]">Design Gallery</h3>
+              <h3 className="text-sm font-extrabold text-[#432744]">
+                {t("adminNailsDesignManagement.designGallery")}
+              </h3>
               <p className="mt-1 text-[11px] text-[#c694ad]">
-                Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} designs
+                {language === "vi"
+                  ? `Hiển thị ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} trong số ${metaData.totalItems} thiết kế`
+                  : `Showing ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} of ${metaData.totalItems} designs`
+                }
               </p>
             </div>
             <div className="flex gap-2">
@@ -400,13 +413,13 @@ export function NailDesignManagementPage() {
                 type="button"
                 className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93]"
               >
-                Filter
+                {t("adminNailsDesignManagement.filter")}
               </button>
               <button
                 type="button"
                 className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93]"
               >
-                Sort
+                {t("adminNailsDesignManagement.sort")}
               </button>
             </div>
           </div>
@@ -431,7 +444,7 @@ export function NailDesignManagementPage() {
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search designs, categories, tags..."
+              placeholder={t("adminNailsDesignManagement.searchDesignsCategoriesTags")}
               className="h-10 w-full rounded-full border border-[#f5d7e4] bg-[#fff9fc] pl-10 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
             />
           </label>
@@ -441,7 +454,7 @@ export function NailDesignManagementPage() {
               <div className="col-span-full rounded-[18px] border border-[#f8dce8] bg-[#fffafb] px-5 py-10">
                 <div className="flex items-center justify-center gap-3 text-sm text-[#b38a9f]">
                   <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
-                  Loading nail designs...
+                  {t("adminNailsDesignManagement.loadingNailDesigns")}
                 </div>
               </div>
             ) : (
@@ -497,13 +510,13 @@ export function NailDesignManagementPage() {
                             to={getAdminNailDesignDetailRoute(design.id)}
                             className="rounded-full border border-[#f4c6da] bg-white px-3 py-1.5 text-[10px] font-bold text-[#8c7085]"
                           >
-                            View
+                            {t("adminNailsDesignManagement.view")}
                           </Link>
                           <Link
                             to={getAdminNailDesignDetailRoute(design.id)}
                             className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93]"
                           >
-                            Edit
+                            {t("adminNailsDesignManagement.edit")}
                           </Link>
                         </div>
                       </div>
@@ -516,13 +529,16 @@ export function NailDesignManagementPage() {
 
           {!isLoading && normalizedDesigns.length === 0 ? (
             <div className="mt-4 rounded-[16px] border border-[#f8dce8] bg-[#fffafb] px-5 py-8 text-center text-sm text-[#8a7082]">
-              No nail designs matched the current search.
+              {t("adminNailsDesignManagement.noNailDesignsMatchedTheCurrent")}
             </div>
           ) : null}
 
           <div className="mt-4 flex flex-col gap-3 rounded-[16px] border border-[#f8dce8] bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-[11px] text-[#c694ad]">
-              Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} designs
+              {language === "vi"
+                ? `Hiển thị ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} trong số ${metaData.totalItems} thiết kế`
+                : `Showing ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} of ${metaData.totalItems} designs`
+              }
             </p>
             <div className="flex items-center gap-1">
               <button
@@ -577,27 +593,38 @@ export function NailDesignManagementPage() {
 
         <aside className="space-y-4">
           <section className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
-            <h3 className="text-sm font-extrabold text-[#432744]">Trending Designs</h3>
+            <h3 className="text-sm font-extrabold text-[#432744]">
+              {t("adminNailsDesignManagement.trendingDesigns")}
+            </h3>
             <div className="mt-4 space-y-4">
-              {TRENDING_DESIGNS.map(([name, meta], index) => (
-                <div key={name} className="flex gap-3">
-                  <span className="w-4 text-xs font-extrabold text-[#ea4f93]">{index + 1}</span>
-                  <div>
-                    <p className="text-sm font-bold text-[#432744]">{name}</p>
-                    <p className="mt-1 text-[11px] text-[#c694ad]">{meta}</p>
+              {TRENDING_DESIGNS.map(([name, meta], index) => {
+                const localizedMeta = typeof meta === "string" && language === "vi"
+                  ? meta.replace("saves", "lượt lưu").replace("views", "lượt xem")
+                  : meta;
+                return (
+                  <div key={name} className="flex gap-3">
+                    <span className="w-4 text-xs font-extrabold text-[#ea4f93]">{index + 1}</span>
+                    <div>
+                      <p className="text-sm font-bold text-[#432744]">{name}</p>
+                      <p className="mt-1 text-[11px] text-[#c694ad]">{localizedMeta}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
 
           <section className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
-            <h3 className="text-sm font-extrabold text-[#432744]">Missing Try-On Assets</h3>
+            <h3 className="text-sm font-extrabold text-[#432744]">
+              {t("adminNailsDesignManagement.missingTryonAssets")}
+            </h3>
             <div className="mt-4 space-y-3">
               {MISSING_TRY_ON.map((name) => (
                 <div key={name} className="flex items-center justify-between gap-3">
                   <span className="text-sm font-medium text-[#6b5668]">{name}</span>
-                  <SmallTag className="bg-[#ffe7ef] text-[#ea4f93]">Upload Needed</SmallTag>
+                  <SmallTag className="bg-[#ffe7ef] text-[#ea4f93]">
+                    {t("adminNailsDesignManagement.uploadNeeded")}
+                  </SmallTag>
                 </div>
               ))}
             </div>
@@ -605,12 +632,14 @@ export function NailDesignManagementPage() {
               type="button"
               className="mt-4 w-full rounded-full bg-[image:var(--gradient-accent)] px-4 py-2.5 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
             >
-              Bulk Upload Assets
+              {t("adminNailsDesignManagement.bulkUploadAssets")}
             </button>
           </section>
 
           <section className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
-            <h3 className="text-sm font-extrabold text-[#432744]">Popular Tags</h3>
+            <h3 className="text-sm font-extrabold text-[#432744]">
+              {t("adminNailsDesignManagement.popularTags")}
+            </h3>
             <div className="mt-4 flex flex-wrap gap-2">
               {POPULAR_TAGS.map(([tag, tone]) => (
                 <SmallTag key={tag} className={tone}>
@@ -621,17 +650,27 @@ export function NailDesignManagementPage() {
           </section>
 
           <section className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
-            <h3 className="text-sm font-extrabold text-[#432744]">Seasonal Suggestions</h3>
+            <h3 className="text-sm font-extrabold text-[#432744]">
+              {t("adminNailsDesignManagement.seasonalSuggestions")}
+            </h3>
             <div className="mt-4 space-y-4">
-              {SEASONAL_SUGGESTIONS.map(([name, collection, badge, tone]) => (
-                <div key={name} className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-bold text-[#432744]">{name}</p>
-                    <p className="mt-1 text-[11px] text-[#c694ad]">{collection}</p>
+              {SEASONAL_SUGGESTIONS.map(([name, collection, badge, tone]) => {
+                const localizedCollection = language === "vi"
+                  ? collection.replace("Spring Collection", "Bộ sưu tập Mùa Xuân").replace("Summer Collection", "Bộ sưu tập Mùa Hè").replace("Autumn Collection", "Bộ sưu tập Mùa Thu")
+                  : collection;
+                const localizedBadge = language === "vi"
+                  ? badge.replace("Trending", "Thịnh hành").replace("Upcoming", "Sắp tới").replace("Plan Now", "Lên kế hoạch")
+                  : badge;
+                return (
+                  <div key={name} className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-bold text-[#432744]">{name}</p>
+                      <p className="mt-1 text-[11px] text-[#c694ad]">{localizedCollection}</p>
+                    </div>
+                    <SmallTag className={tone}>{localizedBadge}</SmallTag>
                   </div>
-                  <SmallTag className={tone}>{badge}</SmallTag>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         </aside>

@@ -12,10 +12,11 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Table, Tooltip } from "antd";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import {
   HIGHEST_REVENUE_SERVICES,
@@ -385,6 +386,7 @@ function sortServices(items, sortValue) {
 }
 
 export function ServicePricingManagementPage() {
+  const { t } = useLanguage();
   const [services, setServices] = useState([]);
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -478,15 +480,30 @@ export function ServicePricingManagementPage() {
   );
 
   const summaryCards = useMemo(
-    () => buildServicePricingSummary(services, []).filter((item) => item.label !== "Add-ons Available"),
-    [services],
+    () => {
+      const originalSummary = buildServicePricingSummary(services, []).filter((item) => item.label !== "Add-ons Available");
+      return originalSummary.map((item) => {
+        let label = item.label;
+        if (label === "Active Services") {
+          label = t("servicePricing.metric.activeServices");
+        } else if (label === "Most Booked Service") {
+          label = t("servicePricing.metric.mostBooked");
+        } else if (label === "Highest Revenue Service") {
+          label = t("servicePricing.metric.highestRevenue");
+        }
+        return { ...item, label };
+      });
+    },
+    [services, t],
   );
 
   const categoryBreakdown = useMemo(() => buildCategoryBreakdown(services), [services]);
 
   useEffect(() => {
     if (!serviceCategories.includes(activeCategory)) {
-      setActiveCategory("All");
+      requestAnimationFrame(() => {
+        setActiveCategory("All");
+      });
     }
   }, [activeCategory, serviceCategories]);
 
@@ -517,13 +534,13 @@ export function ServicePricingManagementPage() {
     return result;
   }, [serviceMetaData.currentPage, serviceMetaData.totalPages]);
 
-  const openCreateService = () => {
+  const openCreateService = useCallback(() => {
     setServiceDraft(createEmptyService());
     setServiceError("");
     setServiceModal({ open: true, mode: "create", recordId: null });
-  };
+  }, []);
 
-  const openEditService = (service) => {
+  const openEditService = useCallback((service) => {
     setServiceDraft({
       name: service.name,
       category: service.category,
@@ -534,18 +551,18 @@ export function ServicePricingManagementPage() {
     });
     setServiceError("");
     setServiceModal({ open: true, mode: "edit", recordId: service.id });
-  };
+  }, []);
 
-  const getServiceActionItems = (service) => [
+  const getServiceActionItems = useCallback((service) => [
     {
       key: "edit-service",
-      label: "Edit Service",
+      label: `${t("promotionDetail.editTitle") || "Edit"} ${t("servicePricing.table.service")}`,
       icon: Pencil,
       onSelect: () => openEditService(service),
     },
     {
       key: "delete-service",
-      label: "Delete Service",
+      label: `${t("promotionDetail.deleteBtn") || "Delete"} ${t("servicePricing.table.service")}`,
       icon: Trash2,
       className: "text-[#d14c84]",
       onSelect: () =>
@@ -555,7 +572,7 @@ export function ServicePricingManagementPage() {
           label: service.name,
         }),
     },
-  ];
+  ], [openEditService, t]);
 
   const submitServiceForm = () => {
     setServiceError("Service create/update API is not connected yet.");
@@ -575,7 +592,7 @@ export function ServicePricingManagementPage() {
     {
       title: (
         <SortableHeader
-          label="Service Name"
+          label={t("servicePricing.table.service")}
           sortKey="service"
           selectedSort={selectedSort}
           onToggle={handleSortToggle}
@@ -594,7 +611,7 @@ export function ServicePricingManagementPage() {
     {
       title: (
         <SortableHeader
-          label="Category"
+          label={t("servicePricing.table.category")}
           sortKey="category"
           selectedSort={selectedSort}
           onToggle={handleSortToggle}
@@ -613,7 +630,7 @@ export function ServicePricingManagementPage() {
     {
       title: (
         <SortableHeader
-          label="Base Price"
+          label={t("servicePricing.table.price")}
           sortKey="price"
           selectedSort={selectedSort}
           onToggle={handleSortToggle}
@@ -626,7 +643,7 @@ export function ServicePricingManagementPage() {
     {
       title: (
         <SortableHeader
-          label="Est. Duration"
+          label={t("servicePricing.table.duration")}
           sortKey="duration"
           selectedSort={selectedSort}
           onToggle={handleSortToggle}
@@ -639,7 +656,7 @@ export function ServicePricingManagementPage() {
     {
       title: (
         <SortableHeader
-          label="Status"
+          label={t("servicePricing.table.status")}
           sortKey="status"
           selectedSort={selectedSort}
           onToggle={handleSortToggle}
@@ -650,11 +667,11 @@ export function ServicePricingManagementPage() {
       render: (value) => <StatusBadge status={value} />,
     },
     {
-      title: "Actions",
+      title: t("userManagement.table.actions"),
       key: "actions",
       render: (_, service) => <ActionDropdown items={getServiceActionItems(service)} />,
     },
-  ]), [getServiceActionItems, selectedSort]);
+  ]), [getServiceActionItems, selectedSort, t]);
 
   return (
     <>
@@ -682,7 +699,7 @@ export function ServicePricingManagementPage() {
                 <input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search services or pricing..."
+                  placeholder={t("servicePricing.filter.searchPlaceholder")}
                   className="h-10 w-full rounded-full border border-[#f4d7e5] bg-[#fffafc] pl-11 pr-4 text-sm text-[#5b4658] outline-none placeholder:text-[#d4a1b8] focus:border-[#ea4f93]"
                 />
               </label>
@@ -698,7 +715,7 @@ export function ServicePricingManagementPage() {
                 className="inline-flex h-10 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
               >
                 <Search size={14} className="mr-2 shrink-0" />
-                Search
+                {t("userManagement.table.actions") === "Thao tác" ? "Tìm kiếm" : "Search"}
               </button>
             </div>
 
@@ -709,7 +726,7 @@ export function ServicePricingManagementPage() {
             >
               {serviceCategories.map((category) => (
                 <option key={category} value={category}>
-                  {category === "All" ? "All categories" : category}
+                  {category === "All" ? t("servicePricing.filter.allCategories") : category}
                 </option>
               ))}
             </select>
@@ -722,7 +739,7 @@ export function ServicePricingManagementPage() {
               className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)] w-35"
             >
               <Plus size={13} className="mr-1.5 inline" />
-              Add Service
+              {t("userManagement.table.actions") === "Thao tác" ? "Thêm dịch vụ" : "Add Service"}
             </button>
           </div>
         </div>
@@ -731,10 +748,12 @@ export function ServicePricingManagementPage() {
           <div className="space-y-4">
             <section className="overflow-hidden rounded-[20px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
               <div className="border-b border-[#f6dbe7] px-5 py-4">
-                <h2 className="text-sm font-extrabold text-[#432744]">Services</h2>
+                <h2 className="text-sm font-extrabold text-[#432744]">{t("menus.admin-service-pricing")}</h2>
                 <p className="mt-1 text-[11px] font-medium text-[#c694ad]">
-                  Showing {serviceMetaData.firstRowOnPage}-{serviceMetaData.lastRowOnPage} of{" "}
-                  {serviceMetaData.totalItems} services
+                  {t("userManagement.table.actions") === "Thao tác"
+                    ? `Hiển thị ${serviceMetaData.firstRowOnPage}-${serviceMetaData.lastRowOnPage} trong số ${serviceMetaData.totalItems} dịch vụ`
+                    : `Showing ${serviceMetaData.firstRowOnPage}-${serviceMetaData.lastRowOnPage} of ${serviceMetaData.totalItems} services`
+                  }
                 </p>
               </div>
 
