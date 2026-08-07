@@ -1,3 +1,4 @@
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   ArrowLeft,
   ClipboardList,
@@ -23,27 +24,28 @@ import {
   updateAdminProcedure,
 } from "../services/proceduresManagementService";
 
-function validateForm(formValues) {
+function validateForm(formValues, t) {
   if (!String(formValues.name || "").trim()) {
-    return "Procedure name is required.";
+    return t("adminProcedures.nameRequired");
   }
 
   if (!String(formValues.description || "").trim()) {
-    return "Procedure description is required.";
+    return t("adminProcedures.descriptionRequired");
   }
 
   if (Number(formValues.duration) < 0 || Number.isNaN(Number(formValues.duration))) {
-    return "Duration must be a valid number.";
+    return t("adminProcedures.durationInvalid");
   }
 
   if (!String(formValues.status || "").trim()) {
-    return "Status is required.";
+    return t("adminProcedures.statusRequired");
   }
 
   return "";
 }
 
 export function ProcedureDetailPage() {
+  const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const { procedureId } = useParams();
@@ -93,7 +95,7 @@ export function ProcedureDetailPage() {
           return;
         }
 
-        setError(loadError instanceof Error ? loadError.message : "Failed to load procedure detail.");
+        setError(loadError instanceof Error ? loadError.message : t("adminProcedures.loadDetailFailed"));
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -114,11 +116,11 @@ export function ProcedureDetailPage() {
     }
 
     return [
-      ["Procedure name", procedure.name],
-      ["Created At", formatProcedureDate(procedure.createAt)],
-      ["Duration", draft.duration !== "" ? formatProcedureDuration(draft.duration) : "--"],
-      ["Status", draft.status || "--"],
-      ["Required", draft.isRequired ? "Required" : "Optional"],
+      [t("adminProcedures.procedureNameLabel"), procedure.name],
+      [t("adminProcedures.createdAtLabel"), formatProcedureDate(procedure.createAt)],
+      [t("adminProcedures.duration"), draft.duration !== "" ? formatProcedureDuration(draft.duration) : "--"],
+      [t("adminProcedures.status"), draft.status || "--"],
+      [t("adminProcedures.required"), draft.isRequired ? t("adminProcedures.required") : t("adminProcedures.optional")],
     ];
   }, [draft, procedure]);
 
@@ -166,7 +168,7 @@ export function ProcedureDetailPage() {
   };
 
   const handleRequestSave = () => {
-    const validationError = validateForm(draft);
+    const validationError = validateForm(draft, t);
 
     if (validationError) {
       setError(validationError);
@@ -198,9 +200,9 @@ export function ProcedureDetailPage() {
         isRequired: updatedProcedure.isRequired,
       });
       setIsEditing(false);
-      toast.success(`${updatedProcedure.name} updated successfully.`);
+      toast.success(t("adminProcedures.updateSuccess", { name: updatedProcedure.name }));
     } catch (saveError) {
-      const message = saveError instanceof Error ? saveError.message : "Failed to update procedure.";
+      const message = saveError instanceof Error ? saveError.message : t("adminProcedures.updateFailed");
       setError(message);
       toast.error(message);
     } finally {
@@ -218,14 +220,14 @@ export function ProcedureDetailPage() {
 
     try {
       await deleteAdminProcedure(procedure.procedureId);
-      toast.success(`${procedure.name} deleted successfully.`);
+      toast.success(t("adminProcedures.deleteSuccess", { name: procedure.name }));
       navigate(ROUTES.adminProcedures, {
         state: {
-          flashMessage: `${procedure.name} has been deleted successfully.`,
+          flashMessage: t("adminProcedures.deleteFlashSuccess", { name: procedure.name }),
         },
       });
     } catch (deleteError) {
-      const message = deleteError instanceof Error ? deleteError.message : "Failed to delete procedure.";
+      const message = deleteError instanceof Error ? deleteError.message : t("adminProcedures.deleteFailed");
       toast.error(message);
     } finally {
       setIsDeleting(false);
@@ -248,9 +250,9 @@ export function ProcedureDetailPage() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">Procedure Detail</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">{t("adminProcedures.procedureDetail")}</h1>
             <p className="text-xs font-medium text-slate-400">
-              Review, edit, and delete this standard procedure from one page.
+              {t("adminProcedures.procedureDetailDesc")}
             </p>
           </div>
         </div>
@@ -263,7 +265,7 @@ export function ProcedureDetailPage() {
             className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Trash2 size={14} />
-            Delete Procedure
+            {t("adminProcedures.deleteProcedure")}
           </button>
           {isEditing ? (
             <>
@@ -273,7 +275,7 @@ export function ProcedureDetailPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
               >
                 <X size={14} />
-                Cancel
+                {t("adminProcedures.cancel")}
               </button>
               <button
                 type="button"
@@ -281,7 +283,7 @@ export function ProcedureDetailPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
               >
                 <Save size={14} />
-                Save Changes
+                {t("adminProcedures.saveChanges")}
               </button>
             </>
           ) : (
@@ -292,7 +294,7 @@ export function ProcedureDetailPage() {
               className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Pencil size={14} />
-              Edit Procedure
+              {t("adminProcedures.editProcedure")}
             </button>
           )}
         </div>
@@ -312,19 +314,19 @@ export function ProcedureDetailPage() {
 
       {isLoading ? (
         <div className="flex min-h-[320px] items-center justify-center rounded-[24px] bg-white/80 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
-          <div className="text-center text-sm text-slate-600">Loading procedure details...</div>
+          <div className="text-center text-sm text-slate-600">{t("adminProcedures.loadingDetails")}</div>
         </div>
       ) : (
         <div className="grid gap-4 ">
           <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
             <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
               <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
-              Procedure Information
+              {t("adminProcedures.procedureInformation")}
             </h2>
 
             <div className="grid gap-5">
               <label className="space-y-2.5">
-                <span className="text-[13px] font-semibold text-slate-600">Procedure Name</span>
+                <span className="text-[13px] font-semibold text-slate-600">{t("adminProcedures.procedureName")}</span>
                 <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                   <ClipboardList size={14} className="shrink-0 text-rose-300" />
                   <input
@@ -338,7 +340,7 @@ export function ProcedureDetailPage() {
               </label>
 
               <label className="space-y-2.5">
-                <span className="text-[13px] font-semibold text-slate-600">Description</span>
+                <span className="text-[13px] font-semibold text-slate-600">{t("adminProcedures.description")}</span>
                 <div className="flex items-start gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                   <FileText size={14} className="mt-0.5 shrink-0 text-rose-300" />
                   <textarea
@@ -353,7 +355,7 @@ export function ProcedureDetailPage() {
 
               <div className="grid gap-5 md:grid-cols-2">
                 <label className="space-y-2.5">
-                  <span className="text-[13px] font-semibold text-slate-600">Duration</span>
+                  <span className="text-[13px] font-semibold text-slate-600">{t("adminProcedures.duration")}</span>
                   <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                     <Clock3 size={14} className="shrink-0 text-rose-300" />
                     <input
@@ -369,7 +371,7 @@ export function ProcedureDetailPage() {
                 </label>
 
                 <label className="space-y-2.5">
-                  <span className="text-[13px] font-semibold text-slate-600">Status</span>
+                  <span className="text-[13px] font-semibold text-slate-600">{t("adminProcedures.status")}</span>
                   <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                     <ShieldCheck size={14} className="shrink-0 text-rose-300" />
                     <select
@@ -389,7 +391,7 @@ export function ProcedureDetailPage() {
               </div>
 
               <label className="space-y-2.5">
-                <span className="text-[13px] font-semibold text-slate-600">Requirement</span>
+                <span className="text-[13px] font-semibold text-slate-600">{t("adminProcedures.requirement")}</span>
                 <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                   <ShieldCheck size={14} className="shrink-0 text-rose-300" />
                   <select
@@ -398,8 +400,8 @@ export function ProcedureDetailPage() {
                     disabled={!isEditing}
                     className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
                   >
-                    <option value="true">Required</option>
-                    <option value="false">Optional</option>
+                    <option value="true">{t("adminProcedures.required")}</option>
+                    <option value="false">{t("adminProcedures.optional")}</option>
                   </select>
                 </div>
               </label>
@@ -429,11 +431,11 @@ export function ProcedureDetailPage() {
       <ActionConfirmModal
         open={showSaveConfirm}
         intent="success"
-        title="Save Procedure Changes"
-        subtitle="This will update the procedure in backend."
-        description="Confirm to save the latest changes to this standard procedure step."
-        confirmText="Save Changes"
-        cancelText="Review Again"
+        title={t("adminProcedures.saveChangesTitle")}
+        subtitle={t("adminProcedures.saveChangesSubtitle")}
+        description={t("adminProcedures.saveChangesDesc")}
+        confirmText={t("adminProcedures.saveChanges")}
+        cancelText={t("adminProcedures.reviewAgain")}
         confirmIcon={Save}
         loading={isSaving}
         onConfirm={handleSave}
@@ -448,11 +450,11 @@ export function ProcedureDetailPage() {
       <ActionConfirmModal
         open={showDeleteConfirm}
         intent="danger"
-        title="Delete Procedure"
-        subtitle="This will permanently remove the procedure from backend."
-        description={`You are about to delete ${procedure?.name || "this procedure"}. This action cannot be undone.`}
-        confirmText="Delete Procedure"
-        cancelText="Keep Procedure"
+        title={t("adminProcedures.deleteProcedureTitle")}
+        subtitle={t("adminProcedures.deleteConfirmSubtitle")}
+        description={t("adminProcedures.deleteConfirmDesc", { name: procedure?.name || "this procedure" })}
+        confirmText={t("adminProcedures.deleteProcedure")}
+        cancelText={t("adminProcedures.keepProcedure")}
         confirmIcon={Trash2}
         loading={isDeleting}
         onConfirm={handleDelete}
@@ -466,7 +468,7 @@ export function ProcedureDetailPage() {
             }
             : null
         }
-        warnings={["This action calls the backend delete endpoint and removes the record permanently."]}
+        warnings={[t("adminProcedures.deleteWarning")]}
       />
     </section>
   );

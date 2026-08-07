@@ -1,3 +1,4 @@
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ArrowLeft, LoaderCircle, Save, Sliders } from "lucide-react";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
@@ -7,6 +8,7 @@ import { createAdminShapeMethodConfig } from "../services/shapeMethodConfigsMana
 import { fetchAdminNailShapes } from "../../nail-shapes-management/services/nailShapesManagementService";
 
 export function ShapeMethodConfigCreatePage() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [nailShapes, setNailShapes] = useState([]);
@@ -24,7 +26,7 @@ export function ShapeMethodConfigCreatePage() {
   useEffect(() => {
     fetchAdminNailShapes({ pageNumber: 1, pageSize: 100 })
       .then(res => setNailShapes(res.items))
-      .catch(err => toast.error("Failed to load nail shapes"))
+      .catch(err => toast.error(t("adminShapeMethodConfigs.loadShapesFailed")))
       .finally(() => setIsLoadingShapes(false));
   }, []);
 
@@ -38,17 +40,17 @@ export function ShapeMethodConfigCreatePage() {
 
   const validate = () => {
     const newErrors = {};
-    if (!formValues.name.trim()) newErrors.name = "Name is required.";
-    if (!formValues.nailShapeId) newErrors.nailShapeId = "Nail shape is required.";
+    if (!formValues.name.trim()) newErrors.name = t("adminShapeMethodConfigs.nameRequired");
+    if (!formValues.nailShapeId) newErrors.nailShapeId = t("adminShapeMethodConfigs.shapeRequired");
 
     const priceNum = Number(formValues.price);
     if (!formValues.price || isNaN(priceNum) || priceNum < 0) {
-      newErrors.price = "Price must be a valid positive number.";
+      newErrors.price = t("adminShapeMethodConfigs.priceInvalid");
     }
 
     const durationNum = Number(formValues.duration);
     if (!formValues.duration || isNaN(durationNum) || durationNum <= 0) {
-      newErrors.duration = "Duration must be greater than 0.";
+      newErrors.duration = t("adminShapeMethodConfigs.durationInvalid");
     }
 
     setErrors(newErrors);
@@ -60,7 +62,7 @@ export function ShapeMethodConfigCreatePage() {
     if (!validate() || isSubmitting) return;
 
     setIsSubmitting(true);
-    const toastId = toast.loading("Creating shape method config...");
+    const toastId = toast.loading(t("adminShapeMethodConfigs.creatingConfig"));
 
     try {
       await createAdminShapeMethodConfig({
@@ -70,12 +72,12 @@ export function ShapeMethodConfigCreatePage() {
         duration: Number(formValues.duration),
       });
 
-      toast.success("Shape method config created successfully.", { id: toastId });
+      toast.success(t("adminShapeMethodConfigs.createSuccess"), { id: toastId });
       navigate(ROUTES.adminShapeMethodConfigs, {
-        state: { flashMessage: "Config created successfully." },
+        state: { flashMessage: t("adminShapeMethodConfigs.createFlashSuccess") },
       });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to create config.", { id: toastId });
+      toast.error(error instanceof Error ? error.message : t("adminShapeMethodConfigs.createFailed"), { id: toastId });
       setIsSubmitting(false);
     }
   };
@@ -87,7 +89,7 @@ export function ShapeMethodConfigCreatePage() {
         className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-[#cd98b1] transition-colors hover:text-[#ea4f93]"
       >
         <ArrowLeft size={16} />
-        Back to Configs
+        {t("adminShapeMethodConfigs.backToConfigs")}
       </Link>
 
       <form onSubmit={handleSubmit} className="overflow-hidden rounded-[24px] border border-[#f8dce8] bg-white shadow-[0_12px_32px_rgba(236,72,153,0.05)]">
@@ -97,8 +99,8 @@ export function ShapeMethodConfigCreatePage() {
               <Sliders size={24} />
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-[#432744]">Create Method Config</h1>
-              <p className="mt-1 text-sm font-medium text-[#b58a9f]">Add a new configuration for a nail shape method</p>
+              <h1 className="text-2xl font-bold tracking-tight text-[#432744]">{t("adminShapeMethodConfigs.createMethodConfig")}</h1>
+              <p className="mt-1 text-sm font-medium text-[#b58a9f]">{t("adminShapeMethodConfigs.createMethodConfigDesc")}</p>
             </div>
           </div>
         </div>
@@ -107,7 +109,7 @@ export function ShapeMethodConfigCreatePage() {
           <div className="space-y-6">
             <div>
               <label htmlFor="name" className="mb-2 block text-sm font-bold text-[#5f4a5c]">
-                Method Name <span className="text-[#ea4f93]">*</span>
+                {t("adminShapeMethodConfigs.methodName")} <span className="text-[#ea4f93]">*</span>
               </label>
               <input
                 id="name"
@@ -126,7 +128,7 @@ export function ShapeMethodConfigCreatePage() {
 
             <div>
               <label htmlFor="nailShapeId" className="mb-2 block text-sm font-bold text-[#5f4a5c]">
-                Nail Shape <span className="text-[#ea4f93]">*</span>
+                {t("adminShapeMethodConfigs.nailShape")} <span className="text-[#ea4f93]">*</span>
               </label>
               <select
                 id="nailShapeId"
@@ -139,7 +141,7 @@ export function ShapeMethodConfigCreatePage() {
                     : "border-[#f4dbe7] focus:border-[#ea4f93] focus:ring-[#ea4f93]/10"
                   }`}
               >
-                <option value="">Select a nail shape...</option>
+                <option value="">{t("adminShapeMethodConfigs.selectNailShape")}</option>
                 {nailShapes.map((shape) => (
                   <option key={shape.nailShapeId} value={shape.nailShapeId}>
                     {shape.name}
@@ -152,7 +154,7 @@ export function ShapeMethodConfigCreatePage() {
             <div className="grid gap-6 sm:grid-cols-2">
               <div>
                 <label htmlFor="price" className="mb-2 block text-sm font-bold text-[#5f4a5c]">
-                  Price (VND) <span className="text-[#ea4f93]">*</span>
+                  {t("adminShapeMethodConfigs.priceVnd")} <span className="text-[#ea4f93]">*</span>
                 </label>
                 <input
                   id="price"
@@ -173,7 +175,7 @@ export function ShapeMethodConfigCreatePage() {
 
               <div>
                 <label htmlFor="duration" className="mb-2 block text-sm font-bold text-[#5f4a5c]">
-                  Duration (Mins) <span className="text-[#ea4f93]">*</span>
+                  {t("adminShapeMethodConfigs.durationMins")} <span className="text-[#ea4f93]">*</span>
                 </label>
                 <input
                   id="duration"
@@ -199,7 +201,7 @@ export function ShapeMethodConfigCreatePage() {
             to={ROUTES.adminShapeMethodConfigs}
             className="inline-flex h-11 items-center justify-center rounded-full px-6 text-sm font-bold text-[#5f4a5c] transition-colors hover:bg-[#fce9f2] hover:text-[#ea4f93]"
           >
-            Cancel
+            {t("adminShapeMethodConfigs.cancel")}
           </Link>
           <button
             type="submit"
@@ -209,12 +211,12 @@ export function ShapeMethodConfigCreatePage() {
             {isSubmitting ? (
               <>
                 <LoaderCircle size={16} className="animate-spin" />
-                Saving...
+                {t("adminShapeMethodConfigs.saving")}
               </>
             ) : (
               <>
                 <Save size={16} />
-                Create Config
+                {t("adminShapeMethodConfigs.createConfig")}
               </>
             )}
           </button>

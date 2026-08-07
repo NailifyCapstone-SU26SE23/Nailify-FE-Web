@@ -1,3 +1,4 @@
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { Save, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -10,6 +11,7 @@ import { UserManagementSnapshotCard } from "../components/UserManagementSnapshot
 import { createAdminUser } from "../services/userManagementService";
 
 export function UserManagementCreatePage() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [formValues, setFormValues] = useState(() => ({
     firstName: "",
@@ -38,7 +40,7 @@ export function UserManagementCreatePage() {
     }
 
     if (!formValues.firstName.trim() || !formValues.lastName.trim() || !formValues.email.trim() || !formValues.password.trim()) {
-      setSubmitError("First name, last name, email, and password are required.");
+      setSubmitError(t("userManagement.detail.validationRequired"));
       return;
     }
 
@@ -48,14 +50,14 @@ export function UserManagementCreatePage() {
     try {
       const createdUser = await createAdminUser(formValues);
 
-      toast.success("User created successfully.");
+      toast.success(t("userManagement.detail.createSuccess"));
       navigate(ROUTES.adminUsers, {
         state: {
-          flashMessage: `Created user ${createdUser.name || displayName}.`,
+          flashMessage: t("userManagement.detail.createFlashSuccess", { name: createdUser.name || displayName }),
         },
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to create user.";
+      const message = error instanceof Error ? error.message : t("userManagement.detail.createFailed");
       setSubmitError(message);
       toast.error(message);
     } finally {
@@ -67,14 +69,14 @@ export function UserManagementCreatePage() {
   return (
     <section className="flex min-h-full flex-col gap-4">
       <UserManagementHeroCard
-        backLabel="Back to user list"
+        backLabel={t("userManagement.detail.backLabel") || t("back")}
         backTo={ROUTES.adminUsers}
-        badge="Users"
-        title="Create internal user"
-        description="Set up a new internal account with the exact fields required by the admin create-user API."
+        badge={t("menus.admin-users") || "Users"}
+        title={t("userManagement.detail.createInternalUser")}
+        description={t("userManagement.detail.createInternalUserDesc")}
         panelIcon={<UserPlus size={18} className="text-[#d45b9f]" />}
-        panelTitle="Create mode"
-        panelDescription="This page now submits the exact account payload required by backend for admin user creation."
+        panelTitle={t("userManagement.detail.createMode")}
+        panelDescription={t("userManagement.detail.createPayloadDesc")}
       />
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
@@ -102,35 +104,35 @@ export function UserManagementCreatePage() {
               className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_26px_rgba(239,93,180,0.24)] transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto"
             >
               <Save size={16} />
-              <span>{isSubmitting ? "Creating..." : "Create user"}</span>
+              <span>{isSubmitting ? t("userManagement.detail.creating") : t("userManagement.detail.createUser")}</span>
             </button>
           </div>
         </article>
 
         <UserManagementSnapshotCard
           formValues={formValues}
-          notice="This form now creates a real user account through the admin API."
+          notice={t("userManagement.detail.createNotice")}
         />
       </div>
 
       <ActionConfirmModal
         open={showCreateConfirm}
         intent="success"
-        title="Create User"
-        subtitle="This will create a new user account through the admin API."
-        description="Confirm to create this internal account with the selected role and provided credentials."
-        confirmText="Create User"
-        cancelText="Review Again"
+        title={t("userManagement.detail.createUser")}
+        subtitle={t("userManagement.detail.createNotice")}
+        description={t("userManagement.detail.saveUserChangesDesc")}
+        confirmText={t("userManagement.detail.createUser")}
+        cancelText={t("userManagement.detail.reviewAgain")}
         confirmIcon={Save}
         loading={isSubmitting}
         onConfirm={handleCreate}
         onCancel={() => setShowCreateConfirm(false)}
         highlights={[displayName || "New user", formValues.role || "Role pending", formValues.email || "Email pending"]}
         details={[
-          { label: "Email", value: formValues.email || "No email entered" },
-          { label: "Phone", value: formValues.phone || "No phone entered" },
+          { label: t("userManagement.detail.email"), value: formValues.email || t("userManagement.detail.emailNotSet") },
+          { label: t("userManagement.detail.phone"), value: formValues.phone || t("userManagement.detail.phoneNotProvided") },
         ]}
-        warnings={["The account will be created immediately when you confirm this action."]}
+        warnings={[t("userManagement.detail.createNotice")]}
       />
     </section>
   );

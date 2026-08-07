@@ -2,13 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
-.custom-bill-table .ant-table-thead > tr > th {
+.custom-bill-table .ant-table-thead>tr>th {
   background-color: #fff9fc !important;
   border-bottom: 1px solid #f5d7e4 !important;
   padding: 12px 16px !important;
 }
 
-.custom-bill-table .ant-table-tbody > tr > td {
+.custom-bill-table .ant-table-tbody>tr>td {
   border-bottom: 1px solid #f8e6ee !important;
   padding: 16px !important;
 }
