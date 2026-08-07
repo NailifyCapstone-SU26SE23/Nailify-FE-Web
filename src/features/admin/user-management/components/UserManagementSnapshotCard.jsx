@@ -5,7 +5,7 @@ import { PropTypes } from "../../../../shared/utils/propTypes";
 import { USER_STATUS_STYLES } from "../services/mockUsers";
 
 export function UserManagementSnapshotCard({ formValues, notice }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const displayName =
     [formValues.firstName, formValues.lastName].filter(Boolean).join(" ").trim() ||
     formValues.name ||

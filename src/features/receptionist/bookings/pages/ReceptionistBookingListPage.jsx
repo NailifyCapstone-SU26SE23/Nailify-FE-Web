@@ -6,6 +6,7 @@ import jsQR from "jsqr";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import { usePagination } from "../../../../shared/hooks/usePagination";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   ROUTES,
   getReceptionistBookingDetailRoute,
@@ -122,6 +123,7 @@ const RECEPTIONIST_BOOKING_FETCH_SIZE = 10;
 const STATUS_OPTIONS = ["All", "Pending", "Confirmed", "Approved", "CheckedIn", "Completed", "Cancelled"];
 
 export function ReceptionistBookingListPage() {
+  const { t, language } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const todayDate = useMemo(() => getTodayDateParam(), []);
@@ -360,28 +362,28 @@ export function ReceptionistBookingListPage() {
 
   const bookingColumns = useMemo(() => ([
     {
-      title: "Customer",
+      title: t("receptionist.bookings.customer") || "Customer",
       dataIndex: "customerName",
       key: "customerName",
       sorter: (a, b) => (a.customerName || "").localeCompare(b.customerName || ""),
       render: (value) => <span className="text-sm font-bold text-[#412643]">{value}</span>,
     },
     {
-      title: "Salon",
+      title: t("receptionist.bookings.salon") || "Salon",
       dataIndex: "salonName",
       key: "salonName",
       sorter: (a, b) => (a.salonName || "").localeCompare(b.salonName || ""),
       render: (value) => <span className="text-sm text-[#6b5668]">{value}</span>,
     },
     {
-      title: "Artist",
+      title: t("receptionist.bookings.artist") || "Artist",
       dataIndex: "artistName",
       key: "artistName",
       sorter: (a, b) => (a.artistName || "").localeCompare(b.artistName || ""),
       render: (value) => <span className="text-sm text-[#6b5668]">{value}</span>,
     },
     {
-      title: "Schedule",
+      title: t("receptionist.bookings.time") || "Schedule",
       key: "schedule",
       sorter: (a, b) => {
         const timeA = new Date(`${a.bookingDate?.split('T')[0] || ''}T${a.startTime || '00:00:00'}`).getTime() || 0;
@@ -396,14 +398,14 @@ export function ReceptionistBookingListPage() {
       ),
     },
     {
-      title: "Price",
+      title: t("receptionist.bookings.price") || "Price",
       dataIndex: "totalPrice",
       key: "totalPrice",
       sorter: (a, b) => (a.totalPrice || 0) - (b.totalPrice || 0),
       render: (value) => <span className="text-sm font-semibold text-[#412643]">{formatCurrency(value)}</span>,
     },
     {
-      title: "Status",
+      title: t("receptionist.bookings.status") || "Status",
       dataIndex: "status",
       key: "status",
       sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
@@ -414,14 +416,14 @@ export function ReceptionistBookingListPage() {
       ),
     },
     {
-      title: "Action",
+      title: t("receptionist.bookings.actions") || "Action",
       key: "action",
       render: (_, booking) => (
         <ActionDropdown
           items={[
             {
               key: "view",
-              label: "View Booking",
+              label: t("receptionist.dashboard.viewDetail") || "View Booking",
               icon: Eye,
               onSelect: () => navigate(getReceptionistBookingDetailRoute(booking.bookingId)),
             },
@@ -429,14 +431,16 @@ export function ReceptionistBookingListPage() {
               ? [
                 {
                   key: "assign-artist",
-                  label: booking.artistName && booking.artistName !== "Unassigned" ? "Change Nail Artist" : "Assign Nail Artist",
+                  label: booking.artistName && booking.artistName !== "Unassigned" 
+                    ? t("receptionist.bookings.changeArtist") || "Change Nail Artist" 
+                    : t("receptionist.bookings.assignArtistTitle") || "Assign Nail Artist",
                   icon: UserRound,
                   className: "text-[#7c63d8]",
                   onSelect: () => setAssignArtistBooking(booking),
                 },
                 {
                   key: "check-in",
-                  label: "Check In",
+                  label: t("receptionist.dashboard.checkinBtn") || "Check In",
                   icon: SquareCheckBig,
                   className: "text-[#4c71d9]",
                   onSelect: () => void handleManualCheckIn(booking.bookingId),
@@ -447,7 +451,7 @@ export function ReceptionistBookingListPage() {
               ? [
                 {
                   key: "checkout",
-                  label: "Checkout",
+                  label: t("receptionist.dashboard.checkoutBtn") || "Checkout",
                   icon: SquareCheckBig,
                   className: "text-[#4c71d9]",
                   onSelect: () => void handleCheckout(booking.bookingId),
@@ -458,7 +462,7 @@ export function ReceptionistBookingListPage() {
         />
       ),
     },
-  ]), [handleCheckout, handleManualCheckIn, navigate]);
+  ]), [handleCheckout, handleManualCheckIn, navigate, t]);
 
   useEffect(() => {
     if (!isScannerOpen) {
@@ -630,10 +634,10 @@ export function ReceptionistBookingListPage() {
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {[
-          { label: "Today Bookings", value: summary.total, note: "Salon booking queue", iconTone: "bg-[#ffe8f1] text-[#ea4f93]" },
-          { label: "Waiting", value: summary.waiting, note: "Need front desk action", iconTone: "bg-[#fff4e5] text-[#d98b1d]" },
-          { label: "Checked In", value: summary.checkedIn, note: "Arrived customers", iconTone: "bg-[#e8f8ef] text-[#1f9d61]" },
-          { label: "Revenue", value: formatCurrency(summary.revenue), note: "Total loaded from API", iconTone: "bg-[#f1ecff] text-[#7c63d8]" },
+          { label: t("receptionist.dashboard.todayBookings") || "Today Bookings", value: summary.total, note: t("receptionist.dashboard.bookingQueueNote") || "Salon booking queue", iconTone: "bg-[#ffe8f1] text-[#ea4f93]" },
+          { label: t("receptionist.dashboard.statusWaiting") || "Waiting", value: summary.waiting, note: t("receptionist.dashboard.frontDeskActionNote") || "Need front desk action", iconTone: "bg-[#fff4e5] text-[#d98b1d]" },
+          { label: t("receptionist.dashboard.statusCheckedIn") || "Checked In", value: summary.checkedIn, note: t("receptionist.dashboard.arrivedNote") || "Arrived customers", iconTone: "bg-[#e8f8ed] text-[#1f9d61]" },
+          { label: t("receptionist.dashboard.todayRevenue") || "Revenue", value: formatCurrency(summary.revenue), note: t("receptionist.dashboard.revenueNote") || "Total loaded from API", iconTone: "bg-[#f1ecff] text-[#7c63d8]" },
         ].map((item) => (
           <article key={item.label} className="rounded-[20px] border border-[#f6d8e5] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.06)]">
             <span className={`flex h-10 w-10 items-center justify-center rounded-2xl ${item.iconTone}`}>
@@ -649,8 +653,12 @@ export function ReceptionistBookingListPage() {
       <article className="rounded-[24px] border border-[#f6d8e5] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] md:p-5">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-lg font-extrabold text-[#412643]">{salonName}</p>
-            <p className="mt-1 text-sm text-[#b38a9f]">{salonMeta}</p>
+            <p className="text-lg font-extrabold text-[#412643]">
+              {salonName === "Receptionist Booking Management" ? t("receptionist.bookings.title") : salonName}
+            </p>
+            <p className="mt-1 text-sm text-[#b38a9f]">
+              {salonMeta === "Bookings are loaded from salon API." ? t("receptionist.bookings.desc") : salonMeta}
+            </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <button
@@ -659,7 +667,7 @@ export function ReceptionistBookingListPage() {
               className="inline-flex h-9 items-center gap-2 rounded-full border border-[#f3cade] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
             >
               <RefreshCcw size={14} />
-              Refresh
+              {t("receptionist.common.refresh") || "Refresh"}
             </button>
 
             <button
@@ -668,7 +676,7 @@ export function ReceptionistBookingListPage() {
               className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-[#e7dcff] bg-white hover:bg-[#7a57d9] hover:text-white px-4 text-sm font-bold text-[#7a57d9] shadow-[0_10px_24px_rgba(122,87,217,0.1)] whitespace-nowrap"
             >
               <UserCheck size={15} />
-              Check-in
+              {t("receptionist.bookings.scanCheckInBtn") || "Scan Check-in"}
             </button>
 
             <Link
@@ -677,7 +685,7 @@ export function ReceptionistBookingListPage() {
               className="inline-flex h-9 items-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)] hover:bg-[image:var(--gradient-accent-hover)] hover:text-pink-600"
             >
               <UserPlus size={14} />
-              Create Walk-in
+              {t("receptionist.walkIn.createBtn") || "Create Walk-in"}
             </Link>
           </div>
         </div>
@@ -686,7 +694,7 @@ export function ReceptionistBookingListPage() {
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <label className="space-y-2">
               <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
-                Date From
+                {t("receptionist.bookings.dateFrom") || "Date From"}
               </span>
               <input
                 type="date"
@@ -697,7 +705,7 @@ export function ReceptionistBookingListPage() {
             </label>
             <label className="space-y-2">
               <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
-                Date To
+                {t("receptionist.bookings.dateTo") || "Date To"}
               </span>
               <input
                 type="date"
@@ -708,7 +716,7 @@ export function ReceptionistBookingListPage() {
             </label>
             <label className="space-y-2">
               <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
-                Salon
+                {t("receptionist.bookings.salon") || "Salon"}
               </span>
               <select
                 value={salonFilter}
@@ -716,13 +724,15 @@ export function ReceptionistBookingListPage() {
                 className="h-12 w-full rounded-2xl border border-[#f5d7e4] bg-[#fff9fc] px-4 text-sm text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
               >
                 {salonOptions.map((item) => (
-                  <option key={item}>{item}</option>
+                  <option key={item} value={item}>
+                    {item === "All salons" ? t("receptionist.bookings.allSalons") || "All salons" : item}
+                  </option>
                 ))}
               </select>
             </label>
             <label className="space-y-2">
               <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
-                Booking Status
+                {t("receptionist.common.status") || "Booking Status"}
               </span>
               <select
                 value={statusFilter}
@@ -730,7 +740,9 @@ export function ReceptionistBookingListPage() {
                 className="h-12 w-full rounded-2xl border border-[#f5d7e4] bg-[#fff9fc] px-4 text-sm text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
               >
                 {STATUS_OPTIONS.map((item) => (
-                  <option key={item}>{item}</option>
+                  <option key={item} value={item}>
+                    {item === "All" ? t("receptionist.bookings.statusAll") || "All Statuses" : t(`receptionist.dashboard.status${item}`) || item}
+                  </option>
                 ))}
               </select>
             </label>
@@ -739,7 +751,7 @@ export function ReceptionistBookingListPage() {
           <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-end">
             <label className="space-y-2 md:w-64">
               <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
-                Staff Artist
+                {t("receptionist.bookings.artist") || "Staff Artist"}
               </span>
               <select
                 value={staffFilter}
@@ -747,14 +759,16 @@ export function ReceptionistBookingListPage() {
                 className="h-12 w-full rounded-2xl border border-[#f5d7e4] bg-[#fff9fc] px-4 text-sm text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
               >
                 {staffOptions.map((item) => (
-                  <option key={item}>{item}</option>
+                  <option key={item} value={item}>
+                    {item === "All staff" ? t("receptionist.bookings.allStaff") || "All staff" : item}
+                  </option>
                 ))}
               </select>
             </label>
 
             <label className="relative block flex-1">
               <span className="mb-2 block text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
-                Search
+                {t("receptionist.common.search") || "Search"}
               </span>
               <Search
                 size={16}
@@ -763,7 +777,7 @@ export function ReceptionistBookingListPage() {
               <input
                 value={draftQuery}
                 onChange={(event) => setDraftQuery(event.target.value)}
-                placeholder="Search booking ID, customer, artist, service..."
+                placeholder={t("receptionist.bookings.searchPlaceholder") || "Search booking ID, customer, artist, service..."}
                 className="h-12 w-full rounded-2xl border border-[#f5d7e4] bg-[#fff9fc] pl-11 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
               />
             </label>
@@ -782,7 +796,7 @@ export function ReceptionistBookingListPage() {
                 }}
                 className="rounded-full bg-[image:var(--gradient-accent)] px-5 py-3 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
               >
-                Apply
+                {t("receptionist.common.apply") || "Apply"}
               </button>
 
               <button
@@ -804,7 +818,7 @@ export function ReceptionistBookingListPage() {
                 }}
                 className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-5 py-3 text-sm font-bold text-[#ea4f93]"
               >
-                Reset
+                {t("receptionist.common.reset") || "Reset"}
               </button>
             </div>
           </div>
@@ -826,7 +840,7 @@ export function ReceptionistBookingListPage() {
           <div className="mt-6 flex min-h-56 items-center justify-center rounded-[20px] border border-[#f7dce8] bg-[#fffafd]">
             <div className="flex items-center gap-3 text-sm font-medium text-[#b38a9f]">
               <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
-              Loading bookings...
+              {t("receptionist.common.loading") || "Loading bookings..."}
             </div>
           </div>
         ) : (
@@ -838,7 +852,7 @@ export function ReceptionistBookingListPage() {
                 dataSource={paginatedBookings}
                 pagination={false}
                 scroll={{ x: 1100 }}
-                locale={{ emptyText: "No bookings matched the current search." }}
+                locale={{ emptyText: t("receptionist.bookings.noBookings") || "No bookings matched the current search." }}
               />
             </div>
 
@@ -865,29 +879,24 @@ export function ReceptionistBookingListPage() {
                       items={[
                         {
                           key: "view",
-                          label: "View Booking",
+                          label: t("receptionist.dashboard.viewDetail") || "View Booking",
                           icon: Eye,
                           onSelect: () => navigate(getReceptionistBookingDetailRoute(booking.bookingId)),
                         },
-                        // {
-                        //   key: "confirm",
-                        //   label: "Confirm Booking",
-                        //   icon: CheckCircle2,
-                        //   className: "text-[#1f9d61]",
-                        //   onSelect: () => void handleConfirmBooking(booking.bookingId),
-                        // },
                         ...(canManualCheckIn(booking.status)
                           ? [
                             {
                               key: "assign-artist",
-                              label: booking.artistName && booking.artistName !== "Unassigned" ? "Change Nail Artist" : "Assign Nail Artist",
+                              label: booking.artistName && booking.artistName !== "Unassigned"
+                                ? t("receptionist.bookings.changeArtist") || "Change Nail Artist"
+                                : t("receptionist.bookings.assignArtistTitle") || "Assign Nail Artist",
                               icon: UserRound,
                               className: "text-[#7c63d8]",
                               onSelect: () => setAssignArtistBooking(booking),
                             },
                             {
                               key: "check-in",
-                              label: "Check In",
+                              label: t("receptionist.dashboard.checkinBtn") || "Check In",
                               icon: SquareCheckBig,
                               className: "text-[#4c71d9]",
                               onSelect: () => void handleManualCheckIn(booking.bookingId),
@@ -898,7 +907,7 @@ export function ReceptionistBookingListPage() {
                           ? [
                             {
                               key: "checkout",
-                              label: "Checkout",
+                              label: t("receptionist.dashboard.checkoutBtn") || "Checkout",
                               icon: SquareCheckBig,
                               className: "text-[#4c71d9]",
                               onSelect: () => void handleCheckout(booking.bookingId),

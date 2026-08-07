@@ -34,6 +34,7 @@ import { Spin, Alert, DatePicker, Drawer, Modal, Tooltip } from "antd";
 import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ROLES } from "../../../../shared/constants/roles";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { BOOKING_ROLE_CONFIG } from "../services/mockBookings";
@@ -140,6 +141,7 @@ InfoItem.propTypes = {
 };
 
 function StatusPill({ status, compact = false }) {
+  const { t, language } = useLanguage();
   const getStyle = () => {
     switch (status) {
       case "Checked In":
@@ -170,12 +172,35 @@ function StatusPill({ status, compact = false }) {
   };
 
   const formatDisplay = (s) => {
-    if (s === "CheckedIn") return "Checked In";
-    if (s === "InProgress") return "In Progress";
-    if (s === "RescheduleReq" || s === "ReschedulePending") return "Reschedule Req";
-    if (s === "RescheduleSuggested") return "Reschedule Proposed";
-    if (s === "ServiceCompleted") return "Completed";
-    return s;
+    switch (s) {
+      case "Checked In":
+      case "CheckedIn":
+        return t("manager.dashboard.statusCalled") || "At Counter";
+      case "In Progress":
+      case "InProgress":
+        return t("manager.dashboard.statusInService") || "In Progress";
+      case "Pending":
+        return t("manager.dashboard.statusWaiting") || "Pending";
+      case "Confirmed":
+      case "Approved":
+        return t("manager.bookings.ready") || "Confirmed";
+      case "Completed":
+      case "ServiceCompleted":
+        return t("manager.dashboard.statusDone") || "Completed";
+      case "Rejected":
+        return t("manager.breaks.statusRejected") || "Rejected";
+      case "Cancelled":
+      case "Canceled":
+        return t("manager.bookings.cancelBooking") || "Cancelled";
+      case "RescheduleReq":
+      case "Reschedule Req":
+      case "ReschedulePending":
+        return t("manager.bookings.rescheduleTime") || "Reschedule Req";
+      case "RescheduleSuggested":
+        return t("manager.bookings.moveSchedule") || "Reschedule Proposed";
+      default:
+        return s;
+    }
   };
 
   return (
@@ -458,8 +483,55 @@ function getCalendarCardStyle(status) {
   }
 }
 
+
+function getBookingStatusLabel(status, t) {
+  switch (status) {
+    case "Pending":
+      return t("manager.dashboard.statusWaiting") || "Pending";
+
+    case "Confirmed":
+    case "Approved":
+      return t("manager.bookings.ready") || "Confirmed";
+
+    case "CheckedIn":
+    case "Checked In":
+      return t("manager.dashboard.statusCalled") || "Checked In";
+
+    case "InProgress":
+    case "In Progress":
+      return t("manager.dashboard.statusInService") || "In Progress";
+
+    case "Completed":
+    case "ServiceCompleted":
+      return t("manager.dashboard.statusDone") || "Completed";
+
+    case "Rejected":
+      return t("manager.breaks.statusRejected") || "Rejected";
+
+    case "Cancelled":
+    case "Canceled":
+      return t("manager.bookings.cancelBooking") || "Cancelled";
+
+    case "Reschedule":
+    case "RescheduleReq":
+    case "Reschedule Req":
+    case "ReschedulePending":
+      return t("manager.bookings.rescheduleTime") || "Reschedule";
+
+    case "RescheduleSuggested":
+      return (
+        t("manager.bookings.moveSchedule") ||
+        "Reschedule Proposed"
+      );
+
+    default:
+      return status;
+  }
+}
+
 // --- Main Page Component ---
 export function ManagerBookingListPage() {
+  const { t, language } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
@@ -698,43 +770,43 @@ export function ManagerBookingListPage() {
     const completed = bookings.filter(b => b.status === "Completed" || b.status === "ServiceCompleted").length;
     return [
       {
-        label: "Pending",
+        label: t("manager.dashboard.statusWaiting"),
         value: pending,
-        subtext: "Awaiting confirmation",
+        subtext: t("manager.bookings.awaitingConfirm") || "Awaiting confirmation",
         icon: Clock3,
         accentBg: "bg-gradient-to-br from-[#FFFBEB] to-[#FEF3C7]",
         accentText: "text-[#D97706]",
         badgeBorder: "border-[#FCD34D]",
       },
       {
-        label: "Confirmed",
+        label: t("manager.bookings.ready") || "Confirmed",
         value: confirmed,
-        subtext: "Locked & ready",
+        subtext: t("manager.bookings.lockedReady") || "Locked & ready",
         icon: CheckCircle2,
         accentBg: "bg-gradient-to-br from-[#ECFDF5] to-[#D1FAE5]",
         accentText: "text-[#059669]",
         badgeBorder: "border-[#6EE7B7]",
       },
       {
-        label: "Checked In",
+        label: t("manager.dashboard.statusCalled") || "Checked In",
         value: checkedIn,
-        subtext: "In salon",
+        subtext: t("manager.bookings.inSalon") || "In salon",
         icon: UserCheck,
         accentBg: "bg-gradient-to-br from-[#EEF2FF] to-[#E0E7FF]",
         accentText: "text-[#4F46E5]",
         badgeBorder: "border-[#A5B4FC]",
       },
       {
-        label: "Completed",
+        label: t("manager.dashboard.statusDone") || "Completed",
         value: completed,
-        subtext: "Finished today",
+        subtext: t("manager.bookings.finishedToday") || "Finished today",
         icon: Sparkles,
         accentBg: "bg-gradient-to-br from-[#FFF0F5] to-[#FFE4EE]",
         accentText: "text-[#E84F93]",
         badgeBorder: "border-[#FBCFE8]",
       },
     ];
-  }, [bookings]);
+  }, [bookings, t]);
 
   const filteredAppointments = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -937,13 +1009,13 @@ export function ManagerBookingListPage() {
                 <div>
                   <div className="inline-flex items-center gap-1.5 rounded-full border border-[#E5C687]/50 bg-gradient-to-r from-[#FFF9EE] to-[#FFF3DC] px-3 py-1 text-[11px] font-bold text-[#9E731A] shadow-xs">
                     <Sparkles size={12} className="text-[#C99635]" />
-                    <span>Nailify Salon Manager Portal</span>
+                    <span>{language === "vi" ? "Cổng Quản Lý Nailify" : "Nailify Salon Manager Portal"} </span>
                   </div>
                   <h1 className="text-2xl lg:text-3xl font-bold text-[#2B182B] mt-1.5 tracking-tight">
-                    Booking Management
+                    {language === "vi" ? "Lịch trình tiệm nails" : "Salon Bookings"}
                   </h1>
                   <p className="mt-1 text-xs lg:text-sm text-[#9E8497] font-medium leading-relaxed">
-                    Track appointments, assign staff artists, and drag-and-drop to reschedule in real-time
+                    {language === "vi" ? "Tổng quan và quản lý các hành động cho tất cả các đặt lịch của khách hàng." : "Overview and action manager for all customer bookings."}
                   </p>
                 </div>
               </div>
@@ -952,25 +1024,25 @@ export function ManagerBookingListPage() {
             {/* Quick Hero Highlights */}
             <div className="grid grid-cols-3 gap-2.5 w-full lg:w-[380px]">
               <div className="rounded-2xl border border-white/80 bg-white/90 p-3 shadow-2xs backdrop-blur-md text-center">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">Today</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">{t("manager.dashboard.today")}</p>
                 <p className="mt-0.5 text-xl font-bold text-[#2B182B]">
                   {bookings.filter(b => { const d = dayjs(b.bookingDate || b.createdAt); return d.isValid() && d.isSame(dayjs(), "day"); }).length}
                 </p>
-                <p className="text-[9px] text-[#E84F93] font-semibold">Appointments</p>
+                <p className="text-[9px] text-[#E84F93] font-semibold">{t("manager.dashboard.appointmentsLeft") || "Appointments"}</p>
               </div>
 
               <div className="rounded-2xl border border-white/80 bg-white/90 p-3 shadow-2xs backdrop-blur-md text-center">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">In View</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">{t("manager.common.view")}</p>
                 <p className="mt-0.5 text-xl font-bold text-[#2B182B]">{filteredAppointments.length}</p>
-                <p className="text-[9px] text-[#4F46E5] font-semibold">Bookings</p>
+                <p className="text-[9px] text-[#4F46E5] font-semibold">{t("manager.payments.services") || "Bookings"}</p>
               </div>
 
               <div className="rounded-2xl border border-white/80 bg-white/90 p-3 shadow-2xs backdrop-blur-md text-center">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">Action</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">{t("manager.common.actions")}</p>
                 <p className="mt-0.5 text-xl font-bold text-[#D97706]">
                   {bookings.filter(b => b.status === "Pending" || !(b.nailArtistId || b.staffId || b.staffArtistId || b.artistId)).length}
                 </p>
-                <p className="text-[9px] text-[#D97706] font-semibold">Pending</p>
+                <p className="text-[9px] text-[#D97706] font-semibold">{t("manager.dashboard.statusWaiting")}</p>
               </div>
             </div>
           </div>
@@ -1034,11 +1106,10 @@ export function ManagerBookingListPage() {
                   <div className="border-b border-[#F3E2EC] bg-gradient-to-b from-[#FFF7FA] to-white p-6">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                       <SectionHeading
-                        title="Salon Booking Board"
-                        subtitle="Search, filter, and drag-and-drop to reschedule bookings"
+                        title={t("manager.bookings.title")}
+                        subtitle={t("manager.bookings.desc")}
                         icon={Filter}
                       />
-
 
                     </div>
                     <div className="flex flex-nowrap items-center gap-3 overflow-x-auto pb-2 lg:pb-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
@@ -1046,7 +1117,7 @@ export function ManagerBookingListPage() {
                       <div className="shrink-0 flex items-center gap-2.5 rounded-2xl border border-[#F3D6E5] bg-gradient-to-r from-[#FFF0F5] to-[#FFF9FB] px-3.5 py-1.5 shadow-[0_4px_12px_rgba(219,70,117,0.06)] transition-all duration-300 hover:border-[#E84F93]/50 hover:shadow-[0_4px_16px_rgba(219,70,117,0.12)] cursor-pointer group">
                         <div className="flex items-center gap-1.5 border-r border-[#F3D6E5] pr-3 py-0.5">
                           <Filter size={14} className="text-[#E84F93]" />
-                          <span className="text-[11px] font-bold text-[#9E8497] uppercase tracking-wider group-hover:text-[#E84F93] transition-colors">Status</span>
+                          <span className="text-[11px] font-bold text-[#9E8497] uppercase tracking-wider group-hover:text-[#E84F93] transition-colors">{t("manager.common.status")}</span>
                         </div>
                         <div className="relative">
                           <select
@@ -1058,9 +1129,10 @@ export function ManagerBookingListPage() {
                               const count = filter.value === "All"
                                 ? bookings.length
                                 : bookings.filter(b => matchesFilter(b.status, filter.value)).length;
+                              const displayLabel = filter.value === "All" ? t("manager.common.all") : getBookingStatusLabel(filter.value, t);
                               return (
                                 <option key={filter.value} value={filter.value} className="text-sm font-medium text-[#2B182B]">
-                                  {filter.label} ({count})
+                                  {displayLabel} ({count})
                                 </option>
                               );
                             })}
@@ -1074,10 +1146,10 @@ export function ManagerBookingListPage() {
                       {/* View Switcher Controls */}
                       <div className="flex shrink-0 items-center gap-1 rounded-2xl border border-[#F3D6E5] bg-[#FFF0F5] p-1 shadow-2xs">
                         {[
-                          { mode: "table", label: "Table", icon: TableIcon },
-                          { mode: "day", label: "Day", icon: LayoutGrid },
-                          { mode: "week", label: "Week", icon: CalendarDays },
-                          { mode: "month", label: "Month", icon: GridIcon },
+                          { mode: "table", label: t("manager.common.table") || "Table", icon: TableIcon },
+                          { mode: "day", label: t("adminDashboard.day"), icon: LayoutGrid },
+                          { mode: "week", label: t("adminDashboard.week"), icon: CalendarDays },
+                          { mode: "month", label: t("adminDashboard.month"), icon: GridIcon },
                         ].map((btn) => (
                           <button
                             key={btn.mode}
@@ -1100,36 +1172,36 @@ export function ManagerBookingListPage() {
                       {/* Search & Date Controls */}
                       <div className="grid gap-3 pt-1 lg:grid-cols-[minmax(0,1fr)_150px_150px_auto]">
                         <div className="relative">
-                          <span className="mb-1.5 block text-[11px] font-bold text-[#9E8497] uppercase tracking-wider">Search</span>
+                          <span className="mb-1.5 block text-[11px] font-bold text-[#9E8497] uppercase tracking-wider">{t("manager.common.search")}</span>
                           <div className="relative">
                             <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9E8497]" />
                             <input
                               value={query}
                               onChange={(e) => setQuery(e.target.value)}
-                              placeholder="Customer name, phone, service, artist..."
+                              placeholder={t("manager.bookings.searchPlaceholder")}
                               className="h-11 w-full rounded-2xl border border-[#F3D7E4] bg-white pl-10 pr-4 text-xs font-medium text-[#2B182B] outline-none transition-all duration-200 placeholder:text-[#C8B0BF] hover:border-[#F0B7CF] focus:border-[#E84F93] focus:ring-4 focus:ring-[#E84F93]/10 shadow-xs"
                             />
                           </div>
                         </div>
 
                         <div>
-                          <span className="mb-1.5 block text-[11px] font-bold text-[#9E8497] uppercase tracking-wider">Date From</span>
+                          <span className="mb-1.5 block text-[11px] font-bold text-[#9E8497] uppercase tracking-wider">{t("manager.bookings.dateFrom")}</span>
                           <DatePicker
                             value={dateFrom}
                             onChange={handleDateFromChange}
-                            placeholder="Select date"
+                            placeholder={t("manager.bookings.dateFrom")}
                             format="DD/MM/YYYY"
                             className="h-11 w-full rounded-2xl border border-[#F3D7E4] bg-white px-3 text-xs text-[#2B182B] outline-none transition-all duration-200 hover:border-[#F0B7CF] focus:border-[#E84F93]"
                             suffixIcon={<Calendar size={15} className="text-[#9E8497]" />}
                           />
                         </div>
                         <div>
-                          <span className="mb-1.5 block text-[11px] font-bold text-[#9E8497] uppercase tracking-wider">Date To</span>
+                          <span className="mb-1.5 block text-[11px] font-bold text-[#9E8497] uppercase tracking-wider">{t("manager.bookings.dateTo")}</span>
                           <DatePicker
                             value={dateTo}
                             onChange={(d) => setDateTo(d)}
                             disabled={viewMode !== "table"}
-                            placeholder="Select date"
+                            placeholder={t("manager.bookings.dateTo")}
                             format="DD/MM/YYYY"
                             className="h-11 w-full rounded-2xl border border-[#F3D7E4] bg-white px-3 text-xs text-[#2B182B] outline-none transition-all duration-200 hover:border-[#F0B7CF] focus:border-[#E84F93]"
                             suffixIcon={<Calendar size={15} className="text-[#9E8497]" />}
@@ -1147,7 +1219,7 @@ export function ManagerBookingListPage() {
                               : "border-[#F5E8EF] bg-[#FAFAFA] text-[#D6B9C8] cursor-not-allowed"
                               }`}
                           >
-                            Reset Filters
+                            {t("manager.common.reset")}
                           </motion.button>
                         </div>
                       </div>
@@ -1163,9 +1235,9 @@ export function ManagerBookingListPage() {
                         <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-[#FFF0F8] text-[#E84F93] mb-3 shadow-inner">
                           <Search size={28} />
                         </div>
-                        <p className="text-base font-bold text-[#2B182B]">No bookings found</p>
+                        <p className="text-base font-bold text-[#2B182B]">{t("manager.bookings.noBookings") || "No bookings found"}</p>
                         <p className="mt-1 text-xs text-[#9E8497] max-w-xs leading-relaxed">
-                          Try adjusting your search terms or filter selection
+                          {t("manager.bookings.noBookingsDesc") || "Try adjusting your search terms or filter selection"}
                         </p>
                         <motion.button
                           whileHover={{ scale: 1.05 }}
@@ -1173,7 +1245,7 @@ export function ManagerBookingListPage() {
                           onClick={handleResetFilters}
                           className="mt-4 rounded-full bg-[#E84F93] px-5 py-2 text-xs font-bold text-white shadow-md hover:bg-[#D93D82]"
                         >
-                          Clear filters
+                          {t("manager.common.reset")}
                         </motion.button>
                       </motion.div>
                     ) : viewMode === "table" ? (
@@ -1189,12 +1261,12 @@ export function ManagerBookingListPage() {
                         </colgroup>
                         <thead>
                           <tr className="border-b border-[#F3E2EC] bg-[#FFF5F8] text-[11px] font-bold uppercase tracking-wider text-[#9E8497]">
-                            <th className="px-3.5 py-3.5 text-left">Time</th>
-                            <th className="px-3.5 py-3.5 text-left">Customer</th>
-                            <th className="px-3.5 py-3.5 text-left">Service & Nail Design</th>
-                            <th className="px-3.5 py-3.5 text-left">Nail Artist</th>
-                            <th className="px-3.5 py-3.5 text-left">Status</th>
-                            <th className="px-3.5 py-3.5 text-center">Actions</th>
+                            <th className="px-3.5 py-3.5 text-left">{t("manager.bookings.time")}</th>
+                            <th className="px-3.5 py-3.5 text-left">{t("manager.bookings.customer")}</th>
+                            <th className="px-3.5 py-3.5 text-left">{t("manager.bookings.serviceDesign") || "Service & Nail Design"}</th>
+                            <th className="px-3.5 py-3.5 text-left">{t("manager.bookings.artist")}</th>
+                            <th className="px-3.5 py-3.5 text-left">{t("manager.common.status")}</th>
+                            <th className="px-3.5 py-3.5 text-center">{t("manager.common.actions")}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1237,7 +1309,7 @@ export function ManagerBookingListPage() {
                                 <td className="px-4 py-3.5 align-middle">
                                   <div className="flex items-center gap-2.5 min-w-0">
                                     {row.thumbnailUrl && (
-                                      <Tooltip title="Click to enlarge Nail Design">
+                                      <Tooltip title={t("manager.bookings.zoomThumbnail") || "Click to enlarge Nail Design"}>
                                         <div
                                           className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-[#F3D6E5] bg-[#FFF0F5] cursor-pointer hover:border-[#E84F93] transition group/img"
                                           onClick={(e) => { e.stopPropagation(); setActiveImageModalUrl(row.thumbnailUrl); }}
@@ -1267,7 +1339,7 @@ export function ManagerBookingListPage() {
                                     </div>
                                     <div className="min-w-0">
                                       <p className={`truncate text-xs font-semibold ${row.artist === "Unassigned" ? "text-[#D97706] italic" : "text-[#2B182B]"}`}>
-                                        {row.artist === "Unassigned" ? "Unassigned" : row.artist}
+                                        {row.artist === "Unassigned" ? t("manager.bookings.unassigned") : row.artist}
                                       </p>
                                     </div>
                                   </div>
@@ -1279,7 +1351,7 @@ export function ManagerBookingListPage() {
 
                                 <td className="px-3 py-3.5 align-middle text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                                   <div className="flex items-center justify-center gap-1.5">
-                                    <Tooltip title="View details">
+                                    <Tooltip title={t("manager.common.view")}>
                                       <motion.button
                                         whileHover={{ scale: 1.1 }}
                                         whileTap={{ scale: 0.9 }}
@@ -1294,7 +1366,7 @@ export function ManagerBookingListPage() {
                                       (row.nailArtistId || row.staffId || row.staffArtistId || row.artistId) &&
                                       (row.status === "CheckedIn" || row.status === "Checked In")
                                     ) && (!isFinalStatus(row.status) || row.status === "Approved") && (
-                                        <Tooltip title="Assign staff artist">
+                                        <Tooltip title={t("manager.bookings.assignArtistTitle") || "Assign staff artist"}>
                                           <motion.button
                                             whileHover={{ scale: 1.1 }}
                                             whileTap={{ scale: 0.9 }}
@@ -1308,7 +1380,7 @@ export function ManagerBookingListPage() {
 
                                     {!isFinalStatus(row.status) && !(row.status === "CheckedIn" || row.status === "Checked In" || row.status === "InProgress" || row.status === "In Progress") && (
                                       <>
-                                        <Tooltip title="Confirm booking">
+                                        <Tooltip title={t("manager.bookings.confirmBooking") || "Confirm booking"}>
                                           <motion.button
                                             whileHover={{ scale: 1.1 }}
                                             whileTap={{ scale: 0.9 }}
@@ -1319,7 +1391,7 @@ export function ManagerBookingListPage() {
                                           </motion.button>
                                         </Tooltip>
 
-                                        <Tooltip title="Cancel booking">
+                                        <Tooltip title={t("manager.bookings.cancelBooking") || "Cancel booking"}>
                                           <motion.button
                                             whileHover={{ scale: 1.1 }}
                                             whileTap={{ scale: 0.9 }}
@@ -1343,7 +1415,7 @@ export function ManagerBookingListPage() {
                       <div className="p-4 space-y-4">
                         <div className="flex items-center justify-between bg-[#FFF5F8] p-3 rounded-2xl border border-[#F3D6E5]/60 text-xs">
                           <span className="font-bold text-[#E84F93] flex items-center gap-1.5">
-                            <GripVertical size={16} /> Drag & drop booking cards onto another hour or artist column to reschedule!
+                            <GripVertical size={16} /> {t("manager.bookings.dragDropTip") || "Drag & drop booking cards onto another hour or artist column to reschedule!"}
                           </span>
                           <span className="font-bold text-[#2B182B]">
                             {dateFrom ? dateFrom.format("dddd, MMM D, YYYY") : dayjs().format("dddd, MMM D, YYYY")}

@@ -133,7 +133,7 @@ function buildInitialFormValues() {
 }
 
 export function PromotionCreatePage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [formValues, setFormValues] = useState(buildInitialFormValues);
   const [formError, setFormError] = useState("");

@@ -20,6 +20,7 @@ import { Spin, Alert, DatePicker, Modal, Input, Form, Dropdown } from "antd";
 import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 import { loadAuthSession } from "../../../core/auth/model/authStorage";
 import { notificationSignalRService } from "../../../core/notifications/services/notificationSignalRService";
@@ -118,11 +119,10 @@ function TimeSlotSelector({ value, onChange }) {
               type="button"
               key={p.key}
               onClick={() => setActivePeriod(p.key)}
-              className={`flex flex-col items-center gap-1 rounded-xl border py-2.5 transition-all duration-200 ${
-                isActive
-                  ? "border-transparent bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-white shadow-[0_8px_18px_rgba(234,79,147,0.28)]"
-                  : "border-[#f3d7e4] bg-white text-[#7f6478] hover:border-[#f0b7cf] hover:bg-[#fff7fb]"
-              }`}
+              className={`flex flex-col items-center gap-1 rounded-xl border py-2.5 transition-all duration-200 ${isActive
+                ? "border-transparent bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-white shadow-[0_8px_18px_rgba(234,79,147,0.28)]"
+                : "border-[#f3d7e4] bg-white text-[#7f6478] hover:border-[#f0b7cf] hover:bg-[#fff7fb]"
+                }`}
             >
               <Icon size={16} />
               <span className="text-[11px] font-bold">{p.label}</span>
@@ -148,11 +148,10 @@ function TimeSlotSelector({ value, onChange }) {
                 type="button"
                 key={slot}
                 onClick={() => onChange?.(slot)}
-                className={`rounded-lg py-1.5 text-[11px] font-bold transition-all duration-150 ${
-                  isSelected
-                    ? "bg-[#ea4f93] text-white shadow-sm shadow-[#ea4f93]/30"
-                    : "bg-white text-[#5c4559] border border-[#f1e7ed] hover:border-[#ea4f93] hover:text-[#ea4f93]"
-                }`}
+                className={`rounded-lg py-1.5 text-[11px] font-bold transition-all duration-150 ${isSelected
+                  ? "bg-[#ea4f93] text-white shadow-sm shadow-[#ea4f93]/30"
+                  : "bg-white text-[#5c4559] border border-[#f1e7ed] hover:border-[#ea4f93] hover:text-[#ea4f93]"
+                  }`}
               >
                 {formatTime(`${slot}:00`)}
               </button>
@@ -165,6 +164,7 @@ function TimeSlotSelector({ value, onChange }) {
 }
 
 export function RescheduleBooking() {
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -366,20 +366,20 @@ export function RescheduleBooking() {
               </div>
               <div>
                 <span className="inline-flex rounded-full border border-white/70 bg-white/80 px-3 py-1 text-[11px] font-semibold text-[#ea4f93] shadow-[0_6px_14px_rgba(234,79,147,0.08)] backdrop-blur">
-                  Manager portal
+                  {language === "vi" ? "Portal quản lý" : "Manager portal"}
                 </span>
-                <h1 className="text-2xl font-extrabold text-[#2d1b35] mt-1.5 tracking-tight">Reschedule Requests</h1>
+                <h1 className="text-2xl font-extrabold text-[#2d1b35] mt-1.5 tracking-tight">{t("manager.bookings.rescheduleTime") || "Reschedule Requests"}</h1>
                 <p className="text-xs text-[#a88a9f] mt-0.5">
-                  Approve, reject, or suggest new times for customer reschedule requests
+                  {language === "vi" ? "Phê duyệt, từ chối hoặc đề xuất thời gian mới cho yêu cầu dời lịch của khách hàng" : "Approve, reject, or suggest new times for customer reschedule requests"}
                 </p>
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-3 w-full lg:w-[450px]">
               {[
-                { label: "Total Requests", value: stats.total, color: "text-[#2d1b35] bg-white" },
-                { label: "Pending Manager", value: stats.pending, color: "text-[#db8520] bg-[#fffcf5] border-[#fdeacc]" },
-                { label: "Awaiting Customer", value: stats.suggested, color: "text-[#6366f1] bg-[#f5f6ff] border-[#e0e3ff]" },
+                { label: language === "vi" ? "Tổng yêu cầu" : "Total Requests", value: stats.total, color: "text-[#2d1b35] bg-white" },
+                { label: t("manager.dashboard.statusWaiting"), value: stats.pending, color: "text-[#db8520] bg-[#fffcf5] border-[#fdeacc]" },
+                { label: language === "vi" ? "Đang chờ khách hàng" : "Awaiting Customer", value: stats.suggested, color: "text-[#6366f1] bg-[#f5f6ff] border-[#e0e3ff]" },
               ].map((s) => (
                 <div
                   key={s.label}
@@ -406,26 +406,24 @@ export function RescheduleBooking() {
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex flex-wrap gap-2">
                 {[
-                  { value: "All", label: "All Requests", count: bookings.length },
-                  { value: "ReschedulePending", label: "Pending Actions", count: stats.pending },
-                  { value: "RescheduleSuggested", label: "Awaiting Customer", count: stats.suggested },
+                  { value: "All", label: t("manager.common.all"), count: bookings.length },
+                  { value: "ReschedulePending", label: t("manager.common.actions") || "Pending Actions", count: stats.pending },
+                  { value: "RescheduleSuggested", label: t("manager.dashboard.statusWaiting") || "Awaiting Customer", count: stats.suggested },
                 ].map((tab) => {
                   const isActive = statusFilter === tab.value;
                   return (
                     <button
                       key={tab.value}
                       onClick={() => setStatusFilter(tab.value)}
-                      className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-bold transition-all duration-300 ${
-                        isActive
-                          ? "border-[#ea4f93] bg-[#ea4f93] text-white shadow-[0_10px_20px_rgba(234,79,147,0.22)]"
-                          : "border-[#f3d7e4] bg-white text-[#7f6478] hover:border-[#f0b7cf] hover:bg-[#fff7fb] hover:text-[#ea4f93]"
-                      }`}
+                      className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-bold transition-all duration-300 ${isActive
+                        ? "border-[#ea4f93] bg-[#ea4f93] text-white shadow-[0_10px_20px_rgba(234,79,147,0.22)]"
+                        : "border-[#f3d7e4] bg-white text-[#7f6478] hover:border-[#f0b7cf] hover:bg-[#fff7fb] hover:text-[#ea4f93]"
+                        }`}
                     >
                       <span>{tab.label}</span>
                       <span
-                        className={`rounded-full px-2 py-0.5 text-[10px] ${
-                          isActive ? "bg-white/20 text-white" : "bg-[#fff0f6] text-[#c86d98]"
-                        }`}
+                        className={`rounded-full px-2 py-0.5 text-[10px] ${isActive ? "bg-white/20 text-white" : "bg-[#fff0f6] text-[#c86d98]"
+                          }`}
                       >
                         {tab.count}
                       </span>
@@ -438,7 +436,7 @@ export function RescheduleBooking() {
                 <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#a88a9f]" />
                 <input
                   type="text"
-                  placeholder="Search customer, phone, service..."
+                  placeholder={t("manager.bookings.searchPlaceholder")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="h-10 w-full rounded-2xl border border-[#f3d7e4] bg-white pl-9 pr-4 text-xs text-[#5c4559] outline-none transition-all duration-300 ease-out placeholder:text-[#c8b0bf] hover:border-[#f0b7cf] focus:border-[#ea4f93] focus:ring-2 focus:ring-[#ea4f93]/10"
@@ -452,20 +450,20 @@ export function RescheduleBooking() {
             {isLoading ? (
               <div className="flex flex-col items-center justify-center py-20">
                 <Spin size="large" />
-                <p className="mt-4 text-xs font-semibold text-[#a88a9f]">Loading reschedule requests...</p>
+                <p className="mt-4 text-xs font-semibold text-[#a88a9f]">{t("manager.common.loading")}</p>
               </div>
             ) : error ? (
               <div className="p-6">
-                <Alert message="Error" description={error} type="error" showIcon />
+                <Alert message={t("manager.common.error")} description={error} type="error" showIcon />
               </div>
             ) : filteredBookings.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#fff0f8] text-[#ea4f93] mb-4">
                   <CalendarDays size={24} />
                 </div>
-                <p className="text-sm font-bold text-[#5b4256]">No reschedule requests found</p>
+                <p className="text-sm font-bold text-[#5b4256]">{t("manager.bookings.noBookings") || "No reschedule requests found"}</p>
                 <p className="mt-1 text-xs text-[#a88a9f] max-w-xs">
-                  There are no requests matching your criteria at this moment.
+                  {t("manager.bookings.noBookingsDesc") || "There are no requests matching your criteria at this moment."}
                 </p>
               </div>
             ) : (
@@ -479,11 +477,11 @@ export function RescheduleBooking() {
                 </colgroup>
                 <thead>
                   <tr className="border-b border-[#f5e2ec] bg-[#fff8fb] text-[11px] font-bold text-[#a88a9f] uppercase tracking-wider">
-                    <th className="px-5 py-3.5">Customer</th>
-                    <th className="px-5 py-3.5">Current Schedule</th>
-                    <th className="px-5 py-3.5">Reschedule Request</th>
-                    <th className="px-5 py-3.5">Status & Reason</th>
-                    <th className="px-5 py-3.5 text-center">Actions</th>
+                    <th className="px-5 py-3.5">{t("manager.bookings.customer")}</th>
+                    <th className="px-5 py-3.5">{language === "vi" ? "Lịch hẹn hiện tại" : "Current Schedule"}</th>
+                    <th className="px-5 py-3.5">{t("manager.bookings.rescheduleTime")}</th>
+                    <th className="px-5 py-3.5">{t("manager.breaks.reason") || "Status & Reason"}</th>
+                    <th className="px-5 py-3.5 text-center">{t("manager.common.actions")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#f7e7ee]">
@@ -499,7 +497,7 @@ export function RescheduleBooking() {
                         label: (
                           <span className="flex items-center gap-2 text-xs font-semibold text-emerald-700">
                             <CheckCircle size={14} />
-                            Approve
+                            {t("manager.breaks.approve") || "Approve"}
                           </span>
                         ),
                         onClick: () => openApproveModal(b),
@@ -509,7 +507,7 @@ export function RescheduleBooking() {
                         label: (
                           <span className="flex items-center gap-2 text-xs font-semibold text-indigo-700">
                             <Clock size={14} />
-                            Suggest new time
+                            {t("manager.bookings.rescheduleTime") || "Suggest new time"}
                           </span>
                         ),
                         onClick: () => openSuggestModal(b),
@@ -520,7 +518,7 @@ export function RescheduleBooking() {
                         label: (
                           <span className="flex items-center gap-2 text-xs font-semibold text-rose-700">
                             <XCircle size={14} />
-                            Reject
+                            {t("manager.breaks.reject") || "Reject"}
                           </span>
                         ),
                         onClick: () => openRejectModal(b),
@@ -551,7 +549,7 @@ export function RescheduleBooking() {
                               <Clock size={12} className="text-[#a88a9f]" />
                               <span>{formatTime(b.startTime)}</span>
                             </div>
-                            <p className="text-[10px] text-[#a88a9f] mt-0.5">Service: {b.serviceName || "Nail Service"}</p>
+                            <p className="text-[10px] text-[#a88a9f] mt-0.5">{t("manager.payments.services") || "Service"}: {b.serviceName || "Nail Service"}</p>
                           </div>
                         </td>
 
@@ -572,11 +570,11 @@ export function RescheduleBooking() {
                           <div>
                             {isPending ? (
                               <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[10px] font-bold text-amber-700">
-                                Pending Action
+                                {t("manager.common.actions") || "Pending Action"}
                               </span>
                             ) : (
                               <span className="inline-flex rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-0.5 text-[10px] font-bold text-indigo-700">
-                                Awaiting Customer
+                                {t("manager.dashboard.statusWaiting") || "Awaiting Customer"}
                               </span>
                             )}
 
@@ -633,11 +631,10 @@ export function RescheduleBooking() {
           <div>
             {/* Accent header bar */}
             <div
-              className={`h-1.5 w-full ${
-                confirmAction.type === "approve"
-                  ? "bg-gradient-to-r from-emerald-400 to-emerald-600"
-                  : "bg-gradient-to-r from-rose-400 to-rose-600"
-              }`}
+              className={`h-1.5 w-full ${confirmAction.type === "approve"
+                ? "bg-gradient-to-r from-emerald-400 to-emerald-600"
+                : "bg-gradient-to-r from-rose-400 to-rose-600"
+                }`}
             />
             <div className="p-6">
               <div className="flex flex-col items-center text-center">
@@ -645,9 +642,8 @@ export function RescheduleBooking() {
                   initial={{ scale: 0.6, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ type: "spring", stiffness: 260, damping: 18 }}
-                  className={`mx-auto flex h-14 w-14 items-center justify-center rounded-full mb-4 ${
-                    confirmAction.type === "approve" ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
-                  }`}
+                  className={`mx-auto flex h-14 w-14 items-center justify-center rounded-full mb-4 ${confirmAction.type === "approve" ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
+                    }`}
                 >
                   {confirmAction.type === "approve" ? <CheckCircle size={26} /> : <AlertTriangle size={26} />}
                 </motion.div>
@@ -703,11 +699,10 @@ export function RescheduleBooking() {
                 <button
                   disabled={isActionLoading}
                   onClick={handleConfirmAction}
-                  className={`h-10 flex-1 rounded-xl text-xs font-bold text-white shadow-sm transition-all disabled:opacity-60 ${
-                    confirmAction.type === "approve"
-                      ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/15"
-                      : "bg-rose-600 hover:bg-rose-700 shadow-rose-600/15"
-                  }`}
+                  className={`h-10 flex-1 rounded-xl text-xs font-bold text-white shadow-sm transition-all disabled:opacity-60 ${confirmAction.type === "approve"
+                    ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/15"
+                    : "bg-rose-600 hover:bg-rose-700 shadow-rose-600/15"
+                    }`}
                 >
                   {isActionLoading ? "Processing..." : confirmAction.type === "approve" ? "Confirm Approve" : "Confirm Reject"}
                 </button>

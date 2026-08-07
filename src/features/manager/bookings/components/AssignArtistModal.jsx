@@ -6,11 +6,13 @@ import toast from "react-hot-toast";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { assignArtistToBooking, assignArtistToBookingOld, fetchSalonStaff, fetchArtistBusySlots } from "../services/bookingsService";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 function getStaffDisplayName(staff) {
+  const { language } = useLanguage();
   const rawName = [staff?.firstName, staff?.lastName].filter(Boolean).join(" ").trim();
   if (rawName) return rawName;
-  return staff?.fullName || staff?.name || staff?.email || "Unknown staff";
+  return staff?.fullName || staff?.name || staff?.email || (language === "vi" ? "Chưa có nhân viên" : "Unknown staff");
 }
 
 function getStaffKey(staff) {
@@ -45,6 +47,7 @@ export function AssignArtistModal({
   const [isLoadingBusySlots, setIsLoadingBusySlots] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [selectedSlotData, setSelectedSlotData] = useState(null);
+  const { language } = useLanguage();
 
   useEffect(() => {
     if (!open) return;
@@ -69,7 +72,7 @@ export function AssignArtistModal({
         setStaffList(artists);
       } catch (err) {
         console.error("Failed to load salon staff:", err);
-        toast.error("Failed to load salon staff.");
+        toast.error(language === "vi" ? "Lỗi khi tải danh sách nhân viên" : "Failed to load salon staff.");
         if (!isCancelled) setStaffList([]);
       } finally {
         if (!isCancelled) setIsLoadingStaff(false);
@@ -141,7 +144,7 @@ export function AssignArtistModal({
         }
       } catch (err) {
         console.error("Error in fetchSlots:", err);
-        toast.error("The nail artist has no scheduled appointments for this day.");
+        toast.error(language === "vi" ? "Nhân viên chưa có lịch hẹn vào ngày này" : "The nail artist has no scheduled appointments for this day.");
         setAvailableSlots([]);
         setBusySlots([]);
       } finally {
@@ -156,15 +159,15 @@ export function AssignArtistModal({
     const staffKey = getStaffKey(selectedStaff);
 
     if (!normalizedBookingId) {
-      toast.error("Booking ID is required.");
+      toast.error(language === "vi" ? "Booking ID không được để trống" : "Booking ID is required.");
       return;
     }
     if (!staffKey) {
-      toast.error("Please select a staff artist.");
+      toast.error(language === "vi" ? "Vui lòng chọn nhân viên" : "Please select a staff artist.");
       return;
     }
     if (!selectedSlotData) {
-      toast.error("Please select an available time slot.");
+      toast.error(language === "vi" ? "Vui lòng chọn khung giờ" : "Please select an available time slot.");
       return;
     }
 
@@ -204,46 +207,46 @@ export function AssignArtistModal({
         setSelectedSlotData(null);
       }}
       confirmLoading={isSubmitting}
-      okText="Confirm"
-      cancelText="Cancel"
+      okText={language === "vi" ? "Xác nhận" : "Confirm"}
+      cancelText={language === "vi" ? "Hủy" : "Cancel"}
       okButtonProps={{
-        style: { 
-          backgroundColor: "#ea4f93", 
-          color: "#fff", 
-          borderRadius: 9999, 
+        style: {
+          backgroundColor: "#ea4f93",
+          color: "#fff",
+          borderRadius: 9999,
           fontWeight: 700,
           padding: "8px 20px"
         },
         disabled: !canConfirm,
       }}
-      cancelButtonProps={{ 
-        style: { 
-          borderRadius: 9999, 
+      cancelButtonProps={{
+        style: {
+          borderRadius: 9999,
           fontWeight: 700,
           padding: "8px 20px"
-        } 
+        }
       }}
       width={800}
       centered
       destroyOnClose
       styles={{
-        content: { 
-          padding: 0, 
-          borderRadius: 32, 
-          overflow: "hidden" 
+        content: {
+          padding: 0,
+          borderRadius: 32,
+          overflow: "hidden"
         },
         body: { padding: 0 },
         mask: { backdropFilter: "blur(8px)" },
       }}
     >
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
         className="bg-gradient-to-br from-[#fff0f8] via-[#fff5fb] to-[#fff9ff] px-7 pb-12 pt-7"
       >
         <div className="flex items-center gap-5">
-          <motion.div 
+          <motion.div
             whileHover={{ scale: 1.1, rotate: 3 }}
             transition={{ type: "spring", stiffness: 500, damping: 15 }}
             className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-white shadow-[0_15px_30px_rgba(234,79,147,0.25)]"
@@ -251,14 +254,14 @@ export function AssignArtistModal({
             <UserRound size={24} />
           </motion.div>
           <div>
-            <h3 className="text-2xl font-extrabold text-[#3d1f3f] tracking-tight">Assign Staff Artist</h3>
+            <h3 className="text-2xl font-extrabold text-[#3d1f3f] tracking-tight">{language === "vi" ? "Phân công nghệ sĩ" : "Assign Staff Artist"}</h3>
             <p className="mt-2 text-sm text-[#9a5f7f]">
-              Select an artist and time slot to assign to this booking.
+              {language === "vi" ? "Chọn nghệ sĩ và khung giờ để phân công cho lịch hẹn này." : "Select an artist and time slot to assign to this booking."}
             </p>
           </div>
         </div>
       </motion.div>
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut", delay: 0.15 }}
@@ -266,7 +269,7 @@ export function AssignArtistModal({
       >
         <AnimatePresence mode="wait">
           {!selectedStaff ? (
-            <motion.div 
+            <motion.div
               key="staff-list"
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
@@ -275,19 +278,19 @@ export function AssignArtistModal({
             >
               <div className="mb-6 rounded-2xl border border-[#f3d7e7] bg-[#fffafd] p-5">
                 <p className="text-sm text-[#6a5064] leading-relaxed">
-                  Browse the available staff below. Select a staff member to view their available time slots.
+                  {language === "vi" ? "Duyệt qua danh sách nhân viên bên dưới. Chọn một nhân viên để xem các khung giờ có sẵn của họ." : "Browse the available staff below. Select a staff member to view their available time slots."}
                 </p>
               </div>
               {isLoadingStaff ? (
                 <div className="flex items-center justify-center py-12">
-                  <Spin tip="Loading salon staff..." size="large" />
+                  <Spin tip={language === "vi" ? "Đang tải danh sách nhân viên..." : "Loading salon staff..."} size="large" />
                 </div>
               ) : (
                 <div className="grid gap-4 md:grid-cols-2">
                   {staffList.length === 0 ? (
                     <div className="col-span-full text-center py-12 text-[#a67f98]">
                       <UserRound size={48} className="mx-auto mb-3 opacity-50" />
-                      <p className="text-base">No staff available right now.</p>
+                      <p className="text-base">{language === "vi" ? "Hiện không có nhân viên nào" : "No staff available right now."}</p>
                     </div>
                   ) : (
                     staffList.map((staff) => {
@@ -307,7 +310,7 @@ export function AssignArtistModal({
                           className="cursor-pointer rounded-[28px] border border-[#f0cfe1] bg-gradient-to-br from-white to-[#fffafd] p-5 transition-all duration-300 hover:border-[#ea4f93] hover:shadow-[0_15px_35px_rgba(236,72,153,0.12)]"
                         >
                           <div className="flex items-start gap-4">
-                            <motion.div 
+                            <motion.div
                               whileHover={{ scale: 1.08 }}
                               className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#d6c1ff] to-[#8b5cf6] text-base font-extrabold text-white shadow-[0_4px_12px_rgba(139,92,246,0.2)]"
                             >
@@ -346,7 +349,7 @@ export function AssignArtistModal({
               )}
             </motion.div>
           ) : (
-            <motion.div 
+            <motion.div
               key="slots-list"
               initial={{ opacity: 0, x: 10 }}
               animate={{ opacity: 1, x: 0 }}
@@ -356,7 +359,7 @@ export function AssignArtistModal({
               <div className="mb-6 rounded-2xl border border-[#f3d7e7] bg-[#fffafd] p-5">
                 <div className="flex items-center justify-between mb-5">
                   <div className="flex items-center gap-4">
-                    <motion.div 
+                    <motion.div
                       whileHover={{ scale: 1.08 }}
                       className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-base font-extrabold text-white shadow-[0_4px_12px_rgba(234,79,147,0.2)]"
                     >
@@ -382,7 +385,7 @@ export function AssignArtistModal({
                     }}
                     className="px-4 py-2 text-xs font-extrabold text-[#9a5f7f] hover:text-[#ea4f93] bg-[#fff0f8] rounded-full transition-all duration-200 hover:bg-[#fde7f3]"
                   >
-                    ← Change staff
+                    ← {language === "vi" ? "Thay đổi nghệ sĩ" : "Change staff"}
                   </motion.button>
                 </div>
 
@@ -390,7 +393,7 @@ export function AssignArtistModal({
                   <div className="mb-5 rounded-xl border border-[#d1f0de] bg-gradient-to-r from-[#eaf9ee] to-[#e6fff3] px-4 py-3">
                     <p className="flex items-center gap-2 text-sm font-semibold text-[#2fa25f]">
                       <Check size={16} />
-                      Selected Slot: {selectedSlotData.startTime} - {selectedSlotData.endTime}
+                      {language === "vi" ? "Khung giờ đã chọn: " : "Selected Slot: "} {selectedSlotData.startTime} - {selectedSlotData.endTime}
                     </p>
                   </div>
                 )}
@@ -400,7 +403,7 @@ export function AssignArtistModal({
                   <div>
                     <p className="text-xs font-extrabold uppercase tracking-widest text-[#2fa25f] mb-4 flex items-center gap-2">
                       <Clock size={16} />
-                      Available slots
+                      {language === "vi" ? "Khung giờ trống: " : "Available slots: "}
                     </p>
                     {isLoadingBusySlots ? (
                       <div className="flex items-center justify-center py-5">
@@ -438,7 +441,7 @@ export function AssignArtistModal({
                     ) : (
                       <div className="flex items-center gap-3 rounded-xl border border-dashed border-[#b8d9c7] bg-[#f7fffa] px-4 py-4 text-xs text-[#759984]">
                         <Clock size={16} className="opacity-60" />
-                        <span>No available slots found for this date.</span>
+                        <span>{language === "vi" ? "Không tìm thấy khung giờ trống." : "No available slots found for this date."}</span>
                       </div>
                     )}
                   </div>
@@ -448,7 +451,7 @@ export function AssignArtistModal({
                     <div>
                       <p className="text-xs font-extrabold uppercase tracking-widest text-[#a65a7d] mb-4 flex items-center gap-2">
                         <Clock size={16} />
-                        Busy slots
+                        {language === "vi" ? "Khung giờ bận" : "Busy slots"}
                       </p>
                       <div className="flex flex-wrap gap-3">
                         {busySlots.map((slot, index) => (

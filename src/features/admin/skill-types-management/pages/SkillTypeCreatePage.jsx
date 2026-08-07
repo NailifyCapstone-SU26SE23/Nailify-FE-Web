@@ -20,7 +20,7 @@ function validateForm(formValues, t) {
 }
 
 export function SkillTypeCreatePage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [formValues, setFormValues] = useState({ name: "", description: "" });
   const [formError, setFormError] = useState("");

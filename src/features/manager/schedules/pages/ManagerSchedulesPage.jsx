@@ -35,6 +35,7 @@ import { Spin, Alert, Modal, DatePicker, Select, TimePicker, Input, Tooltip, Pro
 import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { EmergencyOffModal } from "../../staff-artist-management/components/EmergencyOffModal";
 import {
   fetchNailArtists,
@@ -180,6 +181,7 @@ const AVATAR_GRADIENTS = [
 ];
 
 export function ManagerSchedulesPage() {
+  const { t, language } = useLanguage();
   const [selectedWeekStart, setSelectedWeekStart] = useState(() => dayjs().startOf("week").add(1, "day"));
   const [staffList, setStaffList] = useState([]);
   const [schedulesList, setSchedulesList] = useState([]);
@@ -440,13 +442,13 @@ export function ManagerSchedulesPage() {
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-[#E84F93]/30 bg-[#E84F93]/10 px-3.5 py-1 text-[11px] font-bold text-[#E84F93] backdrop-blur-md shadow-xs">
                   <Sparkles size={13} className="text-[#E84F93] animate-pulse" />
-                  <span>Salon Staff Rostering & Scheduling</span>
+                  <span>{language === "vi" ? "Quản lý lịch làm việc" : "Salon Staff Rostering & Scheduling"}</span>
                 </div>
                 <h1 className="text-2xl lg:text-3xl font-bold text-[#2B182B] mt-1.5 tracking-tight ">
-                  Staff Schedules
+                  {language === "vi" ? "Lịch làm việc" : "Staff Schedules"}
                 </h1>
                 <p className="mt-1 text-xs lg:text-sm text-[#8C6682] font-semibold leading-relaxed">
-                  Manage weekly shifts, workload capacity, and staff rosters in real-time
+                  {t("manager.schedules.desc") || "Manage weekly shifts, workload capacity, and staff rosters in real-time"}
                 </p>
               </div>
             </div>
@@ -459,7 +461,7 @@ export function ManagerSchedulesPage() {
                 className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#E84F93] via-[#EC4899] to-[#F43F5E] px-6 py-3 text-xs font-bold text-white shadow-[0_10px_25px_rgba(232,79,147,0.35)] hover:shadow-xl transition-all"
               >
                 <Plus size={17} />
-                <span>Add Shift Schedule</span>
+                <span>{language === "vi" ? "Thêm lịch làm việc" : "Add Shift Schedule"}</span>
               </motion.button>
             </div>
           </div>
@@ -468,7 +470,7 @@ export function ManagerSchedulesPage() {
           <div className="grid gap-3.5 pt-6 mt-6 border-t border-[#F3D6E5] grid-cols-2 md:grid-cols-4">
             <div className="rounded-2xl border border-[#F3D6E5] bg-white/80 p-4 backdrop-blur-md hover:border-[#E84F93] transition shadow-2xs group">
               <div className="flex items-center justify-between">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">Salon Staff</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">{language === "vi" ? "Nhân viên" : "Salon Staff"}</p>
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#E84F93]/15 text-[#E84F93] group-hover:scale-110 transition">
                   <Users size={16} />
                 </div>
@@ -476,35 +478,35 @@ export function ManagerSchedulesPage() {
               <p className="mt-2 text-2xl font-bold text-[#2B182B]">{staffList.length}</p>
               <div className="flex items-center gap-1.5 mt-1">
                 <span className="h-2 w-2 rounded-full bg-[#10B981] animate-pulse" />
-                <span className="text-[10px] text-[#8C6682] font-semibold">Active Nail Artists</span>
+                <span className="text-[10px] text-[#8C6682] font-semibold">{language === "vi" ? "Nhân viên làm việc" : "Active Nail Artists"}</span>
               </div>
             </div>
 
             <div className="rounded-2xl border border-[#F3D6E5] bg-white/80 p-4 backdrop-blur-md hover:border-[#10B981] transition shadow-2xs group">
               <div className="flex items-center justify-between">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">Shifts Today</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">{language === "vi" ? "Ca làm việc hôm nay" : "Shifts Today"}</p>
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#10B981]/15 text-[#10B981] group-hover:scale-110 transition">
                   <UserCheck size={16} />
                 </div>
               </div>
               <p className="mt-2 text-2xl font-bold text-[#059669]">{activeTodayCount}</p>
-              <p className="text-[10px] text-[#8C6682] font-semibold mt-1">Staff On Duty Today</p>
+              <p className="text-[10px] text-[#8C6682] font-semibold mt-1">{language === "vi" ? "Nhân viên làm việc hôm nay" : "Staff On Duty Today"}</p>
             </div>
 
             <div className="rounded-2xl border border-[#F3D6E5] bg-white/80 p-4 backdrop-blur-md hover:border-[#6366F1] transition shadow-2xs group">
               <div className="flex items-center justify-between">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">Scheduled Hours</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">{language === "vi" ? "Ca làm việc" : "Scheduled Hours"}</p>
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#6366F1]/15 text-[#6366F1] group-hover:scale-110 transition">
                   <Clock size={16} />
                 </div>
               </div>
               <p className="mt-2 text-2xl font-bold text-[#4F46E5]">{totalWeeklyHours}h</p>
-              <p className="text-[10px] text-[#8C6682] font-semibold mt-1">Total Hours This Week</p>
+              <p className="text-[10px] text-[#8C6682] font-semibold mt-1">{language === "vi" ? "Tổng giờ làm việc" : "Total Hours This Week"}</p>
             </div>
 
             <div className="rounded-2xl border border-[#F3D6E5] bg-white/80 p-4 backdrop-blur-md hover:border-[#F59E0B] transition shadow-2xs group">
               <div className="flex items-center justify-between">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">Week Span</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">{language === "vi" ? "Tuần làm việc" : "Week Span"}</p>
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F59E0B]/15 text-[#F59E0B] group-hover:scale-110 transition">
                   <CalendarIcon size={16} />
                 </div>
@@ -512,7 +514,7 @@ export function ManagerSchedulesPage() {
               <p className="mt-2 text-xs font-bold text-[#B45309] py-1">
                 {selectedWeekStart.format("MMM D")} – {selectedWeekStart.add(6, "day").format("MMM D, YYYY")}
               </p>
-              <p className="text-[10px] text-[#8C6682] font-semibold">7-Day Weekly Roster</p>
+              <p className="text-[10px] text-[#8C6682] font-semibold">{language === "vi" ? "Tuần làm việc" : "Week Span"}</p>
             </div>
           </div>
         </div>
@@ -537,7 +539,7 @@ export function ManagerSchedulesPage() {
             className="rounded-xl border border-[#F3D6E5] bg-gradient-to-r from-[#FFF0F5] to-[#FFE4EE] px-4 py-2 text-xs font-bold text-[#E84F93] hover:from-[#FFE4EE] hover:to-[#FFD6E7] transition shadow-2xs flex items-center gap-2"
           >
             <CalendarIcon size={14} />
-            <span>Current Week</span>
+            <span>{language === "vi" ? "Tuần này" : "Current Week"}</span>
           </button>
           <button
             type="button"
@@ -581,7 +583,7 @@ export function ManagerSchedulesPage() {
             title="Manager trigger Emergency Off for artist leave"
           >
             <ShieldAlert size={15} />
-            <span>Emergency Off</span>
+            <span>{t("manager.schedules.emergencyOff") || "Emergency Off"}</span>
           </button>
 
           {/* Toggle Shift Times Button */}
@@ -595,7 +597,7 @@ export function ManagerSchedulesPage() {
             title="Toggle working time visibility for staff shifts"
           >
             {showShiftTimes ? <Eye size={15} /> : <EyeOff size={15} />}
-            <span>{showShiftTimes ? "Shift Times: Visible" : "Shift Times: Hidden"}</span>
+            <span>{showShiftTimes ? language === 'vi' ? 'Giờ làm việc: Hiển thị' : 'Shift Times: Visible' : language === 'vi' ? 'Giờ làm việc: Ẩn' : 'Shift Times: Hidden'}</span>
           </button>
 
           <div className="relative min-w-[240px]">
@@ -603,7 +605,7 @@ export function ManagerSchedulesPage() {
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search staff artist..."
+              placeholder={language === 'vi' ? 'Tìm kiếm thợ nail...' : 'Search staff artist...'}
               className="h-10 w-full rounded-xl border border-[#F3D7E4] bg-[#FFFDFE] pl-10 pr-4 text-xs font-medium text-[#2B182B] outline-none hover:border-[#F0B7CF] focus:border-[#E84F93] transition"
             />
           </div>
@@ -614,7 +616,7 @@ export function ManagerSchedulesPage() {
       <motion.div variants={fadeInUp} className="flex items-center gap-2 overflow-x-auto pb-1">
         <span className="text-[11px] font-bold uppercase text-[#9E8497] tracking-wider mr-1 flex items-center gap-1.5 shrink-0">
           <Filter size={13} className="text-[#E84F93]" />
-          <span>Focus Day:</span>
+          <span>{language === 'vi' ? 'Ngày làm việc:' : 'Focus Day:'}</span>
         </span>
         <button
           type="button"
@@ -624,7 +626,7 @@ export function ManagerSchedulesPage() {
             : "bg-white text-[#8C6682] border border-[#F3D6E5] hover:border-[#E84F93]"
             }`}
         >
-          All 7 Days
+          {language === 'vi' ? 'Cả tuần' : 'All 7 Days'}
         </button>
 
         {weekDays.map((d) => {
@@ -666,7 +668,7 @@ export function ManagerSchedulesPage() {
                 <th className="w-64 p-4.5 text-left border-r border-[#F3E2EC]">
                   <div className="flex items-center gap-2 text-[#2B182B] font-bold uppercase text-[11px] tracking-wider">
                     <Users size={15} className="text-[#E84F93]" />
-                    <span>Staff Artist ({filteredStaff.length})</span>
+                    <span>{language === 'vi' ? 'Thợ nail' : 'Staff Artist'} ({filteredStaff.length})</span>
                   </div>
                 </th>
                 {displayedWeekDays.map((d) => {
@@ -695,7 +697,7 @@ export function ManagerSchedulesPage() {
                         </span>
                         {isToday && (
                           <span className="rounded-full bg-gradient-to-r from-[#E84F93] to-[#F43F5E] px-2 py-0.5 text-[9px] font-bold text-white uppercase tracking-wider shadow-2xs">
-                            Today
+                            {language === 'vi' ? 'Hôm nay' : 'Today'}
                           </span>
                         )}
                       </div>
@@ -712,8 +714,8 @@ export function ManagerSchedulesPage() {
                       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#FFF0F5] text-[#E84F93]">
                         <Users size={32} />
                       </div>
-                      <p className="font-bold text-sm text-[#5C4559]">No staff artists found</p>
-                      <p className="text-xs text-[#A88A9F]">Try searching another name or add staff to this salon.</p>
+                      <p className="font-bold text-sm text-[#5C4559]">{language === 'vi' ? 'Không tìm thấy thợ' : 'No staff artists found'}</p>
+                      <p className="text-xs text-[#A88A9F]">{language === 'vi' ? 'Thử tìm kiếm tên khác hoặc thêm thợ vào tiệm.' : 'Try searching another name or add staff to this salon.'}</p>
                     </div>
                   </td>
                 </tr>
@@ -855,8 +857,8 @@ export function ManagerSchedulesPage() {
                 <Plus size={22} />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-[#2B182B]  tracking-tight">Add Staff Work Shift</h3>
-                <p className="text-xs text-[#9E8497] font-semibold">Assign shift schedule to salon nail artist</p>
+                <h3 className="text-lg font-bold text-[#2B182B]  tracking-tight">{language === 'vi' ? "Thêm ca làm việc" : "Add Staff Work Shift"}</h3>
+                <p className="text-xs text-[#9E8497] font-semibold">{language === 'vi' ? "Lịch làm việc" : "Add shift schedule to salon nail artist"}</p>
               </div>
             </div>
             <button
@@ -872,7 +874,7 @@ export function ManagerSchedulesPage() {
             {/* Quick Shift Presets */}
             <div>
               <label className="block mb-2 text-[#9E8497] uppercase text-[10px] tracking-widest font-bold">
-                Select Shift Preset
+                {language === 'vi' ? "Chọn ca làm việc" : "Select Shift Preset"}
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 <button
@@ -884,7 +886,7 @@ export function ManagerSchedulesPage() {
                     }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold flex items-center gap-1">☀️ Morning</span>
+                    <span className="text-[11px] font-bold flex items-center gap-1">☀️ {language === 'vi' ? "Buổi sáng" : "Morning"}</span>
                     {activePreset === "MORNING" && <Check size={13} className="text-[#3B82F6]" />}
                   </div>
                   <span className="text-[9px] font-bold mt-1 opacity-80">08:00 AM - 04:00 PM</span>
@@ -899,7 +901,7 @@ export function ManagerSchedulesPage() {
                     }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold flex items-center gap-1">🌙 Evening</span>
+                    <span className="text-[11px] font-bold flex items-center gap-1">🌙 {language === 'vi' ? "Buổi tối" : "Evening"}</span>
                     {activePreset === "EVENING" && <Check size={13} className="text-[#F59E0B]" />}
                   </div>
                   <span className="text-[9px] font-bold mt-1 opacity-80">12:00 PM - 08:00 PM</span>
@@ -914,7 +916,7 @@ export function ManagerSchedulesPage() {
                     }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold flex items-center gap-1">⭐ Full Day</span>
+                    <span className="text-[11px] font-bold flex items-center gap-1">⭐ {language === 'vi' ? "Cả ngày" : "Full Day"}</span>
                     {activePreset === "FULLDAY" && <Check size={13} className="text-[#10B981]" />}
                   </div>
                   <span className="text-[9px] font-bold mt-1 opacity-80">08:00 AM - 11:30 PM</span>
@@ -929,7 +931,7 @@ export function ManagerSchedulesPage() {
                     }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold flex items-center gap-1">⚡ Short</span>
+                    <span className="text-[11px] font-bold flex items-center gap-1">⚡ {language === 'vi' ? "Ngắn" : "Short"}</span>
                     {activePreset === "SHORT" && <Check size={13} className="text-[#8B5CF6]" />}
                   </div>
                   <span className="text-[9px] font-bold mt-1 opacity-80">08:00 AM - 09:00 AM</span>
@@ -939,11 +941,12 @@ export function ManagerSchedulesPage() {
 
             {/* Select Staff Artist with Rich Options */}
             <div>
-              <label className="block mb-1.5 text-[#9E8497] uppercase text-[10px] tracking-widest font-bold">Select Staff Artist</label>
+              <label className="block mb-1.5 text-[#9E8497] uppercase text-[10px] tracking-widest font-bold">{language === 'vi' ? "Chọn thợ làm móng" : "Select Staff Artist"}</label>
               <Select
                 value={formArtistId}
                 onChange={(val) => setFormArtistId(val)}
                 className="w-full h-12"
+                placeholder={language === 'vi' ? "Chọn thợ làm móng" : "Select Staff Artist"}
                 options={staffList.map((s) => ({
                   label: (
                     <div className="flex items-center gap-2.5 py-0.5">
@@ -960,7 +963,7 @@ export function ManagerSchedulesPage() {
             </div>
 
             <div>
-              <label className="block mb-1.5 text-[#9E8497] uppercase text-[10px] tracking-widest font-bold">Work Date</label>
+              <label className="block mb-1.5 text-[#9E8497] uppercase text-[10px] tracking-widest font-bold">{language === 'vi' ? "Ngày làm việc" : "Work Date"}</label>
               <DatePicker
                 value={formWorkDate}
                 onChange={(d) => d && setFormWorkDate(d)}
@@ -972,7 +975,7 @@ export function ManagerSchedulesPage() {
             {/* Custom Clean Time Selects */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block mb-1.5 text-[#9E8497] uppercase text-[10px] tracking-widest font-bold">Shift Start Time</label>
+                <label className="block mb-1.5 text-[#9E8497] uppercase text-[10px] tracking-widest font-bold">{language === 'vi' ? "Giờ bắt đầu" : "Shift Start Time"}</label>
                 <Select
                   value={formStartTimeStr}
                   onChange={(val) => setFormStartTimeStr(val)}
@@ -982,7 +985,7 @@ export function ManagerSchedulesPage() {
               </div>
 
               <div>
-                <label className="block mb-1.5 text-[#9E8497] uppercase text-[10px] tracking-widest font-bold">Shift End Time</label>
+                <label className="block mb-1.5 text-[#9E8497] uppercase text-[10px] tracking-widest font-bold">{language === 'vi' ? "Giờ kết thúc" : "Shift End Time"}</label>
                 <Select
                   value={formEndTimeStr}
                   onChange={(val) => setFormEndTimeStr(val)}
@@ -993,7 +996,7 @@ export function ManagerSchedulesPage() {
             </div>
 
             <div>
-              <label className="block mb-1.5 text-[#9E8497] uppercase text-[10px] tracking-widest font-bold">Shift Status</label>
+              <label className="block mb-1.5 text-[#9E8497] uppercase text-[10px] tracking-widest font-bold">{language === 'vi' ? "Trạng thái ca làm" : "Shift Status"}</label>
               <Select
                 value={formStatus}
                 onChange={(val) => setFormStatus(val)}
@@ -1011,7 +1014,7 @@ export function ManagerSchedulesPage() {
                 onClick={() => setIsAddModalOpen(false)}
                 className="rounded-full border border-[#F3D7E4] px-6 py-3 text-xs font-bold text-[#2B182B] hover:bg-[#FAF0F5] transition"
               >
-                Cancel
+                {language === 'vi' ? "Hủy" : "Cancel"}
               </button>
               <button
                 type="button"
@@ -1019,7 +1022,7 @@ export function ManagerSchedulesPage() {
                 disabled={isSubmitting}
                 className="rounded-full bg-gradient-to-r from-[#E84F93] via-[#EC4899] to-[#F43F5E] px-7 py-3 text-xs font-bold text-white shadow-md hover:shadow-lg transition"
               >
-                {isSubmitting ? "Saving..." : "Create Shift Schedule"}
+                {isSubmitting ? (language === 'vi' ? "Đang lưu..." : "Saving...") : (language === 'vi' ? "Tạo lịch làm việc" : "Create Shift Schedule")}
               </button>
             </div>
           </div>

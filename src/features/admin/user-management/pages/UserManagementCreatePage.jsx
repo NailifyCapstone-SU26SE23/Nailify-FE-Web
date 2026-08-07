@@ -11,7 +11,7 @@ import { UserManagementSnapshotCard } from "../components/UserManagementSnapshot
 import { createAdminUser } from "../services/userManagementService";
 
 export function UserManagementCreatePage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [formValues, setFormValues] = useState(() => ({
     firstName: "",

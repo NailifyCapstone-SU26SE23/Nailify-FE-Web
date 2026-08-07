@@ -32,10 +32,22 @@ export function LanguageProvider({ children }) {
     }
   };
 
-  const t = (key) => {
+  const t = (key, options) => {
     if (!key) return "";
     const keys = key.split(".");
     
+    // Helper to format string with options
+    const formatString = (str) => {
+      if (str !== undefined && typeof str === "string" && options && typeof options === "object") {
+        let formatted = str;
+        for (const [k, v] of Object.entries(options)) {
+          formatted = formatted.replace(new RegExp(`\\{\\{\\s*${k}\\s*\\}\\}`, "g"), String(v));
+        }
+        return formatted;
+      }
+      return str;
+    };
+
     // 1. Try selected language
     let val = translations[language];
     for (const k of keys) {
@@ -46,7 +58,7 @@ export function LanguageProvider({ children }) {
         break;
       }
     }
-    if (val !== undefined && typeof val === "string") return val;
+    if (val !== undefined && typeof val === "string") return formatString(val);
 
     // 2. Try English fallback
     let fallbackVal = translations["en"];
@@ -58,7 +70,7 @@ export function LanguageProvider({ children }) {
         break;
       }
     }
-    if (fallbackVal !== undefined && typeof fallbackVal === "string") return fallbackVal;
+    if (fallbackVal !== undefined && typeof fallbackVal === "string") return formatString(fallbackVal);
 
     // 3. Try Vietnamese fallback
     let fallbackViVal = translations["vi"];
@@ -70,7 +82,7 @@ export function LanguageProvider({ children }) {
         break;
       }
     }
-    if (fallbackViVal !== undefined && typeof fallbackViVal === "string") return fallbackViVal;
+    if (fallbackViVal !== undefined && typeof fallbackViVal === "string") return formatString(fallbackViVal);
 
     // Return key itself as last resort
     return key;

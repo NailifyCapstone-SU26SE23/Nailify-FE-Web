@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { DatePicker, Spin, Select, Modal, Input } from "antd";
+import { DatePicker, Spin, Select, Modal, Input, Tooltip } from "antd";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
 import {
@@ -24,9 +24,10 @@ import {
   ClipboardList,
   ClipboardClock,
   CircleCheck,
-  CircleX,
+  CircleX, Eye
 } from "lucide-react";
 import { Pagination } from "../../../../shared/components/common/Pagination";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { EmptyState } from "../../../../shared/components/common/EmptyState";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import {
@@ -37,6 +38,7 @@ import {
 } from "../../../core/breaks/services/breakService";
 
 export function ManagerArtistBreakPage() {
+  const { t, language } = useLanguage();
   const [breaks, setBreaks] = useState([]);
   const [artists, setArtists] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,6 +58,7 @@ export function ManagerArtistBreakPage() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedBreak, setSelectedBreak] = useState(null);
   const [rejectReasonInput, setRejectReasonInput] = useState("");
 
@@ -74,6 +77,7 @@ export function ManagerArtistBreakPage() {
   const loadBreaks = useCallback(async () => {
     try {
       setIsLoading(true);
+
       const response = await fetchBreaks({
         pageNumber: currentPage,
         pageSize,
@@ -86,12 +90,18 @@ export function ManagerArtistBreakPage() {
         setMetaData(response.metaData || null);
       }
     } catch (error) {
-      console.error("Failed to load break requests:", error);
-      toast.error(error.message || "Failed to load break request list.");
+      console.error(error);
+
+      toast.error(
+        error.message ||
+        (language === "vi"
+          ? "Không tải được danh sách yêu cầu nghỉ."
+          : "Failed to load break request list.")
+      );
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, filterArtistId, filterDate]);
+  }, [currentPage, filterArtistId, filterDate, language]);
 
   useEffect(() => {
     loadArtists();
@@ -104,9 +114,9 @@ export function ManagerArtistBreakPage() {
   const getArtistName = useCallback(
     (artistId) => {
       const artist = artists.find((a) => String(a.id) === String(artistId));
-      return artist ? artist.name : "Nail Artist";
+      return artist ? artist.name : language === 'vi' ? 'Nail Artist' : 'Nail Artist';
     },
-    [artists]
+    [artists, language]
   );
 
   // Client-side filtering by status and search query
@@ -157,12 +167,12 @@ export function ManagerArtistBreakPage() {
       await approveRejectBreakRequest(selectedBreak.nailArtistBreakId, {
         status: "Approved",
       });
-      toast.success("Nail artist break request approved successfully!");
+      toast.success(language === 'vi' ? 'Duyệt yêu cầu nghỉ thành công!' : 'Nail artist break request approved successfully!');
       setIsApproveModalOpen(false);
       setSelectedBreak(null);
       loadBreaks();
     } catch (error) {
-      toast.error(error.message || "Failed to approve break request.");
+      toast.error(error.message || (language === 'vi' ? 'Không duyệt được yêu cầu nghỉ.' : 'Failed to approve break request.'));
     } finally {
       setIsActionLoading(false);
     }
@@ -175,15 +185,15 @@ export function ManagerArtistBreakPage() {
       setIsActionLoading(true);
       await approveRejectBreakRequest(selectedBreak.nailArtistBreakId, {
         status: "Rejected",
-        rejectReason: rejectReasonInput.trim() || "Request declined due to shift coverage requirements.",
+        rejectReason: rejectReasonInput.trim() || (language === 'vi' ? 'Không duyệt được yêu cầu nghỉ.' : 'Request declined due to shift coverage requirements.'),
       });
-      toast.success("Break request declined successfully.");
+      toast.success(language === 'vi' ? 'Từ chối yêu cầu nghỉ thành công!' : 'Break request declined successfully!');
       setIsRejectModalOpen(false);
       setSelectedBreak(null);
       setRejectReasonInput("");
       loadBreaks();
     } catch (error) {
-      toast.error(error.message || "Failed to decline break request.");
+      toast.error(error.message || (language === 'vi' ? 'Không từ chối được yêu cầu nghỉ.' : 'Failed to decline break request.'));
     } finally {
       setIsActionLoading(false);
     }
@@ -195,12 +205,12 @@ export function ManagerArtistBreakPage() {
     try {
       setIsActionLoading(true);
       await deleteBreakRequest(selectedBreak.nailArtistBreakId);
-      toast.success("Break request deleted successfully.");
+      toast.success(language === 'vi' ? 'Xóa yêu cầu nghỉ thành công!' : 'Break request deleted successfully!');
       setIsDeleteOpen(false);
       setSelectedBreak(null);
       loadBreaks();
     } catch (error) {
-      toast.error(error.message || "Failed to delete break request.");
+      toast.error(error.message || (language === 'vi' ? 'Không xóa được yêu cầu nghỉ.' : 'Failed to delete break request.'));
     } finally {
       setIsActionLoading(false);
     }
@@ -216,7 +226,7 @@ export function ManagerArtistBreakPage() {
         return (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 border border-emerald-200/90 shadow-2xs">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-            Approved
+            {language === 'vi' ? 'Đã duyệt' : 'Approved'}
           </span>
         );
       case "rejected":
@@ -225,7 +235,7 @@ export function ManagerArtistBreakPage() {
         return (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700 border border-rose-200/90 shadow-2xs">
             <span className="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
-            Rejected
+            {language === 'vi' ? 'Từ chối' : 'Rejected'}
           </span>
         );
       case "pending":
@@ -234,7 +244,7 @@ export function ManagerArtistBreakPage() {
         return (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800 border border-amber-200/90 shadow-2xs">
             <span className="h-2 w-2 rounded-full bg-amber-500 animate-ping"></span>
-            Pending
+            {language === 'vi' ? 'Chờ duyệt' : 'Pending'}
           </span>
         );
     }
@@ -264,14 +274,14 @@ export function ManagerArtistBreakPage() {
         <div className="relative z-10 flex flex-wrap items-center justify-between gap-6">
           <div className="space-y-1.5 max-w-2xl">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1 text-xs font-bold text-[#F2D6E3] backdrop-blur-md border border-white/15">
-              <Sparkles size={14} className="text-[#C97A9E]" /> Manager Portal • Shift Management
+              <Sparkles size={14} className="text-[#C97A9E]" /> {language === "vi" ? "Cổng Quản Lý • Quản Lý Ca Làm Việc" : "Manager Portal • Shift Management"}
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white flex items-center gap-3">
               <Coffee size={28} className="text-[#C97A9E]" />
-              Artist Break Requests
+              {language === "vi" ? "Yêu Cầu Nghỉ Của Thợ Nail" : "Artist Break Requests"}
             </h1>
             <p className="text-xs sm:text-sm font-medium text-gray-300 leading-relaxed">
-              Review, approve, or decline shift break requests submitted by salon nail artists in real time.
+              {language === "vi" ? "Xem, duyệt hoặc từ chối yêu cầu nghỉ giải lao do thợ nail salon gửi trong thời gian thực." : "Review, approve, or decline shift break requests submitted by salon nail artists in real time."}
             </p>
           </div>
 
@@ -283,7 +293,7 @@ export function ManagerArtistBreakPage() {
               className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#C97A9E] to-[#B86B8E] px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#C97A9E]/30 hover:scale-105 active:scale-95 transition-all cursor-pointer"
             >
               <AlertCircle size={15} />
-              <span>Review Pending ({stats.pending})</span>
+              <span>{language === "vi" ? "Xem Xét Yêu Cầu Nghỉ" : "Review Pending"} ({stats.pending})</span>
             </button>
 
             <button
@@ -292,7 +302,7 @@ export function ManagerArtistBreakPage() {
               title="Refresh List"
             >
               <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
-              <span className="hidden sm:inline">Refresh</span>
+              <span className="hidden sm:inline">{language === "vi" ? "Làm Mới" : "Refresh"}</span>
             </button>
           </div>
         </div>
@@ -311,7 +321,7 @@ export function ManagerArtistBreakPage() {
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-[#9E4D76] flex items-center gap-1.5">
               <Sparkles size={13} className="text-[#C97A9E]" />
-              Total Requests
+              {language === "vi" ? "Tổng yêu cầu" : "Total Requests"}
             </span>
             <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#FAF0F5] text-[#C97A9E] font-bold text-xs group-hover:scale-110 transition-transform">
               <ClipboardList />
@@ -319,7 +329,7 @@ export function ManagerArtistBreakPage() {
           </div>
           <p className="mt-3 text-3xl font-bold text-[#221F26] tracking-tight">{stats.total}</p>
           <div className="mt-2 flex items-center justify-between pt-2 border-t border-[#F2D6E3]/60">
-            <span className="text-[11px] font-semibold text-[#9E4D76]">All submitted requests</span>
+            <span className="text-[11px] font-semibold text-[#9E4D76]">{language === "vi" ? "Tất cả yêu cầu đã gửi" : "All submitted requests"}</span>
             <ArrowUpRight size={14} className="text-[#C97A9E] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
           </div>
         </div>
@@ -335,7 +345,7 @@ export function ManagerArtistBreakPage() {
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-amber-800 flex items-center gap-1.5">
               <span className="flex h-2 w-2 rounded-full bg-amber-500 animate-ping"></span>
-              Pending Approval
+              {t("manager.breaks.statusPending") || "Pending Approval"}
             </span>
             <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-100/80 text-amber-800 font-bold text-xs group-hover:scale-110 transition-transform">
               <ClipboardClock />
@@ -343,7 +353,7 @@ export function ManagerArtistBreakPage() {
           </div>
           <p className="mt-3 text-3xl font-bold text-amber-950 tracking-tight">{stats.pending}</p>
           <div className="mt-2 flex items-center justify-between pt-2 border-t border-amber-100/60">
-            <span className="text-[11px] font-semibold text-amber-800">Action required</span>
+            <span className="text-[11px] font-semibold text-amber-800">{t("manager.common.actions") || "Action required"}</span>
             <ArrowUpRight size={14} className="text-amber-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
           </div>
         </div>
@@ -359,7 +369,7 @@ export function ManagerArtistBreakPage() {
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
               <CheckCircle2 size={13} className="text-emerald-600" />
-              Approved Breaks
+              {t("manager.breaks.statusApproved") || "Approved Breaks"}
             </span>
             <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-emerald-100/80 text-emerald-800 font-bold text-xs group-hover:scale-110 transition-transform">
               <CircleCheck />
@@ -367,7 +377,7 @@ export function ManagerArtistBreakPage() {
           </div>
           <p className="mt-3 text-3xl font-bold text-emerald-950 tracking-tight">{stats.approved}</p>
           <div className="mt-2 flex items-center justify-between pt-2 border-t border-emerald-100/60">
-            <span className="text-[11px] font-semibold text-emerald-800">Approved shift breaks</span>
+            <span className="text-[11px] font-semibold text-emerald-800">{t("manager.breaks.statusApproved") || "Approved shift breaks"}</span>
             <ArrowUpRight size={14} className="text-emerald-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
           </div>
         </div>
@@ -383,7 +393,7 @@ export function ManagerArtistBreakPage() {
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-rose-800 flex items-center gap-1.5">
               <XCircle size={13} className="text-rose-600" />
-              Rejected Requests
+              {t("manager.breaks.statusRejected") || "Rejected Requests"}
             </span>
             <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-rose-100/80 text-rose-800 font-bold text-xs group-hover:scale-110 transition-transform">
               <CircleX />
@@ -391,7 +401,7 @@ export function ManagerArtistBreakPage() {
           </div>
           <p className="mt-3 text-3xl font-bold text-rose-950 tracking-tight">{stats.rejected}</p>
           <div className="mt-2 flex items-center justify-between pt-2 border-t border-rose-100/60">
-            <span className="text-[11px] font-semibold text-rose-800">Declined requests</span>
+            <span className="text-[11px] font-semibold text-rose-800">{t("manager.breaks.statusRejected") || "Declined requests"}</span>
             <ArrowUpRight size={14} className="text-rose-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
           </div>
         </div>
@@ -402,55 +412,12 @@ export function ManagerArtistBreakPage() {
       {/* Modern Filter Toolbar & Search Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-gray-200/90 bg-white p-4 shadow-sm">
         <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[300px]">
-          {/* Status Filter Segmented Tabs */}
-          {/* <div className="flex items-center gap-1 bg-gray-100/90 p-1.5 rounded-2xl border border-gray-200/50">
-            <button
-              type="button"
-              onClick={() => setFilterStatus("all")}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${filterStatus === "all"
-                ? "bg-white text-[#221F26] shadow-sm scale-102"
-                : "text-gray-500 hover:text-gray-900"
-                }`}
-            >
-              All ({stats.total})
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterStatus("pending")}
-              className={`px-3.5 flex items-center gap-1 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${filterStatus === "pending"
-                ? "bg-amber-500 text-white shadow-md shadow-amber-500/30 scale-102"
-                : "text-amber-800 hover:bg-amber-100/60"
-                }`}
-            >
-              <ClipboardClock size={15} /> <span>Pending ({stats.pending})</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterStatus("approved")}
-              className={`px-3.5 flex items-center gap-1 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${filterStatus === "approved"
-                ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/30 scale-102"
-                : "text-emerald-800 hover:bg-emerald-100/60"
-                }`}
-            >
-              <CheckCircle2 size={15} /> <span>Approved ({stats.approved})</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterStatus("rejected")}
-              className={`px-3.5 flex items-center gap-1 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${filterStatus === "rejected"
-                ? "bg-rose-600 text-white shadow-md shadow-rose-600/30 scale-102"
-                : "text-rose-800 hover:bg-rose-100/60"
-                }`}
-            >
-              <CircleX size={15} /> <span>Rejected ({stats.rejected})</span>
-            </button>
-          </div> */}
 
           {/* Search Query Input */}
           <div className="relative min-w-[200px] flex-1">
             <Input
               prefix={<Search size={14} className="text-gray-400 mr-1" />}
-              placeholder="Search artist or reason..."
+              placeholder={t("manager.bookings.searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               allowClear
@@ -462,10 +429,10 @@ export function ManagerArtistBreakPage() {
         <div className="flex flex-wrap items-center gap-3">
           {/* Artist Filter Dropdown */}
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-gray-500">Artist:</span>
+            <span className="text-xs font-bold text-gray-500">{t("manager.bookings.artist")}:</span>
             <Select
               allowClear
-              placeholder="All Nail Artists"
+              placeholder={language === "vi" ? "Tất cả nhân viên" : "All Nail Artists"}
               loading={isArtistsLoading}
               value={filterArtistId}
               onChange={(value) => {
@@ -485,7 +452,7 @@ export function ManagerArtistBreakPage() {
 
           {/* Date Filter */}
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-gray-500">Date:</span>
+            <span className="text-xs font-bold text-gray-500">{language === "vi" ? "Ngày yêu cầu" : "Request Date"}:</span>
             <DatePicker
               value={filterDate ? dayjs(filterDate) : null}
               onChange={(date, dateString) => {
@@ -494,7 +461,7 @@ export function ManagerArtistBreakPage() {
               }}
               className="rounded-xl border-gray-200 text-xs"
               format="YYYY-MM-DD"
-              placeholder="Select date"
+              placeholder={language === "vi" ? "Chọn ngày" : "Select date"}
             />
           </div>
 
@@ -510,7 +477,7 @@ export function ManagerArtistBreakPage() {
               }}
               className="rounded-2xl bg-gray-100 hover:bg-gray-200 px-3.5 py-1.5 text-xs font-bold text-gray-700 transition cursor-pointer"
             >
-              Reset Filters
+              {language === "vi" ? "Đặt lại bộ lọc" : "Reset Filters"}
             </button>
           )}
         </div>
@@ -520,15 +487,15 @@ export function ManagerArtistBreakPage() {
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-gray-100 shadow-sm space-y-3">
           <Spin size="large" />
-          <span className="text-xs font-bold text-gray-400">Loading break requests from server...</span>
+          <span className="text-xs font-bold text-gray-400">{language === "vi" ? "Đang tải yêu cầu nghỉ từ máy chủ..." : "Loading break requests from server..."}</span>
         </div>
       ) : filteredBreaks.length === 0 ? (
         <EmptyState
-          title="No break requests found"
+          title={language === "vi" ? "Không tìm thấy yêu cầu nghỉ" : "No break requests found"}
           description={
             searchQuery || filterArtistId || filterDate || filterStatus !== "all"
-              ? "No break requests match your current search and filter criteria."
-              : "There are no nail artist break requests submitted yet."
+              ? language === "vi" ? "Không tìm thấy yêu cầu nghỉ phù hợp với tiêu chí tìm kiếm và lọc hiện tại." : "No break requests match your current search and filter criteria."
+              : language === "vi" ? "Chưa có yêu cầu nghỉ giải lao nào được gửi." : "There are no nail artist break requests submitted yet."
           }
         />
       ) : (
@@ -538,13 +505,13 @@ export function ManagerArtistBreakPage() {
               <table className="min-w-full divide-y divide-gray-100">
                 <thead className="bg-gradient-to-r from-[#FAF0F5] via-[#FAF5F8] to-[#FAF0F5]">
                   <tr className="text-left text-[11px] uppercase tracking-wider font-bold text-[#8C4368]">
-                    <th className="px-6 py-4">Nail Artist</th>
-                    <th className="px-6 py-4">Break Date</th>
-                    <th className="px-6 py-4">Time Slot & Duration</th>
-                    <th className="px-6 py-4">Reason</th>
-                    <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4">Rejection Note</th>
-                    <th className="px-6 py-4 text-right">Actions</th>
+                    <th className="px-6 py-4">{t("manager.bookings.artist")}</th>
+                    <th className="px-6 py-4">{language === "vi" ? "Ngày yêu cầu" : "Request Date"}</th>
+                    <th className="px-6 py-4">{t("manager.bookings.time")}</th>
+                    <th className="px-6 py-4">{t("manager.breaks.reason") || "Reason"}</th>
+                    <th className="px-6 py-4">{language === "vi" ? "Trạng thái" : "Status"}</th>
+                    <th className="px-6 py-4">{language === "vi" ? "Ghi chú từ chối" : "Rejection Note"}</th>
+                    <th className="px-6 py-4 text-right">{language === "vi" ? "Thao tác" : "Actions"}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 bg-white">
@@ -630,45 +597,64 @@ export function ManagerArtistBreakPage() {
                           <div className="flex items-center justify-end gap-2">
                             {isPending ? (
                               <>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedBreak(item);
-                                    setIsApproveModalOpen(true);
-                                  }}
-                                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xs shadow-md shadow-emerald-600/20 hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                                >
-                                  <Check size={14} strokeWidth={2.5} /> Approve
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedBreak(item);
-                                    setRejectReasonInput("");
-                                    setIsRejectModalOpen(true);
-                                  }}
-                                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 text-white font-bold text-xs shadow-md shadow-rose-600/20 hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                                >
-                                  <X size={14} strokeWidth={2.5} /> Reject
-                                </button>
+                                <Tooltip title={language === "vi" ? "Xem chi tiết" : "View details"}>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedBreak(item);
+                                      setIsViewModalOpen(true);
+                                    }}
+                                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-sky-200 bg-sky-50 text-sky-600 hover:bg-sky-100 hover:border-sky-300 transition-all cursor-pointer"
+                                  >
+                                    <Eye size={15} />
+                                  </button>
+                                </Tooltip>
+
+                                <Tooltip title={language === "vi" ? "Phê duyệt" : "Approve"}>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedBreak(item);
+                                      setIsApproveModalOpen(true);
+                                    }}
+                                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/20 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                                  >
+                                    <Check size={16} strokeWidth={2.5} />
+                                  </button>
+                                </Tooltip>
+
+                                <Tooltip title={language === "vi" ? "Từ chối" : "Reject"}>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedBreak(item);
+                                      setRejectReasonInput("");
+                                      setIsRejectModalOpen(true);
+                                    }}
+                                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 text-white shadow-md shadow-rose-600/20 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                                  >
+                                    <X size={16} strokeWidth={2.5} />
+                                  </button>
+                                </Tooltip>
                               </>
                             ) : (
                               <span className="text-[11px] font-bold text-gray-400 bg-gray-100 px-2.5 py-1 rounded-lg">
-                                Processed
+                                {t("manager.dashboard.statusDone") || "Processed"}
                               </span>
                             )}
 
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedBreak(item);
-                                setIsDeleteOpen(true);
-                              }}
-                              className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-400 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all cursor-pointer ml-1 shadow-2xs"
-                              title="Delete request record"
-                            >
-                              <Trash2 size={13} />
-                            </button>
+                            <Tooltip title={language === "vi" ? "Xóa yêu cầu" : "Delete request"}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedBreak(item);
+                                  setIsDeleteOpen(true);
+                                }}
+                                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-400 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all cursor-pointer shadow-2xs"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </Tooltip>
                           </div>
                         </td>
                       </tr>
@@ -696,10 +682,10 @@ export function ManagerArtistBreakPage() {
       <ActionConfirmModal
         open={isApproveModalOpen}
         intent="success"
-        title="Approve Break Request?"
-        description="Confirm approval for the nail artist break request during this time slot."
-        confirmText="Approve Request"
-        cancelText="Cancel"
+        title={language === "vi" ? "Phê duyệt yêu cầu nghỉ?" : "Approve Break Request?"}
+        description={language === "vi" ? "Xác nhận phê duyệt yêu cầu nghỉ của nghệ sĩ làm móng trong khung giờ này." : "Confirm approval for the nail artist break request during this time slot."}
+        confirmText={language === "vi" ? "Phê duyệt" : "Approve"}
+        cancelText={language === "vi" ? "Hủy" : "Cancel"}
         onConfirm={handleApprove}
         onCancel={() => {
           setIsApproveModalOpen(false);
@@ -708,11 +694,11 @@ export function ManagerArtistBreakPage() {
         loading={isActionLoading}
         details={[
           {
-            label: "Nail Artist",
+            label: language === "vi" ? "Nhân viên " : "Nail Artist",
             value: selectedBreak ? getArtistName(selectedBreak.nailArtistId) : "",
           },
           {
-            label: "Break Date",
+            label: language === "vi" ? "Ngày yêu cầu nghỉ" : "Break Date",
             value: selectedBreak ? dayjs(selectedBreak.breakDate).format("DD/MM/YYYY") : "",
           },
           {
@@ -743,9 +729,9 @@ export function ManagerArtistBreakPage() {
               <XCircle size={22} />
             </div>
             <div>
-              <h3 className="text-base font-bold text-[#221F26]">Reject Break Request</h3>
+              <h3 className="text-base font-bold text-[#221F26]">{language === "vi" ? "Từ chối yêu cầu nghỉ" : "Reject Break Request"}</h3>
               <p className="text-xs text-gray-500 font-medium">
-                Please provide a reason for declining this request.
+                {language === "vi" ? "Vui lòng cung cấp lý do từ chối yêu cầu nghỉ." : "Please provide a reason for declining this request."}
               </p>
             </div>
           </div>
@@ -753,22 +739,22 @@ export function ManagerArtistBreakPage() {
           {selectedBreak && (
             <div className="p-3.5 bg-rose-50/70 rounded-2xl border border-rose-200/70 text-xs space-y-1.5">
               <p className="font-bold text-rose-950">
-                Nail Artist: {getArtistName(selectedBreak.nailArtistId)}
+                {language === "vi" ? "Nhân viên" : "Nail Artist"}: {getArtistName(selectedBreak.nailArtistId)}
               </p>
               <p className="text-rose-800 font-semibold">
-                Slot: {dayjs(selectedBreak.breakDate).format("DD/MM/YYYY")} ({selectedBreak.startTime?.substring(0, 5)} - {selectedBreak.endTime?.substring(0, 5)})
+                {language === "vi" ? "Ca" : "Slot"}: {dayjs(selectedBreak.breakDate).format("DD/MM/YYYY")} ({selectedBreak.startTime?.substring(0, 5)} - {selectedBreak.endTime?.substring(0, 5)})
               </p>
-              <p className="text-gray-600 italic">Reason: &quot;{selectedBreak.reason || "Shift break"}&quot;</p>
+              <p className="text-gray-600 italic">{language === "vi" ? "Lý do" : "Reason"}: &quot;{selectedBreak.reason || "Shift break"}&quot;</p>
             </div>
           )}
 
           <div className="space-y-1.5">
             <label className="block text-xs font-bold text-[#221F26]">
-              Rejection Reason (Sent to artist):
+              {language === "vi" ? "Lý do từ chối (Gửi cho nhân viên)" : "Rejection Reason (Sent to artist)"}
             </label>
             <Input.TextArea
               rows={3}
-              placeholder="Enter rejection reason (e.g., High customer volume during shift...)"
+              placeholder={language === "vi" ? "Nhập lý do từ chối (Ví dụ: Số lượng khách hàng cao trong ca làm việc...)" : "Enter rejection reason (e.g., High customer volume during shift...)"}
               value={rejectReasonInput}
               onChange={(e) => setRejectReasonInput(e.target.value)}
               className="rounded-2xl border-gray-200 text-xs font-medium py-2 px-3"
@@ -794,10 +780,113 @@ export function ManagerArtistBreakPage() {
               className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 transition cursor-pointer shadow-md shadow-rose-600/20 inline-flex items-center gap-1.5"
             >
               {isActionLoading && <Spin size="small" />}
-              <span>Confirm Rejection</span>
+              <span>{language === "vi" ? "Xác nhận từ chối" : "Confirm Rejection"}</span>
             </button>
           </div>
         </div>
+      </Modal>
+
+      <Modal
+        open={isViewModalOpen}
+        footer={null}
+        centered
+        width={640}
+        onCancel={() => {
+          setIsViewModalOpen(false);
+          setSelectedBreak(null);
+        }}
+      >
+        {selectedBreak && (
+          <div className="space-y-5">
+
+            <div className="flex items-center gap-3">
+              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-[#C97A9E] to-[#9E4D76] text-white flex items-center justify-center text-lg font-bold">
+                {getArtistName(selectedBreak.nailArtistId)
+                  .charAt(0)
+                  .toUpperCase()}
+              </div>
+
+              <div>
+                <h2 className="text-lg font-bold">
+                  {getArtistName(selectedBreak.nailArtistId)}
+                </h2>
+
+                <div className="mt-1">
+                  {getStatusBadge(selectedBreak.status)}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+
+              <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                <p className="text-xs text-gray-400">
+                  {language === "vi" ? "Ngày nghỉ" : "Break Date"}
+                </p>
+
+                <p className="mt-1 font-bold">
+                  {dayjs(selectedBreak.breakDate).format("DD/MM/YYYY")}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                <p className="text-xs text-gray-400">
+                  {language === "vi" ? "Khung giờ" : "Time Slot"}
+                </p>
+
+                <p className="mt-1 font-bold">
+                  {selectedBreak.startTime?.substring(0, 5)} -{" "}
+                  {selectedBreak.endTime?.substring(0, 5)}
+                </p>
+
+                <p className="text-xs text-purple-600 mt-1">
+                  {getSlotDuration(
+                    selectedBreak.startTime,
+                    selectedBreak.endTime
+                  )}
+                </p>
+              </div>
+
+            </div>
+
+            <div className="rounded-2xl border border-gray-100 p-4">
+              <p className="text-xs text-gray-400 mb-2">
+                {language === "vi" ? "Lý do nghỉ" : "Break Reason"}
+              </p>
+
+              <p className="text-sm font-medium whitespace-pre-wrap">
+                {selectedBreak.reason || "-"}
+              </p>
+            </div>
+
+            {selectedBreak.rejectReason && (
+              <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
+                <p className="text-xs font-bold text-rose-500 mb-2">
+                  {language === "vi"
+                    ? "Lý do từ chối"
+                    : "Rejection Reason"}
+                </p>
+
+                <p className="text-sm text-rose-700 whitespace-pre-wrap">
+                  {selectedBreak.rejectReason}
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => {
+                  setIsViewModalOpen(false);
+                  setSelectedBreak(null);
+                }}
+                className="rounded-xl bg-gray-100 px-5 py-2 text-sm font-bold hover:bg-gray-200 transition cursor-pointer"
+              >
+                {language === "vi" ? "Đóng" : "Close"}
+              </button>
+            </div>
+
+          </div>
+        )}
       </Modal>
 
       {/* Delete Confirm Modal */}

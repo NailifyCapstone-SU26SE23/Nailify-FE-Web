@@ -23,6 +23,7 @@ import { ReadOnlyNailPreview } from "../../../../shared/components/common/ReadOn
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import { useQuery } from "@tanstack/react-query";
 import { fetchStaffCustomerDetail, fetchLoyaltyTiers } from "../services/staffBookingService";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -452,6 +453,7 @@ export function StaffBookingConsultationDetail({
     (requiresCustomerNailConfirmation ? isCustomerNailConfirmed : isCurrentDesignConfirmed) &&
     !isServiceCompleted;
   const [isVariantModalOpen, setIsVariantModalOpen] = useState(false);
+  const { language } = useLanguage();
   const hasSelectedNailDesign = Boolean(
     data.design.variantDetail ||
     (
@@ -469,18 +471,18 @@ export function StaffBookingConsultationDetail({
     ),
   );
   const consultationQuestion = hasSelectedNailDesign
-    ? `Does the customer want to continue with the selected nail design - ${data.design.name}?`
-    : "Does the customer want to continue with no nail design ?";
-  const confirmButtonLabel = hasSelectedNailDesign ? "Confirm Current Design" : "Confirm booking";
+    ? (language === "vi" ? `Khách có muốn tiếp tục với thiết kế móng - ${data.design.name}?` : `Does the customer want to continue with the selected nail design - ${data.design.name}?`)
+    : (language === "vi" ? "Khách có muốn tiếp tục không có thiết kế móng?" : "Does the customer want to continue with no nail design ?");
+  const confirmButtonLabel = hasSelectedNailDesign ? (language === "vi" ? "Xác nhận thiết kế hiện tại" : "Confirm Current Design") : (language === "vi" ? "Xác nhận lịch hẹn" : "Confirm booking");
   const confirmCustomerNailButtonLabel = isCustomerNailConfirmed
-    ? "Customer Nail Confirmed"
-    : "Confirm Customer Nail";
+    ? (language === "vi" ? "Đã xác nhận thiết kế khách" : "Customer Nail Confirmed")
+    : (language === "vi" ? "Xác nhận thiết kế khách" : "Confirm Customer Nail");
   const confirmedButtonLabel = isServiceCompleted
-    ? "Service Completed"
+    ? (language === "vi" ? "Dịch vụ hoàn thành" : "Service Completed")
     : hasSelectedNailDesign
-      ? "Current Design Confirmed"
-      : "Booking Confirmed";
-  const chooseAnotherDesignButtonLabel = hasSelectedNailDesign ? "Choose Another Design" : "Choose Design";
+      ? (language === "vi" ? "Đã xác nhận thiết kế" : "Current Design Confirmed")
+      : (language === "vi" ? "Lịch hẹn đã xác nhận" : "Booking Confirmed");
+  const chooseAnotherDesignButtonLabel = hasSelectedNailDesign ? (language === "vi" ? "Chọn thiết kế khác" : "Choose Another Design") : (language === "vi" ? "Chọn thiết kế" : "Choose Design");
 
   const [customerExpanded, setCustomerExpanded] = useState(true);
   const [bookingExpanded, setBookingExpanded] = useState(true);
@@ -532,7 +534,7 @@ export function StaffBookingConsultationDetail({
               </div>
 
               <h2 className="text-sm font-bold uppercase tracking-widest text-[#ea4f93]">
-                Customer Information
+                {language === "vi" ? "Thông tin khách hàng" : "Customer Information"}
               </h2>
             </div>
 
@@ -614,11 +616,11 @@ export function StaffBookingConsultationDetail({
               </div>
 
               <div className="rounded-[12px] border border-[#f5cada] bg-[#fff1f6] px-4 py-3 text-sm text-[#d44b88]">
-                <span className="font-bold">Allergy Note:</span> {data.customer.allergyNote}
+                <span className="font-bold">{language === "vi" ? "Ghi chú:" : "Note:"}</span> {data.customer.allergyNote}
               </div>
 
               <p className="text-sm text-[#7a6275]">
-                <span className="font-medium text-[#a08697]">Customer Preferences:</span>{" "}
+                <span className="font-medium text-[#a08697]">{language === "vi" ? "Sở thích của khách:" : "Customer Preferences:"}</span>{" "}
                 {data.customer.preferences}
               </p>
             </div>
@@ -637,7 +639,7 @@ export function StaffBookingConsultationDetail({
                 </div>
 
                 <h2 className="text-sm font-bold uppercase tracking-widest text-[#ea4f93]">
-                  Booking Information
+                  {language === "vi" ? "Thông tin lịch hẹn" : "Booking Information"}
                 </h2>
 
 
@@ -700,7 +702,7 @@ export function StaffBookingConsultationDetail({
                           <div className={`text-[15px] font-bold tracking-tight ${item.tone === 'success' ? 'text-[#059669]' : 'text-[#3f2a3a]'}`}>
                             {item.value}
                           </div>
-                          <div className="mt-1.5 h-[16px] text-[11px] font-bold text-[#a68b98]">
+                          <div className="mt-1.5 h-[50px] text-[11px] font-bold text-[#a68b98]">
                             {item.note ?? ""}
                           </div>
                         </div>
@@ -727,7 +729,7 @@ export function StaffBookingConsultationDetail({
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2] shadow-inner">
                         <Sparkles size={18} className="text-[#ea4f93]" />
                       </div>
-                      <h2 className="text-sm font-bold uppercase tracking-widest text-[#ea4f93]">Current Selected Nail Design</h2>
+                      <h2 className="text-sm font-bold uppercase tracking-widest text-[#ea4f93]">{language === "vi" ? "Thiết kế móng đang chọn" : "Current Selected Nail Design"}</h2>
                     </div>
                     {canViewVariantDetail ? (
                       <button
@@ -805,7 +807,7 @@ export function StaffBookingConsultationDetail({
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2] shadow-inner">
                     <Search size={18} className="text-[#ea4f93]" />
                   </div>
-                  <h2 className="text-sm font-bold uppercase tracking-widest text-[#ea4f93]">Customer Consultation</h2>
+                  <h2 className="text-sm font-bold uppercase tracking-widest text-[#ea4f93]">{language === "vi" ? "Tư vấn khách hàng" : "Customer Consultation"}</h2>
                 </div>
                 <div className="mt-5 flex flex-col items-center gap-6 text-center">
                   <p className="text-lg font-bold text-[#3f2b3f]">{consultationQuestion}</p>
@@ -857,7 +859,7 @@ export function StaffBookingConsultationDetail({
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2] shadow-inner">
                     <ClipboardCheck size={18} className="text-[#ea4f93]" />
                   </div>
-                  <h2 className="text-sm font-bold uppercase tracking-widest text-[#ea4f93]">Final Confirmation Checklist</h2>
+                  <h2 className="text-sm font-bold uppercase tracking-widest text-[#ea4f93]">{language === "vi" ? "Danh sách kiểm tra xác nhận" : "Final Confirmation Checklist"}</h2>
                 </div>
                 <div className="mt-5 space-y-3">
                   {data.checklist.map((item) => (
@@ -890,13 +892,13 @@ export function StaffBookingConsultationDetail({
                     : "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
                     }`}
                 >
-                  {isServiceInProgress ? "Continue Service" : "Proceed to Service Session"}
+                  {isServiceInProgress ? (language === "vi" ? "Tiếp tục dịch vụ" : "Continue Service") : (language === "vi" ? "Tiến hành phiên dịch vụ" : "Proceed to Service Session")}
                 </button>
                 {!canProceedToService ? (
                   <p className="mt-3 text-xs font-medium text-[#b1859d]">
                     {requiresCustomerNailConfirmation
-                      ? "Confirm current nail before proceeding to the service session."
-                      : "Confirm Current Design before proceeding to the service session."}
+                      ? (language === "vi" ? "Xác nhận thiết kế hiện tại trước khi tiến hành phiên dịch vụ." : "Confirm current nail before proceeding to the service session.")
+                      : (language === "vi" ? "Xác nhận thiết kế trước khi tiến hành phiên dịch vụ." : "Confirm Current Design before proceeding to the service session.")}
                   </p>
                 ) : null}
 
@@ -907,14 +909,14 @@ export function StaffBookingConsultationDetail({
                       onClick={onOpenDesignStudio}
                       className="rounded-[12px] border border-[#f4cada] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
                     >
-                      Open Design Studio
+                      {language === "vi" ? "Mở Studio Thiết kế" : "Open Design Studio"}
                     </button>
                     <button
                       type="button"
                       onClick={onOpenUpdateBooking}
                       className="rounded-[12px] border border-[#f4cada] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
                     >
-                      Add service
+                      {language === "vi" ? "Thêm dịch vụ" : "Add service"}
                     </button>
 
                   </div>
@@ -928,7 +930,7 @@ export function StaffBookingConsultationDetail({
               <article className="rounded-[18px] border border-[#f3d5e2] bg-white p-4 ">
                 <SectionTitle
                   icon={CheckCheck}
-                  title={isServiceInProgress ? "Continue Service" : "Next Actions"}
+                  title={isServiceInProgress ? (language === "vi" ? "Tiếp tục dịch vụ" : "Continue Service") : (language === "vi" ? "Hành động tiếp theo" : "Next Actions")}
                 />
                 <div className="mt-4 space-y-3">
                   {!isServiceInProgress ? (
@@ -939,7 +941,7 @@ export function StaffBookingConsultationDetail({
                         className="flex w-full items-center justify-center gap-2 rounded-[12px] border border-[#f4cada] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
                       >
                         <PencilLine size={13} />
-                        Update Booking
+                        {language === "vi" ? "Cập nhật lịch hẹn" : "Update Booking"}
                       </button>
                       <button
                         type="button"
@@ -947,7 +949,7 @@ export function StaffBookingConsultationDetail({
                         className="flex w-full items-center justify-center gap-2 rounded-[12px] border border-[#f4cada] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
                       >
                         <Search size={13} />
-                        Open Design Studio
+                        {language === "vi" ? "Mở Studio Thiết kế" : "Open Design Studio"}
                       </button>
                     </>
                   ) : null}
@@ -961,7 +963,7 @@ export function StaffBookingConsultationDetail({
                       }`}
                   >
                     <ArrowUp size={13} />
-                    {isServiceInProgress ? "Continue Service" : "Start Service"}
+                    {isServiceInProgress ? (language === "vi" ? "Tiếp tục dịch vụ" : "Continue Service") : (language === "vi" ? "Bắt đầu dịch vụ" : "Start Service")}
                   </button>
                 </div>
               </article>

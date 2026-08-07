@@ -47,6 +47,37 @@ function getRoleTone(role) {
   }
 }
 
+const getRoleLabel = (role, t) => {
+  switch (String(role).trim().toLowerCase()) {
+    case "admin":
+      return t("superAdmin");
+    case "manager":
+      return t("salonManager");
+    case "receptionist":
+      return t("receptionist");
+    case "staff":
+    case "staff_artist":
+      return t("nailArtist");
+    default:
+      return role;
+  }
+};
+
+const getStatusLabel = (status, t) => {
+  switch (status) {
+    case "Active":
+      return t("userManagement.detail.statusActive");
+    case "Inactive":
+      return t("userManagement.detail.statusInactive");
+    case "Pending":
+      return t("userManagement.detail.statusPending");
+    case "Suspended":
+      return t("userManagement.detail.statusSuspended");
+    default:
+      return status;
+  }
+};
+
 function sortUsers(items, sortValue) {
   const [sortKey = "user", sortDirection = "asc"] = String(sortValue || "user-asc").split("-");
   const sortedItems = [...items];
@@ -192,7 +223,7 @@ FilterSelect.propTypes = {
 };
 
 export function UserManagementPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
@@ -454,10 +485,10 @@ export function UserManagementPage() {
       title: <SortableHeader label={t("userManagement.table.assignedRole")} sortKey="role" selectedSort={selectedSort} onToggle={handleHeaderSort} />,
       dataIndex: "displayRole",
       key: "displayRole",
-      render: (value, user) => <SmallTag className={getRoleTone(user.role)}>{value}</SmallTag>,
+      render: (value, user) => <SmallTag className={getRoleTone(user.role)}>{getRoleLabel(user.role || value, t)}</SmallTag>,
     },
     {
-      title: <SortableHeader label="Email" sortKey="email" selectedSort={selectedSort} onToggle={handleHeaderSort} />,
+      title: <SortableHeader label={t("userManagement.detail.email")} sortKey="email" selectedSort={selectedSort} onToggle={handleHeaderSort} />,
       key: "contact",
       render: (_, user) => (
         <div>
@@ -466,7 +497,7 @@ export function UserManagementPage() {
       ),
     },
      {
-      title: <SortableHeader label="Phone" sortKey="phone" selectedSort={selectedSort} onToggle={handleHeaderSort} />,
+      title: <SortableHeader label={t("userManagement.detail.phoneLabel")} sortKey="phone" selectedSort={selectedSort} onToggle={handleHeaderSort} />,
       key: "contact",
       render: (_, user) => (
         <div>
@@ -484,9 +515,9 @@ export function UserManagementPage() {
       title: <SortableHeader label={t("userManagement.table.status")} sortKey="status" selectedSort={selectedSort} onToggle={handleHeaderSort} />,
       dataIndex: "statusLabel",
       key: "statusLabel",
-      render: (value) => (
+      render: (value, user) => (
         <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold ${USER_STATUS_STYLES[value] ?? "bg-[#f5f0f4] text-[#8a7082]"}`}>
-          {value}
+          {getStatusLabel(user.status || value, t)}
         </span>
       ),
     },
@@ -538,7 +569,7 @@ export function UserManagementPage() {
                   className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
                 >
                   <Search size={15} className="mr-2" />
-                  {t("userManagement.table.actions") === "Thao tác" ? "Tìm kiếm" : "Search"}
+                  {t("userManagement.filter.searchButton")}
                 </button>
               </div>
 
@@ -546,24 +577,24 @@ export function UserManagementPage() {
                 <FilterSelect
                   icon={Users}
                   value={selectedRole}
-                  onChange={(value) => {
-                    setSelectedRole(value);
-                    setMetaData((current) => ({ ...current, currentPage: 1 }));
-                  }}
-                  options={roleFilterOptions}
-                  className="min-w-[200px]"
+                  onChange={handleRoleChange}
+                  options={[
+                    { label: t("userManagement.filter.allRoles"), value: ALL_FILTER_VALUE },
+                    ...USER_ROLE_OPTIONS.map((role) => ({
+                      label: getRoleLabel(role, t),
+                      value: role,
+                    })),
+                  ]}
+                  className="min-w-[155px]"
                   placeholder={t("userManagement.filter.allRoles")}
                   disabled={isLoading}
                 />
                 <FilterSelect
                   icon={MapPin}
                   value={selectedSalonId}
-                  onChange={(value) => {
-                    setSelectedSalonId(value);
-                    setMetaData((current) => ({ ...current, currentPage: 1 }));
-                  }}
+                  onChange={handleSalonChange}
                   options={[
-                    { value: ALL_FILTER_VALUE, label: t("userManagement.filter.allSalons") },
+                    { label: t("userManagement.filter.allSalons"), value: ALL_FILTER_VALUE },
                     ...salons.map((salon) => ({
                       value: salon.id,
                       label: salon.name,
@@ -582,7 +613,7 @@ export function UserManagementPage() {
                 className="inline-flex h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
               >
                 <UserPlus size={15} className="mr-2" />
-                {t("userManagement.table.actions") === "Thao tác" ? "Thêm người dùng" : "Add User"}
+                {t("userManagement.table.addUser")}
               </Link>
             </div>
           </div>
@@ -602,13 +633,10 @@ export function UserManagementPage() {
           <div className="mt-4 overflow-hidden rounded-[18px] border border-[#f6dbe7]">
             <div className="flex items-center justify-between gap-3 border-b border-[#f7dce8] bg-[#fffafd] px-4 py-3">
               <p className="text-sm font-extrabold text-[#462a45]">
-                {t("userManagement.table.actions") === "Thao tác" ? "Tất cả người dùng" : "All Users"}
+                {t("userManagement.table.allUsers")}
               </p>
               <p className="text-[11px] font-medium text-[#d197b0]">
-                {t("userManagement.table.actions") === "Thao tác" 
-                  ? `Hiển thị ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} trong số ${metaData.totalItems} người dùng`
-                  : `Showing ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} of ${metaData.totalItems} users`
-                }
+                {t("userManagement.table.showingRows", { first: metaData.firstRowOnPage, last: metaData.lastRowOnPage, total: metaData.totalItems })}
               </p>
             </div>
 
@@ -620,7 +648,7 @@ export function UserManagementPage() {
                 loading={isLoading}
                 pagination={false}
                 scroll={{ x: 1100 }}
-                locale={{ emptyText: t("userManagement.table.actions") === "Thao tác" ? "Không tìm thấy người dùng." : "No users found." }}
+                locale={{ emptyText: t("userManagement.table.emptyText") }}
               />
             </div>
 
@@ -628,7 +656,7 @@ export function UserManagementPage() {
               {isLoading ? (
                 <div className="flex items-center justify-center gap-3 rounded-[16px] border border-[#f8dce8] bg-[#fffafb] p-4 text-sm text-[#b38a9f]">
                   <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
-                  {t("userManagement.table.actions") === "Thao tác" ? "Đang tải dữ liệu..." : "Loading users..."}
+                  {t("userManagement.table.loadingText")}
                 </div>
               ) : displayedUsers.length ? (
                 displayedUsers.map((user) => (
@@ -644,7 +672,7 @@ export function UserManagementPage() {
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="font-bold text-[#432744]">{user.name}</p>
                         <SmallTag className={getRoleTone(user.role)}>
-                          {user.displayRole}
+                          {getRoleLabel(user.role || user.displayRole, t)}
                         </SmallTag>
                       </div>
                       <p className="mt-1 text-sm text-[#6b5668]">{user.email}</p>
@@ -662,7 +690,7 @@ export function UserManagementPage() {
                       <span
                         className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold ${USER_STATUS_STYLES[user.statusLabel]}`}
                       >
-                        {user.statusLabel}
+                        {getStatusLabel(user.status || user.statusLabel, t)}
                       </span>
                       <div className="mt-2 flex justify-end">
                         <ActionDropdown items={getActionItems(user)} />
@@ -673,14 +701,14 @@ export function UserManagementPage() {
                 ))
               ) : (
                 <div className="rounded-[16px] border border-[#f8dce8] bg-[#fffafb] p-4 text-center text-sm text-[#8a7082]">
-                  No users found.
+                  {t("userManagement.table.emptyText")}
                 </div>
               )}
             </div>
 
             <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-[11px] text-[#c694ad]">
-                Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} users
+                {t("userManagement.table.showingRows", { first: metaData.firstRowOnPage, last: metaData.lastRowOnPage, total: metaData.totalItems })}
               </p>
               <div className="flex items-center gap-1">
                 <button
