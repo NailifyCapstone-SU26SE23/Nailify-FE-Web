@@ -129,7 +129,6 @@ function getAvatarTone(index) {
 }
 
 function normalizeAppointmentRow(booking, index) {
-  const { t, language } = useLanguage();
   return {
     id: booking.bookingId,
     bookingId: booking.bookingId,
