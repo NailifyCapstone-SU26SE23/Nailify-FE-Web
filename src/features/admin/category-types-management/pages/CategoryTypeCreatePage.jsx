@@ -1,4 +1,3 @@
-import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ArrowLeft, FolderTree, Save, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
@@ -7,16 +6,15 @@ import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfi
 import { ROUTES, getAdminCategoryTypeDetailRoute } from "../../../../shared/constants/routes";
 import { createAdminCategoryType } from "../services/categoryTypesManagementService";
 
-function validateForm(formValues, t) {
+function validateForm(formValues) {
   if (!String(formValues.name || "").trim()) {
-    return t("adminCategoryTypes.nameRequired");
+    return "Category type name is required.";
   }
 
   return "";
 }
 
 export function CategoryTypeCreatePage() {
-  const { t } = useLanguage();
   const navigate = useNavigate();
   const [formValues, setFormValues] = useState({ name: "" });
   const [formError, setFormError] = useState("");
@@ -24,10 +22,10 @@ export function CategoryTypeCreatePage() {
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const summaryItems = useMemo(() => [[t("adminCategoryTypes.categoryTypeName"), formValues.name || "--"]], [formValues.name]);
+  const summaryItems = useMemo(() => [["Category Type Name", formValues.name || "--"]], [formValues.name]);
 
   const handleSubmitRequest = () => {
-    const validationError = validateForm(formValues, t);
+    const validationError = validateForm(formValues);
 
     if (validationError) {
       setFormError(validationError);
@@ -42,14 +40,14 @@ export function CategoryTypeCreatePage() {
 
     try {
       const createdCategoryType = await createAdminCategoryType(formValues);
-      toast.success(t("adminCategoryTypes.createSuccess", { name: createdCategoryType.name }));
+      toast.success(`${createdCategoryType.name} created successfully.`);
       navigate(getAdminCategoryTypeDetailRoute(createdCategoryType.categoryTypeId), {
         state: {
-          flashMessage: t("adminCategoryTypes.createFlashSuccess", { name: createdCategoryType.name }),
+          flashMessage: `${createdCategoryType.name} has been created successfully.`,
         },
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : t("adminCategoryTypes.createFailed");
+      const message = error instanceof Error ? error.message : "Failed to create category type.";
       setFormError(message);
       toast.error(message);
     } finally {
@@ -69,8 +67,8 @@ export function CategoryTypeCreatePage() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">{t("adminCategoryTypes.addNewCategoryType")}</h1>
-            <p className="text-xs font-medium text-slate-400">{t("adminCategoryTypes.addNewCategoryTypeDesc")}</p>
+            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">Add New Category Type</h1>
+            <p className="text-xs font-medium text-slate-400">Create a new category type for admin management.</p>
           </div>
         </div>
 
@@ -81,7 +79,7 @@ export function CategoryTypeCreatePage() {
             className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
           >
             <X size={14} />
-            {t("adminCategoryTypes.cancel")}
+            Cancel
           </button>
           <button
             type="button"
@@ -89,7 +87,7 @@ export function CategoryTypeCreatePage() {
             className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
           >
             <Save size={14} />
-            {t("adminCategoryTypes.saveCategoryType")}
+            Save Category Type
           </button>
         </div>
       </header>
@@ -104,11 +102,11 @@ export function CategoryTypeCreatePage() {
         <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
           <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
             <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
-            {t("adminCategoryTypes.categoryTypeDetails")}
+            Category Type Details
           </h2>
 
           <label className="space-y-2.5">
-            <span className="text-[13px] font-semibold text-slate-600">{t("adminCategoryTypes.categoryTypeName")}</span>
+            <span className="text-[13px] font-semibold text-slate-600">Category Type Name</span>
             <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
               <FolderTree size={14} className="shrink-0 text-rose-300" />
               <input
@@ -120,7 +118,7 @@ export function CategoryTypeCreatePage() {
                     setFormError("");
                   }
                 }}
-                placeholder={t("adminCategoryTypes.enterCategoryTypeName")}
+                placeholder="Enter category type name"
                 className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none placeholder:text-rose-300"
               />
             </div>
@@ -131,7 +129,7 @@ export function CategoryTypeCreatePage() {
           <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
             <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
               <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
-              {t("adminCategoryTypes.preview")}
+              Preview
             </h2>
 
             <div className="space-y-3 rounded-2xl border border-rose-100 bg-[#fff8fb] p-4">
@@ -149,11 +147,11 @@ export function CategoryTypeCreatePage() {
       <ActionConfirmModal
         open={showCancelConfirm}
         intent="warning"
-        title={t("adminCategoryTypes.cancelCreateTitle")}
-        subtitle={t("adminCategoryTypes.cancelCreateSubtitle")}
-        description={t("adminCategoryTypes.cancelCreateDesc")}
-        confirmText={t("adminCategoryTypes.discardChanges")}
-        cancelText={t("adminCategoryTypes.keepEditing")}
+        title="Cancel Category Type Creation"
+        subtitle="You are leaving this form without saving."
+        description="All unsaved category type details will be discarded."
+        confirmText="Discard Changes"
+        cancelText="Keep Editing"
         confirmIcon={X}
         onConfirm={() => navigate(ROUTES.adminCategoryTypes)}
         onCancel={() => setShowCancelConfirm(false)}
@@ -163,11 +161,11 @@ export function CategoryTypeCreatePage() {
       <ActionConfirmModal
         open={showSaveConfirm}
         intent="success"
-        title={t("adminCategoryTypes.saveNewCategoryTypeTitle")}
-        subtitle={t("adminCategoryTypes.saveNewCategoryTypeSubtitle")}
-        description={t("adminCategoryTypes.saveNewCategoryTypeDesc")}
-        confirmText={t("adminCategoryTypes.createCategoryType")}
-        cancelText={t("adminCategoryTypes.reviewAgain")}
+        title="Save New Category Type"
+        subtitle="This will create the category type in backend."
+        description="Confirm to add this category type to admin management."
+        confirmText="Create Category Type"
+        cancelText="Review Again"
         confirmIcon={Save}
         loading={isSaving}
         onConfirm={handleCreate}

@@ -1,4 +1,3 @@
-import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   ArrowUpDown,
   ChevronLeft,
@@ -43,16 +42,13 @@ function MetricCard({ item }) {
 }
 
 function SkillTypeStatusBadge({ status }) {
-  const { t } = useLanguage();
   const normalizedStatus = String(status || "").toLowerCase();
-  const isStatusActive = normalizedStatus === "active";
-  const className = isStatusActive
-    ? "bg-[#e7fbf4] text-[#159669]"
-    : "bg-[#fff1f5] text-[#d14c84]";
+  const className =
+    normalizedStatus === "active"
+      ? "bg-[#e7fbf4] text-[#159669]"
+      : "bg-[#fff1f5] text-[#d14c84]";
 
-  const displayLabel = isStatusActive ? t("adminSkillTypes.active") : t("adminSkillTypes.inactive");
-
-  return <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${className}`}>{displayLabel}</span>;
+  return <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${className}`}>{status}</span>;
 }
 
 function SortableHeader({ label, sortKey, selectedSort, onToggle }) {
@@ -94,7 +90,6 @@ function sortSkillTypes(items, sortValue) {
 }
 
 export function SkillTypesManagementPage() {
-  const { t, language } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
@@ -164,7 +159,7 @@ export function SkillTypesManagementPage() {
         }
 
         setSkillTypes([]);
-        setError(loadError instanceof Error ? loadError.message : t("adminSkillTypes.loadFailed"));
+        setError(loadError instanceof Error ? loadError.message : "Failed to load skill types.");
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -185,28 +180,28 @@ export function SkillTypesManagementPage() {
 
     return [
       {
-        label: t("adminSkillTypes.totalTypes"),
+        label: "Total Types",
         value: metaData.totalItems.toLocaleString(),
         note: `${metaData.totalPages} pages`,
         icon: FolderTree,
         iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
       },
       {
-        label: t("adminSkillTypes.activeTypes"),
+        label: "Active Types",
         value: activeCount.toLocaleString(),
         note: "Current page",
         icon: Sparkles,
         iconClassName: "bg-[#e7fbf4] text-[#20ab77]",
       },
       {
-        label: t("adminSkillTypes.withDescription"),
+        label: "With Description",
         value: describedCount.toLocaleString(),
         note: "Current page",
         icon: FolderTree,
         iconClassName: "bg-[#fff4df] text-[#d9871c]",
       },
       {
-        label: t("adminSkillTypes.pageItems"),
+        label: "Page Items",
         value: skillTypes.length.toLocaleString(),
         note: debouncedQuery || "Current page",
         icon: FolderTree,
@@ -272,7 +267,7 @@ export function SkillTypesManagementPage() {
       {
         title: (
           <SortableHeader
-            label={t("adminSkillTypes.skillType")}
+            label="Skill Type"
             sortKey="skillType"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -289,7 +284,7 @@ export function SkillTypesManagementPage() {
       {
         title: (
           <SortableHeader
-            label={t("adminSkillTypes.description")}
+            label="Description"
             sortKey="description"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -302,7 +297,7 @@ export function SkillTypesManagementPage() {
       {
         title: (
           <SortableHeader
-            label={t("adminSkillTypes.status")}
+            label="Status"
             sortKey="status"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -313,20 +308,20 @@ export function SkillTypesManagementPage() {
         render: (value) => <SkillTypeStatusBadge status={value} />,
       },
       {
-        title: t("adminSkillTypes.actions"),
+        title: "Actions",
         key: "actions",
         render: (_, skillType) => (
           <ActionDropdown
             items={[
               {
                 key: "view",
-                label: t("adminSkillTypes.viewDetail"),
+                label: "View Detail",
                 icon: Eye,
                 onSelect: () => navigate(getAdminSkillTypeDetailRoute(skillType.skillTypeId)),
               },
               {
                 key: "edit",
-                label: t("adminSkillTypes.editSkillType"),
+                label: "Edit Skill Type",
                 icon: Pencil,
                 onSelect: () =>
                   navigate(getAdminSkillTypeDetailRoute(skillType.skillTypeId), {
@@ -335,7 +330,7 @@ export function SkillTypesManagementPage() {
               },
               {
                 key: "delete",
-                label: t("adminSkillTypes.deleteSkillType"),
+                label: "Delete Skill Type",
                 icon: Trash2,
                 className: "text-[#d14c84]",
                 onSelect: () => setDeleteTarget(skillType),
@@ -344,7 +339,8 @@ export function SkillTypesManagementPage() {
           />
         ),
       },
-    ], [navigate, selectedSort, t],
+    ],
+    [navigate, selectedSort],
   );
 
   const handleDeleteSkillType = async () => {
@@ -357,7 +353,7 @@ export function SkillTypesManagementPage() {
     try {
       await deleteAdminSkillType(deleteTarget.skillTypeId);
       setDeleteTarget(null);
-      toast.success(t("adminSkillTypes.deleteSuccess", { name: deleteTarget.name }));
+      toast.success(`${deleteTarget.name} deleted successfully.`);
 
       const shouldMoveBack = skillTypes.length === 1 && metaData.currentPage > 1;
       const targetPage = shouldMoveBack ? Math.max(metaData.currentPage - 1, 1) : metaData.currentPage;
@@ -370,7 +366,7 @@ export function SkillTypesManagementPage() {
       setSkillTypes(response.items);
       setMetaData(response.metaData);
     } catch (deleteError) {
-      toast.error(deleteError instanceof Error ? deleteError.message : t("adminSkillTypes.deleteFailed"));
+      toast.error(deleteError instanceof Error ? deleteError.message : "Failed to delete skill type.");
     } finally {
       setIsDeleting(false);
     }
@@ -403,7 +399,7 @@ export function SkillTypesManagementPage() {
                 <input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder={t("adminSkillTypes.searchPlaceholder")}
+                  placeholder="Search skill type by name..."
                   className="h-10 w-full rounded-full border border-[#f4d7e5] bg-[#fffafc] pl-11 pr-4 text-sm text-[#5b4658] outline-none placeholder:text-[#d4a1b8] focus:border-[#ea4f93]"
                 />
               </label>
@@ -419,7 +415,7 @@ export function SkillTypesManagementPage() {
                 className="inline-flex h-10 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
               >
                 <Search size={14} className="mr-2 shrink-0" />
-                {t("adminSkillTypes.search")}
+                Search
               </button>
             </div>
 
@@ -428,9 +424,9 @@ export function SkillTypesManagementPage() {
               onChange={(event) => setStatusFilter(event.target.value)}
               className="h-10 rounded-full border border-[#f4d7e5] bg-[#fffafc] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
             >
-              <option value="">{t("adminSkillTypes.allStatuses")}</option>
-              <option value="Active">{t("adminSkillTypes.active")}</option>
-              <option value="Inactive">{t("adminSkillTypes.inactive")}</option>
+              <option value="">All statuses</option>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
             </select>
           </div>
 
@@ -439,15 +435,15 @@ export function SkillTypesManagementPage() {
             className="inline-flex items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
           >
             <Plus size={13} className="mr-1.5 shrink-0" />
-            {t("adminSkillTypes.addSkillType")}
+            Add Skill Type
           </Link>
         </div>
 
         <section className="overflow-hidden rounded-[20px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
           <div className="border-b border-[#f6dbe7] px-5 py-4">
-            <h2 className="text-sm font-extrabold text-[#432744]">{t("adminSkillTypes.skillTypes")}</h2>
+            <h2 className="text-sm font-extrabold text-[#432744]">Skill Types</h2>
             <p className="mt-1 text-[11px] font-medium text-[#c694ad]">
-              {t("adminSkillTypes.showingSkillTypes", { first: metaData.firstRowOnPage, last: metaData.lastRowOnPage, total: metaData.totalItems })}
+              Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} skill types
             </p>
           </div>
 
@@ -461,12 +457,12 @@ export function SkillTypesManagementPage() {
             }}
             pagination={false}
             scroll={{ x: 980 }}
-            locale={{ emptyText: error || t("adminSkillTypes.noSkillTypesFound") }}
+            locale={{ emptyText: error || "No skill types found." }}
           />
 
           <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-[11px] text-[#c694ad]">
-              {t("adminSkillTypes.showingSkillTypes", { first: metaData.firstRowOnPage, last: metaData.lastRowOnPage, total: metaData.totalItems })}
+              Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} skill types
             </p>
             <div className="flex items-center gap-1">
               <button
@@ -525,11 +521,11 @@ export function SkillTypesManagementPage() {
         <ActionConfirmModal
           open
           intent="danger"
-          title={t("adminSkillTypes.deleteSkillTypeTitle")}
-          subtitle={t("adminSkillTypes.deleteConfirmSubtitle")}
-          description={t("adminSkillTypes.deleteConfirmDesc", { name: deleteTarget.name })}
-          confirmText={t("adminSkillTypes.deleteSkillType")}
-          cancelText={t("adminSkillTypes.keepSkillType")}
+          title="Delete Skill Type"
+          subtitle="This will set the skill type status to inactive in backend."
+          description={`You are about to delete ${deleteTarget.name}. This action cannot be undone from this page.`}
+          confirmText="Delete Skill Type"
+          cancelText="Keep Skill Type"
           confirmIcon={Trash2}
           loading={isDeleting}
           onConfirm={handleDeleteSkillType}
@@ -539,7 +535,7 @@ export function SkillTypesManagementPage() {
             meta: deleteTarget.status,
             note: `Skill Type ID: ${deleteTarget.skillTypeId}`,
           }}
-          warnings={[t("adminSkillTypes.deleteWarning")]}
+          warnings={["Backend delete for this resource changes the status to inactive."]}
         />
       ) : null}
     </>

@@ -1,4 +1,7 @@
 import {
+  AlertCircle,
+  ArrowUpRight,
+  ArrowDownRight,
   CircleDollarSign,
   Store,
   UserRound,
@@ -16,10 +19,9 @@ import {
 import { Modal, Table, Spin, Alert, DatePicker, Segmented, Dropdown, Button } from "antd";
 import dayjs from "dayjs";
 import { useMemo, useState, useEffect } from "react";
-import { useAdminDashboard, useSalonDetails, useManagersList, useSalonsList, useSalonStaffByRole } from "../hooks/useAdminDashboard";
+import { useAdminDashboard, useSalonDetails, useManagersList, useSalonsList, useStaffsList, useSalonStaffByRole } from "../hooks/useAdminDashboard";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import ReactECharts from "echarts-for-react";
-import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 // Technical Light Theme Palette
 const TECH_COLORS = ["#0ea5e9", "#f59e0b", "#10b981", "#6366f1", "#8b5cf6", "#ec4899", "#14b8a6", "#84cc16"];
@@ -54,7 +56,6 @@ const defaultWidgets = [
 ];
 
 function WidgetWrapper({ id, widget, onPin, onHide, onDragStart, onDragOver, onDrop, onDragEnter, children, isPinned }) {
-  const { t } = useLanguage();
   const isFullWidth = ['rankedSalons'].includes(id);
 
   return (
@@ -75,9 +76,7 @@ function WidgetWrapper({ id, widget, onPin, onHide, onDragStart, onDragOver, onD
               </div>
             )}
             <div>
-              <h3 className={`font-bold text-slate-800 uppercase tracking-widest ${isPinned ? 'text-[15px]' : 'text-sm'}`}>
-                {t(`adminDashboard.widgets.${id}`) || widget.title}
-              </h3>
+              <h3 className={`font-bold text-slate-800 uppercase tracking-widest ${isPinned ? 'text-[15px]' : 'text-sm'}`}>{widget.title}</h3>
               {widget.subtitle && <p className="mt-1 text-xs text-slate-500 font-medium">{widget.subtitle}</p>}
             </div>
           </div>
@@ -85,14 +84,14 @@ function WidgetWrapper({ id, widget, onPin, onHide, onDragStart, onDragOver, onD
             <button
               onClick={() => onPin(id)}
               className="p-1.5 text-slate-400 hover:text-sky-500 hover:bg-sky-50 rounded-md transition-colors"
-              title={isPinned ? t("adminDashboard.widgetActions.unpin") : t("adminDashboard.widgetActions.pin")}
+              title={isPinned ? "Unpin widget" : "Pin to top"}
             >
               {isPinned ? <PinOff size={16} /> : <Pin size={16} />}
             </button>
             <button
               onClick={() => onHide(id)}
               className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
-              title={t("adminDashboard.widgetActions.hide")}
+              title="Hide widget"
             >
               <EyeOff size={16} />
             </button>
@@ -119,7 +118,6 @@ WidgetWrapper.propTypes = {
 };
 
 export function AdminDashboardPage() {
-  const { t } = useLanguage();
   const [selectedSalonId, setSelectedSalonId] = useState(null);
   const [dateRange, setDateRange] = useState([dayjs().subtract(7, 'day'), dayjs()]);
   const [filterMode, setFilterMode] = useState("Week");
@@ -129,9 +127,7 @@ export function AdminDashboardPage() {
     if (saved) {
       try {
         return JSON.parse(saved);
-      } catch {
-        // Fall back to defaultWidgets
-      }
+      } catch (e) { }
     }
     return defaultWidgets;
   });
@@ -156,6 +152,7 @@ export function AdminDashboardPage() {
   const { data: salonDetails, isLoading: isLoadingSalon } = useSalonDetails(selectedSalonId);
   const { data: managersList } = useManagersList();
   const { data: salonsList } = useSalonsList();
+  const { data: staffsList } = useStaffsList();
 
   const { data: salonManagers } = useSalonStaffByRole(selectedSalonId, "Manager");
   const { data: salonReceptionists } = useSalonStaffByRole(selectedSalonId, "Receptionist");
@@ -216,7 +213,7 @@ export function AdminDashboardPage() {
     setDraggedWidgetId(null);
   };
 
-  const handleDragEnter = (e) => {
+  const handleDragEnter = (e, id) => {
     e.preventDefault();
   };
 
@@ -259,7 +256,7 @@ export function AdminDashboardPage() {
 
   const salonPerformanceColumns = useMemo(() => ([
     {
-      title: t("adminDashboard.table.salon").toUpperCase(),
+      title: "SALON",
       key: "name",
       render: (_, salon) => (
         <div>
@@ -268,19 +265,19 @@ export function AdminDashboardPage() {
       ),
     },
     {
-      title: t("adminDashboard.table.manager").toUpperCase(),
+      title: "MANAGER",
       dataIndex: "manager",
       key: "manager",
       render: (value) => <span className="text-sm font-bold text-slate-800">{value}</span>,
     },
     {
-      title: t("adminDashboard.table.revenue").toUpperCase(),
+      title: "REVENUE",
       dataIndex: "revenue",
       key: "revenue",
       render: (value) => <span className="text-sm font-mono text-emerald-600">{value ? value.toLocaleString("vi-VN") + " ₫" : "0 ₫"}</span>,
     },
     {
-      title: t("userManagement.table.actions").toUpperCase(),
+      title: "ACTION",
       key: "action",
       render: (_, salon) => (
         <button
@@ -289,11 +286,11 @@ export function AdminDashboardPage() {
           className={`text-[10px] font-bold uppercase tracking-widest border-b transition-colors ${salon.originalId ? 'text-sky-600 hover:text-sky-800 border-transparent hover:border-sky-800' : 'text-slate-400 border-transparent cursor-not-allowed'}`}
           disabled={!salon.originalId}
         >
-          {t("view") || "VIEW"}
+          VIEW
         </button>
       ),
     },
-  ]), [t]);
+  ]), []);
 
   const topSalonsData = useMemo(() => {
     if (!salonsList) return [];
@@ -328,12 +325,12 @@ export function AdminDashboardPage() {
   }, [salonsList, data]);
 
   const metricCards = useMemo(() => [
-    { label: t("adminDashboard.table.revenue"), value: `${(data?.totalPlatformRevenue || 0).toLocaleString("vi-VN")}`, unit: "VND", trend: "+12.5%", icon: CircleDollarSign, color: '#0ea5e9' },
-    { label: t("userManagement.metric.clientAccounts"), value: `${data?.totalRegisteredCustomers || 0}`, unit: "USERS", trend: "+8.2%", icon: Users, color: '#10b981' },
-    { label: t("menus.admin-salons"), value: `${data?.totalActiveSalons || 0}`, unit: "LOCATIONS", trend: "+2", icon: Store, color: '#f59e0b' },
-    { label: t("menus.admin-staff"), value: `${data?.totalActiveStaff || 0}`, unit: "STAFF", trend: "+5", icon: UserRound, color: '#8b5cf6' },
-    { label: t("adminDashboard.widgets.salonRatingDistribution"), value: `${data?.platformAverageRating || 0}`, unit: "/ 5.0", trend: "+0.2", icon: Activity, color: '#ec4899' },
-  ], [data, t]);
+    { label: "Total Revenue", value: `${(data?.totalPlatformRevenue || 0).toLocaleString("vi-VN")}`, unit: "VND", trend: "+12.5%", icon: CircleDollarSign, color: '#0ea5e9' },
+    { label: "Customers", value: `${data?.totalRegisteredCustomers || 0}`, unit: "USERS", trend: "+8.2%", icon: Users, color: '#10b981' },
+    { label: "Active Salons", value: `${data?.totalActiveSalons || 0}`, unit: "LOCATIONS", trend: "+2", icon: Store, color: '#f59e0b' },
+    { label: "Active Staff", value: `${data?.totalActiveStaff || 0}`, unit: "STAFF", trend: "+5", icon: UserRound, color: '#8b5cf6' },
+    { label: "Avg Rating", value: `${data?.platformAverageRating || 0}`, unit: "/ 5.0", trend: "+0.2", icon: Activity, color: '#ec4899' },
+  ], [data]);
 
   if (isLoading) {
     return (
@@ -541,12 +538,12 @@ export function AdminDashboardPage() {
     items: [
       ...hiddenWidgets.map((w) => ({
         key: `restore-${w.id}`,
-        label: `${t("view") || "Show"} ${t(`adminDashboard.widgets.${w.id}`) || w.title}`,
+        label: `Show ${w.title}`,
         icon: <Eye size={16} />,
         onClick: () => toggleHide(w.id),
       })),
       hiddenWidgets.length > 0 ? { type: 'divider' } : null,
-      { key: 'reset', label: t("adminDashboard.resetLayout"), icon: <RotateCcw size={16} />, onClick: resetLayout, danger: true }
+      { key: 'reset', label: 'Reset Layout', icon: <RotateCcw size={16} />, onClick: resetLayout, danger: true }
     ].filter(Boolean),
   };
 
@@ -568,26 +565,20 @@ export function AdminDashboardPage() {
                   px-8 py-5
                   md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-[22px] font-bold tracking-tight text-slate-900">{t("menus.admin-dashboard")}</h1>
-          <p className="text-[13px] text-slate-500 font-medium">{t("header.dashboard.desc")}</p>
+          <h1 className="text-[22px] font-bold tracking-tight text-slate-900">Admin Dashboard</h1>
+          <p className="text-[13px] text-slate-500 font-medium">Data Telemetry & Monitoring</p>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <Dropdown menu={layoutMenuProps} trigger={['click']} placement="bottomRight">
             <Button icon={<Settings2 size={16} className="text-slate-500" />} className="border-slate-200 font-medium text-slate-700 bg-white shadow-sm">
-              {t("shared.customize") || "Customize"}
+              Customize
             </Button>
           </Dropdown>
           <Segmented
-            options={[
-              { label: t("adminDashboard.day"), value: "Day" },
-              { label: t("adminDashboard.week"), value: "Week" },
-              { label: t("adminDashboard.month"), value: "Month" },
-              { label: t("adminDashboard.year"), value: "Year" },
-              { label: t("adminDashboard.custom"), value: "Custom" },
-            ]}
+            options={['Day', 'Week', 'Month', 'Year', 'Custom']}
             value={filterMode}
             onChange={handleFilterModeChange}
-            className="rounded-md bg-slate-100 p-1 font-semibold text-slate-700"
+            className="rounded-md bg-slate-100 p-1 font-semibold"
           />
           <DatePicker.RangePicker
             value={dateRange}

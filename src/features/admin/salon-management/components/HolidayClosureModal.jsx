@@ -60,7 +60,7 @@ const MonthCard = ({ monthIndex, year, onClick, selected, hasSelectedDays }) => 
       {isCurrentMonth && (
         <span className="absolute right-3 top-3 h-1.5 w-1.5 rounded-full bg-[#ea4f93]" title="Current month" />
       )}
-      <span className=" text-lg font-semibold text-[#3f2034]">
+      <span className="nailify-display text-lg font-semibold text-[#3f2034]">
         {MONTH_NAMES[monthIndex]}
       </span>
       {hasSelectedDays && (
@@ -103,7 +103,7 @@ const MonthView = ({ monthIndex, year, onBack, onSelectDay, selectedDays = [] })
           <ChevronLeft size={16} />
           Back to Year
         </motion.button>
-        <h3 className=" text-xl font-semibold text-[#3f2034]">
+        <h3 className="nailify-display text-xl font-semibold text-[#3f2034]">
           {MONTH_NAMES[monthIndex]} {year}
         </h3>
         <div className="w-16" />
@@ -155,7 +155,7 @@ const MonthView = ({ monthIndex, year, onBack, onSelectDay, selectedDays = [] })
 const YearCalendar = ({ year, onSelectMonth, selectedMonthIndex, selectedDays }) => {
   return (
     <div className="space-y-4">
-      <h2 className=" text-center text-4xl font-semibold text-[#3f2034]">
+      <h2 className="nailify-display text-center text-4xl font-semibold text-[#3f2034]">
         {year}
       </h2>
       <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
@@ -554,7 +554,7 @@ export default function HolidayClosureModal({
       }}
     >
       <style>{`
-       
+        .nailify-display { font-family: "Cormorant Garamond", "Times New Roman", serif; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
       `}</style>
 
@@ -570,7 +570,7 @@ export default function HolidayClosureModal({
                 <span className="inline-flex rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] bg-white/20 text-white">
                   Schedule
                 </span>
-                <h3 className=" mt-3 text-2xl font-semibold">Holiday Closure</h3>
+                <h3 className="nailify-display mt-3 text-2xl font-semibold">Holiday Closure</h3>
                 <p className="mt-1 text-sm text-white/85">
                   Schedule temporary salon closures
                 </p>
@@ -730,7 +730,7 @@ export default function HolidayClosureModal({
             {selectedSalonId && (
               <div className="rounded-[22px] border border-[#f5cbdc] bg-white p-5">
                 <div className="mb-4 flex items-center justify-between">
-                  <h4 className=" text-lg font-semibold text-[#3f2034] flex items-center gap-2">
+                  <h4 className="nailify-display text-lg font-semibold text-[#3f2034] flex items-center gap-2">
                     <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#fff0f6] text-[11px] font-extrabold text-[#ea4f93]">
                       L
                     </span>
@@ -891,7 +891,7 @@ export default function HolidayClosureModal({
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white text-[#d14c84] shadow-[0_10px_24px_rgba(209,76,132,0.22)] ring-8 ring-[#fff0f6]">
                   <Trash2 size={26} strokeWidth={2.2} />
                 </div>
-                <h4 className=" text-xl font-semibold text-[#3f2034]">
+                <h4 className="nailify-display text-xl font-semibold text-[#3f2034]">
                   Remove this closure?
                 </h4>
                 <p className="mt-1.5 px-2 text-[13px] leading-relaxed text-[#8c7484]">
@@ -966,7 +966,7 @@ export default function HolidayClosureModal({
                 </div>
               )}
 
-              <h4 className=" text-xl font-semibold text-[#3f2034]">
+              <h4 className="nailify-display text-xl font-semibold text-[#3f2034]">
                 {notificationModal.type === "success" ? "Success" : "Something went wrong"}
               </h4>
               <p className="mt-2 px-2 text-sm leading-relaxed text-[#8c7484]">

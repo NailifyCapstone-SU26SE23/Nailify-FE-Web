@@ -1,4 +1,3 @@
-import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   ArrowUpDown,
   ChevronLeft,
@@ -86,11 +85,10 @@ function sortConfigs(items, sortValue) {
   });
 }
 
-const formatCurrency = (value, t) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value).replace("₫", t("adminShapeMethodConfigs.currencySymbol"));
-const formatDuration = (value, t) => `${value} ${t("adminShapeMethodConfigs.mins")}`;
+const formatCurrency = (value) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value);
+const formatDuration = (value) => `${value} mins`;
 
 export function ShapeMethodConfigsManagementPage() {
-  const { t, language } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
@@ -169,7 +167,7 @@ export function ShapeMethodConfigsManagementPage() {
         }
 
         setConfigs([]);
-        setError(loadError instanceof Error ? loadError.message : t("adminShapeMethodConfigs.loadFailed"));
+        setError(loadError instanceof Error ? loadError.message : "Failed to load shape method configs.");
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -192,22 +190,22 @@ export function ShapeMethodConfigsManagementPage() {
 
     return [
       {
-        label: t("adminShapeMethodConfigs.totalConfigs"),
+        label: "Total Configs",
         value: metaData.totalItems.toLocaleString(),
         note: `${metaData.totalPages} pages`,
         icon: Sliders,
         iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
       },
       {
-        label: t("adminShapeMethodConfigs.avgPrice"),
-        value: formatCurrency(averagePrice, t),
+        label: "Avg Price",
+        value: formatCurrency(averagePrice),
         note: "Current page",
         icon: Wallet,
         iconClassName: "bg-[#f3ebff] text-[#8b5cf6]",
       },
       {
-        label: t("adminShapeMethodConfigs.avgDuration"),
-        value: formatDuration(averageDuration, t),
+        label: "Avg Duration",
+        value: formatDuration(averageDuration),
         note: "Current page",
         icon: TimerReset,
         iconClassName: "bg-[#e7fbf4] text-[#20ab77]",
@@ -271,7 +269,7 @@ export function ShapeMethodConfigsManagementPage() {
     }
 
     setIsDeleting(true);
-    const toastId = toast.loading(t("adminShapeMethodConfigs.deleting", { name: deleteTarget.name }));
+    const toastId = toast.loading(`Deleting ${deleteTarget.name}...`);
 
     try {
       await deleteAdminShapeMethodConfig(deleteTarget.shapeMethodConfigId);
@@ -280,18 +278,18 @@ export function ShapeMethodConfigsManagementPage() {
         ...current,
         totalItems: Math.max(0, current.totalItems - 1),
       }));
-      toast.success(t("adminShapeMethodConfigs.deletedSuccess", { name: deleteTarget.name }), { id: toastId });
+      toast.success(`${deleteTarget.name} has been deleted.`, { id: toastId });
       setDeleteTarget(null);
     } catch (deleteError) {
-      toast.error(deleteError instanceof Error ? deleteError.message : t("adminShapeMethodConfigs.deleteFailed"), { id: toastId });
+      toast.error(deleteError instanceof Error ? deleteError.message : "Failed to delete shape method config.", { id: toastId });
     } finally {
       setIsDeleting(false);
     }
   };
 
   const getStatusClasses = (status) => {
-    if (status === "Active" || status === t("adminShapeMethodConfigs.active")) return "bg-green-100 text-green-700";
-    if (status === "Inactive" || status === t("adminShapeMethodConfigs.inactive")) return "bg-red-100 text-red-700";
+    if (status === "Active") return "bg-green-100 text-green-700";
+    if (status === "Inactive") return "bg-red-100 text-red-700";
     return "bg-gray-100 text-gray-700";
   };
 
@@ -299,13 +297,13 @@ export function ShapeMethodConfigsManagementPage() {
 
   const columns = [
     {
-      title: <SortableHeader label={t("adminShapeMethodConfigs.name")} sortKey="name" selectedSort={selectedSort} onToggle={handleSortToggle} />,
+      title: <SortableHeader label="Name" sortKey="name" selectedSort={selectedSort} onToggle={handleSortToggle} />,
       dataIndex: "name",
       key: "name",
       render: (text) => <span className="font-bold text-[#432744]">{text}</span>,
     },
     {
-      title: t("adminShapeMethodConfigs.shape"),
+      title: "Shape",
       dataIndex: "nailShapeId",
       key: "nailShapeId",
       render: (shapeId) => {
@@ -314,19 +312,19 @@ export function ShapeMethodConfigsManagementPage() {
       },
     },
     {
-      title: <SortableHeader label={t("adminShapeMethodConfigs.price")} sortKey="price" selectedSort={selectedSort} onToggle={handleSortToggle} />,
+      title: <SortableHeader label="Price" sortKey="price" selectedSort={selectedSort} onToggle={handleSortToggle} />,
       dataIndex: "price",
       key: "price",
-      render: (price) => <span className="font-semibold text-[#8b5cf6]">{formatCurrency(price, t)}</span>,
+      render: (price) => <span className="font-semibold text-[#8b5cf6]">{formatCurrency(price)}</span>,
     },
     {
-      title: <SortableHeader label={t("adminShapeMethodConfigs.duration")} sortKey="duration" selectedSort={selectedSort} onToggle={handleSortToggle} />,
+      title: <SortableHeader label="Duration" sortKey="duration" selectedSort={selectedSort} onToggle={handleSortToggle} />,
       dataIndex: "duration",
       key: "duration",
-      render: (duration) => <span className="font-semibold text-[#20ab77]">{formatDuration(duration, t)}</span>,
+      render: (duration) => <span className="font-semibold text-[#20ab77]">{formatDuration(duration)}</span>,
     },
     {
-      title: t("adminShapeMethodConfigs.status"),
+      title: "Status",
       dataIndex: "status",
       key: "status",
       render: (status) => (
@@ -336,7 +334,7 @@ export function ShapeMethodConfigsManagementPage() {
       ),
     },
     {
-      title: t("adminShapeMethodConfigs.actions"),
+      title: "Actions",
       key: "actions",
       align: "right",
       render: (_, record) => (
@@ -344,19 +342,19 @@ export function ShapeMethodConfigsManagementPage() {
           items={[
             {
               key: "view",
-              label: t("adminShapeMethodConfigs.viewDetails"),
+              label: "View Details",
               icon: Eye,
               onSelect: () => navigate(ROUTES.adminShapeMethodConfigDetail.replace(":configId", record.shapeMethodConfigId)),
             },
             {
               key: "edit",
-              label: t("adminShapeMethodConfigs.edit"),
+              label: "Edit",
               icon: Pencil,
               onSelect: () => navigate(ROUTES.adminShapeMethodConfigDetail.replace(":configId", record.shapeMethodConfigId)),
             },
             {
               key: "delete",
-              label: t("adminShapeMethodConfigs.delete"),
+              label: "Delete",
               icon: Trash2,
               danger: true,
               onSelect: () => setDeleteTarget(record),
@@ -377,8 +375,8 @@ export function ShapeMethodConfigsManagementPage() {
 
       <header className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-[#432744]">{t("adminShapeMethodConfigs.shapeMethodConfigs")}</h1>
-          <p className="mt-1 text-sm font-medium text-[#b58a9f]">{t("adminShapeMethodConfigs.manageDesc")}</p>
+          <h1 className="text-3xl font-bold tracking-tight text-[#432744]">Shape Method Configs</h1>
+          <p className="mt-1 text-sm font-medium text-[#b58a9f]">Manage configuration and pricing for nail shape methods.</p>
         </div>
 
         <Link
@@ -386,7 +384,7 @@ export function ShapeMethodConfigsManagementPage() {
           className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-6 text-sm font-bold text-white shadow-[0_8px_20px_rgba(236,72,153,0.25)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(236,72,153,0.35)]"
         >
           <Plus size={18} />
-          {t("adminShapeMethodConfigs.createConfig")}
+          Create Config
         </Link>
       </header>
 
@@ -403,14 +401,14 @@ export function ShapeMethodConfigsManagementPage() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={t("adminShapeMethodConfigs.searchPlaceholder")}
+            placeholder="Search configs by name..."
             className="h-12 w-full rounded-full border border-[#f8dce8] bg-white pl-11 pr-4 text-sm font-medium text-[#432744] shadow-sm outline-none transition-all placeholder:text-[#cd98b1] focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10"
           />
         </div>
         <div className="relative">
           <Select
             allowClear
-            placeholder={t("adminShapeMethodConfigs.filterPlaceholder")}
+            placeholder="Filter by Nail Shape"
             style={{ width: 220, height: 48 }}
             className="rounded-full shadow-sm [&>.ant-select-selector]:!rounded-full [&>.ant-select-selector]:!h-12 [&>.ant-select-selector]:!items-center [&>.ant-select-selector]:!border-[#f8dce8]"
             onChange={(val) => setNailShapeId(val)}
@@ -434,7 +432,9 @@ export function ShapeMethodConfigsManagementPage() {
         {metaData.totalPages > 1 && (
           <div className="flex items-center justify-between border-t border-[#fdebf3] bg-[#fffafc] px-6 py-4">
             <p className="text-xs font-semibold text-[#b58a9f]">
-              {t("adminShapeMethodConfigs.showingResults", { first: metaData.firstRowOnPage, last: metaData.lastRowOnPage, total: metaData.totalItems })}
+              Showing <span className="text-[#ea4f93]">{metaData.firstRowOnPage}</span> to{" "}
+              <span className="text-[#ea4f93]">{metaData.lastRowOnPage}</span> of{" "}
+              <span className="text-[#ea4f93]">{metaData.totalItems}</span> results
             </p>
             <div className="flex items-center gap-1">
               <button
@@ -484,10 +484,10 @@ export function ShapeMethodConfigsManagementPage() {
       {deleteTarget && (
         <ActionConfirmModal
           isOpen
-          title={t("adminShapeMethodConfigs.deleteConfigTitle")}
-          description={t("adminShapeMethodConfigs.deleteConfirmDesc", { name: deleteTarget.name })}
-          confirmLabel={t("adminShapeMethodConfigs.delete")}
-          cancelLabel={t("adminShapeMethodConfigs.cancel")}
+          title="Delete Config"
+          description={`Are you sure you want to delete "${deleteTarget.name}"? This action cannot be undone.`}
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
           icon={Trash2}
           isDestructive
           isLoading={isDeleting}

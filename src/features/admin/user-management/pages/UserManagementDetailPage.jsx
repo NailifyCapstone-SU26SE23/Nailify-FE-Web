@@ -1,4 +1,3 @@
-import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { Building2, CalendarDays, Clock3, LoaderCircle, MapPin, PencilLine, Phone, Save, Star, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
@@ -90,7 +89,6 @@ function StarRating({ level = 0, max = 5 }) {
 }
 
 export function UserManagementDetailPage() {
-  const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const { userId } = useParams();
@@ -158,7 +156,7 @@ export function UserManagementDetailPage() {
           return;
         }
 
-        const message = error instanceof Error ? error.message : t("userManagement.detail.loadDetailFailed");
+        const message = error instanceof Error ? error.message : "Failed to load user detail.";
         setLoadError(message);
         toast.error(message);
       } finally {
@@ -184,7 +182,7 @@ export function UserManagementDetailPage() {
       <section className="flex min-h-full items-center justify-center rounded-[24px] bg-white p-6">
         <div className="flex items-center gap-3 text-sm text-[#b38a9f]">
           <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
-          {t("userManagement.detail.loadingDetails")}
+          Loading user detail...
         </div>
       </section>
     );
@@ -227,13 +225,13 @@ export function UserManagementDetailPage() {
   );
   const scheduleColumns = [
     {
-      title: t("userManagement.detail.workDate"),
+      title: "Work Date",
       dataIndex: "workDate",
       key: "workDate",
       render: (value) => <span className="font-semibold text-[var(--color-ink)]">{formatWorkDate(value)}</span>,
     },
     {
-      title: t("userManagement.detail.shift"),
+      title: "Shift",
       key: "shift",
       render: (_, schedule) => (
         <span className="inline-flex items-center gap-2 text-sm text-[var(--color-muted)]">
@@ -243,7 +241,7 @@ export function UserManagementDetailPage() {
       ),
     },
     {
-      title: t("userManagement.detail.status"),
+      title: "Status",
       dataIndex: "status",
       key: "status",
       render: (value) => (
@@ -260,7 +258,7 @@ export function UserManagementDetailPage() {
     const email = String(formValues.email || "").trim();
 
     if (!firstName || !lastName || !email) {
-      toast.error(t("userManagement.detail.validationRequired"));
+      toast.error("First name, last name, and email are required.");
       return;
     }
 
@@ -281,10 +279,10 @@ export function UserManagementDetailPage() {
       setFormValues(nextValues);
       setShowSaveConfirm(false);
       setIsEditing(false);
-      setFlashMessage(t("userManagement.detail.updateSuccess"));
-      toast.success(t("userManagement.detail.updateSuccess"));
+      setFlashMessage("User information updated successfully.");
+      toast.success("User updated successfully.");
     } catch (error) {
-      const message = error instanceof Error ? error.message : t("userManagement.detail.updateFailed");
+      const message = error instanceof Error ? error.message : "Failed to update user.";
       toast.error(message);
     } finally {
       setIsSaving(false);
@@ -309,14 +307,14 @@ export function UserManagementDetailPage() {
     try {
       await deleteAdminUser(userId);
       setShowDeleteConfirm(false);
-      toast.success(t("userManagement.detail.deleteSuccess"));
+      toast.success("User deleted successfully.");
       navigate(ROUTES.adminUsers, {
         state: {
-          flashMessage: t("userManagement.detail.deleteSuccess"),
+          flashMessage: `${displayName || formValues.id} has been moved to inactive status.`,
         },
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : t("userManagement.detail.deleteFailed");
+      const message = error instanceof Error ? error.message : "Failed to delete user.";
       toast.error(message);
     } finally {
       setIsDeleting(false);
@@ -327,11 +325,11 @@ export function UserManagementDetailPage() {
     <section className="flex min-h-full flex-col gap-4">
       <UserManagementHeroCard
         avatarUrl={formValues.avatarUrl}
-        backLabel={t("back")}
+        backLabel="Back to user list"
         backTo={ROUTES.adminUsers}
-        badge={t("menus.admin-users") || "Users"}
+        badge="Users"
         title={displayName}
-        description={t("userManagement.detail.detailNotice")}
+        description="Review the user profile loaded from the backend and manage this account from the admin detail page."
         headerActions={!isEditing ? (
           <>
             <button
@@ -340,7 +338,7 @@ export function UserManagementDetailPage() {
               className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-semibold text-white shadow-[0_14px_26px_rgba(239,93,180,0.24)] transition hover:scale-[1.01]"
             >
               <PencilLine size={16} />
-              <span>{t("userManagement.detail.editUser")}</span>
+              <span>Edit user</span>
             </button>
             <button
               type="button"
@@ -349,13 +347,13 @@ export function UserManagementDetailPage() {
               className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#fff0f5] px-5 text-sm font-semibold text-[#d14c84] transition hover:bg-[#ffe1ec] disabled:opacity-70"
             >
               {isDeleting ? <LoaderCircle size={16} className="animate-spin" /> : <Trash2 size={16} />}
-              <span>{isDeleting ? t("userManagement.detail.deleting") : t("userManagement.detail.deleteUser")}</span>
+              <span>{isDeleting ? "Deleting..." : "Delete user"}</span>
             </button>
           </>
         ) : null}
         panelIcon={<PencilLine size={18} className="text-[#d45b9f]" />}
-        panelTitle={isEditing ? t("userManagement.detail.editMode") : t("userManagement.detail.viewMode")}
-        panelDescription={t("userManagement.detail.detailDataLoadedDesc")}
+        panelTitle={isEditing ? "Edit mode" : "View mode"}
+        panelDescription="Detail data is loaded from API. Save and delete actions now call the backend user management endpoints."
       />
 
       {flashMessage ? (
@@ -385,7 +383,7 @@ export function UserManagementDetailPage() {
                   className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_26px_rgba(239,93,180,0.24)] transition hover:scale-[1.01] sm:w-auto"
                 >
                   {isSaving ? <LoaderCircle size={16} className="animate-spin" /> : <Save size={16} />}
-                  <span>{isSaving ? t("userManagement.detail.creating") : t("userManagement.detail.saveChanges")}</span>
+                  <span>{isSaving ? "Saving..." : "Save changes"}</span>
                 </button>
 
                 <button
@@ -393,7 +391,7 @@ export function UserManagementDetailPage() {
                   onClick={() => setShowCancelConfirm(true)}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#fff5ef] px-5 py-3 text-sm font-semibold text-[var(--color-ink)] transition hover:bg-[#ffe9d7] sm:w-auto"
                 >
-                  <span>{t("userManagement.detail.discardChanges")}</span>
+                  <span>Cancel</span>
                 </button>
                 <button
                   type="button"
@@ -402,7 +400,7 @@ export function UserManagementDetailPage() {
                   className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#fff0f5] px-5 py-3 text-sm font-semibold text-[#d14c84] transition hover:bg-[#ffe1ec] sm:w-auto"
                 >
                   {isDeleting ? <LoaderCircle size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                  <span>{isDeleting ? t("userManagement.detail.deleting") : t("userManagement.detail.deleteUser")}</span>
+                  <span>{isDeleting ? "Deleting..." : "Delete user"}</span>
                 </button>
               </>
             ) : null}
@@ -410,7 +408,7 @@ export function UserManagementDetailPage() {
 
           <div className="mt-8 space-y-4">
             {shouldShowSalonDetail ? (
-              <InfoSection icon={Building2} title={t("userManagement.detail.assignedSalon")}>
+              <InfoSection icon={Building2} title="Assigned Salon">
                 <div className="grid gap-4 lg:grid-cols-[180px_minmax(0,1fr)]">
                   {salonDetail?.imageUrl ? (
                     <img
@@ -423,23 +421,23 @@ export function UserManagementDetailPage() {
                   ) : null}
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="rounded-2xl bg-white px-4 py-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d39bb5]">{t("userManagement.detail.salonName")}</p>
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d39bb5]">Salon Name</p>
                       <p className="mt-2 font-semibold text-[var(--color-ink)]">{salonDetail?.name || "--"}</p>
                     </div>
                     <div className="rounded-2xl bg-white px-4 py-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d39bb5]">{t("userManagement.detail.status")}</p>
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d39bb5]">Status</p>
                       <p className="mt-2 font-semibold text-[var(--color-ink)]">{salonDetail?.status || "--"}</p>
                     </div>
                     <div className="rounded-2xl bg-white px-4 py-3 sm:col-span-2">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d39bb5]">{t("userManagement.detail.address")}</p>
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d39bb5]">Address</p>
                       <p className="mt-2 flex items-start gap-2 text-[var(--color-ink)]"><MapPin size={15} className="mt-0.5 text-[#d45b9f]" />{salonDetail?.address || "--"}</p>
                     </div>
                     <div className="rounded-2xl bg-white px-4 py-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d39bb5]">{t("userManagement.detail.phone")}</p>
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d39bb5]">Phone</p>
                       <p className="mt-2 flex items-center gap-2 text-[var(--color-ink)]"><Phone size={15} className="text-[#d45b9f]" />{salonDetail?.phone || "--"}</p>
                     </div>
                     <div className="rounded-2xl bg-white px-4 py-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d39bb5]">Artist {t("userManagement.detail.status")}</p>
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d39bb5]">Artist Status</p>
                       <p className="mt-2 font-semibold text-[var(--color-ink)]">{artistDetail?.status || formValues.status || "--"}</p>
                     </div>
                   </div>
@@ -448,7 +446,7 @@ export function UserManagementDetailPage() {
             ) : null}
 
             {shouldShowSkills ? (
-              <InfoSection icon={Star} title={t("userManagement.detail.skillRatings")}>
+              <InfoSection icon={Star} title="Skill Ratings">
                 {artistSkills.length ? (
                   <div className="grid gap-3 md:grid-cols-2">
                     {artistSkills.map((skill) => (
@@ -468,14 +466,14 @@ export function UserManagementDetailPage() {
                   </div>
                 ) : (
                   <div className="rounded-2xl bg-white px-4 py-4 text-sm text-[#8f7c6d]">
-                    {t("userManagement.detail.noSkillsAssigned")}
+                    No skills assigned for this staff artist yet.
                   </div>
                 )}
               </InfoSection>
             ) : null}
 
             {shouldShowWorkSchedule ? (
-              <InfoSection icon={CalendarDays} title={t("userManagement.detail.workSchedule")}>
+              <InfoSection icon={CalendarDays} title="Work Schedule">
                 {formValues.staffId ? (
                   sortedSchedules.length ? (
                     <div className="overflow-hidden rounded-[20px] border border-[#f6dbe7] bg-white">
@@ -484,18 +482,18 @@ export function UserManagementDetailPage() {
                         columns={scheduleColumns}
                         dataSource={sortedSchedules}
                         pagination={false}
-                        locale={{ emptyText: t("userManagement.detail.noWorkScheduleFound") }}
+                        locale={{ emptyText: "No work schedule found." }}
                         scroll={{ x: 640 }}
                       />
                     </div>
                   ) : (
                     <div className="rounded-2xl bg-white px-4 py-4 text-sm text-[#8f7c6d]">
-                      {t("userManagement.detail.noWorkScheduleFound")}
+                      No work schedule entries found for this staff artist.
                     </div>
                   )
                 ) : (
                   <div className="rounded-2xl bg-white px-4 py-4 text-sm text-[#8f7c6d]">
-                    {t("userManagement.detail.notLinkedToArtist")}
+                    This account is not linked to a nail artist profile, so there is no work schedule to display.
                   </div>
                 )}
               </InfoSection>
@@ -505,25 +503,25 @@ export function UserManagementDetailPage() {
 
         <UserManagementSnapshotCard
           formValues={formValues}
-          notice={t("userManagement.detail.detailNotice")}
+          notice="This profile is loaded from API. Save updates the account, and delete changes the account status to inactive."
         />
       </div>
 
       <ActionConfirmModal
         open={showSaveConfirm}
         intent="success"
-        title={t("userManagement.detail.saveUserChanges")}
-        subtitle={t("userManagement.detail.saveUserChanges")}
-        description={t("userManagement.detail.saveUserChangesDesc")}
-        confirmText={t("userManagement.detail.saveChangesBtn")}
-        cancelText={t("userManagement.detail.reviewAgain")}
+        title="Save User Changes"
+        subtitle="This will update the user account in the backend."
+        description="Confirm to apply the latest edits to this user profile."
+        confirmText="Save Changes"
+        cancelText="Review Again"
         confirmIcon={Save}
         onConfirm={handleSave}
         onCancel={() => setShowSaveConfirm(false)}
         highlights={[displayName, formValues.role || "Role pending", formValues.status || "Status pending"]}
         details={[
-          { label: t("userManagement.detail.email"), value: formValues.email || t("userManagement.detail.emailNotSet") },
-          { label: t("userManagement.detail.status"), value: formValues.status || "Not set" },
+          { label: "Email", value: formValues.email || "No email entered" },
+          { label: "Status", value: formValues.status || "Not set" },
         ]}
         warnings={["Only email, first name, last name, phone, and status are sent to the update API."]}
       />
@@ -531,11 +529,11 @@ export function UserManagementDetailPage() {
       <ActionConfirmModal
         open={showCancelConfirm}
         intent="warning"
-        title={t("userManagement.detail.discardChanges")}
-        subtitle={t("userManagement.detail.discardChangesSubtitle")}
-        description={t("userManagement.detail.discardChangesDesc")}
-        confirmText={t("userManagement.detail.discardChanges")}
-        cancelText={t("userManagement.detail.keepEditing")}
+        title="Discard User Edits"
+        subtitle="You are about to leave edit mode without saving."
+        description="Unsaved changes on this user profile will be discarded."
+        confirmText="Discard Changes"
+        cancelText="Keep Editing"
         confirmIcon={X}
         onConfirm={handleCancelEdit}
         onCancel={() => setShowCancelConfirm(false)}
@@ -549,11 +547,11 @@ export function UserManagementDetailPage() {
       <ActionConfirmModal
         open={showDeleteConfirm}
         intent="danger"
-        title={t("userManagement.detail.deleteUserConfirmTitle")}
-        subtitle={t("userManagement.detail.deleteUserConfirmSubtitle")}
-        description={t("userManagement.detail.deleteUserConfirmDesc", { name: displayName || "this user" })}
-        confirmText={t("userManagement.detail.deleteUser")}
-        cancelText={t("userManagement.detail.keepUser")}
+        title="Delete User"
+        subtitle="This will call the delete API and mark the account as inactive."
+        description={`You are about to delete ${displayName || "this user"}. This action cannot be undone.`}
+        confirmText="Delete User"
+        cancelText="Keep User"
         confirmIcon={Trash2}
         onConfirm={handleDelete}
         onCancel={() => setShowDeleteConfirm(false)}
@@ -562,7 +560,7 @@ export function UserManagementDetailPage() {
           meta: `${formValues.role || "Role pending"} | ${formValues.branch || "Branch pending"}`,
           note: formValues.email || "No email entered",
         }}
-        warnings={[t("userManagement.detail.softDeleteWarning")]}
+        warnings={["The backend delete endpoint performs a soft delete by changing the account status to inactive."]}
       />
     </section>
   );

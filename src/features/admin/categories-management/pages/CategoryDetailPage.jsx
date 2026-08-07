@@ -1,4 +1,3 @@
-import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ArrowLeft, FolderTree, Layers3, Pencil, Save, ShieldCheck, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
@@ -13,24 +12,23 @@ import {
   updateAdminCategory,
 } from "../services/categoriesManagementService";
 
-function validateForm(formValues, t) {
+function validateForm(formValues) {
   if (!String(formValues.name || "").trim()) {
-    return t("adminCategories.nameRequired");
+    return "Category name is required.";
   }
 
   if (!Number.isInteger(Number(formValues.categoryTypeId)) || Number(formValues.categoryTypeId) <= 0) {
-    return t("adminCategories.typeRequired");
+    return "Category type is required.";
   }
 
   if (!String(formValues.status || "").trim()) {
-    return t("adminCategories.statusRequired");
+    return "Status is required.";
   }
 
   return "";
 }
 
 export function CategoryDetailPage() {
-  const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const { categoryId } = useParams();
@@ -85,7 +83,7 @@ export function CategoryDetailPage() {
           return;
         }
 
-        setError(loadError instanceof Error ? loadError.message : t("adminCategories.loadDetailFailed"));
+        setError(loadError instanceof Error ? loadError.message : "Failed to load category detail.");
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -109,9 +107,9 @@ export function CategoryDetailPage() {
     const selectedType = categoryTypeOptions.find((item) => String(item.value) === String(draft.categoryTypeId));
 
     return [
-      [t("adminCategories.categoryIdLabel"), String(category.categoryId)],
-      [t("adminCategories.categoryType"), selectedType?.label || category.categoryTypeName || "--"],
-      [t("adminCategories.status"), draft.status || "--"],
+      ["Category ID", String(category.categoryId)],
+      ["Category Type", selectedType?.label || category.categoryTypeName || "--"],
+      ["Status", draft.status || "--"],
     ];
   }, [category, categoryTypeOptions, draft]);
 
@@ -155,7 +153,7 @@ export function CategoryDetailPage() {
   };
 
   const handleRequestSave = () => {
-    const validationError = validateForm(draft, t);
+    const validationError = validateForm(draft);
 
     if (validationError) {
       setError(validationError);
@@ -184,9 +182,9 @@ export function CategoryDetailPage() {
         status: updatedCategory.status,
       });
       setIsEditing(false);
-      toast.success(t("adminCategories.updateSuccess", { name: updatedCategory.name }));
+      toast.success(`${updatedCategory.name} updated successfully.`);
     } catch (saveError) {
-      const message = saveError instanceof Error ? saveError.message : t("adminCategories.updateFailed");
+      const message = saveError instanceof Error ? saveError.message : "Failed to update category.";
       setError(message);
       toast.error(message);
     } finally {
@@ -204,14 +202,14 @@ export function CategoryDetailPage() {
 
     try {
       await deleteAdminCategory(category.categoryId);
-      toast.success(t("adminCategories.deleteSuccess", { name: category.name }));
+      toast.success(`${category.name} deleted successfully.`);
       navigate(ROUTES.adminCategories, {
         state: {
-          flashMessage: t("adminCategories.deleteFlashSuccess", { name: category.name }),
+          flashMessage: `${category.name} has been deleted successfully.`,
         },
       });
     } catch (deleteError) {
-      const message = deleteError instanceof Error ? deleteError.message : t("adminCategories.deleteFailed");
+      const message = deleteError instanceof Error ? deleteError.message : "Failed to delete category.";
       toast.error(message);
     } finally {
       setIsDeleting(false);
@@ -234,8 +232,8 @@ export function CategoryDetailPage() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">{t("adminCategories.categoryDetail")}</h1>
-            <p className="text-xs font-medium text-slate-400">{t("adminCategories.categoryDetailDesc")}</p>
+            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">Category Detail</h1>
+            <p className="text-xs font-medium text-slate-400">Review, edit, and delete this category from one page.</p>
           </div>
         </div>
 
@@ -247,7 +245,7 @@ export function CategoryDetailPage() {
             className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Trash2 size={14} />
-            {t("adminCategories.deleteCategory")}
+            Delete Category
           </button>
           {isEditing ? (
             <>
@@ -257,7 +255,7 @@ export function CategoryDetailPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
               >
                 <X size={14} />
-                {t("adminCategories.cancel")}
+                Cancel
               </button>
               <button
                 type="button"
@@ -265,7 +263,7 @@ export function CategoryDetailPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
               >
                 <Save size={14} />
-                {t("adminCategories.saveChanges")}
+                Save Changes
               </button>
             </>
           ) : (
@@ -276,7 +274,7 @@ export function CategoryDetailPage() {
               className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Pencil size={14} />
-              {t("adminCategories.editCategory")}
+              Edit Category
             </button>
           )}
         </div>
@@ -296,19 +294,19 @@ export function CategoryDetailPage() {
 
       {isLoading ? (
         <div className="flex min-h-[320px] items-center justify-center rounded-[24px] bg-white/80 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
-          <div className="text-center text-sm text-slate-600">{t("adminCategories.loadingDetails")}</div>
+          <div className="text-center text-sm text-slate-600">Loading category details...</div>
         </div>
       ) : (
         <div className="grid gap-4 ">
           <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
             <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
               <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
-              {t("adminCategories.categoryInformation")}
+              Category Information
             </h2>
 
             <div className="grid gap-5">
               <label className="space-y-2.5">
-                <span className="text-[13px] font-semibold text-slate-600">{t("adminCategories.categoryName")}</span>
+                <span className="text-[13px] font-semibold text-slate-600">Category Name</span>
                 <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                   <FolderTree size={14} className="shrink-0 text-rose-300" />
                   <input
@@ -322,7 +320,7 @@ export function CategoryDetailPage() {
               </label>
 
               <label className="space-y-2.5">
-                <span className="text-[13px] font-semibold text-slate-600">{t("adminCategories.categoryType")}</span>
+                <span className="text-[13px] font-semibold text-slate-600">Category Type</span>
                 <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                   <Layers3 size={14} className="shrink-0 text-rose-300" />
                   <select
@@ -341,7 +339,7 @@ export function CategoryDetailPage() {
               </label>
 
               <label className="space-y-2.5">
-                <span className="text-[13px] font-semibold text-slate-600">{t("adminCategories.status")}</span>
+                <span className="text-[13px] font-semibold text-slate-600">Status</span>
                 <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                   <ShieldCheck size={14} className="shrink-0 text-rose-300" />
                   <select
@@ -367,11 +365,11 @@ export function CategoryDetailPage() {
       <ActionConfirmModal
         open={showSaveConfirm}
         intent="success"
-        title={t("adminCategories.saveChangesTitle")}
-        subtitle={t("adminCategories.saveChangesSubtitle")}
-        description={t("adminCategories.saveChangesDesc")}
-        confirmText={t("adminCategories.saveChanges")}
-        cancelText={t("adminCategories.reviewAgain")}
+        title="Save Category Changes"
+        subtitle="This will update the category in backend."
+        description="Confirm to save the latest changes to this category."
+        confirmText="Save Changes"
+        cancelText="Review Again"
         confirmIcon={Save}
         loading={isSaving}
         onConfirm={handleSave}
@@ -386,11 +384,11 @@ export function CategoryDetailPage() {
       <ActionConfirmModal
         open={showDeleteConfirm}
         intent="danger"
-        title={t("adminCategories.deleteCategoryTitle")}
-        subtitle={t("adminCategories.deleteConfirmSubtitle")}
-        description={t("adminCategories.deleteConfirmDesc", { name: category?.name || "this category" })}
-        confirmText={t("adminCategories.deleteCategory")}
-        cancelText={t("adminCategories.keepCategory")}
+        title="Delete Category"
+        subtitle="This will set the category status to inactive in backend."
+        description={`You are about to delete ${category?.name || "this category"}.`}
+        confirmText="Delete Category"
+        cancelText="Keep Category"
         confirmIcon={Trash2}
         loading={isDeleting}
         onConfirm={handleDelete}
@@ -404,7 +402,7 @@ export function CategoryDetailPage() {
             }
             : null
         }
-        warnings={[t("adminCategories.deleteWarning")]}
+        warnings={["Backend delete for this resource changes the status to inactive."]}
       />
     </section>
   );

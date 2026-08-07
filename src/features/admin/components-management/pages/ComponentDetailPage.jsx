@@ -1,4 +1,3 @@
-import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   ArrowLeft,
   Clock3,
@@ -27,28 +26,27 @@ import {
 } from "../services/componentsManagementService";
 import { Image } from "antd";
 
-function validateForm(formValues, t) {
+function validateForm(formValues) {
   if (!String(formValues.name || "").trim()) {
-    return t("adminComponents.nameRequired");
+    return "Component name is required.";
   }
 
   if (!String(formValues.componentType || "").trim()) {
-    return t("adminComponents.typeRequired");
+    return "Component type is required.";
   }
 
   if (Number(formValues.price) < 0 || Number.isNaN(Number(formValues.price))) {
-    return t("adminComponents.priceInvalid");
+    return "Price must be a valid number.";
   }
 
   if (Number(formValues.duration) < 0 || Number.isNaN(Number(formValues.duration))) {
-    return t("adminComponents.durationInvalid");
+    return "Duration must be a valid number.";
   }
 
   return "";
 }
 
 export function ComponentDetailPage() {
-  const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const { componentId } = useParams();
@@ -100,7 +98,7 @@ export function ComponentDetailPage() {
           return;
         }
 
-        setError(loadError instanceof Error ? loadError.message : t("adminComponents.loadDetailFailed"));
+        setError(loadError instanceof Error ? loadError.message : "Failed to load component detail.");
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -121,11 +119,11 @@ export function ComponentDetailPage() {
     }
 
     return [
-      [t("adminComponents.componentIdLabel"), String(component.componentId)],
-      [t("adminComponents.componentName"), draft.name || "--"],
-      [t("adminComponents.type"), draft.componentType || "--"],
-      [t("adminComponents.price"), draft.price ? formatComponentCurrency(draft.price) : "--"],
-      [t("adminComponents.duration"), draft.duration ? formatComponentDuration(draft.duration) : "--"],
+      ["Component ID", String(component.componentId)],
+      ["Component Name", draft.name || "--"],
+      ["Type", draft.componentType || "--"],
+      ["Price", draft.price ? formatComponentCurrency(draft.price) : "--"],
+      ["Duration", draft.duration ? formatComponentDuration(draft.duration) : "--"],
     ];
   }, [component, draft]);
 
@@ -189,7 +187,7 @@ export function ComponentDetailPage() {
   };
 
   const handleRequestSave = () => {
-    const validationError = validateForm(draft, t);
+    const validationError = validateForm(draft);
 
     if (validationError) {
       setError(validationError);
@@ -223,9 +221,9 @@ export function ComponentDetailPage() {
       });
       setImagePreview(updatedComponent.imageUrl || imagePreview);
       setIsEditing(false);
-      toast.success(t("adminComponents.updateSuccess", { name: updatedComponent.name }));
+      toast.success(`${updatedComponent.name} updated successfully.`);
     } catch (saveError) {
-      const message = saveError instanceof Error ? saveError.message : t("adminComponents.updateFailed");
+      const message = saveError instanceof Error ? saveError.message : "Failed to update component.";
       setError(message);
       toast.error(message);
     } finally {
@@ -243,14 +241,14 @@ export function ComponentDetailPage() {
 
     try {
       await deleteAdminComponent(component.componentId);
-      toast.success(t("adminComponents.deleteSuccess", { name: component.name }));
+      toast.success(`${component.name} deleted successfully.`);
       navigate(ROUTES.adminComponents, {
         state: {
-          flashMessage: t("adminComponents.deleteFlashSuccess", { name: component.name }),
+          flashMessage: `${component.name} has been deleted successfully.`,
         },
       });
     } catch (deleteError) {
-      const message = deleteError instanceof Error ? deleteError.message : t("adminComponents.deleteFailed");
+      const message = deleteError instanceof Error ? deleteError.message : "Failed to delete component.";
       toast.error(message);
     } finally {
       setIsDeleting(false);
@@ -273,9 +271,9 @@ export function ComponentDetailPage() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">{t("adminComponents.componentDetail")}</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">Component Detail</h1>
             <p className="text-xs font-medium text-slate-400">
-              {t("adminComponents.componentDetailDesc")}
+              Review, edit, and delete this component from one page.
             </p>
           </div>
         </div>
@@ -288,7 +286,7 @@ export function ComponentDetailPage() {
             className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Trash2 size={14} />
-            {t("adminComponents.deleteComponent")}
+            Delete Component
           </button>
           {isEditing ? (
             <>
@@ -298,7 +296,7 @@ export function ComponentDetailPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
               >
                 <X size={14} />
-                {t("adminComponents.cancel")}
+                Cancel
               </button>
               <button
                 type="button"
@@ -306,7 +304,7 @@ export function ComponentDetailPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
               >
                 <Save size={14} />
-                {t("adminComponents.saveChanges")}
+                Save Changes
               </button>
             </>
           ) : (
@@ -317,7 +315,7 @@ export function ComponentDetailPage() {
               className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Pencil size={14} />
-              {t("adminComponents.editComponent")}
+              Edit Component
             </button>
           )}
         </div>
@@ -337,19 +335,19 @@ export function ComponentDetailPage() {
 
       {isLoading ? (
         <div className="flex min-h-[320px] items-center justify-center rounded-[24px] bg-white/80 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
-          <div className="text-center text-sm text-slate-600">{t("adminComponents.loadingDetails")}</div>
+          <div className="text-center text-sm text-slate-600">Loading component details...</div>
         </div>
       ) : (
         <div className="grid gap-4 ">
           <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
             <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
               <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
-              {t("adminComponents.componentInformation")}
+              Component Information
             </h2>
 
             <div className="grid gap-5 md:grid-cols-2">
               <label className="space-y-2.5">
-                <span className="text-[13px] font-semibold text-slate-600">{t("adminComponents.componentName")}</span>
+                <span className="text-[13px] font-semibold text-slate-600">Component Name</span>
                 <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                   <Shapes size={14} className="shrink-0 text-rose-300" />
                   <input
@@ -363,7 +361,7 @@ export function ComponentDetailPage() {
               </label>
 
               <label className="space-y-2.5">
-                <span className="text-[13px] font-semibold text-slate-600">{t("adminComponents.componentType")}</span>
+                <span className="text-[13px] font-semibold text-slate-600">Component Type</span>
                 <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                   <Gem size={14} className="shrink-0 text-rose-300" />
                   <select
@@ -382,7 +380,7 @@ export function ComponentDetailPage() {
               </label>
 
               <label className="space-y-2.5">
-                <span className="text-[13px] font-semibold text-slate-600">{t("adminComponents.price")}</span>
+                <span className="text-[13px] font-semibold text-slate-600">Price</span>
                 <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                   <Wallet size={14} className="shrink-0 text-rose-300" />
                   <input
@@ -398,7 +396,7 @@ export function ComponentDetailPage() {
               </label>
 
               <label className="space-y-2.5">
-                <span className="text-[13px] font-semibold text-slate-600">{t("adminComponents.duration")}</span>
+                <span className="text-[13px] font-semibold text-slate-600">Duration</span>
                 <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                   <Clock3 size={14} className="shrink-0 text-rose-300" />
                   <input
@@ -414,7 +412,7 @@ export function ComponentDetailPage() {
               </label>
 
               <label className="space-y-2.5 md:col-span-2">
-                <span className="text-[13px] font-semibold text-slate-600">{t("adminComponents.previewImage")}</span>
+                <span className="text-[13px] font-semibold text-slate-600">Preview Image</span>
                 <label
                   className={`flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-rose-200 px-6 py-8 ${isEditing
                     ? "cursor-pointer bg-gradient-to-br from-[#fffafc] to-[#fff5f9] transition hover:border-rose-300 hover:shadow-[0_8px_24px_rgba(226,93,143,0.12)]"
@@ -436,9 +434,9 @@ export function ComponentDetailPage() {
                       </div>
                       <div className="text-center">
                         <p className="text-base font-semibold text-slate-700">
-                          {isEditing ? t("adminComponents.clickUploadImage") : t("adminComponents.noPreviewImage")}
+                          {isEditing ? "Click to upload component image" : "No preview image"}
                         </p>
-                        <p className="mt-1 text-xs text-slate-400">{t("adminComponents.uploadFormat")}</p>
+                        <p className="mt-1 text-xs text-slate-400">PNG, JPG up to 5MB</p>
                       </div>
                     </>
                   )}
@@ -461,11 +459,11 @@ export function ComponentDetailPage() {
       <ActionConfirmModal
         open={showSaveConfirm}
         intent="success"
-        title={t("adminComponents.saveChangesTitle")}
-        subtitle={t("adminComponents.saveChangesSubtitle")}
-        description={t("adminComponents.saveChangesDesc")}
-        confirmText={t("adminComponents.saveChanges")}
-        cancelText={t("adminComponents.reviewAgain")}
+        title="Save Component Changes"
+        subtitle="This will update the component in backend."
+        description="Confirm to save the latest changes to this component."
+        confirmText="Save Changes"
+        cancelText="Review Again"
         confirmIcon={Save}
         loading={isSaving}
         onConfirm={handleSave}
@@ -480,11 +478,11 @@ export function ComponentDetailPage() {
       <ActionConfirmModal
         open={showDeleteConfirm}
         intent="danger"
-        title={t("adminComponents.deleteComponentTitle")}
-        subtitle={t("adminComponents.deleteConfirmSubtitle")}
-        description={t("adminComponents.deleteConfirmDesc", { name: component?.name || "this component" })}
-        confirmText={t("adminComponents.deleteComponent")}
-        cancelText={t("adminComponents.keepComponent")}
+        title="Delete Component"
+        subtitle="This will permanently remove the component from backend."
+        description={`You are about to delete ${component?.name || "this component"}. This action cannot be undone.`}
+        confirmText="Delete Component"
+        cancelText="Keep Component"
         confirmIcon={Trash2}
         loading={isDeleting}
         onConfirm={handleDelete}
@@ -499,7 +497,7 @@ export function ComponentDetailPage() {
             }
             : null
         }
-        warnings={[t("adminComponents.deleteWarning")]}
+        warnings={["This action calls the backend delete endpoint and removes the record permanently."]}
       />
     </section>
   );

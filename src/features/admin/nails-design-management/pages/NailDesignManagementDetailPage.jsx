@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
-import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import {
   getAdminNailVariantCreateRoute,
@@ -392,12 +391,12 @@ function NailVariantHandPreview({ variantDetail, compact = false, showShapeOverl
               <div className="relative group">
                 <div className={fingerGlowClassName} />
 
-                <div
+                <div 
                   className={nailShellClassName}
                   style={compact ? { width: '48px', height: '63px' } : { width: '96px', height: '126px' }}
                 >
-                  <div
-                    className="absolute"
+                  <div 
+                    className="absolute" 
                     style={{
                       left: '14%',
                       top: '37.2%',
@@ -467,7 +466,7 @@ function NailVariantHandPreview({ variantDetail, compact = false, showShapeOverl
                   </div>
 
                   {showShapeOverlay && variantDetail?.nailShape?.imageUrl ? (
-                    <div
+                    <div 
                       className="pointer-events-none absolute"
                       style={{
                         left: '14%',
@@ -678,25 +677,9 @@ SkillLevelSlider.propTypes = {
   value: PropTypes.number.isRequired,
 };
 
-const PRICING_DICT = {
-  "Total Material Cost": "Tổng Chi phí Nguyên liệu",
-  "Est. Service Cost": "Chi phí Dịch vụ Ước tính",
-  "Estimated Profit Margin": "Lợi nhuận Biên Ước tính",
-  "Final Price": "Giá Cuối cùng",
-  "Avg Competitor Price": "Giá Đối thủ Trung bình",
-  "Premium vs Market": "Cao cấp so với Thị trường",
-  "Base Gel": "Gel Nền",
-  "Top Coat": "Gel Bóng",
-  "Nail Polish": "Sơn Móng",
-  "Charms & Stones": "Charm & Đá",
-  "Manicure Work": "Công Làm Móng",
-  "Design Service": "Dịch vụ Thiết kế",
-};
-
 export function NailDesignManagementDetailPage() {
   const { designId } = useParams();
   const navigate = useNavigate();
-  const { t, language } = useLanguage();
   const heroSectionRef = useRef(null);
   const customerProfileRef = useRef(null);
   const designComponentsRef = useRef(null);
@@ -779,7 +762,7 @@ export function NailDesignManagementDetailPage() {
       <section className="flex min-h-full items-center justify-center bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)] px-4 py-10">
         <div className="flex items-center gap-3 rounded-[18px] border border-[#f8dce8] bg-white px-5 py-4 text-sm text-[#b38a9f] shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
           <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
-          {t("adminNailsDesignManagement.loadingNailDesignDetail")}
+          Loading nail design detail...
         </div>
       </section>
     );
@@ -1110,13 +1093,13 @@ export function NailDesignManagementDetailPage() {
   };
 
   const summaryRows = [
-    [t("adminNailsDesignManagement.designStatus"), formValues.designStatus === "Active" ? (t("adminNailsDesignManagement.active")) : formValues.designStatus],
-    [t("adminNailsDesignManagement.tryonReady"), formValues.tryOnReady ? (t("adminNailsDesignManagement.yes")) : (t("adminNailsDesignManagement.no"))],
-    [t("adminNailsDesignManagement.complexity"), formValues.complexity === "Medium" ? (t("adminNailsDesignManagement.medium")) : formValues.complexity === "High" ? (t("adminNailsDesignManagement.high")) : (t("adminNailsDesignManagement.low"))],
-    [t("adminNailsDesignManagement.estDuration"), formatDurationLabel(formValues.estimatedDuration)],
-    [t("adminNailsDesignManagement.nailShape"), formValues.nailShape],
-    [t("adminNailsDesignManagement.nailLength"), formValues.nailLength],
-    [t("adminNailsDesignManagement.suggestedPrice"), formValues.suggestedPrice],
+    ["Design Status", formValues.designStatus],
+    ["Try-On Ready", formValues.tryOnReady ? "Yes" : "No"],
+    ["Complexity", formValues.complexity],
+    ["Est. Duration", formatDurationLabel(formValues.estimatedDuration)],
+    ["Nail Shape", formValues.nailShape],
+    ["Nail Length", formValues.nailLength],
+    ["Suggested Price", formValues.suggestedPrice],
   ];
   const apiCategoryRows = Array.isArray(formValues.categories) ? formValues.categories : [];
 
@@ -1156,19 +1139,18 @@ export function NailDesignManagementDetailPage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-xs text-[#c694ad]">
-              {t("adminNailsDesignManagement.nailDesigns")}<span className="text-[#ea4f93]">{formValues.breadcrumbsLabel}</span>
+              Nail Designs / <span className="text-[#ea4f93]">{formValues.breadcrumbsLabel}</span>
             </p>
             <h2 className="mt-1 text-[1.7rem] font-extrabold text-[#432744]">
-              {t("adminNailsDesignManagement.nailDesignDetail")}
+              Nail Design Detail
             </h2>
             <p className="mt-1 text-sm text-[#c694ad]">
-              {t("adminNailsDesignManagement.viewAndEditDesignDetailsWorkfl")
-              }
+              View and edit design details, workflow, and AI recommendation profile. Pricing stays locked.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <span className="inline-flex rounded-full bg-[#eaf9ee] px-4 py-2 text-xs font-bold text-[#2fa25f]">
-              {formValues.designStatus === "Active" ? (t("adminNailsDesignManagement.active")) : (t("adminNailsDesignManagement.inactive"))}
+              {formValues.designStatus}
             </span>
             {isEditing ? (
               <>
@@ -1178,7 +1160,7 @@ export function NailDesignManagementDetailPage() {
                   disabled={isSavingVariants || isDeletingVariant}
                   className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.2)]"
                 >
-                  {isSavingVariants ? (t("adminNailsDesignManagement.saving")) : (t("adminNailsDesignManagement.saveChanges"))}
+                  {isSavingVariants ? "Saving..." : "Save Changes"}
                 </button>
                 <button
                   type="button"
@@ -1186,7 +1168,7 @@ export function NailDesignManagementDetailPage() {
                   disabled={isSavingVariants || isDeletingVariant}
                   className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#7e6075]"
                 >
-                  {t("adminNailsDesignManagement.cancel")}
+                  Cancel
                 </button>
               </>
             ) : (
@@ -1197,17 +1179,17 @@ export function NailDesignManagementDetailPage() {
                   className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
                 >
                   <PencilLine size={13} className="mr-1.5 inline" />
-                  {t("adminNailsDesignManagement.editDesign")}
+                  Edit Design
                 </button>
                 <button
                   type="button"
                   onClick={() =>
-                    setFlashMessage(t("adminNailsDesignManagement.mockDuplicateCompletedAClonedD"))
+                    setFlashMessage("Mock duplicate completed. A cloned design would be created in a real flow.")
                   }
                   className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.2)]"
                 >
                   <Copy size={13} className="mr-1.5 inline" />
-                  {t("adminNailsDesignManagement.duplicateDesign")}
+                  Duplicate Design
                 </button>
               </>
             )}
@@ -1295,9 +1277,9 @@ export function NailDesignManagementDetailPage() {
 
                 <div className="mt-5 grid gap-3 sm:grid-cols-3">
                   {[
-                    [t("adminNailsDesignManagement.popularityScore"), formValues.popularityScore],
-                    [t("adminNailsDesignManagement.bookingRate"), formValues.bookingRate],
-                    [t("adminNailsDesignManagement.customerRating"), formValues.customerRating],
+                    ["Popularity Score", formValues.popularityScore],
+                    ["Booking Rate", formValues.bookingRate],
+                    ["Customer Rating", formValues.customerRating],
                   ].map(([label, value]) => (
                     <div key={label} className="rounded-[18px] bg-[#fff3f8] px-4 py-4">
                       <p className="text-xs font-semibold text-[#c694ad]">{label}</p>
@@ -1310,31 +1292,29 @@ export function NailDesignManagementDetailPage() {
           </article>
 
           <SectionCard
-            title={t("adminNailsDesignManagement.apiDetailMapping")}
-            subtitle={t("adminNailsDesignManagement.fieldsMappedDirectlyFromGetApi")}
+            title="API Detail Mapping"
+            subtitle="Fields mapped directly from GET /api/NailDesigns/{id}."
             icon={<Eye size={18} />}
           >
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
 
               <div className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c694ad]">{t("adminNailsDesignManagement.name")}</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c694ad]">Name</p>
                 <p className="mt-3 text-sm font-extrabold text-[#432744]">{formatApiValue(formValues.name)}</p>
               </div>
               <div className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c694ad]">{t("adminNailsDesignManagement.status")}</p>
-                <p className="mt-3 text-sm font-extrabold text-[#432744]">
-                  {formValues.status === "Active" ? (t("adminNailsDesignManagement.active")) : (t("adminNailsDesignManagement.inactive"))}
-                </p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c694ad]">Status</p>
+                <p className="mt-3 text-sm font-extrabold text-[#432744]">{formatApiValue(formValues.status)}</p>
               </div>
               <div className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c694ad]">{t("adminNailsDesignManagement.variants")}</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c694ad]">Variants</p>
                 <p className="mt-3 text-sm font-extrabold text-[#432744]">{formatApiValue(formValues.variantCount)}</p>
               </div>
             </div>
 
             <div className="mt-4 grid gap-4 ">
               <div className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c694ad]">{t("adminNailsDesignManagement.description")}</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c694ad]">Description</p>
                 <p className="mt-3 whitespace-pre-line text-sm leading-6 text-[#6d5669]">
                   {formatApiValue(formValues.description)}
                 </p>
@@ -1345,15 +1325,15 @@ export function NailDesignManagementDetailPage() {
             <div className="mt-4 grid gap-4 lg:grid-cols-2">
               <div className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c694ad]">{t("adminNailsDesignManagement.categories")}</p>
-                  <Pill tone="purple">{apiCategoryRows.length} {t("adminNailsDesignManagement.items1")}</Pill>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c694ad]">Categories</p>
+                  <Pill tone="purple">{apiCategoryRows.length} item(s)</Pill>
                 </div>
                 <div className="mt-4 space-y-3">
                   {apiCategoryRows.length ? apiCategoryRows.map((category) => (
                     <div key={category.id || category.categoryId} className="rounded-[16px] border border-[#f1d7e3] bg-white p-4">
                       <p className="text-sm font-bold text-[#432744]">{formatApiValue(category.name)}</p>
-                      <p className="mt-1 text-xs text-[#8c7085]">{t("adminNailsDesignManagement.categoryType")}{formatApiValue(category.categoryTypeName)}</p>
-                      <p className="mt-1 text-xs text-[#8c7085]">{t("adminNailsDesignManagement.status1")}{category.status === "Active" ? (t("adminNailsDesignManagement.active")) : (t("adminNailsDesignManagement.inactive"))}</p>
+                      <p className="mt-1 text-xs text-[#8c7085]">Category Type: {formatApiValue(category.categoryTypeName)}</p>
+                      <p className="mt-1 text-xs text-[#8c7085]">Status: {formatApiValue(category.status)}</p>
                     </div>
                   )) : (
                     <div className="rounded-[16px] border border-dashed border-[#f3c9dd] bg-white px-4 py-4 text-sm text-[#8c7085]">
@@ -1363,7 +1343,7 @@ export function NailDesignManagementDetailPage() {
                 </div>
               </div>
               <div className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c694ad]">{t("adminNailsDesignManagement.priceRange")}</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c694ad]">Price Range</p>
                 <p className="mt-3 text-sm font-extrabold text-[#432744]">
                   {formatApiValue(formValues.suggestedPrice === "0 VND" ? null : `${formValues.suggestedPrice}`)}
                 </p>
@@ -1380,7 +1360,7 @@ export function NailDesignManagementDetailPage() {
           </SectionCard>
 
           <SectionCard
-            title={t("adminNailsDesignManagement.customerMatchingProfile")}
+            title="Customer Matching Profile"
 
             icon={<Sparkles size={18} />}
             sectionId="customer-profile-section"
@@ -1416,10 +1396,7 @@ export function NailDesignManagementDetailPage() {
                         })}
                       </div>
                       <p className="text-[11px] text-[#b2879f]">
-                        {values.length > 0
-                          ? (language === "vi" ? `Đã chọn ${values.length} thẻ` : `Selected ${values.length} tags`)
-                          : (t("adminNailsDesignManagement.selectOneOrMoreTags"))
-                        }
+                        {values.length > 0 ? `Selected ${values.length} tags` : "Select one or more tags"}
                       </p>
                     </div>
                   ) : (
@@ -1437,8 +1414,8 @@ export function NailDesignManagementDetailPage() {
           </SectionCard>
 
           <SectionCard
-            title={t("adminNailsDesignManagement.designComponents")}
-            subtitle={t("adminNailsDesignManagement.coreStructureAndStylingDecisio")}
+            title="Design Components"
+            subtitle="Core structure and styling decisions"
             icon={<Settings2 size={18} />}
             sectionId="design-components-section"
             sectionRef={designComponentsRef}
@@ -1467,8 +1444,8 @@ export function NailDesignManagementDetailPage() {
           </SectionCard>
 
           <SectionCard
-            title={t("adminNailsDesignManagement.designVariants")}
-            subtitle={t("adminNailsDesignManagement.designVariationsHaveDifferentA")}
+            title="Design Variants"
+            subtitle="Design variations have different accessories"
             icon={<Copy size={18} />}
             sectionId="design-variants-section"
             sectionRef={designVariantsRef}
@@ -1481,7 +1458,7 @@ export function NailDesignManagementDetailPage() {
                 className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
               >
                 <Plus size={13} className="mr-1.5 inline" />
-                {t("adminNailsDesignManagement.addNailVariant")}
+                Add Nail Variant
               </button>
             </div>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -1499,14 +1476,14 @@ export function NailDesignManagementDetailPage() {
                   {isEditing ? (
                     <div className="mt-3 space-y-3">
                       <div>
-                        <InputLabel>{t("adminNailsDesignManagement.variantName")}</InputLabel>
+                        <InputLabel>Variant Name</InputLabel>
                         <EditInput
                           value={variant.name}
                           onChange={handleVariantFieldChange(index, "name")}
                         />
                       </div>
                       <div>
-                        <InputLabel>{t("adminNailsDesignManagement.description")}</InputLabel>
+                        <InputLabel>Description</InputLabel>
                         <EditTextarea
                           disabled
                           value={variant.description}
@@ -1514,13 +1491,12 @@ export function NailDesignManagementDetailPage() {
                           rows={3}
                         />
                         <p className="mt-1 text-[11px] text-[#b2879f]">
-                          {t("adminNailsDesignManagement.descriptionIsDerivedFromSurfac")
-                          }
+                          Description is derived from surface and accessories, not persisted by this API.
                         </p>
                       </div>
                       <div className="grid gap-3 sm:grid-cols-2">
                         <div>
-                          <InputLabel>{t("adminNailsDesignManagement.level")}</InputLabel>
+                          <InputLabel>Level</InputLabel>
                           <EditSelect
                             disabled
                             value={variant.level}
@@ -1529,7 +1505,7 @@ export function NailDesignManagementDetailPage() {
                           />
                         </div>
                         <div>
-                          <InputLabel>{t("adminNailsDesignManagement.duration")}</InputLabel>
+                          <InputLabel>Duration</InputLabel>
                           <EditInput
                             className="disabled:cursor-not-allowed disabled:bg-[#f9f1f5] disabled:text-[#b2879f]"
                             disabled
@@ -1539,7 +1515,7 @@ export function NailDesignManagementDetailPage() {
                         </div>
                       </div>
                       <div>
-                        <InputLabel>{t("adminNailsDesignManagement.imageUrl")}</InputLabel>
+                        <InputLabel>Image URL</InputLabel>
                         <EditInput
                           value={variant.imageUrl}
                           onChange={handleVariantFieldChange(index, "imageUrl")}
@@ -1566,7 +1542,7 @@ export function NailDesignManagementDetailPage() {
                       onClick={() => void handleViewVariant(variant)}
                       className="flex-1 rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-2 text-xs font-bold text-[#ea4f93]"
                     >
-                      {t("adminNailsDesignManagement.view")}
+                      View
                     </button>
                     <button
                       type="button"
@@ -1587,7 +1563,7 @@ export function NailDesignManagementDetailPage() {
                         : "border-[#f4c6da] bg-white text-[#8c7085]"
                         }`}
                     >
-                      {isEditing ? (t("adminNailsDesignManagement.delete")) : (t("adminNailsDesignManagement.edit"))}
+                      {isEditing ? "Delete" : "Edit"}
                     </button>
                   </div>
                 </div>
@@ -1596,7 +1572,7 @@ export function NailDesignManagementDetailPage() {
           </SectionCard>
 
           <SectionCard
-            title={t("adminNailsDesignManagement.pricingCostBreakdown")}
+            title="Pricing & Cost Breakdown"
             subtitle=""
             icon={<CircleDollarSign size={18} />}
             sectionId="pricing-section"
@@ -1607,22 +1583,22 @@ export function NailDesignManagementDetailPage() {
               <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
-                    <p className="font-bold text-[#432744]">{t("adminNailsDesignManagement.materialCosts")}</p>
+                    <p className="font-bold text-[#432744]">Material Costs</p>
                     <div className="mt-4 space-y-3">
                       {formValues.pricing.materialCosts.map(([label, value]) => (
                         <div key={label} className="flex items-center justify-between gap-3 text-sm">
-                          <span className="text-[#8c7085]">{language === "vi" ? (PRICING_DICT[label] || label) : label}</span>
+                          <span className="text-[#8c7085]">{label}</span>
                           <span className="font-semibold text-[#432744]">{value}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                   <div>
-                    <p className="font-bold text-[#432744]">{t("adminNailsDesignManagement.servicePricing")}</p>
+                    <p className="font-bold text-[#432744]">Service Pricing</p>
                     <div className="mt-4 space-y-3">
                       {formValues.pricing.servicePricing.map(([label, value]) => (
                         <div key={label} className="flex items-center justify-between gap-3 text-sm">
-                          <span className="text-[#8c7085]">{language === "vi" ? (PRICING_DICT[label] || label) : label}</span>
+                          <span className="text-[#8c7085]">{label}</span>
                           <span className="font-semibold text-[#432744]">{value}</span>
                         </div>
                       ))}
@@ -1633,11 +1609,11 @@ export function NailDesignManagementDetailPage() {
 
               <div className="space-y-4">
                 <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
-                  <p className="font-bold text-[#432744]">{t("adminNailsDesignManagement.summary")}</p>
+                  <p className="font-bold text-[#432744]">Summary</p>
                   <div className="mt-4 space-y-3 text-sm">
                     {formValues.pricing.summary.map(([label, value], index) => (
                       <div key={label} className="flex items-center justify-between gap-3">
-                        <span className="text-[#8c7085]">{language === "vi" ? (PRICING_DICT[label] || label) : label}</span>
+                        <span className="text-[#8c7085]">{label}</span>
                         <span
                           className={`font-semibold ${index >= 3 ? "text-[#ea4f93]" : "text-[#432744]"}`}
                         >
@@ -1648,11 +1624,11 @@ export function NailDesignManagementDetailPage() {
                   </div>
                 </div>
                 <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
-                  <p className="font-bold text-[#432744]">{t("adminNailsDesignManagement.priceComparison")}</p>
+                  <p className="font-bold text-[#432744]">Price Comparison</p>
                   <div className="mt-4 space-y-3 text-sm">
                     {formValues.pricing.comparison.map(([label, value]) => (
                       <div key={label} className="flex items-center justify-between gap-3">
-                        <span className="text-[#8c7085]">{language === "vi" ? (PRICING_DICT[label] || label) : label}</span>
+                        <span className="text-[#8c7085]">{label}</span>
                         <span className={`font-semibold ${getComparisonValueTone(label)}`}>
                           {value}
                         </span>
@@ -1667,7 +1643,7 @@ export function NailDesignManagementDetailPage() {
 
         <aside className="space-y-4">
           <SectionCard
-            title={t("adminNailsDesignManagement.quickSummary")}
+            title="Quick Summary"
             subtitle=""
             icon={<Sparkles size={18} />}
             sectionId="quick-summary-section"
@@ -1677,7 +1653,7 @@ export function NailDesignManagementDetailPage() {
             {isEditing ? (
               <div className="space-y-3">
                 <div>
-                  <InputLabel>{t("adminNailsDesignManagement.designStatus")}</InputLabel>
+                  <InputLabel>Design Status</InputLabel>
                   <EditSelect
                     value={formValues.designStatus}
                     onChange={handleChange("designStatus")}
@@ -1685,18 +1661,18 @@ export function NailDesignManagementDetailPage() {
                   />
                 </div>
                 <div>
-                  <InputLabel>{t("adminNailsDesignManagement.tryonReady")}</InputLabel>
+                  <InputLabel>Try-On Ready</InputLabel>
                   <select
                     value={String(formValues.tryOnReady)}
                     onChange={handleBooleanChange("tryOnReady")}
                     className="h-11 w-full rounded-2xl border border-[#f4d4e2] bg-[#fffdfd] px-4 text-sm text-[#432744] outline-none transition focus:border-[#ef6bb4]"
                   >
-                    <option value="true">{t("adminNailsDesignManagement.yes")}</option>
-                    <option value="false">{t("adminNailsDesignManagement.no")}</option>
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
                   </select>
                 </div>
                 <div>
-                  <InputLabel>{t("adminNailsDesignManagement.complexity")}</InputLabel>
+                  <InputLabel>Complexity</InputLabel>
                   <EditSelect
                     value={formValues.complexity}
                     onChange={handleChange("complexity")}
@@ -1704,7 +1680,7 @@ export function NailDesignManagementDetailPage() {
                   />
                 </div>
                 <div>
-                  <InputLabel>{t("adminNailsDesignManagement.estDuration")}</InputLabel>
+                  <InputLabel>Est. Duration</InputLabel>
                   <EditSelect
                     value={formValues.estimatedDuration}
                     onChange={handleChange("estimatedDuration")}
@@ -1712,7 +1688,7 @@ export function NailDesignManagementDetailPage() {
                   />
                 </div>
                 <div>
-                  <InputLabel>{t("adminNailsDesignManagement.nailShape")}</InputLabel>
+                  <InputLabel>Nail Shape</InputLabel>
                   <EditSelect
                     value={formValues.nailShape}
                     onChange={handleChange("nailShape")}
@@ -1720,7 +1696,7 @@ export function NailDesignManagementDetailPage() {
                   />
                 </div>
                 <div>
-                  <InputLabel>{t("adminNailsDesignManagement.nailLength")}</InputLabel>
+                  <InputLabel>Nail Length</InputLabel>
                   <EditSelect
                     value={formValues.nailLength}
                     onChange={handleChange("nailLength")}
@@ -1728,7 +1704,7 @@ export function NailDesignManagementDetailPage() {
                   />
                 </div>
                 <div className="rounded-[16px] border border-dashed border-[#f3c9dd] bg-[#fff8fb] px-4 py-3 text-xs text-[#8c7085]">
-                  {t("adminNailsDesignManagement.suggestedPriceRemainsLockedInE")}
+                  Suggested price remains locked in edit mode.
                 </div>
               </div>
             ) : (
@@ -1745,13 +1721,13 @@ export function NailDesignManagementDetailPage() {
             )}
           </SectionCard>
 
-          <SectionCard title={t("adminNailsDesignManagement.performance")} subtitle="" icon={<BarChart3 size={18} />}>
+          <SectionCard title="Performance" subtitle="" icon={<BarChart3 size={18} />}>
             <div className="grid grid-cols-2 gap-3">
               {[
-                ["342", t("adminNailsDesignManagement.totalBookings")],
-                ["218", t("adminNailsDesignManagement.favorites")],
-                ["4.6★", t("adminNailsDesignManagement.avgRating")],
-                ["61%", t("adminNailsDesignManagement.repeatRate")],
+                ["342", "Total Bookings"],
+                ["218", "Favorites"],
+                ["4.6★", "Avg Rating"],
+                ["61%", "Repeat Rate"],
               ].map(([value, label]) => (
                 <div key={label} className="rounded-[18px] bg-[#fff3f8] px-4 py-4 text-center">
                   <p className="text-2xl font-extrabold text-[#ea4f93]">{value}</p>
@@ -1761,7 +1737,7 @@ export function NailDesignManagementDetailPage() {
             </div>
           </SectionCard>
 
-          <SectionCard title={t("adminNailsDesignManagement.quickActions")} subtitle="" icon={<Settings2 size={18} />}>
+          <SectionCard title="Quick Actions" subtitle="" icon={<Settings2 size={18} />}>
             <div className="space-y-2">
               <button
                 type="button"
@@ -1774,7 +1750,7 @@ export function NailDesignManagementDetailPage() {
                   }`}
               >
                 <PencilLine size={13} className="mr-1.5 inline" />
-                {t("adminNailsDesignManagement.editDesign")}
+                Edit Design
               </button>
               <button
                 type="button"
@@ -1787,7 +1763,7 @@ export function NailDesignManagementDetailPage() {
                   }`}
               >
                 <Copy size={13} className="mr-1.5 inline" />
-                {t("adminNailsDesignManagement.addVariant")}
+                Add Variant
               </button>
               <button
                 type="button"
@@ -1798,7 +1774,7 @@ export function NailDesignManagementDetailPage() {
                   }`}
               >
                 <CircleDollarSign size={13} className="mr-1.5 inline" />
-                {t("adminNailsDesignManagement.updatePrice")}
+                Update Price
               </button>
               <button
                 type="button"
@@ -1809,7 +1785,7 @@ export function NailDesignManagementDetailPage() {
                   }`}
               >
                 <Upload size={13} className="mr-1.5 inline" />
-                {t("adminNailsDesignManagement.uploadMedia")}
+                Upload Media
               </button>
               <button
                 type="button"
@@ -1825,14 +1801,14 @@ export function NailDesignManagementDetailPage() {
                   }`}
               >
                 <Trash2 size={13} className="mr-1.5 inline" />
-                {t("adminNailsDesignManagement.archiveDesign")}
+                Archive Design
               </button>
             </div>
           </SectionCard>
 
           <SectionCard
-            title={t("adminNailsDesignManagement.customerPreview")}
-            subtitle={t("adminNailsDesignManagement.howCustomersSeeThisDesign")}
+            title="Customer Preview"
+            subtitle="How customers see this design"
             icon={<Eye size={18} />}
             sectionId="customer-preview-section"
             sectionRef={customerPreviewRef}
@@ -1860,7 +1836,7 @@ export function NailDesignManagementDetailPage() {
               type="button"
               className="mt-4 w-full rounded-full bg-[image:var(--gradient-accent)] px-4 py-2.5 text-xs font-bold text-white"
             >
-              {t("adminNailsDesignManagement.tryOnVirtually")}
+              Try On Virtually
             </button>
           </SectionCard>
         </aside>
@@ -1869,50 +1845,50 @@ export function NailDesignManagementDetailPage() {
       <ActionConfirmModal
         open={showSaveConfirm}
         intent="success"
-        title={t("adminNailsDesignManagement.saveDesignChanges")}
-        subtitle={t("adminNailsDesignManagement.nailDesignAndVariantEditsAreSy")}
-        description={t("adminNailsDesignManagement.confirmToUpdateTheCurrentNailD")}
-        confirmText={t("adminNailsDesignManagement.saveChanges")}
-        cancelText={t("adminNailsDesignManagement.reviewAgain")}
+        title="Save Design Changes"
+        subtitle="Nail design and variant edits are synced to backend when supported by the current APIs."
+        description="Confirm to update the current nail design and any changed variants with the latest API-supported values."
+        confirmText="Save Changes"
+        cancelText="Review Again"
         confirmIcon={Sparkles}
         width={520}
         loading={isSavingVariants}
         onConfirm={handleSave}
         onCancel={() => setShowSaveConfirm(false)}
-        highlights={[formValues.name || (t("adminNailsDesignManagement.designDetail")), formValues.designStatus || (t("adminNailsDesignManagement.statusPending")), formValues.complexity || (t("adminNailsDesignManagement.complexityPending"))]}
+        highlights={[formValues.name || "Design detail", formValues.designStatus || "Status pending", formValues.complexity || "Complexity pending"]}
         details={[
-          { label: t("adminNailsDesignManagement.suggestedPrice"), value: formValues.suggestedPrice || (t("adminNailsDesignManagement.noPriceEntered")) },
-          { label: t("adminNailsDesignManagement.estDuration"), value: formValues.estimatedDuration || (t("adminNailsDesignManagement.noDurationEntered")) },
+          { label: "Suggested Price", value: formValues.suggestedPrice || "No price entered" },
+          { label: "Est. Duration", value: formValues.estimatedDuration || "No duration entered" },
         ]}
-        warnings={[t("adminNailsDesignManagement.thisScreenNowPersistsDesignEdi")]}
+        warnings={["This screen now persists design edits through PUT /api/NailDesigns/{id} and variant edits through PUT /api/NailVariants/{id}."]}
       />
 
       <ActionConfirmModal
         open={showCancelConfirm}
         intent="warning"
-        title={t("adminNailsDesignManagement.discardDesignEdits")}
-        subtitle={t("adminNailsDesignManagement.youAreAboutToLeaveEditModeWith")}
-        description={t("adminNailsDesignManagement.unsavedUpdatesToThisNailDesign")}
-        confirmText={t("adminNailsDesignManagement.discardChanges")}
-        cancelText={t("adminNailsDesignManagement.keepEditing")}
+        title="Discard Design Edits"
+        subtitle="You are about to leave edit mode without saving."
+        description="Unsaved updates to this nail design will be discarded."
+        confirmText="Discard Changes"
+        cancelText="Keep Editing"
         confirmIcon={X}
         onConfirm={handleCancelEdit}
         onCancel={() => setShowCancelConfirm(false)}
         details={[
-          { label: t("adminNailsDesignManagement.editingMode"), value: t("adminNailsDesignManagement.nailDesignDetail1") },
-          { label: t("adminNailsDesignManagement.result"), value: t("adminNailsDesignManagement.revertToLastLoadedValues") },
+          { label: "Editing Mode", value: "Nail design detail" },
+          { label: "Result", value: "Revert to last loaded values" },
         ]}
-        warnings={[t("adminNailsDesignManagement.currentUnsavedNonpricingEditsO")]}
+        warnings={["Current unsaved non-pricing edits on this screen will be lost. Pricing remains read-only."]}
       />
 
       <ActionConfirmModal
         open={Boolean(pendingDeleteVariant)}
         intent="danger"
-        title={t("adminNailsDesignManagement.deleteVariant")}
-        subtitle={t("adminNailsDesignManagement.thisActionWillCallDeleteApinai")}
-        description={language === "vi" ? `Bạn sắp xóa biến thể ${pendingDeleteVariant?.name ?? "này"}.` : `You are about to delete ${pendingDeleteVariant?.name ?? "this variant"}.`}
-        confirmText={t("adminNailsDesignManagement.deleteVariant")}
-        cancelText={t("adminNailsDesignManagement.keepVariant")}
+        title="Delete Variant"
+        subtitle="This action will call DELETE /api/NailVariants/{id}."
+        description={`You are about to delete ${pendingDeleteVariant?.name ?? "this variant"}.`}
+        confirmText="Delete Variant"
+        cancelText="Keep Variant"
         confirmIcon={Trash2}
         loading={isDeletingVariant}
         onConfirm={handleDeleteVariant}
@@ -1923,11 +1899,11 @@ export function NailDesignManagementDetailPage() {
               title: pendingDeleteVariant.name,
               image: pendingDeleteVariant.imageUrl || formValues.previewImage || DESIGN_PREVIEW_IMAGE,
               meta: pendingDeleteVariant.level,
-              note: pendingDeleteVariant.description || (t("adminNailsDesignManagement.selectedVariantWillBeRemovedFr")),
+              note: pendingDeleteVariant.description || "Selected variant will be removed from this design.",
             }
             : null
         }
-        warnings={[t("adminNailsDesignManagement.thisPermanentlyRemovesTheVaria")]}
+        warnings={["This permanently removes the variant from backend if the API call succeeds."]}
       />
 
       <Modal
@@ -1950,13 +1926,13 @@ export function NailDesignManagementDetailPage() {
                 </div>
                 <div>
                   <span className="inline-flex rounded-full bg-white/70 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#b25784]">
-                    {t("adminNailsDesignManagement.variantDetail")}
+                    Variant Detail
                   </span>
                   <h3 className="mt-3 text-lg font-bold text-[#432744]">
-                    {selectedVariantDetail?.name || (t("adminNailsDesignManagement.variant"))}
+                    {selectedVariantDetail?.name || "Variant"}
                   </h3>
                   <p className="mt-1 text-sm text-[#9c7089]">
-                    {t("adminNailsDesignManagement.dataLoadedFromGetApinailvarian")}
+                    Data loaded from `GET /api/NailVariants/{'{id}'}`.
                   </p>
                 </div>
               </div>
@@ -1975,7 +1951,7 @@ export function NailDesignManagementDetailPage() {
           {isLoadingVariantDetail && selectedVariantDetail?.isPlaceholder ? (
             <div className="flex items-center gap-3 px-6 py-8 text-sm text-[#8c7085]">
               <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
-              {t("adminNailsDesignManagement.loadingNailVariantDetail")}
+              Loading nail variant detail...
             </div>
           ) : (
             <div className="space-y-5 px-6 py-5">
@@ -1991,8 +1967,8 @@ export function NailDesignManagementDetailPage() {
               <div className="space-y-4">
                 <div className="grid gap-3 sm:grid-cols-2">
                   {[
-                    [t("adminNailsDesignManagement.price"), selectedVariantDetail?.priceLabel || "N/A"],
-                    [t("adminNailsDesignManagement.duration"), selectedVariantDetail?.durationLabel || "N/A"],
+                    ["Price", selectedVariantDetail?.priceLabel || "N/A"],
+                    ["Duration", selectedVariantDetail?.durationLabel || "N/A"],
                   ].map(([label, value]) => (
                     <div key={label} className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
@@ -2005,7 +1981,7 @@ export function NailDesignManagementDetailPage() {
 
                 <div className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
-                    {t("adminNailsDesignManagement.description")}
+                    Description
                   </p>
                   <p className="mt-2 text-sm leading-6 text-[#6d5669]">
                     {formatApiValue(selectedVariantDetail?.description)}
@@ -2015,23 +1991,23 @@ export function NailDesignManagementDetailPage() {
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
-                  <p className="font-bold text-[#432744]">{t("adminNailsDesignManagement.nailShape")}</p>
+                  <p className="font-bold text-[#432744]">Nail Shape</p>
                   <div className="mt-4 space-y-3 text-sm">
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-[#8c7085]">{t("adminNailsDesignManagement.name")}</span>
+                      <span className="text-[#8c7085]">Name</span>
                       <span className="font-semibold text-[#432744]">
                         {formatApiValue(selectedVariantDetail?.nailShape?.name)}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-[#8c7085]">{t("adminNailsDesignManagement.price")}</span>
+                      <span className="text-[#8c7085]">Price</span>
                       <span className="font-semibold text-[#432744]">
                         {selectedVariantDetail?.nailShape?.priceLabel || "N/A"}
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-[#8c7085]">{t("adminNailsDesignManagement.duration")}</span>
+                      <span className="text-[#8c7085]">Duration</span>
                       <span className="font-semibold text-[#432744]">
                         {selectedVariantDetail?.nailShape?.durationLabel || "N/A"}
                       </span>
@@ -2040,23 +2016,23 @@ export function NailDesignManagementDetailPage() {
                 </div>
 
                 <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
-                  <p className="font-bold text-[#432744]">{t("adminNailsDesignManagement.nailSurface")}</p>
+                  <p className="font-bold text-[#432744]">Nail Surface</p>
                   <div className="mt-4 space-y-3 text-sm">
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-[#8c7085]">{t("adminNailsDesignManagement.name")}</span>
+                      <span className="text-[#8c7085]">Name</span>
                       <span className="font-semibold text-[#432744]">
                         {formatApiValue(selectedVariantDetail?.nailSurface?.name)}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-[#8c7085]">{t("adminNailsDesignManagement.price")}</span>
+                      <span className="text-[#8c7085]">Price</span>
                       <span className="font-semibold text-[#432744]">
                         {selectedVariantDetail?.nailSurface?.priceLabel || "N/A"}
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-[#8c7085]">{t("adminNailsDesignManagement.duration")}</span>
+                      <span className="text-[#8c7085]">Duration</span>
                       <span className="font-semibold text-[#432744]">
                         {selectedVariantDetail?.nailSurface?.durationLabel || "N/A"}
                       </span>
@@ -2066,7 +2042,7 @@ export function NailDesignManagementDetailPage() {
               </div>
 
               <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
-                <p className="font-bold text-[#432744]">{t("adminNailsDesignManagement.colorPreview")}</p>
+                <p className="font-bold text-[#432744]">Color Preview</p>
                 {extractVariantColors(selectedVariantDetail?.colorJson).length > 0 ? (
                   <div className="mt-4 flex flex-wrap gap-3">
                     {extractVariantColors(selectedVariantDetail?.colorJson).length > 1 ? (
@@ -2077,7 +2053,7 @@ export function NailDesignManagementDetailPage() {
                             backgroundImage: `linear-gradient(135deg, ${extractVariantColors(selectedVariantDetail?.colorJson).join(", ")})`,
                           }}
                         />
-                        <p className="mt-3 text-center text-[11px] font-bold text-[#6d5669]">{t("adminNailsDesignManagement.gradientMix")}</p>
+                        <p className="mt-3 text-center text-[11px] font-bold text-[#6d5669]">Gradient Mix</p>
                       </div>
                     ) : null}
                     {extractVariantColors(selectedVariantDetail?.colorJson).map((color) => (
@@ -2103,7 +2079,7 @@ export function NailDesignManagementDetailPage() {
               <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="font-bold text-[#432744]">{t("adminNailsDesignManagement.procedureSteps")}</p>
+                    <p className="font-bold text-[#432744]">Procedure Steps</p>
 
                   </div>
                   <div className="flex gap-2">
@@ -2114,7 +2090,7 @@ export function NailDesignManagementDetailPage() {
                       className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#ea4f93]"
                     >
                       <Plus size={13} className="mr-1.5 inline" />
-                      {t("adminNailsDesignManagement.addStep")}
+                      Add Step
                     </button>
                     <button
                       type="button"
@@ -2123,7 +2099,7 @@ export function NailDesignManagementDetailPage() {
                       className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white"
                     >
                       <Save size={13} className="mr-1.5 inline" />
-                      {isSavingVariantProcedures ? (t("adminNailsDesignManagement.saving")) : (t("adminNailsDesignManagement.saveSteps"))}
+                      {isSavingVariantProcedures ? "Saving..." : "Save Steps"}
                     </button>
                   </div>
                 </div>
@@ -2131,7 +2107,7 @@ export function NailDesignManagementDetailPage() {
                 {isLoadingVariantProcedures ? (
                   <div className="mt-4 flex items-center gap-3 text-sm text-[#8c7085]">
                     <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
-                    {t("adminNailsDesignManagement.loadingProcedureConfiguration")}
+                    Loading procedure configuration...
                   </div>
                 ) : variantProcedureDraft.length ? (
                   <div className="mt-4 space-y-3">
@@ -2143,7 +2119,7 @@ export function NailDesignManagementDetailPage() {
                         <div className="grid gap-3 md:grid-cols-[110px_minmax(0,1fr)_auto]">
                           <label className="space-y-2">
                             <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
-                              {t("adminNailsDesignManagement.stepOrder")}
+                              Step Order
                             </span>
                             <EditInput
                               value={String(item.stepOrder || index + 1)}
@@ -2158,25 +2134,25 @@ export function NailDesignManagementDetailPage() {
                             disabled={isSavingVariantProcedures}
                             className="self-end rounded-full border border-[#f3b1c7] bg-[#fff2f6] px-4 py-2 text-xs font-bold text-[#d14c84]"
                           >
-                            {t("adminNailsDesignManagement.remove")}
+                            Remove
                           </button>
                         </div>
                         <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
                           <div>
-                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.name")}</p>
+                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">Name</p>
                             <p className="mt-1 font-semibold text-[#432744]">{item.name || "--"}</p>
                           </div>
                           <div>
-                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.duration")}</p>
+                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">Duration</p>
                             <p className="mt-1 font-semibold text-[#432744]">{item.durationLabel || "--"}</p>
                           </div>
                           <div>
-                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.status")}</p>
+                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">Status</p>
                             <p className="mt-1 font-semibold text-[#432744]">{item.status || "--"}</p>
                           </div>
                           <div>
-                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.required")}</p>
-                            <p className="mt-1 font-semibold text-[#432744]">{item.isRequired ? (t("adminNailsDesignManagement.yes")) : (t("adminNailsDesignManagement.no"))}</p>
+                            <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">Required</p>
+                            <p className="mt-1 font-semibold text-[#432744]">{item.isRequired ? "Yes" : "No"}</p>
                           </div>
                         </div>
                         {item.description ? (
@@ -2187,7 +2163,7 @@ export function NailDesignManagementDetailPage() {
                   </div>
                 ) : (
                   <div className="mt-4 rounded-[16px] border border-dashed border-[#f3c9dd] bg-white px-4 py-4 text-sm text-[#8c7085]">
-                    {t("adminNailsDesignManagement.noProceduresConfiguredForThisV")}
+                    No procedures configured for this variant yet. Add rows and save to call `POST /api/Procedures/assign/{'{nailVariantId}'}`.
                   </div>
                 )}
               </div>

@@ -1,4 +1,3 @@
-import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   ArrowUpDown,
   ChevronLeft,
@@ -131,7 +130,6 @@ function sortComponents(items, sortValue) {
 }
 
 export function ComponentsManagementPage() {
-  const { t, language } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
@@ -202,7 +200,7 @@ export function ComponentsManagementPage() {
         }
 
         setComponents([]);
-        setError(loadError instanceof Error ? loadError.message : t("adminComponents.loadFailed"));
+        setError(loadError instanceof Error ? loadError.message : "Failed to load components.");
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -226,28 +224,28 @@ export function ComponentsManagementPage() {
 
     return [
       {
-        label: t("adminComponents.totalComponents"),
+        label: "Total Components",
         value: metaData.totalItems.toLocaleString(),
         note: `${metaData.totalPages} pages`,
         icon: Shapes,
         iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
       },
       {
-        label: t("adminComponents.visibleItems"),
+        label: "Visible Items",
         value: components.length.toLocaleString(),
         note: "Current page",
         icon: Sparkles,
         iconClassName: "bg-[#fff4df] text-[#d9871c]",
       },
       {
-        label: t("adminComponents.avgPrice"),
+        label: "Avg Price",
         value: formatComponentCurrency(averagePrice),
         note: averageDuration ? `Avg ${formatComponentDuration(averageDuration)}` : "Current page",
         icon: Wallet,
         iconClassName: "bg-[#f3ebff] text-[#8b5cf6]",
       },
       {
-        label: t("adminComponents.visibleTypes"),
+        label: "Visible Types",
         value: visibleTypes.size.toLocaleString(),
         note: componentTypeFilter || "All component types",
         icon: Gem,
@@ -303,7 +301,7 @@ export function ComponentsManagementPage() {
       {
         title: (
           <SortableHeader
-            label={t("adminComponents.component")}
+            label="Component"
             sortKey="component"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -323,7 +321,7 @@ export function ComponentsManagementPage() {
       {
         title: (
           <SortableHeader
-            label={t("adminComponents.type")}
+            label="Type"
             sortKey="type"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -336,7 +334,7 @@ export function ComponentsManagementPage() {
       {
         title: (
           <SortableHeader
-            label={t("adminComponents.price")}
+            label="Price"
             sortKey="price"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -349,7 +347,7 @@ export function ComponentsManagementPage() {
       {
         title: (
           <SortableHeader
-            label={t("adminComponents.duration")}
+            label="Duration"
             sortKey="duration"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -360,20 +358,20 @@ export function ComponentsManagementPage() {
         render: (value) => <span className="text-sm text-[#6b5668]">{value}</span>,
       },
       {
-        title: t("adminComponents.actions"),
+        title: "Actions",
         key: "actions",
         render: (_, component) => (
           <ActionDropdown
             items={[
               {
                 key: "view",
-                label: t("adminComponents.viewDetail"),
+                label: "View Detail",
                 icon: Eye,
                 onSelect: () => navigate(getAdminComponentDetailRoute(component.componentId)),
               },
               {
                 key: "edit",
-                label: t("adminComponents.editComponent"),
+                label: "Edit Component",
                 icon: Pencil,
                 onSelect: () =>
                   navigate(getAdminComponentDetailRoute(component.componentId), {
@@ -382,7 +380,7 @@ export function ComponentsManagementPage() {
               },
               {
                 key: "delete",
-                label: t("adminComponents.deleteComponent"),
+                label: "Delete Component",
                 icon: Trash2,
                 className: "text-[#d14c84]",
                 onSelect: () => setDeleteTarget(component),
@@ -391,7 +389,8 @@ export function ComponentsManagementPage() {
           />
         ),
       },
-    ], [navigate, selectedSort, t],
+    ],
+    [navigate, selectedSort],
   );
 
   const handleDeleteComponent = async () => {
@@ -404,7 +403,7 @@ export function ComponentsManagementPage() {
     try {
       await deleteAdminComponent(deleteTarget.componentId);
       setDeleteTarget(null);
-      toast.success(t("adminComponents.deleteSuccess", { name: deleteTarget.name }));
+      toast.success(`${deleteTarget.name} deleted successfully.`);
 
       const shouldMoveBack = components.length === 1 && metaData.currentPage > 1;
       const targetPage = shouldMoveBack ? Math.max(metaData.currentPage - 1, 1) : metaData.currentPage;
@@ -418,7 +417,7 @@ export function ComponentsManagementPage() {
       setComponents(response.items);
       setMetaData(response.metaData);
     } catch (deleteError) {
-      toast.error(deleteError instanceof Error ? deleteError.message : t("adminComponents.deleteFailed"));
+      toast.error(deleteError instanceof Error ? deleteError.message : "Failed to delete component.");
     } finally {
       setIsDeleting(false);
     }
@@ -456,7 +455,7 @@ export function ComponentsManagementPage() {
                 <input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder={t("adminComponents.searchPlaceholder")}
+                  placeholder="Search component by name..."
                   className="h-10 w-full rounded-full border border-[#f4d7e5] bg-[#fffafc] pl-11 pr-4 text-sm text-[#5b4658] outline-none placeholder:text-[#d4a1b8] focus:border-[#ea4f93]"
                 />
               </label>
@@ -472,7 +471,7 @@ export function ComponentsManagementPage() {
                 className="inline-flex h-10 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
               >
                 <Search size={14} className="mr-2 shrink-0" />
-                {t("adminComponents.search")}
+                Search
               </button>
             </div>
 
@@ -487,7 +486,7 @@ export function ComponentsManagementPage() {
               }}
               className="h-10 rounded-full border border-[#f4d7e5] bg-[#fffafc] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
             >
-              <option value="">{t("adminComponents.allTypes")}</option>
+              <option value="">All types</option>
               {COMPONENT_TYPE_OPTIONS.map((type) => (
                 <option key={type} value={type}>
                   {type}
@@ -501,15 +500,15 @@ export function ComponentsManagementPage() {
             className="inline-flex items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
           >
             <Plus size={13} className="mr-1.5 shrink-0" />
-            {t("adminComponents.addComponent")}
+            Add Component
           </Link>
         </div>
 
         <section className="overflow-hidden rounded-[20px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
           <div className="border-b border-[#f6dbe7] px-5 py-4">
-            <h2 className="text-sm font-extrabold text-[#432744]">{t("adminComponents.components")}</h2>
+            <h2 className="text-sm font-extrabold text-[#432744]">Components</h2>
             <p className="mt-1 text-[11px] font-medium text-[#c694ad]">
-              {t("adminComponents.showingComponents", { first: metaData.firstRowOnPage, last: metaData.lastRowOnPage, total: metaData.totalItems })}
+              Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} components
             </p>
           </div>
 
@@ -523,12 +522,12 @@ export function ComponentsManagementPage() {
             }}
             pagination={false}
             scroll={{ x: 980 }}
-            locale={{ emptyText: error || t("adminComponents.noComponentsFound") }}
+            locale={{ emptyText: error || "No components found." }}
           />
 
           <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-[11px] text-[#c694ad]">
-              {t("adminComponents.showingComponents", { first: metaData.firstRowOnPage, last: metaData.lastRowOnPage, total: metaData.totalItems })}
+              Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} components
             </p>
             <div className="flex items-center gap-1">
               <button
@@ -586,11 +585,11 @@ export function ComponentsManagementPage() {
         <ActionConfirmModal
           open
           intent="danger"
-          title={t("adminComponents.deleteComponentTitle")}
-          subtitle={t("adminComponents.deleteConfirmSubtitle")}
-          description={t("adminComponents.deleteConfirmDesc", { name: deleteTarget.name })}
-          confirmText={t("adminComponents.deleteComponent")}
-          cancelText={t("adminComponents.keepComponent")}
+          title="Delete Component"
+          subtitle="This will permanently remove the component from backend."
+          description={`You are about to delete ${deleteTarget.name}. This action cannot be undone.`}
+          confirmText="Delete Component"
+          cancelText="Keep Component"
           confirmIcon={Trash2}
           loading={isDeleting}
           onConfirm={handleDeleteComponent}
@@ -601,7 +600,7 @@ export function ComponentsManagementPage() {
             meta: `${deleteTarget.componentType} • ${deleteTarget.priceLabel}`,
             note: `Component ID: ${deleteTarget.componentId}`,
           }}
-          warnings={[t("adminComponents.deleteWarning")]}
+          warnings={["This action calls the backend delete endpoint and removes this component record."]}
         />
       ) : null}
     </>

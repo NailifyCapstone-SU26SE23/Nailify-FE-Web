@@ -17,7 +17,6 @@ import womanHandImg from "../../../../shared/assets/images/womanHand.png";
 import toast from "react-hot-toast";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
-import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   getAdminNailDesignDetailRoute,
   getAdminNailVariantDetailRoute,
@@ -269,12 +268,12 @@ function buildFingerColorStyle(colorConfig, fingerIndex) {
  */
 function getBuilderCanvasLayout(canvasW = 320, canvasH = 420, length = 1.0) {
   const fingerLength = Math.min(canvasW * 0.36, canvasH * 0.32);
-  const nailWidth = fingerLength * 2.0;
-  const nailHeight = fingerLength * 1.2 * length;
-  const nailBottom = fingerLength * 0.75;
-  const totalHeight = nailHeight * 1.5;
-  const originX = canvasW / 2;                      // ctx.translate x
-  const originY = canvasH / 2 + canvasH * 0.16;    // ctx.translate y
+  const nailWidth    = fingerLength * 2.0;
+  const nailHeight   = fingerLength * 1.2 * length;
+  const nailBottom   = fingerLength * 0.75;
+  const totalHeight  = nailHeight * 1.5;
+  const originX      = canvasW / 2;                      // ctx.translate x
+  const originY      = canvasH / 2 + canvasH * 0.16;    // ctx.translate y
   return {
     // Absolute pixel coords of dest rectangle on canvas
     destX: originX - nailWidth / 2,
@@ -310,9 +309,9 @@ function componentStyleFromDecoration(posX, posY, scale, rotation) {
   const decCY = cy + Number(posY || 0) * destH;
 
   // Convert to % of canvas (= % of nail card)
-  const leftPct = (decCX / canvasW) * 100;
-  const topPct = (decCY / canvasH) * 100;
-  const widthPct = (destW * Number(scale || 0.2)) / canvasW * 100;
+  const leftPct   = (decCX / canvasW) * 100;
+  const topPct    = (decCY / canvasH) * 100;
+  const widthPct  = (destW * Number(scale || 0.2)) / canvasW * 100;
   const heightPct = (destH * Number(scale || 0.2)) / canvasH * 100;
 
   return { leftPct, topPct, widthPct, heightPct };
@@ -350,18 +349,18 @@ function getFingerAlignmentClass(fingerName) {
 // Default coordinates for nails on the hand images
 const DEFAULT_COORDINATES = {
   woman: {
-    1: { left: 17.8, top: 35.8, width: 7.7, height: 11.4, rotation: -46 }, // Thumb
-    2: { left: 38.5, top: 11.5, width: 8.9, height: 14.4, rotation: -2 }, // Index
-    3: { left: 52.7, top: 8.8, width: 10.1, height: 16.2, rotation: 0 }, // Middle
-    4: { left: 65.5, top: 13.0, width: 9.5, height: 14.7, rotation: 0 }, // Ring
-    5: { left: 81.4, top: 23.5, width: 6.8, height: 11.1, rotation: 9 }, // Pinky
+    1: { left: 17.8, top: 35.8, width: 7.7,  height: 11.4, rotation: -46 }, // Thumb
+    2: { left: 38.5, top: 11.5, width: 8.9,  height: 14.4, rotation: -2  }, // Index
+    3: { left: 52.7, top: 8.8,  width: 10.1, height: 16.2, rotation: 0   }, // Middle
+    4: { left: 65.5, top: 13.0, width: 9.5,  height: 14.7, rotation: 0   }, // Ring
+    5: { left: 81.4, top: 23.5, width: 6.8,  height: 11.1, rotation: 9   }, // Pinky
   },
   man: {
-    1: { left: 14.4, top: 43.2, width: 7.4, height: 17.5, rotation: -54 }, // Thumb
-    2: { left: 26.9, top: 10.6, width: 9.8, height: 24.3, rotation: -19 }, // Index
-    3: { left: 46.8, top: 4.6, width: 10.1, height: 23.4, rotation: -2 }, // Middle
-    4: { left: 63.5, top: 11.2, width: 10.4, height: 22.5, rotation: 4 }, // Ring
-    5: { left: 75.2, top: 23.6, width: 8.0, height: 17.4, rotation: 4 }, // Pinky
+    1: { left: 14.4, top: 43.2, width: 7.4,  height: 17.5, rotation: -54 }, // Thumb
+    2: { left: 26.9, top: 10.6, width: 9.8,  height: 24.3, rotation: -19 }, // Index
+    3: { left: 46.8, top: 4.6,  width: 10.1, height: 23.4, rotation: -2  }, // Middle
+    4: { left: 63.5, top: 11.2, width: 10.4, height: 22.5, rotation: 4   }, // Ring
+    5: { left: 75.2, top: 23.6, width: 8.0,  height: 17.4, rotation: 4   }, // Pinky
   }
 };
 
@@ -460,8 +459,8 @@ function NailVariantHandPreview({ variantDetail }) {
   };
 
   const currentHandImg = handType === "woman" ? womanHandImg : manHandImg;
-  const handDimensions = handType === "woman"
-    ? { width: 325, height: 488 }
+  const handDimensions = handType === "woman" 
+    ? { width: 325, height: 488 } 
     : { width: 400, height: 400 };
 
   return (
@@ -551,7 +550,7 @@ function NailVariantHandPreview({ variantDetail }) {
               >
                 <div className="relative group">
                   <div className="absolute -inset-1 rounded-t-[36px] rounded-b-[18px] bg-gradient-to-t from-[#ea4f93]/15 to-[#ffb8d9]/5 opacity-30 blur-md transition duration-500 group-hover:opacity-60 group-hover:blur-lg" />
-
+                  
                   {/* Nail card — large w-24 h-48 format */}
                   <div className="relative h-48 w-24 overflow-hidden rounded-t-[32px] rounded-b-[14px] border-2 border-[#fcd5e6] bg-gradient-to-b from-[#fff6f9] to-[#ffeef5] shadow-[0_12px_28px_rgba(236,72,153,0.06)] transition-all duration-300 group-hover:scale-105 group-hover:border-[#ea4f93]">
                     <div className="absolute inset-0 h-full w-full" style={shapeMaskStyle}>
@@ -565,9 +564,9 @@ function NailVariantHandPreview({ variantDetail }) {
                         if (!component?.imageUrl) return null;
 
                         const config = parseComponentConfig(componentItem.configJson);
-                        const scale = Number.isFinite(Number(config?.scale)) ? Number(config.scale) : 0.2;
+                        const scale    = Number.isFinite(Number(config?.scale))    ? Number(config.scale)    : 0.2;
                         const rotation = Number.isFinite(Number(config?.rotation)) ? Number(config.rotation) : 0;
-
+                        
                         // Apply 2.5x scaling multiplier to make the accessories legible on the card
                         const displaySizePercent = scale * 2.5 * 100;
 
@@ -614,7 +613,7 @@ function NailVariantHandPreview({ variantDetail }) {
         </div>
       ) : (
         <div className="space-y-4">
-          <div
+          <div 
             ref={handContainerRef}
             className={`relative h-[520px] w-full overflow-hidden rounded-[20px] border border-[#fcd5e6] flex items-center justify-center ${clickToPlace ? 'cursor-crosshair bg-[#ffeef5]/60' : 'cursor-grab bg-[#ffeef5]/35'}`}
             onMouseDown={handleMouseDown}
@@ -623,7 +622,7 @@ function NailVariantHandPreview({ variantDetail }) {
             onMouseLeave={handleMouseUp}
             onClick={handleHandClick}
           >
-            <div
+            <div 
               ref={handImgRef}
               className="relative select-none origin-center"
               style={{
@@ -635,9 +634,9 @@ function NailVariantHandPreview({ variantDetail }) {
               }}
             >
               {/* Hand Image */}
-              <img
-                src={currentHandImg}
-                alt="Hand preview"
+              <img 
+                src={currentHandImg} 
+                alt="Hand preview" 
                 draggable="false"
                 className="w-full h-full object-cover select-none pointer-events-none"
               />
@@ -689,9 +688,9 @@ function NailVariantHandPreview({ variantDetail }) {
                           if (!component?.imageUrl) return null;
 
                           const config = parseComponentConfig(componentItem.configJson);
-                          const scale = Number.isFinite(Number(config?.scale)) ? Number(config.scale) : 0.2;
+                          const scale    = Number.isFinite(Number(config?.scale))    ? Number(config.scale)    : 0.2;
                           const rotation = Number.isFinite(Number(config?.rotation)) ? Number(config.rotation) : 0;
-
+                          
                           // Apply 2.5x scaling multiplier to make accessories legible on the hand fingertips
                           const displaySizePercent = scale * 2.5 * 100;
 
@@ -704,10 +703,10 @@ function NailVariantHandPreview({ variantDetail }) {
                               className="pointer-events-none absolute object-contain"
                               referrerPolicy="no-referrer"
                               style={{
-                                left: `${50 + Number(componentItem?.posX || 0) * 100}%`,
-                                top: `${50 + Number(componentItem?.posY || 0) * 100}%`,
-                                width: `${displaySizePercent}%`,
-                                height: `${displaySizePercent}%`,
+                                  left: `${50 + Number(componentItem?.posX || 0) * 100}%`,
+                                  top: `${50 + Number(componentItem?.posY || 0) * 100}%`,
+                                  width: `${displaySizePercent}%`,
+                                  height: `${displaySizePercent}%`,
                                 transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
                               }}
                             />
@@ -752,12 +751,13 @@ function NailVariantHandPreview({ variantDetail }) {
                       setClickToPlace(v => !v);
                       if (!clickToPlace) setSelectedFinger(1);
                     }}
-                    className={`rounded-full px-3.5 py-1.5 text-xs font-bold border transition ${clickToPlace ? 'bg-[#ea4f93] border-[#ea4f93] text-white shadow-sm' : 'bg-white border-[#fcd5e6] text-[#ea4f93] hover:bg-[#ffeef5]'
-                      }`}
+                    className={`rounded-full px-3.5 py-1.5 text-xs font-bold border transition ${
+                      clickToPlace ? 'bg-[#ea4f93] border-[#ea4f93] text-white shadow-sm' : 'bg-white border-[#fcd5e6] text-[#ea4f93] hover:bg-[#ffeef5]'
+                    }`}
                   >
                     {clickToPlace ? '✓ Click-to-Place ON' : 'Click-to-Place'}
                   </button>
-                  <button
+                  <button 
                     onClick={() => {
                       navigator.clipboard.writeText(JSON.stringify(coords, null, 2));
                       toast.success("Coordinates copied! Paste into DEFAULT_COORDINATES to save.");
@@ -829,7 +829,6 @@ function NailVariantHandPreview({ variantDetail }) {
 export function NailVariantDetailPage() {
   const { designId, variantId } = useParams();
   const navigate = useNavigate();
-  const { t, language } = useLanguage();
   const location = useLocation();
   const [variant, setVariant] = useState(null);
   const [procedures, setProcedures] = useState([]);
@@ -871,7 +870,7 @@ export function NailVariantDetailPage() {
         if (statusCode === 404) {
           setIsNotFound(true);
         } else {
-          setError(loadError instanceof Error ? loadError.message : (t("adminNailsDesignManagement.failedToLoadNailVariantDetail")));
+          setError(loadError instanceof Error ? loadError.message : "Failed to load nail variant detail.");
         }
       } finally {
         if (isMounted) {
@@ -945,7 +944,7 @@ export function NailVariantDetailPage() {
       );
       setProcedures(await fetchProceduresByVariant(variant.nailVariantId));
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : (t("adminNailsDesignManagement.failedToSaveProcedureSteps")));
+      setError(saveError instanceof Error ? saveError.message : "Failed to save procedure steps.");
     } finally {
       setIsSavingProcedures(false);
     }
@@ -970,7 +969,7 @@ export function NailVariantDetailPage() {
       const nailSurfaceId = findSurfaceId(references.surfaces, pendingTryOnConfig);
 
       if (!nailShapeId || !nailSurfaceId) {
-        throw new Error(t("adminNailsDesignManagement.nailShapeAndSurfaceReferencesA"));
+        throw new Error("Nail shape and surface references are required before saving.");
       }
 
       await updateAdminNailVariant(variantId, {
@@ -1006,7 +1005,7 @@ export function NailVariantDetailPage() {
       <section className="flex min-h-full items-center justify-center bg-[#fff7fb] px-4 py-10">
         <div className="flex items-center gap-3 rounded-[18px] border border-[#f8dce8] bg-white px-5 py-4 text-sm text-[#b38a9f]">
           <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
-          {t("adminNailsDesignManagement.loadingNailVariantDetail")}
+          Loading nail variant detail...
         </div>
       </section>
     );
@@ -1020,7 +1019,7 @@ export function NailVariantDetailPage() {
     return (
       <section className="flex min-h-full items-center justify-center bg-[#fff7fb] px-4 py-10">
         <div className="rounded-[18px] border border-[#f8dce8] bg-white px-5 py-4 text-sm font-medium text-[#d14c84]">
-          {error || (t("adminNailsDesignManagement.failedToLoadNailVariantDetail"))}
+          {error || "Failed to load nail variant detail."}
         </div>
       </section>
     );
@@ -1032,7 +1031,7 @@ export function NailVariantDetailPage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-xs text-[#c694ad]">
-              {t("adminNailsDesignManagement.nailDesigns")}<span className="text-[#ea4f93]">{t("adminNailsDesignManagement.variantDetail")}</span>
+              Nail Designs / <span className="text-[#ea4f93]">Variant Detail</span>
             </p>
             <h1 className="mt-2 text-2xl font-bold text-[#432744]">{variant.name}</h1>
             <p className="mt-1 max-w-3xl text-sm text-[#8c7085]">{variant.description || "--"}</p>
@@ -1044,7 +1043,7 @@ export function NailVariantDetailPage() {
               className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#8c7085]"
             >
               <ArrowLeft size={14} className="mr-1.5 inline" />
-              {t("adminNailsDesignManagement.backToDesign")}
+              Back to Design
             </button>
             <button
               type="button"
@@ -1052,7 +1051,7 @@ export function NailVariantDetailPage() {
               className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
             >
               <Sparkles size={14} className="mr-1.5 inline" />
-              {t("adminNailsDesignManagement.setUpTryOn")}
+              Set Up Try On
             </button>
             <button
               type="button"
@@ -1060,7 +1059,7 @@ export function NailVariantDetailPage() {
               className="rounded-full bg-[#4a72d8] px-4 py-2 text-xs font-bold text-white"
             >
               <Image size={14} className="mr-1.5 inline" />
-              {t("adminNailsDesignManagement.photoTryOn")}
+              Photo Try On
             </button>
             <button
               type="button"
@@ -1068,7 +1067,7 @@ export function NailVariantDetailPage() {
               className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white"
             >
               <Camera size={14} className="mr-1.5 inline" />
-              {t("adminNailsDesignManagement.liveTryOn")}
+              Live Try On
             </button>
           </div>
         </div>
@@ -1082,23 +1081,21 @@ export function NailVariantDetailPage() {
 
       {pendingTryOnConfig && !error ? (
         <div className="flex items-center justify-between rounded-[18px] border border-[#f4bfd2] bg-[#fff1f6] px-5 py-3">
-          <p className="text-sm font-semibold text-green-700 px-4 py-2 border border-green-400 rounded-full bg-green-100">
-            {t("adminNailsDesignManagement.youHaveUnsavedTryonChanges")}
-          </p>
+          <p className="text-sm font-semibold text-green-700 px-4 py-2 border border-green-400 rounded-full bg-green-100">You have unsaved Try-On changes.</p>
           <div className="flex gap-2">
             <button
               onClick={() => navigate(getAdminNailVariantDetailRoute(designId, variantId), { replace: true })}
               disabled={isSavingTryOn}
               className="rounded-full border border-[#f4bfd2] bg-white px-4 py-2 text-xs font-bold text-[#d14c84]"
             >
-              {t("adminNailsDesignManagement.cancel")}
+              Cancel
             </button>
             <button
               onClick={handleSaveTryOn}
               disabled={isSavingTryOn}
               className="rounded-full bg-[#d14c84] px-4 py-2 text-xs font-bold text-white shadow"
             >
-              {isSavingTryOn ? (t("adminNailsDesignManagement.saving")) : (t("adminNailsDesignManagement.saveChanges"))}
+              {isSavingTryOn ? "Saving..." : "Save Changes"}
             </button>
           </div>
         </div>
@@ -1106,14 +1103,14 @@ export function NailVariantDetailPage() {
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="space-y-4">
-          <DetailCard title={t("adminNailsDesignManagement.variantOverview")}>
+          <DetailCard title="Variant Overview">
             <div className="space-y-5">
               <NailVariantHandPreview variantDetail={variant} />
 
               <div className="grid gap-3 sm:grid-cols-2">
                 {[
-                  [t("adminNailsDesignManagement.price"), variant.priceLabel || "--"],
-                  [t("adminNailsDesignManagement.duration"), variant.durationLabel || "--"],
+                  ["Price", variant.priceLabel || "--"],
+                  ["Duration", variant.durationLabel || "--"],
                 ].map(([label, value]) => (
                   <div key={label} className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">{label}</p>
@@ -1124,12 +1121,12 @@ export function NailVariantDetailPage() {
 
               <div className="grid gap-4 lg:grid-cols-2">
                 <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-5">
-                  <h3 className="text-sm font-extrabold uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.nailShape")}</h3>
+                  <h3 className="text-sm font-extrabold uppercase tracking-[0.08em] text-[#c694ad]">Nail Shape</h3>
                   <div className="mt-4 space-y-3">
                     {[
-                      [t("adminNailsDesignManagement.name"), variant.nailShape?.name || "--"],
-                      [t("adminNailsDesignManagement.price"), variant.nailShape?.priceLabel || "--"],
-                      [t("adminNailsDesignManagement.duration"), variant.nailShape?.durationLabel || "--"],
+                      ["Name", variant.nailShape?.name || "--"],
+                      ["Price", variant.nailShape?.priceLabel || "--"],
+                      ["Duration", variant.nailShape?.durationLabel || "--"],
                     ].map(([label, value]) => (
                       <div key={label} className="rounded-[16px] border border-[#f3dce7] bg-white px-4 py-3">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">{label}</p>
@@ -1140,12 +1137,12 @@ export function NailVariantDetailPage() {
                 </div>
 
                 <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-5">
-                  <h3 className="text-sm font-extrabold uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.nailSurface")}</h3>
+                  <h3 className="text-sm font-extrabold uppercase tracking-[0.08em] text-[#c694ad]">Nail Surface</h3>
                   <div className="mt-4 space-y-3">
                     {[
-                      [t("adminNailsDesignManagement.name"), variant.nailSurface?.name || "--"],
-                      [t("adminNailsDesignManagement.price"), variant.nailSurface?.priceLabel || "--"],
-                      [t("adminNailsDesignManagement.duration"), variant.nailSurface?.durationLabel || "--"],
+                      ["Name", variant.nailSurface?.name || "--"],
+                      ["Price", variant.nailSurface?.priceLabel || "--"],
+                      ["Duration", variant.nailSurface?.durationLabel || "--"],
                     ].map(([label, value]) => (
                       <div key={label} className="rounded-[16px] border border-[#f3dce7] bg-white px-4 py-3">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">{label}</p>
@@ -1182,9 +1179,9 @@ export function NailVariantDetailPage() {
             )}
           </DetailCard> */}
 
-          <DetailCard title={t("adminNailsDesignManagement.procedureSteps")}>
+          <DetailCard title="Procedure Steps">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-[#8c7085]">{t("adminNailsDesignManagement.stepOrderIsInitializedFromTheC")}</p>
+              <p className="text-sm text-[#8c7085]">Step order is initialized from the current variant procedure response.</p>
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -1193,7 +1190,7 @@ export function NailVariantDetailPage() {
                   className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#ea4f93]"
                 >
                   <Plus size={13} className="mr-1.5 inline" />
-                  {t("adminNailsDesignManagement.addStep")}
+                  Add Step
                 </button>
                 <button
                   type="button"
@@ -1202,7 +1199,7 @@ export function NailVariantDetailPage() {
                   className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white"
                 >
                   <Save size={13} className="mr-1.5 inline" />
-                  {isSavingProcedures ? (t("adminNailsDesignManagement.saving")) : (t("adminNailsDesignManagement.saveSteps"))}
+                  {isSavingProcedures ? "Saving..." : "Save Steps"}
                 </button>
               </div>
             </div>
@@ -1214,7 +1211,7 @@ export function NailVariantDetailPage() {
                     <div className="grid gap-3 md:grid-cols-[110px_minmax(0,1fr)]">
                       <label className="space-y-2">
                         <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
-                          {t("adminNailsDesignManagement.stepOrder")}
+                          Step Order
                         </span>
                         <input
                           value={String(item.stepOrder || index + 1)}
@@ -1224,14 +1221,14 @@ export function NailVariantDetailPage() {
                       </label>
                       <div className="flex flex-col gap-2">
                         <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
-                          {t("adminNailsDesignManagement.procedure")}
+                          Procedure
                         </span>
                         <select
                           value={item.procedureId || ""}
                           onChange={(e) => updateProcedureDraft(index, "procedureId", e.target.value)}
                           className="w-full rounded-2xl border border-[#f4d4e2] bg-white px-4 py-3 text-sm font-semibold text-[#432744] outline-none focus:border-[#ea4f93]"
                         >
-                          <option value="">{t("adminNailsDesignManagement.selectAProcedure")}</option>
+                          <option value="">Select a procedure</option>
                           {availableProcedures.map((proc) => (
                             <option key={proc.id || proc.procedureId} value={proc.id || proc.procedureId}>
                               {proc.name}
@@ -1239,9 +1236,9 @@ export function NailVariantDetailPage() {
                           ))}
                         </select>
                         <div className="mt-2 grid gap-2 text-sm md:grid-cols-3">
-                          <span>{t("adminNailsDesignManagement.duration")}: <b>{item.durationLabel || item.duration || "--"}</b></span>
-                          <span>{t("adminNailsDesignManagement.status")}: <b>{item.status || "--"}</b></span>
-                          <span>{t("adminNailsDesignManagement.required")}: <b>{item.isRequired ? (t("adminNailsDesignManagement.yes")) : (t("adminNailsDesignManagement.no"))}</b></span>
+                          <span>Duration: <b>{item.durationLabel || item.duration || "--"}</b></span>
+                          <span>Status: <b>{item.status || "--"}</b></span>
+                          <span>Required: <b>{item.isRequired ? "Yes" : "No"}</b></span>
                         </div>
                       </div>
                     </div>
@@ -1251,19 +1248,19 @@ export function NailVariantDetailPage() {
               </div>
             ) : (
               <div className="mt-4 rounded-[16px] border border-dashed border-[#f3c9dd] bg-[#fffafb] px-4 py-4 text-sm text-[#8c7085]">
-                {t("adminNailsDesignManagement.noProceduresConfiguredForThisV1")}
+                No procedures configured for this variant yet.
               </div>
             )}
           </DetailCard>
         </div>
 
         <aside className="space-y-4">
-          <DetailCard title={t("adminNailsDesignManagement.tryon")}>
+          <DetailCard title="Try-On">
             <div className="space-y-3">
               {[
-                [t("adminNailsDesignManagement.setUpTryOn"), t("adminNailsDesignManagement.tuneNailShapeColorFinishAndLay"), undefined, Eye],
-                [t("adminNailsDesignManagement.photoTryOn"), t("adminNailsDesignManagement.applyThisVariantOnAnUploadedHa"), "image", Image],
-                [t("adminNailsDesignManagement.liveTryOn"), t("adminNailsDesignManagement.applyThisVariantUsingTheCamera"), "live", Camera],
+                ["Set Up Try On", "Tune nail shape, color, finish, and layers.", undefined, Eye],
+                ["Photo Try On", "Apply this variant on an uploaded hand image.", "image", Image],
+                ["Live Try On", "Apply this variant using the camera.", "live", Camera],
               ].map(([label, note, mode, Icon]) => (
                 <button
                   key={label}
@@ -1283,7 +1280,7 @@ export function NailVariantDetailPage() {
             </div>
           </DetailCard>
 
-          <DetailCard title={t("adminNailsDesignManagement.colorPreview")}>
+          <DetailCard title="Color Preview">
             {colors.length > 0 ? (
               <div className="flex flex-wrap gap-3">
                 {colors.length > 1 ? (
@@ -1292,7 +1289,7 @@ export function NailVariantDetailPage() {
                       className="h-16 rounded-[14px] border border-white shadow-inner"
                       style={{ backgroundImage: `linear-gradient(135deg, ${colors.join(", ")})` }}
                     />
-                    <p className="mt-3 text-center text-[11px] font-bold text-[#6d5669]">{t("adminNailsDesignManagement.gradientMix")}</p>
+                    <p className="mt-3 text-center text-[11px] font-bold text-[#6d5669]">Gradient Mix</p>
                   </div>
                 ) : null}
                 {colors.map((color) => (

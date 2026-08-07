@@ -5,35 +5,34 @@ import { useAuth } from "../../features/core/auth/hooks/useAuth";
 import { Header } from "../../shared/components/common/Header";
 import { Sidebar } from "../../shared/components/common/Sidebar";
 import { getMenuConfig } from "../../shared/constants/menuConfig";
-import { useLanguage } from "../../shared/hooks/useLanguage";
 
-function getRoleLabel(role, t) {
+function getRoleLabel(role) {
   switch (role) {
     case "admin":
-      return t("superAdmin");
+      return "Super Admin";
     case "manager":
-      return t("salonManager");
+      return "Salon Manager";
     case "receptionist":
-      return t("receptionist");
+      return "Receptionist";
     case "staff":
-      return t("nailArtist");
+      return "Nail Artist";
     default:
-      return t("workspace") || "Workspace";
+      return "Workspace";
   }
 }
 
-function getPortalLabel(role, t) {
+function getPortalLabel(role) {
   switch (role) {
     case "admin":
-      return t("adminConsole");
+      return "Admin Console";
     case "manager":
-      return t("managerPortal");
+      return "Manager Portal";
     case "receptionist":
-      return t("receptionDesk");
+      return "Reception Desk";
     case "staff":
-      return t("staffWorkspace");
+      return "Staff Workspace";
     default:
-      return t("nailifyPortal");
+      return "Nailify Portal";
   }
 }
 
@@ -46,8 +45,8 @@ function getUserInitials(name) {
     .join("");
 }
 
-function getTodayLabel(language) {
-  return new Intl.DateTimeFormat(language === "vi" ? "vi-VN" : "en-US", {
+function getTodayLabel() {
+  return new Intl.DateTimeFormat("en-US", {
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -67,7 +66,7 @@ function groupMenusBySection(menus) {
   }, {});
 }
 
-function getHeaderContent(pathname, menus, t, language) {
+function getHeaderContent(pathname, menus) {
   const currentMenu =
     menus.find((item) => item.to === pathname) ??
     menus.find(
@@ -76,8 +75,8 @@ function getHeaderContent(pathname, menus, t, language) {
 
   if (!currentMenu) {
     return {
-      title: t("header.dashboard.title"),
-      description: t("header.dashboard.desc"),
+      title: "Dashboard",
+      description: "Monitor internal operations across the Nailify workspace.",
     };
   }
 
@@ -87,63 +86,61 @@ function getHeaderContent(pathname, menus, t, language) {
     case "staff-bookings":
     case "receptionist-bookings":
       return {
-        title: t("header.bookings.title"),
-        description: t("header.bookings.desc"),
+        title: "Bookings",
+        description: "Monitor bookings across all Nailify salon locations.",
       };
     case "admin-salons":
       return {
-        title: t("header.salons.title"),
-        description: t("header.salons.desc"),
+        title: "Salon Management",
+        description: "Manage salons, branches, capacity, and operational status.",
       };
     case "admin-staff":
       return {
-        title: t("header.staff.title"),
-        description: t("header.staff.desc"),
+        title: "Staff Management",
+        description: "Manage staff profiles, assignments, performance, and availability.",
       };
     case "admin-users":
       return {
-        title: t("header.users.title"),
-        description: t("header.users.desc"),
+        title: "Users",
+        description: "Manage customers, staff artists, and salon managers.",
       };
     case "admin-loyalty-tiers":
       return {
-        title: t("header.loyaltyTiers.title"),
-        description: t("header.loyaltyTiers.desc"),
+        title: "Loyalty Tiers",
+        description: "Manage customer loyalty programs, point systems, and benefits.",
       };
     case "admin-quiz":
       return {
-        title: t("header.quiz.title"),
-        description: t("header.quiz.desc"),
+        title: "Quiz Management",
+        description: "Configure nail styling diagnostic questions, scoring logic, and shape recommendations.",
       };
     case "admin-quiz-create":
       return {
-        title: t("header.quizCreate.title"),
-        description: t("header.quizCreate.desc"),
+        title: "Create Quiz Question",
+        description: "Configure a new diagnostic question with multiple choice options and properties.",
       };
     case "admin-service-pricing":
       return {
-        title: t("header.servicePricing.title"),
-        description: t("header.servicePricing.desc"),
+        title: "Service Management",
+        description: "Manage services, prices, and estimated durations.",
       };
     case "staff-tasks":
       return {
-        title: t("header.tasks.title"),
-        description: t("header.tasks.desc"),
+        title: "Task Queue",
+        description: "Track assigned procedures and claim open salon tasks.",
       };
     case "staff-profile":
     case "receptionist-profile":
     case "manager-profile":
     case "admin-profile":
       return {
-        title: t("header.profile.title"),
-        description: t("header.profile.desc"),
+        title: "Profile",
+        description: "View and manage your account information and assigned salon details.",
       };
     default:
       return {
         title: currentMenu.label,
-        description: language === "vi"
-          ? `Quản lý ${currentMenu.label.toLowerCase()} trên hệ thống Nailify.`
-          : `Manage ${currentMenu.label.toLowerCase()} across the Nailify workspace.`,
+        description: `Manage ${currentMenu.label.toLowerCase()} across the Nailify workspace.`,
       };
   }
 }
@@ -153,26 +150,16 @@ export function DashboardLayout() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { language, t } = useLanguage();
-
   const menus = getMenuConfig(user?.role);
-  const translatedMenus = menus.map((item) => ({
-    ...item,
-    label: t(`menus.${item.key}`) || item.label,
-  }));
-  
-  const menuGroups = groupMenusBySection(translatedMenus);
+  const menuGroups = groupMenusBySection(menus);
   const profileName = user?.fullName ?? "Nailify User";
-  const profileRole = getRoleLabel(user?.role, t);
-  const portalLabel = getPortalLabel(user?.role, t);
-  const headerContent = getHeaderContent(location.pathname, translatedMenus, t, language);
+  const profileRole = getRoleLabel(user?.role);
+  const portalLabel = getPortalLabel(user?.role);
+  const headerContent = getHeaderContent(location.pathname, menus);
   const sidebarWidth = collapsed ? 80 : 200;
 
   useEffect(() => {
-    const handle = requestAnimationFrame(() => {
-      setMobileMenuOpen(false);
-    });
-    return () => cancelAnimationFrame(handle);
+    setMobileMenuOpen(false);
   }, [location.pathname]);
 
   return (
@@ -194,7 +181,7 @@ export function DashboardLayout() {
             backButtonFallbackTo="/"
             title={headerContent.title}
             description={headerContent.description}
-            todayLabel={getTodayLabel(language)}
+            todayLabel={getTodayLabel()}
             onOpenMobileMenu={() => setMobileMenuOpen(true)}
             onLogout={logout}
           />

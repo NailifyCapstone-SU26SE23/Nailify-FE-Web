@@ -19,7 +19,6 @@ import { Spin, Tag } from "antd";
 import { fetchAdminSalons } from "../../salon-management/services/salonManagementService";
 import { fetchBookingsBySalonId } from "../../../manager/bookings/services/bookingsService";
 import { getAdminSalonBookingDetailRoute, ROUTES } from "../../../../shared/constants/routes";
-import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 const SALON_PLACEHOLDER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"><rect width="400" height="200" rx="28" fill="#fde7ef"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#8f365c" font-family="Arial, sans-serif" font-size="30" font-weight="700">Salon</text></svg>',
@@ -284,7 +283,6 @@ function BookingCard({ booking }) {
 }
 
 export function AdminSalonBookingsPage() {
-  const { t, language } = useLanguage();
   const navigate = useNavigate();
 
   const [salons, setSalons] = useState([]);
@@ -348,35 +346,33 @@ export function AdminSalonBookingsPage() {
     loadData();
   }, []);
 
-  const isVi = language === "vi";
-
   return (
     <div className="mx-auto w-full min-w-0 max-w-[1600px] px-4 py-8">
       <motion.div key="salons-list" initial="hidden" animate="visible" variants={fadeInUp}>
         <Breadcrumb
           items={[
-            { label: t("menus.admin-dashboard") || "Dashboard", link: ROUTES.adminDashboard, icon: Home },
-            { label: t("menus.admin-bookings") || "Salon Bookings" },
+            { label: "Dashboard", link: ROUTES.adminDashboard, icon: Home },
+            { label: "Salon Bookings" },
           ]}
         />
 
         <div className="mb-8">
           <h1 className="text-[32px] font-extrabold tracking-tight text-[#3d1f3f]">
-            {t("header.bookings.title") || "Salon Bookings Overview"}
+            Salon Bookings Overview
           </h1>
           <p className="mt-2 text-[14px] text-[#9a5f7f]">
-            {isVi ? "Chọn chi nhánh để xem và quản lý lịch sử đặt lịch" : "Select a salon to view and manage its booking history"}
+            Select a salon to view and manage its booking history
           </p>
         </div>
 
         {isLoadingSalons ? (
           <div className="flex flex-col items-center justify-center py-24">
-            <Spin size="large" tip={isVi ? "Đang tải dữ liệu chi nhánh..." : "Loading salons..."} />
+            <Spin size="large" tip="Loading salons..." />
           </div>
         ) : error ? (
           <PremiumCard>
             <div className="py-16 text-center text-[#e1447f]">
-              <p className="text-xl font-bold mb-2">{isVi ? "Có lỗi xảy ra!" : "Oops!"}</p>
+              <p className="text-xl font-bold mb-2">Oops!</p>
               <p className="text-base">{error}</p>
             </div>
           </PremiumCard>
@@ -441,12 +437,12 @@ export function AdminSalonBookingsPage() {
                         <span className="font-bold text-[#16975f]">
                           ${calculateSalonRevenue(salon?.id || salon?.salonId).toLocaleString()}
                         </span>
-                        <span className="text-[#9a5f7f] text-xs">{t("adminDashboard.table.revenue") || "Revenue"}</span>
+                        <span className="text-[#9a5f7f] text-xs">Revenue</span>
                       </div>
                     </div>
                     <div className="flex items-center justify-between pt-4 border-t border-[#f1e7ed]">
                       <div className="flex items-center gap-1 text-[#ea4f93] text-sm font-bold">
-                        {isVi ? "Xem lịch hẹn" : "View Bookings"}
+                        View Bookings
                         <ChevronRight size={16} />
                       </div>
                     </div>

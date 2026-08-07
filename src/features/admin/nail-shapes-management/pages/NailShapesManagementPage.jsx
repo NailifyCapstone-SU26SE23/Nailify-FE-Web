@@ -16,7 +16,6 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { Table } from "antd";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
@@ -115,7 +114,6 @@ function sortShapes(items, sortValue) {
 export function NailShapesManagementPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { t, language } = useLanguage();
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [priceFilter, setPriceFilter] = useState("");
@@ -183,7 +181,7 @@ export function NailShapesManagementPage() {
         }
 
         setShapes([]);
-        setError(loadError instanceof Error ? loadError.message : (t("adminNailShapesManagement.failedToLoadNailShapes")));
+        setError(loadError instanceof Error ? loadError.message : "Failed to load nail shapes.");
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -206,30 +204,30 @@ export function NailShapesManagementPage() {
 
     return [
       {
-        label: t("adminNailShapesManagement.totalShapes"),
+        label: "Total Shapes",
         value: metaData.totalItems.toLocaleString(),
-        note: language === "vi" ? `${metaData.totalPages} trang` : `${metaData.totalPages} pages`,
+        note: `${metaData.totalPages} pages`,
         icon: Shapes,
         iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
       },
       {
-        label: t("adminNailShapesManagement.visibleItems"),
+        label: "Visible Items",
         value: shapes.length.toLocaleString(),
-        note: t("adminNailShapesManagement.currentPage"),
+        note: "Current page",
         icon: Sparkles,
         iconClassName: "bg-[#fff4df] text-[#d9871c]",
       },
       {
-        label: t("adminNailShapesManagement.avgPrice"),
+        label: "Avg Price",
         value: formatNailShapeCurrency(averagePrice),
-        note: t("adminNailShapesManagement.currentPage"),
+        note: "Current page",
         icon: Wallet,
         iconClassName: "bg-[#f3ebff] text-[#8b5cf6]",
       },
       {
-        label: t("adminNailShapesManagement.avgDuration"),
+        label: "Avg Duration",
         value: formatNailShapeDuration(averageDuration),
-        note: t("adminNailShapesManagement.currentPage"),
+        note: "Current page",
         icon: TimerReset,
         iconClassName: "bg-[#e7fbf4] text-[#20ab77]",
       },
@@ -292,7 +290,7 @@ export function NailShapesManagementPage() {
       {
         title: (
           <SortableHeader
-            label={t("adminNailShapesManagement.shape")}
+            label="Shape"
             sortKey="shape"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -311,7 +309,7 @@ export function NailShapesManagementPage() {
       {
         title: (
           <SortableHeader
-            label={t("adminNailShapesManagement.price")}
+            label="Price"
             sortKey="price"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -324,7 +322,7 @@ export function NailShapesManagementPage() {
       {
         title: (
           <SortableHeader
-            label={t("adminNailShapesManagement.duration")}
+            label="Duration"
             sortKey="duration"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -335,26 +333,26 @@ export function NailShapesManagementPage() {
         render: (value) => <span className="text-sm text-[#6b5668]">{value}</span>,
       },
       {
-        title: t("adminNailShapesManagement.actions"),
+        title: "Actions",
         key: "actions",
         render: (_, shape) => (
           <ActionDropdown
             items={[
               {
                 key: "view",
-                label: t("adminNailShapesManagement.viewDetail"),
+                label: "View Detail",
                 icon: Eye,
                 onSelect: () => navigate(getAdminNailShapeDetailRoute(shape.nailShapeId)),
               },
               {
                 key: "edit",
-                label: t("adminNailShapesManagement.editShape"),
+                label: "Edit Shape",
                 icon: Pencil,
                 onSelect: () => navigate(getAdminNailShapeDetailRoute(shape.nailShapeId), { state: { startInEdit: true } }),
               },
               {
                 key: "delete",
-                label: t("adminNailShapesManagement.deleteShape"),
+                label: "Delete Shape",
                 icon: Trash2,
                 className: "text-[#d14c84]",
                 onSelect: () => setDeleteTarget(shape),
@@ -363,7 +361,8 @@ export function NailShapesManagementPage() {
           />
         ),
       },
-    ], [navigate, selectedSort, t],
+    ],
+    [navigate, selectedSort],
   );
 
   const handleDeleteShape = async () => {
@@ -376,7 +375,7 @@ export function NailShapesManagementPage() {
     try {
       await deleteAdminNailShape(deleteTarget.nailShapeId);
       setDeleteTarget(null);
-      toast.success(language === "vi" ? `Đã xóa dáng móng ${deleteTarget.name} thành công.` : `${deleteTarget.name} deleted successfully.`);
+      toast.success(`${deleteTarget.name} deleted successfully.`);
 
       const shouldMoveBack = shapes.length === 1 && metaData.currentPage > 1;
       setMetaData((current) => ({
@@ -392,7 +391,7 @@ export function NailShapesManagementPage() {
       setShapes(response.items);
       setMetaData(response.metaData);
     } catch (deleteError) {
-      toast.error(deleteError instanceof Error ? deleteError.message : (t("adminNailShapesManagement.failedToDeleteNailShape")));
+      toast.error(deleteError instanceof Error ? deleteError.message : "Failed to delete nail shape.");
     } finally {
       setIsDeleting(false);
     }
@@ -430,7 +429,7 @@ export function NailShapesManagementPage() {
                 <input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder={t("adminNailShapesManagement.searchNailShapeByName")}
+                  placeholder="Search nail shape by name..."
                   className="h-10 w-full rounded-full border border-[#f4d7e5] bg-[#fffafc] pl-11 pr-4 text-sm text-[#5b4658] outline-none placeholder:text-[#d4a1b8] focus:border-[#ea4f93]"
                 />
               </label>
@@ -446,7 +445,7 @@ export function NailShapesManagementPage() {
                 className="inline-flex h-10 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
               >
                 <Search size={14} className="mr-2 shrink-0" />
-                {t("adminNailShapesManagement.search")}
+                Search
               </button>
             </div>
 
@@ -455,9 +454,9 @@ export function NailShapesManagementPage() {
               onChange={(event) => setPriceFilter(event.target.value)}
               className="h-10 rounded-full border border-[#f4d7e5] bg-[#fffafc] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
             >
-              <option value="">{t("adminNailShapesManagement.allPricing")}</option>
-              <option value="free">{t("adminNailShapesManagement.freeShapes")}</option>
-              <option value="priced">{t("adminNailShapesManagement.pricedShapes")}</option>
+              <option value="">All pricing</option>
+              <option value="free">Free shapes</option>
+              <option value="priced">Priced shapes</option>
             </select>
           </div>
 
@@ -466,18 +465,15 @@ export function NailShapesManagementPage() {
             className="inline-flex items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
           >
             <Plus size={13} className="mr-1.5 shrink-0" />
-            {t("adminNailShapesManagement.addNailShape")}
+            Add Nail Shape
           </Link>
         </div>
 
         <section className="overflow-hidden rounded-[20px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
           <div className="border-b border-[#f6dbe7] px-5 py-4">
-            <h2 className="text-sm font-extrabold text-[#432744]">{t("adminNailShapesManagement.nailShapes")}</h2>
+            <h2 className="text-sm font-extrabold text-[#432744]">Nail Shapes</h2>
             <p className="mt-1 text-[11px] font-medium text-[#c694ad]">
-              {language === "vi"
-                ? `Đang hiển thị ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} trên ${metaData.totalItems} dáng móng`
-                : `Showing ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} of ${metaData.totalItems} nail shapes`
-              }
+              Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} nail shapes
             </p>
           </div>
 
@@ -491,15 +487,12 @@ export function NailShapesManagementPage() {
             }}
             pagination={false}
             scroll={{ x: 920 }}
-            locale={{ emptyText: error || (t("adminNailShapesManagement.noNailShapesFound")) }}
+            locale={{ emptyText: error || "No nail shapes found." }}
           />
 
           <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-[11px] text-[#c694ad]">
-              {language === "vi"
-                ? `Đang hiển thị ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} trên ${metaData.totalItems} dáng móng`
-                : `Showing ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} of ${metaData.totalItems} nail shapes`
-              }
+              Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} nail shapes
             </p>
             <div className="flex items-center gap-1">
               <button
@@ -528,8 +521,8 @@ export function NailShapesManagementPage() {
                     setMetaData((current) => ({ ...current, currentPage: item }));
                   }}
                   className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md px-2 text-[11px] ${item === metaData.currentPage
-                    ? "bg-[#ea4f93] font-bold text-white"
-                    : "border border-[#f3cade] bg-white font-medium text-[#b9849f]"
+                      ? "bg-[#ea4f93] font-bold text-white"
+                      : "border border-[#f3cade] bg-white font-medium text-[#b9849f]"
                     } disabled:cursor-default disabled:opacity-100`}
                 >
                   {item}
@@ -557,11 +550,11 @@ export function NailShapesManagementPage() {
         <ActionConfirmModal
           open
           intent="danger"
-          title={t("adminNailShapesManagement.deleteNailShape")}
-          subtitle={t("adminNailShapesManagement.thisWillPermanentlyRemoveTheNa")}
-          description={language === "vi" ? `Bạn chuẩn bị xóa dáng móng ${deleteTarget.name}. Hành động này không thể hoàn tác.` : `You are about to delete ${deleteTarget.name}. This action cannot be undone.`}
-          confirmText={t("adminNailShapesManagement.deleteShape")}
-          cancelText={t("adminNailShapesManagement.keepShape")}
+          title="Delete Nail Shape"
+          subtitle="This will permanently remove the nail shape from backend."
+          description={`You are about to delete ${deleteTarget.name}. This action cannot be undone.`}
+          confirmText="Delete Shape"
+          cancelText="Keep Shape"
           confirmIcon={Trash2}
           loading={isDeleting}
           onConfirm={handleDeleteShape}
@@ -570,9 +563,9 @@ export function NailShapesManagementPage() {
             image: deleteTarget.imageUrl || undefined,
             title: deleteTarget.name,
             meta: `${deleteTarget.priceLabel} • ${deleteTarget.durationLabel}`,
-            note: (t("adminNailShapesManagement.shapeId1")) + deleteTarget.nailShapeId,
+            note: `Shape ID: ${deleteTarget.nailShapeId}`,
           }}
-          warnings={[t("adminNailShapesManagement.thisActionCallsTheBackendDelet1")]}
+          warnings={["This action calls the backend delete endpoint and removes this nail shape record."]}
         />
       ) : null}
     </>

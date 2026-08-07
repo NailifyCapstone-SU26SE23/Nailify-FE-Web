@@ -26,7 +26,6 @@ import { fetchBookingRatingsBySalonId, fetchUserById } from "../../../manager/bo
 import { fetchAllSalonStaff } from "../../../manager/staff-artist-management/services/nailArtistsService";
 import { formatDate } from "../../../../shared/utils/formatDate";
 import { Spin, Alert, Select, DatePicker } from "antd";
-import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import dayjs from "dayjs";
 
 // Helper to generate initials for custom avatar when imageUrl is missing
@@ -79,7 +78,6 @@ const fadeInUp = {
 };
 
 export function AdminSalonBookingRatingPage() {
-  const { t, language } = useLanguage();
   const [salons, setSalons] = useState([]);
   const [loadingSalons, setLoadingSalons] = useState(true);
   const [salonsError, setSalonsError] = useState(null);
@@ -362,8 +360,6 @@ export function AdminSalonBookingRatingPage() {
     };
   }, [ratings]);
 
-  const isVi = language === "vi";
-
   return (
     <div className="min-h-[100dvh] bg-[#fafaf9] p-6 lg:p-8 font-sans relative overflow-hidden">
       {/* Background gradients */}
@@ -379,17 +375,15 @@ export function AdminSalonBookingRatingPage() {
               <span className="p-2 rounded-xl bg-[#ea4f93]/10 text-[#ea4f93]">
                 <Store size={18} className="stroke-[2]" />
               </span>
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#ea4f93]">
-                {isVi ? "Bảng điều khiển quản trị" : "Admin Control Panel"}
-              </span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#ea4f93]">Admin Control Panel</span>
             </div>
             <h1 className="text-3xl font-bold text-[#2d1b35] tracking-tight md:text-4xl">
-              {t("menus.admin-reviews") || "Salons Feedback Audit"}
+              Salons Feedback Audit
             </h1>
             <p className="text-xs md:text-sm text-[#a88a9f] max-w-[65ch] leading-relaxed">
               {selectedSalon
-                ? (isVi ? `Đang kiểm toán chỉ số hài lòng và các phản hồi của khách hàng tại ${selectedSalon.name}.` : `Auditing satisfaction indices and customer feedback cards for ${selectedSalon.name}.`)
-                : (isVi ? "Chọn một chi nhánh salon bên dưới để kiểm toán lịch sử đánh giá của khách hàng và điểm chất lượng dịch vụ." : "Select a salon branch below to audit customer review history and service quality scores.")
+                ? `Auditing satisfaction indices and customer feedback cards for ${selectedSalon.name}.`
+                : "Select a salon branch below to audit customer review history and service quality scores."
               }
             </p>
           </div>
@@ -400,7 +394,7 @@ export function AdminSalonBookingRatingPage() {
               className="flex self-start md:self-auto items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4.5 py-3 text-xs font-bold text-[#2d1b35] shadow-[0_4px_12px_rgba(0,0,0,0.03)] hover:border-[#ea4f93]/30 transition-all duration-300 active:scale-[0.98]"
             >
               <ArrowLeft size={13} />
-              {isVi ? "Quay lại chi nhánh" : "Back to Salons"}
+              Back to Salons
             </button>
           )}
         </div>
@@ -417,7 +411,7 @@ export function AdminSalonBookingRatingPage() {
                     <Store size={20} />
                   </span>
                   <div>
-                    <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider block">{isVi ? "Chi nhánh hệ thống" : "Network Branches"}</span>
+                    <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider block">Network Branches</span>
                     <span className="text-2xl font-bold text-[#2d1b35]">{salons.length}</span>
                   </div>
                 </div>
@@ -428,7 +422,7 @@ export function AdminSalonBookingRatingPage() {
                     <MessageSquare size={20} />
                   </span>
                   <div>
-                    <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider block">{isVi ? "Đánh giá đã duyệt" : "Audited Reviews"}</span>
+                    <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider block">Audited Reviews</span>
                     <span className="text-2xl font-bold text-[#2d1b35]">
                       {loadingMetrics ? <Spin size="small" /> : `${totalNetworkReviews} logs`}
                     </span>
@@ -441,7 +435,7 @@ export function AdminSalonBookingRatingPage() {
                     <Star size={20} className="fill-current" />
                   </span>
                   <div>
-                    <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider block">{isVi ? "Điểm trung bình" : "Network Avg Score"}</span>
+                    <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider block">Network Avg Score</span>
                     <span className="text-2xl font-mono font-bold text-[#2d1b35]">
                       {loadingMetrics ? <Spin size="small" /> : `${networkAvgScore} / 5`}
                     </span>
@@ -456,7 +450,7 @@ export function AdminSalonBookingRatingPage() {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]" size={15} />
                 <input
                   type="text"
-                  placeholder={isVi ? "Lọc theo tên chi nhánh..." : "Search salons by name, address..."}
+                  placeholder="Search salons by name, address..."
                   value={salonSearchQuery}
                   onChange={(e) => setSalonSearchQuery(e.target.value)}
                   className="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300"
@@ -471,26 +465,26 @@ export function AdminSalonBookingRatingPage() {
                       type="button"
                       onClick={() => setSalonStatusFilter(st)}
                       className={`px-3.5 py-1.5 rounded-xl text-xs font-bold capitalize transition-all duration-200 ${salonStatusFilter === st
-                        ? "bg-[#ea4f93] text-white shadow-xs"
-                        : "text-[#7f6478] hover:text-[#2d1b35] hover:bg-[#ea4f93]/5"
+                          ? "bg-[#ea4f93] text-white shadow-xs"
+                          : "text-[#7f6478] hover:text-[#2d1b35] hover:bg-[#ea4f93]/5"
                         }`}
                     >
-                      {st === "all" ? (isVi ? "Tất cả" : "all") : st === "active" ? (isVi ? "Hoạt động" : "active") : st === "busy" ? (isVi ? "Bận" : "busy") : (isVi ? "Đóng cửa" : "closed")}
+                      {st}
                     </button>
                   ))}
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider">{isVi ? "Sắp xếp:" : "Sort:"}</span>
+                  <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider">Sort:</span>
                   <Select
                     value={salonSortOption}
                     onChange={(val) => setSalonSortOption(val)}
                     className="w-36 h-10 select-premium-antd"
                     popupClassName="select-premium-dropdown"
                     options={[
-                      { value: "name", label: isVi ? "Tên" : "Name" },
-                      { value: "rating", label: isVi ? "Đánh giá" : "Rating" },
-                      { value: "reviews", label: isVi ? "Số lượng đánh giá" : "Reviews Volume" }
+                      { value: "name", label: "Name" },
+                      { value: "rating", label: "Rating" },
+                      { value: "reviews", label: "Reviews Volume" }
                     ]}
                     style={{ borderRadius: "0.875rem" }}
                   />
@@ -501,12 +495,12 @@ export function AdminSalonBookingRatingPage() {
             {loadingSalons ? (
               <div className="flex flex-col items-center justify-center py-32 bg-white/40 backdrop-blur-xs rounded-3xl border border-slate-200/60 shadow-xs">
                 <Spin size="large" />
-                <p className="mt-4 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] animate-pulse">{isVi ? "Đang tải dữ liệu chi nhánh..." : "Loading salons..."}</p>
+                <p className="mt-4 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] animate-pulse">Loading salons...</p>
               </div>
             ) : salonsError ? (
               <div className="p-6 bg-rose-50/50 rounded-3xl border border-rose-100">
                 <Alert
-                  message={isVi ? "Lỗi tải danh sách chi nhánh" : "Failed to load salons list"}
+                  message="Failed to load salons list"
                   description={salonsError}
                   type="warning"
                   showIcon
@@ -515,7 +509,7 @@ export function AdminSalonBookingRatingPage() {
                       onClick={loadSalons}
                       className="px-3.5 py-2 bg-white border border-rose-200 rounded-xl text-xs font-bold text-rose-700 transition hover:bg-rose-50"
                     >
-                      {isVi ? "Thử lại" : "Retry"}
+                      Retry
                     </button>
                   }
                 />
@@ -523,8 +517,8 @@ export function AdminSalonBookingRatingPage() {
             ) : filteredSalons.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-24 text-center bg-white rounded-3xl border border-slate-200/60 shadow-xs">
                 <Store size={36} className="text-[#a88a9f] mb-3 stroke-[1.2]" />
-                <h3 className="text-sm font-bold text-[#2d1b35]">{isVi ? "Không tìm thấy chi nhánh nào" : "No Salons Found"}</h3>
-                <p className="mt-1 text-xs text-[#a88a9f] max-w-[40ch]">{isVi ? "Không có chi nhánh salon nào phù hợp bộ lọc tìm kiếm." : "No salon branch matches your search query."}</p>
+                <h3 className="text-sm font-bold text-[#2d1b35]">No Salons Found</h3>
+                <p className="mt-1 text-xs text-[#a88a9f] max-w-[40ch]">No branches match your current search query or filter selection.</p>
               </div>
             ) : (
               <motion.div
@@ -560,10 +554,10 @@ export function AdminSalonBookingRatingPage() {
                           )}
 
                           <span className={`absolute top-3 right-3 text-[10px] font-bold px-2.5 py-1 rounded-full border shadow-xs ${salon.status === "Active" || salon.status === "Open"
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                            : salon.status === "Busy"
-                              ? "bg-amber-50 text-amber-700 border-amber-200"
-                              : "bg-slate-50 text-slate-600 border-slate-200"
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : salon.status === "Busy"
+                                ? "bg-amber-50 text-amber-700 border-amber-200"
+                                : "bg-slate-50 text-slate-600 border-slate-200"
                             }`}>
                             {salon.status || "Active"}
                           </span>
@@ -613,9 +607,9 @@ export function AdminSalonBookingRatingPage() {
                             </div>
 
                             <div className="flex justify-between items-center text-[10px] text-[#a88a9f]">
-                              <span>{isVi ? "Số lượng đánh giá đã kiểm toán" : "Audited Reviews Count"}</span>
+                              <span>Audited Reviews Count</span>
                               <span className="font-bold text-[#2d1b35] font-mono">
-                                {isMetricLoading ? "..." : (isVi ? `${metric.count} bản ghi` : `${metric.count} logs`)}
+                                {isMetricLoading ? "..." : `${metric.count} logs`}
                               </span>
                             </div>
                           </div>
@@ -623,7 +617,7 @@ export function AdminSalonBookingRatingPage() {
                       </div>
 
                       <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-[#ea4f93]">
-                        <span>{isVi ? "Xem đánh giá chi nhánh" : "Review Salon Feedback"}</span>
+                        <span>Review Salon Feedback</span>
                         <span className="h-8 w-8 rounded-full bg-[#ea4f93]/10 text-[#ea4f93] flex items-center justify-center group-hover:bg-[#ea4f93] group-hover:text-white transition-colors duration-300 shadow-2xs">
                           <ArrowRight size={14} />
                         </span>
@@ -641,12 +635,12 @@ export function AdminSalonBookingRatingPage() {
             {loadingRatings ? (
               <div className="flex flex-col items-center justify-center py-32 bg-white/40 backdrop-blur-xs rounded-[2.5rem] border border-slate-200/60 shadow-xs">
                 <Spin size="large" />
-                <p className="mt-4 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] animate-pulse">{isVi ? "Đang tải dữ liệu đánh giá..." : "Loading ratings logs..."}</p>
+                <p className="mt-4 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] animate-pulse">Loading ratings logs...</p>
               </div>
             ) : ratingsError ? (
               <div className="p-6 bg-rose-50/50 rounded-[2.5rem] border border-rose-100">
                 <Alert
-                  message={isVi ? "Lỗi tải dữ liệu phản hồi" : "Failed to load feedback"}
+                  message="Failed to load feedback"
                   description={ratingsError}
                   type="warning"
                   showIcon
@@ -655,7 +649,7 @@ export function AdminSalonBookingRatingPage() {
                       onClick={loadReviewsForSelectedSalon}
                       className="px-3.5 py-2 bg-white border border-rose-200 rounded-xl text-xs font-bold text-rose-700 transition hover:bg-rose-50"
                     >
-                      {isVi ? "Thử lại" : "Retry"}
+                      Retry
                     </button>
                   }
                 />
@@ -671,7 +665,7 @@ export function AdminSalonBookingRatingPage() {
                       <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]" size={15} />
                       <input
                         type="text"
-                        placeholder={isVi ? "Tìm theo tên khách hàng, email hoặc số điện thoại..." : "Search by customer, nail artist, or comment..."}
+                        placeholder="Search by customer, nail artist, or comment..."
                         value={reviewSearchQuery}
                         onChange={(e) => setReviewSearchQuery(e.target.value)}
                         className="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300"
@@ -686,18 +680,18 @@ export function AdminSalonBookingRatingPage() {
                             type="button"
                             onClick={() => setReviewScoreFilter(score)}
                             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-0.5 ${reviewScoreFilter === score
-                              ? "bg-[#ea4f93] text-white shadow-xs"
-                              : "text-[#7f6478] hover:text-[#2d1b35] hover:bg-[#ea4f93]/5"
+                                ? "bg-[#ea4f93] text-white shadow-xs"
+                                : "text-[#7f6478] hover:text-[#2d1b35] hover:bg-[#ea4f93]/5"
                               }`}
                           >
-                            {score === "all" ? (isVi ? "Tất cả" : "All") : `${score}`}
+                            {score === "all" ? "All" : `${score}`}
                             {score !== "all" && <Star size={10} className="fill-current" />}
                           </button>
                         ))}
                       </div>
 
                       <DatePicker
-                        placeholder={isVi ? "Lọc theo ngày" : "Filter by date"}
+                        placeholder="Filter by date"
                         value={reviewFilterDate}
                         onChange={(date) => setReviewFilterDate(date)}
                         className="h-10 rounded-[0.875rem] border border-slate-200 px-3 text-xs md:text-sm shadow-2xs hover:border-[#ea4f93] focus:border-[#ea4f93] transition-all duration-300"
@@ -711,9 +705,9 @@ export function AdminSalonBookingRatingPage() {
                         className="w-36 h-10 select-premium-antd"
                         popupClassName="select-premium-dropdown"
                         options={[
-                          { value: "recent", label: isVi ? "Gần đây nhất" : "Most Recent" },
-                          { value: "highest", label: isVi ? "Điểm cao nhất" : "Highest Score" },
-                          { value: "lowest", label: isVi ? "Điểm thấp nhất" : "Lowest Score" }
+                          { value: "recent", label: "Most Recent" },
+                          { value: "highest", label: "Highest Score" },
+                          { value: "lowest", label: "Lowest Score" }
                         ]}
                         style={{ borderRadius: "0.875rem" }}
                       />
@@ -724,8 +718,8 @@ export function AdminSalonBookingRatingPage() {
                   {processedRatings.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-24 text-center bg-white rounded-[2.5rem] border border-slate-200/60 shadow-xs">
                       <MessageSquare size={36} className="text-[#a88a9f] mb-3 stroke-[1.2]" />
-                      <h3 className="text-sm font-bold text-[#2d1b35]">{isVi ? "Không tìm thấy đánh giá nào" : "No Reviews Found"}</h3>
-                      <p className="mt-1 text-xs text-[#a88a9f] max-w-[40ch]">{isVi ? "Không có đánh giá phản hồi nào từ khách hàng phù hợp bộ lọc." : "No customer feedback matches your search filters."}</p>
+                      <h3 className="text-sm font-bold text-[#2d1b35]">No Reviews Found</h3>
+                      <p className="mt-1 text-xs text-[#a88a9f] max-w-[40ch]">No customer feedback matches your search filters.</p>
                     </div>
                   ) : (
                     <motion.div
@@ -776,8 +770,8 @@ export function AdminSalonBookingRatingPage() {
                                       key={sIndex}
                                       size={15}
                                       className={`${sIndex <= Math.round(score)
-                                        ? "text-amber-400 fill-amber-400"
-                                        : "text-slate-200"
+                                          ? "text-amber-400 fill-amber-400"
+                                          : "text-slate-200"
                                         }`}
                                     />
                                   ))}
@@ -788,7 +782,7 @@ export function AdminSalonBookingRatingPage() {
                             {/* Mid Row: Comment bubble layout matching the design reference */}
                             <div className="bg-[#fff5f9]/70 border-l-4 border-[#ea4f93] p-4 lg:p-5 rounded-r-2xl rounded-bl-2xl rounded-tl-xs shadow-3xs">
                               <p className="text-xs md:text-sm text-[#2d1b35] leading-relaxed font-medium">
-                                "{rating.comment || (isVi ? "Không có ý kiến bình luận bằng văn bản." : "No written comment provided.")}"
+                                "{rating.comment || "No written comment provided."}"
                               </p>
                             </div>
 
@@ -803,7 +797,7 @@ export function AdminSalonBookingRatingPage() {
                                 />
                                 <div className="absolute bottom-2.5 right-2.5 bg-black/60 backdrop-blur-xs text-[10px] text-white font-bold py-1 px-2.5 rounded-lg flex items-center gap-1.5 pointer-events-none">
                                   <ImageIcon size={10} />
-                                  {isVi ? "Hình khách chụp" : "Client Photo"}
+                                  Client Photo
                                 </div>
                               </div>
                             )}
@@ -811,19 +805,19 @@ export function AdminSalonBookingRatingPage() {
                             {/* Detailed sub-scores mapping */}
                             <div className="grid grid-cols-3 gap-3 bg-[#fafaf9]/60 p-3 rounded-2xl border border-slate-100/80 text-center">
                               <div>
-                                <span className="text-[9px] uppercase text-[#a88a9f] block">{isVi ? "Chất lượng" : "Quality"}</span>
+                                <span className="text-[9px] uppercase text-[#a88a9f] block">Quality</span>
                                 <span className="font-mono text-xs font-bold text-[#2d1b35]">
                                   {rating.serviceQuality || 5}/5
                                 </span>
                               </div>
                               <div className="border-x border-slate-200/50">
-                                <span className="text-[9px] uppercase text-[#a88a9f] block">{isVi ? "Đúng giờ" : "Punctual"}</span>
+                                <span className="text-[9px] uppercase text-[#a88a9f] block">Punctual</span>
                                 <span className="font-mono text-xs font-bold text-[#2d1b35]">
                                   {rating.punctuality || 5}/5
                                 </span>
                               </div>
                               <div>
-                                <span className="text-[9px] uppercase text-[#a88a9f] block">{isVi ? "Sạch sẽ" : "Clean"}</span>
+                                <span className="text-[9px] uppercase text-[#a88a9f] block">Clean</span>
                                 <span className="font-mono text-xs font-bold text-[#2d1b35]">
                                   {rating.cleanliness || 5}/5
                                 </span>
@@ -834,7 +828,7 @@ export function AdminSalonBookingRatingPage() {
                             <div className="pt-2 flex items-center justify-between">
                               <span className="text-xs text-[#a88a9f] font-medium">{dateFormatted}</span>
                               <span className="px-3.5 py-1.5 rounded-full bg-[#fff2f7] text-[#ea4f93] text-[10px] font-extrabold uppercase tracking-wider select-none">
-                                {isVi ? "Đánh giá lịch hẹn" : "Booking Review"}
+                                Booking Review
                               </span>
                             </div>
 
@@ -845,13 +839,13 @@ export function AdminSalonBookingRatingPage() {
                                   <User size={12} />
                                 </div>
                                 <span className="text-xs text-[#a88a9f]">
-                                  {isVi ? "Kỹ thuật viên:" : "Assigned Artist:"} <span className="font-bold text-[#2d1b35]">{artistName}</span>
+                                  Assigned Artist: <span className="font-bold text-[#2d1b35]">{artistName}</span>
                                 </span>
                               </div>
 
                               <span className="text-[10px] font-bold text-[#ea4f93] uppercase tracking-wider bg-[#ea4f93]/5 border border-[#ea4f93]/15 px-3 py-1 rounded-full flex items-center gap-1 select-none">
                                 <Sparkle size={10} className="fill-[#ea4f93]" />
-                                {isVi ? "Bản ghi đã kiểm toán" : "Audited Record"}
+                                Audited Record
                               </span>
                             </div>
 

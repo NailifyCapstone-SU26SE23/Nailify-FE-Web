@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import { Spin, Input, Empty, Tag } from "antd";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import dayjs from "dayjs";
 
 import { fetchBookingsBySalonId } from "../../../manager/bookings/services/bookingsService";
@@ -230,7 +229,6 @@ const staggerContainer = {
 };
 
 export function AdminSalonBookingDetailPage() {
-  const { t, language } = useLanguage();
   const { salonId } = useParams();
   const navigate = useNavigate();
   const [salon, setSalon] = useState(null);
@@ -285,14 +283,13 @@ export function AdminSalonBookingDetailPage() {
   }, [completedBookings]);
 
   const salonSummary = useMemo(() => {
-    const isVi = language === "vi";
     return [
       {
         accent: "from-[#fff5fb] to-[#fff]",
         icon: "dollar",
         iconBg: "bg-[#fde7ef]",
-        label: t("adminDashboard.table.revenue") || "Total Revenue",
-        note: isVi ? "+12.5% quý này" : "+12.5% this quarter",
+        label: "Total Revenue",
+        note: "+12.5% this quarter",
         noteColor: "text-emerald-500",
         title: `$${stats.totalRevenue.toLocaleString()}`,
       },
@@ -300,8 +297,8 @@ export function AdminSalonBookingDetailPage() {
         accent: "from-[#fff9f2] to-[#fff]",
         icon: "calendar",
         iconBg: "bg-[#ffedd5]",
-        label: isVi ? "Lịch hẹn đã hoàn thành" : "Completed Bookings",
-        note: isVi ? "+8 tuần này" : "+8 this week",
+        label: "Completed Bookings",
+        note: "+8 this week",
         noteColor: "text-emerald-500",
         title: stats.totalBookings.toString(),
       },
@@ -309,8 +306,8 @@ export function AdminSalonBookingDetailPage() {
         accent: "from-[#f2fdf6] to-[#fff]",
         icon: "creditCard",
         iconBg: "bg-[#e6fdf0]",
-        label: isVi ? "Giá trị lịch hẹn TB" : "Avg. Booking Value",
-        note: isVi ? "+5.2% so với tháng trước" : "+5.2% vs last month",
+        label: "Avg. Booking Value",
+        note: "+5.2% vs last month",
         noteColor: "text-emerald-500",
         title: `$${stats.avgBookingValue.toFixed(0).toLocaleString()}`,
       },
@@ -318,13 +315,13 @@ export function AdminSalonBookingDetailPage() {
         accent: "from-[#f5f2fd] to-[#fff]",
         icon: "sparkles",
         iconBg: "bg-[#e0e7ff]",
-        label: t("userManagement.table.status") || "Status",
-        note: isVi ? "Hoạt động bình thường" : "Operating normally",
+        label: "Status",
+        note: "Operating normally",
         noteColor: "text-emerald-500",
-        title: isLoadingSalon ? "..." : (isVi && salon?.status === "Active" ? "Đang hoạt động" : salon?.status || "Active"),
+        title: isLoadingSalon ? "..." : salon?.status || "Active",
       },
     ];
-  }, [stats, salon, isLoadingSalon, t, language]);
+  }, [stats, salon, isLoadingSalon]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -369,7 +366,7 @@ export function AdminSalonBookingDetailPage() {
           </Link>
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">
-              {isLoadingSalon ? (t("adminSalonBookings.loading")) : salon?.name || "Salon Bookings"}
+              {isLoadingSalon ? "Loading..." : salon?.name || "Salon Bookings"}
             </h1>
             <nav className="flex items-center gap-1.5 text-[12px] mt-1">
               <Link
@@ -377,7 +374,7 @@ export function AdminSalonBookingDetailPage() {
                 className="text-slate-400 hover:text-[#ea4f93] font-medium transition-colors"
               >
                 <Home size={12} className="inline mr-1" />
-                {t("menus.admin-dashboard") || "Dashboard"}
+                Dashboard
               </Link>
               <ChevronRight size={10} className="text-slate-300" />
               <Link
@@ -385,11 +382,11 @@ export function AdminSalonBookingDetailPage() {
                 className="text-slate-400 hover:text-[#ea4f93] font-medium transition-colors"
               >
                 <Calendar size={12} className="inline mr-1" />
-                {t("menus.admin-bookings") || "Salon Bookings"}
+                Salon Bookings
               </Link>
               <ChevronRight size={10} className="text-slate-300" />
               <span className="text-[#ea4f93] font-bold">
-                {isLoadingSalon ? (t("adminSalonBookings.loading")) : salon?.name || "Salon"}
+                {isLoadingSalon ? "Loading..." : salon?.name || "Salon"}
               </span>
             </nav>
           </div>
@@ -432,8 +429,8 @@ export function AdminSalonBookingDetailPage() {
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-4">
           <PremiumCard>
             <SectionHeading
-              title={t(`adminDashboard.widgets.revenueTrend`)}
-              subtitle={t("adminSalonBookings.revenueFromCompletedBookingsOv")}
+              title="Revenue Trend"
+              subtitle="Revenue from completed bookings over time"
             />
             {isLoadingBookings ? (
               <div className="h-64 bg-[#fde7ef] rounded-2xl animate-pulse mt-6" />
@@ -486,8 +483,8 @@ export function AdminSalonBookingDetailPage() {
           <div>
             <PremiumCard>
               <SectionHeading
-                title={t("adminSalonBookings.quickStats")}
-                subtitle={t("adminSalonBookings.keyInformationAboutTheSalon")}
+                title="Quick Stats"
+                subtitle="Key information about the salon"
               />
               <div className="mt-6 space-y-5">
                 {isLoadingSalon ? (
@@ -501,7 +498,7 @@ export function AdminSalonBookingDetailPage() {
                   <>
                     <div>
                       <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 mb-2">
-                        {t("adminSalonBookings.salonPhone")}
+                        Salon Phone
                       </p>
                       <p className="text-[14px] font-bold text-[#2d1b35]">
                         {salon?.phone || "--"}
@@ -509,7 +506,7 @@ export function AdminSalonBookingDetailPage() {
                     </div>
                     <div>
                       <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 mb-2">
-                        {t("adminSalonBookings.operatingHours")}
+                        Operating Hours
                       </p>
                       <p className="text-[13px] font-medium text-[#5b4256]">
                         {salon?.hours || "--"}
@@ -517,7 +514,7 @@ export function AdminSalonBookingDetailPage() {
                     </div>
                     <div>
                       <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 mb-2">
-                        {t("adminSalonBookings.location")}
+                        Location
                       </p>
                       <p className="text-[13px] font-medium text-[#5b4256] truncate">
                         {salon?.address || "--"}
@@ -534,18 +531,15 @@ export function AdminSalonBookingDetailPage() {
       <PremiumCard>
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
           <SectionHeading
-            title={t("adminSalonBookings.completedBookings")}
-            subtitle={
-              language === "vi"
-                ? `Hiển thị ${filteredBookings.length} lịch hẹn${searchQuery ? ` • Tìm kiếm: "${searchQuery}"` : ""}`
-                : `Showing ${filteredBookings.length} booking${filteredBookings.length !== 1 ? "s" : ""}${searchQuery ? ` • Search: "${searchQuery}"` : ""}`
-            }
+            title="Completed Bookings"
+            subtitle={`Showing ${filteredBookings.length} booking${filteredBookings.length !== 1 ? "s" : ""
+              }${searchQuery ? ` • Search: "${searchQuery}"` : ""}`}
           />
           <div className="flex-1 max-w-md">
             <div className="flex w-full items-center gap-3 rounded-full border border-[#f0b7cf] bg-white px-5 py-3 shadow-inner shadow-[#fff0f8]">
               <Search size={18} className="text-[#ea4f93]" />
               <Input
-                placeholder={t("adminSalonBookings.searchCustomerNameEmailOrPhone")}
+                placeholder="Search customer name, email, or phone..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 variant="borderless"
@@ -574,11 +568,11 @@ export function AdminSalonBookingDetailPage() {
               description={
                 <div>
                   <p className="text-[#5b4256] text-sm font-medium">
-                    {t("adminSalonBookings.noCompletedBookingsFound")}
+                    No completed bookings found
                   </p>
                   {searchQuery && (
                     <p className="text-[#a88a9f] text-xs mt-1">
-                      {t("adminSalonBookings.tryADifferentSearchTerm")}
+                      Try a different search term
                     </p>
                   )}
                 </div>

@@ -1,4 +1,3 @@
-import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   ArrowUpDown,
   ChevronLeft,
@@ -45,16 +44,13 @@ function MetricCard({ item }) {
 }
 
 function CategoryStatusBadge({ status }) {
-  const { t } = useLanguage();
   const normalizedStatus = String(status || "").toLowerCase();
-  const isStatusActive = normalizedStatus === "active";
-  const className = isStatusActive
-    ? "bg-[#e7fbf4] text-[#159669]"
-    : "bg-[#fff1f5] text-[#d14c84]";
+  const className =
+    normalizedStatus === "active"
+      ? "bg-[#e7fbf4] text-[#159669]"
+      : "bg-[#fff1f5] text-[#d14c84]";
 
-  const displayLabel = isStatusActive ? t("adminCategories.active") : t("adminCategories.inactive");
-
-  return <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${className}`}>{displayLabel}</span>;
+  return <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${className}`}>{status}</span>;
 }
 
 function SortableHeader({ label, sortKey, selectedSort, onToggle }) {
@@ -96,7 +92,6 @@ function sortCategories(items, sortValue) {
 }
 
 export function CategoriesManagementPage() {
-  const { t, language } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
@@ -203,7 +198,7 @@ export function CategoriesManagementPage() {
         }
 
         setCategories([]);
-        setError(loadError instanceof Error ? loadError.message : t("adminCategories.loadFailed"));
+        setError(loadError instanceof Error ? loadError.message : "Failed to load categories.");
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -224,28 +219,28 @@ export function CategoriesManagementPage() {
 
     return [
       {
-        label: t("adminCategories.totalCategories"),
+        label: "Total Categories",
         value: metaData.totalItems.toLocaleString(),
         note: `${metaData.totalPages} pages`,
         icon: FolderTree,
         iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
       },
       {
-        label: t("adminCategories.activeItems"),
+        label: "Active Items",
         value: activeCount.toLocaleString(),
         note: "Current page",
         icon: Sparkles,
         iconClassName: "bg-[#e7fbf4] text-[#20ab77]",
       },
       {
-        label: t("adminCategories.visibleTypes"),
+        label: "Visible Types",
         value: visibleTypes.toLocaleString(),
         note: categoryTypeFilter ? "Filtered type" : "Current page",
         icon: Layers3,
         iconClassName: "bg-[#fff4df] text-[#d9871c]",
       },
       {
-        label: t("adminCategories.pageItems"),
+        label: "Page Items",
         value: categories.length.toLocaleString(),
         note: debouncedQuery || "Current page",
         icon: FolderTree,
@@ -301,7 +296,7 @@ export function CategoriesManagementPage() {
       {
         title: (
           <SortableHeader
-            label={t("adminCategories.category")}
+            label="Category"
             sortKey="category"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -321,7 +316,7 @@ export function CategoriesManagementPage() {
       {
         title: (
           <SortableHeader
-            label={t("adminCategories.categoryType")}
+            label="Category Type"
             sortKey="categoryType"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -334,7 +329,7 @@ export function CategoriesManagementPage() {
       {
         title: (
           <SortableHeader
-            label={t("adminCategories.status")}
+            label="Status"
             sortKey="status"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -345,20 +340,20 @@ export function CategoriesManagementPage() {
         render: (value) => <CategoryStatusBadge status={value} />,
       },
       {
-        title: t("adminCategories.actions"),
+        title: "Actions",
         key: "actions",
         render: (_, category) => (
           <ActionDropdown
             items={[
               {
                 key: "view",
-                label: t("adminCategories.viewDetail"),
+                label: "View Detail",
                 icon: Eye,
                 onSelect: () => navigate(getAdminCategoryDetailRoute(category.categoryId)),
               },
               {
                 key: "edit",
-                label: t("adminCategories.editCategory"),
+                label: "Edit Category",
                 icon: Pencil,
                 onSelect: () =>
                   navigate(getAdminCategoryDetailRoute(category.categoryId), {
@@ -367,7 +362,7 @@ export function CategoriesManagementPage() {
               },
               {
                 key: "delete",
-                label: t("adminCategories.deleteCategory"),
+                label: "Delete Category",
                 icon: Trash2,
                 className: "text-[#d14c84]",
                 onSelect: () => setDeleteTarget(category),
@@ -376,7 +371,8 @@ export function CategoriesManagementPage() {
           />
         ),
       },
-    ], [navigate, selectedSort, t],
+    ],
+    [navigate, selectedSort],
   );
 
   const handleDeleteCategory = async () => {
@@ -389,7 +385,7 @@ export function CategoriesManagementPage() {
     try {
       await deleteAdminCategory(deleteTarget.categoryId);
       setDeleteTarget(null);
-      toast.success(t("adminCategories.deleteSuccess", { name: deleteTarget.name }));
+      toast.success(`${deleteTarget.name} deleted successfully.`);
 
       const shouldMoveBack = categories.length === 1 && metaData.currentPage > 1;
       const targetPage = shouldMoveBack ? Math.max(metaData.currentPage - 1, 1) : metaData.currentPage;
@@ -403,7 +399,7 @@ export function CategoriesManagementPage() {
       setCategories(response.items);
       setMetaData(response.metaData);
     } catch (deleteError) {
-      toast.error(deleteError instanceof Error ? deleteError.message : t("adminCategories.deleteFailed"));
+      toast.error(deleteError instanceof Error ? deleteError.message : "Failed to delete category.");
     } finally {
       setIsDeleting(false);
     }
@@ -436,7 +432,7 @@ export function CategoriesManagementPage() {
                 <input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder={t("adminCategories.searchPlaceholder")}
+                  placeholder="Search category by name..."
                   className="h-10 w-full rounded-full border border-[#f4d7e5] bg-[#fffafc] pl-11 pr-4 text-sm text-[#5b4658] outline-none placeholder:text-[#d4a1b8] focus:border-[#ea4f93]"
                 />
               </label>
@@ -452,7 +448,7 @@ export function CategoriesManagementPage() {
                 className="inline-flex h-10 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
               >
                 <Search size={14} className="mr-2 shrink-0" />
-                {t("adminCategories.search")}
+                Search
               </button>
             </div>
 
@@ -482,15 +478,15 @@ export function CategoriesManagementPage() {
             className="inline-flex items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
           >
             <Plus size={13} className="mr-1.5 shrink-0" />
-            {t("adminCategories.addCategory")}
+            Add Category
           </Link>
         </div>
 
         <section className="overflow-hidden rounded-[20px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
           <div className="border-b border-[#f6dbe7] px-5 py-4">
-            <h2 className="text-sm font-extrabold text-[#432744]">{t("adminCategories.categories")}</h2>
+            <h2 className="text-sm font-extrabold text-[#432744]">Categories</h2>
             <p className="mt-1 text-[11px] font-medium text-[#c694ad]">
-              {t("adminCategories.showingCategories", { first: metaData.firstRowOnPage, last: metaData.lastRowOnPage, total: metaData.totalItems })}
+              Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} categories
             </p>
           </div>
 
@@ -504,12 +500,12 @@ export function CategoriesManagementPage() {
             }}
             pagination={false}
             scroll={{ x: 980 }}
-            locale={{ emptyText: error || t("adminCategories.noCategoriesFound") }}
+            locale={{ emptyText: error || "No categories found." }}
           />
 
           <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-[11px] text-[#c694ad]">
-              {t("adminCategories.showingCategories", { first: metaData.firstRowOnPage, last: metaData.lastRowOnPage, total: metaData.totalItems })}
+              Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} categories
             </p>
             <div className="flex items-center gap-1">
               <button
@@ -568,11 +564,11 @@ export function CategoriesManagementPage() {
         <ActionConfirmModal
           open
           intent="danger"
-          title={t("adminCategories.deleteCategoryTitle")}
-          subtitle={t("adminCategories.deleteConfirmSubtitle")}
-          description={t("adminCategories.deleteConfirmDesc", { name: deleteTarget.name })}
-          confirmText={t("adminCategories.deleteCategory")}
-          cancelText={t("adminCategories.keepCategory")}
+          title="Delete Category"
+          subtitle="This will set the category status to inactive in backend."
+          description={`You are about to delete ${deleteTarget.name}. This action cannot be undone from this page.`}
+          confirmText="Delete Category"
+          cancelText="Keep Category"
           confirmIcon={Trash2}
           loading={isDeleting}
           onConfirm={handleDeleteCategory}
@@ -582,7 +578,7 @@ export function CategoriesManagementPage() {
             meta: `${deleteTarget.categoryTypeName} | ${deleteTarget.status}`,
             note: `Category ID: ${deleteTarget.categoryId}`,
           }}
-          warnings={[t("adminCategories.deleteWarning")]}
+          warnings={["Backend delete for this resource changes the status to inactive."]}
         />
       ) : null}
     </>

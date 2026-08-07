@@ -17,7 +17,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ConfigProvider, Select } from "antd";
 import { ROUTES } from "../../../../shared/constants/routes";
 import { createQuizQuestion, fetchLinkedOptions } from "../services/quizManagement";
-import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 const TYPE_OPTIONS = [
     { value: "SingleSelect", label: "Single Choice", hint: "Customer can select only one option" },
@@ -43,20 +42,7 @@ const antdPinkTheme = {
 
 export function CreateQuiz() {
     const navigate = useNavigate();
-    const { t, language } = useLanguage();
     const [isSaving, setIsSaving] = useState(false);
-
-    const typeOptions = useMemo(() => [
-        { value: "SingleSelect", label: t("adminQuizManagement.singleChoice"), hint: t("adminQuizManagement.customerCanSelectOnlyOneOption") },
-        { value: "MultiSelect", label: t("adminQuizManagement.multipleChoice"), hint: t("adminQuizManagement.customerCanSelectMultipleOptio") }
-    ], [language]);
-
-    const linkSourceOptions = useMemo(() => [
-        { value: "NailShape", label: t("adminQuizManagement.nailShape"), hint: t("adminQuizManagement.pickFromTheNailshapeListIdsUse") },
-        { value: "NailSurface", label: t("adminQuizManagement.nailSurface"), hint: t("adminQuizManagement.pickFromTheNailsurfaceListIdsU") },
-        { value: "Color", label: t("adminQuizManagement.color"), hint: t("adminQuizManagement.assignColorHexCodesToRecommend") },
-        { value: "Category", label: t("adminQuizManagement.category"), hint: t("adminQuizManagement.pickFromCategoriesGroupedByCat") }
-    ], [language]);
 
     const [formData, setFormData] = useState({
         questionText: "",
@@ -94,7 +80,7 @@ export function CreateQuiz() {
             .catch((err) => {
                 if (!cancelled) {
                     setLinkedOptions([]);
-                    setLinkedError(err instanceof Error ? err.message : (t("adminQuizManagement.couldNotLoadTheLinkedDataList")));
+                    setLinkedError(err instanceof Error ? err.message : "Could not load the linked data list.");
                 }
             })
             .finally(() => {
@@ -200,7 +186,7 @@ export function CreateQuiz() {
 
     const handleRemoveChoice = (idx) => {
         if (formData.choices.length <= 2) {
-            showNotification(t("adminQuizManagement.aQuestionNeedsAtLeastTwoChoice"), "error");
+            showNotification("A question needs at least two choices.", "error");
             return;
         }
         setFormData((prev) => ({
@@ -222,45 +208,42 @@ export function CreateQuiz() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         const errors = {};
-        const isVi = language === "vi";
 
         if (!formData.questionText.trim()) {
-            errors.questionText = isVi ? "Vui lòng nhập nội dung câu hỏi" : "Please enter the question text";
+            errors.questionText = "Please enter the question text";
         }
 
         if (!formData.optionSource) {
-            errors.optionSource = isVi ? "Vui lòng chọn Nguồn câu trả lời liên kết" : "Please select a Linked Answer Source";
+            errors.optionSource = "Please select a Linked Answer Source";
         }
 
         const emptyLabelIdx = formData.choices.findIndex((c) => !c.text.trim());
         if (emptyLabelIdx !== -1) {
-            errors.choices = isVi ? "Tất cả các tùy chọn phải có nhãn hiển thị" : "All choices must have a display label";
+            errors.choices = "All choices must have a display label";
         } else if (formData.optionSource) {
             const missingValueIdx = formData.choices.findIndex(
                 (c) => !(c.optionValues && c.optionValues.length)
             );
             if (missingValueIdx !== -1) {
-                const sourceLabel = linkSourceOptions.find((o) => o.value === formData.optionSource)?.label;
-                errors.choices = isVi
-                    ? `Tất cả câu trả lời cần ít nhất một mục được chọn từ ${sourceLabel}`
-                    : `All choices need at least one item selected from ${sourceLabel}`;
+                errors.choices = `All choices need at least one item selected from ${LINK_SOURCE_OPTIONS.find((o) => o.value === formData.optionSource)?.label
+                    }`;
             }
         }
 
         if (Object.keys(errors).length > 0) {
             setFormErrors(errors);
-            showNotification(isVi ? "Vui lòng kiểm tra các trường còn thiếu." : "Please check the missing fields.", "error");
+            showNotification("Please check the missing fields.", "error");
             return;
         }
 
         setIsSaving(true);
         try {
             await createQuizQuestion(formData);
-            showNotification(isVi ? "Tạo câu hỏi khảo sát thành công!" : "Quiz question created successfully!");
+            showNotification("Quiz question created successfully!");
             setTimeout(() => navigate(ROUTES.adminQuiz), 1000);
         } catch (err) {
             console.error(err);
-            showNotification(err instanceof Error ? err.message : (isVi ? "Không thể lưu câu hỏi, vui lòng thử lại." : "Failed to save the question, please try again."), "error");
+            showNotification(err instanceof Error ? err.message : "Failed to save the question, please try again.", "error");
         } finally {
             setIsSaving(false);
         }
@@ -276,17 +259,17 @@ export function CreateQuiz() {
             {/* Header */}
             <div className="flex flex-col gap-4 border-b border-[#f5e3ed] pb-6 md:flex-row md:items-end md:justify-between">
                 <div>
-                    <h1 className="font-bold text-[2rem] leading-tight text-[#3f2034] md:text-[2.4rem]">
-                        {t("adminQuizManagement.createQuizQuestion")}
+                    <h1 className=" text-[2rem] leading-tight text-[#3f2034] md:text-[2.4rem]">
+                        Create Quiz Question
                     </h1>
                     <p className="mt-2 max-w-xl text-sm leading-relaxed text-[#8c7484]">
-                        {t("adminQuizManagement.setUpAQuestionToSuggestAMatchi")
-                        }
+                        Set up a question to suggest a matching nail style — choose the answer type, tag it with a
+                        category, and compose the choices customers will see.
                     </p>
                 </div>
                 <div className="flex items-center gap-2 rounded-full border border-[#f3cade] bg-white px-4 py-2 text-[11px] font-bold text-[#a6869a] shrink-0">
                     <ListChecks size={14} className="text-[#ea4f93]" />
-                    {filledChoiceCount}/{formData.choices.length} {t("adminQuizManagement.choicesFilled")}
+                    {filledChoiceCount}/{formData.choices.length} choices filled
                 </div>
             </div>
 
@@ -302,21 +285,21 @@ export function CreateQuiz() {
                                     <ListChecks size={14} />
                                 </span>
                                 <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-[#3f2034]">
-                                    {t("adminQuizManagement.questionDetailsChoices")}
+                                    Question Details & Choices
                                 </h2>
                             </div>
                         </header>
 
                         <div className="flex flex-col gap-2">
                             <label htmlFor="questionText" className="text-[11px] font-bold uppercase tracking-wide text-[#7a6473]">
-                                {t("adminQuizManagement.questionShownToTheCustomer")}
+                                Question shown to the customer
                             </label>
                             <textarea
                                 id="questionText"
                                 name="questionText"
                                 value={formData.questionText}
                                 onChange={handleFormChange}
-                                placeholder={t("adminQuizManagement.egWhichNailStyleDoYouLikeMost")}
+                                placeholder="e.g. Which nail style do you like most?"
                                 rows={2}
                                 className={`w-full resize-none rounded-2xl border bg-[#fffbfc] p-3.5 text-[13px] text-[#4b3345] outline-none transition ${formErrors.questionText
                                     ? "border-[#d14c84] focus:border-[#d14c84]"
@@ -333,10 +316,10 @@ export function CreateQuiz() {
                         <div className="mt-5 flex flex-col gap-4">
                             <div className="flex flex-col gap-2">
                                 <span className="text-[11px] font-bold uppercase tracking-wide text-[#7a6473]">
-                                    {t("adminQuizManagement.answerType")}
+                                    Answer Type
                                 </span>
                                 <div className="grid grid-cols-2 gap-2">
-                                    {typeOptions.map((opt) => {
+                                    {TYPE_OPTIONS.map((opt) => {
                                         const active = formData.type === opt.value;
                                         return (
                                             <button
@@ -367,26 +350,26 @@ export function CreateQuiz() {
                             <div className="flex flex-col gap-2">
                                 <label htmlFor="optionSource" className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-[#7a6473]">
                                     <Link2 size={12} className="text-[#ea4f93]" />
-                                    {t("adminQuizManagement.linkedAnswerSource")}
+                                    Linked Answer Source
                                 </label>
                                 <ConfigProvider theme={antdPinkTheme}>
                                     <Select
                                         id="optionSource"
                                         value={formData.optionSource || undefined}
-                                        placeholder={t("adminQuizManagement.selectALinkedAnswerSource")}
+                                        placeholder="Select a linked answer source..."
                                         allowClear
                                         size="large"
                                         style={{ width: "100%" }}
                                         onChange={(value) =>
                                             handleFormChange({ target: { name: "optionSource", value: value || "" } })
                                         }
-                                        options={linkSourceOptions.map((opt) => ({ value: opt.value, label: opt.label }))}
+                                        options={LINK_SOURCE_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label }))}
                                     />
                                 </ConfigProvider>
                                 <p className="text-[10.5px] leading-relaxed text-[#a6869a]">
                                     {formData.optionSource
-                                        ? linkSourceOptions.find((o) => o.value === formData.optionSource)?.hint
-                                        : (t("adminQuizManagement.chooseThisFirstItDeterminesHow"))}
+                                        ? LINK_SOURCE_OPTIONS.find((o) => o.value === formData.optionSource)?.hint
+                                        : "Choose this first — it determines how choice values below are set."}
                                 </p>
                                 {formErrors.optionSource && (
                                     <span className="flex items-center gap-1 text-[11px] font-bold text-[#d14c84]">
@@ -398,18 +381,18 @@ export function CreateQuiz() {
                             {formData.optionSource === "Category" && (
                                 <div className="flex flex-col gap-2">
                                     <label htmlFor="categoryKey" className="text-[11px] font-bold uppercase tracking-wide text-[#7a6473]">
-                                        {t("adminQuizManagement.categoryGroup")}
+                                        Category Group
                                     </label>
                                     <ConfigProvider theme={antdPinkTheme}>
                                         <Select
                                             id="categoryKey"
                                             value={formData.categoryKey || undefined}
-                                            placeholder={linkedLoading ? (t("adminQuizManagement.loadingCategoryGroups")) : (t("adminQuizManagement.selectACategoryGroup"))}
+                                            placeholder={linkedLoading ? "Loading category groups..." : "Select a category group..."}
                                             size="large"
                                             style={{ width: "100%" }}
                                             loading={linkedLoading}
                                             disabled={linkedLoading || categoryTypeChoices.length === 0}
-                                            notFoundContent={linkedLoading ? (t("adminQuizManagement.loading")) : (t("adminQuizManagement.noCategoryGroupsFound"))}
+                                            notFoundContent={linkedLoading ? "Loading..." : "No category groups found"}
                                             onChange={(value) =>
                                                 handleFormChange({ target: { name: "categoryKey", value } })
                                             }
@@ -420,8 +403,8 @@ export function CreateQuiz() {
                                         />
                                     </ConfigProvider>
                                     <p className="text-[10.5px] leading-relaxed text-[#a6869a]">
-                                        {t("adminQuizManagement.pulledStraightFromCategoriesEg")
-                                        }
+                                        Pulled straight from Categories (e.g. Theme, Style, Skin Tone). Picking a
+                                        group filters the choice list below to only that group's categories.
                                     </p>
                                 </div>
                             )}
@@ -431,7 +414,7 @@ export function CreateQuiz() {
                             <div className="flex items-center justify-between">
                                 <h3 className="text-xs font-bold uppercase tracking-wider text-[#3f2034] flex items-center gap-1.5">
                                     <ListChecks size={14} className="text-[#ea4f93]" />
-                                    {t("adminQuizManagement.answerChoices")}
+                                    Answer Choices
                                 </h3>
                             </div>
 
@@ -445,7 +428,7 @@ export function CreateQuiz() {
                             {!formData.optionSource && (
                                 <div className="mb-4 flex items-center gap-1.5 rounded-xl border border-[#f3cade] bg-[#fff8fb] p-3 text-[11px] font-bold text-[#c95b90]">
                                     <Link2 size={14} className="shrink-0" />
-                                    {t("adminQuizManagement.selectALinkedAnswerSourceAbove")}
+                                    Select a Linked Answer Source above to set each choice's scoring value.
                                 </div>
                             )}
 
@@ -467,7 +450,7 @@ export function CreateQuiz() {
                                                         type="text"
                                                         value={choice.text}
                                                         onChange={(e) => handleChoiceFieldChange(idx, "text", e.target.value)}
-                                                        placeholder={t("adminQuizManagement.displayLabelEgMinimalist")}
+                                                        placeholder="Display label, e.g. Minimalist"
                                                         className="h-10 w-full rounded-xl border border-[#f0dde8] bg-white px-3.5 text-[12.5px] text-[#4b3345] outline-none transition focus:border-[#ea4f93]"
                                                         required
                                                     />
@@ -475,14 +458,14 @@ export function CreateQuiz() {
                                                         type="text"
                                                         value={choice.description}
                                                         onChange={(e) => handleChoiceFieldChange(idx, "description", e.target.value)}
-                                                        placeholder={t("adminQuizManagement.additionalDescriptionOptionalE")}
+                                                        placeholder="Additional description (optional), e.g. Simple design, minimal detailing"
                                                         className="h-10 w-full rounded-xl border border-[#f0dde8] bg-white px-3.5 text-[12px] text-[#4b3345] outline-none transition focus:border-[#ea4f93]"
                                                     />
 
                                                     {!formData.optionSource ? null : formData.optionSource === "Color" ? (
                                                         <div className="flex flex-col gap-1">
                                                             <label className="text-[10px] font-bold uppercase tracking-wide text-[#a6869a]">
-                                                                {t("adminQuizManagement.chooseColorCode")}
+                                                                Choose Color Code
                                                             </label>
                                                             <div className="relative flex items-center">
                                                                 <input
@@ -506,19 +489,19 @@ export function CreateQuiz() {
                                                     ) : (
                                                         <div className="rounded-xl border border-[#f0dde8] bg-white p-2.5">
                                                             <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-[#a6869a]">
-                                                                {t("adminQuizManagement.select")} {linkSourceOptions.find((o) => o.value === formData.optionSource)?.label}
+                                                                Select {LINK_SOURCE_OPTIONS.find((o) => o.value === formData.optionSource)?.label}
                                                                 {formData.optionSource === "Category" && formData.categoryKey
                                                                     ? ` · ${formData.categoryKey}`
                                                                     : ""}
                                                             </p>
                                                             {linkedLoading && (
-                                                                <p className="text-[11px] text-[#a6869a]">{t("adminQuizManagement.loadingList")}</p>
+                                                                <p className="text-[11px] text-[#a6869a]">Loading list...</p>
                                                             )}
                                                             {linkedError && (
                                                                 <p className="text-[11px] font-bold text-[#d14c84]">{linkedError}</p>
                                                             )}
                                                             {!linkedLoading && !linkedError && categoryFilteredOptions.length === 0 && (
-                                                                <p className="text-[11px] text-[#a6869a]">{t("adminQuizManagement.noDataAvailable")}</p>
+                                                                <p className="text-[11px] text-[#a6869a]">No data available.</p>
                                                             )}
                                                             {!linkedLoading && !linkedError && categoryFilteredOptions.length > 0 && (
                                                                 <div className="max-h-36 space-y-0.5 overflow-y-auto pr-1">
@@ -562,7 +545,7 @@ export function CreateQuiz() {
                                                         type="button"
                                                         onClick={() => handleRemoveChoice(idx)}
                                                         className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#c9a7be] transition-colors hover:bg-[#fff0f3] hover:text-[#d14c84]"
-                                                        title={t("adminQuizManagement.removeChoice")}
+                                                        title="Remove choice"
                                                     >
                                                         <X size={14} />
                                                     </button>
@@ -579,7 +562,7 @@ export function CreateQuiz() {
                                     onClick={handleAddChoice}
                                     className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-[#ea4f93]/40 bg-[#fff0f6]/50 py-4 text-xs font-bold text-[#ea4f93] transition-all duration-300 hover:border-[#ea4f93] hover:bg-[#fff0f6] hover:shadow-[0_8px_16px_rgba(234,79,147,0.12)] active:scale-[0.98]"
                                 >
-                                    <Plus size={13} /> {t("adminQuizManagement.addChoice")}
+                                    <Plus size={13} /> Add Choice
                                 </button>
                             </div>
                         </div>
@@ -591,10 +574,7 @@ export function CreateQuiz() {
                         className="inline-flex h-12 w-full items-center justify-center rounded-full bg-gradient-to-r from-[#ea4f93] to-[#ff7eb3] px-8 text-sm font-bold text-white shadow-[0_12px_24px_rgba(234,79,147,0.3)] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_16px_32px_rgba(234,79,147,0.4)] active:scale-95 disabled:opacity-50"
                     >
                         <Save size={15} />
-                        {isSaving
-                            ? (t("adminQuizManagement.saving"))
-                            : (t("adminQuizManagement.createQuizQuestion"))
-                        }
+                        {isSaving ? "Saving..." : "Create Quiz Question"}
                     </button>
                 </form>
 
@@ -602,9 +582,7 @@ export function CreateQuiz() {
                 <div className="lg:col-span-5 lg:sticky lg:top-6 flex flex-col gap-4">
                     <div className="flex items-center gap-2 text-[#3f2034]">
                         <Smartphone size={15} className="text-[#ea4f93]" />
-                        <h3 className="text-xs font-bold uppercase tracking-[0.14em]">
-                            {t("adminQuizManagement.appLivePreview")}
-                        </h3>
+                        <h3 className="text-xs font-bold uppercase tracking-[0.14em]">App Live Preview</h3>
                     </div>
 
                     <div className="relative mx-auto w-full max-w-[300px] rounded-[2.75rem] border-[8px] border-[#321c29] bg-[#321c29] p-1.5 shadow-[0_28px_56px_-18px_rgba(50,28,41,0.4)]">
@@ -613,7 +591,7 @@ export function CreateQuiz() {
                             <div className="space-y-5">
                                 <div className="space-y-1.5">
                                     <div className="flex items-center justify-between text-[9px] font-bold uppercase tracking-widest text-[#a6869a]">
-                                        <span>{t("adminQuizManagement.styleAnalysisStep")}</span>
+                                        <span>Style Analysis Step</span>
                                     </div>
                                     <div className="flex gap-1">
                                         {[0, 1, 2, 3].map((i) => (
@@ -627,21 +605,19 @@ export function CreateQuiz() {
 
                                 <div>
                                     <span className="rounded-full bg-[#fff0f6] px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-[#ea4f93]">
-                                        {formData.categoryKey || (t("adminQuizManagement.diagnostic"))}
+                                        {formData.categoryKey || "Diagnostic"}
                                     </span>
                                     <h4 className="mt-2.5  text-[16px] leading-snug text-[#3f2034]">
-                                        {formData.questionText.trim() || (t("adminQuizManagement.whatNailStyleDoYouPrefer"))}
+                                        {formData.questionText.trim() || "What nail style do you prefer?"}
                                     </h4>
                                     <p className="mt-1 text-[10.5px] text-[#8e7987]">
-                                        {formData.type === "SingleSelect"
-                                            ? (t("adminQuizManagement.selectOneOptionBelow"))
-                                            : (t("adminQuizManagement.youCanSelectMultipleOptions"))}
+                                        {formData.type === "SingleSelect" ? "Select one option below." : "You can select multiple options."}
                                     </p>
                                 </div>
 
                                 <div className="space-y-2">
                                     {formData.choices.map((choice, idx) => {
-                                        const labelText = choice.text.trim() || (language === "vi" ? `Tùy chọn ${idx + 1}` : `Option ${idx + 1}`);
+                                        const labelText = choice.text.trim() || `Option ${idx + 1}`;
                                         const isSelected = previewSelected.includes(labelText);
                                         return (
                                             <button
@@ -680,13 +656,13 @@ export function CreateQuiz() {
                                 type="button"
                                 className="mt-4 flex h-10 items-center justify-center rounded-xl bg-[#3f2034] text-[11px] font-bold text-white transition-opacity active:opacity-90"
                             >
-                                {t("adminQuizManagement.continue")}
+                                Continue
                             </button>
                         </div>
                     </div>
 
                     <p className="mx-auto max-w-[260px] text-center text-[10.5px] leading-relaxed text-[#a6869a]">
-                        {t("adminQuizManagement.livePreviewUpdatesInRealTimeAs")}
+                        Live preview updates in real time as you edit the form on the left.
                     </p>
                 </div>
             </div>
@@ -714,10 +690,7 @@ export function CreateQuiz() {
 
                         <div className="flex-1 space-y-0.5 pr-2">
                             <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#3f2034]">
-                                {notification.type === "error"
-                                    ? (t("adminQuizManagement.systemError"))
-                                    : (t("adminQuizManagement.success"))
-                                }
+                                {notification.type === "error" ? "System Error" : "Success"}
                             </h4>
                             <p className="text-[11.5px] leading-normal text-[#695463]">
                                 {notification.message}

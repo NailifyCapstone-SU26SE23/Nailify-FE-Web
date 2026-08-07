@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Button, Select, Popconfirm, message, Tooltip, Spin, Modal } from 'antd';
 import { Plus, Edit2, Trash2, Armchair, Building2, Eye } from 'lucide-react';
 import { chairManagementService } from '../services/chairManagementService';
-import { useLanguage } from '../../../../shared/hooks/useLanguage';
 import { fetchSalons } from '../../salon-management/services/salonsService';
 import ChairFormModal from '../components/ChairFormModal';
 import toast from 'react-hot-toast';
@@ -11,7 +10,6 @@ import ChairMap from '../../../../shared/components/ui/ChairMap';
 const { Option } = Select;
 
 export default function ChairManagementPage() {
-  const { t, language } = useLanguage();
   const [salons, setSalons] = useState([]);
   const [selectedSalonId, setSelectedSalonId] = useState(null);
 
@@ -33,7 +31,7 @@ export default function ChairManagementPage() {
           setSelectedSalonId(data[0].salonId || data[0].id);
         }
       } catch (error) {
-        toast.error(t("adminChairs.failedToLoadSalons"));
+        toast.error("Failed to load salons");
       }
     };
     loadSalons();
@@ -51,7 +49,7 @@ export default function ChairManagementPage() {
       setChairs(response.items || []);
     } catch (error) {
       console.error(error);
-      toast.error(t("adminChairs.failedToLoadChairs"));
+      toast.error("Failed to load chairs");
     } finally {
       setLoading(false);
     }
@@ -66,10 +64,10 @@ export default function ChairManagementPage() {
   const handleDelete = async (chairId) => {
     try {
       await chairManagementService.deleteChair(chairId);
-      toast.success(t("adminChairs.chairDeletedSuccess"));
+      toast.success("Chair deleted successfully");
       loadChairs(selectedSalonId);
     } catch (error) {
-      toast.error(error.message || t("adminChairs.failedToDeleteChair"));
+      toast.error(error.message || "Failed to delete chair");
     }
   };
 
@@ -129,7 +127,7 @@ export default function ChairManagementPage() {
     // Check if target cell already has a chair
     const isOccupied = chairs.some(c => c.chairName?.trim().toUpperCase() === targetCellName.toUpperCase());
     if (isOccupied) {
-      toast.warning(t("adminChairs.positionOccupied", { name: targetCellName }));
+      toast.warning(`Position ${targetCellName} is already occupied!`);
       return;
     }
 
@@ -140,15 +138,14 @@ export default function ChairManagementPage() {
         chairName: targetCellName,
         status: chair.status,
       });
-      toast.success(t("adminChairs.chairMovedSuccess", { name: targetCellName }));
+      toast.success(`Chair moved to ${targetCellName}`);
       loadChairs(selectedSalonId);
     } catch (error) {
       console.error(error);
-      toast.error(error.message || t("adminChairs.failedToMoveChair"));
+      toast.error(error.message || "Failed to move chair");
       setLoading(false);
     }
   };
-
 
   return (
     <div className="flex min-h-screen flex-col bg-[#fff9fb] text-slate-800 font-sans bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.15),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.15),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.15),transparent_35%)]">
@@ -159,12 +156,8 @@ export default function ChairManagementPage() {
             <Armchair size={24} />
           </div>
           <div>
-            <h1 className="text-[24px] font-bold tracking-tight text-[#432744]">
-              {t("adminChairs.title")}
-            </h1>
-            <p className="text-[13px] text-[#a88a9d] font-medium mt-1">
-              {t("adminChairs.description")}
-            </p>
+            <h1 className="text-[24px] font-bold tracking-tight text-[#432744]">Chair Management</h1>
+            <p className="text-[13px] text-[#a88a9d] font-medium mt-1">Manage physical resources across your salons</p>
           </div>
         </div>
         <div className="flex flex-col sm:flex-row items-center gap-4">
@@ -176,7 +169,7 @@ export default function ChairManagementPage() {
               style={{ width: 220, height: 20 }}
               bordered={false}
               className="font-semibold text-[#432744] [&_.ant-select-selection-item]:text-[#432744]"
-              placeholder={t("adminChairs.selectSalon")}
+              placeholder="Select a salon"
             >
               {salons.map(salon => (
                 <Option key={salon.salonId || salon.id} value={salon.salonId || salon.id}>{salon.name}</Option>
@@ -189,7 +182,7 @@ export default function ChairManagementPage() {
             onClick={() => openCreateModal()}
             className="flex h-11 items-center justify-center rounded-2xl border-none bg-[linear-gradient(180deg,#f25b99_0%,#d92f7b_100%)] px-6 font-bold text-white shadow-[0_10px_20px_rgba(236,72,153,0.25)] transition-all hover:scale-105 hover:shadow-[0_14px_28px_rgba(236,72,153,0.35)]"
           >
-            {t("adminChairs.addChair")}
+            Add Chair
           </Button>
         </div>
       </div>
@@ -199,7 +192,7 @@ export default function ChairManagementPage() {
           {salons.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <Building2 size={48} className="text-slate-200 mb-4" />
-              <p className="text-slate-500 font-medium">{t("adminChairs.noSalonsAvailable")}</p>
+              <p className="text-slate-500 font-medium">No salons available. Please create a salon first.</p>
             </div>
           ) : loading ? (
             <div className="flex justify-center items-center h-64">
@@ -224,7 +217,7 @@ export default function ChairManagementPage() {
 
                       {/* Hover Actions */}
                       <div className="absolute inset-0 bg-white/95 backdrop-blur-sm flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 scale-95 group-hover:scale-100">
-                        <Tooltip title={t("adminChairs.view")}>
+                        <Tooltip title="View">
                           <Button
                             type="text"
                             size="small"
@@ -233,7 +226,7 @@ export default function ChairManagementPage() {
                             onClick={() => openDetailModal(chair)}
                           />
                         </Tooltip>
-                        <Tooltip title={t("adminChairs.edit")}>
+                        <Tooltip title="Edit">
                           <Button
                             type="text"
                             size="small"
@@ -243,18 +236,18 @@ export default function ChairManagementPage() {
                           />
                         </Tooltip>
                         <Popconfirm
-                          title={t("adminChairs.deleteConfirmTitle")}
-                          description={t("adminChairs.deleteConfirmDesc")}
+                          title="Delete Chair"
+                          description="Are you sure you want to delete this chair?"
                           onConfirm={(e) => {
                             e.stopPropagation();
                             handleDelete(chair.chairId);
                           }}
-                          okText={t("adminChairs.yes")}
-                          cancelText={t("adminChairs.no")}
+                          okText="Yes"
+                          cancelText="No"
                           okButtonProps={{ danger: true, className: 'rounded-lg font-semibold' }}
                           cancelButtonProps={{ className: 'rounded-lg font-semibold' }}
                         >
-                          <Tooltip title={t("adminChairs.delete")}>
+                          <Tooltip title="Delete">
                             <Button
                               type="text"
                               size="small"
@@ -281,7 +274,7 @@ export default function ChairManagementPage() {
                         <Plus size={18} strokeWidth={3} />
                       </div>
                       <span className="text-[11px] font-bold text-slate-400 group-hover:text-pink-500 mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-                        {t("adminChairs.addPosition", { name: cellName })}
+                        Add {cellName}
                       </span>
                     </div>
                   );
@@ -306,14 +299,14 @@ export default function ChairManagementPage() {
         title={
           <div className="text-lg font-bold tracking-tight text-slate-900 flex items-center gap-2">
             <Armchair className="text-[#ea4f93]" size={24} />
-            {t("adminChairs.chairDetails")}
+            Chair Details
           </div>
         }
         open={!!detailChair}
         onCancel={() => setDetailChair(null)}
         footer={[
           <Button key="close" onClick={() => setDetailChair(null)} className="rounded-xl border-slate-200 font-semibold">
-            {t("adminChairs.close")}
+            Close
           </Button>
         ]}
         className="[&_.ant-modal-content]:rounded-2xl [&_.ant-modal-content]:p-6"
@@ -321,17 +314,17 @@ export default function ChairManagementPage() {
         {detailChair && (
           <div className="mt-6 flex flex-col gap-4">
             <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <span className="text-slate-500 font-medium">{t("adminChairs.chairName")}</span>
+              <span className="text-slate-500 font-medium">Chair Name</span>
               <span className="font-bold text-slate-800 text-base">{detailChair.chairName}</span>
             </div>
             <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <span className="text-slate-500 font-medium">{t("adminChairs.status")}</span>
+              <span className="text-slate-500 font-medium">Status</span>
               <span className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${getStatusColor(detailChair.status).replace('border-2', '')}`}>
-                {detailChair.status === 'Active' ? t("adminChairs.active") : detailChair.status === 'Maintenance' ? t("adminChairs.maintenance") : t("adminChairs.inactive")}
+                {detailChair.status}
               </span>
             </div>
             <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <span className="text-slate-500 font-medium">{t("adminChairs.salon")}</span>
+              <span className="text-slate-500 font-medium">Salon</span>
               <span className="font-bold text-slate-800">{detailChair.salonName}</span>
             </div>
           </div>

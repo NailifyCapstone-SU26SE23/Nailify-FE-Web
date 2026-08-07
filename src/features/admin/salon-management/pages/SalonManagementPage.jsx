@@ -37,13 +37,12 @@ import {
   getAdminSalonUpdateRoute,
 } from "../../../../shared/constants/routes";
 import { PropTypes } from "../../../../shared/utils/propTypes";
-import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   SALON_STATUS_FILTERS,
   matchesSalonStatusFilter,
 } from "../services/mockSalon";
 import { fetchSalons, deleteSalon } from "../services/salonsService";
-import { fetchAdminSalons, normalizeAdminSalon, fetchSalonStaffCount } from "../services/salonManagementService";
+import { fetchAdminSalons, normalizeAdminSalon } from "../services/salonManagementService";
 import { fetchAdminUsers, updateAdminUser, fetchRawAdminUserDetail } from "../../user-management/services/userManagementService";
 
 const SALON_PLACEHOLDER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
@@ -78,7 +77,7 @@ PremiumCard.propTypes = {
 function SectionHeading({ title, subtitle }) {
   return (
     <div>
-      <h2 className="text-2xl font-bold text-[#3f2034]">{title}</h2>
+      <h2 className="nailify-display text-2xl font-semibold text-[#3f2034]">{title}</h2>
       {subtitle ? <p className="mt-1 text-xs text-[#a6869a] leading-relaxed">{subtitle}</p> : null}
     </div>
   );
@@ -104,7 +103,7 @@ function StatCard({ item, index }) {
       <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-xl ${item.iconBg} text-[#ea4f93]`}>
         <Icon size={20} strokeWidth={2.2} />
       </div>
-      <p className="text-[36px] font-semibold leading-none text-[#3f2034]">{item.title}</p>
+      <p className="nailify-display text-[36px] font-semibold leading-none text-[#3f2034]">{item.title}</p>
       <p className="mt-2 text-[10px] font-extrabold uppercase tracking-wider text-[#a6869a]">{item.label}</p>
       <p className={`mt-1.5 text-[11px] font-bold ${item.noteColor}`}>{item.note}</p>
     </motion.div>
@@ -219,9 +218,6 @@ RightMetricCard.propTypes = {
  * in the row ends up the same height regardless of how much text it holds.
  */
 function BranchCard({ branch, onClick }) {
-
-  const { t, language } = useLanguage();
-
   return (
     <motion.button
       type="button"
@@ -250,19 +246,19 @@ function BranchCard({ branch, onClick }) {
         <div className="space-y-3 text-[13px] text-[#5b4256]">
           <div className="flex items-center gap-2">
             <MapPin size={16} className="shrink-0 text-[#ea4f93]" />
-            <span className="truncate">{t("adminSalonManagement.address1")} {branch.address}</span>
+            <span className="truncate">{branch.address}</span>
           </div>
           <div className="flex items-center gap-2">
             <UserRound size={16} className="shrink-0 text-[#ea4f93]" />
-            <span className="truncate">{t("adminSalonManagement.manager1")} {branch.manager}</span>
+            <span className="truncate">Manager: {branch.manager}</span>
           </div>
           <div className="flex items-center gap-2">
             <Phone size={16} className="shrink-0 text-[#ea4f93]" />
-            <span className="truncate">{t("adminSalonManagement.phone")} {branch.phone}</span>
+            <span className="truncate">{branch.phone}</span>
           </div>
           <div className="flex items-center gap-2">
             <Clock3 size={16} className="shrink-0 text-[#ea4f93]" />
-            <span className="truncate">{t("adminSalonManagement.hours")} {branch.hours}</span>
+            <span className="truncate">{branch.hours}</span>
           </div>
         </div>
         <div className="mt-auto flex items-center justify-between border-t border-[#f5e2ec] pt-4">
@@ -400,7 +396,6 @@ export function SalonManagementPage() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [branchOverviewStart, setBranchOverviewStart] = useState(0);
   const [branchControlsPage, setBranchControlsPage] = useState(1);
-  const { t, language } = useLanguage();
   const [salonsRefreshKey, setSalonsRefreshKey] = useState(0);
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
   const [salons, setSalons] = useState([]);
@@ -435,23 +430,6 @@ export function SalonManagementPage() {
         // Fetch all managers to match with salons
         const managersData = await fetchAdminUsers({ role: "Manager", pageSize: 1000 });
         setManagers(managersData.items);
-
-        // fetch staff count for each salon
-        const salonsWithCount = await Promise.all(
-          salons.map(async (salon) => {
-            const [artist, receptionist] = await Promise.all([
-              fetchSalonStaffCount(salon.salonId, "Staff_Artist"),
-              fetchSalonStaffCount(salon.salonId, "Receptionist"),
-            ]);
-
-            return {
-              ...salon,
-              staffCount: artist + receptionist,
-            };
-          })
-        );
-
-        setSalons(salonsWithCount);
 
         // Match managers to salons using the new salonId field
         const enrichedSalons = salonsData.items.map(salon => {
@@ -670,19 +648,19 @@ export function SalonManagementPage() {
   const getSalonActionItems = (salon) => [
     {
       key: "view",
-      label: t("adminSalonManagement.viewSalon"),
+      label: "View Salon",
       icon: Eye,
       onSelect: () => handleViewSalon(salon),
     },
     {
       key: "edit",
-      label: t("adminSalonManagement.editSalon"),
+      label: "Edit Salon",
       icon: Pencil,
       onSelect: () => handleUpdateSalon(salon),
     },
     {
       key: "delete",
-      label: t("adminSalonManagement.deleteSalon"),
+      label: "Delete Salon",
       icon: Trash2,
       className: "text-[#d14c84]",
       onSelect: () => handleDeleteSalon(salon),
@@ -700,14 +678,13 @@ export function SalonManagementPage() {
   );
 
   const salonSummary = useMemo(() => {
-    const isVi = language === "vi";
     return [
       {
         accent: "from-[#fff5fb] to-[#fff]",
         icon: "briefcase",
         iconBg: "bg-[#fde7ef]",
-        label: t("adminDashboard.widgets.totalBranches") || "Total Branches",
-        note: isVi ? "+2 quý này" : "+2 this quarter",
+        label: "Total Branches",
+        note: "+2 this quarter",
         noteColor: "text-emerald-500",
         title: salons.length.toString(),
       },
@@ -715,7 +692,7 @@ export function SalonManagementPage() {
         accent: "from-[#fff9f2] to-[#fff]",
         icon: "check",
         iconBg: "bg-[#ffedd5]",
-        label: isVi ? "Chi nhánh hoạt động" : "Active Salons",
+        label: "Active Salons",
         note: "98% uptime",
         noteColor: "text-emerald-500",
         title: salons.filter((s) => s.status === "Active").length.toString(),
@@ -724,8 +701,8 @@ export function SalonManagementPage() {
         accent: "from-[#f2fdf6] to-[#fff]",
         icon: "sparkles",
         iconBg: "bg-[#e6fdf0]",
-        label: isVi ? "Đánh giá trung bình" : "Avg. Rating",
-        note: isVi ? "+0.2 so với tháng trước" : "+0.2 vs last month",
+        label: "Avg. Rating",
+        note: "+0.2 vs last month",
         noteColor: "text-emerald-500",
         title: "4.8",
       },
@@ -733,13 +710,13 @@ export function SalonManagementPage() {
         accent: "from-[#f5f2fd] to-[#fff]",
         icon: "trendingUp",
         iconBg: "bg-[#e0e7ff]",
-        label: isVi ? "Tổng số nhân viên" : "Total Staff",
-        note: isVi ? "+12 tuyển mới" : "+12 new hires",
+        label: "Total Staff",
+        note: "+12 new hires",
         noteColor: "text-emerald-500",
         title: salons.reduce((sum, s) => sum + (parseInt(s.staff) || 0), 0).toString(),
       },
     ];
-  }, [salons, t, language]);
+  }, [salons]);
 
   const fadeInUp = {
     hidden: { opacity: 0, y: 20 },
@@ -759,7 +736,9 @@ export function SalonManagementPage() {
 
   return (
     <section className="mx-auto max-w-[1400px] px-4 py-8 text-slate-700">
-      {/*  */}
+      <style>{`
+        .nailify-display { font-family: "Cormorant Garamond", "Times New Roman", serif; }
+      `}</style>
       {flashMessage ? (
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 rounded-[20px] bg-[#edfdf4] px-6 py-4 text-sm font-medium text-[#16975f]">
           {flashMessage}
@@ -797,8 +776,8 @@ export function SalonManagementPage() {
             <PremiumCard className="p-6">
               <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <SectionHeading
-                  title={t("adminSalonManagement.branchOverview")}
-                  subtitle={t("adminSalonManagement.snapshotCardsForTheBranchesMat")}
+                  title="Branch Overview"
+                  subtitle="Snapshot cards for the branches matching your current filters"
                 />
                 <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em]">
                   {SALON_STATUS_FILTERS.map((tab) => (
@@ -809,11 +788,11 @@ export function SalonManagementPage() {
                       type="button"
                       onClick={() => setStatusFilter(tab)}
                       className={`rounded-full px-4 py-2 text-[12px] font-semibold transition-all duration-300 ${statusFilter === tab
-                        ? "bg-[#ea4f93] text-white shadow-[0_10px_20px_rgba(226,93,143,0.22)]"
-                        : "bg-[#fff5fb] text-[#a88a9f] hover:bg-[#fde7ef] hover:text-[#ea4f93]"
+                          ? "bg-[#ea4f93] text-white shadow-[0_10px_20px_rgba(226,93,143,0.22)]"
+                          : "bg-[#fff5fb] text-[#a88a9f] hover:bg-[#fde7ef] hover:text-[#ea4f93]"
                         }`}
                     >
-                      {tab === "All" ? (t("adminSalonManagement.all")) : tab === "Active" ? (t("adminSalonManagement.active")) : tab === "Inactive" ? (t("adminSalonManagement.inactive")) : (t("adminSalonManagement.busy"))}
+                      {tab}
                     </motion.button>
                   ))}
                 </div>
@@ -873,9 +852,9 @@ export function SalonManagementPage() {
                 </div>
               ) : (
                 <div className="rounded-[28px] border border-dashed border-[#f0b7cf] bg-white px-8 py-12 text-center">
-                  <p className="text-[16px] font-bold text-[#2d1b35]">{t("adminSalonManagement.noBranchesMatchedYourFilters")}</p>
+                  <p className="text-[16px] font-bold text-[#2d1b35]">No branches matched your filters</p>
                   <p className="mt-2 text-[13px] font-medium text-[#a88a9f]">
-                    {t("adminSalonManagement.tryADifferentKeywordOrSwitchTh")}
+                    Try a different keyword or switch the status tab.
                   </p>
                 </div>
               )}
@@ -886,10 +865,8 @@ export function SalonManagementPage() {
               <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <SectionHeading
-                    title={t("adminSalonManagement.branchControls")}
-                    subtitle={language === "vi"
-                      ? `Hiển thị ${filteredSalons.length} trên ${salons.length} chi nhánh${searchTerm ? ` • Tìm kiếm: "${searchTerm}"` : ""}${statusFilter !== "All" ? ` • Trạng thái: ${statusFilter === "Active" ? "Đang hoạt động" : statusFilter === "Inactive" ? "Ngừng hoạt động" : "Bận"}` : ""}`
-                      : `Showing ${filteredSalons.length} of ${salons.length} salons${searchTerm ? ` • Search: "${searchTerm}"` : ""}${statusFilter !== "All" ? ` • Status: ${statusFilter}` : ""}`}
+                    title="Branch Controls"
+                    subtitle={`Showing ${filteredSalons.length} of ${salons.length} salons${searchTerm ? ` • Search: "${searchTerm}"` : ""}${statusFilter !== "All" ? ` • Status: ${statusFilter}` : ""}`}
                   />
                 </div>
                 <div className="flex flex-col gap-4 xl:ml-auto xl:min-w-[640px] xl:items-end">
@@ -898,7 +875,7 @@ export function SalonManagementPage() {
                       <Search size={18} className="text-[#ea4f93]" />
                       <input
                         type="text"
-                        placeholder={t("adminSalonManagement.searchSalons")}
+                        placeholder="Search salons..."
                         value={searchTerm}
                         onChange={(event) => setSearchTerm(event.target.value)}
                         className="w-full bg-transparent text-[13px] text-[#2d1b35] outline-none placeholder:text-[#c8b0bf]"
@@ -921,16 +898,16 @@ export function SalonManagementPage() {
                         className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#ea4f93] to-[#cf3d74] px-6 py-3 text-[15px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition-all duration-300 hover:opacity-90"
                       >
                         <Plus size={20} />
-                        {t("adminSalonManagement.addSalon")}
+                        Add Salon
                       </Link>
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center justify-end gap-3">
                     <SmallActionButton onClick={() => setShowAssignManagerModal(true)}>
-                      {t("adminSalonManagement.assignManager")}
+                      Assign Manager
                     </SmallActionButton>
                     <SmallActionButton onClick={() => setShowHolidayClosureModal(true)}>
-                      {t("adminSalonManagement.holidayClosure")}
+                      Holiday Closure
                     </SmallActionButton>
                     <SmallActionButton onClick={() => {
                       setActivePeriod(null);
@@ -942,7 +919,7 @@ export function SalonManagementPage() {
                       setSelectedSalonId(null);
                       setShowSetHoursModal(true);
                     }}>
-                      {t("adminSalonManagement.setHours")}
+                      Set Hours
                     </SmallActionButton>
                   </div>
                 </div>
@@ -952,20 +929,19 @@ export function SalonManagementPage() {
                   <table className="w-full text-left">
                     <thead className="bg-[#fff9fb]">
                       <tr className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#a88a9f]">
-                        <th className="px-4 py-4 w-16">{t("adminSalonManagement.avatar")}</th>
-                        <th className="px-4 py-4">{t("adminSalonManagement.salon")}</th>
-                        <th className="px-4 py-4">{t("adminSalonManagement.address")}</th>
-                        <th className="px-4 py-4">{t("adminSalonManagement.manager")}</th>
-                        <th className="px-4 py-4">{t("adminSalonManagement.staff")}</th>
-                        <th className="px-4 py-4">{t("adminSalonManagement.hours1")}</th>
-                        <th className="px-4 py-4">{t("adminSalonManagement.status")}</th>
-                        <th className="px-4 py-4 text-right">{t("adminSalonManagement.actions")}</th>
+                        <th className="px-4 py-4 w-16">Avatar</th>
+                        <th className="px-4 py-4">Salon</th>
+                        <th className="px-4 py-4">Address</th>
+                        <th className="px-4 py-4">Manager</th>
+                        <th className="px-4 py-4">Staff</th>
+                        <th className="px-4 py-4">Hours</th>
+                        <th className="px-4 py-4">Status</th>
+                        <th className="px-4 py-4 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       <AnimatePresence>
                         {visibleBranchControlsSalons.map((salon, index) => (
-                          console.log("salons", salon),
                           <motion.tr
                             key={`${salon.name}-${salon.id}`}
                             initial={{ opacity: 0, x: -20 }}
@@ -1002,7 +978,7 @@ export function SalonManagementPage() {
                             <td className="px-4 py-4">
                               <div className="inline-flex items-center gap-1.5 rounded-full bg-[#fff9fb] px-2.5 py-1 text-[11px] font-semibold">
                                 <UserRound size={12} className="text-[#ea4f93]" />
-                                {salon.staffCount}
+                                {salon.staff}
                               </div>
                             </td>
                             <td className="px-4 py-4">
@@ -1015,7 +991,7 @@ export function SalonManagementPage() {
                             </td>
                             <td className="px-4 py-4">
                               <div className="flex items-center justify-end gap-1.5">
-                                <Tooltip title={t("adminSalonManagement.viewSalon")}>
+                                <Tooltip title="View Salon">
                                   <motion.button
                                     whileHover={{ scale: 1.08 }}
                                     whileTap={{ scale: 0.95 }}
@@ -1027,7 +1003,7 @@ export function SalonManagementPage() {
                                     <Eye size={14} />
                                   </motion.button>
                                 </Tooltip>
-                                <Tooltip title={t("adminSalonManagement.editSalon")}>
+                                <Tooltip title="Edit Salon">
                                   <motion.button
                                     whileHover={{ scale: 1.08 }}
                                     whileTap={{ scale: 0.95 }}
@@ -1039,17 +1015,15 @@ export function SalonManagementPage() {
                                     <Pencil size={14} />
                                   </motion.button>
                                 </Tooltip>
-                                <Tooltip title={t("adminSalonManagement.deleteSalon")}>
-                                  <motion.button
-                                    whileHover={{ scale: 1.08 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    type="button"
-                                    onClick={() => handleDeleteSalon(salon)}
-                                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#f0b7cf] bg-[#fff0f0] border border-[#fecdd3] text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
-                                  >
-                                    <Trash2 size={14} />
-                                  </motion.button>
-                                </Tooltip>
+                                <motion.button
+                                  whileHover={{ scale: 1.08 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  type="button"
+                                  onClick={() => handleDeleteSalon(salon)}
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#f0b7cf] bg-[#fff0f0] border border-[#fecdd3] text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
+                                >
+                                  <Trash2 size={14} />
+                                </motion.button>
                               </div>
                             </td>
                           </motion.tr>
@@ -1062,7 +1036,7 @@ export function SalonManagementPage() {
                 {totalBranchControlsPages > 1 && (
                   <div className="flex items-center justify-between px-6 py-4 border-t border-[#f5e2ec] bg-[#fff9fb]">
                     <div className="text-[12px] font-semibold text-[#a88a9f]">
-                      {language === "vi" ? `Trang ${branchControlsPage} trên ${totalBranchControlsPages}` : `Page ${branchControlsPage} of ${totalBranchControlsPages}`}
+                      Page {branchControlsPage} of {totalBranchControlsPages}
                     </div>
                     <div className="flex items-center gap-3">
                       <motion.button
@@ -1085,8 +1059,8 @@ export function SalonManagementPage() {
                             type="button"
                             onClick={() => setBranchControlsPage(page)}
                             className={`inline-flex h-9 w-9 items-center justify-center rounded-full text-[12px] font-bold transition-all duration-300 ${branchControlsPage === page
-                              ? "bg-[#ea4f93] text-white shadow-[0_8px_16px_rgba(234,79,147,0.25)]"
-                              : "bg-white text-[#ea4f93] hover:bg-[#fff5fb]"
+                                ? "bg-[#ea4f93] text-white shadow-[0_8px_16px_rgba(234,79,147,0.25)]"
+                                : "bg-white text-[#ea4f93] hover:bg-[#fff5fb]"
                               }`}
                           >
                             {page}

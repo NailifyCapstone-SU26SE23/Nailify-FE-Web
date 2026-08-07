@@ -7,8 +7,8 @@ function getAuthHeaders() {
 
   return token
     ? {
-      Authorization: `Bearer ${token}`,
-    }
+        Authorization: `Bearer ${token}`,
+      }
     : {};
 }
 
@@ -23,12 +23,12 @@ function unwrapResponse(response, fallbackMessage) {
 }
 
 export function normalizeStaffMember(staff) {
-  const fullName = staff?.firstName && staff?.lastName
-    ? `${staff.firstName} ${staff.lastName}`
+  const fullName = staff?.firstName && staff?.lastName 
+    ? `${staff.firstName} ${staff.lastName}` 
     : staff?.fullName || staff?.name || "Unnamed Staff";
-
+  
   const initials = fullName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() || "S";
-
+  
   const result = {
     ...staff, // Keep all original fields FIRST
     id: staff?.staffId || staff?.userId || staff?.id || "",
@@ -362,26 +362,4 @@ export async function fetchArtistSchedule(artistId, { fromDate, toDate } = {}) {
     console.error("Error fetching artist schedule:", error);
     return [];
   }
-}
-
-export async function fetchTodaySchedules() {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const tomorrow = new Date(today);
-  tomorrow.setDate(today.getDate() + 1);
-
-  const response = await axiosClient.get("/Schedules", {
-    headers: getAuthHeaders(),
-    params: {
-      pageNumber: 1,
-      pageSize: 1000,
-      startDate: today.toISOString(),
-      endDate: tomorrow.toISOString(),
-    },
-  });
-
-  const data = unwrapResponse(response, "Failed to load schedules.");
-
-  return Array.isArray(data?.items) ? data.items : [];
 }

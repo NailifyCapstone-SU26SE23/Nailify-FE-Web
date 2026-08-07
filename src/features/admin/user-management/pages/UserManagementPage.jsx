@@ -14,11 +14,10 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Select, Table } from "antd";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
-import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   ROUTES,
   getAdminUserDetailRoute,
@@ -31,6 +30,14 @@ import { fetchAdminUsers } from "../services/userManagementService";
 import { fetchAdminSalons } from "../../salon-management/services/salonManagementService";
 
 const ALL_FILTER_VALUE = "__all__";
+const ROLE_FILTER_OPTIONS = [
+  { value: ALL_FILTER_VALUE, label: "All roles" },
+  { value: "Admin", label: "Admin" },
+  { value: "Manager", label: "Manager" },
+  { value: "Receptionist", label: "Receptionist" },
+  { value: "Staff_Artist", label: "Staff Artist" },
+  { value: "Customer", label: "Customer" },
+];
 
 function getRoleTone(role) {
   switch (role) {
@@ -192,7 +199,6 @@ FilterSelect.propTypes = {
 };
 
 export function UserManagementPage() {
-  const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
@@ -323,61 +329,50 @@ export function UserManagementPage() {
     return sortUsers(mappedUsers, selectedSort);
   }, [salonNameById, selectedSort, users]);
 
-  const roleFilterOptions = useMemo(() => [
-    { value: ALL_FILTER_VALUE, label: t("userManagement.filter.allRoles") },
-    { value: "Admin", label: t("superAdmin") },
-    { value: "Manager", label: t("salonManager") },
-    { value: "Receptionist", label: t("receptionist") },
-    { value: "Staff_Artist", label: t("nailArtist") },
-    { value: "Customer", label: t("userManagement.metric.clientAccounts") },
-  ], [t]);
-
   const summaryCards = useMemo(() => {
     const customers = displayedUsers.filter((user) => user.role === "Customer").length;
     const staffArtists = displayedUsers.filter((user) => user.role === "Staff").length;
     const managers = displayedUsers.filter((user) => user.role === "Manager").length;
     const suspendedUsers = displayedUsers.filter((user) => user.statusLabel === "Suspended").length;
 
-    const isVi = t("adminDashboard.year") === "Năm";
-
     return [
       {
-        label: t("userManagement.metric.totalUsers"),
+        label: "Total Users",
         value: String(metaData.totalItems),
-        note: `${metaData.totalPages} ${isVi ? "trang" : "pages"}`,
+        note: `${metaData.totalPages} pages`,
         icon: Users,
         iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
       },
       {
-        label: t("userManagement.metric.clientAccounts"),
+        label: "Customers",
         value: String(customers),
-        note: isVi ? "Trên trang hiện tại" : "On current page",
+        note: "On current page",
         icon: Users,
         iconClassName: "bg-[#fff0f7] text-[#ea4f93]",
       },
       {
-        label: t("userManagement.metric.nailArtists"),
+        label: "Staff Artists",
         value: String(staffArtists),
-        note: isVi ? "Trên trang hiện tại" : "On current page",
+        note: "On current page",
         icon: UserCog,
         iconClassName: "bg-[#fff0f7] text-[#ea4f93]",
       },
       {
-        label: t("userManagement.metric.branchManagers"),
+        label: "Salon Managers",
         value: String(managers),
-        note: isVi ? "Trên trang hiện tại" : "On current page",
+        note: "On current page",
         icon: Shield,
         iconClassName: "bg-[#eef4ff] text-[#7c5cff]",
       },
       {
-        label: t("userManagement.table.status") + " (Suspended)",
+        label: "Suspended Users",
         value: String(suspendedUsers),
-        note: isVi ? "Trên trang hiện tại" : "On current page",
+        note: "On current page",
         icon: AlertTriangle,
         iconClassName: "bg-[#fff4ef] text-[#ff7a59]",
       },
     ];
-  }, [displayedUsers, metaData.totalItems, metaData.totalPages, t]);
+  }, [displayedUsers, metaData.totalItems, metaData.totalPages]);
 
   const paginationItems = useMemo(() => {
     const currentPage = metaData.currentPage;
@@ -406,30 +401,26 @@ export function UserManagementPage() {
     return result;
   }, [metaData.currentPage, metaData.totalPages]);
 
-  const getActionItems = useCallback((user) => {
+  const getActionItems = (user) => {
     const detailRoute = getAdminUserDetailRoute(user.id);
-    const viewLabel = t("view") || "View";
-    const editLabel = t("promotionDetail.editTitle") || "Edit";
-    const deleteLabel = t("promotionDetail.deleteBtn") || "Delete";
-    const userLabel = t("userManagement.table.user");
 
     return [
-      { key: "view", label: `${viewLabel} ${userLabel}`, icon: Eye, onSelect: () => navigate(detailRoute) },
+      { key: "view", label: "View User", icon: Eye, onSelect: () => navigate(detailRoute) },
       {
         key: "edit",
-        label: `${editLabel} ${userLabel}`,
+        label: "Edit User",
         icon: PencilLine,
         onSelect: () => navigate(detailRoute, { state: { requestEdit: true } }),
       },
       {
         key: "delete",
-        label: `${deleteLabel} ${userLabel}`,
+        label: "Delete User",
         icon: Trash2,
         className: "text-[#d14c84]",
         onSelect: () => navigate(detailRoute, { state: { requestDelete: true } }),
       },
     ];
-  }, [navigate, t]);
+  };
 
   const handleHeaderSort = (sortKey) => {
     setSelectedSort((current) =>
@@ -439,7 +430,7 @@ export function UserManagementPage() {
 
   const userColumns = useMemo(() => ([
     {
-      title: <SortableHeader label={t("userManagement.table.user")} sortKey="user" selectedSort={selectedSort} onToggle={handleHeaderSort} />,
+      title: <SortableHeader label="User" sortKey="user" selectedSort={selectedSort} onToggle={handleHeaderSort} />,
       key: "user",
       render: (_, user) => (
         <div className="flex items-start gap-3">
@@ -451,7 +442,7 @@ export function UserManagementPage() {
       ),
     },
     {
-      title: <SortableHeader label={t("userManagement.table.assignedRole")} sortKey="role" selectedSort={selectedSort} onToggle={handleHeaderSort} />,
+      title: <SortableHeader label="Role" sortKey="role" selectedSort={selectedSort} onToggle={handleHeaderSort} />,
       dataIndex: "displayRole",
       key: "displayRole",
       render: (value, user) => <SmallTag className={getRoleTone(user.role)}>{value}</SmallTag>,
@@ -475,13 +466,13 @@ export function UserManagementPage() {
       ),
     },
     {
-      title: <SortableHeader label={t("userManagement.table.salonBranch")} sortKey="salon" selectedSort={selectedSort} onToggle={handleHeaderSort} />,
+      title: <SortableHeader label="Salon" sortKey="salon" selectedSort={selectedSort} onToggle={handleHeaderSort} />,
       dataIndex: "salon",
       key: "salon",
       render: (value) => <span className="text-sm text-[#8a7082]">{value}</span>,
     },
     {
-      title: <SortableHeader label={t("userManagement.table.status")} sortKey="status" selectedSort={selectedSort} onToggle={handleHeaderSort} />,
+      title: <SortableHeader label="Status" sortKey="status" selectedSort={selectedSort} onToggle={handleHeaderSort} />,
       dataIndex: "statusLabel",
       key: "statusLabel",
       render: (value) => (
@@ -491,17 +482,17 @@ export function UserManagementPage() {
       ),
     },
     {
-      title: <SortableHeader label={t("userManagement.table.lastActive")} sortKey="lastActive" selectedSort={selectedSort} onToggle={handleHeaderSort} />,
+      title: <SortableHeader label="Last Active" sortKey="lastActive" selectedSort={selectedSort} onToggle={handleHeaderSort} />,
       dataIndex: "lastActive",
       key: "lastActive",
       render: (value) => <span className="text-sm text-[#8a7082]">{value}</span>,
     },
     {
-      title: t("userManagement.table.actions"),
+      title: "Action",
       key: "action",
       render: (_, user) => <ActionDropdown items={getActionItems(user)} />,
     },
-  ]), [getActionItems, selectedSort, t]);
+  ]), [getActionItems, selectedSort]);
 
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)]">
@@ -525,7 +516,7 @@ export function UserManagementPage() {
                   <input
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
-                    placeholder={t("userManagement.filter.searchPlaceholder")}
+                    placeholder="Search by email, first name, last name..."
                     className="h-11 w-full rounded-full border border-[#f5d7e4] bg-[#fff9fc] pl-11 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
                   />
                 </label>
@@ -538,7 +529,7 @@ export function UserManagementPage() {
                   className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
                 >
                   <Search size={15} className="mr-2" />
-                  {t("userManagement.table.actions") === "Thao tác" ? "Tìm kiếm" : "Search"}
+                  Search
                 </button>
               </div>
 
@@ -550,9 +541,9 @@ export function UserManagementPage() {
                     setSelectedRole(value);
                     setMetaData((current) => ({ ...current, currentPage: 1 }));
                   }}
-                  options={roleFilterOptions}
+                  options={ROLE_FILTER_OPTIONS}
                   className="min-w-[200px]"
-                  placeholder={t("userManagement.filter.allRoles")}
+                  placeholder="All roles"
                   disabled={isLoading}
                 />
                 <FilterSelect
@@ -563,14 +554,14 @@ export function UserManagementPage() {
                     setMetaData((current) => ({ ...current, currentPage: 1 }));
                   }}
                   options={[
-                    { value: ALL_FILTER_VALUE, label: t("userManagement.filter.allSalons") },
+                    { value: ALL_FILTER_VALUE, label: "All salons" },
                     ...salons.map((salon) => ({
                       value: salon.id,
                       label: salon.name,
                     })),
                   ]}
                   className="min-w-[250px]"
-                  placeholder={t("userManagement.filter.allSalons")}
+                  placeholder="All salons"
                   disabled={isLoading}
                 />
               </div>
@@ -582,7 +573,7 @@ export function UserManagementPage() {
                 className="inline-flex h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
               >
                 <UserPlus size={15} className="mr-2" />
-                {t("userManagement.table.actions") === "Thao tác" ? "Thêm người dùng" : "Add User"}
+                Add User
               </Link>
             </div>
           </div>
@@ -601,14 +592,9 @@ export function UserManagementPage() {
 
           <div className="mt-4 overflow-hidden rounded-[18px] border border-[#f6dbe7]">
             <div className="flex items-center justify-between gap-3 border-b border-[#f7dce8] bg-[#fffafd] px-4 py-3">
-              <p className="text-sm font-extrabold text-[#462a45]">
-                {t("userManagement.table.actions") === "Thao tác" ? "Tất cả người dùng" : "All Users"}
-              </p>
+              <p className="text-sm font-extrabold text-[#462a45]">All Users</p>
               <p className="text-[11px] font-medium text-[#d197b0]">
-                {t("userManagement.table.actions") === "Thao tác" 
-                  ? `Hiển thị ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} trong số ${metaData.totalItems} người dùng`
-                  : `Showing ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} of ${metaData.totalItems} users`
-                }
+                Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} users
               </p>
             </div>
 
@@ -620,7 +606,7 @@ export function UserManagementPage() {
                 loading={isLoading}
                 pagination={false}
                 scroll={{ x: 1100 }}
-                locale={{ emptyText: t("userManagement.table.actions") === "Thao tác" ? "Không tìm thấy người dùng." : "No users found." }}
+                locale={{ emptyText: "No users found." }}
               />
             </div>
 
@@ -628,7 +614,7 @@ export function UserManagementPage() {
               {isLoading ? (
                 <div className="flex items-center justify-center gap-3 rounded-[16px] border border-[#f8dce8] bg-[#fffafb] p-4 text-sm text-[#b38a9f]">
                   <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
-                  {t("userManagement.table.actions") === "Thao tác" ? "Đang tải dữ liệu..." : "Loading users..."}
+                  Loading users...
                 </div>
               ) : displayedUsers.length ? (
                 displayedUsers.map((user) => (

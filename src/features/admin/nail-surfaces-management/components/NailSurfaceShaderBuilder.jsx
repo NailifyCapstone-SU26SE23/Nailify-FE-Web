@@ -1,7 +1,6 @@
 import { Sparkles, Paintbrush, Eraser } from "lucide-react";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { SURFACE_PRESET_OPTIONS } from "../utils/surfaceShaderConfig";
-import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 function SliderField({ label, min, max, step, value, onChange, helper }) {
   return (
@@ -25,8 +24,8 @@ function SliderField({ label, min, max, step, value, onChange, helper }) {
 }
 
 SliderField.propTypes = {
-  helper: PropTypes.node,
-  label: PropTypes.node.isRequired,
+  helper: PropTypes.string,
+  label: PropTypes.string.isRequired,
   max: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
   min: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
   onChange: PropTypes.func.isRequired,
@@ -45,7 +44,7 @@ function ToggleField({ label, checked, onChange }) {
 
 ToggleField.propTypes = {
   checked: PropTypes.bool.isRequired,
-  label: PropTypes.node.isRequired,
+  label: PropTypes.string.isRequired,
   onChange: PropTypes.func.isRequired,
 };
 
@@ -54,18 +53,17 @@ export function NailSurfaceShaderBuilder({ formValues, onFieldChange, disabled =
   const showMetalness = preset === "chrome" || formValues.metalnessEnabled;
   const showStripe = preset === "cat-eye" || formValues.stripeEnabled;
   const showRainbow = preset === "holographic" || formValues.rainbowEnabled;
-  const { t, language } = useLanguage();
 
   return (
     <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
       <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
         <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
-        {t("adminNailSurfacesManagement.surfaceEffectBuilder")}
+        Surface Effect Builder
       </h2>
 
       <div className={`space-y-5 ${disabled ? "pointer-events-none opacity-75" : ""}`}>
         <label className="space-y-2.5">
-          <span className="text-[13px] font-semibold text-slate-600">{t("adminNailSurfacesManagement.surfaceType")}</span>
+          <span className="text-[13px] font-semibold text-slate-600">Surface Type</span>
           <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
             <Sparkles size={14} className="shrink-0 text-rose-300" />
             <select
@@ -85,32 +83,32 @@ export function NailSurfaceShaderBuilder({ formValues, onFieldChange, disabled =
 
         <div className="grid gap-3 md:grid-cols-2">
           <ToggleField
-            label={t("adminNailSurfacesManagement.shineHighlight")}
+            label="Shine highlight"
             checked={Boolean(formValues.shineEnabled)}
             onChange={(event) => onFieldChange("shineEnabled", event.target.checked)}
           />
           <ToggleField
-            label={t("adminNailSurfacesManagement.reflection")}
+            label="Reflection"
             checked={Boolean(formValues.reflectionEnabled)}
             onChange={(event) => onFieldChange("reflectionEnabled", event.target.checked)}
           />
           <ToggleField
-            label={t("adminNailSurfacesManagement.specular")}
+            label="Specular"
             checked={Boolean(formValues.specularEnabled)}
             onChange={(event) => onFieldChange("specularEnabled", event.target.checked)}
           />
           <ToggleField
-            label={t("adminNailSurfacesManagement.metallic")}
+            label="Metallic"
             checked={Boolean(formValues.metalnessEnabled)}
             onChange={(event) => onFieldChange("metalnessEnabled", event.target.checked)}
           />
           <ToggleField
-            label={t("adminNailSurfacesManagement.magneticStripe")}
+            label="Magnetic stripe"
             checked={Boolean(formValues.stripeEnabled)}
             onChange={(event) => onFieldChange("stripeEnabled", event.target.checked)}
           />
           <ToggleField
-            label={t("adminNailSurfacesManagement.rainbowIridescence")}
+            label="Rainbow / iridescence"
             checked={Boolean(formValues.rainbowEnabled)}
             onChange={(event) => onFieldChange("rainbowEnabled", event.target.checked)}
           />
@@ -119,7 +117,7 @@ export function NailSurfaceShaderBuilder({ formValues, onFieldChange, disabled =
         {/* PAINTER MODE UI */}
         <div className="pt-2">
           <ToggleField
-            label={t("adminNailSurfacesManagement.interactivePainterMode")}
+            label="Interactive Painter Mode (Draw on Nail!)"
             checked={Boolean(formValues.painterMode)}
             onChange={(event) => onFieldChange("painterMode", event.target.checked)}
           />
@@ -128,24 +126,24 @@ export function NailSurfaceShaderBuilder({ formValues, onFieldChange, disabled =
         {formValues.painterMode && (
           <div className="space-y-4 rounded-2xl border border-rose-100 bg-[#fff8fb] p-4 shadow-[inset_0_2px_10px_rgba(234,79,147,0.05)]">
             <div className="flex items-center gap-3">
-              <button
+              <button 
                 type="button"
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold transition-all shadow-sm ${formValues.brushType === 'matte' ? 'bg-[#ea4f93] text-white shadow-[#ea4f93]/30' : 'bg-white text-slate-500 border border-rose-100 hover:bg-rose-50'}`}
                 onClick={() => onFieldChange("brushType", "matte")}
               >
-                <Eraser size={16} /> {t("adminNailSurfacesManagement.matteBrush")}
+                <Eraser size={16} /> Matte Brush
               </button>
-              <button
+              <button 
                 type="button"
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold transition-all shadow-sm ${formValues.brushType !== 'matte' ? 'bg-[#ea4f93] text-white shadow-[#ea4f93]/30' : 'bg-white text-slate-500 border border-rose-100 hover:bg-rose-50'}`}
                 onClick={() => onFieldChange("brushType", "glossy")}
               >
-                <Paintbrush size={16} /> {t("adminNailSurfacesManagement.glossyBrush")}
+                <Paintbrush size={16} /> Glossy Brush
               </button>
             </div>
-
+            
             <SliderField
-              label={t("adminNailSurfacesManagement.brushRadius")}
+              label="Brush Radius"
               min={5}
               max={100}
               step={5}
@@ -157,7 +155,7 @@ export function NailSurfaceShaderBuilder({ formValues, onFieldChange, disabled =
 
         <div className="grid gap-5 md:grid-cols-2 pt-2">
           <SliderField
-            label={t("adminNailSurfacesManagement.shineOpacity")}
+            label="Shine opacity"
             min="0"
             max="1"
             step="0.05"
@@ -165,7 +163,7 @@ export function NailSurfaceShaderBuilder({ formValues, onFieldChange, disabled =
             onChange={(event) => onFieldChange("shineOpacity", event.target.value)}
           />
           <SliderField
-            label={t("adminNailSurfacesManagement.reflectionIntensity")}
+            label="Reflection intensity"
             min="0"
             max="1"
             step="0.05"
@@ -173,7 +171,7 @@ export function NailSurfaceShaderBuilder({ formValues, onFieldChange, disabled =
             onChange={(event) => onFieldChange("reflectionIntensity", event.target.value)}
           />
           <SliderField
-            label={t("adminNailSurfacesManagement.specularIntensity")}
+            label="Specular intensity"
             min="0"
             max="1"
             step="0.05"
@@ -181,17 +179,17 @@ export function NailSurfaceShaderBuilder({ formValues, onFieldChange, disabled =
             onChange={(event) => onFieldChange("specularIntensity", event.target.value)}
           />
           <SliderField
-            label={t("adminNailSurfacesManagement.textureRoughness")}
+            label="Texture roughness"
             min="0"
             max="1"
             step="0.05"
             value={formValues.roughness}
             onChange={(event) => onFieldChange("roughness", event.target.value)}
-            helper={t("adminNailSurfacesManagement.textureRoughnessHelper")}
+            helper="Lower is glossier, higher is more matte."
           />
           {showMetalness ? (
             <SliderField
-              label={t("adminNailSurfacesManagement.metalnessIntensity")}
+              label="Metalness intensity"
               min="0"
               max="1"
               step="0.05"
@@ -201,7 +199,7 @@ export function NailSurfaceShaderBuilder({ formValues, onFieldChange, disabled =
           ) : null}
           {showStripe ? (
             <SliderField
-              label={t("adminNailSurfacesManagement.stripeOpacity")}
+              label="Stripe opacity"
               min="0"
               max="1"
               step="0.05"
@@ -211,7 +209,7 @@ export function NailSurfaceShaderBuilder({ formValues, onFieldChange, disabled =
           ) : null}
           {showRainbow ? (
             <SliderField
-              label={t("adminNailSurfacesManagement.rainbowIntensity")}
+              label="Rainbow intensity"
               min="0"
               max="1"
               step="0.05"
@@ -222,13 +220,13 @@ export function NailSurfaceShaderBuilder({ formValues, onFieldChange, disabled =
         </div>
 
         <div className="rounded-[20px] border border-rose-100 bg-[#fff8fb] p-4">
-          <p className="text-[13px] font-semibold text-slate-600">{t("adminNailSurfacesManagement.colorOffsets")}</p>
+          <p className="text-[13px] font-semibold text-slate-600">Color Offsets</p>
           <p className="mt-1 text-xs text-slate-400">
-            {t("adminNailSurfacesManagement.colorOffsetsHelper")}
+            These sliders adjust preview brightness, saturation, and hue without exposing JSON.
           </p>
           <div className="mt-4 grid gap-5 md:grid-cols-3">
             <SliderField
-              label={t("adminNailSurfacesManagement.lightness")}
+              label="Lightness"
               min="-1"
               max="1"
               step="0.05"
@@ -236,7 +234,7 @@ export function NailSurfaceShaderBuilder({ formValues, onFieldChange, disabled =
               onChange={(event) => onFieldChange("lightnessOffset", event.target.value)}
             />
             <SliderField
-              label={t("adminNailSurfacesManagement.saturation")}
+              label="Saturation"
               min="-1"
               max="1"
               step="0.05"
@@ -244,7 +242,7 @@ export function NailSurfaceShaderBuilder({ formValues, onFieldChange, disabled =
               onChange={(event) => onFieldChange("saturationOffset", event.target.value)}
             />
             <SliderField
-              label={t("adminNailSurfacesManagement.hue")}
+              label="Hue"
               min="-30"
               max="30"
               step="1"

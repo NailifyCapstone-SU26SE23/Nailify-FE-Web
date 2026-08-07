@@ -1,4 +1,3 @@
-import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   USER_BRANCH_OPTIONS,
   USER_ROLE_OPTIONS,
@@ -19,79 +18,78 @@ export function UserManagementFormFields({
   createApiFieldsOnly = false,
   updateApiFieldsOnly = false,
 }) {
-  const { t } = useLanguage();
   if (createApiFieldsOnly) {
     return (
       <>
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.firstName")}</span>
+          <span className="text-sm font-medium text-[var(--color-ink)]">First name</span>
           <input
             value={formValues.firstName}
             onChange={onFieldChange("firstName")}
             disabled={disabled}
             className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-            placeholder={t("userManagement.detail.enterFirstName")}
+            placeholder="Enter first name"
           />
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.lastName")}</span>
+          <span className="text-sm font-medium text-[var(--color-ink)]">Last name</span>
           <input
             value={formValues.lastName}
             onChange={onFieldChange("lastName")}
             disabled={disabled}
             className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-            placeholder={t("userManagement.detail.enterLastName")}
+            placeholder="Enter last name"
           />
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.email")}</span>
+          <span className="text-sm font-medium text-[var(--color-ink)]">Email</span>
           <input
             value={formValues.email}
             onChange={onFieldChange("email")}
             disabled={disabled}
             className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-            placeholder={t("userManagement.detail.enterEmail")}
+            placeholder="Enter work email"
           />
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.password")}</span>
+          <span className="text-sm font-medium text-[var(--color-ink)]">Password</span>
           <input
             type="password"
             value={formValues.password}
             onChange={onFieldChange("password")}
             disabled={disabled}
             className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-            placeholder={t("userManagement.detail.enterPassword")}
+            placeholder="Enter account password"
           />
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.phoneLabel")}</span>
+          <span className="text-sm font-medium text-[var(--color-ink)]">Phone</span>
           <input
             value={formValues.phone}
             onChange={onFieldChange("phone")}
             disabled={disabled}
             className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-            placeholder={t("userManagement.detail.enterPhone")}
+            placeholder="Enter phone number"
           />
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.avatarUrl")}</span>
+          <span className="text-sm font-medium text-[var(--color-ink)]">Avatar URL</span>
           <input
             value={formValues.avatarUrl}
             onChange={onFieldChange("avatarUrl")}
             disabled={disabled}
             className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-            placeholder={t("userManagement.detail.enterAvatarUrl")}
+            placeholder="Enter avatar image URL"
           />
         </label>
 
         <label className="space-y-2 md:col-span-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.role")}</span>
+          <span className="text-sm font-medium text-[var(--color-ink)]">Role</span>
           <select
             value={formValues.role}
             onChange={onFieldChange("role")}
@@ -113,51 +111,51 @@ export function UserManagementFormFields({
     return (
       <>
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.firstName")}</span>
+          <span className="text-sm font-medium text-[var(--color-ink)]">First name</span>
           <input
             value={formValues.firstName}
             onChange={onFieldChange("firstName")}
             disabled={disabled}
             className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-            placeholder={t("userManagement.detail.enterFirstName")}
+            placeholder="Enter first name"
           />
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.lastName")}</span>
+          <span className="text-sm font-medium text-[var(--color-ink)]">Last name</span>
           <input
             value={formValues.lastName}
             onChange={onFieldChange("lastName")}
             disabled={disabled}
             className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-            placeholder={t("userManagement.detail.enterLastName")}
+            placeholder="Enter last name"
           />
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.email")}</span>
+          <span className="text-sm font-medium text-[var(--color-ink)]">Email</span>
           <input
             value={formValues.email}
             onChange={onFieldChange("email")}
             disabled={disabled}
             className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-            placeholder={t("userManagement.detail.enterEmail")}
+            placeholder="Enter work email"
           />
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.phoneLabel")}</span>
+          <span className="text-sm font-medium text-[var(--color-ink)]">Phone</span>
           <input
             value={formValues.phone}
             onChange={onFieldChange("phone")}
             disabled={disabled}
             className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-            placeholder={t("userManagement.detail.enterPhone")}
+            placeholder="Enter phone number"
           />
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.statusLabel")}</span>
+          <span className="text-sm font-medium text-[var(--color-ink)]">Status</span>
           <select
             value={formValues.status}
             onChange={onFieldChange("status")}
@@ -173,12 +171,12 @@ export function UserManagementFormFields({
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.role")}</span>
+          <span className="text-sm font-medium text-[var(--color-ink)]">Role</span>
           <input
             value={formValues.role}
             disabled
             className={`${INPUT_CLASSNAME} ${DISABLED_INPUT_CLASSNAME}`}
-            placeholder={t("userManagement.detail.role")}
+            placeholder="Role"
           />
         </label>
 
@@ -190,14 +188,14 @@ export function UserManagementFormFields({
     <>
       <label className="space-y-2">
         <span className="text-sm font-medium text-[var(--color-ink)]">
-          {t("userManagement.detail.fullName")}
+          Full name
         </span>
         <input
           value={formValues.name}
           onChange={onFieldChange("name")}
           disabled={disabled}
           className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-          placeholder={t("userManagement.detail.enterFullName")}
+          placeholder="Enter full name"
         />
       </label>
 
@@ -208,7 +206,7 @@ export function UserManagementFormFields({
           onChange={onFieldChange("email")}
           disabled={disabled}
           className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-          placeholder={t("userManagement.detail.enterEmail")}
+          placeholder="Enter work email"
         />
       </label>
 
@@ -219,40 +217,40 @@ export function UserManagementFormFields({
           onChange={onFieldChange("phone")}
           disabled={disabled}
           className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-          placeholder={t("userManagement.detail.enterPhone")}
+          placeholder="Enter phone number"
         />
       </label>
 
       {showAccountFields ? (
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.password")}</span>
+          <span className="text-sm font-medium text-[var(--color-ink)]">Password</span>
           <input
             type="password"
             value={formValues.password}
             onChange={onFieldChange("password")}
             disabled={disabled}
             className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-            placeholder={t("userManagement.detail.enterPassword")}
+            placeholder="Enter account password"
           />
         </label>
       ) : null}
 
       {showAccountFields ? (
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.avatarUrl")}</span>
+          <span className="text-sm font-medium text-[var(--color-ink)]">Avatar URL</span>
           <input
             value={formValues.avatarUrl}
             onChange={onFieldChange("avatarUrl")}
             disabled={disabled}
             className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-            placeholder={t("userManagement.detail.enterAvatarUrl")}
+            placeholder="Enter avatar image URL"
           />
         </label>
       ) : null}
 
       <label className="space-y-2">
         <span className="text-sm font-medium text-[var(--color-ink)]">
-          {t("userManagement.detail.joinedDate")}
+          Joined date
         </span>
         <input
           type="date"
@@ -264,7 +262,7 @@ export function UserManagementFormFields({
       </label>
 
       <label className="space-y-2">
-        <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.role")}</span>
+        <span className="text-sm font-medium text-[var(--color-ink)]">Role</span>
         <select
           value={formValues.role}
           onChange={onFieldChange("role")}
@@ -280,7 +278,7 @@ export function UserManagementFormFields({
       </label>
 
       <label className="space-y-2">
-        <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.branch")}</span>
+        <span className="text-sm font-medium text-[var(--color-ink)]">Branch</span>
         <select
           value={formValues.branch}
           onChange={onFieldChange("branch")}
@@ -313,7 +311,7 @@ export function UserManagementFormFields({
 
       <label className="space-y-2">
         <span className="text-sm font-medium text-[var(--color-ink)]">
-          {t("userManagement.detail.lastActive")}
+          Last active
         </span>
         <input
           value={formValues.lastActive}
@@ -325,14 +323,14 @@ export function UserManagementFormFields({
       </label>
 
       <label className="space-y-2 md:col-span-2">
-        <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.notes")}</span>
+        <span className="text-sm font-medium text-[var(--color-ink)]">Notes</span>
         <textarea
           value={formValues.notes}
           onChange={onFieldChange("notes")}
           rows={5}
           disabled={disabled}
           className={`w-full rounded-[22px] border border-[#f1d7c0] bg-[#fffdfb] px-4 py-3 text-sm text-[var(--color-ink)] outline-none transition focus:border-[#ef6bb4] ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-          placeholder={t("userManagement.detail.addInternalNotes")}
+          placeholder="Add internal notes for this user"
         />
       </label>
     </>

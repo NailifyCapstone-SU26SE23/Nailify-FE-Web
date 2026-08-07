@@ -1,7 +1,6 @@
 import { Check, Copy, FileImage, Plus, Sparkles, Trash2, Upload } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ROUTES } from "../../../../shared/constants/routes";
 import { createEmptyNailDesign } from "../services/mockNailDesigns";
@@ -140,8 +139,8 @@ function PillButton({ active = false, children, onClick }) {
       type="button"
       onClick={onClick}
       className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold transition ${active
-        ? "border-[#ea4f93] bg-[linear-gradient(180deg,#f25b99_0%,#d92f7b_100%)] text-white shadow-[0_10px_20px_rgba(236,72,153,0.18)]"
-        : "border-[#f4c6da] bg-white text-[#8c7085] hover:border-[#ef6bb4] hover:text-[#ea4f93]"
+          ? "border-[#ea4f93] bg-[linear-gradient(180deg,#f25b99_0%,#d92f7b_100%)] text-white shadow-[0_10px_20px_rgba(236,72,153,0.18)]"
+          : "border-[#f4c6da] bg-white text-[#8c7085] hover:border-[#ef6bb4] hover:text-[#ea4f93]"
         }`}
     >
       {children}
@@ -155,8 +154,8 @@ function ColorSwatchButton({ active = false, label, onClick, swatch }) {
       type="button"
       onClick={onClick}
       className={`flex min-w-[92px] flex-col items-center gap-2 rounded-[18px] border px-3 py-3 text-center transition ${active
-        ? "border-[#ea4f93] bg-[#fff0f7] shadow-[0_10px_20px_rgba(236,72,153,0.12)]"
-        : "border-[#f4c6da] bg-white hover:border-[#ef6bb4]"
+          ? "border-[#ea4f93] bg-[#fff0f7] shadow-[0_10px_20px_rgba(236,72,153,0.12)]"
+          : "border-[#f4c6da] bg-white hover:border-[#ef6bb4]"
         }`}
     >
       <span
@@ -204,7 +203,6 @@ function LivePreview({ variant, title }) {
 
 export function NailDesignManagementCreatePage() {
   const navigate = useNavigate();
-  const { t, language } = useLanguage();
   const [formValues, setFormValues] = useState(createEmptyNailDesign);
   const [variants, setVariants] = useState([createEmptyVariant(0)]);
   const [activeVariantIndex, setActiveVariantIndex] = useState(0);
@@ -266,7 +264,7 @@ export function NailDesignManagementCreatePage() {
         setSubmitError(
           loadError instanceof Error
             ? loadError.message
-            : (t("adminNailsDesignManagement.failedToLoadNailDesignReferenc")),
+            : "Failed to load nail design reference data.",
         );
       }
     };
@@ -342,10 +340,9 @@ export function NailDesignManagementCreatePage() {
 
     const normalizedName = String(formValues.name || "").trim();
     const normalizedDescription = String(formValues.description || "").trim();
-    const isVi = language === "vi";
 
     if (!normalizedName) {
-      setSubmitError(isVi ? "Tên thiết kế móng là bắt buộc." : "Nail design name is required.");
+      setSubmitError("Nail design name is required.");
       return;
     }
 
@@ -354,7 +351,7 @@ export function NailDesignManagementCreatePage() {
     );
 
     if (!selectedCategory?.categoryId) {
-      setSubmitError(isVi ? `Danh mục "${formValues.category}" không có sẵn từ danh mục của API.` : `Category "${formValues.category}" is not available from API categories.`);
+      setSubmitError(`Category "${formValues.category}" is not available from API categories.`);
       return;
     }
 
@@ -381,9 +378,7 @@ export function NailDesignManagementCreatePage() {
 
     if (unresolvedVariant) {
       setSubmitError(
-        isVi
-          ? `Biến thể "${unresolvedVariant.name || unresolvedVariant.code}" có dáng móng hoặc bề mặt không được hỗ trợ để tạo API.`
-          : `Variant "${unresolvedVariant.name || unresolvedVariant.code}" has unsupported shape or surface mapping for API create.`,
+        `Variant "${unresolvedVariant.name || unresolvedVariant.code}" has unsupported shape or surface mapping for API create.`,
       );
       return;
     }
@@ -416,14 +411,12 @@ export function NailDesignManagementCreatePage() {
 
       navigate(ROUTES.adminNailDesigns, {
         state: {
-          flashMessage: language === "vi"
-            ? `Tạo thành công ${normalizedName} với ${createdVariants.length} biến thể.`
-            : `Created ${normalizedName} with ${createdVariants.length} variants successfully.`,
+          flashMessage: `Created ${normalizedName} with ${createdVariants.length} variants successfully.`,
         },
       });
     } catch (createError) {
       setSubmitError(
-        createError instanceof Error ? createError.message : (t("adminNailsDesignManagement.failedToCreateNailDesign")),
+        createError instanceof Error ? createError.message : "Failed to create nail design.",
       );
     } finally {
       setIsSubmitting(false);
@@ -438,12 +431,9 @@ export function NailDesignManagementCreatePage() {
       <div className="rounded-[18px] border border-[#f8d8e6] bg-white px-5 py-4 shadow-[0_12px_28px_rgba(236,72,153,0.06)]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="text-[1.7rem] font-extrabold text-[#432744]">
-              {t("adminNailsDesignManagement.createNewNailDesign")}
-            </h2>
+            <h2 className="text-[1.7rem] font-extrabold text-[#432744]">Create New Nail Design</h2>
             <p className="mt-1 text-sm text-[#c694ad]">
-              {t("adminNailsDesignManagement.uiDaDuocRutGonTheoDungPayloadA")
-              }
+              UI da duoc rut gon theo dung payload API create design va create variant.
             </p>
           </div>
           <button
@@ -453,7 +443,7 @@ export function NailDesignManagementCreatePage() {
             className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.2)]"
           >
             <Sparkles size={13} className="mr-1.5 inline" />
-            {isSubmitting ? (t("adminNailsDesignManagement.publishing")) : (t("adminNailsDesignManagement.publishDesign"))}
+            {isSubmitting ? "Publishing..." : "Publish Design"}
           </button>
         </div>
       </div>
@@ -468,26 +458,26 @@ export function NailDesignManagementCreatePage() {
         <div className="space-y-4">
           <SectionCard
             step="1"
-            title={t("adminNailsDesignManagement.designInformation")}
+            title="Design Information"
             subtitle="Payload: Name, Description, CategoryIds"
             icon={<Sparkles size={18} />}
           >
             <div className="grid gap-4">
               <label className="space-y-2">
                 <span className="text-sm font-semibold text-[#5c4559]">
-                  {t("adminNailsDesignManagement.nailDesignName")} <span className="text-[#ea4f93]">*</span>
+                  Nail Design Name <span className="text-[#ea4f93]">*</span>
                 </span>
                 <input
                   value={formValues.name}
                   onChange={handleChange("name")}
-                  placeholder={t("adminNailsDesignManagement.egRubyBowRomance")}
+                  placeholder="e.g. Ruby Bow Romance"
                   className="h-12 w-full rounded-2xl border border-[#f4d4e2] bg-[#fffdfd] px-4 text-sm text-[#432744] outline-none transition focus:border-[#ef6bb4]"
                 />
               </label>
 
               <label className="space-y-2">
                 <span className="text-sm font-semibold text-[#5c4559]">
-                  {t("adminNailsDesignManagement.category")} <span className="text-[#ea4f93]">*</span>
+                  Category <span className="text-[#ea4f93]">*</span>
                 </span>
                 <select
                   value={formValues.category}
@@ -501,18 +491,18 @@ export function NailDesignManagementCreatePage() {
                       </option>
                     ))
                   ) : (
-                    <option value={formValues.category || ""}>{formValues.category || (t("adminNailsDesignManagement.loading"))}</option>
+                    <option value={formValues.category || ""}>{formValues.category || "Loading..."}</option>
                   )}
                 </select>
               </label>
 
               <label className="space-y-2">
-                <span className="text-sm font-semibold text-[#5c4559]">{t("adminNailsDesignManagement.description")}</span>
+                <span className="text-sm font-semibold text-[#5c4559]">Description</span>
                 <textarea
                   value={formValues.description}
                   onChange={handleChange("description")}
                   rows={4}
-                  placeholder={t("adminNailsDesignManagement.describeTheStyleAndKeyDetails")}
+                  placeholder="Describe the style and key details..."
                   className="w-full rounded-2xl border border-[#f4d4e2] bg-[#fffdfd] px-4 py-3 text-sm text-[#432744] outline-none transition focus:border-[#ef6bb4]"
                 />
               </label>
@@ -521,7 +511,7 @@ export function NailDesignManagementCreatePage() {
 
           <SectionCard
             step="2"
-            title={t("adminNailsDesignManagement.variants")}
+            title="Variants"
             subtitle="Payload: Name, NailShapeId, NailSurfaceId, NailDesignId, ColorJson, image"
             icon={<Copy size={18} />}
           >
@@ -532,7 +522,7 @@ export function NailDesignManagementCreatePage() {
                 className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.2)]"
               >
                 <Plus size={13} className="mr-1.5 inline" />
-                {t("adminNailsDesignManagement.addNewVariant")}
+                Add New Variant
               </button>
             </div>
 
@@ -541,8 +531,8 @@ export function NailDesignManagementCreatePage() {
                 <div
                   key={variant.code}
                   className={`rounded-[22px] border p-4 transition ${activeVariantIndex === index
-                    ? "border-[#ef6bb4] bg-[#fff0f6] shadow-[0_12px_24px_rgba(236,72,153,0.12)]"
-                    : "border-[#f7d7e5] bg-[#fff3f8]"
+                      ? "border-[#ef6bb4] bg-[#fff0f6] shadow-[0_12px_24px_rgba(236,72,153,0.12)]"
+                      : "border-[#f7d7e5] bg-[#fff3f8]"
                     }`}
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -554,14 +544,14 @@ export function NailDesignManagementCreatePage() {
                       <span className={`rounded-full px-3 py-1 text-[10px] font-bold ${variant.badgeTone}`}>
                         {variant.code}
                       </span>
-                      <h4 className="font-extrabold text-[#432744]">{variant.name || (language === "vi" ? `Biến thể ${index + 1}` : `Variant ${index + 1}`)}</h4>
+                      <h4 className="font-extrabold text-[#432744]">{variant.name || `Variant ${index + 1}`}</h4>
                     </button>
                     <div className="flex gap-2">
                       <button
                         type="button"
                         onClick={() => duplicateVariant(index)}
                         className="rounded-xl bg-white p-2 text-[#d58aa8]"
-                        title={t("adminNailsDesignManagement.duplicateVariant")}
+                        title="Duplicate variant"
                       >
                         <Copy size={14} />
                       </button>
@@ -569,7 +559,7 @@ export function NailDesignManagementCreatePage() {
                         type="button"
                         onClick={() => removeVariant(index)}
                         className="rounded-xl bg-white p-2 text-[#ea4f93]"
-                        title={t("adminNailsDesignManagement.removeVariant")}
+                        title="Remove variant"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -579,17 +569,17 @@ export function NailDesignManagementCreatePage() {
                   <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
                     <div className="space-y-4">
                       <label className="space-y-2">
-                        <span className="text-sm font-semibold text-[#5c4559]">{t("adminNailsDesignManagement.variantName")}</span>
+                        <span className="text-sm font-semibold text-[#5c4559]">Variant Name</span>
                         <input
                           value={variant.name}
                           onChange={(event) => updateVariant(index, "name", event.target.value)}
-                          placeholder={language === "vi" ? `Biến thể ${index + 1}` : `Variant ${index + 1}`}
+                          placeholder={`Variant ${index + 1}`}
                           className="h-11 w-full rounded-2xl border border-[#f4d4e2] bg-white px-4 text-sm text-[#432744] outline-none"
                         />
                       </label>
 
                       <div>
-                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#c694ad]">{t("adminNailsDesignManagement.color")}</p>
+                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#c694ad]">Color</p>
                         <div className="mt-3 flex flex-wrap gap-3">
                           {VARIANT_COLOR_OPTIONS.map((item) => (
                             <ColorSwatchButton
@@ -629,7 +619,7 @@ export function NailDesignManagementCreatePage() {
                       </div>
 
                       <div>
-                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#c694ad]">{t("adminNailsDesignManagement.shape")}</p>
+                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#c694ad]">Shape</p>
                         <div className="mt-3 flex flex-wrap gap-2">
                           {shapeOptions.map((item) => (
                             <PillButton
@@ -644,7 +634,7 @@ export function NailDesignManagementCreatePage() {
                       </div>
 
                       <div>
-                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#c694ad]">{t("adminNailsDesignManagement.surface")}</p>
+                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#c694ad]">Surface</p>
                         <div className="mt-3 flex flex-wrap gap-2">
                           {surfaceOptions.map((item) => (
                             <PillButton
@@ -664,7 +654,7 @@ export function NailDesignManagementCreatePage() {
 
                     <div className="space-y-4">
                       <div className="rounded-[18px] border border-[#f4d4e2] bg-white p-4">
-                        <p className="text-sm font-semibold text-[#5c4559]">{t("adminNailsDesignManagement.colorJsonPreview")}</p>
+                        <p className="text-sm font-semibold text-[#5c4559]">Color JSON Preview</p>
                         <textarea
                           value={buildVariantColorJson(variant.colorHex)}
                           readOnly
@@ -675,9 +665,9 @@ export function NailDesignManagementCreatePage() {
 
                       <div className="rounded-[18px] border border-dashed border-[#f4bfd6] bg-white px-4 py-6 text-center">
                         <FileImage size={20} className="mx-auto text-[#ea4f93]" />
-                        <p className="mt-4 font-bold text-[#432744]">{t("adminNailsDesignManagement.variantImage")}</p>
+                        <p className="mt-4 font-bold text-[#432744]">Variant Image</p>
                         <p className="mt-1 text-xs text-[#c694ad]">
-                          {t("adminNailsDesignManagement.optionalImageForThisVariant")}
+                          Optional image for this variant.
                         </p>
                         <button
                           type="button"
@@ -685,7 +675,7 @@ export function NailDesignManagementCreatePage() {
                           className="mt-4 rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
                         >
                           <Upload size={13} className="mr-1.5 inline" />
-                          {t("adminNailsDesignManagement.uploadVariantImage")}
+                          Upload Variant Image
                         </button>
                         <input
                           id={`variant-image-input-${index}`}
@@ -695,7 +685,7 @@ export function NailDesignManagementCreatePage() {
                           onChange={(event) => updateVariant(index, "imageFile", event.target.files?.[0] ?? null)}
                         />
                         <p className="mt-3 text-xs text-[#b2879f]">
-                          {variant.imageFile ? variant.imageFile.name : (t("adminNailsDesignManagement.noVariantImageSelected"))}
+                          {variant.imageFile ? variant.imageFile.name : "No variant image selected"}
                         </p>
                       </div>
                     </div>
@@ -707,8 +697,8 @@ export function NailDesignManagementCreatePage() {
 
           <SectionCard
             step="3"
-            title={t("adminNailsDesignManagement.designImages")}
-            subtitle={t("adminNailsDesignManagement.optionalImagesFilesForPostApin")}
+            title="Design Images"
+            subtitle="Optional `images` files for POST /api/NailDesigns"
             icon={<FileImage size={18} />}
           >
             <div className="rounded-[18px] border border-[#f7d7e5] bg-white px-4 py-4 text-center">
@@ -718,7 +708,7 @@ export function NailDesignManagementCreatePage() {
                 className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
               >
                 <Upload size={13} className="mr-1.5 inline" />
-                {t("adminNailsDesignManagement.chooseDesignImages")}
+                Choose Design Images
               </button>
               <input
                 id="design-images-input"
@@ -730,24 +720,24 @@ export function NailDesignManagementCreatePage() {
               />
               <p className="mt-3 text-xs text-[#b2879f]">
                 {designImageFiles.length
-                  ? `${designImageFiles.length} ${t("adminNailsDesignManagement.files")}: ${designImageFiles.map((file) => file.name).join(", ")}`
-                  : (t("adminNailsDesignManagement.noDesignImagesSelected"))}
+                  ? `${designImageFiles.length} file(s): ${designImageFiles.map((file) => file.name).join(", ")}`
+                  : "No design images selected"}
               </p>
             </div>
           </SectionCard>
 
           <SectionCard
             step="4"
-            title={t("adminNailsDesignManagement.finalReview")}
-            subtitle={t("adminNailsDesignManagement.quickCheckBeforePublish")}
+            title="Final Review"
+            subtitle="Quick check before publish"
             icon={<Check size={18} />}
           >
             <div className="grid gap-3 md:grid-cols-2">
               {[
-                [formValues.name || "--", t("adminNailsDesignManagement.designName")],
-                [formValues.category || "--", t("adminNailsDesignManagement.category")],
-                [String(variants.length), t("adminNailsDesignManagement.variants")],
-                [String(designImageFiles.length), t("adminNailsDesignManagement.designImages")],
+                [formValues.name || "--", "Design Name"],
+                [formValues.category || "--", "Category"],
+                [String(variants.length), "Variants"],
+                [String(designImageFiles.length), "Design Images"],
               ].map(([value, label]) => (
                 <div
                   key={label}
@@ -766,7 +756,7 @@ export function NailDesignManagementCreatePage() {
                 className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.2)]"
               >
                 <Sparkles size={13} className="mr-1.5 inline" />
-                {t("adminNailsDesignManagement.publishDesign")}
+                Publish Design
               </button>
             </div>
           </SectionCard>
@@ -776,7 +766,7 @@ export function NailDesignManagementCreatePage() {
           <section className="rounded-[24px] border border-[#f8d3e2] bg-[linear-gradient(180deg,#fff7fb_0%,#fff1f6_100%)] p-4 shadow-[0_14px_34px_rgba(236,72,153,0.06)]">
             <div className="flex items-center gap-2 text-sm font-extrabold text-[#432744]">
               <span className="inline-flex h-2 w-2 rounded-full bg-[#ff477f]" />
-              {t("adminNailsDesignManagement.livePreview")}
+              Live Preview
             </div>
             <div className="mt-4">
               <LivePreview variant={activeVariant} title={previewTitle} />
@@ -784,23 +774,23 @@ export function NailDesignManagementCreatePage() {
           </section>
 
           <section className="rounded-[24px] border border-[#f8d3e2] bg-[#fff7fb] p-4 shadow-[0_14px_34px_rgba(236,72,153,0.06)]">
-            <h3 className="font-extrabold text-[#432744]">{t("adminNailsDesignManagement.currentVariant")}</h3>
+            <h3 className="font-extrabold text-[#432744]">Current Variant</h3>
             <div className="mt-4 space-y-2 text-sm text-[#8c7085]">
               <div className="flex items-center justify-between gap-3">
-                <span>{t("adminNailsDesignManagement.name")}</span>
-                <span className="font-semibold text-[#432744]">{activeVariant.name || (t("adminNailsDesignManagement.notSet"))}</span>
+                <span>Name</span>
+                <span className="font-semibold text-[#432744]">{activeVariant.name || "Not set"}</span>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <span>{t("adminNailsDesignManagement.color")}</span>
-                <span className="font-semibold text-[#432744]">{activeVariant.colorHex || (t("adminNailsDesignManagement.notSet"))}</span>
+                <span>Color</span>
+                <span className="font-semibold text-[#432744]">{activeVariant.colorHex || "Not set"}</span>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <span>{t("adminNailsDesignManagement.shape")}</span>
-                <span className="font-semibold text-[#432744]">{formatOptionLabel(activeVariant.shape || (t("adminNailsDesignManagement.notSet")))}</span>
+                <span>Shape</span>
+                <span className="font-semibold text-[#432744]">{formatOptionLabel(activeVariant.shape || "Not set")}</span>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <span>{t("adminNailsDesignManagement.surface")}</span>
-                <span className="font-semibold text-[#432744]">{formatOptionLabel(activeVariant.finish || (t("adminNailsDesignManagement.notSet")))}</span>
+                <span>Surface</span>
+                <span className="font-semibold text-[#432744]">{formatOptionLabel(activeVariant.finish || "Not set")}</span>
               </div>
             </div>
           </section>
@@ -810,22 +800,22 @@ export function NailDesignManagementCreatePage() {
       <ActionConfirmModal
         open={showCreateConfirm}
         intent="success"
-        title={t("adminNailsDesignManagement.publishNailDesign")}
-        subtitle={t("adminNailsDesignManagement.thisWillCallPostApinaildesigns")}
-        description={t("adminNailsDesignManagement.confirmToCreateTheNailDesignFi")}
-        confirmText={t("adminNailsDesignManagement.publishDesign")}
-        cancelText={t("adminNailsDesignManagement.reviewAgain")}
+        title="Publish Nail Design"
+        subtitle="This will call POST /api/NailDesigns and POST /api/NailVariants."
+        description="Confirm to create the nail design first, then create its variants with the returned nailDesignId."
+        confirmText="Publish Design"
+        cancelText="Review Again"
         confirmIcon={Sparkles}
         width={520}
         loading={isSubmitting}
         onConfirm={handleCreate}
         onCancel={() => !isSubmitting && setShowCreateConfirm(false)}
-        highlights={[formValues.name || (t("adminNailsDesignManagement.newNailDesign")), formValues.category || (t("adminNailsDesignManagement.categoryPending")), language === "vi" ? `${variants.length} biến thể` : `${variants.length} variant(s)`]}
+        highlights={[formValues.name || "New nail design", formValues.category || "Category pending", `${variants.length} variant(s)`]}
         details={[
-          { label: t("adminNailsDesignManagement.designImages1"), value: designImageFiles.length ? (language === "vi" ? `${designImageFiles.length} ảnh` : String(designImageFiles.length)) : (t("adminNailsDesignManagement.noImage")) },
-          { label: t("adminNailsDesignManagement.activeVariant"), value: activeVariant?.name || (t("adminNailsDesignManagement.variant1")) },
+          { label: "Design images", value: designImageFiles.length ? String(designImageFiles.length) : "No image" },
+          { label: "Active variant", value: activeVariant?.name || "Variant 1" },
         ]}
-        warnings={[t("adminNailsDesignManagement.categoryShapeAndSurfaceValuesM")]}
+        warnings={["Category, shape, and surface values must resolve to backend IDs before the create APIs can succeed."]}
       />
     </section>
   );

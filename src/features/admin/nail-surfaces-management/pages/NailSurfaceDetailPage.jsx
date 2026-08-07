@@ -11,7 +11,6 @@ import {
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
-import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ROUTES } from "../../../../shared/constants/routes";
 import {
@@ -30,18 +29,17 @@ import {
   syncSurfaceForm,
 } from "../utils/surfaceShaderConfig";
 
-function validateForm(formValues, language) {
-  const isVi = language === "vi";
+function validateForm(formValues) {
   if (!String(formValues.name || "").trim()) {
-    return isVi ? "Tên bề mặt móng là bắt buộc." : "Nail surface name is required.";
+    return "Nail surface name is required.";
   }
 
   if (Number(formValues.price) < 0 || Number.isNaN(Number(formValues.price))) {
-    return isVi ? "Giá phải là một số hợp lệ." : "Price must be a valid number.";
+    return "Price must be a valid number.";
   }
 
   if (Number(formValues.duration) <= 0 || Number.isNaN(Number(formValues.duration))) {
-    return isVi ? "Thời lượng phải lớn hơn 0." : "Duration must be greater than 0.";
+    return "Duration must be greater than 0.";
   }
 
   return "";
@@ -50,7 +48,6 @@ function validateForm(formValues, language) {
 export function NailSurfaceDetailPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { t, language } = useLanguage();
   const { surfaceId } = useParams();
   const [surface, setSurface] = useState(null);
   const [draft, setDraft] = useState(null);
@@ -92,7 +89,7 @@ export function NailSurfaceDetailPage() {
           return;
         }
 
-        setError(loadError instanceof Error ? loadError.message : (t("adminNailSurfacesManagement.failedToLoadNailSurfaceDetail")));
+        setError(loadError instanceof Error ? loadError.message : "Failed to load nail surface detail.");
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -141,7 +138,7 @@ export function NailSurfaceDetailPage() {
   };
 
   const handleRequestSave = () => {
-    const validationError = validateForm(draft, language);
+    const validationError = validateForm(draft);
 
     if (validationError) {
       setError(validationError);
@@ -167,9 +164,9 @@ export function NailSurfaceDetailPage() {
       setSurface(updatedSurface);
       setDraft(syncSurfaceForm(parseShaderParamToControls(updatedSurface.shaderParam, updatedSurface)));
       setIsEditing(false);
-      toast.success(language === "vi" ? `Đã cập nhật ${updatedSurface.name} thành công.` : `${updatedSurface.name} updated successfully.`);
+      toast.success(`${updatedSurface.name} updated successfully.`);
     } catch (saveError) {
-      const message = saveError instanceof Error ? saveError.message : (t("adminNailSurfacesManagement.failedToUpdateNailSurface"));
+      const message = saveError instanceof Error ? saveError.message : "Failed to update nail surface.";
       setError(message);
       toast.error(message);
     } finally {
@@ -187,14 +184,14 @@ export function NailSurfaceDetailPage() {
 
     try {
       await deleteAdminNailSurface(surface.nailSurfaceId);
-      toast.success(language === "vi" ? `Đã xóa ${surface.name} thành công.` : `${surface.name} deleted successfully.`);
+      toast.success(`${surface.name} deleted successfully.`);
       navigate(ROUTES.adminNailSurfaces, {
         state: {
-          flashMessage: language === "vi" ? `Bề mặt ${surface.name} đã được xóa thành công.` : `${surface.name} has been deleted successfully.`,
+          flashMessage: `${surface.name} has been deleted successfully.`,
         },
       });
     } catch (deleteError) {
-      const message = deleteError instanceof Error ? deleteError.message : (t("adminNailSurfacesManagement.failedToDeleteNailSurface"));
+      const message = deleteError instanceof Error ? deleteError.message : "Failed to delete nail surface.";
       toast.error(message);
     } finally {
       setIsDeleting(false);
@@ -217,9 +214,9 @@ export function NailSurfaceDetailPage() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">{t("adminNailSurfacesManagement.nailSurfaceDetail")}</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">Nail Surface Detail</h1>
             <p className="text-xs font-medium text-slate-400">
-              {t("adminNailSurfacesManagement.reviewEditAndDeleteThisNailSur")}
+              Review, edit, and delete this nail surface from one page.
             </p>
           </div>
         </div>
@@ -232,7 +229,7 @@ export function NailSurfaceDetailPage() {
             className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Trash2 size={14} />
-            {t("adminNailSurfacesManagement.deleteSurface")}
+            Delete Surface
           </button>
           {isEditing ? (
             <>
@@ -242,7 +239,7 @@ export function NailSurfaceDetailPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
               >
                 <X size={14} />
-                {t("adminNailSurfacesManagement.cancel")}
+                Cancel
               </button>
               <button
                 type="button"
@@ -250,7 +247,7 @@ export function NailSurfaceDetailPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
               >
                 <Save size={14} />
-                {t("adminNailSurfacesManagement.saveChanges")}
+                Save Changes
               </button>
             </>
           ) : (
@@ -261,7 +258,7 @@ export function NailSurfaceDetailPage() {
               className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Pencil size={14} />
-              {t("adminNailSurfacesManagement.editSurface")}
+              Edit Surface
             </button>
           )}
         </div>
@@ -281,19 +278,19 @@ export function NailSurfaceDetailPage() {
 
       {isLoading ? (
         <div className="flex min-h-[320px] items-center justify-center rounded-[24px] bg-white/80 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
-          <div className="text-center text-sm text-slate-600">{t("adminNailSurfacesManagement.loadingNailSurfaceDetails")}</div>
+          <div className="text-center text-sm text-slate-600">Loading nail surface details...</div>
         </div>
       ) : (
         <div className="grid gap-4">
           <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
             <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
               <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
-              {t("adminNailSurfacesManagement.nailSurfaceInformation")}
+              Nail Surface Information
             </h2>
 
             <div className="grid gap-5 md:grid-cols-2">
               <label className="space-y-2.5">
-                <span className="text-[13px] font-semibold text-slate-600">{t("adminNailSurfacesManagement.surfaceName")}</span>
+                <span className="text-[13px] font-semibold text-slate-600">Surface Name</span>
                 <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                   <Layers3 size={14} className="shrink-0 text-rose-300" />
                   <input
@@ -307,7 +304,7 @@ export function NailSurfaceDetailPage() {
               </label>
 
               <label className="space-y-2.5">
-                <span className="text-[13px] font-semibold text-slate-600">{t("adminNailSurfacesManagement.price")}</span>
+                <span className="text-[13px] font-semibold text-slate-600">Price</span>
                 <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                   <Wallet size={14} className="shrink-0 text-rose-300" />
                   <input
@@ -323,7 +320,7 @@ export function NailSurfaceDetailPage() {
               </label>
 
               <label className="space-y-2.5">
-                <span className="text-[13px] font-semibold text-slate-600">{t("adminNailSurfacesManagement.duration")}</span>
+                <span className="text-[13px] font-semibold text-slate-600">Duration</span>
                 <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                   <Clock3 size={14} className="shrink-0 text-rose-300" />
                   <input
@@ -351,13 +348,13 @@ export function NailSurfaceDetailPage() {
           <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
             <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
               <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
-              {t("adminNailSurfacesManagement.surfacePreview")}
+              Surface Preview
             </h2>
 
             <div className="grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
               {draft?.painterMode ? (
-                <NailSurfacePainter
-                  brushType={draft.brushType || 'glossy'}
+                <NailSurfacePainter 
+                  brushType={draft.brushType || 'glossy'} 
                   brushSize={draft.brushSize || 20}
                   initialMaskDataUrl={draft.maskDataUrl}
                   onSave={(dataUrl) => handleFieldChange("maskDataUrl", dataUrl)}
@@ -375,12 +372,12 @@ export function NailSurfaceDetailPage() {
 
               <div className="rounded-[20px] border border-rose-100 bg-[#fff8fb] p-4">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
-                  {t("adminNailSurfacesManagement.surfaceSummary")}
+                  Surface Summary
                 </p>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   <div className="rounded-[16px] border border-rose-100 bg-white p-3">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
-                      {t("adminNailSurfacesManagement.surfaceType")}
+                      Surface Type
                     </p>
                     <p className="mt-2 text-sm font-bold capitalize text-[#432744]">
                       {draft?.surfacePreset || "--"}
@@ -388,7 +385,7 @@ export function NailSurfaceDetailPage() {
                   </div>
                   <div className="rounded-[16px] border border-rose-100 bg-white p-3">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
-                      {t("adminNailSurfacesManagement.price")}
+                      Price
                     </p>
                     <p className="mt-2 text-sm font-bold text-[#432744]">
                       {draft?.price ? formatNailSurfaceCurrency(draft.price) : "--"}
@@ -396,7 +393,7 @@ export function NailSurfaceDetailPage() {
                   </div>
                   <div className="rounded-[16px] border border-rose-100 bg-white p-3">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
-                      {t("adminNailSurfacesManagement.duration")}
+                      Duration
                     </p>
                     <p className="mt-2 text-sm font-bold text-[#432744]">
                       {draft?.duration ? formatNailSurfaceDuration(draft.duration) : "--"}
@@ -404,7 +401,7 @@ export function NailSurfaceDetailPage() {
                   </div>
                   <div className="rounded-[16px] border border-rose-100 bg-white p-3">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
-                      {t("adminNailSurfacesManagement.lightnessOffset")}
+                      Lightness Offset
                     </p>
                     <p className="mt-2 text-sm font-bold text-[#432744]">
                       {draft?.lightnessOffset || "0"}
@@ -412,7 +409,7 @@ export function NailSurfaceDetailPage() {
                   </div>
                   <div className="rounded-[16px] border border-rose-100 bg-white p-3">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
-                      {t("adminNailSurfacesManagement.saturationOffset")}
+                      Saturation Offset
                     </p>
                     <p className="mt-2 text-sm font-bold text-[#432744]">
                       {draft?.saturationOffset || "0"}
@@ -428,30 +425,30 @@ export function NailSurfaceDetailPage() {
       <ActionConfirmModal
         open={showSaveConfirm}
         intent="success"
-        title={t("adminNailSurfacesManagement.saveNailSurfaceChanges")}
-        subtitle={t("adminNailSurfacesManagement.thisWillUpdateTheNailSurfaceIn")}
-        description={t("adminNailSurfacesManagement.confirmToSaveTheLatestChangesT")}
-        confirmText={t("adminNailSurfacesManagement.saveChanges")}
-        cancelText={t("adminNailSurfacesManagement.reviewAgain")}
+        title="Save Nail Surface Changes"
+        subtitle="This will update the nail surface in backend."
+        description="Confirm to save the latest changes to this nail surface."
+        confirmText="Save Changes"
+        cancelText="Review Again"
         confirmIcon={Save}
         loading={isSaving}
         onConfirm={handleSave}
         onCancel={() => !isSaving && setShowSaveConfirm(false)}
-        highlights={[draft?.name || surface?.name || (t("adminNailSurfacesManagement.nailSurface"))]}
+        highlights={[draft?.name || surface?.name || "Nail surface"]}
         details={[
-          { label: t("adminNailSurfacesManagement.surfaceType"), value: draft?.surfacePreset || "--" },
-          { label: t("adminNailSurfacesManagement.price"), value: draft?.price ? formatNailSurfaceCurrency(draft.price) : "--" },
+          { label: "Surface Type", value: draft?.surfacePreset || "--" },
+          { label: "Price", value: draft?.price ? formatNailSurfaceCurrency(draft.price) : "--" },
         ]}
       />
 
       <ActionConfirmModal
         open={showDeleteConfirm}
         intent="danger"
-        title={t("adminNailSurfacesManagement.deleteNailSurface")}
-        subtitle={t("adminNailSurfacesManagement.thisWillPermanentlyRemoveTheNa")}
-        description={language === "vi" ? `Bạn chuẩn bị xóa ${surface?.name || "bề mặt móng này"}. Hành động này không thể hoàn tác.` : `You are about to delete ${surface?.name || "this nail surface"}. This action cannot be undone.`}
-        confirmText={t("adminNailSurfacesManagement.deleteSurface")}
-        cancelText={t("adminNailSurfacesManagement.keepSurface")}
+        title="Delete Nail Surface"
+        subtitle="This will permanently remove the nail surface from backend."
+        description={`You are about to delete ${surface?.name || "this nail surface"}. This action cannot be undone.`}
+        confirmText="Delete Surface"
+        cancelText="Keep Surface"
         confirmIcon={Trash2}
         loading={isDeleting}
         onConfirm={handleDelete}
@@ -461,11 +458,11 @@ export function NailSurfaceDetailPage() {
             ? {
               title: surface.name,
               meta: `${surface.shaderParam} • ${surface.priceLabel}`,
-              note: (t("adminNailSurfacesManagement.surfaceId")) + surface.nailSurfaceId,
+              note: `Surface ID: ${surface.nailSurfaceId}`,
             }
             : null
         }
-        warnings={[t("adminNailSurfacesManagement.thisActionCallsTheBackendDelet")]}
+        warnings={["This action calls the backend delete endpoint and removes the record permanently."]}
       />
     </section>
   );

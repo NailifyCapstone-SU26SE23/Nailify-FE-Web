@@ -1,4 +1,3 @@
-import { useLanguage } from '../../../../shared/hooks/useLanguage';
 import { Modal, Form, Input, Select, Button, message } from 'antd';
 import { useEffect, useState } from 'react';
 import { chairManagementService } from '../services/chairManagementService';
@@ -15,7 +14,6 @@ export default function ChairFormModal({
   salons = [],
   onSuccess
 }) {
-  const { t } = useLanguage();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
 
@@ -44,11 +42,11 @@ export default function ChairFormModal({
           chairName: values.chairName,
           status: values.status,
         });
-        toast.success(t('adminChairs.chairUpdatedSuccess'));
+        toast.success('Chair updated successfully');
       } else {
         // Create
         if (!values.salonId) {
-          toast.error(t('adminChairs.pleaseSelectSalon'));
+          toast.error('Please select a salon');
           return;
         }
         await chairManagementService.createChair({
@@ -56,14 +54,14 @@ export default function ChairFormModal({
           chairName: values.chairName,
           status: values.status,
         });
-        toast.success(t('adminChairs.chairCreatedSuccess'));
+        toast.success('Chair created successfully');
       }
 
       onSuccess();
       onClose();
     } catch (error) {
       console.error(error);
-      toast.error(error.message || t('adminChairs.failedToSaveChair'));
+      toast.error(error.message || 'Failed to save chair');
     } finally {
       setLoading(false);
     }
@@ -73,17 +71,17 @@ export default function ChairFormModal({
     <Modal
       title={
         <div className="text-lg font-bold tracking-tight text-slate-900">
-          {chair ? t("adminChairs.editChair") : t("adminChairs.addNewChair")}
+          {chair ? "Edit Chair" : "Add New Chair"}
         </div>
       }
       open={open}
       onCancel={onClose}
       footer={[
         <Button key="cancel" onClick={onClose} disabled={loading} className="rounded-xl border-slate-200 font-semibold">
-          {t("adminChairs.cancel")}
+          Cancel
         </Button>,
         <Button key="submit" type="primary" loading={loading} onClick={handleSubmit} className="rounded-xl bg-[#ea4f93] font-semibold hover:bg-[#d94685] border-none shadow-md shadow-[#ea4f93]/30">
-          {chair ? t("adminChairs.updateChair") : t("adminChairs.createChair")}
+          {chair ? "Update Chair" : "Create Chair"}
         </Button>
       ]}
       className="[&_.ant-modal-content]:rounded-2xl [&_.ant-modal-content]:p-6"
@@ -91,9 +89,9 @@ export default function ChairFormModal({
     >
       <Form form={form} layout="vertical" className="mt-6">
         <Form.Item
-          label={<span className="text-[13px] font-bold text-slate-700 uppercase tracking-wide">{t("adminChairs.chairName")}</span>}
+          label={<span className="text-[13px] font-bold text-slate-700 uppercase tracking-wide">Chair Name</span>}
           name="chairName"
-          rules={[{ required: true, message: t('adminChairs.pleaseInputName') }]}
+          rules={[{ required: true, message: 'Please input the chair name!' }]}
         >
           <Input
             placeholder="e.g. 1A, 2B, 3C,..."
@@ -103,14 +101,14 @@ export default function ChairFormModal({
 
         {!chair && (
           <Form.Item
-            label={<span className="text-[13px] font-bold text-slate-700 uppercase tracking-wide">{t("adminChairs.salon")}</span>}
+            label={<span className="text-[13px] font-bold text-slate-700 uppercase tracking-wide">Salon</span>}
             name="salonId"
-            rules={[{ required: true, message: t('adminChairs.pleaseSelectSalon') }]}
+            rules={[{ required: true, message: 'Please select a salon!' }]}
           >
             <Select
               className="[&_.ant-select-selector]:rounded-xl [&_.ant-select-selector]:border-slate-200 hover:[&_.ant-select-selector]:border-[#ea4f93] focus:[&_.ant-select-selector]:border-[#ea4f93]"
               size="large"
-              placeholder={t("adminChairs.selectSalon")}
+              placeholder="Select a salon"
             >
               {salons.map(s => (
                 <Option key={s.id || s.salonId} value={s.id || s.salonId}>{s.name}</Option>
@@ -120,9 +118,9 @@ export default function ChairFormModal({
         )}
 
         <Form.Item
-          label={<span className="text-[13px] font-bold text-slate-700 uppercase tracking-wide">{t("adminChairs.status")}</span>}
+          label={<span className="text-[13px] font-bold text-slate-700 uppercase tracking-wide">Status</span>}
           name="status"
-          rules={[{ required: true, message: t('adminChairs.pleaseSelectStatus') }]}
+          rules={[{ required: true, message: 'Please select a status!' }]}
         >
           <Select
             className="[&_.ant-select-selector]:rounded-xl [&_.ant-select-selector]:border-slate-200 hover:[&_.ant-select-selector]:border-[#ea4f93] focus:[&_.ant-select-selector]:border-[#ea4f93]"
@@ -131,19 +129,19 @@ export default function ChairFormModal({
             <Option value="Active">
               <span className="flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
-                <span className="font-semibold text-emerald-700">{t("adminChairs.active")}</span>
+                <span className="font-semibold text-emerald-700">Active</span>
               </span>
             </Option>
             <Option value="Inactive">
               <span className="flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-slate-400"></span>
-                <span className="font-semibold text-slate-600">{t("adminChairs.inactive")}</span>
+                <span className="font-semibold text-slate-600">Inactive</span>
               </span>
             </Option>
             <Option value="Maintenance">
               <span className="flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-amber-500"></span>
-                <span className="font-semibold text-amber-700">{t("adminChairs.maintenance")}</span>
+                <span className="font-semibold text-amber-700">Maintenance</span>
               </span>
             </Option>
           </Select>

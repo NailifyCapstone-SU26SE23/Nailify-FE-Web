@@ -15,7 +15,6 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
-import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ROUTES } from "../../../../shared/constants/routes";
 import { fetchAdminCategories } from "../services/nailDesignManagementService";
 
@@ -46,7 +45,6 @@ function Pill({ children, tone = "bg-[#fff1f7] text-[#ea4f93]" }) {
 
 export function NailDesignManagementCategoryPage() {
   const navigate = useNavigate();
-  const { t, language } = useLanguage();
   const [categories, setCategories] = useState([]);
   const [draft, setDraft] = useState(emptyDraft);
   const [editingId, setEditingId] = useState(null);
@@ -103,7 +101,7 @@ export function NailDesignManagementCategoryPage() {
         }
 
         setCategories([]);
-        setError(loadError instanceof Error ? loadError.message : (t("adminNailsDesignManagement.failedToLoadCategories")));
+        setError(loadError instanceof Error ? loadError.message : "Failed to load categories.");
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -170,14 +168,14 @@ export function NailDesignManagementCategoryPage() {
     const normalizedName = draft.name.trim();
 
     if (!normalizedName) {
-      setFlashMessage(t("adminNailsDesignManagement.categoryNameIsRequired"));
+      setFlashMessage("Category name is required.");
       return;
     }
 
     setFlashMessage(
       editingId
-        ? (language === "vi" ? `${normalizedName} đã sẵn sàng, nhưng API cập nhật danh mục chưa được kết nối.` : `${normalizedName} is ready, but category update API is not connected yet.`)
-        : (language === "vi" ? `${normalizedName} đã sẵn sàng, nhưng API tạo danh mục chưa được kết nối.` : `${normalizedName} is ready, but category create API is not connected yet.`),
+        ? `${normalizedName} is ready, but category update API is not connected yet.`
+        : `${normalizedName} is ready, but category create API is not connected yet.`,
     );
 
     resetDraft();
@@ -199,21 +197,17 @@ export function NailDesignManagementCategoryPage() {
 
   const handleDelete = () => {
     setPendingDeleteId(null);
-    setFlashMessage(t("adminNailsDesignManagement.categoryDeleteApiIsNotConnecte"));
+    setFlashMessage("Category delete API is not connected yet.");
   };
 
   const handleToggleStatus = (category) => {
-    setFlashMessage(
-      language === "vi"
-        ? `Thay đổi trạng thái cho ${category.name} chưa được kết nối với API.`
-        : `Status change for ${category.name} is not connected to API yet.`
-    );
+    setFlashMessage(`Status change for ${category.name} is not connected to API yet.`);
   };
 
   const pendingDeleteCategory = categories.find((item) => item.id === pendingDeleteId) ?? null;
-  const previewName = draft.name.trim() || (t("adminNailsDesignManagement.newCategory"));
+  const previewName = draft.name.trim() || "New category";
   const previewDescription =
-    draft.description.trim() || (t("adminNailsDesignManagement.aShortCatalogDescriptionWillAp"));
+    draft.description.trim() || "A short catalog description will appear here for admins.";
   const previewInitials = buildCategoryInitials(previewName);
   const descriptionLength = draft.description.trim().length;
 
@@ -230,10 +224,10 @@ export function NailDesignManagementCategoryPage() {
             </Link>
             <div>
               <h1 className="text-[26px] font-bold tracking-tight text-[#432744]">
-                {t("adminNailsDesignManagement.nailDesignCategories")}
+                Nail Design Categories
               </h1>
               <p className="mt-1 text-[12px] text-[#c694ad]">
-                {t("adminNailsDesignManagement.categoryListIsLoadedFromApiGet")}
+                Category list is loaded from API `GET /Categories`.
               </p>
             </div>
           </div>
@@ -243,13 +237,13 @@ export function NailDesignManagementCategoryPage() {
               onClick={() => navigate(ROUTES.adminNailDesigns)}
               className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
             >
-              {t("adminNailsDesignManagement.backToDesigns")}
+              Back To Designs
             </button>
             <Link
               to={ROUTES.adminNailDesignsCreate}
               className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
             >
-              {t("adminNailsDesignManagement.addDesign")}
+              Add Design
             </Link>
           </div>
         </div>
@@ -261,36 +255,28 @@ export function NailDesignManagementCategoryPage() {
             <Tag size={18} />
           </div>
           <p className="text-[28px] font-bold text-[#432744]">{summary.total}</p>
-          <p className="mt-1 text-sm font-semibold text-[#8a7082]">
-            {t("adminNailsDesignManagement.totalCategories")}
-          </p>
+          <p className="mt-1 text-sm font-semibold text-[#8a7082]">Total Categories</p>
         </div>
         <div className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
           <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-[#edfdf4] text-[#16975f]">
             <Sparkles size={18} />
           </div>
           <p className="text-[28px] font-bold text-[#432744]">{summary.active}</p>
-          <p className="mt-1 text-sm font-semibold text-[#8a7082]">
-            {t("adminNailsDesignManagement.activeOnCurrentPage")}
-          </p>
+          <p className="mt-1 text-sm font-semibold text-[#8a7082]">Active On Current Page</p>
         </div>
         <div className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
           <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-[#fff4df] text-[#d9871c]">
             <FolderPlus size={18} />
           </div>
           <p className="text-[28px] font-bold text-[#432744]">{summary.draftCount}</p>
-          <p className="mt-1 text-sm font-semibold text-[#8a7082]">
-            {t("adminNailsDesignManagement.nonactiveOnCurrentPage")}
-          </p>
+          <p className="mt-1 text-sm font-semibold text-[#8a7082]">Non-Active On Current Page</p>
         </div>
         <div className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
           <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-[#eef4ff] text-[#3f68c9]">
             <Save size={18} />
           </div>
           <p className="text-[28px] font-bold text-[#432744]">{summary.totalTypes}</p>
-          <p className="mt-1 text-sm font-semibold text-[#8a7082]">
-            {t("adminNailsDesignManagement.categoryTypesOnPage")}
-          </p>
+          <p className="mt-1 text-sm font-semibold text-[#8a7082]">Category Types On Page</p>
         </div>
       </section>
 
@@ -300,17 +286,13 @@ export function NailDesignManagementCategoryPage() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <span className="inline-flex rounded-full bg-white/90 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#ea4f93] shadow-[0_8px_20px_rgba(236,72,153,0.08)]">
-                  {t("adminNailsDesignManagement.catalogEditor")}
+                  Catalog Editor
                 </span>
                 <h2 className="mt-3 text-lg font-bold text-[#432744]">
-                  {editingId
-                    ? (t("adminNailsDesignManagement.editCategory"))
-                    : (t("adminNailsDesignManagement.addCategory"))
-                  }
+                  {editingId ? "Edit Category" : "Add Category"}
                 </h2>
                 <p className="mt-1 text-[12px] leading-5 text-[#a37792]">
-                  {t("adminNailsDesignManagement.formUiIsAvailableButCreateupda")
-                  }
+                  Form UI is available, but create/update/delete category APIs are not connected yet.
                 </p>
               </div>
               {editingId ? (
@@ -336,7 +318,7 @@ export function NailDesignManagementCategoryPage() {
                       {previewName}
                     </p>
                     <Pill tone="bg-[#fff1f7] text-[#ea4f93]">
-                      {editingId ? (t("adminNailsDesignManagement.editing")) : (t("adminNailsDesignManagement.newDraft"))}
+                      {editingId ? "Editing" : "New Draft"}
                     </Pill>
                   </div>
                   <p className="mt-2 text-sm leading-6 text-[#8a7082]">{previewDescription}</p>
@@ -345,30 +327,25 @@ export function NailDesignManagementCategoryPage() {
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
                 <div className="rounded-[16px] border border-[#f9dfeb] bg-[#fff9fc] px-3 py-3">
                   <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#c694ad]">
-                    {t("adminNailsDesignManagement.status")}
+                    Status
                   </p>
                   <p className="mt-1 text-sm font-bold text-[#432744]">
-                    {editingId
-                      ? (t("adminNailsDesignManagement.readyToUpdate"))
-                      : (t("adminNailsDesignManagement.readyToCreate"))
-                    }
+                    {editingId ? "Ready to update" : "Ready to create"}
                   </p>
                 </div>
                 <div className="rounded-[16px] border border-[#f9dfeb] bg-[#fff9fc] px-3 py-3">
                   <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#c694ad]">
-                    {t("adminNailsDesignManagement.nameLength")}
+                    Name length
                   </p>
                   <p className="mt-1 text-sm font-bold text-[#432744]">
-                    {draft.name.trim().length || 0} {t("adminNailsDesignManagement.chars")}
+                    {draft.name.trim().length || 0} chars
                   </p>
                 </div>
                 <div className="rounded-[16px] border border-[#f9dfeb] bg-[#fff9fc] px-3 py-3">
                   <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#c694ad]">
-                    {t("adminNailsDesignManagement.description")}
+                    Description
                   </p>
-                  <p className="mt-1 text-sm font-bold text-[#432744]">
-                    {descriptionLength} {t("adminNailsDesignManagement.chars")}
-                  </p>
+                  <p className="mt-1 text-sm font-bold text-[#432744]">{descriptionLength} chars</p>
                 </div>
               </div>
             </div>
@@ -377,34 +354,30 @@ export function NailDesignManagementCategoryPage() {
           <form className="space-y-5 p-5" onSubmit={handleSubmit}>
             <label className="block">
               <div className="mb-2 flex items-center justify-between gap-2">
-                <span className="block text-[12px] font-bold text-[#8a7082]">
-                  {t("adminNailsDesignManagement.categoryName")}
-                </span>
+                <span className="block text-[12px] font-bold text-[#8a7082]">Category Name</span>
                 <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#c694ad]">
-                  {t("adminNailsDesignManagement.required")}
+                  Required
                 </span>
               </div>
               <input
                 value={draft.name}
                 onChange={(event) => handleDraftChange("name", event.target.value)}
-                placeholder={t("adminNailsDesignManagement.exGlitterLuxe")}
+                placeholder="Ex: Glitter Luxe"
                 className="h-12 w-full rounded-2xl border border-[#f5d7e4] bg-[#fff9fc] px-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4] focus:bg-white"
               />
             </label>
 
             <label className="block">
               <div className="mb-2 flex items-center justify-between gap-2">
-                <span className="block text-[12px] font-bold text-[#8a7082]">
-                  {t("adminNailsDesignManagement.description")}
-                </span>
+                <span className="block text-[12px] font-bold text-[#8a7082]">Description</span>
                 <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#c694ad]">
-                  {t("adminNailsDesignManagement.optional")}
+                  Optional
                 </span>
               </div>
               <textarea
                 value={draft.description}
                 onChange={(event) => handleDraftChange("description", event.target.value)}
-                placeholder={t("adminNailsDesignManagement.shortDescriptionForAdminsAndMe")}
+                placeholder="Short description for admins and merchandising."
                 rows={5}
                 className="w-full rounded-2xl border border-[#f5d7e4] bg-[#fff9fc] px-4 py-3 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4] focus:bg-white"
               />
@@ -412,11 +385,11 @@ export function NailDesignManagementCategoryPage() {
 
             <div className="rounded-[18px] border border-dashed border-[#f3c9dd] bg-[#fff8fb] px-4 py-3">
               <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#c694ad]">
-                {t("adminNailsDesignManagement.writingTip")}
+                Writing tip
               </p>
               <p className="mt-1 text-sm leading-6 text-[#8a7082]">
-                {t("adminNailsDesignManagement.useShortNamesWithAStrongVisual")
-                }
+                Use short names with a strong visual theme, then describe the collection mood or
+                catalog grouping.
               </p>
             </div>
 
@@ -426,10 +399,7 @@ export function NailDesignManagementCategoryPage() {
                 className="inline-flex items-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2.5 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
               >
                 <Save size={13} className="mr-1.5" />
-                {editingId
-                  ? (t("adminNailsDesignManagement.saveCategory"))
-                  : (t("adminNailsDesignManagement.createCategory"))
-                }
+                {editingId ? "Save Category" : "Create Category"}
               </button>
               <button
                 type="button"
@@ -437,7 +407,7 @@ export function NailDesignManagementCategoryPage() {
                 className="inline-flex items-center rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
               >
                 <X size={13} className="mr-1.5" />
-                {t("adminNailsDesignManagement.reset")}
+                Reset
               </button>
             </div>
           </form>
@@ -446,15 +416,12 @@ export function NailDesignManagementCategoryPage() {
         <section className="rounded-[18px] border border-[#f8dce8] bg-white p-5 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-sm font-extrabold text-[#432744]">
-                {t("adminNailsDesignManagement.categoryList")}
-              </h2>
+              <h2 className="text-sm font-extrabold text-[#432744]">Category List</h2>
               <p className="mt-1 text-[11px] text-[#c694ad]">
-                {t("adminNailsDesignManagement.loadedFromApiWithPaginationAnd")
-                }
+                Loaded from API with pagination and name filter.
               </p>
             </div>
-            <Pill>{metaData.totalItems} {t("adminNailsDesignManagement.items")}</Pill>
+            <Pill>{metaData.totalItems} items</Pill>
           </div>
 
           {flashMessage ? (
@@ -477,7 +444,7 @@ export function NailDesignManagementCategoryPage() {
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder={t("adminNailsDesignManagement.searchCategoriesByName")}
+              placeholder="Search categories by name..."
               className="h-10 w-full rounded-full border border-[#f5d7e4] bg-[#fff9fc] pl-10 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
             />
           </label>
@@ -487,7 +454,7 @@ export function NailDesignManagementCategoryPage() {
               <div className="rounded-[18px] border border-[#f8dce8] bg-[#fffafb] px-5 py-10">
                 <div className="flex items-center justify-center gap-3 text-sm text-[#b38a9f]">
                   <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
-                  {t("adminNailsDesignManagement.loadingCategories")}
+                  Loading categories...
                 </div>
               </div>
             ) : categories.length ? (
@@ -507,10 +474,7 @@ export function NailDesignManagementCategoryPage() {
                               : "bg-[#fff7e7] text-[#cc8a16]"
                           }
                         >
-                          {category.status === "Active"
-                            ? (t("adminNailsDesignManagement.active"))
-                            : (t("adminNailsDesignManagement.inactive"))
-                          }
+                          {category.status}
                         </Pill>
                         <Pill tone="bg-[#eef4ff] text-[#3f68c9]">{category.categoryTypeName}</Pill>
                       </div>
@@ -528,7 +492,7 @@ export function NailDesignManagementCategoryPage() {
                         onClick={() => handleToggleStatus(category)}
                         className="rounded-full border border-[#f4c6da] bg-white px-3 py-1.5 text-[10px] font-bold text-[#8c7085]"
                       >
-                        {t("adminNailsDesignManagement.toggleStatus")}
+                        Toggle Status
                       </button>
                       <button
                         type="button"
@@ -536,7 +500,7 @@ export function NailDesignManagementCategoryPage() {
                         className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93]"
                       >
                         <PencilLine size={12} className="mr-1 inline" />
-                        {t("adminNailsDesignManagement.edit")}
+                        Edit
                       </button>
                       <button
                         type="button"
@@ -544,7 +508,7 @@ export function NailDesignManagementCategoryPage() {
                         className="rounded-full border border-[#f9d0dc] bg-white px-3 py-1.5 text-[10px] font-bold text-[#d14c84]"
                       >
                         <Trash2 size={12} className="mr-1 inline" />
-                        {t("adminNailsDesignManagement.delete")}
+                        Delete
                       </button>
                     </div>
                   </div>
@@ -552,17 +516,14 @@ export function NailDesignManagementCategoryPage() {
               ))
             ) : (
               <div className="rounded-[18px] border border-[#f8dce8] bg-[#fffafb] px-5 py-10 text-center text-sm text-[#8a7082]">
-                {t("adminNailsDesignManagement.noCategoriesFound")}
+                No categories found.
               </div>
             )}
           </div>
 
           <div className="mt-4 flex flex-col gap-3 rounded-[16px] border border-[#f8dce8] bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-[11px] text-[#c694ad]">
-              {language === "vi"
-                ? `Hiển thị ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} trong số ${metaData.totalItems} danh mục`
-                : `Showing ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} of ${metaData.totalItems} categories`
-              }
+              Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} categories
             </p>
             <div className="flex items-center gap-1">
               <button
@@ -619,37 +580,37 @@ export function NailDesignManagementCategoryPage() {
       <ActionConfirmModal
         open={showSubmitConfirm}
         intent="success"
-        title={editingId ? (t("adminNailsDesignManagement.saveCategoryChanges")) : (t("adminNailsDesignManagement.createCategory"))}
-        subtitle={t("adminNailsDesignManagement.categoryCreateupdateApiIsNotCo")}
+        title={editingId ? "Save Category Changes" : "Create Category"}
+        subtitle="Category create/update API is not connected yet."
         description={
           editingId
-            ? (t("adminNailsDesignManagement.confirmToStageTheLatestCategor"))
-            : (t("adminNailsDesignManagement.confirmToStageThisCategoryDraf"))
+            ? "Confirm to stage the latest category label and description changes."
+            : "Confirm to stage this category draft."
         }
-        confirmText={editingId ? (t("adminNailsDesignManagement.saveCategory")) : (t("adminNailsDesignManagement.createCategory"))}
-        cancelText={t("adminNailsDesignManagement.reviewAgain")}
+        confirmText={editingId ? "Save Category" : "Create Category"}
+        cancelText="Review Again"
         confirmIcon={Save}
         onConfirm={() => {
           setShowSubmitConfirm(false);
           applyDraftChanges();
         }}
         onCancel={() => setShowSubmitConfirm(false)}
-        highlights={[draft.name || (t("adminNailsDesignManagement.categoryNamePending")), editingId ? (t("adminNailsDesignManagement.editMode")) : (t("adminNailsDesignManagement.createMode"))]}
+        highlights={[draft.name || "Category name pending", editingId ? "Edit mode" : "Create mode"]}
         details={[
-          { label: t("adminNailsDesignManagement.description"), value: draft.description || (t("adminNailsDesignManagement.noDescriptionEntered")) },
-          { label: t("adminNailsDesignManagement.catalogScope"), value: t("adminNailsDesignManagement.nailDesignCategories1") },
+          { label: "Description", value: draft.description || "No description entered" },
+          { label: "Catalog Scope", value: "Nail design categories" },
         ]}
-        warnings={[t("adminNailsDesignManagement.theListOnTheRightIsLoadedFromA")]}
+        warnings={["The list on the right is loaded from API only. This form does not persist to backend yet."]}
       />
 
       <ActionConfirmModal
         open={Boolean(pendingDeleteCategory)}
         intent="danger"
-        title={t("adminNailsDesignManagement.deleteCategory")}
-        subtitle={t("adminNailsDesignManagement.categoryDeleteApiIsNotConnecte")}
-        description={language === "vi" ? `Bạn sắp xóa danh mục ${pendingDeleteCategory?.name ?? ""}.` : `You are about to delete ${pendingDeleteCategory?.name ?? "this category"}.`}
-        confirmText={t("adminNailsDesignManagement.deleteCategory")}
-        cancelText={t("adminNailsDesignManagement.keepCategory")}
+        title="Delete Category"
+        subtitle="Category delete API is not connected yet."
+        description={`You are about to delete ${pendingDeleteCategory?.name ?? "this category"}.`}
+        confirmText="Delete Category"
+        cancelText="Keep Category"
         confirmIcon={Trash2}
         onConfirm={handleDelete}
         onCancel={() => setPendingDeleteId(null)}
@@ -657,12 +618,12 @@ export function NailDesignManagementCategoryPage() {
           pendingDeleteCategory
             ? {
               title: pendingDeleteCategory.name,
-              meta: `${pendingDeleteCategory.status === "Active" ? (t("adminNailsDesignManagement.active")) : (t("adminNailsDesignManagement.inactive"))} • ${pendingDeleteCategory.categoryTypeName}`,
+              meta: `${pendingDeleteCategory.status} • ${pendingDeleteCategory.categoryTypeName}`,
               // note: `Category ID #${pendingDeleteCategory.categoryId}`,
             }
             : null
         }
-        warnings={[t("adminNailsDesignManagement.deleteIsNotConnectedToBackendS")]}
+        warnings={["Delete is not connected to backend, so the API list will not change."]}
       />
     </section>
   );
