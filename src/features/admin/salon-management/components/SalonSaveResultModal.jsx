@@ -52,16 +52,14 @@ export function SalonSaveResultModal({
         },
       }}
     >
-      <style>{`
-        .nailify-display { font-family: "Cormorant Garamond", "Times New Roman", serif; }
-      `}</style>
+
 
       <div>
         {/* Header Strip */}
         <div
           className={`px-6 py-5 text-white ${isSuccess
-              ? "bg-[linear-gradient(135deg,#10b981_0%,#059669_100%)]"
-              : "bg-[linear-gradient(135deg,#f43f5e_0%,#e11d48_100%)]"
+            ? "bg-[linear-gradient(135deg,#10b981_0%,#059669_100%)]"
+            : "bg-[linear-gradient(135deg,#f43f5e_0%,#e11d48_100%)]"
             }`}
         >
           <div className="flex items-start justify-between gap-4">
@@ -73,7 +71,7 @@ export function SalonSaveResultModal({
                 <span className="inline-flex rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] bg-white/20 text-white">
                   {isSuccess ? "Success" : "Error"}
                 </span>
-                <h3 className="nailify-display mt-3 text-2xl font-semibold">
+                <h3 className=" mt-3 text-2xl font-semibold">
                   {isSuccess ? successTitle : failureTitle}
                 </h3>
               </div>
@@ -95,8 +93,8 @@ export function SalonSaveResultModal({
         <div className="space-y-4 px-6 py-6 text-center">
           <div
             className={`rounded-[22px] border p-5 ${isSuccess
-                ? "border-emerald-100 bg-[#f4fffb] text-emerald-900"
-                : "border-rose-100 bg-[#fff7fa] text-rose-900"
+              ? "border-emerald-100 bg-[#f4fffb] text-emerald-900"
+              : "border-rose-100 bg-[#fff7fa] text-rose-900"
               }`}
           >
             <p className="text-sm font-bold">

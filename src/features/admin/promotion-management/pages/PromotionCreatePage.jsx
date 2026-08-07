@@ -1,3 +1,4 @@
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ArrowLeft, BadgePercent, CalendarRange, ImagePlus, Save, Tag, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
@@ -41,49 +42,49 @@ function toApiDateTime(value) {
   return parsed.toISOString();
 }
 
-function validateForm(formValues) {
+function validateForm(formValues, t) {
   if (!String(formValues.name || "").trim()) {
-    return "Promotion name is required.";
+    return t("promotionDetail.validations.nameRequired");
   }
 
   if (!String(formValues.description || "").trim()) {
-    return "Promotion description is required.";
+    return t("promotionDetail.validations.descRequired");
   }
 
   if (!String(formValues.type || "").trim()) {
-    return "Promotion type is required.";
+    return t("promotionDetail.validations.typeRequired");
   }
 
   if (!String(formValues.scope || "").trim()) {
-    return "Promotion scope is required.";
+    return t("promotionDetail.validations.scopeRequired");
   }
 
   if (!String(formValues.discountType || "").trim()) {
-    return "Discount type is required.";
+    return t("promotionDetail.validations.discountTypeRequired");
   }
 
   if (!(Number(formValues.discountValue) > 0)) {
-    return "Discount value must be greater than 0.";
+    return t("promotionDetail.validations.discountValueGreaterZero");
   }
 
   if (!formValues.startDate || !formValues.endDate) {
-    return "Start date and end date are required.";
+    return t("promotionDetail.validations.dateRequired");
   }
 
   if (new Date(formValues.startDate).getTime() >= new Date(formValues.endDate).getTime()) {
-    return "End date must be later than start date.";
+    return t("promotionDetail.validations.endDateLater");
   }
 
   if (formValues.scope === "Category" && !Number(formValues.categoryId)) {
-    return "Category is required for category-scoped promotions.";
+    return t("promotionDetail.validations.categoryRequired");
   }
 
   if (formValues.scope === "CategoryType" && !Number(formValues.categoryTypeId)) {
-    return "Category type is required for category-type-scoped promotions.";
+    return t("promotionDetail.validations.categoryTypeRequired");
   }
 
   if (formValues.scope === "NailDesign" && !Number(formValues.nailDesignId)) {
-    return "Nail design is required for nail-design-scoped promotions.";
+    return t("promotionDetail.validations.nailDesignRequired");
   }
 
   return "";
@@ -132,6 +133,7 @@ function buildInitialFormValues() {
 }
 
 export function PromotionCreatePage() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [formValues, setFormValues] = useState(buildInitialFormValues);
   const [formError, setFormError] = useState("");
@@ -172,7 +174,7 @@ export function PromotionCreatePage() {
           return;
         }
 
-        setFormError(error instanceof Error ? error.message : "Failed to load promotion form options.");
+        setFormError(error instanceof Error ? error.message : t("promotionDetail.loadOptionsFailed"));
       } finally {
         if (isMounted) {
           setIsLoadingLookups(false);
@@ -189,10 +191,10 @@ export function PromotionCreatePage() {
 
   const summaryItems = useMemo(
     () => [
-      ["Promotion Name", formValues.name || "--"],
-      ["Scope", formValues.scope || "--"],
-      ["Discount", formValues.discountValue ? `${formValues.discountValue} (${formValues.discountType || "--"})` : "--"],
-      ["Date Range", formValues.startDate && formValues.endDate ? `${formValues.startDate} → ${formValues.endDate}` : "--"],
+      [t("promotionDetail.promotionName"), formValues.name || "--"],
+      [t("promotionDetail.scope"), formValues.scope || "--"],
+      [t("promotionDetail.discountValue"), formValues.discountValue ? `${formValues.discountValue} (${formValues.discountType || "--"})` : "--"],
+      [t("promotionDetail.startDate"), formValues.startDate && formValues.endDate ? `${formValues.startDate} → ${formValues.endDate}` : "--"],
     ],
     [formValues.discountType, formValues.discountValue, formValues.endDate, formValues.name, formValues.scope, formValues.startDate],
   );
@@ -242,7 +244,7 @@ export function PromotionCreatePage() {
   };
 
   const handleSubmitRequest = () => {
-    const validationError = validateForm(formValues);
+    const validationError = validateForm(formValues, t);
 
     if (validationError) {
       setFormError(validationError);
@@ -261,14 +263,14 @@ export function PromotionCreatePage() {
         startDate: toApiDateTime(formValues.startDate),
         endDate: toApiDateTime(formValues.endDate),
       });
-      toast.success(`${createdPromotion.name} created successfully.`);
+      toast.success(t("promotionDetail.createSuccess", { name: createdPromotion.name }));
       navigate(getAdminPromotionDetailRoute(createdPromotion.promotionId), {
         state: {
-          flashMessage: `${createdPromotion.name} has been created successfully.`,
+          flashMessage: t("promotionDetail.createFlashSuccess", { name: createdPromotion.name }),
         },
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to create promotion.";
+      const message = error instanceof Error ? error.message : t("promotionDetail.createFailed");
       setFormError(message);
       toast.error(message);
     } finally {
@@ -288,8 +290,8 @@ export function PromotionCreatePage() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">Add New Promotion</h1>
-            <p className="text-xs font-medium text-slate-400">Create a new promotion campaign for admin management.</p>
+            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">{t("promotionDetail.addNewPromotion")}</h1>
+            <p className="text-xs font-medium text-slate-400">{t("promotionDetail.addNewPromotionDesc")}</p>
           </div>
         </div>
 
@@ -300,7 +302,7 @@ export function PromotionCreatePage() {
             className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
           >
             <X size={14} />
-            Cancel
+            {t("promotionDetail.messages.cancel")}
           </button>
           <button
             type="button"
@@ -308,7 +310,7 @@ export function PromotionCreatePage() {
             className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
           >
             <Save size={14} />
-            Save Promotion
+            {t("promotionDetail.savePromotionBtn")}
           </button>
         </div>
       </header>
@@ -321,92 +323,92 @@ export function PromotionCreatePage() {
 
       <div className="grid gap-4">
         <div className="space-y-4">
-          <PanelCard title="Promotion Details" icon={BadgePercent}>
+          <PanelCard title={t("promotionDetail.promotionDetails")} icon={BadgePercent}>
             <div className="grid gap-5 md:grid-cols-2">
-              <FormField label="Promotion Name">
+              <FormField label={t("promotionDetail.promotionName")}>
                 <input
                   type="text"
                   value={formValues.name}
                   onChange={(event) => handleFieldChange("name", event.target.value)}
-                  placeholder="Enter promotion name"
+                  placeholder={t("promotionDetail.enterPromotionName")}
                   className="h-12 w-full rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 text-[14px] font-medium text-slate-800 outline-none placeholder:text-rose-300"
                 />
               </FormField>
 
-              <FormField label="Promotion Type">
+              <FormField label={t("promotionDetail.promotionType")}>
                 <select
                   value={formValues.type}
                   onChange={(event) => handleFieldChange("type", event.target.value)}
                   className="h-12 w-full rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 text-[14px] font-medium text-slate-800 outline-none"
                 >
-                  <option value="">Select promotion type</option>
+                  <option value="">{t("promotionDetail.selectType")}</option>
                   {PROMOTION_TYPE_OPTIONS.map((option) => (
                     <option key={option} value={option}>{option}</option>
                   ))}
                 </select>
               </FormField>
 
-              <FormField label="Promotion Scope">
+              <FormField label={t("promotionDetail.scope")}>
                 <select
                   value={formValues.scope}
                   onChange={(event) => handleScopeChange(event.target.value)}
                   className="h-12 w-full rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 text-[14px] font-medium text-slate-800 outline-none"
                 >
-                  <option value="">Select promotion scope</option>
+                  <option value="">{t("promotionDetail.selectScope")}</option>
                   {PROMOTION_SCOPE_OPTIONS.map((option) => (
                     <option key={option} value={option}>{option}</option>
                   ))}
                 </select>
               </FormField>
 
-              <FormField label="Discount Type">
+              <FormField label={t("promotionDetail.discountType")}>
                 <select
                   value={formValues.discountType}
                   onChange={(event) => handleFieldChange("discountType", event.target.value)}
                   className="h-12 w-full rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 text-[14px] font-medium text-slate-800 outline-none"
                 >
-                  <option value="">Select discount type</option>
+                  <option value="">{t("promotionDetail.selectDiscountType")}</option>
                   {PROMOTION_DISCOUNT_TYPE_OPTIONS.map((option) => (
                     <option key={option} value={option}>{option}</option>
                   ))}
                 </select>
               </FormField>
 
-              <FormField label="Discount Value">
+              <FormField label={t("promotionDetail.discountValue")}>
                 <input
                   type="number"
                   min="0"
                   step="0.01"
                   value={formValues.discountValue}
                   onChange={(event) => handleFieldChange("discountValue", event.target.value)}
-                  placeholder="Enter discount value"
+                  placeholder={t("promotionDetail.enterDiscountValue")}
                   className="h-12 w-full rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 text-[14px] font-medium text-slate-800 outline-none placeholder:text-rose-300"
                 />
               </FormField>
 
-              <FormField label="Usage Limit">
+              <FormField label={t("promotionDetail.usageLimit")}>
                 <input
                   type="number"
                   min="0"
                   value={formValues.usageLimit}
                   onChange={(event) => handleFieldChange("usageLimit", event.target.value)}
-                  placeholder="Optional total usage limit"
+                  placeholder={t("promotionDetail.optionalUsageLimit")}
                   className="h-12 w-full rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 text-[14px] font-medium text-slate-800 outline-none placeholder:text-rose-300"
                 />
               </FormField>
 
-              <FormField label="User Limit">
+              <FormField label={t("promotionDetail.userLimit")}>
                 <input
                   type="number"
                   min="0"
                   value={formValues.userLimit}
                   onChange={(event) => handleFieldChange("userLimit", event.target.value)}
-                  placeholder="Optional per-user limit"
+                  placeholder={t("promotionDetail.optionalUserLimit")}
                   className="h-12 w-full rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 text-[14px] font-medium text-slate-800 outline-none placeholder:text-rose-300"
                 />
               </FormField>
 
-              <FormField label="Start Date">
+              <FormField label={t("promotionDetail.startDate")}>
                 <input
                   type="datetime-local"
                   value={formValues.startDate}
@@ -415,7 +417,7 @@ export function PromotionCreatePage() {
                 />
               </FormField>
 
-              <FormField label="End Date">
+              <FormField label={t("promotionDetail.endDate")}>
                 <input
                   type="datetime-local"
                   value={formValues.endDate}
@@ -425,14 +427,14 @@ export function PromotionCreatePage() {
               </FormField>
 
               {formValues.scope === "Category" ? (
-                <FormField label="Category">
+                <FormField label={t("promotionDetail.categoryId")}>
                   <select
                     value={formValues.categoryId}
                     onChange={(event) => handleFieldChange("categoryId", event.target.value)}
                     disabled={isLoadingLookups}
                     className="h-12 w-full rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 text-[14px] font-medium text-slate-800 outline-none disabled:opacity-60"
                   >
-                    <option value="">Select category</option>
+                    <option value="">{t("promotionDetail.selectCategory")}</option>
                     {lookupOptions.categories.map((option) => (
                       <option key={option.value} value={option.value}>{option.label}</option>
                     ))}
@@ -441,14 +443,14 @@ export function PromotionCreatePage() {
               ) : null}
 
               {formValues.scope === "CategoryType" ? (
-                <FormField label="Category Type">
+                <FormField label={t("promotionDetail.categoryTypeId")}>
                   <select
                     value={formValues.categoryTypeId}
                     onChange={(event) => handleFieldChange("categoryTypeId", event.target.value)}
                     disabled={isLoadingLookups}
                     className="h-12 w-full rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 text-[14px] font-medium text-slate-800 outline-none disabled:opacity-60"
                   >
-                    <option value="">Select category type</option>
+                    <option value="">{t("promotionDetail.selectCategoryType")}</option>
                     {lookupOptions.categoryTypes.map((option) => (
                       <option key={option.value} value={option.value}>{option.label}</option>
                     ))}
@@ -457,14 +459,14 @@ export function PromotionCreatePage() {
               ) : null}
 
               {formValues.scope === "NailDesign" ? (
-                <FormField label="Nail Design">
+                <FormField label={t("promotionDetail.nailDesignId")}>
                   <select
                     value={formValues.nailDesignId}
                     onChange={(event) => handleFieldChange("nailDesignId", event.target.value)}
                     disabled={isLoadingLookups}
                     className="h-12 w-full rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 text-[14px] font-medium text-slate-800 outline-none disabled:opacity-60"
                   >
-                    <option value="">Select nail design</option>
+                    <option value="">{t("promotionDetail.selectNailDesign")}</option>
                     {lookupOptions.nailDesigns.map((option) => (
                       <option key={option.value} value={option.value}>{option.label}</option>
                     ))}
@@ -473,18 +475,18 @@ export function PromotionCreatePage() {
               ) : null}
             </div>
 
-            <FormField label="Description">
+            <FormField label={t("promotionDetail.description")}>
               <textarea
                 rows={5}
                 value={formValues.description}
                 onChange={(event) => handleFieldChange("description", event.target.value)}
-                placeholder="Enter promotion description"
+                placeholder={t("promotionDetail.enterDescription")}
                 className="w-full rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5 text-[14px] font-medium text-slate-800 outline-none placeholder:text-rose-300"
               />
             </FormField>
           </PanelCard>
 
-          <PanelCard title="Promotion Image" icon={ImagePlus}>
+          <PanelCard title={t("promotionDetail.promotionImage")} icon={ImagePlus}>
             <label className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-[20px] border-2 border-dashed border-rose-200 bg-[#fff8fb] px-4 py-8 transition hover:border-[#cf3d74]">
               {imagePreview ? (
                 <img
@@ -498,8 +500,8 @@ export function PromotionCreatePage() {
                 </div>
               )}
               <div className="text-center">
-                <p className="text-sm font-bold text-slate-700">Upload promotion image</p>
-                <p className="mt-1 text-xs text-slate-400">Optional banner or thumbnail image for this promotion.</p>
+                <p className="text-sm font-bold text-slate-700">{t("promotionDetail.uploadImage")}</p>
+                <p className="mt-1 text-xs text-slate-400">{t("promotionDetail.uploadDesc")}</p>
               </div>
               <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
             </label>
@@ -512,11 +514,11 @@ export function PromotionCreatePage() {
       <ActionConfirmModal
         open={showCancelConfirm}
         intent="warning"
-        title="Cancel Promotion Creation"
-        subtitle="You are leaving this form without saving."
-        description="All unsaved promotion details will be discarded."
-        confirmText="Discard Changes"
-        cancelText="Keep Editing"
+        title={t("promotionDetail.cancelCreateTitle")}
+        subtitle={t("promotionDetail.cancelCreateSubtitle")}
+        description={t("promotionDetail.cancelCreateDesc")}
+        confirmText={t("promotionDetail.discardChanges")}
+        cancelText={t("promotionDetail.keepEditing")}
         confirmIcon={X}
         onConfirm={() => navigate(ROUTES.adminPromotions)}
         onCancel={() => setShowCancelConfirm(false)}
@@ -526,11 +528,11 @@ export function PromotionCreatePage() {
       <ActionConfirmModal
         open={showSaveConfirm}
         intent="success"
-        title="Save New Promotion"
-        subtitle="This will create the promotion in backend."
-        description="Confirm to add this promotion to admin management."
-        confirmText="Create Promotion"
-        cancelText="Review Again"
+        title={t("promotionDetail.saveNewPromotionTitle")}
+        subtitle={t("promotionDetail.saveNewPromotionSubtitle")}
+        description={t("promotionDetail.saveNewPromotionDesc")}
+        confirmText={t("promotionDetail.createPromotion")}
+        cancelText={t("promotionDetail.reviewAgain")}
         confirmIcon={Save}
         loading={isSaving}
         onConfirm={handleCreate}

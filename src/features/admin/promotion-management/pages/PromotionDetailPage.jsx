@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ROUTES, getAdminPromotionDetailRoute } from "../../../../shared/constants/routes";
 import {
   deleteAdminPromotion,
@@ -55,49 +56,49 @@ function toApiDateTime(value) {
   return parsed.toISOString();
 }
 
-function validateForm(formValues) {
+function validateForm(formValues, t) {
   if (!String(formValues.name || "").trim()) {
-    return "Promotion name is required.";
+    return t("promotionDetail.validations.nameRequired");
   }
 
   if (!String(formValues.description || "").trim()) {
-    return "Promotion description is required.";
+    return t("promotionDetail.validations.descRequired");
   }
 
   if (!String(formValues.type || "").trim()) {
-    return "Promotion type is required.";
+    return t("promotionDetail.validations.typeRequired");
   }
 
   if (!String(formValues.scope || "").trim()) {
-    return "Promotion scope is required.";
+    return t("promotionDetail.validations.scopeRequired");
   }
 
   if (!String(formValues.discountType || "").trim()) {
-    return "Discount type is required.";
+    return t("promotionDetail.validations.discountTypeRequired");
   }
 
   if (!(Number(formValues.discountValue) > 0)) {
-    return "Discount value must be greater than 0.";
+    return t("promotionDetail.validations.discountValueGreaterZero");
   }
 
   if (!formValues.startDate || !formValues.endDate) {
-    return "Start date and end date are required.";
+    return t("promotionDetail.validations.dateRequired");
   }
 
   if (new Date(formValues.startDate).getTime() >= new Date(formValues.endDate).getTime()) {
-    return "End date must be later than start date.";
+    return t("promotionDetail.validations.endDateLater");
   }
 
   if (formValues.scope === "Category" && !Number(formValues.categoryId)) {
-    return "Category is required for category-scoped promotions.";
+    return t("promotionDetail.validations.categoryRequired");
   }
 
   if (formValues.scope === "CategoryType" && !Number(formValues.categoryTypeId)) {
-    return "Category type is required for category-type-scoped promotions.";
+    return t("promotionDetail.validations.categoryTypeRequired");
   }
 
   if (formValues.scope === "NailDesign" && !Number(formValues.nailDesignId)) {
-    return "Nail design is required for nail-design-scoped promotions.";
+    return t("promotionDetail.validations.nailDesignRequired");
   }
 
   return "";
@@ -149,6 +150,7 @@ export function PromotionDetailPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { promotionId } = useParams();
+  const { language, t } = useLanguage();
   const [promotion, setPromotion] = useState(null);
   const [draft, setDraft] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -210,7 +212,7 @@ export function PromotionDetailPage() {
           return;
         }
 
-        setError(loadError instanceof Error ? loadError.message : "Failed to load promotion detail.");
+        setError(loadError instanceof Error ? loadError.message : t("promotionDetail.loadDetailFailed"));
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -351,7 +353,7 @@ export function PromotionDetailPage() {
   };
 
   const handleRequestSave = () => {
-    const validationError = validateForm(draft);
+    const validationError = validateForm(draft, t);
 
     if (validationError) {
       setError(validationError);
@@ -379,9 +381,9 @@ export function PromotionDetailPage() {
       setDraft(mapPromotionToDraft(updatedPromotion));
       setImagePreview(updatedPromotion.imageUrl || "");
       setIsEditing(false);
-      toast.success(`${updatedPromotion.name} updated successfully.`);
+      toast.success(t("promotionDetail.messages.updateSuccess"));
     } catch (saveError) {
-      const message = saveError instanceof Error ? saveError.message : "Failed to update promotion.";
+      const message = saveError instanceof Error ? saveError.message : t("promotionDetail.updateFailed");
       setError(message);
       toast.error(message);
     } finally {
@@ -399,14 +401,14 @@ export function PromotionDetailPage() {
 
     try {
       await deleteAdminPromotion(promotion.promotionId);
-      toast.success(`${promotion.name} deleted successfully.`);
+      toast.success(t("promotionDetail.messages.deleteSuccess"));
       navigate(ROUTES.adminPromotions, {
         state: {
-          flashMessage: `${promotion.name} has been deleted successfully.`,
+          flashMessage: t("promotionDetail.messages.deleteSuccess"),
         },
       });
     } catch (deleteError) {
-      const message = deleteError instanceof Error ? deleteError.message : "Failed to delete promotion.";
+      const message = deleteError instanceof Error ? deleteError.message : t("promotionDetail.deleteFailed");
       toast.error(message);
     } finally {
       setIsDeleting(false);
@@ -425,8 +427,15 @@ export function PromotionDetailPage() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">Promotion Detail</h1>
-            <p className="text-xs font-medium text-slate-400">Review, edit, and delete this promotion from one page.</p>
+            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">
+              {isEditing ? t("promotionDetail.editTitle") : t("promotionDetail.title")}
+            </h1>
+            <p className="text-xs font-medium text-slate-400">
+              {isEditing 
+                ? (t("adminPromotionManagement.editThePromotionDetailsBelow"))
+                : (t("adminPromotionManagement.reviewEditAndDeleteThisPromoti"))
+              }
+            </p>
           </div>
         </div>
 
@@ -438,7 +447,7 @@ export function PromotionDetailPage() {
             className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Trash2 size={14} />
-            Delete Promotion
+            {t("promotionDetail.deleteBtn")}
           </button>
           {isEditing ? (
             <>
@@ -448,7 +457,7 @@ export function PromotionDetailPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
               >
                 <X size={14} />
-                Cancel
+                {t("promotionDetail.messages.cancel")}
               </button>
               <button
                 type="button"
@@ -456,7 +465,7 @@ export function PromotionDetailPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
               >
                 <Save size={14} />
-                Save Changes
+                {t("promotionDetail.saveBtn")}
               </button>
             </>
           ) : (
@@ -467,7 +476,7 @@ export function PromotionDetailPage() {
               className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Pencil size={14} />
-              Edit Promotion
+              {t("promotionDetail.editTitle")}
             </button>
           )}
         </div>
@@ -487,28 +496,28 @@ export function PromotionDetailPage() {
 
       {isLoading ? (
         <div className="flex min-h-[320px] items-center justify-center rounded-[24px] bg-white/80 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
-          <div className="text-center text-sm text-slate-600">Loading promotion details...</div>
+          <div className="text-center text-sm text-slate-600">{t("promotionDetail.loadingDetails")}</div>
         </div>
       ) : !promotion || !draft ? (
         <div className="rounded-[24px] border border-rose-100 bg-white/85 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
           <div className="mx-auto max-w-xl text-center">
-            <h2 className="text-lg font-bold text-slate-800">Unable to load promotion detail</h2>
+            <h2 className="text-lg font-bold text-slate-800">{t("promotionDetail.unableToLoad")}</h2>
             <p className="mt-2 text-sm text-slate-500">
-              {error || "This promotion could not be loaded from the backend."}
+              {error || t("promotionDetail.unableToLoadDesc")}
             </p>
             <div className="mt-5 flex justify-center gap-3">
               <Link
                 to={ROUTES.adminPromotions}
                 className="inline-flex items-center justify-center rounded-full border border-rose-200 bg-white px-4 py-2 text-sm font-semibold text-rose-500 transition hover:bg-rose-50"
               >
-                Back to promotions
+                {t("promotionDetail.backToPromotions")}
               </Link>
               <button
                 type="button"
                 onClick={() => window.location.reload()}
                 className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(226,93,143,0.24)]"
               >
-                Retry
+                {t("promotionDetail.retry")}
               </button>
             </div>
           </div>
@@ -516,9 +525,9 @@ export function PromotionDetailPage() {
       ) : (
         <div className="grid gap-4">
           <div className="space-y-4">
-            <PanelCard title="Promotion Details" icon={BadgePercent}>
+            <PanelCard title={t("promotionDetail.promotionDetails")} icon={BadgePercent}>
               <div className="grid gap-5 md:grid-cols-2">
-                <FormField label="Promotion Name">
+                <FormField label={t("promotionDetail.promotionName")}>
                   <input
                     type="text"
                     value={draft.name}
@@ -528,49 +537,49 @@ export function PromotionDetailPage() {
                   />
                 </FormField>
 
-                <FormField label="Promotion Type">
+                <FormField label={t("promotionDetail.promotionType")}>
                   <select
                     value={draft.type}
                     onChange={(event) => handleFieldChange("type", event.target.value)}
                     disabled={!isEditing}
                     className="h-12 w-full rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
                   >
-                    <option value="">Select promotion type</option>
+                    <option value="">{t("promotionDetail.selectType")}</option>
                     {PROMOTION_TYPE_OPTIONS.map((option) => (
                       <option key={option} value={option}>{option}</option>
                     ))}
                   </select>
                 </FormField>
 
-                <FormField label="Promotion Scope">
+                <FormField label={t("promotionDetail.scope")}>
                   <select
                     value={draft.scope}
                     onChange={(event) => handleScopeChange(event.target.value)}
                     disabled={!isEditing}
                     className="h-12 w-full rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
                   >
-                    <option value="">Select promotion scope</option>
+                    <option value="">{t("promotionDetail.selectScope")}</option>
                     {PROMOTION_SCOPE_OPTIONS.map((option) => (
                       <option key={option} value={option}>{option}</option>
                     ))}
                   </select>
                 </FormField>
 
-                <FormField label="Discount Type">
+                <FormField label={t("promotionDetail.discountType")}>
                   <select
                     value={draft.discountType}
                     onChange={(event) => handleFieldChange("discountType", event.target.value)}
                     disabled={!isEditing}
                     className="h-12 w-full rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
                   >
-                    <option value="">Select discount type</option>
+                    <option value="">{t("promotionDetail.selectDiscountType")}</option>
                     {PROMOTION_DISCOUNT_TYPE_OPTIONS.map((option) => (
                       <option key={option} value={option}>{option}</option>
                     ))}
                   </select>
                 </FormField>
 
-                <FormField label="Discount Value">
+                <FormField label={t("promotionDetail.discountValue")}>
                   <input
                     type="number"
                     min="0"
@@ -582,7 +591,7 @@ export function PromotionDetailPage() {
                   />
                 </FormField>
 
-                <FormField label="Usage Limit">
+                <FormField label={t("promotionDetail.usageLimit")}>
                   <input
                     type="number"
                     min="0"
@@ -593,7 +602,7 @@ export function PromotionDetailPage() {
                   />
                 </FormField>
 
-                <FormField label="User Limit">
+                <FormField label={t("promotionDetail.userLimit")}>
                   <input
                     type="number"
                     min="0"
@@ -604,7 +613,7 @@ export function PromotionDetailPage() {
                   />
                 </FormField>
 
-                <FormField label="Start Date">
+                <FormField label={t("promotionDetail.startDate")}>
                   <input
                     type="datetime-local"
                     value={draft.startDate}
@@ -614,7 +623,7 @@ export function PromotionDetailPage() {
                   />
                 </FormField>
 
-                <FormField label="End Date">
+                <FormField label={t("promotionDetail.endDate")}>
                   <input
                     type="datetime-local"
                     value={draft.endDate}
@@ -625,14 +634,14 @@ export function PromotionDetailPage() {
                 </FormField>
 
                 {draft.scope === "Category" ? (
-                  <FormField label="Category">
+                  <FormField label={t("promotionDetail.categoryId")}>
                     <select
                       value={draft.categoryId}
                       onChange={(event) => handleFieldChange("categoryId", event.target.value)}
                       disabled={!isEditing}
                       className="h-12 w-full rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
                     >
-                      <option value="">Select category</option>
+                      <option value="">{t("promotionDetail.selectCategory")}</option>
                       {lookupOptions.categories.map((option) => (
                         <option key={option.value} value={option.value}>{option.label}</option>
                       ))}
@@ -641,14 +650,14 @@ export function PromotionDetailPage() {
                 ) : null}
 
                 {draft.scope === "CategoryType" ? (
-                  <FormField label="Category Type">
+                  <FormField label={t("promotionDetail.categoryTypeId")}>
                     <select
                       value={draft.categoryTypeId}
                       onChange={(event) => handleFieldChange("categoryTypeId", event.target.value)}
                       disabled={!isEditing}
                       className="h-12 w-full rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
                     >
-                      <option value="">Select category type</option>
+                      <option value="">{t("promotionDetail.selectCategoryType")}</option>
                       {lookupOptions.categoryTypes.map((option) => (
                         <option key={option.value} value={option.value}>{option.label}</option>
                       ))}
@@ -657,14 +666,14 @@ export function PromotionDetailPage() {
                 ) : null}
 
                 {draft.scope === "NailDesign" ? (
-                  <FormField label="Nail Design">
+                  <FormField label={t("promotionDetail.nailDesignId")}>
                     <select
                       value={draft.nailDesignId}
                       onChange={(event) => handleFieldChange("nailDesignId", event.target.value)}
                       disabled={!isEditing}
                       className="h-12 w-full rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
                     >
-                      <option value="">Select nail design</option>
+                      <option value="">{t("promotionDetail.selectNailDesign")}</option>
                       {lookupOptions.nailDesigns.map((option) => (
                         <option key={option.value} value={option.value}>{option.label}</option>
                       ))}
@@ -673,7 +682,7 @@ export function PromotionDetailPage() {
                 ) : null}
               </div>
 
-              <FormField label="Description">
+              <FormField label={t("promotionDetail.description")}>
                 <textarea
                   rows={5}
                   value={draft.description}
@@ -684,7 +693,7 @@ export function PromotionDetailPage() {
               </FormField>
             </PanelCard>
 
-            <PanelCard title="Promotion Image" icon={ImagePlus}>
+            <PanelCard title={t("promotionDetail.promotionImage")} icon={ImagePlus}>
               {isEditing ? (
                 <label className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-[20px] border-2 border-dashed border-rose-200 bg-[#fff8fb] px-4 py-8 transition hover:border-[#cf3d74]">
                   {imagePreview ? (
@@ -699,8 +708,8 @@ export function PromotionDetailPage() {
                     </div>
                   )}
                   <div className="text-center">
-                    <p className="text-sm font-bold text-slate-700">Update promotion image</p>
-                    <p className="mt-1 text-xs text-slate-400">Choose a new banner or thumbnail for this promotion.</p>
+                    <p className="text-sm font-bold text-slate-700">{t("promotionDetail.updateImage")}</p>
+                    <p className="mt-1 text-xs text-slate-400">{t("promotionDetail.updateDesc")}</p>
                   </div>
                   <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
                 </label>
@@ -712,15 +721,15 @@ export function PromotionDetailPage() {
                 />
               ) : (
                 <div className="rounded-[20px] border border-dashed border-rose-200 bg-[#fff8fb] px-4 py-10 text-center text-sm font-semibold text-slate-500">
-                  No promotion image uploaded.
+                  {t("promotionDetail.noImageUploaded")}
                 </div>
               )}
             </PanelCard>
 
             {promotion?.scope && promotion.scope !== "All" ? (
-              <PanelCard title="Related Promotions" icon={Tag}>
+              <PanelCard title={t("promotionDetail.relatedPromotions")} icon={Tag}>
                 {isLoadingRelatedPromotions ? (
-                  <p className="text-sm font-medium text-slate-500">Loading related promotions...</p>
+                  <p className="text-sm font-medium text-slate-500">{t("promotionDetail.loadingRelated")}</p>
                 ) : relatedPromotions.length > 0 ? (
                   <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                     {relatedPromotions.map((item) => (
@@ -736,7 +745,7 @@ export function PromotionDetailPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm font-medium text-slate-500">No related promotions found for this scope.</p>
+                  <p className="text-sm font-medium text-slate-500">{t("promotionDetail.noRelatedFound")}</p>
                 )}
               </PanelCard>
             ) : null}
@@ -747,11 +756,11 @@ export function PromotionDetailPage() {
       <ActionConfirmModal
         open={showSaveConfirm}
         intent="success"
-        title="Save Promotion Changes"
-        subtitle="This will update the promotion in backend."
-        description="Confirm to save the latest changes to this promotion."
-        confirmText="Save Changes"
-        cancelText="Review Again"
+        title={t("promotionDetail.saveChangesTitle")}
+        subtitle={t("promotionDetail.saveChangesSubtitle")}
+        description={t("promotionDetail.saveChangesDesc")}
+        confirmText={t("promotionDetail.saveChangesBtn")}
+        cancelText={t("promotionDetail.reviewAgain")}
         confirmIcon={Save}
         loading={isSaving}
         onConfirm={handleSave}
@@ -767,11 +776,11 @@ export function PromotionDetailPage() {
       <ActionConfirmModal
         open={showDeleteConfirm}
         intent="danger"
-        title="Delete Promotion"
-        subtitle="This will remove the promotion from backend."
-        description={`You are about to delete ${promotion?.name || "this promotion"}.`}
-        confirmText="Delete Promotion"
-        cancelText="Keep Promotion"
+        title={t("promotionDetail.deleteConfirmTitle")}
+        subtitle={t("promotionDetail.deleteConfirmSubtitle")}
+        description={t("promotionDetail.deleteConfirmDesc", { name: promotion?.name || "this promotion" })}
+        confirmText={t("promotionDetail.deleteBtn")}
+        cancelText={t("promotionDetail.keepPromotion")}
         confirmIcon={Trash2}
         loading={isDeleting}
         onConfirm={handleDelete}

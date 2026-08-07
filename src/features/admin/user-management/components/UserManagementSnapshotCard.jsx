@@ -1,9 +1,11 @@
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { useEffect, useState } from "react";
 import { ShieldAlert } from "lucide-react";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { USER_STATUS_STYLES } from "../services/mockUsers";
 
 export function UserManagementSnapshotCard({ formValues, notice }) {
+  const { t } = useLanguage();
   const displayName =
     [formValues.firstName, formValues.lastName].filter(Boolean).join(" ").trim() ||
     formValues.name ||
@@ -23,7 +25,7 @@ export function UserManagementSnapshotCard({ formValues, notice }) {
   return (
     <article className="rounded-[24px] bg-white p-4 shadow-[0_16px_34px_rgba(94,76,62,0.06)] sm:p-5 md:p-6">
       <p className="text-sm uppercase tracking-[0.18em] text-[#d45b9f]">
-        User snapshot
+        {t("userManagement.detail.userSnapshot")}
       </p>
 
       <div className="mt-5 rounded-[22px] bg-[linear-gradient(180deg,#fff5f9_0%,#fff8e8_100%)] p-5">
@@ -47,7 +49,7 @@ export function UserManagementSnapshotCard({ formValues, notice }) {
               {displayName}
             </p>
             <p className="text-sm text-[var(--color-muted)]">
-              {formValues.email || "Email not set"}
+              {formValues.email || t("userManagement.detail.emailNotSet")}
             </p>
           </div>
         </div>
@@ -56,7 +58,7 @@ export function UserManagementSnapshotCard({ formValues, notice }) {
           <span
             className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${USER_STATUS_STYLES[formValues.status] ?? "bg-[#fff0f5] text-[#d14c84]"}`}
           >
-            {formValues.status || "New account"}
+            {formValues.status || t("userManagement.detail.newAccount")}
           </span>
           <span className="inline-flex rounded-full bg-[#fff] px-3 py-1 text-xs font-semibold text-[var(--color-ink)]">
             {formValues.role}
@@ -66,8 +68,8 @@ export function UserManagementSnapshotCard({ formValues, notice }) {
 
       <div className="mt-5 space-y-4">
         <div className="rounded-2xl bg-[#fff7ef] px-4 py-4 text-sm leading-6 text-[var(--color-ink)]">
-          <span className="font-semibold">Phone:</span>{" "}
-          {formValues.phone || "Not provided"}
+          <span className="font-semibold">{t("userManagement.detail.phone")}:</span>{" "}
+          {formValues.phone || t("userManagement.detail.phoneNotProvided")}
         </div>
       </div>
 

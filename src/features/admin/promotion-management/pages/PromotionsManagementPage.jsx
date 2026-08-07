@@ -17,6 +17,7 @@ import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Table } from "antd";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import {
@@ -136,6 +137,7 @@ function sortPromotions(items, sortValue) {
 }
 
 export function PromotionsManagementPage() {
+  const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
@@ -227,37 +229,39 @@ export function PromotionsManagementPage() {
       String(item.discountType || "").toLowerCase().includes("percent"),
     ).length;
 
+    const isVi = t("adminDashboard.year") === "Năm";
+
     return [
       {
-        label: "Total Promotions",
+        label: t("promotions.table.promotion"),
         value: metaData.totalItems.toLocaleString(),
-        note: `${metaData.totalPages} pages`,
+        note: `${metaData.totalPages} ${isVi ? "trang" : "pages"}`,
         icon: BadgePercent,
         iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
       },
       {
-        label: "Active Now",
+        label: t("promotionDetail.active"),
         value: activeCount.toLocaleString(),
-        note: "Current page",
+        note: isVi ? "Trang hiện tại" : "Current page",
         icon: Sparkles,
         iconClassName: "bg-[#e7fbf4] text-[#20ab77]",
       },
       {
-        label: "Category Scope",
+        label: t("promotions.table.scope") + " (" + (t("promotionDetail.categoryId") || "Category") + ")",
         value: categoryScopedCount.toLocaleString(),
-        note: "Current page",
+        note: isVi ? "Trang hiện tại" : "Current page",
         icon: Tag,
         iconClassName: "bg-[#fff4df] text-[#d9871c]",
       },
       {
-        label: "Percent Discount",
+        label: t("promotions.table.value") + " (%)",
         value: percentDiscountCount.toLocaleString(),
-        note: "Current page",
+        note: isVi ? "Trang hiện tại" : "Current page",
         icon: CalendarRange,
         iconClassName: "bg-[#f3ebff] text-[#8b5cf6]",
       },
     ];
-  }, [metaData.totalItems, metaData.totalPages, promotions]);
+  }, [metaData.totalItems, metaData.totalPages, promotions, t]);
 
   const paginationItems = useMemo(() => {
     const currentPage = metaData.currentPage;
@@ -319,7 +323,7 @@ export function PromotionsManagementPage() {
       {
         title: (
           <SortableHeader
-            label="Promotion"
+            label={t("promotions.table.promotion")}
             sortKey="name"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -349,7 +353,7 @@ export function PromotionsManagementPage() {
       {
         title: (
           <SortableHeader
-            label="Type"
+            label={t("promotions.table.type")}
             sortKey="type"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -365,7 +369,7 @@ export function PromotionsManagementPage() {
       {
         title: (
           <SortableHeader
-            label="Discount"
+            label={t("promotions.table.value")}
             sortKey="discount"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -381,7 +385,7 @@ export function PromotionsManagementPage() {
       {
         title: (
           <SortableHeader
-            label="Validity"
+            label={t("promotions.table.startDate")}
             sortKey="scope"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -390,30 +394,33 @@ export function PromotionsManagementPage() {
         render: (_, promotion) => (
           <div className="space-y-1 text-sm text-[#5f4a5c]">
             <p>{formatDateTime(promotion.startDate)}</p>
-            <p className="text-[11px] text-[#c694ad]">to {formatDateTime(promotion.endDate)}</p>
+            <p className="text-[11px] text-[#c694ad]">
+              {t("userManagement.table.actions") === "Thao tác" ? "đến" : "to"}{" "}
+              {formatDateTime(promotion.endDate)}
+            </p>
           </div>
         ),
       },
       {
-        title: "Status",
+        title: t("promotions.table.status"),
         key: "status",
         render: (_, promotion) => <PromotionStatusBadge promotion={promotion} />,
       },
       {
-        title: "Actions",
+        title: t("userManagement.table.actions"),
         key: "actions",
         render: (_, promotion) => (
           <ActionDropdown
             items={[
               {
                 key: "view",
-                label: "View Detail",
+                label: t("view") || "View Detail",
                 icon: Eye,
                 onSelect: () => navigate(getAdminPromotionDetailRoute(promotion.promotionId)),
               },
               {
                 key: "edit",
-                label: "Edit Promotion",
+                label: t("promotionDetail.editTitle"),
                 icon: Pencil,
                 onSelect: () =>
                   navigate(getAdminPromotionDetailRoute(promotion.promotionId), {
@@ -422,7 +429,7 @@ export function PromotionsManagementPage() {
               },
               {
                 key: "delete",
-                label: "Delete Promotion",
+                label: t("promotionDetail.deleteBtn"),
                 icon: Trash2,
                 className: "text-[#d14c84]",
                 onSelect: () => setDeleteTarget(promotion),
@@ -432,7 +439,7 @@ export function PromotionsManagementPage() {
         ),
       },
     ],
-    [navigate, selectedSort],
+    [navigate, selectedSort, t],
   );
 
   const handleDeletePromotion = async () => {
@@ -492,7 +499,7 @@ export function PromotionsManagementPage() {
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Filter current page by name, scope, or type..."
+                placeholder={t("promotions.filter.searchPlaceholder")}
                 className="h-10 w-full rounded-full border border-[#f4d7e5] bg-[#fffafc] pl-11 pr-4 text-sm text-[#5b4658] outline-none placeholder:text-[#d4a1b8] focus:border-[#ea4f93]"
               />
             </label>
@@ -502,7 +509,7 @@ export function PromotionsManagementPage() {
               onChange={(event) => setTypeFilter(event.target.value)}
               className="h-10 rounded-full border border-[#f4d7e5] bg-[#fffafc] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
             >
-              <option value="">All types</option>
+              <option value="">{t("userManagement.table.actions") === "Thao tác" ? "Tất cả các loại" : "All types"}</option>
               {PROMOTION_TYPE_OPTIONS.map((option) => (
                 <option key={option} value={option}>{option}</option>
               ))}
@@ -513,7 +520,7 @@ export function PromotionsManagementPage() {
               onChange={(event) => setScopeFilter(event.target.value)}
               className="h-10 rounded-full border border-[#f4d7e5] bg-[#fffafc] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
             >
-              <option value="">All scopes</option>
+              <option value="">{t("userManagement.table.actions") === "Thao tác" ? "Tất cả phạm vi" : "All scopes"}</option>
               {PROMOTION_SCOPE_OPTIONS.map((option) => (
                 <option key={option} value={option}>{option}</option>
               ))}
@@ -524,7 +531,7 @@ export function PromotionsManagementPage() {
               onChange={(event) => setDiscountTypeFilter(event.target.value)}
               className="h-10 rounded-full border border-[#f4d7e5] bg-[#fffafc] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
             >
-              <option value="">All discounts</option>
+              <option value="">{t("userManagement.table.actions") === "Thao tác" ? "Tất cả giảm giá" : "All discounts"}</option>
               {PROMOTION_DISCOUNT_TYPE_OPTIONS.map((option) => (
                 <option key={option} value={option}>{option}</option>
               ))}
@@ -536,15 +543,18 @@ export function PromotionsManagementPage() {
             className="inline-flex items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
           >
             <Plus size={13} className="mr-1.5 shrink-0" />
-            Add Promotion
+            {t("promotions.btnCreate")}
           </Link>
         </div>
 
         <section className="overflow-hidden rounded-[20px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
           <div className="border-b border-[#f6dbe7] px-5 py-4">
-            <h2 className="text-sm font-extrabold text-[#432744]">Promotions</h2>
+            <h2 className="text-sm font-extrabold text-[#432744]">{t("promotions.title")}</h2>
             <p className="mt-1 text-[11px] font-medium text-[#c694ad]">
-              Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} promotions
+              {t("userManagement.table.actions") === "Thao tác"
+                ? `Hiển thị ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} trong số ${metaData.totalItems} khuyến mãi`
+                : `Showing ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} of ${metaData.totalItems} promotions`
+              }
             </p>
           </div>
 
@@ -558,12 +568,15 @@ export function PromotionsManagementPage() {
             }}
             pagination={false}
             scroll={{ x: 1180 }}
-            locale={{ emptyText: error || "No promotions found." }}
+            locale={{ emptyText: error || (t("userManagement.table.actions") === "Thao tác" ? "Không tìm thấy khuyến mãi." : "No promotions found.") }}
           />
 
           <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-[11px] text-[#c694ad]">
-              Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} promotions
+              {t("userManagement.table.actions") === "Thao tác"
+                ? `Hiển thị ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} trong số ${metaData.totalItems} khuyến mãi`
+                : `Showing ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} of ${metaData.totalItems} promotions`
+              }
             </p>
             <div className="flex items-center gap-1">
               <button
