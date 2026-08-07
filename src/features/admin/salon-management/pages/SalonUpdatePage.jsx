@@ -16,6 +16,7 @@ import { motion } from "framer-motion";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { TimePicker } from "../../../../shared/components/ui/TimePicker";
 import { SalonSaveResultModal } from "../components/SalonSaveResultModal";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import HolidayClosureModal from "../components/HolidayClosureModal";
 import { ROUTES, getAdminSalonDetailRoute } from "../../../../shared/constants/routes";
 import {
@@ -84,6 +85,7 @@ function SalonUpdateLoadingState() {
 }
 
 export function SalonUpdatePage() {
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const { salonId } = useParams();
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -196,7 +198,9 @@ export function SalonUpdatePage() {
       if (validationError) {
         setSaveResult({
           success: false,
-          message: validationError,
+          message: validationError === "Salon name is required"
+            ? (t("adminSalonManagement.salonNameIsRequired"))
+            : validationError,
         });
         setShowSaveModal(false);
         return;
@@ -206,12 +210,14 @@ export function SalonUpdatePage() {
 
       setSaveResult({
         success: true,
-        message: `${formData.salonName.trim()} has been updated successfully.`,
+        message: language === "vi"
+          ? `${formData.salonName.trim()} đã được cập nhật thành công.`
+          : `${formData.salonName.trim()} has been updated successfully.`,
       });
     } catch (error) {
       setSaveResult({
         success: false,
-        message: error.message || "Failed to update salon. Please try again.",
+        message: error.message || (t("adminSalonManagement.failedToUpdateSalonPleaseTryAg")),
       });
     } finally {
       setIsSaving(false);
@@ -251,17 +257,15 @@ export function SalonUpdatePage() {
       variants={staggerContainer}
       className="mx-auto w-full min-w-0 max-w-[1300px]"
     >
-      <style>{`
-        .nailify-display { font-family: "Cormorant Garamond", serif; }
-      `}</style>
+
       <header className="mb-6 flex flex-col gap-5">
         <motion.div variants={fadeInUp} className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
-            <h1 className="nailify-display text-[32px] font-semibold text-[#3f2034]">
-              Update Salon
+            <h1 className=" text-[32px] font-semibold text-[#3f2034]">
+              {t("adminSalonManagement.updateSalon")}
             </h1>
             <p className="mt-1 text-sm text-[#a6869a]">
-              Update salon information for {formData.salonName || "Salon"}
+              {language === "vi" ? `Cập nhật thông tin cho chi nhánh ${formData.salonName || ""}` : `Update salon information for ${formData.salonName || "Salon"}`}
             </p>
           </div>
 
@@ -275,7 +279,7 @@ export function SalonUpdatePage() {
               className="inline-flex items-center justify-center gap-2 rounded-full border border-[#f1e7ed] bg-white px-5 py-2.5 text-[12px] font-bold text-[#ea4f93] transition-all duration-300 hover:bg-[#fff8fb] disabled:cursor-not-allowed disabled:opacity-60"
             >
               <X size={16} />
-              Cancel
+              {t("adminSalonManagement.cancel")}
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -286,7 +290,7 @@ export function SalonUpdatePage() {
               className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#ea4f93] to-[#cf3d74] px-6 py-2.5 text-[12px] font-bold text-white shadow-[0_12px_24px_rgba(234,79,147,0.32)] transition-all duration-300 hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Save size={16} />
-              Update Salon
+              {t("adminSalonManagement.updateSalon")}
             </motion.button>
           </div>
         </motion.div>
@@ -309,8 +313,8 @@ export function SalonUpdatePage() {
               <PremiumCard>
                 <div className="mb-6">
                   <SectionHeading
-                    title="Salon Details"
-                    subtitle="Update the basic information for this salon"
+                    title={t("adminSalonManagement.salonDetails")}
+                    subtitle={t("adminSalonManagement.updateTheBasicInformationForTh")}
                   />
                 </div>
 
@@ -322,7 +326,7 @@ export function SalonUpdatePage() {
                 >
                   <label className="space-y-2.5">
                     <span className="text-[13px] font-semibold text-[#2d1b35]">
-                      Salon Name <span className="text-[#ea4f93]">*</span>
+                      {t("adminSalonManagement.salonName")} <span className="text-[#ea4f93]">*</span>
                     </span>
                     <div className={inputWrapperClassName}>
                       <UserRound size={14} className="shrink-0 text-[#ea4f93]" />
@@ -330,7 +334,7 @@ export function SalonUpdatePage() {
                         type="text"
                         value={formData.salonName}
                         onChange={(event) => handleInputChange("salonName", event.target.value)}
-                        placeholder="Enter salon name"
+                        placeholder={t("adminSalonManagement.enterSalonName")}
                         className={inputClassName}
                         required
                       />
@@ -339,7 +343,7 @@ export function SalonUpdatePage() {
 
                   <label className="space-y-2.5">
                     <span className="text-[13px] font-semibold text-[#2d1b35]">
-                      Phone Number <span className="text-[#ea4f93]">*</span>
+                      {t("adminSalonManagement.phoneNumber")} <span className="text-[#ea4f93]">*</span>
                     </span>
                     <div className={inputWrapperClassName}>
                       <Phone size={14} className="shrink-0 text-[#ea4f93]" />
@@ -347,7 +351,7 @@ export function SalonUpdatePage() {
                         type="tel"
                         value={formData.phone}
                         onChange={(event) => handleInputChange("phone", event.target.value)}
-                        placeholder="Enter phone number"
+                        placeholder={t("adminSalonManagement.enterPhoneNumber")}
                         className={inputClassName}
                         required
                       />
@@ -356,14 +360,14 @@ export function SalonUpdatePage() {
 
                   <label className="space-y-2.5 md:col-span-2">
                     <span className="text-[13px] font-semibold text-[#2d1b35]">
-                      Address <span className="text-[#ea4f93]">*</span>
+                      {t("adminSalonManagement.address")} <span className="text-[#ea4f93]">*</span>
                     </span>
                     <div className={`${inputWrapperClassName} items-start`}>
                       <MapPin size={14} className="mt-0.5 shrink-0 text-[#ea4f93]" />
                       <textarea
                         value={formData.address}
                         onChange={(event) => handleInputChange("address", event.target.value)}
-                        placeholder="Full address including city and zip code"
+                        placeholder={t("adminSalonManagement.fullAddressIncludingCityAndZip")}
                         className={`${inputClassName} resize-none`}
                         rows={3}
                         required
@@ -373,7 +377,7 @@ export function SalonUpdatePage() {
 
                   <label className="space-y-2 md:col-span-2">
                     <span className="text-[13px] font-semibold text-[#2d1b35]">
-                      Salon Image
+                      {t("adminSalonManagement.salonImage")}
                     </span>
                     <div className="flex flex-col items-center justify-center gap-3 rounded-[16px] border border-dashed border-[#f0b7cf] bg-[#fff8fb] px-6 py-8 cursor-pointer transition-all duration-300 hover:border-[#ea4f93] hover:bg-[#fff5fb] hover:shadow-[0_8px_24px_rgba(234,79,147,0.12)]">
                       {imagePreview ? (
@@ -401,8 +405,8 @@ export function SalonUpdatePage() {
                             <Upload size={28} />
                           </div>
                           <div className="text-center">
-                            <p className="text-base font-semibold text-[#2d1b35]">Click to upload salon image</p>
-                            <p className="text-xs text-[#a88a9f] mt-1">PNG, JPG up to 5MB</p>
+                            <p className="text-base font-semibold text-[#2d1b35]">{t("adminSalonManagement.clickToUploadSalonImage")}</p>
+                            <p className="text-xs text-[#a88a9f] mt-1">{t("adminSalonManagement.pngJpgUpTo5mb")}</p>
                           </div>
                           <input
                             type="file"
@@ -417,24 +421,27 @@ export function SalonUpdatePage() {
 
                   <div className="space-y-2 md:col-span-2">
                     <span className="text-[13px] font-semibold text-[#2d1b35]">
-                      Status <span className="text-[#ea4f93]">*</span>
+                      {t("adminSalonManagement.status")} <span className="text-[#ea4f93]">*</span>
                     </span>
                     <div className="grid grid-cols-2 gap-2.5">
-                      {SALON_STATUS_OPTIONS.map((option) => (
-                        <motion.button
-                          key={option.value}
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          type="button"
-                          onClick={() => handleInputChange("status", option.value)}
-                          className={`rounded-[16px] px-4 py-3.5 text-center text-sm font-bold transition-all duration-300 ${formData.status === option.value
+                      {SALON_STATUS_OPTIONS.map((option) => {
+                        const labelMap = { ACTIVE: "Hoạt động", INACTIVE: "Ngừng hoạt động" };
+                        return (
+                          <motion.button
+                            key={option.value}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            type="button"
+                            onClick={() => handleInputChange("status", option.value)}
+                            className={`rounded-[16px] px-4 py-3.5 text-[14px] font-bold transition-all duration-300 ${formData.status === option.value
                               ? `${option.color} shadow-lg`
                               : "bg-[#fff8fb] text-[#a88a9f] hover:text-[#2d1b35] hover:bg-[#fff5fb] border border-[#f1e7ed]"
-                            }`}
-                        >
-                          {option.label}
-                        </motion.button>
-                      ))}
+                              }`}
+                          >
+                            {language === "vi" ? labelMap[option.value] || option.label : option.label}
+                          </motion.button>
+                        );
+                      })}
                     </div>
                   </div>
                 </motion.div>
@@ -443,39 +450,42 @@ export function SalonUpdatePage() {
               <PremiumCard>
                 <div className="mb-6">
                   <SectionHeading
-                    title="Operating Hours"
-                    subtitle="Set the opening and closing hours for each day"
+                    title={t("adminSalonManagement.operatingHours")}
+                    subtitle={t("adminSalonManagement.setTheOpeningAndClosingHoursFo")}
                   />
                 </div>
 
                 <div className="space-y-3">
-                  {SALON_DAYS_OF_WEEK.map((day) => (
-                    <motion.div
-                      key={day.key}
-                      variants={fadeInUp}
-                      className="flex flex-col gap-3 rounded-[16px] border border-[#f1e7ed] bg-[#fff8fb] px-5 py-4 sm:flex-row sm:items-center transition-all duration-300 hover:border-[#f0b7cf] hover:shadow-[0_4px_16px_rgba(234,79,147,0.08)]"
-                    >
-                      <div className="w-full sm:w-28">
-                        <span className="text-[13px] font-bold text-[#2d1b35]">{day.label}</span>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-3">
-                        <Clock3 size={14} className="shrink-0 text-[#ea4f93]" />
-                        <TimePicker
-                          value={formData.operatingHours[day.key].open}
-                          onChange={(value) => handleHoursChange(day.key, "open", value)}
-                          placeholder="Open time"
-                          className="w-full min-w-[7rem] sm:w-28"
-                        />
-                        <span className="text-sm text-[#a88a9f] font-semibold">to</span>
-                        <TimePicker
-                          value={formData.operatingHours[day.key].close}
-                          onChange={(value) => handleHoursChange(day.key, "close", value)}
-                          placeholder="Close time"
-                          className="w-full min-w-[7rem] sm:w-28"
-                        />
-                      </div>
-                    </motion.div>
-                  ))}
+                  {SALON_DAYS_OF_WEEK.map((day) => {
+                    const daysMap = { Monday: "Thứ hai", Tuesday: "Thứ ba", Wednesday: "Thứ tư", Thursday: "Thứ năm", Friday: "Thứ sáu", Saturday: "Thứ bảy", Sunday: "Chủ nhật" };
+                    return (
+                      <motion.div
+                        key={day.key}
+                        variants={fadeInUp}
+                        className="flex flex-col gap-3 rounded-[16px] border border-[#f1e7ed] bg-[#fff8fb] px-5 py-4 sm:flex-row sm:items-center transition-all duration-300 hover:border-[#f0b7cf] hover:shadow-[0_4px_16px_rgba(234,79,147,0.08)]"
+                      >
+                        <div className="w-full sm:w-28">
+                          <span className="text-[13px] font-bold text-[#2d1b35]">{language === "vi" ? daysMap[day.key] || day.label : day.label}</span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3">
+                          <Clock3 size={14} className="shrink-0 text-[#ea4f93]" />
+                          <TimePicker
+                            value={formData.operatingHours[day.key].open}
+                            onChange={(value) => handleHoursChange(day.key, "open", value)}
+                            placeholder={t("adminSalonManagement.openTime")}
+                            className="w-full min-w-[7rem] sm:w-28"
+                          />
+                          <span className="text-sm text-[#a88a9f] font-semibold">{t("adminSalonManagement.to")}</span>
+                          <TimePicker
+                            value={formData.operatingHours[day.key].close}
+                            onChange={(value) => handleHoursChange(day.key, "close", value)}
+                            placeholder={t("adminSalonManagement.closeTime")}
+                            className="w-full min-w-[7rem] sm:w-28"
+                          />
+                        </div>
+                      </motion.div>
+                    );
+                  })}
                 </div>
               </PremiumCard>
             </div>
@@ -484,8 +494,8 @@ export function SalonUpdatePage() {
               <PremiumCard>
                 <div className="mb-6">
                   <SectionHeading
-                    title="Quick Actions"
-                    subtitle="Additional actions for salon management"
+                    title={t("adminSalonManagement.quickActions")}
+                    subtitle={t("adminSalonManagement.additionalActionsForSalonManag")}
                   />
                 </div>
 
@@ -498,7 +508,7 @@ export function SalonUpdatePage() {
                     className="flex w-full items-center justify-center gap-2.5 rounded-full border border-[#f1e7ed] bg-[#fff8fb] px-4 py-3 text-[13px] font-bold text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb] hover:shadow-[0_4px_16px_rgba(234,79,147,0.08)]"
                   >
                     <Eye size={16} />
-                    View Salon Details
+                    {t("adminSalonManagement.viewSalonDetails")}
                   </motion.button>
 
                   <motion.button
@@ -509,7 +519,7 @@ export function SalonUpdatePage() {
                     className="flex w-full items-center justify-center gap-2.5 rounded-full border border-[#f1e7ed] bg-[#fff8fb] px-4 py-3 text-[13px] font-bold text-[#2d1b35] transition-all duration-300 hover:bg-[#fff5fb] hover:shadow-[0_4px_16px_rgba(234,79,147,0.08)]"
                   >
                     <Calendar size={16} />
-                    Set Holiday Schedule
+                    {t("adminSalonManagement.setHolidaySchedule")}
                   </motion.button>
 
                   <motion.button
@@ -520,7 +530,7 @@ export function SalonUpdatePage() {
                     className="flex w-full items-center justify-center gap-2.5 rounded-full border border-[#fecdd3] bg-[#fff0f0] px-4 py-3 text-[13px] font-bold text-[#d14c84] transition-all duration-300 hover:shadow-[0_4px_16px_rgba(209,76,132,0.15)]"
                   >
                     <X size={16} />
-                    Discard Changes
+                    {t("adminSalonManagement.discardChanges")}
                   </motion.button>
                 </div>
               </PremiumCard>
@@ -528,26 +538,26 @@ export function SalonUpdatePage() {
               <PremiumCard>
                 <div className="mb-6">
                   <SectionHeading
-                    title="Preview"
-                    subtitle="Summary of the salon information"
+                    title={t("adminSalonManagement.preview")}
+                    subtitle={t("adminSalonManagement.summaryOfTheSalonInformation")}
                   />
                 </div>
 
                 <div className="space-y-4">
                   <div className="rounded-[16px] border border-[#f1e7ed] bg-[#fff8fb] p-5">
                     <div className="mb-4 flex items-center justify-between gap-2">
-                      <h3 className="text-[15px] font-bold text-[#2d1b35]">Salon Summary</h3>
+                      <h3 className="text-[15px] font-bold text-[#2d1b35]">{t("adminSalonManagement.salonSummary")}</h3>
                       <span
                         className={`shrink-0 rounded-full px-3.5 py-1.5 text-[11px] font-bold ${getSalonStatusStyle(formData.status)}`}
                       >
-                        {formData.status}
+                        {language === "vi" && formData.status === "ACTIVE" ? "Hoạt động" : formData.status}
                       </span>
                     </div>
 
                     <div className="space-y-3 text-[13px] text-[#5b4256]">
                       <div className="flex justify-between gap-3">
-                        <span className="font-semibold text-[#2d1b35]">Name:</span>
-                        <span className="text-right font-medium text-[#2d1b35]">{formData.salonName || "Not set"}</span>
+                        <span className="font-semibold text-[#2d1b35]">{t("adminSalonManagement.name")}</span>
+                        <span className="text-right font-medium text-[#2d1b35]">{formData.salonName || (t("adminSalonManagement.notSet"))}</span>
                       </div>
                     </div>
                   </div>
@@ -559,17 +569,17 @@ export function SalonUpdatePage() {
           <PremiumCard className="mt-6">
             <div className="mb-6">
               <SectionHeading
-                title="Additional Information"
-                subtitle="Add any extra details about the salon"
+                title={t("adminSalonManagement.additionalInformation")}
+                subtitle={t("adminSalonManagement.addAnyExtraDetailsAboutTheSalo")}
               />
             </div>
 
             <label className="block space-y-2.5">
-              <span className="text-[13px] font-semibold text-[#2d1b35]">Description</span>
+              <span className="text-[13px] font-semibold text-[#2d1b35]">{t("adminSalonManagement.description")}</span>
               <textarea
                 value={formData.description}
                 onChange={(event) => handleInputChange("description", event.target.value)}
-                placeholder="Add any additional notes or description about this salon..."
+                placeholder={t("adminSalonManagement.addAnyAdditionalNotesOrDescrip")}
                 className="w-full rounded-[16px] border border-[#f1e7ed] bg-[#fff8fb] px-4 py-3.5 text-[14px] text-[#2d1b35] outline-none placeholder:text-[#a88a9f] font-medium transition-all duration-300 focus:border-[#ea4f93] focus:bg-white focus:shadow-[0_0_0_3px_rgba(234,79,147,0.15)]"
                 rows={4}
               />
@@ -581,48 +591,49 @@ export function SalonUpdatePage() {
       <ActionConfirmModal
         open={showCancelModal}
         intent="warning"
-        title="Cancel Salon Update"
-        subtitle="You are leaving this editing session without saving."
-        description="Unsaved changes to this salon will be discarded if you cancel now."
-        confirmText="Yes, Cancel"
-        cancelText="Keep Editing"
+        title={t("adminSalonManagement.cancelSalonUpdate")}
+        subtitle={t("adminSalonManagement.youAreLeavingThisEditingSessio")}
+        description={t("adminSalonManagement.unsavedChangesToThisSalonWillB")}
+        confirmText={t("adminSalonManagement.yesCancel")}
+        cancelText={t("adminSalonManagement.keepEditing")}
         confirmIcon={X}
         onConfirm={handleConfirmCancel}
         onCancel={() => setShowCancelModal(false)}
         details={[
-          { label: "Editing Mode", value: "Update existing salon" },
-          { label: "Next Step", value: "Return to salon details" },
+          { label: t("adminSalonManagement.editingMode"), value: t("adminSalonManagement.updateExistingSalon") },
+          { label: t("adminSalonManagement.nextStep"), value: t("adminSalonManagement.returnToSalonDetails") },
         ]}
-        warnings={[
-          "Recent edits to branch info and operating hours will be lost.",
-          "The salon will remain unchanged until you confirm an update.",
-        ]}
+        warnings={
+          language === "vi"
+            ? ["Các chỉnh sửa gần đây về thông tin và giờ hoạt động sẽ bị mất.", "Chi nhánh sẽ giữ nguyên trạng thái cũ cho đến khi bạn xác nhận cập nhật thành công."]
+            : ["Recent edits to branch info and operating hours will be lost.", "The salon will remain unchanged until you confirm an update."]
+        }
       />
 
       <ActionConfirmModal
         open={showSaveModal}
         intent="success"
-        title="Save Salon Changes"
-        subtitle="This will update the salon in the system."
-        description="Confirm to apply your edits and refresh the salon record with the latest values."
-        confirmText="Update Salon"
-        cancelText="Review Again"
+        title={t("adminSalonManagement.saveSalonChanges")}
+        subtitle={t("adminSalonManagement.thisWillCreateTheSalonInTheSys")}
+        description={t("adminSalonManagement.confirmToApplyYourEditsAndRefr")}
+        confirmText={t("adminSalonManagement.updateSalon")}
+        cancelText={t("adminSalonManagement.reviewAgain")}
         confirmIcon={Save}
         loading={isSaving}
         onConfirm={handleConfirmSave}
         onCancel={() => !isSaving && setShowSaveModal(false)}
-        highlights={[formData.salonName || "Salon record", formData.status]}
+        highlights={[formData.salonName || (t("adminSalonManagement.salonRecord")), language === "vi" && formData.status === "ACTIVE" ? "Hoạt động" : formData.status]}
         details={[
-          { label: "Address", value: formData.address || "No address entered" },
+          { label: t("adminSalonManagement.address"), value: formData.address || (t("adminSalonManagement.noAddressEntered")) },
         ]}
       />
 
       <SalonSaveResultModal
         result={saveResult}
-        successTitle="Update Successful"
-        failureTitle="Update Failed"
-        successDescription="The salon has been updated successfully."
-        failureDescription="Unable to update the salon."
+        successTitle={t("adminSalonManagement.updateSuccessful")}
+        failureTitle={t("adminSalonManagement.updateFailed")}
+        successDescription={t("adminSalonManagement.theSalonHasBeenUpdatedSuccessf")}
+        failureDescription={t("adminSalonManagement.unableToUpdateTheSalon")}
         onFailureClose={handleCloseResultModal}
         onSuccessComplete={handleSuccessComplete}
       />
@@ -630,7 +641,7 @@ export function SalonUpdatePage() {
       <HolidayClosureModal
         open={showHolidayClosureModal}
         onCancel={() => setShowHolidayClosureModal(false)}
-        salonOptions={[{ value: salonId, label: formData.salonName || "This Salon" }]}
+        salonOptions={[{ value: salonId, label: formData.salonName || (t("adminSalonManagement.thisSalon")) }]}
       />
     </motion.section>
   );

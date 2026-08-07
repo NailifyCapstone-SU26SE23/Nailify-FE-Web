@@ -8,8 +8,8 @@ function getAuthHeaders() {
 
   return token
     ? {
-        Authorization: `Bearer ${token}`,
-      }
+      Authorization: `Bearer ${token}`,
+    }
     : {};
 }
 
@@ -145,15 +145,15 @@ export function normalizeAdminSalon(salon) {
     salonId: realId,
     name: String(salon?.name || "").trim() || "--",
     address: String(salon?.address || "").trim() || "--",
-    manager: "Unassigned",
-    staff: "--",
+    manager: salon?.manager || "Unassigned",
+    staffCount: salon?.staffCount || 0,
     hours: formatOperatingHours(salon?.operatingHours),
     status,
     statusColor: getSalonStatusColor(status),
     image: getSalonImage(imageUrl, salon?.name || realId),
     phone: String(salon?.phone || "").trim() || "--",
-    rating: "—",
-    reviews: "0",
+    rating: salon?.rating || "—",
+    reviews: salon?.reviewCount || "0",
     latitude: Number(salon?.latitude || 0),
     longitude: Number(salon?.longitude || 0),
     operatingHours: Array.isArray(salon?.operatingHours) ? salon.operatingHours : [],
@@ -180,7 +180,24 @@ export async function fetchAdminSalons({
   });
 
   const data = unwrapResponse(response, "Failed to load salons.");
-  const items = Array.isArray(data?.items) ? data.items.map(normalizeAdminSalon) : [];
+  // const items = Array.isArray(data?.items) ? data.items.map(normalizeAdminSalon) : [];
+  const items = Array.isArray(data?.items)
+    ? await Promise.all(
+      data.items.map(async (salon) => {
+        const normalizedSalon = normalizeAdminSalon(salon);
+
+        const [artist, receptionist] = await Promise.all([
+          fetchSalonStaffCount(normalizedSalon.salonId, "Staff_Artist"),
+          fetchSalonStaffCount(normalizedSalon.salonId, "Receptionist"),
+        ]);
+
+        return {
+          ...normalizedSalon,
+          staffCount: artist + receptionist,
+        };
+      })
+    )
+    : [];
   const metaData = data?.metaData ?? {};
 
   return {
@@ -196,6 +213,22 @@ export async function fetchAdminSalons({
       lastRowOnPage: Number(metaData.lastRowOnPage || items.length),
     },
   };
+}
+
+export async function fetchSalonStaffCount(salonId, role) {
+  const response = await axiosClient.get(
+    `/Users/salon/${salonId}/staff`,
+    {
+      headers: getAuthHeaders(),
+      params: {
+        role,
+        pageNumber: 1,
+        pageSize: 1,
+      },
+    }
+  );
+
+  return response.data.data.metaData.totalItems;
 }
 
 export async function fetchAdminSalonDetail(salonId) {

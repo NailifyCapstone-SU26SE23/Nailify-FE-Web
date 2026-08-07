@@ -1,6 +1,7 @@
 import { ArrowLeft, FileImage, LoaderCircle, Save, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { createPlacedNailComponent } from "../../../../services/nailDesign.service";
 import {
   getAdminNailDesignDetailRoute,
@@ -30,6 +31,7 @@ import {
 export function NailVariantCreatePage() {
   const { designId } = useParams();
   const navigate = useNavigate();
+  const { t, language } = useLanguage();
   const location = useLocation();
   const routeState = location.state ?? {};
   const [formValues, setFormValues] = useState(() => ({
@@ -67,7 +69,7 @@ export function NailVariantCreatePage() {
         }
 
         setError(
-          loadError instanceof Error ? loadError.message : "Failed to load nail variant references.",
+          loadError instanceof Error ? loadError.message : (t("adminNailsDesignManagement.failedToLoadNailVariantReferen")),
         );
       } finally {
         if (isMounted) {
@@ -112,14 +114,15 @@ export function NailVariantCreatePage() {
     setError("");
 
     const normalizedName = String(formValues.name || "").trim();
+    const isVi = language === "vi";
 
     if (!normalizedName) {
-      setError("Variant name is required.");
+      setError(isVi ? "Tên biến thể là bắt buộc." : "Variant name is required.");
       return;
     }
 
     if (!formValues.image) {
-      setError("Variant image file is required.");
+      setError(isVi ? "Tệp hình ảnh biến thể là bắt buộc." : "Variant image file is required.");
       return;
     }
 
@@ -127,7 +130,7 @@ export function NailVariantCreatePage() {
     const nailSurfaceId = findSurfaceId(references.surfaces, formValues.tryOnConfig);
 
     if (!nailShapeId || !nailSurfaceId) {
-      setError("Nail shape and surface references are required before saving.");
+      setError(isVi ? "Cần thiết lập dáng móng và bề mặt móng trước khi lưu." : "Nail shape and surface references are required before saving.");
       return;
     }
 
@@ -154,12 +157,12 @@ export function NailVariantCreatePage() {
           : getAdminNailDesignDetailRoute(designId),
         {
           state: {
-            flashMessage: `Created variant "${normalizedName}".`,
+            flashMessage: isVi ? `Đã tạo biến thể "${normalizedName}".` : `Created variant "${normalizedName}".`,
           },
         },
       );
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Failed to create nail variant.");
+      setError(saveError instanceof Error ? saveError.message : (isVi ? "Tạo biến thể móng thất bại." : "Failed to create nail variant."));
     } finally {
       setIsSaving(false);
     }
@@ -178,11 +181,13 @@ export function NailVariantCreatePage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-xs text-[#c694ad]">
-              Nail Designs / <span className="text-[#ea4f93]">Add Nail Variant</span>
+              {t("adminNailsDesignManagement.nailDesigns")}<span className="text-[#ea4f93]">{t("adminNailsDesignManagement.addNailVariant")}</span>
             </p>
-            <h1 className="mt-2 text-2xl font-bold text-[#432744]">Add Nail Variant</h1>
+            <h1 className="mt-2 text-2xl font-bold text-[#432744]">
+              {t("adminNailsDesignManagement.addNailVariant")}
+            </h1>
             <p className="mt-1 text-sm text-[#8c7085]">
-              Set up try-on data first if needed. Nothing is persisted until Save.
+              {t("adminNailsDesignManagement.setUpTryonDataFirstIfNeededNot")}
             </p>
           </div>
           <button
@@ -191,7 +196,7 @@ export function NailVariantCreatePage() {
             className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#8c7085]"
           >
             <ArrowLeft size={14} className="mr-1.5 inline" />
-            Back to Design
+            {t("adminNailsDesignManagement.backToDesign")}
           </button>
         </div>
       </div>
@@ -207,15 +212,17 @@ export function NailVariantCreatePage() {
                 <FileImage size={18} />
               </div>
               <div>
-                <h2 className="font-extrabold text-[#432744]">Variant Information</h2>
-                <p className="mt-1 text-sm text-[#a88a9d]">Name and image file are required.</p>
+                <h2 className="font-extrabold text-[#432744]">{t("adminNailsDesignManagement.variantInformation")}</h2>
+                <p className="mt-1 text-sm text-[#a88a9d]">
+                  {t("adminNailsDesignManagement.nameAndImageFileAreRequired")}
+                </p>
               </div>
             </div>
 
             <div className="mt-5 grid gap-4">
               <label className="space-y-2">
                 <span className="text-sm font-semibold text-[#5c4559]">
-                  Variant Name <span className="text-[#ea4f93]">*</span>
+                  {t("adminNailsDesignManagement.variantName")} <span className="text-[#ea4f93]">*</span>
                 </span>
                 <input
                   value={formValues.name}
@@ -225,14 +232,14 @@ export function NailVariantCreatePage() {
                       name: event.target.value,
                     }))
                   }
-                  placeholder="e.g. Pearl Chrome Accent"
+                  placeholder={t("adminNailsDesignManagement.egPearlChromeAccent")}
                   className="h-12 w-full rounded-2xl border border-[#f4d4e2] bg-[#fffdfd] px-4 text-sm text-[#432744] outline-none transition focus:border-[#ef6bb4]"
                 />
               </label>
 
               <label className="space-y-2">
                 <span className="text-sm font-semibold text-[#5c4559]">
-                  Image File <span className="text-[#ea4f93]">*</span>
+                  {t("adminNailsDesignManagement.imageFile")} <span className="text-[#ea4f93]">*</span>
                 </span>
                 <input
                   type="file"
@@ -256,9 +263,10 @@ export function NailVariantCreatePage() {
                   <Sparkles size={18} />
                 </div>
                 <div>
-                  <h2 className="font-extrabold text-[#432744]">Nail Try-On Setup</h2>
+                  <h2 className="font-extrabold text-[#432744]">{t("adminNailsDesignManagement.nailTryonSetup")}</h2>
                   <p className="mt-1 text-sm text-[#a88a9d]">
-                    Cached in browser route state until Save creates the variant.
+                    {t("adminNailsDesignManagement.cachedInBrowserRouteStateUntil")
+                    }
                   </p>
                 </div>
               </div>
@@ -268,15 +276,15 @@ export function NailVariantCreatePage() {
                 disabled={isLoadingReferences}
                 className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.2)] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Set Up Nail Try On
+                {t("adminNailsDesignManagement.setUpNailTryOn")}
               </button>
             </div>
 
             <div className="mt-5 grid gap-3 md:grid-cols-3">
               {[
-                ["Setup Status", formValues.tryOnConfig ? "Configured" : "Not configured"],
-                ["Shape", selectedShape?.name || "Default"],
-                ["Surface", selectedSurface?.name || "Default"],
+                [t("adminNailsDesignManagement.setupStatus"), formValues.tryOnConfig ? (t("adminNailsDesignManagement.configured")) : (t("adminNailsDesignManagement.notConfigured"))],
+                [t("adminNailsDesignManagement.shape"), selectedShape?.name || (t("adminNailsDesignManagement.default"))],
+                [t("adminNailsDesignManagement.surface"), selectedSurface?.name || (t("adminNailsDesignManagement.default"))],
               ].map(([label, value]) => (
                 <div key={label} className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">{label}</p>
@@ -301,12 +309,12 @@ export function NailVariantCreatePage() {
               {isSaving ? (
                 <>
                   <LoaderCircle size={14} className="mr-1.5 inline animate-spin" />
-                  Saving...
+                  {t("adminNailsDesignManagement.saving")}
                 </>
               ) : (
                 <>
                   <Save size={14} className="mr-1.5 inline" />
-                  Save Variant
+                  {t("adminNailsDesignManagement.saveVariant")}
                 </>
               )}
             </button>
@@ -315,7 +323,7 @@ export function NailVariantCreatePage() {
 
         <aside className="space-y-4">
           <section className="rounded-[22px] border border-[#f8d3e2] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
-            <h2 className="font-extrabold text-[#432744]">Preview</h2>
+            <h2 className="font-extrabold text-[#432744]">{t("adminNailsDesignManagement.preview")}</h2>
             <div className="mt-4 overflow-hidden rounded-[18px] bg-[#f6edf2]">
               {previewImageUrl ? (
                 <img
@@ -326,13 +334,14 @@ export function NailVariantCreatePage() {
                 />
               ) : (
                 <div className="flex h-64 items-center justify-center text-sm font-semibold text-[#b2879f]">
-                  No image selected
+                  {t("adminNailsDesignManagement.noImageSelected")}
                 </div>
               )}
             </div>
-            <p className="mt-4 text-sm font-extrabold text-[#432744]">{formValues.name || "Unnamed Variant"}</p>
+            <p className="mt-4 text-sm font-extrabold text-[#432744]">{formValues.name || (t("adminNailsDesignManagement.unnamedVariant"))}</p>
             <p className="mt-1 text-xs text-[#a88a9d]">
-              The uploaded image and cached try-on setup will be sent only when Save Variant is clicked.
+              {t("adminNailsDesignManagement.theUploadedImageAndCachedTryon")
+              }
             </p>
           </section>
         </aside>

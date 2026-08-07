@@ -1,3 +1,4 @@
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   ArrowUpDown,
   ChevronLeft,
@@ -44,25 +45,30 @@ function MetricCard({ item }) {
 }
 
 function ProcedureStatusBadge({ status }) {
+  const { t } = useLanguage();
   const toneMap = {
     Active: "bg-[#e7fbf4] text-[#159669]",
     Inactive: "bg-[#fff1f5] text-[#d14c84]",
   };
 
+  const isStatusActive = String(status || "").toLowerCase() === "active";
+  const displayLabel = isStatusActive ? t("adminProcedures.active") : t("adminProcedures.inactive");
+
   return (
-    <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${toneMap[status] || "bg-[#fff7fb] text-[#c694ad]"}`}>
-      {status}
+    <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${isStatusActive ? toneMap.Active : toneMap.Inactive}`}>
+      {displayLabel}
     </span>
   );
 }
 
 function ProcedureRequiredBadge({ isRequired }) {
+  const { t } = useLanguage();
   return (
     <span
       className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${isRequired ? "bg-[#fff4df] text-[#d9871c]" : "bg-[#f3ebff] text-[#7e4fe6]"
         }`}
     >
-      {isRequired ? "Required" : "Optional"}
+      {isRequired ? t("adminProcedures.required") : t("adminProcedures.optional")}
     </span>
   );
 }
@@ -117,6 +123,7 @@ function sortProcedures(items, sortValue) {
 }
 
 export function ProceduresManagementPage() {
+  const { t, language } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
@@ -186,7 +193,7 @@ export function ProceduresManagementPage() {
         }
 
         setProcedures([]);
-        setError(loadError instanceof Error ? loadError.message : "Failed to load procedures.");
+        setError(loadError instanceof Error ? loadError.message : t("adminProcedures.loadFailed"));
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -210,28 +217,28 @@ export function ProceduresManagementPage() {
 
     return [
       {
-        label: "Total Procedures",
+        label: t("adminProcedures.totalProcedures"),
         value: metaData.totalItems.toLocaleString(),
         note: `${metaData.totalPages} pages`,
         icon: ClipboardList,
         iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
       },
       {
-        label: "Active Items",
+        label: t("adminProcedures.activeItems"),
         value: activeCount.toLocaleString(),
         note: "Current page",
         icon: Sparkles,
         iconClassName: "bg-[#e7fbf4] text-[#20ab77]",
       },
       {
-        label: "Required Steps",
+        label: t("adminProcedures.requiredSteps"),
         value: requiredCount.toLocaleString(),
         note: "Current page",
         icon: TimerReset,
         iconClassName: "bg-[#fff4df] text-[#d9871c]",
       },
       {
-        label: "Avg Duration",
+        label: t("adminProcedures.avgDuration"),
         value: formatProcedureDuration(averageDuration),
         note: "Current page",
         icon: TimerReset,
@@ -303,7 +310,7 @@ export function ProceduresManagementPage() {
       {
         title: (
           <SortableHeader
-            label="Procedure"
+            label={t("adminProcedures.procedure")}
             sortKey="procedure"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -323,7 +330,7 @@ export function ProceduresManagementPage() {
       {
         title: (
           <SortableHeader
-            label="Duration"
+            label={t("adminProcedures.duration")}
             sortKey="duration"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -336,7 +343,7 @@ export function ProceduresManagementPage() {
       {
         title: (
           <SortableHeader
-            label="Required"
+            label={t("adminProcedures.required")}
             sortKey="required"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -349,7 +356,7 @@ export function ProceduresManagementPage() {
       {
         title: (
           <SortableHeader
-            label="Status"
+            label={t("adminProcedures.status")}
             sortKey="status"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -362,7 +369,7 @@ export function ProceduresManagementPage() {
       {
         title: (
           <SortableHeader
-            label="Created"
+            label={t("adminProcedures.created")}
             sortKey="created"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -373,20 +380,20 @@ export function ProceduresManagementPage() {
         render: (value) => <span className="text-sm text-[#6b5668]">{value}</span>,
       },
       {
-        title: "Actions",
+        title: t("adminProcedures.actions"),
         key: "actions",
         render: (_, procedure) => (
           <ActionDropdown
             items={[
               {
                 key: "view",
-                label: "View Detail",
+                label: t("adminProcedures.viewDetail"),
                 icon: Eye,
                 onSelect: () => navigate(getAdminProcedureDetailRoute(procedure.procedureId)),
               },
               {
                 key: "edit",
-                label: "Edit Procedure",
+                label: t("adminProcedures.editProcedure"),
                 icon: Pencil,
                 onSelect: () =>
                   navigate(getAdminProcedureDetailRoute(procedure.procedureId), {
@@ -395,7 +402,7 @@ export function ProceduresManagementPage() {
               },
               {
                 key: "delete",
-                label: "Delete Procedure",
+                label: t("adminProcedures.deleteProcedure"),
                 icon: Trash2,
                 className: "text-[#d14c84]",
                 onSelect: () => setDeleteTarget(procedure),
@@ -404,8 +411,7 @@ export function ProceduresManagementPage() {
           />
         ),
       },
-    ],
-    [navigate, selectedSort],
+    ], [navigate, selectedSort, t],
   );
 
   const handleDeleteProcedure = async () => {
@@ -418,7 +424,7 @@ export function ProceduresManagementPage() {
     try {
       await deleteAdminProcedure(deleteTarget.procedureId);
       setDeleteTarget(null);
-      toast.success(`${deleteTarget.name} deleted successfully.`);
+      toast.success(t("adminProcedures.deleteSuccess", { name: deleteTarget.name }));
 
       const shouldMoveBack = procedures.length === 1 && metaData.currentPage > 1;
       const targetPage = shouldMoveBack ? Math.max(metaData.currentPage - 1, 1) : metaData.currentPage;
@@ -430,7 +436,7 @@ export function ProceduresManagementPage() {
       setProcedures(response.items);
       setMetaData(response.metaData);
     } catch (deleteError) {
-      toast.error(deleteError instanceof Error ? deleteError.message : "Failed to delete procedure.");
+      toast.error(deleteError instanceof Error ? deleteError.message : t("adminProcedures.deleteFailed"));
     } finally {
       setIsDeleting(false);
     }
@@ -465,7 +471,7 @@ export function ProceduresManagementPage() {
                 <input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search procedure by name or description..."
+                  placeholder={t("adminProcedures.searchPlaceholder")}
                   className="h-10 w-full rounded-full border border-[#f4d7e5] bg-[#fffafc] pl-11 pr-4 text-sm text-[#5b4658] outline-none placeholder:text-[#d4a1b8] focus:border-[#ea4f93]"
                 />
               </label>
@@ -481,7 +487,7 @@ export function ProceduresManagementPage() {
                 className="inline-flex h-10 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
               >
                 <Search size={14} className="mr-2 shrink-0" />
-                Search
+                {t("adminProcedures.search")}
               </button>
             </div>
 
@@ -490,9 +496,9 @@ export function ProceduresManagementPage() {
               onChange={(event) => setSelectedRequired(event.target.value)}
               className="h-10 rounded-full border border-[#f4d7e5] bg-[#fffafc] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
             >
-              <option value="">All required</option>
-              <option value="required">Required</option>
-              <option value="optional">Optional</option>
+              <option value="">{t("adminProcedures.allRequired")}</option>
+              <option value="required">{t("adminProcedures.required")}</option>
+              <option value="optional">{t("adminProcedures.optional")}</option>
             </select>
 
             <select
@@ -500,9 +506,9 @@ export function ProceduresManagementPage() {
               onChange={(event) => setSelectedStatus(event.target.value)}
               className="h-10 rounded-full border border-[#f4d7e5] bg-[#fffafc] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
             >
-              <option value="">All statuses</option>
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
+              <option value="">{t("adminProcedures.allStatuses")}</option>
+              <option value="Active">{t("adminProcedures.active")}</option>
+              <option value="Inactive">{t("adminProcedures.inactive")}</option>
             </select>
           </div>
           <div className="w-auto min-w-[150px]">
@@ -511,16 +517,16 @@ export function ProceduresManagementPage() {
               className="inline-flex h-[40px] items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
             >
               <Plus size={13} className="mr-1.5 shrink-0" />
-              Add Procedure
+              {t("adminProcedures.addProcedure")}
             </Link>
           </div>
         </div>
 
         <section className="overflow-hidden rounded-[20px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
           <div className="border-b border-[#f6dbe7] px-5 py-4">
-            <h2 className="text-sm font-extrabold text-[#432744]">Procedures</h2>
+            <h2 className="text-sm font-extrabold text-[#432744]">{t("adminProcedures.procedures")}</h2>
             <p className="mt-1 text-[11px] font-medium text-[#c694ad]">
-              Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} procedures
+              {t("adminProcedures.showingProcedures", { first: metaData.firstRowOnPage, last: metaData.lastRowOnPage, total: metaData.totalItems })}
             </p>
           </div>
 
@@ -534,12 +540,12 @@ export function ProceduresManagementPage() {
             }}
             pagination={false}
             scroll={{ x: 1100 }}
-            locale={{ emptyText: error || "No procedures found." }}
+            locale={{ emptyText: error || t("adminProcedures.noProceduresFound") }}
           />
 
           <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-[11px] text-[#c694ad]">
-              Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} procedures
+              {t("adminProcedures.showingProcedures", { first: metaData.firstRowOnPage, last: metaData.lastRowOnPage, total: metaData.totalItems })}
             </p>
             <div className="flex items-center gap-1">
               <button
@@ -597,11 +603,11 @@ export function ProceduresManagementPage() {
         <ActionConfirmModal
           open
           intent="danger"
-          title="Delete Procedure"
-          subtitle="This will permanently remove the procedure from backend."
-          description={`You are about to delete ${deleteTarget.name}. This action cannot be undone.`}
-          confirmText="Delete Procedure"
-          cancelText="Keep Procedure"
+          title={t("adminProcedures.deleteProcedureTitle")}
+          subtitle={t("adminProcedures.deleteConfirmSubtitle")}
+          description={t("adminProcedures.deleteConfirmDesc", { name: deleteTarget.name })}
+          confirmText={t("adminProcedures.deleteProcedure")}
+          cancelText={t("adminProcedures.keepProcedure")}
           confirmIcon={Trash2}
           loading={isDeleting}
           onConfirm={handleDeleteProcedure}
@@ -611,7 +617,7 @@ export function ProceduresManagementPage() {
             meta: `${deleteTarget.durationLabel} | ${deleteTarget.status}`,
 
           }}
-          warnings={["This action calls the backend delete endpoint and removes this procedure record."]}
+          warnings={[t("adminProcedures.deleteWarning")]}
         />
       ) : null}
     </>

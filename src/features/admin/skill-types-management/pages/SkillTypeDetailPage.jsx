@@ -1,3 +1,4 @@
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ArrowLeft, FileText, FolderTree, Pencil, Save, ShieldCheck, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
@@ -10,19 +11,20 @@ import {
   updateAdminSkillType,
 } from "../services/skillTypesManagementService";
 
-function validateForm(formValues) {
+function validateForm(formValues, t) {
   if (!String(formValues.name || "").trim()) {
-    return "Skill type name is required.";
+    return t("adminSkillTypes.nameRequired");
   }
 
   if (!String(formValues.description || "").trim()) {
-    return "Skill type description is required.";
+    return t("adminSkillTypes.descriptionRequired");
   }
 
   return "";
 }
 
 export function SkillTypeDetailPage() {
+  const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const { skillTypeId } = useParams();
@@ -75,7 +77,7 @@ export function SkillTypeDetailPage() {
           return;
         }
 
-        setError(loadError instanceof Error ? loadError.message : "Failed to load skill type detail.");
+        setError(loadError instanceof Error ? loadError.message : t("adminSkillTypes.loadDetailFailed"));
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -96,9 +98,9 @@ export function SkillTypeDetailPage() {
     }
 
     return [
-      ["Skill Type ID", skillType.skillTypeId],
-      ["Status", skillType.status || "--"],
-      ["Description", draft.description || "--"],
+      [t("adminSkillTypes.skillTypeIdLabel"), skillType.skillTypeId],
+      [t("adminSkillTypes.status"), skillType.status || "--"],
+      [t("adminSkillTypes.description"), draft.description || "--"],
     ];
   }, [draft, skillType]);
 
@@ -140,7 +142,7 @@ export function SkillTypeDetailPage() {
   };
 
   const handleRequestSave = () => {
-    const validationError = validateForm(draft);
+    const validationError = validateForm(draft, t);
 
     if (validationError) {
       setError(validationError);
@@ -165,9 +167,9 @@ export function SkillTypeDetailPage() {
         description: updatedSkillType.description,
       });
       setIsEditing(false);
-      toast.success(`${updatedSkillType.name} updated successfully.`);
+      toast.success(t("adminSkillTypes.updateSuccess", { name: updatedSkillType.name }));
     } catch (saveError) {
-      const message = saveError instanceof Error ? saveError.message : "Failed to update skill type.";
+      const message = saveError instanceof Error ? saveError.message : t("adminSkillTypes.updateFailed");
       setError(message);
       toast.error(message);
     } finally {
@@ -185,14 +187,14 @@ export function SkillTypeDetailPage() {
 
     try {
       await deleteAdminSkillType(skillType.skillTypeId);
-      toast.success(`${skillType.name} deleted successfully.`);
+      toast.success(t("adminSkillTypes.deleteSuccess", { name: skillType.name }));
       navigate(ROUTES.adminSkillTypes, {
         state: {
-          flashMessage: `${skillType.name} has been deleted successfully.`,
+          flashMessage: t("adminSkillTypes.deleteFlashSuccess", { name: skillType.name }),
         },
       });
     } catch (deleteError) {
-      const message = deleteError instanceof Error ? deleteError.message : "Failed to delete skill type.";
+      const message = deleteError instanceof Error ? deleteError.message : t("adminSkillTypes.deleteFailed");
       toast.error(message);
     } finally {
       setIsDeleting(false);
@@ -211,8 +213,8 @@ export function SkillTypeDetailPage() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">Skill Type Detail</h1>
-            <p className="text-xs font-medium text-slate-400">Review, edit, and delete this skill type from one page.</p>
+            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">{t("adminSkillTypes.skillTypeDetail")}</h1>
+            <p className="text-xs font-medium text-slate-400">{t("adminSkillTypes.skillTypeDetailDesc")}</p>
           </div>
         </div>
 
@@ -224,7 +226,7 @@ export function SkillTypeDetailPage() {
             className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Trash2 size={14} />
-            Delete Skill Type
+            {t("adminSkillTypes.deleteSkillType")}
           </button>
           {isEditing ? (
             <>
@@ -234,7 +236,7 @@ export function SkillTypeDetailPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
               >
                 <X size={14} />
-                Cancel
+                {t("adminSkillTypes.cancel")}
               </button>
               <button
                 type="button"
@@ -242,7 +244,7 @@ export function SkillTypeDetailPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
               >
                 <Save size={14} />
-                Save Changes
+                {t("adminSkillTypes.saveChanges")}
               </button>
             </>
           ) : (
@@ -253,7 +255,7 @@ export function SkillTypeDetailPage() {
               className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Pencil size={14} />
-              Edit Skill Type
+              {t("adminSkillTypes.editSkillType")}
             </button>
           )}
         </div>
@@ -273,28 +275,28 @@ export function SkillTypeDetailPage() {
 
       {isLoading ? (
         <div className="flex min-h-[320px] items-center justify-center rounded-[24px] bg-white/80 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
-          <div className="text-center text-sm text-slate-600">Loading skill type details...</div>
+          <div className="text-center text-sm text-slate-600">{t("adminSkillTypes.loadingDetails")}</div>
         </div>
       ) : !skillType ? (
         <div className="rounded-[24px] border border-rose-100 bg-white/85 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
           <div className="mx-auto max-w-xl text-center">
-            <h2 className="text-lg font-bold text-slate-800">Unable to load skill type detail</h2>
+            <h2 className="text-lg font-bold text-slate-800">{t("adminSkillTypes.unableToLoad")}</h2>
             <p className="mt-2 text-sm text-slate-500">
-              {error || "This skill type could not be loaded from the backend."}
+              {error || t("adminSkillTypes.unableToLoadDesc")}
             </p>
             <div className="mt-5 flex justify-center gap-3">
               <Link
                 to={ROUTES.adminSkillTypes}
                 className="inline-flex items-center justify-center rounded-full border border-rose-200 bg-white px-4 py-2 text-sm font-semibold text-rose-500 transition hover:bg-rose-50"
               >
-                Back to skill types
+                {t("adminSkillTypes.backToSkillTypes")}
               </Link>
               <button
                 type="button"
                 onClick={() => window.location.reload()}
                 className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(226,93,143,0.24)]"
               >
-                Retry
+                {t("adminSkillTypes.retry")}
               </button>
             </div>
           </div>
@@ -304,12 +306,12 @@ export function SkillTypeDetailPage() {
           <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
             <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
               <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
-              Skill Type Information
+              {t("adminSkillTypes.skillTypeInformation")}
             </h2>
 
             <div className="grid gap-5">
               <label className="space-y-2.5">
-                <span className="text-[13px] font-semibold text-slate-600">Skill Type Name</span>
+                <span className="text-[13px] font-semibold text-slate-600">{t("adminSkillTypes.skillTypeName")}</span>
                 <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                   <FolderTree size={14} className="shrink-0 text-rose-300" />
                   <input
@@ -323,7 +325,7 @@ export function SkillTypeDetailPage() {
               </label>
 
               <label className="space-y-2.5">
-                <span className="text-[13px] font-semibold text-slate-600">Description</span>
+                <span className="text-[13px] font-semibold text-slate-600">{t("adminSkillTypes.description")}</span>
                 <div className="flex items-start gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                   <FileText size={14} className="mt-0.5 shrink-0 text-rose-300" />
                   <textarea
@@ -340,7 +342,7 @@ export function SkillTypeDetailPage() {
                 <div className="flex items-center gap-2">
                   <ShieldCheck size={14} className="shrink-0 text-rose-300" />
                   <div>
-                    <p className="text-[13px] font-semibold text-slate-600">Current Status</p>
+                    <p className="text-[13px] font-semibold text-slate-600">{t("adminSkillTypes.currentStatus")}</p>
                     <p className="mt-1 text-sm font-bold text-slate-800">{skillType?.status || "--"}</p>
                   </div>
                 </div>
@@ -352,7 +354,7 @@ export function SkillTypeDetailPage() {
             <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
               <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
                 <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
-                Summary
+                {t("adminSkillTypes.summary")}
               </h2>
 
               <div className="space-y-3 rounded-2xl border border-rose-100 bg-[#fff8fb] p-4">
@@ -371,11 +373,11 @@ export function SkillTypeDetailPage() {
       <ActionConfirmModal
         open={showSaveConfirm}
         intent="success"
-        title="Save Skill Type Changes"
-        subtitle="This will update the skill type in backend."
-        description="Confirm to save the latest changes to this skill type."
-        confirmText="Save Changes"
-        cancelText="Review Again"
+        title={t("adminSkillTypes.saveChangesTitle")}
+        subtitle={t("adminSkillTypes.saveChangesSubtitle")}
+        description={t("adminSkillTypes.saveChangesDesc")}
+        confirmText={t("adminSkillTypes.saveChanges")}
+        cancelText={t("adminSkillTypes.reviewAgain")}
         confirmIcon={Save}
         loading={isSaving}
         onConfirm={handleSave}
@@ -390,11 +392,11 @@ export function SkillTypeDetailPage() {
       <ActionConfirmModal
         open={showDeleteConfirm}
         intent="danger"
-        title="Delete Skill Type"
-        subtitle="This will set the skill type status to inactive in backend."
-        description={`You are about to delete ${skillType?.name || "this skill type"}.`}
-        confirmText="Delete Skill Type"
-        cancelText="Keep Skill Type"
+        title={t("adminSkillTypes.deleteSkillTypeTitle")}
+        subtitle={t("adminSkillTypes.deleteConfirmSubtitle")}
+        description={t("adminSkillTypes.deleteConfirmDesc", { name: skillType?.name || "this skill type" })}
+        confirmText={t("adminSkillTypes.deleteSkillType")}
+        cancelText={t("adminSkillTypes.keepSkillType")}
         confirmIcon={Trash2}
         loading={isDeleting}
         onConfirm={handleDelete}
@@ -408,7 +410,7 @@ export function SkillTypeDetailPage() {
             }
             : null
         }
-        warnings={["Backend delete for this resource changes the status to inactive."]}
+        warnings={[t("adminSkillTypes.deleteWarning")]}
       />
     </section>
   );

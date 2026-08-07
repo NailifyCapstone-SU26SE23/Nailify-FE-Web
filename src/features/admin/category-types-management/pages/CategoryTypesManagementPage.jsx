@@ -1,3 +1,4 @@
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   ArrowUpDown,
   ChevronLeft,
@@ -43,13 +44,16 @@ function MetricCard({ item }) {
 }
 
 function CategoryTypeStatusBadge({ status }) {
+  const { t } = useLanguage();
   const normalizedStatus = String(status || "").toLowerCase();
-  const className =
-    normalizedStatus === "active"
-      ? "bg-[#e7fbf4] text-[#159669]"
-      : "bg-[#fff1f5] text-[#d14c84]";
+  const isStatusActive = normalizedStatus === "active";
+  const className = isStatusActive
+    ? "bg-[#e7fbf4] text-[#159669]"
+    : "bg-[#fff1f5] text-[#d14c84]";
 
-  return <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${className}`}>{status}</span>;
+  const displayLabel = isStatusActive ? t("adminCategoryTypes.active") : t("adminCategoryTypes.inactive");
+
+  return <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${className}`}>{displayLabel}</span>;
 }
 
 function SortableHeader({ label, sortKey, selectedSort, onToggle }) {
@@ -98,6 +102,7 @@ function sortCategoryTypes(items, sortValue) {
 }
 
 export function CategoryTypesManagementPage() {
+  const { t, language } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
@@ -167,7 +172,7 @@ export function CategoryTypesManagementPage() {
         }
 
         setCategoryTypes([]);
-        setError(loadError instanceof Error ? loadError.message : "Failed to load category types.");
+        setError(loadError instanceof Error ? loadError.message : t("adminCategoryTypes.loadFailed"));
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -188,28 +193,28 @@ export function CategoryTypesManagementPage() {
 
     return [
       {
-        label: "Total Types",
+        label: t("adminCategoryTypes.totalTypes"),
         value: metaData.totalItems.toLocaleString(),
         note: `${metaData.totalPages} pages`,
         icon: FolderTree,
         iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
       },
       {
-        label: "Active Types",
+        label: t("adminCategoryTypes.activeTypes"),
         value: activeCount.toLocaleString(),
         note: "Current page",
         icon: Sparkles,
         iconClassName: "bg-[#e7fbf4] text-[#20ab77]",
       },
       {
-        label: "Visible Categories",
+        label: t("adminCategoryTypes.visibleCategories"),
         value: totalCategories.toLocaleString(),
         note: "Nested categories on page",
         icon: Layers3,
         iconClassName: "bg-[#fff4df] text-[#d9871c]",
       },
       {
-        label: "Page Items",
+        label: t("adminCategoryTypes.pageItems"),
         value: categoryTypes.length.toLocaleString(),
         note: debouncedQuery || "Current page",
         icon: FolderTree,
@@ -275,7 +280,7 @@ export function CategoryTypesManagementPage() {
       {
         title: (
           <SortableHeader
-            label="Category Type"
+            label={t("adminCategoryTypes.categoryType")}
             sortKey="categoryType"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -295,7 +300,7 @@ export function CategoryTypesManagementPage() {
       {
         title: (
           <SortableHeader
-            label="Status"
+            label={t("adminCategoryTypes.status")}
             sortKey="status"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -308,7 +313,7 @@ export function CategoryTypesManagementPage() {
       {
         title: (
           <SortableHeader
-            label="Categories"
+            label={t("adminCategoryTypes.categories")}
             sortKey="categories"
             selectedSort={selectedSort}
             onToggle={handleSortToggle}
@@ -323,20 +328,20 @@ export function CategoryTypesManagementPage() {
         ),
       },
       {
-        title: "Actions",
+        title: t("adminCategoryTypes.actions"),
         key: "actions",
         render: (_, categoryType) => (
           <ActionDropdown
             items={[
               {
                 key: "view",
-                label: "View Detail",
+                label: t("adminCategoryTypes.viewDetail"),
                 icon: Eye,
                 onSelect: () => navigate(getAdminCategoryTypeDetailRoute(categoryType.categoryTypeId)),
               },
               {
                 key: "edit",
-                label: "Edit Category Type",
+                label: t("adminCategoryTypes.editCategoryType"),
                 icon: Pencil,
                 onSelect: () =>
                   navigate(getAdminCategoryTypeDetailRoute(categoryType.categoryTypeId), {
@@ -345,7 +350,7 @@ export function CategoryTypesManagementPage() {
               },
               {
                 key: "delete",
-                label: "Delete Category Type",
+                label: t("adminCategoryTypes.deleteCategoryType"),
                 icon: Trash2,
                 className: "text-[#d14c84]",
                 onSelect: () => setDeleteTarget(categoryType),
@@ -354,8 +359,7 @@ export function CategoryTypesManagementPage() {
           />
         ),
       },
-    ],
-    [navigate, selectedSort],
+    ], [navigate, selectedSort, t],
   );
 
   const handleDeleteCategoryType = async () => {
@@ -368,7 +372,7 @@ export function CategoryTypesManagementPage() {
     try {
       await deleteAdminCategoryType(deleteTarget.categoryTypeId);
       setDeleteTarget(null);
-      toast.success(`${deleteTarget.name} deleted successfully.`);
+      toast.success(t("adminCategoryTypes.deleteSuccess", { name: deleteTarget.name }));
 
       const shouldMoveBack = categoryTypes.length === 1 && metaData.currentPage > 1;
       const targetPage = shouldMoveBack ? Math.max(metaData.currentPage - 1, 1) : metaData.currentPage;
@@ -381,7 +385,7 @@ export function CategoryTypesManagementPage() {
       setCategoryTypes(response.items);
       setMetaData(response.metaData);
     } catch (deleteError) {
-      toast.error(deleteError instanceof Error ? deleteError.message : "Failed to delete category type.");
+      toast.error(deleteError instanceof Error ? deleteError.message : t("adminCategoryTypes.deleteFailed"));
     } finally {
       setIsDeleting(false);
     }
@@ -414,7 +418,7 @@ export function CategoryTypesManagementPage() {
                 <input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search category type by name..."
+                  placeholder={t("adminCategoryTypes.searchPlaceholder")}
                   className="h-10 w-full rounded-full border border-[#f4d7e5] bg-[#fffafc] pl-11 pr-4 text-sm text-[#5b4658] outline-none placeholder:text-[#d4a1b8] focus:border-[#ea4f93]"
                 />
               </label>
@@ -430,7 +434,7 @@ export function CategoryTypesManagementPage() {
                 className="inline-flex h-10 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
               >
                 <Search size={14} className="mr-2 shrink-0" />
-                Search
+                {t("adminCategoryTypes.search")}
               </button>
             </div>
 
@@ -439,9 +443,9 @@ export function CategoryTypesManagementPage() {
               onChange={(event) => setStatusFilter(event.target.value)}
               className="h-10 rounded-full border border-[#f4d7e5] bg-[#fffafc] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
             >
-              <option value="">All statuses</option>
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
+              <option value="">{t("adminCategoryTypes.allStatuses")}</option>
+              <option value="Active">{t("adminCategoryTypes.active")}</option>
+              <option value="Inactive">{t("adminCategoryTypes.inactive")}</option>
             </select>
           </div>
 
@@ -450,15 +454,15 @@ export function CategoryTypesManagementPage() {
             className="inline-flex items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
           >
             <Plus size={13} className="mr-1.5 shrink-0" />
-            Add Category Type
+            {t("adminCategoryTypes.addCategoryType")}
           </Link>
         </div>
 
         <section className="overflow-hidden rounded-[20px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
           <div className="border-b border-[#f6dbe7] px-5 py-4">
-            <h2 className="text-sm font-extrabold text-[#432744]">Category Types</h2>
+            <h2 className="text-sm font-extrabold text-[#432744]">{t("adminCategoryTypes.categoryTypes")}</h2>
             <p className="mt-1 text-[11px] font-medium text-[#c694ad]">
-              Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} category types
+              {t("adminCategoryTypes.showingCategoryTypes", { first: metaData.firstRowOnPage, last: metaData.lastRowOnPage, total: metaData.totalItems })}
             </p>
           </div>
 
@@ -472,12 +476,12 @@ export function CategoryTypesManagementPage() {
             }}
             pagination={false}
             scroll={{ x: 980 }}
-            locale={{ emptyText: error || "No category types found." }}
+            locale={{ emptyText: error || t("adminCategoryTypes.noCategoryTypesFound") }}
           />
 
           <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-[11px] text-[#c694ad]">
-              Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} category types
+              {t("adminCategoryTypes.showingCategoryTypes", { first: metaData.firstRowOnPage, last: metaData.lastRowOnPage, total: metaData.totalItems })}
             </p>
             <div className="flex items-center gap-1">
               <button
@@ -536,11 +540,11 @@ export function CategoryTypesManagementPage() {
         <ActionConfirmModal
           open
           intent="danger"
-          title="Delete Category Type"
-          subtitle="This will set the category type status to inactive in backend."
-          description={`You are about to delete ${deleteTarget.name}. This action cannot be undone from this page.`}
-          confirmText="Delete Category Type"
-          cancelText="Keep Category Type"
+          title={t("adminCategoryTypes.deleteCategoryTypeTitle")}
+          subtitle={t("adminCategoryTypes.deleteConfirmSubtitle")}
+          description={t("adminCategoryTypes.deleteConfirmDesc", { name: deleteTarget.name })}
+          confirmText={t("adminCategoryTypes.deleteCategoryType")}
+          cancelText={t("adminCategoryTypes.keepCategoryType")}
           confirmIcon={Trash2}
           loading={isDeleting}
           onConfirm={handleDeleteCategoryType}
@@ -550,7 +554,7 @@ export function CategoryTypesManagementPage() {
             meta: `${deleteTarget.categoriesCount} categories | ${deleteTarget.status}`,
             note: `Category Type ID: ${deleteTarget.categoryTypeId}`,
           }}
-          warnings={["Backend delete for this resource changes the status to inactive."]}
+          warnings={[t("adminCategoryTypes.deleteWarning")]}
         />
       ) : null}
     </>

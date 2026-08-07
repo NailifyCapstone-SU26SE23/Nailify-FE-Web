@@ -4,15 +4,18 @@ import { PropTypes } from "../../shared/utils/propTypes";
 import { AuthProvider } from "./AuthProvider";
 import { QueryProvider } from "./QueryProvider";
 import { ThemeProvider } from "./ThemeProvider";
+import { LanguageProvider } from "./LanguageProvider";
 
 export function AppProviders({ children }) {
   return (
     <Provider store={store}>
-      <ThemeProvider>
-        <QueryProvider>
-          <AuthProvider>{children}</AuthProvider>
-        </QueryProvider>
-      </ThemeProvider>
+      <LanguageProvider>
+        <ThemeProvider>
+          <QueryProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </QueryProvider>
+        </ThemeProvider>
+      </LanguageProvider>
     </Provider>
   );
 }
