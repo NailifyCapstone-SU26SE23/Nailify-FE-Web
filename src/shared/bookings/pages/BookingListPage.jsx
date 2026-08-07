@@ -42,6 +42,7 @@ import {
   normalizeStaffBooking,
 } from "../../../features/staff/bookings/services/staffBookingService";
 import { getBookingRoleFromPath } from "../utils/bookingMapper";
+import { useLanguage } from "../../hooks/useLanguage";
 
 const STAFF_BOOKING_SCOPES = {
   mine: "mine",
@@ -50,152 +51,32 @@ const STAFF_BOOKING_SCOPES = {
 
 const SUMMARY_BY_ROLE = {
   [ROLES.admin]: [
-    {
-      label: "Total Bookings",
-      value: "1,284",
-      note: "+12.4% this month",
-      icon: CalendarDays,
-      iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
-    },
-    {
-      label: "Pending",
-      value: "87",
-      note: "+5 today",
-      icon: Clock3,
-      iconClassName: "bg-[#fff4e8] text-[#f59e0b]",
-    },
-    {
-      label: "Completed",
-      value: "1,091",
-      note: "+8.6% this month",
-      icon: DollarSign,
-      iconClassName: "bg-[#eaf9ee] text-[#2fa25f]",
-    },
-    {
-      label: "Cancelled",
-      value: "74",
-      note: "-2.3% this month",
-      icon: XCircle,
-      iconClassName: "bg-[#fff0f5] text-[#e1447f]",
-    },
-    {
-      label: "No-shows",
-      value: "32",
-      note: "-1.1% this month",
-      icon: AlertTriangle,
-      iconClassName: "bg-[#f5ecff] text-[#8b5cf6]",
-    },
+    { label: "Total Bookings", value: "1,284", note: "+12.4% this month", icon: CalendarDays, iconClassName: "bg-[#ffe8f2] text-[#ea4f93]" },
+    { label: "Pending", value: "87", note: "+5 today", icon: Clock3, iconClassName: "bg-[#fff4e8] text-[#f59e0b]" },
+    { label: "Completed", value: "1,091", note: "+8.6% this month", icon: DollarSign, iconClassName: "bg-[#eaf9ee] text-[#2fa25f]" },
+    { label: "Cancelled", value: "74", note: "-2.3% this month", icon: XCircle, iconClassName: "bg-[#fff0f5] text-[#e1447f]" },
+    { label: "No-shows", value: "32", note: "-1.1% this month", icon: AlertTriangle, iconClassName: "bg-[#f5ecff] text-[#8b5cf6]" },
   ],
   [ROLES.manager]: [
-    {
-      label: "Branch Bookings",
-      value: "428",
-      note: "+9.8% this month",
-      icon: CalendarDays,
-      iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
-    },
-    {
-      label: "Pending",
-      value: "21",
-      note: "+3 today",
-      icon: Clock3,
-      iconClassName: "bg-[#fff4e8] text-[#f59e0b]",
-    },
-    {
-      label: "Completed",
-      value: "356",
-      note: "+6.1% this month",
-      icon: DollarSign,
-      iconClassName: "bg-[#eaf9ee] text-[#2fa25f]",
-    },
-    {
-      label: "Cancelled",
-      value: "18",
-      note: "-0.6% this month",
-      icon: XCircle,
-      iconClassName: "bg-[#fff0f5] text-[#e1447f]",
-    },
-    {
-      label: "No-shows",
-      value: "11",
-      note: "-0.4% this month",
-      icon: AlertTriangle,
-      iconClassName: "bg-[#f5ecff] text-[#8b5cf6]",
-    },
+    { label: "Branch Bookings", value: "428", note: "+9.8% this month", icon: CalendarDays, iconClassName: "bg-[#ffe8f2] text-[#ea4f93]" },
+    { label: "Pending", value: "21", note: "+3 today", icon: Clock3, iconClassName: "bg-[#fff4e8] text-[#f59e0b]" },
+    { label: "Completed", value: "356", note: "+6.1% this month", icon: DollarSign, iconClassName: "bg-[#eaf9ee] text-[#2fa25f]" },
+    { label: "Cancelled", value: "18", note: "-0.6% this month", icon: XCircle, iconClassName: "bg-[#fff0f5] text-[#e1447f]" },
+    { label: "No-shows", value: "11", note: "-0.4% this month", icon: AlertTriangle, iconClassName: "bg-[#f5ecff] text-[#8b5cf6]" },
   ],
   [ROLES.staff]: [
-    {
-      label: "Assigned Today",
-      value: "18",
-      note: "+2 vs yesterday",
-      icon: CalendarDays,
-      iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
-    },
-    {
-      label: "Pending",
-      value: "4",
-      note: "Awaiting check-in",
-      icon: Clock3,
-      iconClassName: "bg-[#fff4e8] text-[#f59e0b]",
-    },
-    {
-      label: "Completed",
-      value: "53",
-      note: "+7 this week",
-      icon: DollarSign,
-      iconClassName: "bg-[#eaf9ee] text-[#2fa25f]",
-    },
-    {
-      label: "Cancelled",
-      value: "3",
-      note: "Low this week",
-      icon: XCircle,
-      iconClassName: "bg-[#fff0f5] text-[#e1447f]",
-    },
-    {
-      label: "No-shows",
-      value: "2",
-      note: "Stable",
-      icon: AlertTriangle,
-      iconClassName: "bg-[#f5ecff] text-[#8b5cf6]",
-    },
+    { label: "Assigned Today", value: "18", note: "+2 vs yesterday", icon: CalendarDays, iconClassName: "bg-[#ffe8f2] text-[#ea4f93]" },
+    { label: "Pending", value: "4", note: "Awaiting check-in", icon: Clock3, iconClassName: "bg-[#fff4e8] text-[#f59e0b]" },
+    { label: "Completed", value: "53", note: "+7 this week", icon: DollarSign, iconClassName: "bg-[#eaf9ee] text-[#2fa25f]" },
+    { label: "Cancelled", value: "3", note: "Low this week", icon: XCircle, iconClassName: "bg-[#fff0f5] text-[#e1447f]" },
+    { label: "No-shows", value: "2", note: "Stable", icon: AlertTriangle, iconClassName: "bg-[#f5ecff] text-[#8b5cf6]" },
   ],
   [ROLES.receptionist]: [
-    {
-      label: "Front Desk Bookings",
-      value: "212",
-      note: "+6 today",
-      icon: CalendarDays,
-      iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
-    },
-    {
-      label: "Pending",
-      value: "19",
-      note: "Needs callback",
-      icon: Clock3,
-      iconClassName: "bg-[#fff4e8] text-[#f59e0b]",
-    },
-    {
-      label: "Completed",
-      value: "168",
-      note: "+4.1% this week",
-      icon: DollarSign,
-      iconClassName: "bg-[#eaf9ee] text-[#2fa25f]",
-    },
-    {
-      label: "Cancelled",
-      value: "9",
-      note: "Watch reschedules",
-      icon: XCircle,
-      iconClassName: "bg-[#fff0f5] text-[#e1447f]",
-    },
-    {
-      label: "No-shows",
-      value: "7",
-      note: "Follow-up needed",
-      icon: AlertTriangle,
-      iconClassName: "bg-[#f5ecff] text-[#8b5cf6]",
-    },
+    { label: "Front Desk Bookings", value: "212", note: "+6 today", icon: CalendarDays, iconClassName: "bg-[#ffe8f2] text-[#ea4f93]" },
+    { label: "Pending", value: "19", note: "Needs callback", icon: Clock3, iconClassName: "bg-[#fff4e8] text-[#f59e0b]" },
+    { label: "Completed", value: "168", note: "+4.1% this week", icon: DollarSign, iconClassName: "bg-[#eaf9ee] text-[#2fa25f]" },
+    { label: "Cancelled", value: "9", note: "Watch reschedules", icon: XCircle, iconClassName: "bg-[#fff0f5] text-[#e1447f]" },
+    { label: "No-shows", value: "7", note: "Follow-up needed", icon: AlertTriangle, iconClassName: "bg-[#f5ecff] text-[#8b5cf6]" },
   ],
 };
 
@@ -205,6 +86,7 @@ const PAYMENT_OPTIONS = ["All", "Paid", "Partial", "Pending", "Refunded", "Unpai
 
 const BOOKING_PAGE_SIZE = 10;
 
+/* STREAMING_CHUNK: UI Components */
 function MetricCard({ item }) {
   const Icon = item.icon;
 
@@ -247,6 +129,7 @@ SmallTag.propTypes = {
   className: PropTypes.string,
 };
 
+/* STREAMING_CHUNK: Helper Functions */
 function formatDateLabel(dateValue) {
   const parts = dateValue.split("-");
   if (parts.length !== 3) return dateValue;
@@ -259,22 +142,16 @@ function getBookingDateTimeValue(booking) {
   ).trim();
   const normalizedTime = String(booking?.startTimeValue || booking?.bookingTime || "").trim();
 
-  if (!normalizedDate) {
-    return Number.MAX_SAFE_INTEGER;
-  }
+  if (!normalizedDate) return Number.MAX_SAFE_INTEGER;
 
   const baseDate = new Date(normalizedDate);
-
-  if (Number.isNaN(baseDate.getTime())) {
-    return Number.MAX_SAFE_INTEGER;
-  }
+  if (Number.isNaN(baseDate.getTime())) return Number.MAX_SAFE_INTEGER;
 
   const [hoursText = "0", minutesText = "0"] = normalizedTime.split(":");
   const hours = Number(hoursText);
   const minutes = Number(minutesText);
 
   baseDate.setHours(Number.isNaN(hours) ? 0 : hours, Number.isNaN(minutes) ? 0 : minutes, 0, 0);
-
   return baseDate.getTime();
 }
 
@@ -298,41 +175,29 @@ function mapBranch(branch) {
 
 function mapService(service) {
   switch (service) {
-    case "Classic Manicure":
-      return "Gel Manicure";
-    case "Nail Art Premium":
-      return "Nail Art";
-    case "Spa Pedicure":
-      return "Pedicure Deluxe";
-    case "Builder Gel Set":
-      return "Acrylic Full Set";
+    case "Classic Manicure": return "Gel Manicure";
+    case "Nail Art Premium": return "Nail Art";
+    case "Spa Pedicure": return "Pedicure Deluxe";
+    case "Builder Gel Set": return "Acrylic Full Set";
     case "Gel Polish":
-    default:
-      return "Gel Polish";
+    default: return "Gel Polish";
   }
 }
 
 function mapPayment(paymentStatus) {
   switch (paymentStatus) {
-    case "Deposit Paid":
-      return "Partial";
-    default:
-      return paymentStatus;
+    case "Deposit Paid": return "Partial";
+    default: return paymentStatus;
   }
 }
 
 function getPaymentTone(paymentStatus) {
   switch (paymentStatus) {
-    case "Paid":
-      return "bg-[#eaf9ee] text-[#2fa25f]";
-    case "Partial":
-      return "bg-[#fff4e8] text-[#d9871c]";
-    case "Refunded":
-      return "bg-[#f5ecff] text-[#8b5cf6]";
-    case "Pending":
-      return "bg-[#fff7e7] text-[#cc8a16]";
-    default:
-      return "bg-[#fff0f5] text-[#e1447f]";
+    case "Paid": return "bg-[#eaf9ee] text-[#2fa25f]";
+    case "Partial": return "bg-[#fff4e8] text-[#d9871c]";
+    case "Refunded": return "bg-[#f5ecff] text-[#8b5cf6]";
+    case "Pending": return "bg-[#fff7e7] text-[#cc8a16]";
+    default: return "bg-[#fff0f5] text-[#e1447f]";
   }
 }
 
@@ -343,18 +208,12 @@ function mapStatus(status) {
 
 function getStatusTone(status) {
   switch (status) {
-    case "Completed":
-      return "bg-[#eaf9ee] text-[#2fa25f]";
-    case "Confirmed":
-      return "bg-[#e8f2ff] text-[#4a72d8]";
-    case "Pending":
-      return "bg-[#fff4e8] text-[#d9871c]";
-    case "Cancelled":
-      return "bg-[#ffe7ef] text-[#e1447f]";
-    case "No-show":
-      return "bg-[#f3ebff] text-[#7e4fe6]";
-    default:
-      return BOOKING_STATUS_STYLES[status] ?? "bg-[#fff5ef] text-[#8c5d44]";
+    case "Completed": return "bg-[#eaf9ee] text-[#2fa25f]";
+    case "Confirmed": return "bg-[#e8f2ff] text-[#4a72d8]";
+    case "Pending": return "bg-[#fff4e8] text-[#d9871c]";
+    case "Cancelled": return "bg-[#ffe7ef] text-[#e1447f]";
+    case "No-show": return "bg-[#f3ebff] text-[#7e4fe6]";
+    default: return BOOKING_STATUS_STYLES[status] ?? "bg-[#fff5ef] text-[#8c5d44]";
   }
 }
 
@@ -363,10 +222,14 @@ function escapeCsvCell(value) {
   return `"${normalizedValue}"`;
 }
 
-function buildBookingsCsvRows(bookings, isStaffRole) {
+function buildBookingsCsvRows(bookings, isStaffRole, language) {
   const headers = isStaffRole
-    ? ["Booking ID", "Customer", "Phone", "Salon", "Staff Artist", "Date", "Time", "Status", "Service", "Total Price"]
-    : ["Booking ID", "Customer", "Phone", "Salon", "Staff Artist", "Date", "Time", "Status", "Payment", "Service", "Total Price"];
+    ? (language === "vi"
+      ? ["Mã LH", "Khách hàng", "SĐT", "Chi nhánh", "Thợ làm nail", "Ngày", "Giờ", "Trạng thái", "Dịch vụ", "Tổng giá"]
+      : ["Booking ID", "Customer", "Phone", "Salon", "Staff Artist", "Date", "Time", "Status", "Service", "Total Price"])
+    : (language === "vi"
+      ? ["Mã LH", "Khách hàng", "SĐT", "Chi nhánh", "Thợ làm nail", "Ngày", "Giờ", "Trạng thái", "Thanh toán", "Dịch vụ", "Tổng giá"]
+      : ["Booking ID", "Customer", "Phone", "Salon", "Staff Artist", "Date", "Time", "Status", "Payment", "Service", "Total Price"]);
 
   const rows = bookings.map((booking) => {
     const baseCells = [
@@ -417,36 +280,98 @@ function normalizeBooking(booking) {
 }
 
 function getDefaultDateRange(bookings) {
-  if (bookings.length === 0) {
-    return {
-      from: "",
-      to: "",
-    };
-  }
-
-  const sortedDates = bookings
-    .map((booking) => booking.bookingDate)
-    .filter(Boolean)
-    .sort();
-
+  if (bookings.length === 0) return { from: "", to: "" };
+  const sortedDates = bookings.map((booking) => booking.bookingDate).filter(Boolean).sort();
   return {
     from: sortedDates[0] ?? "",
     to: sortedDates[sortedDates.length - 1] ?? "",
   };
 }
 
+/* STREAMING_CHUNK: Translation Maps */
+const translateOption = (option, language) => {
+  if (language !== "vi") return option;
+  const mapVi = {
+    "All": "Tất cả",
+    "All salons": "Tất cả chi nhánh",
+    "All staff": "Tất cả nhân viên",
+    "Pending": "Đang chờ",
+    "Confirmed": "Đã xác nhận",
+    "ServiceCompleted": "Đã hoàn tất dịch vụ",
+    "Completed": "Đã hoàn thành",
+    "CheckedIn": "Đã có mặt",
+    "Cancelled": "Đã hủy",
+    "No-show": "Không đến",
+    "Paid": "Đã thanh toán",
+    "Partial": "Thanh toán một phần",
+    "Refunded": "Đã hoàn tiền",
+    "Unpaid": "Chưa thanh toán"
+  };
+  return mapVi[option] || option;
+};
+
+const translateSummaryText = (text, language) => {
+  if (language !== "vi") return text;
+  const mapVi = {
+    "Total Bookings": "Tổng lịch hẹn",
+    "Branch Bookings": "Lịch hẹn chi nhánh",
+    "Assigned Today": "Được giao hôm nay",
+    "Front Desk Bookings": "Lịch hẹn lễ tân",
+    "Pending": "Đang chờ",
+    "Completed": "Đã hoàn thành",
+    "Cancelled": "Đã hủy",
+    "No-shows": "Không đến",
+    "Revenue": "Doanh thu",
+    "+12.4% this month": "+12.4% tháng này",
+    "+5 today": "+5 hôm nay",
+    "+8.6% this month": "+8.6% tháng này",
+    "-2.3% this month": "-2.3% tháng này",
+    "-1.1% this month": "-1.1% tháng này",
+    "+9.8% this month": "+9.8% tháng này",
+    "+3 today": "+3 hôm nay",
+    "+6.1% this month": "+6.1% tháng này",
+    "-0.6% this month": "-0.6% tháng này",
+    "-0.4% this month": "-0.4% tháng này",
+    "+2 vs yesterday": "+2 so với hôm qua",
+    "Awaiting check-in": "Đang chờ check-in",
+    "+7 this week": "+7 tuần này",
+    "Low this week": "Thấp trong tuần",
+    "Stable": "Ổn định",
+    "+6 today": "+6 hôm nay",
+    "Needs callback": "Cần gọi lại",
+    "+4.1% this week": "+4.1% tuần này",
+    "Watch reschedules": "Chú ý đổi lịch",
+    "Follow-up needed": "Cần theo dõi",
+    "Loaded from salon booking API": "Tải từ API đặt lịch của tiệm",
+    "Loaded from artist schedule": "Tải từ lịch trình của thợ",
+    "Awaiting service progress": "Đang chờ tiến trình dịch vụ",
+    "Finished today": "Đã hoàn thành hôm nay",
+    "Today": "Hôm nay",
+    "Total loaded from API": "Tổng được tải từ API",
+    "Salon Bookings": "Lịch hẹn toàn tiệm",
+    "My Bookings": "Lịch hẹn của tôi"
+  };
+  return mapVi[text] || text;
+};
+
+/* STREAMING_CHUNK: Component Setup */
 export function BookingListPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { language } = useLanguage();
+
   const role = getBookingRoleFromPath(location.pathname);
   const roleConfig = BOOKING_ROLE_CONFIG[role];
   const isStaffRole = role === ROLES.staff;
+
   const normalizedBookings = useMemo(() => BOOKING_ROWS.map(normalizeBooking), []);
   const todayDate = useMemo(() => getTodayDateParam(), []);
+
   const defaultDateRange = useMemo(
     () => (isStaffRole ? { from: todayDate, to: todayDate } : getDefaultDateRange(normalizedBookings)),
     [isStaffRole, normalizedBookings, todayDate],
   );
+
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
   const [query, setQuery] = useState("");
   const [dateFrom, setDateFrom] = useState(defaultDateRange.from);
@@ -462,11 +387,9 @@ export function BookingListPage() {
   const [staffBookings, setStaffBookings] = useState([]);
   const [staffSalonBookings, setStaffSalonBookings] = useState([]);
   const [selectedStaffNotesBooking, setSelectedStaffNotesBooking] = useState(null);
-  const currentStaffArtistId = useMemo(() => {
-    if (!isStaffRole) {
-      return "";
-    }
 
+  const currentStaffArtistId = useMemo(() => {
+    if (!isStaffRole) return "";
     try {
       return getStaffArtistId();
     } catch {
@@ -474,34 +397,25 @@ export function BookingListPage() {
     }
   }, [isStaffRole]);
 
+  /* STREAMING_CHUNK: Effects */
   useEffect(() => {
-    if (!location.state?.flashMessage) {
-      return;
-    }
-
+    if (!location.state?.flashMessage) return;
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
 
   useEffect(() => {
-    if (!isStaffRole) {
-      return;
-    }
-
+    if (!isStaffRole) return;
     let isMounted = true;
 
     const loadBookings = async () => {
       setIsLoading(true);
       setLoadError("");
-
       try {
         const data = staffBookingScope === STAFF_BOOKING_SCOPES.salon
           ? await fetchStaffSalonBookings()
           : await fetchStaffBookings();
 
-        if (!isMounted) {
-          return;
-        }
-
+        if (!isMounted) return;
         const normalizedData = Array.isArray(data) ? data.map(normalizeStaffBooking) : [];
 
         if (staffBookingScope === STAFF_BOOKING_SCOPES.salon) {
@@ -510,40 +424,29 @@ export function BookingListPage() {
           setStaffBookings(normalizedData);
         }
       } catch (error) {
-        if (!isMounted) {
-          return;
-        }
-
+        if (!isMounted) return;
         const message = error instanceof Error
           ? error.message
           : staffBookingScope === STAFF_BOOKING_SCOPES.salon
-            ? "Failed to load salon bookings."
-            : "Failed to load assigned bookings.";
+            ? (language === "vi" ? "Không thể tải lịch hẹn toàn tiệm." : "Failed to load salon bookings.")
+            : (language === "vi" ? "Không thể tải lịch hẹn của bạn." : "Failed to load assigned bookings.");
         setLoadError(message);
         toast.error(message);
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        if (isMounted) setIsLoading(false);
       }
     };
-
     void loadBookings();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [isStaffRole, staffBookingScope]);
+    return () => { isMounted = false; };
+  }, [isStaffRole, staffBookingScope, language]);
 
   useEffect(() => {
-    if (!isStaffRole) {
-      return;
-    }
-
+    if (!isStaffRole) return;
     setDateFrom(todayDate);
     setDateTo(todayDate);
   }, [isStaffRole, staffBookingScope, todayDate]);
 
+  /* STREAMING_CHUNK: Filtering & Pagination Logic */
   const isSalonScopeForStaff = isStaffRole && staffBookingScope === STAFF_BOOKING_SCOPES.salon;
   const activeBookings = isStaffRole
     ? (isSalonScopeForStaff ? staffSalonBookings : staffBookings)
@@ -555,104 +458,35 @@ export function BookingListPage() {
     return activeBookings.filter((booking) => {
       const matchesQuery =
         normalizedQuery.length === 0 ||
-        [
-          booking.id,
-          booking.uiId,
-          booking.customerName,
-          booking.customerPhone,
-          booking.uiBranch,
-          booking.uiService,
-          booking.staffName,
-        ]
-          .join(" ")
-          .toLowerCase()
-          .includes(normalizedQuery);
+        [booking.id, booking.uiId, booking.customerName, booking.customerPhone, booking.uiBranch, booking.uiService, booking.staffName]
+          .join(" ").toLowerCase().includes(normalizedQuery);
 
-      const matchesStatus =
-        statusFilter === "All" || booking.uiStatus === statusFilter;
-      const matchesPayment =
-        isStaffRole || paymentFilter === "All" || booking.uiPayment === paymentFilter;
-      const matchesSalon =
-        salonFilter === "All salons" || booking.uiBranch === salonFilter;
-      const matchesStaff =
-        staffFilter === "All staff" || booking.staffName === staffFilter;
+      const matchesStatus = statusFilter === "All" || booking.uiStatus === statusFilter;
+      const matchesPayment = isStaffRole || paymentFilter === "All" || booking.uiPayment === paymentFilter;
+      const matchesSalon = salonFilter === "All salons" || booking.uiBranch === salonFilter;
+      const matchesStaff = staffFilter === "All staff" || booking.staffName === staffFilter;
       const matchesDate =
         (!dateFrom || booking.bookingDateValue >= dateFrom) &&
         (!dateTo || booking.bookingDateValue <= dateTo);
 
-      if (isStaffRole) {
-        return (
-          matchesQuery &&
-          matchesStatus &&
-          matchesPayment &&
-          matchesSalon &&
-          matchesStaff &&
-          matchesDate
-        );
-      }
+      if (isStaffRole) return matchesQuery && matchesStatus && matchesPayment && matchesSalon && matchesStaff && matchesDate;
+      if (role === ROLES.staff) return matchesQuery && matchesStatus && matchesPayment && matchesSalon && matchesStaff && matchesDate && ["Ariana Vo", "Bao Tran", "Linh Pham"].includes(booking.staffName);
+      if (role === ROLES.manager) return matchesQuery && matchesStatus && matchesPayment && matchesSalon && matchesStaff && matchesDate && ["District 1 Salon", "District 3 Salon"].includes(booking.branch);
 
-      if (role === ROLES.staff) {
-        return (
-          matchesQuery &&
-          matchesStatus &&
-          matchesPayment &&
-          matchesSalon &&
-          matchesStaff &&
-          matchesDate &&
-          ["Ariana Vo", "Bao Tran", "Linh Pham"].includes(booking.staffName)
-        );
-      }
-
-      if (role === ROLES.manager) {
-        return (
-          matchesQuery &&
-          matchesStatus &&
-          matchesPayment &&
-          matchesSalon &&
-          matchesStaff &&
-          matchesDate &&
-          ["District 1 Salon", "District 3 Salon"].includes(booking.branch)
-        );
-      }
-
-      return (
-        matchesQuery &&
-        matchesStatus &&
-        matchesPayment &&
-        matchesSalon &&
-        matchesStaff &&
-        matchesDate
-      );
+      return matchesQuery && matchesStatus && matchesPayment && matchesSalon && matchesStaff && matchesDate;
     });
-  }, [
-    activeBookings,
-    dateFrom,
-    dateTo,
-    isStaffRole,
-    paymentFilter,
-    query,
-    role,
-    salonFilter,
-    staffFilter,
-    statusFilter,
-  ]);
+  }, [activeBookings, dateFrom, dateTo, isStaffRole, paymentFilter, query, role, salonFilter, staffFilter, statusFilter]);
+
   const sortedBookings = useMemo(() => {
-    if (!isStaffRole) {
-      return filteredBookings;
-    }
-
+    if (!isStaffRole) return filteredBookings;
     const sortMultiplier = staffTimeSortDirection === "desc" ? -1 : 1;
-
     return [...filteredBookings].sort((left, right) => {
       const timeDifference = getBookingDateTimeValue(left) - getBookingDateTimeValue(right);
-
-      if (timeDifference !== 0) {
-        return timeDifference * sortMultiplier;
-      }
-
+      if (timeDifference !== 0) return timeDifference * sortMultiplier;
       return left.customerName.localeCompare(right.customerName) * sortMultiplier;
     });
   }, [filteredBookings, isStaffRole, staffTimeSortDirection]);
+
   const {
     currentPage,
     paginatedItems: paginatedBookings,
@@ -666,74 +500,47 @@ export function BookingListPage() {
 
   const paginationLabel = useMemo(() => {
     if (!filteredBookings.length) {
-      return "Showing 0 bookings";
+      return language === "vi" ? "Đang hiển thị 0 lịch hẹn" : "Showing 0 bookings";
     }
-
     const start = (currentPage - 1) * BOOKING_PAGE_SIZE + 1;
     const end = Math.min(filteredBookings.length, currentPage * BOOKING_PAGE_SIZE);
+    return language === "vi"
+      ? `Đang hiển thị ${start}-${end} trong số ${filteredBookings.length} lịch hẹn`
+      : `Showing ${start}-${end} of ${filteredBookings.length} bookings`;
+  }, [currentPage, filteredBookings.length, language]);
 
-    return `Showing ${start}-${end} of ${filteredBookings.length} bookings`;
-  }, [currentPage, filteredBookings.length]);
-
+  /* STREAMING_CHUNK: Dynamic Summary & Actions */
   const summaryItems = useMemo(() => {
+    let baseItems = [];
     if (!isStaffRole) {
-      return SUMMARY_BY_ROLE[role] ?? SUMMARY_BY_ROLE[ROLES.admin];
+      baseItems = SUMMARY_BY_ROLE[role] ?? SUMMARY_BY_ROLE[ROLES.admin];
+    } else {
+      const pendingCount = activeBookings.filter((booking) => booking.status === "Pending").length;
+      const completedCount = activeBookings.filter((booking) => booking.status === "Completed").length;
+      const cancelledCount = activeBookings.filter((booking) => booking.status === "Cancelled").length;
+      const revenue = activeBookings.reduce((sum, booking) => sum + booking.totalPriceValue, 0);
+
+      baseItems = [
+        { label: isSalonScopeForStaff ? "Salon Bookings" : "Assigned Today", value: String(activeBookings.length), note: isSalonScopeForStaff ? "Loaded from salon booking API" : "Loaded from artist schedule", icon: CalendarDays, iconClassName: "bg-[#ffe8f2] text-[#ea4f93]" },
+        { label: "Pending", value: String(pendingCount), note: "Awaiting service progress", icon: Clock3, iconClassName: "bg-[#fff4e8] text-[#f59e0b]" },
+        { label: "Completed", value: String(completedCount), note: "Finished today", icon: DollarSign, iconClassName: "bg-[#eaf9ee] text-[#2fa25f]" },
+        { label: "Cancelled", value: String(cancelledCount), note: "Today", icon: XCircle, iconClassName: "bg-[#fff0f5] text-[#e1447f]" },
+        { label: "Revenue", value: revenue > 0 ? `${new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(revenue)} VND` : "0 VND", note: "Total loaded from API", icon: AlertTriangle, iconClassName: "bg-[#f5ecff] text-[#8b5cf6]" },
+      ];
     }
 
-    const pendingCount = activeBookings.filter((booking) => booking.status === "Pending").length;
-    const completedCount = activeBookings.filter((booking) => booking.status === "Completed").length;
-    const cancelledCount = activeBookings.filter((booking) => booking.status === "Cancelled").length;
-    const revenue = activeBookings.reduce((sum, booking) => sum + booking.totalPriceValue, 0);
+    return baseItems.map(item => ({
+      ...item,
+      label: translateSummaryText(item.label, language),
+      note: translateSummaryText(item.note, language)
+    }));
+  }, [activeBookings, isSalonScopeForStaff, isStaffRole, role, language]);
 
-    return [
-      {
-        label: isSalonScopeForStaff ? "Salon Bookings" : "Assigned Today",
-        value: String(activeBookings.length),
-        note: isSalonScopeForStaff ? "Loaded from salon booking API" : "Loaded from artist schedule",
-        icon: CalendarDays,
-        iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
-      },
-      {
-        label: "Pending",
-        value: String(pendingCount),
-        note: "Awaiting service progress",
-        icon: Clock3,
-        iconClassName: "bg-[#fff4e8] text-[#f59e0b]",
-      },
-      {
-        label: "Completed",
-        value: String(completedCount),
-        note: "Finished today",
-        icon: DollarSign,
-        iconClassName: "bg-[#eaf9ee] text-[#2fa25f]",
-      },
-      {
-        label: "Cancelled",
-        value: String(cancelledCount),
-        note: "Today",
-        icon: XCircle,
-        iconClassName: "bg-[#fff0f5] text-[#e1447f]",
-      },
-      {
-        label: "Revenue",
-        value: revenue > 0
-          ? `${new Intl.NumberFormat("vi-VN", {
-            maximumFractionDigits: 0,
-          }).format(revenue)} VND`
-          : "0 VND",
-        note: "Total loaded from API",
-        icon: AlertTriangle,
-        iconClassName: "bg-[#f5ecff] text-[#8b5cf6]",
-      },
-    ];
-  }, [activeBookings, isSalonScopeForStaff, isStaffRole, role]);
   const getActionItems = (booking) => {
     const detailRoute = roleConfig.getDetailRoute(booking.id);
 
     if (role === ROLES.staff) {
-      const isOwnBooking = !isSalonScopeForStaff
-        || !currentStaffArtistId
-        || String(booking?.nailArtistId || "").trim() === String(currentStaffArtistId).trim();
+      const isOwnBooking = !isSalonScopeForStaff || !currentStaffArtistId || String(booking?.nailArtistId || "").trim() === String(currentStaffArtistId).trim();
       const normalizedBookingStatus = String(booking?.status || booking?.uiStatus || "").trim().toLowerCase();
       const isPendingBooking = ["pending", "approved"].includes(normalizedBookingStatus);
       const isCheckedInBooking = normalizedBookingStatus === "checkedin";
@@ -759,72 +566,39 @@ export function BookingListPage() {
 
       if (isInProgressBooking) {
         return [
-          { key: "view", label: "View Booking", icon: Eye, onSelect: () => navigate(detailRoute) },
-          ...(isOwnBooking ? [{
-            key: "continue",
-            label: "Continue Service",
-            icon: Play,
-            onSelect: () => void openServiceSession(),
-          }] : []),
-          {
-            key: "notes",
-            label: "View Notes",
-            icon: FileText,
-            onSelect: () => setSelectedStaffNotesBooking(booking),
-          },
+          { key: "view", label: language === "vi" ? "Xem lịch hẹn" : "View Booking", icon: Eye, onSelect: () => navigate(detailRoute) },
+          ...(isOwnBooking ? [{ key: "continue", label: language === "vi" ? "Tiếp tục làm" : "Continue Service", icon: Play, onSelect: () => void openServiceSession() }] : []),
+          { key: "notes", label: language === "vi" ? "Xem ghi chú" : "View Notes", icon: FileText, onSelect: () => setSelectedStaffNotesBooking(booking) },
         ];
       }
 
       return [
-        { key: "view", label: "View Booking", icon: Eye, onSelect: () => navigate(detailRoute) },
+        { key: "view", label: language === "vi" ? "Xem lịch hẹn" : "View Booking", icon: Eye, onSelect: () => navigate(detailRoute) },
         ...(isOwnBooking && !isCancelledBooking && !isPendingBooking && !isCompletedBooking && !isServiceCompletedBooking
-          ? [{
-            key: "start",
-            label: "Start Service",
-            icon: Play,
-            onSelect: () => void openServiceSession(),
-          }]
+          ? [{ key: "start", label: language === "vi" ? "Bắt đầu làm" : "Start Service", icon: Play, onSelect: () => void openServiceSession() }]
           : []),
         ...(isOwnBooking && !isCancelledBooking && !isPendingBooking && !isCheckedInBooking && !isCompletedBooking && !isServiceCompletedBooking
-          ? [{
-            key: "complete",
-            label: "Complete Service",
-            icon: SquareCheckBig,
-            onSelect: () => navigate(detailRoute, { state: { staffAction: "complete" } }),
-          }]
+          ? [{ key: "complete", label: language === "vi" ? "Hoàn thành" : "Complete Service", icon: SquareCheckBig, onSelect: () => navigate(detailRoute, { state: { staffAction: "complete" } }) }]
           : []),
-        {
-          key: "notes",
-          label: "View Notes",
-          icon: FileText,
-          onSelect: () => setSelectedStaffNotesBooking(booking),
-        },
+        { key: "notes", label: language === "vi" ? "Xem ghi chú" : "View Notes", icon: FileText, onSelect: () => setSelectedStaffNotesBooking(booking) },
       ];
     }
 
     return [
-      { key: "view", label: "View Detail", icon: Eye, onSelect: () => navigate(detailRoute) },
-      { key: "edit", label: "Edit Booking", icon: PencilLine, onSelect: () => navigate(detailRoute) },
-      {
-        key: "delete",
-        label: "Delete Booking",
-        icon: Trash2,
-        className: "text-[#d14c84]",
-        onSelect: () => navigate(detailRoute, { state: { requestDelete: true } }),
-      },
+      { key: "view", label: language === "vi" ? "Xem chi tiết" : "View Detail", icon: Eye, onSelect: () => navigate(detailRoute) },
+      { key: "edit", label: language === "vi" ? "Sửa lịch hẹn" : "Edit Booking", icon: PencilLine, onSelect: () => navigate(detailRoute) },
+      { key: "delete", label: language === "vi" ? "Xóa lịch hẹn" : "Delete Booking", icon: Trash2, className: "text-[#d14c84]", onSelect: () => navigate(detailRoute, { state: { requestDelete: true } }) },
     ];
   };
 
   const handleExportCsv = () => {
     if (!sortedBookings.length) {
-      toast.error("No bookings available to export.");
+      toast.error(language === "vi" ? "Không có lịch hẹn để xuất." : "No bookings available to export.");
       return;
     }
 
-    const csvContent = buildBookingsCsvRows(sortedBookings, isStaffRole);
-    const csvBlob = new Blob([`\uFEFF${csvContent}`], {
-      type: "text/csv;charset=utf-8;",
-    });
+    const csvContent = buildBookingsCsvRows(sortedBookings, isStaffRole, language);
+    const csvBlob = new Blob([`\uFEFF${csvContent}`], { type: "text/csv;charset=utf-8;" });
     const downloadUrl = URL.createObjectURL(csvBlob);
     const link = document.createElement("a");
     const dateLabel = new Date().toISOString().slice(0, 10);
@@ -836,386 +610,379 @@ export function BookingListPage() {
     document.body.removeChild(link);
     URL.revokeObjectURL(downloadUrl);
 
-    toast.success("CSV exported successfully.");
+    toast.success(language === "vi" ? "Đã xuất CSV thành công." : "CSV exported successfully.");
   };
 
+  /* STREAMING_CHUNK: Render Application UI */
   return (
     <>
       <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)]">
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        {summaryItems.map((item) => (
-          <MetricCard key={item.label} item={item} />
-        ))}
-      </div>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+          {summaryItems.map((item) => (
+            <MetricCard key={item.label} item={item} />
+          ))}
+        </div>
 
-      <div className="">
-        <div className="space-y-4">
-          <article className="rounded-[20px] border border-[#f7d8e6] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] md:p-5">
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-              <label className="space-y-2">
-                <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
-                  Date From
-                </span>
-                <input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(event) => setDateFrom(event.target.value)}
-                  className="h-10 w-full rounded-xl border border-[#f5d7e4] bg-[#fff9fc] px-3 text-sm text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
-                />
-              </label>
-              <label className="space-y-2">
-                <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
-                  Date To
-                </span>
-                <input
-                  type="date"
-                  value={dateTo}
-                  onChange={(event) => setDateTo(event.target.value)}
-                  className="h-10 w-full rounded-xl border border-[#f5d7e4] bg-[#fff9fc] px-3 text-sm text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
-                />
-              </label>
+        <div className="">
+          <div className="space-y-4">
+            <article className="rounded-[20px] border border-[#f7d8e6] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] md:p-5">
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+                <label className="space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
+                    {language === "vi" ? "Từ ngày" : "Date From"}
+                  </span>
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(event) => setDateFrom(event.target.value)}
+                    className="h-10 w-full rounded-xl border border-[#f5d7e4] bg-[#fff9fc] px-3 text-sm text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
+                  />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
+                    {language === "vi" ? "Đến ngày" : "Date To"}
+                  </span>
+                  <input
+                    type="date"
+                    value={dateTo}
+                    onChange={(event) => setDateTo(event.target.value)}
+                    className="h-10 w-full rounded-xl border border-[#f5d7e4] bg-[#fff9fc] px-3 text-sm text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
+                  />
+                </label>
 
-              <label className="space-y-2">
-                <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
-                  Booking Status
-                </span>
-                <select
-                  value={statusFilter}
-                  onChange={(event) => setStatusFilter(event.target.value)}
-                  className="h-10 w-full rounded-xl border border-[#f5d7e4] bg-[#fff9fc] px-3 text-sm text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
-                >
-                  {STATUS_OPTIONS.map((item) => (
-                    <option key={item}>{item}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="space-y-2">
-                {!isStaffRole ? (
-                  <>
-                    <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
-                      Payment
-                    </span>
-                    <select
-                      value={paymentFilter}
-                      onChange={(event) => setPaymentFilter(event.target.value)}
-                      className="h-10 w-full rounded-xl border border-[#f5d7e4] bg-[#fff9fc] px-3 text-sm text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
-                    >
-                      {PAYMENT_OPTIONS.map((item) => (
-                        <option key={item}>{item}</option>
-                      ))}
-                    </select>
-                  </>
-                ) : null}
-              </label>
-            </div>
-
-            <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-end">
-
-              <label className="relative block flex-1">
-                <span className="mb-2 block text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
-                  Search
-                </span>
-                <Search
-                  size={15}
-                  className="pointer-events-none absolute left-3 top-[2.5rem] -translate-y-1/2 text-[#df7baa]"
-                />
-                <input
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search booking ID, customer..."
-                  className="h-10 w-full rounded-xl border border-[#f5d7e4] bg-[#fff9fc] pl-10 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
-                />
-              </label>
-
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2.5 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
-                >
-                  Apply
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDateFrom(isStaffRole ? todayDate : defaultDateRange.from);
-                    setDateTo(isStaffRole ? todayDate : defaultDateRange.to);
-                    setSalonFilter(SALON_OPTIONS[0]);
-                    setStatusFilter(STATUS_OPTIONS[0]);
-                    setPaymentFilter(PAYMENT_OPTIONS[0]);
-                    setStaffFilter("All staff");
-                    setQuery("");
-                  }}
-                  className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
-                >
-                  Reset
-                </button>
-              </div>
-            </div>
-          </article>
-
-          <article className="rounded-[20px] border border-[#f7d8e6] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] md:p-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-extrabold text-[#462a45]">
-                  {isStaffRole
-                    ? (isSalonScopeForStaff ? "Salon Bookings" : "My Bookings")
-                    : "All Bookings"}
-                </p>
-                <p className="mt-1 text-[11px] text-[#d197b0]">
-                  {isStaffRole
-                    ? (isSalonScopeForStaff ? paginationLabel : `${paginationLabel} for today`)
-                    : paginationLabel}
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {isStaffRole ? (
-                  <div className="inline-flex rounded-full border border-[#f4c6da] bg-[#fff7fb] p-1">
-                    {[
-                      { key: STAFF_BOOKING_SCOPES.mine, label: "My Bookings" },
-                      { key: STAFF_BOOKING_SCOPES.salon, label: "Salon Bookings" },
-                    ].map((scopeOption) => {
-                      const isActive = staffBookingScope === scopeOption.key;
-
-                      return (
-                        <button
-                          key={scopeOption.key}
-                          type="button"
-                          onClick={() => setStaffBookingScope(scopeOption.key)}
-                          className={`rounded-full px-4 py-2 text-xs font-bold transition ${
-                            isActive
-                              ? "bg-[image:var(--gradient-accent)] text-white shadow-[0_10px_20px_rgba(236,72,153,0.18)]"
-                              : "text-[#ea4f93]"
-                          }`}
-                        >
-                          {scopeOption.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : null}
-                <button
-                  type="button"
-                  onClick={handleExportCsv}
-                  className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
-                >
-                  Export CSV
-                </button>
-                {!isStaffRole ? (
-                  <Link
-                    to={roleConfig.createRoute}
-                    className="inline-flex items-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
+                <label className="space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
+                    {language === "vi" ? "Trạng thái" : "Booking Status"}
+                  </span>
+                  <select
+                    value={statusFilter}
+                    onChange={(event) => setStatusFilter(event.target.value)}
+                    className="h-10 w-full rounded-xl border border-[#f5d7e4] bg-[#fff9fc] px-3 text-sm text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
                   >
-                    <UserPlus size={13} className="mr-1.5" />
-                    {roleConfig.createLabel}
-                  </Link>
-                ) : null}
+                    {STATUS_OPTIONS.map((item) => (
+                      <option key={item} value={item}>{translateOption(item, language)}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="space-y-2">
+                  {!isStaffRole ? (
+                    <>
+                      <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
+                        {language === "vi" ? "Thanh toán" : "Payment"}
+                      </span>
+                      <select
+                        value={paymentFilter}
+                        onChange={(event) => setPaymentFilter(event.target.value)}
+                        className="h-10 w-full rounded-xl border border-[#f5d7e4] bg-[#fff9fc] px-3 text-sm text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
+                      >
+                        {PAYMENT_OPTIONS.map((item) => (
+                          <option key={item} value={item}>{translateOption(item, language)}</option>
+                        ))}
+                      </select>
+                    </>
+                  ) : null}
+                </label>
               </div>
-            </div>
 
-            {flashMessage ? (
-              <div className="mt-4 rounded-[16px] bg-[#edfdf4] px-4 py-3 text-sm font-medium text-[#16975f]">
-                {flashMessage}
-              </div>
-            ) : null}
+              <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-end">
 
-            {loadError ? (
-              <div className="mt-4 rounded-[16px] border border-[#f7d4df] bg-[#fff3f7] px-4 py-3 text-sm font-medium text-[#d14c84]">
-                {loadError}
-              </div>
-            ) : null}
+                <label className="relative block flex-1">
+                  <span className="mb-2 block text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
+                    {language === "vi" ? "Tìm kiếm" : "Search"}
+                  </span>
+                  <Search
+                    size={15}
+                    className="pointer-events-none absolute left-3 top-[2.5rem] -translate-y-1/2 text-[#df7baa]"
+                  />
+                  <input
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder={language === "vi" ? "Nhập mã lịch hẹn, tên khách hàng..." : "Search booking ID, customer..."}
+                    className="h-10 w-full rounded-xl border border-[#f5d7e4] bg-[#fff9fc] pl-10 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
+                  />
+                </label>
 
-            <div className="mt-4 overflow-hidden rounded-[18px] border border-[#f6dbe7]">
-              <div className="flex items-center justify-between gap-3 border-b border-[#f7dce8] bg-[#fffafd] px-4 py-3">
-                <p className="text-sm font-extrabold text-[#462a45]">
-                  {isStaffRole
-                    ? (isSalonScopeForStaff ? "Salon Bookings" : "My Bookings")
-                    : "All Bookings"}
-                </p>
-                {!isStaffRole ? (
+                <div className="flex gap-2">
                   <button
                     type="button"
-                    className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93]"
+                    className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2.5 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
                   >
-                    Bulk Actions
+                    {language === "vi" ? "Áp dụng" : "Apply"}
                   </button>
-                ) : null}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDateFrom(isStaffRole ? todayDate : defaultDateRange.from);
+                      setDateTo(isStaffRole ? todayDate : defaultDateRange.to);
+                      setSalonFilter(SALON_OPTIONS[0]);
+                      setStatusFilter(STATUS_OPTIONS[0]);
+                      setPaymentFilter(PAYMENT_OPTIONS[0]);
+                      setStaffFilter("All staff");
+                      setQuery("");
+                    }}
+                    className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
+                  >
+                    {language === "vi" ? "Đặt lại" : "Reset"}
+                  </button>
+                </div>
+              </div>
+            </article>
+
+            <article className="rounded-[20px] border border-[#f7d8e6] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] md:p-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-extrabold text-[#462a45]">
+                    {isStaffRole
+                      ? (isSalonScopeForStaff ? (language === "vi" ? "Lịch Hẹn Toàn Tiệm" : "Salon Bookings") : (language === "vi" ? "Lịch Hẹn Của Tôi" : "My Bookings"))
+                      : (language === "vi" ? "Tất Cả Lịch Hẹn" : "All Bookings")}
+                  </p>
+                  <p className="mt-1 text-[11px] text-[#d197b0]">
+                    {isStaffRole
+                      ? (isSalonScopeForStaff ? paginationLabel : `${paginationLabel} ${language === "vi" ? "trong hôm nay" : "for today"}`)
+                      : paginationLabel}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {isStaffRole ? (
+                    <div className="inline-flex rounded-full border border-[#f4c6da] bg-[#fff7fb] p-1">
+                      {[
+                        { key: STAFF_BOOKING_SCOPES.mine, label: language === "vi" ? "Của tôi" : "My Bookings" },
+                        { key: STAFF_BOOKING_SCOPES.salon, label: language === "vi" ? "Toàn tiệm" : "Salon Bookings" },
+                      ].map((scopeOption) => {
+                        const isActive = staffBookingScope === scopeOption.key;
+                        return (
+                          <button
+                            key={scopeOption.key}
+                            type="button"
+                            onClick={() => setStaffBookingScope(scopeOption.key)}
+                            className={`rounded-full px-4 py-2 text-xs font-bold transition ${isActive
+                              ? "bg-[image:var(--gradient-accent)] text-white shadow-[0_10px_20px_rgba(236,72,153,0.18)]"
+                              : "text-[#ea4f93]"
+                              }`}
+                          >
+                            {scopeOption.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={handleExportCsv}
+                    className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
+                  >
+                    {language === "vi" ? "Xuất CSV" : "Export CSV"}
+                  </button>
+                  {!isStaffRole ? (
+                    <Link
+                      to={roleConfig.createRoute}
+                      className="inline-flex items-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
+                    >
+                      <UserPlus size={13} className="mr-1.5" />
+                      {roleConfig.createLabel}
+                    </Link>
+                  ) : null}
+                </div>
               </div>
 
-              {isLoading ? (
-                <div className="px-5 py-10 text-center text-sm text-[#8a7082]">
-                  {isStaffRole
-                    ? (isSalonScopeForStaff ? "Loading salon bookings..." : "Loading assigned bookings...")
-                    : "Loading bookings..."}
+              {flashMessage ? (
+                <div className="mt-4 rounded-[16px] bg-[#edfdf4] px-4 py-3 text-sm font-medium text-[#16975f]">
+                  {flashMessage}
                 </div>
-              ) : (
-                <>
-                  <div className="hidden overflow-x-auto lg:block">
-                    <table className="min-w-full">
-                      <thead className="border-b border-[#f8e1eb] bg-[#fffdfd]">
-                        <tr className="text-left text-[10px] font-bold uppercase tracking-[0.16em] text-[#c696ad]">
-                          <th className="px-4 py-3">Customer</th>
-                          <th className="px-4 py-3">Salon</th>
-                          <th className="px-4 py-3">Staff Artist</th>
-                          {/* <th className="px-4 py-3">Service</th> */}
-                          <th className="px-4 py-3">
-                            {isStaffRole ? (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setStaffTimeSortDirection((currentDirection) =>
-                                    currentDirection === "asc" ? "desc" : "asc",
-                                  )
-                                }
-                                className="inline-flex items-center gap-1 text-left text-[10px] font-bold uppercase tracking-[0.16em] text-[#c696ad]"
-                              >
-                                Time
-                                <ArrowUpDown size={12} className="text-[#df7baa]" />
-                                <span className="text-[9px] normal-case tracking-normal text-[#df7baa]">
-                                  {staffTimeSortDirection === "asc" ? "Earliest" : "Latest"}
-                                </span>
-                              </button>
-                            ) : (
-                              "Time"
-                            )}
-                          </th>
-                          {!isStaffRole ? <th className="px-4 py-3">Payment</th> : null}
-                          <th className="px-4 py-3">Status</th>
-                          <th className="px-4 py-3">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-[#fae6ef] bg-white">
-                        {paginatedBookings.map((booking) => (
-                          <tr key={booking.id} className="align-top">
-                            <td className="px-4 py-3.5">
-                              <div className="flex items-start gap-3">
-                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-[10px] font-extrabold text-white">
-                                  {booking.avatar}
+              ) : null}
+
+              {loadError ? (
+                <div className="mt-4 rounded-[16px] border border-[#f7d4df] bg-[#fff3f7] px-4 py-3 text-sm font-medium text-[#d14c84]">
+                  {loadError}
+                </div>
+              ) : null}
+
+              <div className="mt-4 overflow-hidden rounded-[18px] border border-[#f6dbe7]">
+                <div className="flex items-center justify-between gap-3 border-b border-[#f7dce8] bg-[#fffafd] px-4 py-3">
+                  <p className="text-sm font-extrabold text-[#462a45]">
+                    {isStaffRole
+                      ? (isSalonScopeForStaff ? (language === "vi" ? "Lịch Hẹn Toàn Tiệm" : "Salon Bookings") : (language === "vi" ? "Lịch Hẹn Của Tôi" : "My Bookings"))
+                      : (language === "vi" ? "Tất Cả Lịch Hẹn" : "All Bookings")}
+                  </p>
+                  {!isStaffRole ? (
+                    <button
+                      type="button"
+                      className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93]"
+                    >
+                      {language === "vi" ? "Thao tác hàng loạt" : "Bulk Actions"}
+                    </button>
+                  ) : null}
+                </div>
+
+                {isLoading ? (
+                  <div className="px-5 py-10 text-center text-sm text-[#8a7082]">
+                    {isStaffRole
+                      ? (isSalonScopeForStaff ? (language === "vi" ? "Đang tải lịch hẹn toàn tiệm..." : "Loading salon bookings...") : (language === "vi" ? "Đang tải lịch hẹn được phân công..." : "Loading assigned bookings..."))
+                      : (language === "vi" ? "Đang tải danh sách lịch hẹn..." : "Loading bookings...")}
+                  </div>
+                ) : (
+                  <>
+                    <div className="hidden overflow-x-auto lg:block">
+                      <table className="min-w-full">
+                        <thead className="border-b border-[#f8e1eb] bg-[#fffdfd]">
+                          <tr className="text-left text-[10px] font-bold uppercase tracking-[0.16em] text-[#c696ad]">
+                            <th className="px-4 py-3">{language === "vi" ? "Khách hàng" : "Customer"}</th>
+                            <th className="px-4 py-3">{language === "vi" ? "Chi nhánh" : "Salon"}</th>
+                            <th className="px-4 py-3">{language === "vi" ? "Thợ làm nail" : "Staff Artist"}</th>
+                            <th className="px-4 py-3">
+                              {isStaffRole ? (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setStaffTimeSortDirection((currentDirection) =>
+                                      currentDirection === "asc" ? "desc" : "asc",
+                                    )
+                                  }
+                                  className="inline-flex items-center gap-1 text-left text-[10px] font-bold uppercase tracking-[0.16em] text-[#c696ad]"
+                                >
+                                  {language === "vi" ? "Thời gian" : "Time"}
+                                  <ArrowUpDown size={12} className="text-[#df7baa]" />
+                                  <span className="text-[9px] normal-case tracking-normal text-[#df7baa]">
+                                    {staffTimeSortDirection === "asc" ? (language === "vi" ? "Sớm nhất" : "Earliest") : (language === "vi" ? "Muộn nhất" : "Latest")}
+                                  </span>
+                                </button>
+                              ) : (
+                                language === "vi" ? "Thời gian" : "Time"
+                              )}
+                            </th>
+                            {!isStaffRole ? <th className="px-4 py-3">{language === "vi" ? "Thanh toán" : "Payment"}</th> : null}
+                            <th className="px-4 py-3">{language === "vi" ? "Trạng thái" : "Status"}</th>
+                            <th className="px-4 py-3">{language === "vi" ? "Thao tác" : "Action"}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#fae6ef] bg-white">
+                          {paginatedBookings.map((booking) => (
+                            <tr key={booking.id} className="align-top">
+                              <td className="px-4 py-3.5">
+                                <div className="flex items-start gap-3">
+                                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-[10px] font-extrabold text-white">
+                                    {booking.avatar}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="font-bold text-[#432744]">{booking.customerName}</p>
+                                    <p className="mt-1 text-[11px] text-[#c694ad]">{booking.customerPhone}</p>
+                                  </div>
                                 </div>
-                                <div className="min-w-0">
-                                  <p className="font-bold text-[#432744]">{booking.customerName}</p>
-                                  <p className="mt-1 text-[11px] text-[#c694ad]">{booking.customerPhone}</p>
-                                </div>
+                              </td>
+                              <td className="px-4 py-3.5 text-sm text-[#6b5668]">{booking.uiBranch}</td>
+                              <td className="px-4 py-3.5 text-sm text-[#8a7082]">{booking.staffName}</td>
+                              <td className="px-4 py-3.5">
+                                <p className="text-sm font-semibold text-[#432744]">
+                                  {formatDateLabel(booking.bookingDate)}
+                                </p>
+                                <p className="mt-1 text-[11px] text-[#c694ad]">{booking.bookingTime}</p>
+                              </td>
+                              {!isStaffRole ? (
+                                <td className="px-4 py-3.5">
+                                  <SmallTag className={getPaymentTone(booking.uiPayment)}>
+                                    {translateOption(booking.uiPayment, language)}
+                                  </SmallTag>
+                                </td>
+                              ) : null}
+                              <td className="px-4 py-3.5">
+                                <SmallTag className={getStatusTone(booking.uiStatus)}>
+                                  {translateOption(booking.uiStatus, language)}
+                                </SmallTag>
+                              </td>
+                              <td className="px-4 py-3.5">
+                                <ActionDropdown items={getActionItems(booking)} />
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="space-y-3 p-4 lg:hidden">
+                      {paginatedBookings.map((booking) => (
+                        <article
+                          key={booking.id}
+                          className="rounded-[16px] border border-[#f8dce8] bg-[#fffafb] p-4"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-[10px] font-extrabold text-white">
+                              {booking.avatar}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="font-bold text-[#432744]">{booking.customerName}</p>
+                                <span className="text-[10px] font-bold text-[#f04f91]">{booking.uiId}</span>
                               </div>
-                            </td>
-                            <td className="px-4 py-3.5 text-sm text-[#6b5668]">{booking.uiBranch}</td>
-                            <td className="px-4 py-3.5 text-sm text-[#8a7082]">{booking.staffName}</td>
-                            {/* <td className="px-4 py-3.5">
-                          <SmallTag className="bg-[#ffe7ef] text-[#ea4f93]">
-                            {booking.uiService}
-                          </SmallTag>
-                        </td> */}
-                            <td className="px-4 py-3.5">
+                              <p className="mt-1 text-sm text-[#6b5668]">{booking.customerPhone}</p>
+                              <p className="mt-1 text-[11px] text-[#c694ad]">
+                                {booking.uiBranch} • {booking.staffName}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            <SmallTag className="bg-[#ffe7ef] text-[#ea4f93]">{booking.uiService}</SmallTag>
+                            {!isStaffRole ? (
+                              <SmallTag className={getPaymentTone(booking.uiPayment)}>{translateOption(booking.uiPayment, language)}</SmallTag>
+                            ) : null}
+                            <SmallTag className={getStatusTone(booking.uiStatus)}>{translateOption(booking.uiStatus, language)}</SmallTag>
+                          </div>
+                          <div className="mt-4 flex items-center justify-between gap-3">
+                            <div>
                               <p className="text-sm font-semibold text-[#432744]">
                                 {formatDateLabel(booking.bookingDate)}
                               </p>
                               <p className="mt-1 text-[11px] text-[#c694ad]">{booking.bookingTime}</p>
-                            </td>
-                            {!isStaffRole ? (
-                              <td className="px-4 py-3.5">
-                                <SmallTag className={getPaymentTone(booking.uiPayment)}>
-                                  {booking.uiPayment}
-                                </SmallTag>
-                              </td>
-                            ) : null}
-                            <td className="px-4 py-3.5">
-                              <SmallTag className={getStatusTone(booking.uiStatus)}>
-                                {booking.uiStatus}
-                              </SmallTag>
-                            </td>
-                            <td className="px-4 py-3.5">
-                              <ActionDropdown items={getActionItems(booking)} />
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <div className="space-y-3 p-4 lg:hidden">
-                    {paginatedBookings.map((booking) => (
-                      <article
-                        key={booking.id}
-                        className="rounded-[16px] border border-[#f8dce8] bg-[#fffafb] p-4"
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-[10px] font-extrabold text-white">
-                            {booking.avatar}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center justify-between gap-2">
-                              <p className="font-bold text-[#432744]">{booking.customerName}</p>
-                              <span className="text-[10px] font-bold text-[#f04f91]">{booking.uiId}</span>
                             </div>
-                            <p className="mt-1 text-sm text-[#6b5668]">{booking.customerPhone}</p>
-                            <p className="mt-1 text-[11px] text-[#c694ad]">
-                              {booking.uiBranch} • {booking.staffName}
-                            </p>
+                            <ActionDropdown items={getActionItems(booking)} />
                           </div>
-                        </div>
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          <SmallTag className="bg-[#ffe7ef] text-[#ea4f93]">{booking.uiService}</SmallTag>
-                          {!isStaffRole ? (
-                            <SmallTag className={getPaymentTone(booking.uiPayment)}>{booking.uiPayment}</SmallTag>
-                          ) : null}
-                          <SmallTag className={getStatusTone(booking.uiStatus)}>{booking.uiStatus}</SmallTag>
-                        </div>
-                        <div className="mt-4 flex items-center justify-between gap-3">
-                          <div>
-                            <p className="text-sm font-semibold text-[#432744]">
-                              {formatDateLabel(booking.bookingDate)}
-                            </p>
-                            <p className="mt-1 text-[11px] text-[#c694ad]">{booking.bookingTime}</p>
-                          </div>
-                          <ActionDropdown items={getActionItems(booking)} />
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                </>
-              )}
+                        </article>
+                      ))}
+                    </div>
+                  </>
+                )}
 
-              <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-[11px] text-[#c694ad]">
-                  {paginationLabel}
-                </p>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage <= 1}
-                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92]"
-                  >
-                    <ChevronLeft size={12} />
-                  </button>
-                  <button
-                    type="button"
-                    className="inline-flex h-7 min-w-7 items-center justify-center rounded-md bg-[#ea4f93] px-2 text-[11px] font-bold text-white"
-                  >
-                    {currentPage}
-                  </button>
-                  <span className="px-2 text-[11px] font-medium text-[#b9849f]">
-                    / {totalPages}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage >= totalPages}
-                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92]"
-                  >
-                    <ChevronRight size={12} />
-                  </button>
+                <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-[11px] text-[#c694ad]">
+                    {paginationLabel}
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage <= 1}
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92]"
+                    >
+                      <ChevronLeft size={12} />
+                    </button>
+                    <button
+                      type="button"
+                      className="inline-flex h-7 min-w-7 items-center justify-center rounded-md bg-[#ea4f93] px-2 text-[11px] font-bold text-white"
+                    >
+                      {currentPage}
+                    </button>
+                    <span className="px-2 text-[11px] font-medium text-[#b9849f]">
+                      / {totalPages}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage >= totalPages}
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92]"
+                    >
+                      <ChevronRight size={12} />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {!isLoading && filteredBookings.length === 0 ? (
-              <div className="mt-4 rounded-[16px] border border-[#f8dce8] bg-[#fffafb] px-5 py-8 text-center text-sm text-[#8a7082]">
-                No bookings matched the current filters.
-              </div>
-            ) : null}
-          </article>
+              {!isLoading && filteredBookings.length === 0 ? (
+                <div className="mt-4 rounded-[16px] border border-[#f8dce8] bg-[#fffafb] px-5 py-8 text-center text-sm text-[#8a7082]">
+                  {language === "vi" ? "Không có lịch hẹn nào khớp với bộ lọc." : "No bookings matched the current filters."}
+                </div>
+              ) : null}
+            </article>
+          </div>
         </div>
-      </div>
       </section>
       <StaffBookingNotesModal
         open={Boolean(selectedStaffNotesBooking)}

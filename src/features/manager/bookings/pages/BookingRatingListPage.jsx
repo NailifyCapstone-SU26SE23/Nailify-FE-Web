@@ -21,6 +21,7 @@ import { fetchAllSalonStaff, getSalonId } from "../../staff-artist-management/se
 import { loadAuthSession } from "../../../../features/core/auth/model/authStorage";
 import { formatDate } from "../../../../shared/utils/formatDate";
 import { Spin, Alert, Select, Modal, DatePicker } from "antd";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import dayjs from "dayjs";
 
 // Helper to generate initials for custom avatar when imageUrl is missing
@@ -165,6 +166,7 @@ function SentimentGauge({ average, total }) {
 }
 
 export function BookingRatingListPage() {
+  const { t, language } = useLanguage();
   const [ratings, setRatings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -378,12 +380,11 @@ export function BookingRatingListPage() {
                   {stats.total} review{stats.total === 1 ? "" : "s"}
                 </span>
               )}
-            </div>
-            <h1 className="text-3xl font-bold text-[#2d1b35] tracking-tight md:text-4xl">
-              Booking Reviews
+            </div>             <h1 className="text-3xl font-bold text-[#2d1b35] tracking-tight md:text-4xl">
+              {language === "vi" ? "Đánh giá khách hàng" : "Customer Reviews"}
             </h1>
             <p className="text-xs md:text-sm text-[#a88a9f] max-w-[65ch] leading-relaxed">
-              Track customer ratings, review staff performance metrics, and respond to branch service feedback.
+              {language === "vi" ? "Quản lý đánh giá và phản hồi từ khách hàng" : "Manage reviews and responses from customers"}
             </p>
           </div>
 
@@ -392,19 +393,19 @@ export function BookingRatingListPage() {
             className="flex self-start md:self-auto items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-[#2d1b35] shadow-[0_4px_12px_rgba(0,0,0,0.02)] hover:border-[#ea4f93]/30 hover:text-[#ea4f93] transition-all duration-300 active:scale-[0.98]"
           >
             <RotateCcw size={13} />
-            Reload Feed
+            {t("manager.common.refresh") || "Reload Feed"}
           </button>
         </div>
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-32 bg-white/40 backdrop-blur-xs rounded-[2.5rem] border border-slate-200/60 shadow-xs">
             <Spin size="large" />
-            <p className="mt-4 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] animate-pulse">Loading ratings data...</p>
+            <p className="mt-4 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] animate-pulse">{t("manager.common.loading")}</p>
           </div>
         ) : error ? (
           <div className="p-6 bg-rose-50/50 rounded-[2.5rem] border border-rose-100">
             <Alert
-              message="Failed to load feedback"
+              message={t("manager.common.error")}
               description={error}
               type="warning"
               showIcon
@@ -413,7 +414,7 @@ export function BookingRatingListPage() {
                   onClick={loadRatings}
                   className="px-3.5 py-2 bg-white border border-rose-200 rounded-xl text-xs font-bold text-rose-700 transition hover:bg-rose-50"
                 >
-                  Retry
+                  {t("manager.common.retry") || "Retry"}
                 </button>
               }
             />
@@ -436,7 +437,6 @@ export function BookingRatingListPage() {
                     className="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300"
                   />
                 </div> */}
-
                 <div className="flex flex-wrap items-center gap-3">
                   <div className="flex items-center gap-1.5 bg-[#fcf9fb] p-1 rounded-2xl border border-[#f1e7ed]">
                     {["all", "5", "4", "3", "2", "1"].map((score) => (
@@ -449,14 +449,14 @@ export function BookingRatingListPage() {
                           : "text-[#7f6478] hover:text-[#2d1b35] hover:bg-[#ea4f93]/5"
                           }`}
                       >
-                        {score === "all" ? "All" : `${score}`}
+                        {score === "all" ? t("manager.common.all") : `${score}`}
                         {score !== "all" && <Star size={10} className="fill-current" />}
                       </button>
                     ))}
                   </div>
 
                   <DatePicker
-                    placeholder="Filter by date"
+                    placeholder={language === "vi" ? "Lọc theo ngày" : "Filter by date"}
                     value={filterDate}
                     onChange={(date) => setFilterDate(date)}
                     className="h-10 rounded-[0.875rem] border border-slate-200 px-3 text-xs md:text-sm shadow-2xs hover:border-[#ea4f93] focus:border-[#ea4f93] transition-all duration-300"
@@ -470,9 +470,9 @@ export function BookingRatingListPage() {
                     className="w-36 h-10 select-premium-antd"
                     popupClassName="select-premium-dropdown"
                     options={[
-                      { value: "recent", label: "Most Recent" },
-                      { value: "highest", label: "Highest Score" },
-                      { value: "lowest", label: "Lowest Score" }
+                      { value: "recent", label: language === "vi" ? "Mới nhất" : "Most Recent" },
+                      { value: "highest", label: language === "vi" ? "Điểm cao nhất" : "Highest Score" },
+                      { value: "lowest", label: language === "vi" ? "Điểm thấp nhất" : "Lowest Score" }
                     ]}
                     style={{ borderRadius: "0.875rem" }}
                   />
@@ -482,7 +482,7 @@ export function BookingRatingListPage() {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]" size={15} />
                 <input
                   type="text"
-                  placeholder="Search by customer name, nail artist, or comment..."
+                  placeholder={language === "vi" ? "Tìm kiếm theo tên khách hàng hoặc mã đơn..." : "Search by customer name or order code..."}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="bg-white w-full pl-11 pr-4 py-2.5 rounded-2xl border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300"
@@ -493,8 +493,8 @@ export function BookingRatingListPage() {
               {processedRatings.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-24 text-center bg-white rounded-[2.5rem] border border-slate-200/60 shadow-xs">
                   <MessageSquare size={36} className="text-[#a88a9f] mb-3 stroke-[1.2]" />
-                  <h3 className="text-sm font-bold text-[#2d1b35]">No reviews match these filters</h3>
-                  <p className="mt-1 text-xs text-[#a88a9f] max-w-[40ch]">Try clearing the search, star, or date filter to see more feedback.</p>
+                  <h3 className="text-sm font-bold text-[#2d1b35]">{language === "vi" ? "Không có đánh giá" : "No Ratings"}</h3>
+                  <p className="mt-1 text-xs text-[#a88a9f] max-w-[65ch]">{language === "vi" ? "Không có đánh giá" : "No Ratings"}</p>
                 </div>
               ) : (
                 <motion.div
@@ -536,7 +536,7 @@ export function BookingRatingListPage() {
                             <div className="space-y-1">
                               <h4 className="text-base font-bold text-[#2d1b35] leading-tight">{cName}</h4>
                               <p className="text-xs text-[#a88a9f] font-semibold leading-none">
-                                Nail Service · {dateFormatted}
+                                {language === "vi" ? "Dịch vụ làm móng" : "Nail Service"} · {dateFormatted}
                               </p>
                               <div className="flex items-center gap-0.5 pt-1">
                                 {[1, 2, 3, 4, 5].map((sIndex) => (
@@ -577,7 +577,7 @@ export function BookingRatingListPage() {
                             />
                             <div className="absolute bottom-2.5 right-2.5 bg-black/60 backdrop-blur-xs text-[10px] text-white font-bold py-1 px-2.5 rounded-lg flex items-center gap-1.5 pointer-events-none">
                               <ImageIcon size={10} />
-                              Client Photo
+                              {language === "vi" ? "Ảnh khách chụp" : "Client Photo"}
                             </div>
                           </div>
                         )}
@@ -586,7 +586,7 @@ export function BookingRatingListPage() {
                         <div className="grid grid-cols-3 gap-3 bg-[#fafaf9]/60 p-3 rounded-2xl border border-slate-100/80">
                           <div className="flex flex-col items-center gap-1">
                             <span className="flex items-center gap-1 text-[9px] uppercase text-[#a88a9f] font-bold">
-                              <Sparkles size={10} className="text-[#ea4f93]" /> Quality
+                              <Sparkles size={10} className="text-[#ea4f93]" /> {language === "vi" ? "Số lượng" : "Quality"}
                             </span>
                             <span className="font-mono text-xs font-bold text-[#2d1b35]">
                               {rating.serviceQuality || 5}/5
@@ -594,7 +594,7 @@ export function BookingRatingListPage() {
                           </div>
                           <div className="flex flex-col items-center gap-1 border-x border-slate-200/50">
                             <span className="flex items-center gap-1 text-[9px] uppercase text-[#a88a9f] font-bold">
-                              <Zap size={10} className="text-amber-500" /> Punctual
+                              <Zap size={10} className="text-amber-500" /> {language === "vi" ? "Đúng giờ" : "Punctual"}
                             </span>
                             <span className="font-mono text-xs font-bold text-[#2d1b35]">
                               {rating.punctuality || 5}/5
@@ -602,7 +602,7 @@ export function BookingRatingListPage() {
                           </div>
                           <div className="flex flex-col items-center gap-1">
                             <span className="flex items-center gap-1 text-[9px] uppercase text-[#a88a9f] font-bold">
-                              <Smile size={10} className="text-emerald-500" /> Clean
+                              <Smile size={10} className="text-emerald-500" /> {language === "vi" ? "Làm sạch" : "Clean"}
                             </span>
                             <span className="font-mono text-xs font-bold text-[#2d1b35]">
                               {rating.cleanliness || 5}/5
@@ -617,7 +617,7 @@ export function BookingRatingListPage() {
                               <User size={12} />
                             </div>
                             <span className="text-xs text-[#a88a9f]">
-                              Assigned Artist: <span className="font-bold text-[#2d1b35]">{artistName}</span>
+                              {language === "vi" ? "Nghệ sĩ được chỉ định" : "Assigned Artist"}: <span className="font-bold text-[#2d1b35]">{artistName}</span>
                             </span>
                           </div>
 
@@ -629,7 +629,7 @@ export function BookingRatingListPage() {
                               }`}
                           >
                             <MessageSquare size={12} />
-                            {isReplied ? "View Response" : "Respond Feedback"}
+                            {isReplied ? (language === "vi" ? "Xem phản hồi" : "View Response") : (language === "vi" ? "Phản hồi đánh giá" : "Respond Feedback")}
                           </button>
                         </div>
 
@@ -643,9 +643,9 @@ export function BookingRatingListPage() {
                             <div className="flex items-center justify-between text-[10px] text-emerald-800 font-bold uppercase tracking-wider">
                               <span className="flex items-center gap-1.5">
                                 <ShieldCheck size={12} />
-                                Salon Manager Response
+                                {language === "vi" ? "Phản hồi của quản lý salon" : "Salon Manager Response"}
                               </span>
-                              <span>Just now</span>
+                              <span>{language === "vi" ? "Vừa xong" : "Just now"}</span>
                             </div>
                             <p className="text-xs text-slate-700 leading-relaxed font-medium">
                               {replies[rating.bookingRatingId]}
@@ -665,8 +665,8 @@ export function BookingRatingListPage() {
               {/* Signature card: sentiment gauge */}
               <div className="bg-white/80 backdrop-blur-md rounded-[2.25rem] border border-[#f1e7ed]/60 p-6 shadow-[0_12px_32px_rgba(0,0,0,0.02)] space-y-4">
                 <div className="space-y-1">
-                  <h3 className="text-sm font-bold text-[#2d1b35]">Rating Summary</h3>
-                  <p className="text-[10px] text-[#a88a9f]">Aggregated satisfaction score index.</p>
+                  <h3 className="text-sm font-bold text-[#2d1b35]">{language === "vi" ? "Tóm tắt đánh giá" : "Rating Summary"}</h3>
+                  <p className="text-[10px] text-[#a88a9f]">{language === "vi" ? "Chỉ số điểm hài lòng tổng hợp." : "Aggregated satisfaction score index."}</p>
                 </div>
 
                 <SentimentGauge average={stats.average} total={stats.total} />
@@ -696,8 +696,8 @@ export function BookingRatingListPage() {
               {/* Sub-criteria indices */}
               <div className="bg-white/80 backdrop-blur-md rounded-[2.25rem] border border-[#f1e7ed]/60 p-6 shadow-[0_12px_32px_rgba(0,0,0,0.02)] space-y-5">
                 <div className="space-y-1">
-                  <h3 className="text-sm font-bold text-[#2d1b35]">Satisfaction Indices</h3>
-                  <p className="text-[10px] text-[#a88a9f]">Core indicators mapping customer loyalty.</p>
+                  <h3 className="text-sm font-bold text-[#2d1b35]">{language === "vi" ? "Chỉ số hài lòng" : "Satisfaction Indices"}</h3>
+                  <p className="text-[10px] text-[#a88a9f]">{language === "vi" ? "Các chỉ số cốt lõi đo lường lòng trung thành của khách hàng." : "Core indicators mapping customer loyalty."}</p>
                 </div>
 
                 <div className="space-y-4 pt-1">
@@ -705,7 +705,7 @@ export function BookingRatingListPage() {
                     <div className="flex justify-between text-xs font-bold text-[#7f6478]">
                       <span className="flex items-center gap-1.5">
                         <Sparkles size={12} className="text-[#ea4f93]" />
-                        Service Quality
+                        {language === "vi" ? "Chất lượng dịch vụ" : "Service Quality"}
                       </span>
                       <span className="font-mono text-[#ea4f93]">{stats.quality}/5</span>
                     </div>
@@ -721,7 +721,7 @@ export function BookingRatingListPage() {
                     <div className="flex justify-between text-xs font-bold text-[#7f6478]">
                       <span className="flex items-center gap-1.5">
                         <Zap size={12} className="text-amber-500" />
-                        Punctuality
+                        {language === "vi" ? "Đúng giờ" : "Punctuality"}
                       </span>
                       <span className="font-mono text-amber-500">{stats.punctuality}/5</span>
                     </div>
@@ -737,7 +737,7 @@ export function BookingRatingListPage() {
                     <div className="flex justify-between text-xs font-bold text-[#7f6478]">
                       <span className="flex items-center gap-1.5">
                         <Smile size={12} className="text-emerald-500" />
-                        Cleanliness
+                        {language === "vi" ? "Vệ sinh" : "Cleanliness"}
                       </span>
                       <span className="font-mono text-emerald-500">{stats.cleanliness}/5</span>
                     </div>
@@ -757,12 +757,12 @@ export function BookingRatingListPage() {
                   <TrendingUp size={16} />
                 </div>
                 <div className="space-y-1">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Manager Insights</h4>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">{language === "vi" ? "Thông tin quản lý" : "Manager Insights"}</h4>
                   <p className="text-xs text-slate-200 leading-relaxed font-medium">
                     {stats.average >= 4.5
-                      ? "Outstanding performance! Your salon is delivering exceptional satisfaction benchmarks — keep it up."
+                      ? language === "vi" ? "Hiệu suất xuất sắc! Salon của bạn đang mang lại các tiêu chuẩn hài lòng vượt trội — hãy tiếp tục phát huy." : "Outstanding performance! Your salon is delivering exceptional satisfaction benchmarks — keep it up."
                       : stats.average >= 3.5
-                        ? "Service levels are healthy, but punctuality logs show room for improvement to maximize repeat appointments."
+                        ? language === "vi" ? "Mức độ dịch vụ đang tốt, nhưng nhật ký đúng giờ cho thấy cần cải thiện để tối đa hóa các cuộc hẹn lặp lại." : "Service levels are healthy, but punctuality logs show room for improvement to maximize repeat appointments."
                         : "Action required — review cleanliness audits and client remarks on service times to re-establish standards."
                     }
                   </p>
@@ -780,7 +780,7 @@ export function BookingRatingListPage() {
         title={
           <div className="flex items-center gap-2 text-[#2d1b35] font-bold text-base">
             <MessageSquare size={16} className="text-[#ea4f93]" />
-            <span>Respond to Customer Review</span>
+            <span>{language === "vi" ? "Trả lời đánh giá khách hàng" : "Respond to Customer Review"}</span>
           </div>
         }
         open={replyModalVisible}
@@ -806,7 +806,7 @@ export function BookingRatingListPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-bold text-[#2d1b35] block">Your Response Comment</label>
+              <label className="text-xs font-bold text-[#2d1b35] block">{language === "vi" ? "Bình luận phản hồi của bạn" : "Your Response Comment"}</label>
               <textarea
                 rows={4}
                 value={replyText}
@@ -818,7 +818,7 @@ export function BookingRatingListPage() {
 
             <div className="flex gap-2 p-3 bg-amber-50/50 border border-amber-500/10 rounded-xl text-[10px] text-amber-800 font-medium">
               <AlertTriangle size={14} className="shrink-0 text-amber-500" />
-              <span>Responses are published to the customer's mobile application inbox immediately. Please keep responses warm and professional.</span>
+              <span>{language === "vi" ? "Phản hồi được gửi đến hộp thư trong ứng dụng di động của khách hàng ngay lập tức. Vui lòng giữ phản hồi ấm áp và chuyên nghiệp." : "Responses are published to the customer's mobile application inbox immediately. Please keep responses warm and professional."}</span>
             </div>
 
             <div className="flex gap-3 justify-end pt-2">
@@ -827,7 +827,7 @@ export function BookingRatingListPage() {
                 onClick={() => setReplyModalVisible(false)}
                 className="px-4 py-2.5 rounded-2xl border border-slate-200 text-xs font-bold text-slate-500 transition hover:bg-slate-50 active:scale-[0.98]"
               >
-                Cancel
+                {language === "vi" ? "Hủy" : "Cancel"}
               </button>
               <button
                 type="button"
@@ -838,10 +838,10 @@ export function BookingRatingListPage() {
                 {submittingReply ? (
                   <>
                     <Spin size="small" className="scale-75 brightness-0 invert" />
-                    Publishing...
+                    {language === "vi" ? "Đang xuất bản..." : "Publishing..."}
                   </>
                 ) : (
-                  "Publish Response"
+                  language === "vi" ? "Xuất bản phản hồi" : "Publish Response"
                 )}
               </button>
             </div>

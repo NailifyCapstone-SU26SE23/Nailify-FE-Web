@@ -48,7 +48,7 @@ function validateForm(formValues, t) {
 }
 
 export function ComponentDetailPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const { componentId } = useParams();

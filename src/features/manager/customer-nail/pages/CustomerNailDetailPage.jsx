@@ -21,6 +21,7 @@ import { ROUTES } from "../../../../shared/constants/routes";
 import { fetchCustomerNailById, fetchSalonStaff, assignReviewer, managerApproveQuote, managerReject, getManagerSalonId } from "../services/customerNailsService";
 import { fetchNailArtistSkills } from "../../staff-artist-management/services/nailArtistsService";
 import toast from "react-hot-toast";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 
 function Card({ className = "", children }) {
@@ -510,6 +511,7 @@ ActionButton.propTypes = {
 };
 
 export function CustomerNailDetailPage() {
+  const { t, language } = useLanguage();
   const { customerNailId } = useParams();
   const navigate = useNavigate();
   const [nail, setNail] = useState(null);
@@ -1102,24 +1104,23 @@ export function CustomerNailDetailPage() {
                 </div>
 
                 <p className="mt-3 max-w-xl text-xs font-medium leading-relaxed text-[#8f6b80]">
-                  Review custom design details, inspect the requested colors, assign a staff artist,
-                  and complete manager actions from one place.
+                  {language === "vi" ? "Xem chi tiết thiết kế, kiểm tra màu sắc được yêu cầu, chỉ định nghệ sĩ, hoàn thành hành động của quản lý" : "Review custom design details, inspect the requested colors, assign a staff artist, and complete manager actions from one place."}
                 </p>
 
                 <div className="mt-4 flex flex-wrap justify-center sm:justify-start items-center gap-2">
                   <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider shadow-sm ${nail?.basedOnNailVariantId !== null ? "bg-[#eef2ff] text-[#4f46e5] border border-blue-100" : "bg-[#fffbeb] text-[#d97706] border border-amber-100"}`}>
-                    {nail?.basedOnNailVariantId !== null ? "Preset template" : "Custom Unique Design"}
+                    {nail?.basedOnNailVariantId !== null ? language === "vi" ? "Mẫu có sẵn" : "Preset template" : language === "vi" ? "Thiết kế độc đáo" : "Custom Unique Design"}
                   </span>
                   {nail?.isFavorite ? (
                     <span className="inline-flex items-center gap-1 rounded-full bg-[#fff1f5] border border-pink-100 px-3 py-1 text-[10px] font-extrabold text-[#ea4f93] uppercase tracking-wider shadow-sm">
                       <Heart size={11} fill="currentColor" />
-                      Favorite
+                      {language === "vi" ? "Yêu thích" : "Favorite"}
                     </span>
                   ) : null}
                   {nail?.isPublic ? (
                     <span className="inline-flex items-center gap-1 rounded-full bg-[#f9fafb] border border-gray-100 px-3 py-1 text-[10px] font-extrabold text-[#6b7280] uppercase tracking-wider shadow-sm">
                       <Eye size={11} />
-                      Public
+                      {language === "vi" ? "Công khai" : "Public"}
                     </span>
                   ) : null}
                 </div>
@@ -1131,7 +1132,7 @@ export function CustomerNailDetailPage() {
               {/* Price card */}
               <div className="rounded-2xl border border-amber-100 bg-[#fffdfa] p-4 shadow-[0_10px_25px_rgba(217,119,6,0.03)] flex flex-col justify-between">
                 <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#d97706]">
-                  Price
+                  {language === "vi" ? "Giá" : "Price"}
                 </span>
                 <span className="mt-2 text-base font-bold text-[#d97706] truncate">
                   {formatVND(nail?.price, nail?.status)}
@@ -1140,7 +1141,7 @@ export function CustomerNailDetailPage() {
               {/* Duration card */}
               <div className="rounded-2xl border border-purple-100 bg-[#fbfaff] p-4 shadow-[0_10px_25px_rgba(139,92,246,0.03)] flex flex-col justify-between">
                 <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#7c3aed]">
-                  Duration
+                  {language === "vi" ? "Thời gian" : "Duration"}
                 </span>
                 <span className="mt-2 text-base font-bold text-[#7c3aed] truncate">
                   {formatDuration(nail?.duration, nail?.status)}
@@ -1149,7 +1150,7 @@ export function CustomerNailDetailPage() {
               {/* Created Date card */}
               <div className="rounded-2xl border border-pink-100 bg-[#fffafc] p-4 shadow-[0_10px_25px_rgba(236,72,153,0.03)] flex flex-col justify-between">
                 <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#db2777]">
-                  Created
+                  {language === "vi" ? "Ngày tạo" : "Created"}
                 </span>
                 <span className="mt-2 text-[11px] font-bold text-[#db2777] leading-snug">
                   {formatDate(nail?.createdAt)}
@@ -1164,27 +1165,27 @@ export function CustomerNailDetailPage() {
           {/* Custom Design Live Preview */}
           <div className="space-y-4">
             <SectionHeading
-              title="Custom Design Live Preview"
-              subtitle="Interactive 3D preview showing nail shape, color blend, surface texture, and accessories in realistic hand positioning."
+              title={language === "vi" ? "Xem trước thiết kế trực tiếp" : "Custom Design Live Preview"}
+              subtitle={language === "vi" ? "Xem trước thiết kế trực tiếp hiển thị hình dạng móng, màu sắc, kết cấu bề mặt và phụ kiện ở vị trí tay thực tế." : "Interactive 3D preview showing nail shape, color blend, surface texture, and accessories in realistic hand positioning."}
             />
 
             <div className="relative rounded-[24px] border border-[#f7d7e5] bg-[radial-gradient(circle_at_top,#fffdfd_0%,#fff6fb_58%,#fff2f8_100%)] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
               <div className="flex min-h-[360px] flex-wrap items-center justify-center gap-5 lg:gap-6">
-                {renderNailPreview(1, "Thumb")}
-                {renderNailPreview(2, "Index")}
-                {renderNailPreview(3, "Middle")}
-                {renderNailPreview(4, "Ring")}
-                {renderNailPreview(5, "Pinky")}
+                {renderNailPreview(1, language === "vi" ? "Ngón cái" : "Thumb")}
+                {renderNailPreview(2, language === "vi" ? "Ngón trỏ" : "Index")}
+                {renderNailPreview(3, language === "vi" ? "Ngón giữa" : "Middle")}
+                {renderNailPreview(4, language === "vi" ? "Ngón áp út" : "Ring")}
+                {renderNailPreview(5, language === "vi" ? "Ngón út" : "Pinky")}
               </div>
 
               <div className="absolute right-6 top-6 flex flex-col gap-2 rounded-2xl border border-white/70 bg-white/90 p-3 shadow-lg backdrop-blur-sm">
-                <span className="text-[9px] font-bold uppercase tracking-wider text-[#c08aa4]">Design Info</span>
+                <span className="text-[9px] font-bold uppercase tracking-wider text-[#c08aa4]">{language === "vi" ? "Thông tin thiết kế" : "Design Info"}</span>
                 <div className="flex items-center gap-2">
                   <span className="rounded-lg bg-[#fff0f8] px-2 py-1 text-[10px] font-bold text-[#ea4f93]">
-                    {nail?.nailShape?.name || "Custom"}
+                    {nail?.nailShape?.name}
                   </span>
                   <span className="rounded-lg bg-[#fff0f8] px-2 py-1 text-[10px] font-bold text-[#ea4f93]">
-                    {nail?.nailSurface?.name || "Glossy"}
+                    {nail?.nailSurface?.name}
                   </span>
                 </div>
                 <span className="text-[10px] font-semibold text-[#9c6f87]">
@@ -1197,8 +1198,8 @@ export function CustomerNailDetailPage() {
           {/* Basic Info */}
           <div className="space-y-4">
             <SectionHeading
-              title="Design Information"
-              subtitle="High-level summary of the requested customer nail design."
+              title={language === "vi" ? "Thông tin thiết kế" : "Design Information"}
+              subtitle={language === "vi" ? "Tóm tắt thông tin về thiết kế móng khách yêu cầu." : "High-level summary of the requested customer nail design."}
             />
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {/* Nail Shape Visual Tile */}
@@ -1211,12 +1212,12 @@ export function CustomerNailDetailPage() {
                   />
                 ) : (
                   <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] flex items-center justify-center text-white text-xs font-bold shrink-0">
-                    Shape
+                    {language === "vi" ? "Kiểu móng" : "Nail Shape"}
                   </div>
                 )}
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">Nail Shape</p>
-                  <p className="mt-1 text-sm font-extrabold text-[#3f2240]">{nail?.nailShape?.name || "Custom Shape"}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">{language === "vi" ? "Kiểu móng" : "Nail Shape"}</p>
+                  <p className="mt-1 text-sm font-extrabold text-[#3f2240]">{nail?.nailShape?.name || language === "vi" ? "Kiểu móng tùy chỉnh" : "Custom Shape"}</p>
                 </div>
               </div>
 
@@ -1230,12 +1231,12 @@ export function CustomerNailDetailPage() {
                   />
                 ) : (
                   <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-[#fecdd3] to-[#fda4af] flex items-center justify-center text-[#9f1239] text-xs font-bold shrink-0">
-                    Surface
+                    {language === "vi" ? "Bề mặt móng" : "Nail Surface"}
                   </div>
                 )}
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">Nail Surface</p>
-                  <p className="mt-1 text-sm font-extrabold text-[#3f2240]">{nail?.nailSurface?.name || "Custom Surface"}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">{language === "vi" ? "Bề mặt móng" : "Nail Surface"}</p>
+                  <p className="mt-1 text-sm font-extrabold text-[#3f2240]">{nail?.nailSurface?.name}</p>
                 </div>
               </div>
 
@@ -1245,7 +1246,7 @@ export function CustomerNailDetailPage() {
                   VND
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">Total Price</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">{language === "vi" ? "Tổng tiền" : "Total Amount"}</p>
                   <p className="mt-1 text-sm font-extrabold text-green-700">{formatVND(nail?.price, nail?.status)}</p>
                 </div>
               </div>
@@ -1256,7 +1257,7 @@ export function CustomerNailDetailPage() {
                   ⏱
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">Total Duration</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">{language === "vi" ? "Tổng thời gian" : "Total Duration"}</p>
                   <p className="mt-1 text-sm font-extrabold text-[#3f2240]">{formatDuration(nail?.duration, nail?.status)}</p>
                 </div>
               </div>
@@ -1267,8 +1268,8 @@ export function CustomerNailDetailPage() {
           {Array.isArray(nail?.customerNailComponents) && nail.customerNailComponents.length > 0 && (
             <div className="space-y-4">
               <SectionHeading
-                title="Components & Ornaments"
-                subtitle="Individual stickers, gems, and 3D decors requested. Click any card to highlight it on the nail preview."
+                title={language === "vi" ? "Phụ kiện" : "Components & Ornaments"}
+                subtitle={language === "vi" ? "Các phụ kiện trang trí cho bộ móng." : "Individual stickers, gems, and 3D decors requested. Click any card to highlight it on the nail preview."}
               />
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {nail.customerNailComponents.map((itemComponent, idx) => {
@@ -1297,13 +1298,13 @@ export function CustomerNailDetailPage() {
                           />
                         ) : (
                           <div className="h-14 w-14 rounded-xl bg-pink-100 flex items-center justify-center text-pink-600 text-xs font-bold shrink-0">
-                            Decor
+                            {language === "vi" ? "Trang trí móng" : "Nail Decor"}
                           </div>
                         )}
                         <div className="min-w-0">
-                          <p className="text-sm font-bold text-[#3f2240] truncate">{comp.name || "Custom Accessory"}</p>
+                          <p className="text-sm font-bold text-[#3f2240] truncate">{comp.name}</p>
                           <p className="mt-0.5 text-xs text-[#a37e93]">
-                            Type: {comp.componentType || "Sticker/Gem"} • Finger: {itemComponent.fingerIndex}
+                            {language === "vi" ? "Loại" : "Type"}: {comp.componentType || "Sticker/Gem"} • {language === "vi" ? "Ngón" : "Finger"}: {itemComponent.fingerIndex}
                           </p>
                           {comp.price ? (
                             <p className="mt-1 text-xs text-[#ea4f93] font-semibold">+{formatVND(comp.price)}</p>
@@ -1347,8 +1348,8 @@ export function CustomerNailDetailPage() {
               </svg>
 
               <SectionHeading
-                title="Custom Color"
-                subtitle="Preview the requested color configuration for this custom design."
+                title={language === "vi" ? "Màu sắc tùy chỉnh" : "Custom Color"}
+                subtitle={language === "vi" ? "Xem cấu hình màu sắc được yêu cầu cho thiết kế tùy chỉnh này." : "Preview the requested color configuration for this custom design."}
               />
               <div className="rounded-[28px] border border-[#f4d6e4] bg-[linear-gradient(180deg,#fffafb_0%,#fff5f9_100%)] p-6 shadow-[0_10px_26px_rgba(236,72,153,0.05)]">
                 <div className="w-full">
@@ -1386,19 +1387,19 @@ export function CustomerNailDetailPage() {
                             </div>
                             <div>
                               <span className="inline-flex rounded-full bg-[#ffe6f1] px-2.5 py-1 text-[10px] font-bold text-[#ea4f93] uppercase tracking-wider">
-                                Solid Color
+                                {language === "vi" ? "Màu sắc" : "Solid Color"}
                               </span>
                               <h4 className="mt-2.5 text-base font-extrabold text-[#3f2240] flex items-center gap-2">
                                 <span className="flex items-center gap-1.5 bg-white/80 px-2.5 py-1 rounded-full border border-[#f5cee1] shadow-sm">
                                   <span className="h-3 w-3 rounded-full border border-white shadow-sm inline-block shrink-0" style={{ backgroundColor: colorData.color }} />
                                   <span className="font-mono text-sm font-extrabold text-[#5c3b5d]">{colorData.color}</span>
                                 </span>
-                                <span className="text-[10px] font-medium text-[#c08aa4] opacity-0 group-hover/card:opacity-100 transition-opacity">(Click to copy)</span>
+                                <span className="text-[10px] font-medium text-[#c08aa4] opacity-0 group-hover/card:opacity-100 transition-opacity">{language === "vi" ? "Bấm để sao chép" : "(Click to copy)"}</span>
                               </h4>
                               <div className="mt-2 h-3.5 w-48 rounded-full border border-white/80 bg-[#fff5f9] shadow-[inset_0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
                                 <div className="h-full w-full rounded-full" style={{ backgroundColor: colorData.color }} />
                               </div>
-                              <p className="mt-2.5 text-xs text-[#c08aa4]">Single solid tone applied across all fingers.</p>
+                              <p className="mt-2.5 text-xs text-[#c08aa4]">{language === "vi" ? "Màu sắc đơn sắc được áp dụng trên tất cả các ngón tay." : "Single solid tone applied across all fingers."}</p>
                             </div>
                           </div>
                         );
@@ -1427,7 +1428,7 @@ export function CustomerNailDetailPage() {
                             </div>
                             <div>
                               <span className="inline-flex rounded-full bg-[#eef2ff] px-2.5 py-1 text-[10px] font-bold text-[#4f46e5] uppercase tracking-wider">
-                                Linear Gradient
+                                {language === "vi" ? "Màu chuyển sắc" : "Linear Gradient"}
                               </span>
                               <h4 className="mt-2.5 text-base font-extrabold text-[#3f2240] flex items-center gap-3 flex-wrap">
                                 {gradientStops.map((stop, sidx) => (
@@ -1439,10 +1440,10 @@ export function CustomerNailDetailPage() {
                                     {sidx < gradientStops.length - 1 && <span className="text-xs text-[#a5b4fc] font-bold">→</span>}
                                   </span>
                                 ))}
-                                <span className="text-[10px] font-medium text-[#c08aa4] opacity-0 group-hover/card:opacity-100 transition-opacity">(Click to copy)</span>
+                                <span className="text-[10px] font-medium text-[#c08aa4] opacity-0 group-hover/card:opacity-100 transition-opacity">{language === "vi" ? "Bấm để sao chép" : "(Click to copy)"}</span>
                               </h4>
                               <div className="mt-2 h-3.5 w-48 rounded-full border border-white/80 shadow-[inset_0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden" style={{ background: `linear-gradient(to right, ${gradientStops.join(", ")})` }} />
-                              <p className="mt-2.5 text-xs text-[#c08aa4]">Smooth color blend applied uniformly across all fingers.</p>
+                              <p className="mt-2.5 text-xs text-[#c08aa4]">{language === "vi" ? "Chuyển màu mượt mà được áp dụng trên tất cả các ngón tay." : "Smooth color blend applied uniformly across all fingers."}</p>
                             </div>
                           </div>
                         );
@@ -1455,9 +1456,9 @@ export function CustomerNailDetailPage() {
                             <div className="flex items-center justify-between border-b border-[#fcd5e6]/50 pb-2">
                               <div>
                                 <span className="inline-flex rounded-full bg-[#fdf2f8] px-3 py-1 text-[10px] font-bold text-[#db2777] uppercase tracking-wider">
-                                  Per-Finger Custom Palette
+                                  {language === "vi" ? "Màu sắc riêng cho từng ngón tay" : "Per-Finger Custom Palette"}
                                 </span>
-                                <p className="mt-1 text-xs text-[#c08aa4]">Each finger has its own unique color or gradient design. Click any card to copy its color code.</p>
+                                <p className="mt-1 text-xs text-[#c08aa4]">{language === "vi" ? "Mỗi ngón tay có thiết kế màu sắc hoặc gradient riêng. Bấm vào thẻ để sao chép mã màu." : "Each finger has its own unique color or gradient design. Click any card to copy its color code."}</p>
                               </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
@@ -1554,7 +1555,7 @@ export function CustomerNailDetailPage() {
                     return (
                       <div className="flex items-center gap-2 text-xs text-[#c08aa4]">
                         <ImageIcon size={12} />
-                        <span>Color configuration unavailable</span>
+                        <span>{language === "vi" ? "Không thể cấu hình màu" : "Color configuration unavailable"}</span>
                       </div>
                     );
                   })()}
@@ -1568,8 +1569,8 @@ export function CustomerNailDetailPage() {
             nail?.rejectReason && (
               <div className="space-y-4">
                 <SectionHeading
-                  title="Reject Reason"
-                  subtitle="Latest manager feedback for this request."
+                  title={language === "vi" ? "Lý do từ chối" : "Reject Reason"}
+                  subtitle={language === "vi" ? "Phản hồi cuối cùng của quản lý cho yêu cầu này." : "Latest manager feedback for this request."}
                 />
                 <div className="rounded-[24px] border border-[#f4b8cb] bg-[linear-gradient(180deg,#fff1f5_0%,#ffe7ef_100%)] p-5 shadow-[0_10px_24px_rgba(225,68,127,0.08)]">
                   <p className="text-sm text-[#e1447f]">{nail.rejectReason}</p>
@@ -1615,7 +1616,7 @@ export function CustomerNailDetailPage() {
                     <div className="flex items-center justify-between border-b border-[#fde7f3] pb-2">
                       <span className="text-xs font-extrabold uppercase tracking-wider text-[#b87c9b] flex items-center gap-1.5">
                         <Sparkles size={13} className="text-[#ea4f93]" />
-                        Artist Skills & Capabilities
+                        {language === "vi" ? "Kỹ năng & Năng lực của nghệ sĩ" : "Artist Skills & Capabilities"}
                       </span>
                     </div>
 
@@ -1645,7 +1646,7 @@ export function CustomerNailDetailPage() {
                       </div>
                     ) : (
                       <div className="text-center py-6 text-xs text-[#c08aa4]">
-                        No skills data available for this artist.
+                        {language === "vi" ? "Không có dữ liệu kỹ năng cho nghệ sĩ này." : "No skills data available for this artist."}
                       </div>
                     )}
                   </div>
@@ -1659,8 +1660,8 @@ export function CustomerNailDetailPage() {
             nail?.status === "PendingReview" && !nail?.assignedStaff && (
               <div className="space-y-4">
                 <SectionHeading
-                  title="Assign Staff"
-                  subtitle="Choose a staff artist so the review can continue with the right owner."
+                  title={language === "vi" ? "Giao nhiệm vụ cho nghệ sĩ" : "Assign Artist"}
+                  subtitle={language === "vi" ? "Chọn nghệ sĩ để tiếp tục xem xét yêu cầu." : "Choose a staff artist so the review can continue with the right owner."}
                 />
                 <div className="rounded-[24px] border border-[#f4d6e4] bg-[linear-gradient(180deg,#fffafb_0%,#fff6fa_100%)] p-5">
                   <ActionButton
@@ -1669,7 +1670,7 @@ export function CustomerNailDetailPage() {
                     icon={UserRound}
                     className="w-fit bg-[#ea4f93] hover:bg-[#df4588]"
                   >
-                    Assign Staff
+                    {language === "vi" ? "Giao nhiệm vụ cho nghệ sĩ" : "Assign Artist"}
                   </ActionButton>
                 </div>
               </div>
@@ -1681,8 +1682,8 @@ export function CustomerNailDetailPage() {
             (nail?.status === "Reviewed" || nail?.status === "Quoted") && (
               <div className="space-y-4">
                 <SectionHeading
-                  title="Review Actions"
-                  subtitle="Finalize the quoted design by confirming or rejecting it."
+                  title={language === "vi" ? "Hành động xem xét" : "Review Actions"}
+                  subtitle={language === "vi" ? "Hoàn thiện thiết kế đã báo giá bằng cách xác nhận hoặc từ chối." : "Finalize the quoted design by confirming or rejecting it."}
                 />
                 <div className="rounded-[24px] border border-[#f4d6e4] bg-[linear-gradient(180deg,#fffafb_0%,#fff5f9_100%)] p-5">
                   <div className="flex flex-wrap gap-3">
@@ -1692,7 +1693,7 @@ export function CustomerNailDetailPage() {
                       icon={CheckCircle2}
                       className="w-fit bg-[#2fa25f] hover:bg-[#2a9255]"
                     >
-                      Confirm Quote
+                      {language === "vi" ? "Xác nhận báo giá" : "Confirm Quote"}
                     </ActionButton>
                     <ActionButton
                       onClick={() => setIsRejectModalOpen(true)}
@@ -1700,7 +1701,7 @@ export function CustomerNailDetailPage() {
                       icon={XCircle}
                       className="w-fit bg-[#e1447f] hover:bg-[#d63e75]"
                     >
-                      Reject Quote
+                      {language === "vi" ? "Từ chối báo giá" : "Reject Quote"}
                     </ActionButton>
                   </div>
                 </div>
@@ -1739,9 +1740,9 @@ export function CustomerNailDetailPage() {
               <XCircle size={20} />
             </div>
             <div>
-              <h3 className="text-xl font-extrabold text-[#402542]">Reject Customer Nail</h3>
+              <h3 className="text-xl font-extrabold text-[#402542]">{language === "vi" ? "Từ chối yêu cầu làm nail của khách hàng" : "Reject Customer Nail"}</h3>
               <p className="mt-1 text-sm text-[#b35f82]">
-                Give the customer a clear reason so the next revision is easier to handle.
+                {language === "vi" ? "Đưa ra lý do rõ ràng để lần sửa tiếp theo dễ xử lý hơn." : "Give the customer a clear reason so the next revision is easier to handle."}
               </p>
             </div>
           </div>
@@ -1749,10 +1750,10 @@ export function CustomerNailDetailPage() {
         <div className="-mt-6 space-y-4 rounded-[28px] bg-white px-6 pb-6 pt-6">
           <div className="rounded-2xl border border-[#f7d8e4] bg-[#fffafb] p-4">
             <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">
-              Reject Reason
+              {language === "vi" ? "Lý do từ chối" : "Reject Reason"}
             </p>
             <p className="mb-3 text-sm text-[#6f5568]">
-              Explain what needs to be adjusted before this request can move forward.
+              {language === "vi" ? "Giải thích những gì cần điều chỉnh trước khi yêu cầu này có thể tiếp tục." : "Explain what needs to be adjusted before this request can move forward."}
             </p>
           </div>
           <Input.TextArea
@@ -1794,9 +1795,9 @@ export function CustomerNailDetailPage() {
               <CheckCircle2 size={20} />
             </div>
             <div>
-              <h3 className="text-xl font-extrabold text-[#31543f]">Confirm Quote</h3>
+              <h3 className="text-xl font-extrabold text-[#31543f]">{language === "vi" ? "Xác nhận báo giá" : "Confirm Quote"}</h3>
               <p className="mt-1 text-sm text-[#5d8b70]">
-                Enter the final approved quote details for this custom design.
+                {language === "vi" ? "Nhập chi tiết báo giá cuối cùng đã được phê duyệt cho thiết kế tùy chỉnh này." : "Enter the final approved quote details for this custom design."}
               </p>
             </div>
           </div>
@@ -1804,12 +1805,12 @@ export function CustomerNailDetailPage() {
         <div className="-mt-6 space-y-4 rounded-[28px] bg-white px-6 pb-6 pt-6">
           <div className="rounded-2xl border border-[#d8efdf] bg-[#f8fffa] p-4">
             <p className="text-sm text-[#496455]">
-              Provide the final price and expected duration that the customer will see.
+              {language === "vi" ? "Cung cấp giá cuối cùng và thời lượng dự kiến mà khách hàng sẽ thấy." : "Provide the final price and expected duration that the customer will see."}
             </p>
           </div>
           <div>
             <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.1em] text-[#c08aa4]">
-              Final Price
+              {language === "vi" ? "Giá cuối cùng" : "Final Price"}
             </p>
             <Input
               type="number"
@@ -1851,9 +1852,9 @@ export function CustomerNailDetailPage() {
               <AlertTriangle size={20} />
             </div>
             <div>
-              <h3 className="text-xl font-extrabold text-[#5a3821]">Assign Staff First</h3>
+              <h3 className="text-xl font-extrabold text-[#5a3821]">{language === "vi" ? "Giao nhiệm vụ cho nghệ sĩ" : "Assign Staff First"}</h3>
               <p className="mt-1 text-sm text-[#9a6a40]">
-                You need to assign a staff artist before approving this customer nail request.
+                {language === "vi" ? "Bạn cần giao nhiệm vụ cho nghệ sĩ trước khi phê duyệt yêu cầu làm nail của khách hàng." : "You need to assign a staff artist before approving this customer nail request."}
               </p>
             </div>
           </div>
@@ -1861,7 +1862,7 @@ export function CustomerNailDetailPage() {
         <div className="-mt-6 rounded-[28px] bg-white px-6 pb-6 pt-6">
           <div className="rounded-2xl border border-[#f5ddbd] bg-[#fffaf2] p-4">
             <p className="text-sm text-[#6f5568]">
-              Please assign the appropriate staff artist so the request can be reviewed and handled correctly.
+              {language === "vi" ? "Vui lòng giao nhiệm vụ cho nghệ sĩ phù hợp để yêu cầu được xem xét và xử lý đúng cách." : "Please assign the appropriate staff artist so the request can be reviewed and handled correctly."}
             </p>
           </div>
           <div className="mt-4 flex flex-col gap-3 sm:flex-row">
@@ -1918,9 +1919,9 @@ export function CustomerNailDetailPage() {
               <UserRound size={20} />
             </div>
             <div>
-              <h3 className="text-xl font-extrabold text-[#402542]">Assign Staff Artist</h3>
+              <h3 className="text-xl font-extrabold text-[#402542]">{language === "vi" ? "Giao nhiệm vụ cho nghệ sĩ" : "Assign Staff Artist"}</h3>
               <p className="mt-1 text-sm text-[#b06484]">
-                Choose the best staff artist to take ownership of this request.
+                {language === "vi" ? "Chọn nghệ sĩ phù hợp nhất để chịu trách nhiệm cho yêu cầu này." : "Choose the best staff artist to take ownership of this request."}
               </p>
             </div>
           </div>
@@ -1928,12 +1929,11 @@ export function CustomerNailDetailPage() {
         <div className="-mt-6 rounded-[28px] bg-white px-6 pb-6 pt-6">
           <div className="mb-4 rounded-2xl border border-[#f6d8e6] bg-[#fffafb] p-4">
             <p className="text-sm text-[#6f5568]">
-              Browse the available staff below. The selected profile will be assigned immediately
-              after confirmation.
+              {language === "vi" ? "Duyệt qua các nghệ sĩ có sẵn bên dưới. Hồ sơ được chọn sẽ được giao ngay sau khi xác nhận." : "Browse the available staff below. The selected profile will be assigned immediately after confirmation."}
             </p>
             {selectedStaff ? (
               <p className="mt-2 text-sm font-semibold text-[#ea4f93]">
-                Selected: {selectedStaffName}
+                {language === "vi" ? "Đã chọn: " : "Selected: "}{selectedStaffName}
               </p>
             ) : null}
           </div>
@@ -1944,7 +1944,7 @@ export function CustomerNailDetailPage() {
           ) : (
             <div className="grid gap-3 md:grid-cols-2">
               {staffList.length === 0 ? (
-                <p className="text-sm text-[#c08aa4]">No staff available.</p>
+                <p className="text-sm text-[#c08aa4]">{language === "vi" ? "Không có nghệ sĩ nào" : "No staff available."}</p>
               ) : (
                 staffList.map((staff) => {
                   return (
@@ -1989,7 +1989,7 @@ export function CustomerNailDetailPage() {
                             </div>
                           ) : (
                             <div className="mt-2.5 text-[9px] italic text-[#c08aa4]">
-                              No skills registered
+                              {language === "vi" ? "Không có kỹ năng nào" : "No skills registered"}
                             </div>
                           )}
 

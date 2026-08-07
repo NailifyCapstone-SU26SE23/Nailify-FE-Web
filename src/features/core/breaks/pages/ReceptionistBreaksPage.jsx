@@ -18,6 +18,7 @@ import {
   deleteBreakRequest,
   fetchNailArtists
 } from "../services/breakService";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 export function ReceptionistBreaksPage() {
   const [breaks, setBreaks] = useState([]);
@@ -26,6 +27,7 @@ export function ReceptionistBreaksPage() {
   const [isArtistsLoading, setIsArtistsLoading] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [metaData, setMetaData] = useState(null);
+  const { language } = useLanguage();
 
   // Filters and Pagination
   const [filterArtistId, setFilterArtistId] = useState(undefined);
@@ -65,11 +67,11 @@ export function ReceptionistBreaksPage() {
       }
     } catch (error) {
       console.error("Failed to load breaks:", error);
-      toast.error(error.message || "Failed to load breaks list.");
+      toast.error(error.message || (language === "vi" ? "Không tải được danh sách nghỉ phép." : "Failed to load breaks list."));
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, filterArtistId, filterDate]);
+  }, [currentPage, filterArtistId, filterDate, language]);
 
   useEffect(() => {
     loadArtists();
@@ -83,12 +85,12 @@ export function ReceptionistBreaksPage() {
     try {
       setIsActionLoading(true);
       await deleteBreakRequest(selectedBreak.nailArtistBreakId);
-      toast.success("Break request cancelled successfully.");
+      toast.success(language === "vi" ? "Hủy yêu cầu xin nghỉ phép thành công." : "Break request cancelled successfully.");
       setIsDeleteOpen(false);
       setSelectedBreak(null);
       loadBreaks();
     } catch (error) {
-      toast.error(error.message || "Failed to cancel break request.");
+      toast.error(error.message || (language === "vi" ? "Không thể hủy yêu cầu nghỉ phép." : "Failed to cancel break request."));
     } finally {
       setIsActionLoading(false);
     }
@@ -101,7 +103,7 @@ export function ReceptionistBreaksPage() {
 
   const getArtistName = (artistId) => {
     const artist = artists.find(a => String(a.id) === String(artistId));
-    return artist ? artist.name : "Nail Artist";
+    return artist ? artist.name : (language === "vi" ? "Thợ Nail" : "Nail Artist");
   };
 
   const getStatusBadge = (status) => {
@@ -113,7 +115,7 @@ export function ReceptionistBreaksPage() {
       case "active":
         return (
           <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-600 border border-emerald-100">
-            Đã duyệt
+            {language === "vi" ? "Đã duyệt" : "Approved"}
           </span>
         );
       case "rejected":
@@ -121,7 +123,7 @@ export function ReceptionistBreaksPage() {
       case "không đồng ý":
         return (
           <span className="inline-flex rounded-full bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-600 border border-rose-100">
-            Từ chối
+            {language === "vi" ? "Từ chối" : "Rejected"}
           </span>
         );
       case "pending":
@@ -129,7 +131,7 @@ export function ReceptionistBreaksPage() {
       default:
         return (
           <span className="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-600 border border-amber-100">
-            Chờ duyệt
+            {language === "vi" ? "Chờ duyệt" : "Pending"}
           </span>
         );
     }
@@ -139,9 +141,9 @@ export function ReceptionistBreaksPage() {
     <div className="space-y-6">
       {/* Header section */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-[#3f2b3f]">Danh Sách Xin Nghỉ Phép</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-[#3f2b3f]">{language === "vi" ? "Danh Sách Xin Nghỉ Phép" : "Staff Break Requests"}</h1>
         <p className="mt-1 text-sm text-[#a88a9d]">
-          Xem danh sách lịch xin nghỉ phép giữa ca của thợ nail và thực hiện hủy yêu cầu nếu cần.
+          {language === "vi" ? "Xem danh sách lịch xin nghỉ phép giữa ca của thợ nail và thực hiện hủy yêu cầu nếu cần." : "View break schedule requests of nail artists and cancel request if needed."}
         </p>
       </div>
 
@@ -150,10 +152,10 @@ export function ReceptionistBreaksPage() {
         <div className="flex flex-wrap items-center gap-4">
           {/* Artist Filter */}
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-[#69708a]">Thợ nail:</span>
+            <span className="text-sm font-semibold text-[#69708a]">{language === "vi" ? "Thợ nail:" : "Artist:"}</span>
             <Select
               allowClear
-              placeholder="Tất cả thợ nail"
+              placeholder={language === "vi" ? "Tất cả thợ nail" : "All nail artists"}
               loading={isArtistsLoading}
               value={filterArtistId}
               onChange={(value) => {
@@ -173,7 +175,7 @@ export function ReceptionistBreaksPage() {
 
           {/* Date Filter */}
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-[#69708a]">Ngày:</span>
+            <span className="text-sm font-semibold text-[#69708a]">{language === "vi" ? "Ngày:" : "Date:"}</span>
             <DatePicker
               value={filterDate ? dayjs(filterDate) : null}
               onChange={(date, dateString) => {
@@ -193,17 +195,17 @@ export function ReceptionistBreaksPage() {
                 setFilterDate("");
                 setCurrentPage(1);
               }}
-              className="rounded-full bg-slate-100 hover:bg-slate-200 px-3 py-1 text-xs font-semibold text-[#69708a] transition"
+              className="rounded-full bg-slate-100 hover:bg-slate-200 px-3 py-1 text-xs font-semibold text-[#69708a] transition cursor-pointer"
             >
-              Xóa lọc
+              {language === "vi" ? "Xóa lọc" : "Clear filters"}
             </button>
           )}
         </div>
 
         <button
           onClick={loadBreaks}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 transition"
-          title="Tải lại dữ liệu"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 transition cursor-pointer"
+          title={language === "vi" ? "Tải lại dữ liệu" : "Reload data"}
         >
           <RefreshCw size={15} />
         </button>
@@ -216,8 +218,8 @@ export function ReceptionistBreaksPage() {
         </div>
       ) : breaks.length === 0 ? (
         <EmptyState
-          title="Không tìm thấy yêu cầu nghỉ phép nào"
-          description="Không có dữ liệu lịch xin nghỉ phép phù hợp với bộ lọc hiện tại."
+          title={language === "vi" ? "Không tìm thấy yêu cầu nghỉ phép nào" : "No break requests found"}
+          description={language === "vi" ? "Không có dữ liệu lịch xin nghỉ phép phù hợp với bộ lọc hiện tại." : "No break requests match the current filters."}
         />
       ) : (
         <div className="space-y-4">
@@ -227,13 +229,12 @@ export function ReceptionistBreaksPage() {
               <table className="min-w-full divide-y divide-[#f4e4d7]">
                 <thead className="bg-[#fff8f2]">
                   <tr className="text-left text-xs uppercase tracking-[0.16em] text-[#b38769]">
-                    <th className="px-5 py-4 font-semibold">Thợ nail</th>
-                    <th className="px-5 py-4 font-semibold">Ngày nghỉ</th>
-                    <th className="px-5 py-4 font-semibold">Thời gian</th>
-                    <th className="px-5 py-4 font-semibold">Lý do</th>
-                    <th className="px-5 py-4 font-semibold">Trạng thái</th>
-                    <th className="px-5 py-4 font-semibold">Lý do từ chối</th>
-                    {/* <th className="px-5 py-4 font-semibold text-right">Thao tác</th> */}
+                    <th className="px-5 py-4 font-semibold">{language === "vi" ? "Thợ nail" : "Nail Artist"}</th>
+                    <th className="px-5 py-4 font-semibold">{language === "vi" ? "Ngày nghỉ" : "Break Date"}</th>
+                    <th className="px-5 py-4 font-semibold">{language === "vi" ? "Thời gian" : "Time Window"}</th>
+                    <th className="px-5 py-4 font-semibold">{language === "vi" ? "Lý do" : "Reason"}</th>
+                    <th className="px-5 py-4 font-semibold">{language === "vi" ? "Trạng thái" : "Status"}</th>
+                    <th className="px-5 py-4 font-semibold">{language === "vi" ? "Lý do từ chối" : "Reject Reason"}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#f7ebdf] bg-white">
@@ -267,15 +268,6 @@ export function ReceptionistBreaksPage() {
                       <td className="px-5 py-4 text-xs text-rose-500 italic max-w-xs truncate" title={item.rejectReason}>
                         {item.rejectReason || "-"}
                       </td>
-                      {/* <td className="px-5 py-4 text-right">
-                        <button
-                          onClick={() => openDeleteModal(item)}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-100 bg-rose-50 text-rose-600 hover:bg-rose-100 transition"
-                          title="Hủy yêu cầu nghỉ"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </td> */}
                     </tr>
                   ))}
                 </tbody>
@@ -303,25 +295,25 @@ export function ReceptionistBreaksPage() {
                 </div>
                 <div className="text-sm text-slate-600 space-y-1.5 border-t border-[#f7ebdf] pt-2">
                   <div className="flex justify-between">
-                    <span className="text-[#a88a9d]">Ngày nghỉ:</span>
+                    <span className="text-[#a88a9d]">{language === "vi" ? "Ngày nghỉ:" : "Break Date:"}</span>
                     <span className="font-semibold text-slate-800">{dayjs(item.breakDate).format("DD/MM/YYYY")}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#a88a9d]">Thời gian:</span>
+                    <span className="text-[#a88a9d]">{language === "vi" ? "Thời gian:" : "Time Window:"}</span>
                     <span className="font-semibold text-slate-800">{item.startTime?.substring(0, 5)} - {item.endTime?.substring(0, 5)}</span>
                   </div>
-                  <p className="text-[var(--color-muted)]"><span className="font-semibold text-slate-700">Lý do:</span> {item.reason}</p>
+                  <p className="text-[var(--color-muted)]"><span className="font-semibold text-slate-700">{language === "vi" ? "Lý do:" : "Reason:"}</span> {item.reason}</p>
                   {item.rejectReason && (
-                    <p className="text-xs text-rose-500 italic"><span className="font-semibold">Từ chối:</span> {item.rejectReason}</p>
+                    <p className="text-xs text-rose-500 italic"><span className="font-semibold">{language === "vi" ? "Từ chối:" : "Rejected:"}</span> {item.rejectReason}</p>
                   )}
                 </div>
                 <div className="pt-2 border-t border-[#f7ebdf]">
                   <button
                     onClick={() => openDeleteModal(item)}
-                    className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-100 bg-rose-50 py-2.5 text-xs font-semibold text-rose-600 hover:bg-rose-100 transition"
+                    className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-100 bg-rose-50 py-2.5 text-xs font-semibold text-rose-600 hover:bg-rose-100 transition cursor-pointer"
                   >
                     <Trash2 size={12} />
-                    Hủy yêu cầu nghỉ
+                    {language === "vi" ? "Hủy yêu cầu nghỉ" : "Cancel Request"}
                   </button>
                 </div>
               </div>
@@ -345,10 +337,10 @@ export function ReceptionistBreaksPage() {
       <ActionConfirmModal
         open={isDeleteOpen}
         intent="danger"
-        title="Hủy yêu cầu xin nghỉ?"
-        description="Hành động này sẽ hủy bỏ yêu cầu xin nghỉ của thợ nail này và xóa vĩnh viễn khỏi cơ sở dữ liệu."
-        confirmText="Hủy yêu cầu"
-        cancelText="Bỏ qua"
+        title={language === "vi" ? "Hủy yêu cầu xin nghỉ?" : "Cancel Break Request?"}
+        description={language === "vi" ? "Hành động này sẽ hủy bỏ yêu cầu xin nghỉ của thợ nail này và xóa vĩnh viễn khỏi cơ sở dữ liệu." : "This action will cancel this staff's break request and remove it from the database."}
+        confirmText={language === "vi" ? "Hủy yêu cầu" : "Cancel request"}
+        cancelText={language === "vi" ? "Bỏ qua" : "Go back"}
         onConfirm={handleDeleteConfirm}
         onCancel={() => {
           setIsDeleteOpen(false);
@@ -357,15 +349,15 @@ export function ReceptionistBreaksPage() {
         loading={isActionLoading}
         details={[
           {
-            label: "Thợ nail",
+            label: language === "vi" ? "Thợ nail" : "Nail artist",
             value: selectedBreak ? getArtistName(selectedBreak.nailArtistId) : ""
           },
           {
-            label: "Ngày nghỉ",
+            label: language === "vi" ? "Ngày nghỉ" : "Break Date",
             value: selectedBreak ? dayjs(selectedBreak.breakDate).format("DD/MM/YYYY") : ""
           },
           {
-            label: "Thời gian",
+            label: language === "vi" ? "Thời gian" : "Time Window",
             value: selectedBreak ? `${selectedBreak.startTime?.substring(0, 5)} - ${selectedBreak.endTime?.substring(0, 5)}` : ""
           }
         ]}

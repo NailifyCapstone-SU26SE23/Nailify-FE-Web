@@ -2,6 +2,7 @@ import React from "react";
 import { Modal, Button } from "antd";
 import { Check, Clock, User, AlertCircle } from "lucide-react";
 import { PropTypes } from "../../utils/propTypes";
+import { useLanguage } from "../../hooks/useLanguage";
 
 function getProcedureStatusTone(status) {
   const normalizedStatus = String(status || "").trim().toLowerCase();
@@ -33,6 +34,9 @@ export function ServiceProceduresViewerModal({
   claimingProcedureId,
   procedureStatusUpdates,
 }) {
+  const { language } = useLanguage();
+  const isVi = language === "vi";
+
   const formatTimeOnly = (val) => {
     if (!val) return "--:--";
     const str = String(val).trim();
@@ -69,8 +73,12 @@ export function ServiceProceduresViewerModal({
               <Check size={20} />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-[#2B182B] tracking-tight">Quy Trình Các Bước Làm Móng</h3>
-              <p className="text-xs text-[#9E8497] font-medium">Chi tiết thời gian thao tác, hơ máy/chờ và phân công thợ theo từng bước</p>
+              <h3 className="text-lg font-bold text-[#2B182B] tracking-tight">
+                {isVi ? "Quy Trình Các Bước Làm Móng" : "Nail Procedure Steps"}
+              </h3>
+              <p className="text-xs text-[#9E8497] font-medium">
+                {isVi ? "Chi tiết thời gian thao tác, hơ máy/chờ và phân công thợ theo từng bước" : "Details of operation time, curing/waiting time, and artist assignment for each step"}
+              </p>
             </div>
           </div>
           <button
@@ -87,15 +95,17 @@ export function ServiceProceduresViewerModal({
             {/* Service Summary Banner Card */}
             <div className="rounded-2xl border border-[#F3D6E5] bg-gradient-to-r from-[#FFF0F6] via-[#FDF2F8] to-[#F5F3FF] p-4 shadow-2xs flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <span className="text-[9px] font-bold uppercase tracking-wider text-[#E84F93]">Dịch Vụ Chọn</span>
+                <span className="text-[9px] font-bold uppercase tracking-wider text-[#E84F93]">
+                  {isVi ? "Dịch Vụ Chọn" : "Selected Service"}
+                </span>
                 <h4 className="text-base font-bold text-[#2B182B]">{service.name || "--"}</h4>
               </div>
               <div className="flex items-center gap-3 text-xs">
                 <span className="rounded-xl border border-[#F3E2EC] bg-white px-3 py-1.5 font-bold text-[#2B182B]">
-                  Số lượng: x{service.quantity || 1}
+                  {isVi ? `Số lượng: x${service.quantity || 1}` : `Qty: x${service.quantity || 1}`}
                 </span>
                 <span className="rounded-xl border border-[#F3E2EC] bg-white px-3 py-1.5 font-bold text-[#E84F93]">
-                  ⏱️ Tổng thời gian: {service.durationLabel || "--"}
+                  ⏱️ {isVi ? "Tổng thời gian:" : "Total duration:"} {service.durationLabel || "--"}
                 </span>
               </div>
             </div>
@@ -104,7 +114,9 @@ export function ServiceProceduresViewerModal({
             {isLoading ? (
               <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-[#F3D6E5] bg-[#FFF9FB] p-8">
                 <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[#E84F93] border-t-transparent" />
-                <p className="text-xs font-bold text-[#2B182B]">Đang tải chi tiết các bước quy trình...</p>
+                <p className="text-xs font-bold text-[#2B182B]">
+                  {isVi ? "Đang tải chi tiết các bước quy trình..." : "Loading procedure step details..."}
+                </p>
               </div>
             ) : error ? (
               <div className="rounded-2xl border border-[#FCA5A5] bg-[#FEF2F2] p-4 text-xs font-bold text-[#991B1B] flex items-center gap-2">
@@ -120,17 +132,17 @@ export function ServiceProceduresViewerModal({
                   const isPending = ["pending", "waiting", "upcoming"].includes(statusLower);
 
                   let statusTone = "border-[#E2E8F0] bg-[#F8FAFC] text-[#64748B]";
-                  let statusLabel = procedure.status || "Chưa làm";
+                  let statusLabel = procedure.status || (isVi ? "Chưa làm" : "Not Started");
 
                   if (isCompleted) {
                     statusTone = "border-[#A7F3D0] bg-[#ECFDF5] text-[#047857]";
-                    statusLabel = "Đã hoàn thành";
+                    statusLabel = isVi ? "Đã hoàn thành" : "Completed";
                   } else if (isInProgress) {
                     statusTone = "border-[#DDD6FE] bg-[#F5F3FF] text-[#6D28D9]";
-                    statusLabel = "Đang thực hiện";
+                    statusLabel = isVi ? "Đang thực hiện" : "In Progress";
                   } else if (isPending) {
                     statusTone = "border-[#FDE68A] bg-[#FEF3C7] text-[#B45309]";
-                    statusLabel = "Chờ thực hiện";
+                    statusLabel = isVi ? "Chờ thực hiện" : "Pending";
                   }
 
                   const hasArtist = Boolean(procedure.assignedArtistId || procedure.assignedArtistName);
@@ -145,28 +157,28 @@ export function ServiceProceduresViewerModal({
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-[#F8F1F5] pb-2.5">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#E84F93] to-[#D93B7D] px-2.5 py-0.5 text-xs font-bold text-white shadow-2xs">
-                            Bước {procedure.stepOrder ?? index + 1}
+                            {isVi ? `Bước ${procedure.stepOrder ?? index + 1}` : `Step ${procedure.stepOrder ?? index + 1}`}
                           </span>
                           <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${statusTone}`}>
                             {statusLabel}
                           </span>
                           {procedure.isRequired && (
                             <span className="rounded-full border border-[#FDE68A] bg-[#FFFBEB] px-2 py-0.5 text-[10px] font-bold text-[#B45309]">
-                              Bắt buộc
+                              {isVi ? "Bắt buộc" : "Required"}
                             </span>
                           )}
                           <h4 className="text-sm font-bold text-[#2B182B] ml-1">
-                            {procedure.procedureName || procedure.label || "Chưa đặt tên bước"}
+                            {procedure.procedureName || procedure.label || (isVi ? "Chưa đặt tên bước" : "Unnamed step")}
                           </h4>
                         </div>
 
                         {/* Estimated Time Badge */}
                         <div className="flex items-center gap-2 text-xs shrink-0">
                           <span className="font-extrabold text-[#E84F93]">
-                            🕒 Dự kiến: {formatTimeOnly(procedure.estimatedStartTime)} - {formatTimeOnly(procedure.estimatedEndTime)}
+                            🕒 {isVi ? "Dự kiến" : "Estimated"}: {formatTimeOnly(procedure.estimatedStartTime)} - {formatTimeOnly(procedure.estimatedEndTime)}
                           </span>
                           <span className="rounded-full bg-[#FFF0F6] px-2.5 py-0.5 text-[11px] font-bold text-[#E84F93] border border-[#F3D6E5]">
-                            {procedure.duration ?? 0} min
+                            {procedure.duration ?? 0} {isVi ? "phút" : "min"}
                           </span>
                         </div>
                       </div>
@@ -187,9 +199,11 @@ export function ServiceProceduresViewerModal({
                             </div>
 
                             <div>
-                              <p className="text-[9px] font-bold uppercase tracking-wider text-[#9E8497]">Thợ Đảm Nhận</p>
+                              <p className="text-[9px] font-bold uppercase tracking-wider text-[#9E8497]">
+                                {isVi ? "Thợ Đảm Nhận" : "Assigned Artist"}
+                              </p>
                               <p className="text-xs font-bold text-[#2B182B]">
-                                {hasArtist ? procedure.assignedArtistName : "Chưa phân công thợ"}
+                                {hasArtist ? procedure.assignedArtistName : (isVi ? "Chưa phân công thợ" : "Unassigned")}
                               </p>
                             </div>
                           </div>
@@ -199,8 +213,8 @@ export function ServiceProceduresViewerModal({
                             <button
                               type="button"
                               onClick={(e) => {
-                                e.stopPropagation();
-                                onClaimProcedure(procedure);
+                                  e.stopPropagation();
+                                  onClaimProcedure(procedure);
                               }}
                               disabled={claimingProcedureId === procedure.bookingProcedureId}
                               className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#E84F93] to-[#8B5CF6] px-4 py-1.5 text-xs font-bold text-white shadow-2xs hover:scale-105 transition cursor-pointer disabled:opacity-50"
@@ -208,23 +222,23 @@ export function ServiceProceduresViewerModal({
                               {claimingProcedureId === procedure.bookingProcedureId && (
                                 <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white" />
                               )}
-                              <span>Nhận Bước Này</span>
+                              <span>{isVi ? "Nhận Bước Này" : "Claim Step"}</span>
                             </button>
                           ) : onCompleteProcedure && procedure.canComplete ? (
                             <button
                               type="button"
                               onClick={(e) => {
-                                e.stopPropagation();
-                                onCompleteProcedure(procedure);
+                                  e.stopPropagation();
+                                  onCompleteProcedure(procedure);
                               }}
                               disabled={procedureStatusUpdates && procedureStatusUpdates[procedure.bookingProcedureId]}
                               className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#10B981] to-[#059669] px-4 py-1.5 text-xs font-bold text-white shadow-2xs hover:scale-105 transition cursor-pointer disabled:opacity-50"
                             >
-                              <span>Hoàn Thành Bước</span>
+                              <span>{isVi ? "Hoàn Thành Bước" : "Complete Step"}</span>
                             </button>
                           ) : procedure.isBlocked ? (
                             <span className="inline-flex rounded-full bg-[#FFFBEB] border border-[#FDE68A] px-3 py-1 text-[10px] font-bold text-[#B45309]">
-                              Chờ bước trước
+                              {isVi ? "Chờ bước trước" : "Waiting for previous step"}
                             </span>
                           ) : null}
                         </div>
@@ -232,22 +246,22 @@ export function ServiceProceduresViewerModal({
                         {/* Right: Time Breakdown & Overlap Badges */}
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="inline-flex items-center gap-1 rounded-full border border-[#DDD6FE] bg-[#F5F3FF] px-2.5 py-1 text-[11px] font-bold text-[#6D28D9]">
-                            ⚡ Thao tác trực tiếp: {procedure.activeDuration ?? 0}m
+                            ⚡ {isVi ? `Thao tác trực tiếp: ${procedure.activeDuration ?? 0}m` : `Direct operation: ${procedure.activeDuration ?? 0}m`}
                           </span>
 
                           {hasPassive && (
                             <span className="inline-flex items-center gap-1 rounded-full border border-[#BAE6FD] bg-[#F0F9FF] px-2.5 py-1 text-[11px] font-bold text-[#0284C7]">
-                              ⏳ Hơ máy / Chờ khô: {procedure.passiveDuration}m
+                              ⏳ {isVi ? `Hơ máy / Chờ khô: ${procedure.passiveDuration}m` : `Curing / Waiting: ${procedure.passiveDuration}m`}
                             </span>
                           )}
 
                           {(hasPassive || procedure.canOverlap) ? (
                             <span className="inline-flex items-center gap-1 rounded-full border border-[#A7F3D0] bg-[#ECFDF5] px-2.5 py-1 text-[11px] font-bold text-[#047857]">
-                              ✨ Overlap (Rảnh {procedure.passiveDuration ?? 0}m)
+                              ✨ Overlap ({isVi ? `Rảnh ${procedure.passiveDuration ?? 0}m` : `Free ${procedure.passiveDuration ?? 0}m`})
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-500">
-                              🔒 Làm liên tục
+                              🔒 {isVi ? "Làm liên tục" : "Continuous work"}
                             </span>
                           )}
                         </div>
@@ -258,7 +272,15 @@ export function ServiceProceduresViewerModal({
                         <div className="mt-2 text-[11px] font-semibold text-[#6D28D9] bg-[#F5F3FF] p-2 rounded-lg border border-[#E9D5FF] flex items-center gap-1.5">
                           <span>💡</span>
                           <span>
-                            Trong <strong>{procedure.passiveDuration} phút</strong> hơ máy / chờ khô này, thợ rảnh tay và có thể tranh thủ làm cho khách khác (Overlap).
+                            {isVi ? (
+                              <>
+                                Trong <strong>{procedure.passiveDuration} phút</strong> hơ máy / chờ khô này, thợ rảnh tay và có thể tranh thủ làm cho khách khác (Overlap).
+                              </>
+                            ) : (
+                              <>
+                                During this <strong>{procedure.passiveDuration} min</strong> curing/drying time, the artist is free and can work on other customers (Overlap).
+                              </>
+                            )}
                           </span>
                         </div>
                       )}
@@ -266,15 +288,15 @@ export function ServiceProceduresViewerModal({
                       {/* Footer Row: Actual Time & Completion */}
                       <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-[#F8F1F5] pt-2 text-[11px]">
                         <div>
-                          <span className="font-bold text-[#9E8497]">Thực tế làm: </span>
+                          <span className="font-bold text-[#9E8497]">{isVi ? "Thực tế làm: " : "Actual time: "}</span>
                           <span className="font-bold text-[#2B182B]">
                             {formatTimeOnly(procedure.actualStartTime || procedure.startTime)} ~ {formatTimeOnly(procedure.actualEndTime || procedure.completedAt)}
                           </span>
                         </div>
                         <div>
-                          <span className="font-bold text-[#9E8497]">Người hoàn thành: </span>
+                          <span className="font-bold text-[#9E8497]">{isVi ? "Người hoàn thành: " : "Completed by: "}</span>
                           <span className="font-bold text-[#2B182B]">
-                            {procedure.completedByName || <span className="text-[#9E8497] italic font-normal">Chưa xong</span>}
+                            {procedure.completedByName || <span className="text-[#9E8497] italic font-normal">{isVi ? "Chưa xong" : "Pending"}</span>}
                           </span>
                         </div>
                       </div>
@@ -284,7 +306,7 @@ export function ServiceProceduresViewerModal({
               </div>
             ) : (
               <div className="rounded-2xl border border-dashed border-[#F3D6E5] bg-[#FFF9FB] p-8 text-center text-xs font-bold text-[#9E8497]">
-                Không tìm thấy bước quy trình nào cho dịch vụ này.
+                {isVi ? "Không tìm thấy bước quy trình nào cho dịch vụ này." : "No procedure steps found for this service."}
               </div>
             )}
 
@@ -295,7 +317,7 @@ export function ServiceProceduresViewerModal({
                 onClick={onClose}
                 className="rounded-full border border-[#F3E2EC] bg-[#FFF5F8] hover:bg-[#FCE2EE] px-6 py-2.5 text-xs font-bold text-[#2B182B] transition cursor-pointer"
               >
-                Đóng
+                {isVi ? "Đóng" : "Close"}
               </button>
             </div>
           </div>

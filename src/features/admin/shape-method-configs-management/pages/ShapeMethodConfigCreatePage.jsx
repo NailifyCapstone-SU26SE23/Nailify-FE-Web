@@ -8,7 +8,7 @@ import { createAdminShapeMethodConfig } from "../services/shapeMethodConfigsMana
 import { fetchAdminNailShapes } from "../../nail-shapes-management/services/nailShapesManagementService";
 
 export function ShapeMethodConfigCreatePage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [nailShapes, setNailShapes] = useState([]);
@@ -119,8 +119,8 @@ export function ShapeMethodConfigCreatePage() {
                 onChange={handleChange}
                 placeholder="e.g. Gắn móng giả (Tip)"
                 className={`h-12 w-full rounded-xl border bg-[#fffafc] px-4 text-[15px] font-medium text-[#432744] shadow-sm outline-none transition-all focus:bg-white focus:ring-4 ${errors.name
-                    ? "border-red-300 focus:border-red-500 focus:ring-red-500/10"
-                    : "border-[#f4dbe7] focus:border-[#ea4f93] focus:ring-[#ea4f93]/10"
+                  ? "border-red-300 focus:border-red-500 focus:ring-red-500/10"
+                  : "border-[#f4dbe7] focus:border-[#ea4f93] focus:ring-[#ea4f93]/10"
                   }`}
               />
               {errors.name && <p className="mt-2 text-xs font-semibold text-red-500">{errors.name}</p>}
@@ -137,8 +137,8 @@ export function ShapeMethodConfigCreatePage() {
                 onChange={handleChange}
                 disabled={isLoadingShapes}
                 className={`h-12 w-full rounded-xl border bg-[#fffafc] px-4 text-[15px] font-medium text-[#432744] shadow-sm outline-none transition-all focus:bg-white focus:ring-4 disabled:opacity-60 ${errors.nailShapeId
-                    ? "border-red-300 focus:border-red-500 focus:ring-red-500/10"
-                    : "border-[#f4dbe7] focus:border-[#ea4f93] focus:ring-[#ea4f93]/10"
+                  ? "border-red-300 focus:border-red-500 focus:ring-red-500/10"
+                  : "border-[#f4dbe7] focus:border-[#ea4f93] focus:ring-[#ea4f93]/10"
                   }`}
               >
                 <option value="">{t("adminShapeMethodConfigs.selectNailShape")}</option>
@@ -166,8 +166,8 @@ export function ShapeMethodConfigCreatePage() {
                   onChange={handleChange}
                   placeholder="e.g. 250000"
                   className={`h-12 w-full rounded-xl border bg-[#fffafc] px-4 text-[15px] font-medium text-[#432744] shadow-sm outline-none transition-all focus:bg-white focus:ring-4 ${errors.price
-                      ? "border-red-300 focus:border-red-500 focus:ring-red-500/10"
-                      : "border-[#f4dbe7] focus:border-[#ea4f93] focus:ring-[#ea4f93]/10"
+                    ? "border-red-300 focus:border-red-500 focus:ring-red-500/10"
+                    : "border-[#f4dbe7] focus:border-[#ea4f93] focus:ring-[#ea4f93]/10"
                     }`}
                 />
                 {errors.price && <p className="mt-2 text-xs font-semibold text-red-500">{errors.price}</p>}
@@ -186,8 +186,8 @@ export function ShapeMethodConfigCreatePage() {
                   onChange={handleChange}
                   placeholder="e.g. 60"
                   className={`h-12 w-full rounded-xl border bg-[#fffafc] px-4 text-[15px] font-medium text-[#432744] shadow-sm outline-none transition-all focus:bg-white focus:ring-4 ${errors.duration
-                      ? "border-red-300 focus:border-red-500 focus:ring-red-500/10"
-                      : "border-[#f4dbe7] focus:border-[#ea4f93] focus:ring-[#ea4f93]/10"
+                    ? "border-red-300 focus:border-red-500 focus:ring-red-500/10"
+                    : "border-[#f4dbe7] focus:border-[#ea4f93] focus:ring-[#ea4f93]/10"
                     }`}
                 />
                 {errors.duration && <p className="mt-2 text-xs font-semibold text-red-500">{errors.duration}</p>}

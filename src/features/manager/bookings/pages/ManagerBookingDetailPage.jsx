@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ROUTES } from "../../../../shared/constants/routes";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { ROLES } from "../../../../shared/constants/roles";
@@ -142,12 +143,36 @@ InfoTile.propTypes = {
 };
 
 function formatStatusDisplay(status) {
-  if (status === "CheckedIn") return "Checked In";
-  if (status === "InProgress") return "In Progress";
-  if (status === "RescheduleReq" || status === "ReschedulePending") return "Reschedule Requested";
-  if (status === "RescheduleSuggested") return "Reschedule Proposed";
-  if (status === "ServiceCompleted") return "Completed";
-  return status;
+  const { t, language } = useLanguage();
+  switch (status) {
+    case "Checked In":
+    case "CheckedIn":
+      return t("manager.dashboard.statusCalled") || "At Counter";
+    case "In Progress":
+    case "InProgress":
+      return t("manager.dashboard.statusInService") || "In Progress";
+    case "Pending":
+      return t("manager.dashboard.statusWaiting") || "Pending";
+    case "Confirmed":
+    case "Approved":
+      return t("manager.bookings.ready") || "Confirmed";
+    case "Completed":
+    case "ServiceCompleted":
+      return t("manager.dashboard.statusDone") || "Completed";
+    case "Rejected":
+      return t("manager.breaks.statusRejected") || "Rejected";
+    case "Cancelled":
+    case "Canceled":
+      return t("manager.bookings.cancelBooking") || "Cancelled";
+    case "RescheduleReq":
+    case "Reschedule Req":
+    case "ReschedulePending":
+      return t("manager.bookings.rescheduleTime") || "Reschedule Requested";
+    case "RescheduleSuggested":
+      return t("manager.bookings.moveSchedule") || "Reschedule Proposed";
+    default:
+      return status;
+  }
 }
 
 function getStatusTone(status) {
@@ -276,6 +301,7 @@ function getQrCodeSrc(qrCode) {
 }
 
 export function ManagerBookingDetailPage() {
+  const { t, language } = useLanguage();
   const { bookingId } = useParams();
   const navigate = useNavigate();
   const [booking, setBooking] = useState(null);
@@ -357,7 +383,7 @@ export function ManagerBookingDetailPage() {
       totalDuration: rawBooking.totalDuration,
       startTime: rawBooking.startTime,
       salonId: rawBooking.salonId,
-      notes: rawBooking.notes || rawBooking.customerNotes || "Customer prefers extra cuticle care and soft blush pink gel shade.",
+      notes: rawBooking.notes || rawBooking.customerNotes,
       proposedBookingDate: rawBooking.proposedBookingDate ? formatDate(rawBooking.proposedBookingDate) : null,
       proposedStartTime: rawBooking.proposedStartTime ? formatTime(rawBooking.proposedStartTime) : null,
       proposedBy: rawBooking.proposedBy || null,
@@ -443,9 +469,9 @@ export function ManagerBookingDetailPage() {
     return (
       <section className="flex min-h-full flex-col gap-4 p-6 font-sans">
         <Link to="/manager/bookings" className="inline-flex items-center gap-2 text-xs font-bold text-[#E84F93]">
-          <ArrowLeft size={16} /> Back to bookings list
+          <ArrowLeft size={16} /> {t("manager.common.back")}
         </Link>
-        <Alert message="Error Loading Booking" description={error} type="error" showIcon className="rounded-2xl" />
+        <Alert message={t("manager.common.error")} description={error} type="error" showIcon className="rounded-2xl" />
       </section>
     );
   }
@@ -453,7 +479,7 @@ export function ManagerBookingDetailPage() {
   if (isLoading) {
     return (
       <section className="flex min-h-[400px] items-center justify-center font-sans">
-        <Spin size="large" tip="Loading booking detail..." />
+        <Spin size="large" tip={t("manager.common.loading")} />
       </section>
     );
   }
@@ -488,12 +514,12 @@ export function ManagerBookingDetailPage() {
                 className="inline-flex items-center gap-2 rounded-full border border-[#F3D6E5] bg-white px-3.5 py-1.5 text-xs font-bold text-[#E84F93] hover:bg-[#FFF0F5] hover:border-[#E84F93] transition shadow-xs mb-3 group"
               >
                 <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
-                <span>Back to Bookings</span>
+                <span>{t("manager.common.back")}</span>
               </button>
 
               <div className="flex flex-wrap items-center gap-3">
                 <h1 className="text-2xl lg:text-3xl font-extrabold text-[#2B182B] tracking-tight ">
-                  Booking Detail
+                  {t("manager.bookings.bookingDetails")}
                 </h1>
                 <span className="inline-flex items-center gap-1 rounded-full border border-[#E5C687]/80 bg-gradient-to-r from-[#FFF9EE] to-[#FFF3DC] px-3.5 py-1 text-xs font-bold text-[#9E731A] shadow-2xs">
                   #{String(booking?.bookingId || bookingId).slice(0, 8).toUpperCase()}
@@ -504,7 +530,7 @@ export function ManagerBookingDetailPage() {
                 </span>
               </div>
               <p className="mt-1.5 text-xs text-[#9E8497] font-medium max-w-xl">
-                Comprehensive booking overview, customer preferences, assigned nail staff, and payment breakdown.
+                {t("manager.bookings.desc")}
               </p>
             </div>
 
@@ -518,7 +544,7 @@ export function ManagerBookingDetailPage() {
                 className="inline-flex items-center gap-2 rounded-full border border-[#F3D7E4] bg-white px-4 py-2.5 text-xs font-bold text-[#2B182B] hover:border-[#E84F93] hover:text-[#E84F93] hover:bg-[#FFF5FA] transition-all shadow-xs"
               >
                 <Edit3 size={15} className="text-[#E84F93]" />
-                <span>Edit Notes</span>
+                <span>{t("manager.common.edit")}</span>
               </motion.button>
 
               {/* Propose Reschedule Button */}
@@ -532,7 +558,7 @@ export function ManagerBookingDetailPage() {
                   className="inline-flex items-center gap-2 rounded-full border border-[#E84F93] bg-[#FFF0F5] px-5 py-2.5 text-xs font-extrabold text-[#E84F93] hover:bg-[#E84F93] hover:text-white transition-all disabled:opacity-50"
                 >
                   <Calendar size={15} />
-                  <span>Propose New Time</span>
+                  <span>{language === "vi" ? "Đề xuất giờ mới" : "Propose New Time"}</span>
                 </motion.button>
               )}
 
@@ -552,7 +578,7 @@ export function ManagerBookingDetailPage() {
                       className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#10B981] to-[#047857] px-5 py-2.5 text-xs font-extrabold text-white shadow-md hover:shadow-lg transition-all disabled:opacity-50"
                     >
                       <CheckCircle2 size={16} />
-                      <span>Confirm</span>
+                      <span>{t("manager.bookings.confirmBooking")}</span>
                     </motion.button>
                   )}
 
@@ -564,7 +590,7 @@ export function ManagerBookingDetailPage() {
                     className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#6366F1] to-[#4F46E5] px-5 py-2.5 text-xs font-extrabold text-white shadow-md hover:shadow-lg transition-all"
                   >
                     <UserCheck size={16} />
-                    <span>Assign Artist</span>
+                    <span>{t("manager.bookings.assignArtistTitle")}</span>
                   </motion.button>
 
                   {booking?.status === "Pending" ? (
@@ -577,7 +603,7 @@ export function ManagerBookingDetailPage() {
                       className="inline-flex items-center gap-2 rounded-full border border-[#FECDD3] bg-[#FEF2F2] px-4 py-2.5 text-xs font-bold text-[#E11D48] hover:bg-[#FEE2E2] transition-all disabled:opacity-50"
                     >
                       <XCircle size={16} />
-                      <span>Reject</span>
+                      <span>{t("manager.breaks.reject")}</span>
                     </motion.button>
                   ) : (
                     <motion.button
@@ -589,7 +615,7 @@ export function ManagerBookingDetailPage() {
                       className="inline-flex items-center gap-2 rounded-full border border-[#F3D7E4] bg-white px-4 py-2.5 text-xs font-bold text-[#E84F93] hover:bg-[#FFF5FA] transition-all disabled:opacity-50"
                     >
                       <XCircle size={16} />
-                      <span>Cancel Booking</span>
+                      <span>{t("manager.bookings.cancelBooking")}</span>
                     </motion.button>
                   )}
                 </>
@@ -609,10 +635,10 @@ export function ManagerBookingDetailPage() {
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                   <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#4F46E5]">
-                    <Calendar size={14} /> Customer Requested Reschedule
+                    <Calendar size={14} /> {t("manager.bookings.customerRequestedReschedule") || "Customer Requested Reschedule"}
                   </span>
                   <p className="text-sm font-extrabold text-[#1E1B4B] mt-1">
-                    Requested Date: <span className="text-[#4F46E5]">{booking.proposedBookingDate || "N/A"}</span> · Time: <span className="text-[#4F46E5]">{booking.proposedStartTime || "N/A"}</span>
+                    {t("manager.bookings.bookingDate") || "Date"}: <span className="text-[#4F46E5]">{booking.proposedBookingDate || "N/A"}</span> · {t("manager.bookings.time") || "Time"}: <span className="text-[#4F46E5]">{booking.proposedStartTime || "N/A"}</span>
                   </p>
                   {booking.rescheduleReason && (
                     <p className="text-xs text-[#4338CA] italic mt-0.5">"{booking.rescheduleReason}"</p>
@@ -625,7 +651,7 @@ export function ManagerBookingDetailPage() {
                     disabled={isRefreshing}
                     className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#10B981] to-[#047857] px-4 py-2 text-xs font-extrabold text-white shadow-md hover:shadow-lg transition disabled:opacity-50"
                   >
-                    <CheckCircle2 size={15} /> Accept Request
+                    <CheckCircle2 size={15} /> {t("manager.breaks.approve") || "Accept Request"}
                   </button>
                   <button
                     type="button"
@@ -633,7 +659,7 @@ export function ManagerBookingDetailPage() {
                     disabled={isRefreshing}
                     className="inline-flex items-center gap-1.5 rounded-full border border-[#FECDD3] bg-white px-4 py-2 text-xs font-bold text-[#E11D48] hover:bg-[#FEF2F2] transition disabled:opacity-50"
                   >
-                    <XCircle size={15} /> Decline
+                    <XCircle size={15} /> {t("manager.breaks.reject") || "Decline"}
                   </button>
                 </div>
               </div>
@@ -658,7 +684,7 @@ export function ManagerBookingDetailPage() {
           {/* Card 1: Customer Profile */}
           <Card>
             <SectionTitle
-              subtitle="Contact details & customer profile"
+              subtitle={language === "vi" ? "Thông tin khách hàng" : "Customer Profile"}
               icon={UserRound}
               actionButton={
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-[#E5C687]/60 bg-gradient-to-r from-[#FFF9EE] to-[#FFF3DC] px-3.5 py-1 text-xs font-extrabold text-[#9E731A] shadow-2xs">
@@ -667,7 +693,7 @@ export function ManagerBookingDetailPage() {
                 </span>
               }
             >
-              Customer Profile
+              {language === "vi" ? "Thông tin khách hàng" : "Customer Profile"}
             </SectionTitle>
 
             <div className="flex items-center gap-4 mb-5 p-3.5 rounded-2xl bg-gradient-to-r from-[#FFF5FA] to-[#FFF0F5]/40 border border-[#F3D6E5]/60">
@@ -678,13 +704,13 @@ export function ManagerBookingDetailPage() {
                 <h3 className="text-base font-extrabold text-[#2B182B] truncate">
                   {customer ? `${customer.firstName || ''} ${customer.lastName || ''}`.trim() : booking?.customerName}
                 </h3>
-                <p className="text-xs text-[#9E8497] font-medium">Registered Customer</p>
+                <p className="text-xs text-[#9E8497] font-medium">{language === "vi" ? "Khách hàng đã đăng ký" : "Registered Customer"}</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {(booking?.phone || customer?.phone) && (
-                <InfoItem label="Phone Number">
+                <InfoItem label={language === "vi" ? "Số điện thoại" : "Phone"}>
                   <a
                     href={`tel:${customer?.phone || booking?.phone}`}
                     className="inline-flex items-center gap-2 font-extrabold text-[#E84F93] hover:underline bg-[#FFF5FA] px-3 py-1.5 rounded-xl border border-[#F3D6E5]/60 text-xs w-full"
@@ -696,7 +722,7 @@ export function ManagerBookingDetailPage() {
               )}
 
               {(booking?.email || customer?.email) && (
-                <InfoItem label="Email Address">
+                <InfoItem label={language === "vi" ? "Email" : "Email"}>
                   <a
                     href={`mailto:${customer?.email || booking?.email}`}
                     className="inline-flex items-center gap-2 font-medium text-[#2B182B] hover:text-[#E84F93] bg-[#FAF6F8] px-3 py-1.5 rounded-xl border border-[#F3E2EC] text-xs w-full truncate"
@@ -713,18 +739,18 @@ export function ManagerBookingDetailPage() {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-[#9E8497] flex items-center gap-1.5">
                   <NotebookPen size={13} className="text-[#E84F93]" />
-                  Customer Notes & Special Requests
+                  {language === "vi" ? "Ghi chú" : "Notes"}
                 </span>
                 <button
                   type="button"
                   onClick={() => setIsEditNotesModalOpen(true)}
                   className="text-xs font-bold text-[#E84F93] hover:underline flex items-center gap-1"
                 >
-                  <Edit3 size={12} /> Edit Notes
+                  <Edit3 size={12} /> {t("manager.common.edit")}
                 </button>
               </div>
               <div className="rounded-2xl border-l-4 border-l-[#E84F93] border-y border-r border-[#F3D6E5]/60 bg-gradient-to-r from-[#FFF5FA]/70 to-[#FFF0F5]/30 p-4 text-xs text-[#2B182B] leading-relaxed italic shadow-2xs">
-                "{booking?.notes || "No special instructions provided by customer."}"
+                "{booking?.notes || t("manager.bookings.noNotes")}"
               </div>
             </div>
 
@@ -752,7 +778,7 @@ export function ManagerBookingDetailPage() {
           {/* Card 2: Service & Appointment Info */}
           <Card>
             <SectionTitle
-              subtitle="Scheduled appointment details & assigned artist"
+              subtitle={language === "vi" ? "Thông tin dịch vụ" : "Service & Appointment Info"}
               icon={Sparkles}
               actionButton={
                 booking?.artistName === "Unassigned" ? (
@@ -762,17 +788,17 @@ export function ManagerBookingDetailPage() {
                     className="inline-flex items-center gap-1.5 rounded-full bg-[#EEF2FF] border border-[#C7D2FE] px-3.5 py-1.5 text-xs font-extrabold text-[#4F46E5] hover:bg-[#4F46E5] hover:text-white transition shadow-2xs"
                   >
                     <UserCheck size={13} />
-                    Assign Artist Now
+                    {language === "vi" ? "Chỉ định nghệ sĩ" : "Assign Artist"}
                   </button>
                 ) : null
               }
             >
-              Appointment Schedule
+              {language === "vi" ? "Thông tin dịch vụ" : "Service & Appointment Info"}
             </SectionTitle>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
               <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFFDFE] p-4 shadow-2xs">
-                <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497] mb-1">Booking Date</p>
+                <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497] mb-1">{language === "vi" ? "Ngày đặt lịch" : "Booking Date"}</p>
                 <div className="flex items-center gap-2 text-sm font-extrabold text-[#2B182B]">
                   <Calendar size={15} className="text-[#E84F93] shrink-0" />
                   <span>{booking?.date}</span>
@@ -780,7 +806,7 @@ export function ManagerBookingDetailPage() {
               </div>
 
               <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFFDFE] p-4 shadow-2xs">
-                <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497] mb-1">Time Slot</p>
+                <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497] mb-1">{language === "vi" ? "Thời gian" : "Time"}</p>
                 <div className="flex items-center gap-2 text-sm font-extrabold text-[#2B182B]">
                   <Clock3 size={15} className="text-[#E84F93] shrink-0" />
                   <span>{booking?.time}</span>
@@ -788,7 +814,7 @@ export function ManagerBookingDetailPage() {
               </div>
 
               <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFFDFE] p-4 shadow-2xs">
-                <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497] mb-1">Total Duration</p>
+                <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497] mb-1">{language === "vi" ? "Khoảng Thời gian làm việc" : "Duration"}</p>
                 <div className="flex items-center gap-2 text-sm font-extrabold text-[#2B182B]">
                   <Clock3 size={15} className="text-[#E84F93] shrink-0" />
                   <span>{booking?.totalDuration ? formatDuration(booking.totalDuration) : "60m"}</span>
@@ -800,8 +826,8 @@ export function ManagerBookingDetailPage() {
           {/* Card 3: Service & Design Items List */}
           {booking?.bookingItems && booking.bookingItems.length > 0 && (
             <Card>
-              <SectionTitle subtitle="Selected nail services & custom design try-ons" icon={Tag}>
-                Booked Services ({booking.bookingItems.length})
+              <SectionTitle subtitle={language === "vi" ? "Thông tin dịch vụ" : "Service & Appointment Info"} icon={Tag}>
+                {language === "vi" ? "Thông tin dịch vụ" : "Service & Appointment Info"} ({booking.bookingItems.length})
               </SectionTitle>
               <div className="space-y-4">
                 {booking.bookingItems.map((item, idx) => (
@@ -848,9 +874,9 @@ export function ManagerBookingDetailPage() {
                       </div>
 
                       <div className="grid min-w-[240px] gap-3 sm:grid-cols-3 bg-[#FAF0F5]/80 border border-[#F3D6E5]/60 p-3.5 rounded-2xl">
-                        <InfoItem label="Quantity">{item.quantity !== undefined ? item.quantity : "1"}</InfoItem>
-                        <InfoItem label="Duration">{item.duration !== undefined ? formatDuration(item.duration) : "-"}</InfoItem>
-                        <InfoItem label="Price">
+                        <InfoItem label={language === "vi" ? "Số lượng" : "Quantity"}>{item.quantity !== undefined ? item.quantity : "1"}</InfoItem>
+                        <InfoItem label={language === "vi" ? "Khoảng Thời gian làm việc" : "Duration"}>{item.duration !== undefined ? formatDuration(item.duration) : "-"}</InfoItem>
+                        <InfoItem label={language === "vi" ? "Giá tiền" : "Price"}>
                           <span className="font-extrabold text-[#E84F93]">
                             {item.price !== undefined ? formatVND(item.price) : "-"}
                           </span>
@@ -868,8 +894,8 @@ export function ManagerBookingDetailPage() {
         <div className="space-y-6 xl:sticky xl:top-6 xl:h-fit">
           {/* Assigned Artist Card */}
           <Card>
-            <SectionTitle subtitle="Staff member assigned to perform service" icon={UserCheck}>
-              Assigned Artist
+            <SectionTitle subtitle={language === "vi" ? "Thông tin nghệ sĩ" : "Artist"} icon={UserCheck}>
+              {language === "vi" ? "Thông tin nghệ sĩ" : "Artist"}
             </SectionTitle>
 
             <div className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-gradient-to-r from-[#FFF5FA] to-[#FFF0F5]/40 border border-[#F3D6E5]/70">
@@ -878,7 +904,7 @@ export function ManagerBookingDetailPage() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className={`text-sm font-extrabold truncate ${booking?.artistName === "Unassigned" ? "text-[#D97706]" : "text-[#2B182B]"}`}>
-                  {booking?.artistName === "Unassigned" ? "Unassigned Artist" : booking?.artistName}
+                  {booking?.artistName === "Unassigned" ? t("manager.bookings.unassigned") : booking?.artistName}
                 </p>
                 <p className="text-[11px] text-[#9E8497] font-medium">Nail Specialist</p>
               </div>
@@ -887,38 +913,38 @@ export function ManagerBookingDetailPage() {
                 onClick={() => setIsAssignArtistModalOpen(true)}
                 className="rounded-full bg-white border border-[#F3D6E5] px-3 py-1.5 text-[11px] font-bold text-[#4F46E5] hover:bg-[#EEF2FF] hover:border-[#C7D2FE] transition shadow-2xs"
               >
-                Change
+                {t("manager.common.edit")}
               </button>
             </div>
           </Card>
 
           {/* Payment & Confirmation Card */}
           <Card>
-            <SectionTitle subtitle="Payment summary and confirmation codes" icon={CreditCard}>
-              Payment & Confirmation
+            <SectionTitle subtitle={language === "vi" ? "Thông tin thanh toán" : "Payment & Confirmation"} icon={CreditCard}>
+              {language === "vi" ? "Thông tin thanh toán" : "Payment & Confirmation"}
             </SectionTitle>
 
             <div className="space-y-5">
               <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFF9FB] p-4 space-y-3">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-[#9E8497]">Deposit Status:</span>
+                  <span className="font-semibold text-[#9E8497]">{language === "vi" ? "Tiền cọc" : "Deposit"}:</span>
                   <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-extrabold ${booking?.depositTone}`}>{booking?.deposit}</span>
                 </div>
 
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-[#9E8497]">Original Total:</span>
+                  <span className="font-semibold text-[#9E8497]">{language === "vi" ? "Tổng tiền" : "Subtotal"}:</span>
                   <span className="font-bold text-[#2B182B]">{formatVND(booking?.totalPrice)}</span>
                 </div>
 
                 {booking?.discountAmount > 0 && (
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-[#9E8497]">Discounts & Offers:</span>
+                    <span className="font-semibold text-[#9E8497]">{language === "vi" ? "Giảm giá" : "Discount"}:</span>
                     <span className="font-bold text-[#059669]">-{formatVND(booking?.discountAmount)}</span>
                   </div>
                 )}
 
                 <div className="border-t border-[#F3E2EC] pt-3 flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#2B182B]">Final Amount:</span>
+                  <span className="text-xs font-bold text-[#2B182B]">{language === "vi" ? "Tổng cộng" : "Total Amount"}:</span>
                   <span className="text-xl font-bold text-[#E84F93]">
                     {formatVND(booking?.discountAmount > 0 ? booking.finalPrice : booking.totalPrice)}
                   </span>
@@ -930,7 +956,7 @@ export function ManagerBookingDetailPage() {
                 <div className="pt-2">
                   <div className="flex items-center gap-2 mb-3">
                     <ScanQrCode size={16} className="text-[#E84F93]" />
-                    <p className="text-xs font-bold text-[#2B182B] uppercase tracking-wider">Verification Codes</p>
+                    <p className="text-xs font-bold text-[#2B182B] uppercase tracking-wider">{language === "vi" ? "Mã xác thực" : "Verification Codes"}</p>
                   </div>
 
                   <div className="space-y-3">
@@ -992,7 +1018,7 @@ export function ManagerBookingDetailPage() {
         <div className="bg-white p-6 font-sans">
           <div className="flex items-center justify-between mb-4 border-b border-[#F3E2EC] pb-3">
             <h3 className="text-base font-extrabold text-[#2B182B] flex items-center gap-2">
-              <Edit3 size={18} className="text-[#E84F93]" /> Edit Booking Notes
+              <Edit3 size={18} className="text-[#E84F93]" /> {language === "vi" ? "Ghi chú đặt lịch" : "Edit Booking Notes"}
             </h3>
             <button type="button" onClick={() => setIsEditNotesModalOpen(false)} className="text-[#9E8497] hover:text-[#E84F93]">
               <X size={18} />
@@ -1000,7 +1026,7 @@ export function ManagerBookingDetailPage() {
           </div>
           <div className="space-y-4">
             <p className="text-xs text-[#9E8497]">
-              Update internal salon notes or customer preferences for this booking.
+              {language === "vi" ? "Cập nhật ghi chú nội bộ của salon hoặc sở thích của khách hàng cho lần đặt lịch này." : "Update internal salon notes or customer preferences for this booking."}
             </p>
             <Input.TextArea
               value={bookingNotesText}
@@ -1015,14 +1041,14 @@ export function ManagerBookingDetailPage() {
                 onClick={() => setIsEditNotesModalOpen(false)}
                 className="rounded-xl border border-[#F3D7E4] px-4 py-2 text-xs font-bold text-[#2B182B] hover:bg-[#FAF0F5]"
               >
-                Cancel
+                {language === "vi" ? "Hủy" : "Cancel"}
               </button>
               <button
                 type="button"
                 onClick={handleSaveNotes}
                 className="rounded-xl bg-gradient-to-r from-[#E84F93] to-[#F43F5E] px-4 py-2 text-xs font-extrabold text-white shadow-md hover:shadow-lg flex items-center gap-1.5"
               >
-                <Check size={14} /> Save Notes
+                <Check size={14} /> {language === "vi" ? "Lưu ghi chú" : "Save Notes"}
               </button>
             </div>
           </div>

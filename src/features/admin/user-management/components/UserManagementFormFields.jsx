@@ -11,6 +11,37 @@ const INPUT_CLASSNAME =
   "w-full rounded-2xl border border-[#f1d7c0] bg-[#fffdfb] px-4 py-3 text-sm text-[var(--color-ink)] outline-none transition focus:border-[#ef6bb4]";
 const DISABLED_INPUT_CLASSNAME = "cursor-not-allowed bg-[#f9f1ea] text-[#8f7c6d]";
 
+const getRoleLabel = (role, t) => {
+  switch (String(role).trim().toLowerCase()) {
+    case "admin":
+      return t("superAdmin");
+    case "manager":
+      return t("salonManager");
+    case "receptionist":
+      return t("receptionist");
+    case "staff":
+    case "staff_artist":
+      return t("nailArtist");
+    default:
+      return role;
+  }
+};
+
+const getStatusLabel = (status, t) => {
+  switch (status) {
+    case "Active":
+      return t("userManagement.detail.statusActive");
+    case "Inactive":
+      return t("userManagement.detail.statusInactive");
+    case "Pending":
+      return t("userManagement.detail.statusPending");
+    case "Suspended":
+      return t("userManagement.detail.statusSuspended");
+    default:
+      return status;
+  }
+};
+
 export function UserManagementFormFields({
   formValues,
   onFieldChange,
@@ -19,7 +50,7 @@ export function UserManagementFormFields({
   createApiFieldsOnly = false,
   updateApiFieldsOnly = false,
 }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   if (createApiFieldsOnly) {
     return (
       <>
@@ -100,7 +131,7 @@ export function UserManagementFormFields({
           >
             {USER_ROLE_OPTIONS.map((role) => (
               <option key={role} value={role}>
-                {role}
+                {getRoleLabel(role, t)}
               </option>
             ))}
           </select>
@@ -166,7 +197,7 @@ export function UserManagementFormFields({
           >
             {FORM_STATUS_OPTIONS.map((status) => (
               <option key={status} value={status}>
-                {status}
+                {getStatusLabel(status, t)}
               </option>
             ))}
           </select>
@@ -175,7 +206,7 @@ export function UserManagementFormFields({
         <label className="space-y-2">
           <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.role")}</span>
           <input
-            value={formValues.role}
+            value={getRoleLabel(formValues.role, t)}
             disabled
             className={`${INPUT_CLASSNAME} ${DISABLED_INPUT_CLASSNAME}`}
             placeholder={t("userManagement.detail.role")}
@@ -202,7 +233,7 @@ export function UserManagementFormFields({
       </label>
 
       <label className="space-y-2">
-        <span className="text-sm font-medium text-[var(--color-ink)]">Email</span>
+        <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.email")}</span>
         <input
           value={formValues.email}
           onChange={onFieldChange("email")}
@@ -213,7 +244,7 @@ export function UserManagementFormFields({
       </label>
 
       <label className="space-y-2">
-        <span className="text-sm font-medium text-[var(--color-ink)]">Phone</span>
+        <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.phoneLabel")}</span>
         <input
           value={formValues.phone}
           onChange={onFieldChange("phone")}
@@ -273,7 +304,7 @@ export function UserManagementFormFields({
         >
           {USER_ROLE_OPTIONS.map((role) => (
             <option key={role} value={role}>
-              {role}
+              {getRoleLabel(role, t)}
             </option>
           ))}
         </select>
@@ -296,7 +327,7 @@ export function UserManagementFormFields({
       </label>
 
       <label className="space-y-2">
-        <span className="text-sm font-medium text-[var(--color-ink)]">Status</span>
+        <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.statusLabel")}</span>
         <select
           value={formValues.status}
           onChange={onFieldChange("status")}
@@ -305,7 +336,7 @@ export function UserManagementFormFields({
         >
           {FORM_STATUS_OPTIONS.map((status) => (
             <option key={status} value={status}>
-              {status}
+              {getStatusLabel(status, t)}
             </option>
           ))}
         </select>
@@ -320,7 +351,7 @@ export function UserManagementFormFields({
           onChange={onFieldChange("lastActive")}
           disabled={disabled}
           className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-          placeholder="Example: 10 min ago"
+          placeholder={t("userManagement.detail.enterLastActive")}
         />
       </label>
 

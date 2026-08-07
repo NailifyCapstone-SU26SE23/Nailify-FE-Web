@@ -26,6 +26,7 @@ import { Modal, Spin, Alert, DatePicker, Drawer, message, Select, TimePicker as 
 import { Link } from "react-router-dom";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { ROUTES, getManagerStaffUpdateRoute } from "../../../../shared/constants/routes";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   QUICK_ACTIONS,
   SCHEDULE_DAY_KEYS,
@@ -259,6 +260,7 @@ function buildPerformanceInsights(staffArtists = [], bookings = []) {
     .sort(sortByCompletedAsc)
     .slice(0, 2)
     .map((performer) => ({
+      id: performer.id,
       name: performer.name,
       completed: String(performer.completedCount),
     }));
@@ -568,8 +570,8 @@ function InsightStrip({ mostCompletedStaff, leastCompletedStaff, loadingBookings
           </div>
         </div>
         <div className="space-y-2">
-          {STAFF_ON_LEAVE.slice(0, 2).map((item) => (
-            <div key={item.name} className="flex items-center justify-between gap-2 text-[12px]">
+          {STAFF_ON_LEAVE.slice(0, 2).map((item, idx) => (
+            <div key={item.id || item.name || idx} className="flex items-center justify-between gap-2 text-[12px]">
               <span className="truncate font-medium text-[#2d1b35]">{item.name}</span>
               <span className="shrink-0 rounded-md bg-[#ffe6ec] px-2 py-0.5 text-[10px] font-bold text-[#e1447f]">
                 {item.days}
@@ -593,8 +595,8 @@ function InsightStrip({ mostCompletedStaff, leastCompletedStaff, loadingBookings
           {loadingBookings ? (
             <p className="text-[12px] text-[#a88a9f]">Loading...</p>
           ) : leastCompletedStaff.length > 0 ? (
-            leastCompletedStaff.map((staff) => (
-              <div key={staff.name} className="flex items-center justify-between gap-2 text-[12px]">
+            leastCompletedStaff.map((staff, idx) => (
+              <div key={staff.id || staff.name || idx} className="flex items-center justify-between gap-2 text-[12px]">
                 <span className="truncate font-medium text-[#2d1b35]">{staff.name}</span>
                 <span className="shrink-0 font-bold text-[#ea4f93]">{staff.completed}</span>
               </div>
@@ -710,6 +712,7 @@ function TimelineSchedule({
 }) {
   const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
+  const { language } = useLanguage();
   const weekDays = useMemo(() => {
     const days = [];
     for (let i = 0; i < 7; i++) {
@@ -727,7 +730,7 @@ function TimelineSchedule({
   return (
     <PremiumCard className="p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
-        <SectionHeading title="Weekly Schedule" subtitle="View and manage staff working hours" />
+        <SectionHeading title={language === "vi" ? "Lịch làm việc" : "Weekly Schedule"} subtitle={language === "vi" ? "Xem và quản lý giờ làm việc" : "View and manage staff working hours"} />
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
             <button
@@ -755,7 +758,7 @@ function TimelineSchedule({
             className="inline-flex items-center gap-2 rounded-full border border-[#f1c6dd] bg-[#fffafd] px-4 py-2 text-[11px] font-semibold text-[#ea4f93] hover:bg-[#fff0f6] transition"
           >
             <Calendar size={14} />
-            This Week
+            {language === "vi" ? "Tuần này" : "This Week"}
           </button>
         </div>
       </div>
@@ -786,8 +789,8 @@ function TimelineSchedule({
 
             {weeklySchedules.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <p className="text-sm font-semibold text-[#5c4559]">No staff schedules found</p>
-                <p className="mt-1 text-xs text-[#a88a9f]">There are no schedules registered for this week</p>
+                <p className="text-sm font-semibold text-[#5c4559]">{language === "vi" ? "Không tìm thấy lịch làm việc" : "No staff schedules found"}</p>
+                <p className="mt-1 text-xs text-[#a88a9f]">{language === "vi" ? "Không có lịch làm việc" : "There are no schedules registered for this week"}</p>
               </div>
             ) : (
               weeklySchedules.map((staff) => (
@@ -860,7 +863,7 @@ function TimelineSchedule({
                                   <span className="text-[9px] font-semibold text-slate-300 tracking-wide group-hover/cell:opacity-0 transition-opacity">— Off —</span>
                                   <span className="absolute inset-0 flex flex-col items-center justify-center text-[9px] font-bold text-[#E84F93] opacity-0 group-hover/cell:opacity-100 transition-opacity bg-pink-50/95 rounded-2xl border border-pink-200/60 gap-1">
                                     <span className="text-[16px] leading-none">✦</span>
-                                    Assign Shift
+                                    {language === "vi" ? "Phân công" : "Assign Shift"}
                                   </span>
                                 </>
                               )}
@@ -869,7 +872,7 @@ function TimelineSchedule({
                             <div className="flex flex-col gap-1 w-full justify-center items-center">
                               {isSplitShift && (
                                 <div className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-violet-500 to-purple-600 px-2 py-0.5 text-[7.5px] font-bold text-white uppercase tracking-widest shadow-sm">
-                                  <span>⚡ Split ({shiftLabels.length})</span>
+                                  <span> {language === "vi" ? "Phân công" : "Split"} ({shiftLabels.length})</span>
                                 </div>
                               )}
                               <div className="flex flex-col gap-1 w-full">
@@ -918,6 +921,7 @@ TimelineSchedule.propTypes = {
 };
 
 export function StaffManagementPage() {
+  const { t, language } = useLanguage();
   const [activeFilter, setActiveFilter] = useState("All");
   const [viewingStaff, setViewingStaff] = useState(null);
   const [viewingStaffDetail, setViewingStaffDetail] = useState(null);
@@ -1410,19 +1414,19 @@ export function StaffManagementPage() {
 
   const summaryStats = useMemo(() => [
     {
-      label: "Total Staff",
+      label: language === "vi" ? "Tổng Nhân viên" : "Total Staff",
       value: staffArtistsWithStats.length,
       icon: Users,
       tone: "bg-[#ffe8f2] text-[#ea4f93]",
     },
     {
-      label: "Active Today",
+      label: language === "vi" ? "Hoạt động hôm nay" : "Active Today",
       value: staffArtistsWithStats.filter((s) => s.status === "Active").length,
       icon: CheckCircle2,
       tone: "bg-[#eaf9ee] text-[#2fa25f]",
     },
     {
-      label: "Average Rating",
+      label: language === "vi" ? "Đánh giá trung bình" : "Average Rating",
       value: staffArtistsWithStats.length > 0
         ? (staffArtistsWithStats.reduce((acc, s) => acc + s.rating, 0) / staffArtistsWithStats.length).toFixed(1)
         : "0",
@@ -1430,7 +1434,7 @@ export function StaffManagementPage() {
       tone: "bg-[#fff0dd] text-[#db8520]",
     },
     {
-      label: "Completed Services",
+      label: language === "vi" ? "Dịch vụ đã hoàn thành" : "Completed Services",
       value: performanceInsights.completedServices,
       icon: CalendarDays,
       tone: "bg-[#e7ecff] text-[#4755b8]",
@@ -1441,8 +1445,8 @@ export function StaffManagementPage() {
 
   const getActionHandler = (label) => {
     switch (label) {
-      case "Edit Schedule": return () => setIsEditScheduleModalOpen(true);
-      case "Transfer Staff": return () => setIsTransferStaffModalOpen(true);
+      case language === "vi" ? "Chỉnh sửa lịch làm việc" : "Edit Schedule": return () => setIsEditScheduleModalOpen(true);
+      case language === "vi" ? "Chuyển nhân viên" : "Transfer Staff": return () => setIsTransferStaffModalOpen(true);
       default: return () => { };
     }
   };
@@ -1460,7 +1464,7 @@ export function StaffManagementPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-24">
-          <Spin size="large" tip="Loading staff artists..." />
+          <Spin size="large" tip={language === "vi" ? "Đang tải nhân viên..." : "Loading staff artists..."} />
         </div>
       ) : (
         <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="space-y-6">
@@ -1479,13 +1483,13 @@ export function StaffManagementPage() {
                   <div>
                     <div className="inline-flex items-center gap-2 rounded-full border border-[#E84F93]/30 bg-[#E84F93]/10 px-3.5 py-1 text-[11px] font-extrabold text-[#E84F93] backdrop-blur-md shadow-xs">
                       <Sparkles size={13} className="text-[#E84F93] animate-pulse" />
-                      <span>Salon Staff & Artisan Roster</span>
+                      <span>{language === "vi" ? "Danh sách nhân viên" : "Salon Staff & Artisan Roster"}</span>
                     </div>
                     <h1 className="text-2xl lg:text-3xl font-extrabold text-[#2B182B] mt-1.5 tracking-tight ">
-                      Staff Artists
+                      {language === "vi" ? "Danh sách nhân viên" : "Staff Artists"}
                     </h1>
                     <p className="mt-1 text-xs lg:text-sm text-[#8C6682] font-semibold leading-relaxed">
-                      Manage staff rosters, artisan profiles, workload performance, and skills
+                      {language === "vi" ? "Quản lý nhân viên, hồ sơ nghệ nhân, hiệu suất công việc và kỹ năng" : "Manage staff rosters, artisan profiles, workload performance, and skills"}
                     </p>
                   </div>
                 </div>
@@ -1517,7 +1521,7 @@ export function StaffManagementPage() {
                     className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#E84F93] via-[#EC4899] to-[#F43F5E] px-6 py-2.5 text-xs font-bold text-white shadow-[0_10px_25px_rgba(232,79,147,0.35)] hover:shadow-xl transition-all"
                   >
                     <UserPlus size={16} />
-                    <span>Add Staff Artist</span>
+                    <span>{language === "vi" ? "Thêm nhân viên" : "Add Staff Artist"}</span>
                   </Link>
                 </div>
               </div>
@@ -1544,8 +1548,8 @@ export function StaffManagementPage() {
               <div className="border-b border-[#f1e7ed] bg-[#fffafd] px-5 py-4 sm:px-6">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                   <SectionHeading
-                    title="Staff Artists"
-                    subtitle="View and manage your nail artists"
+                    title={language === "vi" ? "Nhân viên" : "Staff Artists"}
+                    subtitle={language === "vi" ? "Xem và quản lý nhân viên của bạn" : "View and manage your nail artists"}
                   />
                   <div className="flex flex-wrap gap-2">
                     {STAFF_FILTER_TABS.map((filter) => {
@@ -1577,7 +1581,7 @@ export function StaffManagementPage() {
                     <input
                       value={query}
                       onChange={(e) => { setQuery(e.target.value); setCurrentPage(1); }}
-                      placeholder="Search by name, role, or status..."
+                      placeholder={language === "vi" ? "Tìm kiếm" : "Search"}
                       className="h-10 w-full rounded-xl border border-[#f3d7e4] bg-white pl-10 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#c8b0bf] focus:border-[#ea4f93] focus:ring-2 focus:ring-[#ea4f93]/10"
                     />
                   </label>
@@ -1585,7 +1589,7 @@ export function StaffManagementPage() {
                   <DatePicker
                     value={selectedDate}
                     onChange={(d) => setSelectedDate(d)}
-                    placeholder="Select date"
+                    placeholder={language === "vi" ? "Ngày đặt lịch" : "Booking Date"}
                     className="h-10 w-full rounded-xl border border-[#f3d7e4]"
                     suffixIcon={<Calendar size={14} className="text-[#a88a9f]" />}
                   />
@@ -1599,7 +1603,7 @@ export function StaffManagementPage() {
                       : "cursor-not-allowed border-[#f5e8ef] bg-[#fffafb] text-[#d6b9c8]"
                       }`}
                   >
-                    Reset
+                    {language === "vi" ? "Đặt lại" : "Reset"}
                   </button>
                 </div>
               </div>
@@ -1610,16 +1614,16 @@ export function StaffManagementPage() {
                     <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#fff0f8] text-[#ea4f93]">
                       <Search size={22} />
                     </div>
-                    <p className="text-base font-semibold text-[#5c4559]">No staff artists found</p>
+                    <p className="text-base font-semibold text-[#5c4559]">{language === "vi" ? "Không tìm thấy nhân viên" : "No staff artists found"}</p>
                     <p className="mt-1 max-w-xs text-xs text-[#a88a9f]">
-                      Try adjusting your filters or search term
+                      {language === "vi" ? "Hãy thử điều chỉnh bộ lọc hoặc cụm từ tìm kiếm" : "Try adjusting your filters or search term"}
                     </p>
                     <button
                       type="button"
                       onClick={() => { setQuery(""); setSelectedDate(null); setActiveFilter("All"); setCurrentPage(1); }}
                       className="mt-4 rounded-xl bg-[#ea4f93] px-4 py-2 text-xs font-semibold text-white transition active:scale-[0.98]"
                     >
-                      Clear filters
+                      {language === "vi" ? "Xóa bộ lọc" : "Clear filters"}
                     </button>
                   </div>
                 ) : (
@@ -1667,21 +1671,21 @@ export function StaffManagementPage() {
             <PremiumCard className="p-5">
               <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <SectionHeading
-                  title="Performance Overview"
-                  subtitle="Staff with the most completed bookings this month"
+                  title={language === "vi" ? "Tổng quan hiệu suất" : "Performance Overview"}
+                  subtitle={language === "vi" ? "Nhân viên có nhiều đơn hàng hoàn thành nhất trong tháng" : "Staff with the most completed bookings this month"}
                 />
                 <button
                   type="button"
                   className="inline-flex items-center gap-2 rounded-xl border border-[#f1c6dd] bg-[#fffafd] px-4 py-2 text-[11px] font-semibold text-[#ea4f93]"
                 >
                   <TrendingUp size={14} />
-                  This Month
+                  {language === "vi" ? "Tháng này" : "This Month"}
                 </button>
               </div>
               <div className="grid gap-4 lg:grid-cols-3">
                 {loadingBookings ? (
                   <div className="col-span-full flex items-center justify-center py-10">
-                    <Spin tip="Loading performance data..." />
+                    <Spin tip={language === "vi" ? "Đang tải hiệu suất..." : "Loading performance data..."} />
                   </div>
                 ) : performanceInsights.topCompletedPerformers.length > 0 ? (
                   performanceInsights.topCompletedPerformers.map((item) => (
@@ -1720,7 +1724,7 @@ export function StaffManagementPage() {
                   ))
                 ) : (
                   <div className="col-span-full rounded-xl border border-dashed border-[#f1c6dd] bg-[#fffafd] px-4 py-8 text-center text-sm text-[#a88a9f]">
-                    No completed bookings this month yet
+                    {language === "vi" ? "Chưa có lịch hoàn thành tháng này" : "No completed bookings this month yet"}
                   </div>
                 )}
               </div>
@@ -1770,7 +1774,7 @@ export function StaffManagementPage() {
                     fallbackClassName="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-white text-2xl font-bold border-2 border-white/30 flex-shrink-0"
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold uppercase tracking-widest text-white/85">Staff Details</p>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-white/85">{language === "vi" ? "Thông tin chi tiết nhân viên" : "Staff Details"}</p>
                     <h2 className="text-xl font-bold text-white mt-1 truncate">
                       {selectedStaff.name}
                     </h2>
@@ -1801,20 +1805,20 @@ export function StaffManagementPage() {
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               {/* Personal Information */}
               <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f1e7ed]">
-                <h3 className="text-sm font-bold text-[#2d1b35] mb-4">Personal Information</h3>
+                <h3 className="text-sm font-bold text-[#2d1b35] mb-4">{language === "vi" ? "Thông tin cá nhân" : "Personal Information"}</h3>
                 <div className="space-y-4">
-                  <InfoItem label="Name">{selectedStaff.name || '-'}</InfoItem>
-                  <InfoItem label="Email">{selectedStaff.email || '-'}</InfoItem>
-                  <InfoItem label="Phone Number">{selectedStaff.phone || '-'}</InfoItem>
+                  <InfoItem label={language === "vi" ? "Tên" : "Name"}>{selectedStaff.name || '-'}</InfoItem>
+                  <InfoItem label={language === "vi" ? "Email" : "Email"}>{selectedStaff.email || '-'}</InfoItem>
+                  <InfoItem label={language === "vi" ? "Số điện thoại" : "Phone Number"}>{selectedStaff.phone || '-'}</InfoItem>
                 </div>
               </div>
 
               {/* Account Information */}
               <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f1e7ed]">
-                <h3 className="text-sm font-bold text-[#2d1b35] mb-4">Account Information</h3>
+                <h3 className="text-sm font-bold text-[#2d1b35] mb-4">{language === "vi" ? "Thông tin tài khoản" : "Account Information"}</h3>
                 <div className="space-y-4">
-                  <InfoItem label="Role">{selectedStaff.role || '-'}</InfoItem>
-                  <InfoItem label="Status">
+                  <InfoItem label={language === "vi" ? "Vai trò" : "Role"}>{selectedStaff.role || '-'}</InfoItem>
+                  <InfoItem label={language === "vi" ? "Trạng thái" : "Status"}>
                     <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold bg-[#eaf9ee] text-[#2fa25f]">
                       {selectedStaff.status || 'Active'}
                     </span>
@@ -1824,7 +1828,7 @@ export function StaffManagementPage() {
 
               {/* Skills Section */}
               <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f1e7ed]">
-                <h3 className="text-sm font-bold text-[#2d1b35] mb-4">Skills &amp; Specialties</h3>
+                <h3 className="text-sm font-bold text-[#2d1b35] mb-4">{language === "vi" ? "Kỹ năng & Chuyên môn" : "Skills & Specialties"}</h3>
                 {isLoadingSkills ? (
                   <div className="flex justify-center py-4">
                     <Spin size="small" />
@@ -1857,7 +1861,7 @@ export function StaffManagementPage() {
                     })}
                   </div>
                 ) : (
-                  <p className="text-xs text-[#a88a9f]">No skills assigned yet</p>
+                  <p className="text-xs text-[#a88a9f]">{language === "vi" ? "Chưa có kỹ năng nào được giao" : "No skills assigned yet"}</p>
                 )}
               </div>
 
@@ -1871,7 +1875,7 @@ export function StaffManagementPage() {
                   className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-[#ea4f93] bg-white px-4 py-3 text-xs font-bold text-[#ea4f93] shadow-lg transition-all hover:bg-[#fff0f8] hover:border-[#ea4f93] hover:scale-[1.02]"
                 >
                   <UserPlus size={14} />
-                  Update Profile
+                  {language === "vi" ? "Cập nhật thông tin" : "Update Profile"}
                 </Link>
                 <button
                   type="button"
@@ -1879,7 +1883,7 @@ export function StaffManagementPage() {
                   className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] px-4 py-3 text-xs font-bold text-white shadow-lg transition-all hover:opacity-90 hover:scale-[1.02]"
                 >
                   <CalendarDays size={14} />
-                  Create New Shift
+                  {language === "vi" ? "Tạo ca mới" : "Create New Shift"}
                 </button>
               </div>
             </div>
@@ -1921,9 +1925,9 @@ export function StaffManagementPage() {
               <CalendarDays size={20} />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-widest text-white/80">New Shift</p>
+              <p className="text-xs font-semibold uppercase tracking-widest text-white/80">{language === "vi" ? "Ca mới" : "New Shift"}</p>
               <h3 className="truncate text-base font-bold text-white">
-                {selectedStaff?.name || "Select staff"}
+                {selectedStaff?.name || language === "vi" ? "Chọn nhân viên" : "Select staff"}
               </h3>
             </div>
           </div>
@@ -2016,14 +2020,14 @@ export function StaffManagementPage() {
 
                 <p className="mt-3 flex items-center gap-1.5 text-[10.5px] text-[#b39aac]">
                   <Lock size={10} />
-                  Days with a lock icon already have a schedule and can&apos;t be selected
+                  {language === "vi" ? "Các ngày có biểu tượng khóa đã có lịch và không thể chọn" : "Days with a lock icon already have a schedule and can&apos;t be selected"}
                 </p>
               </div>
 
               {/* Status segmented control */}
               <div>
                 <label className="mb-2 block text-[11px] font-semibold uppercase tracking-wider text-[#a88a9f]">
-                  Status
+                  {language === "vi" ? "Trạng thái" : "Status"}
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {Object.entries(SHIFT_STATUS_META).map(([key, meta]) => {
@@ -2053,7 +2057,7 @@ export function StaffManagementPage() {
                 <div>
                   <div className="mb-2 flex items-center justify-between">
                     <label className="text-[11px] font-semibold uppercase tracking-wider text-[#a88a9f]">
-                      Working Hours
+                      {language === "vi" ? "Giờ làm việc" : "Working Hours"}
                     </label>
                     <div className="flex gap-1.5">
                       {SHIFT_DURATION_PRESETS.map((preset) => (
@@ -2071,14 +2075,14 @@ export function StaffManagementPage() {
 
                   {/* Time Slots Helpers */}
                   <div className="mb-3 flex items-center justify-between border-b border-rose-50 pb-2">
-                    <span className="text-[10px] text-slate-400">Select working intervals:</span>
+                    <span className="text-[10px] text-slate-400">{language === "vi" ? "Chọn khoảng thời gian làm việc:" : "Select working intervals:"}</span>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => setSelectedTimeSlots(TIME_SLOTS_30MIN.map((_, i) => i))}
                         className="text-[10px] font-bold text-[#ea4f93] hover:underline"
                       >
-                        Select All
+                        {language === "vi" ? "Chọn tất cả" : "Select All"}
                       </button>
                       <span className="text-[10px] text-slate-300">|</span>
                       <button
@@ -2086,7 +2090,7 @@ export function StaffManagementPage() {
                         onClick={() => setSelectedTimeSlots([])}
                         className="text-[10px] font-bold text-slate-500 hover:underline"
                       >
-                        Clear All
+                        {language === "vi" ? "Xóa tất cả" : "Clear All"}
                       </button>
                     </div>
                   </div>
@@ -2123,7 +2127,7 @@ export function StaffManagementPage() {
                   {isShiftTimeInvalid ? (
                     <p className="flex items-center gap-1.5 text-[11px] font-medium text-red-500">
                       <AlertCircle size={12} />
-                      Please select at least one time slot
+                      {language === "vi" ? "Vui lòng chọn ít nhất một khoảng thời gian làm việc" : "Please select at least one time slot"}
                     </p>
                   ) : (
                     shiftDurationHours > 0 && (
@@ -2148,7 +2152,7 @@ export function StaffManagementPage() {
               }}
               className="rounded-xl px-5 py-2.5 text-xs font-semibold text-[#a88a9f] hover:bg-[#fff5fa] hover:text-[#2d1b35] transition"
             >
-              Cancel
+              {language === "vi" ? "Hủy" : "Cancel"}
             </button>
             <button
               type="button"
