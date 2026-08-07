@@ -41,7 +41,6 @@ const STATUS_META = {
 
 
 function generateSlotsFromOperatingHours(openTimeStr = "08:00", closeTimeStr = "19:00") {
-  const { language } = useLanguage();
   const parseMinutes = (timeStr) => {
     if (!timeStr) return 480;
     const [h, m] = String(timeStr).split(":").map(Number);
@@ -79,8 +78,7 @@ function getMondayOfWeek(date) {
 }
 
 /** Map schedules → { Mon: [s1, s2, …], … } sorted by shiftStart */
-function buildDayMap(schedules) {
-  const { language } = useLanguage();
+function buildDayMap(schedules, language) {
   const DAY_NAMES = language === "vi" ? ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"] : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const map = {};
   (schedules || []).forEach((s) => {
@@ -359,7 +357,7 @@ export function EditScheduleModal({
           startDate: modalMonday.format("YYYY-MM-DDT00:00:00"),
           endDate: modalSunday.format("YYYY-MM-DDT23:59:59"),
         });
-        if (!cancelled) setWeekMap(buildDayMap(data));
+        if (!cancelled) setWeekMap(buildDayMap(data, language));
       } catch {
         if (!cancelled) setWeekMap({});
       } finally {

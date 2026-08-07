@@ -294,7 +294,7 @@ export function ProfilePage() {
   if (isLoading) {
     return (
       <section className="flex min-h-[420px] items-center justify-center">
-        <Spin size="large" tip={t("profile.loadingProfile")} />
+        <Spin size="large" description={t("profile.loadingProfile")} />
       </section>
     );
   }
@@ -499,9 +499,9 @@ export function ProfilePage() {
 
               <div className="mt-6 space-y-3">
                 {salon?.operatingHours?.length ? (
-                  salon.operatingHours.map((slot) => (
+                  salon.operatingHours.map((slot, index) => (
                     <div
-                      key={`${slot.dayOfWeek}-${slot.dayName}`}
+                      key={`${slot.dayOfWeek}-${slot.dayName}-${index}`}
                       className="group flex items-center justify-between rounded-[20px] border border-white/50 bg-white/40 px-5 py-4 transition-all duration-300 hover:bg-white/70 hover:shadow-sm"
                     >
                       <div className="flex items-center gap-4">
