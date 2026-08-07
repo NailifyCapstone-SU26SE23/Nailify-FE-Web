@@ -110,17 +110,17 @@ export function LoginPage() {
                 operations workspace.
               </p>
             </div>
-
-            <div className="rounded-[28px] border border-white/25 bg-white/14 p-5 backdrop-blur">
-              <div className="mb-4 flex items-center justify-between gap-4">
+            <div className="rounded-[28px] h-full p-5 backdrop-blur" />
+            {/* <div className="rounded-[28px] border border-white/25 bg-white/14 p-5 backdrop-blur">
+               <div className="mb-4 flex items-center justify-between gap-4">
                 <p className="text-sm font-semibold uppercase tracking-[0.18em] text-white/95">
                   Internal Demo Roles
                 </p>
                 <span className="rounded-full bg-white/18 px-3 py-1 text-xs font-semibold text-white">
                   API Login
                 </span>
-              </div>
-              <ul className="space-y-3 text-sm">
+              </div> */}
+            {/* <ul className="space-y-3 text-sm">
                 {demoAccounts.map((account) => (
                   <li
                     key={account}
@@ -129,8 +129,8 @@ export function LoginPage() {
                     {account}
                   </li>
                 ))}
-              </ul>
-            </div>
+              </ul> 
+            </div>*/}
           </div>
         </section>
 
