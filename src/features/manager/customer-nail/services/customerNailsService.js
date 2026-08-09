@@ -436,14 +436,23 @@ export async function fetchCustomerNailRequestById(id) {
   return fetchCustomerNailById(id);
 }
 
-export async function staffSubmitArtistQuote(customerNailId, quotedPrice, quotedDuration) {
+export async function staffSubmitArtistQuote(customerNailId, quotedPrice, quotedDuration, artistNotes = "", procedures = []) {
   const normalizedId = String(customerNailId || "").trim();
   if (!normalizedId) {
     throw new Error("Customer Nail ID is required.");
   }
   const payload = {
     quotedPrice: Number(quotedPrice),
-    quotedDuration: Number(quotedDuration)
+    quotedDuration: Number(quotedDuration),
+    artistNotes,
+    procedures: procedures.map(p => ({
+      procedureId: p.isCustomStep ? null : p.procedureId,
+      name: p.name,
+      estimatedMinutes: p.estimatedMinutes,
+      isCustomStep: p.isCustomStep,
+      stepOrder: p.stepOrder,
+      note: p.note
+    }))
   };
 
   try {
