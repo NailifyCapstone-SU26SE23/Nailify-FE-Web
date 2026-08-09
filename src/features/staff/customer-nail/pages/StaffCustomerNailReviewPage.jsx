@@ -13,6 +13,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { fetchCustomerNailRequestById, staffSubmitArtistQuote } from "../../../manager/customer-nail/services/customerNailsService";
+import { ProcedureBuilderSection } from "../components/ProcedureBuilderSection";
 import toast from "react-hot-toast";
 
 function getStatusTone(status) {
@@ -661,6 +662,7 @@ export function StaffCustomerNailReviewPage() {
   const [quotedPrice, setQuotedPrice] = useState("");
   const [quotedDuration, setQuotedDuration] = useState("");
   const [artistNotes, setArtistNotes] = useState("");
+  const [procedures, setProcedures] = useState([]);
 
   const loadRequestDetail = useCallback(async (options = {}) => {
     const { silent = false } = options;
@@ -696,6 +698,22 @@ export function StaffCustomerNailReviewPage() {
         // Use already existing values if request has them, otherwise use calculations
         setQuotedPrice(data.price || baseCalculatedPrice || "");
         setQuotedDuration(data.duration || baseCalculatedDuration || "");
+
+        // Load existing procedures if they were already created
+        if (nail.nailProcedures && nail.nailProcedures.length > 0) {
+          const loadedProcedures = nail.nailProcedures.map(p => ({
+            id: p.nailProcedureId,
+            procedureId: p.procedureId,
+            name: p.name || p.procedureName,
+            estimatedMinutes: p.estimatedMinutes || p.procedureDuration || 15,
+            stepOrder: p.stepOrder,
+            isCommon: p.isCustomStep ? false : (p.procedureType === "Common" || p.procedureType === 1),
+            isCustomStep: p.isCustomStep,
+            procedureType: p.procedureType || (p.isCustomStep ? "ModelSpecific" : "Common"),
+            note: p.note || p.procedureDescription || ""
+          })).sort((a, b) => a.stepOrder - b.stepOrder);
+          setProcedures(loadedProcedures);
+        }
       }
     } catch (err) {
       console.error("Error loading custom request:", err);
@@ -770,7 +788,7 @@ export function StaffCustomerNailReviewPage() {
 
     try {
       setIsSubmitting(true);
-      await staffSubmitArtistQuote(customerNailId, Number(quotedPrice), Number(quotedDuration));
+      await staffSubmitArtistQuote(customerNailId, Number(quotedPrice), Number(quotedDuration), artistNotes, procedures);
       toast.success("Estimation submitted to Manager successfully!");
       navigate("/staff/customer-nails");
     } catch (err) {
@@ -898,6 +916,18 @@ export function StaffCustomerNailReviewPage() {
             <div className="space-y-6 lg:col-span-2">
               {/* Blueprint */}
               <NailBlueprint nail={nail} componentsList={componentsList} />
+
+              {/* Procedure Checklist Builder */}
+              <ProcedureBuilderSection
+                nail={nail}
+                procedures={procedures}
+                setProcedures={setProcedures}
+                onApplyToQuote={({ totalDuration, totalPrice }) => {
+                  setQuotedDuration(totalDuration);
+                  setQuotedPrice(totalPrice > 0 ? totalPrice : recommendedStats.price);
+                  toast.success("Đã đồng bộ tổng thời gian & chi phí quy trình vào Báo Giá!");
+                }}
+              />
 
               {/* General details */}
               <div className="rounded-[28px] border border-[#f5cee1] bg-white p-5 shadow-sm space-y-4">
