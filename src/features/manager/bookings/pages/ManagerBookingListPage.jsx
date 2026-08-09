@@ -387,9 +387,25 @@ function mapApiBookingToUiFormat(apiBooking, index) {
     thumbnail = SAMPLE_NAIL_THUMBNAILS[index % SAMPLE_NAIL_THUMBNAILS.length];
   }
 
+  // Precompute expensive fields for filtering
+  const phoneVal = apiBooking.customerPhone || apiBooking.phone || apiBooking.customer?.phone || apiBooking.customer?.phoneNumber || apiBooking.phoneNumber || "";
+  const serviceVal = apiBooking.serviceName || "Nail Service";
+  const statusVal = apiBooking.status || "Pending";
+  const searchString = [customerName, phoneVal, artistName, serviceVal, statusVal].join(" ").toLowerCase();
+
+  let parsedDateStr = "";
+  if (apiBooking.bookingDate || apiBooking.createdAt) {
+    const d = dayjs(apiBooking.bookingDate || apiBooking.createdAt);
+    if (d.isValid()) {
+      parsedDateStr = d.format("YYYY-MM-DD");
+    }
+  }
+
   return {
     id: apiBooking.bookingId || apiBooking.id,
     bookingId: apiBooking.bookingId || apiBooking.id,
+    searchString,
+    parsedDateStr,
     bookingDate: apiBooking.bookingDate,
     date: formatDate(apiBooking.bookingDate || apiBooking.createdAt),
     time: formatTimeRange(apiBooking.startTime, apiBooking.totalDuration, apiBooking.bookingDate || apiBooking.createdAt),
@@ -555,7 +571,7 @@ export function ManagerBookingListPage() {
 
   // Schedule state
   const [selectedTimeFilter, setSelectedTimeFilter] = useState('morning');
-  const [scheduleDate, setScheduleDate] = useState(dayjs());
+  const [scheduleDate, setScheduleDate] = useState(() => dayjs());
   const timeFilters = [
     { label: "9 AM - 3 PM", value: "morning", startHour: 9, endHour: 15 },
     { label: "3 PM - 8 PM", value: "afternoon", startHour: 15, endHour: 20 }
@@ -564,9 +580,9 @@ export function ManagerBookingListPage() {
   // Core state
   const [query, setQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
-  const [dateFrom, setDateFrom] = useState(dayjs());
-  const [dateTo, setDateTo] = useState(dayjs());
-  const [anchorDate, setAnchorDate] = useState(dayjs());
+  const [dateFrom, setDateFrom] = useState(() => dayjs());
+  const [dateTo, setDateTo] = useState(() => dayjs());
+  const [anchorDate, setAnchorDate] = useState(() => dayjs());
   const [bookings, setBookings] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -592,6 +608,27 @@ export function ManagerBookingListPage() {
   }, [location.pathname, location.state, navigate]);
 
   const [salonStaffList, setSalonStaffList] = useState([]);
+
+  // Fetch salon staff once on mount or when salonId changes
+  useEffect(() => {
+    let active = true;
+    const loadStaff = async () => {
+      const salonId = (await getSalonIdAsync()) || getSalonId();
+      if (!salonId) return;
+      try {
+        const staffMembers = await fetchSalonStaff(salonId);
+        if (active) {
+          setSalonStaffList(Array.isArray(staffMembers) ? staffMembers : staffMembers?.items || []);
+        }
+      } catch (staffErr) {
+        console.warn("Failed to fetch salon staff:", staffErr);
+      }
+    };
+    loadStaff();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const dayViewStaffList = useMemo(() => {
     if (!salonStaffList || salonStaffList.length === 0) {
@@ -627,12 +664,6 @@ export function ManagerBookingListPage() {
         setError("No salon ID found in session. Please log in as a salon manager.");
         setIsLoading(false);
         return;
-      }
-      try {
-        const staffMembers = await fetchSalonStaff(salonId);
-        setSalonStaffList(Array.isArray(staffMembers) ? staffMembers : staffMembers?.items || []);
-      } catch (staffErr) {
-        console.warn("Failed to fetch salon staff:", staffErr);
       }
 
       const startParam = dateFrom ? dateFrom.format("YYYY-MM-DD") : undefined;
@@ -763,6 +794,23 @@ export function ManagerBookingListPage() {
   };
 
   // --- Derived State ---
+  const quickStats = useMemo(() => {
+    const todayStr = dayjs().format("YYYY-MM-DD");
+    let todayCount = 0;
+    let actionRequiredCount = 0;
+
+    for (let i = 0; i < bookings.length; i++) {
+      const b = bookings[i];
+      if (b.parsedDateStr === todayStr) {
+        todayCount++;
+      }
+      if (b.status === "Pending" || !(b.nailArtistId || b.staffId || b.staffArtistId || b.artistId)) {
+        actionRequiredCount++;
+      }
+    }
+    return { todayCount, actionRequiredCount };
+  }, [bookings]);
+
   const summaryStats = useMemo(() => {
     const pending = bookings.filter(b => b.status === "Pending").length;
     const confirmed = bookings.filter(b => b.status === "Confirmed" || b.status === "Approved").length;
@@ -810,26 +858,23 @@ export function ManagerBookingListPage() {
 
   const filteredAppointments = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
+
+    let fromStr = null;
+    let toStr = null;
+    if (dateFrom && dateFrom.isValid()) fromStr = dateFrom.format("YYYY-MM-DD");
+    if (dateTo && dateTo.isValid()) toStr = dateTo.format("YYYY-MM-DD");
+
     return bookings.filter((appointment) => {
-      const matchesQuery =
-        normalizedQuery.length === 0 ||
-        [
-          appointment.customer,
-          appointment.phone,
-          appointment.artist,
-          appointment.time,
-          appointment.service,
-          appointment.status,
-        ]
-          .join(" ")
-          .toLowerCase()
-          .includes(normalizedQuery);
+      const matchesQuery = normalizedQuery.length === 0 || appointment.searchString.includes(normalizedQuery);
+
       let matchesDate = true;
-      if (dateFrom || dateTo) {
-        const bookingDate = dayjs(appointment.bookingDate || appointment.createdAt);
-        if (bookingDate.isValid()) {
-          if (dateFrom && bookingDate.isBefore(dateFrom, "day")) matchesDate = false;
-          if (dateTo && bookingDate.isAfter(dateTo, "day")) matchesDate = false;
+      if (fromStr || toStr) {
+        const dStr = appointment.parsedDateStr;
+        if (dStr) {
+          if (fromStr && dStr < fromStr) matchesDate = false;
+          if (toStr && dStr > toStr) matchesDate = false;
+        } else {
+          matchesDate = false;
         }
       }
       return matchesQuery && matchesFilter(appointment.status, activeFilter) && matchesDate;
@@ -846,10 +891,8 @@ export function ManagerBookingListPage() {
   }, [filteredAppointments.length]);
 
   const scheduleDateBookings = useMemo(() => {
-    return bookings.filter(b => {
-      const d = dayjs(b.bookingDate || b.createdAt);
-      return d.isValid() && d.isSame(scheduleDate, "day");
-    });
+    const targetDateStr = scheduleDate ? scheduleDate.format("YYYY-MM-DD") : null;
+    return bookings.filter(b => b.parsedDateStr && b.parsedDateStr === targetDateStr);
   }, [bookings, scheduleDate]);
 
   const capacityData = useMemo(() => {
@@ -970,10 +1013,12 @@ export function ManagerBookingListPage() {
   };
 
   const handleResetFilters = () => {
+    const today = dayjs();
     setQuery("");
     setActiveFilter("All");
-    setDateFrom(null);
-    setDateTo(null);
+    setDateFrom(today);
+    setDateTo(today);
+    setAnchorDate(today);
   };
 
   const handlePageChange = (newPage) => setCurrentPage(newPage);
@@ -1026,7 +1071,7 @@ export function ManagerBookingListPage() {
               <div className="rounded-2xl border border-white/80 bg-white/90 p-3 shadow-2xs backdrop-blur-md text-center">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">{t("manager.dashboard.today")}</p>
                 <p className="mt-0.5 text-xl font-bold text-[#2B182B]">
-                  {bookings.filter(b => { const d = dayjs(b.bookingDate || b.createdAt); return d.isValid() && d.isSame(dayjs(), "day"); }).length}
+                  {quickStats.todayCount}
                 </p>
                 <p className="text-[9px] text-[#E84F93] font-semibold">{t("manager.dashboard.appointmentsLeft") || "Appointments"}</p>
               </div>
@@ -1040,7 +1085,7 @@ export function ManagerBookingListPage() {
               <div className="rounded-2xl border border-white/80 bg-white/90 p-3 shadow-2xs backdrop-blur-md text-center">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">{t("manager.common.actions")}</p>
                 <p className="mt-0.5 text-xl font-bold text-[#D97706]">
-                  {bookings.filter(b => b.status === "Pending" || !(b.nailArtistId || b.staffId || b.staffArtistId || b.artistId)).length}
+                  {quickStats.actionRequiredCount}
                 </p>
                 <p className="text-[9px] text-[#D97706] font-semibold">{t("manager.dashboard.statusWaiting")}</p>
               </div>
@@ -1250,20 +1295,19 @@ export function ManagerBookingListPage() {
                       </motion.div>
                     ) : viewMode === "table" ? (
                       /* --- 1. TABLE BOARD VIEW (WITH TRY-ON NAIL THUMBNAILS & TOOLTIPS) --- */
-                      <table className="w-full min-w-[960px] table-fixed text-left">
+                      <table className="w-full min-w-[700px] table-fixed text-left">
                         <colgroup>
+                          <col className="w-[140px]" />
+                          <col className="w-[170px]" />
+                          <col className="w-[150px]" />
                           <col className="w-[110px]" />
-                          <col className="w-[160px]" />
-                          <col className="w-[180px]" />
                           <col className="w-[130px]" />
-                          <col className="w-[160px]" />
-                          <col className="w-[160px]" />
                         </colgroup>
                         <thead>
                           <tr className="border-b border-[#F3E2EC] bg-[#FFF5F8] text-[11px] font-bold uppercase tracking-wider text-[#9E8497]">
                             <th className="px-3.5 py-3.5 text-left">{t("manager.bookings.time")}</th>
                             <th className="px-3.5 py-3.5 text-left">{t("manager.bookings.customer")}</th>
-                            <th className="px-3.5 py-3.5 text-left">{t("manager.bookings.serviceDesign") || "Service & Nail Design"}</th>
+                            {/* <th className="px-3.5 py-3.5 text-left">{t("manager.bookings.serviceDesign") || "Service & Nail Design"}</th> */}
                             <th className="px-3.5 py-3.5 text-left">{t("manager.bookings.artist")}</th>
                             <th className="px-3.5 py-3.5 text-left">{t("manager.common.status")}</th>
                             <th className="px-3.5 py-3.5 text-center">{t("manager.common.actions")}</th>
@@ -1306,7 +1350,7 @@ export function ManagerBookingListPage() {
                                 </td>
 
                                 {/* Service & Try-On Nail Design Thumbnail Preview */}
-                                <td className="px-4 py-3.5 align-middle">
+                                {/* <td className="px-4 py-3.5 align-middle">
                                   <div className="flex items-center gap-2.5 min-w-0">
                                     {row.thumbnailUrl && (
                                       <Tooltip title={t("manager.bookings.zoomThumbnail") || "Click to enlarge Nail Design"}>
@@ -1330,7 +1374,7 @@ export function ManagerBookingListPage() {
                                       )}
                                     </div>
                                   </div>
-                                </td>
+                                </td> */}
 
                                 <td className="px-4 py-3.5 align-middle">
                                   <div className="flex min-w-0 items-center gap-2">

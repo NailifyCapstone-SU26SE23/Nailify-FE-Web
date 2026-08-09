@@ -29,6 +29,7 @@ import {
   Eye,
   EyeOff,
   ShieldAlert,
+  AlarmClock,
 } from "lucide-react";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Spin, Alert, Modal, DatePicker, Select, TimePicker, Input, Tooltip, Progress } from "antd";
@@ -339,7 +340,7 @@ export function ManagerSchedulesPage() {
     setActivePreset(type);
     setFormStartTimeStr(startStr);
     setFormEndTimeStr(endStr);
-    toast.success(`Applied shift preset: ${startStr} - ${endStr}`, { icon: "⏱️" });
+    toast.success(`Applied shift preset: ${startStr} - ${endStr}`, { icon: <AlarmClock size={12} /> });
   };
 
   const handleOpenEditModal = (schedule) => {
@@ -931,7 +932,7 @@ export function ManagerSchedulesPage() {
                     }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold flex items-center gap-1">⚡ {language === 'vi' ? "Ngắn" : "Short"}</span>
+                    <span className="text-[11px] font-bold flex items-center gap-1"><Zap size={12} /> {language === 'vi' ? "Ngắn" : "Short"}</span>
                     {activePreset === "SHORT" && <Check size={13} className="text-[#8B5CF6]" />}
                   </div>
                   <span className="text-[9px] font-bold mt-1 opacity-80">08:00 AM - 09:00 AM</span>
@@ -1120,7 +1121,7 @@ export function ManagerSchedulesPage() {
                     }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold flex items-center gap-1">⚡ Short</span>
+                    <span className="text-[11px] font-bold flex items-center gap-1"><Zap size={12} /> Short</span>
                     {activePreset === "SHORT" && <Check size={13} className="text-[#8B5CF6]" />}
                   </div>
                   <span className="text-[9px] font-bold mt-1 opacity-80">08:00 AM - 09:00 AM</span>

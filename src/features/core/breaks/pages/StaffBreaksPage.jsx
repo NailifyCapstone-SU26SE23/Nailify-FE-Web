@@ -11,7 +11,8 @@ import {
   X,
   AlertTriangle,
   RefreshCw,
-  Sparkles
+  Sparkles,
+  Eye
 } from "lucide-react";
 import { Pagination } from "../../../../shared/components/common/Pagination";
 import { EmptyState } from "../../../../shared/components/common/EmptyState";
@@ -42,6 +43,7 @@ export function StaffBreaksPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   // Selected break for Edit/Delete
   const [selectedBreak, setSelectedBreak] = useState(null);
@@ -190,6 +192,11 @@ export function StaffBreaksPage() {
     setIsDeleteOpen(true);
   };
 
+  const openDetailModal = (item) => {
+    setSelectedBreak(item);
+    setIsDetailOpen(true);
+  };
+
   const getStatusBadge = (status) => {
     const s = String(status || "Pending").trim().toLowerCase();
     switch (s) {
@@ -318,17 +325,28 @@ export function StaffBreaksPage() {
                           <span>{item.startTime?.substring(0, 5)} - {item.endTime?.substring(0, 5)}</span>
                         </div>
                       </td>
-                      <td className="px-5 py-4 max-w-xs truncate text-[var(--color-muted)]" title={item.reason}>
-                        {item.reason}
+                      <td className="px-5 py-4">
+                        <div className="max-w-[200px] truncate text-[var(--color-muted)]" title={item.reason}>
+                          {item.reason}
+                        </div>
                       </td>
                       <td className="px-5 py-4">
                         {getStatusBadge(item.status)}
                       </td>
-                      <td className="px-5 py-4 text-xs text-rose-500 italic max-w-xs truncate" title={item.rejectReason}>
-                        {item.rejectReason || "-"}
+                      <td className="px-5 py-4">
+                        <div className="max-w-[200px] truncate text-xs text-rose-500 italic" title={item.rejectReason}>
+                          {item.rejectReason || "-"}
+                        </div>
                       </td>
                       <td className="px-5 py-4 text-right">
                         <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => openDetailModal(item)}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-indigo-100 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition"
+                            title={language === "vi" ? "Chi tiết" : "Details"}
+                          >
+                            <Eye size={13} />
+                          </button>
                           {String(item.status || "").toLowerCase() === "pending" || String(item.status || "").toLowerCase() === "chờ duyệt" ? (
                             <>
                               <button
@@ -376,30 +394,43 @@ export function StaffBreaksPage() {
                     <Clock3 size={14} className="text-[#a88a9d]" />
                     <span>{item.startTime?.substring(0, 5)} - {item.endTime?.substring(0, 5)}</span>
                   </div>
-                  <p className="text-[var(--color-muted)]"><span className="font-semibold text-slate-700">{language === "vi" ? "Lý do:" : "Reason:"}</span> {item.reason}</p>
+                  <p className="text-[var(--color-muted)] truncate" title={item.reason}>
+                    <span className="font-semibold text-slate-700">{language === "vi" ? "Lý do:" : "Reason:"}</span> {item.reason}
+                  </p>
                   {item.rejectReason && (
-                    <p className="text-xs text-rose-500 italic"><span className="font-semibold">{language === "vi" ? "Từ chối:" : "Rejected:"}</span> {item.rejectReason}</p>
+                    <p className="text-xs text-rose-500 italic truncate" title={item.rejectReason}>
+                      <span className="font-semibold">{language === "vi" ? "Từ chối:" : "Rejected:"}</span> {item.rejectReason}
+                    </p>
                   )}
                 </div>
 
-                {(String(item.status || "").toLowerCase() === "pending" || String(item.status || "").toLowerCase() === "chờ duyệt") && (
-                  <div className="flex items-center gap-2 pt-2 border-t border-[#f7ebdf]">
-                    <button
-                      onClick={() => openEditModal(item)}
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition"
-                    >
-                      <Edit2 size={12} />
-                      {language === "vi" ? "Sửa" : "Edit"}
-                    </button>
-                    <button
-                      onClick={() => openDeleteModal(item)}
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-100 bg-rose-50 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-100 transition"
-                    >
-                      <Trash2 size={12} />
-                      {language === "vi" ? "Hủy" : "Cancel"}
-                    </button>
-                  </div>
-                )}
+                <div className="flex items-center gap-2 pt-2 border-t border-[#f7ebdf]">
+                  <button
+                    onClick={() => openDetailModal(item)}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-indigo-100 bg-indigo-50 py-2 text-xs font-semibold text-indigo-600 hover:bg-indigo-100 transition"
+                  >
+                    <Eye size={12} />
+                    {language === "vi" ? "Chi tiết" : "Details"}
+                  </button>
+                  {(String(item.status || "").toLowerCase() === "pending" || String(item.status || "").toLowerCase() === "chờ duyệt") && (
+                    <>
+                      <button
+                        onClick={() => openEditModal(item)}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition"
+                      >
+                        <Edit2 size={12} />
+                        {language === "vi" ? "Sửa" : "Edit"}
+                      </button>
+                      <button
+                        onClick={() => openDeleteModal(item)}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-100 bg-rose-50 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-100 transition"
+                      >
+                        <Trash2 size={12} />
+                        {language === "vi" ? "Hủy" : "Cancel"}
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -585,6 +616,78 @@ export function StaffBreaksPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Break Detail Modal */}
+      {isDetailOpen && selectedBreak && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2f1c2e]/45 px-4 py-6 backdrop-blur-sm">
+          <div className="flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-[28px] border border-[#f1cddd] bg-white shadow-[0_24px_60px_rgba(63,43,63,0.24)] animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-start justify-between gap-4 border-b border-[#f7dfeb] px-6 py-5">
+              <div>
+                <h3 className="text-lg font-extrabold text-[#3f2b3f]">{language === "vi" ? "Chi tiết yêu cầu nghỉ" : "Break Request Details"}</h3>
+                <p className="mt-1 text-sm text-[#a88a9d]">{language === "vi" ? "Thông tin chi tiết về yêu cầu nghỉ phép." : "Detailed information about the break request."}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDetailOpen(false);
+                  setSelectedBreak(null);
+                }}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#f2bfd4] bg-white text-[#ea4f93] transition hover:bg-[#fff5f8]"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 space-y-5">
+              <div className="grid gap-4">
+                <div className="rounded-2xl border border-[#f7dfeb] bg-[#fff9fc] p-4">
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-sm font-semibold text-[#69708a]">{language === "vi" ? "Trạng thái:" : "Status:"}</span>
+                    {getStatusBadge(selectedBreak.status)}
+                  </div>
+                  
+                  <div className="space-y-3 text-sm text-[#3f2b3f]">
+                    <div className="flex justify-between border-b border-[#f7dfeb] pb-2">
+                      <span className="text-[#a88a9d] font-medium">{language === "vi" ? "Ngày nghỉ:" : "Break Date:"}</span>
+                      <span className="font-semibold">{dayjs(selectedBreak.breakDate).format("DD/MM/YYYY")}</span>
+                    </div>
+                    
+                    <div className="flex justify-between border-b border-[#f7dfeb] pb-2">
+                      <span className="text-[#a88a9d] font-medium">{language === "vi" ? "Thời gian:" : "Time:"}</span>
+                      <span className="font-semibold">{selectedBreak.startTime?.substring(0, 5)} - {selectedBreak.endTime?.substring(0, 5)}</span>
+                    </div>
+                    
+                    <div className="flex flex-col gap-1 border-b border-[#f7dfeb] pb-2">
+                      <span className="text-[#a88a9d] font-medium">{language === "vi" ? "Lý do:" : "Reason:"}</span>
+                      <p className="font-semibold whitespace-pre-wrap">{selectedBreak.reason || "-"}</p>
+                    </div>
+
+                    {selectedBreak.rejectReason && (
+                      <div className="flex flex-col gap-1">
+                        <span className="text-rose-500 font-medium">{language === "vi" ? "Phản hồi từ chối:" : "Rejection Reason:"}</span>
+                        <p className="font-semibold text-rose-600 whitespace-pre-wrap">{selectedBreak.rejectReason}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-[#f7dfeb] p-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDetailOpen(false);
+                  setSelectedBreak(null);
+                }}
+                className="w-full inline-flex h-11 items-center justify-center rounded-2xl bg-[#fff9fc] border border-[#f2bfd4] text-sm font-bold text-[#ea4f93] hover:bg-[#fff5f8] transition"
+              >
+                {language === "vi" ? "Đóng" : "Close"}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -1,5 +1,6 @@
 import { Button, Modal, Table, Descriptions, Image, Divider, Timeline, Card, Tag, Badge, List, Avatar, Popover } from "antd";
 import {
+  AlarmClock,
   Armchair,
   Bell,
   Calendar,
@@ -29,6 +30,7 @@ import {
   UserRound,
   X,
   XCircle,
+  Zap,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
@@ -1234,7 +1236,7 @@ export function ReceptionistBookingDetailPage() {
                   className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-[#F3E2EC] bg-[#FFF5F8] hover:bg-[#FCE2EE] px-5 py-3.5 text-xs font-bold text-[#E84F93] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs"
                 >
                   <Printer size={16} />
-                  {t("receptionist.payments.printReceipt") || "Print Receipt"}
+                  {language === "vi" ? "In Hóa đơn" : "Print Receipt"}
                 </button>
               </div>
             </div>
@@ -1307,7 +1309,7 @@ export function ReceptionistBookingDetailPage() {
           </DetailCard>
 
           {/* CUSTOMER REVIEW WIDGET */}
-          <DetailCard title={t("receptionist.common.feedback") || "Customer Review Widget"}>
+          <DetailCard title={language === "vi" ? "Đánh giá khách hàng" : "Customer Review Widget"}>
             <div className="bg-[#FFF9FB] p-3.5 rounded-2xl border border-[#F3E2EC] space-y-2.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
@@ -1333,8 +1335,8 @@ export function ReceptionistBookingDetailPage() {
 
           {/* BOOKING OPERATIONS TIMELINE */}
           <DetailCard
-            title="Booking Operations Timeline"
-            subtitle="Real-time timestamped audit log"
+            title={language === "vi" ? "Dòng thời gian hoạt động đặt lịch" : "Booking Operations Timeline"}
+            subtitle={language === "vi" ? "Nhật ký kiểm tra theo thời gian thực" : "Real-time timestamped audit log"}
             badge={isBookingHistoriesLoading ? "Loading..." : `${bookingHistories.length} Events`}
           >
             {isBookingHistoriesLoading ? (
@@ -1492,8 +1494,8 @@ export function ReceptionistBookingDetailPage() {
                   <span className="rounded-full bg-[#E84F93] px-3 py-0.5 text-[10px] font-bold uppercase text-white shadow-2xs">
                     {isNail ? "✨ Dịch Vụ Móng Nail" : "💅 Dịch Vụ Salon"}
                   </span>
-                  <span className="text-xs font-bold text-[#E84F93]">
-                    ⏱️ Thời gian: {selectedServiceRow.duration || "--"}
+                  <span className="flex items-center justify-center gap-1.5 text-xs font-bold text-[#E84F93]">
+                    <AlarmClock size={12} /> {isVi ? "Tổng thời gian:" : "Total duration:"} {selectedServiceRow.duration || "--"}
                   </span>
                 </div>
                 <h3 className="mt-2 text-base font-bold text-[#2B182B]">
@@ -1780,7 +1782,7 @@ export function ReceptionistBookingDetailPage() {
                           {/* Time badge (Estimated Time) */}
                           <div className="flex items-center gap-2 text-xs shrink-0">
                             <span className="font-bold text-[#E84F93]">
-                              🕒 Dự kiến: {String(procedure.estimatedStartTime || "--").slice(0, 5)} - {String(procedure.estimatedEndTime || "--").slice(0, 5)}
+                              <Clock size={12} /> {isVi ? "Dự kiến" : "Estimated"}: {String(procedure.estimatedStartTime || "--").slice(0, 5)} - {String(procedure.estimatedEndTime || "--").slice(0, 5)}
                             </span>
                             <span className="rounded-full bg-[#FFF0F6] px-2.5 py-0.5 text-[11px] font-bold text-[#E84F93] border border-[#F3D6E5]">
                               {formatDurationMinutes(procedure.duration || 0)}
@@ -1840,13 +1842,13 @@ export function ReceptionistBookingDetailPage() {
 
                           {/* Right: Time Breakdown & Overlap Badges */}
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="inline-flex items-center gap-1 rounded-full border border-[#DDD6FE] bg-[#F5F3FF] px-2.5 py-1 text-[11px] font-bold text-[#6D28D9]">
-                              ⚡ Thao tác: {procedure.activeDuration ?? 0}m
+                            <span className="flex items-center justify-center gap-1.5 inline-flex items-center gap-1 rounded-full border border-[#DDD6FE] bg-[#F5F3FF] px-2.5 py-1 text-[11px] font-bold text-[#6D28D9]">
+                              <Zap size={12} /> Thao tác: {procedure.activeDuration ?? 0}m
                             </span>
 
                             {hasPassive && (
-                              <span className="inline-flex items-center gap-1 rounded-full border border-[#BAE6FD] bg-[#F0F9FF] px-2.5 py-1 text-[11px] font-bold text-[#0284C7]">
-                                ⏳ Hơ máy / Chờ: {procedure.passiveDuration}m
+                              <span className="flex items-center justify-center gap-1.5 inline-flex items-center gap-1 rounded-full border border-[#BAE6FD] bg-[#F0F9FF] px-2.5 py-1 text-[11px] font-bold text-[#0284C7]">
+                                <Hourglass size={12} /> Hơ máy / Chờ: {procedure.passiveDuration}m
                               </span>
                             )}
 
@@ -1855,8 +1857,8 @@ export function ReceptionistBookingDetailPage() {
                                 ✨ Overlap (Rảnh {procedure.passiveDuration ?? 0}m)
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-500">
-                                🔒 Làm liên tục
+                              <span className="flex items-center justify-center gap-1.5 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-500">
+                                <LockKeyhole size={12} /> Làm liên tục
                               </span>
                             )}
                           </div>
