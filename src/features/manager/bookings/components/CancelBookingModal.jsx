@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { cancelBooking } from "../services/bookingsService";
 import { motion } from "framer-motion";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 const CANCEL_REASONS = [
   { label: "Customer requested cancellation", value: "customer_request" },
@@ -21,6 +22,8 @@ export function CancelBookingModal({
   onSuccess,
   booking = {},
 }) {
+  const { language } = useLanguage();
+  const isVi = language === "vi";
   const [isLoading, setIsLoading] = useState(false);
   const [reason, setReason] = useState("");
   const [details, setDetails] = useState("");
@@ -41,13 +44,13 @@ export function CancelBookingModal({
       setIsLoading(true);
       const fullReason = details ? `${reason} - ${details}` : reason;
       await cancelBooking(bookingId, fullReason, booking?.holdToken);
-      toast.success("Booking cancelled successfully!");
+      toast.success(isVi ? "Đã hủy lịch hẹn thành công!" : "Booking cancelled successfully!");
       onSuccess?.();
       onClose();
       resetForm();
     } catch (err) {
       console.error("Failed to cancel booking:", err);
-      toast.error("Failed to cancel booking.");
+      toast.error(isVi ? "Đã hủy lịch hẹn thất bại." : "Failed to cancel booking.");
     } finally {
       setIsLoading(false);
     }
@@ -86,8 +89,8 @@ export function CancelBookingModal({
             <XCircle size={26} className="drop-shadow-md animate-pulse" />
           </div>
           <div>
-            <h2 className="text-xl font-bold tracking-tight">Cancel Booking</h2>
-            <p className="mt-1 text-xs text-amber-100/90 font-medium">This action will cancel the customer's appointment request</p>
+            <h2 className="text-xl font-bold tracking-tight">{isVi ? "Hủy lịch hẹn" : "Cancel Booking"}</h2>
+            <p className="mt-1 text-xs text-amber-100/90 font-medium">{isVi ? "Thao tác này sẽ hủy yêu cầu đặt lịch của khách hàng" : "This action will cancel the customer's appointment request"}</p>
           </div>
         </div>
       </div>
@@ -98,9 +101,9 @@ export function CancelBookingModal({
         <div className="flex gap-3 rounded-2xl border border-[#ffecca] bg-[#fffbf4] p-4 shadow-[0_2px_8px_rgba(219,133,32,0.03)]">
           <AlertCircle size={18} className="shrink-0 text-[#db8520] mt-0.5" />
           <div>
-            <p className="text-xs font-extrabold text-[#7c4d16]">Important Notice</p>
+            <p className="text-xs font-extrabold text-[#7c4d16]">{isVi ? "Thông báo quan trọng" : "Important Notice"}</p>
             <p className="mt-1 text-xs text-[#a3723b] leading-relaxed font-medium">
-              Cancelling an appointment will trigger an automated notification to the customer and may impact their service experience.
+              {isVi ? "Hủy lịch hẹn sẽ gửi thông báo tự động đến khách hàng và có thể ảnh hưởng đến trải nghiệm dịch vụ của họ." : "Cancelling an appointment will trigger an automated notification to the customer and may impact their service experience."}
             </p>
           </div>
         </div>
@@ -109,7 +112,7 @@ export function CancelBookingModal({
         {Object.keys(booking).length > 0 && (
           <div className="space-y-3 rounded-2xl border border-[#ffdcb5]/60 bg-gradient-to-b from-[#fffcf8] to-[#fff6ec] p-4 shadow-[0_4px_16px_rgba(219,133,32,0.02)]">
             <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#db8520]/80">
-              Booking Details
+              {isVi ? "Chi tiết lịch hẹn" : "Booking Details"}
             </h3>
             <div className="grid grid-cols-2 gap-x-4 gap-y-3 pt-1">
               {booking.customerName && (
@@ -118,7 +121,7 @@ export function CancelBookingModal({
                     <User size={14} />
                   </div>
                   <div>
-                    <p className="text-[9px] text-[#8e7b89] font-semibold uppercase tracking-wider">Customer</p>
+                    <p className="text-[9px] text-[#8e7b89] font-semibold uppercase tracking-wider">{isVi ? "Khách hàng" : "Customer"}</p>
                     <p className="font-extrabold text-[#402542] text-[13px]">{booking.customerName}</p>
                   </div>
                 </div>
@@ -129,14 +132,14 @@ export function CancelBookingModal({
                     <Clock size={14} />
                   </div>
                   <div>
-                    <p className="text-[9px] text-[#8e7b89] font-semibold uppercase tracking-wider">Time Slot</p>
+                    <p className="text-[9px] text-[#8e7b89] font-semibold uppercase tracking-wider">{isVi ? "Thời gian" : "Time Slot"}</p>
                     <p className="font-extrabold text-[#402542] text-[13px]">{booking.time} ({booking.date})</p>
                   </div>
                 </div>
               )}
               {booking.totalPrice && (
                 <div className="col-span-2 flex items-center justify-between border-t border-[#ffdcb5]/30 pt-2 mt-1 text-xs">
-                  <span className="font-semibold text-[#8e7b89]">Total Amount:</span>
+                  <span className="font-semibold text-[#8e7b89]">{isVi ? "Tổng giá trị:" : "Total Amount:"}</span>
                   <span className="text-base font-bold text-[#db8520]">{booking.totalPrice}</span>
                 </div>
               )}
@@ -147,12 +150,12 @@ export function CancelBookingModal({
         {/* Reason Selection */}
         <div className="space-y-1.5">
           <label className="text-[10px] font-bold uppercase tracking-wider text-[#8b7282]">
-            Cancellation Reason <span className="text-[#db8520] font-bold">*</span>
+            {isVi ? "Lý do hủy" : "Cancellation Reason"} <span className="text-[#db8520] font-bold">*</span>
           </label>
           <Select
             value={reason || undefined}
             onChange={setReason}
-            placeholder="Select cancellation reason..."
+            placeholder={isVi ? "Chọn lý do hủy..." : "Select cancellation reason..."}
             disabled={isLoading}
             options={CANCEL_REASONS}
             style={{
@@ -164,12 +167,12 @@ export function CancelBookingModal({
         {/* Details Field */}
         <div className="space-y-1.5">
           <label className="text-[10px] font-bold uppercase tracking-wider text-[#8b7282]">
-            Additional Notes (Optional)
+            {isVi ? "Ghi chú thêm (Tùy chọn)" : "Additional Notes (Optional)"}
           </label>
           <Input.TextArea
             value={details}
             onChange={(e) => setDetails(e.target.value)}
-            placeholder="Provide additional details regarding this cancellation..."
+            placeholder={isVi ? "Cung cấp thông tin chi tiết về việc hủy này..." : "Provide additional details regarding this cancellation..."}
             rows={3}
             maxLength={300}
             disabled={isLoading}
@@ -186,11 +189,11 @@ export function CancelBookingModal({
 
         {/* Info Box */}
         <div className="space-y-2 rounded-2xl border border-[#ffdcb5]/60 bg-[#fffdfb] p-4 shadow-[0_2px_8px_rgba(219,133,32,0.02)]">
-          <p className="text-xs font-extrabold text-[#7c4d16]">After cancellation:</p>
+          <p className="text-xs font-extrabold text-[#7c4d16]">{isVi ? "Sau khi hủy:" : "After cancellation:"}</p>
           <ul className="space-y-1 text-xs text-[#a3723b] font-medium leading-relaxed">
-            <li>• Customer will receive a cancellation update notification</li>
-            <li>• Booking status will be set to Cancelled permanently</li>
-            <li>• Deposit refunds (if applicable) will follow salon terms</li>
+            <li>{isVi ? "Khách hàng sẽ nhận được thông báo hủy lịch hẹn" : "Customer will receive a cancellation update notification"}</li>
+            <li>{isVi ? "Trạng thái lịch hẹn sẽ được đặt là Hủy vĩnh viễn" : "Booking status will be set to Cancelled permanently"}</li>
+            <li>{isVi ? "Việc hoàn tiền đặt cọc (nếu có) sẽ tuân theo điều khoản của salon" : "Deposit refunds (if applicable) will follow salon terms"}</li>
           </ul>
         </div>
 
@@ -202,7 +205,7 @@ export function CancelBookingModal({
           className="text-xs"
         >
           <span className="text-[#7a6176] font-medium">
-            I have read, understood, and agree to <span className="font-extrabold text-[#db8520]">cancel this booking</span>
+            {isVi ? "Tôi đã đọc, hiểu và đồng ý hủy lịch hẹn này" : "I have read, understood, and agree to cancel this booking"} <span className="font-extrabold text-[#db8520]"></span>
           </span>
         </Checkbox>
 
@@ -215,7 +218,7 @@ export function CancelBookingModal({
             disabled={isLoading}
           >
             <X size={14} />
-            Keep Booking
+            {isVi ? "Giữ lại lịch hẹn" : "Keep Booking"}
           </button>
           <button
             type="button"
@@ -228,7 +231,7 @@ export function CancelBookingModal({
             ) : (
               <>
                 <XCircle size={14} />
-                Confirm Cancellation
+                {isVi ? "Xác nhận hủy" : "Confirm Cancellation"}
               </>
             )}
           </button>

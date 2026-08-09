@@ -409,6 +409,8 @@ function BoardTaskCard({
   const passiveDuration = task.passiveDuration ?? 0;
   const hasPassive = passiveDuration > 0;
   const [showDetails, setShowDetails] = useState(false);
+  const { language } = useLanguage();
+  const isVi = language === "vi";
 
   return (
     <div
@@ -467,11 +469,11 @@ function BoardTaskCard({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] ${theme.chipClassName}`}>
-              Step {task.stepOrder || 0}
+              {isVi ? `Bước ${task.stepOrder || 0}` : `Step ${task.stepOrder || 0}`}
             </span>
             {task.isMainStep ? (
               <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] ${theme.chipClassName}`}>
-                Main
+                {isVi ? "Chính" : "Main"}
               </span>
             ) : null}
           </div>
@@ -490,15 +492,15 @@ function BoardTaskCard({
       >
         {/* Basic Meta Grid */}
         <div className="mt-3 grid grid-cols-2 gap-2">
-          <MiniInfo label="Customer" value={task.customerName} className={theme.infoClassName} />
-          <MiniInfo label="Chair" value={task.chairName || "--"} className={theme.infoClassName} />
+          <MiniInfo label={isVi ? "Khách hàng" : "Customer"} value={task.customerName} className={theme.infoClassName} />
+          <MiniInfo label={isVi ? "Ghế" : "Chair"} value={task.chairName || "--"} className={theme.infoClassName} />
           <MiniInfo
-            label="Date"
+            label={isVi ? "Ngày" : "Date"}
             value={formatDate(task.bookingDate) || "--"}
             className={theme.infoClassName}
           />
           <MiniInfo
-            label="Total Time"
+            label={isVi ? "Tổng thời gian" : "Total Time"}
             value={formatDurationMinutes(task.duration)}
             className={theme.infoClassName}
           />
@@ -509,24 +511,24 @@ function BoardTaskCard({
           <div className="flex flex-wrap items-center justify-between gap-1 text-[11px] font-bold">
             <span className="inline-flex items-center gap-1 text-yellow-600">
               <Zap size={13} strokeWidth={2.5} />
-              Active: {activeDuration}m
+              {isVi ? "Hoạt động:" : "Active:"} {activeDuration}m
             </span>
 
             {hasPassive && (
               <span className="inline-flex items-center gap-1 text-[#0284C7]">
                 <Hourglass size={13} strokeWidth={2.5} />
-                Passive: {passiveDuration}m
+                {isVi ? "Thụ động" : "Passive"}: {passiveDuration}m
               </span>
             )}
             {(hasPassive || task.canOverlap) ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-[#ECFDF5] px-2 py-0.5 text-[10px] font-bold text-[#047857] border border-[#A7F3D0]">
                 <Sparkles size={12} />
-                Overlap ({passiveDuration}m free)
+                {isVi ? "Thực hiện chéo" : "Overlap"} ({passiveDuration}m free)
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-600">
                 <LockKeyhole size={12} />
-                Continuous
+                {isVi ? "Liên tục" : "Continuous"}
               </span>
             )}
           </div>
@@ -536,12 +538,13 @@ function BoardTaskCard({
             <div className="flex items-center justify-between text-blue-600 font-medium opacity-80">
               <span className="flex items-center justify-center gap-1.5">
                 <Clock size={12} />
-                Estimated: {formatTaskTime(task.estimatedStartTime || task.startTime)} - {formatTaskTime(task.estimatedEndTime)}</span>
+                {isVi ? "Dự kiến" : "Estimated"} : {formatTaskTime(task.estimatedStartTime || task.startTime)} - {formatTaskTime(task.estimatedEndTime)}
+              </span>
             </div>
             {(task.actualStartTime || task.actualEndTime) && (
               <div className="flex items-center justify-center align-center gap-2 rounded-xl bg-gradient-to-r from-emerald-100/90 via-emerald-50 to-teal-50 px-3 py-1.5 text-emerald-950 border border-emerald-300 shadow-2xs">
                 <span className="font-bold text-[11px] text-emerald-800 flex items-center gap-1">
-                  <AlarmClock size={13} /> Actually do:
+                  <AlarmClock size={13} /> {isVi ? "Thực tế" : "Actually do"}:
                 </span>
                 <span className="font-bold text-xs text-emerald-700 tracking-tight">
                   {formatTaskTime(task.actualStartTime)} ~ {task.actualEndTime ? formatTaskTime(task.actualEndTime) : "Doing..."}
@@ -569,7 +572,7 @@ function BoardTaskCard({
                 to={task.bookingId ? getStaffBookingDetailRoute(task.bookingId) : ROUTES.staffBookings}
                 className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#f3d5e2] bg-white px-3 py-1 text-[11px] font-bold text-[#d94f92] transition hover:bg-[#fff5fa]"
               >
-                View
+                {isVi ? "Xem chi tiết" : "View Details"}
                 <ArrowRight size={12} />
               </Link>
             ))}

@@ -2582,7 +2582,7 @@ export const translations = {
     superAdmin: "Quản trị viên",
     salonManager: "Quản lý Salon",
     receptionist: "Lễ tân",
-    nailArtist: "Nghệ sĩ làm móng",
+    nailArtist: "Nhân viên làm móng",
     adminConsole: "Bảng điều khiển Admin",
     managerPortal: "Cổng quản lý",
     receptionDesk: "Bàn lễ tân",
