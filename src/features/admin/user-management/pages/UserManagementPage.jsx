@@ -26,6 +26,7 @@ import {
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import {
   USER_STATUS_STYLES,
+  USER_ROLE_OPTIONS,
 } from "../services/mockUsers";
 import { fetchAdminUsers } from "../services/userManagementService";
 import { fetchAdminSalons } from "../../salon-management/services/salonManagementService";
@@ -246,6 +247,16 @@ export function UserManagementPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
+
+  const handleRoleChange = useCallback((value) => {
+    setSelectedRole(value);
+    setMetaData((current) => ({ ...current, currentPage: 1 }));
+  }, []);
+
+  const handleSalonChange = useCallback((value) => {
+    setSelectedSalonId(value);
+    setMetaData((current) => ({ ...current, currentPage: 1 }));
+  }, []);
 
   useEffect(() => {
     if (!location.state?.flashMessage) {
@@ -496,7 +507,7 @@ export function UserManagementPage() {
         </div>
       ),
     },
-     {
+    {
       title: <SortableHeader label={t("userManagement.detail.phoneLabel")} sortKey="phone" selectedSort={selectedSort} onToggle={handleHeaderSort} />,
       key: "contact",
       render: (_, user) => (
@@ -660,44 +671,44 @@ export function UserManagementPage() {
                 </div>
               ) : displayedUsers.length ? (
                 displayedUsers.map((user) => (
-                <article
-                  key={user.id}
-                  className="rounded-[16px] border border-[#f8dce8] bg-[#fffafb] p-4"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-xs font-extrabold text-white">
-                      {user.avatar}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-bold text-[#432744]">{user.name}</p>
-                        <SmallTag className={getRoleTone(user.role)}>
-                          {getRoleLabel(user.role || user.displayRole, t)}
-                        </SmallTag>
+                  <article
+                    key={user.id}
+                    className="rounded-[16px] border border-[#f8dce8] bg-[#fffafb] p-4"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-xs font-extrabold text-white">
+                        {user.avatar}
                       </div>
-                      <p className="mt-1 text-sm text-[#6b5668]">{user.email}</p>
-                      <p className="mt-1 text-[11px] text-[#d197b0]">{user.phone}</p>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.14em] text-[#c694ad]">
-                        {user.salon}
-                      </p>
-                      <p className="mt-1 text-sm text-[#8a7082]">{user.lastActive}</p>
-                    </div>
-                    <div className="text-right">
-                      <span
-                        className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold ${USER_STATUS_STYLES[user.statusLabel]}`}
-                      >
-                        {getStatusLabel(user.status || user.statusLabel, t)}
-                      </span>
-                      <div className="mt-2 flex justify-end">
-                        <ActionDropdown items={getActionItems(user)} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-bold text-[#432744]">{user.name}</p>
+                          <SmallTag className={getRoleTone(user.role)}>
+                            {getRoleLabel(user.role || user.displayRole, t)}
+                          </SmallTag>
+                        </div>
+                        <p className="mt-1 text-sm text-[#6b5668]">{user.email}</p>
+                        <p className="mt-1 text-[11px] text-[#d197b0]">{user.phone}</p>
                       </div>
                     </div>
-                  </div>
-                </article>
+                    <div className="mt-4 flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.14em] text-[#c694ad]">
+                          {user.salon}
+                        </p>
+                        <p className="mt-1 text-sm text-[#8a7082]">{user.lastActive}</p>
+                      </div>
+                      <div className="text-right">
+                        <span
+                          className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold ${USER_STATUS_STYLES[user.statusLabel]}`}
+                        >
+                          {getStatusLabel(user.status || user.statusLabel, t)}
+                        </span>
+                        <div className="mt-2 flex justify-end">
+                          <ActionDropdown items={getActionItems(user)} />
+                        </div>
+                      </div>
+                    </div>
+                  </article>
                 ))
               ) : (
                 <div className="rounded-[16px] border border-[#f8dce8] bg-[#fffafb] p-4 text-center text-sm text-[#8a7082]">
