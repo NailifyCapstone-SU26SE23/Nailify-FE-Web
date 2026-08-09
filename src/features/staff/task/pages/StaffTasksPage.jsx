@@ -534,7 +534,7 @@ function BoardTaskCard({
           {/* Estimated Schedule & Actual Execution Time */}
           <div className="flex flex-col gap-1.5 text-[10px]">
             <div className="flex items-center justify-between text-blue-600 font-medium opacity-80">
-              <span className="inline-flex items-center gap-1">
+              <span className="flex items-center justify-center gap-1.5">
                 <Clock size={12} />
                 Estimated: {formatTaskTime(task.estimatedStartTime || task.startTime)} - {formatTaskTime(task.estimatedEndTime)}</span>
             </div>

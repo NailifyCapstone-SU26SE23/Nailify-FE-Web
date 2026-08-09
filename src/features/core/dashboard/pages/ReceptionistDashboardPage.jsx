@@ -591,7 +591,7 @@ export function ReceptionistDashboardPage() {
   const getActionItems = (bookingId, status) => [
     {
       key: "view",
-      label: t("receptionist.dashboard.viewDetail") || "View Booking",
+      label: language === "vi" ? "Xem lịch hẹn" : "View Booking",
       icon: Eye,
       onSelect: () => navigate(getReceptionistBookingDetailRoute(bookingId)),
     },

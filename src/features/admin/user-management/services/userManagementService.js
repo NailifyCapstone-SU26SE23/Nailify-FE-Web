@@ -209,18 +209,32 @@ function mapRoleToApi(role) {
   }
 }
 
+const isSalonRole = (role) => {
+  const normalized = String(role || "").trim().toLowerCase();
+  return ["staff", "staff_artist", "receptionist", "manager"].includes(normalized);
+};
+
 export async function createAdminUser(formValues) {
+  const payload = {
+    email: String(formValues?.email || "").trim(),
+    password: String(formValues?.password || ""),
+    firstName: String(formValues?.firstName || "").trim(),
+    lastName: String(formValues?.lastName || "").trim(),
+    phone: String(formValues?.phone || "").trim(),
+    avatarUrl: String(formValues?.avatarUrl || "").trim(),
+    role: mapRoleToApi(formValues?.role),
+  };
+
+  if (isSalonRole(formValues?.role)) {
+    const sId = String(formValues?.salonId || "").trim();
+    payload.salonId = sId ? sId : null;
+  } else {
+    payload.salonId = null;
+  }
+
   const response = await axiosClient.post(
     "/Users",
-    {
-      email: String(formValues?.email || "").trim(),
-      password: String(formValues?.password || ""),
-      firstName: String(formValues?.firstName || "").trim(),
-      lastName: String(formValues?.lastName || "").trim(),
-      phone: String(formValues?.phone || "").trim(),
-      avatarUrl: String(formValues?.avatarUrl || "").trim(),
-      role: mapRoleToApi(formValues?.role),
-    },
+    payload,
     {
       headers: getAuthHeaders(),
     },
@@ -245,7 +259,13 @@ export async function updateAdminUser(userId, formValues) {
   if (formValues?.lastName !== undefined) payload.lastName = String(formValues.lastName || "").trim();
   if (formValues?.phone !== undefined) payload.phone = String(formValues.phone || "").trim();
   if (formValues?.status !== undefined) payload.status = String(formValues.status || "").trim();
-  if (formValues?.salonId !== undefined) payload.salonId = formValues.salonId;
+  
+  if (isSalonRole(formValues?.role)) {
+    const sId = String(formValues?.salonId || "").trim();
+    payload.salonId = sId ? sId : null;
+  } else {
+    payload.salonId = null;
+  }
 
   console.log("updateAdminUser - userId:", normalizedUserId);
   console.log("updateAdminUser - payload:", payload);

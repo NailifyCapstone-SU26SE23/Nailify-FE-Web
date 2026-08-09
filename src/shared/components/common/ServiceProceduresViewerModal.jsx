@@ -1,6 +1,6 @@
 import React from "react";
 import { Modal, Button } from "antd";
-import { Check, Clock, User, AlertCircle } from "lucide-react";
+import { Check, Clock, User, AlertCircle, AlarmClock, Zap, LockKeyhole, Hourglass, Sparkles } from "lucide-react";
 import { PropTypes } from "../../utils/propTypes";
 import { useLanguage } from "../../hooks/useLanguage";
 
@@ -104,8 +104,8 @@ export function ServiceProceduresViewerModal({
                 <span className="rounded-xl border border-[#F3E2EC] bg-white px-3 py-1.5 font-bold text-[#2B182B]">
                   {isVi ? `Số lượng: x${service.quantity || 1}` : `Qty: x${service.quantity || 1}`}
                 </span>
-                <span className="rounded-xl border border-[#F3E2EC] bg-white px-3 py-1.5 font-bold text-[#E84F93]">
-                  ⏱️ {isVi ? "Tổng thời gian:" : "Total duration:"} {service.durationLabel || "--"}
+                <span className="flex items-center justify-center gap-1.5 rounded-xl border border-[#F3E2EC] bg-white px-3 py-1.5 font-bold text-[#E84F93]">
+                  <AlarmClock size={12} /> {isVi ? "Tổng thời gian:" : "Total duration:"} {service.durationLabel || "--"}
                 </span>
               </div>
             </div>
@@ -174,8 +174,8 @@ export function ServiceProceduresViewerModal({
 
                         {/* Estimated Time Badge */}
                         <div className="flex items-center gap-2 text-xs shrink-0">
-                          <span className="font-extrabold text-[#E84F93]">
-                            🕒 {isVi ? "Dự kiến" : "Estimated"}: {formatTimeOnly(procedure.estimatedStartTime)} - {formatTimeOnly(procedure.estimatedEndTime)}
+                          <span className="flex items-center justify-center gap-1.5 font-extrabold text-[#E84F93]">
+                            <Clock size={12} /> {isVi ? "Dự kiến" : "Estimated"}: {formatTimeOnly(procedure.estimatedStartTime)} - {formatTimeOnly(procedure.estimatedEndTime)}
                           </span>
                           <span className="rounded-full bg-[#FFF0F6] px-2.5 py-0.5 text-[11px] font-bold text-[#E84F93] border border-[#F3D6E5]">
                             {procedure.duration ?? 0} {isVi ? "phút" : "min"}
@@ -213,8 +213,8 @@ export function ServiceProceduresViewerModal({
                             <button
                               type="button"
                               onClick={(e) => {
-                                  e.stopPropagation();
-                                  onClaimProcedure(procedure);
+                                e.stopPropagation();
+                                onClaimProcedure(procedure);
                               }}
                               disabled={claimingProcedureId === procedure.bookingProcedureId}
                               className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#E84F93] to-[#8B5CF6] px-4 py-1.5 text-xs font-bold text-white shadow-2xs hover:scale-105 transition cursor-pointer disabled:opacity-50"
@@ -228,8 +228,8 @@ export function ServiceProceduresViewerModal({
                             <button
                               type="button"
                               onClick={(e) => {
-                                  e.stopPropagation();
-                                  onCompleteProcedure(procedure);
+                                e.stopPropagation();
+                                onCompleteProcedure(procedure);
                               }}
                               disabled={procedureStatusUpdates && procedureStatusUpdates[procedure.bookingProcedureId]}
                               className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#10B981] to-[#059669] px-4 py-1.5 text-xs font-bold text-white shadow-2xs hover:scale-105 transition cursor-pointer disabled:opacity-50"
@@ -245,23 +245,23 @@ export function ServiceProceduresViewerModal({
 
                         {/* Right: Time Breakdown & Overlap Badges */}
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="inline-flex items-center gap-1 rounded-full border border-[#DDD6FE] bg-[#F5F3FF] px-2.5 py-1 text-[11px] font-bold text-[#6D28D9]">
-                            ⚡ {isVi ? `Thao tác trực tiếp: ${procedure.activeDuration ?? 0}m` : `Direct operation: ${procedure.activeDuration ?? 0}m`}
+                          <span className="flex items-center justify-center gap-1.5 inline-flex items-center gap-1 rounded-full border border-[#DDD6FE] bg-[#F5F3FF] px-2.5 py-1 text-[11px] font-bold text-[#6D28D9]">
+                            <Zap size={12} /> {isVi ? `Thao tác trực tiếp: ${procedure.activeDuration ?? 0}m` : `Direct operation: ${procedure.activeDuration ?? 0}m`}
                           </span>
 
                           {hasPassive && (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-[#BAE6FD] bg-[#F0F9FF] px-2.5 py-1 text-[11px] font-bold text-[#0284C7]">
-                              ⏳ {isVi ? `Hơ máy / Chờ khô: ${procedure.passiveDuration}m` : `Curing / Waiting: ${procedure.passiveDuration}m`}
+                            <span className="flex items-center justify-center gap-1.5 inline-flex items-center gap-1 rounded-full border border-[#BAE6FD] bg-[#F0F9FF] px-2.5 py-1 text-[11px] font-bold text-[#0284C7]">
+                              <Hourglass size={12} /> {isVi ? `Hơ máy / Chờ khô: ${procedure.passiveDuration}m` : `Curing / Waiting: ${procedure.passiveDuration}m`}
                             </span>
                           )}
 
                           {(hasPassive || procedure.canOverlap) ? (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-[#A7F3D0] bg-[#ECFDF5] px-2.5 py-1 text-[11px] font-bold text-[#047857]">
-                              ✨ Overlap ({isVi ? `Rảnh ${procedure.passiveDuration ?? 0}m` : `Free ${procedure.passiveDuration ?? 0}m`})
+                            <span className="flex items-center justify-center gap-1.5 inline-flex items-center gap-1 rounded-full border border-[#A7F3D0] bg-[#ECFDF5] px-2.5 py-1 text-[11px] font-bold text-[#047857]">
+                              <Sparkles size={12} /> Overlap ({isVi ? `Rảnh ${procedure.passiveDuration ?? 0}m` : `Free ${procedure.passiveDuration ?? 0}m`})
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-500">
-                              🔒 {isVi ? "Làm liên tục" : "Continuous work"}
+                            <span className="flex items-center justify-center gap-1.5 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-500">
+                              <LockKeyhole size={12} /> {isVi ? "Làm liên tục" : "Continuous work"}
                             </span>
                           )}
                         </div>

@@ -31,7 +31,9 @@ import {
   X,
   Smartphone,
   UserX,
-  Armchair
+  Armchair,
+  AlarmClock,
+  Zap
 } from "lucide-react";
 import { Table, Spin, Modal, Input, Select, Tag } from "antd";
 import toast from "react-hot-toast";
@@ -370,10 +372,10 @@ export function ReceptionistCustomerListPage() {
         try {
           const artistId = artist.nailArtistId || artist.id;
           if (!artistId) return null;
-          
+
           const scheduleRes = await receptionistWalkInBookingService.getArtistSchedule(artistId, todayStr, todayStr);
           const schedules = Array.isArray(scheduleRes) ? scheduleRes : scheduleRes?.data || [];
-          
+
           if (schedules && schedules.length > 0) {
             return artist;
           }
@@ -1194,8 +1196,8 @@ export function ReceptionistCustomerListPage() {
                             </div>
                             <h5 className="font-bold text-[#221F26] text-sm mt-1">{g.customerName}</h5>
                           </div>
-                          <span className="text-[10px] font-semibold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-md border border-gray-100">
-                            ⏱️ {g.duration}
+                          <span className="flex items-center justify-center gap-1.5 text-[10px] font-semibold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-md border border-gray-100">
+                            <AlarmClock size={12} /> {g.duration}
                           </span>
                         </div>
 
@@ -1281,8 +1283,8 @@ export function ReceptionistCustomerListPage() {
                             </span>
                             <h5 className="font-bold text-[#221F26] text-sm mt-1">{g.customerName}</h5>
                           </div>
-                          <span className="text-[10px] font-semibold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-md border border-gray-100">
-                            ⏱️ {g.duration}
+                          <span className="flex items-center justify-center gap-1.5 text-[10px] font-semibold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-md border border-gray-100">
+                            <AlarmClock size={12} /> {g.duration}
                           </span>
                         </div>
 
@@ -1725,8 +1727,8 @@ export function ReceptionistCustomerListPage() {
               <div>
                 <label className="block text-xs font-bold text-[#221F26] mb-1 flex items-center justify-between">
                   <span>{language === "vi" ? "Thời Gian Phục Vụ Dự Kiến" : "Estimated Service Duration"}</span>
-                  <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
-                    {language === "vi" ? "⚡ Tự động tính toán" : "⚡ Auto-calculated"}
+                  <span className="flex items-center justify-center gap-1.5 text-[10px] text-emerald-600 font-bold flex items-center gap-1">
+                    <Zap size={12} /> {language === "vi" ? "Tự động tính toán" : "Auto-calculated"}
                   </span>
                 </label>
                 <div className="flex items-center gap-2.5 p-2 px-3 bg-gradient-to-r from-emerald-50 via-teal-50/60 to-emerald-50 border border-emerald-200/90 rounded-xl shadow-2xs">
@@ -1889,8 +1891,8 @@ export function ReceptionistCustomerListPage() {
                 </div>
               ) : (
                 <span className="text-xs text-gray-400 font-medium">
-                  {language === "vi" 
-                    ? "💡 Chọn dịch vụ hoặc mẫu móng để tính tổng tiền & gợi ý thợ rảnh" 
+                  {language === "vi"
+                    ? "💡 Chọn dịch vụ hoặc mẫu móng để tính tổng tiền & gợi ý thợ rảnh"
                     : "💡 Select services or variants to calculate total price & suggest free artists"}
                 </span>
               )}

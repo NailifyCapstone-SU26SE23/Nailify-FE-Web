@@ -559,7 +559,7 @@ export function AdminDashboardPage() {
       {/* <div className="flex flex-col gap-4 bg-white px-8 py-5 shadow-sm border-b border-slate-200 md:flex-row md:items-center md:justify-between z-50 sticky top-0"> */}
       <div
         className="
-                  sticky top-0 z-50
+                  sticky top-[-20px] z-50
                   flex flex-col gap-4
                   border-b border-white/30
                   bg-[linear-gradient(135deg,rgba(255,236,244,0.8)_0%,rgba(255,248,220,0.8)_100%)]
