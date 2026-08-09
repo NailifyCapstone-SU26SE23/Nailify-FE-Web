@@ -376,6 +376,19 @@ export async function managerApproveQuote(customerNailId, finalPrice, finalDurat
   }
 }
 
+export async function fetchProcedures(params = {}) {
+  try {
+    const response = await axiosClient.get(`/Procedures`, {
+      params,
+      headers: getAuthHeaders(),
+    });
+    return unwrapResponse(response, "Failed to fetch procedures.");
+  } catch (error) {
+    console.error("Error fetching procedures:", error.response?.data || error);
+    throw new Error(error.response?.data?.message || error.message || "Failed to fetch procedures.", { cause: error });
+  }
+}
+
 export async function managerReject(customerNailId, reason) {
   const normalizedId = String(customerNailId || "").trim();
   const normalizedReason = String(reason || "").trim();

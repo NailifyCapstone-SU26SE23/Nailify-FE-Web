@@ -868,18 +868,7 @@ export function CustomerNailPage() {
             {/* Soft decorative background glow */}
             <div className="absolute right-1/4 top-1/2 -translate-y-1/2 w-48 h-20 bg-pink-300/10 rounded-full blur-3xl pointer-events-none" />
             <div className="max-w-2xl relative z-10">
-              <div className="flex items-center gap-3.5">
-                <div className="flex h-12 w-12 items-center justify-center rounded-[18px] bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-white shadow-[0_10px_22px_rgba(234,79,147,0.25)] transition-transform duration-500 hover:rotate-12">
-                  <Palette size={22} />
-                </div>
-                <div>
-                  <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-[#402542] via-[#8a2f4c] to-[#ea4f93] bg-clip-text text-transparent">{t("manager.customerNails.title") || "Customer Nails"}</h2>
-                  <p className="text-xs font-semibold text-[#b07a94] mt-0.5">{t("manager.customerNails.desc") || "Manage customer nail designs and monitor new requests in real time."}</p>
-                </div>
-              </div>
-              <p className="mt-4 text-xs leading-relaxed text-[#8f6b80] font-medium max-w-xl">
-                {language === "vi" ? "Trang tự động làm mới sau mỗi 3 giây để quản lý có thể nhận các yêu cầu thiết kế tùy chỉnh mới nhất ngay khi chúng xuất hiện." : "The page refreshes automatically every 3 seconds so managers can catch new custom design submissions as soon as they arrive."}
-              </p>
+              {/* Removed redundant header texts */}
             </div>
             <div className="flex flex-col items-start gap-3 lg:items-end relative z-10">
               <div className={`inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-[10px] font-extrabold transition shadow-sm ${isRefreshing

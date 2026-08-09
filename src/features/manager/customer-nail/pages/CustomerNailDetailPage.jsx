@@ -1127,35 +1127,69 @@ export function CustomerNailDetailPage() {
               </div>
             </div>
 
-            {/* Right side: Stats Cards */}
-            <div className="grid gap-3 grid-cols-3 lg:w-auto lg:min-w-[420px]">
-              {/* Price card */}
-              <div className="rounded-2xl border border-amber-100 bg-[#fffdfa] p-4 shadow-[0_10px_25px_rgba(217,119,6,0.03)] flex flex-col justify-between">
-                <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#d97706]">
-                  {language === "vi" ? "Giá" : "Price"}
-                </span>
-                <span className="mt-2 text-base font-bold text-[#d97706] truncate">
-                  {formatVND(nail?.price, nail?.status)}
-                </span>
+            {/* Right side: Stats Cards & Actions */}
+            <div className="flex flex-col gap-3 lg:w-auto lg:min-w-[420px]">
+              <div className="grid gap-3 grid-cols-3">
+                {/* Price card */}
+                <div className="rounded-2xl border border-amber-100 bg-[#fffdfa] p-4 shadow-[0_10px_25px_rgba(217,119,6,0.03)] flex flex-col justify-between">
+                  <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#d97706]">
+                    {language === "vi" ? "Giá" : "Price"}
+                  </span>
+                  <span className="mt-2 text-base font-bold text-[#d97706] truncate">
+                    {formatVND(nail?.price, nail?.status)}
+                  </span>
+                </div>
+                {/* Duration card */}
+                <div className="rounded-2xl border border-purple-100 bg-[#fbfaff] p-4 shadow-[0_10px_25px_rgba(139,92,246,0.03)] flex flex-col justify-between">
+                  <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#7c3aed]">
+                    {language === "vi" ? "Thời gian" : "Duration"}
+                  </span>
+                  <span className="mt-2 text-base font-bold text-[#7c3aed] truncate">
+                    {formatDuration(nail?.duration, nail?.status)}
+                  </span>
+                </div>
+                {/* Created Date card */}
+                <div className="rounded-2xl border border-pink-100 bg-[#fffafc] p-4 shadow-[0_10px_25px_rgba(236,72,153,0.03)] flex flex-col justify-between">
+                  <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#db2777]">
+                    {language === "vi" ? "Ngày tạo" : "Created"}
+                  </span>
+                  <span className="mt-2 text-[11px] font-bold text-[#db2777] leading-snug">
+                    {formatDate(nail?.createdAt)}
+                  </span>
+                </div>
               </div>
-              {/* Duration card */}
-              <div className="rounded-2xl border border-purple-100 bg-[#fbfaff] p-4 shadow-[0_10px_25px_rgba(139,92,246,0.03)] flex flex-col justify-between">
-                <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#7c3aed]">
-                  {language === "vi" ? "Thời gian" : "Duration"}
-                </span>
-                <span className="mt-2 text-base font-bold text-[#7c3aed] truncate">
-                  {formatDuration(nail?.duration, nail?.status)}
-                </span>
-              </div>
-              {/* Created Date card */}
-              <div className="rounded-2xl border border-pink-100 bg-[#fffafc] p-4 shadow-[0_10px_25px_rgba(236,72,153,0.03)] flex flex-col justify-between">
-                <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#db2777]">
-                  {language === "vi" ? "Ngày tạo" : "Created"}
-                </span>
-                <span className="mt-2 text-[11px] font-bold text-[#db2777] leading-snug">
-                  {formatDate(nail?.createdAt)}
-                </span>
-              </div>
+
+              {/* Action Buttons Integrated into Header */}
+              {nail?.status === "PendingReview" && !nail?.assignedStaff && (
+                <button
+                  onClick={handleOpenAssignModal}
+                  disabled={isSubmitting}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] px-4 py-3.5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(234,79,147,0.25)] transition-all hover:scale-[1.02] hover:shadow-[0_12px_25px_rgba(234,79,147,0.35)] disabled:opacity-70"
+                >
+                  <UserRound size={18} />
+                  {language === "vi" ? "Giao nhiệm vụ cho nghệ sĩ" : "Assign Artist"}
+                </button>
+              )}
+              {(nail?.status === "Reviewed" || nail?.status === "Quoted") && (
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setIsApproveModalOpen(true)}
+                    disabled={isSubmitting}
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#34d399] to-[#059669] px-4 py-3.5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(5,150,105,0.25)] transition-all hover:scale-[1.02] hover:shadow-[0_12px_25px_rgba(5,150,105,0.35)] disabled:opacity-70"
+                  >
+                    <CheckCircle2 size={18} />
+                    {language === "vi" ? "Xác nhận báo giá" : "Confirm Quote"}
+                  </button>
+                  <button
+                    onClick={() => setIsRejectModalOpen(true)}
+                    disabled={isSubmitting}
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#fb7185] to-[#e11d48] px-4 py-3.5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(225,29,72,0.25)] transition-all hover:scale-[1.02] hover:shadow-[0_12px_25px_rgba(225,29,72,0.35)] disabled:opacity-70"
+                  >
+                    <XCircle size={18} />
+                    {language === "vi" ? "Từ chối báo giá" : "Reject Quote"}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1655,59 +1689,7 @@ export function CustomerNailDetailPage() {
             )
           }
 
-          {/* Assign Staff Button - Only show if status is PendingReview and no staff assigned */}
-          {
-            nail?.status === "PendingReview" && !nail?.assignedStaff && (
-              <div className="space-y-4">
-                <SectionHeading
-                  title={language === "vi" ? "Giao nhiệm vụ cho nghệ sĩ" : "Assign Artist"}
-                  subtitle={language === "vi" ? "Chọn nghệ sĩ để tiếp tục xem xét yêu cầu." : "Choose a staff artist so the review can continue with the right owner."}
-                />
-                <div className="rounded-[24px] border border-[#f4d6e4] bg-[linear-gradient(180deg,#fffafb_0%,#fff6fa_100%)] p-5">
-                  <ActionButton
-                    onClick={handleOpenAssignModal}
-                    disabled={isSubmitting}
-                    icon={UserRound}
-                    className="w-fit bg-[#ea4f93] hover:bg-[#df4588]"
-                  >
-                    {language === "vi" ? "Giao nhiệm vụ cho nghệ sĩ" : "Assign Artist"}
-                  </ActionButton>
-                </div>
-              </div>
-            )
-          }
 
-          {/* Confirm/Reject Buttons - Only show when status is Reviewed or Quoted */}
-          {
-            (nail?.status === "Reviewed" || nail?.status === "Quoted") && (
-              <div className="space-y-4">
-                <SectionHeading
-                  title={language === "vi" ? "Hành động xem xét" : "Review Actions"}
-                  subtitle={language === "vi" ? "Hoàn thiện thiết kế đã báo giá bằng cách xác nhận hoặc từ chối." : "Finalize the quoted design by confirming or rejecting it."}
-                />
-                <div className="rounded-[24px] border border-[#f4d6e4] bg-[linear-gradient(180deg,#fffafb_0%,#fff5f9_100%)] p-5">
-                  <div className="flex flex-wrap gap-3">
-                    <ActionButton
-                      onClick={() => setIsApproveModalOpen(true)}
-                      disabled={isSubmitting}
-                      icon={CheckCircle2}
-                      className="w-fit bg-[#2fa25f] hover:bg-[#2a9255]"
-                    >
-                      {language === "vi" ? "Xác nhận báo giá" : "Confirm Quote"}
-                    </ActionButton>
-                    <ActionButton
-                      onClick={() => setIsRejectModalOpen(true)}
-                      disabled={isSubmitting}
-                      icon={XCircle}
-                      className="w-fit bg-[#e1447f] hover:bg-[#d63e75]"
-                    >
-                      {language === "vi" ? "Từ chối báo giá" : "Reject Quote"}
-                    </ActionButton>
-                  </div>
-                </div>
-              </div>
-            )
-          }
         </div>
       </Card >
 
