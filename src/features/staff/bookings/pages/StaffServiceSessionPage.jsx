@@ -3567,7 +3567,7 @@ export function StaffServiceSessionPage() {
           setServiceCatalogPage(page);
         }}
         onConfirm={handleAddExtraService}
-        title={isVi ? "Cập nhật dịch vụ làm thêm" : "Update Booking Services"}
+        title={isVi ? "Cập nhật dịch vụ làm thêm" : "Add Extra Services"}
         description={isVi ? "Thêm nhanh dịch vụ phát sinh vào lịch của khách." : "Select extra services to add into the current booking before starting the service session."}
       />
 

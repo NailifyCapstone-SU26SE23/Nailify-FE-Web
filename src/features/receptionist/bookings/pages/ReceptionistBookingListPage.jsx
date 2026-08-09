@@ -423,7 +423,7 @@ export function ReceptionistBookingListPage() {
           items={[
             {
               key: "view",
-              label: t("receptionist.dashboard.viewDetail") || "View Booking",
+              label: language === "vi" ? "Xem chi tiết" : "View Booking",
               icon: Eye,
               onSelect: () => navigate(getReceptionistBookingDetailRoute(booking.bookingId)),
             },
@@ -431,8 +431,8 @@ export function ReceptionistBookingListPage() {
               ? [
                 {
                   key: "assign-artist",
-                  label: booking.artistName && booking.artistName !== "Unassigned" 
-                    ? t("receptionist.bookings.changeArtist") || "Change Nail Artist" 
+                  label: booking.artistName && booking.artistName !== "Unassigned"
+                    ? t("receptionist.bookings.changeArtist") || "Change Nail Artist"
                     : t("receptionist.bookings.assignArtistTitle") || "Assign Nail Artist",
                   icon: UserRound,
                   className: "text-[#7c63d8]",
@@ -879,7 +879,7 @@ export function ReceptionistBookingListPage() {
                       items={[
                         {
                           key: "view",
-                          label: t("receptionist.dashboard.viewDetail") || "View Booking",
+                          label: language === "vi" ? "Xem chi tiết" : "View Booking",
                           icon: Eye,
                           onSelect: () => navigate(getReceptionistBookingDetailRoute(booking.bookingId)),
                         },
