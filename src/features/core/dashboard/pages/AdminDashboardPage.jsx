@@ -54,7 +54,7 @@ const defaultWidgets = [
 ];
 
 function WidgetWrapper({ id, widget, onPin, onHide, onDragStart, onDragOver, onDrop, onDragEnter, children, isPinned }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const isFullWidth = ['rankedSalons'].includes(id);
 
   return (
@@ -119,7 +119,7 @@ WidgetWrapper.propTypes = {
 };
 
 export function AdminDashboardPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [selectedSalonId, setSelectedSalonId] = useState(null);
   const [dateRange, setDateRange] = useState([dayjs().subtract(7, 'day'), dayjs()]);
   const [filterMode, setFilterMode] = useState("Week");

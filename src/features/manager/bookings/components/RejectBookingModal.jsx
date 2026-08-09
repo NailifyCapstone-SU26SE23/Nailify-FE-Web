@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { rejectBooking } from "../services/bookingsService";
 import { motion } from "framer-motion";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 const REJECT_REASONS = [
   { label: "Customer not responding to calls/messages", value: "no_response" },
@@ -26,15 +27,16 @@ export function RejectBookingModal({
   const [reason, setReason] = useState("");
   const [details, setDetails] = useState("");
   const [isConfirmed, setIsConfirmed] = useState(false);
+  const { language } = useLanguage();
 
   const handleReject = async () => {
     if (!reason) {
-      toast("Please select a rejection reason", { icon: "⚠️" });
+      toast(language === "vi" ? "Vui lòng chọn lý do từ chối" : "Please select a rejection reason", { icon: "⚠️" });
       return;
     }
 
     if (!isConfirmed) {
-      toast("Please confirm the rejection", { icon: "⚠️" });
+      toast(language === "vi" ? "Vui lòng xác nhận việc từ chối" : "Please confirm the rejection", { icon: "⚠️" });
       return;
     }
 
@@ -42,13 +44,13 @@ export function RejectBookingModal({
       setIsLoading(true);
       const fullReason = details ? `${reason} - ${details}` : reason;
       await rejectBooking(bookingId, fullReason);
-      toast.success("Booking rejected successfully!");
+      toast.success(language === "vi" ? "Từ chối yêu cầu đặt lịch thành công!" : "Booking rejected successfully!");
       onSuccess?.();
       onClose();
       resetForm();
     } catch (err) {
       console.error("Failed to reject booking:", err);
-      toast.error("Failed to reject booking.");
+      toast.error(language === "vi" ? "Lỗi từ chối yêu cầu đặt lịch!" : "Failed to reject booking.");
     } finally {
       setIsLoading(false);
     }
@@ -87,8 +89,8 @@ export function RejectBookingModal({
             <XCircle size={26} className="drop-shadow-md animate-pulse" />
           </div>
           <div>
-            <h2 className="text-xl font-bold tracking-tight">Reject Booking</h2>
-            <p className="mt-1 text-xs text-rose-100/90 font-medium">This action will reject the customer's appointment request</p>
+            <h2 className="text-xl font-bold tracking-tight">{language === "vi" ? "Từ chối yêu cầu đặt lịch" : "Reject Booking"}</h2>
+            <p className="mt-1 text-xs text-rose-100/90 font-medium">{language === "vi" ? "Hành động này sẽ từ chối yêu cầu đặt lịch của khách hàng" : "This action will reject the customer's appointment request"}</p>
           </div>
         </div>
       </div>
@@ -99,9 +101,9 @@ export function RejectBookingModal({
         <div className="flex gap-3 rounded-2xl border border-[#ffd4e5] bg-[#fffafc] p-4 shadow-[0_2px_8px_rgba(225,68,127,0.03)]">
           <AlertTriangle size={18} className="shrink-0 text-[#e1447f] mt-0.5" />
           <div>
-            <p className="text-xs font-extrabold text-[#7c2847]">Action Warning</p>
+            <p className="text-xs font-extrabold text-[#7c2847]">{language === "vi" ? "Cảnh báo hành động" : "Action Warning"}</p>
             <p className="mt-1 text-xs text-[#a34468] leading-relaxed font-medium">
-              Rejecting an appointment request cannot be undone. An email/push notification will be sent to the customer immediately.
+              {language === "vi" ? "Hành động này sẽ từ chối yêu cầu đặt lịch của khách hàng" : "Rejecting an appointment request cannot be undone. An email/push notification will be sent to the customer immediately."}
             </p>
           </div>
         </div>
@@ -119,7 +121,7 @@ export function RejectBookingModal({
                     <User size={14} />
                   </div>
                   <div>
-                    <p className="text-[9px] text-[#8e7b89] font-semibold uppercase tracking-wider">Customer</p>
+                    <p className="text-[9px] text-[#8e7b89] font-semibold uppercase tracking-wider">{language === "vi" ? "Khách hàng" : "Customer"}</p>
                     <p className="font-extrabold text-[#402542] text-[13px]">{booking.customerName}</p>
                   </div>
                 </div>
@@ -130,14 +132,14 @@ export function RejectBookingModal({
                     <Clock size={14} />
                   </div>
                   <div>
-                    <p className="text-[9px] text-[#8e7b89] font-semibold uppercase tracking-wider">Time Slot</p>
+                    <p className="text-[9px] text-[#8e7b89] font-semibold uppercase tracking-wider">{language === "vi" ? "Thời gian đặt lịch" : "Time Slot"}</p>
                     <p className="font-extrabold text-[#402542] text-[13px]">{booking.time} ({booking.date})</p>
                   </div>
                 </div>
               )}
               {booking.totalPrice && (
                 <div className="col-span-2 flex items-center justify-between border-t border-[#ffd4e5]/30 pt-2 mt-1 text-xs">
-                  <span className="font-semibold text-[#8e7b89]">Total Value:</span>
+                  <span className="font-semibold text-[#8e7b89]">{language === "vi" ? "Tổng giá trị" : "Total Value"}:</span>
                   <span className="text-base font-bold text-[#e1447f]">{booking.totalPrice}</span>
                 </div>
               )}
@@ -148,12 +150,12 @@ export function RejectBookingModal({
         {/* Reason Selection */}
         <div className="space-y-1.5">
           <label className="text-[10px] font-bold uppercase tracking-wider text-[#8b7282]">
-            Rejection Reason <span className="text-[#e1447f] font-bold">*</span>
+            {language === "vi" ? "Lý do từ chối" : "Rejection Reason"} <span className="text-[#e1447f] font-bold">*</span>
           </label>
           <Select
             value={reason || undefined}
             onChange={setReason}
-            placeholder="Select rejection reason..."
+            placeholder={language === "vi" ? "Chọn lý do từ chối" : "Select rejection reason..."}
             disabled={isLoading}
             options={REJECT_REASONS}
             style={{
@@ -165,12 +167,12 @@ export function RejectBookingModal({
         {/* Details Field */}
         <div className="space-y-1.5">
           <label className="text-[10px] font-bold uppercase tracking-wider text-[#8b7282]">
-            Additional Notes (Optional)
+            {language === "vi" ? "Ghi chú thêm (Tùy chọn)" : "Additional Notes (Optional)"}
           </label>
           <Input.TextArea
             value={details}
             onChange={(e) => setDetails(e.target.value)}
-            placeholder="Provide additional details regarding this rejection..."
+            placeholder={language === "vi" ? "Nhập ghi chú thêm về việc từ chối này..." : "Provide additional details regarding this rejection..."}
             rows={3}
             maxLength={300}
             disabled={isLoading}
@@ -193,7 +195,7 @@ export function RejectBookingModal({
           className="text-xs"
         >
           <span className="text-[#7a6176] font-medium">
-            I confirm that I want to <span className="font-extrabold text-[#e1447f]">reject this appointment</span>
+            {language === "vi" ? "Tôi xác nhận rằng tôi muốn từ chối yêu cầu đặt lịch này" : "I confirm that I want to reject this appointment"}
           </span>
         </Checkbox>
 
@@ -206,7 +208,7 @@ export function RejectBookingModal({
             disabled={isLoading}
           >
             <X size={14} />
-            Keep Request
+            {language === "vi" ? "Giữ yêu cầu" : "Keep Request"}
           </button>
           <button
             type="button"
@@ -219,7 +221,7 @@ export function RejectBookingModal({
             ) : (
               <>
                 <XCircle size={14} />
-                Confirm Rejection
+                {language === "vi" ? "Xác nhận từ chối" : "Confirm Rejection"}
               </>
             )}
           </button>

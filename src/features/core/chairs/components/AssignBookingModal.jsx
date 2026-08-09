@@ -3,6 +3,7 @@ import { Modal, Table, Button, DatePicker, Select } from "antd";
 import toast from "react-hot-toast";
 import dayjs from "dayjs";
 import { chairsService } from "../services/chairsService";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -32,6 +33,8 @@ const getStatusColor = (status) => {
 };
 
 export function AssignBookingModal({ isOpen, onClose, salonId, chair, onSuccess }) {
+
+  const { language } = useLanguage();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [assigningId, setAssigningId] = useState(null);
@@ -73,7 +76,7 @@ export function AssignBookingModal({ isOpen, onClose, salonId, chair, onSuccess 
       setCurrentPage(page);
       setPageSize(size);
     } catch (error) {
-      toast.error("Failed to load bookings");
+      toast.error(language === "vi" ? "Lỗi tải danh sách đặt lịch" : "Failed to load bookings");
     } finally {
       setLoading(false);
     }
@@ -89,11 +92,11 @@ export function AssignBookingModal({ isOpen, onClose, salonId, chair, onSuccess 
     setAssigningId(bookingId);
     try {
       await chairsService.assignBookingToChair(bookingId, chair.chairId);
-      toast.success("Booking assigned successfully!");
+      toast.success(language === "vi" ? "Đặt lịch thành công" : "Booking assigned successfully!");
       onSuccess();
       onClose();
     } catch (error) {
-      toast.error("Failed to assign booking");
+      toast.error(language === "vi" ? "Lỗi đặt lịch" : "Failed to assign booking");
     } finally {
       setAssigningId(null);
     }
@@ -135,13 +138,13 @@ export function AssignBookingModal({ isOpen, onClose, salonId, chair, onSuccess 
       title: "Artist",
       dataIndex: "artistName",
       key: "artistName",
-      render: (text) => <span className="text-slate-600">{text || "Chưa chỉ định"}</span>,
+      render: (text) => <span className="text-slate-600">{text || language === "vi" ? "Chưa chỉ định" : "Not assigned"}</span>,
     },
     {
       title: "Duration",
       dataIndex: "totalDuration",
       key: "totalDuration",
-      render: (mins) => <span className="text-slate-600">{mins} mins</span>,
+      render: (mins) => <span className="text-slate-600">{mins} {language === "vi" ? "phút" : "minutes"}</span>,
     },
     {
       title: "Status",
@@ -165,7 +168,7 @@ export function AssignBookingModal({ isOpen, onClose, salonId, chair, onSuccess 
           onClick={() => handleAssign(record.bookingId)}
           className="!bg-[#ea4f93] hover:!bg-[#d63d7e] border-none !font-semibold !text-[11px] !text-white !px-5 !rounded-md !shadow-sm !shadow-pink-200/50"
         >
-          Assign
+          {language === "vi" ? "Chỉ định" : "Assign"}
         </Button>
       ),
     }
@@ -175,7 +178,7 @@ export function AssignBookingModal({ isOpen, onClose, salonId, chair, onSuccess 
     <Modal
       title={
         <div className="font-bold text-lg text-slate-800">
-          Assign Booking to <span className="text-pink-600">{chair?.chairName}</span>
+          {language === "vi" ? "Chỉ định đặt lịch vào ghế: " : "Assign Booking to "} <span className="text-pink-600">{chair?.chairName}</span>
         </div>
       }
       open={isOpen}
@@ -194,22 +197,22 @@ export function AssignBookingModal({ isOpen, onClose, salonId, chair, onSuccess 
         />
         <Select
           allowClear
-          placeholder="Filter by status"
+          placeholder={language === "vi" ? "Lọc theo trạng thái" : "Filter by status"}
           value={status}
           onChange={(val) => setStatus(val)}
           style={{ width: 180 }}
           options={[
-            { label: 'Pending', value: 'Pending' },
-            { label: 'Approved', value: 'Approved' },
-            { label: 'Rejected', value: 'Rejected' },
-            { label: 'Cancelled', value: 'Cancelled' },
-            { label: 'CheckedIn', value: 'CheckedIn' },
-            { label: 'InProgress', value: 'InProgress' },
-            { label: 'ServiceCompleted', value: 'ServiceCompleted' },
-            { label: 'Completed', value: 'Completed' },
-            { label: 'Repaired', value: 'Repaired' },
-            { label: 'ReschedulePending', value: 'ReschedulePending' },
-            { label: 'RescheduleSuggested', value: 'RescheduleSuggested' },
+            { label: language === "vi" ? "Đang chờ" : "Pending", value: 'Pending' },
+            { label: language === "vi" ? "Đã duyệt" : "Approved", value: 'Approved' },
+            { label: language === "vi" ? "Đã từ chối" : "Rejected", value: 'Rejected' },
+            { label: language === "vi" ? "Đã hủy" : "Cancelled", value: 'Cancelled' },
+            { label: language === "vi" ? "Đã check-in" : "CheckedIn", value: 'CheckedIn' },
+            { label: language === "vi" ? "Đang thực hiện" : "InProgress", value: 'InProgress' },
+            { label: language === "vi" ? "Đã hoàn thành dịch vụ" : "ServiceCompleted", value: 'ServiceCompleted' },
+            { label: language === "vi" ? "Đã hoàn thành" : "Completed", value: 'Completed' },
+            { label: language === "vi" ? "Đã sửa chữa" : "Repaired", value: 'Repaired' },
+            { label: language === "vi" ? "Đang chờ sắp xếp lại" : "ReschedulePending", value: 'ReschedulePending' },
+            { label: language === "vi" ? "Đang đề xuất sắp xếp lại" : "RescheduleSuggested", value: 'RescheduleSuggested' },
           ]}
         />
       </div>

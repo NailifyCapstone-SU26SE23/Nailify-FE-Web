@@ -15,6 +15,7 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { formatDurationLabel } from "../../../../shared/utils/formatDuration";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 const SERVICE_ROWS = [
   {
@@ -75,13 +76,7 @@ const SERVICE_ROWS = [
   },
 ];
 
-const QUICK_STATUS = [
-  ["Current Status", "In Progress"],
-  ["Assigned Artist", "Luna Park"],
-  ["Chair Number", "Chair #03"],
-  ["Est. Finish", "1:05 PM"],
-  ["Check-in Time", "8:55 AM"],
-];
+// QUICK_STATUS is now defined dynamically inside the component function
 
 const ACTION_CENTER = [
   {
@@ -172,6 +167,7 @@ SectionCard.propTypes = {
 };
 
 export function ReceptionistBookingDetail({ booking }) {
+  const { t, language } = useLanguage();
   const [notes, setNotes] = useState(
     "Customer prefers soft pink tones. Allergic to acetone-based removers - use gentle formula only. Requested extra hand massage during spa.",
   );
@@ -182,15 +178,23 @@ export function ReceptionistBookingDetail({ booking }) {
     toast.success(`${label} is ready as a mock receptionist action.`);
   };
 
+  const QUICK_STATUS = [
+    [t("receptionist.common.status") || "Current Status", "In Progress"],
+    [t("receptionist.bookings.artist") || "Assigned Artist", "Luna Park"],
+    [t("receptionist.bookings.assignChairTitle") || "Chair Number", "Chair #03"],
+    [t("receptionist.bookings.estFinish") || "Est. Finish", "1:05 PM"],
+    [t("receptionist.bookings.time") || "Check-in Time", "8:55 AM"],
+  ];
+
   const serviceColumns = [
     {
-      title: "Time",
+      title: t("receptionist.bookings.time") || "Time",
       dataIndex: "time",
       key: "time",
       render: (value) => <span className="text-xs font-bold text-[#eb5b92]">{value}</span>,
     },
     {
-      title: "Service",
+      title: t("receptionist.payments.services") || "Service",
       key: "service",
       render: (_, row) => (
         <div>
@@ -200,7 +204,7 @@ export function ReceptionistBookingDetail({ booking }) {
       ),
     },
     {
-      title: "Nail Artist",
+      title: t("receptionist.bookings.artist") || "Nail Artist",
       key: "artist",
       render: (_, row) => (
         <div className="flex items-center gap-2.5">
@@ -212,7 +216,7 @@ export function ReceptionistBookingDetail({ booking }) {
       ),
     },
     {
-      title: "Duration",
+      title: t("receptionist.bookings.duration") || "Duration",
       dataIndex: "duration",
       key: "duration",
       render: (value) => <span className="text-xs text-[#4a3741]">{formatDurationLabel(value)}</span>,
@@ -228,7 +232,7 @@ export function ReceptionistBookingDetail({ booking }) {
     //   ),
     // },
     {
-      title: "Action",
+      title: t("receptionist.bookings.actions") || "Action",
       key: "action",
       render: (_, row) => (
         <div className="flex gap-2">
@@ -237,14 +241,14 @@ export function ReceptionistBookingDetail({ booking }) {
             onClick={() => handleMockAction(`View ${row.service}`)}
             className="rounded-xl bg-[#fff1f6] px-3 py-1.5 text-[10px] font-bold text-[#eb5b92]"
           >
-            View
+            {t("receptionist.common.view") || "View"}
           </button>
           <button
             type="button"
             onClick={() => handleMockAction(`${row.secondaryAction} ${row.service}`)}
             className={`rounded-xl px-3 py-1.5 text-[10px] font-bold ${row.secondaryTone}`}
           >
-            {row.secondaryAction}
+            {row.secondaryAction === "Edit" ? (t("receptionist.common.edit") || "Edit") : row.secondaryAction === "Manage" ? (t("receptionist.common.manage") || "Manage") : row.secondaryAction}
           </button>
         </div>
       ),
@@ -256,9 +260,9 @@ export function ReceptionistBookingDetail({ booking }) {
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_280px]">
         <div className="space-y-4">
           <SectionCard
-            title="Customer Overview"
-            subtitle={`Booking ${booking.id}`}
-            badge="Active Booking"
+            title={t("receptionist.payments.customerInfo") || "Customer Overview"}
+            subtitle={`${t("receptionist.bookings.bookingId") || "Booking ID"} ${booking.id}`}
+            badge={language === "vi" ? "Đơn Đặt Lịch Hoạt Động" : "Active Booking"}
           >
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex flex-1 items-start gap-4">
@@ -270,57 +274,37 @@ export function ReceptionistBookingDetail({ booking }) {
                     loading="lazy"
                     referrerPolicy="no-referrer"
                   />
-                  {/* <span className="absolute bottom-1 left-1/2 -translate-x-1/2 rounded-full bg-[linear-gradient(90deg,#ef5b92_0%,#f58b77_100%)] px-2 py-0.5 text-[9px] font-extrabold text-white">
-                    VIP
-                  </span> */}
                 </div>
 
                 <div className="flex-1">
                   <p className="text-xl font-bold text-[#4a3741]">{booking.customerName}</p>
-                  {/* <div className="mt-3 flex flex-wrap gap-2">
-                    {["VIP Member", "Sensitive Nails", "Frequent Customer"].map((tag, index) => (
-                      <span
-                        key={tag}
-                        className={[
-                          "rounded-full px-3 py-1 text-[10px] font-bold",
-                          index === 0
-                            ? "border border-[#f3d3df] bg-[#fff1f6] text-[#eb5b92]"
-                            : index === 1
-                              ? "border border-[#f6e1a7] bg-[#fff4cf] text-[#c89516]"
-                              : "border border-[#e4dcff] bg-[#f2edff] text-[#7b68c8]",
-                        ].join(" ")}
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div> */}
 
                   <div className="mt-5 grid gap-4 sm:grid-cols-2">
                     <div className="space-y-3">
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">Phone</p>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">{t("profile.phone") || "Phone"}</p>
                         <p className="mt-1 text-sm font-medium text-[#4a3741]">{booking.customerPhone}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">Last Visit</p>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">{t("receptionist.customers.lastVisit") || "Last Visit"}</p>
                         <p className="mt-1 text-sm font-medium text-[#4a3741]">July 5, 2025</p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">Membership</p>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">{t("receptionist.customers.tier") || "Membership"}</p>
                         <p className="mt-1 text-sm font-extrabold text-[#eb5b92]">Gold Tier</p>
                       </div>
                     </div>
                     <div className="space-y-3">
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">Email</p>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">{t("profile.email") || "Email"}</p>
                         <p className="mt-1 text-sm font-medium text-[#4a3741]">sophia.h@email.com</p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">Preferred Artist</p>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">{t("receptionist.bookings.artist") || "Preferred Artist"}</p>
                         <p className="mt-1 text-sm font-medium text-[#4a3741]">Luna Park</p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">Total Visits</p>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">{t("receptionist.customers.totalVisits") || "Total Visits"}</p>
                         <p className="mt-1 text-sm font-medium text-[#4a3741]">47 visits</p>
                       </div>
                     </div>
@@ -332,7 +316,7 @@ export function ReceptionistBookingDetail({ booking }) {
                 <button
                   type="button"
                   onClick={() => handleMockAction("Call Customer")}
-                  title="Call Customer"
+                  title={t("receptionist.common.call") || "Call Customer"}
                   className="inline-flex items-center justify-center gap-2 rounded-full bg-[#fff1f6] px-4 py-2.5 text-xs font-bold text-[#eb5b92]"
                 >
                   <Phone size={14} />
@@ -340,7 +324,7 @@ export function ReceptionistBookingDetail({ booking }) {
                 <button
                   type="button"
                   onClick={() => handleMockAction("Send Message")}
-                  title="Send Message"
+                  title={t("receptionist.common.message") || "Send Message"}
                   className="inline-flex items-center justify-center gap-2 rounded-full bg-[#f2edff] px-4 py-2.5 text-xs font-bold text-[#7b68c8]"
                 >
                   <Send size={14} />
@@ -349,7 +333,7 @@ export function ReceptionistBookingDetail({ booking }) {
                 <button
                   type="button"
                   onClick={() => handleMockAction("View History")}
-                  title="View History"
+                  title={t("receptionist.common.feedback") || "View History"}
                   className="inline-flex items-center justify-center gap-2 rounded-full bg-[#fff4cf] px-4 py-2.5 text-xs font-bold text-[#c89516]"
                 >
                   <Sparkles size={14} />
@@ -360,9 +344,9 @@ export function ReceptionistBookingDetail({ booking }) {
           </SectionCard>
 
           <SectionCard
-            title="Appointment Details"
-            subtitle="Today's scheduled services"
-            badge="4 Services"
+            title={t("receptionist.bookings.title") || "Appointment Details"}
+            subtitle={t("receptionist.bookings.desc") || "Today's scheduled services"}
+            badge={language === "vi" ? "4 Dịch vụ" : "4 Services"}
           >
             <Table
               rowKey="id"
@@ -374,17 +358,17 @@ export function ReceptionistBookingDetail({ booking }) {
           </SectionCard>
 
           <SectionCard
-            title="Payment Summary"
-            subtitle="Booking financial overview"
-            badge="60% Paid"
+            title={t("receptionist.payments.summaryTitle") || "Payment Summary"}
+            subtitle={t("receptionist.payments.checkoutDesc") || "Booking financial overview"}
+            badge={language === "vi" ? "Đã thanh toán 60%" : "60% Paid"}
           >
             <div className="grid gap-5 lg:grid-cols-[1fr_250px]">
               <div>
                 <div className="space-y-3 text-sm">
                   {[
-                    ["Subtotal", "$285.00"],
-                    ["Gold Member Discount (10%)", "-$28.50"],
-                    ["Deposit Paid", "-$80.00"],
+                    [t("receptionist.payments.subtotal") || "Subtotal", "$285.00"],
+                    [language === "vi" ? "Giảm giá Thành viên Vàng (10%)" : "Gold Member Discount (10%)", "-$28.50"],
+                    [t("receptionist.payments.deposit") || "Deposit Paid", "-$80.00"],
                   ].map(([label, value]) => (
                     <div key={label} className="flex items-center justify-between gap-3">
                       <span className="text-[#8f7b88]">{label}</span>
@@ -395,19 +379,19 @@ export function ReceptionistBookingDetail({ booking }) {
 
                 <div className="mt-4 border-t border-[#f3d7e2] pt-4">
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-sm font-medium text-[#8f7b88]">Remaining Balance</span>
+                    <span className="text-sm font-medium text-[#8f7b88]">{t("receptionist.payments.totalAmount") || "Remaining Balance"}</span>
                     <span className="text-sm font-extrabold text-[#eb5b92]">$176.50</span>
                   </div>
                 </div>
 
                 <div className="mt-4 flex items-end justify-between gap-4">
                   <div>
-                    <p className="text-sm font-bold text-[#4a3741]">Total Amount</p>
+                    <p className="text-sm font-bold text-[#4a3741]">{t("receptionist.payments.totalAmount") || "Total Amount"}</p>
                     <p className="mt-2 text-[1.8rem] font-bold leading-none text-[#eb5b92]">$256.50</p>
                   </div>
                   <div className="text-right text-[11px] text-[#a48796]">
-                    <p>Deposit paid $80.00</p>
-                    <p className="mt-1">Remaining $176.50</p>
+                    <p>{language === "vi" ? "Đã cọc $80.00" : "Deposit paid $80.00"}</p>
+                    <p className="mt-1">{language === "vi" ? "Còn lại $176.50" : "Remaining $176.50"}</p>
                   </div>
                 </div>
 
@@ -426,7 +410,7 @@ export function ReceptionistBookingDetail({ booking }) {
                   className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(90deg,#cf3d82_0%,#ef5b92_100%)] px-4 py-3 text-xs font-extrabold text-white shadow-[0_12px_24px_rgba(235,91,146,0.22)]"
                 >
                   <CreditCard size={14} />
-                  Add Payment
+                  {t("receptionist.payments.checkoutTitle") || "Add Payment"}
                 </button>
                 <button
                   type="button"
@@ -434,7 +418,7 @@ export function ReceptionistBookingDetail({ booking }) {
                   className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#f3d7e2] bg-[#fff3f8] px-4 py-3 text-xs font-extrabold text-[#eb5b92]"
                 >
                   <Printer size={14} />
-                  Print Receipt
+                  {t("receptionist.payments.printReceipt") || "Print Receipt"}
                 </button>
               </div>
             </div>
@@ -458,8 +442,44 @@ export function ReceptionistBookingDetail({ booking }) {
                     <span className={`mx-auto flex h-11 w-11 items-center justify-center rounded-2xl ${item.iconTone}`}>
                       <Icon size={18} />
                     </span>
-                    <p className="mt-3 text-xs font-extrabold text-[#4a3741]">{item.label}</p>
-                    <p className="mt-1 text-[10px] text-[#9f8896]">{item.subtitle}</p>
+                    <p className="mt-3 text-xs font-extrabold text-[#4a3741]">
+                      {item.label === "Check In"
+                        ? t("receptionist.dashboard.checkinBtn") || item.label
+                        : item.label === "Start Service"
+                        ? t("receptionist.bookings.startService") || item.label
+                        : item.label === "Reassign Artist"
+                        ? t("receptionist.bookings.reassignArtist") || item.label
+                        : item.label === "Move Schedule"
+                        ? t("receptionist.bookings.moveSchedule") || item.label
+                        : item.label === "Add Service"
+                        ? t("receptionist.bookings.addService") || item.label
+                        : item.label === "Complete Booking"
+                        ? t("receptionist.bookings.completeBooking") || item.label
+                        : item.label === "Cancel Booking"
+                        ? t("receptionist.bookings.cancelBooking") || item.label
+                        : item.label === "Send Invoice"
+                        ? t("receptionist.bookings.sendInvoice") || item.label
+                        : item.label}
+                    </p>
+                    <p className="mt-1 text-[10px] text-[#9f8896]">
+                      {item.label === "Check In"
+                        ? t("receptionist.bookings.manualCheckInBtn") || item.subtitle
+                        : item.label === "Start Service"
+                        ? t("receptionist.bookings.beginSession") || item.subtitle
+                        : item.label === "Reassign Artist"
+                        ? t("receptionist.bookings.changeStaff") || item.subtitle
+                        : item.label === "Move Schedule"
+                        ? t("receptionist.bookings.rescheduleTime") || item.subtitle
+                        : item.label === "Add Service"
+                        ? t("receptionist.bookings.extraTreatment") || item.subtitle
+                        : item.label === "Complete Booking"
+                        ? t("receptionist.bookings.finalizeSession") || item.subtitle
+                        : item.label === "Cancel Booking"
+                        ? t("receptionist.bookings.voidAppointment") || item.subtitle
+                        : item.label === "Send Invoice"
+                        ? t("receptionist.bookings.emailToClient") || item.subtitle
+                        : item.subtitle}
+                    </p>
                   </button>
                 );
               })}
@@ -468,7 +488,7 @@ export function ReceptionistBookingDetail({ booking }) {
         </div>
 
         <aside className="space-y-4">
-          <SectionCard title="Quick Status">
+          <SectionCard title={t("receptionist.common.status") || "Quick Status"}>
             <div className="space-y-3 text-sm">
               {QUICK_STATUS.map(([label, value], index) => (
                 <div key={label} className="flex items-center justify-between gap-3">
@@ -488,8 +508,8 @@ export function ReceptionistBookingDetail({ booking }) {
 
             <div className="mt-5">
               <div className="mb-2 flex items-center justify-between text-[10px] text-[#a48796]">
-                <span>Progress</span>
-                <span>2 of 4 done</span>
+                <span>{language === "vi" ? "Tiến độ" : "Progress"}</span>
+                <span>{language === "vi" ? "Đã xong 2 trong 4" : "2 of 4 done"}</span>
               </div>
               <div className="h-2 rounded-full bg-[#f6d6e3]">
                 <div className="h-full w-1/2 rounded-full bg-[linear-gradient(90deg,#eb5b92_0%,#f4869f_100%)]" />
@@ -497,7 +517,7 @@ export function ReceptionistBookingDetail({ booking }) {
             </div>
           </SectionCard>
 
-          <SectionCard title="Latest Review">
+          <SectionCard title={t("receptionist.common.feedback") || "Latest Review"}>
             <div className="flex items-start gap-3">
               <img crossOrigin="anonymous"
                 src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80"
@@ -521,7 +541,7 @@ export function ReceptionistBookingDetail({ booking }) {
             </p>
           </SectionCard>
 
-          <SectionCard title="Internal Notes">
+          <SectionCard title={language === "vi" ? "Ghi chú nội bộ" : "Internal Notes"}>
             <textarea
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
@@ -529,10 +549,10 @@ export function ReceptionistBookingDetail({ booking }) {
             />
             <button
               type="button"
-              onClick={() => toast.success("Receptionist notes saved in mock UI.")}
+              onClick={() => toast.success(language === "vi" ? "Đã lưu ghi chú trong giao diện mô phỏng." : "Receptionist notes saved in mock UI.")}
               className="mt-4 w-full rounded-xl border border-[#f3d7e2] bg-[#fff1f6] px-4 py-3 text-xs font-extrabold text-[#eb5b92]"
             >
-              Save Notes
+              {language === "vi" ? "Lưu ghi chú" : "Save Notes"}
             </button>
           </SectionCard>
 

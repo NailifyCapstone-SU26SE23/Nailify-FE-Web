@@ -16,19 +16,20 @@ import { ROUTES } from "../../../../shared/constants/routes";
 import { receptionistWalkInBookingService } from "../services/receptionistWalkInBookingService";
 import { NailVariantSelectionModal } from "../components/NailVariantSelectionModal";
 import { getReceptionistSalonId } from "../../bookings/services/receptionistBookingService";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 const TIME_SLOTS = [
-  { time: "10:00 - 10:30 AM", status: "Available", tone: "border-[#bfe7ca] bg-[#effcf3] text-[#2f9557]" },
-  { time: "10:30 - 11:00 AM", status: "Busy", tone: "border-[#ffd6df] bg-[#fff3f7] text-[#df4f84]" },
-  { time: "11:00 - 11:30 AM", status: "Available", tone: "border-[#bfe7ca] bg-[#effcf3] text-[#2f9557]" },
-  { time: "11:30 AM - 12:00 PM", status: "Available", tone: "border-[#bfe7ca] bg-[#effcf3] text-[#2f9557]" },
-  { time: "12:00 - 12:30 PM", status: "Busy", tone: "border-[#ffd6df] bg-[#fff3f7] text-[#df4f84]" },
-  { time: "12:30 - 1:00 PM", status: "Available", tone: "border-[#bfe7ca] bg-[#effcf3] text-[#2f9557]" },
+  { time: "10:00 - 10:30 AM", status: "Available", statusVi: "Trống", tone: "border-[#bfe7ca] bg-[#effcf3] text-[#2f9557]" },
+  { time: "10:30 - 11:00 AM", status: "Busy", statusVi: "Bận", tone: "border-[#ffd6df] bg-[#fff3f7] text-[#df4f84]" },
+  { time: "11:00 - 11:30 AM", status: "Available", statusVi: "Trống", tone: "border-[#bfe7ca] bg-[#effcf3] text-[#2f9557]" },
+  { time: "11:30 AM - 12:00 PM", status: "Available", statusVi: "Trống", tone: "border-[#bfe7ca] bg-[#effcf3] text-[#2f9557]" },
+  { time: "12:00 - 12:30 PM", status: "Busy", statusVi: "Bận", tone: "border-[#ffd6df] bg-[#fff3f7] text-[#df4f84]" },
+  { time: "12:30 - 1:00 PM", status: "Available", statusVi: "Trống", tone: "border-[#bfe7ca] bg-[#effcf3] text-[#2f9557]" },
 ];
 
-function formatDateLabel(dateValue) {
-  if (!dateValue) return "Not selected";
-  return new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(dateValue));
+function formatDateLabel(dateValue, language = "vi") {
+  if (!dateValue) return language === "vi" ? "Chưa chọn" : "Not selected";
+  return new Intl.DateTimeFormat(language === "vi" ? "vi-VN" : "en-US", { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(dateValue));
 }
 
 function formatVND(amount) {
@@ -57,6 +58,7 @@ function DashboardCard({ title, description, icon, children, className = "" }) {
 export function ReceptionistWalkInBookingCreatePage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t, language } = useLanguage();
   const [showCreateConfirm, setShowCreateConfirm] = useState(false);
 
   const [customerSearchQuery, setCustomerSearchQuery] = useState(location.state?.prefillCustomerName ?? "");
@@ -187,7 +189,7 @@ export function ReceptionistWalkInBookingCreatePage() {
   const handleCreate = async () => {
     try {
       if (!bookingItems.length) {
-        toast.error("Vui lòng chọn ít nhất 1 dịch vụ hoặc mẫu móng.");
+        toast.error(language === "vi" ? "Vui lòng chọn ít nhất 1 dịch vụ hoặc mẫu móng." : "Please select at least 1 service or nail design.");
         return;
       }
 
@@ -200,9 +202,9 @@ export function ReceptionistWalkInBookingCreatePage() {
         assignedNailArtistId: selectedArtist?.nailArtistId || null,
         guestName: selectedCustomer
           ? `${selectedCustomer.firstName || ""} ${selectedCustomer.lastName || ""}`.trim()
-          : "Khách Vãng Lai",
+          : (language === "vi" ? "Khách Vãng Lai" : "Walk-in Guest"),
         guestPhone: selectedCustomer?.phone && selectedCustomer.phone !== "Mới đăng ký" ? selectedCustomer.phone : null,
-        requestNote: "Tạo từ màn hình tiếp đón Walk-In",
+        requestNote: language === "vi" ? "Tạo từ màn hình tiếp đón Walk-In" : "Created from Walk-In reception panel",
         bookingItems: bookingItems.map((item) => ({
           nailVariantId: item.type === "variant" ? item.nailVariantId : null,
           serviceId: item.type === "service" ? item.serviceId : null,
@@ -212,10 +214,10 @@ export function ReceptionistWalkInBookingCreatePage() {
 
       try {
         await receptionistWalkInBookingService.createWalkInQueue(payload);
-        toast.success(`Đã thêm ${selectedCustomer?.firstName || "khách vãng lai"} vào Sảnh chờ Walk-In thành công!`);
+        toast.success(language === "vi" ? `Đã thêm ${selectedCustomer?.firstName || "khách vãng lai"} vào Sảnh chờ Walk-In thành công!` : `Added ${selectedCustomer?.firstName || "guest"} to Lobby Queue successfully!`);
       } catch (apiErr) {
         console.warn("Backend API WalkInQueue failed, fallback to local Queue state:", apiErr);
-        toast.success(`Đã đăng ký sảnh chờ Walk-In cho ${selectedCustomer?.firstName || "khách vãng lai"}!`);
+        toast.success(language === "vi" ? `Đã đăng ký sảnh chờ Walk-In cho ${selectedCustomer?.firstName || "khách vãng lai"}!` : `Registered Walk-in Lobby Queue for ${selectedCustomer?.firstName || "guest"}!`);
       }
 
       setShowCreateConfirm(false);
@@ -224,7 +226,7 @@ export function ReceptionistWalkInBookingCreatePage() {
       });
     } catch (err) {
       console.error(err);
-      toast.error("Có lỗi xảy ra khi đưa khách vào sảnh chờ.");
+      toast.error(language === "vi" ? "Có lỗi xảy ra khi đưa khách vào sảnh chờ." : "An error occurred while placing guest in lobby.");
       setShowCreateConfirm(false);
     }
   };
@@ -234,8 +236,8 @@ export function ReceptionistWalkInBookingCreatePage() {
       <div className="rounded-[24px] border border-[#f3d7e3] bg-white px-4 py-4 shadow-[0_12px_28px_rgba(236,72,153,0.05)] sm:px-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-[#412643]">Walk-in Customer Booking</h1>
-            <p className="mt-1 text-sm text-[#c092a8]">Create booking and check-in for walk-in customers</p>
+            <h1 className="text-2xl font-bold text-[#412643]">{language === "vi" ? "Đặt Lịch & Check-In Khách Walk-In" : "Walk-in Customer Booking"}</h1>
+            <p className="mt-1 text-sm text-[#c092a8]">{language === "vi" ? "Tạo lịch dịch vụ nhanh và check-in vào sảnh chờ cho khách vãng lai" : "Create booking and check-in for walk-in customers"}</p>
           </div>
         </div>
       </div>
@@ -243,7 +245,7 @@ export function ReceptionistWalkInBookingCreatePage() {
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
         <div className="space-y-4">
 
-          <DashboardCard title="Customer Search" description="Search for an existing customer" icon={Search}>
+          <DashboardCard title={language === "vi" ? "Tìm Kiếm Khách Hàng" : "Customer Search"} description={language === "vi" ? "Tìm kiếm tài khoản thành viên sẵn có" : "Search for an existing customer"} icon={Search}>
             <div className="flex flex-col gap-3 md:flex-row">
               <label className="relative flex-1">
                 <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#b48ca0]" />
@@ -255,7 +257,7 @@ export function ReceptionistWalkInBookingCreatePage() {
                       setSelectedCustomer(null);
                     }
                   }}
-                  placeholder="Search customer by phone number or name..."
+                  placeholder={language === "vi" ? "Tìm kiếm theo tên hoặc số điện thoại..." : "Search customer by phone number or name..."}
                   className="h-12 w-full rounded-2xl border border-[#f3d4e1] bg-[#fff9fc] pl-11 pr-4 text-sm text-[#5c4559] outline-none placeholder:text-[#d19ab3] focus:border-[#ee6cb5]"
                 />
               </label>
@@ -264,11 +266,11 @@ export function ReceptionistWalkInBookingCreatePage() {
                 state={{ continueToBooking: true }}
                 className="inline-flex items-center justify-center rounded-xl border border-[#f3d4e1] bg-white px-5 py-3 text-sm font-bold text-[#ea4f93]"
               >
-                + Register New Customer
+                {language === "vi" ? "+ Đăng Ký Khách Mới" : "+ Register New Customer"}
               </Link>
             </div>
 
-            {isSearchingCustomer && <p className="mt-2 text-xs text-[#b48ca0]">Searching...</p>}
+            {isSearchingCustomer && <p className="mt-2 text-xs text-[#b48ca0]">{language === "vi" ? "Đang tìm..." : "Searching..."}</p>}
             {apiCustomers.length > 0 && !selectedCustomer ? (
               <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {apiCustomers.map((customer) => {
@@ -288,7 +290,7 @@ export function ReceptionistWalkInBookingCreatePage() {
                           <p className="text-sm font-bold text-[#432744]">{customer.firstName} {customer.lastName}</p>
                           <p className="mt-1 text-[11px] text-[#b48ca0]">{customer.phone}</p>
                         </div>
-                        <span className="rounded-full bg-[#fff1f7] px-2.5 py-1 text-[10px] font-bold text-[#ea4f93]">Customer</span>
+                        <span className="rounded-full bg-[#fff1f7] px-2.5 py-1 text-[10px] font-bold text-[#ea4f93]">{language === "vi" ? "Khách Hàng" : "Customer"}</span>
                       </div>
                     </button>
                   );
@@ -300,14 +302,14 @@ export function ReceptionistWalkInBookingCreatePage() {
                 <div>
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-bold text-[#432744]">
-                      Selected Customer: {selectedCustomer.firstName} {selectedCustomer.lastName}
+                      {language === "vi" ? `Khách Hàng Đã Chọn: ${selectedCustomer.firstName} ${selectedCustomer.lastName}` : `Selected Customer: ${selectedCustomer.firstName} ${selectedCustomer.lastName}`}
                     </p>
                     <span className="rounded-full bg-[#ea4f93] px-2.5 py-0.5 text-[10px] font-bold text-white">
-                      Registered Profile
+                      {language === "vi" ? "Tài Khoản Đăng Ký" : "Registered Profile"}
                     </span>
                   </div>
                   <p className="text-xs text-[#b48ca0] mt-1">
-                    Phone: {selectedCustomer.phone || "No phone"} {selectedCustomer.email ? ` • Email: ${selectedCustomer.email}` : ""}
+                    {language === "vi" ? "SĐT" : "Phone"}: {selectedCustomer.phone || (language === "vi" ? "Chưa có" : "No phone")} {selectedCustomer.email ? ` • Email: ${selectedCustomer.email}` : ""}
                   </p>
                 </div>
                 <button
@@ -318,25 +320,25 @@ export function ReceptionistWalkInBookingCreatePage() {
                   }}
                   className="text-xs font-bold text-[#ea4f93] hover:underline cursor-pointer"
                 >
-                  Change Customer
+                  {language === "vi" ? "Đổi Khách Hàng" : "Change Customer"}
                 </button>
               </div>
             )}
           </DashboardCard>
 
-          <DashboardCard title="Service Selection" description="Select Nail Designs and Extra Services" icon={Sparkles}>
+          <DashboardCard title={language === "vi" ? "Lựa Chọn Dịch Vụ" : "Service Selection"} description={language === "vi" ? "Chọn các mẫu thiết kế móng và dịch vụ đi kèm" : "Select Nail Designs and Extra Services"} icon={Sparkles}>
             <div className="flex gap-2 border-b border-[#f3d4e1] pb-2">
               <button
                 onClick={() => setActiveTab("Designs")}
                 className={`px-4 py-2 text-sm font-bold transition-colors ${activeTab === "Designs" ? "border-b-2 border-[#ea4f93] text-[#ea4f93]" : "text-[#b48ca0] hover:text-[#ea4f93]"}`}
               >
-                Nail Designs
+                {language === "vi" ? "Mẫu Thiết Kế Móng" : "Nail Designs"}
               </button>
               <button
                 onClick={() => setActiveTab("Services")}
                 className={`px-4 py-2 text-sm font-bold transition-colors ${activeTab === "Services" ? "border-b-2 border-[#ea4f93] text-[#ea4f93]" : "text-[#b48ca0] hover:text-[#ea4f93]"}`}
               >
-                Extra Services
+                {language === "vi" ? "Dịch Vụ Phụ" : "Extra Services"}
               </button>
             </div>
 
@@ -355,11 +357,11 @@ export function ReceptionistWalkInBookingCreatePage() {
                       </div>
                       <div className="p-3">
                         <p className="text-sm font-bold text-[#432744] truncate">{design.name}</p>
-                        <p className="mt-1 text-[11px] font-bold text-[#ea4f93]">From {formatVND(design.minPrice)}</p>
+                        <p className="mt-1 text-[11px] font-bold text-[#ea4f93]">{language === "vi" ? "Từ " : "From "}{formatVND(design.minPrice)}</p>
                       </div>
                     </button>
                   ))}
-                  {!nailDesigns.length && <p className="text-sm text-[#b48ca0]">No designs available.</p>}
+                  {!nailDesigns.length && <p className="text-sm text-[#b48ca0]">{language === "vi" ? "Không có mẫu thiết kế nào khả dụng." : "No designs available."}</p>}
                 </div>
               )}
 
@@ -384,13 +386,13 @@ export function ReceptionistWalkInBookingCreatePage() {
                       </button>
                     );
                   })}
-                  {!services.length && <p className="text-sm text-[#b48ca0]">No services available.</p>}
+                  {!services.length && <p className="text-sm text-[#b48ca0]">{language === "vi" ? "Không có dịch vụ nào khả dụng." : "No services available."}</p>}
                 </div>
               )}
             </div>
 
             <div className="mt-4 rounded-[18px] border border-[#f4cbdb] bg-[linear-gradient(180deg,#fff6fa_0%,#fff9fc_100%)] px-4 py-4">
-              <p className="text-xs font-bold text-[#ea4f93]">Booking Cart</p>
+              <p className="text-xs font-bold text-[#ea4f93]">{language === "vi" ? "Giỏ Dịch Vụ Đã Chọn" : "Booking Cart"}</p>
               <div className="mt-3 flex flex-col gap-2">
                 {bookingItems.length ? bookingItems.map((item, index) => (
                   <div key={index} className="flex items-center justify-between rounded-lg bg-white p-2 border border-[#f5d6e3]">
@@ -402,24 +404,24 @@ export function ReceptionistWalkInBookingCreatePage() {
                       <Trash2 size={16} />
                     </button>
                   </div>
-                )) : <p className="text-sm text-[#c195ab]">No items in cart</p>}
+                )) : <p className="text-sm text-[#c195ab]">{language === "vi" ? "Chưa có dịch vụ nào được chọn" : "No items in cart"}</p>}
               </div>
               <div className="mt-3 flex justify-between border-t border-[#f4cbdb] pt-2">
-                <p className="font-bold text-[#432744]">Total:</p>
+                <p className="font-bold text-[#432744]">{language === "vi" ? "Tổng cộng:" : "Total:"}</p>
                 <p className="font-bold text-[#ea4f93]">{formatVND(estimatedPrice)}</p>
               </div>
             </div>
           </DashboardCard>
 
-          <DashboardCard title="Booking Schedule" description="Select date, time, and staff" icon={CalendarDays}>
+          <DashboardCard title={language === "vi" ? "Lịch Hẹn Dịch Vụ" : "Booking Schedule"} description={language === "vi" ? "Chọn ngày làm móng, khung giờ và thợ nail" : "Select date, time, and staff"} icon={CalendarDays}>
             <div className="rounded-[20px] border border-[#f7dce8] bg-white p-4">
               <div className="mt-2">
-                <p className="text-sm font-bold text-[#432744]">1. Select Date (Walk-in defaults to today)</p>
+                <p className="text-sm font-bold text-[#432744]">{language === "vi" ? "1. Chọn Ngày (Mặc định hôm nay)" : "1. Select Date (Walk-in defaults to today)"}</p>
                 <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="mt-2 h-10 rounded-xl border border-[#f2d7e3] px-3 text-sm text-[#5c4559] outline-none focus:border-[#ee6cb5]" />
               </div>
 
               <div className="mt-5">
-                <p className="text-sm font-bold text-[#432744]">2. Available Time Slots</p>
+                <p className="text-sm font-bold text-[#432744]">{language === "vi" ? "2. Khung Giờ Hoạt Động" : "2. Available Time Slots"}</p>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   {TIME_SLOTS.map((slot) => (
                     <button
@@ -429,22 +431,22 @@ export function ReceptionistWalkInBookingCreatePage() {
                       className={`rounded-[14px] border px-3 py-3 text-left ${selectedSlot === slot.time.split(" - ")[0] ? "border-[#ea4f93] bg-[#fff3f8]" : slot.tone}`}
                     >
                       <p className="text-[11px] font-bold">{slot.time}</p>
-                      <p className="mt-1 text-[10px]">{slot.status}</p>
+                      <p className="mt-1 text-[10px]">{language === "vi" ? slot.statusVi : slot.status}</p>
                     </button>
                   ))}
                 </div>
               </div>
 
               <div className="mt-5">
-                <p className="text-sm font-bold text-[#432744]">3. Select Nail Artist</p>
+                <p className="text-sm font-bold text-[#432744]">{language === "vi" ? "3. Chọn Thợ Nail Phụ Trách" : "3. Select Nail Artist"}</p>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   <button
                     type="button"
                     onClick={() => setSelectedArtist(null)}
                     className={`rounded-[14px] border px-3 py-3 text-left ${!selectedArtist ? "border-[#ea4f93] bg-[#fff3f8]" : "border-[#f7dce8] bg-[#fdfbfd]"}`}
                   >
-                    <p className="text-[11px] font-bold text-[#432744]">Any Available Artist</p>
-                    <p className="mt-1 text-[10px] text-[#b48ca0]">First available</p>
+                    <p className="text-[11px] font-bold text-[#432744]">{language === "vi" ? "Thợ Bất Kỳ Khả Dụng" : "Any Available Artist"}</p>
+                    <p className="mt-1 text-[10px] text-[#b48ca0]">{language === "vi" ? "Ưu tiên thợ rảnh sớm nhất" : "First available"}</p>
                   </button>
                   {artists.map((artist) => {
                     const isAvailable = artistAvailabilities[artist.nailArtistId] !== false;
@@ -461,7 +463,7 @@ export function ReceptionistWalkInBookingCreatePage() {
                         <img src={artist.avatarUrl || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80"} className={`h-8 w-8 rounded-full object-cover ${!isAvailable && "grayscale"}`} />
                         <div>
                           <p className={`text-[11px] font-bold ${!isAvailable ? "text-gray-500" : "text-[#432744]"}`}>{artist.firstName} {artist.lastName}</p>
-                          {!isAvailable && <p className="text-[9px] text-gray-400 mt-0.5">Off today</p>}
+                          {!isAvailable && <p className="text-[9px] text-gray-400 mt-0.5">{language === "vi" ? "Nghỉ hôm nay" : "Off today"}</p>}
                         </div>
                       </button>
                     )
@@ -471,23 +473,23 @@ export function ReceptionistWalkInBookingCreatePage() {
             </div>
           </DashboardCard>
 
-          <DashboardCard title="Final Actions" description="Confirm the booking and check-in the customer" icon={Save}>
+          <DashboardCard title={language === "vi" ? "Xác Nhận Đặt Lịch" : "Final Actions"} description={language === "vi" ? "Xác nhận và đưa khách vào hàng đợi sảnh chờ" : "Confirm the booking and check-in the customer"} icon={Save}>
             <div className="flex flex-col gap-3">
               <button
                 type="button"
                 onClick={() => setShowCreateConfirm(true)}
-                className="rounded-xl bg-[image:var(--gradient-accent)] px-5 py-3 text-sm font-bold text-white"
+                className="rounded-xl bg-[image:var(--gradient-accent)] px-5 py-3 text-sm font-bold text-white cursor-pointer"
               >
-                Confirm Walk-in Booking
+                {language === "vi" ? "Xác Nhận Đặt Lịch Walk-in" : "Confirm Walk-in Booking"}
               </button>
             </div>
           </DashboardCard>
         </div>
 
         <aside className="space-y-4">
-          <DashboardCard title="Staff Availability" description="" icon={UserRound}>
+          <DashboardCard title={language === "vi" ? "Trạng Thái Nhân Viên" : "Staff Availability"} description="" icon={UserRound}>
             <div className="space-y-3">
-              {artists.length === 0 && <p className="text-xs text-[#b48ca0]">No staff found</p>}
+              {artists.length === 0 && <p className="text-xs text-[#b48ca0]">{language === "vi" ? "Không tìm thấy thợ nail" : "No staff found"}</p>}
               {artists.map((artist) => {
                 const isAvailable = artistAvailabilities[artist.nailArtistId] !== false;
                 return (
@@ -500,7 +502,7 @@ export function ReceptionistWalkInBookingCreatePage() {
                       <p className={`text-sm font-bold ${!isAvailable ? "text-gray-500" : "text-[#432744]"}`}>{artist.firstName} {artist.lastName}</p>
                     </div>
                     <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${isAvailable ? "bg-[#e8f8ed] text-[#2f9557]" : "bg-[#ffe9f0] text-[#df4f84]"}`}>
-                      {isAvailable ? "Available" : "Off Today"}
+                      {isAvailable ? (language === "vi" ? "Sẵn sàng" : "Available") : (language === "vi" ? "Nghỉ hôm nay" : "Off Today")}
                     </span>
                   </div>
                 )
@@ -520,22 +522,22 @@ export function ReceptionistWalkInBookingCreatePage() {
       <ActionConfirmModal
         open={showCreateConfirm}
         intent="success"
-        title="Create Walk-in Booking"
-        subtitle="This will continue the receptionist walk-in flow."
-        description="Confirm to create this walk-in booking with the selected guest, services, slot, and artist."
-        confirmText="Confirm Walk-in Booking"
-        cancelText="Review Again"
+        title={language === "vi" ? "Xác nhận đặt lịch khách Walk-in" : "Create Walk-in Booking"}
+        subtitle={language === "vi" ? "Thao tác này sẽ tiếp tục luồng check-in của tiếp tân." : "This will continue the receptionist walk-in flow."}
+        description={language === "vi" ? "Xác nhận đưa khách cùng các dịch vụ đã chọn vào sảnh chờ dịch vụ." : "Confirm to create this walk-in booking with the selected guest, services, slot, and artist."}
+        confirmText={language === "vi" ? "Xác Nhận Đặt Lịch Walk-in" : "Confirm Walk-in Booking"}
+        cancelText={language === "vi" ? "Xem Lại" : "Review Again"}
         confirmIcon={Save}
         onConfirm={handleCreate}
         onCancel={() => setShowCreateConfirm(false)}
         highlights={[
-          selectedCustomer ? `${selectedCustomer.firstName} ${selectedCustomer.lastName}` : "Walk-in guest",
-          bookingItems.length ? bookingItems.map(i => i.name).join(", ") : "No items selected",
-          selectedArtist ? `${selectedArtist.firstName} ${selectedArtist.lastName}` : "Any Available Artist",
+          selectedCustomer ? `${selectedCustomer.firstName} ${selectedCustomer.lastName}` : (language === "vi" ? "Khách vãng lai" : "Walk-in guest"),
+          bookingItems.length ? bookingItems.map(i => i.name).join(", ") : (language === "vi" ? "Chưa có dịch vụ nào" : "No items selected"),
+          selectedArtist ? `${selectedArtist.firstName} ${selectedArtist.lastName}` : (language === "vi" ? "Thợ bất kỳ" : "Any Available Artist"),
         ]}
         details={[
-          { label: "Booking Date", value: formatDateLabel(selectedDate) },
-          { label: "Booking Time", value: selectedSlot || "Not selected" },
+          { label: language === "vi" ? "Ngày hẹn" : "Booking Date", value: formatDateLabel(selectedDate, language) },
+          { label: language === "vi" ? "Giờ hẹn" : "Booking Time", value: selectedSlot || (language === "vi" ? "Chưa chọn" : "Not selected") },
         ]}
       />
     </section>

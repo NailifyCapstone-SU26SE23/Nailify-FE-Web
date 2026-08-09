@@ -124,7 +124,7 @@ export function Sidebar({
   profileRole,
   userInitials,
 }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   return (
     <aside className="relative h-full overflow-hidden bg-[linear-gradient(180deg,#ea87aa_0%,#ea5f94_55%,#cc437a_100%)] shadow-[6px_0_30px_rgba(201,45,120,0.22)]">

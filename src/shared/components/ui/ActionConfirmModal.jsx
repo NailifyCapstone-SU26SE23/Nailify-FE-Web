@@ -8,6 +8,7 @@ import {
   X,
 } from "lucide-react";
 import { PropTypes } from "../../utils/propTypes";
+import { useLanguage } from "../../hooks/useLanguage";
 
 const INTENT_STYLES = {
   danger: {
@@ -92,6 +93,7 @@ export function ActionConfirmModal({
 }) {
   const palette = INTENT_STYLES[intent] ?? INTENT_STYLES.info;
   const HeaderIcon = ICON_BY_TONE[intent] ?? ICON_BY_TONE.info;
+  const { t, language } = useLanguage();
 
   return (
     <Modal
@@ -114,7 +116,7 @@ export function ActionConfirmModal({
               </div>
               <div>
                 <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] ${palette.badgeClassName}`}>
-                  Confirm Action
+                  {language === "vi" ? "Xác nhận hành động" : "Confirm Action"}
                 </span>
                 <h3 className="mt-3 text-lg font-bold">{title}</h3>
                 {subtitle ? <p className="mt-1 text-sm text-white/78">{subtitle}</p> : null}
@@ -196,7 +198,9 @@ export function ActionConfirmModal({
             <div className={`rounded-[22px] border p-4 ${palette.warningClassName}`}>
               <div className="mb-3 flex items-center gap-2">
                 <AlertTriangle size={15} />
-                <p className="text-[12px] font-extrabold uppercase tracking-[0.08em]">Please Note</p>
+                <p className="text-[12px] font-extrabold uppercase tracking-[0.08em]">
+                  {language === "vi" ? "Xin lưu ý" : "Please Note"}
+                </p>
               </div>
               <ul className="space-y-2">
                 {warnings.map((warning) => (

@@ -6,6 +6,7 @@ import { patchSchedule, fetchArtistSchedules, createSchedule, getSalonIdAsync } 
 import { fetchSalonById } from "../../../admin/salon-management/services/salonsService";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -77,8 +78,8 @@ function getMondayOfWeek(date) {
 }
 
 /** Map schedules → { Mon: [s1, s2, …], … } sorted by shiftStart */
-function buildDayMap(schedules) {
-  const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+function buildDayMap(schedules, language) {
+  const DAY_NAMES = language === "vi" ? ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"] : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const map = {};
   (schedules || []).forEach((s) => {
     const dateVal = s.date || s.workDate || s.scheduleDate || s.day;
@@ -163,6 +164,7 @@ export function EditScheduleModal({
   onSuccess,
   operatingHours = [],
 }) {
+  const { language } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [method, setMethod] = useState("PATCH");
 
@@ -321,7 +323,7 @@ export function EditScheduleModal({
 
       if (dateVal) {
         const rawDay = dayjs(dateVal).day();
-        const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+        const DAY_NAMES = language === "vi" ? ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"] : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
         const dayKey = rawDay === 0 ? "Sun" : DAY_NAMES[rawDay - 1];
         setSelectedDays({ [dayKey]: true });
       } else {
@@ -355,7 +357,7 @@ export function EditScheduleModal({
           startDate: modalMonday.format("YYYY-MM-DDT00:00:00"),
           endDate: modalSunday.format("YYYY-MM-DDT23:59:59"),
         });
-        if (!cancelled) setWeekMap(buildDayMap(data));
+        if (!cancelled) setWeekMap(buildDayMap(data, language));
       } catch {
         if (!cancelled) setWeekMap({});
       } finally {
@@ -390,17 +392,17 @@ export function EditScheduleModal({
 
   const staffName =
     schedule?.name ||
-    staffArtists.find((s) => String(s.id) === String(selectedStaffId))?.name ||
-    "Select staff";
+      staffArtists.find((s) => String(s.id) === String(selectedStaffId))?.name ||
+      language === "vi" ? "Chọn nhân viên" : "Select staff";
 
   // ── Submit ──────────────────────────────────────────────────────────────────
   const handleSave = async () => {
     if (!selectedStaffId) {
-      toast.error("Please select a staff member.");
+      toast.error(language === "vi" ? "Vui lòng chọn nhân viên" : "Please select a staff member.");
       return;
     }
     if (isTimeInvalid) {
-      toast.error("Please select at least one time slot.");
+      toast.error(language === "vi" ? "Vui lòng chọn ít nhất một khung giờ làm việc" : "Please select at least one time slot.");
       return;
     }
 
@@ -485,7 +487,7 @@ export function EditScheduleModal({
       } else {
         daysToProcess = DAYS_OF_WEEK.filter((d) => selectedDays[d.key]);
         if (daysToProcess.length === 0) {
-          toast.error("Please select at least one day to update.");
+          toast.error(language === "vi" ? "Vui lòng chọn ít nhất một ngày để cập nhật" : "Please select at least one day to update.");
           return;
         }
       }
@@ -500,7 +502,7 @@ export function EditScheduleModal({
 
       await Promise.all(allOps);
       toast.success(
-        `Schedules updated for ${daysToProcess.length} day(s).`
+        language === "vi" ? `Đã cập nhật lịch cho ${daysToProcess.length} ngày` : `Schedules updated for ${daysToProcess.length} day(s).`
       );
       if (onSuccess) onSuccess();
       onClose();
@@ -544,7 +546,7 @@ export function EditScheduleModal({
           </div>
           <div className="min-w-0">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-white/80">
-              Edit Schedule
+              {language === "vi" ? "Cập nhật lịch làm việc" : "Edit Schedule"}
             </p>
             <h3 className="truncate text-sm font-bold text-white">{staffName}</h3>
           </div>
@@ -561,12 +563,12 @@ export function EditScheduleModal({
             {/* Update Method */}
             <div>
               <label className="mb-2 block text-[10px] font-semibold uppercase tracking-wider text-[#a88a9f]">
-                Update Method
+                {language === "vi" ? "Phương cập nhật" : "Update Method"}
               </label>
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { value: "PUT", label: "Full Update", sub: "Apply to all days of the week" },
-                  { value: "PATCH", label: "Partial Update", sub: "Select specific days to edit" },
+                  { value: "PUT", label: language === "vi" ? "Cập nhật đầy đủ" : "Full Update", sub: language === "vi" ? "Áp dụng cho tất cả các ngày trong tuần" : "Apply to all days of the week" },
+                  { value: "PATCH", label: language === "vi" ? "Cập nhật một phần" : "Partial Update", sub: language === "vi" ? "Chọn ngày cụ thể để chỉnh sửa" : "Select specific days to edit" },
                 ].map((opt) => {
                   const isActive = method === opt.value;
                   return (
@@ -592,7 +594,7 @@ export function EditScheduleModal({
             {/* Staff */}
             <div>
               <label className="mb-2 block text-[10px] font-semibold uppercase tracking-wider text-[#a88a9f]">
-                Staff
+                {language === "vi" ? "Nhân viên" : "Staff"}
               </label>
               {schedule ? (
                 <div className="flex h-10 items-center rounded-xl border border-[#f1e7ed] bg-[#fffafd] px-4 text-sm font-semibold text-[#2d1b35]">
@@ -617,7 +619,7 @@ export function EditScheduleModal({
             {/* Status */}
             <div>
               <label className="mb-2 block text-[10px] font-semibold uppercase tracking-wider text-[#a88a9f]">
-                New Status
+                {language === "vi" ? "Trạng thái mới" : "New Status"}
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {Object.entries(STATUS_META).map(([key, meta]) => {
@@ -647,7 +649,7 @@ export function EditScheduleModal({
                 <div className="mb-2 flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <label className="text-[10px] font-bold uppercase tracking-wider text-[#ea4f93]">
-                      Salon Operating Hours
+                      {language === "vi" ? "Giờ làm việc của salon" : "Salon Operating Hours"}
                     </label>
                     <span className="rounded-md bg-rose-50 border border-rose-200/60 px-1.5 py-0.5 text-[9px] font-extrabold text-[#ea4f93]">
                       {activeHoursSummary.label}
@@ -670,7 +672,7 @@ export function EditScheduleModal({
                 {/* Select / Clear helpers */}
                 <div className="mb-2 flex items-center justify-between border-b border-rose-50 pb-1.5">
                   <span className="text-[9.5px] text-slate-400">
-                    Deselect slots to create breaks:
+                    {language === "vi" ? "Bỏ chọn ô để tạo nghỉ:" : "Deselect slots to create breaks:"}
                   </span>
                   <div className="flex items-center gap-2">
                     <button
@@ -678,7 +680,7 @@ export function EditScheduleModal({
                       onClick={selectAllSlots}
                       className="text-[9.5px] font-bold text-[#ea4f93] hover:underline"
                     >
-                      All
+                      {language === "vi" ? "Tất cả" : "All"}
                     </button>
                     <span className="text-[9.5px] text-slate-300">|</span>
                     <button
@@ -686,7 +688,7 @@ export function EditScheduleModal({
                       onClick={clearAllSlots}
                       className="text-[9.5px] font-bold text-slate-500 hover:underline"
                     >
-                      Clear
+                      {language === "vi" ? "Xóa tất cả" : "Clear"}
                     </button>
                   </div>
                 </div>
@@ -723,7 +725,7 @@ export function EditScheduleModal({
                   {isTimeInvalid ? (
                     <p className="flex items-center gap-1 text-[10px] font-semibold text-red-500">
                       <AlertCircle size={11} />
-                      Please select at least one time slot
+                      {language === "vi" ? "Vui lòng chọn ít nhất một ô thời gian" : "Please select at least one time slot"}
                     </p>
                   ) : (
                     <>
@@ -732,7 +734,7 @@ export function EditScheduleModal({
                         {totalWorkingHours.toFixed(1)}h working
                         {groupContiguous(selectedSlots).length > 1 && (
                           <span className="ml-1 text-[#a88a9f]">
-                            ({groupContiguous(selectedSlots).length} shifts)
+                            ({language === "vi" ? groupContiguous(selectedSlots).length + " ca làm việc" : groupContiguous(selectedSlots).length + " shifts"})
                           </span>
                         )}
                       </p>
@@ -761,7 +763,7 @@ export function EditScheduleModal({
                 disabled={loading}
                 className="flex-1 rounded-full border border-[#f1c6dd] bg-white py-2 text-[11px] font-bold text-[#ea4f93] transition hover:bg-[#fffafd] disabled:opacity-50"
               >
-                Cancel
+                {language === "vi" ? "Hủy" : "Cancel"}
               </button>
               <button
                 type="button"
@@ -871,7 +873,7 @@ export function EditScheduleModal({
                               </span>
                             ) : (
                               <span className="mt-0.5 text-[8px] leading-none text-slate-400 font-medium block">
-                                No shift
+                                {language === "vi" ? "Không có ca làm việc" : "No shift"}
                               </span>
                             )}
                           </div>

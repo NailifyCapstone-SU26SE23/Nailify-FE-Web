@@ -30,6 +30,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/hooks/useAuth";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import ChairMap from "../../../../shared/components/ui/ChairMap";
 import { usePagination } from "../../../../shared/hooks/usePagination";
@@ -162,6 +163,7 @@ function DashboardCard({ children, className = "" }) {
 }
 
 function SectionTitle({ icon: Icon, title, action, className = "" }) {
+  const { t, language } = useLanguage();
   return (
     <div className={`flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3 ${className}`}>
       <div className="flex min-w-0 items-center gap-2">
@@ -174,6 +176,7 @@ function SectionTitle({ icon: Icon, title, action, className = "" }) {
 }
 
 function MetricCard({ item }) {
+  const { t, language } = useLanguage();
   const Icon = item.icon || Activity;
   const color = item.color || '#10b981';
 
@@ -216,6 +219,7 @@ function MetricCard({ item }) {
 }
 
 function MobileAppointmentCard({ row, actions }) {
+  const { t, language } = useLanguage();
   return (
     <article className="w-full min-w-0 rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -260,6 +264,7 @@ const defaultWidgets = [
 ];
 
 function WidgetWrapper({ id, widget, onPin, onHide, onDragStart, onDragOver, onDrop, onDragEnter, children, isPinned, fullWidth }) {
+  const { t, language } = useLanguage();
   return (
     <div
       draggable={!isPinned}
@@ -277,20 +282,22 @@ function WidgetWrapper({ id, widget, onPin, onHide, onDragStart, onDragOver, onD
                 <GripHorizontal size={18} />
               </div>
             )}
-            <h3 className={`min-w-0 font-extrabold text-[#e14f91] ${isPinned ? 'text-[18px]' : 'text-sm'}`}>{widget.title}</h3>
+            <h3 className={`min-w-0 font-extrabold text-[#e14f91] ${isPinned ? 'text-[18px]' : 'text-sm'}`}>
+              {t("receptionist.dashboard.widgets." + id) || widget.title}
+            </h3>
           </div>
           <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={() => onPin(id)}
               className="p-1.5 text-[#c59bb0] hover:text-[#7a57d9] hover:bg-[#f2f0ff] rounded-md transition-colors"
-              title={isPinned ? "Unpin widget" : "Pin to top"}
+              title={isPinned ? t("adminDashboard.widgetActions.unpin") || "Unpin widget" : t("adminDashboard.widgetActions.pin") || "Pin to top"}
             >
               {isPinned ? <PinOff size={16} /> : <Pin size={16} />}
             </button>
             <button
               onClick={() => onHide(id)}
               className="p-1.5 text-[#c59bb0] hover:text-[#ea4f93] hover:bg-[#fff2f8] rounded-md transition-colors"
-              title="Hide widget"
+              title={t("adminDashboard.widgetActions.hide") || "Hide widget"}
             >
               <EyeOff size={16} />
             </button>
@@ -307,6 +314,7 @@ function WidgetWrapper({ id, widget, onPin, onHide, onDragStart, onDragOver, onD
 export function ReceptionistDashboardPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t, language } = useLanguage();
 
   const [selectedDate, setSelectedDate] = useState(dayjs());
   const selectedDateStr = selectedDate.format("YYYY-MM-DD");
@@ -390,9 +398,11 @@ export function ReceptionistDashboardPage() {
         });
 
         const staffWithStatus = (await Promise.all(staffWithSchedulePromises)).filter(Boolean);
+        // const { t, language } = useLanguage();
 
         const displayData = staffWithStatus.map((s, index) => {
           const c = s.artist;
+          const artistId = c.nailArtistId || c.id || index;
           const name = c.account
             ? `${c.account.firstName || ""} ${c.account.lastName || ""}`.trim()
             : (c.firstName ? `${c.firstName} ${c.lastName}`.trim() : (c.name || "Thợ Nail"));
@@ -402,10 +412,13 @@ export function ReceptionistDashboardPage() {
           return [
             name,
             getInitials(name),
+            // isOffToday ? (t('receptionist.dashboard.widgets.offToDay')) : (t('receptionist.dashboard.widgets.available')),
             isOffToday ? "Off Today" : "Available",
+            // isOffToday ? (language === 'vi' ? "Nghỉ hôm nay" : "Off Today") : language === 'vi' ? "Có sẵn" : "Available",
             getAvatarTone(index),
             isOffToday ? "bg-[#ffeaf2] text-[#ef5a95]" : "bg-[#e8f8ed] text-[#30a364]",
-            isOffToday
+            isOffToday,
+            artistId
           ];
         });
 
@@ -555,7 +568,7 @@ export function ReceptionistDashboardPage() {
     try {
       const updatedBooking = await manualCheckInReceptionistBooking(bookingId);
       updateAppointmentRow(updatedBooking);
-      toast.success(`Checked in successfully.`);
+      toast.success(t("receptionist.bookings.checkinSuccess") || `Checked in successfully.`);
     } catch (actionError) {
       const message =
         actionError instanceof Error ? actionError.message : "Failed to check in booking.";
@@ -567,7 +580,7 @@ export function ReceptionistDashboardPage() {
     try {
       const updatedBooking = await checkoutReceptionistBooking(bookingId);
       updateAppointmentRow(updatedBooking);
-      toast.success(`Checkout completed successfully for booking ${bookingId}.`);
+      toast.success(t("receptionist.bookings.checkoutSuccess") || `Checkout completed successfully.`);
     } catch (actionError) {
       const message =
         actionError instanceof Error ? actionError.message : "Failed to check out booking.";
@@ -578,15 +591,15 @@ export function ReceptionistDashboardPage() {
   const getActionItems = (bookingId, status) => [
     {
       key: "view",
-      label: "View Booking",
+      label: t("receptionist.dashboard.viewDetail") || "View Booking",
       icon: Eye,
       onSelect: () => navigate(getReceptionistBookingDetailRoute(bookingId)),
     },
     ...(canManualCheckIn(status)
       ? [
         {
-          key: "check-in",
-          label: "Check In",
+          key: "checkin",
+          label: t("receptionist.dashboard.checkinBtn") || "Check In",
           icon: UserCheck,
           onSelect: () => void handleManualCheckIn(bookingId),
         },
@@ -596,21 +609,25 @@ export function ReceptionistDashboardPage() {
       ? [
         {
           key: "checkout",
-          label: "Checkout",
-          icon: UserCheck,
-          onSelect: () => void handleCheckout(bookingId),
+          label: t("receptionist.dashboard.checkoutBtn") || "Checkout",
+          icon: SquareCheckBig,
+          onSelect: () => {
+            if (window.confirm(t("receptionist.bookings.checkoutConfirm", { id: bookingId }) || `Proceed to checkout for booking ${bookingId}?`)) {
+              void handleCheckout(bookingId);
+            }
+          },
         },
       ]
       : []),
     {
       key: "reschedule",
-      label: "Reschedule",
+      label: t("receptionist.bookings.reschedule") || "Reschedule",
       icon: CalendarClock,
       onSelect: () => navigate(getReceptionistBookingDetailRoute(bookingId)),
     },
     {
       key: "edit",
-      label: "Edit Booking",
+      label: t("receptionist.bookings.editBooking") || "Edit Booking",
       icon: PencilLine,
       onSelect: () => navigate(getReceptionistBookingDetailRoute(bookingId)),
     },
@@ -846,41 +863,43 @@ export function ReceptionistDashboardPage() {
 
   const displayMetrics = dashboardData ? [
     {
-      label: "Walk-In Queue Size",
+      label: t("receptionist.dashboard.walkInQueueSize"),
       value: String(dashboardData.currentWalkInQueueSize || "0"),
-      note: `Clear in ${dashboardData.estimatedTimeToClearQueueMins || 0}m`,
+      note: t("receptionist.dashboard.clearIn", { mins: dashboardData.estimatedTimeToClearQueueMins || 0 }),
       icon: UserRound,
       color: "#ef4f92",
     },
     {
-      label: "Appointments Left",
+      label: t("receptionist.dashboard.appointmentsLeft"),
       value: String(dashboardData.remainingAppointmentsToday || "0"),
-      note: "Today",
+      note: t("receptionist.dashboard.today"),
       icon: CalendarClock,
       color: "#8d54ef",
     },
     {
-      label: "Waitlist Size",
+      label: t("receptionist.dashboard.waitlistSize"),
       value: String(dashboardData.currentWaitlistSize || "0"),
-      note: `Avg wait ${dashboardData.averageWaitTimeMinutes || 0}m`,
+      note: t("receptionist.dashboard.avgWait", { mins: dashboardData.averageWaitTimeMinutes || 0 }),
       icon: Clock3,
       color: "#ff7a3d",
     },
     {
-      label: "Staff On Duty",
+      label: t("receptionist.dashboard.staffOnDuty"),
       value: (dashboardData.staffOnDutyText || "").split(" ")[0] || "0",
-      note: dashboardData.staffOnDutyText || "0 artists",
+      note: language === "vi"
+        ? `${(dashboardData.staffOnDutyText || "").split(" ")[0] || 0} ${t("receptionist.dashboard.artists")}`
+        : dashboardData.staffOnDutyText || `0 ${t("receptionist.dashboard.artists")}`,
       icon: Users,
       color: "#1da989",
     },
   ] : [];
 
   const displayQuickStatus = dashboardData ? [
-    ["Current Queue", String(dashboardData.currentWalkInQueueSize || "0")],
-    ["Waitlist Size", String(dashboardData.currentWaitlistSize || "0")],
-    ["Avg Wait Time", `${dashboardData.averageWaitTimeMinutes || 0} min`],
-    ["Appts Remaining Today", String(dashboardData.remainingAppointmentsToday || "0")],
-    ["Staff On Duty", dashboardData.staffOnDutyText || "N/A"],
+    [t("receptionist.dashboard.widgets.walkInQueue"), String(dashboardData.currentWalkInQueueSize || "0")],
+    [t("receptionist.dashboard.widgets.waitlist"), String(dashboardData.currentWaitlistSize || "0")],
+    [t("receptionist.dashboard.avgWait", { mins: dashboardData.averageWaitTimeMinutes || 0 }), `${dashboardData.averageWaitTimeMinutes || 0} min`],
+    [t("receptionist.dashboard.appointmentsLeft"), String(dashboardData.remainingAppointmentsToday || "0")],
+    [t("receptionist.dashboard.staffOnDuty"), dashboardData.staffOnDutyText || "N/A"],
   ] : [];
 
   const activeWaitlistItems = waitlistData?.items || dashboardData?.liveWaitlist || [];
@@ -923,7 +942,7 @@ export function ReceptionistDashboardPage() {
                     type="text"
                     value={appointmentQuery}
                     onChange={(event) => setAppointmentQuery(event.target.value)}
-                    placeholder="Search customer by phone number, name, ..."
+                    placeholder={language === "vi" ? "Tìm kiếm khách hàng theo số điện thoại, tên..." : "Search customer by phone number, name, ..."}
                     className="w-full bg-transparent text-sm text-[#5c4557] outline-none placeholder:text-[#c7a0b2]"
                   />
                 </label>
@@ -941,7 +960,7 @@ export function ReceptionistDashboardPage() {
                   className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-[#f3cfe0] bg-[#fff3f8] hover:bg-[#eb5a98] hover:text-white px-4 text-sm font-bold text-[#eb5a98] whitespace-nowrap"
                 >
                   <Plus size={15} />
-                  Create Walk-In
+                  {language === "vi" ? "Tạo khách vãng lai" : "Create Walk-In"}
                 </button>
               </div>
             </div>
@@ -966,7 +985,7 @@ export function ReceptionistDashboardPage() {
                 ))
               ) : (
                 <div className="rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-center text-sm text-[#aa8a99]">
-                  No appointments found for today.
+                  {language === "vi" ? "Không tìm thấy lịch hẹn nào cho hôm nay." : "No appointments found for today."}
                 </div>
               )}
             </div>
@@ -980,7 +999,7 @@ export function ReceptionistDashboardPage() {
                 pagination={false}
                 size="middle"
                 scroll={{ x: "max-content" }}
-                locale={{ emptyText: appointmentsError || "No appointments found for today." }}
+                locale={{ emptyText: appointmentsError || language === "vi" ? "Không tìm thấy lịch hẹn nào cho hôm nay." : "No appointments found for today." }}
               />
             </div>
 
@@ -1106,7 +1125,7 @@ export function ReceptionistDashboardPage() {
               })
             ) : (
               <div className="rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-8 text-center text-sm font-medium text-[#aa8a99]">
-                No walk-ins currently waiting.
+                {language === "vi" ? "Hiện không có khách vãng lai nào đang chờ." : "No walk-ins currently waiting."}
               </div>
             )}
           </div>
@@ -1148,7 +1167,7 @@ export function ReceptionistDashboardPage() {
               ))
             ) : (
               <div className="rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-8 text-center text-sm font-medium text-[#aa8a99]">
-                No customers currently on the waitlist.
+                {language === "vi" ? "Hiện không có khách hàng nào trong danh sách chờ." : "No customers currently on the waitlist."}
               </div>
             )}
           </div>
@@ -1180,7 +1199,7 @@ export function ReceptionistDashboardPage() {
                         {chair.isOccupied ? (
                           <div className="flex flex-col items-center leading-tight">
                             <span className="inline-flex rounded-full bg-[#ffeaf2] px-2 py-0.5 text-[9px] font-bold text-[#ef5a95]">
-                              Occupied
+                              {language === "vi" ? "Đang sử dụng" : "Occupied"}
                             </span>
                             <span className="text-[9px] text-[#aa8a99] truncate w-20 text-center mt-0.5">
                               {chair.occupiedByCustomerName || 'Customer'}
@@ -1189,7 +1208,7 @@ export function ReceptionistDashboardPage() {
                         ) : (
                           <div className="flex flex-col items-center leading-tight">
                             <span className="inline-flex rounded-full bg-[#e8f8ed] px-2 py-0.5 text-[9px] font-bold text-[#30a364]">
-                              Available
+                              {language === "vi" ? "Trống" : "Available"}
                             </span>
                             <span className="text-[9px] text-[#aa8a99] truncate w-20 text-center mt-0.5">
                               --
@@ -1212,7 +1231,7 @@ export function ReceptionistDashboardPage() {
               />
             ) : (
               <div className="rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-center text-sm text-[#aa8a99]">
-                No chair status data available.
+                {language === "vi" ? "Không có dữ liệu trạng thái ghế." : "No chair status data available."}
               </div>
             )}
           </div>
@@ -1223,6 +1242,7 @@ export function ReceptionistDashboardPage() {
     }
   };
 
+
   return (
     <section className="flex min-h-screen flex-col bg-slate-50 text-slate-800 font-sans">
       <div className="mx-auto w-full space-y-6 p-4 md:p-8
@@ -1231,8 +1251,12 @@ export function ReceptionistDashboardPage() {
                     ">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-2">
           <div>
-            <h1 className="text-2xl font-black text-[#e14f91]">Receptionist Dashboard</h1>
-            <p className="text-sm font-semibold text-[#c59bb0]">Good {new Date().getHours() < 12 ? 'morning' : 'afternoon'}, {greetingName}!</p>
+            <h1 className="text-2xl font-black text-[#e14f91]">{t("receptionDesk") || "Receptionist Dashboard"}</h1>
+            <p className="text-sm font-semibold text-[#c59bb0]">
+              {language === "vi"
+                ? `${new Date().getHours() < 12 ? "Chào buổi sáng" : "Chào buổi chiều"}, ${greetingName}!`
+                : `Good ${new Date().getHours() < 12 ? "morning" : "afternoon"}, ${greetingName}!`}
+            </p>
           </div>
           <div className="flex items-center gap-3">
             <DatePicker
@@ -1249,7 +1273,7 @@ export function ReceptionistDashboardPage() {
                     key: w.id,
                     label: (
                       <div className="flex items-center justify-between min-w-[200px]" onClick={(e) => e.stopPropagation()}>
-                        <span className="font-medium text-slate-700">{w.title}</span>
+                        <span className="font-medium text-slate-700">{t("receptionist.dashboard.widgets." + w.id) || w.title}</span>
                         <Button size="small" type="text" onClick={(e) => { e.stopPropagation(); toggleHide(w.id); }}>
                           {w.visible ? <Eye size={14} className="text-emerald-500" /> : <EyeOff size={14} className="text-slate-400" />}
                         </Button>
@@ -1259,7 +1283,7 @@ export function ReceptionistDashboardPage() {
                   { type: 'divider' },
                   {
                     key: 'reset',
-                    label: <div className="text-red-500 text-center font-bold">Reset Layout</div>,
+                    label: <div className="text-red-500 text-center font-bold">{t("receptionist.dashboard.resetLayout") || "Reset Layout"}</div>,
                     onClick: resetLayout
                   }
                 ]
@@ -1268,7 +1292,7 @@ export function ReceptionistDashboardPage() {
             >
               <Button className="h-10 rounded-xl border-[#f4d6e2] text-[#e14f91] font-bold bg-white hover:bg-pink-50 flex items-center gap-2 shadow-sm">
                 <Settings2 size={16} />
-                Customize
+                {t("receptionist.dashboard.customize") || "Customize"}
               </Button>
             </Dropdown>
           </div>
@@ -1324,12 +1348,12 @@ export function ReceptionistDashboardPage() {
                   ))}
               </div>
               <DashboardCard>
-                <SectionTitle icon={UserRound} title="Staff Availability" />
+                <SectionTitle icon={UserRound} title={t("receptionist.dashboard.widgets.staffAvailability")} />
                 <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   {displayStaff.length > 0 ? (
-                    displayStaff.map(([name, initials, status, avatarTone, badgeTone, isOffToday]) => (
+                    displayStaff.map(([name, initials, status, avatarTone, badgeTone, isOffToday, artistId], idx) => (
                       <div
-                        key={name}
+                        key={artistId || `${name}-${idx}`}
                         className={`rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-4 text-center ${isOffToday ? "opacity-50 grayscale" : ""}`}
                       >
                         <div
@@ -1347,7 +1371,7 @@ export function ReceptionistDashboardPage() {
                     ))
                   ) : (
                     <div className="col-span-full rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-center text-sm text-[#aa8a99]">
-                      No staff availability data available.
+                      {language === "vi" ? "Không có dữ liệu về tình trạng thái làm việc của nhân viên." : "No staff availability data available."}
                     </div>
                   )}
                 </div>
@@ -1356,7 +1380,7 @@ export function ReceptionistDashboardPage() {
 
             <aside className="min-w-0 space-y-4">
               <DashboardCard>
-                <SectionTitle icon={AlertCircle} title="Late / No-Show Alerts" />
+                <SectionTitle icon={AlertCircle} title={t("receptionist.dashboard.widgets.lateNoShowAlerts")} />
                 <div className="mt-4 space-y-3">
                   {displayAlerts.length > 0 ? (
                     displayAlerts.map((alert, index) => (
@@ -1379,13 +1403,13 @@ export function ReceptionistDashboardPage() {
                     ))
                   ) : (
                     <div className="rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-center text-sm text-[#aa8a99]">
-                      No late alerts at this time.
+                      {language === "vi" ? "Hiện không có thông báo trễ nào." : "No late alerts at this time."}
                     </div>
                   )}
                 </div>
               </DashboardCard>
               <DashboardCard>
-                <SectionTitle icon={Bell} title="Recent Check-ins & Arrivals" />
+                <SectionTitle icon={Bell} title={t("receptionist.dashboard.widgets.recentCheckinsAndArrivals")} />
                 <div className="mt-4 space-y-4">
                   {displayArrivals.length > 0 ? (
                     displayArrivals.map(([name, service, time, initials, bg], index) => (
@@ -1405,7 +1429,7 @@ export function ReceptionistDashboardPage() {
                     ))
                   ) : (
                     <div className="rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-center text-sm text-[#aa8a99]">
-                      No upcoming arrivals today.
+                      {language === "vi" ? "Hiện không có khách check-in nào trong hôm nay." : "No upcoming arrivals today."}
                     </div>
                   )}
                 </div>

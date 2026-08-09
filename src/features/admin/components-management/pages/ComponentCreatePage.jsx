@@ -54,7 +54,7 @@ function validateForm(formValues, t) {
 }
 
 export function ComponentCreatePage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [formValues, setFormValues] = useState(createEmptyForm);
   const [imagePreview, setImagePreview] = useState("");

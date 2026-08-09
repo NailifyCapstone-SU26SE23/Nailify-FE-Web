@@ -30,7 +30,7 @@ function validateForm(formValues, t) {
 }
 
 export function CategoryDetailPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const { categoryId } = useParams();
