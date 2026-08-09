@@ -8,6 +8,7 @@ import { fetchAllSalonStaff } from "../services/nailArtistsService";
 import { motion, AnimatePresence } from "framer-motion";
 import { StaffAvatar } from "../../../../shared/components/common/StaffAvatar";
 import { Pagination } from "../../../../shared/components/common/Pagination";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 function getStaffDisplayName(staff) {
   const rawName = [staff?.firstName, staff?.lastName].filter(Boolean).join(" ").trim();
@@ -36,6 +37,7 @@ export function TransferStaffModal({
   salonId,
   onSuccess
 }) {
+  const { language } = useLanguage();
   const [staffList, setStaffList] = useState([]);
   const [selectedStaff, setSelectedStaff] = useState(null);
   const [isLoadingStaff, setIsLoadingStaff] = useState(false);
@@ -132,7 +134,7 @@ export function TransferStaffModal({
   }, [salons, targetSalonId]);
 
   const canConfirm = selectedStaff && targetSalonId;
-  
+
   // Reset page when modal opens or staff list changes
   useEffect(() => {
     setCurrentPage(1);
@@ -156,46 +158,46 @@ export function TransferStaffModal({
         setCurrentPage(1);
       }}
       confirmLoading={isSubmitting}
-      okText="Confirm Transfer"
-      cancelText="Cancel"
+      okText={language === "vi" ? "Xác nhận chuyển" : "Confirm Transfer"}
+      cancelText={language === "vi" ? "Hủy" : "Cancel"}
       okButtonProps={{
-        style: { 
-          backgroundColor: "#ea4f93", 
-          color: "#fff", 
-          borderRadius: 9999, 
+        style: {
+          backgroundColor: "#ea4f93",
+          color: "#fff",
+          borderRadius: 9999,
           fontWeight: 700,
           padding: "8px 20px"
         },
         disabled: !canConfirm,
       }}
-      cancelButtonProps={{ 
-        style: { 
-          borderRadius: 9999, 
+      cancelButtonProps={{
+        style: {
+          borderRadius: 9999,
           fontWeight: 700,
           padding: "8px 20px"
-        } 
+        }
       }}
       width={800}
       centered
       destroyOnClose
       styles={{
-        content: { 
-          padding: 0, 
-          borderRadius: 32, 
-          overflow: "hidden" 
+        content: {
+          padding: 0,
+          borderRadius: 32,
+          overflow: "hidden"
         },
         body: { padding: 0 },
         mask: { backdropFilter: "blur(8px)" },
       }}
     >
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
         className="bg-gradient-to-br from-[#fff0f8] via-[#fff5fb] to-[#fff9ff] px-7 pb-12 pt-7"
       >
         <div className="flex items-center gap-5">
-          <motion.div 
+          <motion.div
             whileHover={{ scale: 1.1, rotate: 3 }}
             transition={{ type: "spring", stiffness: 500, damping: 15 }}
             className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-white shadow-[0_15px_30px_rgba(234,79,147,0.25)]"
@@ -203,14 +205,14 @@ export function TransferStaffModal({
             <UserRound size={24} />
           </motion.div>
           <div>
-            <h3 className="text-2xl font-extrabold text-[#3d1f3f] tracking-tight">Transfer Staff</h3>
+            <h3 className="text-2xl font-extrabold text-[#3d1f3f] tracking-tight">{language === "vi" ? "Chuyển nhân viên" : "Transfer Staff"}</h3>
             <p className="mt-2 text-sm text-[#9a5f7f]">
-              Select a staff member and target salon to transfer.
+              {language === "vi" ? "Chọn nhân viên và salon đích để chuyển." : "Select a staff member and target salon to transfer."}
             </p>
           </div>
         </div>
       </motion.div>
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut", delay: 0.15 }}
@@ -218,7 +220,7 @@ export function TransferStaffModal({
       >
         <AnimatePresence mode="wait">
           {!selectedStaff ? (
-            <motion.div 
+            <motion.div
               key="staff-list"
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
@@ -227,78 +229,78 @@ export function TransferStaffModal({
             >
               <div className="mb-6 rounded-2xl border border-[#f3d7e7] bg-[#fffafd] p-5">
                 <p className="text-sm text-[#6a5064] leading-relaxed">
-                  Browse the available staff below. Select a staff member to proceed with transferring them.
+                  {language === "vi" ? "Chọn nhân viên và salon đích để chuyển." : "Select a staff member and target salon to transfer."}
                 </p>
               </div>
               {isLoadingStaff ? (
                 <div className="flex items-center justify-center py-12">
-                  <Spin tip="Loading salon staff..." size="large" />
+                  <Spin tip={language === "vi" ? "Đang tải danh sách nhân viên..." : "Loading salon staff..."} size="large" />
                 </div>
               ) : (
                 <div className="space-y-5">
                   <div className="grid gap-4 md:grid-cols-2">
-                  {staffList.length === 0 ? (
-                    <div className="col-span-full text-center py-12 text-[#a67f98]">
-                      <UserRound size={48} className="mx-auto mb-3 opacity-50" />
-                      <p className="text-base">No staff available right now.</p>
-                    </div>
-                  ) : (
-                    currentStaff.map((staff) => {
-                      const key = getStaffKey(staff);
-                      const name = getStaffDisplayName(staff);
-                      const currentSalon = staff?.salonName || staff?.assignedSalon || "—";
+                    {staffList.length === 0 ? (
+                      <div className="col-span-full text-center py-12 text-[#a67f98]">
+                        <UserRound size={48} className="mx-auto mb-3 opacity-50" />
+                        <p className="text-base">{language === "vi" ? "Không có nhân viên" : "No staff available right now."}</p>
+                      </div>
+                    ) : (
+                      currentStaff.map((staff) => {
+                        const key = getStaffKey(staff);
+                        const name = getStaffDisplayName(staff);
+                        const currentSalon = staff?.salonName || staff?.assignedSalon || "—";
 
-                      return (
-                        <motion.div
-                          key={key || `${name}-${staff?.email || ""}`}
-                          whileHover={{ scale: 1.02, y: -4 }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() => {
-                            setSelectedStaff(staff);
-                            setTargetSalonId(null);
-                            setCurrentPage(1);
-                          }}
-                          className="cursor-pointer rounded-[28px] border border-[#f0cfe1] bg-gradient-to-br from-white to-[#fffafd] p-5 transition-all duration-300 hover:border-[#ea4f93] hover:shadow-[0_15px_35px_rgba(236,72,153,0.12)]"
-                        >
-                          <div className="flex items-start gap-4">
-                            <StaffAvatar
-                              staff={{
-                                ...staff,
-                                name: name,
-                                initials: getStaffInitials(staff),
-                              }}
-                              className="h-14 w-14 shrink-0 rounded-2xl object-cover"
-                              fallbackClassName="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#d6c1ff] to-[#8b5cf6] text-base font-extrabold text-white shadow-[0_4px_12px_rgba(139,92,246,0.2)]"
-                            />
-                            <div className="min-w-0 flex-1">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <p className="text-base font-extrabold text-[#3d1f3f] truncate">{name}</p>
-                                {staff?.role ? (
-                                  <span className="inline-flex items-center rounded-full bg-[#fde7f3] px-3 py-1 text-[10px] font-extrabold text-[#e1447f]">
-                                    {staff.role}
-                                  </span>
-                                ) : null}
-                              </div>
-                              <div className="mt-4 space-y-2">
-                                <div className="flex items-center gap-2 text-xs text-[#7f6478]">
-                                  <Mail size={14} className="text-[#b88ca8]" />
-                                  <span className="truncate">{staff.email || "No email provided"}</span>
+                        return (
+                          <motion.div
+                            key={key || `${name}-${staff?.email || ""}`}
+                            whileHover={{ scale: 1.02, y: -4 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => {
+                              setSelectedStaff(staff);
+                              setTargetSalonId(null);
+                              setCurrentPage(1);
+                            }}
+                            className="cursor-pointer rounded-[28px] border border-[#f0cfe1] bg-gradient-to-br from-white to-[#fffafd] p-5 transition-all duration-300 hover:border-[#ea4f93] hover:shadow-[0_15px_35px_rgba(236,72,153,0.12)]"
+                          >
+                            <div className="flex items-start gap-4">
+                              <StaffAvatar
+                                staff={{
+                                  ...staff,
+                                  name: name,
+                                  initials: getStaffInitials(staff),
+                                }}
+                                className="h-14 w-14 shrink-0 rounded-2xl object-cover"
+                                fallbackClassName="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#d6c1ff] to-[#8b5cf6] text-base font-extrabold text-white shadow-[0_4px_12px_rgba(139,92,246,0.2)]"
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <p className="text-base font-extrabold text-[#3d1f3f] truncate">{name}</p>
+                                  {staff?.role ? (
+                                    <span className="inline-flex items-center rounded-full bg-[#fde7f3] px-3 py-1 text-[10px] font-extrabold text-[#e1447f]">
+                                      {staff.role}
+                                    </span>
+                                  ) : null}
                                 </div>
-                                <div className="flex items-center gap-2 text-xs text-[#7f6478]">
-                                  <Phone size={14} className="text-[#b88ca8]" />
-                                  <span className="truncate">{staff.phone || staff.phoneNumber || "No phone number"}</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-xs text-[#7f6478]">
-                                  <MapPin size={14} className="text-[#b88ca8]" />
-                                  <span className="truncate">{currentSalon}</span>
+                                <div className="mt-4 space-y-2">
+                                  <div className="flex items-center gap-2 text-xs text-[#7f6478]">
+                                    <Mail size={14} className="text-[#b88ca8]" />
+                                    <span className="truncate">{staff.email || "No email provided"}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2 text-xs text-[#7f6478]">
+                                    <Phone size={14} className="text-[#b88ca8]" />
+                                    <span className="truncate">{staff.phone || staff.phoneNumber || "No phone number"}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2 text-xs text-[#7f6478]">
+                                    <MapPin size={14} className="text-[#b88ca8]" />
+                                    <span className="truncate">{currentSalon}</span>
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                          </div>
-                        </motion.div>
-                      );
-                    })
-                  )}
+                          </motion.div>
+                        );
+                      })
+                    )}
                   </div>
                   {staffList.length > STAFF_PER_PAGE ? (
                     <div className="flex justify-center">
@@ -313,7 +315,7 @@ export function TransferStaffModal({
               )}
             </motion.div>
           ) : (
-            <motion.div 
+            <motion.div
               key="salon-list"
               initial={{ opacity: 0, x: 10 }}
               animate={{ opacity: 1, x: 0 }}
@@ -352,7 +354,7 @@ export function TransferStaffModal({
                     }}
                     className="px-4 py-2 text-xs font-extrabold text-[#9a5f7f] hover:text-[#ea4f93] bg-[#fff0f8] rounded-full transition-all duration-200 hover:bg-[#fde7f3]"
                   >
-                    ← Change staff
+                    ← {language === "vi" ? "Thay đổi nhân viên" : "Change staff"}
                   </motion.button>
                 </div>
 
@@ -360,7 +362,7 @@ export function TransferStaffModal({
                   <div className="mb-5 rounded-xl border border-[#d1f0de] bg-gradient-to-r from-[#eaf9ee] to-[#e6fff3] px-4 py-3">
                     <p className="flex items-center gap-2 text-sm font-semibold text-[#2fa25f]">
                       <Check size={16} />
-                      Selected Salon: {selectedSalonName}
+                      {language === "vi" ? "Chọn salon đích" : "Selected Salon"}: {selectedSalonName}
                     </p>
                   </div>
                 )}
@@ -369,7 +371,7 @@ export function TransferStaffModal({
                   <div>
                     <p className="text-xs font-extrabold uppercase tracking-widest text-[#ea4f93] mb-4 flex items-center gap-2">
                       <MapPin size={16} />
-                      Select Target Salon
+                      {language === "vi" ? "Chọn Salon đích" : "Select Target Salon"}
                     </p>
                     {isLoadingSalons ? (
                       <div className="flex items-center justify-center py-5">
@@ -389,7 +391,7 @@ export function TransferStaffModal({
                               className={`w-full text-left rounded-2xl border p-4 transition-all duration-200 ${isSelected
                                 ? "border-[#ea4f93] bg-gradient-to-br from-[#fff5fb] to-[#fff9ff] shadow-[0_8px_20px_rgba(234,79,147,0.18)]"
                                 : "border-[#f0cfe1] bg-white hover:border-[#ea4f93] hover:shadow-[0_8px_20px_rgba(234,79,147,0.1)]"
-                              }`}
+                                }`}
                             >
                               <p className="text-sm font-extrabold text-[#3d1f3f]">{salon.name}</p>
                               <p className="text-xs text-[#7f6478] mt-1">{salon.address}</p>
@@ -406,7 +408,7 @@ export function TransferStaffModal({
                     ) : (
                       <div className="flex items-center gap-3 rounded-xl border border-dashed border-[#f0cfe1] bg-[#fffafd] px-4 py-4 text-xs text-[#9a5f7f]">
                         <MapPin size={16} className="opacity-60" />
-                        <span>No salons available to transfer to.</span>
+                        <span>{language === "vi" ? "Không có salon nào để chuyển đến." : "No salons available to transfer to."}</span>
                       </div>
                     )}
                   </div>

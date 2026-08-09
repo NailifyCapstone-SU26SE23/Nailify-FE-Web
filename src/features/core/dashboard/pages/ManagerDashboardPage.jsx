@@ -19,6 +19,7 @@ import { Spin, Alert, DatePicker, Segmented, Modal, Avatar, Rate, Dropdown, Butt
 import { UserOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useState, useEffect } from "react";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   useManagerDashboard,
   useSalonStaffs,
@@ -51,6 +52,27 @@ const defaultWidgets = [
   { id: 'staffDirectory', title: 'Staff Directory', visible: true, pinned: false },
 ];
 
+const getWidgetTitle = (id, defaultTitle, t) => {
+  switch (id) {
+    case 'revenueBreakdown':
+      return t("manager.dashboard.widgets.revenueBreakdown") || "Revenue Breakdown";
+    case 'keyRatios':
+      return t("manager.dashboard.widgets.keyRatios") || "Key Ratios";
+    case 'retentionRate':
+      return t("manager.dashboard.widgets.retentionRate") || "Customer Retention Rate";
+    case 'peakHours':
+      return t("manager.dashboard.widgets.peakHours") || "Peak Hours Heatmap";
+    case 'artistLeaderboard':
+      return t("manager.dashboard.widgets.artistLeaderboard") || "Artist Leaderboard";
+    case 'staffLeaveAlerts':
+      return t("manager.dashboard.widgets.staffLeaveAlerts") || "Staff Leave Alerts";
+    case 'staffDirectory':
+      return t("manager.dashboard.widgets.staffDirectory") || "Staff Directory";
+    default:
+      return defaultTitle;
+  }
+};
+
 function Card({ className = "", children }) {
   return (
     <article
@@ -67,6 +89,7 @@ Card.propTypes = {
 };
 
 function WidgetWrapper({ id, widget, onPin, onHide, onDragStart, onDragOver, onDrop, onDragEnter, children, isPinned, fullWidth }) {
+  const { t, language } = useLanguage();
   return (
     <div
       draggable={!isPinned}
@@ -84,20 +107,22 @@ function WidgetWrapper({ id, widget, onPin, onHide, onDragStart, onDragOver, onD
                 <GripHorizontal size={18} />
               </div>
             )}
-            <h3 className={`font-bold text-slate-800 ${isPinned ? 'text-[18px]' : 'text-[15px]'}`}>{widget.title}</h3>
+            <h3 className={`font-bold text-slate-800 ${isPinned ? 'text-[18px]' : 'text-[15px]'}`}>
+              {getWidgetTitle(id, widget.title, t)}
+            </h3>
           </div>
           <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={() => onPin(id)}
               className="p-1.5 text-slate-400 hover:text-sky-500 hover:bg-sky-50 rounded-md transition-colors"
-              title={isPinned ? "Unpin widget" : "Pin to top"}
+              title={isPinned ? t("manager.dashboard.unpinWidget") : t("manager.dashboard.pinWidget")}
             >
               {isPinned ? <PinOff size={16} /> : <Pin size={16} />}
             </button>
             <button
               onClick={() => onHide(id)}
               className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
-              title="Hide widget"
+              title={t("manager.dashboard.hideWidget")}
             >
               <EyeOff size={16} />
             </button>
@@ -125,6 +150,7 @@ WidgetWrapper.propTypes = {
 };
 
 export function ManagerDashboardPage() {
+  const { t, language } = useLanguage();
   const salonId = getSalonId();
   const [dateRange, setDateRange] = useState([dayjs().subtract(7, 'day'), dayjs()]);
   const [filterMode, setFilterMode] = useState("Week");
@@ -233,7 +259,7 @@ export function ManagerDashboardPage() {
   if (!salonId) {
     return (
       <div className="p-10 max-w-2xl mx-auto">
-        <Alert message="Salon Missing" description="No salon assigned to this manager." type="error" showIcon />
+        <Alert message={t("manager.dashboard.salonMissing")} description={t("manager.dashboard.noSalonAssigned")} type="error" showIcon />
       </div>
     );
   }
@@ -249,7 +275,7 @@ export function ManagerDashboardPage() {
   if (isError) {
     return (
       <div className="p-10 max-w-2xl mx-auto bg-slate-50">
-        <Alert message="System Error" description="Unable to load manager dashboard data. Please check your connection." type="error" showIcon />
+        <Alert message={t("common.error")} description={t("manager.dashboard.loadingText")} type="error" showIcon />
       </div>
     );
   }
@@ -260,7 +286,7 @@ export function ManagerDashboardPage() {
 
   const topMetrics = [
     {
-      label: "Today's Revenue",
+      label: t("receptionist.dashboard.todayRevenue"),
       value: data?.todaysRevenue
         ? `${data.todaysRevenue.toLocaleString("vi-VN")} ₫`
         : "0 ₫",
@@ -268,7 +294,7 @@ export function ManagerDashboardPage() {
       icon: CircleDollarSign,
     },
     {
-      label: "Avg Ticket Value",
+      label: t("receptionist.payments.tierDiscount"),
       value: data?.averageTicketValue
         ? `${data.averageTicketValue.toLocaleString("vi-VN")} ₫`
         : "0 ₫",
@@ -276,19 +302,19 @@ export function ManagerDashboardPage() {
       icon: Wallet,
     },
     {
-      label: "Completed",
+      label: t("receptionist.dashboard.statusDone"),
       value: completed,
       color: "#f59e0b",
       icon: CalendarCheck2,
     },
     {
-      label: "Pending",
+      label: t("receptionist.dashboard.statusWaiting"),
       value: pending,
       color: "#8b5cf6",
       icon: Clock3,
     },
     {
-      label: "Staff Utilization",
+      label: t("receptionist.dashboard.staffAvailability"),
       value: data?.staffUtilizationRate
         ? `${data.staffUtilizationRate.toFixed(1)}%`
         : "0%",
@@ -434,10 +460,10 @@ export function ManagerDashboardPage() {
             <table className="min-w-full text-left border-collapse w-full">
               <thead className="sticky top-0 bg-white z-10">
                 <tr className="border-b border-slate-200 text-[11px] uppercase tracking-wider text-slate-500">
-                  <th className="px-3 py-3 font-bold">Artist Name</th>
-                  <th className="px-3 py-3 font-bold text-center">Bookings</th>
-                  <th className="px-3 py-3 font-bold text-right">Revenue</th>
-                  <th className="px-3 py-3 font-bold text-center">Rating</th>
+                  <th className="px-3 py-3 font-bold">{t("adminStaffManagement.firstName")}</th>
+                  <th className="px-3 py-3 font-bold text-center">{t("receptionist.dashboard.todayBookings")}</th>
+                  <th className="px-3 py-3 font-bold text-right">{t("receptionist.dashboard.todayRevenue")}</th>
+                  <th className="px-3 py-3 font-bold text-center">{t("adminStaffManagement.skillsSpecialties")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -464,7 +490,7 @@ export function ManagerDashboardPage() {
                   ))}
                 {(!data?.artistPerformanceLeaderboard || data.artistPerformanceLeaderboard.length === 0) && (
                   <tr>
-                    <td colSpan="4" className="text-center py-6 text-sm text-slate-500">No artist data available.</td>
+                    <td colSpan="4" className="text-center py-6 text-sm text-slate-500">{t("receptionist.bookings.noAvailableArtists")}</td>
                   </tr>
                 )}
               </tbody>
@@ -525,7 +551,7 @@ export function ManagerDashboardPage() {
                 ))}
                 {(!staffData?.items || staffData.items.length === 0) && (
                   <div className="col-span-full text-center py-6 text-sm text-slate-500 w-full">
-                    No staff members found.
+                    {t("receptionist.bookings.noAvailableArtists")}
                   </div>
                 )}
               </div>
@@ -543,14 +569,14 @@ export function ManagerDashboardPage() {
     items: [
       ...hiddenWidgets.map((w) => ({
         key: `restore-${w.id}`,
-        label: `Show ${w.title}`,
+        label: `${t("receptionist.common.view")} ${getWidgetTitle(w.id, w.title, t)}`,
         icon: <Eye size={16} />,
         onClick: () => toggleHide(w.id),
       })),
       hiddenWidgets.length > 0 ? { type: 'divider' } : null,
       {
         key: 'reset',
-        label: 'Reset Layout',
+        label: t("manager.dashboard.resetLayout"),
         icon: <RotateCcw size={16} />,
         onClick: resetLayout,
         danger: true,
@@ -576,17 +602,23 @@ export function ManagerDashboardPage() {
                   px-8 py-5
                   md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-[22px] font-bold tracking-tight text-slate-900">Manager Dashboard</h1>
-          <p className="text-[13px] text-slate-500 font-medium">Overview of salon operations</p>
+          <h1 className="text-[22px] font-bold tracking-tight text-slate-900">{t("manager.staff.title")}</h1>
+          <p className="text-[13px] text-slate-500 font-medium">{t("manager.staff.desc")}</p>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <Dropdown menu={layoutMenuProps} trigger={['click']} placement="bottomRight">
             <Button icon={<Settings2 size={16} className="text-slate-500" />} className="border-slate-200 font-medium text-slate-700 bg-white shadow-sm">
-              Customize
+              {t("manager.dashboard.customize")}
             </Button>
           </Dropdown>
           <Segmented
-            options={["Day", "Week", "Month", "Year", "Custom"]}
+            options={[
+              { label: t("adminDashboard.day"), value: "Day" },
+              { label: t("adminDashboard.week"), value: "Week" },
+              { label: t("adminDashboard.month"), value: "Month" },
+              { label: t("adminDashboard.year"), value: "Year" },
+              { label: t("adminDashboard.custom"), value: "Custom" },
+            ]}
             value={filterMode}
             onChange={handleFilterModeChange}
             className="rounded-md bg-slate-100 p-1 font-semibold"
@@ -746,6 +778,7 @@ const StaffAvatar = ({ staff, size = 56, className }) => {
 
 // Staff Detail Modal Component
 function StaffDetailModal({ staff, startDate, endDate, onClose }) {
+  const { t, language } = useLanguage();
   const { data: userDetail, isLoading: isUserLoading } = useUserDetail(staff?.userId);
   const { data: dashboard, isLoading: isDashboardLoading } = useNailArtistDashboard(staff?.staffId, startDate, endDate);
 
@@ -821,25 +854,25 @@ function StaffDetailModal({ staff, startDate, endDate, onClose }) {
             <div>
               <h3 className="text-[17px] font-bold text-slate-800">{userDetail?.firstName} {userDetail?.lastName}</h3>
               <p className="text-[13px] font-medium text-slate-500">{userDetail?.email}</p>
-              <p className="text-[13px] font-medium text-slate-500">{userDetail?.phone || "No phone number"}</p>
+              <p className="text-[13px] font-medium text-slate-500">{userDetail?.phone || t("receptionist.bookings.unassigned")}</p>
             </div>
           </div>
 
           <div className="mt-4 rounded-xl border border-slate-200 p-4 bg-slate-50">
-            <h4 className="text-[13px] font-bold text-slate-500 mb-3 uppercase tracking-wider">Performance ({dayjs(startDate).format("DD/MM/YY")} - {dayjs(endDate).format("DD/MM/YY")})</h4>
+            <h4 className="text-[13px] font-bold text-slate-500 mb-3 uppercase tracking-wider">{t("adminStaffManagement.profilePreview")} ({dayjs(startDate).format("DD/MM/YY")} - {dayjs(endDate).format("DD/MM/YY")})</h4>
             <div className="flex flex-col gap-3">
               <div className="flex justify-between items-center pb-3 border-b border-slate-200">
-                <span className="text-[14px] font-semibold text-slate-700">Estimated Earnings</span>
+                <span className="text-[14px] font-semibold text-slate-700">{t("manager.dashboard.widgets.revenueBreakdown")}</span>
                 <span className="font-bold text-emerald-600 text-[18px]">
                   {dashboard?.estimatedEarnings ? dashboard.estimatedEarnings.toLocaleString("vi-VN") : "0"} ₫
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-[14px] font-medium text-slate-600">Completed Appointments</span>
+                <span className="text-[14px] font-medium text-slate-600">{t("receptionist.dashboard.todayBookings")}</span>
                 <span className="font-bold text-slate-800">{dashboard?.completedAppointmentsCount || 0}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-[14px] font-medium text-slate-600">Average Rating</span>
+                <span className="text-[14px] font-medium text-slate-600">{t("adminStaffManagement.skillsSpecialties")}</span>
                 <div className="flex items-center gap-2">
                   <Rate disabled allowHalf value={dashboard?.averageRatingScore || 0} className="text-amber-400 text-sm" />
                   <span className="font-bold text-amber-500">{dashboard?.averageRatingScore || 0}</span>
@@ -850,7 +883,7 @@ function StaffDetailModal({ staff, startDate, endDate, onClose }) {
 
           {dashboard && (
             <div className="rounded-xl border border-slate-200 p-4 bg-slate-50">
-              <h4 className="text-[13px] font-bold text-slate-500 mb-3 uppercase tracking-wider">Earnings Tracker</h4>
+              <h4 className="text-[13px] font-bold text-slate-500 mb-3 uppercase tracking-wider">{t("manager.dashboard.widgets.earningsTracker")}</h4>
               <ReactECharts
                 option={{
                   color: ['#10b981'],
@@ -883,7 +916,7 @@ function StaffDetailModal({ staff, startDate, endDate, onClose }) {
 
           {dashboard?.recentFeedback?.length > 0 && (
             <div className="rounded-xl border border-slate-200 p-4 bg-slate-50">
-              <h4 className="text-[13px] font-bold text-slate-500 mb-3 uppercase tracking-wider">Recent Feedback</h4>
+              <h4 className="text-[13px] font-bold text-slate-500 mb-3 uppercase tracking-wider">{t("staff.dashboard.widgets.recentFeedback")}</h4>
               <div className="flex flex-col gap-3">
                 {dashboard.recentFeedback.map((fb, idx) => (
                   <div key={idx} className="flex gap-3 bg-white p-3.5 rounded-xl border border-slate-100 shadow-sm transition-all hover:shadow-md hover:border-sky-100">

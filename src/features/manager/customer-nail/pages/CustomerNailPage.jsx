@@ -1,11 +1,12 @@
 import { Spin, Alert, DatePicker, Pagination, ConfigProvider, Modal } from "antd";
-import { Palette, Heart, Eye, Calendar, CheckCircle2, XCircle, RefreshCw, Sparkles, Clock3, ArrowRight, Timer, CircleDollarSign } from "lucide-react";
+import { Palette, Heart, Eye, Calendar, CheckCircle2, XCircle, RefreshCw, Sparkles, Clock3, ArrowRight, Timer, CircleDollarSign, Languages } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { ROUTES } from "../../../../shared/constants/routes";
 import { fetchCustomerNails } from "../services/customerNailsService";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 function Card({ className = "", children }) {
   return (
@@ -560,9 +561,9 @@ function CustomerNailCard({ nail }) {
           {/* Status Message */}
           <div className="mt-3.5 flex items-center gap-2">
             <span className={`h-2 w-2 rounded-full ${nail.status === "PendingReview" ? "bg-amber-400 animate-pulse" :
-                nail.status === "Approved" ? "bg-emerald-400" :
-                  nail.status === "Rejected" ? "bg-rose-400" :
-                    "bg-indigo-400"
+              nail.status === "Approved" ? "bg-emerald-400" :
+                nail.status === "Rejected" ? "bg-rose-400" :
+                  "bg-indigo-400"
               }`} />
             <p className="text-[10px] font-bold uppercase tracking-wider text-[#9b7b92]">{getStatusMessage(nail.status)}</p>
           </div>
@@ -652,6 +653,7 @@ CustomerNailCard.propTypes = {
 };
 
 export function CustomerNailPage() {
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [nails, setNails] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -782,37 +784,37 @@ export function CustomerNailPage() {
 
     return [
       {
-        title: "Total Designs",
+        title: language === "vi" ? "Tổng yêu cầu thiết kế" : "Total Designs",
         value: nails.length,
-        note: "all customer requests",
+        note: language === "vi" ? "Tất cả yêu cầu khách hàng" : "all customer requests",
         icon: Sparkles,
         toneClassName: "bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93]",
       },
       {
-        title: "Pending Review",
+        title: language === "vi" ? "Chờ đánh giá" : "Pending Review",
         value: pendingReviewCount,
-        note: "needs manager attention",
+        note: language === "vi" ? "Cần sự chú ý của quản lý" : "needs manager attention",
         icon: Clock3,
         toneClassName: "bg-gradient-to-br from-[#f5b455] to-[#db8520]",
       },
       {
-        title: "Reviewed",
+        title: language === "vi" ? "Đã đánh giá" : "Reviewed",
         value: reviewedCount,
-        note: "waiting for final action",
+        note: language === "vi" ? "Chờ hành động cuối cùng" : "waiting for final action",
         icon: Calendar,
         toneClassName: "bg-gradient-to-br from-[#7c8cff] to-[#4755b8]",
       },
       {
-        title: "Approved",
+        title: language === "vi" ? "Đã duyệt" : "Approved",
         value: approvedCount,
-        note: "confirmed by manager",
+        note: language === "vi" ? "Xác nhận bởi quản lý" : "confirmed by manager",
         icon: CheckCircle2,
         toneClassName: "bg-gradient-to-br from-[#5dd18d] to-[#2fa25f]",
       },
       {
-        title: "Rejected",
+        title: language === "vi" ? "Đã từ chối" : "Rejected",
         value: rejectedCount,
-        note: "sent back with feedback",
+        note: language === "vi" ? "Đã từ chối" : "sent back with feedback",
         icon: XCircle,
         toneClassName: "bg-gradient-to-br from-[#f089ad] to-[#e1447f]",
       },
@@ -834,7 +836,7 @@ export function CustomerNailPage() {
     return (
       <div className="min-h-full">
         <Alert
-          message="Error Loading Customer Nails"
+          message={t("manager.common.error")}
           description={error}
           type="error"
           showIcon
@@ -846,7 +848,7 @@ export function CustomerNailPage() {
   if (isLoading) {
     return (
       <div className="flex min-h-[300px] items-center justify-center">
-        <Spin size="large" tip="Loading customer nails..." />
+        <Spin size="large" tip={t("manager.common.loading")} />
       </div>
     );
   }
@@ -871,12 +873,12 @@ export function CustomerNailPage() {
                   <Palette size={22} />
                 </div>
                 <div>
-                  <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-[#402542] via-[#8a2f4c] to-[#ea4f93] bg-clip-text text-transparent">Customer Nails</h2>
-                  <p className="text-xs font-semibold text-[#b07a94] mt-0.5">Manage customer nail designs and monitor new requests in real time.</p>
+                  <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-[#402542] via-[#8a2f4c] to-[#ea4f93] bg-clip-text text-transparent">{t("manager.customerNails.title") || "Customer Nails"}</h2>
+                  <p className="text-xs font-semibold text-[#b07a94] mt-0.5">{t("manager.customerNails.desc") || "Manage customer nail designs and monitor new requests in real time."}</p>
                 </div>
               </div>
               <p className="mt-4 text-xs leading-relaxed text-[#8f6b80] font-medium max-w-xl">
-                The page refreshes automatically every 3 seconds so managers can catch new custom design submissions as soon as they arrive.
+                {language === "vi" ? "Trang tự động làm mới sau mỗi 3 giây để quản lý có thể nhận các yêu cầu thiết kế tùy chỉnh mới nhất ngay khi chúng xuất hiện." : "The page refreshes automatically every 3 seconds so managers can catch new custom design submissions as soon as they arrive."}
               </p>
             </div>
             <div className="flex flex-col items-start gap-3 lg:items-end relative z-10">
@@ -886,12 +888,12 @@ export function CustomerNailPage() {
                 }`}>
                 <span className={`h-1.5 w-1.5 rounded-full ${isRefreshing ? "bg-pink-500 animate-ping" : "bg-emerald-500"}`} />
                 <RefreshCw size={12} className={isRefreshing ? "animate-spin" : ""} />
-                {isRefreshing ? "Refreshing..." : "Auto refresh: Active"}
+                {isRefreshing ? t("manager.common.refresh") || "Refreshing..." : "Auto refresh: Active"}
               </div>
               <DatePicker
                 value={selectedDate}
                 onChange={handleDateChange}
-                placeholder="Filter by date"
+                placeholder={language === "vi" ? "Chọn ngày" : "Filter by date"}
                 allowClear
                 className="h-11 min-w-[220px] rounded-full border border-[#f5d0e4] bg-white/90 text-xs text-[#5c4158] outline-none transition placeholder:text-[#d198b0] focus:border-[#ea4f93] focus:ring-2 focus:ring-[#ea4f93]/20 shadow-sm"
                 suffixIcon={<Calendar size={16} className="text-[#c08aa4]" />}
@@ -908,8 +910,8 @@ export function CustomerNailPage() {
         <Card className="p-0">
           <div className="border-b border-[#f6dce7] p-6">
             <SectionHeading
-              title="All Customer Nails"
-              subtitle={`${filteredNails.length} designs${selectedDate ? " (filtered by selected date)" : " available in the current salon workspace"}`}
+              title={t("manager.customerNails.title") || "All Customer Nails"}
+              subtitle={`${filteredNails.length} designs${selectedDate ? " (filtered by selected date)" : language === "vi" ? " (lọc theo ngày đã chọn)" : " available in the current salon workspace"}`}
             />
           </div>
 
@@ -920,14 +922,14 @@ export function CustomerNailPage() {
                   <Palette size={32} className="text-[#ea4f93]" />
                 </div>
                 <p className="text-sm text-[#c08aa4]">
-                  {selectedDate ? "No customer nails found for selected date" : "No customer nails found"}
+                  {selectedDate ? t("manager.bookings.noBookings") : t("manager.bookings.noBookings")}
                 </p>
                 {selectedDate && (
                   <button
                     onClick={() => setSelectedDate(null)}
                     className="mt-4 rounded-full border border-[#f4c1d8] bg-[#fff7fb] px-6 py-2.5 text-xs font-bold text-[#ea4f93] hover:bg-[#fff0f8]"
                   >
-                    Clear date filter
+                    {t("manager.bookings.resetFilters") || "Clear date filter"}
                   </button>
                 )}
               </div>
@@ -953,7 +955,7 @@ export function CustomerNailPage() {
                       onChange={handlePageChange}
                       showSizeChanger={false}
                       showQuickJumper={false}
-                      showTotal={(total) => `Total ${total} items`}
+                      showTotal={(total) => language === "vi" ? `Tổng ${total} mục` : `Total ${total} items`}
                     />
                   </div>
                 )}
@@ -980,20 +982,21 @@ export function CustomerNailPage() {
               <Sparkles size={24} />
             </div>
             <div className="mt-4 text-center">
-              <h3 className="text-xl font-extrabold text-[#402542]">New Pending Review Request</h3>
+              <h3 className="text-xl font-extrabold text-[#402542]">{language === "vi" ? "Yêu cầu thiết kế mới" : "New Pending Review Request"}</h3>
               <p className="mt-2 text-sm text-[#a46a87]">
-                A new customer nail request needs manager attention.
+                {language === "vi" ? "Một yêu cầu thiết kế móng mới cần sự chú ý của quản lý" : "A new customer nail request needs manager attention."
+                }
               </p>
             </div>
           </div>
           <div className="-mt-6 rounded-[28px] bg-white px-6 pb-6 pt-6">
             <div className="rounded-[22px] border border-[#f5d4e3] bg-[linear-gradient(180deg,#fffafb_0%,#fff6fa_100%)] p-5 text-center shadow-[0_12px_28px_rgba(236,72,153,0.06)]">
-              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">Design Name</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">{language === "vi" ? "Tên thiết kế" : "Design Name"}</p>
               <p className="mt-2 text-lg font-extrabold text-[#3f2240]">
                 {pendingReviewModalNail?.name || "Untitled Design"}
               </p>
               <p className="mt-2 text-sm text-[#8d6d80]">
-                This modal closes automatically in about 3 seconds.
+                {language === "vi" ? "Modal này sẽ đóng tự động trong khoảng 3 giây." : "This modal closes automatically in about 3 seconds."}
               </p>
             </div>
             <button
@@ -1007,7 +1010,7 @@ export function CustomerNailPage() {
               }}
               className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-[#ea4f93] px-5 py-3 text-sm font-bold text-white shadow-[0_10px_22px_rgba(234,79,147,0.18)] transition hover:bg-[#df4588]"
             >
-              Open Request
+              {t("manager.common.view") || "Open Request"}
             </button>
           </div>
         </Modal>

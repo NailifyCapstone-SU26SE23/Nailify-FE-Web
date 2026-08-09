@@ -16,7 +16,7 @@ function validateForm(formValues, t) {
 }
 
 export function CategoryTypeCreatePage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [formValues, setFormValues] = useState({ name: "" });
   const [formError, setFormError] = useState("");

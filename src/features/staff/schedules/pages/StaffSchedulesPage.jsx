@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { fetchStaffSchedules } from "../services/staffScheduleService";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const HOUR_MARKERS = Array.from({ length: 12 }, (_, index) => 7 + index);
@@ -133,6 +134,7 @@ export function StaffSchedulesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [now, setNow] = useState(() => dayjs());
+  const { language } = useLanguage();
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -252,7 +254,7 @@ export function StaffSchedulesPage() {
                   <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[#f0f2f6] bg-[#fff9f6] text-[#f57c67]">
                     <ArrowLeft size={15} />
                   </span>
-                  <span className="text-[16px] font-bold">Daily schedule</span>
+                  <span className="text-[16px] font-bold">{language === "vi" ? "Lịch làm việc hàng ngày" : "Daily schedule"}</span>
                 </button>
 
                 <button
@@ -261,7 +263,7 @@ export function StaffSchedulesPage() {
                   className="inline-flex items-center gap-2 rounded-2xl border border-[#eef0f5] bg-white px-4 py-2 text-sm font-semibold text-[#4d556d]"
                 >
                   <RefreshCcw size={14} className="text-[#f57c67]" />
-                  Refresh
+                  {language === "vi" ? "Tải lại" : "Refresh"}
                 </button>
               </div>
             </div>
@@ -276,7 +278,7 @@ export function StaffSchedulesPage() {
               <div className="overflow-hidden rounded-[24px] border border-[#eef0f5] bg-[#fbfcff]">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#eef0f5] px-4 py-4">
                   <div>
-                    <p className="text-[15px] font-bold text-[#1f2435]">Daily schedule (staff week view)</p>
+                    <p className="text-[15px] font-bold text-[#1f2435]">{language === "vi" ? "Lịch làm việc theo tuần" : "Daily schedule (staff week view)"}</p>
                     <p className="mt-1 text-sm text-[#8f97aa]">
                       {currentWeek.format("DD MMM YYYY")} - {endOfIsoWeek(currentWeek).format("DD MMM YYYY")}
                     </p>
@@ -306,7 +308,7 @@ export function StaffSchedulesPage() {
                       <ChevronRight size={16} />
                     </button>
                     <div className="rounded-2xl bg-white px-4 py-2 text-sm font-semibold text-[#5d657d]">
-                      {totalProcedures} schedules this week
+                      {language === "vi" ? `${totalProcedures} lịch trong tuần này` : `${totalProcedures} schedules this week`}
                     </div>
                   </div>
                 </div>
@@ -328,7 +330,7 @@ export function StaffSchedulesPage() {
 
                     <div className="relative">
                       <div className="grid grid-cols-[150px_repeat(12,minmax(0,1fr))] border-b border-[#eef0f5] text-sm text-[#707892]">
-                        <div className="px-4 py-4 font-semibold text-[#8e95aa]">Day</div>
+                        <div className="px-4 py-4 font-semibold text-[#8e95aa]">{language === "vi" ? "Ngày" : "Day"}</div>
                         {HOUR_MARKERS.map((hour) => (
                           <div key={`header-${hour}`} className="border-l border-[#f3f5f8] px-1 py-4 text-center text-xs font-medium sm:px-2 lg:px-3 lg:text-sm">
                             {String(hour).padStart(2, "0")}:00
@@ -359,8 +361,10 @@ export function StaffSchedulesPage() {
                                 {isToday ? <span className="h-2 w-2 rounded-full bg-[#f57c67]" /> : null}
                               </div>
                               <p className="mt-2 text-xs text-[#8f97aa] lg:text-sm">
-                                {group.schedules.length > 0 ? `${group.schedules.length} shift${group.schedules.length > 1 ? "s" : ""}` : "No shifts"}
-                              </p>
+                                 {group.schedules.length > 0
+                                   ? (language === "vi" ? `${group.schedules.length} ca làm` : `${group.schedules.length} shift${group.schedules.length > 1 ? "s" : ""}`)
+                                   : (language === "vi" ? "Không có ca" : "No shifts")}
+                               </p>
                             </div>
 
                             {HOUR_MARKERS.map((hour) => (

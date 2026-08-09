@@ -25,28 +25,34 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { fetchSalonWaitlist } from "../services/bookingsService";
 import { loadAuthSession } from "../../../core/auth/model/authStorage";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 dayjs.extend(duration);
 
 const STATUS_META = {
   WAITING: {
     label: "Waiting for slot",
+    labelVi: "Đang chờ xếp chỗ",
     className: "border-[#ffd9a8] bg-[#fff7ed] text-[#c76a00]",
   },
   NOTIFIED: {
     label: "Offer sent",
+    labelVi: "Đã gửi đề nghị",
     className: "border-[#c7d2fe] bg-[#eef2ff] text-[#4f46e5]",
   },
   CONFIRMED: {
     label: "Converted",
+    labelVi: "Đã đặt lịch thành công",
     className: "border-[#bbf7d0] bg-[#f0fdf4] text-[#15803d]",
   },
   EXPIRED: {
     label: "Offer expired",
+    labelVi: "Đề nghị đã hết hạn",
     className: "border-[#fecdd3] bg-[#fff1f2] text-[#be123c]",
   },
   CANCELLED: {
     label: "Cancelled",
+    labelVi: "Đã hủy bỏ",
     className: "border-[#e5e7eb] bg-[#f9fafb] text-[#4b5563]",
   },
 };
@@ -69,6 +75,7 @@ const getSalonId = () => {
 function NotifiedCountdown({ expiresAt, onExpire }) {
   const [timeLeft, setTimeLeft] = useState("");
   const [progress, setProgress] = useState(100);
+  const { language } = useLanguage();
 
   useEffect(() => {
     if (!expiresAt) return;
@@ -81,7 +88,7 @@ function NotifiedCountdown({ expiresAt, onExpire }) {
       const diffSeconds = target.diff(now, "second");
 
       if (diffSeconds <= 0) {
-        setTimeLeft("Hold Expired");
+        setTimeLeft(language === "vi" ? "Hết hạn giữ chỗ" : "Hold Expired");
         setProgress(0);
         if (onExpire) onExpire();
         return;
@@ -90,7 +97,7 @@ function NotifiedCountdown({ expiresAt, onExpire }) {
       // Format time left
       const mins = Math.floor(diffSeconds / 60);
       const secs = diffSeconds % 60;
-      setTimeLeft(`${mins}m ${secs.toString().padStart(2, "0")}s`);
+      setTimeLeft(language === "vi" ? `${mins}phút ${secs.toString().padStart(2, "0")}giây` : `${mins}m ${secs.toString().padStart(2, "0")}s`);
 
       // Progress bar percentage
       const pct = Math.min(100, Math.max(0, (diffSeconds / totalWindowSeconds) * 100));
@@ -101,13 +108,13 @@ function NotifiedCountdown({ expiresAt, onExpire }) {
     const interval = setInterval(updateTimer, 1000);
 
     return () => clearInterval(interval);
-  }, [expiresAt, onExpire]);
+  }, [expiresAt, onExpire, language]);
 
-  if (timeLeft === "Hold Expired") {
+  if (timeLeft === (language === "vi" ? "Hết hạn giữ chỗ" : "Hold Expired")) {
     return (
       <div className="flex items-center gap-1.5 text-xs font-bold text-[#e1447f]">
         <XCircle size={13} />
-        <span>Hold Expired</span>
+        <span>{language === "vi" ? "Hết hạn giữ chỗ" : "Hold Expired"}</span>
       </div>
     );
   }
@@ -117,7 +124,7 @@ function NotifiedCountdown({ expiresAt, onExpire }) {
       <div className="flex items-center justify-between text-[11px] font-bold text-[#ea4f93]">
         <span className="flex items-center gap-1">
           <Clock size={11} className="animate-spin" style={{ animationDuration: "3s" }} />
-          Confirm hold:
+          {language === "vi" ? "Thời gian giữ chỗ:" : "Confirm hold:"}
         </span>
         <span>{timeLeft}</span>
       </div>
@@ -133,6 +140,7 @@ function NotifiedCountdown({ expiresAt, onExpire }) {
 
 // Card Wrapper for stats
 function StatCard({ title, value, icon: Icon, gradient, textColor, shadowColor, description }) {
+  const { language } = useLanguage();
   return (
     <div className={`relative overflow-hidden rounded-[24px] bg-white p-5 border border-[#fbe7ef] shadow-sm transition-all duration-300 hover:shadow-md`}>
       <div className="flex items-start justify-between">
@@ -198,6 +206,7 @@ function QueueEntryCard({ item, fallbackPosition, isNext, onOpen, getStatusBadge
   const statusKey = getStatusKey(item.status);
   const isActive = statusKey === "WAITING" || statusKey === "NOTIFIED";
   const position = getWaitlistPosition(item, fallbackPosition);
+  const { language } = useLanguage();
 
   return (
     <article
@@ -213,12 +222,12 @@ function QueueEntryCard({ item, fallbackPosition, isNext, onOpen, getStatusBadge
             className={`flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-2xl border text-center ${isActive ? "border-[#f7c7da] bg-[#fff4f8] text-[#d83f86]" : "border-[#e5e7eb] bg-[#f9fafb] text-[#64748b]"
               }`}
           >
-            <span className="text-[9px] font-bold uppercase leading-none opacity-60">No.</span>
+            <span className="text-[9px] font-bold uppercase leading-none opacity-60">STT</span>
             <span className="mt-1 text-xl font-bold leading-none">{position}</span>
           </div>
           {isNext && (
             <span className="hidden rounded-full bg-[#402542] px-2.5 py-1 text-[9px] font-bold uppercase text-white lg:inline-flex animate-pulse">
-              Next to notify
+              {language === "vi" ? "Lượt tiếp theo" : "Next to notify"}
             </span>
           )}
         </div>
@@ -233,14 +242,14 @@ function QueueEntryCard({ item, fallbackPosition, isNext, onOpen, getStatusBadge
             </div>
             <p className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-[#9b7f92]">
               <UserRound size={13} className="text-[#a88a9f]" />
-              Joined at: {dayjs(item.createdAt).format("DD MMM, HH:mm")}
+              {language === "vi" ? "Tham gia lúc" : "Joined at"}: {dayjs(item.createdAt).format("DD MMM, HH:mm")}
             </p>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3 rounded-xl bg-[#fff8fb] p-3 text-xs sm:grid-cols-3 lg:grid-cols-1 lg:bg-transparent lg:p-0">
           <div>
-            <p className="font-bold uppercase text-[10px] tracking-wider text-[#b38da4]">Requested Time</p>
+            <p className="font-bold uppercase text-[10px] tracking-wider text-[#b38da4]">{language === "vi" ? "Giờ yêu cầu" : "Requested Time"}</p>
             <p className="mt-1 flex items-center gap-1.5 font-bold text-[#321735]">
               <Calendar size={13} className="text-[#ea4f93]" />
               {dayjs(item.requestedDate).format("DD MMM")}
@@ -248,19 +257,19 @@ function QueueEntryCard({ item, fallbackPosition, isNext, onOpen, getStatusBadge
             <p className="mt-1 font-bold text-[#7e4fe6]">{formatTimeSpan(item.requestedStartTime)}</p>
           </div>
           <div className="lg:hidden">
-            <p className="font-bold uppercase text-[10px] tracking-wider text-[#b38da4]">Duration</p>
+            <p className="font-bold uppercase text-[10px] tracking-wider text-[#b38da4]">{language === "vi" ? "Thời lượng" : "Duration"}</p>
             <p className="mt-1 font-bold text-[#321735]">{item.estimatedDuration ? `${item.estimatedDuration}m` : "--"}</p>
           </div>
           <div className="lg:hidden">
-            <p className="font-bold uppercase text-[10px] tracking-wider text-[#b38da4]">Requested Artist</p>
-            <p className="mt-1 truncate font-bold text-[#321735]">{item.preferredNailArtistName || "Unassigned"}</p>
+            <p className="font-bold uppercase text-[10px] tracking-wider text-[#b38da4]">{language === "vi" ? "Thợ yêu cầu" : "Requested Artist"}</p>
+            <p className="mt-1 truncate font-bold text-[#321735]">{item.preferredNailArtistName || (language === "vi" ? "Không chỉ định" : "Unassigned")}</p>
           </div>
         </div>
 
         <div className="hidden min-w-0 text-sm lg:block">
           <p className="flex items-center gap-1.5 font-bold text-[#321735]">
             <Scissors size={15} className="text-[#ea4f93]" />
-            <span className="truncate">{item.preferredNailArtistName || "Unassigned"}</span>
+            <span className="truncate">{item.preferredNailArtistName || (language === "vi" ? "Không chỉ định" : "Unassigned")}</span>
           </p>
           <p className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-[#9b7f92]">
             <MapPin size={13} className="text-[#a88a9f]" />
@@ -268,14 +277,14 @@ function QueueEntryCard({ item, fallbackPosition, isNext, onOpen, getStatusBadge
           </p>
           <p className="mt-1 flex items-center gap-1.5 text-xs font-bold text-[#7e4fe6]">
             <Timer size={13} />
-            {item.estimatedDuration ? `${item.estimatedDuration} mins` : "Not estimated"}
+            {item.estimatedDuration ? `${item.estimatedDuration} ${language === "vi" ? "phút" : "mins"}` : (language === "vi" ? "Không ước tính" : "Not estimated")}
           </p>
         </div>
 
         <div className="rounded-xl border border-[#f5d0e3] bg-[#fffafd] p-3 text-sm">
           <p className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase text-[#b38da4] tracking-wider">
             <BellRing size={13} className="text-[#ea4f93]" />
-            Slot Notification
+            {language === "vi" ? "Nhận thông báo" : "Slot Notification"}
           </p>
           <div>{getStatusBadge(item.status)}</div>
           <div className="mt-2">{renderActionWindow(item)}</div>
@@ -284,7 +293,7 @@ function QueueEntryCard({ item, fallbackPosition, isNext, onOpen, getStatusBadge
         <div className="flex items-center justify-end">
           <button
             onClick={() => onOpen(item)}
-            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#f0d9e8] bg-white text-[#ea4f93] shadow-sm transition hover:border-[#ea4f93]/40 hover:bg-[#fff5f9] active:scale-95"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#f0d9e8] bg-white text-[#ea4f93] shadow-sm transition hover:border-[#ea4f93]/40 hover:bg-[#fff5f9] active:scale-95 cursor-pointer"
             title="Waitlist Details"
           >
             <Eye size={16} />
@@ -489,50 +498,50 @@ export function ManagerWaitlistPage() {
             <div className="relative z-10 flex flex-wrap items-center gap-3">
               <span className="inline-flex items-center gap-2 rounded-full border border-emerald-300/30 bg-emerald-400/20 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-200">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
-                Automated Waitlist Monitor
+                {language === "vi" ? "Giám Sát Hàng Chờ Tự Động" : "Automated Waitlist Monitor"}
               </span>
-              <span className="text-xs font-semibold text-white/60">Loaded {totalCount || waitlistData.length} entries</span>
+              <span className="text-xs font-semibold text-white/60">{language === "vi" ? `Đã tải ${totalCount || waitlistData.length} lượt` : `Loaded ${totalCount || waitlistData.length} entries`}</span>
             </div>
 
             <div className="relative z-10 mt-4 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
               <div>
-                <h1 className="text-3xl font-bold tracking-tight text-pink-100">Slot Recovery Waitlist</h1>
+                <h1 className="text-3xl font-bold tracking-tight text-pink-100">{language === "vi" ? "Danh Sách Chờ Nhận Lượt" : "Slot Recovery Waitlist"}</h1>
                 <p className="mt-2 max-w-2xl text-xs leading-5 text-white/70">
-                  When a customer cancels a booked appointment, the system will automatically send a priority slot offer to the first eligible customer in the waitlist below.
+                  {language === "vi" ? "Khi một khách hàng hủy cuộc hẹn đã đặt, hệ thống sẽ tự động gửi thông báo ưu tiên nhận slot trống cho khách hàng đủ điều kiện đầu tiên trong danh sách chờ dưới đây." : "When a customer cancels a booked appointment, the system will automatically send a priority slot offer to the first eligible customer in the waitlist below."}
                 </p>
               </div>
               <button
                 onClick={loadWaitlist}
                 disabled={isLoading}
-                className="inline-flex h-11 w-fit items-center justify-center gap-2 rounded-xl bg-white px-4 text-xs font-bold text-[#402542] shadow-md transition hover:bg-pink-50 hover:shadow active:scale-95 disabled:opacity-50"
+                className="inline-flex h-11 w-fit items-center justify-center gap-2 rounded-xl bg-white px-4 text-xs font-bold text-[#402542] shadow-md transition hover:bg-pink-50 hover:shadow active:scale-95 disabled:opacity-50 cursor-pointer"
               >
                 <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
-                Refresh Waitlist
+                {language === "vi" ? "Tải Lại Danh Sách" : "Refresh Waitlist"}
               </button>
             </div>
           </div>
 
           <div className="bg-[#fff8fb] p-6 border-l border-[#f5e3ed] flex flex-col justify-between">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[#a77f98]">Next Customer to Receive Slot</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#a77f98]">{language === "vi" ? "Khách Hàng Tiếp Theo Được Nhận Lượt" : "Next Customer to Receive Slot"}</p>
             {nextGuest ? (
               <div className="mt-3 flex items-center gap-4 bg-white p-3 rounded-2xl border border-[#fcd5e6] shadow-sm">
                 <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-[#402542] text-white shadow-sm">
-                  <span className="text-[8px] font-bold uppercase leading-none opacity-60">No.</span>
+                  <span className="text-[8px] font-bold uppercase leading-none opacity-60">STT</span>
                   <span className="mt-0.5 text-xl font-bold leading-none">{getWaitlistPosition(nextGuest, 1)}</span>
                 </div>
                 <div className="min-w-0 flex-1">
                   <h2 className="truncate text-base font-bold text-[#321735]">{nextGuest.customerName || "Guest"}</h2>
                   <p className="mt-0.5 text-xs font-bold text-[#ea4f93]">
-                    {dayjs(nextGuest.requestedDate).format("DD MMM")} at {formatTimeSpan(nextGuest.requestedStartTime)}
+                    {dayjs(nextGuest.requestedDate).format("DD MMM")} - {formatTimeSpan(nextGuest.requestedStartTime)}
                   </p>
                   <p className="mt-0.5 truncate text-[10px] font-semibold text-[#a77f98]">
-                    Requested: {nextGuest.preferredNailArtistName || "Any Artist"} · {nextGuest.estimatedDuration || "--"}m
+                    {language === "vi" ? "Yêu cầu" : "Requested"}: {nextGuest.preferredNailArtistName || (language === "vi" ? "Bất kỳ thợ nào" : "Any Artist")} · {nextGuest.estimatedDuration || "--"}m
                   </p>
                 </div>
               </div>
             ) : (
               <div className="mt-3 rounded-xl border border-dashed border-[#fcd5e6] bg-white p-4 text-xs font-bold text-[#a77f98] text-center">
-                No customers are currently waiting.
+                {language === "vi" ? "Hiện tại không có khách nào đang chờ." : "No customers are currently waiting."}
               </div>
             )}
           </div>
@@ -542,40 +551,40 @@ export function ManagerWaitlistPage() {
       {/* Queue stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Waiting For Slot"
+          title={language === "vi" ? "Đang Chờ Xếp Chỗ" : "Waiting For Slot"}
           value={stats.waiting}
           icon={Hourglass}
           gradient="from-[#ffafcc] to-[#ea4f93]"
           textColor="text-[#ea4f93]"
           shadowColor="shadow-[#ea4f93]/15"
-          description="Guests queued for a cancelled/open slot"
+          description={language === "vi" ? "Khách hàng đang xếp hàng chờ có lịch trống" : "Guests queued for a cancelled/open slot"}
         />
         <StatCard
-          title="Offer Sent"
+          title={language === "vi" ? "Đã Gửi Đề Nghị" : "Offer Sent"}
           value={stats.notified}
           icon={Clock}
           gradient="from-[#c4b5fd] to-[#7e4fe6]"
           textColor="text-[#7e4fe6]"
           shadowColor="shadow-[#7e4fe6]/15"
-          description="Guests notified to confirm the slot"
+          description={language === "vi" ? "Khách được thông báo xác nhận slot trống" : "Guests notified to confirm the slot"}
         />
         <StatCard
-          title="Expired Offers"
+          title={language === "vi" ? "Đề Nghị Đã Hết Hạn" : "Expired Offers"}
           value={stats.expired}
           icon={XCircle}
           gradient="from-[#fda4af] to-[#e1447f]"
           textColor="text-[#e1447f]"
           shadowColor="shadow-[#e1447f]/15"
-          description="Confirmation window ended"
+          description={language === "vi" ? "Hết thời gian xác nhận lịch đặt giữ" : "Confirmation window ended"}
         />
         <StatCard
-          title="Converted Bookings"
+          title={language === "vi" ? "Đã Chuyển Đặt Lịch" : "Converted Bookings"}
           value={stats.confirmed}
           icon={UserCheck}
           gradient="from-[#6ee7b7] to-[#2fa25f]"
           textColor="text-[#2fa25f]"
           shadowColor="shadow-[#2fa25f]/15"
-          description="Waitlist guests booked successfully"
+          description={language === "vi" ? "Khách hàng trong danh sách đã đặt thành công" : "Waitlist guests booked successfully"}
         />
       </div>
 
@@ -583,7 +592,7 @@ export function ManagerWaitlistPage() {
       <div className="rounded-2xl border border-[#fbe7ef] bg-white p-5 shadow-sm space-y-4 md:space-y-0 md:flex md:items-center md:justify-between md:gap-4">
         <div className="grid flex-1 gap-4 lg:grid-cols-[1fr_220px_240px]">
           <Input
-            placeholder="Search guest, artist, or salon branch..."
+            placeholder={language === "vi" ? "Tìm kiếm tên khách, thợ nail hoặc chi nhánh..." : "Search guest, artist, or salon branch..."}
             prefix={<Search size={16} className="text-[#c08aa4]" />}
             value={searchQuery}
             onChange={(e) => {
@@ -595,7 +604,7 @@ export function ManagerWaitlistPage() {
 
           <div className="flex items-center gap-2 rounded-xl border border-[#f0d9e8] px-3">
             <span className="text-xs font-bold text-[#7f6478] flex items-center gap-1.5 shrink-0">
-              <Filter size={14} /> Status:
+              <Filter size={14} /> Trạng thái:
             </span>
             <Select
               value={statusFilter}
@@ -604,12 +613,12 @@ export function ManagerWaitlistPage() {
                 setCurrentPage(1);
               }}
               options={[
-                { value: "ALL", label: "All Statuses" },
-                { value: "WAITING", label: "Waiting for slot" },
-                { value: "NOTIFIED", label: "Offer sent" },
-                { value: "CONFIRMED", label: "Converted" },
-                { value: "EXPIRED", label: "Offer expired" },
-                { value: "CANCELLED", label: "Cancelled" },
+                { value: "ALL", label: language === "vi" ? "Tất cả trạng thái" : "All Statuses" },
+                { value: "WAITING", label: language === "vi" ? "Đang chờ xếp chỗ" : "Waiting for slot" },
+                { value: "NOTIFIED", label: language === "vi" ? "Đã gửi đề nghị" : "Offer sent" },
+                { value: "CONFIRMED", label: language === "vi" ? "Đã đặt lịch" : "Converted" },
+                { value: "EXPIRED", label: language === "vi" ? "Đã hết hạn" : "Offer expired" },
+                { value: "CANCELLED", label: language === "vi" ? "Đã hủy" : "Cancelled" },
               ]}
               variant="borderless"
               className="h-11 flex-1"
@@ -619,7 +628,7 @@ export function ManagerWaitlistPage() {
 
           <div className="flex items-center gap-2 rounded-xl border border-[#f0d9e8] px-3">
             <span className="text-xs font-bold text-[#7f6478] flex items-center gap-1.5 shrink-0">
-              <ArrowUpDown size={14} /> Sort:
+              <ArrowUpDown size={14} /> Sắp xếp:
             </span>
             <Select
               value={sortMode}
@@ -628,10 +637,10 @@ export function ManagerWaitlistPage() {
                 setCurrentPage(1);
               }}
               options={[
-                { value: "queue", label: "Notify priority" },
-                { value: "requestAsc", label: "Earliest requested slot" },
-                { value: "requestDesc", label: "Latest requested slot" },
-                { value: "newest", label: "Newest waitlist entry" },
+                { value: "queue", label: language === "vi" ? "Thứ tự ưu tiên" : "Notify priority" },
+                { value: "requestAsc", label: language === "vi" ? "Giờ đặt sớm nhất" : "Earliest requested slot" },
+                { value: "requestDesc", label: language === "vi" ? "Giờ đặt trễ nhất" : "Latest requested slot" },
+                { value: "newest", label: language === "vi" ? "Mới đăng ký nhất" : "Newest waitlist entry" },
               ]}
               variant="borderless"
               className="h-11 flex-1"
@@ -649,29 +658,29 @@ export function ManagerWaitlistPage() {
       <div className="rounded-2xl border border-[#fbe7ef] bg-white p-6 shadow-sm">
         <div className="mb-5 flex flex-col justify-between gap-3 border-b border-[#fbe7ef] pb-5 md:flex-row md:items-center">
           <div>
-            <h2 className="text-lg font-bold text-[#402542]">Slot release queue</h2>
+            <h2 className="text-lg font-bold text-[#402542]">{language === "vi" ? "Hàng chờ phục hồi slot trống" : "Slot release queue"}</h2>
             <p className="mt-1 text-xs font-semibold text-[#9b7f92]">
-              Showing {sortedList.length} guests waiting for their requested slot to become available.
+              {language === "vi" ? `Hiển thị ${sortedList.length} khách đang đợi khung giờ yêu cầu được trống.` : `Showing ${sortedList.length} guests waiting for their requested slot to become available.`}
             </p>
           </div>
           <div className="inline-flex items-center gap-2 rounded-xl bg-[#fff4f8] px-3 py-2 text-xs font-bold text-[#d83f86]">
             <CalendarClock size={14} />
-            {sortMode === "queue" ? "Notify order: priority first" : "Custom sort active"}
+            {sortMode === "queue" ? (language === "vi" ? "Thứ tự ưu tiên gửi tin" : "Notify order: priority first") : (language === "vi" ? "Đang áp dụng bộ lọc xếp" : "Custom sort active")}
           </div>
         </div>
         {isLoading ? (
           <div className="flex h-64 flex-col items-center justify-center gap-4 text-center">
             <Spin size="large" className="pink-spin" />
-            <p className="text-sm font-semibold text-[#a88a9f]">Syncing queue data...</p>
+            <p className="text-sm font-semibold text-[#a88a9f]">{language === "vi" ? "Đang đồng bộ dữ liệu..." : "Syncing queue data..."}</p>
           </div>
         ) : sortedList.length === 0 ? (
           <div className="flex h-64 flex-col items-center justify-center gap-3 text-center border-2 border-dashed border-[#f8deea] rounded-2xl">
             <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#fff0f5] text-[#ea4f93]">
               <AlertCircle size={24} />
             </div>
-            <h3 className="text-base font-bold text-[#402542]">No Waitlist Guests Found</h3>
+            <h3 className="text-base font-bold text-[#402542]">{language === "vi" ? "Không tìm thấy khách hàng nào" : "No Waitlist Guests Found"}</h3>
             <p className="text-xs text-[#a88a9f] max-w-xs">
-              No guests are currently waiting for a cancelled/open slot matching your filters.
+              {language === "vi" ? "Không có khách nào đang chờ có lịch trống khớp với bộ lọc của bạn." : "No guests are currently waiting for a cancelled/open slot matching your filters."}
             </p>
           </div>
         ) : (
@@ -699,22 +708,22 @@ export function ManagerWaitlistPage() {
             {totalPages > 1 && (
               <div className="mt-6 flex items-center justify-between border-t border-[#fbe7ef] pt-4">
                 <p className="text-xs font-semibold text-[#a88a9f]">
-                  Showing Page {visiblePage} of {totalPages} ({sortedList.length} items total)
+                  {language === "vi" ? `Hiển thị Trang ${visiblePage} / ${totalPages} (Tổng cộng ${sortedList.length} mục)` : `Showing Page {visiblePage} of {totalPages} ({sortedList.length} items total)`}
                 </p>
                 <div className="flex items-center gap-2">
                   <button
                     disabled={visiblePage === 1}
                     onClick={() => setCurrentPage((c) => Math.max(1, c - 1))}
-                    className="rounded-xl border border-[#f0d9e8] bg-white px-3.5 py-2 text-xs font-bold text-[#402542] hover:bg-gray-50 disabled:opacity-50"
+                    className="rounded-xl border border-[#f0d9e8] bg-white px-3.5 py-2 text-xs font-bold text-[#402542] hover:bg-gray-50 disabled:opacity-50 cursor-pointer"
                   >
-                    Previous
+                    {language === "vi" ? "Trang trước" : "Previous"}
                   </button>
                   <button
                     disabled={visiblePage === totalPages}
                     onClick={() => setCurrentPage((c) => Math.min(totalPages, c + 1))}
-                    className="rounded-xl border border-[#f0d9e8] bg-white px-3.5 py-2 text-xs font-bold text-[#402542] hover:bg-gray-50 disabled:opacity-50"
+                    className="rounded-xl border border-[#f0d9e8] bg-white px-3.5 py-2 text-xs font-bold text-[#402542] hover:bg-gray-50 disabled:opacity-50 cursor-pointer"
                   >
-                    Next
+                    {language === "vi" ? "Trang sau" : "Next"}
                   </button>
                 </div>
               </div>
@@ -730,7 +739,7 @@ export function ManagerWaitlistPage() {
             <div className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#ffe7ef] text-[#ea4f93]">
               <Sparkles size={16} />
             </div>
-            <span className="font-extrabold text-[#402542]">Slot Offer Details</span>
+            <span className="font-extrabold text-[#402542]">{language === "vi" ? "Chi Tiết Đề Nghị Slot Trống" : "Slot Offer Details"}</span>
           </div>
         }
         placement="right"
@@ -758,7 +767,7 @@ export function ManagerWaitlistPage() {
                   <div className="mt-1 flex items-center gap-1.5">
                     {getStatusBadge(selectedEntry.status)}
                     <span className="text-[11px] font-bold text-[#ea4f93] bg-[#fff0f5] border border-[#fbe1ec] rounded-full px-2">
-                      Notify Priority: #{selectedEntry.position}
+                      {language === "vi" ? `Ưu tiên báo: #${selectedEntry.position}` : `Notify Priority: #${selectedEntry.position}`}
                     </span>
                   </div>
                 </div>
@@ -766,59 +775,59 @@ export function ManagerWaitlistPage() {
             </div>
 
             <div className="space-y-4">
-              <h5 className="text-xs font-bold uppercase tracking-wider text-[#a88a9f]">Wanted Slot</h5>
+              <h5 className="text-xs font-bold uppercase tracking-wider text-[#a88a9f]">{language === "vi" ? "Khung Giờ Mong Muốn" : "Wanted Slot"}</h5>
               <div className="rounded-xl border border-[#fbe7ef] bg-[#fffcfd] p-4 space-y-3">
                 <div className="flex justify-between text-xs">
-                  <span className="font-semibold text-[#8b7382]">Requested Date:</span>
+                  <span className="font-semibold text-[#8b7382]">{language === "vi" ? "Ngày yêu cầu:" : "Requested Date:"}</span>
                   <span className="font-bold text-[#402542]">{dayjs(selectedEntry.requestedDate).format("dddd, DD MMMM YYYY")}</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="font-semibold text-[#8b7382]">Requested Time:</span>
+                  <span className="font-semibold text-[#8b7382]">{language === "vi" ? "Giờ yêu cầu:" : "Requested Time:"}</span>
                   <span className="font-bold text-[#7e4fe6]">{formatTimeSpan(selectedEntry.requestedStartTime)}</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="font-semibold text-[#8b7382]">Estimated Duration:</span>
-                  <span className="font-bold text-[#ea4f93]">{selectedEntry.estimatedDuration} minutes</span>
+                  <span className="font-semibold text-[#8b7382]">{language === "vi" ? "Thời lượng dự kiến:" : "Estimated Duration:"}</span>
+                  <span className="font-bold text-[#ea4f93]">{selectedEntry.estimatedDuration} {language === "vi" ? "phút" : "minutes"}</span>
                 </div>
               </div>
             </div>
 
             <div className="space-y-4">
-              <h5 className="text-xs font-bold uppercase tracking-wider text-[#a88a9f]">Staff & Branch</h5>
+              <h5 className="text-xs font-bold uppercase tracking-wider text-[#a88a9f]">{language === "vi" ? "Nhân Viên & Chi Nhánh" : "Staff & Branch"}</h5>
               <div className="rounded-xl border border-[#fbe7ef] bg-[#fffcfd] p-4 space-y-3">
                 <div className="flex justify-between text-xs">
-                  <span className="font-semibold text-[#8b7382]">Preferred Nail Artist:</span>
-                  <span className="font-bold text-[#402542]">{selectedEntry.preferredNailArtistName || "Unassigned"}</span>
+                  <span className="font-semibold text-[#8b7382]">{language === "vi" ? "Thợ yêu cầu:" : "Preferred Nail Artist:"}</span>
+                  <span className="font-bold text-[#402542]">{selectedEntry.preferredNailArtistName || (language === "vi" ? "Không chỉ định" : "Unassigned")}</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="font-semibold text-[#8b7382]">Salon Branch:</span>
+                  <span className="font-semibold text-[#8b7382]">{language === "vi" ? "Chi nhánh Salon:" : "Salon Branch:"}</span>
                   <span className="font-bold text-[#402542]">{selectedEntry.salonName || "Salon Branch"}</span>
                 </div>
               </div>
             </div>
 
             <div className="space-y-4">
-              <h5 className="text-xs font-bold uppercase tracking-wider text-[#a88a9f]">Audit Timestamps</h5>
+              <h5 className="text-xs font-bold uppercase tracking-wider text-[#a88a9f]">{language === "vi" ? "Lịch Sử Thời Gian" : "Audit Timestamps"}</h5>
               <div className="rounded-xl border border-[#fbe7ef] bg-[#fffcfd] p-4 space-y-3">
                 <div className="flex justify-between text-xs">
-                  <span className="font-semibold text-[#8b7382]">Entered Waitlist:</span>
+                  <span className="font-semibold text-[#8b7382]">{language === "vi" ? "Vào hàng chờ lúc:" : "Entered Waitlist:"}</span>
                   <span className="font-bold text-[#402542]">{dayjs(selectedEntry.createdAt).format("DD MMM YYYY, HH:mm:ss")}</span>
                 </div>
                 {selectedEntry.notifiedAt && (
                   <div className="flex justify-between text-xs">
-                    <span className="font-semibold text-[#8b7382]">Offer Sent:</span>
+                    <span className="font-semibold text-[#8b7382]">{language === "vi" ? "Gửi đề nghị lúc:" : "Offer Sent:"}</span>
                     <span className="font-bold text-[#7e4fe6]">{dayjs(selectedEntry.notifiedAt).format("DD MMM YYYY, HH:mm:ss")}</span>
                   </div>
                 )}
                 {selectedEntry.expiresAt && (
                   <div className="flex justify-between text-xs">
-                    <span className="font-semibold text-[#8b7382]">Offer Expires:</span>
+                    <span className="font-semibold text-[#8b7382]">{language === "vi" ? "Hết hạn đề nghị lúc:" : "Offer Expires:"}</span>
                     <span className="font-bold text-[#e1447f]">{dayjs(selectedEntry.expiresAt).format("DD MMM YYYY, HH:mm:ss")}</span>
                   </div>
                 )}
                 {selectedEntry.convertedBookingId && (
                   <div className="flex justify-between text-xs">
-                    <span className="font-semibold text-[#8b7382]">Booking Created:</span>
+                    <span className="font-semibold text-[#8b7382]">{language === "vi" ? "Đặt lịch thành công:" : "Booking Created:"}</span>
                     <span className="font-bold text-[#2fa25f]">ID: {selectedEntry.convertedBookingId}</span>
                   </div>
                 )}
@@ -829,9 +838,9 @@ export function ManagerWaitlistPage() {
               <Button
                 type="default"
                 onClick={() => setIsDrawerOpen(false)}
-                className="w-full h-11 rounded-xl font-bold border-[#f0d9e8] text-[#402542] hover:text-[#ea4f93] hover:border-[#ea4f93]"
+                className="w-full h-11 rounded-xl font-bold border-[#f0d9e8] text-[#402542] hover:text-[#ea4f93] hover:border-[#ea4f93] cursor-pointer"
               >
-                Close Panel
+                {language === "vi" ? "Đóng Bảng" : "Close Panel"}
               </Button>
             </div>
           </div>

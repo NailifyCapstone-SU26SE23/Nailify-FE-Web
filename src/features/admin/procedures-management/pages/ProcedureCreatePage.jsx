@@ -44,7 +44,7 @@ function validateForm(formValues, t) {
 }
 
 export function ProcedureCreatePage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [formValues, setFormValues] = useState(createEmptyForm);
   const [formError, setFormError] = useState("");

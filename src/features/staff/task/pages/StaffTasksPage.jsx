@@ -34,6 +34,7 @@ import {
   fetchSalonQueueTasks,
   updateStaffTaskStatus,
 } from "../services/staffTaskService";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 const TASK_TABS = [
   { key: "my", label: "My Tasks" },
@@ -652,6 +653,19 @@ export function StaffTasksPage() {
       return "";
     }
   }, []);
+  const { language } = useLanguage();
+
+  const TASK_TABS = [
+    { key: "my", label: language === "vi" ? "Nhiệm vụ của tôi" : "My Tasks" },
+    { key: "salon", label: language === "vi" ? "Nhiệm vụ Salon" : "Salon Tasks" },
+  ];
+
+  const BOARD_COLUMNS_TRANSLATED = [
+    { ...BOARD_COLUMNS[0], label: language === "vi" ? "Cần làm" : "To Do" },
+    { ...BOARD_COLUMNS[1], label: language === "vi" ? "Đang làm" : "In Progress" },
+    { ...BOARD_COLUMNS[2], label: language === "vi" ? "Hoàn thành" : "Completed" },
+    { ...BOARD_COLUMNS[3], label: language === "vi" ? "Bỏ qua" : "Skipped" },
+  ];
 
   const loadTasks = useCallback(async (options = {}) => {
     const { silent = false } = options;
@@ -951,38 +965,38 @@ export function StaffTasksPage() {
     return [
       {
         key: "assigned",
-        title: "Assigned",
+        title: language === "vi" ? "Được phân công" : "Assigned",
         value: myTasks.length,
-        note: "Tasks currently assigned to you",
+        note: language === "vi" ? "Nhiệm vụ hiện đang được giao cho bạn" : "Tasks currently assigned to you",
         icon: UserRoundCheck,
         toneClassName: "bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93]",
       },
       {
         key: "claimable",
-        title: "Claimable",
+        title: language === "vi" ? "Có thể nhận" : "Claimable",
         value: salonTasks.length,
-        note: "Visible steps in the salon queue",
+        note: language === "vi" ? "Các bước hiện thị trong hàng đợi salon" : "Visible steps in the salon queue",
         icon: Sparkles,
         toneClassName: "bg-gradient-to-br from-[#8b5cf6] to-[#7c3aed]",
       },
       {
         key: "required",
-        title: "Required",
+        title: language === "vi" ? "Bắt buộc" : "Required",
         value: requiredMyTasks,
-        note: "Required steps in your queue",
+        note: language === "vi" ? "Bước bắt buộc trong hàng đợi của bạn" : "Required steps in your queue",
         icon: CheckCircle2,
         toneClassName: "bg-gradient-to-br from-[#34d399] to-[#059669]",
       },
       {
         key: "overlap",
-        title: "Overlap Ready",
+        title: language === "vi" ? "Sẵn sàng song song" : "Overlap Ready",
         value: overlapReadyTasks,
-        note: "Claimable tasks that can overlap",
+        note: language === "vi" ? "Nhiệm vụ có thể làm đồng thời" : "Claimable tasks that can overlap",
         icon: Layers3,
         toneClassName: "bg-gradient-to-br from-[#f59e0b] to-[#d97706]",
       },
     ];
-  }, [myTasks, salonTasks]);
+  }, [myTasks, salonTasks, language]);
 
   return (
     <section className="mx-auto w-full max-w-[1450px] space-y-5">
@@ -1012,11 +1026,11 @@ export function StaffTasksPage() {
         <div className="border-b border-[#f6dce7] bg-[linear-gradient(180deg,#fff8fb_0%,#fff3f8_100%)] px-5 py-4 sm:px-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <SectionHeading
-              title="Task Queue"
+              title={language === "vi" ? "Hàng đợi nhiệm vụ" : "Task Queue"}
               subtitle={
                 activeTab === "my"
-                  ? "Drag tasks between columns to update their working status."
-                  : "Review the full salon task queue. Locked steps stay visible until earlier required steps are finished."
+                  ? (language === "vi" ? "Kéo thả nhiệm vụ giữa các cột để cập nhật trạng thái làm việc." : "Drag tasks between columns to update their working status.")
+                  : (language === "vi" ? "Xem toàn bộ hàng đợi nhiệm vụ salon. Các bước bị khóa vẫn hiển thị cho đến khi các bước trước đó hoàn thành." : "Review the full salon task queue. Locked steps stay visible until earlier required steps are finished.")
               }
             />
 
@@ -1036,7 +1050,7 @@ export function StaffTasksPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-full border border-[#f3d5e2] bg-white px-4 py-2 text-xs font-bold text-[#8f7184] transition hover:bg-[#fff7fb]"
               >
                 <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} />
-                Refresh
+                {language === "vi" ? "Tải lại" : "Refresh"}
               </button>
             </div>
           </div>
@@ -1053,7 +1067,7 @@ export function StaffTasksPage() {
 
               <input
                 type="text"
-                placeholder="Search customer, booking code, procedure..."
+                placeholder={language === "vi" ? "Tìm khách, mã booking, thủ thuật..." : "Search customer, booking code, procedure..."}
                 value={searchTaskText}
                 onChange={(e) => setSearchTaskText(e.target.value)}
                 className="
@@ -1135,7 +1149,7 @@ export function StaffTasksPage() {
                           "
               >
                 <option value="all">
-                  All Customers ({uniqueCustomers.length})
+                  {language === "vi" ? `Tất cả khách hàng (${uniqueCustomers.length})` : `All Customers (${uniqueCustomers.length})`}
                 </option>
 
                 {uniqueCustomers.map((cust) => (
@@ -1182,18 +1196,18 @@ export function StaffTasksPage() {
         <div className="p-5 sm:p-6">
           {isLoading ? (
             <div className="flex items-center justify-center py-20">
-              <Spin size="large" tip="Loading tasks..." />
+              <Spin size="large" tip={language === "vi" ? "Đang tải nhiệm vụ..." : "Loading tasks..."} />
             </div>
           ) : activeTab === "my" ? (
             myTasks.length === 0 ? (
               <EmptyState
-                title="No assigned tasks"
-                description="You currently do not have any active booking procedures assigned."
+                title={language === "vi" ? "Không có nhiệm vụ được phân công" : "No assigned tasks"}
+                description={language === "vi" ? "Bạn hiện không có bất kỳ thủ thuật đặt chỗ nào được giao." : "You currently do not have any active booking procedures assigned."}
               />
             ) : (
               <div className="overflow-x-auto pb-2">
                 <div className="flex min-w-max gap-4">
-                  {BOARD_COLUMNS.map((column) => (
+                  {BOARD_COLUMNS_TRANSLATED.map((column) => (
                     <BoardColumn
                       key={column.key}
                       column={column}
@@ -1217,13 +1231,13 @@ export function StaffTasksPage() {
             )
           ) : salonTasks.length === 0 ? (
             <EmptyState
-              title="No salon tasks"
-              description="There are no in-progress booking procedures visible in the salon queue right now."
+              title={language === "vi" ? "Không có nhiệm vụ salon" : "No salon tasks"}
+              description={language === "vi" ? "Hiện không có thủ thuật đặt chỗ nào đang tiến hành trong hàng đợi salon." : "There are no in-progress booking procedures visible in the salon queue right now."}
             />
           ) : (
             <div className="overflow-x-auto pb-2">
               <div className="flex min-w-max gap-4">
-                {BOARD_COLUMNS.map((column) => (
+                {BOARD_COLUMNS_TRANSLATED.map((column) => (
                   <BoardColumn
                     key={column.key}
                     column={column}
@@ -1266,19 +1280,19 @@ export function StaffTasksPage() {
                           canDrag={canDrag}
                           ownerLabel={
                             isAssigned
-                              ? getTaskOwnerLabel(task, "Assigned")
-                              : "Unassigned"
+                              ? getTaskOwnerLabel(task, language === "vi" ? "Đã nhận" : "Assigned")
+                              : (language === "vi" ? "Chưa nhận" : "Unassigned")
                           }
                           footerHint={
                             isBlockedBySequence
-                              ? "Claim follows the booking step order"
+                              ? (language === "vi" ? "Nhận theo thứ tự bước booking" : "Claim follows the booking step order")
                               : canDrag
-                                ? "Drag to move this task"
+                                ? (language === "vi" ? "Kéo để di chuyển nhiệm vụ này" : "Drag to move this task")
                                 : isAssignedToCurrentArtist
-                                  ? "Claim this task before updating status"
+                                  ? (language === "vi" ? "Nhận nhiệm vụ này trước khi cập nhật trạng thái" : "Claim this task before updating status")
                                   : isAssigned
-                                    ? "Only the staff who claimed this step can move it"
-                                    : "Claim this task before updating status"
+                                    ? (language === "vi" ? "Chỉ thợ đã nhận bước này mới có thể di chuyển" : "Only the staff who claimed this step can move it")
+                                    : (language === "vi" ? "Nhận nhiệm vụ này trước khi cập nhật trạng thái" : "Claim this task before updating status")
                           }
                           primaryAction={
                             isClaimable ? (
@@ -1288,7 +1302,7 @@ export function StaffTasksPage() {
                                 disabled={claimingTaskId === task.bookingProcedureId}
                                 className="inline-flex shrink-0 items-center justify-center gap-1 rounded-full bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] px-3 py-1 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
                               >
-                                {claimingTaskId === task.bookingProcedureId ? "Claiming..." : "Claim"}
+                                {claimingTaskId === task.bookingProcedureId ? (language === "vi" ? "Đang nhận..." : "Claiming...") : (language === "vi" ? "Nhận" : "Claim")}
                               </button>
                             ) : undefined
                           }
@@ -1318,11 +1332,11 @@ export function StaffTasksPage() {
             <TimerReset size={18} />
           </div>
           <div className="min-w-0">
-            <h3 className="text-sm font-bold text-[#402542]">How this screen works</h3>
+            <h3 className="text-sm font-bold text-[#402542]">{language === "vi" ? "Cách hoạt động" : "How this screen works"}</h3>
             <div className="mt-3 grid gap-3 md:grid-cols-3">
-              <MiniInfo label="My Tasks" value="Drag a card into another column to update its real status." />
-              <MiniInfo label="Salon Tasks" value="All salon steps stay visible, but blocked pending steps cannot be claimed until the earlier required step is done." />
-              <MiniInfo label="No Add Button" value="This board only reflects backend booking procedures, no manual task creation." />
+              <MiniInfo label={language === "vi" ? "Nhiệm vụ của tôi" : "My Tasks"} value={language === "vi" ? "Kéo thẻ sang cột khác để cập nhật trạng thái thực tế." : "Drag a card into another column to update its real status."} />
+              <MiniInfo label={language === "vi" ? "Nhiệm vụ Salon" : "Salon Tasks"} value={language === "vi" ? "Tất cả các bước đều hiển thị, nhưng các bước bị khóa không thể nhận được cho đến khi các bước bắt buộc trước đó hoàn thành." : "All salon steps stay visible, but blocked pending steps cannot be claimed until the earlier required step is done."} />
+              <MiniInfo label={language === "vi" ? "Không có nút Thêm" : "No Add Button"} value={language === "vi" ? "Bảng này chỉ phản ánh các thủ thuật booking từ backend." : "This board only reflects backend booking procedures, no manual task creation."} />
             </div>
           </div>
         </div>

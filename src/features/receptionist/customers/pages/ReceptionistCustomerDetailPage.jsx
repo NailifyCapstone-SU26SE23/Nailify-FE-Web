@@ -40,12 +40,13 @@ import {
 } from "../services/receptionistCustomerService";
 import { getReceptionistSalonId } from "../../bookings/services/receptionistBookingService";
 import { ROUTES } from "../../../../shared/constants/routes";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
-function formatDate(dateString) {
-  if (!dateString) return "Chưa cập nhật";
+function formatDate(dateString, language = "vi") {
+  if (!dateString) return language === "vi" ? "Chưa cập nhật" : "Not updated";
   const date = new Date(dateString);
-  if (isNaN(date.getTime()) || date.getFullYear() < 2000) return "Chưa cập nhật";
-  return new Intl.DateTimeFormat("vi-VN", {
+  if (isNaN(date.getTime()) || date.getFullYear() < 2000) return language === "vi" ? "Chưa cập nhật" : "Not updated";
+  return new Intl.DateTimeFormat(language === "vi" ? "vi-VN" : "en-US", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -75,19 +76,19 @@ function getAvatarBg(userId) {
   return gradients[charCode % gradients.length];
 }
 
-function getStatusBadge(status) {
+function getStatusBadge(status, language = "vi") {
   const norm = String(status || "").trim().toLowerCase();
   switch (norm) {
     case "active":
     case "current":
-      return { label: "Hoạt động", bg: "bg-[#E8F8EF] text-[#1F9D61] border-[#B8F0D0]" };
+      return { label: language === "vi" ? "Hoạt động" : "Active", bg: "bg-[#E8F8EF] text-[#1F9D61] border-[#B8F0D0]" };
     case "prospective":
-      return { label: "Tiềm năng", bg: "bg-[#F5ECFF] text-[#7C63D8] border-[#DCD0FF]" };
+      return { label: language === "vi" ? "Tiềm năng" : "Prospective", bg: "bg-[#F5ECFF] text-[#7C63D8] border-[#DCD0FF]" };
     case "non-active":
     case "inactive":
-      return { label: "Tạm khóa", bg: "bg-[#F1F1F1] text-[#666666] border-[#E0E0E0]" };
+      return { label: language === "vi" ? "Tạm khóa" : "Suspended", bg: "bg-[#F1F1F1] text-[#666666] border-[#E0E0E0]" };
     default:
-      return { label: status || "Hoạt động", bg: "bg-[#E8F8EF] text-[#1F9D61] border-[#B8F0D0]" };
+      return { label: status || (language === "vi" ? "Hoạt động" : "Active"), bg: "bg-[#E8F8EF] text-[#1F9D61] border-[#B8F0D0]" };
   }
 }
 
@@ -113,6 +114,7 @@ function getBookingStatusBadge(status) {
 export function ReceptionistCustomerDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t, language } = useLanguage();
 
   const [customer, setCustomer] = useState(null);
   const [bookings, setBookings] = useState([]);
@@ -123,7 +125,11 @@ export function ReceptionistCustomerDetailPage() {
   const [promotions, setPromotions] = useState([]);
 
   // Customer Preferences State
-  const [preferenceTags, setPreferenceTags] = useState(["Sơn Gel nhạt", "Móng vuông tròn", "Ưu tiên thợ kinh nghiệm"]);
+  const [preferenceTags, setPreferenceTags] = useState(
+    language === "vi" 
+      ? ["Sơn Gel nhạt", "Móng vuông tròn", "Ưu tiên thợ kinh nghiệm"] 
+      : ["Light Gel Polish", "Squoval Nails", "Experienced Artist Preferred"]
+  );
   const [newTagInput, setNewTagInput] = useState("");
 
   // Edit Customer Modal State
@@ -167,12 +173,12 @@ export function ReceptionistCustomerDetailPage() {
       }
     } catch (error) {
       console.error("Error loading customer detail:", error);
-      toast.error("Không thể tải thông tin khách hàng.");
+      toast.error(language === "vi" ? "Không thể tải thông tin khách hàng." : "Failed to load customer details.");
     } finally {
       setIsLoading(false);
       setLoadingBookings(false);
     }
-  }, [id]);
+  }, [id, language]);
 
   useEffect(() => {
     loadData();
@@ -196,25 +202,6 @@ export function ReceptionistCustomerDetailPage() {
     return null;
   }, [loyaltyTiers, customerTier]);
 
-  // const promotionMessage = useMemo(() => {
-  //   if (!promotions || promotions.length === 0) return "Tích điểm để nhận nhiều ưu đãi!";
-
-  //   // Tìm khuyến mãi Active phù hợp không phải đền bù
-  //   const activePromos = promotions.filter(p => p.status === 'Active' && p.situation !== 'Cancelled' && p.situation !== 'Reschedule');
-
-  //   if (activePromos.length > 0) {
-  //     const p = activePromos[0];
-  //     if (p.discountType === 'Percentage') {
-  //       return `Đủ điều kiện đổi ưu đãi ${p.discountValue}%`;
-  //     } else if (p.discountType === 'FixedAmount') {
-  //       return `Đủ điều kiện đổi ưu đãi ${p.discountValue.toLocaleString('vi-VN')}đ`;
-  //     }
-  //     return `Đủ điều kiện đổi: ${p.name}`;
-  //   }
-
-  //   return "Tích điểm để nhận nhiều ưu đãi!";
-  // }, [promotions]);
-
   const handleCreateWalkIn = () => {
     if (!customer) return;
     navigate(ROUTES.receptionistBookingsCreate, {
@@ -229,7 +216,7 @@ export function ReceptionistCustomerDetailPage() {
 
   const handleSaveProfile = async () => {
     if (!editFirstName.trim()) {
-      toast.error("Vui lòng nhập Tên khách hàng.");
+      toast.error(language === "vi" ? "Vui lòng nhập Tên khách hàng." : "Please enter the customer's first name.");
       return;
     }
     try {
@@ -241,12 +228,12 @@ export function ReceptionistCustomerDetailPage() {
         phone: editPhone.trim(),
         status: editStatus,
       });
-      toast.success("Cập nhật thông tin khách hàng thành công!");
+      toast.success(language === "vi" ? "Cập nhật thông tin khách hàng thành công!" : "Customer profile updated successfully!");
       setIsEditModalOpen(false);
       loadData();
     } catch (err) {
       console.error("Failed to update profile:", err);
-      toast.error(err.message || "Cập nhật thông tin thất bại.");
+      toast.error(err.message || (language === "vi" ? "Cập nhật thông tin thất bại." : "Failed to update profile."));
     } finally {
       setIsSavingProfile(false);
     }
@@ -256,7 +243,7 @@ export function ReceptionistCustomerDetailPage() {
     const trimmed = newTagInput.trim();
     if (!trimmed) return;
     if (preferenceTags.includes(trimmed)) {
-      toast.error("Nhãn sở thích này đã tồn tại.");
+      toast.error(language === "vi" ? "Nhãn sở thích này đã tồn tại." : "This preference tag already exists.");
       return;
     }
     setPreferenceTags([...preferenceTags, trimmed]);
@@ -287,7 +274,7 @@ export function ReceptionistCustomerDetailPage() {
   if (isLoading) {
     return (
       <div className="flex h-full min-h-[500px] items-center justify-center bg-[#FAF7F9]">
-        <Spin size="large" tip="Đang tải hồ sơ khách hàng..." />
+        <Spin size="large" tip={language === "vi" ? "Đang tải hồ sơ khách hàng..." : "Loading customer profile..."} />
       </div>
     );
   }
@@ -296,19 +283,19 @@ export function ReceptionistCustomerDetailPage() {
     return (
       <div className="flex h-full min-h-[500px] flex-col items-center justify-center bg-[#FAF7F9] text-gray-500 font-sans">
         <UserCircle size={60} className="mb-4 text-[#EA4F93] opacity-40" />
-        <p className="text-base font-extrabold text-[#3D243C]">Không tìm thấy thông tin khách hàng</p>
+        <p className="text-base font-extrabold text-[#3D243C]">{language === "vi" ? "Không tìm thấy thông tin khách hàng" : "Customer not found"}</p>
         <button
           onClick={() => navigate(-1)}
           className="mt-4 px-6 py-2.5 bg-[#FFF0F5] border border-[#F4D6E4] hover:bg-[#FFE5EE] text-[#EA4F93] rounded-full text-xs font-bold transition shadow-2xs"
         >
-          Quay lại danh sách
+          {language === "vi" ? "Quay lại danh sách" : "Back to list"}
         </button>
       </div>
     );
   }
 
-  const fullName = `${customer.firstName || ""} ${customer.lastName || ""}`.trim() || "Khách Hàng";
-  const statusInfo = getStatusBadge(customer.status);
+  const fullName = `${customer.firstName || ""} ${customer.lastName || ""}`.trim() || (language === "vi" ? "Khách Hàng" : "Customer");
+  const statusInfo = getStatusBadge(customer.status, language);
   const initials = getInitials(customer.firstName, customer.lastName);
   const avatarGradient = getAvatarBg(customer.userId);
 
@@ -327,10 +314,10 @@ export function ReceptionistCustomerDetailPage() {
           </button>
           <div>
             <h1 className="text-2xl font-bold text-[#2B182B] tracking-tight flex items-center gap-2.5">
-              Hồ Sơ Khách Hàng
+              {language === "vi" ? "Hồ Sơ Khách Hàng" : "Customer Profile"}
             </h1>
             <p className="text-xs text-[#9E8497] font-medium">
-              Quản lý chi tiết tài khoản, lịch sử dịch vụ và ưu đãi tích điểm
+              {language === "vi" ? "Quản lý chi tiết tài khoản, lịch sử dịch vụ và ưu đãi tích điểm" : "Manage account details, service history and loyalty programs"}
             </p>
           </div>
         </div>
@@ -343,7 +330,7 @@ export function ReceptionistCustomerDetailPage() {
             className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-white border border-[#F4D6E4] text-[#2B182B] text-xs font-bold shadow-2xs hover:bg-[#FFF8FA] hover:border-[#EA4F93] transition cursor-pointer"
           >
             <Edit size={15} className="text-[#EA4F93]" />
-            Chỉnh Sửa Hồ Sơ
+            {language === "vi" ? "Chỉnh Sửa Hồ Sơ" : "Edit Profile"}
           </button>
 
           <button
@@ -352,7 +339,7 @@ export function ReceptionistCustomerDetailPage() {
             className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-[#EA4F93] via-[#E11D48] to-[#BE123C] text-white text-xs font-bold shadow-md hover:shadow-lg transition hover:-translate-y-0.5 cursor-pointer"
           >
             <CalendarPlus size={16} />
-            Tạo Lịch Hẹn Đặt Chỗ
+            {language === "vi" ? "Tạo Lịch Hẹn Đặt Chỗ" : "Book Appointment"}
           </button>
         </div>
       </div>
@@ -411,29 +398,29 @@ export function ReceptionistCustomerDetailPage() {
               <a
                 href={customer.email ? `mailto:${customer.email}` : "#"}
                 className="text-xs font-bold text-white hover:text-pink-300 transition block mt-0.5 truncate"
-                title={customer.email || "Chưa cập nhật"}
+                title={customer.email || (language === "vi" ? "Chưa cập nhật" : "Not updated")}
               >
-                {customer.email || "Chưa cập nhật"}
+                {customer.email || (language === "vi" ? "Chưa cập nhật" : "Not updated")}
               </a>
             </div>
 
             <div className="rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 p-3 hover:bg-white/10 transition max-w-full shrink-0">
               <p className="text-[10px] font-bold text-purple-300 uppercase tracking-wider flex items-center gap-1.5">
-                <Phone size={12} className="text-pink-400" /> SĐT
+                <Phone size={12} className="text-pink-400" /> {language === "vi" ? "SĐT" : "Phone"}
               </p>
               <a
                 href={customer.phone ? `tel:${customer.phone}` : "#"}
                 className="text-xs font-bold text-white hover:text-pink-300 transition block mt-0.5 truncate"
               >
-                {customer.phone || "Chưa cập nhật"}
+                {customer.phone || (language === "vi" ? "Chưa cập nhật" : "Not updated")}
               </a>
             </div>
 
             <div className="rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 p-3 hover:bg-white/10 transition max-w-full shrink-0">
               <p className="text-[10px] font-bold text-purple-300 uppercase tracking-wider flex items-center gap-1.5">
-                <Calendar size={12} className="text-pink-400" /> Ngày Đăng Ký
+                <Calendar size={12} className="text-pink-400" /> {language === "vi" ? "Ngày Đăng Ký" : "Date Registered"}
               </p>
-              <p className="text-xs font-bold text-white truncate mt-0.5">{formatDate(customer.createdAt)}</p>
+              <p className="text-xs font-bold text-white truncate mt-0.5">{formatDate(customer.createdAt, language)}</p>
             </div>
           </div>
 
@@ -441,14 +428,11 @@ export function ReceptionistCustomerDetailPage() {
           <div className="lg:col-span-3">
             <div className="rounded-2xl bg-gradient-to-br from-amber-500/20 via-pink-500/10 to-purple-500/20 border border-amber-400/30 p-4 text-center space-y-1 shadow-md backdrop-blur-md">
               <p className="text-[10px] font-bold text-amber-300 uppercase tracking-wider flex items-center justify-center gap-1">
-                <Star size={12} className="text-amber-400 fill-amber-400 animate-pulse" /> Điểm Thưởng Tích Lũy
+                <Star size={12} className="text-amber-400 fill-amber-400 animate-pulse" /> {language === "vi" ? "Điểm Thưởng Tích Lũy" : "Accumulated Points"}
               </p>
               <p className="text-3xl font-bold text-amber-300">
                 {customer.loyaltyPoint || 0} <span className="text-xs font-extrabold text-white">pts</span>
               </p>
-              {/* <span className="inline-block rounded-full bg-amber-400/20 border border-amber-400/40 px-2.5 py-0.5 text-[9.5px] font-bold text-amber-200">
-                {promotionMessage}
-              </span> */}
             </div>
           </div>
         </div>
@@ -461,9 +445,9 @@ export function ReceptionistCustomerDetailPage() {
             <CalendarPlus size={22} />
           </div>
           <div>
-            <p className="text-[11px] font-extrabold uppercase text-[#9E8497]">Tổng Lịch Hẹn</p>
-            <p className="text-xl font-bold text-[#2B182B]">{metrics.totalBookings} đơn</p>
-            <p className="text-[10px] text-emerald-600 font-bold mt-0.5">{metrics.completedBookings} hoàn thành</p>
+            <p className="text-[11px] font-extrabold uppercase text-[#9E8497]">{language === "vi" ? "Tổng Lịch Hẹn" : "Total Bookings"}</p>
+            <p className="text-xl font-bold text-[#2B182B]">{metrics.totalBookings} {language === "vi" ? "đơn" : "orders"}</p>
+            <p className="text-[10px] text-emerald-600 font-bold mt-0.5">{metrics.completedBookings} {language === "vi" ? "hoàn thành" : "completed"}</p>
           </div>
         </div>
 
@@ -472,9 +456,9 @@ export function ReceptionistCustomerDetailPage() {
             <DollarSign size={22} />
           </div>
           <div>
-            <p className="text-[11px] font-extrabold uppercase text-[#9E8497]">Tổng Chi Tiêu</p>
+            <p className="text-[11px] font-extrabold uppercase text-[#9E8497]">{language === "vi" ? "Tổng Chi Tiêu" : "Total Spent"}</p>
             <p className="text-xl font-bold text-[#2B182B]">{formatCurrency(metrics.totalSpent)}</p>
-            <p className="text-[10px] text-[#9E8497] font-semibold mt-0.5">~{formatCurrency(metrics.avgSpent)}/lần</p>
+            <p className="text-[10px] text-[#9E8497] font-semibold mt-0.5">~{formatCurrency(metrics.avgSpent)}/{language === "vi" ? "lần" : "visit"}</p>
           </div>
         </div>
 
@@ -483,9 +467,9 @@ export function ReceptionistCustomerDetailPage() {
             <Star size={22} className="fill-[#D97706]" />
           </div>
           <div>
-            <p className="text-[11px] font-extrabold uppercase text-[#9E8497]">Đánh Giá Dịch Vụ</p>
+            <p className="text-[11px] font-extrabold uppercase text-[#9E8497]">{language === "vi" ? "Đánh Giá Dịch Vụ" : "Service Reviews"}</p>
             <p className="text-xl font-bold text-[#2B182B]">5.0 / 5.0</p>
-            <p className="text-[10px] text-[#D97706] font-bold mt-0.5">3 Đánh giá hài lòng</p>
+            <p className="text-[10px] text-[#D97706] font-bold mt-0.5">{language === "vi" ? "3 Đánh giá hài lòng" : "3 Satisfactory reviews"}</p>
           </div>
         </div>
 
@@ -494,9 +478,9 @@ export function ReceptionistCustomerDetailPage() {
             <Award size={22} />
           </div>
           <div>
-            <p className="text-[11px] font-extrabold uppercase text-[#9E8497]">Hạng Thành Viên</p>
-            <p className="text-xl font-bold text-[#2B182B]" style={{ color: customerTier?.backgroundColor }}>{customerTier ? customerTier.name : "Thành Viên"}</p>
-            <p className="text-[10px] font-bold mt-0.5" style={{ color: customerTier?.backgroundColor || '#4F46E5' }}>Tích điểm tự động</p>
+            <p className="text-[11px] font-extrabold uppercase text-[#9E8497]">{language === "vi" ? "Hạng Thành Viên" : "Membership Tier"}</p>
+            <p className="text-xl font-bold text-[#2B182B]" style={{ color: customerTier?.backgroundColor }}>{customerTier ? customerTier.name : (language === "vi" ? "Thành Viên" : "Member")}</p>
+            <p className="text-[10px] font-bold mt-0.5" style={{ color: customerTier?.backgroundColor || '#4F46E5' }}>{language === "vi" ? "Tích điểm tự động" : "Earn points automatically"}</p>
           </div>
         </div>
       </div>
@@ -514,7 +498,7 @@ export function ReceptionistCustomerDetailPage() {
               }`}
           >
             <Sparkles size={15} />
-            <span>Thông Tin Cá Nhân & Ghi Chú</span>
+            <span>{language === "vi" ? "Thông Tin Cá Nhân & Ghi Chú" : "Personal Profile & Notes"}</span>
           </button>
 
           <button
@@ -526,7 +510,7 @@ export function ReceptionistCustomerDetailPage() {
               }`}
           >
             <Clock size={15} />
-            <span>Lịch Sử Đặt Hẹn ({bookings.length})</span>
+            <span>{language === "vi" ? `Lịch Sử Đặt Hẹn (${bookings.length})` : `Booking History (${bookings.length})`}</span>
           </button>
 
           <button
@@ -538,7 +522,7 @@ export function ReceptionistCustomerDetailPage() {
               }`}
           >
             <Scissors size={15} />
-            <span>Sở Thích Móng & Phong Cách</span>
+            <span>{language === "vi" ? "Sở Thích Móng & Phong Cách" : "Nail Preferences & Style"}</span>
           </button>
 
           <button
@@ -550,7 +534,7 @@ export function ReceptionistCustomerDetailPage() {
               }`}
           >
             <Award size={15} />
-            <span>Ưu Đãi Loyalty</span>
+            <span>{language === "vi" ? "Ưu Đãi Loyalty" : "Loyalty Rewards"}</span>
           </button>
         </div>
 
@@ -562,36 +546,36 @@ export function ReceptionistCustomerDetailPage() {
               <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFF9FC] p-5 space-y-4">
                 <div className="flex items-center justify-between border-b border-[#F4D6E4] pb-3">
                   <h3 className="text-sm font-bold text-[#2B182B] uppercase tracking-wider flex items-center gap-2">
-                    <UserCheck size={16} className="text-[#EA4F93]" /> Thông Tin Liên Hệ Khách Hàng
+                    <UserCheck size={16} className="text-[#EA4F93]" /> {language === "vi" ? "Thông Tin Liên Hệ Khách Hàng" : "Customer Contact Information"}
                   </h3>
-                  <span className="text-[11px] text-[#9E8497] font-semibold">Tài khoản chính chủ</span>
+                  <span className="text-[11px] text-[#9E8497] font-semibold">{language === "vi" ? "Tài khoản chính chủ" : "Verified profile account"}</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="p-3.5 bg-white rounded-xl border border-[#F3E2EC] space-y-1">
                     <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497] flex items-center gap-1.5">
-                      <Mail size={13} className="text-[#EA4F93]" /> Địa chỉ Email
+                      <Mail size={13} className="text-[#EA4F93]" /> {language === "vi" ? "Địa chỉ Email" : "Email Address"}
                     </p>
-                    <p className="font-bold text-[#2B182B] text-sm break-all">{customer.email || "Chưa cập nhật"}</p>
+                    <p className="font-bold text-[#2B182B] text-sm break-all">{customer.email || (language === "vi" ? "Chưa cập nhật" : "Not updated")}</p>
                   </div>
 
                   <div className="p-3.5 bg-white rounded-xl border border-[#F3E2EC] space-y-1">
                     <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497] flex items-center gap-1.5">
-                      <Phone size={13} className="text-[#EA4F93]" /> Số Điện Thoại
+                      <Phone size={13} className="text-[#EA4F93]" /> {language === "vi" ? "Số Điện Thoại" : "Phone Number"}
                     </p>
-                    <p className="font-bold text-[#2B182B] text-sm">{customer.phone || "Chưa cập nhật"}</p>
+                    <p className="font-bold text-[#2B182B] text-sm">{customer.phone || (language === "vi" ? "Chưa cập nhật" : "Not updated")}</p>
                   </div>
 
                   <div className="p-3.5 bg-white rounded-xl border border-[#F3E2EC] space-y-1">
                     <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497] flex items-center gap-1.5">
-                      <Calendar size={13} className="text-[#EA4F93]" /> Ngày Đăng Ký Hệ Thống
+                      <Calendar size={13} className="text-[#EA4F93]" /> {language === "vi" ? "Ngày Đăng Ký Hệ Thống" : "System Registration Date"}
                     </p>
-                    <p className="font-bold text-[#2B182B] text-sm">{formatDate(customer.createdAt)}</p>
+                    <p className="font-bold text-[#2B182B] text-sm">{formatDate(customer.createdAt, language)}</p>
                   </div>
 
                   <div className="p-3.5 bg-white rounded-xl border border-[#F3E2EC] space-y-1">
                     <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497] flex items-center gap-1.5">
-                      <Activity size={13} className="text-[#EA4F93]" /> Trạng Thái Tài Khoản
+                      <Activity size={13} className="text-[#EA4F93]" /> {language === "vi" ? "Trạng Thái Tài Khoản" : "Account Status"}
                     </p>
                     <p className="font-bold text-[#2B182B] text-sm flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
@@ -605,7 +589,7 @@ export function ReceptionistCustomerDetailPage() {
               <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFF9FC] p-5 space-y-3">
                 <div className="flex items-center justify-between border-b border-[#F4D6E4] pb-3">
                   <h3 className="text-sm font-bold text-[#2B182B] uppercase tracking-wider flex items-center gap-2">
-                    <Tag size={16} className="text-[#EA4F93]" /> Nhãn Sở Thích & Lưu Ý Làm Móng
+                    <Tag size={16} className="text-[#EA4F93]" /> {language === "vi" ? "Nhãn Sở Thích & Lưu Ý Làm Móng" : "Nail Preference Tags & Notes"}
                   </h3>
                 </div>
 
@@ -633,7 +617,7 @@ export function ReceptionistCustomerDetailPage() {
                     value={newTagInput}
                     onChange={(e) => setNewTagInput(e.target.value)}
                     onPressEnter={handleAddPreferenceTag}
-                    placeholder="Thêm sở thích mới (VD: Dị ứng nước tẩy, Sơn Gel nhạt...)"
+                    placeholder={language === "vi" ? "Thêm sở thích mới (VD: Dị ứng nước tẩy, Sơn Gel nhạt...)" : "Add new preference (e.g. Polish remover allergy, Light gel...)"}
                     className="rounded-xl border-[#F3D7E4] text-xs font-medium"
                   />
                   <button
@@ -641,7 +625,7 @@ export function ReceptionistCustomerDetailPage() {
                     onClick={handleAddPreferenceTag}
                     className="rounded-xl bg-[#EA4F93] px-4 py-2 text-xs font-bold text-white hover:bg-[#D4387B] transition shrink-0 cursor-pointer"
                   >
-                    + Thêm
+                    {language === "vi" ? "+ Thêm" : "+ Add"}
                   </button>
                 </div>
               </div>
@@ -653,28 +637,28 @@ export function ReceptionistCustomerDetailPage() {
             <div className="space-y-4 animate-fadeIn">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-[#2B182B] uppercase tracking-wider flex items-center gap-2">
-                  <Clock size={16} className="text-[#EA4F93]" /> Danh Sách Lịch Hẹn Đặt Chỗ
+                  <Clock size={16} className="text-[#EA4F93]" /> {language === "vi" ? "Danh Sách Lịch Hẹn Đặt Chỗ" : "Appointment Booking List"}
                 </h3>
-                <span className="text-xs font-bold text-[#9E8497]">Hiển thị {bookings.length} lịch hẹn gần nhất</span>
+                <span className="text-xs font-bold text-[#9E8497]">{language === "vi" ? `Hiển thị ${bookings.length} lịch hẹn gần nhất` : `Displaying last ${bookings.length} appointments`}</span>
               </div>
 
               {loadingBookings ? (
                 <div className="py-12 text-center">
-                  <Spin size="medium" tip="Đang tải danh sách đặt hẹn..." />
+                  <Spin size="medium" tip={language === "vi" ? "Đang tải danh sách đặt hẹn..." : "Loading bookings history..."} />
                 </div>
               ) : bookings.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-[#F4D6E4] bg-[#FFF9FC] py-12 text-center space-y-3">
                   <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#FFF0F5] text-[#EA4F93] mx-auto">
                     <Calendar size={28} />
                   </div>
-                  <p className="text-sm font-bold text-[#2B182B]">Chưa tìm thấy lịch hẹn nào của khách hàng</p>
-                  <p className="text-xs text-[#9E8497]">Tạo ngay một lịch hẹn mới cho khách hàng tại chi nhánh.</p>
+                  <p className="text-sm font-bold text-[#2B182B]">{language === "vi" ? "Chưa tìm thấy lịch hẹn nào của khách hàng" : "No bookings found for this customer"}</p>
+                  <p className="text-xs text-[#9E8497]">{language === "vi" ? "Tạo ngay một lịch hẹn mới cho khách hàng tại chi nhánh." : "Create a new appointment for this customer at the salon."}</p>
                   <button
                     type="button"
                     onClick={handleCreateWalkIn}
                     className="inline-flex items-center gap-2 rounded-full bg-[#EA4F93] px-5 py-2 text-xs font-bold text-white shadow-2xs hover:bg-[#D4387B] transition cursor-pointer"
                   >
-                    <CalendarPlus size={15} /> Tạo Lịch Hẹn Mới
+                    <CalendarPlus size={15} /> {language === "vi" ? "Tạo Lịch Hẹn Mới" : "Create New Booking"}
                   </button>
                 </div>
               ) : (
@@ -694,21 +678,21 @@ export function ReceptionistCustomerDetailPage() {
                           <div>
                             <div className="flex items-center gap-2">
                               <p className="text-sm font-bold text-[#2B182B]">
-                                Lịch Hẹn {formatDate(item.bookingDate || item.appointmentTime)}
+                                {language === "vi" ? "Lịch Hẹn " : "Booking "} {formatDate(item.bookingDate || item.appointmentTime, language)}
                               </p>
                               <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider ${statusClass}`}>
                                 {bStatus}
                               </span>
                             </div>
                             <p className="text-xs text-[#9E8497] font-medium mt-0.5">
-                              Thợ phụ trách: <span className="font-bold text-[#2B182B]">{item.artistName || item.nailArtistName || "Chưa phân bổ"}</span>
+                              {language === "vi" ? "Thợ phụ trách: " : "Assigned artist: "} <span className="font-bold text-[#2B182B]">{item.artistName || item.nailArtistName || (language === "vi" ? "Chưa phân bổ" : "Unassigned")}</span>
                             </p>
                           </div>
                         </div>
 
                         <div className="flex items-center justify-between md:justify-end w-full md:w-auto gap-4 border-t md:border-t-0 border-[#F3E2EC] pt-3 md:pt-0">
                           <div className="text-right">
-                            <p className="text-xs text-[#9E8497] font-medium">Tổng Tiền Dịch Vụ</p>
+                            <p className="text-xs text-[#9E8497] font-medium">{language === "vi" ? "Tổng Tiền Dịch Vụ" : "Total Bill"}</p>
                             <p className="text-sm font-bold text-[#EA4F93]">
                               {formatCurrency(item.totalAmount || item.finalPrice || 0)}
                             </p>
@@ -718,7 +702,7 @@ export function ReceptionistCustomerDetailPage() {
                             type="button"
                             onClick={() => navigate(`/receptionist/bookings/${item.bookingId || item.id}`)}
                             className="p-2 rounded-xl border border-[#F3E2EC] hover:bg-[#FFF0F5] hover:border-[#EA4F93] text-[#2B182B] hover:text-[#EA4F93] transition cursor-pointer"
-                            title="Xem chi tiết đơn hẹn"
+                            title={language === "vi" ? "Xem chi tiết đơn hẹn" : "View booking details"}
                           >
                             <ChevronRight size={18} />
                           </button>
@@ -736,24 +720,24 @@ export function ReceptionistCustomerDetailPage() {
             <div className="space-y-6 animate-fadeIn">
               <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFF9FC] p-5 space-y-4">
                 <h3 className="text-sm font-bold text-[#2B182B] uppercase tracking-wider flex items-center gap-2">
-                  <Scissors size={16} className="text-[#EA4F93]" /> Mẫu Móng & Phong Cách Thường Làm
+                  <Scissors size={16} className="text-[#EA4F93]" /> {language === "vi" ? "Mẫu Móng & Phong Cách Thường Làm" : "Common Nail Styles & Preferences"}
                 </h3>
                 <p className="text-xs text-[#9E8497]">
-                  Thông tin phong cách ưu thích giúp thợ nail chuẩn bị dụng cụ và phụ kiện phù hợp trước khi làm móng.
+                  {language === "vi" ? "Thông tin phong cách ưu thích giúp thợ nail chuẩn bị dụng cụ và phụ kiện phù hợp trước khi làm móng." : "Favorite style details help nail artists prepare suitable tools and accessories before starting."}
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
                   <div className="p-4 bg-white rounded-xl border border-[#F3E2EC] text-center space-y-1">
-                    <p className="text-xs font-bold text-[#9E8497]">Dáng Móng Yêu Thích</p>
-                    <p className="text-base font-bold text-[#2B182B]">Square Almond (Vuông Tròn)</p>
+                    <p className="text-xs font-bold text-[#9E8497]">{language === "vi" ? "Dáng Móng Yêu Thích" : "Favorite Nail Shape"}</p>
+                    <p className="text-base font-bold text-[#2B182B]">{language === "vi" ? "Square Almond (Vuông Tròn)" : "Square Almond"}</p>
                   </div>
                   <div className="p-4 bg-white rounded-xl border border-[#F3E2EC] text-center space-y-1">
-                    <p className="text-xs font-bold text-[#9E8497]">Tone Màu Sơn Hay Dùng</p>
+                    <p className="text-xs font-bold text-[#9E8497]">{language === "vi" ? "Tone Màu Sơn Hay Dùng" : "Preferred Polish Tones"}</p>
                     <p className="text-base font-bold text-[#EA4F93]">Nude Pastel & Pastel Pink</p>
                   </div>
                   <div className="p-4 bg-white rounded-xl border border-[#F3E2EC] text-center space-y-1">
-                    <p className="text-xs font-bold text-[#9E8497]">Loại Mặt Móng Ưu Tiên</p>
-                    <p className="text-base font-bold text-[#2B182B]">Gel Cứng Cao Cấp</p>
+                    <p className="text-xs font-bold text-[#9E8497]">{language === "vi" ? "Loại Mặt Móng Ưu Tiên" : "Preferred Overlay Type"}</p>
+                    <p className="text-base font-bold text-[#2B182B]">{language === "vi" ? "Gel Cứng Cao Cấp" : "Premium Hard Gel"}</p>
                   </div>
                 </div>
               </div>
@@ -770,18 +754,18 @@ export function ReceptionistCustomerDetailPage() {
                       <Award size={26} style={{ color: customerTier?.textColor || '#fff' }} />
                     </div>
                     <div>
-                      <h3 className="text-base font-bold text-[#2B182B]">Hạng Thành Viên VIP {customerTier ? customerTier.name : ""}</h3>
-                      <p className="text-xs text-[#9E8497] font-medium">Tích {customer.loyaltyPoint || 0} điểm thưởng / Đã tiêu {formatCurrency(metrics.totalSpent)}</p>
+                      <h3 className="text-base font-bold text-[#2B182B]">{language === "vi" ? `Hạng Thành Viên VIP ${customerTier ? customerTier.name : ""}` : `VIP Loyalty Tier ${customerTier ? customerTier.name : ""}`}</h3>
+                      <p className="text-xs text-[#9E8497] font-medium">{language === "vi" ? `Tích ${customer.loyaltyPoint || 0} điểm thưởng / Đã tiêu ${formatCurrency(metrics.totalSpent)}` : `Earned ${customer.loyaltyPoint || 0} points / Spent ${formatCurrency(metrics.totalSpent)}`}</p>
                     </div>
                   </div>
                   <span className="rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wider shadow-xs" style={{ backgroundColor: customerTier?.backgroundColor || '#F5C842', color: customerTier?.textColor || '#fff' }}>
-                    {customerTier ? customerTier.name : "Thành Viên"}
+                    {customerTier ? customerTier.name : (language === "vi" ? "Thành Viên" : "Member")}
                   </span>
                 </div>
 
                 <div className="space-y-1.5 pt-2">
                   <div className="flex justify-between text-xs font-extrabold text-[#2B182B]">
-                    <span>Tiến trình thăng hạng {nextTier ? nextTier.name : "Tối đa"}</span>
+                    <span>{language === "vi" ? `Tiến trình thăng hạng ${nextTier ? nextTier.name : "Tối đa"}` : `Next tier status progress ${nextTier ? nextTier.name : "Maxed"}`}</span>
                     <span>{customer.loyaltyPoint || 0} {nextTier ? `/ ${nextTier.minLifetimePoints} Pts` : "Pts"}</span>
                   </div>
                   <Progress percent={nextTier ? ((customer.loyaltyPoint || 0) / nextTier.minLifetimePoints) * 100 : 100} strokeColor={{ "0%": customerTier?.backgroundColor || "#F59E0B", "100%": nextTier?.backgroundColor || "#D97706" }} showInfo={false} />
@@ -809,8 +793,8 @@ export function ReceptionistCustomerDetailPage() {
                 <Edit size={22} />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-[#2B182B]">Chỉnh Sửa Thông Tin Khách Hàng</h3>
-                <p className="text-xs text-[#9E8497] font-medium">Cập nhật hồ sơ tài khoản chi tiết</p>
+                <h3 className="text-lg font-bold text-[#2B182B]">{language === "vi" ? "Chỉnh Sửa Thông Tin Khách Hàng" : "Edit Customer Profile"}</h3>
+                <p className="text-xs text-[#9E8497] font-medium">{language === "vi" ? "Cập nhật hồ sơ tài khoản chi tiết" : "Update detailed profile credentials"}</p>
               </div>
             </div>
             <button
@@ -826,23 +810,23 @@ export function ReceptionistCustomerDetailPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-bold text-[#2B182B] uppercase tracking-wider mb-1">
-                  Họ (Last Name)
+                  {language === "vi" ? "Họ (Last Name)" : "Last Name"}
                 </label>
                 <Input
                   value={editLastName}
                   onChange={(e) => setEditLastName(e.target.value)}
-                  placeholder="Nhập họ..."
+                  placeholder={language === "vi" ? "Nhập họ..." : "Enter last name..."}
                   className="rounded-xl border-[#F3D7E4] text-xs font-medium py-2"
                 />
               </div>
               <div>
                 <label className="block text-xs font-bold text-[#2B182B] uppercase tracking-wider mb-1">
-                  Tên (First Name)
+                  {language === "vi" ? "Tên (First Name)" : "First Name"}
                 </label>
                 <Input
                   value={editFirstName}
                   onChange={(e) => setEditFirstName(e.target.value)}
-                  placeholder="Nhập tên..."
+                  placeholder={language === "vi" ? "Nhập tên..." : "Enter first name..."}
                   className="rounded-xl border-[#F3D7E4] text-xs font-medium py-2"
                 />
               </div>
@@ -850,39 +834,39 @@ export function ReceptionistCustomerDetailPage() {
 
             <div>
               <label className="block text-xs font-bold text-[#2B182B] uppercase tracking-wider mb-1 flex items-center gap-1">
-                <Phone size={13} className="text-[#EA4F93]" /> Số Điện Thoại
+                <Phone size={13} className="text-[#EA4F93]" /> {language === "vi" ? "Số Điện Thoại" : "Phone Number"}
               </label>
               <Input
                 value={editPhone}
                 onChange={(e) => setEditPhone(e.target.value)}
-                placeholder="Nhập số điện thoại..."
+                placeholder={language === "vi" ? "Nhập số điện thoại..." : "Enter phone number..."}
                 className="rounded-xl border-[#F3D7E4] text-xs font-medium py-2"
               />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-[#2B182B] uppercase tracking-wider mb-1 flex items-center gap-1">
-                <Mail size={13} className="text-[#EA4F93]" /> Địa Chỉ Email
+                <Mail size={13} className="text-[#EA4F93]" /> {language === "vi" ? "Địa Chỉ Email" : "Email Address"}
               </label>
               <Input
                 value={editEmail}
                 onChange={(e) => setEditEmail(e.target.value)}
-                placeholder="Nhập email..."
+                placeholder={language === "vi" ? "Nhập email..." : "Enter email address..."}
                 className="rounded-xl border-[#F3D7E4] text-xs font-medium py-2"
               />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-[#2B182B] uppercase tracking-wider mb-1">
-                Trạng Thái Tài Khoản
+                {language === "vi" ? "Trạng Thái Tài Khoản" : "Account Status"}
               </label>
               <Select
                 value={editStatus}
                 onChange={(val) => setEditStatus(val)}
                 className="w-full text-xs font-medium"
                 options={[
-                  { value: "Active", label: "Active (Hoạt động bình thường)" },
-                  { value: "Inactive", label: "Inactive (Tạm ngưng hoạt động)" },
+                  { value: "Active", label: language === "vi" ? "Active (Hoạt động bình thường)" : "Active (Normal operation)" },
+                  { value: "Inactive", label: language === "vi" ? "Inactive (Tạm ngưng hoạt động)" : "Inactive (Temporarily suspended)" },
                 ]}
               />
             </div>
@@ -893,7 +877,7 @@ export function ReceptionistCustomerDetailPage() {
                 onClick={() => setIsEditModalOpen(false)}
                 className="rounded-full border border-[#F3D7E4] px-5 py-2.5 text-xs font-bold text-[#2B182B] hover:bg-[#FAF0F5] transition cursor-pointer"
               >
-                Hủy
+                {language === "vi" ? "Hủy" : "Cancel"}
               </button>
               <button
                 type="button"
@@ -902,7 +886,7 @@ export function ReceptionistCustomerDetailPage() {
                 className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#EA4F93] to-[#E11D48] px-6 py-2.5 text-xs font-bold text-white shadow-md hover:shadow-lg transition cursor-pointer disabled:opacity-50"
               >
                 <Check size={16} />
-                {isSavingProfile ? "Đang lưu..." : "Lưu Thay Đổi"}
+                {isSavingProfile ? (language === "vi" ? "Đang lưu..." : "Saving...") : (language === "vi" ? "Lưu Thay Đổi" : "Save Changes")}
               </button>
             </div>
           </div>

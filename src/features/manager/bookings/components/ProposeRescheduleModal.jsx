@@ -6,6 +6,7 @@ import dayjs from "dayjs";
 import { managerSuggestTime } from "../services/bookingsService";
 import { fetchSalonById } from "../../../admin/salon-management/services/salonsService";
 import { getSalonIdAsync } from "../../staff-artist-management/services/nailArtistsService";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 function generateSlotsFromTimes(openTimeStr = "08:00", closeTimeStr = "20:00") {
   const parseMin = (tStr) => {
@@ -36,6 +37,7 @@ export function ProposeRescheduleModal({
   booking,
   onSuccess,
 }) {
+  const { language } = useLanguage();
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTimeStr, setSelectedTimeStr] = useState("");
   const [reason, setReason] = useState("");
@@ -97,7 +99,7 @@ export function ProposeRescheduleModal({
         isClosed: false,
         openTimeStr: overallHours.openTimeStr,
         closeTimeStr: overallHours.closeTimeStr,
-        label: `Select a date to filter hours (${overallHours.openTimeStr} – ${overallHours.closeTimeStr})`,
+        label: `${language === "vi" ? "Chọn ngày mới" : "Select a date to filter hours"} (${overallHours.openTimeStr} – ${overallHours.closeTimeStr})`,
         slots: generateSlotsFromTimes(overallHours.openTimeStr, overallHours.closeTimeStr),
       };
     }
@@ -203,8 +205,8 @@ export function ProposeRescheduleModal({
               <Calendar size={22} />
             </div>
             <div>
-              <h3 className="text-lg font-extrabold text-[#2B182B] tracking-tight">Propose New Time</h3>
-              <p className="text-xs text-[#9E8497] font-medium">Suggest an alternative date or slot to customer</p>
+              <h3 className="text-lg font-extrabold text-[#2B182B] tracking-tight">{language === "vi" ? "Đề xuất giờ mới" : "Propose New Time"}</h3>
+              <p className="text-xs text-[#9E8497] font-medium">{language === "vi" ? "Đề xuất ngày hoặc giờ mới cho khách hàng" : "Suggest an alternative date or slot to customer"}</p>
             </div>
           </div>
           <button
@@ -221,9 +223,9 @@ export function ProposeRescheduleModal({
           <div className="mb-5 rounded-2xl border border-[#F3D6E5]/80 bg-gradient-to-r from-[#FFF5FA] to-[#FFF0F5]/50 p-4 text-xs text-[#2B182B] shadow-2xs">
             <div className="flex items-center justify-between">
               <span className="font-extrabold text-[#9E8497] uppercase tracking-wider text-[10px] flex items-center gap-1">
-                <Sparkles size={12} className="text-[#E84F93]" /> Current Appointment
+                <Sparkles size={12} className="text-[#E84F93]" /> {language === "vi" ? "Lịch hẹn hiện tại" : "Current Appointment"}
               </span>
-              <span className="font-bold text-[#E84F93] text-[11px]">#{String(booking.bookingId || "").slice(0, 8).toUpperCase()}</span>
+              {/* <span className="font-bold text-[#E84F93] text-[11px]">#{String(booking.bookingId || "").slice(0, 8).toUpperCase()}</span> */}
             </div>
             <p className="font-extrabold text-[#2B182B] text-sm mt-1">
               {booking.date} · <span className="text-[#E84F93]">{booking.time}</span>
@@ -236,7 +238,7 @@ export function ProposeRescheduleModal({
           {/* Step 1: Select New Date */}
           <div>
             <label className="block text-xs font-bold text-[#2B182B] uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <Calendar size={14} className="text-[#E84F93]" /> 1. Select New Date
+              <Calendar size={14} className="text-[#E84F93]" /> {language === "vi" ? "Chọn ngày mới" : "1. Select New Date"}
             </label>
             <DatePicker
               value={selectedDate}
@@ -246,7 +248,7 @@ export function ProposeRescheduleModal({
               }}
               disabledDate={(current) => current && current < dayjs().startOf("day")}
               className="w-full rounded-2xl border-[#F3D7E4] py-2.5 px-3.5 focus:border-[#E84F93] text-xs font-medium shadow-2xs"
-              placeholder="Click to choose new appointment date"
+              placeholder={language === "vi" ? "Chọn ngày mới" : "Click to choose new appointment date"}
             />
           </div>
 
@@ -254,7 +256,7 @@ export function ProposeRescheduleModal({
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-xs font-bold text-[#2B182B] uppercase tracking-wider flex items-center gap-1.5">
-                <Clock size={14} className="text-[#E84F93]" /> 2. Pick Start Time Slot
+                <Clock size={14} className="text-[#E84F93]" /> {language === "vi" ? "Chọn giờ bắt đầu" : "2. Pick Start Time Slot"}
               </label>
               <span className="text-[11px] font-extrabold text-[#E84F93]">
                 {dayOperatingInfo.label}
@@ -264,7 +266,7 @@ export function ProposeRescheduleModal({
             {dayOperatingInfo.isClosed ? (
               <div className="rounded-2xl border border-[#FECDD3] bg-[#FEF2F2] p-4 text-center text-xs text-[#E11D48] flex items-center justify-center gap-2">
                 <AlertTriangle size={16} />
-                <span>Salon is Closed on this day. Please select a different date.</span>
+                <span>{language === "vi" ? "Tiệm đóng cửa vào ngày này. Vui lòng chọn ngày khác." : "Salon is Closed on this day. Please select a different date."}</span>
               </div>
             ) : (
               <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-44 overflow-y-auto pr-1 p-1.5 bg-[#FAF6F8] rounded-2xl border border-[#F3E2EC]">
@@ -291,13 +293,13 @@ export function ProposeRescheduleModal({
           {/* Step 3: Reason / Instructions */}
           <div>
             <label className="block text-xs font-bold text-[#2B182B] uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <Edit3 size={14} className="text-[#E84F93]" /> 3. Reason or Note to Customer
+              <Edit3 size={14} className="text-[#E84F93]" /> {language === "vi" ? "Lý do hoặc ghi chú cho khách hàng" : "3. Reason or Note to Customer"}
             </label>
             <Input.TextArea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               rows={3}
-              placeholder="e.g., Requested nail artist is fully booked at 1:30 PM, proposing 3:00 PM instead..."
+              placeholder={language === "vi" ? "Ví dụ: Nghệ sĩ làm móng được yêu cầu đã kín lịch lúc 1:30 chiều, đề xuất 3:00 chiều thay thế..." : "e.g., Requested nail artist is fully booked at 1:30 PM, proposing 3:00 PM instead..."}
               className="rounded-2xl border-[#F3D7E4] focus:border-[#E84F93] p-3 text-xs font-medium shadow-2xs"
             />
           </div>
@@ -309,7 +311,7 @@ export function ProposeRescheduleModal({
               onClick={handleClose}
               className="rounded-full border border-[#F3D7E4] px-5 py-2.5 text-xs font-bold text-[#2B182B] hover:bg-[#FAF0F5] transition"
             >
-              Cancel
+              {language === "vi" ? "Hủy" : "Cancel"}
             </button>
             <button
               type="button"
@@ -318,7 +320,7 @@ export function ProposeRescheduleModal({
               className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#E84F93] to-[#F43F5E] px-6 py-2.5 text-xs font-extrabold text-white shadow-md hover:shadow-lg transition disabled:opacity-50"
             >
               <Check size={16} />
-              {loading ? "Sending Proposal..." : "Send Proposal"}
+              {loading ? (language === "vi" ? "Đang gửi..." : "Sending...") : (language === "vi" ? "Gửi đề xuất" : "Send Proposal")}
             </button>
           </div>
         </div>

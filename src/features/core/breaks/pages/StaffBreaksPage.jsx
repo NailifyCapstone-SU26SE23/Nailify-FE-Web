@@ -23,8 +23,11 @@ import {
   deleteBreakRequest,
   getStaffArtistId
 } from "../services/breakService";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 export function StaffBreaksPage() {
+  const { language } = useLanguage();
+
   const [breaks, setBreaks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState(false);
@@ -66,11 +69,11 @@ export function StaffBreaksPage() {
       }
     } catch (error) {
       console.error("Failed to load breaks:", error);
-      toast.error(error.message || "Failed to load breaks list.");
+      toast.error(error.message || (language === "vi" ? "Lỗi khi tải danh sách lịch nghỉ." : "Failed to load breaks list."));
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, filterDate]);
+  }, [currentPage, filterDate, language]);
 
   useEffect(() => {
     loadBreaks();
@@ -79,15 +82,15 @@ export function StaffBreaksPage() {
   const handleCreateSubmit = async (e) => {
     e.preventDefault();
     if (!formStartTime || !formEndTime) {
-      toast.error("Please fill in start time and end time.");
+      toast.error(language === "vi" ? "Vui lòng điền giờ bắt đầu và kết thúc." : "Please fill in start time and end time.");
       return;
     }
     if (formStartTime >= formEndTime) {
-      toast.error("Start time must be before end time.");
+      toast.error(language === "vi" ? "Giờ bắt đầu phải trước giờ kết thúc." : "Start time must be before end time.");
       return;
     }
     if (!formReason.trim()) {
-      toast.error("Please enter a reason.");
+      toast.error(language === "vi" ? "Vui lòng nhập lý do." : "Please enter a reason.");
       return;
     }
 
@@ -104,7 +107,7 @@ export function StaffBreaksPage() {
         reason: formReason.trim(),
       });
 
-      toast.success("Break request submitted successfully!");
+      toast.success(language === "vi" ? "Đã gửi yêu cầu nghỉ thành công!" : "Break request submitted successfully!");
       setIsCreateOpen(false);
 
       // Reset form
@@ -115,7 +118,7 @@ export function StaffBreaksPage() {
 
       loadBreaks();
     } catch (error) {
-      toast.error(error.message || "Failed to submit break request.");
+      toast.error(error.message || (language === "vi" ? "Lỗi khi gửi yêu cầu nghỉ." : "Failed to submit break request."));
     } finally {
       setIsActionLoading(false);
     }
@@ -124,15 +127,15 @@ export function StaffBreaksPage() {
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     if (!formStartTime || !formEndTime) {
-      toast.error("Please fill in start time and end time.");
+      toast.error(language === "vi" ? "Vui lòng điền giờ bắt đầu và kết thúc." : "Please fill in start time and end time.");
       return;
     }
     if (formStartTime >= formEndTime) {
-      toast.error("Start time must be before end time.");
+      toast.error(language === "vi" ? "Giờ bắt đầu phải trước giờ kết thúc." : "Start time must be before end time.");
       return;
     }
     if (!formReason.trim()) {
-      toast.error("Please enter a reason.");
+      toast.error(language === "vi" ? "Vui lòng nhập lý do." : "Please enter a reason.");
       return;
     }
 
@@ -144,12 +147,12 @@ export function StaffBreaksPage() {
         reason: formReason.trim(),
       });
 
-      toast.success("Break request updated successfully!");
+      toast.success(language === "vi" ? "Cập nhật yêu cầu thành công!" : "Break request updated successfully!");
       setIsEditOpen(false);
       setSelectedBreak(null);
       loadBreaks();
     } catch (error) {
-      toast.error(error.message || "Failed to update break request.");
+      toast.error(error.message || (language === "vi" ? "Lỗi khi cập nhật yêu cầu nghỉ." : "Failed to update break request."));
     } finally {
       setIsActionLoading(false);
     }
@@ -159,12 +162,12 @@ export function StaffBreaksPage() {
     try {
       setIsActionLoading(true);
       await deleteBreakRequest(selectedBreak.nailArtistBreakId);
-      toast.success("Break request cancelled successfully.");
+      toast.success(language === "vi" ? "Đã hủy yêu cầu thành công." : "Break request cancelled successfully.");
       setIsDeleteOpen(false);
       setSelectedBreak(null);
       loadBreaks();
     } catch (error) {
-      toast.error(error.message || "Failed to cancel break request.");
+      toast.error(error.message || (language === "vi" ? "Lỗi khi hủy yêu cầu." : "Failed to cancel break request."));
     } finally {
       setIsActionLoading(false);
     }
@@ -196,7 +199,7 @@ export function StaffBreaksPage() {
       case "active":
         return (
           <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-600 border border-emerald-100">
-            Đã duyệt
+            {language === "vi" ? "Đã duyệt" : "Approved"}
           </span>
         );
       case "rejected":
@@ -204,7 +207,7 @@ export function StaffBreaksPage() {
       case "không đồng ý":
         return (
           <span className="inline-flex rounded-full bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-600 border border-rose-100">
-            Từ chối
+            {language === "vi" ? "Từ chối" : "Rejected"}
           </span>
         );
       case "pending":
@@ -212,7 +215,7 @@ export function StaffBreaksPage() {
       default:
         return (
           <span className="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-600 border border-amber-100">
-            Chờ duyệt
+            {language === "vi" ? "Chờ duyệt" : "Pending"}
           </span>
         );
     }
@@ -223,9 +226,9 @@ export function StaffBreaksPage() {
       {/* Header section */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#3f2b3f]">Yêu Cầu Nghỉ Phép</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-[#3f2b3f]">{language === "vi" ? "Yêu Cầu Nghỉ Phép" : "Break Requests"}</h1>
           <p className="mt-1 text-sm text-[#a88a9d]">
-            Gửi yêu cầu nghỉ đột xuất, việc riêng giữa ca và xem lịch sử của bạn.
+            {language === "vi" ? "Gửi yêu cầu nghỉ đột xuất, việc riêng giữa ca và xem lịch sử của bạn." : "Submit unexpected break requests, personal errands between shifts, and view your history."}
           </p>
         </div>
         <button
@@ -239,14 +242,14 @@ export function StaffBreaksPage() {
           className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[image:var(--gradient-accent)] px-5 py-3 text-sm font-bold text-white shadow-md hover:opacity-95 transition"
         >
           <Plus size={16} />
-          <span>Gửi yêu cầu nghỉ</span>
+          <span>{language === "vi" ? "Gửi yêu cầu xin nghỉ" : "Submit Request"}</span>
         </button>
       </div>
 
       {/* Filter panel */}
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-[22px] border border-[#f1e7ed] bg-white p-4">
         <div className="flex flex-wrap items-center gap-3">
-          <span className="text-sm font-semibold text-[#69708a]">Lọc theo ngày:</span>
+          <span className="text-sm font-semibold text-[#69708a]">{language === "vi" ? "Lọc theo ngày:" : "Filter by date:"}</span>
           <DatePicker
             value={filterDate ? dayjs(filterDate) : null}
             onChange={(date, dateString) => {
@@ -264,14 +267,14 @@ export function StaffBreaksPage() {
               }}
               className="rounded-full bg-slate-100 hover:bg-slate-200 px-3 py-1 text-xs font-semibold text-[#69708a] transition"
             >
-              Xóa lọc
+              {language === "vi" ? "Xóa lọc" : "Clear filter"}
             </button>
           )}
         </div>
         <button
           onClick={loadBreaks}
           className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 transition"
-          title="Tải lại dữ liệu"
+          title={language === "vi" ? "Tải lại dữ liệu" : "Refresh data"}
         >
           <RefreshCw size={15} />
         </button>
@@ -284,8 +287,8 @@ export function StaffBreaksPage() {
         </div>
       ) : breaks.length === 0 ? (
         <EmptyState
-          title="Không tìm thấy yêu cầu nghỉ phép nào"
-          description="Hãy click vào nút 'Gửi yêu cầu nghỉ' phía trên để xin nghỉ phép giữa ca."
+          title={language === "vi" ? "Không tìm thấy yêu cầu nghỉ phép nào" : "No break requests found"}
+          description={language === "vi" ? "Hãy click vào nút 'Gửi yêu cầu nghỉ' phía trên để xin nghỉ phép giữa ca." : "Click the 'Submit Request' button above to ask for a break between shifts."}
         />
       ) : (
         <div className="space-y-4">
@@ -295,12 +298,12 @@ export function StaffBreaksPage() {
               <table className="min-w-full divide-y divide-[#f4e4d7]">
                 <thead className="bg-[#fff8f2]">
                   <tr className="text-left text-xs uppercase tracking-[0.16em] text-[#b38769]">
-                    <th className="px-5 py-4 font-semibold">Ngày nghỉ</th>
-                    <th className="px-5 py-4 font-semibold">Thời gian</th>
-                    <th className="px-5 py-4 font-semibold">Lý do</th>
-                    <th className="px-5 py-4 font-semibold">Trạng thái</th>
-                    <th className="px-5 py-4 font-semibold">Phản hồi từ chối</th>
-                    <th className="px-5 py-4 font-semibold text-right">Thao tác</th>
+                    <th className="px-5 py-4 font-semibold">{language === "vi" ? "Ngày nghỉ" : "Break Date"}</th>
+                    <th className="px-5 py-4 font-semibold">{language === "vi" ? "Thời gian" : "Time"}</th>
+                    <th className="px-5 py-4 font-semibold">{language === "vi" ? "Lý do" : "Reason"}</th>
+                    <th className="px-5 py-4 font-semibold">{language === "vi" ? "Trạng thái" : "Status"}</th>
+                    <th className="px-5 py-4 font-semibold">{language === "vi" ? "Phản hồi từ chối" : "Rejection Reason"}</th>
+                    <th className="px-5 py-4 font-semibold text-right">{language === "vi" ? "Thao tác" : "Action"}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#f7ebdf] bg-white">
@@ -331,20 +334,20 @@ export function StaffBreaksPage() {
                               <button
                                 onClick={() => openEditModal(item)}
                                 className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition"
-                                title="Sửa yêu cầu"
+                                title={language === "vi" ? "Sửa yêu cầu" : "Edit Request"}
                               >
                                 <Edit2 size={13} />
                               </button>
                               <button
                                 onClick={() => openDeleteModal(item)}
                                 className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-100 bg-rose-50 text-rose-600 hover:bg-rose-100 transition"
-                                title="Hủy yêu cầu"
+                                title={language === "vi" ? "Hủy yêu cầu" : "Cancel Request"}
                               >
                                 <Trash2 size={13} />
                               </button>
                             </>
                           ) : (
-                            <span className="text-xs text-slate-400">Không thể sửa/hủy</span>
+                            <span className="text-xs text-slate-400">{language === "vi" ? "Không thể sửa/hủy" : "Cannot edit/cancel"}</span>
                           )}
                         </div>
                       </td>
@@ -373,9 +376,9 @@ export function StaffBreaksPage() {
                     <Clock3 size={14} className="text-[#a88a9d]" />
                     <span>{item.startTime?.substring(0, 5)} - {item.endTime?.substring(0, 5)}</span>
                   </div>
-                  <p className="text-[var(--color-muted)]"><span className="font-semibold text-slate-700">Lý do:</span> {item.reason}</p>
+                  <p className="text-[var(--color-muted)]"><span className="font-semibold text-slate-700">{language === "vi" ? "Lý do:" : "Reason:"}</span> {item.reason}</p>
                   {item.rejectReason && (
-                    <p className="text-xs text-rose-500 italic"><span className="font-semibold">Từ chối:</span> {item.rejectReason}</p>
+                    <p className="text-xs text-rose-500 italic"><span className="font-semibold">{language === "vi" ? "Từ chối:" : "Rejected:"}</span> {item.rejectReason}</p>
                   )}
                 </div>
 
@@ -386,14 +389,14 @@ export function StaffBreaksPage() {
                       className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition"
                     >
                       <Edit2 size={12} />
-                      Sửa
+                      {language === "vi" ? "Sửa" : "Edit"}
                     </button>
                     <button
                       onClick={() => openDeleteModal(item)}
                       className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-100 bg-rose-50 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-100 transition"
                     >
                       <Trash2 size={12} />
-                      Hủy
+                      {language === "vi" ? "Hủy" : "Cancel"}
                     </button>
                   </div>
                 )}
@@ -420,8 +423,8 @@ export function StaffBreaksPage() {
           <div className="flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-[28px] border border-[#f1cddd] bg-white shadow-[0_24px_60px_rgba(63,43,63,0.24)] animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-start justify-between gap-4 border-b border-[#f7dfeb] px-6 py-5">
               <div>
-                <h3 className="text-lg font-extrabold text-[#3f2b3f]">Gửi yêu cầu nghỉ</h3>
-                <p className="mt-1 text-sm text-[#a88a9d]">Mặc định yêu cầu sẽ ở trạng thái Chờ duyệt.</p>
+                <h3 className="text-lg font-extrabold text-[#3f2b3f]">{language === "vi" ? "Gửi yêu cầu nghỉ" : "Submit Break Request"}</h3>
+                <p className="mt-1 text-sm text-[#a88a9d]">{language === "vi" ? "Mặc định yêu cầu sẽ ở trạng thái Chờ duyệt." : "By default, requests will be in Pending status."}</p>
               </div>
               <button
                 type="button"
@@ -434,7 +437,7 @@ export function StaffBreaksPage() {
 
             <form onSubmit={handleCreateSubmit} className="min-h-0 flex-1 overflow-y-auto px-6 py-5 space-y-4">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-[0.08em] text-[#69708a] mb-2">Ngày xin nghỉ</label>
+                <label className="block text-xs font-bold uppercase tracking-[0.08em] text-[#69708a] mb-2">{language === "vi" ? "Ngày xin nghỉ" : "Break Date"}</label>
                 <input
                   type="date"
                   value={formDate}
@@ -447,7 +450,7 @@ export function StaffBreaksPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-[0.08em] text-[#69708a] mb-2">Từ giờ</label>
+                  <label className="block text-xs font-bold uppercase tracking-[0.08em] text-[#69708a] mb-2">{language === "vi" ? "Từ giờ" : "From Time"}</label>
                   <input
                     type="time"
                     value={formStartTime}
@@ -457,7 +460,7 @@ export function StaffBreaksPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-[0.08em] text-[#69708a] mb-2">Đến giờ</label>
+                  <label className="block text-xs font-bold uppercase tracking-[0.08em] text-[#69708a] mb-2">{language === "vi" ? "Đến giờ" : "To Time"}</label>
                   <input
                     type="time"
                     value={formEndTime}
@@ -469,12 +472,12 @@ export function StaffBreaksPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-[0.08em] text-[#69708a] mb-2">Lý do nghỉ</label>
+                <label className="block text-xs font-bold uppercase tracking-[0.08em] text-[#69708a] mb-2">{language === "vi" ? "Lý do nghỉ" : "Reason for Break"}</label>
                 <textarea
                   rows={3}
                   value={formReason}
                   onChange={(e) => setFormReason(e.target.value)}
-                  placeholder="Nhập lý do nghỉ của bạn..."
+                  placeholder={language === "vi" ? "Nhập lý do nghỉ của bạn..." : "Enter your reason..."}
                   required
                   className="w-full rounded-2xl border border-[#f2bfd4] bg-[#fff9fc] px-4 py-3 text-sm text-[#3f2b3f] outline-none focus:border-[#ea4f93] focus:ring-1 focus:ring-[#ea4f93] placeholder:text-[#c59ab0]"
                 />
@@ -487,14 +490,14 @@ export function StaffBreaksPage() {
                   disabled={isActionLoading}
                   className="flex-1 inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
                 >
-                  Hủy
+                  {language === "vi" ? "Hủy" : "Cancel"}
                 </button>
                 <button
                   type="submit"
                   disabled={isActionLoading}
                   className="flex-1 inline-flex h-11 items-center justify-center rounded-2xl bg-[image:var(--gradient-accent)] text-sm font-bold text-white shadow-sm hover:opacity-95 transition disabled:opacity-50"
                 >
-                  {isActionLoading ? "Đang gửi..." : "Gửi yêu cầu"}
+                  {isActionLoading ? (language === "vi" ? "Đang gửi..." : "Submitting...") : (language === "vi" ? "Gửi yêu cầu" : "Submit Request")}
                 </button>
               </div>
             </form>
@@ -508,9 +511,9 @@ export function StaffBreaksPage() {
           <div className="flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-[28px] border border-[#f1cddd] bg-white shadow-[0_24px_60px_rgba(63,43,63,0.24)] animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-start justify-between gap-4 border-b border-[#f7dfeb] px-6 py-5">
               <div>
-                <h3 className="text-lg font-extrabold text-[#3f2b3f]">Cập nhật lịch nghỉ</h3>
+                <h3 className="text-lg font-extrabold text-[#3f2b3f]">{language === "vi" ? "Cập nhật lịch nghỉ" : "Update Break Request"}</h3>
                 <p className="mt-1 text-sm text-[#a88a9d]">
-                  Thay đổi thời gian nghỉ cho ngày {dayjs(formDate).format("DD/MM/YYYY")}.
+                  {language === "vi" ? `Thay đổi thời gian nghỉ cho ngày ${dayjs(formDate).format("DD/MM/YYYY")}.` : `Change break time for ${dayjs(formDate).format("DD/MM/YYYY")}.`}
                 </p>
               </div>
               <button
@@ -528,7 +531,7 @@ export function StaffBreaksPage() {
             <form onSubmit={handleEditSubmit} className="min-h-0 flex-1 overflow-y-auto px-6 py-5 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-[0.08em] text-[#69708a] mb-2">Từ giờ</label>
+                  <label className="block text-xs font-bold uppercase tracking-[0.08em] text-[#69708a] mb-2">{language === "vi" ? "Từ giờ" : "From Time"}</label>
                   <input
                     type="time"
                     value={formStartTime}
@@ -538,7 +541,7 @@ export function StaffBreaksPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-[0.08em] text-[#69708a] mb-2">Đến giờ</label>
+                  <label className="block text-xs font-bold uppercase tracking-[0.08em] text-[#69708a] mb-2">{language === "vi" ? "Đến giờ" : "To Time"}</label>
                   <input
                     type="time"
                     value={formEndTime}
@@ -550,12 +553,12 @@ export function StaffBreaksPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-[0.08em] text-[#69708a] mb-2">Lý do nghỉ</label>
+                <label className="block text-xs font-bold uppercase tracking-[0.08em] text-[#69708a] mb-2">{language === "vi" ? "Lý do nghỉ" : "Reason for Break"}</label>
                 <textarea
                   rows={3}
                   value={formReason}
                   onChange={(e) => setFormReason(e.target.value)}
-                  placeholder="Nhập lý do nghỉ của bạn..."
+                  placeholder={language === "vi" ? "Nhập lý do nghỉ của bạn..." : "Enter your reason..."}
                   required
                   className="w-full rounded-2xl border border-[#f2bfd4] bg-[#fff9fc] px-4 py-3 text-sm text-[#3f2b3f] outline-none focus:border-[#ea4f93] focus:ring-1 focus:ring-[#ea4f93] placeholder:text-[#c59ab0]"
                 />
@@ -571,14 +574,14 @@ export function StaffBreaksPage() {
                   disabled={isActionLoading}
                   className="flex-1 inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
                 >
-                  Hủy
+                  {language === "vi" ? "Hủy" : "Cancel"}
                 </button>
                 <button
                   type="submit"
                   disabled={isActionLoading}
                   className="flex-1 inline-flex h-11 items-center justify-center rounded-2xl bg-[image:var(--gradient-accent)] text-sm font-bold text-white shadow-sm hover:opacity-95 transition disabled:opacity-50"
                 >
-                  {isActionLoading ? "Đang lưu..." : "Cập nhật"}
+                  {isActionLoading ? (language === "vi" ? "Đang lưu..." : "Saving...") : (language === "vi" ? "Cập nhật" : "Update")}
                 </button>
               </div>
             </form>
@@ -590,10 +593,10 @@ export function StaffBreaksPage() {
       <ActionConfirmModal
         open={isDeleteOpen}
         intent="danger"
-        title="Hủy yêu cầu xin nghỉ?"
-        description="Bạn có chắc chắn muốn hủy yêu cầu xin nghỉ phép này không? Hành động này sẽ xóa yêu cầu khỏi hệ thống và không thể khôi phục."
-        confirmText="Đồng ý hủy"
-        cancelText="Hủy bỏ"
+        title={language === "vi" ? "Hủy yêu cầu xin nghỉ?" : "Cancel break request?"}
+        description={language === "vi" ? "Bạn có chắc chắn muốn hủy yêu cầu xin nghỉ phép này không? Hành động này sẽ xóa yêu cầu khỏi hệ thống và không thể khôi phục." : "Are you sure you want to cancel this break request? This action will remove the request from the system and cannot be undone."}
+        confirmText={language === "vi" ? "Đồng ý hủy" : "Confirm Cancel"}
+        cancelText={language === "vi" ? "Hủy bỏ" : "Cancel"}
         onConfirm={handleDeleteConfirm}
         onCancel={() => {
           setIsDeleteOpen(false);
@@ -602,11 +605,11 @@ export function StaffBreaksPage() {
         loading={isActionLoading}
         details={[
           {
-            label: "Ngày nghỉ",
+            label: language === "vi" ? "Ngày nghỉ" : "Break Date",
             value: selectedBreak ? dayjs(selectedBreak.breakDate).format("DD/MM/YYYY") : ""
           },
           {
-            label: "Thời gian",
+            label: language === "vi" ? "Thời gian" : "Time",
             value: selectedBreak ? `${selectedBreak.startTime?.substring(0, 5)} - ${selectedBreak.endTime?.substring(0, 5)}` : ""
           }
         ]}
