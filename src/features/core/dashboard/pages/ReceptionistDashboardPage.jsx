@@ -10,6 +10,7 @@ import {
   Plus,
   Search,
   Sparkles,
+  SquareCheckBig,
   UserCheck,
   UserRound,
   Users,
