@@ -84,99 +84,68 @@ function RequestCard({ request, language }) {
   const initials = nail.name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() || "CN";
   const statusLabel = request.status || nail.status || "Assigned";
 
-  // Deterministic skill requirements based on design metadata for thesis mapping
-  const skillReqs = {
-    A: ((nail.nailShapeId || 1) % 3) + 2, // Nail Shape Level
-    B: ((nail.nailSurfaceId || 1) % 3) + 2, // Coating/Finish Level
-    C: Math.min(5, Math.max(1, ((nail.customerNailComponents || nail.nailComponents || []).length % 3) + 2)), // Accessory Complexity
-    D: Math.min(5, Math.max(1, ((nail.nailShapeId || 1) + (nail.nailSurfaceId || 1)) % 3 + 2)) // Detail Art Level
-  };
-
   return (
-    <div className="group rounded-[24px] border border-[#f5cee1] bg-gradient-to-b from-white to-[#fff9fb] p-5 shadow-[0_10px_28px_rgba(236,72,153,0.04)] transition-all duration-300 hover:-translate-y-1.5 hover:border-[#ea4f93] hover:shadow-[0_20px_40px_rgba(236,72,153,0.12)]">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          {nail.imageUrl ? (
-            <img crossOrigin="anonymous"
-              src={nail.imageUrl}
-              alt={nail.name}
-              className="h-16 w-16 rounded-[18px] border-4 border-white object-cover shadow-[0_12px_24px_rgba(236,72,153,0.08)] transition group-hover:scale-105"
-            />
-          ) : (
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[18px] bg-gradient-to-br from-[#ff9ac2] via-[#ea4f93] to-[#c63d79] text-sm font-bold text-white shadow-[0_10px_20px_rgba(234,79,147,0.18)]">
-              {initials}
-            </div>
-          )}
-          <div>
-            <h4 className="text-base font-extrabold text-[#3f2240] transition group-hover:text-[#ea4f93]">
-              {nail.name || "Untitled Design"}
-            </h4>
-            <p className="mt-1 text-xs font-semibold text-[#c08aa4]">
-              {nail.nailShape?.name || "Custom Shape"} • {nail.nailSurface?.name || "Custom Surface"}
-            </p>
+    <div className="group relative overflow-hidden rounded-3xl bg-white border border-[#fdf7f9] shadow-[0_10px_35px_rgba(236,72,153,0.05)] transition-all duration-500 hover:-translate-y-1 hover:rotate-1 hover:shadow-[0_20px_50px_rgba(236,72,153,0.15)]">
+      {/* 🎨 TOP: Large Nail Preview */}
+      <div className="relative h-[220px] w-full overflow-hidden bg-gradient-to-b from-[#fffbfd] to-[#fff5f9] perspective-1000">
+        <div className="absolute -bottom-4 left-1/2 h-6 w-[70%] -translate-x-1/2 rounded-full bg-pink-200/50 blur-xl opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+        {nail.imageUrl ? (
+          <img crossOrigin="anonymous"
+            src={nail.imageUrl}
+            alt={nail.name}
+            className="pointer-events-none h-full w-full object-cover transition-all duration-700 group-hover:scale-110 group-hover:-rotate-2"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#d4af37] to-[#c5a059] text-4xl font-serif text-white shadow-inner">
+            {initials}
           </div>
+        )}
+        <div className="absolute left-3 top-3 flex gap-1.5 z-10">
+          <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[9px] font-bold shadow-sm backdrop-blur-md bg-white/90 ${getStatusTone(statusLabel)}`}>
+            {statusLabel === "Approved" || statusLabel === "Reviewed" || statusLabel === "Quoted" ? (
+              <CheckCircle2 size={10} />
+            ) : statusLabel === "Rejected" ? (
+              <XCircle size={10} />
+            ) : (
+              <Clock3 size={10} />
+            )}
+            {statusLabel}
+          </span>
         </div>
       </div>
 
-      {/* Skill Mapping Requirements */}
-      <div className="mt-4 rounded-xl bg-[#fff0f6]/60 border border-[#fbdde9] p-2.5">
-        <p className="text-[9px] font-extrabold uppercase tracking-wider text-[#b87c9b] mb-1.5 flex items-center gap-1">
-          <Sparkles size={10} className="text-[#ea4f93]" />
-          {language === "vi" ? "Yêu cầu kỹ năng (Phức tạp A-D)" : "Skill Requirements (Complexity A-D)"}
+      <div className="flex flex-col p-5">
+        <h4 className="line-clamp-1 text-lg font-serif font-bold text-[#3f2240] transition-colors duration-300 group-hover:text-[#ea4f93]">
+          {nail.name || "Untitled Design"}
+        </h4>
+        <p className="mt-0.5 text-[11px] font-medium text-[#a988a0]">
+          {nail.nailShape?.name || "Custom Shape"} • {nail.nailSurface?.name || "Custom Surface"}
         </p>
-        <div className="flex flex-wrap gap-2">
-          <div className="flex items-center gap-1 rounded-lg bg-white px-2 py-0.5 border border-[#fce7f3] text-[10px]">
-            <span className="font-bold text-[#b87c9b]">{language === "vi" ? "Hình dạng (A):" : "Shape (A):"}</span>
-            <span className="font-bold text-[#ea4f93]">{skillReqs.A}★</span>
-          </div>
-          <div className="flex items-center gap-1 rounded-lg bg-white px-2 py-0.5 border border-[#fce7f3] text-[10px]">
-            <span className="font-bold text-[#b87c9b]">{language === "vi" ? "Phong cách (B):" : "Coating (B):"}</span>
-            <span className="font-bold text-[#ea4f93]">{skillReqs.B}★</span>
-          </div>
-          <div className="flex items-center gap-1 rounded-lg bg-white px-2 py-0.5 border border-[#fce7f3] text-[10px]">
-            <span className="font-bold text-[#b87c9b]">{language === "vi" ? "Phụ kiện (C):" : "Accessory (C):"}</span>
-            <span className="font-bold text-[#ea4f93]">{skillReqs.C}★</span>
-          </div>
-          <div className="flex items-center gap-1 rounded-lg bg-white px-2 py-0.5 border border-[#fce7f3] text-[10px]">
-            <span className="font-bold text-[#b87c9b]">{language === "vi" ? "Nghệ thuật (D):" : "Art (D):"}</span>
-            <span className="font-bold text-[#ea4f93]">{skillReqs.D}★</span>
-          </div>
-        </div>
-      </div>
 
-      <div className="mt-4 grid grid-cols-3 gap-2.5">
-        <div className="rounded-[16px] border border-[#f5cee1] bg-white/70 p-2.5 text-center">
-          <p className="text-[9px] font-bold uppercase tracking-wider text-[#c08aa4]">{language === "vi" ? "Giá ước tính" : "Estimate Price"}</p>
-          <p className="mt-0.5 text-xs font-bold text-[#ea4f93]">{formatVND(request.price || nail.price)}</p>
+        <div className="mt-3 flex items-center justify-between rounded-xl bg-[#fff0f6] border border-[#fbcfe8] p-2.5">
+          <span className="text-[10px] font-bold text-[#c08aa4]">{language === "vi" ? "Thành phần tùy chỉnh" : "Custom Components"}</span>
+          <span className="rounded-md bg-white px-2 py-0.5 text-[11px] font-extrabold text-[#ea4f93] shadow-2xs">
+            {(nail.customerNailComponents || nail.nailComponents || []).length} {language === "vi" ? "Phụ kiện" : "Add-ons"}
+          </span>
         </div>
-        <div className="rounded-[16px] border border-[#f5cee1] bg-white/70 p-2.5 text-center">
-          <p className="text-[9px] font-bold uppercase tracking-wider text-[#c08aa4]">{language === "vi" ? "Thời lượng" : "Duration"}</p>
-          <p className="mt-0.5 text-xs font-bold text-[#3f2240]">{formatDuration(request.duration || nail.duration)}</p>
-        </div>
-        <div className="rounded-[16px] border border-[#f5cee1] bg-white/70 p-2.5 text-center">
-          <p className="text-[9px] font-bold uppercase tracking-wider text-[#c08aa4]">{language === "vi" ? "Đã phân công" : "Assigned"}</p>
-          <p className="mt-0.5 text-[10px] font-bold text-[#3f2240] truncate">
-            {formatDate(request.createdAt || nail.createdAt)}
-          </p>
-        </div>
-      </div>
 
-      <div className="mt-4 flex items-center justify-between border-t border-[#fdebf3] pt-3.5">
-        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wider ${getStatusTone(statusLabel)}`}>
-          {statusLabel === "Approved" || statusLabel === "Reviewed" || statusLabel === "Quoted" ? (
-            <CheckCircle2 size={11} />
-          ) : statusLabel === "Rejected" ? (
-            <XCircle size={11} />
-          ) : (
-            <Clock3 size={11} />
-          )}
-          {statusLabel}
-        </span>
+        <div className="mt-4 grid grid-cols-2 gap-3 border-t border-[#fdf0f5] pt-4">
+          <div>
+            <p className="text-[9px] font-bold uppercase tracking-widest text-[#c08aa4]">{language === "vi" ? "Giá ước tính" : "Est. Price"}</p>
+            <p className="mt-0.5 text-xs font-bold text-[#d4af37]">{formatVND(request.price || nail.price)}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-[#c08aa4]">{language === "vi" ? "Thời lượng" : "Duration"}</p>
+            <p className="mt-0.5 text-xs font-bold text-[#3f2240]">{formatDuration(request.duration || nail.duration)}</p>
+          </div>
+        </div>
 
-        <span className="flex items-center gap-1 text-[11px] font-bold text-[#ea4f93] transition-all group-hover:gap-1.5">
-          {statusLabel === "Assigned" ? (language === "vi" ? "Bắt đầu đánh giá" : "Start Review") : (language === "vi" ? "Xem đánh giá" : "View Review")}
-          <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
-        </span>
+        <div className="mt-4 flex justify-end">
+          <span className="flex items-center gap-1 text-[11px] font-bold text-[#ea4f93] transition-all group-hover:gap-1.5">
+            {statusLabel === "Assigned" ? (language === "vi" ? "Bắt đầu đánh giá" : "Start Review") : (language === "vi" ? "Xem đánh giá" : "View Review")}
+            <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -184,13 +153,12 @@ function RequestCard({ request, language }) {
 
 export function StaffCustomerNailsListPage() {
   const navigate = useNavigate();
+  const { language } = useLanguage();
   const [requests, setRequests] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
-  const { language } = useLanguage();
+  const itemsPerPage = 12;
 
   const staffArtistId = useMemo(() => {
     try {
@@ -208,9 +176,7 @@ export function StaffCustomerNailsListPage() {
     }
     const { silent = false } = options;
     try {
-      if (silent) {
-        setIsRefreshing(true);
-      } else {
+      if (!silent) {
         setIsLoading(true);
       }
       setError("");
@@ -222,26 +188,17 @@ export function StaffCustomerNailsListPage() {
       console.error("Failed to load custom nail requests:", err);
       setError(err.message || (language === "vi" ? "Không tải được yêu cầu thiết kế." : "Failed to load custom nail requests."));
     } finally {
-      if (silent) {
-        setIsRefreshing(false);
-      } else {
+      if (!silent) {
         setIsLoading(false);
       }
     }
-  }, [staffArtistId]);
+  }, [staffArtistId, language]);
 
   useEffect(() => {
     loadRequests();
   }, [loadRequests]);
 
-  // Auto refresh
-  useEffect(() => {
-    if (!staffArtistId) return undefined;
-    const intervalId = window.setInterval(() => {
-      loadRequests({ silent: true });
-    }, 5000);
-    return () => window.clearInterval(intervalId);
-  }, [loadRequests, staffArtistId]);
+
 
   // Calculate paginated requests
   const paginatedRequests = useMemo(() => {
@@ -296,8 +253,8 @@ export function StaffCustomerNailsListPage() {
     return (
       <div className="p-6">
         <Alert
-          message="Authentication Required"
-          description="You must be logged in as a Staff Artist to access the review board."
+          message={language === "vi" ? "Yêu cầu xác thực" : "Authentication Required"}
+          description={language === "vi" ? "Bạn phải đăng nhập với vai trò Thợ Nail để truy cập bảng đánh giá." : "You must be logged in as a Staff Artist to access the review board."}
           type="warning"
           showIcon
         />
@@ -309,7 +266,7 @@ export function StaffCustomerNailsListPage() {
     return (
       <div className="p-6">
         <Alert
-          message="Error Loading Custom Reviews"
+          message={language === "vi" ? "Lỗi tải đánh giá tùy chỉnh" : "Error Loading Custom Reviews"}
           description={error}
           type="error"
           showIcon
@@ -318,7 +275,7 @@ export function StaffCustomerNailsListPage() {
               onClick={() => loadRequests()}
               className="text-xs font-semibold text-[#ea4f93] hover:underline"
             >
-              Retry
+              {language === "vi" ? "Thử lại" : "Retry"}
             </button>
           }
         />
@@ -329,7 +286,7 @@ export function StaffCustomerNailsListPage() {
   if (isLoading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <Spin size="large" tip="Loading assigned design requests..." />
+        <Spin size="large" tip={language === "vi" ? "Đang tải yêu cầu thiết kế được giao..." : "Loading assigned design requests..."} />
       </div>
     );
   }
@@ -346,29 +303,8 @@ export function StaffCustomerNailsListPage() {
       <div className="flex min-h-full flex-col gap-5 p-1">
         {/* Header Hero */}
         <Card className="overflow-hidden border-none bg-[linear-gradient(135deg,#fff0f8_0%,#fffafb_52%,#fff5fb_100%)] p-0 shadow-[0_18px_36px_rgba(236,72,153,0.12)]">
-          <div className="flex flex-col gap-6 p-6 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-2xl">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-[18px] bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-white shadow-[0_10px_22px_rgba(234,79,147,0.28)]">
-                  <Palette size={22} />
-                </div>
-                <div>
-                  <h2 className="text-3xl font-extrabold text-[#402542]">{language === "vi" ? "Yêu cầu thiết kế tùy chỉnh" : "Custom Review Requests"}</h2>
-                  <p className="text-sm text-[#b07a94]">{language === "vi" ? "Xem thiết kế của khách hàng, lêp giá ước tính và lập báo giá." : "Review customer designs, formulate pricing estimates, and draft quotes."}</p>
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-col items-start gap-3 lg:items-end">
-              <div className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-bold transition ${isRefreshing
-                ? "bg-white text-[#ea4f93] shadow-[0_8px_18px_rgba(234,79,147,0.12)]"
-                : "bg-white/80 text-[#9b7b8f]"
-                }`}>
-                <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} />
-                {isRefreshing ? (language === "vi" ? "Đang làm mới..." : "Refreshing...") : (language === "vi" ? "Tự động làm mới" : "Auto refresh active")}
-              </div>
-            </div>
-          </div>
-          <div className="grid gap-4 border-t border-white/70 bg-white/45 p-6 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Empty top row removed */}
+          <div className="grid gap-4 bg-white/45 p-6 sm:grid-cols-2 lg:grid-cols-4">
             {stats.map((item) => (
               <StatCard key={item.title} {...item} />
             ))}
@@ -377,10 +313,10 @@ export function StaffCustomerNailsListPage() {
 
         {/* Request Grid */}
         <Card className="p-0">
-          <div className="border-b border-[#f6dce7] p-6">
+          <div className="flex flex-col gap-4 border-b border-[#f6dce7] p-6 sm:flex-row sm:items-center sm:justify-between">
             <SectionHeading
-              title={language === "vi" ? "Bảng công việc được phân công" : "Assigned Workboard"}
-              subtitle={language === "vi" ? `${requests.length} thiết kế được giao cho bạn để định giá.` : `${requests.length} designs assigned to you for valuation.`}
+              title={language === "vi" ? "Tất cả yêu cầu thiết kế" : "All Design Requests"}
+              subtitle={language === "vi" ? "Hiển thị các bản nộp mới nhất được giao cho bạn" : "Showing latest submissions assigned to you"}
             />
           </div>
 
@@ -394,15 +330,16 @@ export function StaffCustomerNailsListPage() {
               </div>
             ) : (
               <>
-                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
                   {paginatedRequests.map((request) => (
-                    <Link
-                      key={request.customerNailRequestId || request.customerNailId || request.id}
-                      to={`/staff/customer-nails/${request.customerNailRequestId || request.customerNailId || request.id}`}
-                      className="block"
-                    >
-                      <RequestCard request={request} language={language} />
-                    </Link>
+                    <div key={request.customerNailRequestId || request.customerNailId || request.id}>
+                      <Link
+                        to={`/staff/customer-nails/${request.customerNailRequestId || request.customerNailId || request.id}`}
+                        className="block h-full"
+                      >
+                        <RequestCard request={request} language={language} />
+                      </Link>
+                    </div>
                   ))}
                 </div>
                 {requests.length > itemsPerPage && (

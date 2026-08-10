@@ -1,4 +1,4 @@
-import { Spin, Alert, Input, message, Button, Card, ConfigProvider } from "antd";
+import { Spin, Alert, Input, message, Button, Card, ConfigProvider, Modal } from "antd";
 import {
   Palette,
   CheckCircle2,
@@ -10,7 +10,7 @@ import {
   Sparkles,
   ClipboardList,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { fetchCustomerNailRequestById, staffSubmitArtistQuote } from "../../../manager/customer-nail/services/customerNailsService";
 import { ProcedureBuilderSection } from "../components/ProcedureBuilderSection";
@@ -61,8 +61,8 @@ function InfoTile({ label, value, valueClassName = "text-[#3f2240]" }) {
 function SectionHeading({ title, subtitle }) {
   return (
     <div>
-      <h3 className="text-sm font-extrabold text-[#3f2240]">{title}</h3>
-      {subtitle ? <p className="mt-1 text-xs text-[#c08aa4]">{subtitle}</p> : null}
+      <h3 className="text-lg font-serif font-bold text-[#3f2240]">{title}</h3>
+      {subtitle ? <p className="mt-1 text-xs text-[#a988a0]">{subtitle}</p> : null}
     </div>
   );
 }
@@ -423,7 +423,7 @@ function NailBlueprint({ nail, componentsList }) {
           {/* 💅 Main nail card (Showcase Display Slot) */}
           <div
             className={`relative h-full w-full transition-all duration-500 rounded-[32px] ${isFingerSelectedWithAccessory
-              ? "border border-[#ea4f93] bg-gradient-to-b from-[#fff2f6] to-[#fffbfc] shadow-[0_20px_40px_rgba(236,72,153,0.15)] ring-2 ring-[#ea4f93]/20 scale-[1.02]"
+              ? "border border-[#d4af37] bg-[#fefdfa] shadow-[0_20px_40px_rgba(212,175,55,0.15)] ring-2 ring-[#d4af37]/20 scale-[1.02]"
               : "bg-gradient-to-b from-white/60 to-[#fffafc]/40 shadow-[0_12px_24px_rgba(236,72,153,0.02)] hover:bg-white/80"
               }`}
           >
@@ -563,7 +563,7 @@ function NailBlueprint({ nail, componentsList }) {
         </defs>
       </svg>
       <div className="relative rounded-[24px] border border-[#f7d7e5] bg-[radial-gradient(circle_at_top,#fffdfd_0%,#fff6fb_58%,#fff2f8_100%)] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
-        <div className="flex min-h-[360px] flex-wrap items-center justify-center gap-5 lg:gap-6">
+        <div className="flex min-h-[360px] flex-nowrap items-center justify-start sm:justify-center overflow-x-auto pb-4 gap-3 md:gap-5 lg:gap-6">
           {renderNailPreview(1, "Thumb")}
           {renderNailPreview(2, "Index")}
           {renderNailPreview(3, "Middle")}
@@ -571,7 +571,7 @@ function NailBlueprint({ nail, componentsList }) {
           {renderNailPreview(5, "Pinky")}
         </div>
 
-        <div className="absolute right-6 top-6 flex flex-col gap-2 rounded-2xl border border-white/70 bg-white/90 p-3 shadow-lg backdrop-blur-sm">
+        {/* <div className="absolute right-6 top-6 flex flex-col gap-2 rounded-2xl border border-white/70 bg-white/90 p-3 shadow-lg backdrop-blur-sm">
           <span className="text-[9px] font-bold uppercase tracking-wider text-[#c08aa4]">Design Info</span>
           <div className="flex items-center gap-2">
             <span className="rounded-lg bg-[#fff0f8] px-2 py-1 text-[10px] font-bold text-[#ea4f93]">
@@ -584,7 +584,7 @@ function NailBlueprint({ nail, componentsList }) {
           <span className="text-[10px] font-semibold text-[#9c6f87]">
             {(componentsList || []).length} add-ons
           </span>
-        </div>
+        </div> */}
       </div>
 
       {/* Selected Components / Accessories */}
@@ -664,6 +664,9 @@ export function StaffCustomerNailReviewPage() {
   const [artistNotes, setArtistNotes] = useState("");
   const [procedures, setProcedures] = useState([]);
 
+  const [hasExternalItems, setHasExternalItems] = useState(false);
+  const [isQuoteModalVisible, setIsQuoteModalVisible] = useState(false);
+
   const loadRequestDetail = useCallback(async (options = {}) => {
     const { silent = false } = options;
     try {
@@ -698,6 +701,10 @@ export function StaffCustomerNailReviewPage() {
         // Use already existing values if request has them, otherwise use calculations
         setQuotedPrice(data.price || baseCalculatedPrice || "");
         setQuotedDuration(data.duration || baseCalculatedDuration || "");
+
+        const componentsList = nail.customerNailComponents || nail.nailComponents || [];
+        const isExternalFound = componentsList.some(comp => comp.customerComponent != null || comp.isExternal === true);
+        setHasExternalItems(isExternalFound);
 
         // Load existing procedures if they were already created
         if (nail.nailProcedures && nail.nailProcedures.length > 0) {
@@ -788,8 +795,14 @@ export function StaffCustomerNailReviewPage() {
 
     try {
       setIsSubmitting(true);
-      await staffSubmitArtistQuote(customerNailId, Number(quotedPrice), Number(quotedDuration), artistNotes, procedures);
-      toast.success("Estimation submitted to Manager successfully!");
+      await staffSubmitArtistQuote(
+        customerNailId,
+        Number(quotedPrice),
+        Number(quotedDuration),
+        artistNotes,
+        procedures
+      );
+      toast.success("Estimation and procedures submitted to Manager successfully!");
       navigate("/staff/customer-nails");
     } catch (err) {
       console.error("Error submitting quote:", err);
@@ -807,7 +820,7 @@ export function StaffCustomerNailReviewPage() {
           className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#f4c1d8] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93] shadow-[0_4px_12px_rgba(234,79,147,0.1)] hover:bg-[#fff7fb]"
         >
           <ChevronLeft size={14} />
-          Back to Workboard
+          {language === "vi" ? "Trở về bảng công việc" : "Back to Workboard"}
         </button>
         <Alert message="Error Loading Request" description={error} type="error" showIcon />
       </div>
@@ -835,8 +848,6 @@ export function StaffCustomerNailReviewPage() {
   const statusLabel = request.status || nail.status || "Assigned";
   const isEditable = statusLabel === "Assigned";
 
-  // Skill matching derived parameters
-
   return (
     <ConfigProvider
       theme={{
@@ -854,12 +865,12 @@ export function StaffCustomerNailReviewPage() {
             className="inline-flex w-fit items-center gap-2 rounded-full border border-[#f4c1d8] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93] shadow-[0_4px_12px_rgba(234,79,147,0.1)] transition hover:bg-[#fff7fb]"
           >
             <ChevronLeft size={14} />
-            Back to Workboard
+            {language === "vi" ? "Trở về bảng công việc" : "Back to Workboard"}
           </button>
           {isRefreshing && (
             <div className="inline-flex items-center gap-2 rounded-full bg-[#fff0f8] px-3 py-2 text-xs font-bold text-[#ea4f93]">
               <span className="h-2 w-2 animate-pulse rounded-full bg-[#ea4f93]" />
-              Refreshing...
+              {language === "vi" ? "Đang làm mới..." : "Refreshing..."}
             </div>
           )}
         </div>
@@ -883,7 +894,7 @@ export function StaffCustomerNailReviewPage() {
                 <div>
                   <div className="flex flex-wrap items-center gap-3">
                     <h2 className="text-2xl font-extrabold text-[#402542]">
-                      {nail.name || "Untitled Design"}
+                      {nail.name || (language === "vi" ? "Thiết kế chưa đặt tên" : "Untitled Design")}
                     </h2>
                     <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold ${getStatusTone(statusLabel)}`}>
                       <Clock size={12} />
@@ -891,27 +902,36 @@ export function StaffCustomerNailReviewPage() {
                     </span>
                   </div>
                   <p className="mt-2 text-sm text-[#9c6f87]">
-                    Review design layers, custom components, and submit quote estimates for this client.
+                    {language === "vi" ? "Đánh giá các lớp thiết kế, thành phần tùy chỉnh và gửi ước tính báo giá cho khách hàng này." : "Review design layers, custom components, and submit quote estimates for this client."}
                   </p>
                 </div>
               </div>
 
-              {/* Recommended Estimates */}
-              <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[300px]">
-                <div className="rounded-2xl border border-white/70 bg-[#fef2f6] p-4 shadow-[0_12px_28px_rgba(236,72,153,0.06)]">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">Recommended Price</p>
-                  <p className="mt-1 text-lg font-extrabold text-[#ea4f93]">{formatVND(recommendedStats.price)}</p>
+              {/* Eye-Catching Recommended Estimates Badges */}
+              <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[320px]">
+                <div className="relative overflow-hidden rounded-2xl border border-[#fbcfe8] bg-gradient-to-br from-[#fff0f6] to-[#fffafc] p-4 shadow-[0_12px_28px_rgba(236,72,153,0.1)]">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#ea4f93] text-white">
+                      <DollarSign size={13} />
+                    </span>
+                    <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c08aa4]">{language === "vi" ? "Giá đề xuất" : "Recommended Price"}</p>
+                  </div>
+                  <p className="mt-2 text-xl font-black text-[#ea4f93]">{formatVND(recommendedStats.price)}</p>
                 </div>
-                <div className="rounded-2xl border border-white/70 bg-white/75 p-4 shadow-[0_12px_28px_rgba(236,72,153,0.06)]">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">Recommended Time</p>
-                  <p className="mt-1 text-lg font-extrabold text-[#402542]">{formatDuration(recommendedStats.duration)}</p>
+                <div className="relative overflow-hidden rounded-2xl border border-[#f3d9e8] bg-white/90 p-4 shadow-[0_12px_28px_rgba(236,72,153,0.06)]">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#402542] text-white">
+                      <Clock size={13} />
+                    </span>
+                    <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c08aa4]">{language === "vi" ? "Thời gian đề xuất" : "Recommended Time"}</p>
+                  </div>
+                  <p className="mt-2 text-xl font-black text-[#402542]">{formatDuration(recommendedStats.duration)}</p>
                 </div>
               </div>
             </div>
           </div>
 
           <div className="grid gap-6 p-6 lg:grid-cols-3">
-            {/* Left side: design specs */}
             {/* Left side: design specs */}
             <div className="space-y-6 lg:col-span-2">
               {/* Blueprint */}
@@ -922,6 +942,7 @@ export function StaffCustomerNailReviewPage() {
                 nail={nail}
                 procedures={procedures}
                 setProcedures={setProcedures}
+                readOnly={!isEditable}
                 onApplyToQuote={({ totalDuration, totalPrice }) => {
                   setQuotedDuration(totalDuration);
                   setQuotedPrice(totalPrice > 0 ? totalPrice : recommendedStats.price);
@@ -929,261 +950,282 @@ export function StaffCustomerNailReviewPage() {
                 }}
               />
 
-              {/* General details */}
-              <div className="rounded-[28px] border border-[#f5cee1] bg-white p-5 shadow-sm space-y-4">
-                <SectionHeading title="General Design Info" subtitle="Basic shape and finish metadata for this request." />
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <InfoTile
-                    label="Nail Shape"
-                    value={
-                      <div className="flex items-center gap-3">
-                        {nail.nailShape?.imageUrl && (
-                          <img crossOrigin="anonymous" src={nail.nailShape.imageUrl} alt="" className="h-8 w-8 rounded-lg object-cover" />
-                        )}
-                        <div>
-                          <p className="font-bold text-[#3f2240]">{nail.nailShape?.name || "Custom Shape"}</p>
-                          <p className="text-[10px] text-[#c08aa4]">
-                            {formatVND(nail.nailShape?.price)} • {formatDuration(nail.nailShape?.duration)}
-                          </p>
-                        </div>
-                      </div>
-                    }
-                  />
-                  <InfoTile
-                    label="Nail Surface/Finish"
-                    value={
-                      <div>
-                        <p className="font-bold text-[#3f2240]">{nail.nailSurface?.name || "Custom Surface"}</p>
-                        <p className="text-[10px] text-[#c08aa4]">
-                          {formatVND(nail.nailSurface?.price)} • {formatDuration(nail.nailSurface?.duration)}
-                        </p>
-                      </div>
-                    }
-                  />
-                </div>
-              </div>
-
-              {/* AI Skill Matching Verification Panel */}
-              <div className="rounded-[28px] border border-[#f5cee1] bg-white p-5 shadow-sm space-y-4">
-                <div className="flex items-center justify-between border-b border-[#fde7f3] pb-3">
-                  <SectionHeading title="AI Skill-Matching Verification" subtitle="Check if artist capabilities fulfill the design's tech requirements." />
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[#eaf9ee] px-2.5 py-1 text-[10px] font-extrabold text-[#2fa25f] uppercase tracking-wider">
-                    Passed ✓
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Left: Design requirements */}
-                  <div className="rounded-2xl bg-[#fffafb] border border-[#fbdde9] p-3.5 space-y-2.5">
-                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#ea4f93] flex items-center gap-1">
-                      <Sparkles size={11} />
-                      Design Required Complexity
-                    </p>
-                    <div className="space-y-2">
-                      <div>
-                        <div className="flex justify-between text-[10px] font-bold text-[#6f5568]">
-                          <span>A: Nail Shape Mastery</span>
-                          <span>Level {skillReqs.A}/5</span>
-                        </div>
-                        <div className="h-1.5 w-full bg-[#fce6f3] rounded-full overflow-hidden mt-1">
-                          <div className="h-full bg-[#ea4f93] rounded-full" style={{ width: `${(skillReqs.A / 5) * 100}%` }} />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex justify-between text-[10px] font-bold text-[#6f5568]">
-                          <span>B: Color/Gradient Coat</span>
-                          <span>Level {skillReqs.B}/5</span>
-                        </div>
-                        <div className="h-1.5 w-full bg-[#fce6f3] rounded-full overflow-hidden mt-1">
-                          <div className="h-full bg-[#ea4f93] rounded-full" style={{ width: `${(skillReqs.B / 5) * 100}%` }} />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex justify-between text-[10px] font-bold text-[#6f5568]">
-                          <span>C: Decor/Accessory</span>
-                          <span>Level {skillReqs.C}/5</span>
-                        </div>
-                        <div className="h-1.5 w-full bg-[#fce6f3] rounded-full overflow-hidden mt-1">
-                          <div className="h-full bg-[#ea4f93] rounded-full" style={{ width: `${(skillReqs.C / 5) * 100}%` }} />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex justify-between text-[10px] font-bold text-[#6f5568]">
-                          <span>D: Embellishment Precision</span>
-                          <span>Level {skillReqs.D}/5</span>
-                        </div>
-                        <div className="h-1.5 w-full bg-[#fce6f3] rounded-full overflow-hidden mt-1">
-                          <div className="h-full bg-[#ea4f93] rounded-full" style={{ width: `${(skillReqs.D / 5) * 100}%` }} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right: Artist Capacity */}
-                  <div className="rounded-2xl bg-[#f0fdf4] border border-[#dcfce7] p-3.5 space-y-2.5">
-                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#166534] flex items-center gap-1">
-                      <CheckCircle2 size={11} />
-                      Artist Capability Grade
-                    </p>
-                    <div className="space-y-2">
-                      <div>
-                        <div className="flex justify-between text-[10px] font-bold text-[#166534]">
-                          <span>A: Shape Mastery</span>
-                          <span>Level {artistSkills.A}/5</span>
-                        </div>
-                        <div className="h-1.5 w-full bg-[#dcfce7] rounded-full overflow-hidden mt-1">
-                          <div className="h-full bg-[#2fa25f] rounded-full" style={{ width: `${(artistSkills.A / 5) * 100}%` }} />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex justify-between text-[10px] font-bold text-[#166534]">
-                          <span>B: Color/Gradient Coat</span>
-                          <span>Level {artistSkills.B}/5</span>
-                        </div>
-                        <div className="h-1.5 w-full bg-[#dcfce7] rounded-full overflow-hidden mt-1">
-                          <div className="h-full bg-[#2fa25f] rounded-full" style={{ width: `${(artistSkills.B / 5) * 100}%` }} />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex justify-between text-[10px] font-bold text-[#166534]">
-                          <span>C: Decor/Accessory</span>
-                          <span>Level {artistSkills.C}/5</span>
-                        </div>
-                        <div className="h-1.5 w-full bg-[#dcfce7] rounded-full overflow-hidden mt-1">
-                          <div className="h-full bg-[#2fa25f] rounded-full" style={{ width: `${(artistSkills.C / 5) * 100}%` }} />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex justify-between text-[10px] font-bold text-[#166534]">
-                          <span>D: Embellishment Precision</span>
-                          <span>Level {artistSkills.D}/5</span>
-                        </div>
-                        <div className="h-1.5 w-full bg-[#dcfce7] rounded-full overflow-hidden mt-1">
-                          <div className="h-full bg-[#2fa25f] rounded-full" style={{ width: `${(artistSkills.D / 5) * 100}%` }} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="text-[10px] text-center font-bold text-[#558d6e] bg-[#eaf9ee] rounded-xl py-2">
-                  Matching Validation Rule: Artist Level &ge; Design Level. Match Successful!
-                </div>
-              </div>
             </div>
 
             {/* Right side: pricing estimation board */}
-            <div>
-              <div className="sticky top-5 space-y-6">
-                <Card title={
-                  <div className="flex items-center gap-2 text-[#402542]">
-                    <ClipboardList size={18} className="text-[#ea4f93]" />
-                    <span className="font-extrabold text-sm">Review & Valuation Board</span>
-                  </div>
-                } className="rounded-2xl border border-[#f8deea] shadow-sm">
-                  {isEditable ? (
-                    <div className="space-y-4">
-                      <div className="rounded-xl bg-[#fff0f6] p-3 text-xs text-[#a35e80]">
-                        Please inspect the client's components on the left. The recommended figures below are computed by summing the selected layers. Adjust the fields if complexity warrants higher/lower margins.
-                      </div>
+            <div className="space-y-6">
 
-                      {/* Quoted Price */}
+              {/* General details (Without catalog prices for custom client designs) */}
+              <div className="rounded-[28px] border border-[#f5cee1] bg-white p-5 shadow-sm space-y-4">
+                <SectionHeading title={language === "vi" ? "Thông tin thiết kế chung" : "General Design Info"} subtitle={language === "vi" ? "Thông số cơ bản về kiểu móng và bề mặt do khách hàng yêu cầu." : "Basic shape and surface finish specifications requested by customer."} />
+                <div className="grid grid-cols-1 gap-4">
+                  <InfoTile
+                    label={language === "vi" ? "Thông số kiểu móng" : "Nail Shape Specification"}
+                    value={
+                      <div className="flex items-center gap-3">
+                        {nail.nailShape?.imageUrl && (
+                          <img crossOrigin="anonymous" src={nail.nailShape.imageUrl} alt="" className="h-9 w-9 rounded-xl border border-pink-100 object-cover p-0.5" />
+                        )}
+                        <div>
+                          <p className="font-bold text-[#3f2240] text-base">{nail.nailShape?.name || (language === "vi" ? "Kiểu tùy chỉnh" : "Custom Shape")}</p>
+                          <p className="text-[11px] text-[#a988a0]">{language === "vi" ? "Hình dáng & Độ dài cơ bản" : "Base Form & Length"}</p>
+                        </div>
+                      </div>
+                    }
+                  />
+                  <InfoTile
+                    label={language === "vi" ? "Bề mặt móng / Độ hoàn thiện" : "Nail Surface / Finish"}
+                    value={
                       <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-[0.08em] text-[#c08aa4] mb-1.5">
-                          Quoted Price (VND)
-                        </label>
-                        <Input
-                          type="number"
-                          prefix={<DollarSign size={16} className="text-[#c08aa4]" />}
-                          value={quotedPrice}
-                          onChange={(e) => setQuotedPrice(e.target.value)}
-                          placeholder="Suggested Price"
-                          className="h-11 rounded-xl"
-                        />
-                        <span className="mt-1 block text-[10px] text-[#9c788e]">
-                          Suggested standard: {formatVND(recommendedStats.price)}
-                        </span>
+                        <p className="font-bold text-[#3f2240] text-base">{nail.nailSurface?.name || (language === "vi" ? "Bề mặt tùy chỉnh" : "Custom Surface")}</p>
+                        <p className="text-[11px] text-[#a988a0]">{language === "vi" ? "Kết cấu bề mặt & Hiệu ứng hoàn thiện" : "Surface Texture & Finish Effect"}</p>
                       </div>
+                    }
+                  />
+                </div>
+              </div>
 
-                      {/* Quoted Duration */}
-                      <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-[0.08em] text-[#c08aa4] mb-1.5">
-                          Estimated Duration (minutes)
-                        </label>
-                        <Input
-                          type="number"
-                          prefix={<Clock size={16} className="text-[#c08aa4]" />}
-                          value={quotedDuration}
-                          onChange={(e) => setQuotedDuration(e.target.value)}
-                          placeholder="Suggested Duration"
-                          className="h-11 rounded-xl"
-                        />
-                        <span className="mt-1 block text-[10px] text-[#9c788e]">
-                          Suggested standard: {formatDuration(recommendedStats.duration)}
-                        </span>
-                      </div>
-
-                      {/* Artist Notes */}
-                      <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-[0.08em] text-[#c08aa4] mb-1.5">
-                          Artist Review Notes (Optional)
-                        </label>
-                        <Input.TextArea
-                          value={artistNotes}
-                          onChange={(e) => setArtistNotes(e.target.value)}
-                          placeholder="E.g., design requires complex nail art details..."
-                          rows={3}
-                          className="rounded-xl"
-                        />
-                      </div>
-
-                      {/* Submit */}
-                      <Button
-                        type="primary"
-                        onClick={handleSubmitQuote}
-                        loading={isSubmitting}
-                        className="w-full h-11 rounded-full font-bold shadow-md bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] hover:from-[#ea4f93] hover:to-[#df4588] border-none"
-                      >
-                        Submit Estimation
-                      </Button>
+              {/* Eye-Catching Smart Price Valuation & Cost Breakdown Panel */}
+              <div className="rounded-[28px] border border-[#f5cee1] bg-gradient-to-br from-[#fffdfd] via-[#fff5fa] to-[#fff0f7] p-6 shadow-[0_12px_32px_rgba(236,72,153,0.06)] space-y-5">
+                <div className="flex flex-col gap-3 border-b border-[#f9d7e6] pb-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-r from-[#ea4f93] to-[#d43d81] text-white shadow-sm shrink-0">
+                        <Sparkles size={14} />
+                      </span>
+                      <h3 className="text-lg font-serif font-extrabold text-[#3f2240]">{language === "vi" ? "Định giá & Giá cả" : "Valuation & Price"}</h3>
                     </div>
+                    <p className="mt-1 text-xs text-[#a988a0]">
+                      {language === "vi" ? "Đề xuất định giá tự động thông minh được tính toán cho yêu cầu này." : "Smart auto-pricing recommendation calculated for this request."}
+                    </p>
+                  </div>
+                  {isEditable ? (
+                    <Button
+                      type="primary"
+                      onClick={() => {
+                        setQuotedPrice(quotedPrice || recommendedStats.price);
+                        setQuotedDuration(quotedDuration || recommendedStats.duration);
+                        setIsQuoteModalVisible(true);
+                      }}
+                      className="h-11 w-full rounded-full font-bold bg-gradient-to-r from-[#ea4f93] to-[#df4588] shadow-md border-none hover:opacity-90 transition-all flex items-center justify-center gap-1.5 mt-2"
+                    >
+                      <Sparkles size={14} />
+                      {language === "vi" ? "Điều chỉnh & Gửi báo giá" : "Adjust & Submit Quote"}
+                    </Button>
                   ) : (
-                    <div className="space-y-4">
-                      <div className="rounded-xl bg-[#f0fdf4] p-4 text-xs text-[#2b6141] flex items-center gap-2">
-                        <CheckCircle2 size={16} />
-                        <span>Estimation has been submitted successfully.</span>
+                    <div className="mt-2 rounded-xl bg-[#f0fdf4] p-3 text-xs text-[#2b6141] flex flex-col gap-1.5 border border-[#bbf7d0]">
+                      <div className="flex items-center gap-2 font-bold mb-1">
+                        <CheckCircle2 size={16} className="text-[#2fa25f]" />
+                        <span>{language === "vi" ? "Báo giá đã chốt" : "Quote Finalized"}</span>
                       </div>
-
-                      <div className="space-y-3 pt-2">
-                        <div className="flex justify-between border-b pb-2 text-xs">
-                          <span className="text-[#c08aa4]">Submitted Price:</span>
-                          <span className="font-bold text-[#ea4f93]">{formatVND(request.price || nail.price)}</span>
-                        </div>
-                        <div className="flex justify-between border-b pb-2 text-xs">
-                          <span className="text-[#c08aa4]">Estimated Duration:</span>
-                          <span className="font-bold text-[#402542]">{formatDuration(request.duration || nail.duration)}</span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                          <span className="text-[#c08aa4]">Status:</span>
-                          <span className="font-extrabold text-[#2fa25f]">{statusLabel}</span>
-                        </div>
+                      <div className="flex justify-between border-b border-[#bbf7d0]/50 pb-1">
+                        <span className="text-[#2b6141]/80">{language === "vi" ? "Giá đã nộp:" : "Submitted Price:"}</span>
+                        <span className="font-bold">{formatVND(request?.price || nail?.price)}</span>
                       </div>
-
-                      <Button
-                        disabled
-                        className="w-full h-11 rounded-full font-bold"
-                      >
-                        Quote Finalized
-                      </Button>
+                      <div className="flex justify-between">
+                        <span className="text-[#2b6141]/80">{language === "vi" ? "Thời lượng:" : "Duration:"}</span>
+                        <span className="font-bold">{formatDuration(request?.duration || nail?.duration)}</span>
+                      </div>
                     </div>
                   )}
-                </Card>
+                </div>
+
+                {/* Price Breakdown Cards */}
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="flex justify-between items-center rounded-2xl border border-white/80 bg-white/90 p-4 shadow-sm backdrop-blur-sm">
+                    <div>
+                      <span className="block text-[10px] font-extrabold uppercase tracking-wider text-[#c08aa4]">{language === "vi" ? "Kiểu cơ bản" : "Base Shape"}</span>
+                      <p className="mt-0.5 text-sm font-bold text-[#3f2240]">{nail.nailShape?.name || (language === "vi" ? "Tiêu chuẩn" : "Standard")}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-semibold text-[#ea4f93]">
+                        {nail.nailShape?.price ? formatVND(nail.nailShape.price) : (language === "vi" ? "Đã bao gồm" : "Included")}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center rounded-2xl border border-white/80 bg-white/90 p-4 shadow-sm backdrop-blur-sm">
+                    <div>
+                      <span className="block text-[10px] font-extrabold uppercase tracking-wider text-[#c08aa4]">{language === "vi" ? "Bề mặt hoàn thiện" : "Surface Finish"}</span>
+                      <p className="mt-0.5 text-sm font-bold text-[#3f2240]">{nail.nailSurface?.name || (language === "vi" ? "Bóng" : "Glossy")}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-semibold text-[#ea4f93]">
+                        {nail.nailSurface?.price ? formatVND(nail.nailSurface.price) : (language === "vi" ? "Đã bao gồm" : "Included")}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center rounded-2xl border border-white/80 bg-white/90 p-4 shadow-sm backdrop-blur-sm">
+                    <div>
+                      <span className="block text-[10px] font-extrabold uppercase tracking-wider text-[#c08aa4]">{language === "vi" ? "Phụ kiện" : "Add-ons"}</span>
+                      <p className="mt-0.5 text-sm font-bold text-[#3f2240]">{componentsList.length} {language === "vi" ? "Món" : "Items"}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-semibold text-[#ea4f93]">
+                        {formatVND(componentsList.reduce((sum, item) => sum + (item.component?.price || 0), 0))}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Calculated Total Highlight Banner */}
+                <div className="rounded-2xl bg-gradient-to-r from-[#ea4f93] via-[#df4588] to-[#c63d79] p-4 text-white shadow-lg text-center space-y-1">
+                  <span className="block text-[10px] font-extrabold uppercase tracking-widest text-pink-100">{language === "vi" ? "Tổng đề xuất" : "Suggested Total"}</span>
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-2xl font-black">{formatVND(recommendedStats.price)}</span>
+                    <span className="text-xs font-semibold text-pink-100">• {formatDuration(recommendedStats.duration)}</span>
+                  </div>
+                </div>
               </div>
+
             </div>
           </div>
         </Card>
       </div>
+
+      <Modal
+        title={
+          <div className="flex items-center gap-3 pb-4 border-b border-[#fce7f0]">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ea4f93] to-[#ff8ebb] text-white shadow-[0_8px_16px_rgba(234,79,147,0.25)]">
+              <ClipboardList size={22} strokeWidth={2.5} />
+            </div>
+            <div>
+              <span className="block font-black text-lg text-[#3f2240] leading-tight tracking-tight">{language === "vi" ? "Chốt báo giá" : "Finalize Quote"}</span>
+              <span className="block text-[11px] font-bold text-[#c08aa4] uppercase tracking-wider mt-0.5">{language === "vi" ? "Thiết lập giá & thời lượng" : "Set pricing & duration"}</span>
+            </div>
+          </div>
+        }
+        open={isQuoteModalVisible}
+        onCancel={() => setIsQuoteModalVisible(false)}
+        footer={null}
+        destroyOnClose
+        centered
+        width={420}
+        closeIcon={
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fff0f6] text-[#a988a0] transition-all hover:bg-[#ea4f93] hover:text-white mt-1 mr-1">
+            <XCircle size={20} strokeWidth={2.5} />
+          </div>
+        }
+        styles={{
+          mask: {
+            backdropFilter: 'blur(8px)',
+            backgroundColor: 'rgba(64, 37, 66, 0.4)',
+          },
+          content: {
+            borderRadius: '28px',
+            padding: '24px 28px',
+            boxShadow: '0 25px 50px -12px rgba(234, 79, 147, 0.25)',
+            border: '1px solid #fce7f0',
+            background: 'linear-gradient(to bottom, #ffffff, #fffdfd)'
+          }
+        }}
+      >
+        <div className="space-y-6 pt-5">
+          {hasExternalItems && (
+            <div className="relative overflow-hidden rounded-2xl border border-[#fde68a] bg-gradient-to-br from-[#fffbeb] to-[#fef3c7] p-4 shadow-sm">
+              <div className="mb-2 flex items-center gap-2">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#d97706] text-white shadow-sm font-bold text-xs">
+                  !
+                </span>
+                <h4 className="font-extrabold text-[#b45309] text-sm">Khách mang phụ kiện tới</h4>
+              </div>
+              <p className="mb-3 text-xs text-[#92400e] leading-relaxed">
+                Mẫu này có phụ kiện do khách hàng mang đến. Vui lòng tính thêm <strong>Chi phí công đính/gia công</strong> vào báo giá bên dưới.
+              </p>
+              <div className="rounded-xl bg-white/60 p-3 text-xs flex justify-between items-center backdrop-blur-sm border border-white/50">
+                <span className="text-[#b45309] font-bold">Gợi ý vật tư (Phom + Mặt móng): </span>
+                <span className="font-black text-[#d97706] text-sm">{formatVND((nail.nailShape?.price || 0) + (nail.nailSurface?.price || 0))}</span>
+              </div>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-[10px] font-extrabold uppercase tracking-widest text-[#c08aa4] mb-2">
+              {language === "vi" ? "Giá báo giá (VNĐ)" : "Quoted Price (VND)"}
+            </label>
+            <Input
+              type="number"
+              prefix={<DollarSign size={18} className="text-[#ea4f93] mr-1.5" />}
+              value={quotedPrice}
+              onChange={(e) => setQuotedPrice(e.target.value)}
+              placeholder={language === "vi" ? "Giá đề xuất" : "Suggested Price"}
+              className="h-12 rounded-2xl border-[#f5cee1] bg-[#fffafc] px-4 font-black text-[#3f2240] text-base hover:border-[#ea4f93] focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all"
+            />
+            <div className="mt-2.5 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setQuotedPrice(recommendedStats.price)}
+                className="flex-1 rounded-xl bg-gradient-to-br from-[#fff0f6] to-[#fffafc] px-3 py-2.5 text-[11px] font-bold text-[#ea4f93] border border-[#fbcfe8] hover:border-[#ea4f93] hover:shadow-[0_4px_12px_rgba(234,79,147,0.15)] transition-all"
+              >
+                {language === "vi" ? "Khuyến nghị" : "Recommended"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setQuotedPrice(Math.round(recommendedStats.price * 1.1))}
+                className="flex-1 rounded-xl bg-gradient-to-br from-[#fff0f6] to-[#fffafc] px-3 py-2.5 text-[11px] font-bold text-[#ea4f93] border border-[#fbcfe8] hover:border-[#ea4f93] hover:shadow-[0_4px_12px_rgba(234,79,147,0.15)] transition-all"
+              >
+                {language === "vi" ? "+10% Phí" : "+10% Fee"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setQuotedPrice(Math.round(recommendedStats.price * 1.2))}
+                className="flex-1 rounded-xl bg-gradient-to-br from-[#fff0f6] to-[#fffafc] px-3 py-2.5 text-[11px] font-bold text-[#ea4f93] border border-[#fbcfe8] hover:border-[#ea4f93] hover:shadow-[0_4px_12px_rgba(234,79,147,0.15)] transition-all"
+              >
+                {language === "vi" ? "+20% Chi tiết" : "+20% Detail"}
+              </button>
+            </div>
+            <span className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-[#a988a0]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#ea4f93]"></span>
+              {language === "vi" ? "Tiêu chuẩn đề xuất: " : "Suggested standard: "} <span className="font-bold text-[#ea4f93]">{formatVND(recommendedStats.price)}</span>
+            </span>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-extrabold uppercase tracking-widest text-[#c08aa4] mb-2">
+              {language === "vi" ? "Thời lượng ước tính (phút)" : "Estimated Duration (minutes)"}
+            </label>
+            <Input
+              type="number"
+              prefix={<Clock size={18} className="text-[#ea4f93] mr-1.5" />}
+              value={quotedDuration}
+              onChange={(e) => setQuotedDuration(e.target.value)}
+              placeholder={language === "vi" ? "Thời lượng đề xuất" : "Suggested Duration"}
+              className="h-12 rounded-2xl border-[#f5cee1] bg-[#fffafc] px-4 font-black text-[#3f2240] text-base hover:border-[#ea4f93] focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all"
+            />
+            <span className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-[#a988a0]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#402542]"></span>
+              {language === "vi" ? "Tiêu chuẩn đề xuất: " : "Suggested standard: "} <span className="font-bold text-[#402542]">{formatDuration(recommendedStats.duration)}</span>
+            </span>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-extrabold uppercase tracking-widest text-[#c08aa4] mb-2">
+              {language === "vi" ? "Ghi chú của thợ (Tùy chọn)" : "Artist Review Notes (Optional)"}
+            </label>
+            <Input.TextArea
+              value={artistNotes}
+              onChange={(e) => setArtistNotes(e.target.value)}
+              placeholder={language === "vi" ? "Ví dụ: thiết kế yêu cầu chi tiết nghệ thuật móng phức tạp..." : "E.g., design requires complex nail art details..."}
+              rows={3}
+              className="rounded-2xl border-[#f5cee1] bg-[#fffafc] p-4 text-sm font-semibold text-[#3f2240] hover:border-[#ea4f93] focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all"
+            />
+          </div>
+
+          <div className="pt-4">
+            <Button
+              type="primary"
+              onClick={handleSubmitQuote}
+              loading={isSubmitting}
+              className="w-full h-12 rounded-2xl font-black text-base shadow-[0_8px_20px_rgba(234,79,147,0.3)] bg-gradient-to-r from-[#ea4f93] via-[#df4588] to-[#c63d79] hover:shadow-[0_12px_24px_rgba(234,79,147,0.4)] border-none transition-all hover:-translate-y-0.5"
+            >
+              {language === "vi" ? "Xác nhận & Gửi báo giá" : "Confirm & Submit Quote"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </ConfigProvider>
   );
 }
 
+export default StaffCustomerNailReviewPage;

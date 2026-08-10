@@ -88,6 +88,7 @@ export function normalizeCustomerNail(item, rawNailsList = []) {
       nailShape: nail.nailShape || matchedRawNail.nailShape,
       nailSurface: nail.nailSurface || matchedRawNail.nailSurface,
       customerNailComponents: nail.customerNailComponents || matchedRawNail.customerNailComponents || [],
+      nailProcedures: nail.nailProcedures || matchedRawNail.nailProcedures || [],
 
       _isRequest: true
     };
@@ -376,19 +377,6 @@ export async function managerApproveQuote(customerNailId, finalPrice, finalDurat
   }
 }
 
-export async function fetchProcedures(params = {}) {
-  try {
-    const response = await axiosClient.get(`/Procedures`, {
-      params,
-      headers: getAuthHeaders(),
-    });
-    return unwrapResponse(response, "Failed to fetch procedures.");
-  } catch (error) {
-    console.error("Error fetching procedures:", error.response?.data || error);
-    throw new Error(error.response?.data?.message || error.message || "Failed to fetch procedures.", { cause: error });
-  }
-}
-
 export async function managerReject(customerNailId, reason) {
   const normalizedId = String(customerNailId || "").trim();
   const normalizedReason = String(reason || "").trim();
@@ -449,6 +437,20 @@ export async function fetchCustomerNailRequestById(id) {
   return fetchCustomerNailById(id);
 }
 
+export async function fetchProcedures(params = {}) {
+  try {
+    const response = await axiosClient.get("/Procedures", {
+      headers: getAuthHeaders(),
+      params,
+    });
+    const data = unwrapResponse(response, "Failed to fetch procedures.");
+    return Array.isArray(data) ? data : data?.items || data?.data || [];
+  } catch (error) {
+    console.warn("Failed fetching procedures from /Procedures, fallbacking to []...", error);
+    return [];
+  }
+}
+
 export async function staffSubmitArtistQuote(customerNailId, quotedPrice, quotedDuration, artistNotes = "", procedures = []) {
   const normalizedId = String(customerNailId || "").trim();
   if (!normalizedId) {
@@ -457,15 +459,8 @@ export async function staffSubmitArtistQuote(customerNailId, quotedPrice, quoted
   const payload = {
     quotedPrice: Number(quotedPrice),
     quotedDuration: Number(quotedDuration),
-    artistNotes,
-    procedures: procedures.map(p => ({
-      procedureId: p.isCustomStep ? null : p.procedureId,
-      name: p.name,
-      estimatedMinutes: p.estimatedMinutes,
-      isCustomStep: p.isCustomStep,
-      stepOrder: p.stepOrder,
-      note: p.note
-    }))
+    artistNotes: artistNotes || "",
+    procedures: Array.isArray(procedures) ? procedures : [],
   };
 
   try {

@@ -12,6 +12,7 @@ import {
   Mail,
   Phone,
   UserRound,
+  UserPlus,
   Sparkles,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
@@ -20,8 +21,10 @@ import { PropTypes } from "../../../../shared/utils/propTypes";
 import { ROUTES } from "../../../../shared/constants/routes";
 import { fetchCustomerNailById, fetchSalonStaff, assignReviewer, managerApproveQuote, managerReject, getManagerSalonId } from "../services/customerNailsService";
 import { fetchNailArtistSkills } from "../../staff-artist-management/services/nailArtistsService";
+import { ProcedureBuilderSection } from "../../../staff/customer-nail/components/ProcedureBuilderSection";
 import toast from "react-hot-toast";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { fetchUserById } from "../../bookings/services/bookingsService";
 
 
 function Card({ className = "", children }) {
@@ -42,8 +45,8 @@ Card.propTypes = {
 function SectionHeading({ title, subtitle }) {
   return (
     <div>
-      <h3 className="text-sm font-extrabold text-[#3f2240]">{title}</h3>
-      {subtitle ? <p className="mt-1 text-xs text-[#c08aa4]">{subtitle}</p> : null}
+      <h3 className="text-lg font-serif font-bold text-[#3f2240]">{title}</h3>
+      {subtitle ? <p className="mt-1 text-xs text-[#a988a0]">{subtitle}</p> : null}
     </div>
   );
 }
@@ -515,8 +518,8 @@ export function CustomerNailDetailPage() {
   const { customerNailId } = useParams();
   const navigate = useNavigate();
   const [nail, setNail] = useState(null);
+  const [customer, setCustomer] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [errorType, setErrorType] = useState(""); // 'auth', 'notfound', 'network', 'unknown'
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
@@ -532,8 +535,8 @@ export function CustomerNailDetailPage() {
   const [finalDuration, setFinalDuration] = useState('');
   const [selectedComponentId, setSelectedComponentId] = useState(null);
   const [assignedStaffSkills, setAssignedStaffSkills] = useState([]);
+  const [procedures, setProcedures] = useState([]);
   const lastFetchedArtistIdRef = useRef(null);
-
 
 
   const skillReqs = useMemo(() => {
@@ -578,39 +581,60 @@ export function CustomerNailDetailPage() {
       console.log("[Page] Successfully loaded:", data);
       let assignedStaff = null;
 
-      // Nếu có approvedArtistId, fetch thông tin staff được assign trước khi set state để tránh giật lag/flicker
-      if (data?.approvedArtistId) {
-        try {
-          const salonId = getManagerSalonId();
-          const staffList = await fetchSalonStaff(salonId);
-          assignedStaff = staffList.find(
-            (staff) => (staff.staffId || staff.staffArtistId || staff.userId || staff.id) === data.approvedArtistId
-          );
-          if (assignedStaff) {
-            const artistId = assignedStaff.staffId || assignedStaff.staffArtistId || assignedStaff.userId || assignedStaff.id;
-            if (lastFetchedArtistIdRef.current !== artistId) {
-              try {
-                const skills = await fetchNailArtistSkills(artistId);
-                setAssignedStaffSkills(skills || []);
-                lastFetchedArtistIdRef.current = artistId;
-              } catch (err) {
-                console.error("[Page] Error loading staff skills:", err);
-              }
-            }
+      // Nếu có approvedArtist, lấy trực tiếp từ data để tránh call API fetchSalonStaff liên tục
+      if (data?.approvedArtist) {
+        assignedStaff = data.approvedArtist;
+        const artistId = assignedStaff.nailArtistId || assignedStaff.staffId || assignedStaff.staffArtistId || assignedStaff.userId || assignedStaff.id;
+
+        if (artistId && lastFetchedArtistIdRef.current !== artistId) {
+          try {
+            const skills = await fetchNailArtistSkills(artistId);
+            setAssignedStaffSkills(skills || []);
+            lastFetchedArtistIdRef.current = artistId;
+          } catch (err) {
+            console.error("[Page] Error loading staff skills:", err);
           }
-        } catch (err) {
-          console.error("[Page] Error loading assigned staff:", err);
-          // Không throw error, chỉ log vì đây là optional
         }
       } else {
         lastFetchedArtistIdRef.current = null;
         setAssignedStaffSkills([]);
+      }
+      // Pre-populate procedures to match Staff view
+      const proceduresList = data?.customerNail?.nailProcedures || data?.nailProcedures || data?.customerNailProcedures || [];
+      if (proceduresList.length > 0) {
+        const loadedProcedures = proceduresList.map(p => {
+          const finalName = p.name || p.procedureName || p.note;
+          return {
+            id: p.nailProcedureId,
+            procedureId: p.procedureId,
+            name: finalName,
+            estimatedMinutes: p.estimatedMinutes || p.procedureDuration || 15,
+            stepOrder: p.stepOrder,
+            isCommon: p.isCustomStep ? false : (p.procedureType === "Common" || p.procedureType === 1),
+            isCustomStep: p.isCustomStep,
+            procedureType: p.procedureType || (p.isCustomStep ? "ModelSpecific" : "Common"),
+            note: (p.name || p.procedureName) ? (p.note || p.procedureDescription || "") : "Bước kỹ thuật thực hiện"
+          };
+        }).sort((a, b) => a.stepOrder - b.stepOrder);
+        setProcedures(loadedProcedures);
       }
 
       setNail({
         ...data,
         assignedStaff: assignedStaff
       });
+
+      // Fetch customer details if available
+      const userId = data?.customerNail?.userId || data?.userId;
+      if (userId) {
+        try {
+          const customerData = await fetchUserById(userId);
+          setCustomer(customerData);
+        } catch (err) {
+          console.error("[Page] Error loading customer details:", err);
+        }
+      }
+
     } catch (err) {
       console.error("[Page] Error loading nail:", err);
 
@@ -638,9 +662,7 @@ export function CustomerNailDetailPage() {
         setError(errorMessage);
       }
     } finally {
-      if (silent) {
-        setIsRefreshing(false);
-      } else {
+      if (!silent) {
         setIsLoading(false);
       }
     }
@@ -650,16 +672,6 @@ export function CustomerNailDetailPage() {
     if (customerNailId) {
       Promise.resolve().then(() => loadCustomerNailDetail());
     }
-  }, [customerNailId, loadCustomerNailDetail]);
-
-  useEffect(() => {
-    if (!customerNailId) return undefined;
-
-    const intervalId = window.setInterval(() => {
-      loadCustomerNailDetail({ silent: true });
-    }, 3000);
-
-    return () => window.clearInterval(intervalId);
   }, [customerNailId, loadCustomerNailDetail]);
 
   const handleOpenAssignModal = async () => {
@@ -1092,20 +1104,27 @@ export function CustomerNailDetailPage() {
                     )}
                     {nail?.status || "Draft"}
                   </span>
-
-                  {/* Auto-Refresh Badge inside the title row */}
-                  <div className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[9px] font-extrabold border shadow-sm transition-all duration-300 ${isRefreshing
-                    ? "bg-white text-[#ea4f93] border-pink-100 animate-pulse"
-                    : "bg-white/80 text-[#9b7b8f] border-transparent"
-                    }`}>
-                    <span className={`h-1.5 w-1.5 rounded-full ${isRefreshing ? "bg-[#ea4f93] animate-ping" : "bg-[#d4b7c7]"}`} />
-                    {isRefreshing ? "Syncing" : "Synced"}
-                  </div>
                 </div>
 
-                <p className="mt-3 max-w-xl text-xs font-medium leading-relaxed text-[#8f6b80]">
-                  {language === "vi" ? "Xem chi tiết thiết kế, kiểm tra màu sắc được yêu cầu, chỉ định nghệ sĩ, hoàn thành hành động của quản lý" : "Review custom design details, inspect the requested colors, assign a staff artist, and complete manager actions from one place."}
-                </p>
+                <div className="mt-3 flex flex-wrap justify-center sm:justify-start items-center gap-3">
+                  {customer ? (
+                    <>
+                      <img
+                        src={customer.avatarUrl || "https://ui-avatars.com/api/?name=" + customer.firstName}
+                        alt="Customer"
+                        className="h-8 w-8 rounded-full border border-pink-200 object-cover shadow-sm"
+                      />
+                      <div className="text-sm text-left">
+                        <p className="font-bold text-[#402542]">{customer.firstName} {customer.lastName}</p>
+                        <p className="text-xs text-[#8f6b80]">{customer.email} • {customer.phone || "No phone"}</p>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="max-w-xl text-xs font-medium leading-relaxed text-[#8f6b80]">
+                      {language === "vi" ? "Xem chi tiết thiết kế, kiểm tra màu sắc được yêu cầu, chỉ định nghệ sĩ, hoàn thành hành động của quản lý" : "Review custom design details, inspect the requested colors, assign a staff artist, and complete manager actions from one place."}
+                    </p>
+                  )}
+                </div>
 
                 <div className="mt-4 flex flex-wrap justify-center sm:justify-start items-center gap-2">
                   <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider shadow-sm ${nail?.basedOnNailVariantId !== null ? "bg-[#eef2ff] text-[#4f46e5] border border-blue-100" : "bg-[#fffbeb] text-[#d97706] border border-amber-100"}`}>
@@ -1129,11 +1148,12 @@ export function CustomerNailDetailPage() {
 
             {/* Right side: Stats Cards & Actions */}
             <div className="flex flex-col gap-3 lg:w-auto lg:min-w-[420px]">
+              {/* Stats Grid */}
               <div className="grid gap-3 grid-cols-3">
                 {/* Price card */}
                 <div className="rounded-2xl border border-amber-100 bg-[#fffdfa] p-4 shadow-[0_10px_25px_rgba(217,119,6,0.03)] flex flex-col justify-between">
                   <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#d97706]">
-                    {language === "vi" ? "Giá" : "Price"}
+                    Price
                   </span>
                   <span className="mt-2 text-base font-bold text-[#d97706] truncate">
                     {formatVND(nail?.price, nail?.status)}
@@ -1142,7 +1162,7 @@ export function CustomerNailDetailPage() {
                 {/* Duration card */}
                 <div className="rounded-2xl border border-purple-100 bg-[#fbfaff] p-4 shadow-[0_10px_25px_rgba(139,92,246,0.03)] flex flex-col justify-between">
                   <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#7c3aed]">
-                    {language === "vi" ? "Thời gian" : "Duration"}
+                    Duration
                   </span>
                   <span className="mt-2 text-base font-bold text-[#7c3aed] truncate">
                     {formatDuration(nail?.duration, nail?.status)}
@@ -1159,35 +1179,44 @@ export function CustomerNailDetailPage() {
                 </div>
               </div>
 
-              {/* Action Buttons Integrated into Header */}
-              {nail?.status === "PendingReview" && !nail?.assignedStaff && (
-                <button
-                  onClick={handleOpenAssignModal}
-                  disabled={isSubmitting}
-                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] px-4 py-3.5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(234,79,147,0.25)] transition-all hover:scale-[1.02] hover:shadow-[0_12px_25px_rgba(234,79,147,0.35)] disabled:opacity-70"
-                >
-                  <UserRound size={18} />
-                  {language === "vi" ? "Giao nhiệm vụ cho nghệ sĩ" : "Assign Artist"}
-                </button>
-              )}
-              {(nail?.status === "Reviewed" || nail?.status === "Quoted") && (
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => setIsApproveModalOpen(true)}
-                    disabled={isSubmitting}
-                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#34d399] to-[#059669] px-4 py-3.5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(5,150,105,0.25)] transition-all hover:scale-[1.02] hover:shadow-[0_12px_25px_rgba(5,150,105,0.35)] disabled:opacity-70"
-                  >
-                    <CheckCircle2 size={18} />
-                    {language === "vi" ? "Xác nhận báo giá" : "Confirm Quote"}
-                  </button>
-                  <button
-                    onClick={() => setIsRejectModalOpen(true)}
-                    disabled={isSubmitting}
-                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#fb7185] to-[#e11d48] px-4 py-3.5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(225,29,72,0.25)] transition-all hover:scale-[1.02] hover:shadow-[0_12px_25px_rgba(225,29,72,0.35)] disabled:opacity-70"
-                  >
-                    <XCircle size={18} />
-                    {language === "vi" ? "Từ chối báo giá" : "Reject Quote"}
-                  </button>
+              {/* Action Buttons */}
+              {((nail?.status === "Pending" || nail?.status === "PendingReview") || nail?.status === "Reviewed") && (
+                <div className="flex gap-2">
+                  {(nail?.status === "Pending" || nail?.status === "PendingReview") && (
+                    <ActionButton
+                      onClick={handleOpenAssignModal}
+                      disabled={isSubmitting}
+                      icon={UserPlus}
+                      className="flex-1 bg-[#ea4f93] hover:bg-[#df4588] shadow-md shadow-pink-500/20 py-2.5 text-sm"
+                    >
+                      {language === "vi" ? "Chỉ định thợ" : "Assign Staff Artist"}
+                    </ActionButton>
+                  )}
+
+                  {nail?.status === "Reviewed" && (
+                    <>
+                      <ActionButton
+                        onClick={() => {
+                          setFinalPrice(nail?.price || "");
+                          setFinalDuration(nail?.duration || "");
+                          setIsApproveModalOpen(true);
+                        }}
+                        disabled={isSubmitting}
+                        icon={CheckCircle2}
+                        className="flex-1 bg-[#2fa25f] hover:bg-[#2a9255] shadow-md shadow-green-500/20 py-2.5 text-sm"
+                      >
+                        {language === "vi" ? "Xác nhận báo giá" : "Confirm Quote"}
+                      </ActionButton>
+                      <ActionButton
+                        onClick={() => setIsRejectModalOpen(true)}
+                        disabled={isSubmitting}
+                        icon={XCircle}
+                        className="flex-1 bg-[#e1447f] hover:bg-[#d63e75] shadow-md shadow-red-500/20 py-2.5 text-sm"
+                      >
+                        {language === "vi" ? "Từ chối báo giá" : "Reject Quote"}
+                      </ActionButton>
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -1203,7 +1232,7 @@ export function CustomerNailDetailPage() {
               subtitle={language === "vi" ? "Xem trước thiết kế trực tiếp hiển thị hình dạng móng, màu sắc, kết cấu bề mặt và phụ kiện ở vị trí tay thực tế." : "Interactive 3D preview showing nail shape, color blend, surface texture, and accessories in realistic hand positioning."}
             />
 
-            <div className="relative rounded-[24px] border border-[#f7d7e5] bg-[radial-gradient(circle_at_top,#fffdfd_0%,#fff6fb_58%,#fff2f8_100%)] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+            <div className="relative rounded-[24px] border border-[#fdf7f9] bg-[radial-gradient(ellipse_at_top,#fffdfd_0%,#fdfafb_58%,#f9f5f7_100%)] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_20px_50px_rgba(236,72,153,0.03)]">
               <div className="flex min-h-[360px] flex-wrap items-center justify-center gap-5 lg:gap-6">
                 {renderNailPreview(1, language === "vi" ? "Ngón cái" : "Thumb")}
                 {renderNailPreview(2, language === "vi" ? "Ngón trỏ" : "Index")}
@@ -1318,9 +1347,9 @@ export function CustomerNailDetailPage() {
                       key={itemComponent.customerNailComponentId || idx}
                       id={`component-card-${globalId}`}
                       onClick={() => setSelectedComponentId(prev => prev === globalId ? null : globalId)}
-                      className={`rounded-2xl border p-4 flex items-center justify-between gap-3.5 cursor-pointer transition-all duration-300 hover:-translate-y-0.5 hover:border-[#ea4f93] ${isCardSelected
-                        ? "border-[#ea4f93] bg-gradient-to-br from-[#fff2f7] to-[#fffafc] shadow-[0_12px_28px_rgba(236,72,153,0.12)] scale-[1.02]"
-                        : "border-[#f6d4e3] bg-gradient-to-br from-white to-[#fffbfd] shadow-[0_8px_20px_rgba(236,72,153,0.03)]"
+                      className={`rounded-2xl border p-4 flex items-center justify-between gap-3.5 cursor-pointer transition-all duration-300 hover:-translate-y-0.5 hover:border-[#d4af37] hover:shadow-md ${isCardSelected
+                        ? "border-[#d4af37] bg-[#fefdfa] shadow-[0_12px_28px_rgba(212,175,55,0.12)] scale-[1.02]"
+                        : "border-[#eee8d9] bg-white shadow-[0_8px_20px_rgba(0,0,0,0.02)]"
                         }`}
                     >
                       <div className="flex items-center gap-3.5 min-w-0">
@@ -1328,25 +1357,25 @@ export function CustomerNailDetailPage() {
                           <img
                             src={comp.imageUrl}
                             alt={comp.name}
-                            className="h-14 w-14 rounded-xl border border-[#f5c6db] bg-[#fffafc] object-contain p-1 shrink-0"
+                            className="h-14 w-14 rounded-xl border border-[#d4af37]/20 bg-[#fdfdfd] object-contain p-1 shrink-0"
                           />
                         ) : (
-                          <div className="h-14 w-14 rounded-xl bg-pink-100 flex items-center justify-center text-pink-600 text-xs font-bold shrink-0">
-                            {language === "vi" ? "Trang trí móng" : "Nail Decor"}
+                          <div className="h-14 w-14 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 text-xs font-bold shrink-0">
+                            Decor
                           </div>
                         )}
                         <div className="min-w-0">
-                          <p className="text-sm font-bold text-[#3f2240] truncate">{comp.name}</p>
-                          <p className="mt-0.5 text-xs text-[#a37e93]">
-                            {language === "vi" ? "Loại" : "Type"}: {comp.componentType || "Sticker/Gem"} • {language === "vi" ? "Ngón" : "Finger"}: {itemComponent.fingerIndex}
+                          <p className="text-sm font-bold text-[#3f2240] truncate font-serif">{comp.name || "Custom Accessory"}</p>
+                          <p className="mt-0.5 text-xs text-[#a18560]">
+                            Type: {comp.componentType || "Sticker/Gem"} • Finger: {itemComponent.fingerIndex}
                           </p>
                           {comp.price ? (
-                            <p className="mt-1 text-xs text-[#ea4f93] font-semibold">+{formatVND(comp.price)}</p>
+                            <p className="mt-1 text-xs text-[#d4af37] font-semibold">+{formatVND(comp.price)}</p>
                           ) : null}
                         </div>
                       </div>
                       {isCardSelected && (
-                        <span className="rounded-full bg-[#ea4f93] p-1.5 text-white shadow-sm shrink-0 animate-pulse">
+                        <span className="rounded-full bg-[#d4af37] p-1.5 text-white shadow-sm shrink-0 animate-pulse">
                           <Sparkles size={12} />
                         </span>
                       )}
@@ -1598,6 +1627,22 @@ export function CustomerNailDetailPage() {
             </div>
           )}
 
+          {/* Procedure Checklist Builder (Read-Only) */}
+          {(nail?.status === "Reviewed" || nail?.status === "Approved") && (
+            <div className="space-y-4">
+              <SectionHeading
+                title={language === "vi" ? "Chi tiết các bước thực hiện" : "Procedure Checklist Builder"}
+                subtitle={language === "vi" ? "Các bước kỹ thuật và chi tiết do thợ đánh giá." : "Technical steps and details estimated by the artist."}
+              />
+              <ProcedureBuilderSection
+                nail={nail}
+                procedures={procedures}
+                setProcedures={setProcedures}
+                readOnly={true}
+              />
+            </div>
+          )}
+
           {/* Reject Reason */}
           {
             nail?.rejectReason && (
@@ -1616,11 +1661,11 @@ export function CustomerNailDetailPage() {
 
           {/* Assigned Staff Info - Show if staff already assigned */}
           {
-            nail?.status === "Assigned" && nail?.assignedStaff && (
+            nail?.assignedStaff && (
               <div className="space-y-4">
                 <SectionHeading
-                  title="Assigned Artist & Capabilities"
-                  subtitle="Current artist details and their skills."
+                  title={language === "vi" ? "Thợ được phân công & Năng lực" : "Assigned Artist & Capabilities"}
+                  subtitle={language === "vi" ? "Chi tiết về thợ hiện tại và kỹ năng của họ." : "Current artist details and their skills."}
                 />
 
                 <div className="grid gap-5 lg:grid-cols-2">
@@ -1688,8 +1733,6 @@ export function CustomerNailDetailPage() {
               </div>
             )
           }
-
-
         </div>
       </Card >
 
@@ -1704,8 +1747,8 @@ export function CustomerNailDetailPage() {
         }
         }
         confirmLoading={isSubmitting}
-        okText="Reject"
-        cancelText="Cancel"
+        okText={language === "vi" ? "Từ chối" : "Reject"}
+        cancelText={language === "vi" ? "Hủy" : "Cancel"}
         okButtonProps={{ style: { backgroundColor: "#e1447f", color: "#fff", borderRadius: 9999, fontWeight: 700 } }}
         cancelButtonProps={{ style: { borderRadius: 9999, fontWeight: 700 } }}
         centered
@@ -1741,7 +1784,7 @@ export function CustomerNailDetailPage() {
           <Input.TextArea
             value={rejectReason}
             onChange={(e) => setRejectReason(e.target.value)}
-            placeholder="Enter reject reason"
+            placeholder={language === "vi" ? "Nhập lý do từ chối" : "Enter reject reason"}
             rows={5}
             className="mt-2"
           />
@@ -1759,8 +1802,8 @@ export function CustomerNailDetailPage() {
           setFinalDuration("");
         }}
         confirmLoading={isSubmitting}
-        okText="Confirm"
-        cancelText="Cancel"
+        okText={language === "vi" ? "Xác nhận" : "Confirm"}
+        cancelText={language === "vi" ? "Hủy" : "Cancel"}
         okButtonProps={{ style: { backgroundColor: "#2fa25f", color: "#fff", borderRadius: 9999, fontWeight: 700 } }}
         cancelButtonProps={{ style: { borderRadius: 9999, fontWeight: 700 } }}
         centered
@@ -1798,18 +1841,18 @@ export function CustomerNailDetailPage() {
               type="number"
               value={finalPrice}
               onChange={(e) => setFinalPrice(e.target.value)}
-              placeholder="Enter final price"
+              placeholder={language === "vi" ? "Nhập giá cuối cùng" : "Enter final price"}
             />
           </div>
           <div>
             <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.1em] text-[#c08aa4]">
-              Final Duration (minutes)
+              {language === "vi" ? "Thời lượng cuối cùng (phút)" : "Final Duration (minutes)"}
             </p>
             <Input
               type="number"
               value={finalDuration}
               onChange={(e) => setFinalDuration(e.target.value)}
-              placeholder="Enter final duration"
+              placeholder={language === "vi" ? "Nhập thời lượng" : "Enter final duration"}
             />
           </div>
         </div>
@@ -1853,7 +1896,7 @@ export function CustomerNailDetailPage() {
               onClick={() => setIsAssignRequiredModalOpen(false)}
               className="flex-1 rounded-full border border-[#f4c1d8] bg-white px-5 py-3 text-sm font-bold text-[#ea4f93] transition hover:bg-[#fff7fb]"
             >
-              Close
+              {language === "vi" ? "Đóng" : "Close"}
             </button>
             <button
               type="button"
@@ -1863,7 +1906,7 @@ export function CustomerNailDetailPage() {
               }}
               className="flex-1 rounded-full bg-[#ea4f93] px-5 py-3 text-sm font-bold text-white shadow-[0_10px_22px_rgba(234,79,147,0.18)] transition hover:bg-[#df4588]"
             >
-              Assign Staff Now
+              {language === "vi" ? "Chỉ định thợ ngay" : "Assign Staff Now"}
             </button>
           </div>
         </div>
@@ -1879,8 +1922,8 @@ export function CustomerNailDetailPage() {
           setSelectedStaff(null);
         }}
         confirmLoading={isSubmitting}
-        okText="Confirm"
-        cancelText="Cancel"
+        okText={language === "vi" ? "Xác nhận" : "Confirm"}
+        cancelText={language === "vi" ? "Hủy" : "Cancel"}
         okButtonProps={{
           style: { backgroundColor: "#ea4f93", color: "#fff", borderRadius: 9999, fontWeight: 700 },
           disabled: !selectedStaff,
