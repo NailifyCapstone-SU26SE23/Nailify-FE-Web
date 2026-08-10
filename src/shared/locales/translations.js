@@ -123,7 +123,7 @@ export const translations = {
       "staff-dashboard": "Dashboard",
       "staff-bookings": "Bookings",
       "staff-tasks": "Tasks",
-      "staff-customer-nails": "Custom Reviews",
+      "staff-customer-nails": "Custom Nails Reviews",
       "staff-schedule": "Schedule",
       "staff-breaks": "Breaks",
       "staff-customers": "Customers",

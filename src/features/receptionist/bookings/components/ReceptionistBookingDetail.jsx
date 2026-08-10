@@ -216,7 +216,7 @@ export function ReceptionistBookingDetail({ booking }) {
       ),
     },
     {
-      title: t("receptionist.bookings.duration") || "Duration",
+      title: language === "vi" ? "Thời gian" : "Duration",
       dataIndex: "duration",
       key: "duration",
       render: (value) => <span className="text-xs text-[#4a3741]">{formatDurationLabel(value)}</span>,

@@ -8,7 +8,8 @@ import {
   Trash2,
   RefreshCw,
   UserRound,
-  X
+  X,
+  Eye
 } from "lucide-react";
 import { Pagination } from "../../../../shared/components/common/Pagination";
 import { EmptyState } from "../../../../shared/components/common/EmptyState";
@@ -37,6 +38,7 @@ export function ReceptionistBreaksPage() {
 
   // Modals state
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedBreak, setSelectedBreak] = useState(null);
 
   const loadArtists = async () => {
@@ -235,6 +237,7 @@ export function ReceptionistBreaksPage() {
                     <th className="px-5 py-4 font-semibold">{language === "vi" ? "Lý do" : "Reason"}</th>
                     <th className="px-5 py-4 font-semibold">{language === "vi" ? "Trạng thái" : "Status"}</th>
                     <th className="px-5 py-4 font-semibold">{language === "vi" ? "Lý do từ chối" : "Reject Reason"}</th>
+                    <th className="px-5 py-4 font-semibold text-right">{language === "vi" ? "Thao tác" : "Action"}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#f7ebdf] bg-white">
@@ -267,6 +270,20 @@ export function ReceptionistBreaksPage() {
                       </td>
                       <td className="px-5 py-4 text-xs text-rose-500 italic max-w-xs truncate" title={item.rejectReason}>
                         {item.rejectReason || "-"}
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => {
+                              setSelectedBreak(item);
+                              setIsDetailOpen(true);
+                            }}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-indigo-100 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition cursor-pointer"
+                            title={language === "vi" ? "Chi tiết" : "Details"}
+                          >
+                            <Eye size={13} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -307,13 +324,23 @@ export function ReceptionistBreaksPage() {
                     <p className="text-xs text-rose-500 italic"><span className="font-semibold">{language === "vi" ? "Từ chối:" : "Rejected:"}</span> {item.rejectReason}</p>
                   )}
                 </div>
-                <div className="pt-2 border-t border-[#f7ebdf]">
+                 <div className="pt-2 border-t border-[#f7ebdf] flex gap-2">
+                  <button
+                    onClick={() => {
+                      setSelectedBreak(item);
+                      setIsDetailOpen(true);
+                    }}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-indigo-100 bg-indigo-50 py-2.5 text-xs font-semibold text-indigo-600 hover:bg-indigo-100 transition cursor-pointer"
+                  >
+                    <Eye size={12} />
+                    {language === "vi" ? "Chi tiết" : "Details"}
+                  </button>
                   <button
                     onClick={() => openDeleteModal(item)}
-                    className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-100 bg-rose-50 py-2.5 text-xs font-semibold text-rose-600 hover:bg-rose-100 transition cursor-pointer"
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-100 bg-rose-50 py-2.5 text-xs font-semibold text-rose-600 hover:bg-rose-100 transition cursor-pointer"
                   >
                     <Trash2 size={12} />
-                    {language === "vi" ? "Hủy yêu cầu nghỉ" : "Cancel Request"}
+                    {language === "vi" ? "Hủy" : "Cancel"}
                   </button>
                 </div>
               </div>
@@ -362,6 +389,81 @@ export function ReceptionistBreaksPage() {
           }
         ]}
       />
+
+      {/* Detail Modal */}
+      {isDetailOpen && selectedBreak && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2f1c2e]/45 px-4 py-6 backdrop-blur-sm">
+          <div className="flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-[28px] border border-[#f1cddd] bg-white shadow-[0_24px_60px_rgba(63,43,63,0.24)] animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-start justify-between gap-4 border-b border-[#f7dfeb] px-6 py-5">
+              <div>
+                <h3 className="text-lg font-extrabold text-[#3f2b3f]">{language === "vi" ? "Chi tiết nghỉ phép" : "Break Request Details"}</h3>
+                <p className="mt-1 text-sm text-[#a88a9d]">{language === "vi" ? "Thông tin chi tiết về yêu cầu nghỉ." : "Detailed information about the break request."}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDetailOpen(false);
+                  setSelectedBreak(null);
+                }}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#f2bfd4] bg-white text-[#ea4f93] transition hover:bg-[#fff5f8]"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 space-y-5">
+              <div className="rounded-2xl border border-[#f7dfeb] bg-[#fff9fc] p-4">
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-sm font-semibold text-[#69708a]">{language === "vi" ? "Trạng thái:" : "Status:"}</span>
+                  {getStatusBadge(selectedBreak.status)}
+                </div>
+                
+                <div className="space-y-3 text-sm text-[#3f2b3f]">
+                  <div className="flex justify-between border-b border-[#f7dfeb] pb-2">
+                    <span className="text-[#a88a9d] font-medium">{language === "vi" ? "Thợ nail:" : "Nail Artist:"}</span>
+                    <span className="font-semibold">{getArtistName(selectedBreak.nailArtistId)}</span>
+                  </div>
+
+                  <div className="flex justify-between border-b border-[#f7dfeb] pb-2">
+                    <span className="text-[#a88a9d] font-medium">{language === "vi" ? "Ngày nghỉ:" : "Break Date:"}</span>
+                    <span className="font-semibold">{dayjs(selectedBreak.breakDate).format("DD/MM/YYYY")}</span>
+                  </div>
+                  
+                  <div className="flex justify-between border-b border-[#f7dfeb] pb-2">
+                    <span className="text-[#a88a9d] font-medium">{language === "vi" ? "Thời gian:" : "Time:"}</span>
+                    <span className="font-semibold">{selectedBreak.startTime?.substring(0, 5)} - {selectedBreak.endTime?.substring(0, 5)}</span>
+                  </div>
+                  
+                  <div className="flex flex-col gap-1 border-b border-[#f7dfeb] pb-2">
+                    <span className="text-[#a88a9d] font-medium">{language === "vi" ? "Lý do:" : "Reason:"}</span>
+                    <p className="font-semibold whitespace-pre-wrap">{selectedBreak.reason || "-"}</p>
+                  </div>
+
+                  {selectedBreak.rejectReason && (
+                    <div className="flex flex-col gap-1">
+                      <span className="text-rose-500 font-medium">{language === "vi" ? "Lý do từ chối:" : "Rejection Reason:"}</span>
+                      <p className="font-semibold text-rose-600 whitespace-pre-wrap">{selectedBreak.rejectReason}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-[#f7dfeb] p-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDetailOpen(false);
+                  setSelectedBreak(null);
+                }}
+                className="w-full inline-flex h-11 items-center justify-center rounded-2xl bg-[#fff9fc] border border-[#f2bfd4] text-sm font-bold text-[#ea4f93] hover:bg-[#fff5f8] transition"
+              >
+                {language === "vi" ? "Đóng" : "Close"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

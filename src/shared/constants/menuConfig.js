@@ -80,7 +80,7 @@ export const MENU_CONFIG = {
     },
     {
       key: "staff-customer-nails",
-      label: "Custom Reviews",
+      label: "Custom Nails Reviews",
       to: ROUTES.staffCustomerNails,
       icon: "palette",
       section: "Main",
