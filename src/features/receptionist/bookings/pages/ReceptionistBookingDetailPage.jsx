@@ -13,7 +13,10 @@ import {
   Clock3,
   CreditCard,
   Eye,
+  ImageIcon,
+  Lightbulb,
   LoaderCircle,
+  LockKeyhole,
   MessageCircleMore,
   Phone,
   Printer,
@@ -218,6 +221,8 @@ function CircularProgressRing({ percent = 65, remainingTime = "45 min" }) {
   const normalizedRadius = radius - strokeWidth * 0.5;
   const circumference = normalizedRadius * 2 * Math.PI;
   const strokeDashoffset = circumference - (percent / 100) * circumference;
+  const { language } = useLanguage();
+  const isVi = language === "vi";
 
   return (
     <div className="relative flex items-center justify-center my-2">
@@ -252,35 +257,35 @@ function CircularProgressRing({ percent = 65, remainingTime = "45 min" }) {
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-1">
         <span className="text-sm font-bold text-[#2B182B] leading-none">{remainingTime}</span>
-        <span className="text-[9px] font-bold text-[#E84F93] mt-1">{percent}% Done</span>
+        <span className="text-[9px] font-bold text-[#E84F93] mt-1">{percent}% {isVi ? "Hoàn thành" : "Done"}</span>
       </div>
     </div>
   );
 }
 
-function getServiceAction(status) {
+function getServiceAction(status, isVi) {
   if (status === "In Progress") {
-    return "Manage";
+    return isVi ? "Quản lý" : "Manage";
   }
 
   if (status === "Completed") {
-    return "Edit";
+    return isVi ? "Chỉnh sửa" : "Edit";
   }
 
-  return "View";
+  return isVi ? "Xem" : "View";
 }
 
-function getServiceActionItems(row, handleViewService, handleViewProcedures) {
+function getServiceActionItems(row, handleViewService, handleViewProcedures, isVi) {
   return [
     {
       key: `view-${row.id}`,
-      label: "View",
+      label: isVi ? "Xem" : "View",
       icon: Eye,
       onSelect: () => handleViewService(row),
     },
     {
       key: `view-procedures-${row.id}`,
-      label: "View Procedures",
+      label: isVi ? "Xem quy trình" : "View Procedures",
       icon: ClipboardList,
       className: "text-[#7c63d8]",
       onSelect: () => handleViewProcedures(row),
@@ -415,6 +420,7 @@ export function ReceptionistBookingDetailPage() {
   );
   const [bookingHistories, setBookingHistories] = useState([]);
   const [isBookingHistoriesLoading, setIsBookingHistoriesLoading] = useState(true);
+  const isVi = language === "vi";
 
   const loadBookingHistories = useCallback(async () => {
     if (!bookingId) return;
@@ -547,7 +553,7 @@ export function ReceptionistBookingDetailPage() {
     const itemMap = new Map();
 
     rawItems.forEach((item, index) => {
-      const sName = item.serviceName || (item.nailVariantName ? `Nail service: ${item.nailVariantName}` : "Nail Service");
+      const sName = item.serviceName || (item.nailVariantName ? (language === "vi" ? "Dịch vụ làm móng: " : "Nail service: ") + item.nailVariantName : language === "vi" ? "Dịch vụ làm móng" : "Nail Service");
       const vName = item.nailVariantName || item.customerNailName || "";
       const uPrice = Number(item.price) || 0;
       const uDur = Number(item.duration) || 0;
@@ -593,18 +599,20 @@ export function ReceptionistBookingDetailPage() {
         duration: group.totalDuration ? formatDurationMinutes(group.totalDuration) : "--",
         price: group.totalPrice ? formatCurrency(group.totalPrice) : "--",
         status,
-        actionLabel: getServiceAction(status),
+        actionLabel: getServiceAction(status, language === "vi"),
         sourceItem: group.sourceItem,
         count: group.count,
       };
     });
-  }, [booking]);
+  }, [language, booking]);
 
   const totalAmount = formatCurrency(booking?.totalPrice);
   const price = formatCurrency(booking?.price);
   const discount = formatCurrency(booking?.discount);
-  const depositPaid = formatCurrency(booking?.amountPaid || 0);
-  const remainingBalance = formatCurrency(booking?.amountDue || booking?.totalPrice - booking?.depositPaid);
+  const depositPaid = formatCurrency(booking?.amountPaid);
+  const remainingBalance = formatCurrency(booking?.amountDue);
+  // const depositPaid = formatCurrency(booking?.amountDue);
+  // const remainingBalance = formatCurrency(booking?.amountPaid);
   const progressPercent = getProgressPercent(booking);
   const isManualCheckInAllowed = canManualCheckIn(booking?.status);
   const actionAvailability = useMemo(
@@ -643,7 +651,7 @@ export function ReceptionistBookingDetailPage() {
       } else {
         setCustomerProfile(null);
       }
-      toast.success("Booking detail refreshed.");
+      toast.success(isVi ? "Làm mới chi tiết đơn hàng thành công" : "Booking detail refreshed.");
       await loadBookingHistories();
     } catch (loadError) {
       const message = loadError instanceof Error ? loadError.message : "Failed to refresh booking detail.";
@@ -655,7 +663,7 @@ export function ReceptionistBookingDetailPage() {
   };
 
   const handleMockAction = useCallback((label) => {
-    toast.success(`${label} is ready for receptionist flow.`);
+    toast.success(`${label} ${isVi ? `đã sẵn sàng cho quy trình tiếp nhận.` : `is ready for receptionist flow.`}`);
   }, []);
 
   const handleViewService = useCallback((row) => {
@@ -666,7 +674,7 @@ export function ReceptionistBookingDetailPage() {
     const bookingItemId = String(row?.sourceItem?.bookingItemId || "").trim();
 
     if (!bookingItemId) {
-      toast.error("Booking item ID is not available for this service.");
+      toast.error(isVi ? "Không tìm thấy ID đơn hàng" : "Booking item ID is not available for this service.");
       return;
     }
 
@@ -692,7 +700,7 @@ export function ReceptionistBookingDetailPage() {
     const bookingProcedureId = String(procedure?.bookingProcedureId || "").trim();
 
     if (!bookingProcedureId) {
-      toast.error("Booking procedure ID is not available.");
+      toast.error(isVi ? "Không tìm thấy ID đơn hàng" : "Booking procedure ID is not available.");
       return;
     }
 
@@ -719,7 +727,7 @@ export function ReceptionistBookingDetailPage() {
     const artistId = String(artist?.nailArtistId || "").trim();
 
     if (!bookingProcedureId || !artistId) {
-      toast.error("Artist assignment data is incomplete.");
+      toast.error(isVi ? "Không tìm thấy ID đơn hàng" : "Artist assignment data is incomplete.");
       return;
     }
 
@@ -737,8 +745,8 @@ export function ReceptionistBookingDetailPage() {
       setProcedureArtistsError("");
       toast.success(
         procedure?.assignedArtistName
-          ? "Procedure artist reassigned successfully."
-          : "Procedure artist assigned successfully.",
+          ? isVi ? "Thợ làm móng đã được gán lại thành công." : "Procedure artist reassigned successfully."
+          : isVi ? "Thợ làm móng đã được gán thành công." : "Procedure artist assigned successfully.",
       );
       await loadBookingHistories();
     } catch (assignError) {
@@ -752,13 +760,13 @@ export function ReceptionistBookingDetailPage() {
 
   const serviceColumns = useMemo(() => ([
     {
-      title: "Time",
+      title: isVi ? "Thời gian" : "Time",
       dataIndex: "time",
       key: "time",
       render: (value) => <span className="text-xs font-bold text-[#E84F93]">{value}</span>,
     },
     {
-      title: "Service Name & Design",
+      title: isVi ? "Tên dịch vụ" : "Service Name & Design",
       key: "service",
       render: (_, row) => (
         <div className="flex items-center gap-2">
@@ -774,7 +782,7 @@ export function ReceptionistBookingDetailPage() {
       ),
     },
     {
-      title: "Assigned Artist",
+      title: isVi ? "Thợ làm móng" : "Assigned Artist",
       key: "artist",
       render: (_, row) => (
         <div className="flex items-center gap-2">
@@ -792,29 +800,29 @@ export function ReceptionistBookingDetailPage() {
       ),
     },
     {
-      title: "Duration",
+      title: isVi ? "Thời gian" : "Duration",
       dataIndex: "duration",
       key: "duration",
       render: (value) => <span className="text-xs font-semibold text-[#6B5B68]">{value}</span>,
     },
     {
-      title: "Price",
+      title: isVi ? "Giá tiền" : "Price",
       dataIndex: "price",
       key: "price",
       render: (value) => <span className="text-xs font-bold text-[#047857]">{value}</span>,
     },
     {
-      title: "Action",
+      title: isVi ? "Thao tác" : "Action",
       key: "action",
       render: (_, row) => (
         <ActionDropdown
-          items={getServiceActionItems(row, handleViewService, handleViewProcedures)}
-          buttonClassName="bg-[#FFF0F6] text-[#E84F93] hover:bg-[#E84F93] hover:text-white transition-all font-bold rounded-full px-3 py-1 text-xs border border-[#F3D6E5] cursor-pointer shadow-2xs"
-          label="Actions"
+          items={getServiceActionItems(row, handleViewService, handleViewProcedures, isVi)}
+          buttonClassName="bg-[#FFF0F6] text-[#E84F93] hover:bg-pink-400 hover:text-white transition-all font-bold rounded-full px-3 py-1 text-xs border border-[#F3D6E5] cursor-pointer shadow-2xs"
+          label={isVi ? "Thao tác" : "Actions"}
         />
       ),
     },
-  ]), [handleViewProcedures, handleViewService]);
+  ]), [isVi, handleViewProcedures, handleViewService]);
 
   const handleManualCheckIn = useCallback(async () => {
     if (!bookingId || !isManualCheckInAllowed || isManualCheckInSubmitting) {
@@ -826,7 +834,7 @@ export function ReceptionistBookingDetailPage() {
     try {
       const updatedBooking = await manualCheckInReceptionistBooking(bookingId);
       setBooking(updatedBooking);
-      toast.success("Customer checked in successfully.");
+      toast.success(isVi ? "Khách hàng đã được check in thành công." : "Customer checked in successfully.");
       await loadBookingHistories();
     } catch (actionError) {
       const message =
@@ -836,25 +844,6 @@ export function ReceptionistBookingDetailPage() {
       setIsManualCheckInSubmitting(false);
     }
   }, [bookingId, isManualCheckInAllowed, isManualCheckInSubmitting, loadBookingHistories]);
-
-  // const handleCheckout = useCallback(async () => {
-  //     if (!bookingId || !actionAvailability.canCheckout) {
-  //       return;
-  //     }
-
-  //     try {
-  //       const response = await createPayment(bookingId);
-  //       const paymentUrl = response?.data?.paymentUrl || response?.paymentUrl;
-
-  //       if (paymentUrl) {
-  //         window.location.href = paymentUrl;
-  //       } else {
-  //         toast.error("Payment link not found.");
-  //       }
-  //     } catch (err) {
-  //       toast.error(err instanceof Error ? err.message : "An error occurred while creating payment.");
-  //     }
-  //   }, [actionAvailability.canCheckout, bookingId]);
 
   const handleCheckout = useCallback(() => {
     if (!bookingId || !actionAvailability.canCheckout) {
@@ -922,33 +911,33 @@ export function ReceptionistBookingDetailPage() {
         disabled: !actionAvailability.canAddService,
         onClick: () => setIsOnsiteAddonModalOpen(true),
       },
-      {
-        label: t("receptionist.bookings.completeBooking") || "Complete Booking",
-        subtitle: t("receptionist.bookings.finalizeSession") || "Finalize session",
-        icon: CheckCircle2,
-        cardTone: "bg-[linear-gradient(180deg,#f2edff_0%,#ebe3ff_100%)]",
-        iconTone: "bg-[#ddd2ff] text-[#8260df]",
-        disabled: !actionAvailability.canCompleteBooking,
-        onClick: () => handleMockAction("Complete Booking"),
-      },
-      {
-        label: t("receptionist.bookings.cancelBooking") || "Cancel Booking",
-        subtitle: t("receptionist.bookings.voidAppointment") || "Void appointment",
-        icon: XCircle,
-        cardTone: "bg-[linear-gradient(180deg,#fff1f1_0%,#ffe9e9_100%)]",
-        iconTone: "bg-[#ffd8d8] text-[#ef6b6b]",
-        disabled: !actionAvailability.canCancelBooking,
-        onClick: () => handleMockAction("Cancel Booking"),
-      },
-      {
-        label: t("receptionist.bookings.sendInvoice") || "Send Invoice",
-        subtitle: t("receptionist.bookings.emailToClient") || "Email to client",
-        icon: ReceiptText,
-        cardTone: "bg-[linear-gradient(180deg,#fff9eb_0%,#fff2cd_100%)]",
-        iconTone: "bg-[#ffe7ae] text-[#d19a15]",
-        disabled: !actionAvailability.canSendInvoice,
-        onClick: () => handleMockAction("Send Invoice"),
-      },
+      // {
+      //   label: t("receptionist.bookings.completeBooking") || "Complete Booking",
+      //   subtitle: t("receptionist.bookings.finalizeSession") || "Finalize session",
+      //   icon: CheckCircle2,
+      //   cardTone: "bg-[linear-gradient(180deg,#f2edff_0%,#ebe3ff_100%)]",
+      //   iconTone: "bg-[#ddd2ff] text-[#8260df]",
+      //   disabled: !actionAvailability.canCompleteBooking,
+      //   onClick: () => handleMockAction("Complete Booking"),
+      // },
+      // {
+      //   label: t("receptionist.bookings.cancelBooking") || "Cancel Booking",
+      //   subtitle: t("receptionist.bookings.voidAppointment") || "Void appointment",
+      //   icon: XCircle,
+      //   cardTone: "bg-[linear-gradient(180deg,#fff1f1_0%,#ffe9e9_100%)]",
+      //   iconTone: "bg-[#ffd8d8] text-[#ef6b6b]",
+      //   disabled: !actionAvailability.canCancelBooking,
+      //   onClick: () => handleMockAction("Cancel Booking"),
+      // },
+      // {
+      //   label: t("receptionist.bookings.sendInvoice") || "Send Invoice",
+      //   subtitle: t("receptionist.bookings.emailToClient") || "Email to client",
+      //   icon: ReceiptText,
+      //   cardTone: "bg-[linear-gradient(180deg,#fff9eb_0%,#fff2cd_100%)]",
+      //   iconTone: "bg-[#ffe7ae] text-[#d19a15]",
+      //   disabled: !actionAvailability.canSendInvoice,
+      //   onClick: () => handleMockAction("Send Invoice"),
+      // },
     ],
     [
       actionAvailability,
@@ -963,7 +952,7 @@ export function ReceptionistBookingDetailPage() {
       <section className="flex min-h-[50vh] items-center justify-center rounded-[24px] bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
         <div className="flex items-center gap-3 text-sm font-medium text-[#b38a9f]">
           <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
-          Loading booking detail...
+          {isVi ? "Đang tải thông tin chi tiết đơn hàng..." : "Loading booking detail..."}
         </div>
       </section>
     );
@@ -972,7 +961,7 @@ export function ReceptionistBookingDetailPage() {
   if (error || !booking) {
     return (
       <section className="rounded-[24px] border border-[#f6d8e5] bg-white p-6 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
-        <p className="text-lg font-bold text-[#412643]">Booking detail unavailable</p>
+        <p className="text-lg font-bold text-[#412643]">{isVi ? "Không thể tải thông tin chi tiết đơn hàng" : "Booking detail unavailable"}</p>
         <p className="mt-2 text-sm text-[#b38a9f]">{error || "This booking could not be loaded."}</p>
         <div className="mt-4 flex flex-wrap gap-2">
           <button
@@ -981,7 +970,7 @@ export function ReceptionistBookingDetailPage() {
             className="inline-flex items-center gap-2 rounded-full border border-[#f3cade] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
           >
             <RefreshCcw size={14} />
-            {t("receptionist.common.retry") || "Retry"}
+            {isVi ? "Thử lại" : "Retry"}
           </button>
           <Link
             to={ROUTES.receptionistBookings}
@@ -1151,11 +1140,11 @@ export function ReceptionistBookingDetailPage() {
                     <div className="space-y-2.5 text-xs">
                       <div>
                         <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">{t("profile.email") || "Email Address"}</p>
-                        <p className="mt-0.5 font-medium text-[#2B182B] truncate">{customerProfile?.email || booking.customerEmail || "doanthanh@gmail.com"}</p>
+                        <p className="mt-0.5 font-medium text-[#2B182B] truncate">{customerProfile?.email || booking.customerEmail}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">{t("receptionist.bookings.artist") || "Preferred Artist"}</p>
-                        <p className="mt-0.5 font-bold text-[#8B5CF6]">{booking.artistName || customerProfile?.preferredArtist || "Aria Nguyen"}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">{t("receptionist.bookings.artist")}</p>
+                        <p className="mt-0.5 font-bold text-[#8B5CF6]">{booking.artistName || customerProfile?.preferredArtist}</p>
                       </div>
                     </div>
                   </div>
@@ -1222,8 +1211,8 @@ export function ReceptionistBookingDetailPage() {
               <div className="flex flex-col justify-center gap-3.5">
                 <button
                   type="button"
-                  onClick={() => handleMockAction("Add Payment")}
-                  disabled={!actionAvailability.canAddPayment}
+                  onClick={handleCheckout}
+                  disabled={!actionAvailability.canCheckout}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-5 py-3.5 text-xs font-bold text-white shadow-[0_8px_20px_rgba(232,79,147,0.3)] hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <CreditCard size={16} />
@@ -1328,7 +1317,7 @@ export function ReceptionistBookingDetailPage() {
                 </div>
               </div>
               <p className="text-xs leading-relaxed text-[#6B5B68] italic pt-1">
-                "Dịch vụ làm móng đính đá mẫu Giáng Sinh rất tỉ mỉ và đẹp tuyệt vời! Thợ làm rất dịu dàng."
+                {language === "vi" ? "Dịch vụ làm móng đính đá mẫu Giáng Sinh rất tỉ mỉ và đẹp tuyệt vời! Thợ làm rất dịu dàng." : "Christmas nail art service is very meticulous and beautiful! The technician is very gentle."}
               </p>
             </div>
           </DetailCard>
@@ -1433,7 +1422,7 @@ export function ReceptionistBookingDetailPage() {
               </div>
             ) : (
               <div className="rounded-2xl border border-dashed border-[#F3E2EC] bg-[#FFFBFD] p-6 text-center text-xs text-[#9E8497] italic">
-                No history events found for this booking yet.
+                {language === "vi" ? "Không có sự kiện lịch sử nào được tìm thấy cho đơn đặt lịch này." : "No history events found for this booking yet."}
               </div>
             )}
           </DetailCard>
@@ -1475,8 +1464,8 @@ export function ReceptionistBookingDetailPage() {
                     <Sparkles size={20} />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-[#2B182B] tracking-tight">Chi Tiết Dịch Vụ & Mẫu Móng</h3>
-                    <p className="text-xs text-[#9E8497] font-medium">Thông tin thực tế dịch vụ và mẫu móng khách chọn</p>
+                    <h3 className="text-lg font-bold text-[#2B182B] tracking-tight">{language === "vi" ? "Chi Tiết Dịch Vụ & Mẫu Móng" : "Service & Nail Art Details"}</h3>
+                    <p className="text-xs text-[#9E8497] font-medium">{language === "vi" ? "Thông tin thực tế dịch vụ và mẫu móng khách chọn" : "Actual service and nail art details selected by the customer"}</p>
                   </div>
                 </div>
                 <button
@@ -1492,28 +1481,28 @@ export function ReceptionistBookingDetailPage() {
               <div className="mb-5 rounded-2xl border border-[#F3D6E5] bg-gradient-to-r from-[#FFF0F6] via-[#FDF2F8] to-[#F5F3FF] p-5 shadow-xs">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="rounded-full bg-[#E84F93] px-3 py-0.5 text-[10px] font-bold uppercase text-white shadow-2xs">
-                    {isNail ? "✨ Dịch Vụ Móng Nail" : "💅 Dịch Vụ Salon"}
+                    {isNail ? language === "vi" ? <span className="flex items-center gap-1"><Sparkles size={12} /> Dịch Vụ Móng Nail</span> : <span className="flex items-center gap-1"><Sparkles size={12} /> Nail Services</span> : language === "vi" ? "💅 Dịch Vụ Salon" : "💅 Salon Services"}
                   </span>
                   <span className="flex items-center justify-center gap-1.5 text-xs font-bold text-[#E84F93]">
-                    <AlarmClock size={12} /> {isVi ? "Tổng thời gian:" : "Total duration:"} {selectedServiceRow.duration || "--"}
+                    <AlarmClock size={12} /> {language === "vi" ? "Tổng thời gian:" : "Total duration:"} {selectedServiceRow.duration || "--"}
                   </span>
                 </div>
                 <h3 className="mt-2 text-base font-bold text-[#2B182B]">
-                  {item?.serviceName || selectedServiceRow.service || item?.nailVariantName || "Dịch Vụ Làm Móng"}
+                  {item?.serviceName || selectedServiceRow.service || item?.nailVariantName || language === "vi" ? "Dịch Vụ Làm Móng" : "Nail Service"}
                 </h3>
               </div>
 
               {/* Metadata Details Unified Single Block Card */}
               <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFF9FB] p-5">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-[#E84F93] border-b border-[#F3E2EC] pb-3 mb-3 flex items-center gap-1.5">
-                  <Sparkles size={14} /> Thông Tin Chi Tiết Dịch Vụ
+                  <Sparkles size={14} /> {language === "vi" ? "Thông Tin Chi Tiết Dịch Vụ" : "Service Details"}
                 </h4>
 
                 <div className="divide-y divide-[#F3E2EC]/70 text-xs">
                   {/* Tên mẫu nail */}
                   {Boolean(item?.nailVariantName) && (
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2.5 gap-1">
-                      <span className="font-bold text-[#9E8497]">Tên Mẫu Nail</span>
+                      <span className="font-bold text-[#9E8497]">{language === "vi" ? "Tên Mẫu Nail" : "Nail Variant Name"}</span>
                       <span className="font-bold text-[#2B182B] text-sm sm:text-right">{item.nailVariantName}</span>
                     </div>
                   )}
@@ -1521,7 +1510,7 @@ export function ReceptionistBookingDetailPage() {
                   {/* Mẫu móng khách yêu cầu (Only shown if present) */}
                   {Boolean(item?.customerNailName) && (
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2.5 gap-1">
-                      <span className="font-bold text-[#9E8497]">Mẫu Nail Khách Yêu Cầu</span>
+                      <span className="font-bold text-[#9E8497]">{language === "vi" ? "Mẫu Nail Khách Yêu Cầu" : "Customer's Nail Style Request"}</span>
                       <span className="font-bold text-[#2B182B] text-sm sm:text-right">{item.customerNailName}</span>
                     </div>
                   )}
@@ -1532,7 +1521,7 @@ export function ReceptionistBookingDetailPage() {
                     (item?.serviceName && !item.serviceName.includes(item?.nailVariantName))
                   ) && (
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2.5 gap-1">
-                        <span className="font-bold text-[#9E8497]">Tên Dịch Vụ</span>
+                        <span className="font-bold text-[#9E8497]">{language === "vi" ? "Tên Dịch Vụ" : "Service Name"}</span>
                         <span className="font-bold text-[#2B182B] sm:text-right">
                           {item?.serviceName || selectedServiceRow.service || selectedServiceRow.serviceType}
                         </span>
@@ -1542,7 +1531,7 @@ export function ReceptionistBookingDetailPage() {
                   {/* Thời gian làm dự kiến */}
                   {Boolean(selectedServiceRow.duration) && (
                     <div className="flex items-center justify-between py-2.5">
-                      <span className="font-bold text-[#9E8497]">Thời Gian Làm Dự Kiến</span>
+                      <span className="font-bold text-[#9E8497]">{language === "vi" ? "Thời Gian Làm Dự Kiến" : "Estimated Duration"}</span>
                       <span className="font-bold text-[#2B182B]">{selectedServiceRow.duration}</span>
                     </div>
                   )}
@@ -1550,7 +1539,7 @@ export function ReceptionistBookingDetailPage() {
                   {/* Số lượng */}
                   {Boolean(item?.quantity && item.quantity > 1) && (
                     <div className="flex items-center justify-between py-2.5">
-                      <span className="font-bold text-[#9E8497]">Số Lượng Suất</span>
+                      <span className="font-bold text-[#9E8497]">{language === "vi" ? "Số Lượng Suất" : "Quantity"}</span>
                       <span className="font-bold text-[#2B182B]">x{item.quantity}</span>
                     </div>
                   )}
@@ -1558,7 +1547,7 @@ export function ReceptionistBookingDetailPage() {
                   {/* Giá dịch vụ */}
                   {item?.price !== undefined && item?.price !== null && (
                     <div className="flex items-center justify-between py-2.5">
-                      <span className="font-bold text-[#9E8497]">Giá Dịch Vụ</span>
+                      <span className="font-bold text-[#9E8497]">{language === "vi" ? "Giá Dịch Vụ" : "Service Price"}</span>
                       <span className="font-bold text-[#047857] text-sm">{formatCurrency(item.price)}</span>
                     </div>
                   )}
@@ -1566,7 +1555,7 @@ export function ReceptionistBookingDetailPage() {
                   {/* Thợ đảm nhận */}
                   {Boolean(selectedServiceRow.artist && selectedServiceRow.artist !== "--") && (
                     <div className="flex items-center justify-between py-2.5">
-                      <span className="font-bold text-[#9E8497]">Thợ Đảm Nhận</span>
+                      <span className="font-bold text-[#9E8497]">{language === "vi" ? "Thợ Đảm Nhận" : "Artist"}</span>
                       <span className="font-bold text-[#6D28D9]">{selectedServiceRow.artist}</span>
                     </div>
                   )}
@@ -1577,18 +1566,18 @@ export function ReceptionistBookingDetailPage() {
               {hasImages && (
                 <div className="mt-5">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-[#9E8497] mb-3 text-center flex items-center justify-center gap-1.5">
-                    <span>🖼️</span> <span>Hình Ảnh Mẫu Móng Thực Tế</span>
+                    <span><ImageIcon size={12} /></span> {language === "vi" ? "Hình Ảnh Mẫu Móng Thực Tế" : "Actual Nail Style Images"}
                   </h4>
                   <div className="flex flex-wrap items-center justify-center gap-6">
                     {sanitizeImageUrl(item?.nailVariantImageUrl) && (
                       <div className="flex flex-col items-center gap-2">
                         <span className="rounded-full bg-[#FFF0F6] px-3 py-1 text-[10px] font-bold text-[#E84F93] border border-[#F3D6E5]">
-                          Mẫu Nail
+                          {language === "vi" ? "Mẫu Nail" : "Nail Variant"}
                         </span>
                         <div className="overflow-hidden rounded-2xl border-4 border-white shadow-md hover:scale-105 transition-transform duration-300">
                           <Image
                             src={sanitizeImageUrl(item?.nailVariantImageUrl)}
-                            alt="Mẫu Nail"
+                            alt={language === "vi" ? "Mẫu Nail" : "Nail Variant"}
                             height={220}
                             className="object-cover rounded-xl"
                             crossOrigin="anonymous"
@@ -1600,12 +1589,12 @@ export function ReceptionistBookingDetailPage() {
                     {sanitizeImageUrl(item?.customerNailImageUrl) && (
                       <div className="flex flex-col items-center gap-2">
                         <span className="rounded-full bg-[#F5F3FF] px-3 py-1 text-[10px] font-bold text-[#6D28D9] border border-[#DDD6FE]">
-                          Mẫu Nail Khách Gửi
+                          {language === "vi" ? "Mẫu Nail Khách Gửi" : "Customer's Nail Style"}
                         </span>
                         <div className="overflow-hidden rounded-2xl border-4 border-white shadow-md hover:scale-105 transition-transform duration-300">
                           <Image
                             src={sanitizeImageUrl(item?.customerNailImageUrl)}
-                            alt="Mẫu Nail Khách Gửi"
+                            alt={language === "vi" ? "Mẫu Nail Khách Gửi" : "Customer's Nail Style"}
                             height={220}
                             className="object-cover rounded-xl"
                             crossOrigin="anonymous"
@@ -1624,7 +1613,7 @@ export function ReceptionistBookingDetailPage() {
                   onClick={() => setSelectedServiceRow(null)}
                   className="rounded-full border border-[#F3E2EC] bg-[#FFF5F8] hover:bg-[#FCE2EE] px-6 py-2.5 text-xs font-bold text-[#2B182B] transition cursor-pointer"
                 >
-                  Đóng
+                  {language === "vi" ? "Đóng" : "Close"}
                 </button>
               </div>
             </div>
@@ -1655,7 +1644,7 @@ export function ReceptionistBookingDetailPage() {
               setProcedureArtistsError("");
             }}
           >
-            Đóng
+            {language === "vi" ? "Đóng" : "Close"}
           </Button>,
         ]}
         centered
@@ -1665,7 +1654,7 @@ export function ReceptionistBookingDetailPage() {
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-[#E84F93] to-[#8B5CF6] text-white shadow-xs">
               <ClipboardList size={16} />
             </div>
-            <span>Quy Trình Làm Móng & Phân Công Thợ</span>
+            <span>{language === "vi" ? "Quy Trình Làm Móng & Phân Công Thợ" : "Booking Procedures & Artist Assignment"}</span>
           </div>
         }
       >
@@ -1677,7 +1666,7 @@ export function ReceptionistBookingDetailPage() {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="rounded-full bg-[#E84F93] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-2xs">
-                      Dịch Vụ Chọn
+                      {language === "vi" ? "Dịch Vụ Chọn" : "Service Selected"}
                     </span>
                     <span className="text-xs font-bold text-[#8B5CF6]">
                       {selectedProcedureRow.serviceType !== "--" ? selectedProcedureRow.serviceType : "Nail Treatment"}
@@ -1696,16 +1685,16 @@ export function ReceptionistBookingDetailPage() {
                 <div className="flex flex-wrap items-center gap-3 shrink-0">
                   <div className="flex items-center gap-1.5 rounded-xl border border-[#F3E2EC] bg-white/80 px-3 py-1.5 text-xs font-bold text-[#2B182B] shadow-2xs">
                     <Clock size={14} className="text-[#E84F93]" />
-                    <span>Thời gian: {selectedProcedureRow.duration || "--"}</span>
+                    <span>{language === "vi" ? "Thời gian:" : "Duration:"} {selectedProcedureRow.duration || "--"}</span>
                   </div>
                   <div className="flex items-center gap-1.5 rounded-xl border border-[#F3E2EC] bg-white/80 px-3 py-1.5 text-xs font-bold text-[#2B182B] shadow-2xs">
                     <Sparkles size={14} className="text-[#8B5CF6]" />
-                    <span>Số lượng: x{selectedProcedureRow.sourceItem?.quantity ?? 1}</span>
+                    <span>{language === "vi" ? "Số lượng:" : "Quantity:"} x{selectedProcedureRow.sourceItem?.quantity ?? 1}</span>
                   </div>
                   {bookingProcedures.length > 0 && (
                     <div className="flex items-center gap-1.5 rounded-xl border border-[#D1FAE5] bg-[#ECFDF5] px-3 py-1.5 text-xs font-bold text-[#047857] shadow-2xs">
                       <ShieldCheck size={14} />
-                      <span>{bookingProcedures.length} bước dịch vụ</span>
+                      <span>{bookingProcedures.length} {language === "vi" ? "bước dịch vụ" : "service steps"}</span>
                     </div>
                   )}
                 </div>
@@ -1716,7 +1705,7 @@ export function ReceptionistBookingDetailPage() {
             {isProceduresLoading ? (
               <div className="flex min-h-[240px] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-[#F3D6E5] bg-[#FFF9FB] p-8">
                 <LoaderCircle size={28} className="animate-spin text-[#E84F93]" />
-                <p className="text-sm font-bold text-[#2B182B]">Đang tải danh sách các bước quy trình...</p>
+                <p className="text-sm font-bold text-[#2B182B]">{language === "vi" ? "Đang tải danh sách các bước quy trình..." : "Loading procedure steps..."}</p>
               </div>
             ) : proceduresError ? (
               <div className="rounded-2xl border border-[#FCA5A5] bg-[#FEF2F2] p-4 text-sm font-bold text-[#991B1B]">
@@ -1738,13 +1727,13 @@ export function ReceptionistBookingDetailPage() {
 
                     if (isCompleted) {
                       statusTone = "border-[#A7F3D0] bg-[#ECFDF5] text-[#047857]";
-                      statusLabel = "Đã hoàn thành";
+                      statusLabel = language === "vi" ? "Đã hoàn thành" : "Completed";
                     } else if (isInProgress) {
                       statusTone = "border-[#DDD6FE] bg-[#F5F3FF] text-[#6D28D9]";
-                      statusLabel = "Đang thực hiện";
+                      statusLabel = language === "vi" ? "Đang thực hiện" : "In Progress";
                     } else if (isPending) {
                       statusTone = "border-[#FDE68A] bg-[#FEF3C7] text-[#B45309]";
-                      statusLabel = "Chờ thực hiện";
+                      statusLabel = language === "vi" ? "Chờ thực hiện" : "Pending";
                     }
 
                     const hasArtist = Boolean(procedure.assignedArtistId || procedure.assignedArtistName);
@@ -1759,19 +1748,19 @@ export function ReceptionistBookingDetailPage() {
                         <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between border-b border-[#F8F1F5] pb-2.5">
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#E84F93] to-[#D93B7D] px-2.5 py-0.5 text-xs font-bold text-white shadow-2xs">
-                              Bước {procedure.stepOrder ?? index + 1}
+                              {language === "vi" ? "Bước" : "Step"} {procedure.stepOrder ?? index + 1}
                             </span>
                             <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${statusTone}`}>
                               {statusLabel}
                             </span>
                             {procedure.isRequired && (
                               <span className="rounded-full border border-[#FDE68A] bg-[#FFFBEB] px-2.5 py-0.5 text-[10px] font-bold text-[#B45309]">
-                                Bắt buộc
+                                {language === "vi" ? "Bắt buộc" : "Required"}
                               </span>
                             )}
                             {procedure.isMainStep && (
                               <span className="rounded-full border border-[#DDD6FE] bg-[#F5F3FF] px-2.5 py-0.5 text-[10px] font-bold text-[#6D28D9]">
-                                Bước chính
+                                {language === "vi" ? "Bước chính" : "Main Step"}
                               </span>
                             )}
                             <h4 className="text-sm font-bold text-[#2B182B] ml-1">
@@ -1781,7 +1770,7 @@ export function ReceptionistBookingDetailPage() {
 
                           {/* Time badge (Estimated Time) */}
                           <div className="flex items-center gap-2 text-xs shrink-0">
-                            <span className="font-bold text-[#E84F93]">
+                            <span className="flex items-center gap-1 font-bold text-[#E84F93]">
                               <Clock size={12} /> {isVi ? "Dự kiến" : "Estimated"}: {String(procedure.estimatedStartTime || "--").slice(0, 5)} - {String(procedure.estimatedEndTime || "--").slice(0, 5)}
                             </span>
                             <span className="rounded-full bg-[#FFF0F6] px-2.5 py-0.5 text-[11px] font-bold text-[#E84F93] border border-[#F3D6E5]">
@@ -1812,18 +1801,18 @@ export function ReceptionistBookingDetailPage() {
                               )}
 
                               <div>
-                                <p className="text-[9px] font-bold uppercase tracking-wider text-[#9E8497]">Thợ Đảm Nhận</p>
+                                <p className="text-[9px] font-bold uppercase tracking-wider text-[#9E8497]">{language === "vi" ? "Thợ Đảm Nhận" : "Assigned Artist"}</p>
                                 <div className="flex items-center gap-2 mt-0.5">
                                   <span className="text-xs font-bold text-[#2B182B]">
-                                    {hasArtist ? procedure.assignedArtistName : "Chưa phân công thợ"}
+                                    {hasArtist ? procedure.assignedArtistName : language === "vi" ? "Chưa phân công thợ" : "Not Assigned"}
                                   </span>
                                   {hasArtist ? (
                                     <span className="inline-flex items-center gap-1 rounded-full bg-[#ECFDF5] border border-[#A7F3D0] px-2 py-0.5 text-[9px] font-bold text-[#047857]">
-                                      <Check size={9} /> Đã phân công
+                                      <Check size={9} /> {language === "vi" ? "Đã phân công" : "Assigned"}
                                     </span>
                                   ) : (
                                     <span className="inline-flex items-center gap-1 rounded-full bg-[#FFFBEB] border border-[#FDE68A] px-2 py-0.5 text-[9px] font-bold text-[#B45309]">
-                                      Cần chọn thợ
+                                      {language === "vi" ? "Cần chọn thợ" : "Need to assign artist"}
                                     </span>
                                   )}
                                 </div>
@@ -1836,29 +1825,30 @@ export function ReceptionistBookingDetailPage() {
                               className="inline-flex items-center justify-center gap-1 rounded-full bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:scale-105 active:scale-95 transition cursor-pointer shrink-0 ml-3"
                             >
                               {hasArtist ? <RefreshCcw size={12} /> : <UserPlus size={12} />}
-                              <span>{hasArtist ? "Đổi Thợ" : "Phân Công"}</span>
+                              <span>{hasArtist ? (language === "vi" ? "Đổi Thợ" : "Change Artist") : (language === "vi" ? "Phân Công" : "Assign")}
+                              </span>
                             </button>
                           </div>
 
                           {/* Right: Time Breakdown & Overlap Badges */}
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="flex items-center justify-center gap-1.5 inline-flex items-center gap-1 rounded-full border border-[#DDD6FE] bg-[#F5F3FF] px-2.5 py-1 text-[11px] font-bold text-[#6D28D9]">
-                              <Zap size={12} /> Thao tác: {procedure.activeDuration ?? 0}m
+                              <Zap size={12} /> {language === "vi" ? "Thao tác" : "Active"}: {procedure.activeDuration ?? 0}m
                             </span>
 
                             {hasPassive && (
                               <span className="flex items-center justify-center gap-1.5 inline-flex items-center gap-1 rounded-full border border-[#BAE6FD] bg-[#F0F9FF] px-2.5 py-1 text-[11px] font-bold text-[#0284C7]">
-                                <Hourglass size={12} /> Hơ máy / Chờ: {procedure.passiveDuration}m
+                                <Hourglass size={12} /> {language === "vi" ? "Hơ máy / Chờ" : "Curing / Waiting"}: {procedure.passiveDuration}m
                               </span>
                             )}
 
                             {(hasPassive || procedure.canOverlap) ? (
                               <span className="inline-flex items-center gap-1 rounded-full border border-[#A7F3D0] bg-[#ECFDF5] px-2.5 py-1 text-[11px] font-bold text-[#047857]">
-                                ✨ Overlap (Rảnh {procedure.passiveDuration ?? 0}m)
+                                ✨ {language === "vi" ? "Chồng chéo" : "Overlap"} ({language === "vi" ? "Rảnh" : "Free"} {procedure.passiveDuration ?? 0}m)
                               </span>
                             ) : (
                               <span className="flex items-center justify-center gap-1.5 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-500">
-                                <LockKeyhole size={12} /> Làm liên tục
+                                <LockKeyhole size={12} /> {language === "vi" ? "Làm liên tục" : "Continuous"}
                               </span>
                             )}
                           </div>
@@ -1867,9 +1857,11 @@ export function ReceptionistBookingDetailPage() {
                         {/* Extra Guidance Note (If Passive Time > 0) */}
                         {hasPassive && (
                           <div className="mt-2 text-[11px] font-semibold text-[#6D28D9] bg-[#F5F3FF] p-2 rounded-lg border border-[#E9D5FF] flex items-center gap-1.5">
-                            <span>💡</span>
+                            <span><Lightbulb size={12} /></span>
                             <span>
-                              Trong <strong>{procedure.passiveDuration} phút</strong> hơ máy / chờ khô này, thợ rảnh tay và có thể tranh thủ làm cho khách khác (Overlap).
+                              {language === "vi"
+                                ? `Trong ${<strong>${procedure.passiveDuration} phút</strong>} hơ máy / chờ khô này, thợ rảnh tay và có thể tranh thủ làm cho khách khác (Overlap).`
+                                : `In ${<strong>${procedure.passiveDuration} minutes</strong>} of curing / waiting time, the artist is free and can take the opportunity to serve another customer (Overlap).`}
                             </span>
                           </div>
                         )}
@@ -1877,7 +1869,7 @@ export function ReceptionistBookingDetailPage() {
                         {/* Footer Row: Actual Execution Time & Completion */}
                         <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-[#F8F1F5] pt-2 text-[11px]">
                           <div>
-                            <span className="font-bold text-[#9E8497]">Thực tế làm: </span>
+                            <span className="font-bold text-[#9E8497]">{language === "vi" ? "Thực tế làm:" : "Actual time:"} </span>
                             <span className="font-bold text-[#2B182B]">
                               {(() => {
                                 const startVal = procedure.actualStartTime || procedure.startTime;
@@ -1888,9 +1880,9 @@ export function ReceptionistBookingDetailPage() {
                             </span>
                           </div>
                           <div>
-                            <span className="font-bold text-[#9E8497]">Người hoàn thành: </span>
+                            <span className="font-bold text-[#9E8497]">{language === "vi" ? "Người hoàn thành:" : "Completed by:"} </span>
                             <span className="font-bold text-[#2B182B]">
-                              {procedure.completedByName || <span className="text-[#9E8497] italic font-normal">Chưa xong</span>}
+                              {procedure.completedByName || <span className="text-[#9E8497] italic font-normal">{language === "vi" ? "Chưa xong" : "Not completed"}</span>}
                             </span>
                           </div>
                         </div>
@@ -1900,7 +1892,7 @@ export function ReceptionistBookingDetailPage() {
               </div>
             ) : (
               <div className="rounded-2xl border border-dashed border-[#F3D6E5] bg-[#FFF9FB] p-8 text-center text-xs font-bold text-[#9E8497]">
-                Không tìm thấy bước quy trình nào cho dịch vụ này.
+                {language === "vi" ? "Không tìm thấy bước quy trình nào cho dịch vụ này." : "No procedure steps found for this service."}
               </div>
             )}
           </div>
@@ -1926,7 +1918,7 @@ export function ReceptionistBookingDetailPage() {
               setAssigningProcedureArtistId("");
             }}
           >
-            Đóng
+            {language === "vi" ? "Đóng" : "Close"}
           </Button>,
         ]}
         centered
@@ -1936,26 +1928,26 @@ export function ReceptionistBookingDetailPage() {
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-[#8B5CF6] to-[#E84F93] text-white shadow-xs">
               <UserCheck size={16} />
             </div>
-            <span>{artistPickerProcedure?.assignedArtistName ? "Thay Đổi Thợ Phân Công Bước" : "Chọn Thợ Phân Công Bước"}</span>
+            <span>{artistPickerProcedure?.assignedArtistName ? language === "vi" ? "Thay Đổi Thợ Phân Công Bước" : "Change Assigned Artist" : language === "vi" ? "Chọn Thợ Phân Công Bước" : "Select Assigned Artist"}</span>
           </div>
         }
       >
         {artistPickerProcedure ? (
           <div className="space-y-5 py-2">
             <div className="rounded-2xl border border-[#F3D6E5] bg-gradient-to-r from-[#FFF0F6] to-[#F5F3FF] p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[#E84F93]">Bước Đang Chọn Phân Công</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#E84F93]">{language === "vi" ? "Bước Đang Chọn Phân Công" : "Procedure Selected"}</p>
               <h3 className="mt-1 text-base font-bold text-[#2B182B]">
                 {artistPickerProcedure.procedureName || "--"}
               </h3>
               <p className="mt-1 text-xs font-bold text-[#8B5CF6]">
-                Thợ hiện tại: {artistPickerProcedure.assignedArtistName || "Chưa phân công thợ nào"}
+                {language === "vi" ? "Thợ hiện tại:" : "Current Artist:"} {artistPickerProcedure.assignedArtistName || (language === "vi" ? "Chưa phân công thợ nào" : "No artist assigned")}
               </p>
             </div>
 
             {isProcedureArtistsLoading ? (
               <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-[#F3D6E5] bg-[#FFF9FB]">
                 <LoaderCircle size={28} className="animate-spin text-[#E84F93]" />
-                <p className="text-xs font-bold text-[#2B182B]">Đang tìm danh sách thợ khả dụng...</p>
+                <p className="text-xs font-bold text-[#2B182B]">{language === "vi" ? "Đang tìm danh sách thợ khả dụng..." : "Finding available artists..."}</p>
               </div>
             ) : procedureArtistsError ? (
               <div className="rounded-2xl border border-[#FCA5A5] bg-[#FEF2F2] p-4 text-xs font-bold text-[#991B1B]">
@@ -1997,7 +1989,7 @@ export function ReceptionistBookingDetailPage() {
                               : "bg-[#FEF2F2] text-[#991B1B] border border-[#FCA5A5]"
                               }`}
                           >
-                            {artist.isFree ? "Rảnh" : "Đang bận"}
+                            {artist.isFree ? (language === "vi" ? "Rảnh" : "Free") : (language === "vi" ? "Đang bận" : "Busy")}
                           </span>
                         </div>
                       </div>
@@ -2019,9 +2011,9 @@ export function ReceptionistBookingDetailPage() {
                         <span>
                           {canAssign
                             ? artistPickerProcedure.assignedArtistName
-                              ? "Chọn thợ này"
-                              : "Phân công"
-                            : "Thợ đang bận"}
+                              ? (language === "vi" ? "Chọn thợ này" : "Select this artist")
+                              : (language === "vi" ? "Phân công" : "Assign")
+                            : (language === "vi" ? "Thợ đang bận" : "Artist is busy")}
                         </span>
                       </button>
                     </div>
@@ -2030,7 +2022,7 @@ export function ReceptionistBookingDetailPage() {
               </div>
             ) : (
               <div className="rounded-2xl border border-dashed border-[#F3D6E5] bg-[#FFF9FB] p-8 text-center text-xs font-bold text-[#9E8497]">
-                Không có thợ nào khả dụng cho bước quy trình này.
+                {language === "vi" ? "Không có thợ nào khả dụng cho bước quy trình này." : "No available artists for this procedure step."}
               </div>
             )}
           </div>
@@ -2053,11 +2045,11 @@ export function ReceptionistBookingDetailPage() {
         onCancel={() => setIsQrOpen(false)}
         footer={[
           <Button key="close" onClick={() => setIsQrOpen(false)}>
-            Close
+            {language === "vi" ? "Đóng" : "Close"}
           </Button>,
         ]}
         centered
-        title="Customer Check-In QR Code"
+        title={language === "vi" ? "Mã QR Check-in Khách Hàng" : "Customer Check-In QR Code"}
       >
         <div className="flex flex-col items-center gap-4 py-2">
           {qrImageSrc ? (
@@ -2068,7 +2060,7 @@ export function ReceptionistBookingDetailPage() {
             />
           ) : (
             <div className="rounded-2xl border border-[#f4d6e2] bg-[#fff7fb] px-6 py-10 text-center text-sm text-[#8f7b88]">
-              QR code not available for this booking.
+              {language === "vi" ? "Mã QR không khả dụng cho đơn đặt này." : "QR code not available for this booking."}
             </div>
           )}
           <div className="text-center">

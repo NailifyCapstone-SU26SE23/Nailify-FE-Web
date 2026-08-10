@@ -309,7 +309,7 @@ export function StaffCustomerNailsListPage() {
     return (
       <div className="p-6">
         <Alert
-          message="Error Loading Custom Reviews"
+          message="Error Loading Custom Nails Reviews"
           description={error}
           type="error"
           showIcon
@@ -353,7 +353,7 @@ export function StaffCustomerNailsListPage() {
                   <Palette size={22} />
                 </div>
                 <div>
-                  <h2 className="text-3xl font-extrabold text-[#402542]">{language === "vi" ? "Yêu cầu thiết kế tùy chỉnh" : "Custom Review Requests"}</h2>
+                  <h2 className="text-3xl font-extrabold text-[#402542]">{language === "vi" ? "Yêu cầu thiết kế tùy chỉnh" : "Custom Nails Review Requests"}</h2>
                   <p className="text-sm text-[#b07a94]">{language === "vi" ? "Xem thiết kế của khách hàng, lêp giá ước tính và lập báo giá." : "Review customer designs, formulate pricing estimates, and draft quotes."}</p>
                 </div>
               </div>
@@ -390,7 +390,7 @@ export function StaffCustomerNailsListPage() {
                 <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#fff0f8]">
                   <Palette size={32} className="text-[#ea4f93]" />
                 </div>
-                <p className="text-sm text-[#c08aa4]">{language === "vi" ? "Bạn chưa được giao yêu cầu thiết kế nào." : "You don't have any custom review requests assigned yet."}</p>
+                <p className="text-sm text-[#c08aa4]">{language === "vi" ? "Bạn chưa được giao yêu cầu thiết kế nào." : "You don't have any custom nails review requests assigned yet."}</p>
               </div>
             ) : (
               <>
