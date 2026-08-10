@@ -150,6 +150,7 @@ export function ReceptionistCustomerListPage() {
   const [suggestedArtists, setSuggestedArtists] = useState([]);
   const [selectedArtistIdForWalkIn, setSelectedArtistIdForWalkIn] = useState(null);
   const [isLoadingSuggestedArtists, setIsLoadingSuggestedArtists] = useState(false);
+  const [lateCancelledBookings, setLateCancelledBookings] = useState([]);
 
   const filteredNailVariants = useMemo(() => {
     if (!variantSearchQuery.trim()) return dbNailVariants;
@@ -163,34 +164,20 @@ export function ReceptionistCustomerListPage() {
   }, [dbNailVariants, variantSearchQuery]);
 
   const lateArrivalOptions = useMemo(() => {
-    const filtered = rawQueueItems.filter(
-      (item) => item.isLateArrival || item.originalBookingId || (item.requestNote && item.requestNote.toLowerCase().includes("muộn"))
-    );
+    const list = [];
 
-    if (filtered.length === 0) {
-      return [
-        {
-          value: "",
-          display: "Chưa có khách hàng tới trễ trong hàng chờ sảnh",
-          label: (
-            <div className="py-1 text-xs text-gray-400 font-medium italic">
-              Chưa có lịch đặt trước tới trễ trong hàng chờ sảnh hôm nay
-            </div>
-          ),
-          disabled: true,
-        },
-      ];
-    }
+    (lateCancelledBookings || []).forEach((b) => {
+      const bId = b.bookingId || b.id;
+      const code = `BK-${String(bId).substring(0, 5).toUpperCase()}`;
+      const name = b.customerName || "Khách Hàng";
+      const phone = b.customerPhone || b.phone || "Chưa có SĐT";
+      const startTime = b.startTime ? String(b.startTime).substring(0, 5) : "";
+      const note = `Lịch hẹn ${startTime} - Tự động hủy do trễ >15p`;
 
-    return filtered.map((item, idx) => {
-      const code = item.queuePosition ? `BK-${100 + item.queuePosition}` : `BK-${100 + idx + 1}`;
-      const name = item.guestName || "Khách Hàng";
-      const phone = item.guestPhone || "Chưa có SĐT";
-      const note = item.requestNote || "Khách hàng đến muộn -> Tự động chuyển xuống hàng chờ";
-      const qId = item.queueId || item.id || item.originalBookingId;
-
-      return {
-        value: qId,
+      list.push({
+        value: bId,
+        isBooking: true,
+        bookingData: b,
         display: `⚠️ ${code}: ${name} - ${phone}`,
         label: (
           <div className="flex flex-col py-1 border-b border-gray-50 last:border-none min-w-[280px]">
@@ -208,9 +195,58 @@ export function ReceptionistCustomerListPage() {
             </span>
           </div>
         ),
-      };
+      });
     });
-  }, [rawQueueItems]);
+
+    (rawQueueItems || [])
+      .filter((item) => item.isLateArrival || item.originalBookingId || (item.requestNote && item.requestNote.toLowerCase().includes("muộn")))
+      .forEach((item, idx) => {
+        const code = item.queuePosition ? `BK-${100 + item.queuePosition}` : `BK-${100 + idx + 1}`;
+        const name = item.guestName || "Khách Hàng";
+        const phone = item.guestPhone || "Chưa có SĐT";
+        const note = item.requestNote || "Khách hàng đến muộn -> Tự động chuyển xuống hàng chờ";
+        const qId = item.queueId || item.id || item.originalBookingId;
+
+        list.push({
+          value: qId,
+          isBooking: false,
+          display: `⚠️ ${code}: ${name} - ${phone}`,
+          label: (
+            <div className="flex flex-col py-1 border-b border-gray-50 last:border-none min-w-[280px]">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-bold text-[#221F26] text-xs">
+                  {code}: {name}
+                </span>
+                <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                  Trễ ≥ 15p
+                </span>
+              </div>
+              <span className="text-[11px] text-gray-500 font-medium mt-0.5">{phone}</span>
+              <span className="text-[10px] text-amber-600 font-semibold italic mt-0.5 truncate">
+                {note}
+              </span>
+            </div>
+          ),
+        });
+      });
+
+    if (list.length === 0) {
+      return [
+        {
+          value: "",
+          display: "Chưa có lịch đặt trước tới trễ trong hàng chờ sảnh",
+          label: (
+            <div className="py-1 text-xs text-gray-400 font-medium italic">
+              Chưa có lịch đặt trước tới trễ trong hàng chờ sảnh hôm nay
+            </div>
+          ),
+          disabled: true,
+        },
+      ];
+    }
+
+    return list;
+  }, [lateCancelledBookings, rawQueueItems]);
 
   const totalCalculatedPrice = useMemo(() => {
     let total = 0;
@@ -254,9 +290,11 @@ export function ReceptionistCustomerListPage() {
 
   const loadModalData = useCallback(async () => {
     try {
-      const [svcRes, varRes] = await Promise.all([
+      const salonId = getReceptionistSalonId();
+      const [svcRes, varRes, lateRes] = await Promise.all([
         receptionistWalkInBookingService.getServices({ pageSize: 100 }),
         receptionistWalkInBookingService.getAllNailVariants({ pageSize: 100 }),
+        receptionistWalkInBookingService.getLateCancelledBookings(salonId).catch(() => null),
       ]);
 
       const svcs = Array.isArray(svcRes)
@@ -265,11 +303,15 @@ export function ReceptionistCustomerListPage() {
       const vars = Array.isArray(varRes)
         ? varRes
         : varRes?.data?.items || varRes?.items || varRes?.data || [];
+      const lates = Array.isArray(lateRes)
+        ? lateRes
+        : lateRes?.data?.items || lateRes?.data || lateRes?.items || [];
 
       setDbServices(svcs);
       setDbNailVariants(vars);
+      setLateCancelledBookings(lates);
     } catch (err) {
-      console.error("Lỗi lấy danh sách Dịch vụ/Mẫu móng:", err);
+      console.error("Lỗi lấy danh sách Dịch vụ/Mẫu móng/Khách trễ:", err);
     }
   }, []);
 
@@ -370,10 +412,10 @@ export function ReceptionistCustomerListPage() {
         try {
           const artistId = artist.nailArtistId || artist.id;
           if (!artistId) return null;
-          
+
           const scheduleRes = await receptionistWalkInBookingService.getArtistSchedule(artistId, todayStr, todayStr);
           const schedules = Array.isArray(scheduleRes) ? scheduleRes : scheduleRes?.data || [];
-          
+
           if (schedules && schedules.length > 0) {
             return artist;
           }
@@ -586,14 +628,35 @@ export function ReceptionistCustomerListPage() {
       finalPhone = walkInPhone.trim() || (language === "vi" ? "Chưa có SĐT" : "No Phone");
       entryTypeLabel = "new_guest";
     } else if (walkInTab === "late_arrival") {
-      finalCustomerName = "Trần Bảo Ngọc (Trễ 18 phút)";
-      finalPhone = "0988 123 456";
+      finalCustomerName = walkInName.trim() || "Khách Trễ 15p";
+      finalPhone = walkInPhone.trim() || "Chưa có SĐT";
       entryTypeLabel = "late_arrival";
     }
 
     setIsSubmittingWalkIn(true);
     try {
       const currentSalonId = getReceptionistSalonId();
+
+      if (walkInTab === "late_arrival" && selectedLateBookingId) {
+        const selectedOpt = lateArrivalOptions.find((opt) => opt.value === selectedLateBookingId);
+        if (selectedOpt && selectedOpt.isBooking) {
+          try {
+            await receptionistWalkInBookingService.lateCheckInBooking(selectedLateBookingId);
+            toast.success("Khôi phục & Check-in thành công đơn đặt trước đến trễ!");
+            setIsWalkInModalOpen(false);
+            setWalkInName("");
+            setWalkInPhone("");
+            setSelectedLateBookingId(null);
+            setSelectedServiceMap({});
+            setSelectedVariantMap({});
+            await loadModalData();
+            await loadWalkInQueue();
+            return;
+          } catch (lateErr) {
+            console.warn("API lateCheckInBooking không thành công, tiếp tục thử tạo lượt sảnh:", lateErr);
+          }
+        }
+      }
 
       const selectedServiceObjs = dbServices.filter((s) => (selectedServiceMap[s.serviceId || s.id] || 0) > 0);
       const serviceSummaryList = selectedServiceObjs.map(
@@ -1540,12 +1603,34 @@ export function ReceptionistCustomerListPage() {
                     value={selectedLateBookingId}
                     onChange={(val) => {
                       setSelectedLateBookingId(val);
-                      const foundLate = rawQueueItems.find(
-                        (item) => (item.queueId || item.id || item.originalBookingId) === val
-                      );
-                      if (foundLate) {
-                        setWalkInName(foundLate.guestName || "");
-                        setWalkInPhone(foundLate.guestPhone || "");
+                      const foundOption = lateArrivalOptions.find((opt) => opt.value === val);
+                      if (foundOption && foundOption.isBooking && foundOption.bookingData) {
+                        const b = foundOption.bookingData;
+                        setWalkInName(b.customerName || "");
+                        setWalkInPhone(b.phone || b.customerPhone || "");
+
+                        const newSvcMap = {};
+                        const newVarMap = {};
+                        if (Array.isArray(b.bookingItems)) {
+                          b.bookingItems.forEach((item) => {
+                            if (item.serviceId) {
+                              newSvcMap[item.serviceId] = (newSvcMap[item.serviceId] || 0) + (item.quantity || 1);
+                            }
+                            if (item.nailVariantId) {
+                              newVarMap[item.nailVariantId] = (newVarMap[item.nailVariantId] || 0) + (item.quantity || 1);
+                            }
+                          });
+                        }
+                        setSelectedServiceMap(newSvcMap);
+                        setSelectedVariantMap(newVarMap);
+                      } else {
+                        const foundLate = rawQueueItems.find(
+                          (item) => (item.queueId || item.id || item.originalBookingId) === val
+                        );
+                        if (foundLate) {
+                          setWalkInName(foundLate.guestName || "");
+                          setWalkInPhone(foundLate.guestPhone || "");
+                        }
                       }
                     }}
                     placeholder={language === "vi" ? "-- chọn khách đặt trước tới trễ --" : "-- select late appointment --"}
@@ -1889,8 +1974,8 @@ export function ReceptionistCustomerListPage() {
                 </div>
               ) : (
                 <span className="text-xs text-gray-400 font-medium">
-                  {language === "vi" 
-                    ? "💡 Chọn dịch vụ hoặc mẫu móng để tính tổng tiền & gợi ý thợ rảnh" 
+                  {language === "vi"
+                    ? "💡 Chọn dịch vụ hoặc mẫu móng để tính tổng tiền & gợi ý thợ rảnh"
                     : "💡 Select services or variants to calculate total price & suggest free artists"}
                 </span>
               )}

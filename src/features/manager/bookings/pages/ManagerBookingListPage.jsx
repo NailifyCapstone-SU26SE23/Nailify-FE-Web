@@ -39,7 +39,10 @@ import { ROLES } from "../../../../shared/constants/roles";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { BOOKING_ROLE_CONFIG } from "../services/mockBookings";
 import { fetchBookingsBySalonId, fetchBookingById, fetchUserById, fetchSalonStaff, assignArtistToBookingOld } from "../services/bookingsService";
+import { OnsiteAddonModal } from "../components/OnsiteAddonModal";
 import { AssignArtistModal } from "../components/AssignArtistModal";
+import { SlaViolationModal } from "../components/SlaViolationModal";
+import { NegativeReviewModal } from "../components/NegativeReviewModal";
 import { ConfirmBookingModal } from "../components/ConfirmBookingModal";
 import { RejectBookingModal } from "../components/RejectBookingModal";
 import { CancelBookingModal } from "../components/CancelBookingModal";
@@ -2192,6 +2195,11 @@ export function ManagerBookingListPage() {
           );
         })()}
       </Modal>
+
+      {/* SLA Alert Modal */}
+      <SlaViolationModal />
+      {/* Negative Review Modal */}
+      <NegativeReviewModal />
     </section>
   );
 }

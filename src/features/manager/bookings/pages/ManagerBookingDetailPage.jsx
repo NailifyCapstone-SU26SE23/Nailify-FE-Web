@@ -46,10 +46,7 @@ import { ProposeRescheduleModal } from "../components/ProposeRescheduleModal";
 import { OnsiteAddonModal } from "../components/OnsiteAddonModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { getSalonId } from "../../staff-artist-management/services/nailArtistsService";
-import {
-  evaluateInterleavingOpportunity,
-  autoAssignPrepArtist,
-} from "../services/bookingProceduresService";
+
 
 const roleConfig = BOOKING_ROLE_CONFIG[ROLES.manager];
 

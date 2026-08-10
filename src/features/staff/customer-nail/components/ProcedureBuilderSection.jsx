@@ -10,11 +10,15 @@ import {
   GripVertical,
   Zap,
   ShieldCheck,
-  Palette
+  Palette,
+  Lock
 } from "lucide-react";
-import { fetchProcedures } from "../../../manager/customer-nail/services/customerNailsService";
+import { fetchProcedures } from '../../../manager/customer-nail/services/customerNailsService';
+import { useLanguage } from '../../../../shared/hooks/useLanguage';
 
-export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, onSyncStats, onApplyToQuote }) {
+
+export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, onSyncStats, onApplyToQuote, readOnly = false }) {
+  const { language } = useLanguage();
   const [dbProcedures, setDbProcedures] = useState([]);
   const [loadingProcedures, setLoadingProcedures] = useState(false);
   const [selectedDbProcedureId, setSelectedDbProcedureId] = useState(null);
@@ -49,13 +53,13 @@ export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, 
           const commonSteps = commonList.map((p, idx) => ({
             id: `step-common-${p.procedureId || p.id || idx}-${Date.now()}`,
             procedureId: p.procedureId || p.id,
-            name: p.name || p.procedureName || `Quy trình chung ${idx + 1}`,
+            name: p.name || p.procedureName,
             estimatedMinutes: p.activeDuration || p.duration || p.estimatedMinutes || 10,
             stepOrder: idx + 1,
             isCommon: true,
             isCustomStep: false,
             procedureType: "Common",
-            note: p.description || "Làm sạch, xử lý da thừa và chuẩn bị da móng",
+            note: p.description || "Bước quy trình chung (Salon Standard)",
           }));
 
           // 2. Model-Specific Procedures - Take at most 2 items
@@ -63,17 +67,21 @@ export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, 
 
           const assignedProcedures = nail.nailProcedures || nail.customerNailProcedures || [];
           if (assignedProcedures.length > 0) {
-            modelSpecificSteps = assignedProcedures.slice(0, 2).map((np, idx) => ({
-              id: `step-model-db-${np.procedureId || idx}-${Date.now()}`,
-              procedureId: np.procedureId || np.procedure?.procedureId,
-              name: np.procedure?.name || np.name || `Kỹ thuật riêng mẫu (${idx + 1})`,
-              estimatedMinutes: np.procedure?.activeDuration || np.procedure?.duration || 15,
-              stepOrder: commonSteps.length + idx + 1,
-              isCommon: false,
-              isCustomStep: false,
-              procedureType: "ModelSpecific",
-              note: np.procedure?.description || "Bước kỹ thuật riêng gán theo mẫu nail trong DB",
-            }));
+            modelSpecificSteps = assignedProcedures.map((np, idx) => {
+              const originalProc = modelList.find(m => m.procedureId === np.procedureId) || commonList.find(m => m.procedureId === np.procedureId);
+
+              return {
+                id: `step-model-db-${np.procedureId || idx}-${Date.now()}`,
+                procedureId: np.procedureId || np.procedure?.procedureId,
+                name: np.procedureName || np.procedure?.name || np.name,
+                estimatedMinutes: np.procedureDuration || np.procedure?.activeDuration || np.procedure?.duration || np.estimatedMinutes || originalProc?.activeDuration || originalProc?.duration || 15,
+                stepOrder: commonSteps.length + idx + 1,
+                isCommon: false,
+                isCustomStep: np.isCustomStep || false,
+                procedureType: np.isCustomStep ? "ArtistCustom" : "ModelSpecific",
+                note: np.note || np.procedureDescription || np.procedure?.description || "Bước kỹ thuật riêng gán theo mẫu nail",
+              };
+            });
           } else if (modelList.length > 0) {
             // Take at most 2 items from the ModelSpecific API response
             modelSpecificSteps = modelList.slice(0, 2).map((p, idx) => ({
@@ -132,7 +140,7 @@ export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, 
       }
     }
     loadProcedures();
-  }, [nail]);
+  }, [nail?.customerNailId]);
 
   // Sync total duration whenever procedures change
   const totalDuration = useMemo(() => {
@@ -312,7 +320,7 @@ export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, 
     return (
       <div
         key={step.id || `${section}-${localIndex}`}
-        draggable
+        draggable={!readOnly}
         onDragStart={(e) => handleDragStart(e, section, localIndex)}
         onDragOver={(e) => handleDragOver(e, section, localIndex)}
         onDrop={(e) => handleDrop(e, section, localIndex)}
@@ -321,22 +329,26 @@ export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, 
           ? "opacity-40 scale-[0.98] border-dashed border-[#ea4f93] bg-[#fff0f6]"
           : isTargetDrop
             ? "border-[#ea4f93] ring-4 ring-[#ea4f93]/20 bg-[#fff5f9] scale-[1.01] shadow-lg"
-            : isCommon
-              ? "border-[#a7f3d0] bg-white hover:border-[#34d399] hover:shadow-[0_8px_20px_rgba(16,185,129,0.08)]"
-              : step.isCustomStep
-                ? "border-[#e9d5ff] bg-gradient-to-r from-[#faf5ff] to-white hover:border-[#a855f7]"
-                : "border-[#f3d9e8] bg-white hover:border-[#ea4f93] hover:shadow-[0_8px_20px_rgba(236,72,153,0.08)]"
+            : readOnly
+              ? "border-gray-200 bg-gray-50/50 opacity-80"
+              : isCommon
+                ? "border-[#a7f3d0] bg-white hover:border-[#34d399] hover:shadow-[0_8px_20px_rgba(16,185,129,0.08)]"
+                : step.isCustomStep
+                  ? "border-[#e9d5ff] bg-gradient-to-r from-[#faf5ff] to-white hover:border-[#a855f7]"
+                  : "border-[#f3d9e8] bg-white hover:border-[#ea4f93] hover:shadow-[0_8px_20px_rgba(236,72,153,0.08)]"
           }`}
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
           {/* Left: Drag Grip + Index + Title */}
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div
-              className="cursor-grab active:cursor-grabbing p-1 rounded-lg text-[#c08aa4] hover:bg-[#fff0f6] hover:text-[#ea4f93] transition-colors shrink-0"
-              title="Nhấp giữ & kéo để sắp xếp thứ tự bước trong khung này"
-            >
-              <GripVertical size={18} className="opacity-80 group-hover:opacity-100" />
-            </div>
+            {!readOnly && (
+              <div
+                className="cursor-grab active:cursor-grabbing p-1 rounded-lg text-[#c08aa4] hover:bg-[#fff0f6] hover:text-[#ea4f93] transition-colors shrink-0"
+                title={language === "vi" ? "Nhấp giữ & kéo để sắp xếp thứ tự bước trong khung này" : "Click & drag to reorder steps in this frame"}
+              >
+                <GripVertical size={18} className="opacity-80 group-hover:opacity-100" />
+              </div>
+            )}
 
             <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-xs font-black text-white shadow-sm ${isCommon
               ? "bg-gradient-to-br from-[#34d399] to-[#059669]"
@@ -351,7 +363,7 @@ export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, 
               <p className="font-extrabold text-[#3f2240] text-sm tracking-tight truncate">{step.name}</p>
               {step.note && (
                 <p className="text-xs text-[#9c6f87] mt-0.5 font-medium italic truncate">
-                  • {step.note}
+                  {step.note}
                 </p>
               )}
             </div>
@@ -370,21 +382,24 @@ export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, 
                 className="w-16 text-xs font-extrabold text-[#3f2240]"
                 bordered={false}
                 controls={false}
+                disabled={readOnly}
               />
-              <span className="text-[11px] text-[#a988a0] font-extrabold uppercase tracking-wider">phút</span>
+              <span className="text-[11px] text-[#a988a0] font-extrabold uppercase tracking-wider">{language === "vi" ? "phút" : "min"}</span>
             </div>
 
             {/* Delete button */}
-            <Tooltip title="Xóa bước này">
-              <Button
-                type="text"
-                size="small"
-                danger
-                onClick={() => handleRemoveStep(step.id)}
-                className="h-8 w-8 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center shrink-0"
-                icon={<Trash2 size={15} />}
-              />
-            </Tooltip>
+            {!readOnly && (
+              <Tooltip title={language === "vi" ? "Xóa bước này" : "Delete this step"}>
+                <Button
+                  type="text"
+                  size="small"
+                  danger
+                  onClick={() => handleRemoveStep(step.id)}
+                  className="h-8 w-8 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center shrink-0"
+                  icon={<Trash2 size={15} />}
+                />
+              </Tooltip>
+            )}
           </div>
         </div>
       </div>
@@ -401,83 +416,87 @@ export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, 
           </div>
           <div>
             <div className="flex items-center gap-2.5">
-              <h3 className="text-xl font-serif font-extrabold text-[#3f2240]">Quy trình thực hiện móng</h3>
+              <h3 className="text-xl font-serif font-extrabold text-[#3f2240]">{language === "vi" ? "Quy trình thực hiện móng" : "Nail Implementation Procedure"}</h3>
               <span className="rounded-full bg-[#fff0f6] px-3 py-1 text-[11px] font-extrabold uppercase text-[#ea4f93] border border-[#fbcfe8] shadow-xs">
-                {procedures.length} Bước
+                {procedures.length} {language === "vi" ? "Bước" : "Steps"}
               </span>
-              <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-pink-100/60 px-2.5 py-0.5 text-[10px] font-bold text-[#b43e74]">
-                <GripVertical size={12} /> Kéo thả nội bộ từng khung
-              </span>
+              {!readOnly && (
+                <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-pink-100/60 px-2.5 py-0.5 text-[10px] font-bold text-[#b43e74]">
+                  <GripVertical size={12} /> {language === "vi" ? "Kéo thả nội bộ từng khung" : "Drag and drop within each frame"}
+                </span>
+              )}
             </div>
           </div>
         </div>
 
         {/* Action Controls */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          {/* Select DB Procedure */}
-          <Select
-            placeholder="➕ Chọn bước từ Thư viện DB..."
-            loading={loadingProcedures}
-            value={selectedDbProcedureId}
-            onChange={handleAddDbProcedure}
-            className="w-56 sm:w-64 custom-procedure-select"
-            size="large"
-            allowClear
-          >
-            {dbProcedures.map(p => {
-              const isCommon = p.procedureType === 1 || p.procedureType === "Common" || p.isMainStep;
-              return (
-                <Select.Option key={p.procedureId || p.id} value={p.procedureId || p.id}>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold text-xs text-[#3f2240] truncate max-w-[130px]">{p.name || p.procedureName}</span>
-                    <div className="flex items-center gap-1 shrink-0">
-                      {isCommon ? (
-                        <span className="text-[9px] font-extrabold text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200">Chung</span>
-                      ) : (
-                        <span className="text-[9px] font-bold text-purple-700 bg-purple-50 px-1 py-0.2 rounded">Riêng</span>
-                      )}
-                      <span className="text-[10px] font-bold text-[#ea4f93] bg-pink-50 px-1.5 py-0.5 rounded">
-                        {p.activeDuration || p.duration || 15}m
-                      </span>
+        {!readOnly && (
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Select DB Procedure */}
+            <Select
+              placeholder={language === "vi" ? "Chọn các bước có sẵn" : "Select available steps"}
+              loading={loadingProcedures}
+              value={selectedDbProcedureId}
+              onChange={handleAddDbProcedure}
+              className="w-56 sm:w-64 custom-procedure-select"
+              size="large"
+              allowClear
+            >
+              {dbProcedures.map(p => {
+                const isCommon = p.procedureType === 1 || p.procedureType === "Common" || p.isMainStep;
+                return (
+                  <Select.Option key={p.procedureId || p.id} value={p.procedureId || p.id}>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold text-xs text-[#3f2240] truncate max-w-[130px]">{p.name || p.procedureName}</span>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {isCommon ? (
+                          <span className="text-[9px] font-extrabold text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200">{language === "vi" ? "Chung" : "Common"}</span>
+                        ) : (
+                          <span className="text-[9px] font-bold text-purple-700 bg-purple-50 px-1 py-0.2 rounded">{language === "vi" ? "Riêng" : "Specific"}</span>
+                        )}
+                        <span className="text-[10px] font-bold text-[#ea4f93] bg-pink-50 px-1.5 py-0.5 rounded">
+                          {p.activeDuration || p.duration || 15}m
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </Select.Option>
-              );
-            })}
-          </Select>
+                  </Select.Option>
+                );
+              })}
+            </Select>
 
-          {/* Add Custom Step Button */}
-          <Button
-            type="primary"
-            onClick={() => setIsModalOpen(true)}
-            className="h-10 rounded-full bg-gradient-to-r from-[#ea4f93] via-[#df4588] to-[#c63d79] px-5 font-bold border-none flex items-center gap-2 shadow-[0_8px_20px_rgba(234,79,147,0.3)] hover:scale-105 transition-all duration-300"
-          >
-            <PlusCircle size={16} />
-            <span>Thêm bước mới</span>
-          </Button>
-        </div>
+            {/* Add Custom Step Button */}
+            <Button
+              type="primary"
+              onClick={() => setIsModalOpen(true)}
+              className="h-10 rounded-full bg-gradient-to-r from-[#ea4f93] via-[#df4588] to-[#c63d79] px-5 font-bold border-none flex items-center gap-2 shadow-[0_8px_20px_rgba(234,79,147,0.3)] hover:scale-105 transition-all duration-300"
+            >
+              <PlusCircle size={16} />
+              <span>{language === "vi" ? "Thêm bước mới" : "Add new step"}</span>
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Procedure Steps Rendered in 2 Isolated Sub-Sections */}
       {procedures.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-[#f4c1d8] p-10 text-center bg-[#fff8fb]">
           <Layers className="mx-auto h-10 w-10 text-[#ea4f93] opacity-60 mb-2 animate-bounce" />
-          <p className="text-base font-bold text-[#3f2240]">Chưa có bước quy trình nào trong DB</p>
+          <p className="text-base font-bold text-[#3f2240]">{language === "vi" ? "Chưa có bước quy trình nào trong DB" : "No procedure steps in DB"}</p>
           <p className="text-xs text-[#9c6f87] mt-1 max-w-md mx-auto">
-            Hãy chọn bước chuẩn từ danh sách DB hoặc tạo bước mới cho mẫu customize này để tính chính xác thời gian thực hiện móng.
+            {language === "vi" ? "Hãy chọn bước chuẩn từ danh sách DB hoặc tạo bước mới cho mẫu customize này để tính chính xác thời gian thực hiện móng." : "Please select standard steps from the DB list or create a new step for this custom design to accurately calculate nail implementation time."}
           </p>
         </div>
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-6">
           {/* SECTION 1: Quy trình chung (Common DB Steps Block) */}
           {commonProceduresList.length > 0 && (
-            <div className="rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-[#f0fdf4]/80 via-[#ffffff] to-[#f0fdf4]/40 p-4 space-y-3 shadow-xs">
-              <div className="flex items-center gap-2 border-b border-emerald-100 pb-2.5">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-2">
                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-xs">
                   <ShieldCheck size={16} />
                 </div>
                 <div>
-                  <h4 className="font-extrabold text-sm text-emerald-950 tracking-tight">Quy trình chung (Common - Chuẩn DB Salon)</h4>
+                  <h4 className="font-extrabold text-sm text-emerald-950 tracking-tight">{language === "vi" ? "Quy trình chung" : "Common Procedure"}</h4>
                 </div>
               </div>
 
@@ -489,13 +508,13 @@ export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, 
 
           {/* SECTION 2: Quy trình riêng theo mẫu Nail (Model-Specific DB Steps Block) */}
           {modelProceduresList.length > 0 && (
-            <div className="rounded-2xl border border-[#fbcfe8] bg-gradient-to-br from-[#fff0f7]/70 via-[#ffffff] to-[#fff5f9] p-4 space-y-3 shadow-xs">
-              <div className="flex items-center gap-2 border-b border-pink-100 pb-2.5">
+            <div className="space-y-4 mt-2">
+              <div className="flex items-center gap-2 mb-2">
                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#ea4f93] to-[#c63d79] text-white shadow-xs">
                   <Palette size={16} />
                 </div>
                 <div>
-                  <h4 className="font-extrabold text-sm text-[#3f2240] tracking-tight">Quy trình kỹ thuật riêng mẫu Nail (ModelSpecific DB)</h4>
+                  <h4 className="font-extrabold text-sm text-[#3f2240] tracking-tight">{language === "vi" ? "Quy trình kỹ thuật riêng mẫu Nail" : "Nail Model Specific Technical Procedure"}</h4>
                 </div>
               </div>
 
@@ -516,15 +535,15 @@ export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, 
             <Sparkles size={18} />
           </div>
           <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-pink-200 block">Tổng Quy Trình Kỹ Thuật</span>
-            <p className="text-xs text-pink-100 font-medium">Bao gồm {procedures.length} bước ({commonProceduresList.length} bước chung + {modelProceduresList.length} bước riêng mẫu)</p>
+            <span className="text-[10px] font-black uppercase tracking-widest text-pink-200 block">{language === "vi" ? "Tổng Quy Trình Kỹ Thuật" : "Total Technical Procedures"}</span>
+            <p className="text-xs text-pink-100 font-medium">{language === "vi" ? "Bao gồm" : "Includes"} {procedures.length} {language === "vi" ? "bước" : "steps"} ({commonProceduresList.length} {language === "vi" ? "bước chung +" : "common steps +"} {modelProceduresList.length} {language === "vi" ? "bước riêng mẫu)" : "specific steps)"}</p>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-5">
           <div className="text-right">
-            <span className="text-[9px] font-bold uppercase tracking-widest text-pink-200 block">Tổng Thời Gian Kỹ Thuật</span>
-            <span className="text-xl font-black text-white">{totalDuration} phút</span>
+            <span className="text-[9px] font-bold uppercase tracking-widest text-pink-200 block">{language === "vi" ? "Tổng Thời Gian Kỹ Thuật" : "Total Technical Time"}</span>
+            <span className="text-xl font-black text-white">{totalDuration} {language === "vi" ? "phút" : "min"}</span>
           </div>
 
           {onApplyToQuote && (
@@ -534,7 +553,7 @@ export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, 
               className="h-10 rounded-full bg-gradient-to-r from-[#ea4f93] to-[#df4588] px-5 text-xs font-extrabold border-none flex items-center gap-2 shadow-[0_4px_16px_rgba(234,79,147,0.4)] hover:scale-105 transition-all"
             >
               <Zap size={14} />
-              <span>Đồng bộ Thời Gian vào Báo Giá</span>
+              <span>{language === "vi" ? "Đồng bộ Thời Gian vào Báo Giá" : "Sync Time to Quote"}</span>
             </Button>
           )}
         </div>
@@ -547,14 +566,14 @@ export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, 
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#fff0f6] text-[#ea4f93]">
               <PlusCircle size={18} />
             </div>
-            <span className="font-serif font-extrabold text-lg">Thêm bước quy trình mới</span>
+            <span className="font-serif font-extrabold text-lg">{language === "vi" ? "Thêm bước quy trình mới" : "Add new procedure step"}</span>
           </div>
         }
         open={isModalOpen}
         onOk={handleAddCustomStep}
         onCancel={() => setIsModalOpen(false)}
-        okText="Thêm vào Quy Trình"
-        cancelText="Hủy Bỏ"
+        okText={language === "vi" ? "Thêm vào Quy Trình" : "Add to Procedure"}
+        cancelText={language === "vi" ? "Hủy Bỏ" : "Cancel"}
         okButtonProps={{
           className: "h-10 rounded-full bg-gradient-to-r from-[#ea4f93] to-[#df4588] font-bold border-none px-6 shadow-md",
         }}
@@ -565,12 +584,12 @@ export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, 
         <div className="space-y-4 py-4">
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-[#c08aa4] mb-1.5">
-              Tên bước quy trình <span className="text-red-500">*</span>
+              {language === "vi" ? "Tên bước quy trình" : "Procedure step name"} <span className="text-red-500">*</span>
             </label>
             <Input
               value={customStepName}
               onChange={(e) => setCustomStepName(e.target.value)}
-              placeholder="VD: Tạo vân loang đá cẩm thạch, đắp hoa nổi 3D..."
+              placeholder={language === "vi" ? "VD: Tạo vân loang đá cẩm thạch, đắp hoa nổi 3D..." : "E.g., create marble veins, 3D flowers..."}
               className="h-11 rounded-xl font-medium"
             />
           </div>
@@ -578,7 +597,7 @@ export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, 
           {/* Quick Preset Buttons for Custom Step Duration */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-[#c08aa4] mb-1.5">
-              Thời gian ước tính (Phút)
+              {language === "vi" ? "Thời gian ước tính (Phút)" : "Estimated time (Minutes)"}
             </label>
             <div className="flex items-center gap-2 mb-2">
               <InputNumber
@@ -600,7 +619,7 @@ export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, 
                     : "bg-pink-50 text-[#ea4f93] hover:bg-pink-100"
                     }`}
                 >
-                  {mins} phút
+                  {mins} {language === "vi" ? "phút" : "min"}
                 </button>
               ))}
             </div>
@@ -608,12 +627,12 @@ export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, 
 
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-[#c08aa4] mb-1.5">
-              Ghi chú kỹ thuật (Không bắt buộc)
+              {language === "vi" ? "Ghi chú kỹ thuật (Không bắt buộc)" : "Technical notes (Optional)"}
             </label>
             <Input.TextArea
               value={customStepNote}
               onChange={(e) => setCustomStepNote(e.target.value)}
-              placeholder="Ghi chú kỹ thuật hoặc dụng cụ/vật liệu đặc biệt cho bước này..."
+              placeholder={language === "vi" ? "Ghi chú kỹ thuật hoặc dụng cụ/vật liệu đặc biệt cho bước này..." : "Technical notes or special tools/materials for this step..."}
               rows={3}
               className="rounded-xl font-medium"
             />
