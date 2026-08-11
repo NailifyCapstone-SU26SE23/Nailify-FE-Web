@@ -10,8 +10,21 @@ export function UserManagementSnapshotCard({ formValues, notice }) {
     [formValues.firstName, formValues.lastName].filter(Boolean).join(" ").trim() ||
     formValues.name ||
     "New internal account";
-  const normalizedAvatarUrl = String(formValues.avatarUrl || "").trim();
+  const [avatarPreview, setAvatarPreview] = useState("");
   const [hasImageError, setHasImageError] = useState(false);
+
+  useEffect(() => {
+    if (formValues.imageFile instanceof File) {
+      const url = URL.createObjectURL(formValues.imageFile);
+      setAvatarPreview(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setAvatarPreview("");
+    }
+  }, [formValues.imageFile]);
+
+  const normalizedAvatarUrl = avatarPreview || String(formValues.avatarUrl || "").trim();
+
   const avatarFallback = (displayName || "New User")
     .split(" ")
     .slice(0, 2)

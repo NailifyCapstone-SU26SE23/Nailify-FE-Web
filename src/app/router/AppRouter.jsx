@@ -6,6 +6,7 @@ import { receptionistRoutes } from "./receptionistRoutes";
 import { staffRoutes } from "./staffRoutes";
 import { ROUTES } from "../../shared/constants/routes";
 import { HandTryOnPage } from "../../features/virtual-try-on/hand-try-on/HandTryOnPage";
+import NotFoundPage from "../../shared/components/common/NotFoundPage";
 
 export const router = createBrowserRouter([
   ...publicRoutes,
@@ -21,4 +22,8 @@ export const router = createBrowserRouter([
     element: <HandTryOnPage />,
   },
   ...adminRoutes,
+  {
+    path: "*",
+    element: <NotFoundPage />,
+  },
 ]);

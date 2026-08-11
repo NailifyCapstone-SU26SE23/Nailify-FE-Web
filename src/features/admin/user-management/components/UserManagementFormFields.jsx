@@ -137,13 +137,18 @@ export function UserManagementFormFields({
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.avatarUrl")}</span>
+          <span className="text-sm font-medium text-[var(--color-ink)]">
+            {language === "vi" ? "Chọn ảnh đại diện" : t("userManagement.detail.avatarUrl")}
+          </span>
           <input
-            value={formValues.avatarUrl}
-            onChange={onFieldChange("avatarUrl")}
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files?.[0] || null;
+              onFieldChange("imageFile")({ target: { value: file } });
+            }}
             disabled={disabled}
             className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-            placeholder={t("userManagement.detail.enterAvatarUrl")}
           />
         </label>
 
@@ -341,13 +346,18 @@ export function UserManagementFormFields({
 
       {showAccountFields ? (
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.avatarUrl")}</span>
+          <span className="text-sm font-medium text-[var(--color-ink)]">
+            {language === "vi" ? "Chọn ảnh đại diện" : t("userManagement.detail.avatarUrl")}
+          </span>
           <input
-            value={formValues.avatarUrl}
-            onChange={onFieldChange("avatarUrl")}
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files?.[0] || null;
+              onFieldChange("imageFile")({ target: { value: file } });
+            }}
             disabled={disabled}
             className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-            placeholder={t("userManagement.detail.enterAvatarUrl")}
           />
         </label>
       ) : null}
