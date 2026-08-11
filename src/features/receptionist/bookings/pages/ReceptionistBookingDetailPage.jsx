@@ -440,7 +440,7 @@ export function ReceptionistBookingDetailPage() {
       });
       const enrichedHistories = histories.map(h => ({
         ...h,
-        actorRole: roleMap[h.actorId] || (h.actorName?.includes("Khách") ? "Customer" : "Unknown")
+        actorRole: roleMap[h.actorId] || (h.actorName?.includes("Khách") ? "Customer" : (h.actorId ? "Unknown" : "System"))
       }));
       setBookingHistories(enrichedHistories);
     } catch (error) {
@@ -1358,7 +1358,9 @@ export function ReceptionistBookingDetailPage() {
                         else if (history.actorRole === "Manager") roleText = "Quản lý";
                         else if (history.actorRole === "Receptionist") roleText = "Lễ tân";
                         else if (history.actorRole === "Staff_Artist" || history.actorRole === "Artist") roleText = "Thợ làm móng";
-                        else if (history.actorRole === "System") roleText = "Hệ thống";
+                        else roleText = "Hệ thống";
+
+                        const actorDisplayName = (history.actorName && history.actorName.trim() !== "" && history.actorName !== "Unknown") ? history.actorName.trim() : null;
 
                         let rawPayload = history.payload || "";
                         rawPayload = rawPayload.replace(/\s?Mã QR \(Base64\) đã được khởi tạo\./g, "");
@@ -1373,7 +1375,21 @@ export function ReceptionistBookingDetailPage() {
                         }
 
                         let formattedAction = "";
-                        if (rawPayload.includes("Đơn đặt lịch được tạo thành công") || rawPayload.includes("tạo thành công")) {
+                        if (rawPayload.includes("tự động hủy do khách trễ") || rawPayload.includes("trễ quá 15 phút")) {
+                          formattedAction = "đã tự động hủy lịch hẹn do khách hàng trễ quá 15 phút không check-in.";
+                        } else if (rawPayload.includes("Hủy đơn từ trạng thái") || rawPayload.toLowerCase().includes("hủy đơn")) {
+                          const reasonMatch = rawPayload.match(/Lý do:\s*(.*)/i);
+                          if (reasonMatch && reasonMatch[1]) {
+                            let cleanReason = reasonMatch[1].trim();
+                            if (cleanReason.toLowerCase().includes("hệ thống tự động hủy do")) {
+                              formattedAction = "đã tự động hủy lịch hẹn do khách hàng trễ quá 15 phút không check-in.";
+                            } else {
+                              formattedAction = `đã hủy lịch hẹn. Lý do: ${cleanReason.charAt(0).toUpperCase() + cleanReason.slice(1)}.`;
+                            }
+                          } else {
+                            formattedAction = "đã hủy lịch hẹn.";
+                          }
+                        } else if (rawPayload.includes("Đơn đặt lịch được tạo thành công") || rawPayload.includes("tạo thành công")) {
                           formattedAction = "đã tạo đơn đặt lịch thành công.";
                         } else if (rawPayload.includes("xác nhận duyệt đơn đặt lịch")) {
                           formattedAction = "đã xác nhận duyệt đơn đặt lịch.";
@@ -1397,9 +1413,13 @@ export function ReceptionistBookingDetailPage() {
                               <span className="font-bold text-[#2B182B]">
                                 {roleText}
                               </span>{" "}
-                              <span className="font-bold text-[#E84F93]">
-                                "{history.actorName}"
-                              </span>{" "}
+                              {actorDisplayName && (
+                                <>
+                                  <span className="font-bold text-[#E84F93]">
+                                    "{actorDisplayName}"
+                                  </span>{" "}
+                                </>
+                              )}
                               {formattedAction}
                             </p>
                             {imageUrl && (

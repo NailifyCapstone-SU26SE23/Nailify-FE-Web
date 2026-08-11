@@ -39,7 +39,10 @@ import { ROLES } from "../../../../shared/constants/roles";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { BOOKING_ROLE_CONFIG } from "../services/mockBookings";
 import { fetchBookingsBySalonId, fetchBookingById, fetchUserById, fetchSalonStaff, assignArtistToBookingOld } from "../services/bookingsService";
+import { OnsiteAddonModal } from "../components/OnsiteAddonModal";
 import { AssignArtistModal } from "../components/AssignArtistModal";
+import { SlaViolationModal } from "../components/SlaViolationModal";
+import { NegativeReviewModal } from "../components/NegativeReviewModal";
 import { ConfirmBookingModal } from "../components/ConfirmBookingModal";
 import { RejectBookingModal } from "../components/RejectBookingModal";
 import { CancelBookingModal } from "../components/CancelBookingModal";
@@ -787,8 +790,8 @@ export function ManagerBookingListPage() {
     );
 
     toast.success(
-      `Rescheduled ${draggedBooking.customer}'s booking to ${displayDate}`,
-      { icon: "📅" }
+      language === "vi" ? `Đã dời lịch cho ${draggedBooking.customer} vào ngày ${displayDate}` : `Rescheduled ${draggedBooking.customer}'s booking to ${displayDate}`,
+      { icon: <CalendarDays /> }
     );
     setDraggedBooking(null);
   };
@@ -897,9 +900,9 @@ export function ManagerBookingListPage() {
 
   const capacityData = useMemo(() => {
     const periods = [
-      { label: "Morning (9 AM - 12 PM)", start: 9, end: 12, maxSlots: 10 },
-      { label: "Afternoon (12 PM - 3 PM)", start: 12, end: 15, maxSlots: 10 },
-      { label: "Evening (3 PM - 6 PM)", start: 15, end: 18, maxSlots: 10 }
+      { label: language === "vi" ? "Buổi sáng (9 giờ sáng - 12 giờ trưa)" : "Morning (9 AM - 12 PM)", start: 9, end: 12, maxSlots: 10 },
+      { label: language === "vi" ? "Buổi chiều (12 giờ trưa - 3 giờ chiều)" : "Afternoon (12 PM - 3 PM)", start: 12, end: 15, maxSlots: 10 },
+      { label: language === "vi" ? "Buổi tối (3 giờ chiều - 6 giờ tối)" : "Evening (3 PM - 6 PM)", start: 15, end: 18, maxSlots: 10 }
     ];
 
     return periods.map(period => {
@@ -1471,7 +1474,7 @@ export function ManagerBookingListPage() {
                             <thead>
                               <tr className="bg-[#FFF5F8] text-xs font-bold text-[#2B182B] border-b border-[#F3E2EC]">
                                 <th className="w-24 min-w-[90px] p-3 text-center border-r border-[#F3E2EC] bg-[#FFF5F8] sticky left-0 z-20 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                                  Time
+                                  {language === "vi" ? "Thời gian" : "Time"}
                                 </th>
                                 {dayViewStaffList.map((artistItem) => {
                                   const isUnassigned = artistItem.isUnassigned;
@@ -1561,10 +1564,10 @@ export function ManagerBookingListPage() {
                       <div className="p-4 space-y-4">
                         <div className="flex items-center justify-between bg-[#FFF5F8] p-3 rounded-2xl border border-[#F3D6E5]/60 text-xs">
                           <span className="font-bold text-[#E84F93] flex items-center gap-1.5">
-                            <GripVertical size={16} /> Drag & drop booking cards to another day to reschedule!
+                            <GripVertical size={16} /> {language === "vi" ? "Kéo và thả thẻ đặt lịch sang ngày khác để lên lịch lại!" : "Drag & drop booking cards to another day to reschedule!"}
                           </span>
                           <span className="font-bold text-[#2B182B]">
-                            Week of {scheduleDate.startOf("week").format("MMM D")} - {scheduleDate.endOf("week").format("MMM D, YYYY")}
+                            {language === "vi" ? "Tuần của" : "Week of"} {scheduleDate.startOf("week").format("MMM D")} - {scheduleDate.endOf("week").format("MMM D, YYYY")}
                           </span>
                         </div>
 
@@ -1601,7 +1604,7 @@ export function ManagerBookingListPage() {
 
                                   <div className="flex-1 space-y-2 overflow-y-auto max-h-[320px] pr-1">
                                     {dayBookings.length === 0 ? (
-                                      <p className="text-[10px] text-[#C8B0BF] italic text-center py-4">No bookings</p>
+                                      <p className="text-[10px] text-[#C8B0BF] italic text-center py-4">{language === "vi" ? "Không có lịch hẹn" : "No bookings"}</p>
                                     ) : (
                                       dayBookings.map((b) => (
                                         <div
@@ -1637,7 +1640,7 @@ export function ManagerBookingListPage() {
                       <div className="p-4 space-y-4">
                         <div className="flex items-center justify-between bg-[#FFF5F8] p-3 rounded-2xl border border-[#F3D6E5]/60 text-xs">
                           <span className="font-bold text-[#E84F93] flex items-center gap-1.5">
-                            <GripVertical size={16} /> Drag & drop booking cards to another calendar date cell!
+                            <GripVertical size={16} /> {language === "vi" ? "Kéo và thả thẻ đặt lịch sang ô ngày khác trong lịch!" : "Drag & drop booking cards to another calendar date cell!"}
                           </span>
                           <span className="font-bold text-[#2B182B]">
                             {(dateFrom || dayjs()).format("MMMM YYYY")}
@@ -1761,7 +1764,7 @@ export function ManagerBookingListPage() {
             <motion.div variants={fadeInUp} className="space-y-5 lg:sticky lg:top-8 lg:self-start">
               {/* Today Capacity Progress */}
               <PremiumCard className="p-5 border-[#F3E2EC]">
-                <SectionHeading title="Capacity Overview" subtitle="Slot distribution by shift" icon={TrendingUp} />
+                <SectionHeading title={language === "vi" ? "Tổng quan công suất" : "Capacity Overview"} subtitle={language === "vi" ? "Phân bổ chỗ theo ca" : "Slot distribution by shift"} icon={TrendingUp} />
                 <div className="mt-4 space-y-4">
                   {capacityData.map((period, i) => (
                     <div key={i}>
@@ -1784,7 +1787,7 @@ export function ManagerBookingListPage() {
 
               {/* Today Schedule Timeline */}
               <PremiumCard className="p-5 border-[#F3E2EC]">
-                <SectionHeading title="Today's Schedule" subtitle="Time slots timeline" icon={Clock3} />
+                <SectionHeading title={language === "vi" ? "Lịch trình hôm nay" : "Today's Schedule"} subtitle={language === "vi" ? "Dòng thời gian" : "Time slots timeline"} icon={Clock3} />
 
                 <div className="mt-3 flex items-center justify-between rounded-xl bg-[#FFF5F8] p-1 border border-[#F3D6E5]/60">
                   {timeFilters.map((tf) => (
@@ -1803,7 +1806,7 @@ export function ManagerBookingListPage() {
 
                 <div className="mt-4 space-y-3">
                   <div className="flex items-center justify-between text-xs text-[#9E8497] border-b border-[#F3E2EC] pb-2">
-                    <span className="font-bold">Date</span>
+                    <span className="font-bold">{language === "vi" ? "Ngày" : "Date"}</span>
                     <span className="font-bold text-[#2B182B]">{scheduleDate.format("MMM D, YYYY")}</span>
                   </div>
 
@@ -1838,7 +1841,7 @@ export function ManagerBookingListPage() {
                                 {formatHourLabel(hour)}
                               </div>
                               <div className="flex-1 border-l border-dashed border-[#F3D6E5] pl-3 py-1">
-                                <p className="text-[11px] text-[#C8B0BF] italic">No bookings</p>
+                                <p className="text-[11px] text-[#C8B0BF] italic">{language === "vi" ? "Không có lịch hẹn" : "No bookings"}</p>
                               </div>
                             </div>
                           );
@@ -1893,7 +1896,7 @@ export function ManagerBookingListPage() {
 
               {/* Staff Workload */}
               <PremiumCard className="p-5 border-[#F3E2EC]">
-                <SectionHeading title="Staff Workload" subtitle="Bookings per nail tech" icon={UserCheck} />
+                <SectionHeading title={language === "vi" ? "Khối lượng công việc của nhân viên" : "Staff Workload"} subtitle={language === "vi" ? "Lượt đặt lịch mỗi kỹ thuật viên" : "Bookings per nail tech"} icon={UserCheck} />
                 <div className="mt-4 space-y-3.5">
                   {staffWorkloadData.map((staff, i) => (
                     <div key={i} className="flex items-center gap-3">
@@ -1904,7 +1907,7 @@ export function ManagerBookingListPage() {
                         <div className="flex items-center justify-between text-xs">
                           <p className="font-bold text-[#2B182B] truncate">{staff.name}</p>
                           <p className="font-bold text-[#E84F93]">
-                            {staff.filled}/{staff.total} slots
+                            {staff.filled}/{staff.total} {language === "vi" ? "lượt" : "slots"}
                           </p>
                         </div>
                         <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-[#FAF0F5]">
@@ -1935,7 +1938,7 @@ export function ManagerBookingListPage() {
       >
         <div className="bg-white p-6 text-center">
           <div className="flex justify-between items-center mb-3">
-            <p className="text-sm font-bold text-[#2B182B]">Customer Selected Nail Design</p>
+            <p className="text-sm font-bold text-[#2B182B]">{language === "vi" ? "Thiết kế móng khách hàng đã chọn" : "Customer Selected Nail Design"}</p>
             <button type="button" onClick={() => setActiveImageModalUrl(null)} className="text-[#9E8497] hover:text-[#E84F93]">
               <X size={18} />
             </button>
@@ -2009,12 +2012,12 @@ export function ManagerBookingListPage() {
             {/* Header Card */}
             <div className="sticky top-0 z-10 bg-gradient-to-br from-[#E84F93] via-[#EC4899] to-[#F43F5E] shadow-md p-6 text-white rounded-b-[24px]">
               <div className="flex items-center justify-between gap-4">
-                <div>
+                {/* <div>
                   <p className="text-[10px] font-bold uppercase tracking-widest text-white/80">Booking ID</p>
                   <h2 className="text-xl font-bold text-white mt-0.5 tracking-tight">
                     #{String(selectedBookingForDrawer.bookingId || selectedBookingForDrawer.id).slice(0, 8).toUpperCase()}
                   </h2>
-                </div>
+                </div> */}
                 <button
                   type="button"
                   onClick={() => { setIsDrawerOpen(false); setSelectedBookingForDrawer(null); }}
@@ -2031,7 +2034,7 @@ export function ManagerBookingListPage() {
                   className="inline-flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-md px-3 py-1 text-xs font-bold text-white hover:bg-white hover:text-[#E84F93] transition"
                 >
                   <Eye size={12} />
-                  <span>Full Details Page</span>
+                  <span>{language === "vi" ? "Xem chi tiết" : "Full Details Page"}</span>
                 </button>
               </div>
             </div>
@@ -2040,7 +2043,7 @@ export function ManagerBookingListPage() {
             <div className="flex-1 overflow-y-auto p-5 space-y-4">
               {/* Customer Info */}
               <PremiumCard className="p-4 border-[#F3E2EC]">
-                <h3 className="text-xs font-bold text-[#9E8497] uppercase tracking-wider mb-3">Customer Info</h3>
+                <h3 className="text-xs font-bold text-[#9E8497] uppercase tracking-wider mb-3">{language === "vi" ? "Thông tin khách hàng" : "Customer Info"}</h3>
                 <div className="space-y-2.5">
                   <InfoItem label="Full Name">
                     {selectedCustomerForDrawer
@@ -2064,7 +2067,7 @@ export function ManagerBookingListPage() {
 
               {/* Service Info */}
               <PremiumCard className="p-4 border-[#F3E2EC]">
-                <h3 className="text-xs font-bold text-[#9E8497] uppercase tracking-wider mb-3">Service & Schedule</h3>
+                <h3 className="text-xs font-bold text-[#9E8497] uppercase tracking-wider mb-3">{language === "vi" ? "Dịch vụ & Lịch trình" : "Service & Schedule"}</h3>
                 <div className="space-y-2.5">
                   <InfoItem label="Service Name">{selectedBookingForDrawer.serviceName}</InfoItem>
                   <InfoItem label="Assigned Artist">{selectedBookingForDrawer.artistName}</InfoItem>
@@ -2077,20 +2080,20 @@ export function ManagerBookingListPage() {
 
               {/* Payment & QR */}
               <PremiumCard className="p-4 border-[#F3E2EC]">
-                <h3 className="text-xs font-bold text-[#9E8497] uppercase tracking-wider mb-3">Payment & Check-in Codes</h3>
+                <h3 className="text-xs font-bold text-[#9E8497] uppercase tracking-wider mb-3">{language === "vi" ? "Thanh toán & Mã Check-in" : "Payment & Check-in Codes"}</h3>
                 <div className="space-y-2.5">
                   <div className="flex items-center justify-between border-b border-[#F3E2EC] pb-2">
-                    <span className="text-xs font-semibold text-[#9E8497]">Deposit Status:</span>
+                    <span className="text-xs font-semibold text-[#9E8497]">{language === "vi" ? "Trạng thái đặt cọc" : "Deposit Status"}:</span>
                     <span className={`text-xs font-bold ${selectedBookingForDrawer.depositTone}`}>{selectedBookingForDrawer.deposit}</span>
                   </div>
                   <div className="flex items-center justify-between pt-1">
-                    <span className="text-xs font-bold text-[#2B182B]">Total Amount:</span>
+                    <span className="text-xs font-bold text-[#2B182B]">{language === "vi" ? "Tổng số tiền" : "Total Amount"}:</span>
                     <span className="text-base font-bold text-[#E84F93]">{formatVND(selectedBookingForDrawer.totalPrice)}</span>
                   </div>
 
                   {(selectedBookingForDrawer.qrCode || selectedBookingForDrawer.qtCode) && (
                     <div className="pt-3 mt-2 border-t border-[#F3E2EC]">
-                      <p className="text-[11px] font-bold text-[#9E8497] uppercase tracking-wider mb-2">Check-in QR Code</p>
+                      <p className="text-[11px] font-bold text-[#9E8497] uppercase tracking-wider mb-2">{language === "vi" ? "Mã QR Check-in" : "Check-in QR Code"}</p>
                       {selectedBookingForDrawer.qrCode && (
                         <div
                           className="rounded-2xl border border-[#F3D6E5] bg-white p-3 text-center cursor-pointer hover:border-[#E84F93] transition"
@@ -2104,7 +2107,7 @@ export function ManagerBookingListPage() {
                             onError={(e) => { e.target.style.display = "none"; }}
                           />
                           <p className="mt-2 text-[10px] font-bold text-[#E84F93] flex items-center justify-center gap-1">
-                            <Maximize2 size={12} /> Click to enlarge
+                            <Maximize2 size={12} /> {language === "vi" ? "Nhấn để xem chi tiết" : "Click to enlarge"}
                           </p>
                         </div>
                       )}
@@ -2128,7 +2131,7 @@ export function ManagerBookingListPage() {
       >
         <div className="bg-white p-6 text-center">
           <div className="flex justify-between items-center mb-4">
-            <p className="text-sm font-bold text-[#2B182B]">Customer QR Code</p>
+            <p className="text-sm font-bold text-[#2B182B]">{language === "vi" ? "QR Code khách hàng" : "Customer QR Code"}</p>
             <button type="button" onClick={() => setIsQrExpanded(false)} className="text-[#9E8497] hover:text-[#E84F93]">
               <X size={18} />
             </button>
@@ -2170,10 +2173,10 @@ export function ManagerBookingListPage() {
                 <div>
                   <h3 className="text-lg font-bold text-[#2B182B] flex items-center gap-2">
                     <Calendar className="text-[#E84F93]" size={20} />
-                    Lịch hẹn ngày {selectedDateForModal.format("DD/MM/YYYY")}
+                    {language === "vi" ? "Lịch hẹn ngày" : "Bookings for"} {selectedDateForModal.format("DD/MM/YYYY")}
                   </h3>
                   <p className="text-xs text-[#9E8497] mt-0.5 font-medium">
-                    Tổng cộng {modalDayBookings.length} đơn đặt lịch trong ngày này
+                    {language === "vi" ? "Tổng cộng" : "Total"} {modalDayBookings.length} {language === "vi" ? "đơn đặt lịch" : "bookings"} {language === "vi" ? "trong ngày này" : "for this day"}
                   </p>
                 </div>
                 <button
@@ -2185,14 +2188,14 @@ export function ManagerBookingListPage() {
                   }}
                   className="px-3.5 py-2 text-xs font-bold text-white bg-gradient-to-r from-[#E84F93] to-[#D93B7D] rounded-full shadow-xs hover:opacity-90 transition flex items-center gap-1.5 cursor-pointer"
                 >
-                  <CalendarDays size={14} /> Xem ma trận giờ & thợ
+                  <CalendarDays size={14} /> {language === "vi" ? "Xem ma trận giờ & thợ" : "View schedule & staff matrix"}
                 </button>
               </div>
 
               <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
                 {modalDayBookings.length === 0 ? (
                   <p className="text-xs text-[#9E8497] italic text-center py-8">
-                    Không có lịch hẹn nào trong ngày này.
+                    {language === "vi" ? "Không có lịch hẹn nào trong ngày này" : "No bookings for this day"}
                   </p>
                 ) : (
                   modalDayBookings.map((b) => (
@@ -2223,7 +2226,7 @@ export function ManagerBookingListPage() {
                       <div className="text-right shrink-0 flex flex-col items-end gap-1.5">
                         <span className="text-xs font-bold text-[#E84F93]">{formatVND(b.totalPrice)}</span>
                         <span className="text-[10px] font-bold text-[#8B5CF6] group-hover:underline flex items-center gap-0.5">
-                          Chi tiết <ChevronRight size={12} />
+                          {language === "vi" ? "Chi tiết" : "Details"} <ChevronRight size={12} />
                         </span>
                       </div>
 
@@ -2236,6 +2239,11 @@ export function ManagerBookingListPage() {
           );
         })()}
       </Modal>
+
+      {/* SLA Alert Modal */}
+      <SlaViolationModal />
+      {/* Negative Review Modal */}
+      <NegativeReviewModal />
     </section>
   );
 }

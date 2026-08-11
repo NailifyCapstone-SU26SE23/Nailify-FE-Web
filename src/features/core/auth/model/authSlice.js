@@ -29,6 +29,17 @@ export const login = createAsyncThunk(
   },
 );
 
+export const loginGoogle = createAsyncThunk(
+  "auth/loginGoogle",
+  async (idToken, { rejectWithValue }) => {
+    try {
+      return await authService.loginGoogle(idToken);
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  },
+);
+
 const authSlice = createSlice({
   name: "auth",
   initialState,
@@ -71,6 +82,24 @@ const authSlice = createSlice({
       .addCase(login.rejected, (state, action) => {
         state.status = AUTH_STATUS.failed;
         state.error = action.payload ?? "Sign-in failed.";
+        state.isAuthenticated = false;
+        toast.error(state.error);
+      })
+      .addCase(loginGoogle.pending, (state) => {
+        state.status = AUTH_STATUS.loading;
+        state.error = null;
+      })
+      .addCase(loginGoogle.fulfilled, (state, action) => {
+        state.status = AUTH_STATUS.succeeded;
+        state.user = action.payload.user;
+        state.accessToken = action.payload.accessToken;
+        state.isAuthenticated = true;
+        saveAuthSession(action.payload);
+        toast.success("Signed in with Google successfully.");
+      })
+      .addCase(loginGoogle.rejected, (state, action) => {
+        state.status = AUTH_STATUS.failed;
+        state.error = action.payload ?? "Google Sign-in failed.";
         state.isAuthenticated = false;
         toast.error(state.error);
       });
