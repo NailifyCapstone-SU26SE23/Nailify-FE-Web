@@ -145,7 +145,7 @@ export async function fetchAdminUsers({
       pageNumber,
       pageSize,
       searchTerm: searchTerm || undefined,
-      role: role || undefined,
+      role: mapRoleToApi(role) || undefined,
       salonId: salonId || undefined,
     },
   });
@@ -209,18 +209,35 @@ function mapRoleToApi(role) {
   }
 }
 
+const isSalonRole = (role) => {
+  const normalized = String(role || "").trim().toLowerCase();
+  return ["staff", "staff_artist", "receptionist", "manager"].includes(normalized);
+};
+
 export async function createAdminUser(formValues) {
+  const formData = new FormData();
+  formData.append("Email", String(formValues?.email || "").trim());
+  formData.append("Password", String(formValues?.password || ""));
+  formData.append("FirstName", String(formValues?.firstName || "").trim());
+  formData.append("LastName", String(formValues?.lastName || "").trim());
+  formData.append("Phone", String(formValues?.phone || "").trim());
+  formData.append("AvatarUrl", String(formValues?.avatarUrl || "").trim());
+  formData.append("Role", mapRoleToApi(formValues?.role));
+
+  if (isSalonRole(formValues?.role)) {
+    const sId = String(formValues?.salonId || "").trim();
+    if (sId) {
+      formData.append("SalonId", sId);
+    }
+  }
+
+  if (formValues?.imageFile) {
+    formData.append("image", formValues.imageFile);
+  }
+
   const response = await axiosClient.post(
     "/Users",
-    {
-      email: String(formValues?.email || "").trim(),
-      password: String(formValues?.password || ""),
-      firstName: String(formValues?.firstName || "").trim(),
-      lastName: String(formValues?.lastName || "").trim(),
-      phone: String(formValues?.phone || "").trim(),
-      avatarUrl: String(formValues?.avatarUrl || "").trim(),
-      role: mapRoleToApi(formValues?.role),
-    },
+    formData,
     {
       headers: getAuthHeaders(),
     },
@@ -245,7 +262,13 @@ export async function updateAdminUser(userId, formValues) {
   if (formValues?.lastName !== undefined) payload.lastName = String(formValues.lastName || "").trim();
   if (formValues?.phone !== undefined) payload.phone = String(formValues.phone || "").trim();
   if (formValues?.status !== undefined) payload.status = String(formValues.status || "").trim();
-  if (formValues?.salonId !== undefined) payload.salonId = formValues.salonId;
+  
+  if (isSalonRole(formValues?.role)) {
+    const sId = String(formValues?.salonId || "").trim();
+    payload.salonId = sId ? sId : null;
+  } else {
+    payload.salonId = null;
+  }
 
   console.log("updateAdminUser - userId:", normalizedUserId);
   console.log("updateAdminUser - payload:", payload);

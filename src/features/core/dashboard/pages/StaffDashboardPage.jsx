@@ -801,68 +801,124 @@ export function StaffDashboardPage() {
         ) : (
           <p className="text-sm text-[#8a7082] p-4">{language === "vi" ? "Không có đánh giá gần đây." : "No recent feedback available."}</p>
         );
-      case 'myScheduleOutline':
-        return dashboardData?.mySchedule && dashboardData.mySchedule.length > 0 ? (
-          <div className="relative min-h-[600px] w-full overflow-y-auto overflow-x-hidden bg-white rounded-[20px] p-4">
-            <div className="absolute top-0 left-0 w-full h-[840px] pointer-events-none">
-              {Array.from({ length: 14 }).map((_, i) => (
-                <div key={i} className="flex h-[60px] border-b border-slate-100/50">
-                  <span className="w-16 text-xs text-slate-400 font-medium pt-2 pl-2">
-                    {String(i + 8).padStart(2, '0')}.00
-                  </span>
-                </div>
-              ))}
-            </div>
-            <div className="relative w-full h-[840px] ml-16 pr-4 pt-[10px]">
-              {dashboardData.mySchedule.map((scheduleItem, idx) => {
-                const [h, m] = scheduleItem.startTime.split(':').map(Number);
-                const top = ((h - 8) * 60) + m;
-                const height = Math.max(30, scheduleItem.durationMinutes);
+      case 'myScheduleOutline': {
+        if (!dashboardData?.mySchedule || dashboardData.mySchedule.length === 0) {
+          return <p className="text-sm text-[#8a7082] p-4">{language === "vi" ? "Không có lịch trình trong thời gian này." : "No schedule items available for selected dates."}</p>;
+        }
 
-                const colors = [
-                  "bg-[#eef2ff] border-l-[#6366f1] text-[#4338ca]",
-                  "bg-[#fff7ed] border-l-[#f97316] text-[#c2410c]",
-                  "bg-[#ecfeff] border-l-[#06b6d4] text-[#0e7490]",
-                ];
-                const colorClass = colors[idx % colors.length];
+        const uniqueDates = Array.from(new Set(dashboardData.mySchedule.map(item => dayjs(item.date).format("YYYY-MM-DD")))).sort();
 
-                const endMins = m + scheduleItem.durationMinutes;
-                const endH = h + Math.floor(endMins / 60);
-                const endM = endMins % 60;
-                const endTimeStr = `${String(endH).padStart(2, '0')}.${String(endM).padStart(2, '0')}`;
+        return (
+          <div className="flex flex-col h-[600px] w-full bg-white rounded-[20px] p-2">
+            <div className="w-full h-full overflow-auto custom-scrollbar">
+              <div style={{ minWidth: `${Math.max(uniqueDates.length * 150 + 64, 100)}%` }}>
 
-                return (
-                  <Tooltip
-                    key={idx}
-                    placement="topLeft"
-                    title={
-                      <div className="text-xs">
-                        <div><strong className="text-[#ea4f93]">{language === "vi" ? "Loại:" : "Type:"}</strong> {scheduleItem.type}</div>
-                        {scheduleItem.type === 'Booking' && <div><strong className="text-[#ea4f93]">{language === "vi" ? "Khách hàng:" : "Customer:"}</strong> {scheduleItem.customerName}</div>}
-                        <div><strong className="text-[#ea4f93]">{language === "vi" ? "Thời lượng:" : "Duration:"}</strong> {scheduleItem.durationMinutes} {language === "vi" ? "phút" : "min"}</div>
+                {/* Header Row for Dates */}
+                <div className="flex ml-16 mb-2 sticky top-0 z-30 bg-white/95 backdrop-blur-sm pt-4">
+                  {uniqueDates.map(date => (
+                    <div key={date} className="flex-1 min-w-[100px] max-w-[150px] text-center pb-2">
+                      <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+                        {dayjs(date).format("ddd")}
                       </div>
-                    }
-                  >
-                    <div
-                      className={`absolute left-2 right-2 rounded-r-md border-l-4 p-3 shadow-sm flex flex-col justify-center overflow-hidden transition-all hover:shadow-md cursor-pointer z-10 hover:z-20 ${colorClass}`}
-                      style={{ top: `${top}px`, height: `${height}px` }}
-                    >
-                      <h4 className="text-xs font-bold leading-tight line-clamp-1">{scheduleItem.customerName || scheduleItem.type}</h4>
-                      {height >= 40 && (
-                        <div className="mt-1 flex items-center gap-1 opacity-80">
-                          <Clock size={10} />
-                          <span className="text-[10px]">{String(h).padStart(2, '0')}.{String(m).padStart(2, '0')} - {endTimeStr}</span>
-                        </div>
-                      )}
+                      <div className="text-lg font-bold text-gray-700">
+                        {dayjs(date).format("DD")}
+                      </div>
                     </div>
-                  </Tooltip>
-                );
-              })}
+                  ))}
+                </div>
+
+                {/* Timeline Body */}
+                <div className="relative w-full h-[840px]">
+                  {/* Background Times */}
+                  <div className="absolute top-0 left-0 w-full h-[840px] pointer-events-none z-0">
+                    {Array.from({ length: 14 }).map((_, i) => {
+                      const hour = i + 8;
+                      const timeLabel = hour === 12 ? '12 PM' : hour > 12 ? `${hour - 12} PM` : `${hour} AM`;
+                      return (
+                        <div key={i} className="flex h-[60px] border-b border-gray-100">
+                          <span className="w-16 text-[10px] text-gray-400 font-medium pr-2 text-right sticky left-0 bg-white/95 backdrop-blur-sm z-20 flex items-start justify-end" style={{ marginTop: '-8px' }}>
+                            {timeLabel}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Timeline Columns */}
+                  <div className="relative w-full h-[840px] ml-16 flex z-10">
+                    {uniqueDates.map((date, colIdx) => {
+                      const dailySchedules = dashboardData.mySchedule.filter(s => dayjs(s.date).format("YYYY-MM-DD") === date);
+                      return (
+                        <div key={date} className={`flex-1 relative min-w-[100px] max-w-[150px] border-l border-gray-100 ${colIdx === uniqueDates.length - 1 ? 'border-r border-gray-100' : ''}`}>
+                          {dailySchedules.map((scheduleItem, idx) => {
+                            const [h, m] = scheduleItem.startTime.split(':').map(Number);
+                            const top = ((h - 8) * 60) + m;
+                            const height = Math.max(30, scheduleItem.durationMinutes);
+
+                            const colors = [
+                              "bg-[#e5f1ff] text-[#1f77d0] border-[#93c5fd]",
+                              "bg-[#f3e8ff] text-[#7e22ce] border-[#d8b4fe]",
+                              "bg-[#ffe4e6] text-[#be123c] border-[#fda4af]",
+                              "bg-[#dcfce7] text-[#15803d] border-[#86efac]",
+                            ];
+                            const colorClass = colors[idx % colors.length];
+                            const [bgClass, textClass, borderClass] = colorClass.split(' ');
+
+                            const endMins = m + scheduleItem.durationMinutes;
+                            const endH = h + Math.floor(endMins / 60);
+                            const endM = endMins % 60;
+                            const formatTime = (hour, min) => {
+                              const ampm = hour >= 12 ? 'PM' : 'AM';
+                              const h12 = hour % 12 || 12;
+                              const minStr = min > 0 ? `:${String(min).padStart(2, '0')}` : '';
+                              return `${h12}${minStr} ${ampm}`;
+                            };
+                            const timeRangeStr = `${formatTime(h, m)} - ${formatTime(endH, endM)}`;
+
+                            return (
+                              <Tooltip
+                                key={idx}
+                                placement="topLeft"
+                                title={
+                                  <div className="text-xs">
+                                    <div><strong className="text-[#ea4f93]">{language === "vi" ? "Ngày:" : "Date:"}</strong> {dayjs(scheduleItem.date).format("DD/MM/YYYY")}</div>
+                                    <div><strong className="text-[#ea4f93]">{language === "vi" ? "Loại:" : "Type:"}</strong> {scheduleItem.type}</div>
+                                    {scheduleItem.type === 'Booking' && <div><strong className="text-[#ea4f93]">{language === "vi" ? "Khách hàng:" : "Customer:"}</strong> {scheduleItem.customerName}</div>}
+                                    <div><strong className="text-[#ea4f93]">{language === "vi" ? "Thời lượng:" : "Duration:"}</strong> {scheduleItem.durationMinutes} {language === "vi" ? "phút" : "min"}</div>
+                                  </div>
+                                }
+                              >
+                                <div
+                                  className={`absolute left-[2px] right-[2px] rounded p-2 flex flex-col overflow-hidden transition-all hover:shadow-md cursor-pointer z-10 hover:z-20 ${bgClass} ${textClass}`}
+                                  style={{ top: `${top}px`, height: `${height}px` }}
+                                >
+                                  {height >= 40 ? (
+                                    <>
+                                      <span className={`text-[10px] font-medium opacity-90 pb-1 mb-1 border-b border-dashed ${borderClass}`}>
+                                        {timeRangeStr}
+                                      </span>
+                                      <h4 className="text-[11px] font-semibold leading-tight line-clamp-2">{scheduleItem.customerName || scheduleItem.type}</h4>
+                                    </>
+                                  ) : (
+                                    <h4 className="text-[11px] font-semibold leading-tight line-clamp-1 truncate flex items-center gap-1">
+                                      <span className="text-[10px] opacity-80 whitespace-nowrap">{formatTime(h, m)}</span>
+                                      {scheduleItem.customerName || scheduleItem.type}
+                                    </h4>
+                                  )}
+                                </div>
+                              </Tooltip>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        ) : (
-          <p className="text-sm text-[#8a7082] p-4">{language === "vi" ? "Không có lịch trình trong thời gian này." : "No schedule items available for selected dates."}</p>
         );
+      }
       default:
         return null;
     }
@@ -1041,7 +1097,7 @@ export function StaffDashboardPage() {
         {/* Header & Controls */}
         <div
           className="
-                  sticky top-0 z-50
+                  sticky top-[-20px] z-50
                   flex flex-col gap-4
                   border-b border-white/30
                   bg-[linear-gradient(135deg,rgba(255,236,244,0.8)_0%,rgba(255,248,220,0.8)_100%)]

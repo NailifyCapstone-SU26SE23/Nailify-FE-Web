@@ -22,6 +22,7 @@ import {
   PinOff,
   EyeOff,
   Settings2,
+  SquareCheckBig,
 } from "lucide-react";
 import { Modal, Table, DatePicker, Dropdown, Button } from "antd";
 import dayjs from "dayjs";
@@ -591,7 +592,7 @@ export function ReceptionistDashboardPage() {
   const getActionItems = (bookingId, status) => [
     {
       key: "view",
-      label: t("receptionist.dashboard.viewDetail") || "View Booking",
+      label: language === "vi" ? "Xem lịch hẹn" : "View Booking",
       icon: Eye,
       onSelect: () => navigate(getReceptionistBookingDetailRoute(bookingId)),
     },

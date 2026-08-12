@@ -41,3 +41,5 @@ CLAUDE.md
 .agents/skills/gitnexus/gitnexus-exploring/SKILL.md
 .agents/skills/gitnexus/gitnexus-debugging/SKILL.md
 .agents/skills/gitnexus/gitnexus-cli/SKILL.md
+.agent_scratchpad.md 
+task.md 

@@ -254,9 +254,9 @@ export function AssignArtistModal({
             <UserRound size={24} />
           </motion.div>
           <div>
-            <h3 className="text-2xl font-extrabold text-[#3d1f3f] tracking-tight">{language === "vi" ? "Phân công nghệ sĩ" : "Assign Staff Artist"}</h3>
+            <h3 className="text-2xl font-extrabold text-[#3d1f3f] tracking-tight">{language === "vi" ? "Phân công thợ làm móng" : "Assign Staff Artist"}</h3>
             <p className="mt-2 text-sm text-[#9a5f7f]">
-              {language === "vi" ? "Chọn nghệ sĩ và khung giờ để phân công cho lịch hẹn này." : "Select an artist and time slot to assign to this booking."}
+              {language === "vi" ? "Chọn thợ làm móng và khung giờ để phân công cho lịch hẹn này." : "Select an artist and time slot to assign to this booking."}
             </p>
           </div>
         </div>

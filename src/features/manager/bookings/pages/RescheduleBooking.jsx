@@ -480,7 +480,7 @@ export function RescheduleBooking() {
                     <th className="px-5 py-3.5">{t("manager.bookings.customer")}</th>
                     <th className="px-5 py-3.5">{language === "vi" ? "Lịch hẹn hiện tại" : "Current Schedule"}</th>
                     <th className="px-5 py-3.5">{t("manager.bookings.rescheduleTime")}</th>
-                    <th className="px-5 py-3.5">{t("manager.breaks.reason") || "Status & Reason"}</th>
+                    <th className="px-5 py-3.5">{language === "vi" ? "Trạng thái & Lý do" : "Status & Reason"}</th>
                     <th className="px-5 py-3.5 text-center">{t("manager.common.actions")}</th>
                   </tr>
                 </thead>
@@ -497,7 +497,7 @@ export function RescheduleBooking() {
                         label: (
                           <span className="flex items-center gap-2 text-xs font-semibold text-emerald-700">
                             <CheckCircle size={14} />
-                            {t("manager.breaks.approve") || "Approve"}
+                            {language === "vi" ? "Phê duyệt" : "Approve"}
                           </span>
                         ),
                         onClick: () => openApproveModal(b),
@@ -507,7 +507,7 @@ export function RescheduleBooking() {
                         label: (
                           <span className="flex items-center gap-2 text-xs font-semibold text-indigo-700">
                             <Clock size={14} />
-                            {t("manager.bookings.rescheduleTime") || "Suggest new time"}
+                            {language === "vi" ? "Đề xuất giờ khác" : "Suggest new time"}
                           </span>
                         ),
                         onClick: () => openSuggestModal(b),
@@ -518,7 +518,7 @@ export function RescheduleBooking() {
                         label: (
                           <span className="flex items-center gap-2 text-xs font-semibold text-rose-700">
                             <XCircle size={14} />
-                            {t("manager.breaks.reject") || "Reject"}
+                            {language === "vi" ? "Từ chối" : "Reject"}
                           </span>
                         ),
                         onClick: () => openRejectModal(b),

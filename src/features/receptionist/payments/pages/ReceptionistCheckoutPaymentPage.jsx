@@ -416,10 +416,10 @@ export function ReceptionistCheckoutPaymentPage() {
               {paymentStage === "paid"
                 ? (t("receptionist.dashboard.statusDone") || "Paid")
                 : paymentStage === "processing"
-                ? (language === "vi" ? "Đang xử lý" : "Processing")
-                : paymentStage === "cancelled"
-                ? (language === "vi" ? "Đã hủy" : "Cancelled")
-                : (language === "vi" ? "Đang chờ thanh toán" : "Awaiting Payment")}
+                  ? (language === "vi" ? "Đang xử lý" : "Processing")
+                  : paymentStage === "cancelled"
+                    ? (language === "vi" ? "Đã hủy" : "Cancelled")
+                    : (language === "vi" ? "Đang chờ thanh toán" : "Awaiting Payment")}
             </span>
           </div>
         </div>
@@ -491,7 +491,7 @@ export function ReceptionistCheckoutPaymentPage() {
                     ),
                   },
                   {
-                    title: <span className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#c38ea8]">{t("receptionist.bookings.duration") || "Duration"}</span>,
+                    title: <span className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#c38ea8]">{language === "vi" ? "Thời gian" : "Duration"}</span>,
                     dataIndex: 'duration',
                     key: 'duration',
                     render: (text) => <span className="text-sm text-[#8f7b88]">{text}</span>,
@@ -669,7 +669,7 @@ export function ReceptionistCheckoutPaymentPage() {
             )}
           </SummaryCard>
 
-          <SummaryCard title={t("receptionist.payments.invoiceTitle") || "Receipt Preview"}>
+          <SummaryCard title={language === "vi" ? "Xem trước hóa đơn" : "Receipt Preview"}>
             <div className="bg-[#faf8f5] border border-[#e6decb] p-5 rounded-[1.75rem] shadow-[0_8px_24px_rgba(97,76,60,0.03)] relative overflow-hidden text-[#4a3f35] border-t-4 border-t-[#ea4f93]">
               {/* Dashed edge header */}
               <div className="text-center pb-3.5 border-b border-dashed border-[#e6decb] space-y-1">
@@ -749,7 +749,7 @@ export function ReceptionistCheckoutPaymentPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-[linear-gradient(90deg,#cf3d82_0%,#ef5b92_100%)] px-4 py-3 text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(235,91,146,0.22)]"
               >
                 <Printer size={14} />
-                {t("receptionist.payments.printReceipt") || "Print Bill"}
+                {language === "vi" ? "In Hóa đơn" : "Print Bill"}
               </button>
               <button
                 type="button"
@@ -802,7 +802,7 @@ export function ReceptionistCheckoutPaymentPage() {
             </div>
           </SummaryCard>
 
-          <SummaryCard title={language === "vi" ? "Điểm tích lũy" : "Customer Loyalty"}>
+          {/* <SummaryCard title={language === "vi" ? "Điểm tích lũy" : "Customer Loyalty"}>
             <div className="rounded-[18px] bg-[linear-gradient(180deg,#fff8e5_0%,#fff3c7_100%)] px-4 py-4 text-center">
               <p className="text-xs font-bold text-[#b18211]">{language === "vi" ? "Thành viên Vàng" : "Gold Member"}</p>
               <p className="mt-3 text-3xl font-bold text-[#d54186]">+63 pts</p>
@@ -811,12 +811,12 @@ export function ReceptionistCheckoutPaymentPage() {
             <div className="mt-3 rounded-[16px] border border-[#f3d7e2] bg-[#fffafb] px-4 py-3 text-center text-xs text-[#8f7b88]">
               {language === "vi" ? "Voucher khả dụng: Giảm 50.000đ cho lần đến tiếp theo" : "Available voucher: 50,000 off next visit"}
             </div>
-          </SummaryCard>
+          </SummaryCard> */}
 
           <SummaryCard title={language === "vi" ? "Hành động tiếp theo" : "Next Actions"}>
             <div className="space-y-3">
               {[
-                [t("receptionist.payments.printReceipt") || "Print Bill", Printer],
+                [language === "vi" ? "In Hóa đơn" : "Print Receipt", Printer],
                 [language === "vi" ? "Yêu cầu đánh giá" : "Request Review", Sparkles],
                 [language === "vi" ? "Đặt lịch hẹn tiếp theo" : "Book Next Appointment", Clock3],
                 [language === "vi" ? "Xem lịch sử khách hàng" : "View Customer History", Phone],
