@@ -156,6 +156,7 @@ export function StaffCustomerNailsListPage() {
   const { language } = useLanguage();
   const [requests, setRequests] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
@@ -176,7 +177,9 @@ export function StaffCustomerNailsListPage() {
     }
     const { silent = false } = options;
     try {
-      if (!silent) {
+      if (silent) {
+        setIsRefreshing(true);
+      } else {
         setIsLoading(true);
       }
       setError("");
@@ -188,7 +191,9 @@ export function StaffCustomerNailsListPage() {
       console.error("Failed to load custom nail requests:", err);
       setError(err.message || (language === "vi" ? "Không tải được yêu cầu thiết kế." : "Failed to load custom nail requests."));
     } finally {
-      if (!silent) {
+      if (silent) {
+        setIsRefreshing(false);
+      } else {
         setIsLoading(false);
       }
     }
@@ -197,6 +202,15 @@ export function StaffCustomerNailsListPage() {
   useEffect(() => {
     loadRequests();
   }, [loadRequests]);
+
+  // Auto refresh
+  useEffect(() => {
+    if (!staffArtistId) return undefined;
+    const intervalId = window.setInterval(() => {
+      loadRequests({ silent: true });
+    }, 5000);
+    return () => window.clearInterval(intervalId);
+  }, [loadRequests, staffArtistId]);
 
 
 
@@ -303,8 +317,29 @@ export function StaffCustomerNailsListPage() {
       <div className="flex min-h-full flex-col gap-5 p-1">
         {/* Header Hero */}
         <Card className="overflow-hidden border-none bg-[linear-gradient(135deg,#fff0f8_0%,#fffafb_52%,#fff5fb_100%)] p-0 shadow-[0_18px_36px_rgba(236,72,153,0.12)]">
-          {/* Empty top row removed */}
-          <div className="grid gap-4 bg-white/45 p-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="flex flex-col gap-6 p-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-2xl">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-[18px] bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-white shadow-[0_10px_22px_rgba(234,79,147,0.28)]">
+                  <Palette size={22} />
+                </div>
+                <div>
+                  <h2 className="text-3xl font-extrabold text-[#402542]">{language === "vi" ? "Yêu cầu thiết kế tùy chỉnh" : "Custom Nails Review Requests"}</h2>
+                  <p className="text-sm text-[#b07a94]">{language === "vi" ? "Xem thiết kế của khách hàng, lêp giá ước tính và lập báo giá." : "Review customer designs, formulate pricing estimates, and draft quotes."}</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col items-start gap-3 lg:items-end">
+              <div className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-bold transition ${isRefreshing
+                ? "bg-white text-[#ea4f93] shadow-[0_8px_18px_rgba(234,79,147,0.12)]"
+                : "bg-white/80 text-[#9b7b8f]"
+                }`}>
+                <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} />
+                {isRefreshing ? (language === "vi" ? "Đang làm mới..." : "Refreshing...") : (language === "vi" ? "Tự động làm mới" : "Auto refresh active")}
+              </div>
+            </div>
+          </div>
+          <div className="grid gap-4 border-t border-white/70 bg-white/45 p-6 sm:grid-cols-2 lg:grid-cols-4">
             {stats.map((item) => (
               <StatCard key={item.title} {...item} />
             ))}
@@ -326,7 +361,7 @@ export function StaffCustomerNailsListPage() {
                 <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#fff0f8]">
                   <Palette size={32} className="text-[#ea4f93]" />
                 </div>
-                <p className="text-sm text-[#c08aa4]">{language === "vi" ? "Bạn chưa được giao yêu cầu thiết kế nào." : "You don't have any custom review requests assigned yet."}</p>
+                <p className="text-sm text-[#c08aa4]">{language === "vi" ? "Bạn chưa được giao yêu cầu thiết kế nào." : "You don't have any custom nails review requests assigned yet."}</p>
               </div>
             ) : (
               <>

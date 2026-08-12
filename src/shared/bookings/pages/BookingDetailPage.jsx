@@ -1210,7 +1210,7 @@ export function BookingDetailPage() {
             setServiceCatalogPage(page);
           }}
           onConfirm={handleAddExtraService}
-          title={isVi ? "Cập nhật dịch vụ cho lịch hẹn" : "Update Booking Services"}
+          title={isVi ? "Cập nhật dịch vụ cho lịch hẹn" : "Add Extra Services"}
           description={isVi ? "Chọn các dịch vụ làm thêm vào lịch hẹn trước khi bắt đầu phiên dịch vụ." : "Select extra services to add into the current booking before starting the service session."}
         />
         <ServiceProceduresViewerModal

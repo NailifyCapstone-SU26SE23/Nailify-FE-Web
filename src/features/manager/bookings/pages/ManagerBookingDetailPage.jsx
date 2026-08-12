@@ -36,7 +36,7 @@ import {
   managerApproveReschedule,
   managerRejectReschedule,
 } from "../services/bookingsService";
-import { Spin, Alert, Modal, Input } from "antd";
+import { Spin, Alert, Modal, Input, Image } from "antd";
 import toast from "react-hot-toast";
 import { ConfirmBookingModal } from "../components/ConfirmBookingModal";
 import { RejectBookingModal } from "../components/RejectBookingModal";
@@ -747,7 +747,7 @@ export function ManagerBookingDetailPage() {
                 </button>
               </div>
               <div className="rounded-2xl border-l-4 border-l-[#E84F93] border-y border-r border-[#F3D6E5]/60 bg-gradient-to-r from-[#FFF5FA]/70 to-[#FFF0F5]/30 p-4 text-xs text-[#2B182B] leading-relaxed italic shadow-2xs">
-                "{booking?.notes || t("manager.bookings.noNotes")}"
+                "{booking?.notes || language === "vi" ? "Không có ghi chú" : "No notes"}"
               </div>
             </div>
 
@@ -756,14 +756,14 @@ export function ManagerBookingDetailPage() {
               <div className="mt-5 pt-4 border-t border-[#F3E2EC] space-y-3">
                 {booking?.checkInImageUrl && (
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-[#9E8497] mb-2">Arrival Check-in Photo</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-[#9E8497] mb-2">{language === "vi" ? "Ảnh check-in" : "Check-in Photo"}</p>
                     <div
                       className="group relative overflow-hidden rounded-2xl border border-[#F3D6E5] bg-white p-1.5 max-w-md cursor-pointer hover:border-[#E84F93] transition shadow-xs"
                       onClick={() => setActiveImageModalUrl(booking.checkInImageUrl)}
                     >
-                      <img src={booking.checkInImageUrl} alt="Check-in" className="w-full h-44 object-cover rounded-xl group-hover:scale-102 transition duration-300" />
+                      <Image src={booking.checkInImageUrl} alt="Check-in" className="w-full h-44 object-cover rounded-xl group-hover:scale-102 transition duration-300" />
                       <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white font-bold text-xs gap-1.5">
-                        <Maximize2 size={16} /> View Photo
+                        <Maximize2 size={16} /> {language === "vi" ? "Xem ảnh" : "View Photo"}
                       </div>
                     </div>
                   </div>
@@ -811,7 +811,7 @@ export function ManagerBookingDetailPage() {
               </div>
 
               <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFFDFE] p-4 shadow-2xs">
-                <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497] mb-1">{language === "vi" ? "Khoảng Thời gian làm việc" : "Duration"}</p>
+                <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497] mb-1">{language === "vi" ? "Thời lượng" : "Duration"}</p>
                 <div className="flex items-center gap-2 text-sm font-extrabold text-[#2B182B]">
                   <Clock3 size={15} className="text-[#E84F93] shrink-0" />
                   <span>{booking?.totalDuration ? formatDuration(booking.totalDuration) : "60m"}</span>
@@ -836,7 +836,7 @@ export function ManagerBookingDetailPage() {
                     className="rounded-2xl border border-[#F3E2EC] bg-gradient-to-br from-white to-[#FFF9FB] p-5 shadow-2xs hover:border-[#E8C5D8] transition-all"
                   >
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-[280px]">
                         <h4 className="text-base font-extrabold text-[#2B182B]">{item.serviceName || "Nail Service"}</h4>
                         {item.nailVariantName && (
                           <p className="mt-1 text-xs font-bold text-[#E84F93] flex items-center gap-1">
@@ -870,9 +870,9 @@ export function ManagerBookingDetailPage() {
                         )}
                       </div>
 
-                      <div className="grid min-w-[240px] gap-3 sm:grid-cols-3 bg-[#FAF0F5]/80 border border-[#F3D6E5]/60 p-3.5 rounded-2xl">
+                      <div className="grid min-w-[240px] lg:w-[320px] shrink-0 gap-3 sm:grid-cols-3 bg-[#FAF0F5]/80 border border-[#F3D6E5]/60 p-3.5 rounded-2xl">
                         <InfoItem label={language === "vi" ? "Số lượng" : "Quantity"}>{item.quantity !== undefined ? item.quantity : "1"}</InfoItem>
-                        <InfoItem label={language === "vi" ? "Khoảng Thời gian làm việc" : "Duration"}>{item.duration !== undefined ? formatDuration(item.duration) : "-"}</InfoItem>
+                        <InfoItem label={language === "vi" ? "Thời lượng" : "Duration"}>{item.duration !== undefined ? formatDuration(item.duration) : "-"}</InfoItem>
                         <InfoItem label={language === "vi" ? "Giá tiền" : "Price"}>
                           <span className="font-extrabold text-[#E84F93]">
                             {item.price !== undefined ? formatVND(item.price) : "-"}
@@ -891,8 +891,8 @@ export function ManagerBookingDetailPage() {
         <div className="space-y-6 xl:sticky xl:top-6 xl:h-fit">
           {/* Assigned Artist Card */}
           <Card>
-            <SectionTitle subtitle={language === "vi" ? "Thông tin nghệ sĩ" : "Artist"} icon={UserCheck}>
-              {language === "vi" ? "Thông tin nghệ sĩ" : "Artist"}
+            <SectionTitle subtitle={language === "vi" ? "Thông tin thợ làm móng" : "Artist"} icon={UserCheck}>
+              {language === "vi" ? "Thông tin thợ làm móng" : "Artist"}
             </SectionTitle>
 
             <div className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-gradient-to-r from-[#FFF5FA] to-[#FFF0F5]/40 border border-[#F3D6E5]/70">
@@ -1064,13 +1064,13 @@ export function ManagerBookingDetailPage() {
       >
         <div className="bg-white p-6 text-center">
           <div className="flex justify-between items-center mb-3">
-            <p className="text-sm font-bold text-[#2B182B]">Image Preview</p>
+            <p className="text-sm font-bold text-[#2B182B]">{language === "vi" ? "Ảnh xem trước" : "Image Preview"}</p>
             <button type="button" onClick={() => setActiveImageModalUrl(null)} className="text-[#9E8497] hover:text-[#E84F93]">
               <X size={18} />
             </button>
           </div>
           {activeImageModalUrl && (
-            <img src={activeImageModalUrl} alt="Preview" className="max-w-full max-h-[420px] mx-auto rounded-xl shadow-md" />
+            <img src={activeImageModalUrl} alt="Preview" className="max-w-full h-auto mx-auto rounded-xl shadow-md" />
           )}
         </div>
       </Modal>

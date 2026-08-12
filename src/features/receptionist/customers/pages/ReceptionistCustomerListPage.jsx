@@ -31,7 +31,9 @@ import {
   X,
   Smartphone,
   UserX,
-  Armchair
+  Armchair,
+  AlarmClock,
+  Zap
 } from "lucide-react";
 import { Table, Spin, Modal, Input, Select, Tag } from "antd";
 import toast from "react-hot-toast";
@@ -1257,8 +1259,8 @@ export function ReceptionistCustomerListPage() {
                             </div>
                             <h5 className="font-bold text-[#221F26] text-sm mt-1">{g.customerName}</h5>
                           </div>
-                          <span className="text-[10px] font-semibold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-md border border-gray-100">
-                            ⏱️ {g.duration}
+                          <span className="flex items-center justify-center gap-1.5 text-[10px] font-semibold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-md border border-gray-100">
+                            <AlarmClock size={12} /> {g.duration}
                           </span>
                         </div>
 
@@ -1273,39 +1275,40 @@ export function ReceptionistCustomerListPage() {
                           </p>
                         </div>
 
-                        <div className="flex items-center justify-between pt-2 border-t border-gray-100 gap-1.5">
+                        <div className="flex items-center gap-2 pt-2 border-t border-gray-100 w-full">
                           <button
                             type="button"
                             onClick={() => handleOpenGuestProfile(g)}
-                            className="px-2 py-1 text-[10px] font-bold text-gray-500 hover:text-[#C97A9E] hover:bg-[#FAF0F5] border border-gray-200 rounded-lg transition cursor-pointer"
+                            className="flex-1 h-9 flex items-center justify-center gap-1 rounded-xl border border-gray-200 bg-white text-[#2B182B] hover:bg-gray-50 transition cursor-pointer text-[10px] font-bold"
                           >
-                            <Eye size={15} /> {language === "vi" ? "Xem" : "View"}
+                            <Eye size={13} /> {language === "vi" ? "Xem" : "View"}
                           </button>
-                          <div className="flex items-center gap-1">
-                            {(g.assignedArtist === "Chưa phân công" || g.assignedArtist === "Unassigned" || !g.assignedNailArtistId) && (
-                              <button
-                                type="button"
-                                onClick={() => handleOpenAssignModal(g, false)}
-                                className="px-2 py-1 text-[10px] font-bold text-white bg-[#C97A9E] hover:bg-[#B86B8E] rounded-lg transition shadow-xs cursor-pointer flex items-center gap-0.5"
-                              >
-                                <UserCheck size={15} /> {language === "vi" ? "Phân Thợ" : "Assign Staff"}
-                              </button>
-                            )}
+
+                          {(g.assignedArtist === "Chưa phân công" || g.assignedArtist === "Unassigned" || !g.assignedNailArtistId) && (
                             <button
                               type="button"
-                              onClick={() => handleMoveGuestStatus(g.id, "called")}
-                              className="px-2 py-1 text-[10px] font-bold text-[#C97A9E] bg-[#FAF0F5] hover:bg-[#C97A9E] hover:text-white border border-[#F2D6E3] rounded-lg transition cursor-pointer flex items-center gap-0.5"
+                              onClick={() => handleOpenAssignModal(g, false)}
+                              className="flex-1 h-9 flex items-center justify-center gap-1 rounded-xl bg-[#C97A9E] text-white hover:bg-[#B86B8E] transition cursor-pointer text-[10px] font-bold"
                             >
-                              <Volume2 size={15} /> {language === "vi" ? "Gọi Loa" : "Call Audio"}
+                              <UserCheck size={13} /> {language === "vi" ? "Phân Thợ" : "Assign"}
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => handleMoveGuestStatus(g.id, "in_service")}
-                              className="px-2.5 py-1 text-[10px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition cursor-pointer flex items-center gap-0.5"
-                            >
-                              <Armchair size={15} /> {language === "vi" ? "Vào Ghế" : "Seat Client"}
-                            </button>
-                          </div>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => handleMoveGuestStatus(g.id, "called")}
+                            className="flex-1 h-9 flex items-center justify-center gap-1 rounded-xl bg-[#fff2f8] text-[#ea4f93] border border-[#f3cadc] hover:bg-[#fff9fc] transition cursor-pointer text-[10px] font-bold"
+                          >
+                            <Volume2 size={13} /> {language === "vi" ? "Gọi Loa" : "Call"}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleMoveGuestStatus(g.id, "in_service")}
+                            className="flex-1 h-9 flex items-center justify-center gap-1 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition cursor-pointer text-[10px] font-bold shadow-xs"
+                          >
+                            <Armchair size={13} /> {language === "vi" ? "Vào Ghế" : "Seat"}
+                          </button>
                         </div>
                       </div>
                     ))
@@ -1344,8 +1347,8 @@ export function ReceptionistCustomerListPage() {
                             </span>
                             <h5 className="font-bold text-[#221F26] text-sm mt-1">{g.customerName}</h5>
                           </div>
-                          <span className="text-[10px] font-semibold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-md border border-gray-100">
-                            ⏱️ {g.duration}
+                          <span className="flex items-center justify-center gap-1.5 text-[10px] font-semibold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-md border border-gray-100">
+                            <AlarmClock size={12} /> {g.duration}
                           </span>
                         </div>
 
@@ -1360,32 +1363,32 @@ export function ReceptionistCustomerListPage() {
                           </p>
                         </div>
 
-                        <div className="flex items-center justify-between pt-2 border-t border-gray-100 gap-1.5">
+                        <div className="flex items-center gap-2 pt-2 border-t border-gray-100 w-full">
                           <button
                             type="button"
                             onClick={() => handleOpenGuestProfile(g)}
-                            className="px-2.5 py-1 text-[10px] font-bold text-white bg-gray-500 hover:bg-blue-500 rounded-lg transition shadow-xs cursor-pointer flex items-center gap-0.5"
+                            className="flex-1 h-9 flex items-center justify-center gap-1 rounded-xl border border-gray-200 bg-white text-[#2B182B] hover:bg-gray-50 transition cursor-pointer text-[10px] font-bold"
                           >
-                            <Eye size={15} /> {language === "vi" ? "Xem" : "View"}
+                            <Eye size={13} /> {language === "vi" ? "Xem" : "View"}
                           </button>
-                          <div className="flex items-center gap-1">
-                            {(g.assignedArtist === "Chưa phân công" || g.assignedArtist === "Unassigned" || !g.assignedNailArtistId) && (
-                              <button
-                                type="button"
-                                onClick={() => handleOpenAssignModal(g, false)}
-                                className="px-2.5 py-1 text-[10px] font-bold text-white bg-[#C97A9E] hover:bg-[#B86B8E] rounded-lg transition shadow-xs cursor-pointer flex items-center gap-0.5"
-                              >
-                                <UserCheck size={15} /> {language === "vi" ? "Phân Thợ" : "Assign Staff"}
-                              </button>
-                            )}
+
+                          {(g.assignedArtist === "Chưa phân công" || g.assignedArtist === "Unassigned" || !g.assignedNailArtistId) && (
                             <button
                               type="button"
-                              onClick={() => handleMoveGuestStatus(g.id, "in_service")}
-                              className="px-2.5 py-1 text-[10px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition shadow-xs cursor-pointer flex items-center gap-0.5"
+                              onClick={() => handleOpenAssignModal(g, false)}
+                              className="flex-1 h-9 flex items-center justify-center gap-1 rounded-xl bg-[#C97A9E] text-white hover:bg-[#B86B8E] transition cursor-pointer text-[10px] font-bold"
                             >
-                              <Armchair size={15} /> {language === "vi" ? "Vào Ghế" : "Seat Client"}
+                              <UserCheck size={13} /> {language === "vi" ? "Phân Thợ" : "Assign"}
                             </button>
-                          </div>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => handleMoveGuestStatus(g.id, "in_service")}
+                            className="flex-1 h-9 flex items-center justify-center gap-1 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition cursor-pointer text-[10px] font-bold shadow-xs"
+                          >
+                            <Armchair size={13} /> {language === "vi" ? "Vào Ghế" : "Seat"}
+                          </button>
                         </div>
                       </div>
                     ))
@@ -1425,11 +1428,11 @@ export function ReceptionistCustomerListPage() {
                         </div>
                         <p className="text-xs text-gray-500 font-medium">{g.nailDesign}</p>
                         <p className="text-[11px] text-gray-400">{language === "vi" ? "Thợ làm: " : "Artist: "}{g.assignedArtist}</p>
-                        <div className="pt-2 border-t border-gray-100">
+                        <div className="pt-2 border-t border-gray-100 w-full">
                           <button
                             type="button"
                             onClick={() => handleOpenGuestProfile(g)}
-                            className="px-2.5 py-1 text-[11px] font-bold text-gray-500 hover:text-[#C97A9E] hover:bg-[#FAF0F5] border border-gray-200 rounded-lg transition cursor-pointer"
+                            className="w-full h-9 flex items-center justify-center gap-1 rounded-xl border border-gray-200 bg-white text-[#2B182B] hover:bg-gray-50 transition cursor-pointer text-[11px] font-bold"
                           >
                             {language === "vi" ? "Xem hồ sơ" : "View Profile"}
                           </button>
@@ -1810,8 +1813,8 @@ export function ReceptionistCustomerListPage() {
               <div>
                 <label className="block text-xs font-bold text-[#221F26] mb-1 flex items-center justify-between">
                   <span>{language === "vi" ? "Thời Gian Phục Vụ Dự Kiến" : "Estimated Service Duration"}</span>
-                  <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
-                    {language === "vi" ? "⚡ Tự động tính toán" : "⚡ Auto-calculated"}
+                  <span className="flex items-center justify-center gap-1.5 text-[10px] text-emerald-600 font-bold flex items-center gap-1">
+                    <Zap size={12} /> {language === "vi" ? "Tự động tính toán" : "Auto-calculated"}
                   </span>
                 </label>
                 <div className="flex items-center gap-2.5 p-2 px-3 bg-gradient-to-r from-emerald-50 via-teal-50/60 to-emerald-50 border border-emerald-200/90 rounded-xl shadow-2xs">
@@ -2049,11 +2052,11 @@ export function ReceptionistCustomerListPage() {
                   <p className="text-sm font-bold text-[#221F26]">{selectedQueueGuest.customerName}</p>
                 </div>
               </div>
-              <div className="text-right">
+              {/* <div className="text-right">
                 <span className="inline-flex items-center gap-1 text-xs font-bold text-[#C97A9E] bg-white px-3 py-1 rounded-xl border border-[#F2D6E3] shadow-2xs">
                   <Scissors size={13} /> {selectedQueueGuest.nailDesign || (language === "vi" ? "Dịch vụ làm móng" : "Nail Service")}
                 </span>
-              </div>
+              </div> */}
             </div>
           )}
 

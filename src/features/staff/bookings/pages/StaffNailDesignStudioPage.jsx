@@ -723,13 +723,200 @@ function getColorStyle(colorMode, primaryColor, secondaryColor) {
   return { backgroundColor: primaryColor };
 }
 
+function renderSurfaceEffects(finish) {
+  const name = String(finish || "").trim().toLowerCase();
+
+  // 🪞 CHROME - Ultra metallic mirror
+  if (name.includes("chrome") || name.includes("mirror") || name.includes("tráng gương") || name.includes("metallic")) {
+    return (
+      <>
+        {/* Silver metallic base sheen */}
+        <div className="pointer-events-none absolute inset-0" style={{
+          background: `linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(200,210,220,0.4) 35%, rgba(80,90,100,0.35) 65%, rgba(255,255,255,0.6) 100%)`,
+        }} />
+        {/* Primary chrome streak */}
+        <div className="pointer-events-none absolute" style={{
+          top: '5%', left: '15%', width: '30%', height: '65%',
+          background: `linear-gradient(to bottom, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.45) 50%, transparent 100%)`,
+          filter: 'blur(3px)', borderRadius: '50%',
+        }} />
+        {/* Center bright line */}
+        <div className="pointer-events-none absolute" style={{
+          top: '8%', left: '35%', width: '8%', height: '55%',
+          background: `linear-gradient(to bottom, rgba(255,255,255,1.0) 0%, rgba(255,255,255,0.3) 70%, transparent 100%)`,
+          filter: 'blur(1px)', borderRadius: '50%',
+        }} />
+        {/* Right edge reflection */}
+        <div className="pointer-events-none absolute" style={{
+          top: '15%', right: '8%', width: '22%', height: '50%',
+          background: `radial-gradient(ellipse, rgba(220,230,240,0.54) 0%, transparent 70%)`,
+          filter: 'blur(4px)',
+        }} />
+        {/* Bottom dark shadow */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0" style={{
+          height: '35%',
+          background: 'linear-gradient(to top, rgba(0,0,0,0.3) 0%, transparent 100%)',
+        }} />
+      </>
+    );
+  }
+
+  // 🌈 HOLOGRAPHIC - Visible rainbow prism
+  if (name.includes("holographic") || name.includes("holo")) {
+    return (
+      <>
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: `linear-gradient(160deg,
+              hsl(0,100%,65%) 0%,
+              hsl(30,100%,60%) 15%,
+              hsl(55,100%,60%) 28%,
+              hsl(130,80%,55%) 42%,
+              hsl(200,100%,60%) 57%,
+              hsl(260,90%,65%) 72%,
+              hsl(300,90%,65%) 85%,
+              hsl(340,100%,65%) 100%)`,
+            opacity: 0.63,
+          }}
+        />
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: `linear-gradient(45deg,
+              hsl(320,100%,70%) 0%,
+              transparent 25%,
+              hsl(190,100%,65%) 45%,
+              transparent 65%,
+              hsl(270,100%,70%) 90%)`,
+            opacity: 0.38,
+          }}
+        />
+        <div
+          className="pointer-events-none absolute"
+          style={{
+            top: '5%', left: '10%', width: '50%', height: '45%',
+            background: 'radial-gradient(ellipse at 30% 25%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.2) 45%, transparent 70%)',
+            filter: 'blur(6px)',
+          }}
+        />
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0"
+          style={{
+            height: '25%',
+            background: 'linear-gradient(to top, rgba(0,0,0,0.2) 0%, transparent 100%)',
+          }}
+        />
+      </>
+    );
+  }
+
+  // 😺 CAT EYE - Magnetic vertical streak
+  if (name.includes("cat") || name.includes("cateye") || name.includes("cat-eye")) {
+    return (
+      <>
+        <div className="pointer-events-none absolute inset-0" style={{
+          background: 'linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.12) 100%)',
+        }} />
+        <div className="pointer-events-none absolute" style={{
+          top: 0, bottom: 0,
+          left: '50%',
+          width: '52%',
+          transform: 'translateX(-50%) rotate(0deg)',
+          background: `linear-gradient(to right,
+            transparent 0%,
+            rgba(255,255,255,0.2) 25%,
+            rgba(255,255,255,0.6) 50%,
+            rgba(255,255,255,0.2) 75%,
+            transparent 100%)`,
+          filter: 'blur(5px)',
+        }} />
+        <div className="pointer-events-none absolute inset-x-0 top-0" style={{
+          height: '28%',
+          background: `linear-gradient(to bottom, rgba(255,255,255,0.4) 0%, transparent 100%)`,
+        }} />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0" style={{
+          height: '25%',
+          background: 'linear-gradient(to top, rgba(0,0,0,0.2) 0%, transparent 100%)',
+        }} />
+      </>
+    );
+  }
+
+  // 🎭 MATTE - Soft flat finish (no shine)
+  if (name.includes("matte") || name.includes("nhám")) {
+    return (
+      <>
+        <div className="pointer-events-none absolute inset-0" style={{
+          background: 'rgba(255,255,255,0.18)',
+          backdropFilter: 'blur(0.5px)',
+        }} />
+        <div className="pointer-events-none absolute inset-x-0 top-0" style={{
+          height: '40%',
+          background: 'linear-gradient(to bottom, rgba(255,255,255,0.1) 0%, transparent 100%)',
+        }} />
+      </>
+    );
+  }
+
+  // 🧪 JELLY - Border inset translucent sheen
+  if (name.includes("jelly")) {
+    return (
+      <span className="pointer-events-none absolute inset-[6%] rounded-[inherit] border border-white/35 bg-white/12" />
+    );
+  }
+
+  // ✨ GLITTER - Sparkles
+  if (name.includes("glitter")) {
+    return (
+      <>
+        <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_25%_35%,rgba(255,255,255,0.95)_0_1px,transparent_1.5px),radial-gradient(circle_at_70%_22%,rgba(255,255,255,0.75)_0_1px,transparent_1.6px),radial-gradient(circle_at_46%_68%,rgba(255,255,255,0.85)_0_1px,transparent_1.5px),radial-gradient(circle_at_78%_74%,rgba(255,255,255,0.9)_0_1px,transparent_1.8px)] opacity-85" />
+        <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,rgba(255,255,255,0.12)_55%,transparent_100%)]" />
+      </>
+    );
+  }
+
+  // ✨ GLOSSY (Default) - Natural shine
+  return (
+    <>
+      <div className="pointer-events-none absolute inset-0" style={{
+        background: 'linear-gradient(160deg, rgba(255,255,255,0.1) 0%, rgba(180,180,200,0.1) 40%, rgba(80,80,120,0.15) 75%, rgba(40,40,80,0.2) 100%)',
+      }} />
+      <div className="pointer-events-none absolute" style={{
+        top: '5%', left: '8%', width: '55%', height: '60%',
+        background: `radial-gradient(ellipse at 28% 25%, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.22) 40%, transparent 72%)`,
+        filter: `blur(8px)`,
+        transform: 'rotate(-12deg)',
+      }} />
+      <div className="pointer-events-none absolute" style={{
+        top: '10%', left: '18%', width: '16%', height: '52%',
+        background: `linear-gradient(to bottom, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.25) 45%, transparent 100%)`,
+        filter: `blur(2px)`,
+        borderRadius: '50%',
+      }} />
+      <div className="pointer-events-none absolute inset-x-0 top-0" style={{
+        height: '32%',
+        background: `linear-gradient(to bottom, rgba(255,255,255,0.27) 0%, transparent 100%)`,
+      }} />
+      <div className="pointer-events-none absolute" style={{
+        top: '18%', right: '8%', width: '22%', height: '42%',
+        background: `radial-gradient(ellipse, rgba(255,255,255,0.2) 0%, transparent 70%)`,
+        filter: `blur(4px)`,
+      }} />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0" style={{
+        height: '35%',
+        background: 'linear-gradient(to top, rgba(60,40,80,0.28) 0%, rgba(60,40,80,0.08) 60%, transparent 100%)',
+      }} />
+      <div className="pointer-events-none absolute inset-y-0 right-0" style={{
+        width: '20%',
+        background: 'linear-gradient(to left, rgba(60,40,80,0.15) 0%, transparent 100%)',
+      }} />
+    </>
+  );
+}
+
 function PreviewNail({ components = [], finish, fingerLabel, index, isActive, shape, length, colorStyle, shapeImageUrl }) {
   const metrics = getNailMetrics(shape, length, index);
-  const isChrome = finish === "Chrome";
-  const isJelly = finish === "Jelly";
-  const isMatte = finish === "Matte";
-  const isGlitter = finish === "Glitter";
-  const isCatEye = components.some((item) => item.label === "Cat Eye");
   const maskStyle = shapeImageUrl
     ? {
       maskImage: `url(${shapeImageUrl})`,
@@ -751,33 +938,7 @@ function PreviewNail({ components = [], finish, fingerLabel, index, isActive, sh
       >
         <div className="absolute inset-[10%]" style={maskStyle}>
           <div className="absolute inset-0" style={colorStyle} />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_18%,rgba(255,255,255,0.4),transparent_42%)]" />
-
-          {isChrome ? (
-            <>
-              <span className="absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.55)_0%,transparent_30%,rgba(255,255,255,0.1)_48%,rgba(255,255,255,0.45)_72%,transparent_100%)] mix-blend-screen" />
-              <span className="absolute inset-y-0 left-[18%] w-[18%] bg-white/25 blur-[3px]" />
-            </>
-          ) : null}
-
-          {isJelly ? (
-            <span className="absolute inset-[6%] rounded-[inherit] border border-white/35 bg-white/12" />
-          ) : null}
-
-          {isMatte ? (
-            <span className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,255,0.08),transparent_50%)] mix-blend-normal" />
-          ) : null}
-
-          {isGlitter ? (
-            <>
-              <span className="absolute inset-0 bg-[radial-gradient(circle_at_25%_35%,rgba(255,255,255,0.95)_0_1px,transparent_1.5px),radial-gradient(circle_at_70%_22%,rgba(255,255,255,0.75)_0_1px,transparent_1.6px),radial-gradient(circle_at_46%_68%,rgba(255,255,255,0.85)_0_1px,transparent_1.5px),radial-gradient(circle_at_78%_74%,rgba(255,255,255,0.9)_0_1px,transparent_1.8px)] opacity-85" />
-              <span className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,rgba(255,255,255,0.12)_55%,transparent_100%)]" />
-            </>
-          ) : null}
-
-          {isCatEye ? (
-            <span className="absolute inset-y-[8%] left-1/2 w-[22%] -translate-x-1/2 rounded-full bg-white/65 blur-[5px] opacity-80" />
-          ) : null}
+          {renderSurfaceEffects(finish)}
 
           {shapeImageUrl ? (
             <img
@@ -961,20 +1122,32 @@ function ChoiceGrid({ items, selected, onSelect, type = "pill" }) {
         const isSelected = selected.includes(value);
         const metaLabel = typeof item === "string" ? "" : formatOptionMeta(item);
         const subLabel = typeof item === "string" ? "" : item?.componentType || "";
+        const imageUrl = typeof item === "string" ? "" : String(item?.imageUrl || "").trim();
 
         return (
           <button
             key={value}
             type="button"
             onClick={() => onSelect(value)}
-            className={`rounded-[14px] border px-3 py-2 text-left transition ${isSelected
+            className={`rounded-[14px] border px-3 py-2 text-left transition flex items-center gap-3 ${isSelected
               ? "border-[#f2bfd4] bg-[#fff1f7] text-[#ea4f93]"
               : "border-[#f4dbe7] bg-white text-[#b18099] hover:bg-[#fff8fc]"
               }`}
           >
-            <p className="text-[10px] font-extrabold">{value}</p>
-            {subLabel ? <p className="mt-1 text-[9px] font-semibold text-[#a98c9f]">{subLabel}</p> : null}
-            {metaLabel ? <p className="mt-1 text-[9px] font-semibold text-[#d2508a]">{metaLabel}</p> : null}
+            {imageUrl && (
+              <img
+                src={imageUrl}
+                alt={value}
+                className="h-10 w-10 shrink-0 rounded-xl border border-[#f3c8db] bg-white object-contain p-1"
+                loading="lazy"
+                referrerPolicy="no-referrer"
+              />
+            )}
+            <div className="min-w-0">
+              <p className="text-[10px] font-extrabold truncate">{value}</p>
+              {subLabel ? <p className="mt-0.5 text-[9px] font-semibold text-[#a98c9f] truncate">{subLabel}</p> : null}
+              {metaLabel ? <p className="mt-0.5 text-[9px] font-semibold text-[#d2508a] truncate">{metaLabel}</p> : null}
+            </div>
           </button>
         );
       })}

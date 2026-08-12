@@ -4,6 +4,7 @@ import { Sparkles, Clock, CheckCircle2, Check, X, Layers, Banknote, Plus, Minus,
 import toast from "react-hot-toast";
 import { confirmOnsiteAddon } from "../services/bookingProceduresService";
 import { axiosClient } from "../../../../lib/axiosClient";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess }) {
   const [activeTab, setActiveTab] = useState("services"); // 'services' | 'variants' | 'custom'
@@ -12,6 +13,8 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
   const [notes, setNotes] = useState("Khách yêu cầu thêm dịch vụ phát sinh tại chỗ.");
   const [dbServices, setDbServices] = useState([]);
   const [dbNailVariants, setDbNailVariants] = useState([]);
+  const { t, language } = useLanguage();
+  const isVi = language === "vi";
 
   // Map of item quantities: { [id]: count }
   const [serviceQuantities, setServiceQuantities] = useState({});
@@ -140,7 +143,7 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
   const handleConfirm = async () => {
     const addonItems = buildAddonItems();
     if (!addonItems || addonItems.length === 0) {
-      toast.error("Vui lòng chọn ít nhất một dịch vụ từ danh mục.");
+      toast.error(isVi ? "Vui lòng chọn ít nhất một dịch vụ từ danh mục." : "Please select at least one service from the category.");
       return;
     }
 
@@ -150,12 +153,12 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
         bookingId,
         addonItems,
       });
-      toast.success("Xác nhận & Cập nhật Lịch thành công!", { icon: "✨" });
+      toast.success(isVi ? "Xác nhận & Cập nhật Lịch thành công!" : "Confirm & Update Schedule Success!", { icon: "✨" });
       if (onSuccess) onSuccess();
       handleClose();
     } catch (err) {
       console.error("Confirm addon failed:", err);
-      toast.error(err.message || "Không thể xác nhận dịch vụ phát sinh.");
+      toast.error(err.message || (isVi ? "Không thể xác nhận dịch vụ phát sinh." : "Failed to confirm addon."));
     } finally {
       setConfirming(false);
     }
@@ -194,8 +197,8 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
               <Sparkles size={24} className="animate-pulse" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-[#0F172A] tracking-tight">Thêm dịch vụ & Mẫu móng phát sinh</h3>
-              <p className="text-xs text-[#64748B] font-medium mt-0.5">Tùy chọn số lượng từng dịch vụ thực tế khi làm tại salon</p>
+              <h3 className="text-lg font-bold text-[#0F172A] tracking-tight">{isVi ? "Thêm dịch vụ & Mẫu móng phát sinh" : "Add Extra Services & Nail Variants"}</h3>
+              <p className="text-xs text-[#64748B] font-medium mt-0.5">{isVi ? "Tùy chọn số lượng từng dịch vụ thực tế khi làm tại salon" : "Select the actual quantity of each service performed at the salon"}</p>
             </div>
           </div>
           <button
@@ -220,7 +223,7 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
             ].join(" ")}
           >
             <Layers size={15} />
-            <span>Dịch Vụ Salon</span>
+            <span>{isVi ? "Dịch Vụ Salon" : "Salon Services"}</span>
             {Object.keys(serviceQuantities).length > 0 && (
               <span className="flex h-5 px-1.5 items-center justify-center rounded-full bg-[#E84F93] text-[10px] font-bold text-white">
                 {Object.values(serviceQuantities).reduce((a, b) => a + b, 0)}
@@ -239,7 +242,7 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
             ].join(" ")}
           >
             <Palette size={15} />
-            <span>Mẫu Móng Art</span>
+            <span>{isVi ? "Mẫu Móng Art" : "Nail Art Variants"}</span>
             {Object.keys(nailVariantQuantities).length > 0 && (
               <span className="flex h-5 px-1.5 items-center justify-center rounded-full bg-[#8B5CF6] text-[10px] font-bold text-white">
                 {Object.values(nailVariantQuantities).reduce((a, b) => a + b, 0)}
@@ -253,10 +256,10 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
           <div className="space-y-3 animate-fadeIn">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-[#0F172A] uppercase tracking-wider">
-                Danh Mục Dịch Vụ Salon
+                {isVi ? "Danh Mục Dịch Vụ Salon" : "Salon Service Category"}
               </span>
               <span className="text-[11px] text-[#64748B] font-medium">
-                Tăng/giảm số lượng từng dịch vụ theo yêu cầu
+                {isVi ? "Tăng/giảm số lượng từng dịch vụ theo yêu cầu" : "Adjust quantity of each service based on actual requirements"}
               </span>
             </div>
 
@@ -285,7 +288,7 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
                             +{Number((s.price || 0) * (qty || 1)).toLocaleString("vi-VN")} VND
                           </span>
                           <span className="text-[10px] text-[#64748B] font-semibold bg-[#F1F5F9] px-2 py-0.5 rounded-full">
-                            +{(s.duration || 15) * (qty || 1)} phút
+                            +{(s.duration || 15) * (qty || 1)} {isVi ? "phút" : "minutes"}
                           </span>
                         </div>
                       </div>
@@ -319,7 +322,7 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
                             className="inline-flex items-center gap-1 rounded-full bg-[#FFF0F6] border border-[#F3D7E4] px-3 py-1.5 text-xs font-bold text-[#E84F93] hover:bg-[#E84F93] hover:text-white transition cursor-pointer"
                           >
                             <Plus size={12} />
-                            <span>Thêm</span>
+                            <span>{isVi ? "Thêm" : "Add"}</span>
                           </button>
                         )}
                       </div>
@@ -328,7 +331,7 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
                 })
               ) : (
                 <div className="col-span-full py-8 text-center text-xs text-[#94A3B8] italic">
-                  Đang tải danh sách dịch vụ từ hệ thống...
+                  {isVi ? "Đang tải danh sách dịch vụ từ hệ thống..." : "Loading salon services..."}
                 </div>
               )}
             </div>
@@ -340,10 +343,10 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
           <div className="space-y-3 animate-fadeIn">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-[#0F172A] uppercase tracking-wider">
-                Mẫu Móng Art & Đính Đá
+                {isVi ? "Mẫu Móng Art & Đính Đá" : "Nail Art Variants & Adornments"}
               </span>
               <span className="text-[11px] text-[#64748B] font-medium">
-                Chọn mẫu móng thiết kế bổ sung
+                {isVi ? "Chọn mẫu móng thiết kế bổ sung" : "Select additional nail art designs"}
               </span>
             </div>
 
@@ -408,7 +411,7 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
                               : "bg-[#F5F3FF] border border-[#DDD6FE] text-[#8B5CF6] group-hover:bg-[#8B5CF6] group-hover:text-white",
                           ].join(" ")}
                         >
-                          {isSelected ? "Đã chọn ✓" : "+ Chọn mẫu"}
+                          {isSelected ? (isVi ? "Đã chọn ✓" : "Selected ✓") : (isVi ? "+ Chọn mẫu" : "+ Select")}
                         </span>
                       </div>
                     </button>
@@ -416,7 +419,7 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
                 })
               ) : (
                 <div className="col-span-full py-8 text-center text-xs text-[#94A3B8] italic">
-                  Đang tải mẫu móng từ hệ thống...
+                  {isVi ? "Đang tải mẫu móng từ hệ thống..." : "Loading nail variants from the system..."}
                 </div>
               )}
             </div>
@@ -429,7 +432,7 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
             <div>
               <label className="block text-[11px] font-bold text-[#0F172A] uppercase tracking-wider mb-1 flex items-center gap-1">
                 <Clock size={13} className="text-[#E84F93]" />
-                Thời gian dự kiến (+phút)
+                {isVi ? "Thời gian dự kiến (+phút)" : "Estimated Time (+minutes)"}
               </label>
               <InputNumber
                 value={extraDuration}
@@ -445,7 +448,7 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
             <div>
               <label className="block text-[11px] font-bold text-[#0F172A] uppercase tracking-wider mb-1 flex items-center gap-1">
                 <Banknote size={13} className="text-[#10B981]" />
-                Chi phí bổ sung (VNĐ)
+                {isVi ? "Chi phí bổ sung (VNĐ)" : "Additional Cost (VND)"}
               </label>
               <InputNumber
                 value={extraPrice}
@@ -462,13 +465,13 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
 
           <div>
             <label className="block text-[11px] font-bold text-[#0F172A] uppercase tracking-wider mb-1">
-              Ghi chú dịch vụ phát sinh
+              {isVi ? "Ghi chú dịch vụ phát sinh" : "Additional Service Notes"}
             </label>
             <Input.TextArea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
-              placeholder="Nhập ghi chú chi tiết cho thợ..."
+              placeholder={isVi ? "Nhập ghi chú chi tiết cho thợ..." : "Enter detailed notes for the technician..."}
               className="rounded-xl border-[#E2E8F0] text-xs font-medium focus:border-[#E84F93]"
             />
           </div>
@@ -481,22 +484,22 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
               <Sparkles size={18} />
             </div>
             <div>
-              <p className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Tổng Cộng Phát Sinh</p>
+              <p className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">{isVi ? "Tổng CộngPhát Sinh" : "Total Additional Services"}</p>
               <p className="text-xs font-bold text-[#0F172A] truncate max-w-[240px]">
                 {totalSelectedCount > 0
-                  ? `Đã chọn tổng cộng ${totalSelectedCount} món phát sinh`
-                  : "Chưa chọn dịch vụ nào"}
+                  ? (isVi ? `Đã chọn tổng cộng ${totalSelectedCount} món phát sinh` : `Selected a total of ${totalSelectedCount} additional items`)
+                  : (isVi ? "Chưa chọn dịch vụ nào" : "No services selected")}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-3 text-right">
             <div className="bg-white/90 px-2.5 py-1 rounded-xl border border-[#E2E8F0]">
-              <span className="text-[10px] text-[#64748B] block font-medium">Thời gian</span>
+              <span className="text-[10px] text-[#64748B] block font-medium">{isVi ? "Thời gian" : "Time"}</span>
               <span className="text-xs font-bold text-[#0F172A]">+{extraDuration}p</span>
             </div>
             <div className="bg-gradient-to-r from-[#E84F93] to-[#8B5CF6] px-3 py-1 rounded-xl text-white shadow-2xs">
-              <span className="text-[10px] text-white/80 block font-medium">Chi phí cộng</span>
+              <span className="text-[10px] text-white/80 block font-medium">{isVi ? "Chi phí cộng" : "Additional Cost"}</span>
               <span className="text-xs font-bold">+{extraPrice.toLocaleString("vi-VN")} VND</span>
             </div>
           </div>
@@ -509,7 +512,7 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
             onClick={handleClose}
             className="rounded-full border border-[#E2E8F0] px-5 py-2.5 text-xs font-bold text-[#64748B] hover:bg-[#F8FAFC] hover:text-[#0F172A] transition cursor-pointer"
           >
-            Hủy bỏ
+            {isVi ? "Hủy bỏ" : "Cancel"}
           </button>
           <button
             type="button"
@@ -518,7 +521,7 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
             className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-7 py-2.5 text-xs font-bold text-white shadow-[0_10px_25px_-5px_rgba(232,79,147,0.4)] hover:shadow-[0_12px_30px_-4px_rgba(232,79,147,0.5)] hover:scale-[1.02] active:scale-[0.98] transition disabled:opacity-50 cursor-pointer"
           >
             <CheckCircle2 size={16} />
-            {confirming ? "Đang xử lý..." : "Xác nhận & Cập nhật Lịch"}
+            {confirming ? (isVi ? "Đang xử lý..." : "Processing...") : (isVi ? "Xác nhận & Cập nhật Lịch" : "Confirm & Update Schedule")}
           </button>
         </div>
       </div>
