@@ -450,10 +450,10 @@ export function UserManagementPage() {
 
   const getActionItems = useCallback((user) => {
     const detailRoute = getAdminUserDetailRoute(user.id);
-    const viewLabel = t("view") || "View";
-    const editLabel = t("promotionDetail.editTitle") || "Edit";
-    const deleteLabel = t("promotionDetail.deleteBtn") || "Delete";
-    const userLabel = t("userManagement.table.user");
+    const viewLabel = language === "vi" ? "Xem" : "View";
+    const editLabel = language === "vi" ? "Chỉnh sửa" : "Edit";
+    const deleteLabel = language === "vi" ? "Xóa" : "Delete";
+    const userLabel = language === "vi" ? "Người dùng" : "User";
 
     return [
       { key: "view", label: `${viewLabel} ${userLabel}`, icon: Eye, onSelect: () => navigate(detailRoute) },

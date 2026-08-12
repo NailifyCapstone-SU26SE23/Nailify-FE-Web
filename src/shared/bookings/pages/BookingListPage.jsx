@@ -372,7 +372,7 @@ export function BookingListPage() {
     [isStaffRole, normalizedBookings, todayDate],
   );
 
-  const [flashMessage] = useState(location.state?.flashMessage ?? "");
+
   const [query, setQuery] = useState("");
   const [dateFrom, setDateFrom] = useState(defaultDateRange.from);
   const [dateTo, setDateTo] = useState(defaultDateRange.to);
@@ -400,6 +400,7 @@ export function BookingListPage() {
   /* STREAMING_CHUNK: Effects */
   useEffect(() => {
     if (!location.state?.flashMessage) return;
+    toast.success(location.state.flashMessage);
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
 
@@ -785,11 +786,7 @@ export function BookingListPage() {
                 </div>
               </div>
 
-              {flashMessage ? (
-                <div className="mt-4 rounded-[16px] bg-[#edfdf4] px-4 py-3 text-sm font-medium text-[#16975f]">
-                  {flashMessage}
-                </div>
-              ) : null}
+
 
               {loadError ? (
                 <div className="mt-4 rounded-[16px] border border-[#f7d4df] bg-[#fff3f7] px-4 py-3 text-sm font-medium text-[#d14c84]">

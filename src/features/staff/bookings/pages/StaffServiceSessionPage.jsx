@@ -54,7 +54,6 @@ import {
   updateBookingProcedureStatus,
 } from "../services/staffBookingService";
 import {
-  evaluateInterleavingOpportunity,
   simulateOnsiteAddon,
   confirmOnsiteAddon,
 } from "../../../manager/bookings/services/bookingProceduresService";
@@ -1276,12 +1275,12 @@ export function StaffServiceSessionPage() {
           baseLabel === "Before photo uploaded" || baseLabel === "Đã tải ảnh trước khi làm"
             ? (isVi ? "Đã tải ảnh trước khi làm" : "Before photo uploaded")
             : baseLabel === "Price confirmed" || baseLabel === "Đã xác nhận giá"
-            ? (isVi ? "Đã xác nhận giá" : "Price confirmed")
-            : baseLabel === "Service design confirmed" || baseLabel === "Đã xác nhận thiết kế"
-            ? (isVi ? "Đã xác nhận thiết kế" : "Service design confirmed")
-            : baseLabel === "Customer identity confirmed" || baseLabel === "Đã xác nhận danh tính khách"
-            ? (isVi ? "Đã xác nhận danh tính khách" : "Customer identity confirmed")
-            : baseLabel;
+              ? (isVi ? "Đã xác nhận giá" : "Price confirmed")
+              : baseLabel === "Service design confirmed" || baseLabel === "Đã xác nhận thiết kế"
+                ? (isVi ? "Đã xác nhận thiết kế" : "Service design confirmed")
+                : baseLabel === "Customer identity confirmed" || baseLabel === "Đã xác nhận danh tính khách"
+                  ? (isVi ? "Đã xác nhận danh tính khách" : "Customer identity confirmed")
+                  : baseLabel;
 
         const isBeforePhotoUploaded = baseLabel === "Before photo uploaded" || baseLabel === "Đã tải ảnh trước khi làm";
         return {
@@ -1300,10 +1299,10 @@ export function StaffServiceSessionPage() {
           baseLabel === "Service completed" || baseLabel === "Đã hoàn thành dịch vụ"
             ? (isVi ? "Đã hoàn thành dịch vụ" : "Service completed")
             : baseLabel === "Customer reviewed final nails" || baseLabel === "Khách đã kiểm tra móng"
-            ? (isVi ? "Khách đã kiểm tra móng" : "Customer reviewed final nails")
-            : baseLabel === "After photo uploaded" || baseLabel === "Đã tải ảnh sau khi làm"
-            ? (isVi ? "Đã tải ảnh sau khi làm" : "After photo uploaded")
-            : baseLabel;
+              ? (isVi ? "Khách đã kiểm tra móng" : "Customer reviewed final nails")
+              : baseLabel === "After photo uploaded" || baseLabel === "Đã tải ảnh sau khi làm"
+                ? (isVi ? "Đã tải ảnh sau khi làm" : "After photo uploaded")
+                : baseLabel;
 
         const isAfterPhotoUploaded = baseLabel === "After photo uploaded" || baseLabel === "Đã tải ảnh sau khi làm";
         return {
@@ -2361,7 +2360,7 @@ export function StaffServiceSessionPage() {
         });
 
         if (simResult?.hasConflict && simResult?.canSplitMultiArtist) {
-          toast.success(`Đã tự động tìm Thợ phụ ${simResult.suggestedSecondaryArtistName || "F"} hỗ trợ công đoạn tiếp theo!`, { icon: "⚡" });
+          toast.success(`Đã tự động tìm Thợ phụ ${simResult.suggestedSecondaryArtistName || "F"} hỗ trợ công đoạn tiếp theo!`, { icon: <Zap size={12} /> });
         }
       } catch (simErr) {
         console.warn("On-site addon simulation warning:", simErr?.message);
@@ -3567,7 +3566,7 @@ export function StaffServiceSessionPage() {
           setServiceCatalogPage(page);
         }}
         onConfirm={handleAddExtraService}
-        title={isVi ? "Cập nhật dịch vụ làm thêm" : "Update Booking Services"}
+        title={isVi ? "Cập nhật dịch vụ làm thêm" : "Add Extra Services"}
         description={isVi ? "Thêm nhanh dịch vụ phát sinh vào lịch của khách." : "Select extra services to add into the current booking before starting the service session."}
       />
 

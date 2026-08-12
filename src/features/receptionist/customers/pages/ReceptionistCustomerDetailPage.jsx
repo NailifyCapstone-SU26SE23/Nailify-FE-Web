@@ -126,8 +126,8 @@ export function ReceptionistCustomerDetailPage() {
 
   // Customer Preferences State
   const [preferenceTags, setPreferenceTags] = useState(
-    language === "vi" 
-      ? ["Sơn Gel nhạt", "Móng vuông tròn", "Ưu tiên thợ kinh nghiệm"] 
+    language === "vi"
+      ? ["Sơn Gel nhạt", "Móng vuông tròn", "Ưu tiên thợ kinh nghiệm"]
       : ["Light Gel Polish", "Squoval Nails", "Experienced Artist Preferred"]
   );
   const [newTagInput, setNewTagInput] = useState("");
@@ -324,14 +324,14 @@ export function ReceptionistCustomerDetailPage() {
 
         {/* Action Controls */}
         <div className="flex items-center gap-2.5">
-          <button
+          {/* <button
             type="button"
             onClick={() => setIsEditModalOpen(true)}
             className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-white border border-[#F4D6E4] text-[#2B182B] text-xs font-bold shadow-2xs hover:bg-[#FFF8FA] hover:border-[#EA4F93] transition cursor-pointer"
           >
             <Edit size={15} className="text-[#EA4F93]" />
             {language === "vi" ? "Chỉnh Sửa Hồ Sơ" : "Edit Profile"}
-          </button>
+          </button> */}
 
           <button
             type="button"
@@ -777,7 +777,7 @@ export function ReceptionistCustomerDetailPage() {
       </div>
 
       {/* EDIT CUSTOMER PROFILE MODAL */}
-      <Modal
+      {/* <Modal
         open={isEditModalOpen}
         onCancel={() => setIsEditModalOpen(false)}
         footer={null}
@@ -891,7 +891,7 @@ export function ReceptionistCustomerDetailPage() {
             </div>
           </div>
         </div>
-      </Modal>
+      </Modal> */}
     </div>
   );
 }

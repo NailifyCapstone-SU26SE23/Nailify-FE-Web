@@ -1,8 +1,27 @@
 import { Input, Modal } from "antd";
 import { Canvas, FabricImage, Rect } from "fabric";
-import { Maximize2, Move, Sparkles } from "lucide-react";
+import { Grid, Hand, Maximize2, Move, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PropTypes } from "../../../../shared/utils/propTypes";
+import womanHandImg from "../../../../shared/assets/images/womanHand.png";
+import manHandImg from "../../../../shared/assets/images/manHand.png";
+
+const HAND_SLOT_CONFIG = {
+  woman: [
+    { label: "Thumb", index: 0, left: "-2%", top: "28.8%", width: "26.2%", rotate: "-55deg" },
+    { label: "Index", index: 1, left: "9.6%", top: "-2.3%", width: "32.7%", rotate: "-20deg" },
+    { label: "Middle", index: 2, left: "27.5%", top: "-12.7%", width: "38.8%", rotate: "0deg" },
+    { label: "Ring", index: 3, left: "45.5%", top: "-6.9%", width: "37.6%", rotate: "7deg" },
+    { label: "Pinky", index: 4, left: "62.3%", top: "10.7%", width: "27.1%", rotate: "9deg" },
+  ],
+  man: [
+    { label: "Thumb", index: 0, left: "-2%", top: "28.8%", width: "26.2%", rotate: "-55deg" },
+    { label: "Index", index: 1, left: "9.6%", top: "-2.3%", width: "32.7%", rotate: "-20deg" },
+    { label: "Middle", index: 2, left: "27.5%", top: "-12.7%", width: "38.8%", rotate: "0deg" },
+    { label: "Ring", index: 3, left: "45.5%", top: "-6.9%", width: "37.6%", rotate: "7deg" },
+    { label: "Pinky", index: 4, left: "62.3%", top: "10.7%", width: "27.1%", rotate: "9deg" },
+  ],
+};
 
 const NAIL_LABELS = ["Thumb", "Index", "Middle", "Ring", "Pinky"];
 const DEFAULT_SHAPE_RATIO = 0.42;
@@ -124,6 +143,198 @@ function getContentMetrics(width, height, shapeImageUrl) {
   };
 }
 
+function renderSurfaceEffects(finish) {
+  const name = String(finish || "").trim().toLowerCase();
+
+  // 🪞 CHROME - Ultra metallic mirror
+  if (name.includes("chrome") || name.includes("mirror") || name.includes("tráng gương") || name.includes("metallic")) {
+    return (
+      <>
+        {/* Silver metallic base sheen */}
+        <div className="pointer-events-none absolute inset-0" style={{
+          background: `linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(200,210,220,0.4) 35%, rgba(80,90,100,0.35) 65%, rgba(255,255,255,0.6) 100%)`,
+        }} />
+        {/* Primary chrome streak */}
+        <div className="pointer-events-none absolute" style={{
+          top: '5%', left: '15%', width: '30%', height: '65%',
+          background: `linear-gradient(to bottom, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.45) 50%, transparent 100%)`,
+          filter: 'blur(3px)', borderRadius: '50%',
+        }} />
+        {/* Center bright line */}
+        <div className="pointer-events-none absolute" style={{
+          top: '8%', left: '35%', width: '8%', height: '55%',
+          background: `linear-gradient(to bottom, rgba(255,255,255,1.0) 0%, rgba(255,255,255,0.3) 70%, transparent 100%)`,
+          filter: 'blur(1px)', borderRadius: '50%',
+        }} />
+        {/* Right edge reflection */}
+        <div className="pointer-events-none absolute" style={{
+          top: '15%', right: '8%', width: '22%', height: '50%',
+          background: `radial-gradient(ellipse, rgba(220,230,240,0.54) 0%, transparent 70%)`,
+          filter: 'blur(4px)',
+        }} />
+        {/* Bottom dark shadow */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0" style={{
+          height: '35%',
+          background: 'linear-gradient(to top, rgba(0,0,0,0.3) 0%, transparent 100%)',
+        }} />
+      </>
+    );
+  }
+
+  // 🌈 HOLOGRAPHIC - Visible rainbow prism
+  if (name.includes("holographic") || name.includes("holo")) {
+    return (
+      <>
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: `linear-gradient(160deg,
+              hsl(0,100%,65%) 0%,
+              hsl(30,100%,60%) 15%,
+              hsl(55,100%,60%) 28%,
+              hsl(130,80%,55%) 42%,
+              hsl(200,100%,60%) 57%,
+              hsl(260,90%,65%) 72%,
+              hsl(300,90%,65%) 85%,
+              hsl(340,100%,65%) 100%)`,
+            opacity: 0.63,
+          }}
+        />
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: `linear-gradient(45deg,
+              hsl(320,100%,70%) 0%,
+              transparent 25%,
+              hsl(190,100%,65%) 45%,
+              transparent 65%,
+              hsl(270,100%,70%) 90%)`,
+            opacity: 0.38,
+          }}
+        />
+        <div
+          className="pointer-events-none absolute"
+          style={{
+            top: '5%', left: '10%', width: '50%', height: '45%',
+            background: 'radial-gradient(ellipse at 30% 25%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.2) 45%, transparent 70%)',
+            filter: 'blur(6px)',
+          }}
+        />
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0"
+          style={{
+            height: '25%',
+            background: 'linear-gradient(to top, rgba(0,0,0,0.2) 0%, transparent 100%)',
+          }}
+        />
+      </>
+    );
+  }
+
+  // 😺 CAT EYE - Magnetic vertical streak
+  if (name.includes("cat") || name.includes("cateye") || name.includes("cat-eye")) {
+    return (
+      <>
+        <div className="pointer-events-none absolute inset-0" style={{
+          background: 'linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.12) 100%)',
+        }} />
+        <div className="pointer-events-none absolute" style={{
+          top: 0, bottom: 0,
+          left: '50%',
+          width: '52%',
+          transform: 'translateX(-50%) rotate(0deg)',
+          background: `linear-gradient(to right,
+            transparent 0%,
+            rgba(255,255,255,0.2) 25%,
+            rgba(255,255,255,0.6) 50%,
+            rgba(255,255,255,0.2) 75%,
+            transparent 100%)`,
+          filter: 'blur(5px)',
+        }} />
+        <div className="pointer-events-none absolute inset-x-0 top-0" style={{
+          height: '28%',
+          background: `linear-gradient(to bottom, rgba(255,255,255,0.4) 0%, transparent 100%)`,
+        }} />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0" style={{
+          height: '25%',
+          background: 'linear-gradient(to top, rgba(0,0,0,0.2) 0%, transparent 100%)',
+        }} />
+      </>
+    );
+  }
+
+  // 🎭 MATTE - Soft flat finish (no shine)
+  if (name.includes("matte") || name.includes("nhám")) {
+    return (
+      <>
+        <div className="pointer-events-none absolute inset-0" style={{
+          background: 'rgba(255,255,255,0.18)',
+          backdropFilter: 'blur(0.5px)',
+        }} />
+        <div className="pointer-events-none absolute inset-x-0 top-0" style={{
+          height: '40%',
+          background: 'linear-gradient(to bottom, rgba(255,255,255,0.1) 0%, transparent 100%)',
+        }} />
+      </>
+    );
+  }
+
+  // 🧪 JELLY - Border inset translucent sheen
+  if (name.includes("jelly")) {
+    return (
+      <span className="pointer-events-none absolute inset-[6%] rounded-[inherit] border border-white/35 bg-white/12" />
+    );
+  }
+
+  // ✨ GLITTER - Sparkles
+  if (name.includes("glitter")) {
+    return (
+      <>
+        <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_25%_35%,rgba(255,255,255,0.95)_0_1px,transparent_1.5px),radial-gradient(circle_at_70%_22%,rgba(255,255,255,0.75)_0_1px,transparent_1.6px),radial-gradient(circle_at_46%_68%,rgba(255,255,255,0.85)_0_1px,transparent_1.5px),radial-gradient(circle_at_78%_74%,rgba(255,255,255,0.9)_0_1px,transparent_1.8px)] opacity-85" />
+        <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,rgba(255,255,255,0.12)_55%,transparent_100%)]" />
+      </>
+    );
+  }
+
+  // ✨ GLOSSY (Default) - Natural shine
+  return (
+    <>
+      <div className="pointer-events-none absolute inset-0" style={{
+        background: 'linear-gradient(160deg, rgba(255,255,255,0.1) 0%, rgba(180,180,200,0.1) 40%, rgba(80,80,120,0.15) 75%, rgba(40,40,80,0.2) 100%)',
+      }} />
+      <div className="pointer-events-none absolute" style={{
+        top: '5%', left: '8%', width: '55%', height: '60%',
+        background: `radial-gradient(ellipse at 28% 25%, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.22) 40%, transparent 72%)`,
+        filter: `blur(8px)`,
+        transform: 'rotate(-12deg)',
+      }} />
+      <div className="pointer-events-none absolute" style={{
+        top: '10%', left: '18%', width: '16%', height: '52%',
+        background: `linear-gradient(to bottom, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.25) 45%, transparent 100%)`,
+        filter: `blur(2px)`,
+        borderRadius: '50%',
+      }} />
+      <div className="pointer-events-none absolute inset-x-0 top-0" style={{
+        height: '32%',
+        background: `linear-gradient(to bottom, rgba(255,255,255,0.27) 0%, transparent 100%)`,
+      }} />
+      <div className="pointer-events-none absolute" style={{
+        top: '18%', right: '8%', width: '22%', height: '42%',
+        background: `radial-gradient(ellipse, rgba(255,255,255,0.2) 0%, transparent 70%)`,
+        filter: `blur(4px)`,
+      }} />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0" style={{
+        height: '35%',
+        background: 'linear-gradient(to top, rgba(60,40,80,0.28) 0%, rgba(60,40,80,0.08) 60%, transparent 100%)',
+      }} />
+      <div className="pointer-events-none absolute inset-y-0 right-0" style={{
+        width: '20%',
+        background: 'linear-gradient(to left, rgba(60,40,80,0.15) 0%, transparent 100%)',
+      }} />
+    </>
+  );
+}
+
 function NailShell({
   finish,
   shape,
@@ -135,10 +346,6 @@ function NailShell({
   height,
   children,
 }) {
-  const isChrome = finish === "Chrome";
-  const isJelly = finish === "Jelly";
-  const isMatte = finish === "Matte";
-  const isGlitter = finish === "Glitter";
   const { framePadding, innerInset } = getShapeInsets(width, shapeImageUrl);
   const maskStyle = shapeImageUrl
     ? {
@@ -194,29 +401,7 @@ function NailShell({
           style={shapeImageUrl ? { inset: innerInset, ...maskStyle } : { width, height }}
         >
           <div className="absolute inset-0" style={colorStyle} />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_18%,rgba(255,255,255,0.4),transparent_42%)]" />
-
-          {isChrome ? (
-            <>
-              <span className="absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.55)_0%,transparent_30%,rgba(255,255,255,0.1)_48%,rgba(255,255,255,0.45)_72%,transparent_100%)] mix-blend-screen" />
-              <span className="absolute inset-y-0 left-[18%] w-[18%] bg-white/25 blur-[3px]" />
-            </>
-          ) : null}
-
-          {isJelly ? (
-            <span className="absolute inset-[6%] rounded-[inherit] border border-white/35 bg-white/12" />
-          ) : null}
-
-          {isMatte ? (
-            <span className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,255,0.08),transparent_50%)] mix-blend-normal" />
-          ) : null}
-
-          {isGlitter ? (
-            <>
-              <span className="absolute inset-0 bg-[radial-gradient(circle_at_25%_35%,rgba(255,255,255,0.95)_0_1px,transparent_1.5px),radial-gradient(circle_at_70%_22%,rgba(255,255,255,0.75)_0_1px,transparent_1.6px),radial-gradient(circle_at_46%_68%,rgba(255,255,255,0.85)_0_1px,transparent_1.5px),radial-gradient(circle_at_78%_74%,rgba(255,255,255,0.9)_0_1px,transparent_1.8px)] opacity-85" />
-              <span className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,rgba(255,255,255,0.12)_55%,transparent_100%)]" />
-            </>
-          ) : null}
+          {renderSurfaceEffects(finish)}
 
           {shapeImageUrl ? (
             <img
@@ -512,6 +697,9 @@ export function InteractiveStudioPreview({
   previewRef,
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [viewMode, setViewMode] = useState("grid"); // "grid" | "hand"
+  const [handGender, setHandGender] = useState("woman"); // "woman" | "man"
+  const aspectRatio = useShapeAspectRatio(shapeImageUrl);
 
   const openNailEditor = (fingerIndex) => {
     onSelectNail(fingerIndex);
@@ -580,6 +768,64 @@ export function InteractiveStudioPreview({
   return (
     <>
       <div ref={previewRef} className="mt-4 rounded-[18px] bg-[linear-gradient(180deg,#fff3f9_0%,#ffeef7_100%)] p-5">
+        {/* Toolbar for Display Mode */}
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-[14px] bg-white/70 p-2.5 shadow-sm">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setViewMode("grid")}
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-extrabold transition ${
+                viewMode === "grid"
+                  ? "bg-[#ea4f93] text-white"
+                  : "bg-white border border-[#f2bfd4] text-[#ea4f93] hover:bg-[#fff5fa]"
+              }`}
+            >
+              <Grid size={13} />
+              Grid
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("hand")}
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-extrabold transition ${
+                viewMode === "hand"
+                  ? "bg-[#ea4f93] text-white"
+                  : "bg-white border border-[#f2bfd4] text-[#ea4f93] hover:bg-[#fff5fa]"
+              }`}
+            >
+              <Hand size={13} />
+              Hand
+            </button>
+          </div>
+
+          {viewMode === "hand" && (
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-[#b07d97]">Model:</span>
+              <button
+                type="button"
+                onClick={() => setHandGender("woman")}
+                className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold transition ${
+                  handGender === "woman"
+                    ? "bg-[#fff1f7] border border-[#f2bfd4] text-[#ea4f93]"
+                    : "bg-white border border-gray-200 text-gray-500 hover:bg-gray-50"
+                }`}
+              >
+                👩 Female
+              </button>
+              <button
+                type="button"
+                onClick={() => setHandGender("man")}
+                className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold transition ${
+                  handGender === "man"
+                    ? "bg-[#fff1f7] border border-[#f2bfd4] text-[#ea4f93]"
+                    : "bg-white border border-gray-200 text-gray-500 hover:bg-gray-50"
+                }`}
+              >
+                👨 Male
+              </button>
+            </div>
+          )}
+        </div>
+
         <div className="mb-4 flex items-center justify-between gap-3 rounded-[14px] bg-white/65 px-3 py-2 text-[10px] font-bold text-[#b07d97]">
           <span>Surface Mode</span>
           <span className="rounded-full bg-[#fff1f7] px-2.5 py-1 text-[#ea4f93]">
@@ -591,31 +837,94 @@ export function InteractiveStudioPreview({
           Click a nail to open its editor and edit component position there.
         </div>
 
-        <div className="mt-4 flex items-end justify-between gap-0.5 overflow-visible px-0">
-          {Array.from({ length: 5 }).map((_, index) => (
-            <button
-              key={index}
-              type="button"
-              onClick={() => openNailEditor(index)}
-              className="relative isolate flex min-w-[68px] flex-1 justify-center overflow-visible bg-transparent py-1"
-            >
-              <FabricNailCanvas
-                fingerIndex={index}
-                finish={finish}
-                shape={shape}
-                length={length}
-                isActive={activeNailIndex === -1 ? true : activeNailIndex === index}
-                colorStyle={getColorStyle(fingerColorConfigs[index])}
-                components={componentPlacements.filter((item) => item.fingerIndex === index)}
-                shapeImageUrl={shapeImageUrl}
-                selectedPlacementKey={selectedPlacementKey}
-                onSelectNail={openNailEditor}
-                onSelectPlacement={onSelectPlacement}
-                onPlacementChange={onPlacementChange}
+        {viewMode === "hand" ? (
+          <div className="mt-4 relative w-full h-[500px] flex items-center justify-center bg-[radial-gradient(circle_at_center,#ffffff_0%,#f7eff3_100%)] rounded-[24px] border border-[#f1e5e8] overflow-hidden shadow-[0_12px_32px_rgba(138,61,96,0.06)]">
+            <div className="relative w-[380px] h-[460px] flex items-center justify-center transition-all duration-500 ease-out">
+              <img
+                src={handGender === "man" ? manHandImg : womanHandImg}
+                alt={`${handGender} hand preview`}
+                className="w-full h-full object-contain drop-shadow-[0_12px_32px_rgba(0,0,0,0.12)]"
               />
-            </button>
-          ))}
-        </div>
+              {HAND_SLOT_CONFIG[handGender].map((slot) => {
+                const isSelected = activeNailIndex === slot.index;
+                const slotWidthPx = 380 * (parseFloat(slot.width) / 100);
+                const metrics = getNailMetrics(slot.index, aspectRatio, false);
+                const scale = slotWidthPx / metrics.frameWidth;
+
+                return (
+                  <button
+                    key={slot.label}
+                    type="button"
+                    onClick={() => openNailEditor(slot.index)}
+                    className={`absolute cursor-pointer transition-all duration-250 ease-out z-[5] hover:z-[25] hover:drop-shadow-[0_4px_14px_rgba(138,61,96,0.6)] ${
+                      isSelected ? "z-[40] drop-shadow-[0_6px_18px_rgba(138,61,96,0.7)]" : ""
+                    }`}
+                    style={{
+                      left: slot.left,
+                      top: slot.top,
+                      width: slot.width,
+                      height: "auto",
+                      transform: `rotate(${slot.rotate})`,
+                      background: "transparent",
+                      border: "none",
+                      padding: 0,
+                    }}
+                  >
+                    <div 
+                      className="origin-top center" 
+                      style={{ 
+                        transform: `scale(${scale})`,
+                        width: `${metrics.frameWidth}px`,
+                        height: `${metrics.frameHeight}px`
+                      }}
+                    >
+                      <FabricNailCanvas
+                        fingerIndex={slot.index}
+                        finish={finish}
+                        shape={shape}
+                        length={length}
+                        isActive={activeNailIndex === -1 ? true : activeNailIndex === slot.index}
+                        colorStyle={getColorStyle(fingerColorConfigs[slot.index])}
+                        components={componentPlacements.filter((item) => item.fingerIndex === slot.index)}
+                        shapeImageUrl={shapeImageUrl}
+                        selectedPlacementKey={selectedPlacementKey}
+                        onSelectNail={openNailEditor}
+                        onSelectPlacement={onSelectPlacement}
+                        onPlacementChange={onPlacementChange}
+                      />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div className="mt-4 flex items-end justify-between gap-0.5 overflow-visible px-0">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <button
+                key={index}
+                type="button"
+                onClick={() => openNailEditor(index)}
+                className="relative isolate flex min-w-[68px] flex-1 justify-center overflow-visible bg-transparent py-1"
+              >
+                <FabricNailCanvas
+                  fingerIndex={index}
+                  finish={finish}
+                  shape={shape}
+                  length={length}
+                  isActive={activeNailIndex === -1 ? true : activeNailIndex === index}
+                  colorStyle={getColorStyle(fingerColorConfigs[index])}
+                  components={componentPlacements.filter((item) => item.fingerIndex === index)}
+                  shapeImageUrl={shapeImageUrl}
+                  selectedPlacementKey={selectedPlacementKey}
+                  onSelectNail={openNailEditor}
+                  onSelectPlacement={onSelectPlacement}
+                  onPlacementChange={onPlacementChange}
+                />
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="mt-5 text-center">
           <p className="text-[10px] text-[#aa8c9f]">Current Design</p>

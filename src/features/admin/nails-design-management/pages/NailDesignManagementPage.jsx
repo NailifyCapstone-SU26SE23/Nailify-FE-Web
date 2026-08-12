@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   ROUTES,
@@ -222,12 +223,13 @@ export function NailDesignManagementPage() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [flashMessage] = useState(location.state?.flashMessage ?? "");
 
   useEffect(() => {
     if (!location.state?.flashMessage) {
       return;
     }
+
+    toast.success(location.state.flashMessage);
 
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
@@ -424,11 +426,7 @@ export function NailDesignManagementPage() {
             </div>
           </div>
 
-          {flashMessage ? (
-            <div className="mb-4 rounded-[16px] bg-[#edfdf4] px-4 py-3 text-sm font-medium text-[#16975f]">
-              {flashMessage}
-            </div>
-          ) : null}
+
 
           {error ? (
             <div className="mb-4 rounded-[16px] bg-[#fff1f5] px-4 py-3 text-sm font-medium text-[#d14c84]">

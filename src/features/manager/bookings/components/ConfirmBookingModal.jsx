@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { confirmBooking } from "../services/bookingsService";
 import { motion } from "framer-motion";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 export function ConfirmBookingModal({
   open,
@@ -13,17 +14,19 @@ export function ConfirmBookingModal({
   onSuccess,
   booking = {},
 }) {
+  const { language } = useLanguage();
+  const isVi = language === "vi";
   const [isLoading, setIsLoading] = useState(false);
   const handleConfirm = async () => {
     try {
       setIsLoading(true);
       await confirmBooking(bookingId);
-      toast.success("Booking confirmed successfully!");
+      toast.success(isVi ? "Đã xác nhận lịch hẹn thành công!" : "Booking confirmed successfully!");
       onSuccess?.();
       onClose();
     } catch (err) {
       console.error("Failed to confirm booking:", err);
-      toast.error("Failed to confirm booking.");
+      toast.error(isVi ? "Đã xác nhận lịch hẹn thất bại." : "Failed to confirm booking.");
     } finally {
       setIsLoading(false);
     }
@@ -55,8 +58,8 @@ export function ConfirmBookingModal({
             <Check size={26} className="drop-shadow-md animate-pulse" />
           </div>
           <div>
-            <h2 className="text-xl font-bold tracking-tight">Confirm Appointment</h2>
-            <p className="mt-1 text-xs text-emerald-100/90 font-medium">Review details and confirm customer's appointment request</p>
+            <h2 className="text-xl font-bold tracking-tight">{isVi ? "Xác nhận lịch hẹn" : "Confirm Appointment"}</h2>
+            <p className="mt-1 text-xs text-emerald-100/90 font-medium">{isVi ? "Xem chi tiết và xác nhận yêu cầu đặt lịch của khách hàng" : "Review details and confirm customer's appointment request"}</p>
           </div>
         </div>
       </div>
@@ -67,7 +70,7 @@ export function ConfirmBookingModal({
         {Object.keys(booking).length > 0 && (
           <div className="space-y-3 rounded-2xl border border-[#eaf9f2] bg-gradient-to-b from-[#f8fdfb] to-[#f2faf5] p-4 shadow-[0_4px_16px_rgba(47,162,95,0.02)]">
             <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#2fa25f]/80">
-              Appointment Details
+              {isVi ? "Chi tiết lịch hẹn" : "Appointment Details"}
             </h3>
             <div className="grid grid-cols-2 gap-x-4 gap-y-3 pt-1">
               {booking.customerName && (
@@ -76,7 +79,7 @@ export function ConfirmBookingModal({
                     <User size={14} />
                   </div>
                   <div>
-                    <p className="text-[9px] text-[#8e7b89] font-semibold uppercase tracking-wider">Customer</p>
+                    <p className="text-[9px] text-[#8e7b89] font-semibold uppercase tracking-wider">{isVi ? "Khách hàng" : "Customer"}</p>
                     <p className="font-extrabold text-[#402542] text-[13px]">{booking.customerName}</p>
                   </div>
                 </div>
@@ -87,14 +90,14 @@ export function ConfirmBookingModal({
                     <Clock size={14} />
                   </div>
                   <div>
-                    <p className="text-[9px] text-[#8e7b89] font-semibold uppercase tracking-wider">Time Slot</p>
+                    <p className="text-[9px] text-[#8e7b89] font-semibold uppercase tracking-wider">{isVi ? "Thời gian" : "Time Slot"}</p>
                     <p className="font-extrabold text-[#402542] text-[13px]">{booking.time} ({booking.date})</p>
                   </div>
                 </div>
               )}
               {booking.totalPrice && (
                 <div className="col-span-2 flex items-center justify-between border-t border-[#e2f5ec] pt-2 mt-1 text-xs">
-                  <span className="font-semibold text-[#8e7b89]">Total Value:</span>
+                  <span className="font-semibold text-[#8e7b89]">{isVi ? "Tổng giá trị:" : "Total Value:"}</span>
                   <span className="text-base font-bold text-[#2fa25f]">{booking.totalPrice}</span>
                 </div>
               )}
@@ -106,11 +109,11 @@ export function ConfirmBookingModal({
         <div className="rounded-2xl border border-[#d1fad7] bg-[#f4fdf6] p-4 flex gap-3 shadow-[0_2px_12px_rgba(47,162,95,0.03)]">
           <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#2fa25f] text-white text-[10px] font-bold">✓</div>
           <div>
-            <p className="text-xs font-extrabold text-[#1d6b3e]">This action will:</p>
+            <p className="text-xs font-extrabold text-[#1d6b3e]">{isVi ? "Thao tác này sẽ:" : "This action will:"}</p>
             <ul className="mt-1 space-y-1 text-xs text-[#446b53] font-medium leading-relaxed">
-              <li>• Change booking status to <strong>Confirmed</strong></li>
-              <li>• Lock appointment slot and reserve nail artist schedule</li>
-              <li>• Automatically send confirmation notification to the customer</li>
+              <li>• {isVi ? "Thay đổi trạng thái lịch hẹn thành Đã xác nhận" : "Change booking status to Confirmed"}</li>
+              <li>• {isVi ? "Khóa khung giờ đặt lịch và đặt lịch nghệ sĩ làm móng" : "Lock appointment slot and reserve nail artist schedule"}</li>
+              <li>• {isVi ? "Tự động gửi thông báo xác nhận cho khách hàng" : "Automatically send confirmation notification to the customer"}</li>
             </ul>
           </div>
         </div>
@@ -124,7 +127,7 @@ export function ConfirmBookingModal({
             disabled={isLoading}
           >
             <X size={14} />
-            Cancel
+            {isVi ? "Hủy" : "Cancel"}
           </button>
           <button
             type="button"
@@ -137,7 +140,7 @@ export function ConfirmBookingModal({
             ) : (
               <>
                 <Check size={14} />
-                Confirm Booking
+                {isVi ? "Xác nhận đặt lịch" : "Confirm Booking"}
               </>
             )}
           </button>

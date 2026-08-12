@@ -14,9 +14,12 @@ import {
   Trash2,
   UserRound,
   X,
+  Eye,
+  EyeOff,
+  LockKeyhole,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../../../shared/constants/routes";
 import { setSession } from "../model/authSlice";
@@ -27,6 +30,7 @@ import {
   fetchProfileSalonDetail,
   updateCurrentProfile,
 } from "../services/profileService";
+import { authService } from "../services/authService";
 import { useAuth } from "../hooks/useAuth";
 
 function Card({ className = "", children }) {
@@ -116,6 +120,7 @@ export function ProfilePage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user, logout, role } = useAuth();
+  const accessToken = useSelector((state) => state.auth.accessToken);
   const [profile, setProfile] = useState(null);
   const [salon, setSalon] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -132,6 +137,17 @@ export function ProfilePage() {
     imageFile: null,
   });
   const [avatarPreview, setAvatarPreview] = useState("");
+
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState("");
+  const [isNewPasswordVisible, setIsNewPasswordVisible] = useState(false);
+  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
 
   const hydrateForm = useCallback((nextProfile) => {
     setFormValues({
@@ -324,7 +340,7 @@ export function ProfilePage() {
 
             <div className="relative z-10 flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex flex-col sm:flex-row items-center gap-8">
-                <div className="relative group">
+                <div className="relative group shrink-0">
                   <div className="absolute -inset-1 rounded-[38px] bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] opacity-20 blur-xl transition-all duration-500 group-hover:opacity-40 group-hover:blur-2xl" />
                   {avatarPreview ? (
                     <img
@@ -408,13 +424,22 @@ export function ProfilePage() {
                       </button>
                     </>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() => setIsEditing(true)}
-                      className="inline-flex h-11 items-center justify-center gap-2 rounded-[20px] border border-white/60 bg-white/60 px-6 text-sm font-bold text-[#ea4f93] shadow-sm transition-all hover:bg-white hover:shadow-[0_8px_20px_rgba(236,72,153,0.15)] hover:-translate-y-0.5"
-                    >
-                      <PencilLine size={16} /> {t("profile.editProfile")}
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setIsChangePasswordOpen(true)}
+                        className="inline-flex h-11 items-center justify-center gap-2 rounded-[20px] border border-[#f8c8db] bg-[#fff8fb] px-6 text-sm font-bold text-[#eb5a99] shadow-sm transition-all hover:bg-[#fff0f7] hover:shadow-[0_8px_20px_rgba(236,72,153,0.15)] hover:-translate-y-0.5"
+                      >
+                        <LockKeyhole size={16} /> {language === "vi" ? "Đổi mật khẩu" : "Change Password"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditing(true)}
+                        className="inline-flex h-11 items-center justify-center gap-2 rounded-[20px] border border-white/60 bg-white/60 px-6 text-sm font-bold text-[#ea4f93] shadow-sm transition-all hover:bg-white hover:shadow-[0_8px_20px_rgba(236,72,153,0.15)] hover:-translate-y-0.5"
+                      >
+                        <PencilLine size={16} /> {t("profile.editProfile")}
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -602,6 +627,160 @@ export function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Change Password Modal */}
+      {isChangePasswordOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-md overflow-hidden rounded-[32px] border border-white/60 bg-white/90 p-8 shadow-[0_32px_64px_rgba(236,72,153,0.18)] backdrop-blur-2xl">
+            <button
+              type="button"
+              onClick={() => {
+                setIsChangePasswordOpen(false);
+                setPasswordForm({ newPassword: "", confirmPassword: "" });
+                setPasswordError("");
+                setPasswordSuccess("");
+              }}
+              className="absolute right-6 top-6 text-slate-400 hover:text-slate-600 transition"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="mb-6 space-y-2">
+              <h3 className="text-2xl font-black text-[#2b182b] flex items-center gap-2">
+                <LockKeyhole className="text-[#ea4f93]" size={24} />
+                {language === "vi" ? "Đổi mật khẩu" : "Change Password"}
+              </h3>
+              <p className="text-xs font-medium text-[#8f6b80] leading-relaxed">
+                {language === "vi"
+                  ? "Nhập mật khẩu mới và xác nhận để cập nhật mật khẩu của bạn."
+                  : "Enter your new password and confirm to update."}
+              </p>
+            </div>
+
+            {passwordError ? (
+              <div className="mb-4 rounded-2xl bg-rose-50 p-4 text-xs font-bold text-rose-500">
+                {passwordError}
+              </div>
+            ) : null}
+
+            {passwordSuccess ? (
+              <div className="mb-4 rounded-2xl bg-emerald-50 p-4 text-xs font-bold text-emerald-600">
+                {passwordSuccess}
+              </div>
+            ) : null}
+
+            <div className="space-y-4">
+              {/* New Password Input */}
+              <label className="block group">
+                <span className="mb-2 block text-[11px] font-extrabold uppercase tracking-wider text-[#c08aa4]">
+                  {language === "vi" ? "Mật khẩu mới" : "New Password"}
+                </span>
+                <div className="relative">
+                  <input
+                    type={isNewPasswordVisible ? "text" : "password"}
+                    value={passwordForm.newPassword}
+                    onChange={(e) => setPasswordForm(c => ({ ...c, newPassword: e.target.value }))}
+                    className="h-12 w-full rounded-[16px] border-2 border-[#f3d5e2]/60 bg-white/50 pl-4 pr-10 text-sm font-bold text-[#2b182b] outline-none transition focus:border-[#ea4f93] focus:bg-white"
+                    placeholder={language === "vi" ? "Nhập mật khẩu mới" : "Enter new password"}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setIsNewPasswordVisible(!isNewPasswordVisible)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    {isNewPasswordVisible ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </label>
+
+              {/* Confirm Password Input */}
+              <label className="block group">
+                <span className="mb-2 block text-[11px] font-extrabold uppercase tracking-wider text-[#c08aa4]">
+                  {language === "vi" ? "Xác nhận mật khẩu mới" : "Confirm New Password"}
+                </span>
+                <div className="relative">
+                  <input
+                    type={isConfirmPasswordVisible ? "text" : "password"}
+                    value={passwordForm.confirmPassword}
+                    onChange={(e) => setPasswordForm(c => ({ ...c, confirmPassword: e.target.value }))}
+                    className="h-12 w-full rounded-[16px] border-2 border-[#f3d5e2]/60 bg-white/50 pl-4 pr-10 text-sm font-bold text-[#2b182b] outline-none transition focus:border-[#ea4f93] focus:bg-white"
+                    placeholder={language === "vi" ? "Nhập lại mật khẩu mới" : "Re-enter new password"}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setIsConfirmPasswordVisible(!isConfirmPasswordVisible)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    {isConfirmPasswordVisible ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </label>
+            </div>
+
+            {/* Actions */}
+            <div className="mt-8 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsChangePasswordOpen(false);
+                  setPasswordForm({ newPassword: "", confirmPassword: "" });
+                  setPasswordError("");
+                  setPasswordSuccess("");
+                }}
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-white/60 bg-white/40 px-5 text-sm font-bold text-[#8f7184] hover:bg-white/80 transition"
+              >
+                {language === "vi" ? "Hủy" : "Cancel"}
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (passwordForm.newPassword.length < 6) {
+                    setPasswordError(language === "vi" ? "Mật khẩu mới phải từ 6 ký tự trở lên." : "New password must be at least 6 characters.");
+                    return;
+                  }
+                  if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+                    setPasswordError(language === "vi" ? "Mật khẩu xác nhận không trùng khớp." : "Confirm password does not match.");
+                    return;
+                  }
+
+                  try {
+                    setIsResettingPassword(true);
+                    setPasswordError("");
+                    setPasswordSuccess("");
+                    const response = await authService.resetPassword({
+                      token: accessToken,
+                      newPassword: passwordForm.newPassword,
+                      confirmPassword: passwordForm.confirmPassword,
+                    });
+                    
+                    if (response?.isSucceeded) {
+                      toast.success(
+                        language === "vi"
+                          ? "Cập nhật mật khẩu mới thành công!"
+                          : "Password updated successfully!"
+                      );
+                      setIsChangePasswordOpen(false);
+                      setPasswordForm({ newPassword: "", confirmPassword: "" });
+                    } else {
+                      setPasswordError(response?.message || "Reset failed.");
+                    }
+                  } catch (err) {
+                    setPasswordError(err.message || "Failed to reset password.");
+                  } finally {
+                    setIsResettingPassword(false);
+                  }
+                }}
+                disabled={isResettingPassword}
+                className="inline-flex h-11 items-center justify-center rounded-xl bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] px-6 text-sm font-bold text-white shadow-sm hover:opacity-90 disabled:opacity-50 transition"
+              >
+                {isResettingPassword
+                  ? (language === "vi" ? "Đang xử lý..." : "Processing...")
+                  : (language === "vi" ? "Xác nhận đổi" : "Confirm Change")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
