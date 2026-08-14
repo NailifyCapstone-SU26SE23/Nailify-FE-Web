@@ -11,7 +11,6 @@ import {
   Sparkles,
   TimerReset,
   Trash2,
-  Wallet,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
@@ -27,8 +26,6 @@ import {
 import {
   fetchAdminNailShapes,
   deleteAdminNailShape,
-  formatNailShapeCurrency,
-  formatNailShapeDuration,
 } from "../services/nailShapesManagementService";
 
 function MetricCard({ item }) {
@@ -91,8 +88,6 @@ function sortShapes(items, sortValue) {
   return [...items].sort((left, right) => {
     const getSortValue = (item) => {
       switch (sortKey) {
-        case "price":
-          return Number(item.price || 0);
         case "duration":
           return Number(item.duration || 0);
         case "shape":
@@ -118,7 +113,6 @@ export function NailShapesManagementPage() {
   const { t, language } = useLanguage();
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [priceFilter, setPriceFilter] = useState("");
   const [selectedSort, setSelectedSort] = useState("shape-asc");
   const [shapes, setShapes] = useState([]);
   const [metaData, setMetaData] = useState({
@@ -199,10 +193,7 @@ export function NailShapesManagementPage() {
   }, [debouncedQuery, metaData.currentPage, metaData.pageSize]);
 
   const summaryCards = useMemo(() => {
-    const totalPrice = shapes.reduce((sum, item) => sum + item.price, 0);
-    const totalDuration = shapes.reduce((sum, item) => sum + item.duration, 0);
-    const averagePrice = shapes.length ? Math.round(totalPrice / shapes.length) : 0;
-    const averageDuration = shapes.length ? Math.round(totalDuration / shapes.length) : 0;
+    const shapesWithDuration = shapes.filter((item) => item.duration != null && item.duration > 0).length;
 
     return [
       {
@@ -220,21 +211,14 @@ export function NailShapesManagementPage() {
         iconClassName: "bg-[#fff4df] text-[#d9871c]",
       },
       {
-        label: t("adminNailShapesManagement.avgPrice"),
-        value: formatNailShapeCurrency(averagePrice),
-        note: t("adminNailShapesManagement.currentPage"),
-        icon: Wallet,
-        iconClassName: "bg-[#f3ebff] text-[#8b5cf6]",
-      },
-      {
-        label: t("adminNailShapesManagement.avgDuration"),
-        value: formatNailShapeDuration(averageDuration),
-        note: t("adminNailShapesManagement.currentPage"),
+        label: language === "vi" ? "Có thời lượng" : "With Duration",
+        value: shapesWithDuration.toLocaleString(),
+        note: language === "vi" ? `Trên ${shapes.length} dáng móng hiện tại` : `Out of ${shapes.length} visible shapes`,
         icon: TimerReset,
         iconClassName: "bg-[#e7fbf4] text-[#20ab77]",
       },
     ];
-  }, [metaData.totalItems, metaData.totalPages, shapes]);
+  }, [metaData.totalItems, metaData.totalPages, shapes, language, t]);
 
   const paginationItems = useMemo(() => {
     const currentPage = metaData.currentPage;
@@ -263,19 +247,7 @@ export function NailShapesManagementPage() {
     return result;
   }, [metaData.currentPage, metaData.totalPages]);
 
-  const filteredShapes = useMemo(() => {
-    if (!priceFilter) {
-      return shapes;
-    }
-
-    if (priceFilter === "free") {
-      return shapes.filter((shape) => Number(shape.price || 0) <= 0);
-    }
-
-    return shapes.filter((shape) => Number(shape.price || 0) > 0);
-  }, [priceFilter, shapes]);
-
-  const sortedShapes = useMemo(() => sortShapes(filteredShapes, selectedSort), [filteredShapes, selectedSort]);
+  const sortedShapes = useMemo(() => sortShapes(shapes, selectedSort), [shapes, selectedSort]);
 
   const handleSortToggle = (sortKey) => {
     setSelectedSort((current) => {
@@ -308,32 +280,19 @@ export function NailShapesManagementPage() {
           </div>
         ),
       },
-      {
-        title: (
-          <SortableHeader
-            label={t("adminNailShapesManagement.price")}
-            sortKey="price"
-            selectedSort={selectedSort}
-            onToggle={handleSortToggle}
-          />
-        ),
-        dataIndex: "priceLabel",
-        key: "priceLabel",
-        render: (value) => <span className="text-sm text-[#6b5668]">{value}</span>,
-      },
-      {
-        title: (
-          <SortableHeader
-            label={t("adminNailShapesManagement.duration")}
-            sortKey="duration"
-            selectedSort={selectedSort}
-            onToggle={handleSortToggle}
-          />
-        ),
-        dataIndex: "durationLabel",
-        key: "durationLabel",
-        render: (value) => <span className="text-sm text-[#6b5668]">{value}</span>,
-      },
+      // {
+      //   title: (
+      //     <SortableHeader
+      //       label={t("adminNailShapesManagement.duration")}
+      //       sortKey="duration"
+      //       selectedSort={selectedSort}
+      //       onToggle={handleSortToggle}
+      //     />
+      //   ),
+      //   dataIndex: "durationLabel",
+      //   key: "durationLabel",
+      //   render: (value) => <span className="text-sm text-[#6b5668]">{value}</span>,
+      // },
       {
         title: t("adminNailShapesManagement.actions"),
         key: "actions",
@@ -449,16 +408,6 @@ export function NailShapesManagementPage() {
                 {t("adminNailShapesManagement.search")}
               </button>
             </div>
-
-            <select
-              value={priceFilter}
-              onChange={(event) => setPriceFilter(event.target.value)}
-              className="h-10 rounded-full border border-[#f4d7e5] bg-[#fffafc] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
-            >
-              <option value="">{t("adminNailShapesManagement.allPricing")}</option>
-              <option value="free">{t("adminNailShapesManagement.freeShapes")}</option>
-              <option value="priced">{t("adminNailShapesManagement.pricedShapes")}</option>
-            </select>
           </div>
 
           <Link
@@ -569,7 +518,7 @@ export function NailShapesManagementPage() {
           item={{
             image: deleteTarget.imageUrl || undefined,
             title: deleteTarget.name,
-            meta: `${deleteTarget.priceLabel} • ${deleteTarget.durationLabel}`,
+            // meta: deleteTarget.durationLabel,
             note: (t("adminNailShapesManagement.shapeId1")) + deleteTarget.nailShapeId,
           }}
           warnings={[t("adminNailShapesManagement.thisActionCallsTheBackendDelet1")]}
