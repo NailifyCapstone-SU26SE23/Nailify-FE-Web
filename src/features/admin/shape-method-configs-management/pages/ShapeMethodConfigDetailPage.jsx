@@ -1,8 +1,20 @@
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
-import { ArrowLeft, LoaderCircle, Save, Sliders, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  ArrowLeft,
+  Clock,
+  Coins,
+  FileText,
+  Image as ImageIcon,
+  LoaderCircle,
+  Pencil,
+  Save,
+  Shapes,
+  Trash2,
+  X,
+} from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
 import toast from "react-hot-toast";
-import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ROUTES } from "../../../../shared/constants/routes";
 import {
@@ -11,6 +23,29 @@ import {
   deleteAdminShapeMethodConfig,
 } from "../services/shapeMethodConfigsManagementService";
 import { fetchAdminNailShapes } from "../../nail-shapes-management/services/nailShapesManagementService";
+import { formatCurrency } from "../../../../shared/utils/formatCurrency";
+
+function validateForm(formValues, language) {
+  const isVi = language === "vi";
+  if (!String(formValues.name || "").trim()) {
+    return isVi ? "Tên phương pháp là bắt buộc." : "Method name is required.";
+  }
+  if (!formValues.nailShapeId) {
+    return isVi ? "Vui lòng chọn dáng móng." : "Please select a nail shape.";
+  }
+
+  const priceNum = Number(formValues.price);
+  if (!formValues.price || isNaN(priceNum) || priceNum < 0) {
+    return isVi ? "Giá phải là một số dương hợp lệ." : "Price must be a valid positive number.";
+  }
+
+  const durationNum = Number(formValues.duration);
+  if (!formValues.duration || isNaN(durationNum) || durationNum <= 0) {
+    return isVi ? "Thời lượng phải lớn hơn 0." : "Duration must be greater than 0.";
+  }
+
+  return "";
+}
 
 export function ShapeMethodConfigDetailPage() {
   const { t, language } = useLanguage();
@@ -22,16 +57,19 @@ export function ShapeMethodConfigDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [errors, setErrors] = useState({});
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
+  const [formError, setFormError] = useState("");
 
   const [nailShapes, setNailShapes] = useState([]);
   const [isLoadingShapes, setIsLoadingShapes] = useState(true);
 
   useEffect(() => {
     fetchAdminNailShapes({ pageNumber: 1, pageSize: 100 })
-      .then(res => setNailShapes(res.items))
-      .catch(err => console.error("Failed to load nail shapes"))
+      .then((res) => setNailShapes(res.items))
+      .catch((err) => console.error("Failed to load nail shapes", err))
       .finally(() => setIsLoadingShapes(false));
   }, []);
 
@@ -66,48 +104,62 @@ export function ShapeMethodConfigDetailPage() {
     return () => {
       isMounted = false;
     };
-  }, [configId, navigate]);
+  }, [configId, navigate, t]);
 
-  if (!configId) {
-    return <Navigate to={ROUTES.adminShapeMethodConfigs} replace />;
-  }
+  const handleFieldChange = (field, value) => {
+    setDraft((current) => ({
+      ...current,
+      [field]: value,
+    }));
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setDraft((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
+    if (formError) {
+      setFormError("");
     }
   };
 
-  const validate = () => {
-    const newErrors = {};
-    if (!String(draft.name || "").trim()) newErrors.name = t("adminShapeMethodConfigs.nameRequired");
-    if (!draft.nailShapeId) newErrors.nailShapeId = t("adminShapeMethodConfigs.shapeRequired");
-
-    const priceNum = Number(draft.price);
-    if (!draft.price || isNaN(priceNum) || priceNum < 0) {
-      newErrors.price = t("adminShapeMethodConfigs.priceInvalid");
-    }
-
-    const durationNum = Number(draft.duration);
-    if (!draft.duration || isNaN(durationNum) || durationNum <= 0) {
-      newErrors.duration = t("adminShapeMethodConfigs.durationInvalid");
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const handleStartEdit = () => {
+    if (!config) return;
+    setDraft({
+      name: config.name,
+      nailShapeId: config.nailShapeId,
+      price: config.price,
+      duration: config.duration,
+      status: config.status,
+    });
+    setFormError("");
+    setIsEditing(true);
   };
 
-  const handleUpdate = async (e) => {
-    e.preventDefault();
-    if (!validate() || isSaving) return;
+  const handleCancelEdit = () => {
+    if (!config) return;
+    setDraft({
+      name: config.name,
+      nailShapeId: config.nailShapeId,
+      price: config.price,
+      duration: config.duration,
+      status: config.status,
+    });
+    setFormError("");
+    setIsEditing(false);
+  };
 
+  const handleRequestSave = () => {
+    const validationError = validateForm(draft, language);
+
+    if (validationError) {
+      setFormError(validationError);
+      return;
+    }
+
+    setShowSaveConfirm(true);
+  };
+
+  const handleSave = async () => {
+    if (!config || !draft) return;
     setIsSaving(true);
-    const toastId = toast.loading(t("adminShapeMethodConfigs.updatingConfig"));
 
     try {
-      const updatedData = await updateAdminShapeMethodConfig(configId, {
+      const updatedConfig = await updateAdminShapeMethodConfig(configId, {
         name: String(draft.name).trim(),
         nailShapeId: Number(draft.nailShapeId),
         price: Number(draft.price),
@@ -115,285 +167,348 @@ export function ShapeMethodConfigDetailPage() {
         status: draft.status,
       });
 
-      setConfig(updatedData);
+      setConfig(updatedConfig);
       setDraft({
-        name: updatedData.name,
-        nailShapeId: updatedData.nailShapeId,
-        price: updatedData.price,
-        duration: updatedData.duration,
-        status: updatedData.status,
+        name: updatedConfig.name,
+        nailShapeId: updatedConfig.nailShapeId,
+        price: updatedConfig.price,
+        duration: updatedConfig.duration,
+        status: updatedConfig.status,
       });
-      toast.success(t("adminShapeMethodConfigs.updateSuccess"), { id: toastId });
+      setIsEditing(false);
+      toast.success(t("adminShapeMethodConfigs.updateSuccess"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t("adminShapeMethodConfigs.updateFailed"), { id: toastId });
+      const message = error instanceof Error ? error.message : t("adminShapeMethodConfigs.updateFailed");
+      setFormError(message);
+      toast.error(message);
     } finally {
       setIsSaving(false);
+      setShowSaveConfirm(false);
     }
   };
 
   const handleDelete = async () => {
-    if (isDeleting) return;
-
+    if (!config) return;
     setIsDeleting(true);
-    const toastId = toast.loading(t("adminShapeMethodConfigs.deletingConfig"));
 
     try {
       await deleteAdminShapeMethodConfig(configId);
-      toast.success(t("adminShapeMethodConfigs.deleteSuccess"), { id: toastId });
+      toast.success(t("adminShapeMethodConfigs.deleteSuccess"));
       navigate(ROUTES.adminShapeMethodConfigs, {
         replace: true,
         state: { flashMessage: t("adminShapeMethodConfigs.deleteFlashSuccess") },
       });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t("adminShapeMethodConfigs.deleteFailed"), { id: toastId });
+      const message = error instanceof Error ? error.message : t("adminShapeMethodConfigs.deleteFailed");
+      toast.error(message);
+    } finally {
       setIsDeleting(false);
-      setShowDeleteModal(false);
+      setShowDeleteConfirm(false);
     }
   };
 
-  const hasChanges = Boolean(
-    config &&
-    draft &&
-    (
-      config.name !== draft.name ||
-      config.nailShapeId !== Number(draft.nailShapeId) ||
-      config.price !== Number(draft.price) ||
-      config.duration !== Number(draft.duration) ||
-      config.status !== draft.status
-    )
+  const selectedShape = useMemo(() => {
+    return nailShapes.find((shape) => String(shape.nailShapeId) === String(draft?.nailShapeId));
+  }, [nailShapes, draft?.nailShapeId]);
+
+  const summaryItems = useMemo(
+    () => [
+      [t("adminShapeMethodConfigs.methodName"), draft?.name || "--"],
+      [t("adminShapeMethodConfigs.nailShape"), selectedShape ? selectedShape.name : t("adminShapeMethodConfigs.notSelected")],
+      [t("adminShapeMethodConfigs.priceVnd"), draft?.price ? formatCurrency(Number(draft.price)) : "--"],
+      [t("adminShapeMethodConfigs.durationMins"), draft?.duration ? `${draft.duration} ${t("adminShapeMethodConfigs.mins")}` : "--"],
+      [t("adminShapeMethodConfigs.status"), draft?.status === "Active" ? t("adminShapeMethodConfigs.active") : t("adminShapeMethodConfigs.inactive")],
+    ],
+    [draft?.name, draft?.price, draft?.duration, draft?.status, selectedShape, t],
   );
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <div className="flex items-center gap-3 text-[#cd98b1]">
-          <LoaderCircle size={24} className="animate-spin text-[#ea4f93]" />
-          <span className="font-semibold tracking-wide">{t("adminShapeMethodConfigs.loadingConfigDetails")}</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (!config) {
-    return null;
+  if (!configId) {
+    return <Navigate to={ROUTES.adminShapeMethodConfigs} replace />;
   }
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <Link
-          to={ROUTES.adminShapeMethodConfigs}
-          className="inline-flex items-center gap-2 text-sm font-semibold text-[#cd98b1] transition-colors hover:text-[#ea4f93]"
-        >
-          <ArrowLeft size={16} />
-          {t("adminShapeMethodConfigs.backToConfigs")}
-        </Link>
-        <button
-          type="button"
-          onClick={() => setShowDeleteModal(true)}
-          className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-red-200 bg-red-50 px-4 text-xs font-bold text-red-600 transition-colors hover:bg-red-100 hover:text-red-700"
-        >
-          <Trash2 size={14} />
-          {t("adminShapeMethodConfigs.deleteConfig")}
-        </button>
-      </div>
-
-      <form onSubmit={handleUpdate} className="overflow-hidden rounded-[24px] border border-[#f8dce8] bg-white shadow-[0_12px_32px_rgba(236,72,153,0.05)]">
-        <div className="border-b border-[#fdebf3] bg-[#fffafc] px-6 py-6 md:px-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-[linear-gradient(135deg,#ffe4ef_0%,#ffd977_100%)] text-[#9c2f63] shadow-inner">
-              <Sliders size={24} />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-[#432744]">{t("adminShapeMethodConfigs.configDetails")}</h1>
-              <p className="mt-1 text-sm font-medium text-[#b58a9f]">{t("adminShapeMethodConfigs.configDetailsDesc")}</p>
-            </div>
-          </div>
-
-          <div className="flex gap-2 text-xs font-semibold text-[#cd98b1]">
-            ID: <span className="text-[#ea4f93]">{configId}</span>
+    <section className="mx-auto flex w-full max-w-[1300px] flex-col gap-4 text-slate-700">
+      <header className="flex flex-col gap-4 rounded-[24px] bg-white/70 px-5 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-start gap-3">
+          <Link
+            to={ROUTES.adminShapeMethodConfigs}
+            className="inline-flex shrink-0 rounded-xl border border-rose-100 bg-white p-2 text-rose-500 transition hover:bg-rose-50"
+          >
+            <ArrowLeft size={18} />
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">
+              {t("adminShapeMethodConfigs.configDetails")}
+            </h1>
+            <p className="text-xs font-medium text-slate-400">
+              {t("adminShapeMethodConfigs.detailPageDesc")}
+            </p>
           </div>
         </div>
 
-        <div className="p-6 md:p-8">
-          <div className="grid gap-8 lg:grid-cols-[1fr_280px]">
-            <div className="space-y-6">
-              <div>
-                <label htmlFor="name" className="mb-2 block text-sm font-bold text-[#5f4a5c]">
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={() => setShowDeleteConfirm(true)}
+            disabled={isLoading}
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Trash2 size={14} />
+            {t("adminShapeMethodConfigs.deleteConfig")}
+          </button>
+
+          {isEditing ? (
+            <>
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
+              >
+                <X size={14} />
+                {t("adminShapeMethodConfigs.cancel")}
+              </button>
+              <button
+                type="button"
+                onClick={handleRequestSave}
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
+              >
+                <Save size={14} />
+                {t("adminShapeMethodConfigs.saveChanges")}
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={handleStartEdit}
+              disabled={isLoading}
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Pencil size={14} />
+              {t("adminShapeMethodConfigs.editConfig")}
+            </button>
+          )}
+        </div>
+      </header>
+
+      {formError ? (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-600">
+          {formError}
+        </div>
+      ) : null}
+
+      {isLoading ? (
+        <div className="flex min-h-[320px] items-center justify-center rounded-[24px] bg-white/80 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
+          <div className="flex items-center gap-3 text-[#cd98b1]">
+            <LoaderCircle size={24} className="animate-spin text-[#ea4f93]" />
+            <span className="font-semibold tracking-wide">{t("adminShapeMethodConfigs.loadingConfigDetails")}</span>
+          </div>
+        </div>
+      ) : (
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_360px]">
+          <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
+            <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
+              <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
+              {t("adminShapeMethodConfigs.configDetails")}
+            </h2>
+
+            <div className="grid gap-5">
+              <label className="space-y-2.5">
+                <span className="text-[13px] font-semibold text-slate-600">
                   {t("adminShapeMethodConfigs.methodName")} <span className="text-[#ea4f93]">*</span>
-                </label>
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  value={draft.name}
-                  onChange={handleChange}
-                  className={`h-12 w-full rounded-xl border bg-[#fffafc] px-4 text-[15px] font-medium text-[#432744] shadow-sm outline-none transition-all focus:bg-white focus:ring-4 ${errors.name
-                    ? "border-red-300 focus:border-red-500 focus:ring-red-500/10"
-                    : "border-[#f4dbe7] focus:border-[#ea4f93] focus:ring-[#ea4f93]/10"
-                    }`}
-                />
-                {errors.name && <p className="mt-2 text-xs font-semibold text-red-500">{errors.name}</p>}
-              </div>
+                </span>
+                <div className={`flex items-center gap-2 rounded-2xl border px-4 py-3.5 ${isEditing ? "border-rose-100 bg-[#fff8fb]" : "border-slate-100 bg-slate-50/50"}`}>
+                  <FileText size={14} className={`shrink-0 ${isEditing ? "text-rose-300" : "text-slate-400"}`} />
+                  <input
+                    type="text"
+                    disabled={!isEditing}
+                    value={draft.name}
+                    onChange={(event) => handleFieldChange("name", event.target.value)}
+                    placeholder="e.g. Gắn móng giả (Tip)"
+                    className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none placeholder:text-rose-300 disabled:cursor-default"
+                  />
+                </div>
+              </label>
 
-              <div>
-                <label htmlFor="nailShapeId" className="mb-2 block text-sm font-bold text-[#5f4a5c]">
+              <label className="space-y-2.5">
+                <span className="text-[13px] font-semibold text-slate-600">
                   {t("adminShapeMethodConfigs.nailShape")} <span className="text-[#ea4f93]">*</span>
-                </label>
-                <select
-                  id="nailShapeId"
-                  name="nailShapeId"
-                  value={draft.nailShapeId}
-                  onChange={handleChange}
-                  disabled={isLoadingShapes}
-                  className={`h-12 w-full rounded-xl border bg-[#fffafc] px-4 text-[15px] font-medium text-[#432744] shadow-sm outline-none transition-all focus:bg-white focus:ring-4 disabled:opacity-60 ${errors.nailShapeId
-                    ? "border-red-300 focus:border-red-500 focus:ring-red-500/10"
-                    : "border-[#f4dbe7] focus:border-[#ea4f93] focus:ring-[#ea4f93]/10"
-                    }`}
-                >
-                  <option value="">{t("adminShapeMethodConfigs.selectNailShape")}</option>
-                  {nailShapes.map((shape) => (
-                    <option key={shape.nailShapeId} value={shape.nailShapeId}>
-                      {shape.name}
+                </span>
+                <div className={`flex items-center gap-2 rounded-2xl border px-4 py-3 ${isEditing ? "border-rose-100 bg-[#fff8fb]" : "border-slate-100 bg-slate-50/50"}`}>
+                  <Shapes size={14} className={`shrink-0 ${isEditing ? "text-rose-300" : "text-slate-400"}`} />
+                  <select
+                    disabled={!isEditing || isLoadingShapes}
+                    value={draft.nailShapeId}
+                    onChange={(event) => handleFieldChange("nailShapeId", event.target.value)}
+                    className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none placeholder:text-rose-300 disabled:opacity-80 disabled:cursor-default"
+                  >
+                    <option value="" className="bg-white text-slate-700">
+                      {t("adminShapeMethodConfigs.selectNailShape")}
                     </option>
-                  ))}
-                </select>
-                {errors.nailShapeId && <p className="mt-2 text-xs font-semibold text-red-500">{errors.nailShapeId}</p>}
-              </div>
+                    {nailShapes.map((shape) => (
+                      <option key={shape.nailShapeId} value={shape.nailShapeId} className="bg-white text-slate-700">
+                        {shape.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </label>
 
-              <div className="grid gap-6 sm:grid-cols-2">
-                <div>
-                  <label htmlFor="price" className="mb-2 block text-sm font-bold text-[#5f4a5c]">
+              <div className="grid gap-5 sm:grid-cols-2">
+                <label className="space-y-2.5">
+                  <span className="text-[13px] font-semibold text-slate-600">
                     {t("adminShapeMethodConfigs.priceVnd")} <span className="text-[#ea4f93]">*</span>
-                  </label>
-                  <input
-                    id="price"
-                    name="price"
-                    type="number"
-                    min="0"
-                    step="1000"
-                    value={draft.price}
-                    onChange={handleChange}
-                    className={`h-12 w-full rounded-xl border bg-[#fffafc] px-4 text-[15px] font-medium text-[#432744] shadow-sm outline-none transition-all focus:bg-white focus:ring-4 ${errors.price
-                      ? "border-red-300 focus:border-red-500 focus:ring-red-500/10"
-                      : "border-[#f4dbe7] focus:border-[#ea4f93] focus:ring-[#ea4f93]/10"
-                      }`}
-                  />
-                  {errors.price && <p className="mt-2 text-xs font-semibold text-red-500">{errors.price}</p>}
-                </div>
+                  </span>
+                  <div className={`flex items-center gap-2 rounded-2xl border px-4 py-3.5 ${isEditing ? "border-rose-100 bg-[#fff8fb]" : "border-slate-100 bg-slate-50/50"}`}>
+                    <Coins size={14} className={`shrink-0 ${isEditing ? "text-rose-300" : "text-slate-400"}`} />
+                    <input
+                      type="number"
+                      disabled={!isEditing}
+                      min="0"
+                      step="1000"
+                      value={draft.price}
+                      onChange={(event) => handleFieldChange("price", event.target.value)}
+                      placeholder="e.g. 250000"
+                      className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none placeholder:text-rose-300 disabled:cursor-default"
+                    />
+                  </div>
+                </label>
 
-                <div>
-                  <label htmlFor="duration" className="mb-2 block text-sm font-bold text-[#5f4a5c]">
+                <label className="space-y-2.5">
+                  <span className="text-[13px] font-semibold text-slate-600">
                     {t("adminShapeMethodConfigs.durationMins")} <span className="text-[#ea4f93]">*</span>
-                  </label>
-                  <input
-                    id="duration"
-                    name="duration"
-                    type="number"
-                    min="1"
-                    value={draft.duration}
-                    onChange={handleChange}
-                    className={`h-12 w-full rounded-xl border bg-[#fffafc] px-4 text-[15px] font-medium text-[#432744] shadow-sm outline-none transition-all focus:bg-white focus:ring-4 ${errors.duration
-                      ? "border-red-300 focus:border-red-500 focus:ring-red-500/10"
-                      : "border-[#f4dbe7] focus:border-[#ea4f93] focus:ring-[#ea4f93]/10"
-                      }`}
-                  />
-                  {errors.duration && <p className="mt-2 text-xs font-semibold text-red-500">{errors.duration}</p>}
-                </div>
+                  </span>
+                  <div className={`flex items-center gap-2 rounded-2xl border px-4 py-3.5 ${isEditing ? "border-rose-100 bg-[#fff8fb]" : "border-slate-100 bg-slate-50/50"}`}>
+                    <Clock size={14} className={`shrink-0 ${isEditing ? "text-rose-300" : "text-slate-400"}`} />
+                    <input
+                      type="number"
+                      disabled={!isEditing}
+                      min="1"
+                      value={draft.duration}
+                      onChange={(event) => handleFieldChange("duration", event.target.value)}
+                      placeholder="e.g. 60"
+                      className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none placeholder:text-rose-300 disabled:cursor-default"
+                    />
+                  </div>
+                </label>
               </div>
-            </div>
 
-            <div className="space-y-6 lg:border-l lg:border-[#fdebf3] lg:pl-8">
-              <div>
-                <label className="mb-3 block text-sm font-bold text-[#5f4a5c]">{t("adminShapeMethodConfigs.status")}</label>
-                <div className="flex gap-4">
-                  <label className="flex cursor-pointer items-center gap-2">
+              <div className="space-y-2.5">
+                <span className="text-[13px] font-semibold text-slate-600">
+                  {t("adminShapeMethodConfigs.status")}
+                </span>
+                <div className="flex gap-4 p-1">
+                  <label className={`flex cursor-pointer items-center gap-2 rounded-xl border px-4 py-3 transition ${draft.status === "Active" ? "border-emerald-200 bg-emerald-50/50 text-emerald-700 font-bold" : "border-slate-100 bg-slate-50/50 text-slate-400"} ${!isEditing ? "cursor-default opacity-85" : ""}`}>
                     <input
                       type="radio"
                       name="status"
                       value="Active"
+                      disabled={!isEditing}
                       checked={draft.status === "Active"}
-                      onChange={handleChange}
-                      className="text-[#ea4f93] focus:ring-[#ea4f93]"
+                      onChange={(event) => handleFieldChange("status", event.target.value)}
+                      className="accent-rose-500 disabled:opacity-50"
                     />
-                    <span className="text-sm font-semibold text-[#432744]">{t("adminShapeMethodConfigs.active")}</span>
+                    <span className="text-[14px]">
+                      {t("adminShapeMethodConfigs.active")}
+                    </span>
                   </label>
-                  <label className="flex cursor-pointer items-center gap-2">
+                  <label className={`flex cursor-pointer items-center gap-2 rounded-xl border px-4 py-3 transition ${draft.status === "Inactive" ? "border-rose-200 bg-rose-50/50 text-rose-700 font-bold" : "border-slate-100 bg-slate-50/50 text-slate-400"} ${!isEditing ? "cursor-default opacity-85" : ""}`}>
                     <input
                       type="radio"
                       name="status"
                       value="Inactive"
+                      disabled={!isEditing}
                       checked={draft.status === "Inactive"}
-                      onChange={handleChange}
-                      className="text-[#ea4f93] focus:ring-[#ea4f93]"
+                      onChange={(event) => handleFieldChange("status", event.target.value)}
+                      className="accent-rose-500 disabled:opacity-50"
                     />
-                    <span className="text-sm font-semibold text-[#432744]">{t("adminShapeMethodConfigs.inactive")}</span>
+                    <span className="text-[14px]">
+                      {t("adminShapeMethodConfigs.inactive")}
+                    </span>
                   </label>
                 </div>
               </div>
             </div>
-          </div>
+          </section>
+
+          <aside className="space-y-4">
+            <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
+              <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
+                <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
+                {t("adminShapeMethodConfigs.preview")}
+              </h2>
+
+              <div className="space-y-4">
+                <div className="flex h-auto min-h-[150px] items-center justify-center overflow-hidden rounded-2xl border border-rose-100 bg-[#fff8fb]">
+                  {selectedShape?.imageUrl ? (
+                    <img
+                      crossOrigin="anonymous"
+                      src={selectedShape.imageUrl}
+                      alt="Selected shape preview"
+                      className="h-full w-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="text-center text-sm font-medium text-slate-400">
+                      <ImageIcon size={24} className="mx-auto mb-3 text-rose-300" />
+                      {t("adminShapeMethodConfigs.notSelected")}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3 rounded-2xl border border-rose-100 bg-[#fff8fb] p-4">
+                  {summaryItems.map(([label, value]) => (
+                    <div key={label} className="flex items-start justify-between gap-3 text-sm">
+                      <span className="font-semibold text-slate-500">{label}</span>
+                      <span className="text-right font-bold text-slate-800">{value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          </aside>
         </div>
-
-        <div className="flex items-center justify-end gap-3 border-t border-[#fdebf3] bg-[#fffafc] px-6 py-5 md:px-8">
-          {hasChanges && (
-            <button
-              type="button"
-              disabled={isSaving}
-              onClick={() => {
-                setDraft({
-                  name: config.name,
-                  nailShapeId: config.nailShapeId,
-                  price: config.price,
-                  duration: config.duration,
-                  status: config.status,
-                });
-                setErrors({});
-              }}
-              className="inline-flex h-11 items-center justify-center rounded-full px-6 text-sm font-bold text-[#5f4a5c] transition-colors hover:bg-[#fce9f2] hover:text-[#ea4f93]"
-            >
-              {t("adminShapeMethodConfigs.discardChanges")}
-            </button>
-          )}
-
-          <button
-            type="submit"
-            disabled={!hasChanges || isSaving}
-            className="inline-flex h-11 min-w-[160px] items-center justify-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-6 text-sm font-bold text-white shadow-[0_8px_20px_rgba(236,72,153,0.25)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(236,72,153,0.35)] disabled:translate-y-0 disabled:opacity-70 disabled:shadow-none"
-          >
-            {isSaving ? (
-              <>
-                <LoaderCircle size={16} className="animate-spin" />
-                {t("adminShapeMethodConfigs.saving")}
-              </>
-            ) : (
-              <>
-                <Save size={16} />
-                {t("adminShapeMethodConfigs.saveChanges")}
-              </>
-            )}
-          </button>
-        </div>
-      </form>
-
-      {showDeleteModal && (
-        <ActionConfirmModal
-          isOpen
-          title={t("adminShapeMethodConfigs.deleteConfigTitle")}
-          description={t("adminShapeMethodConfigs.deleteConfirmDesc", { name: config.name })}
-          confirmLabel={t("adminShapeMethodConfigs.delete")}
-          cancelLabel={t("adminShapeMethodConfigs.cancel")}
-          icon={Trash2}
-          isDestructive
-          isLoading={isDeleting}
-          onConfirm={handleDelete}
-          onClose={() => {
-            if (!isDeleting) {
-              setShowDeleteModal(false);
-            }
-          }}
-        />
       )}
-    </div>
+
+      <ActionConfirmModal
+        open={showSaveConfirm}
+        intent="success"
+        title={t("adminShapeMethodConfigs.saveConfigChanges")}
+        subtitle={t("adminShapeMethodConfigs.thisWillUpdateTheConfigInBa")}
+        description={t("adminShapeMethodConfigs.confirmToSaveTheLatestChanges")}
+        confirmText={t("adminShapeMethodConfigs.saveChanges")}
+        cancelText={t("adminShapeMethodConfigs.reviewAgain")}
+        confirmIcon={Save}
+        loading={isSaving}
+        onConfirm={handleSave}
+        onCancel={() => !isSaving && setShowSaveConfirm(false)}
+        highlights={[draft?.name || config?.name || t("adminShapeMethodConfigs.newMethodConfig")]}
+        details={[]}
+      />
+
+      <ActionConfirmModal
+        open={showDeleteConfirm}
+        intent="danger"
+        title={t("adminShapeMethodConfigs.deleteConfigTitle")}
+        subtitle={t("adminShapeMethodConfigs.thisWillPermanentlyRemoveTheConfig")}
+        description={language === "vi" ? `Bạn chuẩn bị xóa cấu hình ${config?.name || ""}. Hành động này không thể hoàn tác.` : `You are about to delete config ${config?.name || ""}. This action cannot be undone.`}
+        confirmText={t("adminShapeMethodConfigs.deleteConfig")}
+        cancelText={t("adminShapeMethodConfigs.keepConfig")}
+        confirmIcon={Trash2}
+        loading={isDeleting}
+        onConfirm={handleDelete}
+        onCancel={() => !isDeleting && setShowDeleteConfirm(false)}
+        item={
+          selectedShape
+            ? {
+              image: selectedShape.imageUrl || undefined,
+              title: draft?.name || config?.name || "",
+              meta: draft?.price ? formatCurrency(Number(draft.price)) : "",
+              note: `ID: ${configId}`,
+            }
+            : null
+        }
+        warnings={[t("adminShapeMethodConfigs.thisActionCallsTheBackendDelete")]}
+      />
+    </section>
   );
 }
