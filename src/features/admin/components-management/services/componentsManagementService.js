@@ -57,9 +57,9 @@ export function normalizeAdminComponent(component) {
   return {
     id: Number(component?.componentId || 0),
     componentId: Number(component?.componentId || 0),
-    name: String(component?.name || "").trim() || "--",
+    name: String(component?.name || "").trim(),
     imageUrl: String(component?.imageUrl || "").trim(),
-    componentType: String(component?.componentType || "").trim() || "--",
+    componentType: String(component?.componentType || "").trim(),
     price: Number(component?.price || 0),
     duration: Number(component?.duration || 0),
     priceLabel: formatComponentCurrency(component?.price || 0),

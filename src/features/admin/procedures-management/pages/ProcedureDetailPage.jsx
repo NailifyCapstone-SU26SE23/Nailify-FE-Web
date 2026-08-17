@@ -119,7 +119,7 @@ export function ProcedureDetailPage() {
       [t("adminProcedures.procedureNameLabel"), procedure.name],
       [t("adminProcedures.createdAtLabel"), formatProcedureDate(procedure.createAt)],
       [t("adminProcedures.duration"), draft.duration !== "" ? formatProcedureDuration(draft.duration) : "--"],
-      [t("adminProcedures.status"), draft.status || "--"],
+      [t("adminProcedures.status"), draft.status],
       [t("adminProcedures.required"), draft.isRequired ? t("adminProcedures.required") : t("adminProcedures.optional")],
     ];
   }, [draft, procedure]);
@@ -442,7 +442,7 @@ export function ProcedureDetailPage() {
         onCancel={() => !isSaving && setShowSaveConfirm(false)}
         highlights={[draft?.name || procedure?.name || "Procedure"]}
         details={[
-          { label: "Status", value: draft?.status || "--" },
+          { label: "Status", value: draft?.status },
           { label: "Required", value: draft?.isRequired ? "Required" : "Optional" },
         ]}
       />

@@ -115,7 +115,7 @@ function normalizeAdminNailVariantDetail(variant) {
   return {
     id: String(variant?.nailVariantId || ""),
     nailVariantId: normalizeIntegerId(variant?.nailVariantId),
-    name: String(variant?.name || "").trim() || "--",
+    name: String(variant?.name || "").trim(),
     nailShapeId: normalizeIntegerId(variant?.nailShapeId),
     nailSurfaceId: normalizeIntegerId(variant?.nailSurfaceId),
     nailDesignId: normalizeIntegerId(variant?.nailDesignId),
@@ -129,7 +129,7 @@ function normalizeAdminNailVariantDetail(variant) {
     nailShape: variant?.nailShape
       ? {
         nailShapeId: normalizeIntegerId(variant.nailShape.nailShapeId),
-        name: toTitleCase(variant.nailShape.name) || "--",
+        name: toTitleCase(variant.nailShape.name),
         imageUrl: String(variant.nailShape.imageUrl || "").trim(),
         price: Number(variant.nailShape.price || 0),
         priceLabel: formatVnd(variant.nailShape.price || 0),
@@ -140,7 +140,7 @@ function normalizeAdminNailVariantDetail(variant) {
     nailSurface: variant?.nailSurface
       ? {
         nailSurfaceId: normalizeIntegerId(variant.nailSurface.nailSurfaceId),
-        name: String(variant.nailSurface.name || "").trim() || "--",
+        name: String(variant.nailSurface.name || "").trim(),
         shaderParam: String(variant.nailSurface.shaderParam || "").trim(),
         lightnessOffset: Number(variant.nailSurface.lightnessOffset || 0),
         saturationOffset: Number(variant.nailSurface.saturationOffset || 0),
@@ -162,9 +162,9 @@ function normalizeAdminNailVariantDetail(variant) {
       component: item?.component
         ? {
           componentId: normalizeIntegerId(item.component.componentId),
-          name: String(item.component.name || "").trim() || "--",
+          name: String(item.component.name || "").trim(),
           imageUrl: String(item.component.imageUrl || "").trim(),
-          componentType: String(item.component.componentType || "").trim() || "--",
+          componentType: String(item.component.componentType || "").trim(),
           price: Number(item.component.price || 0),
           priceLabel: formatVnd(item.component.price || 0),
           duration: Number(item.component.duration || 0),
@@ -181,7 +181,7 @@ function normalizeVariantProcedure(procedure, index = 0) {
     description: String(procedure?.description || "").trim(),
     duration: Number(procedure?.duration || 0),
     durationLabel: formatDurationMinutes(Number(procedure?.duration || 0)),
-    status: String(procedure?.status || "").trim() || "--",
+    status: String(procedure?.status || "").trim(),
     createAt: String(procedure?.createAt || "").trim(),
     isRequired: Boolean(procedure?.isRequired),
     // Inference: assign order is initialized from API response position because GET schema does not expose stepOrder.
@@ -275,7 +275,7 @@ export function normalizeAdminNailDesign(design) {
   return {
     id: String(design?.nailDesignId || ""),
     nailDesignId: Number(design?.nailDesignId || 0),
-    name: String(design?.name || "").trim() || "--",
+    name: String(design?.name || "").trim(),
     description: String(design?.description || "").trim(),
     status: String(design?.status || "").trim() || "Inactive",
     minPrice,
@@ -294,9 +294,9 @@ export function normalizeAdminCategory(category) {
   return {
     id: String(category?.categoryId || ""),
     categoryId: Number(category?.categoryId || 0),
-    name: String(category?.name || "").trim() || "--",
+    name: String(category?.name || "").trim(),
     categoryTypeId: Number(category?.categoryTypeId || 0),
-    categoryTypeName: String(category?.categoryTypeName || "").trim() || "--",
+    categoryTypeName: String(category?.categoryTypeName || "").trim(),
     status: String(category?.status || "").trim() || "Inactive",
   };
 }

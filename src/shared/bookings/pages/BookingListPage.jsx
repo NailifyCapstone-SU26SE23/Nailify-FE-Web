@@ -81,7 +81,7 @@ const SUMMARY_BY_ROLE = {
 };
 
 const SALON_OPTIONS = ["All salons", "Downtown Luxe", "Westside Glow", "Northpark Studio", "Eastview Nails"];
-const STATUS_OPTIONS = ["All", "Pending", "Confirmed", "Completed", "Cancelled", "No-show"];
+const STATUS_OPTIONS = ["All", "Pending", "Approved", "Rejected", "Cancelled", "CheckedIn", "InProgress", "ServiceCompleted", "Completed", "Repaired", "ReschedulePending", "RescheduleSuggested"];
 const PAYMENT_OPTIONS = ["All", "Paid", "Partial", "Pending", "Refunded", "Unpaid"];
 
 const BOOKING_PAGE_SIZE = 10;
@@ -131,7 +131,8 @@ SmallTag.propTypes = {
 
 /* STREAMING_CHUNK: Helper Functions */
 function formatDateLabel(dateValue) {
-  const parts = dateValue.split("-");
+  if (!dateValue) return "";
+  const parts = String(dateValue).split("-");
   if (parts.length !== 3) return dateValue;
   return `${parts[1]}/${parts[2]}/${parts[0]}`;
 }
@@ -156,13 +157,14 @@ function getBookingDateTimeValue(booking) {
 }
 
 function getInitials(name) {
-  return name
+  if (!name) return "NA";
+  return String(name)
     .split(" ")
     .filter(Boolean)
     .slice(0, 2)
     .map((part) => part[0])
     .join("")
-    .toUpperCase();
+    .toUpperCase() || "NA";
 }
 
 function mapBranch(branch) {
@@ -233,29 +235,29 @@ function buildBookingsCsvRows(bookings, isStaffRole, language) {
 
   const rows = bookings.map((booking) => {
     const baseCells = [
-      booking.uiId || booking.id || "--",
-      booking.customerName || "--",
-      booking.customerPhone || "--",
-      booking.uiBranch || booking.branch || "--",
-      booking.staffName || "--",
-      booking.bookingDate || booking.bookingDateValue || "--",
-      booking.bookingTime || "--",
-      booking.uiStatus || booking.status || "--",
+      booking.uiId || booking.id,
+      booking.customerName,
+      booking.customerPhone,
+      booking.uiBranch || booking.branch,
+      booking.staffName,
+      booking.bookingDate || booking.bookingDateValue,
+      booking.bookingTime,
+      booking.uiStatus || booking.status,
     ];
 
     if (isStaffRole) {
       return [
         ...baseCells,
-        booking.uiService || booking.service || "--",
-        booking.totalPriceLabel || booking.totalPrice || "--",
+        booking.uiService || booking.service,
+        booking.totalPriceLabel || booking.totalPrice,
       ];
     }
 
     return [
       ...baseCells,
-      booking.uiPayment || booking.paymentStatus || "--",
-      booking.uiService || booking.service || "--",
-      booking.totalPriceLabel || booking.totalPrice || "--",
+      booking.uiPayment || booking.paymentStatus,
+      booking.uiService || booking.service,
+      booking.totalPriceLabel || booking.totalPrice,
     ];
   });
 
@@ -862,7 +864,7 @@ export function BookingListPage() {
                                   </div>
                                   <div className="min-w-0">
                                     <p className="font-bold text-[#432744]">{booking.customerName}</p>
-                                    <p className="mt-1 text-[11px] text-[#c694ad]">{booking.customerPhone}</p>
+                                    {/* <p className="mt-1 text-[11px] text-[#c694ad]">{booking.customerPhone}</p> */}
                                   </div>
                                 </div>
                               </td>
@@ -908,9 +910,9 @@ export function BookingListPage() {
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center justify-between gap-2">
                                 <p className="font-bold text-[#432744]">{booking.customerName}</p>
-                                <span className="text-[10px] font-bold text-[#f04f91]">{booking.uiId}</span>
+                                {/* <span className="text-[10px] font-bold text-[#f04f91]">{booking.uiId}</span> */}
                               </div>
-                              <p className="mt-1 text-sm text-[#6b5668]">{booking.customerPhone}</p>
+                              {/* <p className="mt-1 text-sm text-[#6b5668]">{booking.customerPhone}</p> */}
                               <p className="mt-1 text-[11px] text-[#c694ad]">
                                 {booking.uiBranch} • {booking.staffName}
                               </p>

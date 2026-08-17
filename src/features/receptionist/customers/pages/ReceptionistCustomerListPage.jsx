@@ -906,7 +906,7 @@ export function ReceptionistCustomerListPage() {
         title: "Email",
         dataIndex: "email",
         key: "email",
-        render: (val) => <span className="text-gray-600 text-xs font-medium">{val || "--"}</span>,
+        render: (val) => <span className="text-gray-600 text-xs font-medium">{val}</span>,
       },
       {
         title: t("receptionist.common.status") || "Trạng Thái",

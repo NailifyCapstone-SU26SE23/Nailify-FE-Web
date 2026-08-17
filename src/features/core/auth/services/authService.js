@@ -159,4 +159,19 @@ export const authService = {
       });
     }
   },
+
+  async checkResetToken(token) {
+    try {
+      const response = await axiosClient.post("/Auth/check-reset-token", {
+        token: token.trim(),
+      });
+      return response.data;
+    } catch (error) {
+      const apiMessage = error.response?.data?.message;
+      throw new Error(apiMessage || error.message || "Token verification failed.", {
+        cause: error,
+      });
+    }
+  },
 };
+

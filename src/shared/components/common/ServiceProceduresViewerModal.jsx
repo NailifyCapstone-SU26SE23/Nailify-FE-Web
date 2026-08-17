@@ -98,14 +98,14 @@ export function ServiceProceduresViewerModal({
                 <span className="text-[9px] font-bold uppercase tracking-wider text-[#E84F93]">
                   {isVi ? "Dịch Vụ Chọn" : "Selected Service"}
                 </span>
-                <h4 className="text-base font-bold text-[#2B182B]">{service.name || "--"}</h4>
+                <h4 className="text-base font-bold text-[#2B182B]">{service.name}</h4>
               </div>
               <div className="flex items-center gap-3 text-xs">
                 <span className="rounded-xl border border-[#F3E2EC] bg-white px-3 py-1.5 font-bold text-[#2B182B]">
                   {isVi ? `Số lượng: x${service.quantity || 1}` : `Qty: x${service.quantity || 1}`}
                 </span>
                 <span className="flex items-center justify-center gap-1.5 rounded-xl border border-[#F3E2EC] bg-white px-3 py-1.5 font-bold text-[#E84F93]">
-                  <AlarmClock size={12} /> {isVi ? "Tổng thời gian:" : "Total duration:"} {service.durationLabel || "--"}
+                  <AlarmClock size={12} /> {isVi ? "Tổng thời gian:" : "Total duration:"} {service.durationLabel}
                 </span>
               </div>
             </div>

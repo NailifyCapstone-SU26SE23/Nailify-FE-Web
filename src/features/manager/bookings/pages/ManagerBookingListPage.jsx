@@ -1382,7 +1382,7 @@ export function ManagerBookingListPage() {
                                 <td className="px-4 py-3.5 align-middle">
                                   <div className="flex min-w-0 items-center gap-2">
                                     <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-xl text-[9px] font-bold text-white shadow-xs ${row.artist === "Unassigned" ? "bg-[#D97706]" : "bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9]"}`}>
-                                      {row.artist === "Unassigned" ? "!" : row.artist.split(" ").map(p => p[0]).join("")}
+                                      {row.artist === "Unassigned" ? "!" : (row.artist || "").split(" ").map(p => p[0]).join("")}
                                     </div>
                                     <div className="min-w-0">
                                       <p className={`truncate text-xs font-semibold ${row.artist === "Unassigned" ? "text-[#D97706] italic" : "text-[#2B182B]"}`}>
@@ -1481,7 +1481,7 @@ export function ManagerBookingListPage() {
                                   const displayName = artistItem.name;
                                   const initials = isUnassigned
                                     ? "!"
-                                    : displayName.split(" ").filter(Boolean).map(p => p[0]).slice(0, 2).join("").toUpperCase();
+                                    : (displayName || "").split(" ").filter(Boolean).map(p => p[0]).slice(0, 2).join("").toUpperCase();
 
                                   return (
                                     <th key={artistItem.id || displayName} className="min-w-[175px] p-3 text-center border-r border-[#F3E2EC] last:border-r-0">
@@ -1720,7 +1720,7 @@ export function ManagerBookingListPage() {
                                         onClick={() => handleOpenDrawer(b.id)}
                                         className={`rounded-lg border px-1.5 py-1 text-[9px] font-bold cursor-grab active:cursor-grabbing truncate ${getCalendarCardStyle(b.status)}`}
                                       >
-                                        {b.customer} ({b.time.split("-")[0].trim()})
+                                        {b.customer} ({(b.time || "").split("-")[0]?.trim() || ""})
                                       </div>
                                     ))}
                                     {dayBookings.length > 2 && (
@@ -1901,7 +1901,7 @@ export function ManagerBookingListPage() {
                   {staffWorkloadData.map((staff, i) => (
                     <div key={i} className="flex items-center gap-3">
                       <div className={`flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br ${staff.tone} text-xs font-bold text-white shadow-xs`}>
-                        {staff.name.split(" ").map((p) => p[0]).join("")}
+                        {(staff.name || "").split(" ").map((p) => p[0]).join("")}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between text-xs">

@@ -49,7 +49,7 @@ export function normalizeAdminNailShape(shape) {
   return {
     id: Number(shape?.nailShapeId || 0),
     nailShapeId: Number(shape?.nailShapeId || 0),
-    name: String(shape?.name || "").trim() || "--",
+    name: String(shape?.name || "").trim(),
     imageUrl: String(shape?.imageUrl || "").trim(),
     duration: shape?.duration != null ? Number(shape.duration) : null,
     durationLabel: formatNailShapeDuration(shape?.duration),

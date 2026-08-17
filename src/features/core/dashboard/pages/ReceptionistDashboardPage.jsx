@@ -58,7 +58,7 @@ import {
 const APPOINTMENTS_PAGE_SIZE = 5;
 
 function getInitials(name) {
-  return (name || "--")
+  return (name)
     .split(" ")
     .filter(Boolean)
     .slice(0, 2)
@@ -135,11 +135,11 @@ function normalizeAppointmentRow(booking, index) {
     bookingId: booking.bookingId,
     rawStartTime: booking.startTime || "",
     time: formatTimeLabel(booking.startTime, booking.totalDuration),
-    customer: typeof booking.customerName === 'object' ? booking.customerName?.customerName || "--" : (booking.customerName || "--"),
+    customer: typeof booking.customerName === 'object' ? booking.customerName?.customerName : (booking.customerName),
     service:
-      booking.bookingItems?.map((item) => item.serviceName).filter(Boolean).join(", ") || "--",
-    staff: booking.artistName || "--",
-    status: booking.status || "--",
+      booking.bookingItems?.map((item) => item.serviceName).filter(Boolean).join(", "),
+    staff: booking.artistName,
+    status: booking.status,
     tone: getStatusTone(booking.status),
     avatarTone: getAvatarTone(index),
   };
@@ -917,7 +917,7 @@ export function ReceptionistDashboardPage() {
       const cName = typeof u.customerName === 'object' ? u.customerName?.customerName || 'Customer' : (u.customerName || 'Customer');
       return [
         cName,
-        u.assignedArtistName || "--",
+        u.assignedArtistName,
         new Date(u.arrivalTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + " | Upcoming",
         getInitials(cName),
         getAvatarTone(idx)
@@ -1051,7 +1051,7 @@ export function ReceptionistDashboardPage() {
             {displayWalkInQueue.length > 0 ? (
               displayWalkInQueue.map((item, index) => {
                 const guestName = typeof item.guestName === 'object' ? item.guestName?.customerName || 'Customer' : (item.guestName || 'Customer');
-                const requestNote = typeof item.requestNote === 'object' ? item.requestNote?.note || 'Walk-in request' : (item.requestNote || "--");
+                const requestNote = typeof item.requestNote === 'object' ? item.requestNote?.note || 'Walk-in request' : (item.requestNote);
 
                 // Convert arrivalTime to readable format (HH:mm)
                 const arrivalTimeStr = item.arrivalTime ? new Date(item.arrivalTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--:--";

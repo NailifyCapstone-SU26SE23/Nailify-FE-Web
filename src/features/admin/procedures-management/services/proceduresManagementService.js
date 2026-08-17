@@ -7,8 +7,8 @@ function getAuthHeaders() {
 
   return token
     ? {
-        Authorization: `Bearer ${token}`,
-      }
+      Authorization: `Bearer ${token}`,
+    }
     : {};
 }
 
@@ -78,10 +78,10 @@ export function normalizeAdminProcedure(procedure) {
   return {
     id: String(procedure?.procedureId || "").trim(),
     procedureId: String(procedure?.procedureId || "").trim(),
-    name: String(procedure?.name || "").trim() || "--",
+    name: String(procedure?.name || "").trim(),
     description: String(procedure?.description || "").trim(),
     duration: Number(procedure?.duration || 0),
-    status: String(procedure?.status || "").trim() || "--",
+    status: String(procedure?.status || "").trim(),
     createAt: String(procedure?.createAt || "").trim(),
     isRequired: Boolean(procedure?.isRequired),
     durationLabel: formatProcedureDuration(procedure?.duration || 0),

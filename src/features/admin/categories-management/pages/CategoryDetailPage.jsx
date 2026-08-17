@@ -110,8 +110,8 @@ export function CategoryDetailPage() {
 
     return [
       [t("adminCategories.categoryIdLabel"), String(category.categoryId)],
-      [t("adminCategories.categoryType"), selectedType?.label || category.categoryTypeName || "--"],
-      [t("adminCategories.status"), draft.status || "--"],
+      [t("adminCategories.categoryType"), selectedType?.label || category.categoryTypeName],
+      [t("adminCategories.status"), draft.status],
     ];
   }, [category, categoryTypeOptions, draft]);
 
@@ -378,8 +378,8 @@ export function CategoryDetailPage() {
         onCancel={() => !isSaving && setShowSaveConfirm(false)}
         highlights={[draft?.name || category?.name || "Category"]}
         details={[
-          { label: "Category Type", value: summaryItems[1]?.[1] || "--" },
-          { label: "Status", value: draft?.status || "--" },
+          { label: "Category Type", value: summaryItems[1]?.[1] },
+          { label: "Status", value: draft?.status },
         ]}
       />
 

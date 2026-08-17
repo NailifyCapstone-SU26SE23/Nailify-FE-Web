@@ -300,7 +300,7 @@ function MiniInfo({ label, value, className = "" }) {
   return (
     <div className={`rounded-[12px] border px-2.5 py-2 ${className || "border-[#f7d8e5] bg-white/80"}`}>
       <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#c08aa4]">{label}</p>
-      <p className="mt-1 text-[11px] font-bold text-[#402542]">{value || "--"}</p>
+      <p className="mt-1 text-[11px] font-bold text-[#402542]">{value}</p>
     </div>
   );
 }
@@ -493,10 +493,10 @@ function BoardTaskCard({
         {/* Basic Meta Grid */}
         <div className="mt-3 grid grid-cols-2 gap-2">
           <MiniInfo label={isVi ? "Khách hàng" : "Customer"} value={task.customerName} className={theme.infoClassName} />
-          <MiniInfo label={isVi ? "Ghế" : "Chair"} value={task.chairName || "--"} className={theme.infoClassName} />
+          <MiniInfo label={isVi ? "Ghế" : "Chair"} value={task.chairName} className={theme.infoClassName} />
           <MiniInfo
             label={isVi ? "Ngày" : "Date"}
-            value={formatDate(task.bookingDate) || "--"}
+            value={formatDate(task.bookingDate)}
             className={theme.infoClassName}
           />
           <MiniInfo

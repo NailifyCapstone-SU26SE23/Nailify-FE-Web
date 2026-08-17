@@ -213,7 +213,7 @@ export function ShapeMethodConfigDetailPage() {
 
   const summaryItems = useMemo(
     () => [
-      [t("adminShapeMethodConfigs.methodName"), draft?.name || "--"],
+      [t("adminShapeMethodConfigs.methodName"), draft?.name],
       [t("adminShapeMethodConfigs.nailShape"), selectedShape ? selectedShape.name : t("adminShapeMethodConfigs.notSelected")],
       [t("adminShapeMethodConfigs.priceVnd"), draft?.price ? formatCurrency(Number(draft.price)) : "--"],
       [t("adminShapeMethodConfigs.durationMins"), draft?.duration ? `${draft.duration} ${t("adminShapeMethodConfigs.mins")}` : "--"],

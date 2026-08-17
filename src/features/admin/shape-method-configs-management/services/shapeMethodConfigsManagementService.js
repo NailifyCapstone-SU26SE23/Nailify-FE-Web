@@ -32,10 +32,10 @@ export async function fetchAdminShapeMethodConfigs(filters = {}) {
     items: Array.isArray(data?.items) ? data.items.map((item) => ({
       shapeMethodConfigId: Number(item?.shapeMethodConfigId || 0),
       nailShapeId: Number(item?.nailShapeId || 0),
-      name: String(item?.name || "").trim() || "--",
+      name: String(item?.name || "").trim(),
       price: Number(item?.price || 0),
       duration: Number(item?.duration || 0),
-      status: String(item?.status || "").trim() || "--",
+      status: String(item?.status || "").trim(),
     })) : [],
     metaData: data?.metaData ?? {
       currentPage: 1,
@@ -66,10 +66,10 @@ export async function fetchAdminShapeMethodConfigDetail(id) {
   return {
     shapeMethodConfigId: Number(data?.shapeMethodConfigId || 0),
     nailShapeId: Number(data?.nailShapeId || 0),
-    name: String(data?.name || "").trim() || "--",
+    name: String(data?.name || "").trim(),
     price: Number(data?.price || 0),
     duration: Number(data?.duration || 0),
-    status: String(data?.status || "").trim() || "--",
+    status: String(data?.status || "").trim(),
   };
 }
 
@@ -90,14 +90,14 @@ export async function fetchAdminShapeMethodConfigsByNailShape(nailShapeId) {
     // but unwrapResponse handles the error. Actually let's use unwrapResponse.
   }
   const data = unwrapResponse(response, "Failed to load shape method configs.");
-  
+
   return Array.isArray(data) ? data.map(item => ({
     shapeMethodConfigId: Number(item?.shapeMethodConfigId || 0),
     nailShapeId: Number(item?.nailShapeId || 0),
-    name: String(item?.name || "").trim() || "--",
+    name: String(item?.name || "").trim(),
     price: Number(item?.price || 0),
     duration: Number(item?.duration || 0),
-    status: String(item?.status || "").trim() || "--",
+    status: String(item?.status || "").trim(),
   })) : [];
 }
 

@@ -314,7 +314,7 @@ export function NailDesignManagementPage() {
       },
       {
         label: t("adminNailsDesignManagement.mostPopularStyle"),
-        value: normalizedDesigns[0]?.uiTitle || "--",
+        value: normalizedDesigns[0]?.uiTitle,
         note: t("adminNailsDesignManagement.currentPageHighlight"),
         icon: Star,
         iconClassName: "bg-[#fff4df] text-[#f5a623]",

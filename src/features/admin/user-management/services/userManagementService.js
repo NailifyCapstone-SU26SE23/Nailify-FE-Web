@@ -7,8 +7,8 @@ function getAuthHeaders() {
 
   return token
     ? {
-        Authorization: `Bearer ${token}`,
-      }
+      Authorization: `Bearer ${token}`,
+    }
     : {};
 }
 
@@ -35,7 +35,7 @@ function normalizeStatus(status) {
     case "pending":
       return "Pending";
     default:
-      return status || "--";
+      return status;
   }
 }
 
@@ -54,7 +54,7 @@ function normalizeRole(role) {
     case "customer":
       return "Customer";
     default:
-      return role || "--";
+      return role;
   }
 }
 
@@ -104,7 +104,7 @@ export function normalizeAdminUser(user) {
   const role = normalizeRole(user?.role);
   const firstName = String(user?.firstName || "").trim();
   const lastName = String(user?.lastName || "").trim();
-  const fullName = [firstName, lastName].filter(Boolean).join(" ").trim() || user?.email || "--";
+  const fullName = [firstName, lastName].filter(Boolean).join(" ").trim() || user?.email;
   const statusLabel = normalizeStatus(user?.status);
 
   return {
@@ -113,10 +113,10 @@ export function normalizeAdminUser(user) {
     name: fullName,
     firstName,
     lastName,
-    email: user?.email || "--",
-    phone: String(user?.phone || "--").trim() || "--",
+    email: user?.email,
+    phone: String(user?.phone).trim(),
     role,
-    rawRole: String(user?.role || "").trim() || "--",
+    rawRole: String(user?.role || "").trim(),
     displayRole: getDisplayRole(role),
     salonId: user?.salonId || "",
     salon: user?.salonId ? "Assigned salon" : "No salon",
@@ -262,7 +262,7 @@ export async function updateAdminUser(userId, formValues) {
   if (formValues?.lastName !== undefined) payload.lastName = String(formValues.lastName || "").trim();
   if (formValues?.phone !== undefined) payload.phone = String(formValues.phone || "").trim();
   if (formValues?.status !== undefined) payload.status = String(formValues.status || "").trim();
-  
+
   if (isSalonRole(formValues?.role)) {
     const sId = String(formValues?.salonId || "").trim();
     payload.salonId = sId ? sId : null;

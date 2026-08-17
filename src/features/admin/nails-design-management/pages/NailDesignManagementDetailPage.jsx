@@ -987,7 +987,7 @@ export function NailDesignManagementDetailPage() {
       const refreshedDetail = await fetchAdminNailDesignDetail(designId);
       setInitialDesign(refreshedDetail);
       setFormValues(refreshedDetail);
-      
+
       setIsEditing(false);
     } catch (saveError) {
       setError(
@@ -2149,15 +2149,15 @@ export function NailDesignManagementDetailPage() {
                         <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
                           <div>
                             <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.name")}</p>
-                            <p className="mt-1 font-semibold text-[#432744]">{item.name || "--"}</p>
+                            <p className="mt-1 font-semibold text-[#432744]">{item.name}</p>
                           </div>
                           <div>
                             <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.duration")}</p>
-                            <p className="mt-1 font-semibold text-[#432744]">{item.durationLabel || "--"}</p>
+                            <p className="mt-1 font-semibold text-[#432744]">{item.durationLabel}</p>
                           </div>
                           <div>
                             <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.status")}</p>
-                            <p className="mt-1 font-semibold text-[#432744]">{item.status || "--"}</p>
+                            <p className="mt-1 font-semibold text-[#432744]">{item.status}</p>
                           </div>
                           <div>
                             <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.required")}</p>

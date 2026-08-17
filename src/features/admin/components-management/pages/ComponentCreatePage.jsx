@@ -65,8 +65,8 @@ export function ComponentCreatePage() {
 
   const summaryItems = useMemo(
     () => [
-      [t("adminComponents.componentName"), formValues.name || "--"],
-      [t("adminComponents.type"), formValues.componentType || "--"],
+      [t("adminComponents.componentName"), formValues.name],
+      [t("adminComponents.type"), formValues.componentType],
       [t("adminComponents.price"), formValues.price ? formatComponentCurrency(formValues.price) : "--"],
       [t("adminComponents.duration"), formValues.duration ? formatComponentDuration(formValues.duration) : "--"],
     ],
@@ -340,7 +340,7 @@ export function ComponentCreatePage() {
         onCancel={() => !isSaving && setShowSaveConfirm(false)}
         highlights={[formValues.name || "New component"]}
         details={[
-          { label: "Type", value: formValues.componentType || "--" },
+          { label: "Type", value: formValues.componentType },
           { label: "Price", value: formValues.price ? formatComponentCurrency(formValues.price) : "--" },
         ]}
       />

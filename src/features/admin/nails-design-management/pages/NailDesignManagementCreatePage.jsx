@@ -196,7 +196,7 @@ function LivePreview({ variant, title }) {
       </div>
       <p className="mt-4 text-sm font-extrabold text-[#432744]">{title}</p>
       <p className="mt-1 text-xs text-[#a88a9d]">
-        {variant?.shape || "--"} / {variant?.finish || "--"}
+        {variant?.shape} / {variant?.finish}
       </p>
     </div>
   );
@@ -744,8 +744,8 @@ export function NailDesignManagementCreatePage() {
           >
             <div className="grid gap-3 md:grid-cols-2">
               {[
-                [formValues.name || "--", t("adminNailsDesignManagement.designName")],
-                [formValues.category || "--", t("adminNailsDesignManagement.category")],
+                [formValues.name, t("adminNailsDesignManagement.designName")],
+                [formValues.category, t("adminNailsDesignManagement.category")],
                 [String(variants.length), t("adminNailsDesignManagement.variants")],
                 [String(designImageFiles.length), t("adminNailsDesignManagement.designImages")],
               ].map(([value, label]) => (
