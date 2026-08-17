@@ -124,6 +124,39 @@ const STATUS_OPTIONS = ["All", "Pending", "Approved", "Rejected", "Cancelled", "
 
 export function ReceptionistBookingListPage() {
   const { t, language } = useLanguage();
+  const formatDisplay = (s) => {
+    switch (s) {
+      case "Checked In":
+      case "CheckedIn":
+        return language === "vi" ? "Đã check in" : "Checked In";
+      case "In Progress":
+      case "InProgress":
+        return language === "vi" ? "Đang tiến hành" : "In Progress";
+      case "Pending":
+        return language === "vi" ? "Đang chờ" : "Pending";
+      case "Confirmed":
+      case "Approved":
+        return language === "vi" ? "Đã xác nhận" : "Confirmed";
+      case "Completed":
+      case "ServiceCompleted":
+        return language === "vi" ? "Đã hoàn thành" : "Completed";
+      case "Rejected":
+        return language === "vi" ? "Đã từ chối" : "Rejected";
+      case "Cancelled":
+      case "Canceled":
+        return language === "vi" ? "Đã hủy" : "Cancelled";
+      case "ReschedulePending":
+        return language === "vi" ? "Đang chờ dời lịch" : "Reschedule Pending";
+      case "RescheduleSuggested":
+        return language === "vi" ? "Đã đề xuất dời lịch" : "Reschedule Proposed";
+      case "Repaired":
+        return language === "vi" ? "Đã sửa chữa" : "Repaired";
+      case "All":
+        return language === "vi" ? "Tất cả" : "All";
+      default:
+        return s;
+    }
+  };
   const location = useLocation();
   const navigate = useNavigate();
   const todayDate = useMemo(() => getTodayDateParam(), []);
@@ -411,7 +444,7 @@ export function ReceptionistBookingListPage() {
       sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
       render: (status) => (
         <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-extrabold ${getStatusTone(status)}`}>
-          {status}
+          {formatDisplay(status)}
         </span>
       ),
     },
@@ -432,8 +465,8 @@ export function ReceptionistBookingListPage() {
                 {
                   key: "assign-artist",
                   label: booking.artistName && booking.artistName !== "Unassigned"
-                    ? t("receptionist.bookings.changeArtist") || "Change Nail Artist"
-                    : t("receptionist.bookings.assignArtistTitle") || "Assign Nail Artist",
+                    ? t("receptionist.bookings.changeArtist") || "Change Staff Artist"
+                    : t("receptionist.bookings.assignArtistTitle") || "Assign Staff Artist",
                   icon: UserRound,
                   className: "text-[#7c63d8]",
                   onSelect: () => setAssignArtistBooking(booking),
@@ -741,7 +774,7 @@ export function ReceptionistBookingListPage() {
               >
                 {STATUS_OPTIONS.map((item) => (
                   <option key={item} value={item}>
-                    {item === "All" ? t("receptionist.bookings.statusAll") || "All Statuses" : item}
+                    {formatDisplay(item)}
                   </option>
                 ))}
               </select>
@@ -865,7 +898,7 @@ export function ReceptionistBookingListPage() {
                       <p className="mt-1 text-[11px] text-[#b38a9f]">{booking.artistName}</p>
                     </div>
                     <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-extrabold ${getStatusTone(booking.status)}`}>
-                      {booking.status}
+                      {formatDisplay(booking.status)}
                     </span>
                   </div>
                   <p className="mt-3 text-sm text-[#6b5668]">{booking.services[0]}</p>
@@ -888,8 +921,8 @@ export function ReceptionistBookingListPage() {
                             {
                               key: "assign-artist",
                               label: booking.artistName && booking.artistName !== "Unassigned"
-                                ? t("receptionist.bookings.changeArtist") || "Change Nail Artist"
-                                : t("receptionist.bookings.assignArtistTitle") || "Assign Nail Artist",
+                                ? t("receptionist.bookings.changeArtist") || "Change Staff Artist"
+                                : t("receptionist.bookings.assignArtistTitle") || "Assign Staff Artist",
                               icon: UserRound,
                               className: "text-[#7c63d8]",
                               onSelect: () => setAssignArtistBooking(booking),

@@ -671,7 +671,7 @@ export function AdminSalonBookingRatingPage() {
                       <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]" size={15} />
                       <input
                         type="text"
-                        placeholder={isVi ? "Tìm theo tên khách hàng, email hoặc số điện thoại..." : "Search by customer, nail artist, or comment..."}
+                        placeholder={isVi ? "Tìm theo tên khách hàng, email hoặc số điện thoại..." : "Search by customer, Staff Artist, or comment..."}
                         value={reviewSearchQuery}
                         onChange={(e) => setReviewSearchQuery(e.target.value)}
                         className="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300"
@@ -739,7 +739,7 @@ export function AdminSalonBookingRatingPage() {
                         const avatarUrl = usersMap[rating.customerId]?.avatarUrl || "";
                         const score = rating.overallScore || 5;
                         const dateFormatted = formatDate(rating.createdAt);
-                        const artistName = rating.nailArtistName || usersMap[rating.nailArtistId]?.name || "Nail Artist";
+                        const artistName = rating.nailArtistName || usersMap[rating.nailArtistId]?.name || "Staff Artist";
 
                         // Check if there is an operational comment response in the API/mock
                         const responseContent = rating.commentResponse || "Cảm ơn quý khách đã tin tưởng và đánh giá dịch vụ của tiệm. Chúng tôi luôn ghi nhận ý kiến để nâng cấp chất lượng tốt hơn nữa.";

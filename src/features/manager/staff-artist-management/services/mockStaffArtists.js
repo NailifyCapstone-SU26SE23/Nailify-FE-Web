@@ -54,7 +54,7 @@ export const STAFF_ARTISTS = [
   {
     id: "staff-01",
     name: "Mia Chen",
-    role: "Senior Nail Artist",
+    role: "Senior Staff Artist",
     rating: 5.0,
     status: "Available",
     skills: ["Gel Nail", "Nail Art", "K-Beauty"],
@@ -104,7 +104,7 @@ export const STAFF_ARTISTS = [
   {
     id: "staff-06",
     name: "Mel Santos",
-    role: "Junior Nail Artist",
+    role: "Junior Staff Artist",
     rating: 4.6,
     status: "Busy",
     skills: ["Gel Manicure", "French Tips"],
@@ -114,7 +114,7 @@ export const STAFF_ARTISTS = [
   {
     id: "staff-07",
     name: "Jess Tan",
-    role: "Nail Artist",
+    role: "Staff Artist",
     rating: 4.5,
     status: "On Leave",
     skills: ["Gel Nail", "Pedicure"],
@@ -124,7 +124,7 @@ export const STAFF_ARTISTS = [
   {
     id: "staff-08",
     name: "Priya Sharma",
-    role: "Senior Nail Artist",
+    role: "Senior Staff Artist",
     rating: 4.9,
     status: "Available",
     skills: ["Nail Art", "Chrome", "Rhinestone"],
@@ -134,7 +134,7 @@ export const STAFF_ARTISTS = [
   {
     id: "staff-09",
     name: "Hana Yoo",
-    role: "Nail Artist",
+    role: "Staff Artist",
     rating: 4.4,
     status: "On Leave",
     skills: ["Gel Nail", "Matte Finish"],
@@ -145,7 +145,7 @@ export const STAFF_ARTISTS = [
 
 export const TOP_PERFORMER = {
   name: "Mia Chen",
-  role: "Senior Nail Artist",
+  role: "Senior Staff Artist",
   badge: "Top Artist of the Month",
   stats: { bookings: "142", rating: "5.0", revenue: "$3.2k" },
   avatarTone: "from-[#ffc5de] via-[#ea4f93] to-[#8b5cf6]",
@@ -285,7 +285,7 @@ export const SCHEDULE_DAY_KEYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun
 export const PERFORMANCE_OVERVIEW = [
   {
     name: "Mia Chen",
-    role: "Senior Nail Artist",
+    role: "Senior Staff Artist",
     avatarTone: "from-[#ffc5de] to-[#ea4f93]",
     metrics: {
       completed: "142",
@@ -313,7 +313,7 @@ export const PERFORMANCE_OVERVIEW = [
   },
   {
     name: "Priya Sharma",
-    role: "Senior Nail Artist",
+    role: "Senior Staff Artist",
     avatarTone: "from-[#a7f3d0] to-[#059669]",
     metrics: {
       completed: "135",
@@ -374,13 +374,13 @@ export const STAFF_SPECIALTIES = [
 ];
 
 export const STAFF_ROLE_OPTIONS = [
-  { value: "Senior Nail Artist", label: "Senior Nail Artist" },
+  { value: "Senior Staff Artist", label: "Senior Staff Artist" },
   { value: "Nail Art Designer", label: "Nail Art Designer" },
   { value: "3D Art Specialist", label: "3D Art Specialist" },
   { value: "Gel & Acrylic Expert", label: "Gel & Acrylic Expert" },
   { value: "K-Beauty Specialist", label: "K-Beauty Specialist" },
-  { value: "Junior Nail Artist", label: "Junior Nail Artist" },
-  { value: "Nail Artist", label: "Nail Artist" },
+  { value: "Junior Staff Artist", label: "Junior Staff Artist" },
+  { value: "Staff Artist", label: "Staff Artist" },
 ];
 
 export const STAFF_FORM_MODAL_STYLES = {
@@ -397,7 +397,7 @@ export const STAFF_FORM_MODAL_STYLES = {
 
 export const createEmptyStaffForm = () => ({
   name: "",
-  role: "Nail Artist",
+  role: "Staff Artist",
   email: "",
   phone: "",
   status: "Available",

@@ -204,7 +204,7 @@ export function ReceptionistBookingDetail({ booking }) {
       ),
     },
     {
-      title: t("receptionist.bookings.artist") || "Nail Artist",
+      title: t("receptionist.bookings.artist") || "Staff Artist",
       key: "artist",
       render: (_, row) => (
         <div className="flex items-center gap-2.5">

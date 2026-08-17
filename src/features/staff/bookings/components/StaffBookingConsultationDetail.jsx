@@ -218,7 +218,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2f1322]/45 p-4 backdrop-blur-[2px]">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#2f1322]/45 p-4 backdrop-blur-[2px]">
       <div className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-[28px] border border-[#f1cade] bg-white shadow-[0_30px_80px_rgba(63,43,63,0.24)]">
         <div className="flex items-start justify-between gap-4 border-b border-[#f7dfeb] px-6 py-5">
           <div>
@@ -246,6 +246,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                 showHeader={false}
                 showInstruction={false}
                 showSurfaceMode={false}
+                compact={true}
               />
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
                 <InfoCard label="Price" value={formatVariantCurrency(variantDetail.price)} note="" tone="success" />
@@ -321,9 +322,11 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                             </div>
                           </div>
 
-                          <span className="rounded-full border border-[#f2bfd4] bg-[#fff5f9] px-3 py-1 text-[10px] font-bold text-[#ea4f93]">
-                            Finger #{item.fingerIndex ?? "--"}
-                          </span>
+                          {item.fingerIndex !== undefined && item.fingerIndex !== null && item.fingerIndex !== -1 && (
+                            <span className="rounded-full border border-[#f2bfd4] bg-[#fff5f9] px-3 py-1 text-[10px] font-bold text-[#ea4f93]">
+                              Finger #{item.fingerIndex}
+                            </span>
+                          )}
                         </div>
                       </div>
                     ))
@@ -754,6 +757,7 @@ export function StaffBookingConsultationDetail({
                             className="w-full"
                             showHeader={false}
                             showInstruction={false}
+                            compact={true}
                           />
                         ) : (
                           <img

@@ -8,31 +8,28 @@ import {
   Eye,
   DollarSign,
   FileText,
-  PencilLine,
   Play,
   Search,
   SquareCheckBig,
-  Trash2,
-  UserPlus,
   XCircle,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ROLES } from "../../constants/roles";
-import { usePagination } from "../../hooks/usePagination";
+import { useLocation, useNavigate } from "react-router-dom";
+import { ROLES } from "../../../../shared/constants/roles";
+import { usePagination } from "../../../../shared/hooks/usePagination";
 import {
   getStaffBookingDesignStudioRoute,
   getStaffBookingServiceSessionRoute,
-} from "../../constants/routes";
-import { ActionDropdown } from "../../components/ui/ActionDropdown";
-import { PropTypes } from "../../utils/propTypes";
+} from "../../../../shared/constants/routes";
+import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
+import { PropTypes } from "../../../../shared/utils/propTypes";
 import { StaffBookingNotesModal } from "../components/StaffBookingNotesModal";
 import {
   BOOKING_ROLE_CONFIG,
   BOOKING_ROWS,
   BOOKING_STATUS_STYLES,
-} from "../services/mockBookings";
+} from "../../../../shared/bookings/services/mockBookings";
 import {
   buildStaffServiceSessionPayload,
   fetchStaffBookings,
@@ -40,9 +37,8 @@ import {
   getStaffArtistId,
   getTodayDateParam,
   normalizeStaffBooking,
-} from "../../../features/staff/bookings/services/staffBookingService";
-import { getBookingRoleFromPath } from "../utils/bookingMapper";
-import { useLanguage } from "../../hooks/useLanguage";
+} from "../services/staffBookingService";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 const STAFF_BOOKING_SCOPES = {
   mine: "mine",
@@ -50,20 +46,6 @@ const STAFF_BOOKING_SCOPES = {
 };
 
 const SUMMARY_BY_ROLE = {
-  [ROLES.admin]: [
-    { label: "Total Bookings", value: "1,284", note: "+12.4% this month", icon: CalendarDays, iconClassName: "bg-[#ffe8f2] text-[#ea4f93]" },
-    { label: "Pending", value: "87", note: "+5 today", icon: Clock3, iconClassName: "bg-[#fff4e8] text-[#f59e0b]" },
-    { label: "Completed", value: "1,091", note: "+8.6% this month", icon: DollarSign, iconClassName: "bg-[#eaf9ee] text-[#2fa25f]" },
-    { label: "Cancelled", value: "74", note: "-2.3% this month", icon: XCircle, iconClassName: "bg-[#fff0f5] text-[#e1447f]" },
-    { label: "No-shows", value: "32", note: "-1.1% this month", icon: AlertTriangle, iconClassName: "bg-[#f5ecff] text-[#8b5cf6]" },
-  ],
-  [ROLES.manager]: [
-    { label: "Branch Bookings", value: "428", note: "+9.8% this month", icon: CalendarDays, iconClassName: "bg-[#ffe8f2] text-[#ea4f93]" },
-    { label: "Pending", value: "21", note: "+3 today", icon: Clock3, iconClassName: "bg-[#fff4e8] text-[#f59e0b]" },
-    { label: "Completed", value: "356", note: "+6.1% this month", icon: DollarSign, iconClassName: "bg-[#eaf9ee] text-[#2fa25f]" },
-    { label: "Cancelled", value: "18", note: "-0.6% this month", icon: XCircle, iconClassName: "bg-[#fff0f5] text-[#e1447f]" },
-    { label: "No-shows", value: "11", note: "-0.4% this month", icon: AlertTriangle, iconClassName: "bg-[#f5ecff] text-[#8b5cf6]" },
-  ],
   [ROLES.staff]: [
     { label: "Assigned Today", value: "18", note: "+2 vs yesterday", icon: CalendarDays, iconClassName: "bg-[#ffe8f2] text-[#ea4f93]" },
     { label: "Pending", value: "4", note: "Awaiting check-in", icon: Clock3, iconClassName: "bg-[#fff4e8] text-[#f59e0b]" },
@@ -71,18 +53,10 @@ const SUMMARY_BY_ROLE = {
     { label: "Cancelled", value: "3", note: "Low this week", icon: XCircle, iconClassName: "bg-[#fff0f5] text-[#e1447f]" },
     { label: "No-shows", value: "2", note: "Stable", icon: AlertTriangle, iconClassName: "bg-[#f5ecff] text-[#8b5cf6]" },
   ],
-  [ROLES.receptionist]: [
-    { label: "Front Desk Bookings", value: "212", note: "+6 today", icon: CalendarDays, iconClassName: "bg-[#ffe8f2] text-[#ea4f93]" },
-    { label: "Pending", value: "19", note: "Needs callback", icon: Clock3, iconClassName: "bg-[#fff4e8] text-[#f59e0b]" },
-    { label: "Completed", value: "168", note: "+4.1% this week", icon: DollarSign, iconClassName: "bg-[#eaf9ee] text-[#2fa25f]" },
-    { label: "Cancelled", value: "9", note: "Watch reschedules", icon: XCircle, iconClassName: "bg-[#fff0f5] text-[#e1447f]" },
-    { label: "No-shows", value: "7", note: "Follow-up needed", icon: AlertTriangle, iconClassName: "bg-[#f5ecff] text-[#8b5cf6]" },
-  ],
 };
 
 const SALON_OPTIONS = ["All salons", "Downtown Luxe", "Westside Glow", "Northpark Studio", "Eastview Nails"];
 const STATUS_OPTIONS = ["All", "Pending", "Approved", "Rejected", "Cancelled", "CheckedIn", "InProgress", "ServiceCompleted", "Completed", "Repaired", "ReschedulePending", "RescheduleSuggested"];
-const PAYMENT_OPTIONS = ["All", "Paid", "Partial", "Pending", "Refunded", "Unpaid"];
 
 const BOOKING_PAGE_SIZE = 10;
 
@@ -186,23 +160,6 @@ function mapService(service) {
   }
 }
 
-function mapPayment(paymentStatus) {
-  switch (paymentStatus) {
-    case "Deposit Paid": return "Partial";
-    default: return paymentStatus;
-  }
-}
-
-function getPaymentTone(paymentStatus) {
-  switch (paymentStatus) {
-    case "Paid": return "bg-[#eaf9ee] text-[#2fa25f]";
-    case "Partial": return "bg-[#fff4e8] text-[#d9871c]";
-    case "Refunded": return "bg-[#f5ecff] text-[#8b5cf6]";
-    case "Pending": return "bg-[#fff7e7] text-[#cc8a16]";
-    default: return "bg-[#fff0f5] text-[#e1447f]";
-  }
-}
-
 function mapStatus(status) {
   if (status === "In Service") return "Confirmed";
   return status;
@@ -224,17 +181,13 @@ function escapeCsvCell(value) {
   return `"${normalizedValue}"`;
 }
 
-function buildBookingsCsvRows(bookings, isStaffRole, language) {
-  const headers = isStaffRole
-    ? (language === "vi"
-      ? ["Mã LH", "Khách hàng", "SĐT", "Chi nhánh", "Thợ làm nail", "Ngày", "Giờ", "Trạng thái", "Dịch vụ", "Tổng giá"]
-      : ["Booking ID", "Customer", "Phone", "Salon", "Staff Artist", "Date", "Time", "Status", "Service", "Total Price"])
-    : (language === "vi"
-      ? ["Mã LH", "Khách hàng", "SĐT", "Chi nhánh", "Thợ làm nail", "Ngày", "Giờ", "Trạng thái", "Thanh toán", "Dịch vụ", "Tổng giá"]
-      : ["Booking ID", "Customer", "Phone", "Salon", "Staff Artist", "Date", "Time", "Status", "Payment", "Service", "Total Price"]);
+function buildBookingsCsvRows(bookings, language) {
+  const headers = language === "vi"
+    ? ["Mã LH", "Khách hàng", "SĐT", "Chi nhánh", "Thợ làm nail", "Ngày", "Giờ", "Trạng thái", "Dịch vụ", "Tổng giá"]
+    : ["Booking ID", "Customer", "Phone", "Salon", "Staff Artist", "Date", "Time", "Status", "Service", "Total Price"];
 
   const rows = bookings.map((booking) => {
-    const baseCells = [
+    return [
       booking.uiId || booking.id,
       booking.customerName,
       booking.customerPhone,
@@ -243,19 +196,6 @@ function buildBookingsCsvRows(bookings, isStaffRole, language) {
       booking.bookingDate || booking.bookingDateValue,
       booking.bookingTime,
       booking.uiStatus || booking.status,
-    ];
-
-    if (isStaffRole) {
-      return [
-        ...baseCells,
-        booking.uiService || booking.service,
-        booking.totalPriceLabel || booking.totalPrice,
-      ];
-    }
-
-    return [
-      ...baseCells,
-      booking.uiPayment || booking.paymentStatus,
       booking.uiService || booking.service,
       booking.totalPriceLabel || booking.totalPrice,
     ];
@@ -268,7 +208,6 @@ function buildBookingsCsvRows(bookings, isStaffRole, language) {
 
 function normalizeBooking(booking) {
   const status = mapStatus(booking.status);
-  const payment = mapPayment(booking.paymentStatus);
 
   return {
     ...booking,
@@ -277,16 +216,6 @@ function normalizeBooking(booking) {
     uiBranch: mapBranch(booking.branch),
     uiService: mapService(booking.service),
     uiStatus: status,
-    uiPayment: payment,
-  };
-}
-
-function getDefaultDateRange(bookings) {
-  if (bookings.length === 0) return { from: "", to: "" };
-  const sortedDates = bookings.map((booking) => booking.bookingDate).filter(Boolean).sort();
-  return {
-    from: sortedDates[0] ?? "",
-    to: sortedDates[sortedDates.length - 1] ?? "",
   };
 }
 
@@ -304,10 +233,6 @@ const translateOption = (option, language) => {
     "CheckedIn": "Đã có mặt",
     "Cancelled": "Đã hủy",
     "No-show": "Không đến",
-    "Paid": "Đã thanh toán",
-    "Partial": "Thanh toán một phần",
-    "Refunded": "Đã hoàn tiền",
-    "Unpaid": "Chưa thanh toán"
   };
   return mapVi[option] || option;
 };
@@ -357,47 +282,71 @@ const translateSummaryText = (text, language) => {
 };
 
 /* STREAMING_CHUNK: Component Setup */
-export function BookingListPage() {
+export function StaffBookingListPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { language } = useLanguage();
+  const formatDisplay = (s) => {
+    switch (s) {
+      case "Checked In":
+      case "CheckedIn":
+        return language === "vi" ? "Đã check in" : "Checked In";
+      case "In Progress":
+      case "InProgress":
+        return language === "vi" ? "Đang tiến hành" : "In Progress";
+      case "Pending":
+        return language === "vi" ? "Đang chờ" : "Pending";
+      case "Confirmed":
+      case "Approved":
+        return language === "vi" ? "Đã xác nhận" : "Confirmed";
+      case "Completed":
+      case "ServiceCompleted":
+        return language === "vi" ? "Đã hoàn thành" : "Completed";
+      case "Rejected":
+        return language === "vi" ? "Đã từ chối" : "Rejected";
+      case "Cancelled":
+      case "Canceled":
+        return language === "vi" ? "Đã hủy" : "Cancelled";
+      case "ReschedulePending":
+        return language === "vi" ? "Đang chờ dời lịch" : "Reschedule Pending";
+      case "RescheduleSuggested":
+        return language === "vi" ? "Đã đề xuất dời lịch" : "Reschedule Proposed";
+      case "Repaired":
+        return language === "vi" ? "Đã sửa chữa" : "Repaired";
+      case "All":
+        return language === "vi" ? "Tất cả" : "All";
+      default:
+        return s;
+    }
+  };
 
-  const role = getBookingRoleFromPath(location.pathname);
+  const role = ROLES.staff;
   const roleConfig = BOOKING_ROLE_CONFIG[role];
-  const isStaffRole = role === ROLES.staff;
+  const isStaffRole = true;
 
-  const normalizedBookings = useMemo(() => BOOKING_ROWS.map(normalizeBooking), []);
   const todayDate = useMemo(() => getTodayDateParam(), []);
 
-  const defaultDateRange = useMemo(
-    () => (isStaffRole ? { from: todayDate, to: todayDate } : getDefaultDateRange(normalizedBookings)),
-    [isStaffRole, normalizedBookings, todayDate],
-  );
-
-
   const [query, setQuery] = useState("");
-  const [dateFrom, setDateFrom] = useState(defaultDateRange.from);
-  const [dateTo, setDateTo] = useState(defaultDateRange.to);
+  const [dateFrom, setDateFrom] = useState(todayDate);
+  const [dateTo, setDateTo] = useState(todayDate);
   const [salonFilter, setSalonFilter] = useState(SALON_OPTIONS[0]);
   const [statusFilter, setStatusFilter] = useState(STATUS_OPTIONS[0]);
-  const [paymentFilter, setPaymentFilter] = useState(PAYMENT_OPTIONS[0]);
   const [staffFilter, setStaffFilter] = useState("All staff");
   const [staffTimeSortDirection, setStaffTimeSortDirection] = useState("asc");
   const [staffBookingScope, setStaffBookingScope] = useState(STAFF_BOOKING_SCOPES.mine);
-  const [isLoading, setIsLoading] = useState(isStaffRole);
+  const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [staffBookings, setStaffBookings] = useState([]);
   const [staffSalonBookings, setStaffSalonBookings] = useState([]);
   const [selectedStaffNotesBooking, setSelectedStaffNotesBooking] = useState(null);
 
   const currentStaffArtistId = useMemo(() => {
-    if (!isStaffRole) return "";
     try {
       return getStaffArtistId();
     } catch {
       return "";
     }
-  }, [isStaffRole]);
+  }, []);
 
   /* STREAMING_CHUNK: Effects */
   useEffect(() => {
@@ -407,7 +356,6 @@ export function BookingListPage() {
   }, [location.pathname, location.state, navigate]);
 
   useEffect(() => {
-    if (!isStaffRole) return;
     let isMounted = true;
 
     const loadBookings = async () => {
@@ -441,19 +389,16 @@ export function BookingListPage() {
     };
     void loadBookings();
     return () => { isMounted = false; };
-  }, [isStaffRole, staffBookingScope, language]);
+  }, [staffBookingScope, language]);
 
   useEffect(() => {
-    if (!isStaffRole) return;
     setDateFrom(todayDate);
     setDateTo(todayDate);
-  }, [isStaffRole, staffBookingScope, todayDate]);
+  }, [staffBookingScope, todayDate]);
 
   /* STREAMING_CHUNK: Filtering & Pagination Logic */
-  const isSalonScopeForStaff = isStaffRole && staffBookingScope === STAFF_BOOKING_SCOPES.salon;
-  const activeBookings = isStaffRole
-    ? (isSalonScopeForStaff ? staffSalonBookings : staffBookings)
-    : normalizedBookings;
+  const isSalonScopeForStaff = staffBookingScope === STAFF_BOOKING_SCOPES.salon;
+  const activeBookings = isSalonScopeForStaff ? staffSalonBookings : staffBookings;
 
   const filteredBookings = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -465,30 +410,24 @@ export function BookingListPage() {
           .join(" ").toLowerCase().includes(normalizedQuery);
 
       const matchesStatus = statusFilter === "All" || booking.uiStatus === statusFilter;
-      const matchesPayment = isStaffRole || paymentFilter === "All" || booking.uiPayment === paymentFilter;
       const matchesSalon = salonFilter === "All salons" || booking.uiBranch === salonFilter;
       const matchesStaff = staffFilter === "All staff" || booking.staffName === staffFilter;
       const matchesDate =
         (!dateFrom || booking.bookingDateValue >= dateFrom) &&
         (!dateTo || booking.bookingDateValue <= dateTo);
 
-      if (isStaffRole) return matchesQuery && matchesStatus && matchesPayment && matchesSalon && matchesStaff && matchesDate;
-      if (role === ROLES.staff) return matchesQuery && matchesStatus && matchesPayment && matchesSalon && matchesStaff && matchesDate && ["Ariana Vo", "Bao Tran", "Linh Pham"].includes(booking.staffName);
-      if (role === ROLES.manager) return matchesQuery && matchesStatus && matchesPayment && matchesSalon && matchesStaff && matchesDate && ["District 1 Salon", "District 3 Salon"].includes(booking.branch);
-
-      return matchesQuery && matchesStatus && matchesPayment && matchesSalon && matchesStaff && matchesDate;
+      return matchesQuery && matchesStatus && matchesSalon && matchesStaff && matchesDate;
     });
-  }, [activeBookings, dateFrom, dateTo, isStaffRole, paymentFilter, query, role, salonFilter, staffFilter, statusFilter]);
+  }, [activeBookings, dateFrom, dateTo, query, salonFilter, staffFilter, statusFilter]);
 
   const sortedBookings = useMemo(() => {
-    if (!isStaffRole) return filteredBookings;
     const sortMultiplier = staffTimeSortDirection === "desc" ? -1 : 1;
     return [...filteredBookings].sort((left, right) => {
       const timeDifference = getBookingDateTimeValue(left) - getBookingDateTimeValue(right);
       if (timeDifference !== 0) return timeDifference * sortMultiplier;
       return left.customerName.localeCompare(right.customerName) * sortMultiplier;
     });
-  }, [filteredBookings, isStaffRole, staffTimeSortDirection]);
+  }, [filteredBookings, staffTimeSortDirection]);
 
   const {
     currentPage,
@@ -499,7 +438,7 @@ export function BookingListPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [dateFrom, dateTo, paymentFilter, query, role, salonFilter, setCurrentPage, staffFilter, staffTimeSortDirection, statusFilter]);
+  }, [dateFrom, dateTo, query, salonFilter, setCurrentPage, staffFilter, staffTimeSortDirection, statusFilter]);
 
   const paginationLabel = useMemo(() => {
     if (!filteredBookings.length) {
@@ -514,83 +453,70 @@ export function BookingListPage() {
 
   /* STREAMING_CHUNK: Dynamic Summary & Actions */
   const summaryItems = useMemo(() => {
-    let baseItems = [];
-    if (!isStaffRole) {
-      baseItems = SUMMARY_BY_ROLE[role] ?? SUMMARY_BY_ROLE[ROLES.admin];
-    } else {
-      const pendingCount = activeBookings.filter((booking) => booking.status === "Pending").length;
-      const completedCount = activeBookings.filter((booking) => booking.status === "Completed").length;
-      const cancelledCount = activeBookings.filter((booking) => booking.status === "Cancelled").length;
-      const revenue = activeBookings.reduce((sum, booking) => sum + booking.totalPriceValue, 0);
+    const pendingCount = activeBookings.filter((booking) => booking.status === "Pending").length;
+    const completedCount = activeBookings.filter((booking) => booking.status === "Completed").length;
+    const cancelledCount = activeBookings.filter((booking) => booking.status === "Cancelled").length;
+    const revenue = activeBookings.reduce((sum, booking) => sum + booking.totalPriceValue, 0);
 
-      baseItems = [
-        { label: isSalonScopeForStaff ? "Salon Bookings" : "Assigned Today", value: String(activeBookings.length), note: isSalonScopeForStaff ? "Loaded from salon booking API" : "Loaded from artist schedule", icon: CalendarDays, iconClassName: "bg-[#ffe8f2] text-[#ea4f93]" },
-        { label: "Pending", value: String(pendingCount), note: "Awaiting service progress", icon: Clock3, iconClassName: "bg-[#fff4e8] text-[#f59e0b]" },
-        { label: "Completed", value: String(completedCount), note: "Finished today", icon: DollarSign, iconClassName: "bg-[#eaf9ee] text-[#2fa25f]" },
-        { label: "Cancelled", value: String(cancelledCount), note: "Today", icon: XCircle, iconClassName: "bg-[#fff0f5] text-[#e1447f]" },
-        { label: "Revenue", value: revenue > 0 ? `${new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(revenue)} VND` : "0 VND", note: "Total loaded from API", icon: AlertTriangle, iconClassName: "bg-[#f5ecff] text-[#8b5cf6]" },
-      ];
-    }
+    const baseItems = [
+      { label: isSalonScopeForStaff ? "Salon Bookings" : "Assigned Today", value: String(activeBookings.length), note: isSalonScopeForStaff ? "Loaded from salon booking API" : "Loaded from artist schedule", icon: CalendarDays, iconClassName: "bg-[#ffe8f2] text-[#ea4f93]" },
+      { label: "Pending", value: String(pendingCount), note: "Awaiting service progress", icon: Clock3, iconClassName: "bg-[#fff4e8] text-[#f59e0b]" },
+      { label: "Completed", value: String(completedCount), note: "Finished today", icon: DollarSign, iconClassName: "bg-[#eaf9ee] text-[#2fa25f]" },
+      { label: "Cancelled", value: String(cancelledCount), note: "Today", icon: XCircle, iconClassName: "bg-[#fff0f5] text-[#e1447f]" },
+      { label: "Revenue", value: revenue > 0 ? `${new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(revenue)} VND` : "0 VND", note: "Total loaded from API", icon: AlertTriangle, iconClassName: "bg-[#f5ecff] text-[#8b5cf6]" },
+    ];
 
     return baseItems.map(item => ({
       ...item,
       label: translateSummaryText(item.label, language),
       note: translateSummaryText(item.note, language)
     }));
-  }, [activeBookings, isSalonScopeForStaff, isStaffRole, role, language]);
+  }, [activeBookings, isSalonScopeForStaff, language]);
 
   const getActionItems = (booking) => {
     const detailRoute = roleConfig.getDetailRoute(booking.id);
 
-    if (role === ROLES.staff) {
-      const isOwnBooking = !isSalonScopeForStaff || !currentStaffArtistId || String(booking?.nailArtistId || "").trim() === String(currentStaffArtistId).trim();
-      const normalizedBookingStatus = String(booking?.status || booking?.uiStatus || "").trim().toLowerCase();
-      const isPendingBooking = ["pending", "approved"].includes(normalizedBookingStatus);
-      const isCheckedInBooking = normalizedBookingStatus === "checkedin";
-      const isInProgressBooking = normalizedBookingStatus === "inprogress";
-      const isCompletedBooking = normalizedBookingStatus === "completed";
-      const isServiceCompletedBooking = normalizedBookingStatus === "servicecompleted";
-      const isCancelledBooking = ["cancelled", "canceled"].includes(normalizedBookingStatus);
+    const isOwnBooking = !isSalonScopeForStaff || !currentStaffArtistId || String(booking?.nailArtistId || "").trim() === String(currentStaffArtistId).trim();
+    const normalizedBookingStatus = String(booking?.status || booking?.uiStatus || "").trim().toLowerCase();
+    const isPendingBooking = ["pending", "approved"].includes(normalizedBookingStatus);
+    const isCheckedInBooking = normalizedBookingStatus === "checkedin";
+    const isInProgressBooking = normalizedBookingStatus === "inprogress";
+    const isCompletedBooking = normalizedBookingStatus === "completed";
+    const isServiceCompletedBooking = normalizedBookingStatus === "servicecompleted";
+    const isCancelledBooking = ["cancelled", "canceled"].includes(normalizedBookingStatus);
 
-      const openServiceSession = () => {
-        navigate(getStaffBookingServiceSessionRoute(booking.id), {
-          state: {
-            serviceSession: {
-              ...buildStaffServiceSessionPayload(booking, {
-                backRoute: detailRoute,
-                designUpdateRoute: getStaffBookingDesignStudioRoute(booking.id),
-              }),
-              started: isInProgressBooking,
-              completed: false,
-            },
+    const openServiceSession = () => {
+      navigate(getStaffBookingServiceSessionRoute(booking.id), {
+        state: {
+          serviceSession: {
+            ...buildStaffServiceSessionPayload(booking, {
+              backRoute: detailRoute,
+              designUpdateRoute: getStaffBookingDesignStudioRoute(booking.id),
+            }),
+            started: isInProgressBooking,
+            completed: false,
           },
-        });
-      };
+        },
+      });
+    };
 
-      if (isInProgressBooking) {
-        return [
-          { key: "view", label: language === "vi" ? "Xem lịch hẹn" : "View Booking", icon: Eye, onSelect: () => navigate(detailRoute) },
-          ...(isOwnBooking ? [{ key: "continue", label: language === "vi" ? "Tiếp tục làm" : "Continue Service", icon: Play, onSelect: () => void openServiceSession() }] : []),
-          { key: "notes", label: language === "vi" ? "Xem ghi chú" : "View Notes", icon: FileText, onSelect: () => setSelectedStaffNotesBooking(booking) },
-        ];
-      }
-
+    if (isInProgressBooking) {
       return [
         { key: "view", label: language === "vi" ? "Xem lịch hẹn" : "View Booking", icon: Eye, onSelect: () => navigate(detailRoute) },
-        ...(isOwnBooking && !isCancelledBooking && !isPendingBooking && !isCompletedBooking && !isServiceCompletedBooking
-          ? [{ key: "start", label: language === "vi" ? "Bắt đầu làm" : "Start Service", icon: Play, onSelect: () => void openServiceSession() }]
-          : []),
-        ...(isOwnBooking && !isCancelledBooking && !isPendingBooking && !isCheckedInBooking && !isCompletedBooking && !isServiceCompletedBooking
-          ? [{ key: "complete", label: language === "vi" ? "Hoàn thành" : "Complete Service", icon: SquareCheckBig, onSelect: () => navigate(detailRoute, { state: { staffAction: "complete" } }) }]
-          : []),
+        ...(isOwnBooking ? [{ key: "continue", label: language === "vi" ? "Tiếp tục làm" : "Continue Service", icon: Play, onSelect: () => void openServiceSession() }] : []),
         { key: "notes", label: language === "vi" ? "Xem ghi chú" : "View Notes", icon: FileText, onSelect: () => setSelectedStaffNotesBooking(booking) },
       ];
     }
 
     return [
-      { key: "view", label: language === "vi" ? "Xem chi tiết" : "View Detail", icon: Eye, onSelect: () => navigate(detailRoute) },
-      { key: "edit", label: language === "vi" ? "Sửa lịch hẹn" : "Edit Booking", icon: PencilLine, onSelect: () => navigate(detailRoute) },
-      { key: "delete", label: language === "vi" ? "Xóa lịch hẹn" : "Delete Booking", icon: Trash2, className: "text-[#d14c84]", onSelect: () => navigate(detailRoute, { state: { requestDelete: true } }) },
+      { key: "view", label: language === "vi" ? "Xem lịch hẹn" : "View Booking", icon: Eye, onSelect: () => navigate(detailRoute) },
+      ...(isOwnBooking && !isCancelledBooking && !isPendingBooking && !isCompletedBooking && !isServiceCompletedBooking
+        ? [{ key: "start", label: language === "vi" ? "Bắt đầu làm" : "Start Service", icon: Play, onSelect: () => void openServiceSession() }]
+        : []),
+      ...(isOwnBooking && !isCancelledBooking && !isPendingBooking && !isCheckedInBooking && !isCompletedBooking && !isServiceCompletedBooking
+        ? [{ key: "complete", label: language === "vi" ? "Hoàn thành" : "Complete Service", icon: SquareCheckBig, onSelect: () => navigate(detailRoute, { state: { staffAction: "complete" } }) }]
+        : []),
+      { key: "notes", label: language === "vi" ? "Xem ghi chú" : "View Notes", icon: FileText, onSelect: () => setSelectedStaffNotesBooking(booking) },
     ];
   };
 
@@ -600,7 +526,7 @@ export function BookingListPage() {
       return;
     }
 
-    const csvContent = buildBookingsCsvRows(sortedBookings, isStaffRole, language);
+    const csvContent = buildBookingsCsvRows(sortedBookings, language);
     const csvBlob = new Blob([`\uFEFF${csvContent}`], { type: "text/csv;charset=utf-8;" });
     const downloadUrl = URL.createObjectURL(csvBlob);
     const link = document.createElement("a");
@@ -663,27 +589,9 @@ export function BookingListPage() {
                     className="h-10 w-full rounded-xl border border-[#f5d7e4] bg-[#fff9fc] px-3 text-sm text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
                   >
                     {STATUS_OPTIONS.map((item) => (
-                      <option key={item} value={item}>{translateOption(item, language)}</option>
+                      <option key={item} value={item}>{formatDisplay(item)}</option>
                     ))}
                   </select>
-                </label>
-                <label className="space-y-2">
-                  {!isStaffRole ? (
-                    <>
-                      <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
-                        {language === "vi" ? "Thanh toán" : "Payment"}
-                      </span>
-                      <select
-                        value={paymentFilter}
-                        onChange={(event) => setPaymentFilter(event.target.value)}
-                        className="h-10 w-full rounded-xl border border-[#f5d7e4] bg-[#fff9fc] px-3 text-sm text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
-                      >
-                        {PAYMENT_OPTIONS.map((item) => (
-                          <option key={item} value={item}>{translateOption(item, language)}</option>
-                        ))}
-                      </select>
-                    </>
-                  ) : null}
                 </label>
               </div>
 
@@ -715,11 +623,10 @@ export function BookingListPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      setDateFrom(isStaffRole ? todayDate : defaultDateRange.from);
-                      setDateTo(isStaffRole ? todayDate : defaultDateRange.to);
+                      setDateFrom(todayDate);
+                      setDateTo(todayDate);
                       setSalonFilter(SALON_OPTIONS[0]);
                       setStatusFilter(STATUS_OPTIONS[0]);
-                      setPaymentFilter(PAYMENT_OPTIONS[0]);
                       setStaffFilter("All staff");
                       setQuery("");
                     }}
@@ -735,40 +642,34 @@ export function BookingListPage() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm font-extrabold text-[#462a45]">
-                    {isStaffRole
-                      ? (isSalonScopeForStaff ? (language === "vi" ? "Lịch Hẹn Toàn Tiệm" : "Salon Bookings") : (language === "vi" ? "Lịch Hẹn Của Tôi" : "My Bookings"))
-                      : (language === "vi" ? "Tất Cả Lịch Hẹn" : "All Bookings")}
+                    {isSalonScopeForStaff ? (language === "vi" ? "Lịch Hẹn Toàn Tiệm" : "Salon Bookings") : (language === "vi" ? "Lịch Hẹn Của Tôi" : "My Bookings")}
                   </p>
                   <p className="mt-1 text-[11px] text-[#d197b0]">
-                    {isStaffRole
-                      ? (isSalonScopeForStaff ? paginationLabel : `${paginationLabel} ${language === "vi" ? "trong hôm nay" : "for today"}`)
-                      : paginationLabel}
+                    {isSalonScopeForStaff ? paginationLabel : `${paginationLabel} ${language === "vi" ? "trong hôm nay" : "for today"}`}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {isStaffRole ? (
-                    <div className="inline-flex rounded-full border border-[#f4c6da] bg-[#fff7fb] p-1">
-                      {[
-                        { key: STAFF_BOOKING_SCOPES.mine, label: language === "vi" ? "Của tôi" : "My Bookings" },
-                        { key: STAFF_BOOKING_SCOPES.salon, label: language === "vi" ? "Toàn tiệm" : "Salon Bookings" },
-                      ].map((scopeOption) => {
-                        const isActive = staffBookingScope === scopeOption.key;
-                        return (
-                          <button
-                            key={scopeOption.key}
-                            type="button"
-                            onClick={() => setStaffBookingScope(scopeOption.key)}
-                            className={`rounded-full px-4 py-2 text-xs font-bold transition ${isActive
-                              ? "bg-[image:var(--gradient-accent)] text-white shadow-[0_10px_20px_rgba(236,72,153,0.18)]"
-                              : "text-[#ea4f93]"
-                              }`}
-                          >
-                            {scopeOption.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ) : null}
+                  <div className="inline-flex rounded-full border border-[#f4c6da] bg-[#fff7fb] p-1">
+                    {[
+                      { key: STAFF_BOOKING_SCOPES.mine, label: language === "vi" ? "Của tôi" : "My Bookings" },
+                      { key: STAFF_BOOKING_SCOPES.salon, label: language === "vi" ? "Toàn tiệm" : "Salon Bookings" },
+                    ].map((scopeOption) => {
+                      const isActive = staffBookingScope === scopeOption.key;
+                      return (
+                        <button
+                          key={scopeOption.key}
+                          type="button"
+                          onClick={() => setStaffBookingScope(scopeOption.key)}
+                          className={`rounded-full px-4 py-2 text-xs font-bold transition ${isActive
+                            ? "bg-[image:var(--gradient-accent)] text-white shadow-[0_10px_20px_rgba(236,72,153,0.18)]"
+                            : "text-[#ea4f93]"
+                            }`}
+                        >
+                          {scopeOption.label}
+                        </button>
+                      );
+                    })}
+                  </div>
                   <button
                     type="button"
                     onClick={handleExportCsv}
@@ -776,19 +677,8 @@ export function BookingListPage() {
                   >
                     {language === "vi" ? "Xuất CSV" : "Export CSV"}
                   </button>
-                  {!isStaffRole ? (
-                    <Link
-                      to={roleConfig.createRoute}
-                      className="inline-flex items-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
-                    >
-                      <UserPlus size={13} className="mr-1.5" />
-                      {roleConfig.createLabel}
-                    </Link>
-                  ) : null}
                 </div>
               </div>
-
-
 
               {loadError ? (
                 <div className="mt-4 rounded-[16px] border border-[#f7d4df] bg-[#fff3f7] px-4 py-3 text-sm font-medium text-[#d14c84]">
@@ -799,25 +689,13 @@ export function BookingListPage() {
               <div className="mt-4 overflow-hidden rounded-[18px] border border-[#f6dbe7]">
                 <div className="flex items-center justify-between gap-3 border-b border-[#f7dce8] bg-[#fffafd] px-4 py-3">
                   <p className="text-sm font-extrabold text-[#462a45]">
-                    {isStaffRole
-                      ? (isSalonScopeForStaff ? (language === "vi" ? "Lịch Hẹn Toàn Tiệm" : "Salon Bookings") : (language === "vi" ? "Lịch Hẹn Của Tôi" : "My Bookings"))
-                      : (language === "vi" ? "Tất Cả Lịch Hẹn" : "All Bookings")}
+                    {isSalonScopeForStaff ? (language === "vi" ? "Lịch Hẹn Toàn Tiệm" : "Salon Bookings") : (language === "vi" ? "Lịch Hẹn Của Tôi" : "My Bookings")}
                   </p>
-                  {!isStaffRole ? (
-                    <button
-                      type="button"
-                      className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93]"
-                    >
-                      {language === "vi" ? "Thao tác hàng loạt" : "Bulk Actions"}
-                    </button>
-                  ) : null}
                 </div>
 
                 {isLoading ? (
                   <div className="px-5 py-10 text-center text-sm text-[#8a7082]">
-                    {isStaffRole
-                      ? (isSalonScopeForStaff ? (language === "vi" ? "Đang tải lịch hẹn toàn tiệm..." : "Loading salon bookings...") : (language === "vi" ? "Đang tải lịch hẹn được phân công..." : "Loading assigned bookings..."))
-                      : (language === "vi" ? "Đang tải danh sách lịch hẹn..." : "Loading bookings...")}
+                    {isSalonScopeForStaff ? (language === "vi" ? "Đang tải lịch hẹn toàn tiệm..." : "Loading salon bookings...") : (language === "vi" ? "Đang tải lịch hẹn được phân công..." : "Loading assigned bookings...")}
                   </div>
                 ) : (
                   <>
@@ -829,27 +707,22 @@ export function BookingListPage() {
                             <th className="px-4 py-3">{language === "vi" ? "Chi nhánh" : "Salon"}</th>
                             <th className="px-4 py-3">{language === "vi" ? "Thợ làm nail" : "Staff Artist"}</th>
                             <th className="px-4 py-3">
-                              {isStaffRole ? (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setStaffTimeSortDirection((currentDirection) =>
-                                      currentDirection === "asc" ? "desc" : "asc",
-                                    )
-                                  }
-                                  className="inline-flex items-center gap-1 text-left text-[10px] font-bold uppercase tracking-[0.16em] text-[#c696ad]"
-                                >
-                                  {language === "vi" ? "Thời gian" : "Time"}
-                                  <ArrowUpDown size={12} className="text-[#df7baa]" />
-                                  <span className="text-[9px] normal-case tracking-normal text-[#df7baa]">
-                                    {staffTimeSortDirection === "asc" ? (language === "vi" ? "Sớm nhất" : "Earliest") : (language === "vi" ? "Muộn nhất" : "Latest")}
-                                  </span>
-                                </button>
-                              ) : (
-                                language === "vi" ? "Thời gian" : "Time"
-                              )}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setStaffTimeSortDirection((currentDirection) =>
+                                    currentDirection === "asc" ? "desc" : "asc",
+                                  )
+                                }
+                                className="inline-flex items-center gap-1 text-left text-[10px] font-bold uppercase tracking-[0.16em] text-[#c696ad]"
+                              >
+                                {language === "vi" ? "Thời gian" : "Time"}
+                                <ArrowUpDown size={12} className="text-[#df7baa]" />
+                                <span className="text-[9px] normal-case tracking-normal text-[#df7baa]">
+                                  {staffTimeSortDirection === "asc" ? (language === "vi" ? "Sớm nhất" : "Earliest") : (language === "vi" ? "Muộn nhất" : "Latest")}
+                                </span>
+                              </button>
                             </th>
-                            {!isStaffRole ? <th className="px-4 py-3">{language === "vi" ? "Thanh toán" : "Payment"}</th> : null}
                             <th className="px-4 py-3">{language === "vi" ? "Trạng thái" : "Status"}</th>
                             <th className="px-4 py-3">{language === "vi" ? "Thao tác" : "Action"}</th>
                           </tr>
@@ -864,7 +737,6 @@ export function BookingListPage() {
                                   </div>
                                   <div className="min-w-0">
                                     <p className="font-bold text-[#432744]">{booking.customerName}</p>
-                                    {/* <p className="mt-1 text-[11px] text-[#c694ad]">{booking.customerPhone}</p> */}
                                   </div>
                                 </div>
                               </td>
@@ -876,16 +748,9 @@ export function BookingListPage() {
                                 </p>
                                 <p className="mt-1 text-[11px] text-[#c694ad]">{booking.bookingTime}</p>
                               </td>
-                              {!isStaffRole ? (
-                                <td className="px-4 py-3.5">
-                                  <SmallTag className={getPaymentTone(booking.uiPayment)}>
-                                    {translateOption(booking.uiPayment, language)}
-                                  </SmallTag>
-                                </td>
-                              ) : null}
                               <td className="px-4 py-3.5">
                                 <SmallTag className={getStatusTone(booking.uiStatus)}>
-                                  {translateOption(booking.uiStatus, language)}
+                                  {formatDisplay(booking.uiStatus)}
                                 </SmallTag>
                               </td>
                               <td className="px-4 py-3.5">
@@ -910,9 +775,7 @@ export function BookingListPage() {
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center justify-between gap-2">
                                 <p className="font-bold text-[#432744]">{booking.customerName}</p>
-                                {/* <span className="text-[10px] font-bold text-[#f04f91]">{booking.uiId}</span> */}
                               </div>
-                              {/* <p className="mt-1 text-sm text-[#6b5668]">{booking.customerPhone}</p> */}
                               <p className="mt-1 text-[11px] text-[#c694ad]">
                                 {booking.uiBranch} • {booking.staffName}
                               </p>
@@ -920,10 +783,7 @@ export function BookingListPage() {
                           </div>
                           <div className="mt-4 flex flex-wrap gap-2">
                             <SmallTag className="bg-[#ffe7ef] text-[#ea4f93]">{booking.uiService}</SmallTag>
-                            {!isStaffRole ? (
-                              <SmallTag className={getPaymentTone(booking.uiPayment)}>{translateOption(booking.uiPayment, language)}</SmallTag>
-                            ) : null}
-                            <SmallTag className={getStatusTone(booking.uiStatus)}>{translateOption(booking.uiStatus, language)}</SmallTag>
+                            <SmallTag className={getStatusTone(booking.uiStatus)}>{formatDisplay(booking.uiStatus)}</SmallTag>
                           </div>
                           <div className="mt-4 flex items-center justify-between gap-3">
                             <div>

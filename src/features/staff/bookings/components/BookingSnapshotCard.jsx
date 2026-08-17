@@ -1,6 +1,6 @@
 import { CalendarClock, ShieldAlert } from "lucide-react";
-import { PropTypes } from "../../utils/propTypes";
-import { BOOKING_STATUS_STYLES } from "../services/mockBookings";
+import { PropTypes } from "../../../../shared/utils/propTypes";
+import { BOOKING_STATUS_STYLES } from "../../../../shared/bookings/services/mockBookings";
 
 export function BookingSnapshotCard({ formValues, notice }) {
   return (

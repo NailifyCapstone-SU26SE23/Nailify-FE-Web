@@ -438,7 +438,7 @@ export function ReceptionistWalkInBookingCreatePage() {
               </div>
 
               <div className="mt-5">
-                <p className="text-sm font-bold text-[#432744]">{language === "vi" ? "3. Chọn Thợ Nail Phụ Trách" : "3. Select Nail Artist"}</p>
+                <p className="text-sm font-bold text-[#432744]">{language === "vi" ? "3. Chọn Thợ Nail Phụ Trách" : "3. Select Staff Artist"}</p>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   <button
                     type="button"

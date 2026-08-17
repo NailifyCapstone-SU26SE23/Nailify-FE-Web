@@ -1,5 +1,5 @@
 import { Sparkles } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { PropTypes } from "../../utils/propTypes";
 
 const NAIL_LABELS = ["Thumb", "Index", "Middle", "Ring", "Pinky"];
@@ -261,8 +261,8 @@ function ReadOnlyNailCard({ components, index, colorStyle, shapeImageUrl, compac
     ? {
       maskImage: `url(${shapeImageUrl})`,
       WebkitMaskImage: `url(${shapeImageUrl})`,
-      maskSize: "100% 100%",
-      WebkitMaskSize: "100% 100%",
+      maskSize: "cover",
+      WebkitMaskSize: "cover",
       maskRepeat: "no-repeat",
       WebkitMaskRepeat: "no-repeat",
       maskPosition: "center",

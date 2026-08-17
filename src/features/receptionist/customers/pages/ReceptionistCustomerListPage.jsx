@@ -448,7 +448,7 @@ export function ReceptionistCustomerListPage() {
   const handleConfirmAssignArtist = async () => {
     if (!selectedQueueGuest) return;
     if (!selectedArtistIdToAssign) {
-      toast.error(language === "vi" ? "Vui lòng chọn thợ làm móng." : "Please select a nail artist.");
+      toast.error(language === "vi" ? "Vui lòng chọn thợ làm móng." : "Please select a Staff Artist.");
       return;
     }
 
@@ -1471,7 +1471,7 @@ export function ReceptionistCustomerListPage() {
                   {language === "vi" ? "Check-In Tiếp Đón Khách Vào Sảnh" : "Walk-in Queue Check-In"}
                 </h3>
                 <p className="text-xs text-gray-500 font-medium mt-0.5">
-                  {language === "vi" ? "Tự động khởi tạo hồ sơ & gợi ý thợ nail đủ kỹ năng (Skill Match)" : "Auto-create profiles & suggest nail artists (Skill Match)"}
+                  {language === "vi" ? "Tự động khởi tạo hồ sơ & gợi ý thợ nail đủ kỹ năng (Skill Match)" : "Auto-create profiles & suggest Staff Artists (Skill Match)"}
                 </p>
               </div>
             </div>
@@ -2031,7 +2031,7 @@ export function ReceptionistCustomerListPage() {
               </span>
               <div>
                 <h3 className="text-base font-bold text-[#221F26] tracking-tight">
-                  {language === "vi" ? "Phân Công Thợ Nail Điều Phối Sảnh" : "Assign Nail Artist for Queue"}
+                  {language === "vi" ? "Phân Công Thợ Nail Điều Phối Sảnh" : "Assign Staff Artist for Queue"}
                 </h3>
                 <p className="text-xs text-gray-500 font-medium mt-0.5">
                   {language === "vi" ? "Chọn thợ phù hợp để đảm bảo thời gian phục vụ tốt nhất" : "Select suitable artist to ensure best service timing"}
@@ -2064,7 +2064,7 @@ export function ReceptionistCustomerListPage() {
           <div className="px-6 py-4">
             <div className="flex items-center justify-between mb-2.5">
               <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
-                <UserCheck size={14} className="text-[#C97A9E]" /> {language === "vi" ? "Chọn Thợ Làm Móng (Salon Artist)" : "Select Nail Artist (Salon Artist)"}
+                <UserCheck size={14} className="text-[#C97A9E]" /> {language === "vi" ? "Chọn Thợ Làm Móng (Salon Artist)" : "Select Staff Artist (Salon Artist)"}
               </label>
               <span className="text-[11px] font-bold text-[#C97A9E] bg-[#FAF0F5] px-2 py-0.5 rounded-md border border-[#F2D6E3]">
                 {language === "vi" ? `${availableArtists.length} thợ sẵn sàng` : `${availableArtists.length} artists ready`}
@@ -2074,11 +2074,11 @@ export function ReceptionistCustomerListPage() {
             {isLoadingArtists ? (
               <div className="py-10 text-center space-y-2">
                 <Spin size="large" />
-                <p className="text-xs font-medium text-gray-500">{language === "vi" ? "Đang tải danh sách thợ làm móng sảnh..." : "Loading lobby nail artists..."}</p>
+                <p className="text-xs font-medium text-gray-500">{language === "vi" ? "Đang tải danh sách thợ làm móng sảnh..." : "Loading lobby Staff Artists..."}</p>
               </div>
             ) : availableArtists.length === 0 ? (
               <div className="py-8 text-center text-xs font-medium text-gray-400 border border-dashed border-gray-200 rounded-2xl">
-                {language === "vi" ? "Hiện chưa có thợ làm móng nào hoạt động tại chi nhánh." : "There are currently no active nail artists at this salon branch."}
+                {language === "vi" ? "Hiện chưa có thợ làm móng nào hoạt động tại chi nhánh." : "There are currently no active Staff Artists at this salon branch."}
               </div>
             ) : (
               <div className="space-y-2.5 max-h-[260px] overflow-y-auto pr-1">

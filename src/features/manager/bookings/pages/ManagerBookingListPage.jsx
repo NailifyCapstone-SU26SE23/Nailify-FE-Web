@@ -145,6 +145,7 @@ InfoItem.propTypes = {
 
 function StatusPill({ status, compact = false }) {
   const { t, language } = useLanguage();
+
   const getStyle = () => {
     switch (status) {
       case "Checked In":
@@ -169,6 +170,11 @@ function StatusPill({ status, compact = false }) {
         return "bg-[#FFF7ED] text-[#C2410C] border-[#FDBA74] shadow-2xs";
       case "RescheduleSuggested":
         return "bg-[#EFF6FF] text-[#1D4ED8] border-[#93C5FD] shadow-2xs";
+      case "Cancelled":
+        return "bg-[#FEF2F2] text-[#B91C1C] border-[#FCA5A5] shadow-2xs";
+      case "Repaired":
+        return "bg-[#FFD1DC] text-[#ff0055] border-[#34D399] shadow-2xs";
+
       default:
         return "bg-[#F3F4F6] text-[#6B7280] border-[#E5E7EB]";
     }
@@ -178,29 +184,29 @@ function StatusPill({ status, compact = false }) {
     switch (s) {
       case "Checked In":
       case "CheckedIn":
-        return t("manager.dashboard.statusCalled") || "At Counter";
+        return language === "vi" ? "Đã check in" : "Checked In";
       case "In Progress":
       case "InProgress":
-        return t("manager.dashboard.statusInService") || "In Progress";
+        return language === "vi" ? "Đang tiến hành" : "In Progress";
       case "Pending":
-        return t("manager.dashboard.statusWaiting") || "Pending";
+        return language === "vi" ? "Đang chờ" : "Pending";
       case "Confirmed":
       case "Approved":
-        return t("manager.bookings.ready") || "Confirmed";
+        return language === "vi" ? "Đã xác nhận" : "Confirmed";
       case "Completed":
       case "ServiceCompleted":
-        return t("manager.dashboard.statusDone") || "Completed";
+        return language === "vi" ? "Đã hoàn thành" : "Completed";
       case "Rejected":
-        return t("manager.breaks.statusRejected") || "Rejected";
+        return language === "vi" ? "Đã từ chối" : "Rejected";
       case "Cancelled":
       case "Canceled":
-        return t("manager.bookings.cancelBooking") || "Cancelled";
-      case "RescheduleReq":
-      case "Reschedule Req":
+        return language === "vi" ? "Đã hủy" : "Cancelled";
       case "ReschedulePending":
-        return t("manager.bookings.rescheduleTime") || "Reschedule Req";
+        return language === "vi" ? "Đang chờ dời lịch" : "Reschedule Pending";
       case "RescheduleSuggested":
-        return t("manager.bookings.moveSchedule") || "Reschedule Proposed";
+        return language === "vi" ? "Đã đề xuất dời lịch" : "Reschedule Proposed";
+      case "Repaired":
+        return language === "vi" ? "Đã sửa chữa" : "Repaired";
       default:
         return s;
     }
@@ -459,19 +465,20 @@ function formatHourLabel(hour) {
   if (hour > 12) return `${hour - 12}:00 PM`;
   return `${hour}:00 AM`;
 }
-
 const appointmentFilters = [
   { value: "All", label: "All" },
   { value: "Pending", label: "Pending" },
-  { value: "Confirmed", label: "Confirmed" },
+  { value: "Approved", label: "Approved" },
+  { value: "Rejected", label: "Rejected" },
+  { value: "Cancelled", label: "Cancelled" },
   { value: "CheckedIn", label: "Checked In" },
   { value: "InProgress", label: "In Progress" },
+  { value: "ServiceCompleted", label: "Service Completed" },
   { value: "Completed", label: "Completed" },
-  { value: "Rejected", label: "Rejected" },
-  { value: "Reschedule", label: "Reschedule" },
-];
-
-const KNOWN_STAFF_LIST = ["Luna Park", "Aria Nguyen", "Chloe Davis", "Mel Santos", "Unassigned"];
+  { value: "Repaired", label: "Repaired" },
+  { value: "ReschedulePending", label: "Reschedule Pending" },
+  { value: "RescheduleSuggested", label: "Reschedule Suggested" }
+]
 
 function getCalendarCardStyle(status) {
   switch (status) {
@@ -492,10 +499,15 @@ function getCalendarCardStyle(status) {
     case "Rejected":
       return "border-[#FCA5A5] bg-[#FEF2F2] text-[#B91C1C]";
     case "RescheduleReq":
-    case "Reschedule Req":
+    case "RescheduleReq":
     case "ReschedulePending":
       return "border-[#FDBA74] bg-[#FFF7ED] text-[#C2410C]";
     case "RescheduleSuggested":
+      return "border-[#93C5FD] bg-[#EFF6FF] text-[#1D4ED8]";
+    case "Cancelled":
+    case "Canceled":
+      return "border-[#FCA5A5] bg-[#FEF2F2] text-[#B91C1C]";
+    case "Repaired":
       return "border-[#93C5FD] bg-[#EFF6FF] text-[#1D4ED8]";
     default:
       return "border-[#E5E7EB] bg-[#F9FAFB] text-[#4B5563]";
@@ -504,45 +516,33 @@ function getCalendarCardStyle(status) {
 
 
 function getBookingStatusLabel(status, t) {
+  const { language } = useLanguage();
   switch (status) {
+    case "Checked In":
+    case "CheckedIn":
+      return language === "vi" ? "Đã check in" : "Checked In";
+    case "In Progress":
+    case "InProgress":
+      return language === "vi" ? "Đang làm" : "In Progress";
     case "Pending":
-      return t("manager.dashboard.statusWaiting") || "Pending";
-
+      return language === "vi" ? "Đang chờ" : "Pending";
     case "Confirmed":
     case "Approved":
-      return t("manager.bookings.ready") || "Confirmed";
-
-    case "CheckedIn":
-    case "Checked In":
-      return t("manager.dashboard.statusCalled") || "Checked In";
-
-    case "InProgress":
-    case "In Progress":
-      return t("manager.dashboard.statusInService") || "In Progress";
-
+      return language === "vi" ? "Đã xác nhận" : "Confirmed";
     case "Completed":
     case "ServiceCompleted":
-      return t("manager.dashboard.statusDone") || "Completed";
-
+      return language === "vi" ? "Đã hoàn thành" : "Completed";
     case "Rejected":
-      return t("manager.breaks.statusRejected") || "Rejected";
-
+      return language === "vi" ? "Đã từ chối" : "Rejected";
     case "Cancelled":
     case "Canceled":
-      return t("manager.bookings.cancelBooking") || "Cancelled";
-
-    case "Reschedule":
-    case "RescheduleReq":
-    case "Reschedule Req":
+      return language === "vi" ? "Đã hủy" : "Cancelled";
     case "ReschedulePending":
-      return t("manager.bookings.rescheduleTime") || "Reschedule";
-
+      return language === "vi" ? "Yêu cầu dời lịch" : "Reschedule Requested";
     case "RescheduleSuggested":
-      return (
-        t("manager.bookings.moveSchedule") ||
-        "Reschedule Proposed"
-      );
-
+      return language === "vi" ? "Đề xuất dời lịch" : "Reschedule Proposed";
+    case "Repaired":
+      return language === "vi" ? "Đã sửa" : "Repaired";
     default:
       return status;
   }

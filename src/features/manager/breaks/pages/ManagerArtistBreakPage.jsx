@@ -114,7 +114,7 @@ export function ManagerArtistBreakPage() {
   const getArtistName = useCallback(
     (artistId) => {
       const artist = artists.find((a) => String(a.id) === String(artistId));
-      return artist ? artist.name : language === 'vi' ? 'Nail Artist' : 'Nail Artist';
+      return artist ? artist.name : language === 'vi' ? 'Staff Artist' : 'Staff Artist';
     },
     [artists, language]
   );
@@ -167,7 +167,7 @@ export function ManagerArtistBreakPage() {
       await approveRejectBreakRequest(selectedBreak.nailArtistBreakId, {
         status: "Approved",
       });
-      toast.success(language === 'vi' ? 'Duyệt yêu cầu nghỉ thành công!' : 'Nail artist break request approved successfully!');
+      toast.success(language === 'vi' ? 'Duyệt yêu cầu nghỉ thành công!' : 'Staff Artist break request approved successfully!');
       setIsApproveModalOpen(false);
       setSelectedBreak(null);
       loadBreaks();
@@ -281,7 +281,7 @@ export function ManagerArtistBreakPage() {
               {language === "vi" ? "Yêu Cầu Nghỉ Của Thợ Nail" : "Artist Break Requests"}
             </h1>
             <p className="text-xs sm:text-sm font-medium text-gray-300 leading-relaxed">
-              {language === "vi" ? "Xem, duyệt hoặc từ chối yêu cầu nghỉ giải lao do thợ nail salon gửi trong thời gian thực." : "Review, approve, or decline shift break requests submitted by salon nail artists in real time."}
+              {language === "vi" ? "Xem, duyệt hoặc từ chối yêu cầu nghỉ giải lao do thợ nail salon gửi trong thời gian thực." : "Review, approve, or decline shift break requests submitted by salon Staff Artists in real time."}
             </p>
           </div>
 
@@ -432,7 +432,7 @@ export function ManagerArtistBreakPage() {
             <span className="text-xs font-bold text-gray-500">{t("manager.bookings.artist")}:</span>
             <Select
               allowClear
-              placeholder={language === "vi" ? "Tất cả nhân viên" : "All Nail Artists"}
+              placeholder={language === "vi" ? "Tất cả nhân viên" : "All Staff Artists"}
               loading={isArtistsLoading}
               value={filterArtistId}
               onChange={(value) => {
@@ -495,7 +495,7 @@ export function ManagerArtistBreakPage() {
           description={
             searchQuery || filterArtistId || filterDate || filterStatus !== "all"
               ? language === "vi" ? "Không tìm thấy yêu cầu nghỉ phù hợp với tiêu chí tìm kiếm và lọc hiện tại." : "No break requests match your current search and filter criteria."
-              : language === "vi" ? "Chưa có yêu cầu nghỉ giải lao nào được gửi." : "There are no nail artist break requests submitted yet."
+              : language === "vi" ? "Chưa có yêu cầu nghỉ giải lao nào được gửi." : "There are no Staff Artist break requests submitted yet."
           }
         />
       ) : (
@@ -526,7 +526,7 @@ export function ManagerArtistBreakPage() {
                         key={item.nailArtistBreakId}
                         className="align-middle text-xs font-medium text-gray-800 hover:bg-[#FAF8FA]/80 transition-colors"
                       >
-                        {/* Nail Artist */}
+                        {/* Staff Artist */}
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[#C97A9E] to-[#9E4D76] text-white font-bold text-sm shadow-md shadow-[#C97A9E]/20 shrink-0">
@@ -683,7 +683,7 @@ export function ManagerArtistBreakPage() {
         open={isApproveModalOpen}
         intent="success"
         title={language === "vi" ? "Phê duyệt yêu cầu nghỉ?" : "Approve Break Request?"}
-        description={language === "vi" ? "Xác nhận phê duyệt yêu cầu nghỉ của nghệ sĩ làm móng trong khung giờ này." : "Confirm approval for the nail artist break request during this time slot."}
+        description={language === "vi" ? "Xác nhận phê duyệt yêu cầu nghỉ của nghệ sĩ làm móng trong khung giờ này." : "Confirm approval for the Staff Artist break request during this time slot."}
         confirmText={language === "vi" ? "Phê duyệt" : "Approve"}
         cancelText={language === "vi" ? "Hủy" : "Cancel"}
         onConfirm={handleApprove}
@@ -694,7 +694,7 @@ export function ManagerArtistBreakPage() {
         loading={isActionLoading}
         details={[
           {
-            label: language === "vi" ? "Nhân viên " : "Nail Artist",
+            label: language === "vi" ? "Nhân viên " : "Staff Artist",
             value: selectedBreak ? getArtistName(selectedBreak.nailArtistId) : "",
           },
           {
@@ -739,7 +739,7 @@ export function ManagerArtistBreakPage() {
           {selectedBreak && (
             <div className="p-3.5 bg-rose-50/70 rounded-2xl border border-rose-200/70 text-xs space-y-1.5">
               <p className="font-bold text-rose-950">
-                {language === "vi" ? "Nhân viên" : "Nail Artist"}: {getArtistName(selectedBreak.nailArtistId)}
+                {language === "vi" ? "Nhân viên" : "Staff Artist"}: {getArtistName(selectedBreak.nailArtistId)}
               </p>
               <p className="text-rose-800 font-semibold">
                 {language === "vi" ? "Ca" : "Slot"}: {dayjs(selectedBreak.breakDate).format("DD/MM/YYYY")} ({selectedBreak.startTime?.substring(0, 5)} - {selectedBreak.endTime?.substring(0, 5)})
@@ -905,7 +905,7 @@ export function ManagerArtistBreakPage() {
         loading={isActionLoading}
         details={[
           {
-            label: "Nail Artist",
+            label: "Staff Artist",
             value: selectedBreak ? getArtistName(selectedBreak.nailArtistId) : "",
           },
           {

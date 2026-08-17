@@ -299,7 +299,7 @@ export function ProposeRescheduleModal({
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               rows={3}
-              placeholder={language === "vi" ? "Ví dụ: Nghệ sĩ làm móng được yêu cầu đã kín lịch lúc 1:30 chiều, đề xuất 3:00 chiều thay thế..." : "e.g., Requested nail artist is fully booked at 1:30 PM, proposing 3:00 PM instead..."}
+              placeholder={language === "vi" ? "Ví dụ: Nghệ sĩ làm móng được yêu cầu đã kín lịch lúc 1:30 chiều, đề xuất 3:00 chiều thay thế..." : "e.g., Requested Staff Artist is fully booked at 1:30 PM, proposing 3:00 PM instead..."}
               className="rounded-2xl border-[#F3D7E4] focus:border-[#E84F93] p-3 text-xs font-medium shadow-2xs"
             />
           </div>

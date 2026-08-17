@@ -1,23 +1,19 @@
 import { CalendarPlus, Save } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ActionConfirmModal } from "../../components/ui/ActionConfirmModal";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { BookingFormFields } from "../components/BookingFormFields";
 import { BookingHeroCard } from "../components/BookingHeroCard";
 import { BookingSnapshotCard } from "../components/BookingSnapshotCard";
 import {
   BOOKING_ROLE_CONFIG,
   createEmptyBooking,
-} from "../services/mockBookings";
-import { getBookingRoleFromPath } from "../utils/bookingMapper";
+} from "../../../../shared/bookings/services/mockBookings";
+import { ROLES } from "../../../../shared/constants/roles";
 
-export function BookingCreatePage() {
-  const location = useLocation();
+export function StaffBookingCreatePage() {
   const navigate = useNavigate();
-  const role = useMemo(
-    () => getBookingRoleFromPath(location.pathname),
-    [location.pathname],
-  );
+  const role = ROLES.staff;
   const roleConfig = BOOKING_ROLE_CONFIG[role];
   const [formValues, setFormValues] = useState(createEmptyBooking);
   const [showCreateConfirm, setShowCreateConfirm] = useState(false);

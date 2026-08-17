@@ -431,7 +431,7 @@ export function BookingRatingListPage() {
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]" size={15} />
                   <input
                     type="text"
-                    placeholder="Search by customer name, nail artist, or comment..."
+                    placeholder="Search by customer name, Staff Artist, or comment..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300"
@@ -509,7 +509,7 @@ export function BookingRatingListPage() {
                     const score = rating.overallScore || 5;
                     const tier = getTier(score);
                     const dateFormatted = formatDate(rating.createdAt);
-                    const artistName = rating.nailArtistName || usersMap[rating.nailArtistId]?.name || "Nail Artist";
+                    const artistName = rating.nailArtistName || usersMap[rating.nailArtistId]?.name || "Staff Artist";
                     const isReplied = !!replies[rating.bookingRatingId];
 
                     return (
