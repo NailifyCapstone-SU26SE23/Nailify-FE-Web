@@ -535,7 +535,7 @@ export function ManagerWaitlistPage() {
                     {dayjs(nextGuest.requestedDate).format("DD MMM")} - {formatTimeSpan(nextGuest.requestedStartTime)}
                   </p>
                   <p className="mt-0.5 truncate text-[10px] font-semibold text-[#a77f98]">
-                    {language === "vi" ? "Yêu cầu" : "Requested"}: {nextGuest.preferredNailArtistName || (language === "vi" ? "Bất kỳ thợ nào" : "Any Artist")} · {nextGuest.estimatedDuration || "--"}m
+                    {language === "vi" ? "Yêu cầu" : "Requested"}: {nextGuest.preferredNailArtistName || (language === "vi" ? "Bất kỳ thợ nào" : "Any Artist")} · {nextGuest.estimatedDuration}m
                   </p>
                 </div>
               </div>

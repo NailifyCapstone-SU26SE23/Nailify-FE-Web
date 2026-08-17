@@ -791,7 +791,7 @@ export const getStaffDesignStudioExperienceById = (bookingId) =>
       preferences: [
         { label: "Favorite Styles", value: bookingExperience?.customer.preferences ?? "Minimal, clean finish" },
         { label: "Preferred Colors", value: "Nude, Pink, White" },
-        { label: "Booking History", value: `Last booking: ${booking.createdAt.split(" ")[0]}` },
+        { label: "Booking History", value: `Last booking: ${booking.createdAt?.split(" ")[0] || ""}` },
         { label: "Skin Tone", value: "Warm Neutral" },
       ],
       recommendations: {
@@ -802,7 +802,7 @@ export const getStaffDesignStudioExperienceById = (bookingId) =>
       builder: {
         ...DEFAULT_STUDIO_BUILDER,
         priceRows: [
-          ["Base Price", booking.total.includes("VND") ? booking.total.replace(" VND", "") : "$40.00"],
+          ["Base Price", booking.total?.includes("VND") ? booking.total.replace(" VND", "") : "$40.00"],
           ["Decoration Fee", "$6.00"],
           ["Extra Services", "$0.00"],
         ],

@@ -113,7 +113,7 @@ function ServiceInfoCard({ services = [], onOpenServiceProcedures = null }) {
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
                     {service.detailLabel || `Service ${index + 1}`}
                   </p>
-                  <p className="mt-2 break-words text-sm font-extrabold text-[#ea4f93]">{service.name || "--"}</p>
+                  <p className="mt-2 break-words text-sm font-extrabold text-[#ea4f93]">{service.name}</p>
                   {service.nailServiceName ? (
                     <p className="mt-1 text-xs font-semibold text-[#7a6275]">
                       Nail service: {service.nailServiceName}
@@ -131,14 +131,14 @@ function ServiceInfoCard({ services = [], onOpenServiceProcedures = null }) {
                 <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Price</p>
                   <span className="inline-flex rounded-full border border-[#d8f0df] bg-[#f1fcf4] px-3 py-1 text-[11px] font-bold text-[#16975f]">
-                    {service.price || "--"}
+                    {service.price}
                   </span>
                 </div>
 
                 <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Duration</p>
                   <span className="inline-flex rounded-full bg-[#f4efff] px-4 py-2 text-sm font-extrabold text-[#8c63ef]">
-                    {service.duration || "--"}
+                    {service.duration}
                   </span>
                 </div>
 
@@ -270,7 +270,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                     />
                     <div className="min-w-0">
                       <p className="text-base font-extrabold capitalize text-[#3f2b3f]">
-                        {variantDetail.nailShape?.name || "--"}
+                        {variantDetail.nailShape?.name}
                       </p>
                     </div>
                   </div>
@@ -280,7 +280,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Nail Surface</p>
                   <div className="mt-3">
                     <p className="text-base font-extrabold text-[#3f2b3f]">
-                      {variantDetail.nailSurface?.name || "--"}
+                      {variantDetail.nailSurface?.name}
                     </p>
                   </div>
                 </article>
@@ -313,10 +313,10 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                             />
                             <div>
                               <p className="text-sm font-extrabold text-[#3f2b3f]">
-                                {item.component?.name || "--"}
+                                {item.component?.name}
                               </p>
                               <p className="mt-1 text-xs text-[#a88a9d]">
-                                Type: {item.component?.componentType || "--"}
+                                Type: {item.component?.componentType}
                               </p>
                             </div>
                           </div>

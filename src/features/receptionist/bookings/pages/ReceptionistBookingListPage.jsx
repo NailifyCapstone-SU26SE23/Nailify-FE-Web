@@ -90,7 +90,7 @@ function normalizeBooking(booking) {
     bookingId: booking.bookingId,
     customerName: booking.customerName || "Unknown customer",
     artistName: booking.artistName || "Unassigned",
-    salonName: booking.salonName || "--",
+    salonName: booking.salonName,
     bookingDate: booking.bookingDate,
     bookingDateValue: toDateInputValue(booking.bookingDate),
     startTime: booking.startTime,
@@ -120,7 +120,7 @@ function isReadyForCheckout(status) {
 
 const BOOKING_PAGE_SIZE = 10;
 const RECEPTIONIST_BOOKING_FETCH_SIZE = 10;
-const STATUS_OPTIONS = ["All", "Pending", "Confirmed", "Approved", "CheckedIn", "Completed", "Cancelled"];
+const STATUS_OPTIONS = ["All", "Pending", "Approved", "Rejected", "Cancelled", "CheckedIn", "InProgress", "ServiceCompleted", "Completed", "Repaired", "ReschedulePending", "RescheduleSuggested"];
 
 export function ReceptionistBookingListPage() {
   const { t, language } = useLanguage();
@@ -741,7 +741,7 @@ export function ReceptionistBookingListPage() {
               >
                 {STATUS_OPTIONS.map((item) => (
                   <option key={item} value={item}>
-                    {item === "All" ? t("receptionist.bookings.statusAll") || "All Statuses" : t(`receptionist.dashboard.status${item}`) || item}
+                    {item === "All" ? t("receptionist.bookings.statusAll") || "All Statuses" : item}
                   </option>
                 ))}
               </select>
@@ -868,7 +868,7 @@ export function ReceptionistBookingListPage() {
                       {booking.status}
                     </span>
                   </div>
-                  <p className="mt-3 text-sm text-[#6b5668]">{booking.services[0] || "--"}</p>
+                  <p className="mt-3 text-sm text-[#6b5668]">{booking.services[0]}</p>
                   <p className="mt-1 text-[11px] text-[#b38a9f]">{booking.salonName}</p>
                   <div className="mt-4 flex items-center justify-between gap-3">
                     <div>
@@ -961,7 +961,7 @@ export function ReceptionistBookingListPage() {
 
             {!filteredBookings.length ? (
               <div className="border-t border-[#f7dce8] bg-[#fffafd] px-5 py-10 text-center text-sm text-[#8a7082]">
-                No bookings matched the current search.
+                {language === "vi" ? "Không có lịch hẹn nào khớp với tìm kiếm hiện tại." : "No bookings matched the current search."}
               </div>
             ) : null}
           </div>
@@ -990,12 +990,11 @@ export function ReceptionistBookingListPage() {
             padding: 16,
           },
         }}
-        title={<span className="text-base font-extrabold text-[#432744]">Customer QR Check-in</span>}
+        title={<span className="text-base font-extrabold text-[#432744]">{language === "vi" ? "Quét mã QR khách hàng để làm thủ tục" : "Customer QR Check-in"}</span>}
       >
         <div className="space-y-4 overflow-hidden">
           <p className="text-sm text-[#8f7484]">
-            Point the webcam at the customer QR code. The scanned token will be sent to backend
-            `verify-qr` before opening the booking.
+            {language === "vi" ? "Đặt camera vào mã QR của khách hàng. Token đã quét sẽ được gửi đến backend `verify-qr` trước khi mở lịch hẹn." : "Point the webcam at the customer QR code. The scanned token will be sent to backend `verify-qr` before opening the booking."}
           </p>
 
           <div className="overflow-hidden rounded-[20px] border border-[#f2d8e4] bg-[#fff7fb]">
@@ -1026,7 +1025,7 @@ export function ReceptionistBookingListPage() {
           {lastScannedCode ? (
             <div className="rounded-[18px] border border-[#f1dde8] bg-white px-4 py-3">
               <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#c49aaf]">
-                Last scanned payload
+                {language === "vi" ? "Mã QR khách hàng đã quét cuối cùng" : "Last scanned payload"}
               </p>
               <p className="mt-2 break-all text-sm text-[#5c4557]">{lastScannedCode}</p>
             </div>

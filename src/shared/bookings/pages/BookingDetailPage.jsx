@@ -255,7 +255,7 @@ function buildStaffExperienceFromBooking(
       rows.push({
         id: `${bookingItemId || `service-${index}`}-service`,
         bookingItemId,
-        name: resolvedServiceName || "--",
+        name: resolvedServiceName,
         // CRITICAL FIX: Keep "Service" as key so StaffBookingConsultationDetail can filter it properly
         detailLabel: "Service",
         quantity,
@@ -275,7 +275,7 @@ function buildStaffExperienceFromBooking(
       rows.push({
         id: `${bookingItemId || `service-${index}`}-nail`,
         bookingItemId,
-        name: resolvedNailName || "--",
+        name: resolvedNailName,
         // CRITICAL FIX: Keep "Customer Nail" and "Nail Variant" as keys
         detailLabel: resolvedCustomerNail ? (language === "vi" ? "Móng của khách hàng" : "Customer Nail") : (language === "vi" ? "Biến thể móng" : "Nail Variant"),
         quantity,
@@ -342,7 +342,7 @@ function buildStaffExperienceFromBooking(
     variantNames[0] ||
     (isVi ? "Chưa chọn mẫu thiết kế" : "Selected design not specified");
   const resolvedVariantName =
-    resolvedDesignDetail?.name || customerDesignNames[0] || variantNames[0] || "--";
+    resolvedDesignDetail?.name || customerDesignNames[0] || variantNames[0];
   const resolvedDesignImage = resolvedDesignDetail?.imageUrl || designImage;
   const hasCustomerNailSelected = Boolean(
     normalizedItems.some((item) => Number(item?.customerNailId || 0) > 0),
@@ -357,10 +357,10 @@ function buildStaffExperienceFromBooking(
     customerDetail?.fullName ||
     booking?.customerName ||
     "--";
-  const customerPhone = customerDetail?.phone || "--";
+  const customerPhone = customerDetail?.phone;
   const customerAvatar = customerDetail?.avatarUrl || DEFAULT_AVATAR;
   const customerMemberTier = customerDetail?.role || "Customer";
-  const customerStatus = customerDetail?.status || booking?.status || "--";
+  const customerStatus = customerDetail?.status || booking?.status;
 
   // CRITICAL FIX: Keeping all `label` values exactly as English string constants 
   // so the child component can find and render the layout correctly.
@@ -383,12 +383,12 @@ function buildStaffExperienceFromBooking(
       id: booking?.customerId,
       userId: booking?.customerId,
       facts: [
-        { label: language === "vi" ? "Tiệm nails" : "Salon", value: booking?.salonName || "--" },
+        { label: language === "vi" ? "Tiệm nails" : "Salon", value: booking?.salonName },
         { label: language === "vi" ? "Số lượng dịch vụ" : "Total Services", value: String(items.length || 0) },
         { label: language === "vi" ? "Trạng thái" : "Status", value: customerStatus },
       ],
-      allergyNote: customerDetail?.email || "--",
-      preferences: requestedDesign || "--",
+      allergyNote: customerDetail?.email,
+      preferences: requestedDesign,
     },
     bookingInfo: [
       {
@@ -423,11 +423,11 @@ function buildStaffExperienceFromBooking(
         : []),
       {
         label: language === "vi" ? "Tiệm nails" : "Salon",
-        value: booking?.salonName || "--",
+        value: booking?.salonName,
       },
       {
         label: language === "vi" ? "Nghệ sĩ" : "Staff Artist",
-        value: booking?.artistName || "--",
+        value: booking?.artistName,
       },
     ],
     design: {
@@ -436,9 +436,9 @@ function buildStaffExperienceFromBooking(
       details: [
         { label: "Service", value: serviceSummary },
         { label: "Variant", value: resolvedVariantName },
-        { label: language === "vi" ? "Kiểu dáng" : "Shape", value: resolvedShape?.name || "--" },
-        { label: language === "vi" ? "Bề mặt" : "Surface", value: resolvedSurface?.name || "--" },
-        { label: "Customer Design", value: customerDesignNames[0] || "--" },
+        { label: language === "vi" ? "Kiểu dáng" : "Shape", value: resolvedShape?.name },
+        { label: language === "vi" ? "Bề mặt" : "Surface", value: resolvedSurface?.name },
+        { label: "Customer Design", value: customerDesignNames[0] },
         { label: language === "vi" ? "Thời lượng" : "Duration", value: timeRange },
         { label: language === "vi" ? "Giá" : "Price", value: bookingItemsBasePrice > 0 ? formatCurrency(bookingItemsBasePrice) : formatCurrency(booking?.price) },
         { label: language === "vi" ? "Thành phần" : "Components", value: componentSummary },
@@ -473,9 +473,9 @@ function buildStaffExperienceFromBooking(
         : null,
     },
     sessionStatus: [
-      { label: "Status", value: booking?.status || "--" },
-      { label: "Staff Artist", value: booking?.artistName || "--" },
-      { label: "Salon", value: booking?.salonName || "--" },
+      { label: "Status", value: booking?.status },
+      { label: "Staff Artist", value: booking?.artistName },
+      { label: "Salon", value: booking?.salonName },
       { label: "Time Slot", value: timeRange },
     ],
     customerHistory: {
@@ -489,7 +489,7 @@ function buildStaffExperienceFromBooking(
           ][index % 3],
         }))
         : [{ label: "--", className: "border-[#f0d8e3] bg-white text-[#6f5c6b]" }],
-      previousShapes: variantNames[0] || "--",
+      previousShapes: variantNames[0],
       lastUpload: {
         title: primaryDesignItem?.customerNailName || primaryDesignItem?.nailVariantName || (isVi ? "Không có hình ảnh" : "Reference unavailable"),
         date: formatStaffDate(booking?.bookingDate),
@@ -504,8 +504,8 @@ function buildStaffExperienceFromBooking(
       : [{ serviceName: "--", nailVariantName: "--", customerNailImageUrl: DEFAULT_DESIGN_IMAGE }])
       .slice(0, 3)
       .map((item) => ({
-        name: item.customerNailName || item.nailVariantName || item.serviceName || "--",
-        meta: `${item.serviceName || "--"} | ${item.duration ? formatDurationMinutes(item.duration) : "--"}`,
+        name: item.customerNailName || item.nailVariantName || item.serviceName,
+        meta: `${item.serviceName} | ${item.duration ? formatDurationMinutes(item.duration) : "--"}`,
         image: item.nailVariantImageUrl || item.customerNailImageUrl || DEFAULT_DESIGN_IMAGE,
       })),
     staffNotes: staffNotesDraft,
@@ -1100,8 +1100,8 @@ export function BookingDetailPage() {
             booking: staffBookingDetail || { id: bookingId },
             bookingDetail: staffBookingDetail || null,
             bookingCode: staffBookingDetail ? formatBookingCode(staffBookingDetail.bookingId) : "",
-            customerName: staffBookingDetail?.customerName || formValues?.customerName || "--",
-            staffName: staffBookingDetail?.artistName || "--",
+            customerName: staffBookingDetail?.customerName || formValues?.customerName,
+            staffName: staffBookingDetail?.artistName,
             statusLabel: staffBookingDetail?.status || "Pending",
             selectedDesignName:
               staffBookingDetail?.bookingItems?.[0]?.customerNailName ||

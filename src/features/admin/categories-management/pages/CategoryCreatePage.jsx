@@ -77,8 +77,8 @@ export function CategoryCreatePage() {
     const selectedType = categoryTypeOptions.find((item) => String(item.value) === String(formValues.categoryTypeId));
 
     return [
-      [t("adminCategories.categoryName"), formValues.name || "--"],
-      [t("adminCategories.categoryType"), selectedType?.label || "--"],
+      [t("adminCategories.categoryName"), formValues.name],
+      [t("adminCategories.categoryType"), selectedType?.label],
     ];
   }, [categoryTypeOptions, formValues.categoryTypeId, formValues.name]);
 
@@ -261,7 +261,7 @@ export function CategoryCreatePage() {
         onConfirm={handleCreate}
         onCancel={() => !isSaving && setShowSaveConfirm(false)}
         highlights={[formValues.name || "New category"]}
-        details={[{ label: "Category Type", value: summaryItems[1]?.[1] || "--" }]}
+        details={[{ label: "Category Type", value: summaryItems[1]?.[1] }]}
       />
     </section>
   );

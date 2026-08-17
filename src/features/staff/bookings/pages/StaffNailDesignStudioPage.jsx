@@ -290,7 +290,7 @@ function buildVariantTemplateFromApi(item) {
 }
 
 function buildShapeOption(item) {
-  const rawLabel = String(item?.name || "--").trim();
+  const rawLabel = String(item?.name).trim();
   return {
     id: String(item?.nailShapeId || item?.id || item?.name || ""),
     label: rawLabel,
@@ -305,7 +305,7 @@ function buildShapeOption(item) {
 function buildSurfaceOption(item) {
   return {
     id: String(item?.nailSurfaceId || item?.id || item?.name || ""),
-    label: String(item?.name || "--").trim(),
+    label: String(item?.name).trim(),
     shaderParam: String(item?.shaderParam || "").trim(),
     price: Number(item?.price || 0),
     duration: Number(item?.duration || 0),
@@ -315,7 +315,7 @@ function buildSurfaceOption(item) {
 function buildDecorationOption(item) {
   return {
     id: String(item?.componentId || item?.id || item?.name || ""),
-    label: String(item?.name || "--").trim(),
+    label: String(item?.name).trim(),
     imageUrl: String(item?.imageUrl || "").trim(),
     componentType: String(item?.componentType || "").trim(),
     price: Number(item?.price || 0),
@@ -326,7 +326,7 @@ function buildDecorationOption(item) {
 function buildCustomerDecorationOption(item) {
   return {
     id: `customer-component-${item?.customerComponentId || item?.id || item?.name || ""}`,
-    label: String(item?.name || "--").trim(),
+    label: String(item?.name).trim(),
     imageUrl: String(item?.imageUrl || "").trim(),
     componentType: String(item?.componentType || "").trim(),
     price: Number(item?.price || 0),
@@ -339,7 +339,7 @@ function buildCustomerDecorationOption(item) {
 function buildExtraServiceOption(item) {
   return {
     id: String(item?.serviceId || item?.id || item?.name || ""),
-    label: String(item?.name || "--").trim(),
+    label: String(item?.name).trim(),
     description: String(item?.description || "").trim(),
     price: Number(item?.price || 0),
     duration: Number(item?.duration || 0),
@@ -438,7 +438,7 @@ function getShapeLengthVariant(shapeName) {
 }
 
 function getShapeFamilyLabel(shapeName) {
-  return String(shapeName || "--")
+  return String(shapeName)
     .replace(/\btrung bình\b/gi, "")
     .replace(/\btrung binh\b/gi, "")
     .replace(/\bmedium\b/gi, "")
@@ -446,7 +446,7 @@ function getShapeFamilyLabel(shapeName) {
     .replace(/\bdai\b/gi, "")
     .replace(/\blong\b/gi, "")
     .replace(/\s+/g, " ")
-    .trim() || "--";
+    .trim();
 }
 
 function getPreferredShapeVariant(shapeOptions, familyLabel, lengthVariant) {
@@ -682,13 +682,13 @@ function buildDefaultPlacement(option, fingerIndex, uniqueToken) {
     customerComponentId: toNullableNumber(option.customerComponentId),
     imageUrl: String(option.imageUrl || "").trim(),
     componentType: String(option.componentType || "").trim(),
-    posX: 50,
-    posY: 52,
-    scale: 0.8,
+    posX: 0,
+    posY: 0,
+    scale: 0.3,
     rotation: 0,
     zIndex: 10,
     configJson: JSON.stringify({
-      scale: 0.8,
+      scale: 0.3,
       rotation: 0,
       zIndex: 10,
     }),
@@ -930,13 +930,19 @@ function PreviewNail({ components = [], finish, fingerLabel, index, isActive, sh
     }
     : {};
 
+  const isClippedType = (type) => {
+    const t = String(type || "").toLowerCase().trim();
+    return t === "sticker" || t === "art" || t === "1" || t === "3";
+  };
+
   return (
     <div className={`flex flex-col items-center gap-2 ${isActive ? "scale-[1.03]" : ""}`}>
       <div
-        className={`relative w-[3.8rem] overflow-hidden rounded-t-[1.9rem] rounded-b-[0.9rem] border-2 border-[#f7cadd] bg-[linear-gradient(180deg,#fff7fb_0%,#fff1f8_100%)] shadow-[0_14px_22px_rgba(236,72,153,0.10)] ${isActive ? "ring-2 ring-[#ef6aac]/45 ring-offset-2 ring-offset-[#fff2f8]" : ""}`}
+        className={`relative w-[3.8rem] rounded-t-[1.9rem] rounded-b-[0.9rem] border-2 border-[#f7cadd] bg-[linear-gradient(180deg,#fff7fb_0%,#fff1f8_100%)] shadow-[0_14px_22px_rgba(236,72,153,0.10)] ${isActive ? "ring-2 ring-[#ef6aac]/45 ring-offset-2 ring-offset-[#fff2f8]" : ""}`}
         style={{ height: metrics.height + 34 }}
       >
-        <div className="absolute inset-[10%]" style={maskStyle}>
+        {/* Masked section for background and Art type components */}
+        <div className="absolute inset-[10%] overflow-hidden" style={maskStyle}>
           <div className="absolute inset-0" style={colorStyle} />
           {renderSurfaceEffects(finish)}
 
@@ -951,15 +957,37 @@ function PreviewNail({ components = [], finish, fingerLabel, index, isActive, sh
           ) : null}
 
           {components.map((component) => (
-            component.imageUrl ? (
+            component.imageUrl && isClippedType(component.componentType || component.type) ? (
               <img
                 key={component.key}
                 src={component.imageUrl}
                 alt={component.label}
                 className="absolute h-9 w-9 object-contain drop-shadow-[0_4px_8px_rgba(234,79,147,0.18)]"
                 style={{
-                  left: `${component.posX}%`,
-                  top: `${component.posY}%`,
+                  left: `${(Number(component.posX ?? 0) + 0.5) * 100}%`,
+                  top: `${(Number(component.posY ?? 0) + 0.5) * 100}%`,
+                  zIndex: component.zIndex,
+                  transform: `translate(-50%, -50%) scale(${component.scale}) rotate(${component.rotation}deg)`,
+                }}
+                loading="lazy"
+                referrerPolicy="no-referrer"
+              />
+            ) : null
+          ))}
+        </div>
+
+        {/* Unmasked section for Gen type components */}
+        <div className="absolute inset-[10%] pointer-events-none">
+          {components.map((component) => (
+            component.imageUrl && !isClippedType(component.componentType || component.type) ? (
+              <img
+                key={component.key}
+                src={component.imageUrl}
+                alt={component.label}
+                className="absolute h-9 w-9 object-contain drop-shadow-[0_4px_8px_rgba(234,79,147,0.18)]"
+                style={{
+                  left: `${(Number(component.posX ?? 0) + 0.5) * 100}%`,
+                  top: `${(Number(component.posY ?? 0) + 0.5) * 100}%`,
                   zIndex: component.zIndex,
                   transform: `translate(-50%, -50%) scale(${component.scale}) rotate(${component.rotation}deg)`,
                 }}
@@ -1988,8 +2016,8 @@ export function StaffNailDesignStudioPage() {
         customerComponentId: toNullableNumber(item?.customerComponentId),
         imageUrl: String(sourceComponent?.imageUrl || "").trim(),
         componentType: String(sourceComponent?.componentType || "").trim(),
-        posX: Number(item?.posX ?? 50),
-        posY: Number(item?.posY ?? 50),
+        posX: Number(item?.posX ?? 0),
+        posY: Number(item?.posY ?? 0),
         ...parsePlacementConfig(item?.configJson),
         configJson: String(item?.configJson || ""),
       });
@@ -2152,8 +2180,8 @@ export function StaffNailDesignStudioPage() {
             componentId: Number(item?.component?.componentId || item?.componentId || 0),
             imageUrl: String(item?.component?.imageUrl || "").trim(),
             componentType: String(item?.component?.componentType || "").trim(),
-            posX: Number(item?.posX ?? 50),
-            posY: Number(item?.posY ?? 50),
+            posX: Number(item?.posX ?? 0),
+            posY: Number(item?.posY ?? 0),
             ...parsePlacementConfig(item?.configJson),
             configJson: String(item?.configJson || ""),
           });
@@ -2172,8 +2200,8 @@ export function StaffNailDesignStudioPage() {
         componentId: Number(item?.component?.componentId || item?.componentId || 0),
         imageUrl: String(item?.component?.imageUrl || "").trim(),
         componentType: String(item?.component?.componentType || "").trim(),
-        posX: Number(item?.posX ?? 50),
-        posY: Number(item?.posY ?? 50),
+        posX: Number(item?.posX ?? 0),
+        posY: Number(item?.posY ?? 0),
         ...parsePlacementConfig(item?.configJson),
         configJson: String(item?.configJson || ""),
       });
@@ -2996,11 +3024,54 @@ export function StaffNailDesignStudioPage() {
                     <p className="mb-3 text-[10px] font-bold text-[#b07d97]">
                       Editing decoration for {activeNailIndex === -1 ? "all fingers" : `${NAIL_LABELS[activeNailIndex]} nail`}
                     </p>
-                    <ChoiceGrid
-                      items={decorationOptions.length ? decorationOptions : studio.builder.decorations}
-                      selected={selectedDecorations}
-                      onSelect={toggleNailDecoration}
-                    />
+                    {(() => {
+                      const allDecorations = decorationOptions.length ? decorationOptions : (studio?.builder?.decorations || []);
+                      
+                      const groupByType = (decorations) => {
+                        const groups = {
+                          Gem: [],
+                          Sticker: [],
+                          Charm: [],
+                          Art: []
+                        };
+                        
+                        decorations.forEach(dec => {
+                          const type = String(dec?.componentType || dec?.type || "").trim();
+                          const normalized = type.charAt(0).toUpperCase() + type.slice(1).toLowerCase();
+                          if (groups[normalized]) {
+                            groups[normalized].push(dec);
+                          } else {
+                            if (normalized.toLowerCase().includes("art")) groups.Art.push(dec);
+                            else if (normalized.toLowerCase().includes("sticker")) groups.Sticker.push(dec);
+                            else if (normalized.toLowerCase().includes("charm")) groups.Charm.push(dec);
+                            else groups.Gem.push(dec);
+                          }
+                        });
+                        return groups;
+                      };
+                      
+                      const grouped = groupByType(allDecorations);
+                      
+                      return (
+                        <div className="space-y-4">
+                          {Object.entries(grouped).map(([category, list]) => {
+                            if (list.length === 0) return null;
+                            return (
+                              <div key={category} className="space-y-2">
+                                <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#ea4f93] pl-1">
+                                  {category}
+                                </p>
+                                <ChoiceGrid
+                                  items={list}
+                                  selected={selectedDecorations}
+                                  onSelect={toggleNailDecoration}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   <div>

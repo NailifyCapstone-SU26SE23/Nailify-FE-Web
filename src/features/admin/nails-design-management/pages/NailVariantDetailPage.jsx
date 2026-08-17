@@ -1035,7 +1035,7 @@ export function NailVariantDetailPage() {
               {t("adminNailsDesignManagement.nailDesigns")}<span className="text-[#ea4f93]">{t("adminNailsDesignManagement.variantDetail")}</span>
             </p>
             <h1 className="mt-2 text-2xl font-bold text-[#432744]">{variant.name}</h1>
-            <p className="mt-1 max-w-3xl text-sm text-[#8c7085]">{variant.description || "--"}</p>
+            <p className="mt-1 max-w-3xl text-sm text-[#8c7085]">{variant.description}</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <button
@@ -1112,8 +1112,8 @@ export function NailVariantDetailPage() {
 
               <div className="grid gap-3 sm:grid-cols-2">
                 {[
-                  [t("adminNailsDesignManagement.price"), variant.priceLabel || "--"],
-                  [t("adminNailsDesignManagement.duration"), variant.durationLabel || "--"],
+                  [t("adminNailsDesignManagement.price"), variant.priceLabel],
+                  [t("adminNailsDesignManagement.duration"), variant.durationLabel],
                 ].map(([label, value]) => (
                   <div key={label} className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">{label}</p>
@@ -1127,9 +1127,9 @@ export function NailVariantDetailPage() {
                   <h3 className="text-sm font-extrabold uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.nailShape")}</h3>
                   <div className="mt-4 space-y-3">
                     {[
-                      [t("adminNailsDesignManagement.name"), variant.nailShape?.name || "--"],
-                      [t("adminNailsDesignManagement.price"), variant.nailShape?.priceLabel || "--"],
-                      [t("adminNailsDesignManagement.duration"), variant.nailShape?.durationLabel || "--"],
+                      [t("adminNailsDesignManagement.name"), variant.nailShape?.name],
+                      [t("adminNailsDesignManagement.price"), variant.nailShape?.priceLabel],
+                      [t("adminNailsDesignManagement.duration"), variant.nailShape?.durationLabel],
                     ].map(([label, value]) => (
                       <div key={label} className="rounded-[16px] border border-[#f3dce7] bg-white px-4 py-3">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">{label}</p>
@@ -1143,9 +1143,9 @@ export function NailVariantDetailPage() {
                   <h3 className="text-sm font-extrabold uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.nailSurface")}</h3>
                   <div className="mt-4 space-y-3">
                     {[
-                      [t("adminNailsDesignManagement.name"), variant.nailSurface?.name || "--"],
-                      [t("adminNailsDesignManagement.price"), variant.nailSurface?.priceLabel || "--"],
-                      [t("adminNailsDesignManagement.duration"), variant.nailSurface?.durationLabel || "--"],
+                      [t("adminNailsDesignManagement.name"), variant.nailSurface?.name],
+                      [t("adminNailsDesignManagement.price"), variant.nailSurface?.priceLabel],
+                      [t("adminNailsDesignManagement.duration"), variant.nailSurface?.durationLabel],
                     ].map(([label, value]) => (
                       <div key={label} className="rounded-[16px] border border-[#f3dce7] bg-white px-4 py-3">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">{label}</p>
@@ -1164,15 +1164,15 @@ export function NailVariantDetailPage() {
                 {variant.nailComponents.map((item) => (
                   <div key={item.id} className="rounded-[18px] border border-[#f1d7e3] bg-[#fffafb] p-4">
                     <div className="flex flex-wrap items-center gap-2">
-                      <Pill tone="pink">{item.component?.name || "--"}</Pill>
-                      <Pill tone="blue">{item.component?.componentType || "--"}</Pill>
-                      <Pill tone="yellow">{item.component?.priceLabel || "--"}</Pill>
+                      <Pill tone="pink">{item.component?.name }</Pill>
+                      <Pill tone="blue">{item.component?.componentType }</Pill>
+                      <Pill tone="yellow">{item.component?.priceLabel }</Pill>
                     </div>
                     <div className="mt-3 grid gap-2 text-sm md:grid-cols-4">
                       <span>Finger: <b>{item.fingerIndex}</b></span>
                       <span>Pos X: <b>{item.posX}</b></span>
                       <span>Pos Y: <b>{item.posY}</b></span>
-                      <span className="break-all">Config: <b>{item.configJson || "--"}</b></span>
+                      <span className="break-all">Config: <b>{item.configJson }</b></span>
                     </div>
                   </div>
                 ))}
@@ -1239,8 +1239,8 @@ export function NailVariantDetailPage() {
                           ))}
                         </select>
                         <div className="mt-2 grid gap-2 text-sm md:grid-cols-3">
-                          <span>{t("adminNailsDesignManagement.duration")}: <b>{item.durationLabel || item.duration || "--"}</b></span>
-                          <span>{t("adminNailsDesignManagement.status")}: <b>{item.status || "--"}</b></span>
+                          <span>{t("adminNailsDesignManagement.duration")}: <b>{item.durationLabel || item.duration}</b></span>
+                          <span>{t("adminNailsDesignManagement.status")}: <b>{item.status}</b></span>
                           <span>{t("adminNailsDesignManagement.required")}: <b>{item.isRequired ? (t("adminNailsDesignManagement.yes")) : (t("adminNailsDesignManagement.no"))}</b></span>
                         </div>
                       </div>
@@ -1304,7 +1304,7 @@ export function NailVariantDetailPage() {
               </div>
             ) : (
               <pre className="overflow-x-auto rounded-[16px] bg-[#fffafb] p-4 text-xs leading-6 text-[#6d5669]">
-                {variant.colorJson || "--"}
+                {variant.colorJson}
               </pre>
             )}
           </DetailCard>

@@ -123,11 +123,13 @@ function formatTime(value) {
 
 function getCustomerDisplayName(customerProfile, booking) {
   const fullName = [customerProfile?.firstName, customerProfile?.lastName].filter(Boolean).join(" ").trim();
-  return fullName || booking?.customerName || "--";
+  return fullName || booking?.customerName || "";
 }
 
 function getCustomerInitials(customerProfile, booking) {
-  return getCustomerDisplayName(customerProfile, booking)
+  const displayName = getCustomerDisplayName(customerProfile, booking);
+  if (!displayName) return "NA";
+  return displayName
     .split(" ")
     .filter(Boolean)
     .slice(0, 2)
@@ -501,7 +503,8 @@ export function ReceptionistBookingDetailPage() {
   }, [bookingId]);
 
   function addMinutes(time, minutes) {
-    const [h, m, s] = time.split(":").map(Number);
+    if (!time) return "--:--";
+    const [h, m, s] = String(time).split(":").map(Number);
 
     const date = new Date();
     date.setHours(h, m, s || 0, 0);
@@ -570,7 +573,7 @@ export function ReceptionistBookingDetailPage() {
           totalDuration: uDur,
           unitPrice: uPrice,
           totalPrice: uPrice,
-          artist: booking?.artistName || "--",
+          artist: booking?.artistName,
           sourceItem: item,
         };
         itemMap.set(key, groupObj);
@@ -594,7 +597,7 @@ export function ReceptionistBookingDetailPage() {
           group.totalDuration
         )}`,
         service: displayName,
-        serviceType: group.nailVariantName || "--",
+        serviceType: group.nailVariantName,
         artist: group.artist,
         duration: group.totalDuration ? formatDurationMinutes(group.totalDuration) : "--",
         price: group.totalPrice ? formatCurrency(group.totalPrice) : "--",
@@ -787,13 +790,13 @@ export function ReceptionistBookingDetailPage() {
       render: (_, row) => (
         <div className="flex items-center gap-2">
           <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9] text-[9px] font-bold text-white shadow-2xs">
-            {(row.artist || "--")
+            {(row.artist)
               .split(" ")
               .filter(Boolean)
               .slice(0, 2)
               .map((part) => part[0])
               .join("")
-              .toUpperCase() || "--"}
+              .toUpperCase()}
           </div>
           <span className="text-xs font-bold text-[#2B182B]">{row.artist || "Aria Nguyen"}</span>
         </div>
@@ -1504,7 +1507,7 @@ export function ReceptionistBookingDetailPage() {
                     {isNail ? language === "vi" ? <span className="flex items-center gap-1"><Sparkles size={12} /> Dịch Vụ Móng Nail</span> : <span className="flex items-center gap-1"><Sparkles size={12} /> Nail Services</span> : language === "vi" ? "💅 Dịch Vụ Salon" : "💅 Salon Services"}
                   </span>
                   <span className="flex items-center justify-center gap-1.5 text-xs font-bold text-[#E84F93]">
-                    <AlarmClock size={12} /> {language === "vi" ? "Tổng thời gian:" : "Total duration:"} {selectedServiceRow.duration || "--"}
+                    <AlarmClock size={12} /> {language === "vi" ? "Tổng thời gian:" : "Total duration:"} {selectedServiceRow.duration}
                   </span>
                 </div>
                 <h3 className="mt-2 text-base font-bold text-[#2B182B]">
@@ -1705,7 +1708,7 @@ export function ReceptionistBookingDetailPage() {
                 <div className="flex flex-wrap items-center gap-3 shrink-0">
                   <div className="flex items-center gap-1.5 rounded-xl border border-[#F3E2EC] bg-white/80 px-3 py-1.5 text-xs font-bold text-[#2B182B] shadow-2xs">
                     <Clock size={14} className="text-[#E84F93]" />
-                    <span>{language === "vi" ? "Thời gian:" : "Duration:"} {selectedProcedureRow.duration || "--"}</span>
+                    <span>{language === "vi" ? "Thời gian:" : "Duration:"} {selectedProcedureRow.duration}</span>
                   </div>
                   <div className="flex items-center gap-1.5 rounded-xl border border-[#F3E2EC] bg-white/80 px-3 py-1.5 text-xs font-bold text-[#2B182B] shadow-2xs">
                     <Sparkles size={14} className="text-[#8B5CF6]" />
@@ -1791,7 +1794,7 @@ export function ReceptionistBookingDetailPage() {
                           {/* Time badge (Estimated Time) */}
                           <div className="flex items-center gap-2 text-xs shrink-0">
                             <span className="flex items-center gap-1 font-bold text-[#E84F93]">
-                              <Clock size={12} /> {isVi ? "Dự kiến" : "Estimated"}: {String(procedure.estimatedStartTime || "--").slice(0, 5)} - {String(procedure.estimatedEndTime || "--").slice(0, 5)}
+                              <Clock size={12} /> {isVi ? "Dự kiến" : "Estimated"}: {String(procedure.estimatedStartTime).slice(0, 5)} - {String(procedure.estimatedEndTime).slice(0, 5)}
                             </span>
                             <span className="rounded-full bg-[#FFF0F6] px-2.5 py-0.5 text-[11px] font-bold text-[#E84F93] border border-[#F3D6E5]">
                               {formatDurationMinutes(procedure.duration || 0)}
@@ -1957,7 +1960,7 @@ export function ReceptionistBookingDetailPage() {
             <div className="rounded-2xl border border-[#F3D6E5] bg-gradient-to-r from-[#FFF0F6] to-[#F5F3FF] p-4">
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#E84F93]">{language === "vi" ? "Bước Đang Chọn Phân Công" : "Procedure Selected"}</p>
               <h3 className="mt-1 text-base font-bold text-[#2B182B]">
-                {artistPickerProcedure.procedureName || "--"}
+                {artistPickerProcedure.procedureName}
               </h3>
               <p className="mt-1 text-xs font-bold text-[#8B5CF6]">
                 {language === "vi" ? "Thợ hiện tại:" : "Current Artist:"} {artistPickerProcedure.assignedArtistName || (language === "vi" ? "Chưa phân công thợ nào" : "No artist assigned")}
@@ -1998,7 +2001,7 @@ export function ReceptionistBookingDetailPage() {
                         </div>
 
                         <h4 className="mt-3 text-sm font-bold text-[#2B182B] truncate w-full">
-                          {artist.name || "--"}
+                          {artist.name}
                         </h4>
 
                         {/* Status Badges */}

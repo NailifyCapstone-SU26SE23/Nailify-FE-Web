@@ -187,7 +187,7 @@ export function NailShapeDetailPage() {
 
     return [
       [t("adminNailShapesManagement.shapeId"), String(shape.nailShapeId)],
-      [t("adminNailShapesManagement.shapeName"), draft.name || "--"],
+      [t("adminNailShapesManagement.shapeName"), draft.name],
     ];
   }, [draft, shape, t]);
 

@@ -42,7 +42,7 @@ export function NailShapeCreatePage() {
 
   const summaryItems = useMemo(
     () => [
-      [t("adminNailShapesManagement.shapeName"), formValues.name || "--"],
+      [t("adminNailShapesManagement.shapeName"), formValues.name],
       [t("adminNailShapesManagement.image"), formValues.image ? formValues.image.name : (t("adminNailShapesManagement.notSelected"))],
     ],
     [formValues.image, formValues.name, t],

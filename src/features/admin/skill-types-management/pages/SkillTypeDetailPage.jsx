@@ -99,8 +99,8 @@ export function SkillTypeDetailPage() {
 
     return [
       [t("adminSkillTypes.skillTypeIdLabel"), skillType.skillTypeId],
-      [t("adminSkillTypes.status"), skillType.status || "--"],
-      [t("adminSkillTypes.description"), draft.description || "--"],
+      [t("adminSkillTypes.status"), skillType.status],
+      [t("adminSkillTypes.description"), draft.description],
     ];
   }, [draft, skillType]);
 
@@ -343,7 +343,7 @@ export function SkillTypeDetailPage() {
                   <ShieldCheck size={14} className="shrink-0 text-rose-300" />
                   <div>
                     <p className="text-[13px] font-semibold text-slate-600">{t("adminSkillTypes.currentStatus")}</p>
-                    <p className="mt-1 text-sm font-bold text-slate-800">{skillType?.status || "--"}</p>
+                    <p className="mt-1 text-sm font-bold text-slate-800">{skillType?.status}</p>
                   </div>
                 </div>
               </div>
@@ -384,8 +384,8 @@ export function SkillTypeDetailPage() {
         onCancel={() => !isSaving && setShowSaveConfirm(false)}
         highlights={[draft?.name || skillType?.name || "Skill type"]}
         details={[
-          { label: "Status", value: skillType?.status || "--" },
-          { label: "Description", value: draft?.description || "--" },
+          { label: "Status", value: skillType?.status },
+          { label: "Description", value: draft?.description },
         ]}
       />
 
