@@ -38,6 +38,7 @@ import { usePagination } from "../../../../shared/hooks/usePagination";
 import {
   ROUTES,
   getReceptionistBookingDetailRoute,
+  getReceptionistBookingCheckoutRoute,
 } from "../../../../shared/constants/routes";
 import { useQuery, useQueries } from "@tanstack/react-query";
 import {
@@ -146,7 +147,8 @@ function normalizeAppointmentRow(booking, index) {
 }
 
 function canManualCheckIn(status) {
-  return !["CheckedIn", "Completed", "ServiceCompleted", "Cancelled"].includes(status);
+  const normalizedStatus = String(status || "").trim().toLowerCase();
+  return normalizedStatus === "approved";
 }
 
 function isReadyForCheckout(status) {
@@ -577,16 +579,8 @@ export function ReceptionistDashboardPage() {
     }
   };
 
-  const handleCheckout = async (bookingId) => {
-    try {
-      const updatedBooking = await checkoutReceptionistBooking(bookingId);
-      updateAppointmentRow(updatedBooking);
-      toast.success(t("receptionist.bookings.checkoutSuccess") || `Checkout completed successfully.`);
-    } catch (actionError) {
-      const message =
-        actionError instanceof Error ? actionError.message : "Failed to check out booking.";
-      toast.error(message);
-    }
+  const handleCheckout = (bookingId) => {
+    navigate(getReceptionistBookingCheckoutRoute(bookingId));
   };
 
   const getActionItems = (bookingId, status) => [
@@ -612,11 +606,8 @@ export function ReceptionistDashboardPage() {
           key: "checkout",
           label: t("receptionist.dashboard.checkoutBtn") || "Checkout",
           icon: SquareCheckBig,
-          onSelect: () => {
-            if (window.confirm(t("receptionist.bookings.checkoutConfirm", { id: bookingId }) || `Proceed to checkout for booking ${bookingId}?`)) {
-              void handleCheckout(bookingId);
-            }
-          },
+          className: "text-[#4c71d9]",
+          onSelect: () => handleCheckout(bookingId),
         },
       ]
       : []),

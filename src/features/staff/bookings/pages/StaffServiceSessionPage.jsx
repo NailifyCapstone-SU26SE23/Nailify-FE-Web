@@ -940,8 +940,10 @@ export function StaffServiceSessionPage() {
               const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
               const priceValue = Number(item?.price || item?.finalPrice || 0);
 
+              const resolvedId = String(item?.bookingItemId || item?.id || `${name}-${index}`).trim();
               return {
-                id: String(item?.bookingItemId || item?.id || `${name}-${index}`).trim(),
+                id: resolvedId,
+                bookingItemId: resolvedId,
                 name,
                 duration: durationValue ? Number.parseInt(durationValue, 10) || 0 : 0,
                 durationLabel: durationValue,
@@ -1095,23 +1097,31 @@ export function StaffServiceSessionPage() {
     };
   }, [booking, bookingDetail, bookingId, customerDetail, serviceDetailMap, bookingNailVariantDetailMap, bookingCustomerNailDetailMap]);
 
+  const [bookingProcedures, setBookingProcedures] = useState(
+    () => persistedSession?.bookingProcedures ?? [],
+  );
+
   const data = useMemo(() => {
     if (!fallbackData && !payload) {
       return null;
     }
 
-    const resolvedServiceBreakdown =
+    const baseServiceBreakdown =
       Array.isArray(fallbackData?.serviceBreakdown) && fallbackData.serviceBreakdown.length
         ? fallbackData.serviceBreakdown
         : Array.isArray(payload?.serviceBreakdown)
           ? payload.serviceBreakdown
           : [];
+
+    const resolvedServiceBreakdown = baseServiceBreakdown;
+
     const resolvedNailServiceBreakdown =
       Array.isArray(fallbackData?.nailServiceBreakdown) && fallbackData.nailServiceBreakdown.length
         ? fallbackData.nailServiceBreakdown
         : Array.isArray(payload?.nailServiceBreakdown)
           ? payload.nailServiceBreakdown
           : [];
+
     const resolvedPriceSummary =
       fallbackData?.priceSummary ||
       payload?.priceSummary ||
@@ -1119,6 +1129,7 @@ export function StaffServiceSessionPage() {
     const payloadBookingItemId = String(payload?.bookingItemId || "").trim();
     const summaryAppointmentTime = fallbackData?.appointmentTime || payload?.appointmentTime;
     const summaryEstimatedDuration = fallbackData?.estimatedDuration || payload?.estimatedDuration;
+
     const summaryCustomerName = fallbackData?.customerName || payload?.customerName;
     const summaryCustomerPhone = fallbackData?.customerPhone || payload?.customerPhone;
     const summaryCustomerAvatar =
@@ -1248,10 +1259,9 @@ export function StaffServiceSessionPage() {
     () => persistedSession?.afterPhoto ?? payload?.afterPhoto ?? serverAfterPhoto ?? null,
   );
   const [sessionNote, setSessionNote] = useState(() => persistedSession?.sessionNote ?? payload?.sessionNote ?? "");
-  const [bookingProcedures, setBookingProcedures] = useState(
-    () => persistedSession?.bookingProcedures ?? [],
-  );
+
   const [isLoadingProcedures, setIsLoadingProcedures] = useState(false);
+
   const [procedureLoadError, setProcedureLoadError] = useState("");
   const [procedureStatusUpdates, setProcedureStatusUpdates] = useState({});
   const [claimingProcedureId, setClaimingProcedureId] = useState("");
@@ -1322,16 +1332,23 @@ export function StaffServiceSessionPage() {
 
     const sortedProcedures = [...bookingProcedures]
       .sort((left, right) => {
-        const idCompare = String(left.bookingItemId || "").localeCompare(String(right.bookingItemId || ""));
-        if (idCompare !== 0) return idCompare;
+        const leftTime = left.estimatedStartTime || "";
+        const rightTime = right.estimatedStartTime || "";
+        if (leftTime && rightTime) {
+          const timeCompare = leftTime.localeCompare(rightTime);
+          if (timeCompare !== 0) return timeCompare;
+        } else if (leftTime) {
+          return -1;
+        } else if (rightTime) {
+          return 1;
+        }
         return (left.stepOrder ?? 0) - (right.stepOrder ?? 0);
       });
 
     return sortedProcedures
-      .map((procedure) => {
+      .map((procedure, index) => {
         const normalizedStatus = String(procedure.status || "").trim().toLowerCase();
         const procedureName = String(procedure.procedureName || "").trim();
-        const hasStepOrder = Number.isFinite(procedure.stepOrder);
         const assignedArtistId = String(procedure.assignedArtistId || "").trim();
         const isAssignedToAnyone = hasAssignedArtist(procedure);
         const isTerminalStatus = ["completed", "done", "skipped"].includes(normalizedStatus);
@@ -1339,20 +1356,14 @@ export function StaffServiceSessionPage() {
         const isPendingStatus = ["pending", "waiting"].includes(normalizedStatus);
         const isAssignedToCurrentArtist =
           !assignedArtistId || !currentStaffArtistId || assignedArtistId === currentStaffArtistId;
-        const isBlocked = sortedProcedures.some((item) => {
-          const itemStepOrder = Number(item?.stepOrder ?? 0);
-          const procedureStepOrder = Number(procedure?.stepOrder ?? 0);
+        const isBlocked = sortedProcedures.some((item, itemIndex) => {
+          if (itemIndex >= index) {
+            return false;
+          }
+
           const itemStatus = String(item?.status || "").trim().toLowerCase();
 
-          if (!Number.isFinite(itemStepOrder) || !Number.isFinite(procedureStepOrder)) {
-            return false;
-          }
-
-          if (itemStepOrder >= procedureStepOrder) {
-            return false;
-          }
-
-          if (!item?.isRequired || item?.canOverlap) {
+          if (item?.canOverlap) {
             return false;
           }
 
@@ -1361,8 +1372,9 @@ export function StaffServiceSessionPage() {
 
         return {
           ...procedure,
+          stepOrder: index + 1,
           checked: ["completed", "done"].includes(normalizedStatus),
-          label: hasStepOrder ? `${isVi ? "Bước" : "Step"} ${procedure.stepOrder}: ${procedureName}` : procedureName,
+          label: `${isVi ? "Bước" : "Step"} ${index + 1}: ${procedureName}`,
           statusLabel: String(procedure.status || "").trim(),
           canClaim: isPendingStatus && !isBlocked && !isAssignedToAnyone,
           canComplete: (isInProgressStatus || (isPendingStatus && assignedArtistId === currentStaffArtistId)) && isAssignedToCurrentArtist && !isBlocked,
@@ -1372,15 +1384,28 @@ export function StaffServiceSessionPage() {
         };
       });
   }, [bookingProcedures, currentStaffArtistId, isVi]);
+
   const modalProcedureList = useMemo(() => {
     if (serviceProcedureList.length === 0) {
       return [];
     }
 
     const sortedProcedures = [...serviceProcedureList]
-      .sort((left, right) => (left.stepOrder ?? 0) - (right.stepOrder ?? 0));
+      .sort((left, right) => {
+        const leftTime = left.estimatedStartTime || "";
+        const rightTime = right.estimatedStartTime || "";
+        if (leftTime && rightTime) {
+          const timeCompare = leftTime.localeCompare(rightTime);
+          if (timeCompare !== 0) return timeCompare;
+        } else if (leftTime) {
+          return -1;
+        } else if (rightTime) {
+          return 1;
+        }
+        return (left.stepOrder ?? 0) - (right.stepOrder ?? 0);
+      });
 
-    return sortedProcedures.map((procedure) => {
+    return sortedProcedures.map((procedure, index) => {
       const normalizedStatus = String(procedure.status || "").trim().toLowerCase();
       const assignedArtistId = String(procedure.assignedArtistId || "").trim();
       const isAssignedToAnyone = hasAssignedArtist(procedure);
@@ -1389,20 +1414,14 @@ export function StaffServiceSessionPage() {
       const isInProgressStatus = ["inprogress", "in progress"].includes(normalizedStatus);
       const isAssignedToCurrentArtist =
         !assignedArtistId || !currentStaffArtistId || assignedArtistId === currentStaffArtistId;
-      const isBlocked = sortedProcedures.some((item) => {
-        const itemStepOrder = Number(item?.stepOrder ?? 0);
-        const procedureStepOrder = Number(procedure?.stepOrder ?? 0);
+      const isBlocked = sortedProcedures.some((item, itemIndex) => {
+        if (itemIndex >= index) {
+          return false;
+        }
+
         const itemStatus = String(item?.status || "").trim().toLowerCase();
 
-        if (!Number.isFinite(itemStepOrder) || !Number.isFinite(procedureStepOrder)) {
-          return false;
-        }
-
-        if (itemStepOrder >= procedureStepOrder) {
-          return false;
-        }
-
-        if (!item?.isRequired || item?.canOverlap) {
+        if (item?.canOverlap) {
           return false;
         }
 
@@ -1411,6 +1430,7 @@ export function StaffServiceSessionPage() {
 
       return {
         ...procedure,
+        stepOrder: index + 1,
         canClaim: isPendingStatus && !isBlocked && !isAssignedToAnyone,
         canComplete: (isInProgressStatus || (isPendingStatus && assignedArtistId === currentStaffArtistId)) && isAssignedToCurrentArtist && !isBlocked,
         canSkip: !isTerminalStatus && isAssignedToCurrentArtist,
@@ -2421,10 +2441,10 @@ export function StaffServiceSessionPage() {
     setFlashMessage("");
   };
 
-  const handleRequestCustomerReview = () => {
-    toast.success(isVi ? "Đã gửi yêu cầu đánh giá cho khách." : "Customer review request sent successfully.");
-    setFlashMessage("");
-  };
+  // const handleRequestCustomerReview = () => {
+  //   toast.success(isVi ? "Đã gửi yêu cầu đánh giá cho khách." : "Customer review request sent successfully.");
+  //   setFlashMessage("");
+  // };
 
   const comparisonModal = showComparisonView ? (
     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[#2b1323]/55 px-4 py-6 backdrop-blur-sm">
@@ -2542,7 +2562,7 @@ export function StaffServiceSessionPage() {
             >
               {isVi ? "Đóng" : "Close"}
             </button>
-            <button
+            {/* <button
               type="button"
               onClick={() =>
                 navigate(data.backRoute, {
@@ -2555,7 +2575,7 @@ export function StaffServiceSessionPage() {
               className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-[image:var(--gradient-accent)] px-5 py-3 text-sm font-bold text-white shadow-[0_16px_28px_rgba(236,72,153,0.24)]"
             >
               {isVi ? "Chuyển tới thanh toán" : "Go to Checkout"}
-            </button>
+            </button> */}
           </div>
         </div>
       </div>
@@ -2615,7 +2635,7 @@ export function StaffServiceSessionPage() {
           />
 
           <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <button
+            {/* <button
               type="button"
               onClick={() =>
                 navigate(data.backRoute, {
@@ -2634,9 +2654,9 @@ export function StaffServiceSessionPage() {
                 <span className="block text-base font-extrabold text-[#3f2b3f]">{isVi ? "Thanh toán" : "Go to Checkout"}</span>
                 <span className="mt-1 block text-sm text-[#a88a9d]">{isVi ? "Chuyển tới quy trình thanh toán." : "Proceed from staff handoff to payment review."}</span>
               </span>
-            </button>
+            </button> */}
 
-            <button
+            {/* <button
               type="button"
               onClick={handleRequestCustomerReview}
               className="flex min-h-24 items-start gap-4 rounded-[24px] border border-[#f2bfd4] bg-[#fff7fb] px-5 py-5 text-left transition hover:bg-[#fff2f8]"
@@ -2648,7 +2668,7 @@ export function StaffServiceSessionPage() {
                 <span className="block text-base font-extrabold text-[#3f2b3f]">{isVi ? "Yêu cầu đánh giá" : "Request Customer Review"}</span>
                 <span className="mt-1 block text-sm text-[#a88a9d]">{isVi ? "Gửi thông báo yêu cầu đánh giá cho khách." : "Send the final review prompt to the customer profile."}</span>
               </span>
-            </button>
+            </button> */}
 
             <button
               type="button"
@@ -3327,7 +3347,7 @@ export function StaffServiceSessionPage() {
                 />
 
                 <div className="mt-5 grid gap-3 md:grid-cols-3">
-                  <button
+                  {/* <button
                     type="button"
                     onClick={() =>
                       navigate(data.backRoute, {
@@ -3346,9 +3366,9 @@ export function StaffServiceSessionPage() {
                       <span className="block text-sm font-extrabold text-[#3f2b3f]">{isVi ? "Thanh toán" : "Go to Checkout"}</span>
                       <span className="mt-1 block text-xs text-[#a88a9d]">{isVi ? "Chuyển tới quy trình thanh toán." : "Proceed from staff handoff to payment review."}</span>
                     </span>
-                  </button>
+                  </button> */}
 
-                  <button
+                  {/* <button
                     type="button"
                     onClick={handleRequestCustomerReview}
                     className="flex min-h-20 items-start gap-3 rounded-2xl border border-[#f2bfd4] bg-[#fff7fb] px-4 py-4 text-left transition hover:bg-[#fff2f8]"
@@ -3360,7 +3380,7 @@ export function StaffServiceSessionPage() {
                       <span className="block text-sm font-extrabold text-[#3f2b3f]">{isVi ? "Yêu cầu đánh giá" : "Request Customer Review"}</span>
                       <span className="mt-1 block text-xs text-[#a88a9d]">{isVi ? "Gửi thông báo yêu cầu đánh giá cho khách." : "Send the final review prompt to the customer profile."}</span>
                     </span>
-                  </button>
+                  </button> */}
 
                   <button
                     type="button"
@@ -3582,6 +3602,7 @@ export function StaffServiceSessionPage() {
         onCompleteProcedure={(procedure) => handleUpdateProcedureStatus(procedure, "Completed")}
         claimingProcedureId={claimingProcedureId}
         procedureStatusUpdates={procedureStatusUpdates}
+        showActions={phase === "progress"}
       />
     </section>
   );

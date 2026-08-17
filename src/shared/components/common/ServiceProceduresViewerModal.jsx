@@ -33,9 +33,17 @@ export function ServiceProceduresViewerModal({
   onCompleteProcedure,
   claimingProcedureId,
   procedureStatusUpdates,
+  showActions = true,
 }) {
   const { language } = useLanguage();
   const isVi = language === "vi";
+
+  const totalEstimatedDuration = React.useMemo(() => {
+    if (!Array.isArray(procedures) || procedures.length === 0) {
+      return 0;
+    }
+    return procedures.reduce((sum, p) => sum + Number(p.duration || p.activeDuration || 0), 0);
+  }, [procedures]);
 
   const formatTimeOnly = (val) => {
     if (!val) return "--:--";
@@ -105,7 +113,7 @@ export function ServiceProceduresViewerModal({
                   {isVi ? `Số lượng: x${service.quantity || 1}` : `Qty: x${service.quantity || 1}`}
                 </span>
                 <span className="flex items-center justify-center gap-1.5 rounded-xl border border-[#F3E2EC] bg-white px-3 py-1.5 font-bold text-[#E84F93]">
-                  <AlarmClock size={12} /> {isVi ? "Tổng thời gian:" : "Total duration:"} {service.durationLabel}
+                  <AlarmClock size={12} /> {isVi ? "Tổng thời gian:" : "Total duration:"} {totalEstimatedDuration} {isVi ? "phút" : "min"}
                 </span>
               </div>
             </div>
@@ -209,37 +217,39 @@ export function ServiceProceduresViewerModal({
                           </div>
 
                           {/* Interactive Claim / Complete Action Buttons */}
-                          {onClaimProcedure && procedure.canClaim ? (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onClaimProcedure(procedure);
-                              }}
-                              disabled={claimingProcedureId === procedure.bookingProcedureId}
-                              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#E84F93] to-[#8B5CF6] px-4 py-1.5 text-xs font-bold text-white shadow-2xs hover:scale-105 transition cursor-pointer disabled:opacity-50"
-                            >
-                              {claimingProcedureId === procedure.bookingProcedureId && (
-                                <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                              )}
-                              <span>{isVi ? "Nhận Bước Này" : "Claim Step"}</span>
-                            </button>
-                          ) : onCompleteProcedure && procedure.canComplete ? (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onCompleteProcedure(procedure);
-                              }}
-                              disabled={procedureStatusUpdates && procedureStatusUpdates[procedure.bookingProcedureId]}
-                              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#10B981] to-[#059669] px-4 py-1.5 text-xs font-bold text-white shadow-2xs hover:scale-105 transition cursor-pointer disabled:opacity-50"
-                            >
-                              <span>{isVi ? "Hoàn Thành Bước" : "Complete Step"}</span>
-                            </button>
-                          ) : procedure.isBlocked ? (
-                            <span className="inline-flex rounded-full bg-[#FFFBEB] border border-[#FDE68A] px-3 py-1 text-[10px] font-bold text-[#B45309]">
-                              {isVi ? "Chờ bước trước" : "Waiting for previous step"}
-                            </span>
+                          {showActions ? (
+                            onClaimProcedure && procedure.canClaim ? (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onClaimProcedure(procedure);
+                                }}
+                                disabled={claimingProcedureId === procedure.bookingProcedureId}
+                                className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#E84F93] to-[#8B5CF6] px-4 py-1.5 text-xs font-bold text-white shadow-2xs hover:scale-105 transition cursor-pointer disabled:opacity-50"
+                              >
+                                {claimingProcedureId === procedure.bookingProcedureId && (
+                                  <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                                )}
+                                <span>{isVi ? "Nhận Bước Này" : "Claim Step"}</span>
+                              </button>
+                            ) : onCompleteProcedure && procedure.canComplete ? (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onCompleteProcedure(procedure);
+                                }}
+                                disabled={procedureStatusUpdates && procedureStatusUpdates[procedure.bookingProcedureId]}
+                                className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#10B981] to-[#059669] px-4 py-1.5 text-xs font-bold text-white shadow-2xs hover:scale-105 transition cursor-pointer disabled:opacity-50"
+                              >
+                                <span>{isVi ? "Hoàn Thành Bước" : "Complete Step"}</span>
+                              </button>
+                            ) : procedure.isBlocked ? (
+                              <span className="inline-flex rounded-full bg-[#FFFBEB] border border-[#FDE68A] px-3 py-1 text-[10px] font-bold text-[#B45309]">
+                                {isVi ? "Chờ bước trước" : "Waiting for previous step"}
+                              </span>
+                            ) : null
                           ) : null}
                         </div>
 
@@ -338,4 +348,5 @@ ServiceProceduresViewerModal.propTypes = {
   onCompleteProcedure: PropTypes.func,
   claimingProcedureId: PropTypes.string,
   procedureStatusUpdates: PropTypes.object,
+  showActions: PropTypes.bool,
 };

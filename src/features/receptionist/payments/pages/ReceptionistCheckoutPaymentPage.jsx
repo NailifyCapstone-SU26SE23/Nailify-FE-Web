@@ -264,10 +264,11 @@ export function ReceptionistCheckoutPaymentPage() {
   const customerInitials = getCustomerInitials(customerProfile, booking);
   const billItems = useMemo(() => getBillItems(booking), [booking]);
   const subtotalValue = billItems.reduce((sum, item) => sum + item.total, 0);
-  const totalValue = Number(booking?.totalPrice || subtotalValue || 0);
-  const discountValue = Math.max(0, subtotalValue - totalValue);
-  const depositValue = 0;
-  const remainingValue = Math.max(0, totalValue - depositValue);
+  // const totalValue = Number(booking?.totalPrice || subtotalValue || 0);
+  const totalValue = Number(booking?.totalPrice);
+  const discountValue = Number(booking?.discount);
+  const depositValue = Number(booking?.amountPaid);
+  const remainingValue = Number(booking?.amountDue);
   const qrImageSrc = useMemo(
     () => {
       if (paymentInfo?.qrCode) {
@@ -465,7 +466,7 @@ export function ReceptionistCheckoutPaymentPage() {
                 </div>
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">{t("receptionist.bookings.assignChairTitle") || "Chair"}</p>
-                  <p className="mt-1 text-xs font-bold text-[#4a3741]">Chair 03</p>
+                  <p className="mt-1 text-xs font-bold text-[#4a3741]">{booking.chairName || (language === "vi" ? "Chưa có ghế" : "No chair")}</p>
                 </div>
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">{t("receptionist.dashboard.statusDone") || "Completed"}</p>
@@ -539,10 +540,10 @@ export function ReceptionistCheckoutPaymentPage() {
               </div>
             </div>
 
-            <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#f5d7e4] pt-4">
+            {/* <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#f5d7e4] pt-4">
               <span className="text-lg font-extrabold text-[#412643]">{t("receptionist.bookings.price") || "Total Amount"}</span>
               <span className="text-2xl font-bold text-green-700">{formatCurrency(totalValue)}</span>
-            </div>
+            </div> */}
           </SummaryCard>
 
           <SummaryCard title={t("receptionist.payments.payMethod") || "Payment Method"}>

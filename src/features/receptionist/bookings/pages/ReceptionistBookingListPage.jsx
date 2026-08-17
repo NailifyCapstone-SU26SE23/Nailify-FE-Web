@@ -10,6 +10,7 @@ import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   ROUTES,
   getReceptionistBookingDetailRoute,
+  getReceptionistBookingCheckoutRoute,
 } from "../../../../shared/constants/routes";
 import { AssignReceptionistArtistModal } from "../components/AssignReceptionistArtistModal";
 import {
@@ -104,14 +105,7 @@ function normalizeBooking(booking) {
 function canManualCheckIn(status) {
   const normalizedStatus = String(status || "").trim().toLowerCase();
 
-  return ![
-    "checkedin",
-    "in progress",
-    "inprogress",
-    "completed",
-    "servicecompleted",
-    "cancelled",
-  ].includes(normalizedStatus);
+  return normalizedStatus === "approved";
 }
 
 function isReadyForCheckout(status) {
@@ -136,10 +130,11 @@ export function ReceptionistBookingListPage() {
         return language === "vi" ? "Đang chờ" : "Pending";
       case "Confirmed":
       case "Approved":
-        return language === "vi" ? "Đã xác nhận" : "Confirmed";
+        return language === "vi" ? "Đã xác nhận" : "Approved";
       case "Completed":
-      case "ServiceCompleted":
         return language === "vi" ? "Đã hoàn thành" : "Completed";
+      case "ServiceCompleted":
+        return language === "vi" ? "Dịch vụ đã hoàn thành" : "Service Completed";
       case "Rejected":
         return language === "vi" ? "Đã từ chối" : "Rejected";
       case "Cancelled":
@@ -381,17 +376,9 @@ export function ReceptionistBookingListPage() {
     }
   }, []);
 
-  const handleCheckout = useCallback(async (bookingId) => {
-    try {
-      const updatedBooking = await checkoutReceptionistBooking(bookingId);
-      updateBookingRow(updatedBooking);
-      toast.success("Checkout completed successfully.");
-    } catch (actionError) {
-      const message =
-        actionError instanceof Error ? actionError.message : "Failed to check out booking.";
-      toast.error(message);
-    }
-  }, []);
+  const handleCheckout = useCallback((bookingId) => {
+    navigate(getReceptionistBookingCheckoutRoute(bookingId));
+  }, [navigate]);
 
   const bookingColumns = useMemo(() => ([
     {

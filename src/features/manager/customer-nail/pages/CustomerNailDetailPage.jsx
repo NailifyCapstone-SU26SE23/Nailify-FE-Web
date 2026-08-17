@@ -45,7 +45,7 @@ Card.propTypes = {
 function SectionHeading({ title, subtitle }) {
   return (
     <div>
-      <h3 className="text-lg font-serif font-bold text-[#3f2240]">{title}</h3>
+      <h3 className="text-lg font-bold text-[#3f2240]">{title}</h3>
       {subtitle ? <p className="mt-1 text-xs text-[#a988a0]">{subtitle}</p> : null}
     </div>
   );
@@ -75,7 +75,7 @@ function getStatusTone(status) {
 
 // 🎨 Parse & render surface effects from config JSON (Backend format)
 function renderSurfaceEffects(surfaceName, effectsConfigJson) {
-  const name = (surfaceName || "glossy").toLowerCase();
+  const name = (surfaceName).toLowerCase();
 
   let config = {};
   try {
@@ -1183,14 +1183,24 @@ export function CustomerNailDetailPage() {
               {((nail?.status === "Pending" || nail?.status === "PendingReview") || nail?.status === "Reviewed") && (
                 <div className="flex gap-2">
                   {(nail?.status === "Pending" || nail?.status === "PendingReview") && (
-                    <ActionButton
-                      onClick={handleOpenAssignModal}
-                      disabled={isSubmitting}
-                      icon={UserPlus}
-                      className="flex-1 bg-[#ea4f93] hover:bg-[#df4588] shadow-md shadow-pink-500/20 py-2.5 text-sm"
-                    >
-                      {language === "vi" ? "Chỉ định thợ" : "Assign Staff Artist"}
-                    </ActionButton>
+                    <>
+                      <ActionButton
+                        onClick={handleOpenAssignModal}
+                        disabled={isSubmitting}
+                        icon={UserPlus}
+                        className="flex-1 bg-[#ea4f93] hover:bg-[#df4588] shadow-md shadow-pink-500/20 py-2.5 text-sm"
+                      >
+                        {language === "vi" ? "Chỉ định thợ" : "Assign Staff Artist"}
+                      </ActionButton>
+                      <ActionButton
+                        onClick={() => setIsRejectModalOpen(true)}
+                        disabled={isSubmitting}
+                        icon={XCircle}
+                        className="flex-1 bg-[#e1447f] hover:bg-[#d63e75] shadow-md shadow-red-500/20 py-2.5 text-sm"
+                      >
+                        {language === "vi" ? "Từ chối yêu cầu" : "Reject Customer Nail"}
+                      </ActionButton>
+                    </>
                   )}
 
                   {nail?.status === "Reviewed" && (
@@ -1207,14 +1217,14 @@ export function CustomerNailDetailPage() {
                       >
                         {language === "vi" ? "Xác nhận báo giá" : "Confirm Quote"}
                       </ActionButton>
-                      <ActionButton
+                      {/* <ActionButton
                         onClick={() => setIsRejectModalOpen(true)}
                         disabled={isSubmitting}
                         icon={XCircle}
                         className="flex-1 bg-[#e1447f] hover:bg-[#d63e75] shadow-md shadow-red-500/20 py-2.5 text-sm"
                       >
                         {language === "vi" ? "Từ chối báo giá" : "Reject Quote"}
-                      </ActionButton>
+                      </ActionButton> */}
                     </>
                   )}
                 </div>
