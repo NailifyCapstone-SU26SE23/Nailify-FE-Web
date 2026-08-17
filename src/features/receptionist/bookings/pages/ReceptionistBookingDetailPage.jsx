@@ -336,14 +336,7 @@ function isNailBookingItem(item) {
 function canManualCheckIn(status) {
   const normalizedStatus = String(status || "").trim().toLowerCase();
 
-  return ![
-    "checkedin",
-    "in progress",
-    "inprogress",
-    "completed",
-    "servicecompleted",
-    "cancelled",
-  ].includes(normalizedStatus);
+  return normalizedStatus === "approved";
 }
 
 function normalizeBookingStatus(status) {
@@ -354,7 +347,7 @@ function getReceptionistActionAvailability(status) {
   const normalizedStatus = normalizeBookingStatus(status);
 
   return {
-    canCheckIn: ["pending", "confirmed", "approved"].includes(normalizedStatus),
+    canCheckIn: normalizedStatus === "approved",
     canStartService: normalizedStatus === "checkedin",
     canReassignArtist: ["pending", "confirmed", "approved", "checkedin"].includes(normalizedStatus),
     canMoveSchedule: ["pending", "confirmed", "approved"].includes(normalizedStatus),
@@ -586,16 +579,17 @@ export function ReceptionistBookingDetailPage() {
       }
     });
 
+    let cursor = booking?.startTime || "00:00:00";
     return grouped.map((group, index) => {
       const status = getServiceStatus(index, booking?.status);
       const displayName = group.count > 1 ? `x${group.count} ${group.serviceName}` : group.serviceName;
+      const slotStart = cursor;
+      const slotEnd = addMinutes(cursor, group.totalDuration);
+      cursor = slotEnd; // advance cursor for next row
 
       return {
         id: group.id,
-        time: `${formatTime(booking?.startTime)} - ${addMinutes(
-          booking?.startTime,
-          group.totalDuration
-        )}`,
+        time: `${formatTime(slotStart)} - ${slotEnd}`,
         service: displayName,
         serviceType: group.nailVariantName,
         artist: group.artist,
@@ -607,6 +601,7 @@ export function ReceptionistBookingDetailPage() {
         count: group.count,
       };
     });
+
   }, [language, booking]);
 
   const totalAmount = formatCurrency(booking?.totalPrice);
@@ -878,15 +873,15 @@ export function ReceptionistBookingDetailPage() {
           actionAvailability.canCheckout ? isCheckoutSubmitting : isManualCheckInSubmitting,
         onClick: () => void handlePrimaryHeaderAction(),
       },
-      {
+      ...(actionAvailability.canStartService ? [{
         label: t("receptionist.bookings.assignChairTitle") || "Assign Chair",
         subtitle: t("receptionist.bookings.assignToSeat") || "Assign to seat",
         icon: Armchair,
         cardTone: "bg-[linear-gradient(180deg,#f2edff_0%,#e9e1ff_100%)]",
         iconTone: "bg-[#dfd1ff] text-[#8160df]",
-        disabled: !actionAvailability.canStartService,
+        disabled: false,
         onClick: () => setIsAssignChairModalOpen(true),
-      },
+      }] : []),
       {
         label: t("receptionist.bookings.reassignArtist") || "Reassign Artist",
         subtitle: t("receptionist.bookings.changeStaff") || "Change staff",
@@ -1205,9 +1200,9 @@ export function ReceptionistBookingDetailPage() {
                     <p className="text-[10px] font-bold uppercase tracking-wider text-[#047857]">{t("receptionist.payments.totalAmount") || "Total Amount Payable"}</p>
                     <p className="text-3xl font-bold text-[#047857] leading-none mt-1">{totalAmount}</p>
                   </div>
-                  <span className="rounded-full bg-[#10B981] text-white px-3.5 py-1 text-xs font-bold shadow-xs flex items-center gap-1">
+                  {/* <span className="rounded-full bg-[#10B981] text-white px-3.5 py-1 text-xs font-bold shadow-xs flex items-center gap-1">
                     <ShieldCheck size={14} /> {language === "vi" ? "ĐÃ THANH TOÁN" : "PAID"}
-                  </span>
+                  </span> */}
                 </div>
               </div>
 

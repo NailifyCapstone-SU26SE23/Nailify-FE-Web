@@ -407,6 +407,12 @@ function buildStaffExperienceFromBooking(
         label: language === "vi" ? "Nghệ sĩ" : "Staff Artist",
         value: booking?.artistName,
       },
+      ...(booking?.chairName
+        ? [{
+          label: language === "vi" ? "Ghế làm việc" : "Working Chair",
+          value: booking.chairName,
+        }]
+        : []),
     ],
     design: {
       name: resolvedDesignDetail?.name || requestedDesign,
@@ -739,6 +745,8 @@ export function StaffBookingDetailPage() {
     return () => { isMounted = false; };
   }, [staffBookingDetail?.bookingItems]);
 
+
+
   useEffect(() => {
     if (!showUpdateBookingModal) return undefined;
     let isMounted = true;
@@ -1050,6 +1058,8 @@ export function StaffBookingDetailPage() {
     }
     : staffExperienceWithCustomerNail;
 
+
+
   const handleOpenDesignStudio = () => {
     navigate(getStaffBookingDesignStudioRoute(bookingId), {
       state: {
@@ -1183,6 +1193,7 @@ export function StaffBookingDetailPage() {
         error={serviceProcedureModalError}
         onClaimProcedure={(procedure) => void handleClaimProcedure(procedure)}
         claimingProcedureId={claimingProcedureId}
+        showActions={staffBookingDetail?.status === "InProgress"}
       />
     </>
   );

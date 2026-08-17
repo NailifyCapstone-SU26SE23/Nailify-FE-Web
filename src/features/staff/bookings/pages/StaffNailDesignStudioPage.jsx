@@ -4,7 +4,13 @@ import {
   Palette,
   Search,
   Star,
+  ArrowUp,
+  ArrowDown,
+  Trash2,
+  LoaderCircle,
+  Sparkles,
 } from "lucide-react";
+import { Modal, Checkbox } from "antd";
 import { toBlob } from "html-to-image";
 import toast from "react-hot-toast";
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
@@ -34,6 +40,7 @@ import {
   getStaffBookingDetailRoute,
   ROUTES,
 } from "../../../../shared/constants/routes";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 const DEFAULT_DESIGN_IMAGE = "https://images.unsplash.com/photo-1604902396830-aca29e19b067?auto=format&fit=crop&w=800&q=80";
 
@@ -57,6 +64,25 @@ function unwrapApiResponse(response, fallbackMessage) {
 
   return payload.data;
 }
+
+async function fetchProcedures(type) {
+  const response = await axiosClient.get(`/Procedures`, {
+    headers: getAuthHeaders(),
+    params: {
+      ProcedureType: type,
+      PageSize: 100,
+    },
+  });
+  return unwrapApiResponse(response, "Failed to load procedures.");
+}
+
+async function assignProceduresToCustomerNail(customerNailId, payload) {
+  const response = await axiosClient.post(`/Procedures/assign/customer-nail/${customerNailId}`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return unwrapApiResponse(response, "Failed to assign procedures.");
+}
+
 
 function formatCurrencyValue(value) {
   return `${Number(value || 0).toLocaleString("vi-VN")} VND`;
@@ -1206,6 +1232,7 @@ ChoiceGrid.propTypes = {
 };
 
 export function StaffNailDesignStudioPage() {
+  const { language } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const { bookingId } = useParams();
@@ -1244,6 +1271,12 @@ export function StaffNailDesignStudioPage() {
 
   const [selectedTemplateId, setSelectedTemplateId] = useState(studio?.selectedDesign.id ?? "");
   const [selectedVariantId, setSelectedVariantId] = useState("");
+  const [isProcedureModalOpen, setIsProcedureModalOpen] = useState(false);
+  const [commonProcedures, setCommonProcedures] = useState([]);
+  const [modelSpecificProcedures, setModelSpecificProcedures] = useState([]);
+  const [selectedProcedures, setSelectedProcedures] = useState([]);
+  const [procedureCustomerNailId, setProcedureCustomerNailId] = useState(null);
+  const [isAssigningProcedures, setIsAssigningProcedures] = useState(false);
   const previewContainerRef = useRef(null);
   const hasHydratedInitialNailRef = useRef(false);
   const [selectedShape, setSelectedShape] = useState(
@@ -2439,6 +2472,47 @@ export function StaffNailDesignStudioPage() {
     });
   };
 
+  const moveStep = (index, direction) => {
+    const nextList = [...selectedProcedures];
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= nextList.length) return;
+    const temp = nextList[index];
+    nextList[index] = nextList[targetIndex];
+    nextList[targetIndex] = temp;
+    setSelectedProcedures(nextList);
+  };
+
+  const handleCloseProcedureModal = () => {
+    setIsProcedureModalOpen(false);
+    setSelectedProcedures([]);
+    setCommonProcedures([]);
+    setModelSpecificProcedures([]);
+  };
+
+  const handleSaveProcedures = async () => {
+    if (!procedureCustomerNailId || isAssigningProcedures) return;
+    if (selectedProcedures.length === 0) {
+      toast.error(language === "vi" ? "Vui lòng chọn ít nhất một quy trình." : "Please select at least one procedure.");
+      return;
+    }
+
+    setIsAssigningProcedures(true);
+    try {
+      const payload = selectedProcedures.map((p, index) => ({
+        procedureId: p.procedureId,
+        stepOrder: index + 1,
+      }));
+      await assignProceduresToCustomerNail(procedureCustomerNailId, payload);
+      toast.success(language === "vi" ? "Lưu quy trình thành công!" : "Procedures assigned successfully!");
+      handleCloseProcedureModal();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to assign procedures.";
+      toast.error(msg);
+    } finally {
+      setIsAssigningProcedures(false);
+    }
+  };
+
   const detailRoute = getStaffBookingDetailRoute(bookingId);
   const handleConfirmDesign = async () => {
     if (!selectedShapeOption || !selectedSurfaceOption || isConfirmingDesign) {
@@ -2491,6 +2565,23 @@ export function StaffNailDesignStudioPage() {
       setIsDesignConfirmed(true);
       setDesignActionSuccess("Custom nail created successfully. You can update this booking now.");
       toast.success("Custom nail created successfully.");
+
+      const customerNailId = Number(createdCustomerNail?.customerNailId || 0);
+      if (customerNailId) {
+        setProcedureCustomerNailId(customerNailId);
+        setIsProcedureModalOpen(true);
+        try {
+          const [commonData, specificData] = await Promise.all([
+            fetchProcedures("Common"),
+            fetchProcedures("ModelSpecific")
+          ]);
+          setCommonProcedures(commonData?.items || []);
+          setModelSpecificProcedures(specificData?.items || []);
+        } catch (err) {
+          console.error("Failed to fetch procedures", err);
+          toast.error("Failed to load procedures list.");
+        }
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to create customer nail.";
       setIsDesignConfirmed(false);
@@ -3026,7 +3117,7 @@ export function StaffNailDesignStudioPage() {
                     </p>
                     {(() => {
                       const allDecorations = decorationOptions.length ? decorationOptions : (studio?.builder?.decorations || []);
-                      
+
                       const groupByType = (decorations) => {
                         const groups = {
                           Gem: [],
@@ -3034,7 +3125,7 @@ export function StaffNailDesignStudioPage() {
                           Charm: [],
                           Art: []
                         };
-                        
+
                         decorations.forEach(dec => {
                           const type = String(dec?.componentType || dec?.type || "").trim();
                           const normalized = type.charAt(0).toUpperCase() + type.slice(1).toLowerCase();
@@ -3049,9 +3140,9 @@ export function StaffNailDesignStudioPage() {
                         });
                         return groups;
                       };
-                      
+
                       const grouped = groupByType(allDecorations);
-                      
+
                       return (
                         <div className="space-y-4">
                           {Object.entries(grouped).map(([category, list]) => {
@@ -3137,12 +3228,12 @@ export function StaffNailDesignStudioPage() {
                   >
                     {isUpdatingBookingDesign ? "Updating Booking..." : "Update Booking Design"}
                   </button>
-                  <button
+                  {/* <button
                     type="button"
                     className="rounded-[12px] border border-[#f2bfd4] bg-white px-4 py-3 text-xs font-bold text-[#ea4f93]"
                   >
                     Save Design
-                  </button>
+                  </button> */}
                   <button
                     type="button"
                     onClick={handleConfirmDesign}
@@ -3210,6 +3301,194 @@ export function StaffNailDesignStudioPage() {
           </div>
         </div>
       </div>
+      {/* Assign Procedures Modal */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2 text-[#402542] border-b border-[#f3d6e5] pb-3">
+            <Sparkles className="text-[#ea4f93]" size={20} />
+            <span className="font-extrabold text-lg">
+              {language === "vi" ? "Chỉ định Quy trình Thực hiện" : "Assign Service Procedures"}
+            </span>
+          </div>
+        }
+        open={isProcedureModalOpen}
+        onCancel={handleCloseProcedureModal}
+        footer={null}
+        width={900}
+        centered
+        destroyOnClose
+        className="rounded-2xl"
+      >
+        <div className="mt-4 grid gap-6 md:grid-cols-[1.5fr_1fr]">
+          {/* Group Lists */}
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+            {/* Common Procedures */}
+            <div>
+              <h4 className="text-xs font-extrabold text-[#c08aa4] uppercase tracking-wider mb-2">
+                {language === "vi" ? "1. Quy trình chung" : "1. Common Procedures"}
+              </h4>
+              <div className="grid gap-2">
+                {commonProcedures.map((proc) => {
+                  const isChecked = selectedProcedures.some((p) => p.procedureId === proc.procedureId);
+                  return (
+                    <div
+                      key={proc.procedureId}
+                      className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${isChecked
+                        ? "border-[#ea4f93] bg-[#fff9fc]"
+                        : "border-slate-100 bg-slate-50/50 hover:bg-slate-50"
+                        }`}
+                      onClick={() => {
+                        if (isChecked) {
+                          setSelectedProcedures(selectedProcedures.filter((p) => p.procedureId !== proc.procedureId));
+                        } else {
+                          setSelectedProcedures([...selectedProcedures, proc]);
+                        }
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          checked={isChecked}
+                          onChange={() => { }} // handled by div onClick
+                          className="accent-[#ea4f93]"
+                        />
+                        <div>
+                          <p className="text-xs font-bold text-slate-800">{proc.name}</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5">{proc.description}</p>
+                        </div>
+                      </div>
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">
+                        {proc.duration} mins
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Model Specific Procedures */}
+            <div className="pt-2">
+              <h4 className="text-xs font-extrabold text-[#c08aa4] uppercase tracking-wider mb-2">
+                {language === "vi" ? "2. Quy trình riêng theo mẫu" : "2. Model Specific Procedures"}
+              </h4>
+              <div className="grid gap-2">
+                {modelSpecificProcedures.map((proc) => {
+                  const isChecked = selectedProcedures.some((p) => p.procedureId === proc.procedureId);
+                  return (
+                    <div
+                      key={proc.procedureId}
+                      className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${isChecked
+                        ? "border-[#ea4f93] bg-[#fff9fc]"
+                        : "border-slate-100 bg-slate-50/50 hover:bg-slate-50"
+                        }`}
+                      onClick={() => {
+                        if (isChecked) {
+                          setSelectedProcedures(selectedProcedures.filter((p) => p.procedureId !== proc.procedureId));
+                        } else {
+                          setSelectedProcedures([...selectedProcedures, proc]);
+                        }
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          checked={isChecked}
+                          onChange={() => { }} // handled by div onClick
+                          className="accent-[#ea4f93]"
+                        />
+                        <div>
+                          <p className="text-xs font-bold text-slate-800">{proc.name}</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5">{proc.description}</p>
+                        </div>
+                      </div>
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">
+                        {proc.duration} mins
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Selected Timeline */}
+          <div className="rounded-2xl border border-[#f3d6e5] bg-[#fffafc] p-4 flex flex-col min-h-[300px]">
+            <h4 className="text-xs font-extrabold text-[#ea4f93] uppercase tracking-wider mb-3">
+              {language === "vi" ? "Quy trình đã chọn (Theo thứ tự)" : "Selected Order Timeline"}
+            </h4>
+
+            <div className="flex-1 overflow-y-auto pr-1 space-y-2 max-h-[45vh] custom-scrollbar">
+              {selectedProcedures.length === 0 ? (
+                <p className="text-xs text-[#a98c9f] italic text-center mt-12">
+                  {language === "vi" ? "Vui lòng chọn các bước bên trái..." : "Please check steps from the left list..."}
+                </p>
+              ) : (
+                selectedProcedures.map((proc, idx) => (
+                  <div
+                    key={proc.procedureId}
+                    className="flex items-center justify-between bg-white border border-[#f5dfeb] p-2.5 rounded-xl shadow-2xs"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ea4f93]/10 text-[10px] font-bold text-[#ea4f93]">
+                        {idx + 1}
+                      </span>
+                      <span className="text-xs font-bold text-slate-800 truncate">{proc.name}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        disabled={idx === 0}
+                        onClick={() => moveStep(idx, -1)}
+                        className="p-1 rounded-md text-slate-400 hover:text-[#ea4f93] hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center"
+                      >
+                        <ArrowUp size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={idx === selectedProcedures.length - 1}
+                        onClick={() => moveStep(idx, 1)}
+                        className="p-1 rounded-md text-slate-400 hover:text-[#ea4f93] hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center"
+                      >
+                        <ArrowDown size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedProcedures(selectedProcedures.filter((p) => p.procedureId !== proc.procedureId))}
+                        className="p-1 rounded-md text-slate-400 hover:text-red-500 hover:bg-slate-50 cursor-pointer flex items-center justify-center"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="pt-4 border-t border-[#f7dfeb] mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={handleCloseProcedureModal}
+                className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-bold text-slate-500 hover:bg-slate-50 cursor-pointer"
+              >
+                {language === "vi" ? "Bỏ qua" : "Skip / Close"}
+              </button>
+              <button
+                type="button"
+                disabled={selectedProcedures.length === 0 || isAssigningProcedures}
+                onClick={handleSaveProcedures}
+                className="flex-1 rounded-xl bg-gradient-to-r from-[#ea4f93] to-[#d93b7d] py-2.5 text-xs font-bold text-white shadow-md hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
+              >
+                {isAssigningProcedures ? (
+                  <span className="flex items-center justify-center gap-1.5">
+                    <LoaderCircle size={14} className="animate-spin" />
+                    {language === "vi" ? "Đang lưu..." : "Saving..."}
+                  </span>
+                ) : (
+                  language === "vi" ? "Xác nhận Quy trình" : "Confirm Assignment"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Modal>
     </section>
   );
 }
