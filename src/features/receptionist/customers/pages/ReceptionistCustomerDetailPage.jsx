@@ -723,7 +723,7 @@ export function ReceptionistCustomerDetailPage() {
                   <Scissors size={16} className="text-[#EA4F93]" /> {language === "vi" ? "Mẫu Móng & Phong Cách Thường Làm" : "Common Nail Styles & Preferences"}
                 </h3>
                 <p className="text-xs text-[#9E8497]">
-                  {language === "vi" ? "Thông tin phong cách ưu thích giúp thợ nail chuẩn bị dụng cụ và phụ kiện phù hợp trước khi làm móng." : "Favorite style details help nail artists prepare suitable tools and accessories before starting."}
+                  {language === "vi" ? "Thông tin phong cách ưu thích giúp thợ nail chuẩn bị dụng cụ và phụ kiện phù hợp trước khi làm móng." : "Favorite style details help Staff Artists prepare suitable tools and accessories before starting."}
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">

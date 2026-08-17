@@ -144,29 +144,29 @@ function formatStatusDisplay(status) {
   switch (status) {
     case "Checked In":
     case "CheckedIn":
-      return t("manager.dashboard.statusCalled") || "At Counter";
+      return language === "vi" ? "Đã check in" : "Checked In";
     case "In Progress":
     case "InProgress":
-      return t("manager.dashboard.statusInService") || "In Progress";
+      return language === "vi" ? "Đang tiến hành" : "In Progress";
     case "Pending":
-      return t("manager.dashboard.statusWaiting") || "Pending";
+      return language === "vi" ? "Đang chờ" : "Pending";
     case "Confirmed":
     case "Approved":
-      return t("manager.bookings.ready") || "Confirmed";
+      return language === "vi" ? "Đã xác nhận" : "Confirmed";
     case "Completed":
     case "ServiceCompleted":
-      return t("manager.dashboard.statusDone") || "Completed";
+      return language === "vi" ? "Đã hoàn thành" : "Completed";
     case "Rejected":
-      return t("manager.breaks.statusRejected") || "Rejected";
+      return language === "vi" ? "Đã từ chối" : "Rejected";
     case "Cancelled":
     case "Canceled":
-      return t("manager.bookings.cancelBooking") || "Cancelled";
-    case "RescheduleReq":
-    case "Reschedule Req":
+      return language === "vi" ? "Đã hủy" : "Cancelled";
     case "ReschedulePending":
-      return t("manager.bookings.rescheduleTime") || "Reschedule Requested";
+      return language === "vi" ? "Đang chờ dời lịch" : "Reschedule Pending";
     case "RescheduleSuggested":
-      return t("manager.bookings.moveSchedule") || "Reschedule Proposed";
+      return language === "vi" ? "Đã đề xuất dời lịch" : "Reschedule Proposed";
+    case "Repaired":
+      return language === "vi" ? "Đã sửa chữa" : "Repaired";
     default:
       return status;
   }

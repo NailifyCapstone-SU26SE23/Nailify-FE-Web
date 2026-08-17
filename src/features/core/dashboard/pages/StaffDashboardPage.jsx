@@ -31,7 +31,7 @@ import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
-import { StaffBookingNotesModal } from "../../../../shared/bookings/components/StaffBookingNotesModal";
+import { StaffBookingNotesModal } from "../../../staff/bookings/components/StaffBookingNotesModal";
 import {
   getStaffBookingDetailRoute,
   getStaffBookingDesignStudioRoute,

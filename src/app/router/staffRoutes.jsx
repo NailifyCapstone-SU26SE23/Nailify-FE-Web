@@ -2,9 +2,9 @@ import { Navigate } from "react-router-dom";
 import { StaffLayout } from "../layouts/StaffLayout";
 import { ProfilePage } from "../../features/core/auth/pages/profilePage";
 import { StaffDashboardPage } from "../../features/core/dashboard/pages/StaffDashboardPage";
-import { BookingListPage } from "../../shared/bookings/pages/BookingListPage";
-import { BookingCreatePage } from "../../shared/bookings/pages/BookingCreatePage";
-import { BookingDetailPage } from "../../shared/bookings/pages/BookingDetailPage";
+import { StaffBookingListPage } from "../../features/staff/bookings/pages/StaffBookingListPage";
+import { StaffBookingCreatePage } from "../../features/staff/bookings/pages/StaffBookingCreatePage";
+import { StaffBookingDetailPage } from "../../features/staff/bookings/pages/StaffBookingDetailPage";
 import { StaffNailDesignStudioPage } from "../../features/staff/bookings/pages/StaffNailDesignStudioPage";
 import { StaffServiceSessionPage } from "../../features/staff/bookings/pages/StaffServiceSessionPage";
 import { StaffUpdateBookingDesignPage } from "../../features/staff/bookings/pages/StaffUpdateBookingDesignPage";
@@ -44,7 +44,7 @@ export const staffRoutes = [
       },
       {
         path: ROUTES.staffBookings,
-        element: <BookingListPage />,
+        element: <StaffBookingListPage />,
       },
       {
         path: ROUTES.staffTasks,
@@ -56,7 +56,7 @@ export const staffRoutes = [
       },
       {
         path: ROUTES.staffBookingsCreate,
-        element: <BookingCreatePage />,
+        element: <StaffBookingCreatePage />,
       },
       {
         path: ROUTES.staffBookingDesignStudio,
@@ -72,7 +72,7 @@ export const staffRoutes = [
       },
       {
         path: ROUTES.staffBookingDetail,
-        element: <BookingDetailPage />,
+        element: <StaffBookingDetailPage />,
       },
       {
         path: ROUTES.staffCustomerNails,

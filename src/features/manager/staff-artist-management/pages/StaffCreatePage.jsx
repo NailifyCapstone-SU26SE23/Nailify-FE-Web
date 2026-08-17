@@ -74,6 +74,7 @@ function getStaffInitials(fullName) {
 // ── Main page ──────────────────────────────────────────────────────────────────
 export function StaffCreatePage() {
   const { t, language } = useLanguage();
+  const isVi = language === "vi";
   const navigate = useNavigate();
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
@@ -169,17 +170,17 @@ export function StaffCreatePage() {
       // 1. Create user account
       const createdUser = await createUser({
         email: formData.email,
-        password: formData.password || "password123",
+        password: formData.password,
         firstName: formData.firstName,
         lastName: formData.lastName,
         phone: formData.phone,
         avatarUrl: formData.avatarUrl,
-        role: "NAIL_ARTIST",
+        role: "Staff_Artist",
         salonId,
         imageFile: formData.imageFile,
       });
 
-      // 2. Create nail artist profile
+      // 2. Create Staff Artist profile
       let nailArtistId = createdUser?.staffId;
       if (!nailArtistId) {
         const nailArtist = await createNailArtist({
@@ -243,10 +244,10 @@ export function StaffCreatePage() {
       <header className="mb-4 flex flex-col gap-4 rounded-[20px] bg-white/70 px-4 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur sm:mb-5 sm:rounded-[24px] sm:px-5 lg:rounded-[28px] lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           <h1 className="text-xl font-bold tracking-tight text-[#cf3d74] sm:text-2xl lg:text-[28px]">
-            {t("manager.staff.addStaff") || "Add New Artist"}
+            {isVi ? "Thêm nhân viên làm móng mới" : "Add New Artist"}
           </h1>
           <p className="text-[11px] font-medium text-slate-400 sm:text-[12px]">
-            Create a new nail artist profile and assign skill ratings
+            {isVi ? "Tạo hồ sơ nhân viên làm móng mới và gán đánh giá kỹ năng" : "Create a new Staff Artist profile and assign skill ratings"}
           </p>
         </div>
 
@@ -257,7 +258,7 @@ export function StaffCreatePage() {
             className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
           >
             <X size={14} />
-            {t("manager.common.cancel")}
+            {isVi ? "Hủy" : "Cancel"}
           </button>
           <button
             type="button"
@@ -265,7 +266,7 @@ export function StaffCreatePage() {
             className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
           >
             <Save size={14} />
-            {t("manager.common.save") || "Save Artist"}
+            {isVi ? "Lưu nhân viên" : "Save Staff"}
           </button>
         </div>
       </header>
@@ -278,13 +279,13 @@ export function StaffCreatePage() {
           <div className="rounded-[24px] bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
             <h2 className="mb-5 text-[18px] font-bold text-slate-800 sm:text-[20px] flex items-center gap-2">
               <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
-              {t("manager.staff.artistDetails") || "Artist Details"}
+              {isVi ? "Thông tin nhân viên làm móng" : "Staff Artist Details"}
             </h2>
 
             <div className="grid gap-5 md:grid-cols-2">
               <label className="space-y-2.5">
                 <span className="text-[13px] font-semibold text-slate-600">
-                  {t("manager.staff.firstName") || "First Name"} <span className="text-rose-500">*</span>
+                  {isVi ? "Tên nghệ sĩ" : "Artist Name"} <span className="text-rose-500">*</span>
                 </span>
                 <div className={inputWrapperClassName}>
                   <User size={14} className="shrink-0 text-rose-300" />
@@ -292,7 +293,7 @@ export function StaffCreatePage() {
                     type="text"
                     value={formData.firstName}
                     onChange={(e) => handleInputChange("firstName", e.target.value)}
-                    placeholder={t("manager.staff.firstName")}
+                    placeholder={isVi ? "Tên" : "First Name"}
                     className={inputClassName}
                     required
                   />
@@ -301,7 +302,7 @@ export function StaffCreatePage() {
 
               <label className="space-y-2.5">
                 <span className="text-[13px] font-semibold text-slate-600">
-                  {t("manager.staff.lastName") || "Last Name"} <span className="text-rose-500">*</span>
+                  {isVi ? "Họ" : "Last Name"} <span className="text-rose-500">*</span>
                 </span>
                 <div className={inputWrapperClassName}>
                   <User size={14} className="shrink-0 text-rose-300" />
@@ -309,7 +310,7 @@ export function StaffCreatePage() {
                     type="text"
                     value={formData.lastName}
                     onChange={(e) => handleInputChange("lastName", e.target.value)}
-                    placeholder={t("manager.staff.lastName")}
+                    placeholder={isVi ? "Họ" : "Last Name"}
                     className={inputClassName}
                     required
                   />
@@ -326,7 +327,7 @@ export function StaffCreatePage() {
                     type="email"
                     value={formData.email}
                     onChange={(e) => handleInputChange("email", e.target.value)}
-                    placeholder="artist@nailify.com"
+                    placeholder={"Email"}
                     className={inputClassName}
                     required
                   />
@@ -335,7 +336,7 @@ export function StaffCreatePage() {
 
               <label className="space-y-2.5">
                 <span className="text-[13px] font-semibold text-slate-600">
-                  {t("manager.common.phone")}
+                  {isVi ? "Số điện thoại" : "Phone Number"} <span className="text-rose-500">*</span>
                 </span>
                 <div className={inputWrapperClassName}>
                   <Phone size={14} className="shrink-0 text-rose-300" />
@@ -343,7 +344,7 @@ export function StaffCreatePage() {
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => handleInputChange("phone", e.target.value)}
-                    placeholder="+84 912 345 678"
+                    placeholder="+84 *** *** ***"
                     className={inputClassName}
                   />
                 </div>
@@ -351,7 +352,7 @@ export function StaffCreatePage() {
 
               <label className="space-y-2.5">
                 <span className="text-[13px] font-semibold text-slate-600">
-                  {t("manager.staff.password") || "Password"} <span className="text-rose-500">*</span>
+                  {isVi ? "Mật khẩu" : "Password"} <span className="text-rose-500">*</span>
                 </span>
                 <div className={inputWrapperClassName}>
                   <Lock size={14} className="shrink-0 text-rose-300" />
@@ -359,7 +360,7 @@ export function StaffCreatePage() {
                     type="password"
                     value={formData.password}
                     onChange={(e) => handleInputChange("password", e.target.value)}
-                    placeholder="Min. 6 characters"
+                    placeholder={isVi ? "Ít nhất 6 ký tự" : "Min. 6 characters"}
                     className={inputClassName}
                     required
                   />
@@ -368,12 +369,12 @@ export function StaffCreatePage() {
 
               <label className="space-y-2.5">
                 <span className="text-[13px] font-semibold text-slate-600">
-                  {t("adminStaffManagement.roleTableHead") || "Job Title / Role"}
+                  {isVi ? "Vai trò" : "Job Title / Role"}
                 </span>
                 <div className={inputWrapperClassName}>
                   <input
                     type="text"
-                    value="Nail Artist"
+                    value="Staff_Artist"
                     readOnly
                     className={inputClassName}
                   />
@@ -382,7 +383,7 @@ export function StaffCreatePage() {
 
               <label className="space-y-2 md:col-span-2">
                 <span className="text-[13px] font-semibold text-slate-600">
-                  Avatar
+                  {isVi ? "Ảnh đại diện" : "Avatar"}
                 </span>
                 <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-rose-200 bg-gradient-to-br from-[#fffafc] to-[#fff5f9] px-6 py-8 cursor-pointer transition-all duration-300 hover:border-rose-300 hover:bg-gradient-to-br hover:from-[#fff8fb] hover:to-[#fff1f6] hover:shadow-[0_8px_24px_rgba(226,93,143,0.12)]">
                   {imagePreview ? (
@@ -406,7 +407,7 @@ export function StaffCreatePage() {
                         <Upload size={28} />
                       </div>
                       <div className="text-center">
-                        <p className="text-base font-semibold text-slate-700">{t("manager.staff.clickUpload") || "Click to upload artist avatar"}</p>
+                        <p className="text-base font-semibold text-slate-700">{isVi ? "Nhấn để tải ảnh lên" : "Click to upload staff avatar"}</p>
                         <p className="text-xs text-slate-400 mt-1">PNG, JPG up to 5MB</p>
                       </div>
                       <input
@@ -438,7 +439,7 @@ export function StaffCreatePage() {
           <div className="rounded-[24px] bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
             <h2 className="mb-5 text-[18px] font-bold text-slate-800 sm:text-[20px] flex items-center gap-2">
               <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
-              Profile Preview
+              {isVi ? "Xem trước thông tin" : "Profile Preview"}
             </h2>
 
             <div className="space-y-4">
@@ -461,7 +462,7 @@ export function StaffCreatePage() {
                     {formData.firstName + " " + formData.lastName || "New Artist"}
                   </h3>
                   <p className="text-xs text-slate-400 mb-3">
-                    Nail Artist
+                    {isVi ? "Nhân viên làm móng" : "Staff Artist"}
                   </p>
                   <div className="flex flex-wrap justify-center gap-1.5 mb-3">
                     {specialties.slice(0, 3).map((item) => (
@@ -514,7 +515,7 @@ export function StaffCreatePage() {
         loading={isSaving}
         onConfirm={handleConfirmSave}
         onCancel={() => !isSaving && setShowSaveModal(false)}
-        highlights={[formData.firstName + " " + formData.lastName || "New Artist", "Nail Artist"]}
+        highlights={[formData.firstName + " " + formData.lastName || "New Artist", "Staff Artist"]}
       />
 
       <StaffSaveResultModal

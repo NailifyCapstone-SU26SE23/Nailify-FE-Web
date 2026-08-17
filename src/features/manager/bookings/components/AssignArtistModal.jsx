@@ -144,7 +144,7 @@ export function AssignArtistModal({
         }
       } catch (err) {
         console.error("Error in fetchSlots:", err);
-        toast.error(language === "vi" ? "Nhân viên chưa có lịch hẹn vào ngày này" : "The nail artist has no scheduled appointments for this day.");
+        toast.error(language === "vi" ? "Nhân viên chưa có lịch hẹn vào ngày này" : "The Staff Artist has no scheduled appointments for this day.");
         setAvailableSlots([]);
         setBusySlots([]);
       } finally {
@@ -336,7 +336,7 @@ export function AssignArtistModal({
                                 </div>
                                 <div className="flex items-center gap-2 text-xs text-[#7f6478]">
                                   <BriefcaseBusiness size={14} className="text-[#b88ca8]" />
-                                  <span className="truncate">{staff.specialty || staff.role || "Nail Artist"}</span>
+                                  <span className="truncate">{staff.specialty || staff.role || "Staff Artist"}</span>
                                 </div>
                               </div>
                             </div>

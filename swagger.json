@@ -2767,7 +2767,7 @@
         "tags": [
           "Bookings"
         ],
-        "summary": "Thợ làm móng (Nail Artist) xác nhận bắt đầu thực hiện làm móng cho khách.",
+        "summary": "Thợ làm móng (Staff Artist) xác nhận bắt đầu thực hiện làm móng cho khách.",
         "parameters": [
           {
             "name": "id",

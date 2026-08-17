@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from "../../auth/hooks/useAuth";
-import { useSalonChairs, useLiveChairStatus } from "../hooks/useChairs";
+import { useLiveChairStatus } from "../hooks/useChairs";
 import ChairMap from "../../../../shared/components/ui/ChairMap";
 import { Modal, Spin, Button, Tooltip } from "antd";
 import { LoaderCircle, Armchair, User, Plus, Eye } from "lucide-react";
@@ -19,19 +19,15 @@ export function ChairsPage() {
   // Use today's date for live status, formatted as YYYY-MM-DD
   const todayDate = dayjs().format('YYYY-MM-DD');
 
-  const { data: chairsData, isLoading: isLoadingChairs, error: chairsError } = useSalonChairs(salonId);
-  const { data: liveStatusData, isLoading: isLoadingLiveStatus, error: liveStatusError } = useLiveChairStatus(salonId, todayDate);
+  const { data: liveStatusData, isLoading, error } = useLiveChairStatus(salonId, todayDate);
 
   const [selectedChair, setSelectedChair] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   const [assignChair, setAssignChair] = useState(null);
 
-  const isLoading = isLoadingChairs || isLoadingLiveStatus;
-  const error = chairsError || liveStatusError;
-
-  const handleChairClick = (chairInfo, liveInfo) => {
-    setSelectedChair({ chairInfo, liveInfo });
+  const handleChairClick = (chairInfo) => {
+    setSelectedChair(chairInfo);
     setIsModalVisible(true);
   };
 
@@ -49,10 +45,8 @@ export function ChairsPage() {
       );
     }
 
-    // Find live status for this chair
-    const liveInfo = liveStatusData?.find(status => status.chairId === chairInfo.chairId) || {};
-    const isOccupied = liveInfo.isOccupied;
-    const currentCustomer = liveInfo.currentCustomer;
+    const isOccupied = chairInfo.isOccupied;
+    const currentCustomer = chairInfo.currentCustomer;
 
     const bgColor = isOccupied ? 'bg-pink-50' : 'bg-emerald-50';
     const borderColor = isOccupied ? 'border-pink-200' : 'border-emerald-200';
@@ -90,7 +84,7 @@ export function ChairsPage() {
               icon={<Eye size={14} />}
               onClick={(e) => {
                 e.stopPropagation();
-                handleChairClick(chairInfo, liveInfo);
+                handleChairClick(chairInfo);
               }}
               className="w-full text-[11px] font-medium bg-blue-500 hover:bg-blue-600 border-none rounded-md shadow-sm flex items-center justify-center gap-1 cursor-pointer"
             >
@@ -133,7 +127,7 @@ export function ChairsPage() {
           </div>
         ) : (
           <div className="rounded-[24px] border border-[#f7e0ea] bg-white p-6 shadow-[0_10px_40px_rgba(234,79,147,0.04)]">
-            <ChairMap chairs={chairsData || []} renderCell={renderCell} />
+            <ChairMap chairs={liveStatusData || []} renderCell={renderCell} />
           </div>
         )}
       </div>
@@ -143,7 +137,7 @@ export function ChairsPage() {
           title={
             <div className="flex items-center gap-2 text-[#432744]">
               <Armchair className="text-[#ea4f93]" size={20} />
-              <span className="font-bold text-lg">{language === "vi" ? `Chi Tiết Ghế ${selectedChair?.chairInfo?.chairName}` : `Chair ${selectedChair?.chairInfo?.chairName} Details`}</span>
+              <span className="font-bold text-lg">{language === "vi" ? `Chi Tiết Ghế ${selectedChair?.chairName}` : `Chair ${selectedChair?.chairName} Details`}</span>
             </div>
           }
           open={isModalVisible}
@@ -156,33 +150,33 @@ export function ChairsPage() {
           <div className="mt-4 space-y-4 text-sm text-[#584654]">
             <div className="flex justify-between items-center py-2 border-b border-[#f7e0ea]">
               <span className="font-semibold text-[#aa8a99]">{language === "vi" ? "Trạng thái sử dụng" : "isOccupied"}</span>
-              <span className={`px-3 py-1 rounded-full text-xs font-bold ${selectedChair.liveInfo?.isOccupied ? "bg-pink-50 text-pink-600" : "bg-emerald-50 text-emerald-600"
+              <span className={`px-3 py-1 rounded-full text-xs font-bold ${selectedChair.isOccupied ? "bg-pink-50 text-pink-600" : "bg-emerald-50 text-emerald-600"
                 }`}>
-                {selectedChair.liveInfo?.isOccupied ? (language === "vi" ? "Đang sử dụng" : "true") : (language === "vi" ? "Trống" : "false")}
+                {selectedChair.isOccupied ? (language === "vi" ? "Đang sử dụng" : "true") : (language === "vi" ? "Trống" : "false")}
               </span>
             </div>
 
             <div className="flex justify-between items-center py-2 border-b border-[#f7e0ea]">
               <span className="font-semibold text-[#aa8a99]">{language === "vi" ? "Trạng thái hệ thống" : "System Status"}</span>
-              <span className="font-bold">{selectedChair.chairInfo?.status}</span>
+              <span className="font-bold">{selectedChair.status}</span>
             </div>
 
             <div className="flex justify-between items-center py-2 border-b border-[#f7e0ea]">
               <span className="font-semibold text-[#aa8a99]">{language === "vi" ? "Tên Salon" : "Salon Name"}</span>
-              <span className="font-bold">{selectedChair.chairInfo?.salonName}</span>
+              <span className="font-bold">{selectedChair.salonName}</span>
             </div>
 
             <div className="bg-[#fff8fb] rounded-xl p-4 border border-[#f7e0ea] mt-4 flex items-center gap-3">
-              <div className={`p-2 rounded-full ${selectedChair.liveInfo?.isOccupied ? 'bg-pink-100 text-pink-500' : 'bg-emerald-100 text-emerald-500'}`}>
+              <div className={`p-2 rounded-full ${selectedChair.isOccupied ? 'bg-pink-100 text-pink-500' : 'bg-emerald-100 text-emerald-500'}`}>
                 <User size={18} />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold text-[#aa8a99]">{language === "vi" ? "Khách hàng hiện tại" : "currentCustomer"}</p>
                 <p className="font-bold text-[#432744] text-base truncate">
-                  {selectedChair.liveInfo?.isOccupied ? (
-                    typeof selectedChair.liveInfo?.currentCustomer === 'object'
-                      ? selectedChair.liveInfo?.currentCustomer?.customerName
-                      : (selectedChair.liveInfo?.currentCustomer || "Walk-In")
+                  {selectedChair.isOccupied ? (
+                    typeof selectedChair.currentCustomer === 'object'
+                      ? selectedChair.currentCustomer?.customerName
+                      : (selectedChair.currentCustomer || "Walk-In")
                   ) : (
                     <span className="text-gray-400 italic">{language === "vi" ? "Không có" : "None"}</span>
                   )}
