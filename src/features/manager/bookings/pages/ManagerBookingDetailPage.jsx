@@ -796,7 +796,7 @@ export function ManagerBookingDetailPage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
               <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFFDFE] p-4 shadow-2xs">
                 <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497] mb-1">{language === "vi" ? "Ngày đặt lịch" : "Booking Date"}</p>
-                <div className="flex items-center gap-2 text-sm font-extrabold text-[#2B182B]">
+                <div className="flex items-center gap-2 text-sm font-semibold text-[#2B182B]">
                   <Calendar size={15} className="text-[#E84F93] shrink-0" />
                   <span>{booking?.date}</span>
                 </div>
@@ -804,7 +804,7 @@ export function ManagerBookingDetailPage() {
 
               <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFFDFE] p-4 shadow-2xs">
                 <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497] mb-1">{language === "vi" ? "Thời gian" : "Time"}</p>
-                <div className="flex items-center gap-2 text-sm font-extrabold text-[#2B182B]">
+                <div className="flex items-center gap-2 text-sm font-semibold text-[#2B182B]">
                   <Clock3 size={15} className="text-[#E84F93] shrink-0" />
                   <span>{booking?.time}</span>
                 </div>
@@ -812,7 +812,7 @@ export function ManagerBookingDetailPage() {
 
               <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFFDFE] p-4 shadow-2xs">
                 <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497] mb-1">{language === "vi" ? "Thời lượng" : "Duration"}</p>
-                <div className="flex items-center gap-2 text-sm font-extrabold text-[#2B182B]">
+                <div className="flex items-center gap-2 text-sm font-semibold text-[#2B182B]">
                   <Clock3 size={15} className="text-[#E84F93] shrink-0" />
                   <span>{booking?.totalDuration ? formatDuration(booking.totalDuration) : "60m"}</span>
                 </div>

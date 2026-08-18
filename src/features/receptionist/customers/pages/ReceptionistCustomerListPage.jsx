@@ -1319,40 +1319,50 @@ export function ReceptionistCustomerListPage() {
                           </p>
                         </div>
 
-                        <div className="flex items-center gap-2 pt-2 border-t border-gray-100 w-full">
+                        <div className="grid grid-cols-2 gap-2 pt-2.5 border-t border-gray-100 w-full">
                           <button
                             type="button"
                             onClick={() => handleOpenGuestProfile(g)}
-                            className="flex-1 h-9 flex items-center justify-center gap-1 rounded-xl border border-gray-200 bg-white text-[#2B182B] hover:bg-gray-50 transition cursor-pointer text-[10px] font-bold"
+                            className="h-10 flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100/80 transition duration-200 cursor-pointer text-xs font-semibold"
                           >
-                            <Eye size={13} /> {language === "vi" ? "Xem" : "View"}
+                            <Eye size={14} /> {language === "vi" ? "Xem" : "View"}
                           </button>
-
-                          {(g.assignedArtist === "Chưa phân công" || g.assignedArtist === "Unassigned" || !g.assignedNailArtistId) && (
-                            <button
-                              type="button"
-                              onClick={() => handleOpenAssignModal(g, false)}
-                              className="flex-1 h-9 flex items-center justify-center gap-1 rounded-xl bg-[#C97A9E] text-white hover:bg-[#B86B8E] transition cursor-pointer text-[10px] font-bold"
-                            >
-                              <UserCheck size={13} /> {language === "vi" ? "Phân Thợ" : "Assign"}
-                            </button>
-                          )}
 
                           <button
                             type="button"
                             onClick={() => handleMoveGuestStatus(g.id, "called")}
-                            className="flex-1 h-9 flex items-center justify-center gap-1 rounded-xl bg-[#fff2f8] text-[#ea4f93] border border-[#f3cadc] hover:bg-[#fff9fc] transition cursor-pointer text-[10px] font-bold"
+                            className="h-10 flex items-center justify-center gap-1.5 rounded-xl bg-rose-50 text-rose-600 border border-rose-200/60 hover:bg-rose-100/80 transition duration-200 cursor-pointer text-xs font-semibold"
                           >
-                            <Volume2 size={13} /> {language === "vi" ? "Gọi Loa" : "Call"}
+                            <Volume2 size={14} /> {language === "vi" ? "Gọi Loa" : "Call"}
                           </button>
 
-                          <button
-                            type="button"
-                            onClick={() => handleMoveGuestStatus(g.id, "in_service")}
-                            className="flex-1 h-9 flex items-center justify-center gap-1 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition cursor-pointer text-[10px] font-bold shadow-xs"
-                          >
-                            <Armchair size={13} /> {language === "vi" ? "Vào Ghế" : "Seat"}
-                          </button>
+                          {(g.assignedArtist === "Chưa phân công" || g.assignedArtist === "Unassigned" || !g.assignedNailArtistId) ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenAssignModal(g, false)}
+                                className="h-10 flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#C97A9E] to-[#B86B8E] hover:from-[#B86B8E] hover:to-[#A75C7E] text-white transition duration-200 cursor-pointer text-xs font-semibold shadow-sm shadow-[#C97A9E]/10"
+                              >
+                                <UserCheck size={14} /> {language === "vi" ? "Phân Thợ" : "Assign"}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleMoveGuestStatus(g.id, "in_service")}
+                                className="h-10 flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white transition duration-200 cursor-pointer text-xs font-semibold shadow-sm shadow-emerald-500/10"
+                              >
+                                <Armchair size={14} /> {language === "vi" ? "Vào Ghế" : "Seat"}
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleMoveGuestStatus(g.id, "in_service")}
+                              className="col-span-2 h-10 flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white transition duration-200 cursor-pointer text-xs font-semibold shadow-sm shadow-emerald-500/10"
+                            >
+                              <Armchair size={14} /> {language === "vi" ? "Vào Ghế" : "Seat"}
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))
@@ -1407,32 +1417,52 @@ export function ReceptionistCustomerListPage() {
                           </p>
                         </div>
 
-                        <div className="flex items-center gap-2 pt-2 border-t border-gray-100 w-full">
-                          <button
-                            type="button"
-                            onClick={() => handleOpenGuestProfile(g)}
-                            className="flex-1 h-9 flex items-center justify-center gap-1 rounded-xl border border-gray-200 bg-white text-[#2B182B] hover:bg-gray-50 transition cursor-pointer text-[10px] font-bold"
-                          >
-                            <Eye size={13} /> {language === "vi" ? "Xem" : "View"}
-                          </button>
+                        <div className="grid grid-cols-2 gap-2 pt-2.5 border-t border-gray-100 w-full">
+                          {(g.assignedArtist === "Chưa phân công" || g.assignedArtist === "Unassigned" || !g.assignedNailArtistId) ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenGuestProfile(g)}
+                                className="h-10 flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100/80 transition duration-200 cursor-pointer text-xs font-semibold"
+                              >
+                                <Eye size={14} /> {language === "vi" ? "Xem" : "View"}
+                              </button>
 
-                          {(g.assignedArtist === "Chưa phân công" || g.assignedArtist === "Unassigned" || !g.assignedNailArtistId) && (
-                            <button
-                              type="button"
-                              onClick={() => handleOpenAssignModal(g, false)}
-                              className="flex-1 h-9 flex items-center justify-center gap-1 rounded-xl bg-[#C97A9E] text-white hover:bg-[#B86B8E] transition cursor-pointer text-[10px] font-bold"
-                            >
-                              <UserCheck size={13} /> {language === "vi" ? "Phân Thợ" : "Assign"}
-                            </button>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenAssignModal(g, false)}
+                                className="h-10 flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#C97A9E] to-[#B86B8E] hover:from-[#B86B8E] hover:to-[#A75C7E] text-white transition duration-200 cursor-pointer text-xs font-semibold shadow-sm shadow-[#C97A9E]/10"
+                              >
+                                <UserCheck size={14} /> {language === "vi" ? "Phân Thợ" : "Assign"}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleMoveGuestStatus(g.id, "in_service")}
+                                className="col-span-2 h-10 flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white transition duration-200 cursor-pointer text-xs font-semibold shadow-sm shadow-emerald-500/10"
+                              >
+                                <Armchair size={14} /> {language === "vi" ? "Vào Ghế" : "Seat"}
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenGuestProfile(g)}
+                                className="h-10 flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100/80 transition duration-200 cursor-pointer text-xs font-semibold"
+                              >
+                                <Eye size={14} /> {language === "vi" ? "Xem" : "View"}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleMoveGuestStatus(g.id, "in_service")}
+                                className="h-10 flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white transition duration-200 cursor-pointer text-xs font-semibold shadow-sm shadow-emerald-500/10"
+                              >
+                                <Armchair size={14} /> {language === "vi" ? "Vào Ghế" : "Seat"}
+                              </button>
+                            </>
                           )}
-
-                          <button
-                            type="button"
-                            onClick={() => handleMoveGuestStatus(g.id, "in_service")}
-                            className="flex-1 h-9 flex items-center justify-center gap-1 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition cursor-pointer text-[10px] font-bold shadow-xs"
-                          >
-                            <Armchair size={13} /> {language === "vi" ? "Vào Ghế" : "Seat"}
-                          </button>
                         </div>
                       </div>
                     ))
@@ -1472,13 +1502,13 @@ export function ReceptionistCustomerListPage() {
                         </div>
                         <p className="text-xs text-gray-500 font-medium">{g.nailDesign}</p>
                         <p className="text-[11px] text-gray-400">{language === "vi" ? "Thợ làm: " : "Artist: "}{g.assignedArtist}</p>
-                        <div className="pt-2 border-t border-gray-100 w-full">
+                        <div className="pt-2.5 border-t border-gray-100 w-full">
                           <button
                             type="button"
                             onClick={() => handleOpenGuestProfile(g)}
-                            className="w-full h-9 flex items-center justify-center gap-1 rounded-xl border border-gray-200 bg-white text-[#2B182B] hover:bg-gray-50 transition cursor-pointer text-[11px] font-bold"
+                            className="w-full h-10 flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100/80 transition duration-200 cursor-pointer text-xs font-semibold"
                           >
-                            {language === "vi" ? "Xem hồ sơ" : "View Profile"}
+                            <Eye size={14} /> {language === "vi" ? "Xem hồ sơ" : "View Profile"}
                           </button>
                         </div>
                       </div>

@@ -145,6 +145,33 @@ export function ManagerArtistBreakPage() {
     });
   }, [breaks, filterStatus, searchQuery, getArtistName]);
 
+  // Reset page when filters change to prevent out of bounds
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterStatus, searchQuery, filterArtistId, filterDate]);
+
+  // Determine if server is returning paginated data or a flat array of all records
+  const isServerPaginated = useMemo(() => {
+    return metaData && metaData.totalPages > 1 && breaks.length < (metaData.totalItems || metaData.totalCount || 0);
+  }, [metaData, breaks.length]);
+
+  // Calculate actual total pages for client-side or server-side pagination
+  const totalPages = useMemo(() => {
+    if (isServerPaginated) {
+      return metaData.totalPages;
+    }
+    return Math.max(1, Math.ceil(filteredBreaks.length / pageSize));
+  }, [isServerPaginated, metaData, filteredBreaks.length, pageSize]);
+
+  // Paginated/Sliced break requests for display
+  const displayedBreaks = useMemo(() => {
+    if (isServerPaginated) {
+      return filteredBreaks;
+    }
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredBreaks.slice(startIndex, startIndex + pageSize);
+  }, [isServerPaginated, filteredBreaks, currentPage, pageSize]);
+
   // Stats counters
   const stats = useMemo(() => {
     let pending = 0;
@@ -515,7 +542,7 @@ export function ManagerArtistBreakPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 bg-white">
-                  {filteredBreaks.map((item) => {
+                  {displayedBreaks.map((item) => {
                     const st = String(item.status || "").toLowerCase();
                     const isPending = st === "pending" || st === "chờ duyệt";
                     const artistName = getArtistName(item.nailArtistId);
@@ -666,11 +693,11 @@ export function ManagerArtistBreakPage() {
           </div>
 
           {/* Pagination */}
-          {metaData && metaData.totalPages > 1 && (
+          {filteredBreaks.length > 0 && (
             <div className="flex justify-end pt-4">
               <Pagination
                 currentPage={currentPage}
-                totalPages={metaData.totalPages}
+                totalPages={totalPages}
                 onPageChange={(page) => setCurrentPage(page)}
               />
             </div>
