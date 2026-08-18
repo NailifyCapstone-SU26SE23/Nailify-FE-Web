@@ -195,7 +195,7 @@ export function AssignChairModal({ isOpen, onClose, booking, onSuccess, onAssign
             onClick={handleAssign}
             disabled={!selectedChair}
             loading={submitting}
-            className="!bg-[#ea4f93] hover:!bg-[#d63d7e] border-none !font-semibold !rounded-xl !shadow-sm !shadow-pink-200/50"
+            className="!text-white hover:!text-[#ea4f93] !bg-[#ea4f93] hover:!bg-white border-none !font-semibold !rounded-xl !shadow-sm !shadow-pink-200/50"
           >
             {t("receptionist.bookings.confirmAssignment") || "Confirm Assignment"}
           </Button>

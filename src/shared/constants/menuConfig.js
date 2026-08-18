@@ -381,6 +381,13 @@ export const MENU_CONFIG = {
       section: "Main",
     },
     {
+      key: "admin-nail-designs",
+      label: "Nail Designs",
+      to: ROUTES.adminNailDesigns,
+      icon: "palette",
+      section: "Main",
+    },
+    {
       key: "admin-service-pricing",
       label: "Services",
       to: ROUTES.adminServicePricing,
@@ -430,13 +437,6 @@ export const MENU_CONFIG = {
       section: "Main",
     },
     {
-      key: "admin-skill-types",
-      label: "Skill Types",
-      to: ROUTES.adminSkillTypes,
-      icon: "wand2",
-      section: "Main",
-    },
-    {
       key: "admin-categories",
       label: "Categories",
       to: ROUTES.adminCategories,
@@ -444,19 +444,21 @@ export const MENU_CONFIG = {
       section: "Main",
     },
     {
+      key: "admin-skill-types",
+      label: "Skill Types",
+      to: ROUTES.adminSkillTypes,
+      icon: "wand2",
+      section: "Main",
+    },
+
+    {
       key: "admin-promotions",
       label: "Promotions",
       to: ROUTES.adminPromotions,
       icon: "gift",
       section: "Main",
     },
-    {
-      key: "admin-nail-designs",
-      label: "Nail Designs",
-      to: ROUTES.adminNailDesigns,
-      icon: "palette",
-      section: "Main",
-    },
+
     // {
     //   key: "admin-analytics",
     //   label: "Analytics",

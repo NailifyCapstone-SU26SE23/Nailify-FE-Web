@@ -300,8 +300,9 @@ export function StaffBookingListPage() {
       case "Approved":
         return language === "vi" ? "Đã xác nhận" : "Confirmed";
       case "Completed":
-      case "ServiceCompleted":
         return language === "vi" ? "Đã hoàn thành" : "Completed";
+      case "ServiceCompleted":
+        return language === "vi" ? "Dịch vụ đã hoàn thành" : "Service Completed";
       case "Rejected":
         return language === "vi" ? "Đã từ chối" : "Rejected";
       case "Cancelled":

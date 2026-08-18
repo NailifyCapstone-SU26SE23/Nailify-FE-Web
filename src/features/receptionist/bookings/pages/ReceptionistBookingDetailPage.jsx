@@ -296,20 +296,95 @@ function getServiceActionItems(row, handleViewService, handleViewProcedures, isV
 }
 
 function getProgressPercent(booking) {
-  const items = booking?.bookingItems ?? [];
+  if (!booking) return 0;
 
-  if (!items.length) {
-    return 25;
+  const status = String(booking.status || "").trim();
+
+  if (status === "Completed") {
+    return 100;
   }
 
-  const completedCount =
-    booking?.status === "Completed"
-      ? items.length
-      : booking?.status === "CheckedIn" || booking?.status === "In Progress"
-        ? 1
-        : 0;
+  if (["Pending", "Confirmed", "CheckedIn", "Cancelled"].includes(status)) {
+    return 0;
+  }
 
-  return Math.max(20, Math.round((completedCount / items.length) * 100));
+  const startTimeStr = booking.startTime;
+  const totalDuration = Number(booking.totalDuration) || 45;
+
+  if (!startTimeStr) {
+    return 20;
+  }
+
+  try {
+    const [hours, minutes] = startTimeStr.split(":").map(Number);
+    const startDate = new Date();
+    startDate.setHours(hours, minutes, 0, 0);
+
+    const now = new Date();
+    const diffMs = now - startDate;
+    const diffMins = Math.floor(diffMs / 1000 / 60);
+
+    if (diffMins < 0) {
+      return 0;
+    }
+
+    const percent = Math.round((diffMins / totalDuration) * 100);
+    return Math.min(95, Math.max(10, percent));
+  } catch (e) {
+    return 50;
+  }
+}
+
+function getRemainingTime(booking, language) {
+  if (!booking) return "0 min";
+
+  const status = String(booking.status || "").trim();
+  const totalDuration = Number(booking.totalDuration) || 0;
+  const isVi = language === "vi";
+
+  const formatMinutes = (mins) => {
+    if (mins < 60) {
+      return `${mins} ${isVi ? "phút" : "min"}`;
+    }
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    if (m === 0) {
+      return `${h}h`;
+    }
+    return `${h}h ${m}m`;
+  };
+
+  if (status === "Completed") {
+    return isVi ? "Đã xong" : "Completed";
+  }
+
+  if (["Pending", "Confirmed", "CheckedIn", "Cancelled"].includes(status)) {
+    return totalDuration ? formatMinutes(totalDuration) : (isVi ? "Chưa rõ" : "Unknown");
+  }
+
+  const startTimeStr = booking.startTime;
+  if (!startTimeStr) {
+    return totalDuration ? formatMinutes(totalDuration) : (isVi ? "Chưa rõ" : "Unknown");
+  }
+
+  try {
+    const [hours, minutes] = startTimeStr.split(":").map(Number);
+    const startDate = new Date();
+    startDate.setHours(hours, minutes, 0, 0);
+
+    const now = new Date();
+    const diffMs = now - startDate;
+    const diffMins = Math.floor(diffMs / 1000 / 60);
+
+    if (diffMins < 0) {
+      return totalDuration ? formatMinutes(totalDuration) : (isVi ? "Chưa rõ" : "Unknown");
+    }
+
+    const remaining = Math.max(1, totalDuration - diffMins);
+    return formatMinutes(remaining);
+  } catch (e) {
+    return totalDuration ? formatMinutes(totalDuration) : (isVi ? "Chưa rõ" : "Unknown");
+  }
 }
 
 function sanitizeImageUrl(value) {
@@ -1198,7 +1273,7 @@ export function ReceptionistBookingDetailPage() {
                 <div className="border-2 border-emerald-300 pt-3.5 pb-3 px-4 flex items-center justify-between bg-gradient-to-r from-[#ECFDF5] to-[#D1FAE5] rounded-2xl shadow-xs">
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-wider text-[#047857]">{t("receptionist.payments.totalAmount") || "Total Amount Payable"}</p>
-                    <p className="text-3xl font-bold text-[#047857] leading-none mt-1">{totalAmount}</p>
+                    <p className="text-3xl font-bold text-[#047857] leading-none mt-1">{remainingBalance}</p>
                   </div>
                   {/* <span className="rounded-full bg-[#10B981] text-white px-3.5 py-1 text-xs font-bold shadow-xs flex items-center gap-1">
                     <ShieldCheck size={14} /> {language === "vi" ? "ĐÃ THANH TOÁN" : "PAID"}
@@ -1272,18 +1347,18 @@ export function ReceptionistBookingDetailPage() {
 
               {/* Gradient Circular Progress Ring */}
               <CircularProgressRing
-                percent={progressPercent || 65}
-                remainingTime={booking.totalDuration ? formatDurationMinutes(booking.totalDuration) : "45 min"}
+                percent={progressPercent}
+                remainingTime={getRemainingTime(booking, language)}
               />
 
               <div className="self-stretch space-y-2.5 text-xs pt-1">
                 <div className="flex items-center justify-between bg-[#FFF9FB] p-2.5 rounded-xl border border-[#F3E2EC]">
                   <span className="font-medium text-[#9E8497]">{t("receptionist.bookings.artist") || "Assigned Artist"}</span>
-                  <span className="font-bold text-[#2B182B]">{booking.artistName || "Aria Nguyen"}</span>
+                  <span className="font-bold text-[#2B182B]">{booking.artistName}</span>
                 </div>
                 <div className="flex items-center justify-between bg-[#FFF9FB] p-2.5 rounded-xl border border-[#F3E2EC]">
                   <span className="font-medium text-[#9E8497]">{t("receptionist.bookings.assignChairTitle") || "Chair / Station"}</span>
-                  <span className="font-bold text-[#8B5CF6]">Station #03</span>
+                  <span className="font-bold text-[#8B5CF6]">{booking.chairName || (language === "vi" ? "Chưa xếp ghế" : "Not Assigned")}</span>
                 </div>
                 <div className="flex items-center justify-between bg-[#FFF9FB] p-2.5 rounded-xl border border-[#F3E2EC]">
                   <span className="font-medium text-[#9E8497]">{t("receptionist.bookings.time") || "Check-in Time"}</span>
