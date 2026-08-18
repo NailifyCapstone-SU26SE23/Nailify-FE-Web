@@ -1,4 +1,4 @@
-import { Spin, Alert, DatePicker, Pagination, ConfigProvider } from "antd";
+import { Spin, Alert, DatePicker, Pagination, ConfigProvider, Select } from "antd";
 import toast from "react-hot-toast";
 import { Palette, Heart, Eye, Calendar, CheckCircle2, XCircle, Sparkles, Clock3, ArrowRight, Timer, CircleDollarSign } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -6,7 +6,7 @@ import { Link, useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { ROUTES } from "../../../../shared/constants/routes";
-import { fetchCustomerNails } from "../services/customerNailsService";
+import { fetchCustomerNails, getManagerSalonId } from "../services/customerNailsService";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 function Card({ className = "", children }) {
@@ -604,10 +604,13 @@ export function CustomerNailPage() {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [nails, setNails] = useState([]);
+  const [allNails, setAllNails] = useState([]); // for statistics calculations
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedDate, setSelectedDate] = useState(null);
+  const [filterStatus, setFilterStatus] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [metaData, setMetaData] = useState(null);
   const itemsPerPage = 12; // Masonry grid layout
 
   const seenPendingReviewIdsRef = useRef(new Set());
@@ -624,7 +627,17 @@ export function CustomerNailPage() {
     return normalizeStatusKey(status) === "pendingreview";
   }, [normalizeStatusKey]);
 
-  // Modal logic removed
+  // Load global stats background fetch
+  const loadStats = useCallback(async () => {
+    try {
+      const salonId = getManagerSalonId();
+      const response = await fetchCustomerNails({ salonId, pageSize: 1000 });
+      const items = response?.items || response || [];
+      setAllNails(items);
+    } catch (e) {
+      console.warn("Failed to load global stats:", e);
+    }
+  }, []);
 
   const loadCustomerNails = useCallback(async (options = {}) => {
     const { silent = false } = options;
@@ -633,10 +646,40 @@ export function CustomerNailPage() {
         setIsLoading(true);
       }
       setError("");
-      const data = await fetchCustomerNails();
-      const nextNails = data || [];
-      setNails(nextNails);
 
+      const salonId = getManagerSalonId();
+
+      // Set up parameters for /api/CustomerNailRequests
+      const fetchParams = {
+        salonId,
+        status: filterStatus === "all" ? undefined : filterStatus,
+      };
+
+      // Since the API doesn't support date filtering, if date filter is active,
+      // we fetch all items to filter client-side. Otherwise, we fetch paginated items.
+      if (!selectedDate) {
+        fetchParams.pageNumber = currentPage;
+        fetchParams.pageSize = itemsPerPage;
+      } else {
+        fetchParams.pageSize = 1000;
+      }
+
+      const response = await fetchCustomerNails(fetchParams);
+      
+      let nextNails = [];
+      let responseMetaData = null;
+
+      if (response && response.items) {
+        nextNails = response.items;
+        responseMetaData = response.metaData;
+      } else {
+        nextNails = response || [];
+      }
+
+      setNails(nextNails);
+      setMetaData(responseMetaData);
+
+      // Notification check for new requests
       const pendingNails = nextNails.filter((item) => isPendingReviewStatus(item?.status));
       const pendingIds = pendingNails
         .map((item) => String(item?.customerNailId || item?.id || "").trim())
@@ -671,13 +714,22 @@ export function CustomerNailPage() {
         setIsLoading(false);
       }
     }
-  }, [isPendingReviewStatus]);
+  }, [currentPage, filterStatus, selectedDate, isPendingReviewStatus]);
 
+  // Load nails on status, date, or page change
   useEffect(() => {
-    Promise.resolve().then(() => loadCustomerNails());
+    loadCustomerNails();
   }, [loadCustomerNails]);
 
-  // Cleanup removed
+  // Load statistics independently on mount or initial list changes
+  useEffect(() => {
+    loadStats();
+  }, [loadStats]);
+
+  // Reset page when filters change to prevent out of bounds
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterStatus, selectedDate]);
 
   // Filter nails by date
   const filteredNails = useMemo(() => {
@@ -694,20 +746,32 @@ export function CustomerNailPage() {
 
   // Calculate paginated nails
   const paginatedNails = useMemo(() => {
+    if (metaData && !selectedDate) {
+      return filteredNails;
+    }
     const startIndex = (currentPage - 1) * itemsPerPage;
     return filteredNails.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredNails, currentPage]);
+  }, [filteredNails, currentPage, metaData, selectedDate]);
+
+  // Calculate total items for pagination
+  const totalItems = useMemo(() => {
+    if (metaData && !selectedDate) {
+      return metaData.totalItems || 0;
+    }
+    return filteredNails.length;
+  }, [metaData, selectedDate, filteredNails.length]);
 
   const summaryStats = useMemo(() => {
-    const pendingReviewCount = nails.filter((nail) => isPendingReviewStatus(nail.status)).length;
-    const approvedCount = nails.filter((nail) => nail.status === "Approved").length;
-    const reviewedCount = nails.filter((nail) => nail.status === "Reviewed").length;
-    const rejectedCount = nails.filter((nail) => nail.status === "Rejected").length;
+    const activeNailsList = allNails.length > 0 ? allNails : nails;
+    const pendingReviewCount = activeNailsList.filter((nail) => isPendingReviewStatus(nail.status)).length;
+    const approvedCount = activeNailsList.filter((nail) => nail.status === "Approved").length;
+    const reviewedCount = activeNailsList.filter((nail) => nail.status === "Reviewed").length;
+    const rejectedCount = activeNailsList.filter((nail) => nail.status === "Rejected").length;
 
     return [
       {
         title: language === "vi" ? "Tổng yêu cầu thiết kế" : "Total Designs",
-        value: nails.length,
+        value: activeNailsList.length,
         note: language === "vi" ? "Tất cả yêu cầu khách hàng" : "all customer requests",
         icon: Sparkles,
         toneClassName: "bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93]",
@@ -741,16 +805,14 @@ export function CustomerNailPage() {
         toneClassName: "bg-gradient-to-br from-[#f089ad] to-[#e1447f]",
       },
     ];
-  }, [isPendingReviewStatus, nails]);
+  }, [isPendingReviewStatus, allNails, nails, language]);
 
   const handleDateChange = (date) => {
     setSelectedDate(date);
-    setCurrentPage(1); // Reset page when date changes
   };
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
-    // Scroll to top of the grid when page changes
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -798,9 +860,25 @@ export function CustomerNailPage() {
           <div className="flex flex-col gap-4 border-b border-[#f6dce7] p-6 sm:flex-row sm:items-center sm:justify-between">
             <SectionHeading
               title={language === "vi" ? "Tất cả mẫu móng của khách hàng" : "All Customer Nails"}
-              subtitle={language === "vi" ? `${filteredNails.length} thiết kế${selectedDate ? " (lọc theo ngày)" : " có sẵn trong không gian làm việc hiện tại"}` : `${filteredNails.length} designs${selectedDate ? " (filtered by selected date)" : " available in the current salon workspace"}`}
+              subtitle={language === "vi" ? `${totalItems} thiết kế${selectedDate ? " (lọc theo ngày)" : " có sẵn trong không gian làm việc hiện tại"}` : `${totalItems} designs${selectedDate ? " (filtered by selected date)" : " available in the current salon workspace"}`}
             />
             <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+              <Select
+                value={filterStatus}
+                onChange={(value) => setFilterStatus(value)}
+                className="h-9 min-w-[160px]"
+                popupClassName="custom-select-pink-popup"
+                options={[
+                  { value: "all", label: language === "vi" ? "Tất cả trạng thái" : "All Status" },
+                  { value: "Draft", label: "Draft" },
+                  { value: "PendingReview", label: language === "vi" ? "Chờ duyệt" : "Pending Review" },
+                  { value: "Assigned", label: language === "vi" ? "Đã phân thợ" : "Assigned" },
+                  { value: "Reviewed", label: language === "vi" ? "Đã đánh giá" : "Reviewed" },
+                  { value: "Quoted", label: language === "vi" ? "Đã báo giá" : "Quoted" },
+                  { value: "Approved", label: language === "vi" ? "Đã duyệt" : "Approved" },
+                  { value: "Rejected", label: language === "vi" ? "Đã từ chối" : "Rejected" },
+                ]}
+              />
               <DatePicker
                 value={selectedDate}
                 onChange={handleDateChange}
@@ -826,7 +904,7 @@ export function CustomerNailPage() {
                     onClick={() => setSelectedDate(null)}
                     className="mt-4 rounded-full border border-[#f4c1d8] bg-[#fff7fb] px-6 py-2.5 text-xs font-bold text-[#ea4f93] hover:bg-[#fff0f8]"
                   >
-                    {t("manager.bookings.resetFilters") || (language === "vi" ? "Xóa bộ lọc ngày" : "Clear date filter")}
+                    {language === "vi" ? "Xóa bộ lọc ngày" : "Clear date filter"}
                   </button>
                 )}
               </div>
@@ -844,12 +922,12 @@ export function CustomerNailPage() {
                     </div>
                   ))}
                 </div>
-                {filteredNails.length > itemsPerPage && (
+                {totalItems > itemsPerPage && (
                   <div className="mt-8 flex justify-center">
                     <Pagination
                       current={currentPage}
                       pageSize={itemsPerPage}
-                      total={filteredNails.length}
+                      total={totalItems}
                       onChange={handlePageChange}
                       showSizeChanger={false}
                       showQuickJumper={false}

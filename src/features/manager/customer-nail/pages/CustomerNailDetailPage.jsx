@@ -75,7 +75,7 @@ function getStatusTone(status) {
 
 // 🎨 Parse & render surface effects from config JSON (Backend format)
 function renderSurfaceEffects(surfaceName, effectsConfigJson) {
-  const name = (surfaceName).toLowerCase();
+  const name = (surfaceName || "glossy").toLowerCase();
 
   let config = {};
   try {

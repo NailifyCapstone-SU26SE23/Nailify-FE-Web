@@ -521,7 +521,7 @@ export function ReceptionistCheckoutPaymentPage() {
             <div className="mt-4 space-y-3 text-sm">
               {[
                 [t("receptionist.payments.subtotal") || "Subtotal", formatCurrency(subtotalValue)],
-                [t("receptionist.payments.promotion") || "Discount / Voucher", discountValue ? `-${formatCurrency(discountValue)}` : formatCurrency(0)],
+                [t("receptionist.payments.promotion") || "Discount / Voucher", discountValue ? `${formatCurrency(discountValue)}` : formatCurrency(0)],
                 [t("receptionist.payments.deposit") || "Deposit Paid", depositValue ? `-${formatCurrency(depositValue)}` : formatCurrency(0)],
               ].map(([label, value]) => (
                 <div key={label} className="flex items-center justify-between gap-3">

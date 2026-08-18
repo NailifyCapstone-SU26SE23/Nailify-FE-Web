@@ -33,6 +33,8 @@ import {
   fetchAssignedStaffTasks,
   fetchSalonQueueTasks,
   updateStaffTaskStatus,
+  fetchBookingProceduresByBookingItem,
+  normalizeTask,
 } from "../services/staffTaskService";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
@@ -178,7 +180,9 @@ function buildTaskSequenceBlockMap(tasks) {
           return false;
         }
 
-        if (!previousTask?.isRequired || previousTask?.canOverlap) {
+        // Ignore isRequired check; all previous steps in the booking sequence must be completed
+        // before starting the current step, unless they can overlap.
+        if (previousTask?.canOverlap) {
           return false;
         }
 
@@ -199,10 +203,26 @@ function applyTaskSequenceBlockState(tasks, blockMap) {
   }));
 }
 
-function decorateTaskBoards(myTaskList, salonTaskList) {
+function decorateTaskBoards(myTaskList, salonTaskList, additionalProceduresList = []) {
   const nextMyTasks = Array.isArray(myTaskList) ? myTaskList : [];
   const nextSalonTasks = Array.isArray(salonTaskList) ? salonTaskList : [];
-  const sequenceBlockMap = buildTaskSequenceBlockMap([...nextMyTasks, ...nextSalonTasks]);
+  const nextAdditional = Array.isArray(additionalProceduresList) ? additionalProceduresList : [];
+
+  // Combine all procedures to construct a complete sequence block map
+  const allProcedures = [...nextMyTasks, ...nextSalonTasks, ...nextAdditional];
+
+  // Deduplicate by bookingProcedureId, prioritizing active tasks (from myTasks or salonTasks)
+  const dedupedProceduresMap = new Map();
+  allProcedures.forEach((proc) => {
+    if (proc.bookingProcedureId) {
+      const existing = dedupedProceduresMap.get(proc.bookingProcedureId);
+      if (!existing || nextMyTasks.includes(proc) || nextSalonTasks.includes(proc)) {
+        dedupedProceduresMap.set(proc.bookingProcedureId, proc);
+      }
+    }
+  });
+
+  const sequenceBlockMap = buildTaskSequenceBlockMap([...dedupedProceduresMap.values()]);
 
   return {
     myTasks: applyTaskSequenceBlockState(nextMyTasks, sequenceBlockMap),
@@ -736,6 +756,7 @@ export function StaffTasksPage() {
   const [activeTab, setActiveTab] = useState("my");
   const [myTasks, setMyTasks] = useState([]);
   const [salonTasks, setSalonTasks] = useState([]);
+  const [additionalProcedures, setAdditionalProcedures] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -785,10 +806,46 @@ export function StaffTasksPage() {
         filterTasksByBookingInProgress(assignedData),
         Promise.resolve(salonQueueData),
       ]);
-      const decoratedBoards = decorateTaskBoards(visibleAssignedTasks, visibleClaimableTasks);
+
+      // Identify booking items present in my tasks but not in salon claimable tasks
+      const fetchedBookingItemIds = new Set(
+        visibleClaimableTasks.map((t) => t.bookingItemId).filter(Boolean)
+      );
+
+      const missingBookingItemIds = [
+        ...new Set(
+          visibleAssignedTasks
+            .map((t) => t.bookingItemId)
+            .filter(Boolean)
+            .filter((id) => !fetchedBookingItemIds.has(id))
+        )
+      ];
+
+      const loadedAdditional = [];
+      if (missingBookingItemIds.length > 0) {
+        const procedureResults = await Promise.allSettled(
+          missingBookingItemIds.map(async (bookingItemId) => {
+            const procedures = await fetchBookingProceduresByBookingItem(bookingItemId);
+            return { bookingItemId, procedures };
+          })
+        );
+
+        procedureResults.forEach((result) => {
+          if (result.status === "fulfilled") {
+            const { bookingItemId, procedures } = result.value;
+            const refTask = visibleAssignedTasks.find((t) => t.bookingItemId === bookingItemId) || {};
+            procedures.forEach((proc) => {
+              loadedAdditional.push(normalizeTask(proc, refTask));
+            });
+          }
+        });
+      }
+
+      const decoratedBoards = decorateTaskBoards(visibleAssignedTasks, visibleClaimableTasks, loadedAdditional);
 
       setMyTasks(decoratedBoards.myTasks);
       setSalonTasks(decoratedBoards.salonTasks);
+      setAdditionalProcedures(loadedAdditional);
     } catch (err) {
       console.error("Failed to load staff tasks:", err);
       const message = getErrorMessage(err, "Failed to load tasks.");
@@ -855,6 +912,17 @@ export function StaffTasksPage() {
       return;
     }
 
+    if (!canTaskBeDragged(draggingTask, currentStaffArtistId)) {
+      const msg = language === "vi"
+        ? "Không thể di chuyển nhiệm vụ này do thứ tự thực hiện bị khóa."
+        : "Cannot move this task as it is blocked by sequence order.";
+      setError(msg);
+      toast.error(msg);
+      setDraggingTask(null);
+      setDraggingSource("");
+      return;
+    }
+
     const currentStatus = normalizeStatusKey(draggingTask.status);
     if (currentStatus === nextStatus) {
       setDraggingTask(null);
@@ -877,7 +945,7 @@ export function StaffTasksPage() {
 
     try {
       setUpdatingTaskId(draggingTask.bookingProcedureId);
-      const optimisticBoards = decorateTaskBoards(optimisticTasks, salonTasks);
+      const optimisticBoards = decorateTaskBoards(optimisticTasks, salonTasks, additionalProcedures);
       setMyTasks(optimisticBoards.myTasks);
       setSalonTasks(optimisticBoards.salonTasks);
 
@@ -899,13 +967,13 @@ export function StaffTasksPage() {
           }
           return { ...merged, ...timeUpdates };
         });
-        const decoratedBoards = decorateTaskBoards(mergedMyTasks, salonTasks);
+        const decoratedBoards = decorateTaskBoards(mergedMyTasks, salonTasks, additionalProcedures);
         setSalonTasks(decoratedBoards.salonTasks);
         return decoratedBoards.myTasks;
       });
     } catch (err) {
       console.error("Failed to update task status:", err);
-      const revertedBoards = decorateTaskBoards(previousTasks, salonTasks);
+      const revertedBoards = decorateTaskBoards(previousTasks, salonTasks, additionalProcedures);
       setMyTasks(revertedBoards.myTasks);
       setSalonTasks(revertedBoards.salonTasks);
       const message = getErrorMessage(err, "Failed to update task status.");
@@ -916,7 +984,7 @@ export function StaffTasksPage() {
       setDraggingTask(null);
       setDraggingSource("");
     }
-  }, [draggingSource, draggingTask, myTasks, salonTasks]);
+  }, [draggingSource, draggingTask, myTasks, salonTasks, additionalProcedures, currentStaffArtistId, language]);
 
   const handleSalonColumnDrop = useCallback(async (event, nextStatus) => {
     event.preventDefault();
@@ -928,9 +996,9 @@ export function StaffTasksPage() {
 
     if (!canTaskBeDragged(draggingTask, currentStaffArtistId)) {
       if (isTaskAssigned(draggingTask)) {
-        setError("Only the staff member who claimed this step can move it.");
+        setError(language === "vi" ? "Chỉ thợ đã nhận bước này mới có thể di chuyển." : "Only the staff member who claimed this step can move it.");
       } else {
-        setError("Claim this task before moving it to another status.");
+        setError(language === "vi" ? "Nhận nhiệm vụ này trước khi cập nhật trạng thái." : "Claim this task before moving it to another status.");
       }
       setDraggingTask(null);
       setDraggingSource("");
@@ -960,7 +1028,7 @@ export function StaffTasksPage() {
 
     try {
       setUpdatingTaskId(draggingTask.bookingProcedureId);
-      const optimisticBoards = decorateTaskBoards(myTasks, optimisticTasks);
+      const optimisticBoards = decorateTaskBoards(myTasks, optimisticTasks, additionalProcedures);
       setMyTasks(optimisticBoards.myTasks);
       setSalonTasks(optimisticBoards.salonTasks);
 
@@ -982,13 +1050,13 @@ export function StaffTasksPage() {
           }
           return { ...merged, ...timeUpdates };
         });
-        const decoratedBoards = decorateTaskBoards(myTasks, mergedSalonTasks);
+        const decoratedBoards = decorateTaskBoards(myTasks, mergedSalonTasks, additionalProcedures);
         setMyTasks(decoratedBoards.myTasks);
         return decoratedBoards.salonTasks;
       });
     } catch (err) {
       console.error("Failed to update salon task status:", err);
-      const revertedBoards = decorateTaskBoards(myTasks, previousTasks);
+      const revertedBoards = decorateTaskBoards(myTasks, previousTasks, additionalProcedures);
       setMyTasks(revertedBoards.myTasks);
       setSalonTasks(revertedBoards.salonTasks);
       const message = getErrorMessage(err, "Failed to update salon task status.");
@@ -999,7 +1067,7 @@ export function StaffTasksPage() {
       setDraggingTask(null);
       setDraggingSource("");
     }
-  }, [currentStaffArtistId, draggingSource, draggingTask, myTasks, salonTasks]);
+  }, [currentStaffArtistId, draggingSource, draggingTask, myTasks, salonTasks, additionalProcedures, language]);
 
   const [searchTaskText, setSearchTaskText] = useState("");
   const [selectedCustomerFilter, setSelectedCustomerFilter] = useState("all");
@@ -1322,6 +1390,32 @@ export function StaffTasksPage() {
                       onDragEnd={handleDragEnd}
                       draggingTaskId={draggingTask?.bookingProcedureId || ""}
                       updatingTaskId={updatingTaskId}
+                      renderTask={(task, hideHeader) => {
+                        const canDrag = canTaskBeDragged(task, currentStaffArtistId);
+                        const isBlockedBySequence =
+                          Boolean(task?.isBlockedBySequence) && normalizeStatusKey(task?.status) === "Pending";
+
+                        return (
+                          <BoardTaskCard
+                            key={task.bookingProcedureId}
+                            task={task}
+                            onDragStart={(event, currentTask) => handleDragStart(event, currentTask, "my")}
+                            onDragEnd={handleDragEnd}
+                            isDragging={draggingTask?.bookingProcedureId === task.bookingProcedureId}
+                            isUpdating={updatingTaskId === task.bookingProcedureId}
+                            canDrag={canDrag}
+                            hideHeader={hideHeader}
+                            ownerLabel={getTaskOwnerLabel(task, language === "vi" ? "Đã nhận" : "Assigned")}
+                            footerHint={
+                              isBlockedBySequence
+                                ? (language === "vi" ? "Hoàn thành các bước trước đó để bắt đầu" : "Complete previous steps to start")
+                                : canDrag
+                                  ? (language === "vi" ? "Kéo để di chuyển nhiệm vụ này" : "Drag to move this task")
+                                  : (language === "vi" ? "Nhận nhiệm vụ này trước khi cập nhật trạng thái" : "Claim this task before updating status")
+                            }
+                          />
+                        );
+                      }}
                     />
                   ))}
                 </div>
@@ -1384,7 +1478,9 @@ export function StaffTasksPage() {
                           }
                           footerHint={
                             isBlockedBySequence
-                              ? (language === "vi" ? "Nhận theo thứ tự bước booking" : "Claim follows the booking step order")
+                              ? (isAssignedToCurrentArtist
+                                ? (language === "vi" ? "Hoàn thành các bước trước đó để bắt đầu" : "Complete previous steps to start")
+                                : (language === "vi" ? "Nhận theo thứ tự bước booking" : "Claim follows the booking step order"))
                               : canDrag
                                 ? (language === "vi" ? "Kéo để di chuyển nhiệm vụ này" : "Drag to move this task")
                                 : isAssignedToCurrentArtist

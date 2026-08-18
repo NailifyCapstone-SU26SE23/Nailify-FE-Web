@@ -23,6 +23,7 @@ import { formatDate } from "../../../../shared/utils/formatDate";
 import { Spin, Alert, Select, Modal, DatePicker } from "antd";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import dayjs from "dayjs";
+import { Pagination } from "../../../../shared/components/common/Pagination";
 
 // Helper to generate initials for custom avatar when imageUrl is missing
 const getInitials = (name) => {
@@ -170,6 +171,9 @@ export function BookingRatingListPage() {
   const [ratings, setRatings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 5;
 
   // Filters state
   const [searchQuery, setSearchQuery] = useState("");
@@ -333,6 +337,22 @@ export function BookingRatingListPage() {
 
     return items;
   }, [ratings, searchQuery, scoreFilter, sortBy, usersMap, filterDate]);
+
+  // Reset page when filters change to prevent out of bounds
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, scoreFilter, sortBy, filterDate]);
+
+  // Calculate total pages for client-side pagination
+  const totalPages = useMemo(() => {
+    return Math.max(1, Math.ceil(processedRatings.length / pageSize));
+  }, [processedRatings.length, pageSize]);
+
+  // Paginated ratings for display
+  const displayedRatings = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return processedRatings.slice(startIndex, startIndex + pageSize);
+  }, [processedRatings, currentPage, pageSize]);
 
   const handleOpenReplyModal = (rating) => {
     setSelectedRating(rating);
@@ -503,7 +523,7 @@ export function BookingRatingListPage() {
                   animate="visible"
                   className="space-y-6"
                 >
-                  {processedRatings.map((rating) => {
+                  {displayedRatings.map((rating) => {
                     const cName = rating.customerName || usersMap[rating.customerId]?.name || "Customer";
                     const avatarUrl = usersMap[rating.customerId]?.avatarUrl || "";
                     const score = rating.overallScore || 5;
@@ -656,6 +676,20 @@ export function BookingRatingListPage() {
                     );
                   })}
                 </motion.div>
+              )}
+
+              {/* Pagination footer */}
+              {processedRatings.length > 0 && (
+                <div className="flex justify-between items-center px-6 py-4.5 border border-slate-200/60 bg-white rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.01)]">
+                  <span className="text-xs text-[#a88a9f]">
+                    {language === "vi" ? "Hiển thị" : "Showing"} <span className="font-bold text-[#2d1b35]">{displayedRatings.length}</span> {language === "vi" ? "kết quả" : "items"}
+                  </span>
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={(page) => setCurrentPage(page)}
+                  />
+                </div>
               )}
             </div>
 

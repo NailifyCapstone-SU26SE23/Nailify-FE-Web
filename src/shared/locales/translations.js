@@ -2659,7 +2659,7 @@ export const translations = {
       "admin-staff": "Nhân viên",
       "admin-users": "Người dùng",
       "admin-loyalty-tiers": "Hạng thành viên",
-      "admin-quiz": "Trắc nghiệm dáng móng",
+      "admin-quiz": "Câu hỏi trắc nghiệm",
       "admin-service-pricing": "Dịch vụ",
       "admin-nail-shapes": "Dáng móng",
       "admin-shape-method-configs": "Cấu hình dáng móng",
