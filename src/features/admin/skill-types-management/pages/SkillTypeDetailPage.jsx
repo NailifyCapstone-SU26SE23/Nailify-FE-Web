@@ -302,7 +302,8 @@ export function SkillTypeDetailPage() {
           </div>
         </div>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_360px]">
+        // <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_360px]">
+        <div className="grid gap-4">
           <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
             <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
               <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
@@ -310,17 +311,28 @@ export function SkillTypeDetailPage() {
             </h2>
 
             <div className="grid gap-5">
-              <label className="space-y-2.5">
-                <span className="text-[13px] font-semibold text-slate-600">{t("adminSkillTypes.skillTypeName")}</span>
-                <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
-                  <FolderTree size={14} className="shrink-0 text-rose-300" />
-                  <input
-                    type="text"
-                    value={draft?.name || ""}
-                    onChange={(event) => handleFieldChange("name", event.target.value)}
-                    disabled={!isEditing}
-                    className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
-                  />
+              <label className="flex w-full items-center justify-between">
+                <div className="space-y-2.5 w-[50%]">
+                  <span className="text-[13px] font-semibold text-slate-600">{t("adminSkillTypes.skillTypeName")}</span>
+                  <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
+                    <FolderTree size={14} className="shrink-0 text-rose-300" />
+                    <input
+                      type="text"
+                      value={draft?.name || ""}
+                      onChange={(event) => handleFieldChange("name", event.target.value)}
+                      disabled={!isEditing}
+                      className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
+                    />
+                  </div>
+                </div>
+                <div className="w-[48%] rounded-2xl border border-rose-100 bg-[#fff8fb] p-4">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck size={14} className="shrink-0 text-rose-300" />
+                    <div>
+                      <p className="text-[13px] font-semibold text-slate-600">{t("adminSkillTypes.currentStatus")}</p>
+                      <p className="mt-1 text-sm font-bold text-slate-800">{skillType?.status}</p>
+                    </div>
+                  </div>
                 </div>
               </label>
 
@@ -338,7 +350,7 @@ export function SkillTypeDetailPage() {
                 </div>
               </label>
 
-              <div className="rounded-2xl border border-rose-100 bg-[#fff8fb] p-4">
+              {/* <div className="rounded-2xl border border-rose-100 bg-[#fff8fb] p-4">
                 <div className="flex items-center gap-2">
                   <ShieldCheck size={14} className="shrink-0 text-rose-300" />
                   <div>
@@ -346,11 +358,11 @@ export function SkillTypeDetailPage() {
                     <p className="mt-1 text-sm font-bold text-slate-800">{skillType?.status}</p>
                   </div>
                 </div>
-              </div>
+              </div> */}
             </div>
           </section>
 
-          <aside className="space-y-4">
+          {/* <aside className="space-y-4">
             <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
               <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
                 <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
@@ -366,7 +378,7 @@ export function SkillTypeDetailPage() {
                 ))}
               </div>
             </section>
-          </aside>
+          </aside> */}
         </div>
       )}
 
