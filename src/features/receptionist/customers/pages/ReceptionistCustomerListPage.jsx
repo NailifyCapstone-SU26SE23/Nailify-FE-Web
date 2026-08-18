@@ -394,6 +394,23 @@ export function ReceptionistCustomerListPage() {
   const [selectedArtistIdToAssign, setSelectedArtistIdToAssign] = useState(null);
   const [isSubmittingAssign, setIsSubmittingAssign] = useState(false);
   const [autoSeatAfterAssign, setAutoSeatAfterAssign] = useState(false);
+  const [allSalonArtists, setAllSalonArtists] = useState([]);
+
+  useEffect(() => {
+    const fetchAllArtists = async () => {
+      try {
+        const salonId = getReceptionistSalonId();
+        const res = await receptionistWalkInBookingService.getAvailableArtists(salonId);
+        const artists = Array.isArray(res)
+          ? res
+          : res?.data?.items || res?.items || res?.data || [];
+        setAllSalonArtists(artists);
+      } catch (err) {
+        console.warn("Could not prefetch salon artists for lookup:", err);
+      }
+    };
+    fetchAllArtists();
+  }, []);
 
   const loadAvailableArtists = useCallback(async () => {
     setIsLoadingArtists(true);
@@ -580,6 +597,20 @@ export function ReceptionistCustomerListPage() {
 
         const displayCode = item.queuePosition ? `W-0${item.queuePosition}` : `W-0${index + 1}`;
 
+        const artistId = item.assignedNailArtistId;
+        let artistName = item.assignedNailArtistName;
+        if (!artistName && artistId && allSalonArtists.length > 0) {
+          const foundArtist = allSalonArtists.find(a => (a.nailArtistId || a.id || a.userId) === artistId);
+          if (foundArtist) {
+            artistName = foundArtist.account
+              ? `${foundArtist.account.firstName || ""} ${foundArtist.account.lastName || ""}`.trim()
+              : `${foundArtist.firstName || ""} ${foundArtist.lastName || ""}`.trim();
+          }
+        }
+        if (!artistName) {
+          artistName = language === "vi" ? "Chưa phân công" : "Unassigned";
+        }
+
         return {
           id: item.queueId || item.id,
           queueId: item.queueId || item.id,
@@ -590,8 +621,10 @@ export function ReceptionistCustomerListPage() {
           lateMinutes: isLate ? 15 : null,
           nailDesign: item.requestNote || "Dịch vụ đã chọn tại quầy",
           serviceName: item.requestNote || "Dịch vụ làm móng",
-          assignedArtist: item.assignedNailArtistName || "Chưa phân công",
-          assignedNailArtistId: item.assignedNailArtistId,
+          assignedArtist: artistName,
+          assignedNailArtistId: artistId,
+          chairId: item.chairId,
+          chairName: item.chairName,
           duration: item.estimatedWait ? `${item.estimatedWait} phút` : "20 phút",
           status: statusKey,
           checkInTime: item.arrivalTime ? new Date(item.arrivalTime).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : "Vừa xong",
@@ -602,7 +635,7 @@ export function ReceptionistCustomerListPage() {
     } catch (err) {
       console.warn("Could not load walk-in queue from API:", err);
     }
-  }, []);
+  }, [allSalonArtists, language]);
 
   const handleQuickAddWalkInGuest = async () => {
     let finalCustomerName = "";
@@ -712,7 +745,10 @@ export function ReceptionistCustomerListPage() {
         const res = await receptionistWalkInBookingService.createWalkInQueue(payload);
         createdQueueId = res?.data?.queueId || res?.queueId || res?.id;
       } catch (apiErr) {
-        console.warn("Backend API WalkInQueue failed, using fallback UI state:", apiErr);
+        console.error("Backend API WalkInQueue failed:", apiErr);
+        const errorMsg = apiErr.response?.data?.message || apiErr.message || (language === "vi" ? "Đăng ký sảnh chờ thất bại." : "Failed to register walk-in lobby.");
+        toast.error(errorMsg);
+        return;
       }
 
       const assignedArtistObj = suggestedArtists.find(a => (a.nailArtistId || a.id || a.userId) === selectedArtistIdForWalkIn);
@@ -806,8 +842,16 @@ export function ReceptionistCustomerListPage() {
     if (!assignChairGuest) return;
     const actualQueueId = assignChairGuest.queueId || assignChairGuest.id;
     try {
+      // 1. Assign chair to the queue
+      await receptionistWalkInBookingService.assignChairToQueue(actualQueueId, selectedChair.chairId || selectedChair.id);
+      
+      // 2. Convert queue entry to booking to start service
       await receptionistWalkInBookingService.convertQueueToBooking(actualQueueId);
-      toast.success(language === "vi" ? `Đã tạo đơn Booking & chuyển khách vào ghế ${selectedChair?.chairName || ""}!` : `Created booking and assigned guest to chair ${selectedChair?.chairName || ""}!`);
+      
+      toast.success(language === "vi" 
+        ? `Đã phân ghế ${selectedChair?.chairName || ""} và chuyển khách vào làm dịch vụ thành công!` 
+        : `Assigned chair ${selectedChair?.chairName || ""} and started service successfully!`
+      );
 
       setWalkInGuests((prev) =>
         prev.map((g) => (g.id === assignChairGuest.id || g.queueId === assignChairGuest.id ? { ...g, status: "in_service" } : g))
