@@ -1346,12 +1346,22 @@ function DraggableCard({ item, onDragStart, onDragEnd, isDragging, extraActions 
             </div>
           )}
 
-          {item.assignedNailArtistName && (
-            <div className="mt-3 flex items-center gap-1.5 text-[9px] font-bold text-[#22a06b] bg-[#22a06b]/10 border border-[#22a06b]/15 px-2 py-0.5 rounded-lg w-max max-w-full shadow-sm">
-              <span className="h-1 w-1 rounded-full bg-[#22a06b] animate-pulse" />
-              <span className="truncate">{language === "vi" ? "Thợ nail" : "Artist"}: {item.assignedNailArtistName}</span>
-            </div>
-          )}
+          {(() => {
+            let artistName = item.assignedNailArtistName;
+            if (!artistName && item.assignedNailArtistId && staffList.length > 0) {
+              const foundStaff = staffList.find(s => (s.staffId || s.id || s.userId) === item.assignedNailArtistId);
+              if (foundStaff) {
+                artistName = foundStaff.fullName || foundStaff.name || (foundStaff.account ? `${foundStaff.account.firstName} ${foundStaff.account.lastName}`.trim() : "");
+              }
+            }
+            if (!artistName) return null;
+            return (
+              <div className="mt-3 flex items-center gap-1.5 text-[9px] font-bold text-[#22a06b] bg-[#22a06b]/10 border border-[#22a06b]/15 px-2 py-0.5 rounded-lg w-max max-w-full shadow-sm">
+                <span className="h-1 w-1 rounded-full bg-[#22a06b] animate-pulse" />
+                <span className="truncate">{language === "vi" ? "Thợ nail" : "Artist"}: {artistName}</span>
+              </div>
+            );
+          })()}
 
           {item.status === "Waiting" && item.estimatedWait !== null && (
             <div className="mt-3 flex items-center gap-1.5 text-[9px] text-[#d89b1d] font-bold bg-[#d89b1d]/10 border border-[#d89b1d]/15 px-2 py-0.5 rounded-lg w-max shadow-sm">
