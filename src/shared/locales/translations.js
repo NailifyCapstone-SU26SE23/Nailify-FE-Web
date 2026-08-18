@@ -114,7 +114,7 @@ export const translations = {
     // Menu Sections
     menuSections: {
       Main: "Main Menu",
-      Support: "Support & Settings",
+      Support: "Settings",
       Analytics: "Analytics"
     },
 
@@ -2613,7 +2613,7 @@ export const translations = {
     // Menu Sections
     menuSections: {
       Main: "Danh mục chính",
-      Support: "Hỗ trợ & Cài đặt",
+      Support: "Cài đặt",
       Analytics: "Thống kê"
     },
 
