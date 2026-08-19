@@ -396,6 +396,19 @@ export async function fetchAvailableSalonChairs(salonId, params = {}) {
   return unwrapResponse(response, "Failed to load available salon chairs.");
 }
 
+export async function fetchChairsStatus(salonId, atDate, atTime) {
+  const normalizedSalonId = String(salonId || "").trim();
+  if (!normalizedSalonId) throw new Error("Salon ID is required.");
+
+  const response = await axiosClient.get(`/salons/${normalizedSalonId}/chairs-status`, {
+    headers: getAuthHeaders(),
+    params: { atDate, atTime },
+  });
+
+  return unwrapResponse(response, "Failed to load salon chairs status.");
+}
+
+
 export async function assignChairToBooking(bookingId, chairId) {
   const normalizedBookingId = String(bookingId || "").trim();
   const normalizedChairId = String(chairId || "").trim();

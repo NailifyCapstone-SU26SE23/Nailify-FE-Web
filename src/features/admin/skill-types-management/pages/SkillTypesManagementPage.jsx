@@ -297,7 +297,11 @@ export function SkillTypesManagementPage() {
         ),
         dataIndex: "descriptionPreview",
         key: "descriptionPreview",
-        render: (value) => <p className="max-w-[380px] text-sm text-[#6b5668]">{value}</p>,
+        render: (value) => (
+          <p className="max-w-[380px] text-sm text-[#6b5668] line-clamp-2" title={value}>
+            {value}
+          </p>
+        ),
       },
       {
         title: (

@@ -82,10 +82,10 @@ function getNailMetrics(index, aspectRatio, large = false) {
   };
 }
 
-function getPlacementRenderScale(scale, nailHeight) {
+function getPlacementRenderScale(scale, nailWidth, imageWidth) {
   const normalizedScale = Number(scale) || 0.8;
-  const referenceHeight = LARGE_FINGER_HEIGHTS[2];
-  return normalizedScale * (nailHeight / referenceHeight);
+  const naturalImageWidth = Number(imageWidth) || 500;
+  return (normalizedScale * nailWidth) / naturalImageWidth;
 }
 
 function normalizeGradientStops(gradientStops, primaryColor, secondaryColor) {
@@ -516,9 +516,9 @@ function FabricNailCanvas({
       if (!target?.data?.placementKey) return;
       applyBounds(target);
       onPlacementChange(target.data.placementKey, {
-        posX: Number(((((target.left || 0) - contentMetrics.contentLeft) / contentMetrics.contentWidth) * 100).toFixed(2)),
-        posY: Number(((((target.top || 0) - contentMetrics.contentTop) / contentMetrics.contentHeight) * 100).toFixed(2)),
-        scale: Number((target.scaleX || 1).toFixed(3)),
+        posX: Number((((target.left || 0) - contentMetrics.contentLeft) / contentMetrics.contentWidth - 0.5).toFixed(4)),
+        posY: Number((((target.top || 0) - contentMetrics.contentTop) / contentMetrics.contentHeight - 0.5).toFixed(4)),
+        scale: Number(((target.scaleX * (target.width || 500)) / metrics.nailWidth).toFixed(3)),
         rotation: Number((target.angle || 0).toFixed(2)),
       });
     };
@@ -561,7 +561,7 @@ function FabricNailCanvas({
       fabricCanvasRef.current = null;
       canvas.dispose();
     };
-  }, [contentMetrics, fingerIndex, height, onPlacementChange, onSelectNail, onSelectPlacement, width]);
+  }, [contentMetrics, fingerIndex, height, metrics, onPlacementChange, onSelectNail, onSelectPlacement, width]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -580,6 +580,11 @@ function FabricNailCanvas({
         (left, right) => Number(left.zIndex || 0) - Number(right.zIndex || 0),
       );
 
+      const isClippedType = (type) => {
+        const t = String(type || "").toLowerCase().trim();
+        return t === "sticker" || t === "art" || t === "1" || t === "3";
+      };
+
       for (const component of sortedComponents) {
         if (!component.imageUrl) continue;
 
@@ -587,14 +592,16 @@ function FabricNailCanvas({
           const image = await FabricImage.fromURL(component.imageUrl, FABRIC_CROSS_ORIGIN_OPTIONS);
           if (isCancelled) return;
 
+          const isArt = isClippedType(component.componentType || component.type);
+
           image.set({
-            left: contentMetrics.contentLeft + ((Number(component.posX) / 100) * contentMetrics.contentWidth),
-            top: contentMetrics.contentTop + ((Number(component.posY) / 100) * contentMetrics.contentHeight),
+            left: contentMetrics.contentLeft + ((Number(component.posX ?? 0) + 0.5) * contentMetrics.contentWidth),
+            top: contentMetrics.contentTop + ((Number(component.posY ?? 0) + 0.5) * contentMetrics.contentHeight),
             originX: "center",
             originY: "center",
             angle: Number(component.rotation) || 0,
-            scaleX: getPlacementRenderScale(component.scale, metrics.nailHeight),
-            scaleY: getPlacementRenderScale(component.scale, metrics.nailHeight),
+            scaleX: getPlacementRenderScale(component.scale, metrics.nailWidth, image.width),
+            scaleY: getPlacementRenderScale(component.scale, metrics.nailWidth, image.width),
             selectable: large,
             evented: large,
             transparentCorners: false,
@@ -611,10 +618,30 @@ function FabricNailCanvas({
             },
           });
 
-          const widthLimit = metrics.nailWidth * 1.42;
+          const widthLimit = isArt ? (metrics.nailWidth * 1.42) : (metrics.nailWidth * 3.0);
           if ((image.getScaledWidth() || 0) > widthLimit) {
             const ratio = widthLimit / image.getScaledWidth();
             image.scale((image.scaleX || 1) * ratio);
+          }
+
+          if (isArt && shapeImageUrl) {
+            try {
+              const clipImage = await FabricImage.fromURL(shapeImageUrl, FABRIC_CROSS_ORIGIN_OPTIONS);
+              const scaleX = contentMetrics.contentWidth / clipImage.width;
+              const scaleY = contentMetrics.contentHeight / clipImage.height;
+              clipImage.set({
+                left: contentMetrics.contentLeft,
+                top: contentMetrics.contentTop,
+                scaleX: scaleX,
+                scaleY: scaleY,
+                originX: "left",
+                originY: "top",
+                absolutePositioned: true,
+              });
+              image.set({ clipPath: clipImage });
+            } catch (clipErr) {
+              console.error("Failed to load clip path shape image:", clipErr);
+            }
           }
 
           canvas.add(image);
@@ -675,6 +702,148 @@ FabricNailCanvas.propTypes = {
   onPlacementChange: PropTypes.func.isRequired,
   large: PropTypes.bool,
 };
+
+function StaticNailCard({ components, index, colorStyle, shapeImageUrl, compact = true }) {
+  const label = NAIL_LABELS[index];
+
+  const shapeMaskStyle = shapeImageUrl
+    ? {
+      maskImage: `url(${shapeImageUrl})`,
+      WebkitMaskImage: `url(${shapeImageUrl})`,
+      maskSize: "cover",
+      WebkitMaskSize: "cover",
+      maskRepeat: "no-repeat",
+      WebkitMaskRepeat: "no-repeat",
+      maskPosition: "center",
+      WebkitMaskPosition: "center",
+    }
+    : {};
+
+  const getFingerAlignmentClass = (label) => {
+    if (compact) {
+      switch (label) {
+        case "Thumb":
+          return "translate-y-5 -rotate-12";
+        case "Index":
+          return "translate-y-1 -rotate-3";
+        case "Middle":
+          return "translate-y-0 rotate-0";
+        case "Ring":
+          return "translate-y-0.5 rotate-3";
+        case "Pinky":
+          return "translate-y-4 rotate-8";
+        default:
+          return "";
+      }
+    }
+    switch (label) {
+      case "Thumb":
+        return "translate-y-8 -rotate-12";
+      case "Index":
+        return "translate-y-2 -rotate-3";
+      case "Middle":
+        return "translate-y-0 rotate-0";
+      case "Ring":
+        return "translate-y-1 rotate-3";
+      case "Pinky":
+        return "translate-y-6 rotate-8";
+      default:
+        return "";
+    }
+  };
+
+  const isClippedType = (type) => {
+    const t = String(type || "").toLowerCase().trim();
+    return t === "sticker" || t === "art" || t === "1" || t === "3";
+  };
+
+  return (
+    <div className={`flex flex-col items-center transition-all duration-500 ease-out ${compact ? "gap-2" : "gap-3.5"} ${getFingerAlignmentClass(label)}`}>
+      <div className="relative group">
+        <div className="absolute -inset-1 rounded-t-[36px] rounded-b-[18px] bg-gradient-to-t from-[#ea4f93]/15 to-[#ffb8d9]/5 opacity-30 blur-md transition duration-500 group-hover:opacity-60 group-hover:blur-lg" />
+
+        {/* Nail card — scaled based on compact mode */}
+        <div className={`relative overflow-visible border-2 border-[#fcd5e6] bg-gradient-to-b from-[#fff6f9] to-[#ffeef5] shadow-[0_12px_28px_rgba(236,72,153,0.06)] transition-all duration-300 group-hover:scale-105 group-hover:border-[#ea4f93] ${
+          compact ? "h-28 w-14 rounded-t-[20px] rounded-b-[10px]" : "h-48 w-24 rounded-t-[32px] rounded-b-[14px]"
+        }`}>
+          
+          {/* Masked section for background and Art type components */}
+          <div className="absolute inset-0 h-full w-full overflow-hidden" style={shapeMaskStyle}>
+            <div className="absolute inset-0 h-full w-full" style={colorStyle} />
+
+            {shapeImageUrl ? (
+              <img
+                crossOrigin="anonymous"
+                src={shapeImageUrl}
+                alt="shape mask overlay"
+                className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-80 mix-blend-multiply"
+                referrerPolicy="no-referrer"
+              />
+            ) : null}
+
+            {components.map((componentItem, idx) => {
+              if (!componentItem.imageUrl || !isClippedType(componentItem.componentType || componentItem.type)) return null;
+
+              const displaySizePercent = (Number(componentItem.scale) || 0.8) * 2.5 * 100;
+              const rotation = Number(componentItem.rotation) || 0;
+
+              return (
+                <img
+                  key={`${componentItem.key}-${idx}`}
+                  crossOrigin="anonymous"
+                  src={componentItem.imageUrl}
+                  alt={componentItem.label}
+                  className="pointer-events-none absolute object-contain drop-shadow-[0_6px_10px_rgba(234,79,147,0.18)]"
+                  referrerPolicy="no-referrer"
+                  style={{
+                    left: `${50 + Number(componentItem.posX || 0) * 100}%`,
+                    top: `${50 + Number(componentItem.posY || 0) * 100}%`,
+                    width: `${displaySizePercent}%`,
+                    height: `${displaySizePercent}%`,
+                    transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+                  }}
+                />
+              );
+            })}
+          </div>
+
+          {/* Unmasked section for Gen type components */}
+          <div className="absolute inset-0 h-full w-full pointer-events-none overflow-visible">
+            {components.map((componentItem, idx) => {
+              if (!componentItem.imageUrl || isClippedType(componentItem.componentType || componentItem.type)) return null;
+
+              const displaySizePercent = (Number(componentItem.scale) || 0.8) * 2.5 * 100;
+              const rotation = Number(componentItem.rotation) || 0;
+
+              return (
+                <img
+                  key={`${componentItem.key}-${idx}`}
+                  crossOrigin="anonymous"
+                  src={componentItem.imageUrl}
+                  alt={componentItem.label}
+                  className="pointer-events-none absolute object-contain drop-shadow-[0_6px_10px_rgba(234,79,147,0.18)]"
+                  referrerPolicy="no-referrer"
+                  style={{
+                    left: `${50 + Number(componentItem.posX || 0) * 100}%`,
+                    top: `${50 + Number(componentItem.posY || 0) * 100}%`,
+                    width: `${displaySizePercent}%`,
+                    height: `${displaySizePercent}%`,
+                    transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+                  }}
+                />
+              );
+            })}
+          </div>
+        </div>
+      </div>
+      <span className={`rounded-full border border-[#fce6f3] bg-white/90 font-extrabold uppercase tracking-[0.14em] text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)] ${
+        compact ? "text-[8px] px-2 py-0.5" : "text-[10px] px-3 py-1"
+      }`}>
+        {label}
+      </span>
+    </div>
+  );
+}
 
 export function InteractiveStudioPreview({
   finish,
@@ -899,27 +1068,20 @@ export function InteractiveStudioPreview({
             </div>
           </div>
         ) : (
-          <div className="mt-4 flex items-end justify-between gap-0.5 overflow-visible px-0">
+          <div className="mt-4 flex items-end justify-center gap-2 overflow-visible px-2 py-8 w-full">
             {Array.from({ length: 5 }).map((_, index) => (
               <button
                 key={index}
                 type="button"
                 onClick={() => openNailEditor(index)}
-                className="relative isolate flex min-w-[68px] flex-1 justify-center overflow-visible bg-transparent py-1"
+                className="relative isolate flex justify-center overflow-visible bg-transparent p-0 transition-transform hover:scale-105"
               >
-                <FabricNailCanvas
-                  fingerIndex={index}
-                  finish={finish}
-                  shape={shape}
-                  length={length}
-                  isActive={activeNailIndex === -1 ? true : activeNailIndex === index}
+                <StaticNailCard
+                  index={index}
                   colorStyle={getColorStyle(fingerColorConfigs[index])}
                   components={componentPlacements.filter((item) => item.fingerIndex === index)}
                   shapeImageUrl={shapeImageUrl}
-                  selectedPlacementKey={selectedPlacementKey}
-                  onSelectNail={openNailEditor}
-                  onSelectPlacement={onSelectPlacement}
-                  onPlacementChange={onPlacementChange}
+                  compact={true}
                 />
               </button>
             ))}

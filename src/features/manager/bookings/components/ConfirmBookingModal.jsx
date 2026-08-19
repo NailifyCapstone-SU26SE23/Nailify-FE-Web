@@ -112,7 +112,7 @@ export function ConfirmBookingModal({
             <p className="text-xs font-extrabold text-[#1d6b3e]">{isVi ? "Thao tác này sẽ:" : "This action will:"}</p>
             <ul className="mt-1 space-y-1 text-xs text-[#446b53] font-medium leading-relaxed">
               <li>• {isVi ? "Thay đổi trạng thái lịch hẹn thành Đã xác nhận" : "Change booking status to Confirmed"}</li>
-              <li>• {isVi ? "Khóa khung giờ đặt lịch và đặt lịch nghệ sĩ làm móng" : "Lock appointment slot and reserve nail artist schedule"}</li>
+              <li>• {isVi ? "Khóa khung giờ đặt lịch và đặt lịch nghệ sĩ làm móng" : "Lock appointment slot and reserve Staff Artist schedule"}</li>
               <li>• {isVi ? "Tự động gửi thông báo xác nhận cho khách hàng" : "Automatically send confirmation notification to the customer"}</li>
             </ul>
           </div>

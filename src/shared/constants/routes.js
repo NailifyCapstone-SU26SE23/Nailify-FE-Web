@@ -44,7 +44,6 @@ export const ROUTES = {
   managerProfile: "/manager/profile",
   managerBookings: "/manager/bookings",
   managerReschedule: "/manager/reschedule",
-  managerBookingsCreate: "/manager/bookings/create",
   managerBookingDetail: "/manager/bookings/:bookingId",
   managerStaffArtists: "/manager/staff-artists",
   managerStaffArtistsCreate: "/manager/staff-artists/create",

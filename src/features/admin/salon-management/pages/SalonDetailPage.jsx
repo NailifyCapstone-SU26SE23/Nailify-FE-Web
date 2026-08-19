@@ -139,7 +139,7 @@ export function SalonDetailPage() {
       address: salonForm?.address || salonRow?.address || "No address",
       manager: matchedManager ? matchedManager.name : "Unassigned",
       phone: salonForm?.phone || salonRow?.phone || "Not set",
-      staff: (salonForm?.staffAmount ?? salonRow?.staff) || "--",
+      staff: (salonForm?.staffAmount ?? salonRow?.staff),
       status: salonForm?.status || salonRow?.status || "Active",
       statusColor: salonRow?.statusColor || "bg-[#eaf9ee] text-[#238a55]",
       image: salonRow?.image || SALON_PLACEHOLDER_IMAGE,
@@ -212,7 +212,7 @@ export function SalonDetailPage() {
       { icon: UserRound, label: isVi ? "Quản lý" : "Manager", value: salonDetail.manager === "Unassigned" ? (isVi ? "Chưa phân bổ" : "Unassigned") : salonDetail.manager || (isVi ? "Chưa phân bổ" : "Unassigned") },
       { icon: Phone, label: isVi ? "Điện thoại" : "Phone", value: salonDetail.phone === "Not set" ? (isVi ? "Chưa thiết lập" : "Not set") : salonDetail.phone || (isVi ? "Chưa thiết lập" : "Not set") },
       { icon: Clock3, label: isVi ? "Giờ mở cửa" : "Operating Hours", value: salonDetail.hours === "Operating hours unavailable" ? (isVi ? "Không khả dụng" : "Operating hours unavailable") : salonDetail.hours },
-      { icon: Wrench, label: isVi ? "Số lượng nhân viên" : "Staff Amount", value: salonDetail.staff || "--" },
+      { icon: Wrench, label: isVi ? "Số lượng nhân viên" : "Staff Amount", value: salonDetail.staff },
       {
         icon: Star,
         label: isVi ? "Đánh giá" : "Rating",

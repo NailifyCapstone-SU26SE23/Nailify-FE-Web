@@ -323,7 +323,7 @@ export function StaffManagementPage() {
 
       const isNailArtist = staffData.role === 'Staff_Artist' || staffData.role === 'NAIL_ARTIST';
 
-      // Fetch skills + schedule song song nếu staff là nail artist và có staffId
+      // Fetch skills + schedule song song nếu staff là Staff Artist và có staffId
       // (staffId ở đây là nailArtistId, không phải userId)
       if (isNailArtist && staffData.staffId) {
         const [skillsResult, scheduleResult] = await Promise.allSettled([
@@ -744,7 +744,7 @@ export function StaffManagementPage() {
                   </div>
                 </div>
 
-                {/* Skills Section (for Nail Artists) */}
+                {/* Skills Section (for Staff Artists) */}
                 {(selectedStaff.role === 'Staff_Artist' || selectedStaff.role === 'NAIL_ARTIST') && (
                   <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f0d9e8]">
                     <h3 className="text-sm font-bold text-[#2d1b35] mb-4">
@@ -778,7 +778,7 @@ export function StaffManagementPage() {
                   </div>
                 )}
 
-                {/* Working Schedule Section (for Nail Artists) */}
+                {/* Working Schedule Section (for Staff Artists) */}
                 {(selectedStaff.role === 'Staff_Artist' || selectedStaff.role === 'NAIL_ARTIST') && (
                   <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f0d9e8]">
                     <div className="mb-4 flex items-center gap-2">

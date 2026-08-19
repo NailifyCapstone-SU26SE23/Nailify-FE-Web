@@ -401,7 +401,7 @@ export function AdminSalonBookingDetailPage() {
               <span className="text-sm font-bold text-[#2d1b35]">{salon.name}</span>
               <span className="text-xs text-slate-400 flex items-center gap-1">
                 <Phone size={10} />
-                {salon.phone || "--"}
+                {salon.phone}
               </span>
             </div>
             <img
@@ -504,7 +504,7 @@ export function AdminSalonBookingDetailPage() {
                         {t("adminSalonBookings.salonPhone")}
                       </p>
                       <p className="text-[14px] font-bold text-[#2d1b35]">
-                        {salon?.phone || "--"}
+                        {salon?.phone}
                       </p>
                     </div>
                     <div>
@@ -512,7 +512,7 @@ export function AdminSalonBookingDetailPage() {
                         {t("adminSalonBookings.operatingHours")}
                       </p>
                       <p className="text-[13px] font-medium text-[#5b4256]">
-                        {salon?.hours || "--"}
+                        {salon?.hours}
                       </p>
                     </div>
                     <div>
@@ -520,7 +520,7 @@ export function AdminSalonBookingDetailPage() {
                         {t("adminSalonBookings.location")}
                       </p>
                       <p className="text-[13px] font-medium text-[#5b4256] truncate">
-                        {salon?.address || "--"}
+                        {salon?.address}
                       </p>
                     </div>
                   </>

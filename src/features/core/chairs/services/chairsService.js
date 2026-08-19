@@ -8,11 +8,20 @@ export const chairsService = {
   },
 
   getLiveChairStatus: async (salonId, date) => {
-    // We can fetch liveChairStatus from the dashboard endpoint
-    const response = await axiosClient.get(`/Dashboard/receptionist/${salonId}`, {
-      params: { date },
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const atTime = `${hours}:${minutes}:${seconds}`;
+
+    const response = await axiosClient.get(`/salons/${salonId}/chairs-status`, {
+      params: { atDate: date, atTime },
     });
-    return response.data?.liveChairStatus || [];
+    const items = response.data?.data || [];
+    return items.map(item => ({
+      ...item,
+      currentCustomer: item.occupiedByCustomerName,
+    }));
   },
 
   getChairDetail: async (chairId) => {

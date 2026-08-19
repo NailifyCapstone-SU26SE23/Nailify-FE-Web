@@ -55,8 +55,8 @@ export function normalizeAdminNailSurface(surface) {
   return {
     id: Number(surface?.nailSurfaceId || 0),
     nailSurfaceId: Number(surface?.nailSurfaceId || 0),
-    name: String(surface?.name || "").trim() || "--",
-    shaderParam: String(surface?.shaderParam || "").trim() || "--",
+    name: String(surface?.name || "").trim(),
+    shaderParam: String(surface?.shaderParam || "").trim(),
     lightnessOffset: Number(surface?.lightnessOffset || 0),
     saturationOffset: Number(surface?.saturationOffset || 0),
     hueOffset: Number(surface?.hueOffset || 0),

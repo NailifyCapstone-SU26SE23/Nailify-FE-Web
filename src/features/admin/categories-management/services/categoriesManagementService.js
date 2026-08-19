@@ -7,8 +7,8 @@ function getAuthHeaders() {
 
   return token
     ? {
-        Authorization: `Bearer ${token}`,
-      }
+      Authorization: `Bearer ${token}`,
+    }
     : {};
 }
 
@@ -41,10 +41,10 @@ export function normalizeAdminCategory(category) {
   return {
     id: Number(category?.categoryId || 0),
     categoryId: Number(category?.categoryId || 0),
-    name: String(category?.name || "").trim() || "--",
+    name: String(category?.name || "").trim(),
     categoryTypeId: Number(category?.categoryTypeId || 0),
-    categoryTypeName: String(category?.categoryTypeName || "").trim() || "--",
-    status: String(category?.status || "").trim() || "--",
+    categoryTypeName: String(category?.categoryTypeName || "").trim(),
+    status: String(category?.status || "").trim(),
     initials: String(category?.name || "")
       .trim()
       .split(/\s+/)
@@ -59,8 +59,8 @@ export function normalizeAdminCategory(category) {
 export function normalizeAdminCategoryTypeOption(categoryType) {
   return {
     value: Number(categoryType?.categoryTypeId || 0),
-    label: String(categoryType?.name || "").trim() || "--",
-    status: String(categoryType?.status || "").trim() || "--",
+    label: String(categoryType?.name || "").trim(),
+    status: String(categoryType?.status || "").trim(),
   };
 }
 

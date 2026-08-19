@@ -431,7 +431,7 @@ export function PromotionDetailPage() {
               {isEditing ? t("promotionDetail.editTitle") : t("promotionDetail.title")}
             </h1>
             <p className="text-xs font-medium text-slate-400">
-              {isEditing 
+              {isEditing
                 ? (t("adminPromotionManagement.editThePromotionDetailsBelow"))
                 : (t("adminPromotionManagement.reviewEditAndDeleteThisPromoti"))
               }
@@ -767,9 +767,9 @@ export function PromotionDetailPage() {
         onCancel={() => !isSaving && setShowSaveConfirm(false)}
         highlights={[draft?.name || promotion?.name || "Promotion"]}
         details={[
-          { label: "Scope", value: draft?.scope || "--" },
-          { label: "Type", value: draft?.type || "--" },
-          { label: "Discount", value: draft?.discountValue || "--" },
+          { label: "Scope", value: draft?.scope },
+          { label: "Type", value: draft?.type },
+          { label: "Discount", value: draft?.discountValue },
         ]}
       />
 

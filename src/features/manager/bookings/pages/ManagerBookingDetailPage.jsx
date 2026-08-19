@@ -144,29 +144,29 @@ function formatStatusDisplay(status) {
   switch (status) {
     case "Checked In":
     case "CheckedIn":
-      return t("manager.dashboard.statusCalled") || "At Counter";
+      return language === "vi" ? "Đã check in" : "Checked In";
     case "In Progress":
     case "InProgress":
-      return t("manager.dashboard.statusInService") || "In Progress";
+      return language === "vi" ? "Đang tiến hành" : "In Progress";
     case "Pending":
-      return t("manager.dashboard.statusWaiting") || "Pending";
+      return language === "vi" ? "Đang chờ" : "Pending";
     case "Confirmed":
     case "Approved":
-      return t("manager.bookings.ready") || "Confirmed";
+      return language === "vi" ? "Đã xác nhận" : "Confirmed";
     case "Completed":
     case "ServiceCompleted":
-      return t("manager.dashboard.statusDone") || "Completed";
+      return language === "vi" ? "Đã hoàn thành" : "Completed";
     case "Rejected":
-      return t("manager.breaks.statusRejected") || "Rejected";
+      return language === "vi" ? "Đã từ chối" : "Rejected";
     case "Cancelled":
     case "Canceled":
-      return t("manager.bookings.cancelBooking") || "Cancelled";
-    case "RescheduleReq":
-    case "Reschedule Req":
+      return language === "vi" ? "Đã hủy" : "Cancelled";
     case "ReschedulePending":
-      return t("manager.bookings.rescheduleTime") || "Reschedule Requested";
+      return language === "vi" ? "Đang chờ dời lịch" : "Reschedule Pending";
     case "RescheduleSuggested":
-      return t("manager.bookings.moveSchedule") || "Reschedule Proposed";
+      return language === "vi" ? "Đã đề xuất dời lịch" : "Reschedule Proposed";
+    case "Repaired":
+      return language === "vi" ? "Đã sửa chữa" : "Repaired";
     default:
       return status;
   }
@@ -796,7 +796,7 @@ export function ManagerBookingDetailPage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
               <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFFDFE] p-4 shadow-2xs">
                 <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497] mb-1">{language === "vi" ? "Ngày đặt lịch" : "Booking Date"}</p>
-                <div className="flex items-center gap-2 text-sm font-extrabold text-[#2B182B]">
+                <div className="flex items-center gap-2 text-sm font-semibold text-[#2B182B]">
                   <Calendar size={15} className="text-[#E84F93] shrink-0" />
                   <span>{booking?.date}</span>
                 </div>
@@ -804,7 +804,7 @@ export function ManagerBookingDetailPage() {
 
               <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFFDFE] p-4 shadow-2xs">
                 <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497] mb-1">{language === "vi" ? "Thời gian" : "Time"}</p>
-                <div className="flex items-center gap-2 text-sm font-extrabold text-[#2B182B]">
+                <div className="flex items-center gap-2 text-sm font-semibold text-[#2B182B]">
                   <Clock3 size={15} className="text-[#E84F93] shrink-0" />
                   <span>{booking?.time}</span>
                 </div>
@@ -812,7 +812,7 @@ export function ManagerBookingDetailPage() {
 
               <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFFDFE] p-4 shadow-2xs">
                 <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497] mb-1">{language === "vi" ? "Thời lượng" : "Duration"}</p>
-                <div className="flex items-center gap-2 text-sm font-extrabold text-[#2B182B]">
+                <div className="flex items-center gap-2 text-sm font-semibold text-[#2B182B]">
                   <Clock3 size={15} className="text-[#E84F93] shrink-0" />
                   <span>{booking?.totalDuration ? formatDuration(booking.totalDuration) : "60m"}</span>
                 </div>

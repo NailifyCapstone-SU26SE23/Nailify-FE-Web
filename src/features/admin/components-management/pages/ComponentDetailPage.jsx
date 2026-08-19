@@ -122,8 +122,8 @@ export function ComponentDetailPage() {
 
     return [
       [t("adminComponents.componentIdLabel"), String(component.componentId)],
-      [t("adminComponents.componentName"), draft.name || "--"],
-      [t("adminComponents.type"), draft.componentType || "--"],
+      [t("adminComponents.componentName"), draft.name],
+      [t("adminComponents.type"), draft.componentType],
       [t("adminComponents.price"), draft.price ? formatComponentCurrency(draft.price) : "--"],
       [t("adminComponents.duration"), draft.duration ? formatComponentDuration(draft.duration) : "--"],
     ];
@@ -472,7 +472,7 @@ export function ComponentDetailPage() {
         onCancel={() => !isSaving && setShowSaveConfirm(false)}
         highlights={[draft?.name || component?.name || "Component"]}
         details={[
-          { label: "Type", value: draft?.componentType || "--" },
+          { label: "Type", value: draft?.componentType },
           { label: "Price", value: draft?.price ? formatComponentCurrency(draft.price) : "--" },
         ]}
       />

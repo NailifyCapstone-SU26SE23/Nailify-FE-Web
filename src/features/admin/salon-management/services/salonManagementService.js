@@ -47,7 +47,7 @@ function formatOperatingHours(operatingHours) {
   const firstDay = sortedDays[0];
   const lastDay = sortedDays[sortedDays.length - 1];
 
-  return `${firstDay?.dayName?.slice(0, 3) || "--"}-${lastDay?.dayName?.slice(0, 3) || "--"} ${formatTimeValue(firstDay?.openTime)}-${formatTimeValue(firstDay?.closeTime)}`;
+  return `${firstDay?.dayName?.slice(0, 3)}-${lastDay?.dayName?.slice(0, 3)} ${formatTimeValue(firstDay?.openTime)}-${formatTimeValue(firstDay?.closeTime)}`;
 }
 
 export function mapSalonOperatingHours(operatingHours) {
@@ -143,15 +143,15 @@ export function normalizeAdminSalon(salon) {
   return {
     id: realId,
     salonId: realId,
-    name: String(salon?.name || "").trim() || "--",
-    address: String(salon?.address || "").trim() || "--",
+    name: String(salon?.name || "").trim(),
+    address: String(salon?.address || "").trim(),
     manager: salon?.manager || "Unassigned",
     staffCount: salon?.staffCount || 0,
     hours: formatOperatingHours(salon?.operatingHours),
     status,
     statusColor: getSalonStatusColor(status),
     image: getSalonImage(imageUrl, salon?.name || realId),
-    phone: String(salon?.phone || "").trim() || "--",
+    phone: String(salon?.phone || "").trim(),
     rating: salon?.rating || "—",
     reviews: salon?.reviewCount || "0",
     latitude: Number(salon?.latitude || 0),

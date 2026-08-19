@@ -7,8 +7,8 @@ function getAuthHeaders() {
 
   return token
     ? {
-        Authorization: `Bearer ${token}`,
-      }
+      Authorization: `Bearer ${token}`,
+    }
     : {};
 }
 
@@ -52,7 +52,7 @@ export function normalizeAdminService(service) {
   return {
     id: service?.serviceId || "",
     serviceId: service?.serviceId || "",
-    name: String(service?.name || "").trim() || "--",
+    name: String(service?.name || "").trim(),
     description: String(service?.description || "").trim(),
     category: inferServiceCategory(service),
     price: Number(service?.price || 0),

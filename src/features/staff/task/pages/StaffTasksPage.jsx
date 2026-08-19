@@ -33,6 +33,8 @@ import {
   fetchAssignedStaffTasks,
   fetchSalonQueueTasks,
   updateStaffTaskStatus,
+  fetchBookingProceduresByBookingItem,
+  normalizeTask,
 } from "../services/staffTaskService";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
@@ -178,7 +180,9 @@ function buildTaskSequenceBlockMap(tasks) {
           return false;
         }
 
-        if (!previousTask?.isRequired || previousTask?.canOverlap) {
+        // Ignore isRequired check; all previous steps in the booking sequence must be completed
+        // before starting the current step, unless they can overlap.
+        if (previousTask?.canOverlap) {
           return false;
         }
 
@@ -199,10 +203,26 @@ function applyTaskSequenceBlockState(tasks, blockMap) {
   }));
 }
 
-function decorateTaskBoards(myTaskList, salonTaskList) {
+function decorateTaskBoards(myTaskList, salonTaskList, additionalProceduresList = []) {
   const nextMyTasks = Array.isArray(myTaskList) ? myTaskList : [];
   const nextSalonTasks = Array.isArray(salonTaskList) ? salonTaskList : [];
-  const sequenceBlockMap = buildTaskSequenceBlockMap([...nextMyTasks, ...nextSalonTasks]);
+  const nextAdditional = Array.isArray(additionalProceduresList) ? additionalProceduresList : [];
+
+  // Combine all procedures to construct a complete sequence block map
+  const allProcedures = [...nextMyTasks, ...nextSalonTasks, ...nextAdditional];
+
+  // Deduplicate by bookingProcedureId, prioritizing active tasks (from myTasks or salonTasks)
+  const dedupedProceduresMap = new Map();
+  allProcedures.forEach((proc) => {
+    if (proc.bookingProcedureId) {
+      const existing = dedupedProceduresMap.get(proc.bookingProcedureId);
+      if (!existing || nextMyTasks.includes(proc) || nextSalonTasks.includes(proc)) {
+        dedupedProceduresMap.set(proc.bookingProcedureId, proc);
+      }
+    }
+  });
+
+  const sequenceBlockMap = buildTaskSequenceBlockMap([...dedupedProceduresMap.values()]);
 
   return {
     myTasks: applyTaskSequenceBlockState(nextMyTasks, sequenceBlockMap),
@@ -300,7 +320,7 @@ function MiniInfo({ label, value, className = "" }) {
   return (
     <div className={`rounded-[12px] border px-2.5 py-2 ${className || "border-[#f7d8e5] bg-white/80"}`}>
       <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#c08aa4]">{label}</p>
-      <p className="mt-1 text-[11px] font-bold text-[#402542]">{value || "--"}</p>
+      <p className="mt-1 text-[11px] font-bold text-[#402542]">{value}</p>
     </div>
   );
 }
@@ -403,6 +423,7 @@ function BoardTaskCard({
   ownerLabel,
   primaryAction,
   secondaryAction,
+  hideHeader = false,
 }) {
   const theme = getTaskTheme(task);
   const activeDuration = task.activeDuration ?? task.duration ?? 0;
@@ -421,66 +442,107 @@ function BoardTaskCard({
         } ${isUpdating ? "cursor-wait opacity-70" : canDrag ? "cursor-grab active:cursor-grabbing" : "cursor-default"}`}
     >
       {/* Prominent Customer & Booking Identifier Header Pill */}
-      <div className="flex flex-row justify-center gap-2 w-full">
-        <div className="w-full mb-2.5 flex items-center justify-between gap-2 rounded-xl bg-gradient-to-r from-purple-50 via-pink-50 to-purple-50 p-2 border border-purple-200/90 shadow-2xs">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-[#C97A9E] font-bold text-[10px] shrink-0">
-              <CircleUserRound size={14} strokeWidth={2.3} />
-            </span>
-            <span className="font-bold text-[#221F26] text-xs truncate">
-              {task.customerName || "Khách Vãng Lai"}
-            </span>
+      {!hideHeader ? (
+        <div className="flex flex-row justify-center gap-2 w-full">
+          <div className="w-full mb-2.5 flex items-center justify-between gap-2 rounded-xl bg-gradient-to-r from-purple-50 via-pink-50 to-purple-50 p-2 border border-purple-200/90 shadow-2xs">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-[#C97A9E] font-bold text-[10px] shrink-0">
+                <CircleUserRound size={14} strokeWidth={2.3} />
+              </span>
+              <span className="font-bold text-[#221F26] text-xs truncate">
+                {task.customerName || "Khách Vãng Lai"}
+              </span>
+            </div>
+
           </div>
-
-        </div>
-        <Tooltip
-          title={showDetails ? "Hide details" : "Show details"}
-          placement="top"
-          color="#262626"
-        >
-          <button
-            type="button"
-            onClick={() => setShowDetails((prev) => !prev)}
-            className="
-      flex h-9 w-9 shrink-0 items-center justify-center
-      rounded-xl
-      border border-white/70
-      bg-white/70
-      text-[#7C3AED]
-      shadow-sm
-      transition-all
-      hover:scale-105
-      hover:bg-white
-      hover:shadow-md
-    "
+          <Tooltip
+            title={showDetails ? "Hide details" : "Show details"}
+            placement="top"
+            color="#262626"
           >
-            {showDetails ? (
-              <ChevronUp size={18} />
-            ) : (
-              <ChevronDown size={18} />
-            )}
-          </button>
-        </Tooltip>
-      </div>
-
-
-      {/* Step Badge & Procedure Title */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] ${theme.chipClassName}`}>
+            <button
+              type="button"
+              onClick={() => setShowDetails((prev) => !prev)}
+              className="
+        flex h-9 w-9 shrink-0 items-center justify-center
+        rounded-xl
+        border border-white/70
+        bg-white/70
+        text-[#7C3AED]
+        shadow-sm
+        transition-all
+        hover:scale-105
+        hover:bg-white
+        hover:shadow-md
+      "
+            >
+              {showDetails ? (
+                <ChevronUp size={18} />
+              ) : (
+                <ChevronDown size={18} />
+              )}
+            </button>
+          </Tooltip>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] ${theme.chipClassName}`}>
               {isVi ? `Bước ${task.stepOrder || 0}` : `Step ${task.stepOrder || 0}`}
             </span>
             {task.isMainStep ? (
-              <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] ${theme.chipClassName}`}>
+              <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] ${theme.chipClassName}`}>
                 {isVi ? "Chính" : "Main"}
               </span>
             ) : null}
           </div>
-          <h3 className="mt-2 text-[14px] font-bold leading-5 text-[#402542]">{task.procedureName}</h3>
+          <Tooltip
+            title={showDetails ? "Hide details" : "Show details"}
+            placement="top"
+            color="#262626"
+          >
+            <button
+              type="button"
+              onClick={() => setShowDetails((prev) => !prev)}
+              className="
+                flex h-6 w-6 shrink-0 items-center justify-center
+                rounded-lg
+                border border-white/70
+                bg-white/70
+                text-[#7C3AED]
+                shadow-2xs
+                transition-all
+                hover:scale-105
+                hover:bg-white
+              "
+            >
+              {showDetails ? (
+                <ChevronUp size={12} />
+              ) : (
+                <ChevronDown size={12} />
+              )}
+            </button>
+          </Tooltip>
         </div>
+      )}
 
-
+      {/* Step Badge & Procedure Title */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          {!hideHeader && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] ${theme.chipClassName}`}>
+                {isVi ? `Bước ${task.stepOrder || 0}` : `Step ${task.stepOrder || 0}`}
+              </span>
+              {task.isMainStep ? (
+                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] ${theme.chipClassName}`}>
+                  {isVi ? "Chính" : "Main"}
+                </span>
+              ) : null}
+            </div>
+          )}
+          <h3 className={`${!hideHeader ? "mt-2" : ""} text-[13px] font-bold leading-snug text-[#402542]`}>{task.procedureName}</h3>
+        </div>
       </div>
       <div
         className={`
@@ -493,10 +555,10 @@ function BoardTaskCard({
         {/* Basic Meta Grid */}
         <div className="mt-3 grid grid-cols-2 gap-2">
           <MiniInfo label={isVi ? "Khách hàng" : "Customer"} value={task.customerName} className={theme.infoClassName} />
-          <MiniInfo label={isVi ? "Ghế" : "Chair"} value={task.chairName || "--"} className={theme.infoClassName} />
+          <MiniInfo label={isVi ? "Ghế" : "Chair"} value={task.chairName} className={theme.infoClassName} />
           <MiniInfo
             label={isVi ? "Ngày" : "Date"}
-            value={formatDate(task.bookingDate) || "--"}
+            value={formatDate(task.bookingDate)}
             className={theme.infoClassName}
           />
           <MiniInfo
@@ -596,11 +658,36 @@ function BoardColumn({
   renderTask,
   emptyText = "Drop a task here",
 }) {
+  const { language } = useLanguage();
+  const isVi = language === "vi";
+
+  // Group tasks with the same bookingId together
+  const groupedTasks = useMemo(() => {
+    const groups = [];
+    const groupMap = {};
+
+    (tasks || []).forEach((task) => {
+      const bookingId = task.bookingId || "unassigned";
+      if (!groupMap[bookingId]) {
+        groupMap[bookingId] = {
+          bookingId,
+          customerName: task.customerName || (isVi ? "Khách vãng lai" : "Walk-in Customer"),
+          chairName: task.chairName,
+          tasks: [],
+        };
+        groups.push(groupMap[bookingId]);
+      }
+      groupMap[bookingId].tasks.push(task);
+    });
+
+    return groups;
+  }, [tasks, isVi]);
+
   return (
     <div
       onDragOver={onDragOver}
       onDrop={(event) => onDrop(event, column.key)}
-      className={`flex h-[540px] min-w-[290px] flex-col overflow-hidden rounded-[24px] border p-4 transition ${column.ringClassName} ${column.panelClassName} ${isActiveDropTarget ? "scale-[1.01] shadow-[0_18px_36px_rgba(236,72,153,0.12)]" : ""
+      className={`flex h-[540px] min-w-[310px] flex-col overflow-hidden rounded-[24px] border p-4 transition ${column.ringClassName} ${column.panelClassName} ${isActiveDropTarget ? "scale-[1.01] shadow-[0_18px_36px_rgba(236,72,153,0.12)]" : ""
         }`}
     >
       <div className="mb-4 flex items-center justify-between gap-3">
@@ -613,23 +700,51 @@ function BoardColumn({
         </div>
       </div>
 
-      <div className="flex-1 space-y-3 overflow-y-auto pr-1">
-        {tasks.length === 0 ? (
+      <div className="flex-1 space-y-3.5 overflow-y-auto pr-1">
+        {groupedTasks.length === 0 ? (
           <div className="flex h-[140px] items-center justify-center rounded-[18px] border border-dashed border-[#efcadd] bg-white/70 px-4 text-center text-[12px] font-semibold text-[#b07a94]">
             {emptyText}
           </div>
         ) : (
-          tasks.map((task) => (
-            renderTask ? renderTask(task) : (
-              <BoardTaskCard
-                key={task.bookingProcedureId}
-                task={task}
-                onDragStart={onDragStart}
-                onDragEnd={onDragEnd}
-                isDragging={draggingTaskId === task.bookingProcedureId}
-                isUpdating={updatingTaskId === task.bookingProcedureId}
-              />
-            )
+          groupedTasks.map((group) => (
+            <div
+              key={group.bookingId}
+              className="rounded-2xl border border-purple-100 bg-[#fffafd]/60 p-2.5 space-y-2 shadow-inner hover:bg-[#fff9fc]/80 transition-all duration-300"
+            >
+              {/* Group Header */}
+              <div className="flex items-center justify-between gap-2 px-0.5 pb-0.5 border-b border-pink-50/50">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-pink-100 text-[#ea4f93] shrink-0">
+                    <CircleUserRound size={12} strokeWidth={2.5} />
+                  </span>
+                  <span className="font-extrabold text-[#3f2a3c] text-[11px] truncate">
+                    {group.customerName}
+                  </span>
+                </div>
+                {group.chairName && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2 py-0.5 text-[9px] font-extrabold text-[#7c3aed] border border-purple-200/50 shadow-3xs">
+                    {isVi ? `Ghế ${group.chairName}` : `Chair ${group.chairName}`}
+                  </span>
+                )}
+              </div>
+
+              {/* Group Tasks */}
+              <div className="space-y-2">
+                {group.tasks.map((task) => (
+                  renderTask ? renderTask(task, true) : (
+                    <BoardTaskCard
+                      key={task.bookingProcedureId}
+                      task={task}
+                      onDragStart={onDragStart}
+                      onDragEnd={onDragEnd}
+                      isDragging={draggingTaskId === task.bookingProcedureId}
+                      isUpdating={updatingTaskId === task.bookingProcedureId}
+                      hideHeader
+                    />
+                  )
+                ))}
+              </div>
+            </div>
           ))
         )}
       </div>
@@ -641,6 +756,7 @@ export function StaffTasksPage() {
   const [activeTab, setActiveTab] = useState("my");
   const [myTasks, setMyTasks] = useState([]);
   const [salonTasks, setSalonTasks] = useState([]);
+  const [additionalProcedures, setAdditionalProcedures] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -690,10 +806,46 @@ export function StaffTasksPage() {
         filterTasksByBookingInProgress(assignedData),
         Promise.resolve(salonQueueData),
       ]);
-      const decoratedBoards = decorateTaskBoards(visibleAssignedTasks, visibleClaimableTasks);
+
+      // Identify booking items present in my tasks but not in salon claimable tasks
+      const fetchedBookingItemIds = new Set(
+        visibleClaimableTasks.map((t) => t.bookingItemId).filter(Boolean)
+      );
+
+      const missingBookingItemIds = [
+        ...new Set(
+          visibleAssignedTasks
+            .map((t) => t.bookingItemId)
+            .filter(Boolean)
+            .filter((id) => !fetchedBookingItemIds.has(id))
+        )
+      ];
+
+      const loadedAdditional = [];
+      if (missingBookingItemIds.length > 0) {
+        const procedureResults = await Promise.allSettled(
+          missingBookingItemIds.map(async (bookingItemId) => {
+            const procedures = await fetchBookingProceduresByBookingItem(bookingItemId);
+            return { bookingItemId, procedures };
+          })
+        );
+
+        procedureResults.forEach((result) => {
+          if (result.status === "fulfilled") {
+            const { bookingItemId, procedures } = result.value;
+            const refTask = visibleAssignedTasks.find((t) => t.bookingItemId === bookingItemId) || {};
+            procedures.forEach((proc) => {
+              loadedAdditional.push(normalizeTask(proc, refTask));
+            });
+          }
+        });
+      }
+
+      const decoratedBoards = decorateTaskBoards(visibleAssignedTasks, visibleClaimableTasks, loadedAdditional);
 
       setMyTasks(decoratedBoards.myTasks);
       setSalonTasks(decoratedBoards.salonTasks);
+      setAdditionalProcedures(loadedAdditional);
     } catch (err) {
       console.error("Failed to load staff tasks:", err);
       const message = getErrorMessage(err, "Failed to load tasks.");
@@ -760,6 +912,17 @@ export function StaffTasksPage() {
       return;
     }
 
+    if (!canTaskBeDragged(draggingTask, currentStaffArtistId)) {
+      const msg = language === "vi"
+        ? "Không thể di chuyển nhiệm vụ này do thứ tự thực hiện bị khóa."
+        : "Cannot move this task as it is blocked by sequence order.";
+      setError(msg);
+      toast.error(msg);
+      setDraggingTask(null);
+      setDraggingSource("");
+      return;
+    }
+
     const currentStatus = normalizeStatusKey(draggingTask.status);
     if (currentStatus === nextStatus) {
       setDraggingTask(null);
@@ -782,7 +945,7 @@ export function StaffTasksPage() {
 
     try {
       setUpdatingTaskId(draggingTask.bookingProcedureId);
-      const optimisticBoards = decorateTaskBoards(optimisticTasks, salonTasks);
+      const optimisticBoards = decorateTaskBoards(optimisticTasks, salonTasks, additionalProcedures);
       setMyTasks(optimisticBoards.myTasks);
       setSalonTasks(optimisticBoards.salonTasks);
 
@@ -804,13 +967,13 @@ export function StaffTasksPage() {
           }
           return { ...merged, ...timeUpdates };
         });
-        const decoratedBoards = decorateTaskBoards(mergedMyTasks, salonTasks);
+        const decoratedBoards = decorateTaskBoards(mergedMyTasks, salonTasks, additionalProcedures);
         setSalonTasks(decoratedBoards.salonTasks);
         return decoratedBoards.myTasks;
       });
     } catch (err) {
       console.error("Failed to update task status:", err);
-      const revertedBoards = decorateTaskBoards(previousTasks, salonTasks);
+      const revertedBoards = decorateTaskBoards(previousTasks, salonTasks, additionalProcedures);
       setMyTasks(revertedBoards.myTasks);
       setSalonTasks(revertedBoards.salonTasks);
       const message = getErrorMessage(err, "Failed to update task status.");
@@ -821,7 +984,7 @@ export function StaffTasksPage() {
       setDraggingTask(null);
       setDraggingSource("");
     }
-  }, [draggingSource, draggingTask, myTasks, salonTasks]);
+  }, [draggingSource, draggingTask, myTasks, salonTasks, additionalProcedures, currentStaffArtistId, language]);
 
   const handleSalonColumnDrop = useCallback(async (event, nextStatus) => {
     event.preventDefault();
@@ -833,9 +996,9 @@ export function StaffTasksPage() {
 
     if (!canTaskBeDragged(draggingTask, currentStaffArtistId)) {
       if (isTaskAssigned(draggingTask)) {
-        setError("Only the staff member who claimed this step can move it.");
+        setError(language === "vi" ? "Chỉ thợ đã nhận bước này mới có thể di chuyển." : "Only the staff member who claimed this step can move it.");
       } else {
-        setError("Claim this task before moving it to another status.");
+        setError(language === "vi" ? "Nhận nhiệm vụ này trước khi cập nhật trạng thái." : "Claim this task before moving it to another status.");
       }
       setDraggingTask(null);
       setDraggingSource("");
@@ -865,7 +1028,7 @@ export function StaffTasksPage() {
 
     try {
       setUpdatingTaskId(draggingTask.bookingProcedureId);
-      const optimisticBoards = decorateTaskBoards(myTasks, optimisticTasks);
+      const optimisticBoards = decorateTaskBoards(myTasks, optimisticTasks, additionalProcedures);
       setMyTasks(optimisticBoards.myTasks);
       setSalonTasks(optimisticBoards.salonTasks);
 
@@ -887,13 +1050,13 @@ export function StaffTasksPage() {
           }
           return { ...merged, ...timeUpdates };
         });
-        const decoratedBoards = decorateTaskBoards(myTasks, mergedSalonTasks);
+        const decoratedBoards = decorateTaskBoards(myTasks, mergedSalonTasks, additionalProcedures);
         setMyTasks(decoratedBoards.myTasks);
         return decoratedBoards.salonTasks;
       });
     } catch (err) {
       console.error("Failed to update salon task status:", err);
-      const revertedBoards = decorateTaskBoards(myTasks, previousTasks);
+      const revertedBoards = decorateTaskBoards(myTasks, previousTasks, additionalProcedures);
       setMyTasks(revertedBoards.myTasks);
       setSalonTasks(revertedBoards.salonTasks);
       const message = getErrorMessage(err, "Failed to update salon task status.");
@@ -904,7 +1067,7 @@ export function StaffTasksPage() {
       setDraggingTask(null);
       setDraggingSource("");
     }
-  }, [currentStaffArtistId, draggingSource, draggingTask, myTasks, salonTasks]);
+  }, [currentStaffArtistId, draggingSource, draggingTask, myTasks, salonTasks, additionalProcedures, language]);
 
   const [searchTaskText, setSearchTaskText] = useState("");
   const [selectedCustomerFilter, setSelectedCustomerFilter] = useState("all");
@@ -1227,6 +1390,32 @@ export function StaffTasksPage() {
                       onDragEnd={handleDragEnd}
                       draggingTaskId={draggingTask?.bookingProcedureId || ""}
                       updatingTaskId={updatingTaskId}
+                      renderTask={(task, hideHeader) => {
+                        const canDrag = canTaskBeDragged(task, currentStaffArtistId);
+                        const isBlockedBySequence =
+                          Boolean(task?.isBlockedBySequence) && normalizeStatusKey(task?.status) === "Pending";
+
+                        return (
+                          <BoardTaskCard
+                            key={task.bookingProcedureId}
+                            task={task}
+                            onDragStart={(event, currentTask) => handleDragStart(event, currentTask, "my")}
+                            onDragEnd={handleDragEnd}
+                            isDragging={draggingTask?.bookingProcedureId === task.bookingProcedureId}
+                            isUpdating={updatingTaskId === task.bookingProcedureId}
+                            canDrag={canDrag}
+                            hideHeader={hideHeader}
+                            ownerLabel={getTaskOwnerLabel(task, language === "vi" ? "Đã nhận" : "Assigned")}
+                            footerHint={
+                              isBlockedBySequence
+                                ? (language === "vi" ? "Hoàn thành các bước trước đó để bắt đầu" : "Complete previous steps to start")
+                                : canDrag
+                                  ? (language === "vi" ? "Kéo để di chuyển nhiệm vụ này" : "Drag to move this task")
+                                  : (language === "vi" ? "Nhận nhiệm vụ này trước khi cập nhật trạng thái" : "Claim this task before updating status")
+                            }
+                          />
+                        );
+                      }}
                     />
                   ))}
                 </div>
@@ -1258,7 +1447,7 @@ export function StaffTasksPage() {
                     draggingTaskId={draggingTask?.bookingProcedureId || ""}
                     updatingTaskId={updatingTaskId}
                     emptyText={column.key === "Pending" ? "No salon tasks here" : "No tasks in this status"}
-                    renderTask={(task) => {
+                    renderTask={(task, hideHeader) => {
                       const canDrag = canTaskBeDragged(task, currentStaffArtistId);
                       const isAssigned = isTaskAssigned(task);
                       const isAssignedToCurrentArtist = isTaskAssignedToCurrentArtist(
@@ -1281,6 +1470,7 @@ export function StaffTasksPage() {
                           isDragging={draggingTask?.bookingProcedureId === task.bookingProcedureId}
                           isUpdating={updatingTaskId === task.bookingProcedureId}
                           canDrag={canDrag}
+                          hideHeader={hideHeader}
                           ownerLabel={
                             isAssigned
                               ? getTaskOwnerLabel(task, language === "vi" ? "Đã nhận" : "Assigned")
@@ -1288,7 +1478,9 @@ export function StaffTasksPage() {
                           }
                           footerHint={
                             isBlockedBySequence
-                              ? (language === "vi" ? "Nhận theo thứ tự bước booking" : "Claim follows the booking step order")
+                              ? (isAssignedToCurrentArtist
+                                ? (language === "vi" ? "Hoàn thành các bước trước đó để bắt đầu" : "Complete previous steps to start")
+                                : (language === "vi" ? "Nhận theo thứ tự bước booking" : "Claim follows the booking step order"))
                               : canDrag
                                 ? (language === "vi" ? "Kéo để di chuyển nhiệm vụ này" : "Drag to move this task")
                                 : isAssignedToCurrentArtist

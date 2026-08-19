@@ -31,7 +31,7 @@ import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
-import { StaffBookingNotesModal } from "../../../../shared/bookings/components/StaffBookingNotesModal";
+import { StaffBookingNotesModal } from "../../../staff/bookings/components/StaffBookingNotesModal";
 import {
   getStaffBookingDetailRoute,
   getStaffBookingDesignStudioRoute,
@@ -290,8 +290,8 @@ function MobileBookingCard({ booking, actions }) {
         )}
 
         <div className="min-w-0 flex-1">
-          <p className="break-words text-xs font-bold text-[#432744]">{booking.services.join(", ") || "--"}</p>
-          <p className="mt-1 break-words text-[11px] text-[#8a7082]">{booking.uiBranch || "--"}</p>
+          <p className="break-words text-xs font-bold text-[#432744]">{booking.services.join(", ")}</p>
+          <p className="mt-1 break-words text-[11px] text-[#8a7082]">{booking.uiBranch}</p>
         </div>
 
         <div className="shrink-0">
@@ -455,8 +455,8 @@ export function StaffDashboardPage() {
       {
         label: language === 'vi' ? 'Kế tiếp' : 'Next',
         value: typeof dashboardData?.nextCustomer === "object" && dashboardData?.nextCustomer !== null
-          ? (dashboardData.nextCustomer.customerName || "--")
-          : (dashboardData?.nextCustomer || "--"),
+          ? (dashboardData.nextCustomer.customerName)
+          : (dashboardData?.nextCustomer),
         note: language === 'vi' ? 'Khách sắp tới' : 'Upcoming customer',
         icon: AlarmClock,
         color: "#8b5cf6",
@@ -1055,7 +1055,7 @@ export function StaffDashboardPage() {
     {
       title: language === "vi" ? "Giá" : "Price",
       key: "price",
-      render: (_, booking) => <span className="font-bold text-[#ea4f93]">{booking.totalPriceLabel || "--"}</span>,
+      render: (_, booking) => <span className="font-bold text-[#ea4f93]">{booking.totalPriceLabel}</span>,
     },
     {
       title: language === "vi" ? "Trạng thái" : "Status",

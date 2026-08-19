@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Modal, Button, Spin, Tooltip } from "antd";
 import toast from "react-hot-toast";
 import ChairMap from "../../../../shared/components/ui/ChairMap";
-import { fetchSalonChairs, fetchAvailableSalonChairs, assignChairToBooking } from "../services/receptionistBookingService";
+import { fetchChairsStatus, assignChairToBooking } from "../services/receptionistBookingService";
 import { Armchair } from "lucide-react";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
@@ -26,23 +26,41 @@ export function AssignChairModal({ isOpen, onClose, booking, onSuccess, onAssign
     try {
       const salonId = booking.salonId;
 
-      const [chairsData, availableChairsData] = await Promise.all([
-        fetchSalonChairs(salonId),
-        fetchAvailableSalonChairs(salonId, {
-          bookingDate: booking?.bookingDate || new Date().toISOString().split('T')[0],
-          startTime: booking?.startTime || new Date().toLocaleTimeString('en-US', { hour12: false }).substring(0, 5),
-          duration: booking?.totalDuration || 60,
-        }).catch(err => {
-          // If available chairs API fails, return empty array
-          console.error("Failed to load available chairs", err);
-          return [];
-        })
-      ]);
+      // Use the booking's own date & time so we get accurate chair availability
+      let atDate;
+      let atTime;
 
-      const allChairs = Array.isArray(chairsData?.items) ? chairsData.items : [];
+      if (booking.bookingDate) {
+        // bookingDate may be "2026-08-17" or a full ISO string
+        atDate = String(booking.bookingDate).substring(0, 10);
+      } else {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        atDate = `${y}-${m}-${d}`;
+      }
+
+      if (booking.startTime) {
+        // startTime may be "15:00" or "15:00:00" — ensure HH:mm:ss
+        const parts = String(booking.startTime).split(':');
+        const hh = (parts[0] || '00').padStart(2, '0');
+        const mm = (parts[1] || '00').padStart(2, '0');
+        const ss = (parts[2] || '00').padStart(2, '0');
+        atTime = `${hh}:${mm}:${ss}`;
+      } else {
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        const ss = String(now.getSeconds()).padStart(2, '0');
+        atTime = `${hh}:${mm}:${ss}`;
+      }
+
+      const chairsStatusData = await fetchChairsStatus(salonId, atDate, atTime);
+      const allChairs = Array.isArray(chairsStatusData) ? chairsStatusData : [];
       setChairs(allChairs);
 
-      const availableChairs = Array.isArray(availableChairsData) ? availableChairsData : [];
+      const availableChairs = allChairs.filter(c => !c.isOccupied);
       setAvailableChairIds(new Set(availableChairs.map(c => c.chairId)));
 
     } catch (error) {
@@ -51,6 +69,7 @@ export function AssignChairModal({ isOpen, onClose, booking, onSuccess, onAssign
       setLoading(false);
     }
   };
+
 
   const handleAssign = async () => {
     if (!selectedChair) return;
@@ -176,7 +195,7 @@ export function AssignChairModal({ isOpen, onClose, booking, onSuccess, onAssign
             onClick={handleAssign}
             disabled={!selectedChair}
             loading={submitting}
-            className="!bg-[#ea4f93] hover:!bg-[#d63d7e] border-none !font-semibold !rounded-xl !shadow-sm !shadow-pink-200/50"
+            className="!text-white hover:!text-[#ea4f93] !bg-[#ea4f93] hover:!bg-white border-none !font-semibold !rounded-xl !shadow-sm !shadow-pink-200/50"
           >
             {t("receptionist.bookings.confirmAssignment") || "Confirm Assignment"}
           </Button>

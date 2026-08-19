@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { PropTypes } from "../../utils/propTypes";
+import { PropTypes } from "../../../../shared/utils/propTypes";
 
 export function BookingHeroCard({
   backLabel,
