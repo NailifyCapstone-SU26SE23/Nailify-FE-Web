@@ -372,7 +372,7 @@ export function NailShapesManagementPage() {
           </div>
         ) : null}
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {summaryCards.map((item) => (
             <MetricCard key={item.label} item={item} />
           ))}

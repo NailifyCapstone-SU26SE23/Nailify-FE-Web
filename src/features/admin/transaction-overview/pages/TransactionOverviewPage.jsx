@@ -361,8 +361,9 @@ export function TransactionOverviewPage() {
       <div className="max-w-[1400px] mx-auto space-y-8">
 
         {/* Page Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/60 pb-6">
-          <div className="space-y-1.5">
+        {selectedSalon && (
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/60 pb-6">
+            {/* <div className="space-y-1.5">
             <div className="flex items-center gap-2">
               <span className="p-2 rounded-xl bg-[#ea4f93]/10 text-[#ea4f93]">
                 <Wallet size={18} className="stroke-[2]" />
@@ -380,18 +381,18 @@ export function TransactionOverviewPage() {
                 : (t("adminTransactions.selectSalonToAudit"))
               }
             </p>
-          </div>
+          </div> */}
 
-          {selectedSalon && (
-            <button
-              onClick={handleBackToSalons}
-              className="flex self-start md:self-auto items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4.5 py-3 text-xs font-bold text-[#2d1b35] shadow-[0_4px_12px_rgba(0,0,0,0.03)] hover:border-[#ea4f93]/30 transition-all duration-300 active:scale-[0.98]"
-            >
-              <ArrowLeft size={13} />
-              {t("adminTransactions.backToSalons")}
-            </button>
-          )}
-        </div>
+            {selectedSalon && (
+              <button
+                onClick={handleBackToSalons}
+                className="flex self-start md:self-auto items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4.5 py-3 text-xs font-bold text-[#2d1b35] shadow-[0_4px_12px_rgba(0,0,0,0.03)] hover:border-[#ea4f93]/30 transition-all duration-300 active:scale-[0.98]"
+              >
+                <ArrowLeft size={13} />
+                {t("adminTransactions.backToSalons")}
+              </button>
+            )}
+          </div>)}
 
         {/* STATE 1: Salon Grid Selection */}
         {!selectedSalon ? (
@@ -495,12 +496,12 @@ export function TransactionOverviewPage() {
                       type="button"
                       onClick={() => setSalonStatusFilter(st)}
                       className={`px-3.5 py-1.5 rounded-xl text-xs font-bold capitalize transition-all duration-200 ${salonStatusFilter === st
-                          ? "bg-[#ea4f93] text-white shadow-xs"
-                          : "text-[#7f6478] hover:text-[#2d1b35] hover:bg-[#ea4f93]/5"
+                        ? "bg-[#ea4f93] text-white shadow-xs"
+                        : "text-[#7f6478] hover:text-[#2d1b35] hover:bg-[#ea4f93]/5"
                         }`}
                     >
-                      {language === "vi" 
-                        ? { all: "Tất cả", active: "Đang hoạt động", busy: "Bận", closed: "Đóng cửa" }[st] || st 
+                      {language === "vi"
+                        ? { all: "Tất cả", active: "Đang hoạt động", busy: "Bận", closed: "Đóng cửa" }[st] || st
                         : st
                       }
                     </button>
@@ -596,13 +597,13 @@ export function TransactionOverviewPage() {
                           )}
 
                           <span className={`absolute top-3 right-3 text-[10px] font-bold px-2.5 py-1 rounded-full border shadow-xs ${salon.status === "Active" || salon.status === "Open"
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                              : salon.status === "Busy"
-                                ? "bg-amber-50 text-amber-700 border-amber-200"
-                                : "bg-slate-50 text-slate-600 border-slate-200"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            : salon.status === "Busy"
+                              ? "bg-amber-50 text-amber-700 border-amber-200"
+                              : "bg-slate-50 text-slate-600 border-slate-200"
                             }`}>
-                            {language === "vi" 
-                              ? ({ Active: "Hoạt động", Open: "Mở cửa", Busy: "Bận", Closed: "Đóng cửa" }[salon.status] || salon.status || "Hoạt động") 
+                            {language === "vi"
+                              ? ({ Active: "Hoạt động", Open: "Mở cửa", Busy: "Bận", Closed: "Đóng cửa" }[salon.status] || salon.status || "Hoạt động")
                               : (salon.status || "Active")
                             }
                           </span>
@@ -736,8 +737,8 @@ export function TransactionOverviewPage() {
                     {metrics.successRate}%
                   </span>
                   <p className="mt-2 text-xs text-[#a88a9f]">
-                    {language === "vi" 
-                      ? `${metrics.paidCount} trên tổng số ${metrics.totalCount} bản ghi` 
+                    {language === "vi"
+                      ? `${metrics.paidCount} trên tổng số ${metrics.totalCount} bản ghi`
                       : `${metrics.paidCount} of ${metrics.totalCount} transaction logs`
                     }
                   </p>
@@ -989,7 +990,7 @@ export function TransactionOverviewPage() {
                   {transactionsData.totalPages > 1 && (
                     <div className="flex justify-between items-center px-6 py-4.5 border-t border-slate-100 bg-slate-50/30">
                       <span className="text-xs text-[#a88a9f]">
-                        {language === "vi" 
+                        {language === "vi"
                           ? <span>Đang hiển thị <span className="font-bold text-[#2d1b35]">{processedTransactions.length}</span> mục</span>
                           : <span>Showing <span className="font-bold text-[#2d1b35]">{processedTransactions.length}</span> items</span>
                         }
@@ -1054,12 +1055,12 @@ export function TransactionOverviewPage() {
                   {renderStatusBadge(selectedTransaction.status)}
                   {bookingDetails && (
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full border ${selectedTransaction.amount === bookingDetails.amountDue
-                        ? "bg-[#fff2f7] text-[#ea4f93] border-[#ea4f93]/20"
-                        : selectedTransaction.amount === bookingDetails.amountPaid
-                           ? "bg-indigo-50 text-indigo-700 border-indigo-500/20"
-                           : selectedTransaction.amount === bookingDetails.totalPrice
-                             ? "bg-emerald-50 text-emerald-700 border-emerald-500/20"
-                             : "bg-slate-50 text-slate-600 border-slate-200"
+                      ? "bg-[#fff2f7] text-[#ea4f93] border-[#ea4f93]/20"
+                      : selectedTransaction.amount === bookingDetails.amountPaid
+                        ? "bg-indigo-50 text-indigo-700 border-indigo-500/20"
+                        : selectedTransaction.amount === bookingDetails.totalPrice
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-500/20"
+                          : "bg-slate-50 text-slate-600 border-slate-200"
                       }`}>
                       {selectedTransaction.amount === bookingDetails.amountDue
                         ? (language === "vi" ? "Đặt cọc (Deposit)" : "Deposit")
