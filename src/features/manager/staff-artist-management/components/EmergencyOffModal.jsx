@@ -64,7 +64,7 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
               nailArtistId: a.nailArtistId || a.id,
               name:
                 a.account?.fullName ||
-                (a.firstName && a.lastName ? `${a.firstName} ${a.lastName}` : a.fullName || a.name || "Nail Artist"),
+                (a.firstName && a.lastName ? `${a.firstName} ${a.lastName}` : a.fullName || a.name || "Staff Artist"),
               phone: a.account?.phone || a.phone || "",
               avatar: a.account?.avatarUrl || a.avatarUrl || "",
               skills: a.skills || [],
@@ -288,7 +288,7 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
                 popupMatchSelectWidth={false}
                 options={combinedArtists.map((a) => {
                   const aId = String(a.nailArtistId || a.id);
-                  const aName = a.fullName || a.name || a.artistName || "Nail Artist";
+                  const aName = a.fullName || a.name || a.artistName || "Staff Artist";
                   const aPhone = a.phone ? ` • ${a.phone}` : "";
                   return {
                     value: aId,

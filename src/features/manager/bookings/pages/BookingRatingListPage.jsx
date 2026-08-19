@@ -23,6 +23,7 @@ import { formatDate } from "../../../../shared/utils/formatDate";
 import { Spin, Alert, Select, Modal, DatePicker } from "antd";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import dayjs from "dayjs";
+import { Pagination } from "../../../../shared/components/common/Pagination";
 
 // Helper to generate initials for custom avatar when imageUrl is missing
 const getInitials = (name) => {
@@ -170,6 +171,9 @@ export function BookingRatingListPage() {
   const [ratings, setRatings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 5;
 
   // Filters state
   const [searchQuery, setSearchQuery] = useState("");
@@ -334,6 +338,22 @@ export function BookingRatingListPage() {
     return items;
   }, [ratings, searchQuery, scoreFilter, sortBy, usersMap, filterDate]);
 
+  // Reset page when filters change to prevent out of bounds
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, scoreFilter, sortBy, filterDate]);
+
+  // Calculate total pages for client-side pagination
+  const totalPages = useMemo(() => {
+    return Math.max(1, Math.ceil(processedRatings.length / pageSize));
+  }, [processedRatings.length, pageSize]);
+
+  // Paginated ratings for display
+  const displayedRatings = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return processedRatings.slice(startIndex, startIndex + pageSize);
+  }, [processedRatings, currentPage, pageSize]);
+
   const handleOpenReplyModal = (rating) => {
     setSelectedRating(rating);
     setReplyText(replies[rating.bookingRatingId] || "");
@@ -431,7 +451,7 @@ export function BookingRatingListPage() {
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]" size={15} />
                   <input
                     type="text"
-                    placeholder="Search by customer name, nail artist, or comment..."
+                    placeholder="Search by customer name, Staff Artist, or comment..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300"
@@ -503,13 +523,13 @@ export function BookingRatingListPage() {
                   animate="visible"
                   className="space-y-6"
                 >
-                  {processedRatings.map((rating) => {
+                  {displayedRatings.map((rating) => {
                     const cName = rating.customerName || usersMap[rating.customerId]?.name || "Customer";
                     const avatarUrl = usersMap[rating.customerId]?.avatarUrl || "";
                     const score = rating.overallScore || 5;
                     const tier = getTier(score);
                     const dateFormatted = formatDate(rating.createdAt);
-                    const artistName = rating.nailArtistName || usersMap[rating.nailArtistId]?.name || "Nail Artist";
+                    const artistName = rating.nailArtistName || usersMap[rating.nailArtistId]?.name || "Staff Artist";
                     const isReplied = !!replies[rating.bookingRatingId];
 
                     return (
@@ -656,6 +676,20 @@ export function BookingRatingListPage() {
                     );
                   })}
                 </motion.div>
+              )}
+
+              {/* Pagination footer */}
+              {processedRatings.length > 0 && (
+                <div className="flex justify-between items-center px-6 py-4.5 border border-slate-200/60 bg-white rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.01)]">
+                  <span className="text-xs text-[#a88a9f]">
+                    {language === "vi" ? "Hiển thị" : "Showing"} <span className="font-bold text-[#2d1b35]">{displayedRatings.length}</span> {language === "vi" ? "kết quả" : "items"}
+                  </span>
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={(page) => setCurrentPage(page)}
+                  />
+                </div>
               )}
             </div>
 

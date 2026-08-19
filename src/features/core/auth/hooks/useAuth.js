@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from "react-redux";
-import { login, logout } from "../model/authSlice";
+import { login, loginGoogle, logout } from "../model/authSlice";
 import {
   selectAuthError,
   selectAuthStatus,
@@ -21,6 +21,7 @@ export function useAuth() {
     status,
     error,
     login: (credentials) => dispatch(login(credentials)),
+    loginGoogle: (idToken) => dispatch(loginGoogle(idToken)),
     logout: () => dispatch(logout()),
   };
 }

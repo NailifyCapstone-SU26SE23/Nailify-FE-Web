@@ -60,7 +60,7 @@ export async function fetchSalonStaff(salonId, { pageIndex = 1, pageSize = 20, r
     };
 
     if (role) {
-      params.role = role;
+      params.role = mapRoleToApi(role);
     }
 
     const response = await axiosClient.get(`/Users/salon/${normalizedSalonId}/staff`, {
@@ -94,10 +94,16 @@ export async function fetchSalonStaff(salonId, { pageIndex = 1, pageSize = 20, r
 function mapRoleToApi(role) {
   switch (role) {
     case "NAIL_ARTIST":
+    case "Staff":
+    case "staff":
       return "Staff_Artist";
     case "SALON_MANAGER":
+    case "Manager":
+    case "manager":
       return "Manager";
     case "RECEPTIONIST":
+    case "Receptionist":
+    case "receptionist":
       return "Receptionist";
     default:
       return role;
@@ -108,14 +114,14 @@ function mapRoleToApi(role) {
 export async function createUser(userData) {
   try {
     const formData = new FormData();
-    formData.append("email", String(userData?.email || "").trim());
-    formData.append("password", String(userData?.password || ""));
-    formData.append("firstName", String(userData?.firstName || "").trim());
-    formData.append("lastName", String(userData?.lastName || "").trim());
-    formData.append("phone", String(userData?.phone || "").trim());
-    formData.append("avatarUrl", String(userData?.avatarUrl || "").trim());
-    formData.append("role", mapRoleToApi(userData?.role));
-    formData.append("salonId", String(userData?.salonId || "").trim());
+    formData.append("Email", String(userData?.email || "").trim());
+    formData.append("Password", String(userData?.password || ""));
+    formData.append("FirstName", String(userData?.firstName || "").trim());
+    formData.append("LastName", String(userData?.lastName || "").trim());
+    formData.append("Phone", String(userData?.phone || "").trim());
+    formData.append("AvatarUrl", String(userData?.avatarUrl || "").trim());
+    formData.append("Role", mapRoleToApi(userData?.role));
+    formData.append("SalonId", String(userData?.salonId || "").trim());
 
     if (userData?.imageFile) {
       formData.append("image", userData.imageFile);
@@ -152,28 +158,28 @@ export async function updateUser(userId, userData) {
       const formData = new FormData();
 
       if (userData?.email !== undefined) {
-        formData.append("email", String(userData.email || "").trim());
+        formData.append("Email", String(userData.email || "").trim());
       }
       if (userData?.firstName !== undefined) {
-        formData.append("firstName", String(userData.firstName || "").trim());
+        formData.append("FirstName", String(userData.firstName || "").trim());
       }
       if (userData?.lastName !== undefined) {
-        formData.append("lastName", String(userData.lastName || "").trim());
+        formData.append("LastName", String(userData.lastName || "").trim());
       }
       if (userData?.phone !== undefined) {
-        formData.append("phone", String(userData.phone || "").trim());
+        formData.append("Phone", String(userData.phone || "").trim());
       }
       if (userData?.avatarUrl !== undefined) {
-        formData.append("avatarUrl", String(userData.avatarUrl || "").trim());
+        formData.append("AvatarUrl", String(userData.avatarUrl || "").trim());
       }
       if (userData?.role !== undefined) {
-        formData.append("role", mapRoleToApi(userData.role));
+        formData.append("Role", mapRoleToApi(userData.role));
       }
       if (userData?.salonId !== undefined) {
-        formData.append("salonId", String(userData.salonId || "").trim());
+        formData.append("SalonId", String(userData.salonId || "").trim());
       }
       if (userData?.status !== undefined) {
-        formData.append("status", String(userData.status || "").trim());
+        formData.append("Status", String(userData.status || "").trim());
       }
 
       formData.append("image", userData.imageFile);
@@ -227,7 +233,7 @@ export async function updateUser(userId, userData) {
   }
 }
 
-// Assign skills to nail artist
+// Assign skills to Staff Artist
 // NOTE QUAN TRỌNG: KHÔNG được gộp skill cũ (đã gán) và skill mới vào chung
 // một mảng rồi POST hết một lượt. Endpoint POST /nail-artists/{id}/skills
 // là endpoint "assign mới" (insert) — nếu gửi kèm skill đã được gán trước
@@ -288,7 +294,7 @@ export async function assignNailArtistSkills(artistId, skills) {
         newSkills,
         { headers: getAuthHeaders() }
       );
-      unwrapResponse(response, "Failed to assign new skills to nail artist.");
+      unwrapResponse(response, "Failed to assign new skills to Staff Artist.");
     } catch (err) {
       console.warn("Failed to assign new skills:", {
         message: err.message,
@@ -320,7 +326,7 @@ export async function assignNailArtistSkills(artistId, skills) {
   return { success: true };
 }
 
-// Lấy lịch làm việc của 1 thợ làm móng (nail artist) trong 1 khoảng thời gian
+// Lấy lịch làm việc của 1 thợ làm móng (Staff Artist) trong 1 khoảng thời gian
 // GET /api/Schedules/artist/{artistId}
 //
 // LƯU Ý: Swagger chỉ show rõ path param bắt buộc "artistId". Mô tả endpoint

@@ -4,7 +4,13 @@ import {
   Palette,
   Search,
   Star,
+  ArrowUp,
+  ArrowDown,
+  Trash2,
+  LoaderCircle,
+  Sparkles,
 } from "lucide-react";
+import { Modal, Checkbox } from "antd";
 import { toBlob } from "html-to-image";
 import toast from "react-hot-toast";
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
@@ -34,6 +40,7 @@ import {
   getStaffBookingDetailRoute,
   ROUTES,
 } from "../../../../shared/constants/routes";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 const DEFAULT_DESIGN_IMAGE = "https://images.unsplash.com/photo-1604902396830-aca29e19b067?auto=format&fit=crop&w=800&q=80";
 
@@ -57,6 +64,25 @@ function unwrapApiResponse(response, fallbackMessage) {
 
   return payload.data;
 }
+
+async function fetchProcedures(type) {
+  const response = await axiosClient.get(`/Procedures`, {
+    headers: getAuthHeaders(),
+    params: {
+      ProcedureType: type,
+      PageSize: 100,
+    },
+  });
+  return unwrapApiResponse(response, "Failed to load procedures.");
+}
+
+async function assignProceduresToCustomerNail(customerNailId, payload) {
+  const response = await axiosClient.post(`/Procedures/assign/customer-nail/${customerNailId}`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return unwrapApiResponse(response, "Failed to assign procedures.");
+}
+
 
 function formatCurrencyValue(value) {
   return `${Number(value || 0).toLocaleString("vi-VN")} VND`;
@@ -290,7 +316,7 @@ function buildVariantTemplateFromApi(item) {
 }
 
 function buildShapeOption(item) {
-  const rawLabel = String(item?.name || "--").trim();
+  const rawLabel = String(item?.name).trim();
   return {
     id: String(item?.nailShapeId || item?.id || item?.name || ""),
     label: rawLabel,
@@ -305,7 +331,7 @@ function buildShapeOption(item) {
 function buildSurfaceOption(item) {
   return {
     id: String(item?.nailSurfaceId || item?.id || item?.name || ""),
-    label: String(item?.name || "--").trim(),
+    label: String(item?.name).trim(),
     shaderParam: String(item?.shaderParam || "").trim(),
     price: Number(item?.price || 0),
     duration: Number(item?.duration || 0),
@@ -315,7 +341,7 @@ function buildSurfaceOption(item) {
 function buildDecorationOption(item) {
   return {
     id: String(item?.componentId || item?.id || item?.name || ""),
-    label: String(item?.name || "--").trim(),
+    label: String(item?.name).trim(),
     imageUrl: String(item?.imageUrl || "").trim(),
     componentType: String(item?.componentType || "").trim(),
     price: Number(item?.price || 0),
@@ -326,7 +352,7 @@ function buildDecorationOption(item) {
 function buildCustomerDecorationOption(item) {
   return {
     id: `customer-component-${item?.customerComponentId || item?.id || item?.name || ""}`,
-    label: String(item?.name || "--").trim(),
+    label: String(item?.name).trim(),
     imageUrl: String(item?.imageUrl || "").trim(),
     componentType: String(item?.componentType || "").trim(),
     price: Number(item?.price || 0),
@@ -339,7 +365,7 @@ function buildCustomerDecorationOption(item) {
 function buildExtraServiceOption(item) {
   return {
     id: String(item?.serviceId || item?.id || item?.name || ""),
-    label: String(item?.name || "--").trim(),
+    label: String(item?.name).trim(),
     description: String(item?.description || "").trim(),
     price: Number(item?.price || 0),
     duration: Number(item?.duration || 0),
@@ -438,7 +464,7 @@ function getShapeLengthVariant(shapeName) {
 }
 
 function getShapeFamilyLabel(shapeName) {
-  return String(shapeName || "--")
+  return String(shapeName)
     .replace(/\btrung bình\b/gi, "")
     .replace(/\btrung binh\b/gi, "")
     .replace(/\bmedium\b/gi, "")
@@ -446,7 +472,7 @@ function getShapeFamilyLabel(shapeName) {
     .replace(/\bdai\b/gi, "")
     .replace(/\blong\b/gi, "")
     .replace(/\s+/g, " ")
-    .trim() || "--";
+    .trim();
 }
 
 function getPreferredShapeVariant(shapeOptions, familyLabel, lengthVariant) {
@@ -682,13 +708,13 @@ function buildDefaultPlacement(option, fingerIndex, uniqueToken) {
     customerComponentId: toNullableNumber(option.customerComponentId),
     imageUrl: String(option.imageUrl || "").trim(),
     componentType: String(option.componentType || "").trim(),
-    posX: 50,
-    posY: 52,
-    scale: 0.8,
+    posX: 0,
+    posY: 0,
+    scale: 0.3,
     rotation: 0,
     zIndex: 10,
     configJson: JSON.stringify({
-      scale: 0.8,
+      scale: 0.3,
       rotation: 0,
       zIndex: 10,
     }),
@@ -723,13 +749,200 @@ function getColorStyle(colorMode, primaryColor, secondaryColor) {
   return { backgroundColor: primaryColor };
 }
 
+function renderSurfaceEffects(finish) {
+  const name = String(finish || "").trim().toLowerCase();
+
+  // 🪞 CHROME - Ultra metallic mirror
+  if (name.includes("chrome") || name.includes("mirror") || name.includes("tráng gương") || name.includes("metallic")) {
+    return (
+      <>
+        {/* Silver metallic base sheen */}
+        <div className="pointer-events-none absolute inset-0" style={{
+          background: `linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(200,210,220,0.4) 35%, rgba(80,90,100,0.35) 65%, rgba(255,255,255,0.6) 100%)`,
+        }} />
+        {/* Primary chrome streak */}
+        <div className="pointer-events-none absolute" style={{
+          top: '5%', left: '15%', width: '30%', height: '65%',
+          background: `linear-gradient(to bottom, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.45) 50%, transparent 100%)`,
+          filter: 'blur(3px)', borderRadius: '50%',
+        }} />
+        {/* Center bright line */}
+        <div className="pointer-events-none absolute" style={{
+          top: '8%', left: '35%', width: '8%', height: '55%',
+          background: `linear-gradient(to bottom, rgba(255,255,255,1.0) 0%, rgba(255,255,255,0.3) 70%, transparent 100%)`,
+          filter: 'blur(1px)', borderRadius: '50%',
+        }} />
+        {/* Right edge reflection */}
+        <div className="pointer-events-none absolute" style={{
+          top: '15%', right: '8%', width: '22%', height: '50%',
+          background: `radial-gradient(ellipse, rgba(220,230,240,0.54) 0%, transparent 70%)`,
+          filter: 'blur(4px)',
+        }} />
+        {/* Bottom dark shadow */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0" style={{
+          height: '35%',
+          background: 'linear-gradient(to top, rgba(0,0,0,0.3) 0%, transparent 100%)',
+        }} />
+      </>
+    );
+  }
+
+  // 🌈 HOLOGRAPHIC - Visible rainbow prism
+  if (name.includes("holographic") || name.includes("holo")) {
+    return (
+      <>
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: `linear-gradient(160deg,
+              hsl(0,100%,65%) 0%,
+              hsl(30,100%,60%) 15%,
+              hsl(55,100%,60%) 28%,
+              hsl(130,80%,55%) 42%,
+              hsl(200,100%,60%) 57%,
+              hsl(260,90%,65%) 72%,
+              hsl(300,90%,65%) 85%,
+              hsl(340,100%,65%) 100%)`,
+            opacity: 0.63,
+          }}
+        />
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: `linear-gradient(45deg,
+              hsl(320,100%,70%) 0%,
+              transparent 25%,
+              hsl(190,100%,65%) 45%,
+              transparent 65%,
+              hsl(270,100%,70%) 90%)`,
+            opacity: 0.38,
+          }}
+        />
+        <div
+          className="pointer-events-none absolute"
+          style={{
+            top: '5%', left: '10%', width: '50%', height: '45%',
+            background: 'radial-gradient(ellipse at 30% 25%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.2) 45%, transparent 70%)',
+            filter: 'blur(6px)',
+          }}
+        />
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0"
+          style={{
+            height: '25%',
+            background: 'linear-gradient(to top, rgba(0,0,0,0.2) 0%, transparent 100%)',
+          }}
+        />
+      </>
+    );
+  }
+
+  // 😺 CAT EYE - Magnetic vertical streak
+  if (name.includes("cat") || name.includes("cateye") || name.includes("cat-eye")) {
+    return (
+      <>
+        <div className="pointer-events-none absolute inset-0" style={{
+          background: 'linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.12) 100%)',
+        }} />
+        <div className="pointer-events-none absolute" style={{
+          top: 0, bottom: 0,
+          left: '50%',
+          width: '52%',
+          transform: 'translateX(-50%) rotate(0deg)',
+          background: `linear-gradient(to right,
+            transparent 0%,
+            rgba(255,255,255,0.2) 25%,
+            rgba(255,255,255,0.6) 50%,
+            rgba(255,255,255,0.2) 75%,
+            transparent 100%)`,
+          filter: 'blur(5px)',
+        }} />
+        <div className="pointer-events-none absolute inset-x-0 top-0" style={{
+          height: '28%',
+          background: `linear-gradient(to bottom, rgba(255,255,255,0.4) 0%, transparent 100%)`,
+        }} />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0" style={{
+          height: '25%',
+          background: 'linear-gradient(to top, rgba(0,0,0,0.2) 0%, transparent 100%)',
+        }} />
+      </>
+    );
+  }
+
+  // 🎭 MATTE - Soft flat finish (no shine)
+  if (name.includes("matte") || name.includes("nhám")) {
+    return (
+      <>
+        <div className="pointer-events-none absolute inset-0" style={{
+          background: 'rgba(255,255,255,0.18)',
+          backdropFilter: 'blur(0.5px)',
+        }} />
+        <div className="pointer-events-none absolute inset-x-0 top-0" style={{
+          height: '40%',
+          background: 'linear-gradient(to bottom, rgba(255,255,255,0.1) 0%, transparent 100%)',
+        }} />
+      </>
+    );
+  }
+
+  // 🧪 JELLY - Border inset translucent sheen
+  if (name.includes("jelly")) {
+    return (
+      <span className="pointer-events-none absolute inset-[6%] rounded-[inherit] border border-white/35 bg-white/12" />
+    );
+  }
+
+  // ✨ GLITTER - Sparkles
+  if (name.includes("glitter")) {
+    return (
+      <>
+        <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_25%_35%,rgba(255,255,255,0.95)_0_1px,transparent_1.5px),radial-gradient(circle_at_70%_22%,rgba(255,255,255,0.75)_0_1px,transparent_1.6px),radial-gradient(circle_at_46%_68%,rgba(255,255,255,0.85)_0_1px,transparent_1.5px),radial-gradient(circle_at_78%_74%,rgba(255,255,255,0.9)_0_1px,transparent_1.8px)] opacity-85" />
+        <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,rgba(255,255,255,0.12)_55%,transparent_100%)]" />
+      </>
+    );
+  }
+
+  // ✨ GLOSSY (Default) - Natural shine
+  return (
+    <>
+      <div className="pointer-events-none absolute inset-0" style={{
+        background: 'linear-gradient(160deg, rgba(255,255,255,0.1) 0%, rgba(180,180,200,0.1) 40%, rgba(80,80,120,0.15) 75%, rgba(40,40,80,0.2) 100%)',
+      }} />
+      <div className="pointer-events-none absolute" style={{
+        top: '5%', left: '8%', width: '55%', height: '60%',
+        background: `radial-gradient(ellipse at 28% 25%, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.22) 40%, transparent 72%)`,
+        filter: `blur(8px)`,
+        transform: 'rotate(-12deg)',
+      }} />
+      <div className="pointer-events-none absolute" style={{
+        top: '10%', left: '18%', width: '16%', height: '52%',
+        background: `linear-gradient(to bottom, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.25) 45%, transparent 100%)`,
+        filter: `blur(2px)`,
+        borderRadius: '50%',
+      }} />
+      <div className="pointer-events-none absolute inset-x-0 top-0" style={{
+        height: '32%',
+        background: `linear-gradient(to bottom, rgba(255,255,255,0.27) 0%, transparent 100%)`,
+      }} />
+      <div className="pointer-events-none absolute" style={{
+        top: '18%', right: '8%', width: '22%', height: '42%',
+        background: `radial-gradient(ellipse, rgba(255,255,255,0.2) 0%, transparent 70%)`,
+        filter: `blur(4px)`,
+      }} />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0" style={{
+        height: '35%',
+        background: 'linear-gradient(to top, rgba(60,40,80,0.28) 0%, rgba(60,40,80,0.08) 60%, transparent 100%)',
+      }} />
+      <div className="pointer-events-none absolute inset-y-0 right-0" style={{
+        width: '20%',
+        background: 'linear-gradient(to left, rgba(60,40,80,0.15) 0%, transparent 100%)',
+      }} />
+    </>
+  );
+}
+
 function PreviewNail({ components = [], finish, fingerLabel, index, isActive, shape, length, colorStyle, shapeImageUrl }) {
   const metrics = getNailMetrics(shape, length, index);
-  const isChrome = finish === "Chrome";
-  const isJelly = finish === "Jelly";
-  const isMatte = finish === "Matte";
-  const isGlitter = finish === "Glitter";
-  const isCatEye = components.some((item) => item.label === "Cat Eye");
   const maskStyle = shapeImageUrl
     ? {
       maskImage: `url(${shapeImageUrl})`,
@@ -743,41 +956,21 @@ function PreviewNail({ components = [], finish, fingerLabel, index, isActive, sh
     }
     : {};
 
+  const isClippedType = (type) => {
+    const t = String(type || "").toLowerCase().trim();
+    return t === "sticker" || t === "art" || t === "1" || t === "3";
+  };
+
   return (
     <div className={`flex flex-col items-center gap-2 ${isActive ? "scale-[1.03]" : ""}`}>
       <div
-        className={`relative w-[3.8rem] overflow-hidden rounded-t-[1.9rem] rounded-b-[0.9rem] border-2 border-[#f7cadd] bg-[linear-gradient(180deg,#fff7fb_0%,#fff1f8_100%)] shadow-[0_14px_22px_rgba(236,72,153,0.10)] ${isActive ? "ring-2 ring-[#ef6aac]/45 ring-offset-2 ring-offset-[#fff2f8]" : ""}`}
+        className={`relative w-[3.8rem] rounded-t-[1.9rem] rounded-b-[0.9rem] border-2 border-[#f7cadd] bg-[linear-gradient(180deg,#fff7fb_0%,#fff1f8_100%)] shadow-[0_14px_22px_rgba(236,72,153,0.10)] ${isActive ? "ring-2 ring-[#ef6aac]/45 ring-offset-2 ring-offset-[#fff2f8]" : ""}`}
         style={{ height: metrics.height + 34 }}
       >
-        <div className="absolute inset-[10%]" style={maskStyle}>
+        {/* Masked section for background and Art type components */}
+        <div className="absolute inset-[10%] overflow-hidden" style={maskStyle}>
           <div className="absolute inset-0" style={colorStyle} />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_18%,rgba(255,255,255,0.4),transparent_42%)]" />
-
-          {isChrome ? (
-            <>
-              <span className="absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.55)_0%,transparent_30%,rgba(255,255,255,0.1)_48%,rgba(255,255,255,0.45)_72%,transparent_100%)] mix-blend-screen" />
-              <span className="absolute inset-y-0 left-[18%] w-[18%] bg-white/25 blur-[3px]" />
-            </>
-          ) : null}
-
-          {isJelly ? (
-            <span className="absolute inset-[6%] rounded-[inherit] border border-white/35 bg-white/12" />
-          ) : null}
-
-          {isMatte ? (
-            <span className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,255,0.08),transparent_50%)] mix-blend-normal" />
-          ) : null}
-
-          {isGlitter ? (
-            <>
-              <span className="absolute inset-0 bg-[radial-gradient(circle_at_25%_35%,rgba(255,255,255,0.95)_0_1px,transparent_1.5px),radial-gradient(circle_at_70%_22%,rgba(255,255,255,0.75)_0_1px,transparent_1.6px),radial-gradient(circle_at_46%_68%,rgba(255,255,255,0.85)_0_1px,transparent_1.5px),radial-gradient(circle_at_78%_74%,rgba(255,255,255,0.9)_0_1px,transparent_1.8px)] opacity-85" />
-              <span className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,rgba(255,255,255,0.12)_55%,transparent_100%)]" />
-            </>
-          ) : null}
-
-          {isCatEye ? (
-            <span className="absolute inset-y-[8%] left-1/2 w-[22%] -translate-x-1/2 rounded-full bg-white/65 blur-[5px] opacity-80" />
-          ) : null}
+          {renderSurfaceEffects(finish)}
 
           {shapeImageUrl ? (
             <img
@@ -790,15 +983,37 @@ function PreviewNail({ components = [], finish, fingerLabel, index, isActive, sh
           ) : null}
 
           {components.map((component) => (
-            component.imageUrl ? (
+            component.imageUrl && isClippedType(component.componentType || component.type) ? (
               <img
                 key={component.key}
                 src={component.imageUrl}
                 alt={component.label}
                 className="absolute h-9 w-9 object-contain drop-shadow-[0_4px_8px_rgba(234,79,147,0.18)]"
                 style={{
-                  left: `${component.posX}%`,
-                  top: `${component.posY}%`,
+                  left: `${(Number(component.posX ?? 0) + 0.5) * 100}%`,
+                  top: `${(Number(component.posY ?? 0) + 0.5) * 100}%`,
+                  zIndex: component.zIndex,
+                  transform: `translate(-50%, -50%) scale(${component.scale}) rotate(${component.rotation}deg)`,
+                }}
+                loading="lazy"
+                referrerPolicy="no-referrer"
+              />
+            ) : null
+          ))}
+        </div>
+
+        {/* Unmasked section for Gen type components */}
+        <div className="absolute inset-[10%] pointer-events-none">
+          {components.map((component) => (
+            component.imageUrl && !isClippedType(component.componentType || component.type) ? (
+              <img
+                key={component.key}
+                src={component.imageUrl}
+                alt={component.label}
+                className="absolute h-9 w-9 object-contain drop-shadow-[0_4px_8px_rgba(234,79,147,0.18)]"
+                style={{
+                  left: `${(Number(component.posX ?? 0) + 0.5) * 100}%`,
+                  top: `${(Number(component.posY ?? 0) + 0.5) * 100}%`,
                   zIndex: component.zIndex,
                   transform: `translate(-50%, -50%) scale(${component.scale}) rotate(${component.rotation}deg)`,
                 }}
@@ -961,20 +1176,32 @@ function ChoiceGrid({ items, selected, onSelect, type = "pill" }) {
         const isSelected = selected.includes(value);
         const metaLabel = typeof item === "string" ? "" : formatOptionMeta(item);
         const subLabel = typeof item === "string" ? "" : item?.componentType || "";
+        const imageUrl = typeof item === "string" ? "" : String(item?.imageUrl || "").trim();
 
         return (
           <button
             key={value}
             type="button"
             onClick={() => onSelect(value)}
-            className={`rounded-[14px] border px-3 py-2 text-left transition ${isSelected
+            className={`rounded-[14px] border px-3 py-2 text-left transition flex items-center gap-3 ${isSelected
               ? "border-[#f2bfd4] bg-[#fff1f7] text-[#ea4f93]"
               : "border-[#f4dbe7] bg-white text-[#b18099] hover:bg-[#fff8fc]"
               }`}
           >
-            <p className="text-[10px] font-extrabold">{value}</p>
-            {subLabel ? <p className="mt-1 text-[9px] font-semibold text-[#a98c9f]">{subLabel}</p> : null}
-            {metaLabel ? <p className="mt-1 text-[9px] font-semibold text-[#d2508a]">{metaLabel}</p> : null}
+            {imageUrl && (
+              <img
+                src={imageUrl}
+                alt={value}
+                className="h-10 w-10 shrink-0 rounded-xl border border-[#f3c8db] bg-white object-contain p-1"
+                loading="lazy"
+                referrerPolicy="no-referrer"
+              />
+            )}
+            <div className="min-w-0">
+              <p className="text-[10px] font-extrabold truncate">{value}</p>
+              {subLabel ? <p className="mt-0.5 text-[9px] font-semibold text-[#a98c9f] truncate">{subLabel}</p> : null}
+              {metaLabel ? <p className="mt-0.5 text-[9px] font-semibold text-[#d2508a] truncate">{metaLabel}</p> : null}
+            </div>
           </button>
         );
       })}
@@ -1005,6 +1232,7 @@ ChoiceGrid.propTypes = {
 };
 
 export function StaffNailDesignStudioPage() {
+  const { language } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const { bookingId } = useParams();
@@ -1043,6 +1271,12 @@ export function StaffNailDesignStudioPage() {
 
   const [selectedTemplateId, setSelectedTemplateId] = useState(studio?.selectedDesign.id ?? "");
   const [selectedVariantId, setSelectedVariantId] = useState("");
+  const [isProcedureModalOpen, setIsProcedureModalOpen] = useState(false);
+  const [commonProcedures, setCommonProcedures] = useState([]);
+  const [modelSpecificProcedures, setModelSpecificProcedures] = useState([]);
+  const [selectedProcedures, setSelectedProcedures] = useState([]);
+  const [procedureCustomerNailId, setProcedureCustomerNailId] = useState(null);
+  const [isAssigningProcedures, setIsAssigningProcedures] = useState(false);
   const previewContainerRef = useRef(null);
   const hasHydratedInitialNailRef = useRef(false);
   const [selectedShape, setSelectedShape] = useState(
@@ -1815,8 +2049,8 @@ export function StaffNailDesignStudioPage() {
         customerComponentId: toNullableNumber(item?.customerComponentId),
         imageUrl: String(sourceComponent?.imageUrl || "").trim(),
         componentType: String(sourceComponent?.componentType || "").trim(),
-        posX: Number(item?.posX ?? 50),
-        posY: Number(item?.posY ?? 50),
+        posX: Number(item?.posX ?? 0),
+        posY: Number(item?.posY ?? 0),
         ...parsePlacementConfig(item?.configJson),
         configJson: String(item?.configJson || ""),
       });
@@ -1979,8 +2213,8 @@ export function StaffNailDesignStudioPage() {
             componentId: Number(item?.component?.componentId || item?.componentId || 0),
             imageUrl: String(item?.component?.imageUrl || "").trim(),
             componentType: String(item?.component?.componentType || "").trim(),
-            posX: Number(item?.posX ?? 50),
-            posY: Number(item?.posY ?? 50),
+            posX: Number(item?.posX ?? 0),
+            posY: Number(item?.posY ?? 0),
             ...parsePlacementConfig(item?.configJson),
             configJson: String(item?.configJson || ""),
           });
@@ -1999,8 +2233,8 @@ export function StaffNailDesignStudioPage() {
         componentId: Number(item?.component?.componentId || item?.componentId || 0),
         imageUrl: String(item?.component?.imageUrl || "").trim(),
         componentType: String(item?.component?.componentType || "").trim(),
-        posX: Number(item?.posX ?? 50),
-        posY: Number(item?.posY ?? 50),
+        posX: Number(item?.posX ?? 0),
+        posY: Number(item?.posY ?? 0),
         ...parsePlacementConfig(item?.configJson),
         configJson: String(item?.configJson || ""),
       });
@@ -2238,6 +2472,47 @@ export function StaffNailDesignStudioPage() {
     });
   };
 
+  const moveStep = (index, direction) => {
+    const nextList = [...selectedProcedures];
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= nextList.length) return;
+    const temp = nextList[index];
+    nextList[index] = nextList[targetIndex];
+    nextList[targetIndex] = temp;
+    setSelectedProcedures(nextList);
+  };
+
+  const handleCloseProcedureModal = () => {
+    setIsProcedureModalOpen(false);
+    setSelectedProcedures([]);
+    setCommonProcedures([]);
+    setModelSpecificProcedures([]);
+  };
+
+  const handleSaveProcedures = async () => {
+    if (!procedureCustomerNailId || isAssigningProcedures) return;
+    if (selectedProcedures.length === 0) {
+      toast.error(language === "vi" ? "Vui lòng chọn ít nhất một quy trình." : "Please select at least one procedure.");
+      return;
+    }
+
+    setIsAssigningProcedures(true);
+    try {
+      const payload = selectedProcedures.map((p, index) => ({
+        procedureId: p.procedureId,
+        stepOrder: index + 1,
+      }));
+      await assignProceduresToCustomerNail(procedureCustomerNailId, payload);
+      toast.success(language === "vi" ? "Lưu quy trình thành công!" : "Procedures assigned successfully!");
+      handleCloseProcedureModal();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to assign procedures.";
+      toast.error(msg);
+    } finally {
+      setIsAssigningProcedures(false);
+    }
+  };
+
   const detailRoute = getStaffBookingDetailRoute(bookingId);
   const handleConfirmDesign = async () => {
     if (!selectedShapeOption || !selectedSurfaceOption || isConfirmingDesign) {
@@ -2290,6 +2565,23 @@ export function StaffNailDesignStudioPage() {
       setIsDesignConfirmed(true);
       setDesignActionSuccess("Custom nail created successfully. You can update this booking now.");
       toast.success("Custom nail created successfully.");
+
+      const customerNailId = Number(createdCustomerNail?.customerNailId || 0);
+      if (customerNailId) {
+        setProcedureCustomerNailId(customerNailId);
+        setIsProcedureModalOpen(true);
+        try {
+          const [commonData, specificData] = await Promise.all([
+            fetchProcedures("Common"),
+            fetchProcedures("ModelSpecific")
+          ]);
+          setCommonProcedures(commonData?.items || []);
+          setModelSpecificProcedures(specificData?.items || []);
+        } catch (err) {
+          console.error("Failed to fetch procedures", err);
+          toast.error("Failed to load procedures list.");
+        }
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to create customer nail.";
       setIsDesignConfirmed(false);
@@ -2823,11 +3115,54 @@ export function StaffNailDesignStudioPage() {
                     <p className="mb-3 text-[10px] font-bold text-[#b07d97]">
                       Editing decoration for {activeNailIndex === -1 ? "all fingers" : `${NAIL_LABELS[activeNailIndex]} nail`}
                     </p>
-                    <ChoiceGrid
-                      items={decorationOptions.length ? decorationOptions : studio.builder.decorations}
-                      selected={selectedDecorations}
-                      onSelect={toggleNailDecoration}
-                    />
+                    {(() => {
+                      const allDecorations = decorationOptions.length ? decorationOptions : (studio?.builder?.decorations || []);
+
+                      const groupByType = (decorations) => {
+                        const groups = {
+                          Gem: [],
+                          Sticker: [],
+                          Charm: [],
+                          Art: []
+                        };
+
+                        decorations.forEach(dec => {
+                          const type = String(dec?.componentType || dec?.type || "").trim();
+                          const normalized = type.charAt(0).toUpperCase() + type.slice(1).toLowerCase();
+                          if (groups[normalized]) {
+                            groups[normalized].push(dec);
+                          } else {
+                            if (normalized.toLowerCase().includes("art")) groups.Art.push(dec);
+                            else if (normalized.toLowerCase().includes("sticker")) groups.Sticker.push(dec);
+                            else if (normalized.toLowerCase().includes("charm")) groups.Charm.push(dec);
+                            else groups.Gem.push(dec);
+                          }
+                        });
+                        return groups;
+                      };
+
+                      const grouped = groupByType(allDecorations);
+
+                      return (
+                        <div className="space-y-4">
+                          {Object.entries(grouped).map(([category, list]) => {
+                            if (list.length === 0) return null;
+                            return (
+                              <div key={category} className="space-y-2">
+                                <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#ea4f93] pl-1">
+                                  {category}
+                                </p>
+                                <ChoiceGrid
+                                  items={list}
+                                  selected={selectedDecorations}
+                                  onSelect={toggleNailDecoration}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   <div>
@@ -2893,12 +3228,12 @@ export function StaffNailDesignStudioPage() {
                   >
                     {isUpdatingBookingDesign ? "Updating Booking..." : "Update Booking Design"}
                   </button>
-                  <button
+                  {/* <button
                     type="button"
                     className="rounded-[12px] border border-[#f2bfd4] bg-white px-4 py-3 text-xs font-bold text-[#ea4f93]"
                   >
                     Save Design
-                  </button>
+                  </button> */}
                   <button
                     type="button"
                     onClick={handleConfirmDesign}
@@ -2966,6 +3301,194 @@ export function StaffNailDesignStudioPage() {
           </div>
         </div>
       </div>
+      {/* Assign Procedures Modal */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2 text-[#402542] border-b border-[#f3d6e5] pb-3">
+            <Sparkles className="text-[#ea4f93]" size={20} />
+            <span className="font-extrabold text-lg">
+              {language === "vi" ? "Chỉ định Quy trình Thực hiện" : "Assign Service Procedures"}
+            </span>
+          </div>
+        }
+        open={isProcedureModalOpen}
+        onCancel={handleCloseProcedureModal}
+        footer={null}
+        width={900}
+        centered
+        destroyOnClose
+        className="rounded-2xl"
+      >
+        <div className="mt-4 grid gap-6 md:grid-cols-[1.5fr_1fr]">
+          {/* Group Lists */}
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+            {/* Common Procedures */}
+            <div>
+              <h4 className="text-xs font-extrabold text-[#c08aa4] uppercase tracking-wider mb-2">
+                {language === "vi" ? "1. Quy trình chung" : "1. Common Procedures"}
+              </h4>
+              <div className="grid gap-2">
+                {commonProcedures.map((proc) => {
+                  const isChecked = selectedProcedures.some((p) => p.procedureId === proc.procedureId);
+                  return (
+                    <div
+                      key={proc.procedureId}
+                      className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${isChecked
+                        ? "border-[#ea4f93] bg-[#fff9fc]"
+                        : "border-slate-100 bg-slate-50/50 hover:bg-slate-50"
+                        }`}
+                      onClick={() => {
+                        if (isChecked) {
+                          setSelectedProcedures(selectedProcedures.filter((p) => p.procedureId !== proc.procedureId));
+                        } else {
+                          setSelectedProcedures([...selectedProcedures, proc]);
+                        }
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          checked={isChecked}
+                          onChange={() => { }} // handled by div onClick
+                          className="accent-[#ea4f93]"
+                        />
+                        <div>
+                          <p className="text-xs font-bold text-slate-800">{proc.name}</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5">{proc.description}</p>
+                        </div>
+                      </div>
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">
+                        {proc.duration} mins
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Model Specific Procedures */}
+            <div className="pt-2">
+              <h4 className="text-xs font-extrabold text-[#c08aa4] uppercase tracking-wider mb-2">
+                {language === "vi" ? "2. Quy trình riêng theo mẫu" : "2. Model Specific Procedures"}
+              </h4>
+              <div className="grid gap-2">
+                {modelSpecificProcedures.map((proc) => {
+                  const isChecked = selectedProcedures.some((p) => p.procedureId === proc.procedureId);
+                  return (
+                    <div
+                      key={proc.procedureId}
+                      className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${isChecked
+                        ? "border-[#ea4f93] bg-[#fff9fc]"
+                        : "border-slate-100 bg-slate-50/50 hover:bg-slate-50"
+                        }`}
+                      onClick={() => {
+                        if (isChecked) {
+                          setSelectedProcedures(selectedProcedures.filter((p) => p.procedureId !== proc.procedureId));
+                        } else {
+                          setSelectedProcedures([...selectedProcedures, proc]);
+                        }
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          checked={isChecked}
+                          onChange={() => { }} // handled by div onClick
+                          className="accent-[#ea4f93]"
+                        />
+                        <div>
+                          <p className="text-xs font-bold text-slate-800">{proc.name}</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5">{proc.description}</p>
+                        </div>
+                      </div>
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">
+                        {proc.duration} mins
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Selected Timeline */}
+          <div className="rounded-2xl border border-[#f3d6e5] bg-[#fffafc] p-4 flex flex-col min-h-[300px]">
+            <h4 className="text-xs font-extrabold text-[#ea4f93] uppercase tracking-wider mb-3">
+              {language === "vi" ? "Quy trình đã chọn (Theo thứ tự)" : "Selected Order Timeline"}
+            </h4>
+
+            <div className="flex-1 overflow-y-auto pr-1 space-y-2 max-h-[45vh] custom-scrollbar">
+              {selectedProcedures.length === 0 ? (
+                <p className="text-xs text-[#a98c9f] italic text-center mt-12">
+                  {language === "vi" ? "Vui lòng chọn các bước bên trái..." : "Please check steps from the left list..."}
+                </p>
+              ) : (
+                selectedProcedures.map((proc, idx) => (
+                  <div
+                    key={proc.procedureId}
+                    className="flex items-center justify-between bg-white border border-[#f5dfeb] p-2.5 rounded-xl shadow-2xs"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ea4f93]/10 text-[10px] font-bold text-[#ea4f93]">
+                        {idx + 1}
+                      </span>
+                      <span className="text-xs font-bold text-slate-800 truncate">{proc.name}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        disabled={idx === 0}
+                        onClick={() => moveStep(idx, -1)}
+                        className="p-1 rounded-md text-slate-400 hover:text-[#ea4f93] hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center"
+                      >
+                        <ArrowUp size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={idx === selectedProcedures.length - 1}
+                        onClick={() => moveStep(idx, 1)}
+                        className="p-1 rounded-md text-slate-400 hover:text-[#ea4f93] hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center"
+                      >
+                        <ArrowDown size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedProcedures(selectedProcedures.filter((p) => p.procedureId !== proc.procedureId))}
+                        className="p-1 rounded-md text-slate-400 hover:text-red-500 hover:bg-slate-50 cursor-pointer flex items-center justify-center"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="pt-4 border-t border-[#f7dfeb] mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={handleCloseProcedureModal}
+                className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-bold text-slate-500 hover:bg-slate-50 cursor-pointer"
+              >
+                {language === "vi" ? "Bỏ qua" : "Skip / Close"}
+              </button>
+              <button
+                type="button"
+                disabled={selectedProcedures.length === 0 || isAssigningProcedures}
+                onClick={handleSaveProcedures}
+                className="flex-1 rounded-xl bg-gradient-to-r from-[#ea4f93] to-[#d93b7d] py-2.5 text-xs font-bold text-white shadow-md hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
+              >
+                {isAssigningProcedures ? (
+                  <span className="flex items-center justify-center gap-1.5">
+                    <LoaderCircle size={14} className="animate-spin" />
+                    {language === "vi" ? "Đang lưu..." : "Saving..."}
+                  </span>
+                ) : (
+                  language === "vi" ? "Xác nhận Quy trình" : "Confirm Assignment"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Modal>
     </section>
   );
 }

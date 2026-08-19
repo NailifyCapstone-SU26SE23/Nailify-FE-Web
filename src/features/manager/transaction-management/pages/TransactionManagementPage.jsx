@@ -85,7 +85,11 @@ export function TransactionManagementPage() {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchTransactions({ pageNumber: currentPage, pageSize });
+      const data = await fetchTransactions({ 
+        pageNumber: currentPage, 
+        pageSize, 
+        status: statusFilter 
+      });
 
       if (data && data.items && data.items.length > 0) {
         const enrichedItems = await Promise.all(
@@ -114,7 +118,12 @@ export function TransactionManagementPage() {
 
   useEffect(() => {
     loadTransactions();
-  }, [currentPage, pageSize]);
+  }, [currentPage, pageSize, statusFilter]);
+
+  // Reset page when search or status filter changes to prevent offset bugs
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter]);
 
   // Load booking details when selected transaction changes
   useEffect(() => {
@@ -164,6 +173,28 @@ export function TransactionManagementPage() {
 
     return items;
   }, [transactionsData.items, searchQuery, statusFilter]);
+
+  // Determine if server is returning paginated data or a flat array of all records
+  const isServerPaginated = useMemo(() => {
+    return transactionsData.totalPages > 1 && transactionsData.items.length < transactionsData.totalCount;
+  }, [transactionsData]);
+
+  // Calculate actual total pages for client-side or server-side pagination
+  const totalPages = useMemo(() => {
+    if (isServerPaginated) {
+      return transactionsData.totalPages;
+    }
+    return Math.max(1, Math.ceil(processedTransactions.length / pageSize));
+  }, [isServerPaginated, transactionsData.totalPages, processedTransactions.length, pageSize]);
+
+  // Paginated/Sliced transactions for display
+  const displayedTransactions = useMemo(() => {
+    if (isServerPaginated) {
+      return processedTransactions;
+    }
+    const startIndex = (currentPage - 1) * pageSize;
+    return processedTransactions.slice(startIndex, startIndex + pageSize);
+  }, [isServerPaginated, processedTransactions, currentPage, pageSize]);
 
   // Recalculate metrics based on all current transactions
   const metrics = useMemo(() => {
@@ -455,7 +486,7 @@ export function TransactionManagementPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {processedTransactions.map((tx) => (
+                    {displayedTransactions.map((tx) => (
                       <motion.tr
                         key={tx.transactionId}
                         variants={fadeInUp}
@@ -535,14 +566,14 @@ export function TransactionManagementPage() {
               </div>
 
               {/* Pagination footer */}
-              {transactionsData.totalPages > 1 && (
+              {processedTransactions.length > 0 && (
                 <div className="flex justify-between items-center px-6 py-4.5 border-t border-slate-100 bg-slate-50/30">
                   <span className="text-xs text-[#a88a9f]">
-                    {language === "vi" ? "Hiển thị" : "Showing"} <span className="font-bold text-[#2d1b35]">{processedTransactions.length}</span> {language === "vi" ? "kết quả" : "items"}
+                    {language === "vi" ? "Hiển thị" : "Showing"} <span className="font-bold text-[#2d1b35]">{displayedTransactions.length}</span> {language === "vi" ? "kết quả" : "items"}
                   </span>
                   <Pagination
                     currentPage={currentPage}
-                    totalPages={transactionsData.totalPages}
+                    totalPages={totalPages}
                     onPageChange={(p) => setCurrentPage(p)}
                   />
                 </div>

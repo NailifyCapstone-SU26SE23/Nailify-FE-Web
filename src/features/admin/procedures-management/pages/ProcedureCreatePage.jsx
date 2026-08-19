@@ -54,10 +54,10 @@ export function ProcedureCreatePage() {
 
   const summaryItems = useMemo(
     () => [
-      [t("adminProcedures.procedureName"), formValues.name || "--"],
+      [t("adminProcedures.procedureName"), formValues.name],
       [t("adminProcedures.duration"), formValues.duration !== "" ? formatProcedureDuration(formValues.duration) : "--"],
       [t("adminProcedures.required"), formValues.isRequired ? t("adminProcedures.required") : t("adminProcedures.optional")],
-      [t("adminProcedures.description"), formValues.description || "--"],
+      [t("adminProcedures.description"), formValues.description],
     ],
     [formValues.description, formValues.duration, formValues.isRequired, formValues.name],
   );

@@ -264,10 +264,29 @@ export function UserManagementDetailPage() {
       return;
     }
 
+    const isSalonRole = ["staff", "staff_artist", "receptionist", "manager"].includes(
+      String(formValues.rawRole || formValues.role || "").trim().toLowerCase()
+    );
+
+    if (isSalonRole && !formValues.salonId) {
+      toast.error(language === "vi" ? "Vui lòng chọn chi nhánh Salon." : "Please select a salon branch.");
+      return;
+    }
+
     setIsSaving(true);
 
     try {
       const updatedUser = await updateAdminUser(userId, formValues);
+
+      let nextSalonDetail = salonDetail;
+      if (updatedUser?.salonId) {
+        if (updatedUser.salonId !== salonDetail?.id) {
+          nextSalonDetail = await fetchSalonById(updatedUser.salonId).catch(() => null);
+        }
+      } else {
+        nextSalonDetail = null;
+      }
+
       const nextValues = {
         ...updatedUser,
         branch: updatedUser.salon,
@@ -277,6 +296,7 @@ export function UserManagementDetailPage() {
         notes: formValues.notes || "",
       };
 
+      setSalonDetail(nextSalonDetail);
       setInitialUser(nextValues);
       setFormValues(nextValues);
       setShowSaveConfirm(false);
@@ -385,7 +405,7 @@ export function UserManagementDetailPage() {
                   className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_26px_rgba(239,93,180,0.24)] transition hover:scale-[1.01] sm:w-auto"
                 >
                   {isSaving ? <LoaderCircle size={16} className="animate-spin" /> : <Save size={16} />}
-                  <span>{isSaving ? t("userManagement.detail.creating") : t("userManagement.detail.saveChanges")}</span>
+                  <span>{isSaving ? (language === "vi" ? "Đang tạo..." : "Creating...") : (language === "vi" ? "Lưu thay đổi" : "Save changes")}</span>
                 </button>
 
                 <button
@@ -424,23 +444,23 @@ export function UserManagementDetailPage() {
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="rounded-2xl bg-white px-4 py-3">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d39bb5]">{t("userManagement.detail.salonName")}</p>
-                      <p className="mt-2 font-semibold text-[var(--color-ink)]">{salonDetail?.name || "--"}</p>
+                      <p className="mt-2 font-semibold text-[var(--color-ink)]">{salonDetail?.name}</p>
                     </div>
                     <div className="rounded-2xl bg-white px-4 py-3">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d39bb5]">{t("userManagement.detail.status")}</p>
-                      <p className="mt-2 font-semibold text-[var(--color-ink)]">{salonDetail?.status || "--"}</p>
+                      <p className="mt-2 font-semibold text-[var(--color-ink)]">{salonDetail?.status}</p>
                     </div>
                     <div className="rounded-2xl bg-white px-4 py-3 sm:col-span-2">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d39bb5]">{t("userManagement.detail.address")}</p>
-                      <p className="mt-2 flex items-start gap-2 text-[var(--color-ink)]"><MapPin size={15} className="mt-0.5 text-[#d45b9f]" />{salonDetail?.address || "--"}</p>
+                      <p className="mt-2 flex items-start gap-2 text-[var(--color-ink)]"><MapPin size={15} className="mt-0.5 text-[#d45b9f]" />{salonDetail?.address}</p>
                     </div>
                     <div className="rounded-2xl bg-white px-4 py-3">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d39bb5]">{t("userManagement.detail.phone")}</p>
-                      <p className="mt-2 flex items-center gap-2 text-[var(--color-ink)]"><Phone size={15} className="text-[#d45b9f]" />{salonDetail?.phone || "--"}</p>
+                      <p className="mt-2 flex items-center gap-2 text-[var(--color-ink)]"><Phone size={15} className="text-[#d45b9f]" />{salonDetail?.phone}</p>
                     </div>
                     <div className="rounded-2xl bg-white px-4 py-3">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d39bb5]">Artist {t("userManagement.detail.status")}</p>
-                      <p className="mt-2 font-semibold text-[var(--color-ink)]">{artistDetail?.status || formValues.status || "--"}</p>
+                      <p className="mt-2 font-semibold text-[var(--color-ink)]">{artistDetail?.status || formValues.status}</p>
                     </div>
                   </div>
                 </div>
@@ -515,7 +535,7 @@ export function UserManagementDetailPage() {
         title={t("userManagement.detail.saveUserChanges")}
         subtitle={t("userManagement.detail.saveUserChanges")}
         description={t("userManagement.detail.saveUserChangesDesc")}
-        confirmText={t("userManagement.detail.saveChangesBtn")}
+        confirmText={language === "vi" ? "Lưu thay đổi" : "Save changes"}
         cancelText={t("userManagement.detail.reviewAgain")}
         confirmIcon={Save}
         onConfirm={handleSave}

@@ -72,7 +72,7 @@ function pickNumber(...values) {
   return 0;
 }
 
-function normalizeTask(task, fallbackTask = {}) {
+export function normalizeTask(task, fallbackTask = {}) {
   return {
     bookingProcedureId: pickTrimmedString(task?.bookingProcedureId, fallbackTask?.bookingProcedureId),
     bookingItemId: pickTrimmedString(task?.bookingItemId, fallbackTask?.bookingItemId),
@@ -104,7 +104,7 @@ function normalizeTask(task, fallbackTask = {}) {
   };
 }
 
-async function fetchBookingProceduresByBookingItem(bookingItemId) {
+export async function fetchBookingProceduresByBookingItem(bookingItemId) {
   const normalizedBookingItemId = String(bookingItemId || "").trim();
 
   if (!normalizedBookingItemId) {

@@ -87,7 +87,7 @@ export const dashboardService = {
   },
   getStaffs: async () => {
     const response = await axiosClient.get("/Users", {
-      params: { role: "Staff", pageSize: 1000 },
+      params: { role: "Staff_Artist", pageSize: 1000 },
       headers: getAuthHeaders(),
     });
     return unwrapResponse(response, "Failed to load staffs");

@@ -126,8 +126,8 @@ export function ReceptionistCustomerDetailPage() {
 
   // Customer Preferences State
   const [preferenceTags, setPreferenceTags] = useState(
-    language === "vi" 
-      ? ["Sơn Gel nhạt", "Móng vuông tròn", "Ưu tiên thợ kinh nghiệm"] 
+    language === "vi"
+      ? ["Sơn Gel nhạt", "Móng vuông tròn", "Ưu tiên thợ kinh nghiệm"]
       : ["Light Gel Polish", "Squoval Nails", "Experienced Artist Preferred"]
   );
   const [newTagInput, setNewTagInput] = useState("");
@@ -324,14 +324,14 @@ export function ReceptionistCustomerDetailPage() {
 
         {/* Action Controls */}
         <div className="flex items-center gap-2.5">
-          <button
+          {/* <button
             type="button"
             onClick={() => setIsEditModalOpen(true)}
             className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-white border border-[#F4D6E4] text-[#2B182B] text-xs font-bold shadow-2xs hover:bg-[#FFF8FA] hover:border-[#EA4F93] transition cursor-pointer"
           >
             <Edit size={15} className="text-[#EA4F93]" />
             {language === "vi" ? "Chỉnh Sửa Hồ Sơ" : "Edit Profile"}
-          </button>
+          </button> */}
 
           <button
             type="button"
@@ -723,7 +723,7 @@ export function ReceptionistCustomerDetailPage() {
                   <Scissors size={16} className="text-[#EA4F93]" /> {language === "vi" ? "Mẫu Móng & Phong Cách Thường Làm" : "Common Nail Styles & Preferences"}
                 </h3>
                 <p className="text-xs text-[#9E8497]">
-                  {language === "vi" ? "Thông tin phong cách ưu thích giúp thợ nail chuẩn bị dụng cụ và phụ kiện phù hợp trước khi làm móng." : "Favorite style details help nail artists prepare suitable tools and accessories before starting."}
+                  {language === "vi" ? "Thông tin phong cách ưu thích giúp thợ nail chuẩn bị dụng cụ và phụ kiện phù hợp trước khi làm móng." : "Favorite style details help Staff Artists prepare suitable tools and accessories before starting."}
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
@@ -777,7 +777,7 @@ export function ReceptionistCustomerDetailPage() {
       </div>
 
       {/* EDIT CUSTOMER PROFILE MODAL */}
-      <Modal
+      {/* <Modal
         open={isEditModalOpen}
         onCancel={() => setIsEditModalOpen(false)}
         footer={null}
@@ -891,7 +891,7 @@ export function ReceptionistCustomerDetailPage() {
             </div>
           </div>
         </div>
-      </Modal>
+      </Modal> */}
     </div>
   );
 }

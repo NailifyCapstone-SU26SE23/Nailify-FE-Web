@@ -31,7 +31,9 @@ import {
   X,
   Smartphone,
   UserX,
-  Armchair
+  Armchair,
+  AlarmClock,
+  Zap
 } from "lucide-react";
 import { Table, Spin, Modal, Input, Select, Tag } from "antd";
 import toast from "react-hot-toast";
@@ -150,6 +152,7 @@ export function ReceptionistCustomerListPage() {
   const [suggestedArtists, setSuggestedArtists] = useState([]);
   const [selectedArtistIdForWalkIn, setSelectedArtistIdForWalkIn] = useState(null);
   const [isLoadingSuggestedArtists, setIsLoadingSuggestedArtists] = useState(false);
+  const [lateCancelledBookings, setLateCancelledBookings] = useState([]);
 
   const filteredNailVariants = useMemo(() => {
     if (!variantSearchQuery.trim()) return dbNailVariants;
@@ -163,34 +166,20 @@ export function ReceptionistCustomerListPage() {
   }, [dbNailVariants, variantSearchQuery]);
 
   const lateArrivalOptions = useMemo(() => {
-    const filtered = rawQueueItems.filter(
-      (item) => item.isLateArrival || item.originalBookingId || (item.requestNote && item.requestNote.toLowerCase().includes("muộn"))
-    );
+    const list = [];
 
-    if (filtered.length === 0) {
-      return [
-        {
-          value: "",
-          display: "Chưa có khách hàng tới trễ trong hàng chờ sảnh",
-          label: (
-            <div className="py-1 text-xs text-gray-400 font-medium italic">
-              Chưa có lịch đặt trước tới trễ trong hàng chờ sảnh hôm nay
-            </div>
-          ),
-          disabled: true,
-        },
-      ];
-    }
+    (lateCancelledBookings || []).forEach((b) => {
+      const bId = b.bookingId || b.id;
+      const code = `BK-${String(bId).substring(0, 5).toUpperCase()}`;
+      const name = b.customerName || "Khách Hàng";
+      const phone = b.customerPhone || b.phone || "Chưa có SĐT";
+      const startTime = b.startTime ? String(b.startTime).substring(0, 5) : "";
+      const note = `Lịch hẹn ${startTime} - Tự động hủy do trễ >15p`;
 
-    return filtered.map((item, idx) => {
-      const code = item.queuePosition ? `BK-${100 + item.queuePosition}` : `BK-${100 + idx + 1}`;
-      const name = item.guestName || "Khách Hàng";
-      const phone = item.guestPhone || "Chưa có SĐT";
-      const note = item.requestNote || "Khách hàng đến muộn -> Tự động chuyển xuống hàng chờ";
-      const qId = item.queueId || item.id || item.originalBookingId;
-
-      return {
-        value: qId,
+      list.push({
+        value: bId,
+        isBooking: true,
+        bookingData: b,
         display: `⚠️ ${code}: ${name} - ${phone}`,
         label: (
           <div className="flex flex-col py-1 border-b border-gray-50 last:border-none min-w-[280px]">
@@ -208,9 +197,58 @@ export function ReceptionistCustomerListPage() {
             </span>
           </div>
         ),
-      };
+      });
     });
-  }, [rawQueueItems]);
+
+    (rawQueueItems || [])
+      .filter((item) => item.isLateArrival || item.originalBookingId || (item.requestNote && item.requestNote.toLowerCase().includes("muộn")))
+      .forEach((item, idx) => {
+        const code = item.queuePosition ? `BK-${100 + item.queuePosition}` : `BK-${100 + idx + 1}`;
+        const name = item.guestName || "Khách Hàng";
+        const phone = item.guestPhone || "Chưa có SĐT";
+        const note = item.requestNote || "Khách hàng đến muộn -> Tự động chuyển xuống hàng chờ";
+        const qId = item.queueId || item.id || item.originalBookingId;
+
+        list.push({
+          value: qId,
+          isBooking: false,
+          display: `⚠️ ${code}: ${name} - ${phone}`,
+          label: (
+            <div className="flex flex-col py-1 border-b border-gray-50 last:border-none min-w-[280px]">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-bold text-[#221F26] text-xs">
+                  {code}: {name}
+                </span>
+                <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                  Trễ ≥ 15p
+                </span>
+              </div>
+              <span className="text-[11px] text-gray-500 font-medium mt-0.5">{phone}</span>
+              <span className="text-[10px] text-amber-600 font-semibold italic mt-0.5 truncate">
+                {note}
+              </span>
+            </div>
+          ),
+        });
+      });
+
+    if (list.length === 0) {
+      return [
+        {
+          value: "",
+          display: "Chưa có lịch đặt trước tới trễ trong hàng chờ sảnh",
+          label: (
+            <div className="py-1 text-xs text-gray-400 font-medium italic">
+              Chưa có lịch đặt trước tới trễ trong hàng chờ sảnh hôm nay
+            </div>
+          ),
+          disabled: true,
+        },
+      ];
+    }
+
+    return list;
+  }, [lateCancelledBookings, rawQueueItems]);
 
   const totalCalculatedPrice = useMemo(() => {
     let total = 0;
@@ -254,9 +292,11 @@ export function ReceptionistCustomerListPage() {
 
   const loadModalData = useCallback(async () => {
     try {
-      const [svcRes, varRes] = await Promise.all([
+      const salonId = getReceptionistSalonId();
+      const [svcRes, varRes, lateRes] = await Promise.all([
         receptionistWalkInBookingService.getServices({ pageSize: 100 }),
         receptionistWalkInBookingService.getAllNailVariants({ pageSize: 100 }),
+        receptionistWalkInBookingService.getLateCancelledBookings(salonId).catch(() => null),
       ]);
 
       const svcs = Array.isArray(svcRes)
@@ -265,11 +305,15 @@ export function ReceptionistCustomerListPage() {
       const vars = Array.isArray(varRes)
         ? varRes
         : varRes?.data?.items || varRes?.items || varRes?.data || [];
+      const lates = Array.isArray(lateRes)
+        ? lateRes
+        : lateRes?.data?.items || lateRes?.data || lateRes?.items || [];
 
       setDbServices(svcs);
       setDbNailVariants(vars);
+      setLateCancelledBookings(lates);
     } catch (err) {
-      console.error("Lỗi lấy danh sách Dịch vụ/Mẫu móng:", err);
+      console.error("Lỗi lấy danh sách Dịch vụ/Mẫu móng/Khách trễ:", err);
     }
   }, []);
 
@@ -350,6 +394,23 @@ export function ReceptionistCustomerListPage() {
   const [selectedArtistIdToAssign, setSelectedArtistIdToAssign] = useState(null);
   const [isSubmittingAssign, setIsSubmittingAssign] = useState(false);
   const [autoSeatAfterAssign, setAutoSeatAfterAssign] = useState(false);
+  const [allSalonArtists, setAllSalonArtists] = useState([]);
+
+  useEffect(() => {
+    const fetchAllArtists = async () => {
+      try {
+        const salonId = getReceptionistSalonId();
+        const res = await receptionistWalkInBookingService.getAvailableArtists(salonId);
+        const artists = Array.isArray(res)
+          ? res
+          : res?.data?.items || res?.items || res?.data || [];
+        setAllSalonArtists(artists);
+      } catch (err) {
+        console.warn("Could not prefetch salon artists for lookup:", err);
+      }
+    };
+    fetchAllArtists();
+  }, []);
 
   const loadAvailableArtists = useCallback(async () => {
     setIsLoadingArtists(true);
@@ -370,10 +431,10 @@ export function ReceptionistCustomerListPage() {
         try {
           const artistId = artist.nailArtistId || artist.id;
           if (!artistId) return null;
-          
+
           const scheduleRes = await receptionistWalkInBookingService.getArtistSchedule(artistId, todayStr, todayStr);
           const schedules = Array.isArray(scheduleRes) ? scheduleRes : scheduleRes?.data || [];
-          
+
           if (schedules && schedules.length > 0) {
             return artist;
           }
@@ -404,7 +465,7 @@ export function ReceptionistCustomerListPage() {
   const handleConfirmAssignArtist = async () => {
     if (!selectedQueueGuest) return;
     if (!selectedArtistIdToAssign) {
-      toast.error(language === "vi" ? "Vui lòng chọn thợ làm móng." : "Please select a nail artist.");
+      toast.error(language === "vi" ? "Vui lòng chọn thợ làm móng." : "Please select a Staff Artist.");
       return;
     }
 
@@ -536,6 +597,20 @@ export function ReceptionistCustomerListPage() {
 
         const displayCode = item.queuePosition ? `W-0${item.queuePosition}` : `W-0${index + 1}`;
 
+        const artistId = item.assignedNailArtistId;
+        let artistName = item.assignedNailArtistName;
+        if (!artistName && artistId && allSalonArtists.length > 0) {
+          const foundArtist = allSalonArtists.find(a => (a.nailArtistId || a.id || a.userId) === artistId);
+          if (foundArtist) {
+            artistName = foundArtist.account
+              ? `${foundArtist.account.firstName || ""} ${foundArtist.account.lastName || ""}`.trim()
+              : `${foundArtist.firstName || ""} ${foundArtist.lastName || ""}`.trim();
+          }
+        }
+        if (!artistName) {
+          artistName = language === "vi" ? "Chưa phân công" : "Unassigned";
+        }
+
         return {
           id: item.queueId || item.id,
           queueId: item.queueId || item.id,
@@ -546,8 +621,10 @@ export function ReceptionistCustomerListPage() {
           lateMinutes: isLate ? 15 : null,
           nailDesign: item.requestNote || "Dịch vụ đã chọn tại quầy",
           serviceName: item.requestNote || "Dịch vụ làm móng",
-          assignedArtist: item.assignedNailArtistName || "Chưa phân công",
-          assignedNailArtistId: item.assignedNailArtistId,
+          assignedArtist: artistName,
+          assignedNailArtistId: artistId,
+          chairId: item.chairId,
+          chairName: item.chairName,
           duration: item.estimatedWait ? `${item.estimatedWait} phút` : "20 phút",
           status: statusKey,
           checkInTime: item.arrivalTime ? new Date(item.arrivalTime).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : "Vừa xong",
@@ -558,7 +635,7 @@ export function ReceptionistCustomerListPage() {
     } catch (err) {
       console.warn("Could not load walk-in queue from API:", err);
     }
-  }, []);
+  }, [allSalonArtists, language]);
 
   const handleQuickAddWalkInGuest = async () => {
     let finalCustomerName = "";
@@ -586,14 +663,35 @@ export function ReceptionistCustomerListPage() {
       finalPhone = walkInPhone.trim() || (language === "vi" ? "Chưa có SĐT" : "No Phone");
       entryTypeLabel = "new_guest";
     } else if (walkInTab === "late_arrival") {
-      finalCustomerName = "Trần Bảo Ngọc (Trễ 18 phút)";
-      finalPhone = "0988 123 456";
+      finalCustomerName = walkInName.trim() || "Khách Trễ 15p";
+      finalPhone = walkInPhone.trim() || "Chưa có SĐT";
       entryTypeLabel = "late_arrival";
     }
 
     setIsSubmittingWalkIn(true);
     try {
       const currentSalonId = getReceptionistSalonId();
+
+      if (walkInTab === "late_arrival" && selectedLateBookingId) {
+        const selectedOpt = lateArrivalOptions.find((opt) => opt.value === selectedLateBookingId);
+        if (selectedOpt && selectedOpt.isBooking) {
+          try {
+            await receptionistWalkInBookingService.lateCheckInBooking(selectedLateBookingId);
+            toast.success("Khôi phục & Check-in thành công đơn đặt trước đến trễ!");
+            setIsWalkInModalOpen(false);
+            setWalkInName("");
+            setWalkInPhone("");
+            setSelectedLateBookingId(null);
+            setSelectedServiceMap({});
+            setSelectedVariantMap({});
+            await loadModalData();
+            await loadWalkInQueue();
+            return;
+          } catch (lateErr) {
+            console.warn("API lateCheckInBooking không thành công, tiếp tục thử tạo lượt sảnh:", lateErr);
+          }
+        }
+      }
 
       const selectedServiceObjs = dbServices.filter((s) => (selectedServiceMap[s.serviceId || s.id] || 0) > 0);
       const serviceSummaryList = selectedServiceObjs.map(
@@ -647,7 +745,10 @@ export function ReceptionistCustomerListPage() {
         const res = await receptionistWalkInBookingService.createWalkInQueue(payload);
         createdQueueId = res?.data?.queueId || res?.queueId || res?.id;
       } catch (apiErr) {
-        console.warn("Backend API WalkInQueue failed, using fallback UI state:", apiErr);
+        console.error("Backend API WalkInQueue failed:", apiErr);
+        const errorMsg = apiErr.response?.data?.message || apiErr.message || (language === "vi" ? "Đăng ký sảnh chờ thất bại." : "Failed to register walk-in lobby.");
+        toast.error(errorMsg);
+        return;
       }
 
       const assignedArtistObj = suggestedArtists.find(a => (a.nailArtistId || a.id || a.userId) === selectedArtistIdForWalkIn);
@@ -741,8 +842,16 @@ export function ReceptionistCustomerListPage() {
     if (!assignChairGuest) return;
     const actualQueueId = assignChairGuest.queueId || assignChairGuest.id;
     try {
+      // 1. Assign chair to the queue
+      await receptionistWalkInBookingService.assignChairToQueue(actualQueueId, selectedChair.chairId || selectedChair.id);
+      
+      // 2. Convert queue entry to booking to start service
       await receptionistWalkInBookingService.convertQueueToBooking(actualQueueId);
-      toast.success(language === "vi" ? `Đã tạo đơn Booking & chuyển khách vào ghế ${selectedChair?.chairName || ""}!` : `Created booking and assigned guest to chair ${selectedChair?.chairName || ""}!`);
+      
+      toast.success(language === "vi" 
+        ? `Đã phân ghế ${selectedChair?.chairName || ""} và chuyển khách vào làm dịch vụ thành công!` 
+        : `Assigned chair ${selectedChair?.chairName || ""} and started service successfully!`
+      );
 
       setWalkInGuests((prev) =>
         prev.map((g) => (g.id === assignChairGuest.id || g.queueId === assignChairGuest.id ? { ...g, status: "in_service" } : g))
@@ -841,7 +950,7 @@ export function ReceptionistCustomerListPage() {
         title: "Email",
         dataIndex: "email",
         key: "email",
-        render: (val) => <span className="text-gray-600 text-xs font-medium">{val || "--"}</span>,
+        render: (val) => <span className="text-gray-600 text-xs font-medium">{val}</span>,
       },
       {
         title: t("receptionist.common.status") || "Trạng Thái",
@@ -1194,8 +1303,8 @@ export function ReceptionistCustomerListPage() {
                             </div>
                             <h5 className="font-bold text-[#221F26] text-sm mt-1">{g.customerName}</h5>
                           </div>
-                          <span className="text-[10px] font-semibold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-md border border-gray-100">
-                            ⏱️ {g.duration}
+                          <span className="flex items-center justify-center gap-1.5 text-[10px] font-semibold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-md border border-gray-100">
+                            <AlarmClock size={12} /> {g.duration}
                           </span>
                         </div>
 
@@ -1210,39 +1319,50 @@ export function ReceptionistCustomerListPage() {
                           </p>
                         </div>
 
-                        <div className="flex items-center justify-between pt-2 border-t border-gray-100 gap-1.5">
+                        <div className="grid grid-cols-2 gap-2 pt-2.5 border-t border-gray-100 w-full">
                           <button
                             type="button"
                             onClick={() => handleOpenGuestProfile(g)}
-                            className="px-2 py-1 text-[10px] font-bold text-gray-500 hover:text-[#C97A9E] hover:bg-[#FAF0F5] border border-gray-200 rounded-lg transition cursor-pointer"
+                            className="h-10 flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100/80 transition duration-200 cursor-pointer text-xs font-semibold"
                           >
-                            <Eye size={15} /> {language === "vi" ? "Xem" : "View"}
+                            <Eye size={14} /> {language === "vi" ? "Xem" : "View"}
                           </button>
-                          <div className="flex items-center gap-1">
-                            {(g.assignedArtist === "Chưa phân công" || g.assignedArtist === "Unassigned" || !g.assignedNailArtistId) && (
+
+                          <button
+                            type="button"
+                            onClick={() => handleMoveGuestStatus(g.id, "called")}
+                            className="h-10 flex items-center justify-center gap-1.5 rounded-xl bg-rose-50 text-rose-600 border border-rose-200/60 hover:bg-rose-100/80 transition duration-200 cursor-pointer text-xs font-semibold"
+                          >
+                            <Volume2 size={14} /> {language === "vi" ? "Gọi Loa" : "Call"}
+                          </button>
+
+                          {(g.assignedArtist === "Chưa phân công" || g.assignedArtist === "Unassigned" || !g.assignedNailArtistId) ? (
+                            <>
                               <button
                                 type="button"
                                 onClick={() => handleOpenAssignModal(g, false)}
-                                className="px-2 py-1 text-[10px] font-bold text-white bg-[#C97A9E] hover:bg-[#B86B8E] rounded-lg transition shadow-xs cursor-pointer flex items-center gap-0.5"
+                                className="h-10 flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#C97A9E] to-[#B86B8E] hover:from-[#B86B8E] hover:to-[#A75C7E] text-white transition duration-200 cursor-pointer text-xs font-semibold shadow-sm shadow-[#C97A9E]/10"
                               >
-                                <UserCheck size={15} /> {language === "vi" ? "Phân Thợ" : "Assign Staff"}
+                                <UserCheck size={14} /> {language === "vi" ? "Phân Thợ" : "Assign"}
                               </button>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => handleMoveGuestStatus(g.id, "called")}
-                              className="px-2 py-1 text-[10px] font-bold text-[#C97A9E] bg-[#FAF0F5] hover:bg-[#C97A9E] hover:text-white border border-[#F2D6E3] rounded-lg transition cursor-pointer flex items-center gap-0.5"
-                            >
-                              <Volume2 size={15} /> {language === "vi" ? "Gọi Loa" : "Call Audio"}
-                            </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleMoveGuestStatus(g.id, "in_service")}
+                                className="h-10 flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white transition duration-200 cursor-pointer text-xs font-semibold shadow-sm shadow-emerald-500/10"
+                              >
+                                <Armchair size={14} /> {language === "vi" ? "Vào Ghế" : "Seat"}
+                              </button>
+                            </>
+                          ) : (
                             <button
                               type="button"
                               onClick={() => handleMoveGuestStatus(g.id, "in_service")}
-                              className="px-2.5 py-1 text-[10px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition cursor-pointer flex items-center gap-0.5"
+                              className="col-span-2 h-10 flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white transition duration-200 cursor-pointer text-xs font-semibold shadow-sm shadow-emerald-500/10"
                             >
-                              <Armchair size={15} /> {language === "vi" ? "Vào Ghế" : "Seat Client"}
+                              <Armchair size={14} /> {language === "vi" ? "Vào Ghế" : "Seat"}
                             </button>
-                          </div>
+                          )}
                         </div>
                       </div>
                     ))
@@ -1281,8 +1401,8 @@ export function ReceptionistCustomerListPage() {
                             </span>
                             <h5 className="font-bold text-[#221F26] text-sm mt-1">{g.customerName}</h5>
                           </div>
-                          <span className="text-[10px] font-semibold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-md border border-gray-100">
-                            ⏱️ {g.duration}
+                          <span className="flex items-center justify-center gap-1.5 text-[10px] font-semibold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-md border border-gray-100">
+                            <AlarmClock size={12} /> {g.duration}
                           </span>
                         </div>
 
@@ -1297,32 +1417,52 @@ export function ReceptionistCustomerListPage() {
                           </p>
                         </div>
 
-                        <div className="flex items-center justify-between pt-2 border-t border-gray-100 gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => handleOpenGuestProfile(g)}
-                            className="px-2.5 py-1 text-[10px] font-bold text-white bg-gray-500 hover:bg-blue-500 rounded-lg transition shadow-xs cursor-pointer flex items-center gap-0.5"
-                          >
-                            <Eye size={15} /> {language === "vi" ? "Xem" : "View"}
-                          </button>
-                          <div className="flex items-center gap-1">
-                            {(g.assignedArtist === "Chưa phân công" || g.assignedArtist === "Unassigned" || !g.assignedNailArtistId) && (
+                        <div className="grid grid-cols-2 gap-2 pt-2.5 border-t border-gray-100 w-full">
+                          {(g.assignedArtist === "Chưa phân công" || g.assignedArtist === "Unassigned" || !g.assignedNailArtistId) ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenGuestProfile(g)}
+                                className="h-10 flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100/80 transition duration-200 cursor-pointer text-xs font-semibold"
+                              >
+                                <Eye size={14} /> {language === "vi" ? "Xem" : "View"}
+                              </button>
+
                               <button
                                 type="button"
                                 onClick={() => handleOpenAssignModal(g, false)}
-                                className="px-2.5 py-1 text-[10px] font-bold text-white bg-[#C97A9E] hover:bg-[#B86B8E] rounded-lg transition shadow-xs cursor-pointer flex items-center gap-0.5"
+                                className="h-10 flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#C97A9E] to-[#B86B8E] hover:from-[#B86B8E] hover:to-[#A75C7E] text-white transition duration-200 cursor-pointer text-xs font-semibold shadow-sm shadow-[#C97A9E]/10"
                               >
-                                <UserCheck size={15} /> {language === "vi" ? "Phân Thợ" : "Assign Staff"}
+                                <UserCheck size={14} /> {language === "vi" ? "Phân Thợ" : "Assign"}
                               </button>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => handleMoveGuestStatus(g.id, "in_service")}
-                              className="px-2.5 py-1 text-[10px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition shadow-xs cursor-pointer flex items-center gap-0.5"
-                            >
-                              <Armchair size={15} /> {language === "vi" ? "Vào Ghế" : "Seat Client"}
-                            </button>
-                          </div>
+
+                              <button
+                                type="button"
+                                onClick={() => handleMoveGuestStatus(g.id, "in_service")}
+                                className="col-span-2 h-10 flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white transition duration-200 cursor-pointer text-xs font-semibold shadow-sm shadow-emerald-500/10"
+                              >
+                                <Armchair size={14} /> {language === "vi" ? "Vào Ghế" : "Seat"}
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenGuestProfile(g)}
+                                className="h-10 flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100/80 transition duration-200 cursor-pointer text-xs font-semibold"
+                              >
+                                <Eye size={14} /> {language === "vi" ? "Xem" : "View"}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleMoveGuestStatus(g.id, "in_service")}
+                                className="h-10 flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white transition duration-200 cursor-pointer text-xs font-semibold shadow-sm shadow-emerald-500/10"
+                              >
+                                <Armchair size={14} /> {language === "vi" ? "Vào Ghế" : "Seat"}
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
                     ))
@@ -1362,13 +1502,13 @@ export function ReceptionistCustomerListPage() {
                         </div>
                         <p className="text-xs text-gray-500 font-medium">{g.nailDesign}</p>
                         <p className="text-[11px] text-gray-400">{language === "vi" ? "Thợ làm: " : "Artist: "}{g.assignedArtist}</p>
-                        <div className="pt-2 border-t border-gray-100">
+                        <div className="pt-2.5 border-t border-gray-100 w-full">
                           <button
                             type="button"
                             onClick={() => handleOpenGuestProfile(g)}
-                            className="px-2.5 py-1 text-[11px] font-bold text-gray-500 hover:text-[#C97A9E] hover:bg-[#FAF0F5] border border-gray-200 rounded-lg transition cursor-pointer"
+                            className="w-full h-10 flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100/80 transition duration-200 cursor-pointer text-xs font-semibold"
                           >
-                            {language === "vi" ? "Xem hồ sơ" : "View Profile"}
+                            <Eye size={14} /> {language === "vi" ? "Xem hồ sơ" : "View Profile"}
                           </button>
                         </div>
                       </div>
@@ -1405,7 +1545,7 @@ export function ReceptionistCustomerListPage() {
                   {language === "vi" ? "Check-In Tiếp Đón Khách Vào Sảnh" : "Walk-in Queue Check-In"}
                 </h3>
                 <p className="text-xs text-gray-500 font-medium mt-0.5">
-                  {language === "vi" ? "Tự động khởi tạo hồ sơ & gợi ý thợ nail đủ kỹ năng (Skill Match)" : "Auto-create profiles & suggest nail artists (Skill Match)"}
+                  {language === "vi" ? "Tự động khởi tạo hồ sơ & gợi ý thợ nail đủ kỹ năng (Skill Match)" : "Auto-create profiles & suggest Staff Artists (Skill Match)"}
                 </p>
               </div>
             </div>
@@ -1540,12 +1680,34 @@ export function ReceptionistCustomerListPage() {
                     value={selectedLateBookingId}
                     onChange={(val) => {
                       setSelectedLateBookingId(val);
-                      const foundLate = rawQueueItems.find(
-                        (item) => (item.queueId || item.id || item.originalBookingId) === val
-                      );
-                      if (foundLate) {
-                        setWalkInName(foundLate.guestName || "");
-                        setWalkInPhone(foundLate.guestPhone || "");
+                      const foundOption = lateArrivalOptions.find((opt) => opt.value === val);
+                      if (foundOption && foundOption.isBooking && foundOption.bookingData) {
+                        const b = foundOption.bookingData;
+                        setWalkInName(b.customerName || "");
+                        setWalkInPhone(b.phone || b.customerPhone || "");
+
+                        const newSvcMap = {};
+                        const newVarMap = {};
+                        if (Array.isArray(b.bookingItems)) {
+                          b.bookingItems.forEach((item) => {
+                            if (item.serviceId) {
+                              newSvcMap[item.serviceId] = (newSvcMap[item.serviceId] || 0) + (item.quantity || 1);
+                            }
+                            if (item.nailVariantId) {
+                              newVarMap[item.nailVariantId] = (newVarMap[item.nailVariantId] || 0) + (item.quantity || 1);
+                            }
+                          });
+                        }
+                        setSelectedServiceMap(newSvcMap);
+                        setSelectedVariantMap(newVarMap);
+                      } else {
+                        const foundLate = rawQueueItems.find(
+                          (item) => (item.queueId || item.id || item.originalBookingId) === val
+                        );
+                        if (foundLate) {
+                          setWalkInName(foundLate.guestName || "");
+                          setWalkInPhone(foundLate.guestPhone || "");
+                        }
                       }
                     }}
                     placeholder={language === "vi" ? "-- chọn khách đặt trước tới trễ --" : "-- select late appointment --"}
@@ -1725,8 +1887,8 @@ export function ReceptionistCustomerListPage() {
               <div>
                 <label className="block text-xs font-bold text-[#221F26] mb-1 flex items-center justify-between">
                   <span>{language === "vi" ? "Thời Gian Phục Vụ Dự Kiến" : "Estimated Service Duration"}</span>
-                  <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
-                    {language === "vi" ? "⚡ Tự động tính toán" : "⚡ Auto-calculated"}
+                  <span className="flex items-center justify-center gap-1.5 text-[10px] text-emerald-600 font-bold flex items-center gap-1">
+                    <Zap size={12} /> {language === "vi" ? "Tự động tính toán" : "Auto-calculated"}
                   </span>
                 </label>
                 <div className="flex items-center gap-2.5 p-2 px-3 bg-gradient-to-r from-emerald-50 via-teal-50/60 to-emerald-50 border border-emerald-200/90 rounded-xl shadow-2xs">
@@ -1889,8 +2051,8 @@ export function ReceptionistCustomerListPage() {
                 </div>
               ) : (
                 <span className="text-xs text-gray-400 font-medium">
-                  {language === "vi" 
-                    ? "💡 Chọn dịch vụ hoặc mẫu móng để tính tổng tiền & gợi ý thợ rảnh" 
+                  {language === "vi"
+                    ? "💡 Chọn dịch vụ hoặc mẫu móng để tính tổng tiền & gợi ý thợ rảnh"
                     : "💡 Select services or variants to calculate total price & suggest free artists"}
                 </span>
               )}
@@ -1943,7 +2105,7 @@ export function ReceptionistCustomerListPage() {
               </span>
               <div>
                 <h3 className="text-base font-bold text-[#221F26] tracking-tight">
-                  {language === "vi" ? "Phân Công Thợ Nail Điều Phối Sảnh" : "Assign Nail Artist for Queue"}
+                  {language === "vi" ? "Phân Công Thợ Nail Điều Phối Sảnh" : "Assign Staff Artist for Queue"}
                 </h3>
                 <p className="text-xs text-gray-500 font-medium mt-0.5">
                   {language === "vi" ? "Chọn thợ phù hợp để đảm bảo thời gian phục vụ tốt nhất" : "Select suitable artist to ensure best service timing"}
@@ -1964,11 +2126,11 @@ export function ReceptionistCustomerListPage() {
                   <p className="text-sm font-bold text-[#221F26]">{selectedQueueGuest.customerName}</p>
                 </div>
               </div>
-              <div className="text-right">
+              {/* <div className="text-right">
                 <span className="inline-flex items-center gap-1 text-xs font-bold text-[#C97A9E] bg-white px-3 py-1 rounded-xl border border-[#F2D6E3] shadow-2xs">
                   <Scissors size={13} /> {selectedQueueGuest.nailDesign || (language === "vi" ? "Dịch vụ làm móng" : "Nail Service")}
                 </span>
-              </div>
+              </div> */}
             </div>
           )}
 
@@ -1976,7 +2138,7 @@ export function ReceptionistCustomerListPage() {
           <div className="px-6 py-4">
             <div className="flex items-center justify-between mb-2.5">
               <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
-                <UserCheck size={14} className="text-[#C97A9E]" /> {language === "vi" ? "Chọn Thợ Làm Móng (Salon Artist)" : "Select Nail Artist (Salon Artist)"}
+                <UserCheck size={14} className="text-[#C97A9E]" /> {language === "vi" ? "Chọn Thợ Làm Móng (Salon Artist)" : "Select Staff Artist (Salon Artist)"}
               </label>
               <span className="text-[11px] font-bold text-[#C97A9E] bg-[#FAF0F5] px-2 py-0.5 rounded-md border border-[#F2D6E3]">
                 {language === "vi" ? `${availableArtists.length} thợ sẵn sàng` : `${availableArtists.length} artists ready`}
@@ -1986,11 +2148,11 @@ export function ReceptionistCustomerListPage() {
             {isLoadingArtists ? (
               <div className="py-10 text-center space-y-2">
                 <Spin size="large" />
-                <p className="text-xs font-medium text-gray-500">{language === "vi" ? "Đang tải danh sách thợ làm móng sảnh..." : "Loading lobby nail artists..."}</p>
+                <p className="text-xs font-medium text-gray-500">{language === "vi" ? "Đang tải danh sách thợ làm móng sảnh..." : "Loading lobby Staff Artists..."}</p>
               </div>
             ) : availableArtists.length === 0 ? (
               <div className="py-8 text-center text-xs font-medium text-gray-400 border border-dashed border-gray-200 rounded-2xl">
-                {language === "vi" ? "Hiện chưa có thợ làm móng nào hoạt động tại chi nhánh." : "There are currently no active nail artists at this salon branch."}
+                {language === "vi" ? "Hiện chưa có thợ làm móng nào hoạt động tại chi nhánh." : "There are currently no active Staff Artists at this salon branch."}
               </div>
             ) : (
               <div className="space-y-2.5 max-h-[260px] overflow-y-auto pr-1">

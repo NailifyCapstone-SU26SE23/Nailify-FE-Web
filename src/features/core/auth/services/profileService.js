@@ -7,8 +7,8 @@ function getAuthHeaders() {
 
   return token
     ? {
-        Authorization: `Bearer ${token}`,
-      }
+      Authorization: `Bearer ${token}`,
+    }
     : {};
 }
 
@@ -35,8 +35,8 @@ export function normalizeProfile(profile) {
     lastName,
     fullName,
     avatarUrl: String(profile?.avatarUrl || "").trim(),
-    status: String(profile?.status || "").trim() || "--",
-    role: String(profile?.role || "").trim() || "--",
+    status: String(profile?.status || "").trim(),
+    role: String(profile?.role || "").trim(),
     salonId: String(profile?.salonId || "").trim(),
     staffId: String(profile?.staffId || "").trim(),
   };
@@ -50,16 +50,16 @@ export function normalizeSalonDetail(salon) {
     phone: String(salon?.phone || "").trim(),
     latitude: Number(salon?.latitude || 0),
     longitude: Number(salon?.longitude || 0),
-    status: String(salon?.status || "").trim() || "--",
+    status: String(salon?.status || "").trim(),
     imageUrl: String(salon?.imageUrl || "").trim(),
     operatingHours: Array.isArray(salon?.operatingHours)
       ? salon.operatingHours.map((item) => ({
-          dayOfWeek: Number(item?.dayOfWeek || 0),
-          dayName: String(item?.dayName || "").trim() || "--",
-          openTime: String(item?.openTime || "").trim(),
-          closeTime: String(item?.closeTime || "").trim(),
-          isClosed: Boolean(item?.isClosed),
-        }))
+        dayOfWeek: Number(item?.dayOfWeek || 0),
+        dayName: String(item?.dayName || "").trim(),
+        openTime: String(item?.openTime || "").trim(),
+        closeTime: String(item?.closeTime || "").trim(),
+        isClosed: Boolean(item?.isClosed),
+      }))
       : [],
   };
 }
@@ -119,3 +119,20 @@ export async function fetchProfileSalonDetail(salonId) {
 
   return normalizeSalonDetail(unwrapResponse(response, "Failed to load salon detail."));
 }
+
+export async function changeProfilePassword({ oldPassword, newPassword, confirmPassword }) {
+  const response = await axiosClient.put(
+    "/Profile/password",
+    {
+      oldPassword,
+      newPassword,
+      confirmPassword,
+    },
+    {
+      headers: getAuthHeaders(),
+    }
+  );
+
+  return unwrapResponse(response, "Failed to change password.");
+}
+

@@ -58,8 +58,8 @@ export function NailSurfaceCreatePage() {
 
   const summaryItems = useMemo(
     () => [
-      [t("adminNailSurfacesManagement.surfaceName"), formValues.name || "--"],
-      [t("adminNailSurfacesManagement.surfaceType"), formValues.surfacePreset || "--"],
+      [t("adminNailSurfacesManagement.surfaceName"), formValues.name],
+      [t("adminNailSurfacesManagement.surfaceType"), formValues.surfacePreset],
       [t("adminNailSurfacesManagement.price"), formValues.price ? formatNailSurfaceCurrency(formValues.price) : "--"],
       [t("adminNailSurfacesManagement.duration"), formValues.duration ? formatNailSurfaceDuration(formValues.duration) : "--"],
     ],
@@ -276,7 +276,7 @@ export function NailSurfaceCreatePage() {
         onCancel={() => !isSaving && setShowSaveConfirm(false)}
         highlights={[formValues.name || (t("adminNailSurfacesManagement.newNailSurface"))]}
         details={[
-          { label: t("adminNailSurfacesManagement.surfaceType"), value: formValues.surfacePreset || "--" },
+          { label: t("adminNailSurfacesManagement.surfaceType"), value: formValues.surfacePreset },
           { label: t("adminNailSurfacesManagement.price"), value: formValues.price ? formatNailSurfaceCurrency(formValues.price) : "--" },
         ]}
       />

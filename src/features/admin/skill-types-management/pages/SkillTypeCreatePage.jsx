@@ -30,8 +30,8 @@ export function SkillTypeCreatePage() {
 
   const summaryItems = useMemo(
     () => [
-      [t("adminSkillTypes.skillTypeName"), formValues.name || "--"],
-      [t("adminSkillTypes.description"), formValues.description || "--"],
+      [t("adminSkillTypes.skillTypeName"), formValues.name],
+      [t("adminSkillTypes.description"), formValues.description],
     ],
     [formValues.description, formValues.name],
   );
@@ -205,7 +205,7 @@ export function SkillTypeCreatePage() {
         onConfirm={handleCreate}
         onCancel={() => !isSaving && setShowSaveConfirm(false)}
         highlights={[formValues.name || "New skill type"]}
-        details={[{ label: "Description", value: formValues.description || "--" }]}
+        details={[{ label: "Description", value: formValues.description }]}
       />
     </section>
   );

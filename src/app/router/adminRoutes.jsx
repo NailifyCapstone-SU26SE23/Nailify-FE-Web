@@ -296,14 +296,10 @@ export const adminRoutes = [
         path: ROUTES.adminBookingRatings,
         element: <AdminSalonBookingRatingPage />,
       },
-      {
-        path: "*",
-        element: <Navigate to={ROUTES.adminDashboard} replace />,
-      },
+      // {
+      //   path: "*",
+      //   element: <Navigate to={ROUTES.adminDashboard} replace />,
+      // },
     ],
-  },
-  {
-    path: "*",
-    element: <Navigate to={ROUTES.login} replace />,
   },
 ];

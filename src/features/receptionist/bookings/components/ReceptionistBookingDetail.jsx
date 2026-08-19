@@ -204,7 +204,7 @@ export function ReceptionistBookingDetail({ booking }) {
       ),
     },
     {
-      title: t("receptionist.bookings.artist") || "Nail Artist",
+      title: t("receptionist.bookings.artist") || "Staff Artist",
       key: "artist",
       render: (_, row) => (
         <div className="flex items-center gap-2.5">
@@ -216,7 +216,7 @@ export function ReceptionistBookingDetail({ booking }) {
       ),
     },
     {
-      title: t("receptionist.bookings.duration") || "Duration",
+      title: language === "vi" ? "Thời gian" : "Duration",
       dataIndex: "duration",
       key: "duration",
       render: (value) => <span className="text-xs text-[#4a3741]">{formatDurationLabel(value)}</span>,
@@ -333,7 +333,7 @@ export function ReceptionistBookingDetail({ booking }) {
                 <button
                   type="button"
                   onClick={() => handleMockAction("View History")}
-                  title={t("receptionist.common.feedback") || "View History"}
+                  title={language === "vi" ? "Xem lịch sử" : "View History"}
                   className="inline-flex items-center justify-center gap-2 rounded-full bg-[#fff4cf] px-4 py-2.5 text-xs font-bold text-[#c89516]"
                 >
                   <Sparkles size={14} />
@@ -418,7 +418,7 @@ export function ReceptionistBookingDetail({ booking }) {
                   className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#f3d7e2] bg-[#fff3f8] px-4 py-3 text-xs font-extrabold text-[#eb5b92]"
                 >
                   <Printer size={14} />
-                  {t("receptionist.payments.printReceipt") || "Print Receipt"}
+                  {language === "vi" ? "In Hóa đơn" : "Print Receipt"}
                 </button>
               </div>
             </div>
@@ -446,39 +446,39 @@ export function ReceptionistBookingDetail({ booking }) {
                       {item.label === "Check In"
                         ? t("receptionist.dashboard.checkinBtn") || item.label
                         : item.label === "Start Service"
-                        ? t("receptionist.bookings.startService") || item.label
-                        : item.label === "Reassign Artist"
-                        ? t("receptionist.bookings.reassignArtist") || item.label
-                        : item.label === "Move Schedule"
-                        ? t("receptionist.bookings.moveSchedule") || item.label
-                        : item.label === "Add Service"
-                        ? t("receptionist.bookings.addService") || item.label
-                        : item.label === "Complete Booking"
-                        ? t("receptionist.bookings.completeBooking") || item.label
-                        : item.label === "Cancel Booking"
-                        ? t("receptionist.bookings.cancelBooking") || item.label
-                        : item.label === "Send Invoice"
-                        ? t("receptionist.bookings.sendInvoice") || item.label
-                        : item.label}
+                          ? t("receptionist.bookings.startService") || item.label
+                          : item.label === "Reassign Artist"
+                            ? t("receptionist.bookings.reassignArtist") || item.label
+                            : item.label === "Move Schedule"
+                              ? t("receptionist.bookings.moveSchedule") || item.label
+                              : item.label === "Add Service"
+                                ? t("receptionist.bookings.addService") || item.label
+                                : item.label === "Complete Booking"
+                                  ? t("receptionist.bookings.completeBooking") || item.label
+                                  : item.label === "Cancel Booking"
+                                    ? t("receptionist.bookings.cancelBooking") || item.label
+                                    : item.label === "Send Invoice"
+                                      ? t("receptionist.bookings.sendInvoice") || item.label
+                                      : item.label}
                     </p>
                     <p className="mt-1 text-[10px] text-[#9f8896]">
                       {item.label === "Check In"
                         ? t("receptionist.bookings.manualCheckInBtn") || item.subtitle
                         : item.label === "Start Service"
-                        ? t("receptionist.bookings.beginSession") || item.subtitle
-                        : item.label === "Reassign Artist"
-                        ? t("receptionist.bookings.changeStaff") || item.subtitle
-                        : item.label === "Move Schedule"
-                        ? t("receptionist.bookings.rescheduleTime") || item.subtitle
-                        : item.label === "Add Service"
-                        ? t("receptionist.bookings.extraTreatment") || item.subtitle
-                        : item.label === "Complete Booking"
-                        ? t("receptionist.bookings.finalizeSession") || item.subtitle
-                        : item.label === "Cancel Booking"
-                        ? t("receptionist.bookings.voidAppointment") || item.subtitle
-                        : item.label === "Send Invoice"
-                        ? t("receptionist.bookings.emailToClient") || item.subtitle
-                        : item.subtitle}
+                          ? t("receptionist.bookings.beginSession") || item.subtitle
+                          : item.label === "Reassign Artist"
+                            ? t("receptionist.bookings.changeStaff") || item.subtitle
+                            : item.label === "Move Schedule"
+                              ? t("receptionist.bookings.rescheduleTime") || item.subtitle
+                              : item.label === "Add Service"
+                                ? t("receptionist.bookings.extraTreatment") || item.subtitle
+                                : item.label === "Complete Booking"
+                                  ? t("receptionist.bookings.finalizeSession") || item.subtitle
+                                  : item.label === "Cancel Booking"
+                                    ? t("receptionist.bookings.voidAppointment") || item.subtitle
+                                    : item.label === "Send Invoice"
+                                      ? t("receptionist.bookings.emailToClient") || item.subtitle
+                                      : item.subtitle}
                     </p>
                   </button>
                 );
@@ -517,7 +517,7 @@ export function ReceptionistBookingDetail({ booking }) {
             </div>
           </SectionCard>
 
-          <SectionCard title={t("receptionist.common.feedback") || "Latest Review"}>
+          <SectionCard title={language === "vi" ? "Đánh giá mới nhất" : "Latest Review"}>
             <div className="flex items-start gap-3">
               <img crossOrigin="anonymous"
                 src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80"

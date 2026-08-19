@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from "react";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   USER_BRANCH_OPTIONS,
@@ -5,6 +6,12 @@ import {
   USER_STATUS_FILTERS,
 } from "../services/mockUsers";
 import { PropTypes } from "../../../../shared/utils/propTypes";
+import { fetchAdminSalons } from "../../salon-management/services/salonManagementService";
+
+const isSalonRole = (role) => {
+  const normalized = String(role || "").trim().toLowerCase();
+  return ["staff", "staff_artist", "receptionist", "manager"].includes(normalized);
+};
 
 const FORM_STATUS_OPTIONS = USER_STATUS_FILTERS.filter((item) => item !== "All");
 const INPUT_CLASSNAME =
@@ -51,6 +58,25 @@ export function UserManagementFormFields({
   updateApiFieldsOnly = false,
 }) {
   const { t, language } = useLanguage();
+  const [salons, setSalons] = useState([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadSalons = async () => {
+      try {
+        const response = await fetchAdminSalons({ pageSize: 100 });
+        if (isMounted) {
+          setSalons(response.items || []);
+        }
+      } catch (error) {
+        console.error("Failed to load salons in form fields:", error);
+      }
+    };
+    void loadSalons();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
   if (createApiFieldsOnly) {
     return (
       <>
@@ -111,13 +137,18 @@ export function UserManagementFormFields({
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.avatarUrl")}</span>
+          <span className="text-sm font-medium text-[var(--color-ink)]">
+            {language === "vi" ? "Chọn ảnh đại diện" : t("userManagement.detail.avatarUrl")}
+          </span>
           <input
-            value={formValues.avatarUrl}
-            onChange={onFieldChange("avatarUrl")}
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files?.[0] || null;
+              onFieldChange("imageFile")({ target: { value: file } });
+            }}
             disabled={disabled}
             className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-            placeholder={t("userManagement.detail.enterAvatarUrl")}
           />
         </label>
 
@@ -136,6 +167,29 @@ export function UserManagementFormFields({
             ))}
           </select>
         </label>
+
+        {isSalonRole(formValues.role) && (
+          <label className="space-y-2 md:col-span-2">
+            <span className="text-sm font-medium text-[var(--color-ink)]">
+              {language === "vi" ? "Chi nhánh Salon" : "Salon Branch"}
+            </span>
+            <select
+              value={formValues.salonId || ""}
+              onChange={onFieldChange("salonId")}
+              disabled={disabled}
+              className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
+            >
+              <option value="">
+                {language === "vi" ? "Chọn Salon..." : "Select Salon..."}
+              </option>
+              {salons.map((salon) => (
+                <option key={salon.id} value={salon.id}>
+                  {salon.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </>
     );
   }
@@ -213,6 +267,28 @@ export function UserManagementFormFields({
           />
         </label>
 
+        {isSalonRole(formValues.role) && (
+          <label className="space-y-2">
+            <span className="text-sm font-medium text-[var(--color-ink)]">
+              {language === "vi" ? "Chi nhánh Salon" : "Salon Branch"}
+            </span>
+            <select
+              value={formValues.salonId || ""}
+              onChange={onFieldChange("salonId")}
+              disabled={disabled}
+              className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
+            >
+              <option value="">
+                {language === "vi" ? "Chọn Salon..." : "Select Salon..."}
+              </option>
+              {salons.map((salon) => (
+                <option key={salon.id} value={salon.id}>
+                  {salon.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </>
     );
   }
@@ -270,13 +346,18 @@ export function UserManagementFormFields({
 
       {showAccountFields ? (
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.avatarUrl")}</span>
+          <span className="text-sm font-medium text-[var(--color-ink)]">
+            {language === "vi" ? "Chọn ảnh đại diện" : t("userManagement.detail.avatarUrl")}
+          </span>
           <input
-            value={formValues.avatarUrl}
-            onChange={onFieldChange("avatarUrl")}
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files?.[0] || null;
+              onFieldChange("imageFile")({ target: { value: file } });
+            }}
             disabled={disabled}
             className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-            placeholder={t("userManagement.detail.enterAvatarUrl")}
           />
         </label>
       ) : null}
@@ -310,21 +391,28 @@ export function UserManagementFormFields({
         </select>
       </label>
 
-      <label className="space-y-2">
-        <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.branch")}</span>
-        <select
-          value={formValues.branch}
-          onChange={onFieldChange("branch")}
-          disabled={disabled}
-          className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-        >
-          {USER_BRANCH_OPTIONS.map((branch) => (
-            <option key={branch} value={branch}>
-              {branch}
+      {isSalonRole(formValues.role) && (
+        <label className="space-y-2">
+          <span className="text-sm font-medium text-[var(--color-ink)]">
+            {language === "vi" ? "Chi nhánh Salon" : "Salon Branch"}
+          </span>
+          <select
+            value={formValues.salonId || ""}
+            onChange={onFieldChange("salonId")}
+            disabled={disabled}
+            className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
+          >
+            <option value="">
+              {language === "vi" ? "Chọn Salon..." : "Select Salon..."}
             </option>
-          ))}
-        </select>
-      </label>
+            {salons.map((salon) => (
+              <option key={salon.id} value={salon.id}>
+                {salon.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
 
       <label className="space-y-2">
         <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.statusLabel")}</span>
@@ -385,6 +473,7 @@ UserManagementFormFields.propTypes = {
     phone: PropTypes.string.isRequired,
     role: PropTypes.string.isRequired,
     status: PropTypes.string.isRequired,
+    salonId: PropTypes.string,
   }).isRequired,
   onFieldChange: PropTypes.func.isRequired,
   disabled: PropTypes.bool,

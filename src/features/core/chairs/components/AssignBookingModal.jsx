@@ -104,19 +104,19 @@ export function AssignBookingModal({ isOpen, onClose, salonId, chair, onSuccess 
 
   const columns = [
     {
-      title: "Customer",
+      title: language === "vi" ? "Khách hàng" : "Customer",
       dataIndex: "customerName",
       key: "customerName",
       render: (text) => <span className="font-semibold text-slate-700">{text || "Unknown"}</span>,
     },
     {
-      title: "Date",
+      title: language === "vi" ? "Ngày" : "Date",
       dataIndex: "bookingDate",
       key: "bookingDate",
       render: (date) => <span className="text-slate-600">{dayjs(date).format("MMM DD, YYYY")}</span>,
     },
     {
-      title: "Time",
+      title: language === "vi" ? "Thời gian" : "Time",
       key: "time",
       render: (_, record) => {
         if (!record.startTime) return <span className="font-bold text-pink-600">--</span>;
@@ -135,19 +135,19 @@ export function AssignBookingModal({ isOpen, onClose, salonId, chair, onSuccess 
       }
     },
     {
-      title: "Artist",
+      title: language === "vi" ? "Thợ nail" : "Artist",
       dataIndex: "artistName",
       key: "artistName",
-      render: (text) => <span className="text-slate-600">{text || language === "vi" ? "Chưa chỉ định" : "Not assigned"}</span>,
+      render: (text) => <span className="text-slate-600">{text || (language === "vi" ? "Chưa chỉ định" : "Not assigned")}</span>,
     },
     {
-      title: "Duration",
+      title: language === "vi" ? "Thời lượng" : "Duration",
       dataIndex: "totalDuration",
       key: "totalDuration",
       render: (mins) => <span className="text-slate-600">{mins} {language === "vi" ? "phút" : "minutes"}</span>,
     },
     {
-      title: "Status",
+      title: language === "vi" ? "Trạng thái" : "Status",
       dataIndex: "status",
       key: "status",
       render: (status) => (
@@ -157,20 +157,51 @@ export function AssignBookingModal({ isOpen, onClose, salonId, chair, onSuccess 
       ),
     },
     {
-      title: "Action",
+      title: language === "vi" ? "Thao tác" : "Action",
       key: "action",
       align: "right",
-      render: (_, record) => (
-        <Button
-          size="small"
-          loading={assigningId === record.bookingId}
-          disabled={assigningId !== null && assigningId !== record.bookingId}
-          onClick={() => handleAssign(record.bookingId)}
-          className="!bg-[#ea4f93] hover:!bg-[#d63d7e] border-none !font-semibold !text-[11px] !text-white !px-5 !rounded-md !shadow-sm !shadow-pink-200/50"
-        >
-          {language === "vi" ? "Chỉ định" : "Assign"}
-        </Button>
-      ),
+      render: (_, record) => {
+        const hasChair = record.chairId && 
+          record.chairId !== "00000000-0000-0000-0000-000000000000";
+
+        const now = dayjs();
+        const bookingDate = dayjs(record.bookingDate);
+        const isToday = now.isSame(bookingDate, 'day');
+        
+        let isCurrentTime = false;
+        if (isToday && record.startTime) {
+          const [hours, minutes] = record.startTime.split(':').map(Number);
+          const start = dayjs().hour(hours).minute(minutes).second(0).millisecond(0);
+          const duration = record.totalDuration || 30;
+          const end = start.add(duration, 'minute');
+          
+          // Allow assignment from 30 minutes before booking starts up to its end
+          const graceStart = start.subtract(30, 'minute');
+          isCurrentTime = now.isAfter(graceStart) && now.isBefore(end);
+        }
+
+        if (!isCurrentTime) {
+          return (
+            <span className="text-xs text-slate-400 font-medium tracking-wide">
+              {language === "vi" ? "Ngoài giờ hẹn" : "Out of schedule"}
+            </span>
+          );
+        }
+
+        return (
+          <Button
+            size="small"
+            loading={assigningId === record.bookingId}
+            disabled={assigningId !== null && assigningId !== record.bookingId}
+            onClick={() => handleAssign(record.bookingId)}
+            className="!bg-[#ea4f93] hover:!bg-[#d63d7e] border-none !font-semibold !text-[11px] !text-white !px-5 !rounded-md !shadow-sm !shadow-pink-200/50"
+          >
+            {hasChair 
+              ? (language === "vi" ? "Đổi ghế" : "Reassign") 
+              : (language === "vi" ? "Chỉ định" : "Assign")}
+          </Button>
+        );
+      },
     }
   ];
 
@@ -184,7 +215,7 @@ export function AssignBookingModal({ isOpen, onClose, salonId, chair, onSuccess 
       open={isOpen}
       onCancel={onClose}
       footer={null}
-      width={800}
+      width={1200}
       centered
       destroyOnClose
       className="rounded-2xl"

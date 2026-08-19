@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ROUTES } from "../../../../shared/constants/routes";
@@ -50,7 +51,6 @@ export function NailDesignManagementCategoryPage() {
   const [categories, setCategories] = useState([]);
   const [draft, setDraft] = useState(emptyDraft);
   const [editingId, setEditingId] = useState(null);
-  const [flashMessage, setFlashMessage] = useState("");
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
   const [query, setQuery] = useState("");
@@ -170,11 +170,11 @@ export function NailDesignManagementCategoryPage() {
     const normalizedName = draft.name.trim();
 
     if (!normalizedName) {
-      setFlashMessage(t("adminNailsDesignManagement.categoryNameIsRequired"));
+      toast.error(t("adminNailsDesignManagement.categoryNameIsRequired"));
       return;
     }
 
-    setFlashMessage(
+    toast.success(
       editingId
         ? (language === "vi" ? `${normalizedName} đã sẵn sàng, nhưng API cập nhật danh mục chưa được kết nối.` : `${normalizedName} is ready, but category update API is not connected yet.`)
         : (language === "vi" ? `${normalizedName} đã sẵn sàng, nhưng API tạo danh mục chưa được kết nối.` : `${normalizedName} is ready, but category create API is not connected yet.`),
@@ -194,16 +194,15 @@ export function NailDesignManagementCategoryPage() {
       name: category.name,
       description: category.categoryTypeName || "",
     });
-    setFlashMessage("");
   };
 
   const handleDelete = () => {
     setPendingDeleteId(null);
-    setFlashMessage(t("adminNailsDesignManagement.categoryDeleteApiIsNotConnecte"));
+    toast.error(t("adminNailsDesignManagement.categoryDeleteApiIsNotConnecte"));
   };
 
   const handleToggleStatus = (category) => {
-    setFlashMessage(
+    toast.error(
       language === "vi"
         ? `Thay đổi trạng thái cho ${category.name} chưa được kết nối với API.`
         : `Status change for ${category.name} is not connected to API yet.`
@@ -457,11 +456,7 @@ export function NailDesignManagementCategoryPage() {
             <Pill>{metaData.totalItems} {t("adminNailsDesignManagement.items")}</Pill>
           </div>
 
-          {flashMessage ? (
-            <div className="mb-4 rounded-[16px] bg-[#edfdf4] px-4 py-3 text-sm font-medium text-[#16975f]">
-              {flashMessage}
-            </div>
-          ) : null}
+
 
           {error ? (
             <div className="mb-4 rounded-[16px] bg-[#fff1f5] px-4 py-3 text-sm font-medium text-[#d14c84]">

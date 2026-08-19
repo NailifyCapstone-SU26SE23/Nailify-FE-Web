@@ -1,11 +1,9 @@
 import {
   ArrowLeft,
-  Clock3,
   Image as ImageIcon,
   Save,
   Shapes,
   Upload,
-  Wallet,
   X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -14,17 +12,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ROUTES, getAdminNailShapeDetailRoute } from "../../../../shared/constants/routes";
-import {
-  createAdminNailShape,
-  formatNailShapeCurrency,
-  formatNailShapeDuration,
-} from "../services/nailShapesManagementService";
+import { createAdminNailShape } from "../services/nailShapesManagementService";
 
 function createEmptyForm() {
   return {
     name: "",
-    price: "",
-    duration: "",
     image: null,
   };
 }
@@ -33,14 +25,6 @@ function validateForm(formValues, language) {
   const isVi = language === "vi";
   if (!String(formValues.name || "").trim()) {
     return isVi ? "Tên dáng móng là bắt buộc." : "Nail shape name is required.";
-  }
-
-  if (Number(formValues.price) < 0 || Number.isNaN(Number(formValues.price))) {
-    return isVi ? "Giá phải là một số hợp lệ." : "Price must be a valid number.";
-  }
-
-  if (Number(formValues.duration) <= 0 || Number.isNaN(Number(formValues.duration))) {
-    return isVi ? "Thời lượng phải lớn hơn 0." : "Duration must be greater than 0.";
   }
 
   return "";
@@ -58,12 +42,10 @@ export function NailShapeCreatePage() {
 
   const summaryItems = useMemo(
     () => [
-      [t("adminNailShapesManagement.shapeName"), formValues.name || "--"],
-      [t("adminNailShapesManagement.price"), formValues.price ? formatNailShapeCurrency(formValues.price) : "--"],
-      [t("adminNailShapesManagement.duration"), formValues.duration ? formatNailShapeDuration(formValues.duration) : "--"],
+      [t("adminNailShapesManagement.shapeName"), formValues.name],
       [t("adminNailShapesManagement.image"), formValues.image ? formValues.image.name : (t("adminNailShapesManagement.notSelected"))],
     ],
-    [formValues.duration, formValues.image, formValues.name, formValues.price, language],
+    [formValues.image, formValues.name, t],
   );
 
   const handleFieldChange = (field, value) => {
@@ -103,11 +85,7 @@ export function NailShapeCreatePage() {
     setIsSaving(true);
 
     try {
-      const createdShape = await createAdminNailShape({
-        ...formValues,
-        price: Number(formValues.price),
-        duration: Number(formValues.duration),
-      });
+      const createdShape = await createAdminNailShape({ ...formValues });
 
       toast.success(language === "vi" ? `Đã tạo dáng móng ${createdShape.name} thành công.` : `${createdShape.name} created successfully.`);
       navigate(getAdminNailShapeDetailRoute(createdShape.nailShapeId), {
@@ -176,7 +154,7 @@ export function NailShapeCreatePage() {
             {t("adminNailShapesManagement.nailShapeDetails")}
           </h2>
 
-          <div className="grid gap-5 md:grid-cols-2">
+          <div className="grid gap-5">
             <label className="space-y-2.5">
               <span className="text-[13px] font-semibold text-slate-600">{t("adminNailShapesManagement.shapeName")}</span>
               <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
@@ -192,38 +170,6 @@ export function NailShapeCreatePage() {
             </label>
 
             <label className="space-y-2.5">
-              <span className="text-[13px] font-semibold text-slate-600">{t("adminNailShapesManagement.price")}</span>
-              <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
-                <Wallet size={14} className="shrink-0 text-rose-300" />
-                <input
-                  type="number"
-                  min="0"
-                  step="1000"
-                  value={formValues.price}
-                  onChange={(event) => handleFieldChange("price", event.target.value)}
-                  placeholder="0"
-                  className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none placeholder:text-rose-300"
-                />
-              </div>
-            </label>
-
-            <label className="space-y-2.5 md:col-span-2">
-              <span className="text-[13px] font-semibold text-slate-600">{t("adminNailShapesManagement.duration")}</span>
-              <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
-                <Clock3 size={14} className="shrink-0 text-rose-300" />
-                <input
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={formValues.duration}
-                  onChange={(event) => handleFieldChange("duration", event.target.value)}
-                  placeholder={t("adminNailShapesManagement.minutes")}
-                  className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none placeholder:text-rose-300"
-                />
-              </div>
-            </label>
-
-            <label className="space-y-2.5 md:col-span-2">
               <span className="text-[13px] font-semibold text-slate-600">{t("adminNailShapesManagement.previewImage")}</span>
               <label className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-rose-200 bg-gradient-to-br from-[#fffafc] to-[#fff5f9] px-6 py-8 transition hover:border-rose-300 hover:shadow-[0_8px_24px_rgba(226,93,143,0.12)]">
                 {imagePreview ? (
@@ -321,10 +267,7 @@ export function NailShapeCreatePage() {
         onConfirm={handleCreateShape}
         onCancel={() => !isSaving && setShowSaveConfirm(false)}
         highlights={[formValues.name || (t("adminNailShapesManagement.newNailShape"))]}
-        details={[
-          { label: t("adminNailShapesManagement.price"), value: formValues.price ? formatNailShapeCurrency(formValues.price) : "--" },
-          { label: t("adminNailShapesManagement.duration"), value: formValues.duration ? formatNailShapeDuration(formValues.duration) : "--" },
-        ]}
+        details={[]}
       />
     </section>
   );

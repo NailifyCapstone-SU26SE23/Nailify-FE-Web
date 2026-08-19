@@ -272,7 +272,7 @@ const MOCK_TRANSACTIONS = [
 ];
 
 export async function fetchTransactions(options = {}) {
-  const { pageNumber = 1, pageSize = 10, salonId } = options;
+  const { pageNumber = 1, pageSize = 10, salonId, status } = options;
   const currentSalonId = salonId || getSalonId();
 
   const queryParams = {
@@ -282,6 +282,10 @@ export async function fetchTransactions(options = {}) {
 
   if (currentSalonId) {
     queryParams.salonId = currentSalonId;
+  }
+
+  if (status && status !== "all") {
+    queryParams.status = status;
   }
 
   console.log("Fetching transactions with params:", queryParams);
@@ -300,18 +304,27 @@ export async function fetchTransactions(options = {}) {
     const data = payload?.data;
     // Process response format to standard list representation
     if (data && Array.isArray(data.items)) {
+      const items = data.items;
+      const meta = data.metaData || {};
+      const totalCount = data.totalCount || meta.totalItems || meta.totalCount || items.length;
+      const size = data.pageSize || meta.pageSize || pageSize;
+      const pageNum = data.pageNumber || data.currentPage || meta.currentPage || meta.pageNumber || 1;
+      const inferredTotalPages = Math.ceil(totalCount / size) || 1;
+      const totalPages = data.totalPages || meta.totalPages || inferredTotalPages;
+
       return {
-        items: data.items,
-        totalCount: data.totalCount || data.items.length,
-        totalPages: data.totalPages || 1,
-        pageNumber: data.pageNumber || 1,
-        pageSize: data.pageSize || 10,
+        items,
+        totalCount,
+        totalPages,
+        pageNumber: pageNum,
+        pageSize: size,
       };
     } else if (Array.isArray(data)) {
+      const inferredTotalPages = Math.ceil(data.length / pageSize) || 1;
       return {
         items: data,
         totalCount: data.length,
-        totalPages: 1,
+        totalPages: inferredTotalPages,
         pageNumber: 1,
         pageSize: 10,
       };
@@ -352,6 +365,13 @@ export async function fetchTransactions(options = {}) {
       );
     }
 
+    // Filter by status if applicable
+    if (status && status !== "all") {
+      filtered = filtered.filter(
+        t => t.status?.toLowerCase() === status.toLowerCase()
+      );
+    }
+    
     // Apply basic pagination
     const totalItems = filtered.length;
     const startIndex = (pageNumber - 1) * pageSize;

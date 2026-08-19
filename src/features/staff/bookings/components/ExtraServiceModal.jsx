@@ -1,5 +1,6 @@
 import { Search, X } from "lucide-react";
 import { PropTypes } from "../../../../shared/utils/propTypes";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 function formatServiceDuration(value) {
   const minutes = Number(value);
@@ -46,7 +47,7 @@ export function ExtraServiceModal({
   if (!open) {
     return null;
   }
-
+  const { language } = useLanguage();
   const normalizedServices = Array.isArray(services) ? services : [];
   const normalizedSelectedServiceQuantities =
     selectedServiceQuantities && typeof selectedServiceQuantities === "object"
@@ -57,9 +58,10 @@ export function ExtraServiceModal({
     const quantity = Number(value || 0);
     return quantity > 0 ? sum + quantity : sum;
   }, 0);
+  const isVi = language === "vi";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2f1c2e]/45 px-4 py-6 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#2f1c2e]/45 px-4 py-6 backdrop-blur-sm">
       <div className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-[28px] border border-[#f1cddd] bg-white shadow-[0_24px_60px_rgba(63,43,63,0.24)]">
         <div className="flex items-start justify-between gap-4 border-b border-[#f7dfeb] px-6 py-5">
           <div>
@@ -82,7 +84,7 @@ export function ExtraServiceModal({
               <input
                 value={searchValue}
                 onChange={onSearchChange}
-                placeholder="Search service name..."
+                placeholder={isVi ? "Tìm kiếm tên dịch vụ..." : "Search service name..."}
                 className="w-full bg-transparent text-sm text-[#3f2b3f] outline-none placeholder:text-[#c59ab0]"
               />
             </label>
@@ -90,14 +92,14 @@ export function ExtraServiceModal({
               type="submit"
               className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-[image:var(--gradient-accent)] px-5 py-3 text-sm font-bold text-white"
             >
-              Search
+              {isVi ? "Tìm kiếm" : "Search"}
             </button>
           </form>
 
           <div className="mt-5 space-y-3 pr-1">
             {isLoading ? (
               <div className="rounded-[20px] border border-dashed border-[#f1cade] bg-[#fff8fb] px-4 py-10 text-center text-sm font-medium text-[#a88a9d]">
-                Loading services...
+                {isVi ? "Đang tải dịch vụ..." : "Loading services..."}
               </div>
             ) : normalizedServices.length ? (
               normalizedServices.map((service) => {
@@ -159,7 +161,7 @@ export function ExtraServiceModal({
               })
             ) : (
               <div className="rounded-[20px] border border-dashed border-[#f1cade] bg-[#fff8fb] px-4 py-10 text-center text-sm font-medium text-[#a88a9d]">
-                No services found.
+                {isVi ? "Không tìm thấy dịch vụ" : "No services found"}
               </div>
             )}
           </div>
@@ -168,10 +170,10 @@ export function ExtraServiceModal({
         <div className="shrink-0 bg-white">
           <div className="flex flex-col gap-3 border-t border-[#f7dfeb] px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-[#a88a9d]">
-              Showing {meta?.firstRowOnPage ?? 0}-{meta?.lastRowOnPage ?? 0} of {meta?.totalItems ?? 0} services
+              {isVi ? "Hiển thị " + meta?.firstRowOnPage ?? 0 : "Showing"} {meta?.firstRowOnPage ?? 0}-{meta?.lastRowOnPage ?? 0} of {meta?.totalItems ?? 0} services
             </p>
             <p className="text-xs font-bold text-[#ea4f93]">
-              Selected: {selectedCount}
+              {isVi ? "Đã chọn: " : "Selected: "} {selectedCount}
             </p>
             <div className="flex items-center gap-2">
               <button
@@ -180,10 +182,10 @@ export function ExtraServiceModal({
                 disabled={!meta?.hasPrevious || isLoading}
                 className="rounded-xl border border-[#f2bfd4] bg-white px-3 py-2 text-xs font-bold text-[#ea4f93] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Previous
+                {isVi ? "Trước đó" : "Previous"}
               </button>
               <span className="text-xs font-bold text-[#866f80]">
-                Page {meta?.currentPage ?? 1}/{meta?.totalPages ?? 1}
+                {isVi ? "Trang " : "Page "} {meta?.currentPage ?? 1}/{meta?.totalPages ?? 1}
               </span>
               <button
                 type="button"
@@ -191,7 +193,7 @@ export function ExtraServiceModal({
                 disabled={!meta?.hasNext || isLoading}
                 className="rounded-xl border border-[#f2bfd4] bg-white px-3 py-2 text-xs font-bold text-[#ea4f93] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Next
+                {isVi ? "Tiếp theo" : "Next"}
               </button>
             </div>
           </div>
@@ -202,7 +204,7 @@ export function ExtraServiceModal({
               onClick={onClose}
               className="rounded-2xl border border-[#f2bfd4] bg-white px-5 py-3 text-sm font-bold text-[#ea4f93]"
             >
-              Cancel
+              {isVi ? "Hủy" : "Cancel"}
             </button>
             <button
               type="button"

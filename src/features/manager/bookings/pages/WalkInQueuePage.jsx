@@ -50,7 +50,7 @@ const getSalonId = () => {
 // Queue status definitions and metadata
 const STATUS_META = {
   Waiting: { label: "Waiting", labelVi: "Đang chờ", color: "#d89b1d", bg: "bg-[#fffdf9] text-[#d89b1d] border-[#fbe9c7]" },
-  Called: { label: "At Counter", labelVi: "Tại quầy", color: "#3b82f6", bg: "bg-[#fffdf9] text-[#3b82f6] border-[#d2e4f7]" },
+  Called: { label: "Checked In", labelVi: "Tại quầy", color: "#3b82f6", bg: "bg-[#fffdf9] text-[#3b82f6] border-[#d2e4f7]" },
   InService: { label: "In Service", labelVi: "Đang phục vụ", color: "#22a06b", bg: "bg-[#fffdf9] text-[#22a06b] border-[#c8ebd3]" },
   Done: { label: "Completed", labelVi: "Hoàn thành", color: "#5b6472", bg: "bg-[#fffdf9] text-[#5b6472] border-[#e0e0e0]" },
   Left: { label: "Absent / Left", labelVi: "Vắng mặt / Rời đi", color: "#e56b6f", bg: "bg-[#fffdf9] text-[#e56b6f] border-[#fbc9c9]" },
@@ -424,7 +424,7 @@ export function WalkInQueuePage() {
               <Sparkle size={16} className="text-[#e85d9b] fill-[#e85d9b] animate-spin" style={{ animationDuration: '6s' }} />
             </h1>
             <p className="text-[11px] text-[#7d6d78] mt-1 font-semibold max-w-xl">
-              {language === "vi" ? "Điều phối lượt phục vụ và phân bổ thợ nail nhanh chóng cho khách hàng vãng lai trong ngày." : "Coordinate service order and quickly assign nail artists for daily walk-in customers."}
+              {language === "vi" ? "Điều phối lượt phục vụ và phân bổ thợ nail nhanh chóng cho khách hàng vãng lai trong ngày." : "Coordinate service order and quickly assign Staff Artists for daily walk-in customers."}
             </p>
           </div>
 
@@ -541,7 +541,7 @@ export function WalkInQueuePage() {
             </div>
 
             <div className="rounded-xl bg-[#fffdf9] p-3 border border-[#e2e8f0] flex flex-col justify-between h-18 transition hover:bg-gray-50/50">
-              <span className="text-[9px] font-bold uppercase text-[#7d6d78] tracking-wider">{language === "vi" ? "Tại quầy" : "At counter"}</span>
+              <span className="text-[9px] font-bold uppercase text-[#7d6d78] tracking-wider">{language === "vi" ? "Tại quầy" : "Checked In"}</span>
               <div className="flex items-baseline gap-1">
                 <span className="text-xl font-bold text-[#3b82f6]">{stats.called}</span>
                 <span className="text-[9px] text-[#7d6d78] font-bold"> {language === "vi" ? "khách" : "guests"}</span>
@@ -661,7 +661,7 @@ export function WalkInQueuePage() {
             <div className="flex items-center justify-between border-b border-[#d2e4f7]/20 pb-3 mb-4">
               <div className="flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#3b82f6]" />
-                <h3 className="font-extrabold text-[#2f2430] text-xs uppercase tracking-wider">{language === "vi" ? `Tại Quầy (${calledEntries.length})` : `At Counter (${calledEntries.length})`}</h3>
+                <h3 className="font-extrabold text-[#2f2430] text-xs uppercase tracking-wider">{language === "vi" ? `Tại Quầy (${calledEntries.length})` : `Checked In (${calledEntries.length})`}</h3>
               </div>
               <span className="rounded-full bg-[#3b82f6]/10 px-2 py-0.5 text-[9px] font-bold uppercase text-[#3b82f6] border border-[#3b82f6]/20">{language === "vi" ? "Đã gọi số" : "Called"}</span>
             </div>
@@ -918,7 +918,7 @@ export function WalkInQueuePage() {
               {/* Vertical Header - Artist Names (Fixed Roster Panel look) */}
               <div className="divide-y divide-gray-100 border-r border-[#e2e8f0] bg-[#fffdf9]">
                 <div className="h-14 flex items-center px-4 font-bold text-[#2f2430] text-[10px] uppercase tracking-wider bg-gray-50/50 border-b border-[#e2e8f0]">
-                  {language === "vi" ? "Thợ Nail Phụ Trách" : "Nail Artist"}
+                  {language === "vi" ? "Thợ Nail Phụ Trách" : "Staff Artist"}
                 </div>
 
                 {/* Row for Unassigned / Queue Pool */}
@@ -930,7 +930,7 @@ export function WalkInQueuePage() {
                   <p className="text-[10px] text-[#7d6d78] mt-1 font-semibold">{language === "vi" ? "Khách vãng lai đang chờ" : "Walk-in customers waiting"}</p>
                 </div>
 
-                {/* Rows for each Nail Artist */}
+                {/* Rows for each Staff Artist */}
                 {staffList.map((artist) => (
                   <div key={artist.staffId} className="h-32 flex items-center gap-3 px-4 bg-[#fffdf9] transition hover:bg-gray-50/40">
                     <div className="flex h-9.5 w-9.5 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#e85d9b] to-[#7c3aed] text-white font-bold text-xs shadow-sm">
@@ -1005,9 +1005,9 @@ export function WalkInQueuePage() {
                     })}
                   </div>
 
-                  {/* 2. Rows for Nail Artists with Drop listeners */}
+                  {/* 2. Rows for Staff Artists with Drop listeners */}
                   {staffList.map((artist) => (
-                     <div key={artist.staffId} className="h-32 flex divide-x divide-gray-100 bg-[#fffdf9]">
+                    <div key={artist.staffId} className="h-32 flex divide-x divide-gray-100 bg-[#fffdf9]">
                       {TIME_SLOTS.map((slot) => {
                         const artistHourEntries = filteredQueue.filter(
                           (x) => x.assignedNailArtistId === artist.staffId && getEntryHour(x) === slot
@@ -1232,7 +1232,7 @@ export function WalkInQueuePage() {
         title={
           <div className="flex items-center gap-2">
             <Award size={16} className="text-[#ea4f93]" />
-            <span className="font-bold text-[#321735]">{language === "vi" ? "Phân Bổ Thợ Nail Phục Vụ" : "Assign Nail Artist"}</span>
+            <span className="font-bold text-[#321735]">{language === "vi" ? "Phân Bổ Thợ Nail Phục Vụ" : "Assign Staff Artist"}</span>
           </div>
         }
         open={isAssignModalOpen}
@@ -1346,12 +1346,22 @@ function DraggableCard({ item, onDragStart, onDragEnd, isDragging, extraActions 
             </div>
           )}
 
-          {item.assignedNailArtistName && (
-            <div className="mt-3 flex items-center gap-1.5 text-[9px] font-bold text-[#22a06b] bg-[#22a06b]/10 border border-[#22a06b]/15 px-2 py-0.5 rounded-lg w-max max-w-full shadow-sm">
-              <span className="h-1 w-1 rounded-full bg-[#22a06b] animate-pulse" />
-              <span className="truncate">{language === "vi" ? "Thợ nail" : "Artist"}: {item.assignedNailArtistName}</span>
-            </div>
-          )}
+          {(() => {
+            let artistName = item.assignedNailArtistName;
+            if (!artistName && item.assignedNailArtistId && staffList.length > 0) {
+              const foundStaff = staffList.find(s => (s.staffId || s.id || s.userId) === item.assignedNailArtistId);
+              if (foundStaff) {
+                artistName = foundStaff.fullName || foundStaff.name || (foundStaff.account ? `${foundStaff.account.firstName} ${foundStaff.account.lastName}`.trim() : "");
+              }
+            }
+            if (!artistName) return null;
+            return (
+              <div className="mt-3 flex items-center gap-1.5 text-[9px] font-bold text-[#22a06b] bg-[#22a06b]/10 border border-[#22a06b]/15 px-2 py-0.5 rounded-lg w-max max-w-full shadow-sm">
+                <span className="h-1 w-1 rounded-full bg-[#22a06b] animate-pulse" />
+                <span className="truncate">{language === "vi" ? "Thợ nail" : "Artist"}: {artistName}</span>
+              </div>
+            );
+          })()}
 
           {item.status === "Waiting" && item.estimatedWait !== null && (
             <div className="mt-3 flex items-center gap-1.5 text-[9px] text-[#d89b1d] font-bold bg-[#d89b1d]/10 border border-[#d89b1d]/15 px-2 py-0.5 rounded-lg w-max shadow-sm">
