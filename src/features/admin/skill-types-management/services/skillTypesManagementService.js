@@ -7,8 +7,8 @@ function getAuthHeaders() {
 
   return token
     ? {
-        Authorization: `Bearer ${token}`,
-      }
+      Authorization: `Bearer ${token}`,
+    }
     : {};
 }
 
@@ -45,10 +45,10 @@ export function normalizeAdminSkillType(skillType) {
   return {
     id: String(skillType?.skillTypeId || "").trim(),
     skillTypeId: String(skillType?.skillTypeId || "").trim(),
-    name: String(skillType?.name || "").trim() || "--",
+    name: String(skillType?.name || "").trim(),
     description,
     descriptionPreview: description || "No description",
-    status: String(skillType?.status || "").trim() || "--",
+    status: String(skillType?.status || "").trim(),
     initials: String(skillType?.name || "")
       .trim()
       .split(/\s+/)

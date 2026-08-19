@@ -11,6 +11,7 @@ import {
   Sparkles,
   Trash2,
   X,
+  Eye,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Table, Tooltip } from "antd";
@@ -184,10 +185,11 @@ ModalShell.propTypes = {
 };
 
 function ServiceFormModal({ draft, mode, onChange, onClose, onSubmit, errorMessage }) {
+  const { language } = useLanguage();
   return (
     <ModalShell
-      title={mode === "create" ? "Create Service" : "Edit Service"}
-      subtitle="Manage mock service pricing, duration, and availability."
+      title={mode === "create" ? language === "vi" ? "Thêm dịch vụ" : "Create Service" : language === "vi" ? "Chỉnh sửa dịch vụ" : "Edit Service"}
+      subtitle={language === "vi" ? "Quản lý giá, thời lượng và tình trạng khả dụng của các dịch vụ giả lập." : "Manage mock service pricing, duration, and availability."}
       onClose={onClose}
     >
       <form
@@ -198,14 +200,14 @@ function ServiceFormModal({ draft, mode, onChange, onClose, onSubmit, errorMessa
         }}
       >
         <div className="grid gap-4 md:grid-cols-2">
-          <FormField label="Service Name">
+          <FormField label={language === "vi" ? "Tên dịch vụ" : "Service Name"}>
             <input
               value={draft.name}
               onChange={(event) => onChange("name", event.target.value)}
               className="h-11 w-full rounded-2xl border border-[#f4d7e5] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
             />
           </FormField>
-          <FormField label="Category">
+          <FormField label={language === "vi" ? "Danh mục" : "Category"}>
             <select
               value={draft.category}
               onChange={(event) => onChange("category", event.target.value)}
@@ -218,7 +220,7 @@ function ServiceFormModal({ draft, mode, onChange, onClose, onSubmit, errorMessa
               ))}
             </select>
           </FormField>
-          <FormField label="Base Price">
+          <FormField label={language === "vi" ? "Giá cơ bản" : "Base Price"}>
             <input
               type="number"
               min="0"
@@ -228,7 +230,7 @@ function ServiceFormModal({ draft, mode, onChange, onClose, onSubmit, errorMessa
               className="h-11 w-full rounded-2xl border border-[#f4d7e5] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
             />
           </FormField>
-          <FormField label="Duration (Min)">
+          <FormField label={language === "vi" ? "Thời lượng (phút)" : "Duration (Min)"}>
             <input
               type="number"
               min="5"
@@ -238,7 +240,7 @@ function ServiceFormModal({ draft, mode, onChange, onClose, onSubmit, errorMessa
               className="h-11 w-full rounded-2xl border border-[#f4d7e5] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
             />
           </FormField>
-          <FormField label="Status">
+          <FormField label={language === "vi" ? "Trạng thái" : "Status"}>
             <select
               value={draft.status}
               onChange={(event) => onChange("status", event.target.value)}
@@ -265,13 +267,13 @@ function ServiceFormModal({ draft, mode, onChange, onClose, onSubmit, errorMessa
             onClick={onClose}
             className="rounded-full border border-[#f4d5e3] px-4 py-2 text-sm font-bold text-[#8a7082]"
           >
-            Cancel
+            {language === "vi" ? "Hủy" : "Cancel"}
           </button>
           <button
             type="submit"
             className="rounded-full bg-[image:var(--gradient-accent)] px-5 py-2 text-sm font-bold text-white"
           >
-            {mode === "create" ? "Create Service" : "Save Changes"}
+            {mode === "create" ? language === "vi" ? "Thêm dịch vụ" : "Create Service" : language === "vi" ? "Lưu thay đổi" : "Save Changes"}
           </button>
         </div>
       </form>
@@ -288,27 +290,107 @@ ServiceFormModal.propTypes = {
   onSubmit: PropTypes.func.isRequired,
 };
 
+function ServiceDetailModal({ service, onClose }) {
+  const { language } = useLanguage();
+  if (!service) return null;
+
+  return (
+    <ModalShell
+      title={language === "vi" ? "Chi tiết dịch vụ" : "Service Details"}
+      subtitle={language === "vi" ? "Thông tin chi tiết về dịch vụ cấu hình giá và thời gian." : "Detailed service specifications, pricing, and timing configurations."}
+      onClose={onClose}
+    >
+      <div className="space-y-4">
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="rounded-2xl border border-[#f4d7e5] bg-[#fffafc] p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#a88ea0]">
+              {language === "vi" ? "Tên dịch vụ" : "Service Name"}
+            </p>
+            <p className="mt-1 text-sm font-extrabold text-[#432744]">{service.name}</p>
+          </div>
+          <div className="rounded-2xl border border-[#f4d7e5] bg-[#fffafc] p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#a88ea0]">
+              {language === "vi" ? "Danh mục" : "Category"}
+            </p>
+            <p className="mt-1 text-sm font-extrabold text-[#432744]">{service.category}</p>
+          </div>
+          <div className="rounded-2xl border border-[#f4d7e5] bg-[#fffafc] p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#a88ea0]">
+              {language === "vi" ? "Giá cơ bản" : "Base Price"}
+            </p>
+            <p className="mt-1 text-sm font-extrabold text-[#2fa06c]">
+              {Number(service.price).toLocaleString("vi-VN")} VND
+            </p>
+          </div>
+          <div className="rounded-2xl border border-[#f4d7e5] bg-[#fffafc] p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#a88ea0]">
+              {language === "vi" ? "Thời lượng" : "Duration"}
+            </p>
+            <p className="mt-1 text-sm font-extrabold text-[#8b5cf6]">
+              {service.duration} {language === "vi" ? "phút" : "min"}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-[#f4d7e5] bg-[#fffafc] p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#a88ea0]">
+              {language === "vi" ? "Trạng thái" : "Status"}
+            </p>
+            <span
+              className={`mt-1.5 inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
+                service.status === "Active" ? "bg-[#e7fbf4] text-[#23b68b]" : "bg-[#fff0f5] text-[#eb5a99]"
+              }`}
+            >
+              {service.status}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex justify-end pt-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full bg-[image:var(--gradient-accent)] px-5 py-2 text-sm font-bold text-white shadow-sm hover:opacity-90"
+          >
+            {language === "vi" ? "Đóng" : "Close"}
+          </button>
+        </div>
+      </div>
+    </ModalShell>
+  );
+}
+
+ServiceDetailModal.propTypes = {
+  service: PropTypes.shape({
+    name: PropTypes.string,
+    category: PropTypes.string,
+    price: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    duration: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    status: PropTypes.string,
+  }),
+  onClose: PropTypes.func.isRequired,
+};
+
 function ConfirmModal({ title, body, label, recordType, onCancel, onConfirm }) {
+  const { language } = useLanguage();
   return (
     <ActionConfirmModal
       open
       intent="danger"
       title={title}
-      subtitle="This will update the current mock pricing state."
+      subtitle={language === "vi" ? "Hành động này sẽ cập nhật trạng thái giá giả lập hiện tại." : "This will update the current mock pricing state."}
       description={body}
-      confirmText="Delete"
-      cancelText="Keep Record"
+      confirmText={language === "vi" ? "Xóa" : "Delete"}
+      cancelText={language === "vi" ? "Giữ bản ghi" : "Keep Record"}
       confirmIcon={Trash2}
       onConfirm={onConfirm}
       onCancel={onCancel}
       item={{
         title: label,
-        meta: `Pricing record • ${recordType}`,
-        note: "This entry will be removed from the current admin UI state.",
+        meta: language === "vi" ? `Bản ghi giá • ${recordType}` : `Pricing record • ${recordType}`,
+        note: language === "vi" ? "Mục này sẽ bị xóa khỏi trạng thái UI giả lập hiện tại." : "This entry will be removed from the current admin UI state.",
       }}
       warnings={[
-        "This delete is mock-only and affects the current UI state.",
-        "Any screens depending on this record should be reviewed after deletion.",
+        language === "vi" ? "Xóa này chỉ là giả lập và ảnh hưởng đến trạng thái UI hiện tại." : "This delete is mock-only and affects the current UI state.",
+        language === "vi" ? "Bất kỳ màn hình nào phụ thuộc vào bản ghi này nên được xem xét sau khi xóa." : "Any screens depending on this record should be reviewed after deletion.",
       ]}
     />
   );
@@ -397,6 +479,7 @@ export function ServicePricingManagementPage() {
   const [deleteState, setDeleteState] = useState(null);
   const [serviceDraft, setServiceDraft] = useState(createEmptyService);
   const [serviceError, setServiceError] = useState("");
+  const [detailService, setDetailService] = useState(null);
   const [serviceMetaData, setServiceMetaData] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -555,6 +638,12 @@ export function ServicePricingManagementPage() {
 
   const getServiceActionItems = useCallback((service) => [
     {
+      key: "view-service",
+      label: language === "vi" ? "Xem chi tiết" : "View Details",
+      icon: Eye,
+      onSelect: () => setDetailService(service),
+    },
+    {
       key: "edit-service",
       label: `${t("promotionDetail.editTitle") || "Edit"} ${t("servicePricing.table.service")}`,
       icon: Pencil,
@@ -572,7 +661,7 @@ export function ServicePricingManagementPage() {
           label: service.name,
         }),
     },
-  ], [openEditService, t]);
+  ], [openEditService, t, language]);
 
   const submitServiceForm = () => {
     setServiceError("Service create/update API is not connected yet.");
@@ -736,7 +825,7 @@ export function ServicePricingManagementPage() {
             <button
               type="button"
               onClick={openCreateService}
-              className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)] w-35"
+              className="whitespace-nowrap rounded-full bg-[image:var(--gradient-accent)] px-5 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
             >
               <Plus size={13} className="mr-1.5 inline" />
               {t("userManagement.table.actions") === "Thao tác" ? "Thêm dịch vụ" : "Add Service"}
@@ -769,8 +858,8 @@ export function ServicePricingManagementPage() {
 
               <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-[11px] text-[#c694ad]">
-                  Showing {serviceMetaData.firstRowOnPage}-{serviceMetaData.lastRowOnPage} of{" "}
-                  {serviceMetaData.totalItems} services
+                  {language === "vi" ? `Hiển thị ${serviceMetaData.firstRowOnPage}-${serviceMetaData.lastRowOnPage} trong số ${serviceMetaData.totalItems} dịch vụ`
+                    : `Showing ${serviceMetaData.firstRowOnPage}-${serviceMetaData.lastRowOnPage} of ${serviceMetaData.totalItems} services`}
                 </p>
                 <div className="flex items-center gap-1">
                   <button
@@ -828,7 +917,7 @@ export function ServicePricingManagementPage() {
             <SidePanel title="Insights">
               <div className="space-y-4">
                 <div className="rounded-[16px] border border-[#f8dce8] bg-[#fff8fb] p-4">
-                  <p className="text-xs font-extrabold text-[#432744]">Most Booked Services</p>
+                  <p className="text-xs font-extrabold text-[#432744]">{language === "vi" ? "Dịch vụ được đặt nhiều nhất" : "Most Booked Services"}</p>
                   <div className="mt-3 space-y-3">
                     {MOST_BOOKED_SERVICES.map(([name, value], index) => (
                       <div key={name} className="flex items-center justify-between gap-3">
@@ -845,7 +934,7 @@ export function ServicePricingManagementPage() {
                 </div>
 
                 <div className="rounded-[16px] border border-[#f8dce8] bg-[#fff8fb] p-4">
-                  <p className="text-xs font-extrabold text-[#432744]">Highest Revenue Services</p>
+                  <p className="text-xs font-extrabold text-[#432744]">{language === "vi" ? "Dịch vụ có doanh thu cao nhất" : "Highest Revenue Services"}</p>
                   <div className="mt-3 space-y-3">
                     {HIGHEST_REVENUE_SERVICES.map(([name, value, progress]) => (
                       <div key={name}>
@@ -865,7 +954,7 @@ export function ServicePricingManagementPage() {
                 </div>
 
                 <div className="rounded-[16px] border border-[#f8dce8] bg-[#fff8fb] p-4">
-                  <p className="text-xs font-extrabold text-[#432744]">Pricing Alerts</p>
+                  <p className="text-xs font-extrabold text-[#432744]">{language === "vi" ? "Cảnh báo giá" : "Pricing Alerts"}</p>
                   <div className="mt-3 space-y-3">
                     {PRICING_ALERTS.map((alert) => {
                       const tone = getAlertTone(alert.tone);
@@ -887,7 +976,7 @@ export function ServicePricingManagementPage() {
                 </div>
 
                 <div className="rounded-[16px] border border-[#f8dce8] bg-[#fff8fb] p-4">
-                  <p className="text-xs font-extrabold text-[#432744]">Category Breakdown</p>
+                  <p className="text-xs font-extrabold text-[#432744]">{language === "vi" ? "Phân loại dịch vụ" : "Category Breakdown"}</p>
                   <div className="mt-3 space-y-3">
                     {categoryBreakdown.map(([name, count]) => (
                       <div key={name}>
@@ -919,6 +1008,13 @@ export function ServicePricingManagementPage() {
           onClose={() => setServiceModal({ open: false, mode: "create", recordId: null })}
           onChange={(field, value) => setServiceDraft((current) => ({ ...current, [field]: value }))}
           onSubmit={submitServiceForm}
+        />
+      ) : null}
+
+      {detailService ? (
+        <ServiceDetailModal
+          service={detailService}
+          onClose={() => setDetailService(null)}
         />
       ) : null}
 

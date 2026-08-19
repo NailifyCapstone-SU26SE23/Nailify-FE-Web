@@ -15,6 +15,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { fetchCustomerNailRequestById, staffSubmitArtistQuote } from "../../../manager/customer-nail/services/customerNailsService";
 import { ProcedureBuilderSection } from "../components/ProcedureBuilderSection";
 import toast from "react-hot-toast";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 function getStatusTone(status) {
   switch (status) {
@@ -650,6 +651,7 @@ function NailBlueprint({ nail, componentsList }) {
 }
 
 export function StaffCustomerNailReviewPage() {
+  const { language } = useLanguage();
   const { customerNailId } = useParams();
   const navigate = useNavigate();
   const [request, setRequest] = useState(null);

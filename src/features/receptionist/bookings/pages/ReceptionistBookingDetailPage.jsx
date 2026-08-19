@@ -33,7 +33,7 @@ import {
   UserRound,
   X,
   XCircle,
-  Zap,
+  Zap, Hourglass
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
@@ -123,11 +123,13 @@ function formatTime(value) {
 
 function getCustomerDisplayName(customerProfile, booking) {
   const fullName = [customerProfile?.firstName, customerProfile?.lastName].filter(Boolean).join(" ").trim();
-  return fullName || booking?.customerName || "--";
+  return fullName || booking?.customerName || "";
 }
 
 function getCustomerInitials(customerProfile, booking) {
-  return getCustomerDisplayName(customerProfile, booking)
+  const displayName = getCustomerDisplayName(customerProfile, booking);
+  if (!displayName) return "NA";
+  return displayName
     .split(" ")
     .filter(Boolean)
     .slice(0, 2)
@@ -294,20 +296,95 @@ function getServiceActionItems(row, handleViewService, handleViewProcedures, isV
 }
 
 function getProgressPercent(booking) {
-  const items = booking?.bookingItems ?? [];
+  if (!booking) return 0;
 
-  if (!items.length) {
-    return 25;
+  const status = String(booking.status || "").trim();
+
+  if (status === "Completed") {
+    return 100;
   }
 
-  const completedCount =
-    booking?.status === "Completed"
-      ? items.length
-      : booking?.status === "CheckedIn" || booking?.status === "In Progress"
-        ? 1
-        : 0;
+  if (["Pending", "Confirmed", "CheckedIn", "Cancelled"].includes(status)) {
+    return 0;
+  }
 
-  return Math.max(20, Math.round((completedCount / items.length) * 100));
+  const startTimeStr = booking.startTime;
+  const totalDuration = Number(booking.totalDuration) || 45;
+
+  if (!startTimeStr) {
+    return 20;
+  }
+
+  try {
+    const [hours, minutes] = startTimeStr.split(":").map(Number);
+    const startDate = new Date();
+    startDate.setHours(hours, minutes, 0, 0);
+
+    const now = new Date();
+    const diffMs = now - startDate;
+    const diffMins = Math.floor(diffMs / 1000 / 60);
+
+    if (diffMins < 0) {
+      return 0;
+    }
+
+    const percent = Math.round((diffMins / totalDuration) * 100);
+    return Math.min(95, Math.max(10, percent));
+  } catch (e) {
+    return 50;
+  }
+}
+
+function getRemainingTime(booking, language) {
+  if (!booking) return "0 min";
+
+  const status = String(booking.status || "").trim();
+  const totalDuration = Number(booking.totalDuration) || 0;
+  const isVi = language === "vi";
+
+  const formatMinutes = (mins) => {
+    if (mins < 60) {
+      return `${mins} ${isVi ? "phút" : "min"}`;
+    }
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    if (m === 0) {
+      return `${h}h`;
+    }
+    return `${h}h ${m}m`;
+  };
+
+  if (status === "Completed") {
+    return isVi ? "Đã xong" : "Completed";
+  }
+
+  if (["Pending", "Confirmed", "CheckedIn", "Cancelled"].includes(status)) {
+    return totalDuration ? formatMinutes(totalDuration) : (isVi ? "Chưa rõ" : "Unknown");
+  }
+
+  const startTimeStr = booking.startTime;
+  if (!startTimeStr) {
+    return totalDuration ? formatMinutes(totalDuration) : (isVi ? "Chưa rõ" : "Unknown");
+  }
+
+  try {
+    const [hours, minutes] = startTimeStr.split(":").map(Number);
+    const startDate = new Date();
+    startDate.setHours(hours, minutes, 0, 0);
+
+    const now = new Date();
+    const diffMs = now - startDate;
+    const diffMins = Math.floor(diffMs / 1000 / 60);
+
+    if (diffMins < 0) {
+      return totalDuration ? formatMinutes(totalDuration) : (isVi ? "Chưa rõ" : "Unknown");
+    }
+
+    const remaining = Math.max(1, totalDuration - diffMins);
+    return formatMinutes(remaining);
+  } catch (e) {
+    return totalDuration ? formatMinutes(totalDuration) : (isVi ? "Chưa rõ" : "Unknown");
+  }
 }
 
 function sanitizeImageUrl(value) {
@@ -334,14 +411,7 @@ function isNailBookingItem(item) {
 function canManualCheckIn(status) {
   const normalizedStatus = String(status || "").trim().toLowerCase();
 
-  return ![
-    "checkedin",
-    "in progress",
-    "inprogress",
-    "completed",
-    "servicecompleted",
-    "cancelled",
-  ].includes(normalizedStatus);
+  return normalizedStatus === "approved";
 }
 
 function normalizeBookingStatus(status) {
@@ -352,7 +422,7 @@ function getReceptionistActionAvailability(status) {
   const normalizedStatus = normalizeBookingStatus(status);
 
   return {
-    canCheckIn: ["pending", "confirmed", "approved"].includes(normalizedStatus),
+    canCheckIn: normalizedStatus === "approved",
     canStartService: normalizedStatus === "checkedin",
     canReassignArtist: ["pending", "confirmed", "approved", "checkedin"].includes(normalizedStatus),
     canMoveSchedule: ["pending", "confirmed", "approved"].includes(normalizedStatus),
@@ -501,7 +571,8 @@ export function ReceptionistBookingDetailPage() {
   }, [bookingId]);
 
   function addMinutes(time, minutes) {
-    const [h, m, s] = time.split(":").map(Number);
+    if (!time) return "--:--";
+    const [h, m, s] = String(time).split(":").map(Number);
 
     const date = new Date();
     date.setHours(h, m, s || 0, 0);
@@ -570,7 +641,7 @@ export function ReceptionistBookingDetailPage() {
           totalDuration: uDur,
           unitPrice: uPrice,
           totalPrice: uPrice,
-          artist: booking?.artistName || "--",
+          artist: booking?.artistName,
           sourceItem: item,
         };
         itemMap.set(key, groupObj);
@@ -583,18 +654,19 @@ export function ReceptionistBookingDetailPage() {
       }
     });
 
+    let cursor = booking?.startTime || "00:00:00";
     return grouped.map((group, index) => {
       const status = getServiceStatus(index, booking?.status);
       const displayName = group.count > 1 ? `x${group.count} ${group.serviceName}` : group.serviceName;
+      const slotStart = cursor;
+      const slotEnd = addMinutes(cursor, group.totalDuration);
+      cursor = slotEnd; // advance cursor for next row
 
       return {
         id: group.id,
-        time: `${formatTime(booking?.startTime)} - ${addMinutes(
-          booking?.startTime,
-          group.totalDuration
-        )}`,
+        time: `${formatTime(slotStart)} - ${slotEnd}`,
         service: displayName,
-        serviceType: group.nailVariantName || "--",
+        serviceType: group.nailVariantName,
         artist: group.artist,
         duration: group.totalDuration ? formatDurationMinutes(group.totalDuration) : "--",
         price: group.totalPrice ? formatCurrency(group.totalPrice) : "--",
@@ -604,6 +676,7 @@ export function ReceptionistBookingDetailPage() {
         count: group.count,
       };
     });
+
   }, [language, booking]);
 
   const totalAmount = formatCurrency(booking?.totalPrice);
@@ -787,13 +860,13 @@ export function ReceptionistBookingDetailPage() {
       render: (_, row) => (
         <div className="flex items-center gap-2">
           <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9] text-[9px] font-bold text-white shadow-2xs">
-            {(row.artist || "--")
+            {(row.artist)
               .split(" ")
               .filter(Boolean)
               .slice(0, 2)
               .map((part) => part[0])
               .join("")
-              .toUpperCase() || "--"}
+              .toUpperCase()}
           </div>
           <span className="text-xs font-bold text-[#2B182B]">{row.artist || "Aria Nguyen"}</span>
         </div>
@@ -875,15 +948,15 @@ export function ReceptionistBookingDetailPage() {
           actionAvailability.canCheckout ? isCheckoutSubmitting : isManualCheckInSubmitting,
         onClick: () => void handlePrimaryHeaderAction(),
       },
-      {
+      ...(actionAvailability.canStartService ? [{
         label: t("receptionist.bookings.assignChairTitle") || "Assign Chair",
         subtitle: t("receptionist.bookings.assignToSeat") || "Assign to seat",
         icon: Armchair,
         cardTone: "bg-[linear-gradient(180deg,#f2edff_0%,#e9e1ff_100%)]",
         iconTone: "bg-[#dfd1ff] text-[#8160df]",
-        disabled: !actionAvailability.canStartService,
+        disabled: false,
         onClick: () => setIsAssignChairModalOpen(true),
-      },
+      }] : []),
       {
         label: t("receptionist.bookings.reassignArtist") || "Reassign Artist",
         subtitle: t("receptionist.bookings.changeStaff") || "Change staff",
@@ -1200,11 +1273,11 @@ export function ReceptionistBookingDetailPage() {
                 <div className="border-2 border-emerald-300 pt-3.5 pb-3 px-4 flex items-center justify-between bg-gradient-to-r from-[#ECFDF5] to-[#D1FAE5] rounded-2xl shadow-xs">
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-wider text-[#047857]">{t("receptionist.payments.totalAmount") || "Total Amount Payable"}</p>
-                    <p className="text-3xl font-bold text-[#047857] leading-none mt-1">{totalAmount}</p>
+                    <p className="text-3xl font-bold text-[#047857] leading-none mt-1">{remainingBalance}</p>
                   </div>
-                  <span className="rounded-full bg-[#10B981] text-white px-3.5 py-1 text-xs font-bold shadow-xs flex items-center gap-1">
+                  {/* <span className="rounded-full bg-[#10B981] text-white px-3.5 py-1 text-xs font-bold shadow-xs flex items-center gap-1">
                     <ShieldCheck size={14} /> {language === "vi" ? "ĐÃ THANH TOÁN" : "PAID"}
-                  </span>
+                  </span> */}
                 </div>
               </div>
 
@@ -1274,18 +1347,18 @@ export function ReceptionistBookingDetailPage() {
 
               {/* Gradient Circular Progress Ring */}
               <CircularProgressRing
-                percent={progressPercent || 65}
-                remainingTime={booking.totalDuration ? formatDurationMinutes(booking.totalDuration) : "45 min"}
+                percent={progressPercent}
+                remainingTime={getRemainingTime(booking, language)}
               />
 
               <div className="self-stretch space-y-2.5 text-xs pt-1">
                 <div className="flex items-center justify-between bg-[#FFF9FB] p-2.5 rounded-xl border border-[#F3E2EC]">
                   <span className="font-medium text-[#9E8497]">{t("receptionist.bookings.artist") || "Assigned Artist"}</span>
-                  <span className="font-bold text-[#2B182B]">{booking.artistName || "Aria Nguyen"}</span>
+                  <span className="font-bold text-[#2B182B]">{booking.artistName}</span>
                 </div>
                 <div className="flex items-center justify-between bg-[#FFF9FB] p-2.5 rounded-xl border border-[#F3E2EC]">
                   <span className="font-medium text-[#9E8497]">{t("receptionist.bookings.assignChairTitle") || "Chair / Station"}</span>
-                  <span className="font-bold text-[#8B5CF6]">Station #03</span>
+                  <span className="font-bold text-[#8B5CF6]">{booking.chairName || (language === "vi" ? "Chưa xếp ghế" : "Not Assigned")}</span>
                 </div>
                 <div className="flex items-center justify-between bg-[#FFF9FB] p-2.5 rounded-xl border border-[#F3E2EC]">
                   <span className="font-medium text-[#9E8497]">{t("receptionist.bookings.time") || "Check-in Time"}</span>
@@ -1504,7 +1577,7 @@ export function ReceptionistBookingDetailPage() {
                     {isNail ? language === "vi" ? <span className="flex items-center gap-1"><Sparkles size={12} /> Dịch Vụ Móng Nail</span> : <span className="flex items-center gap-1"><Sparkles size={12} /> Nail Services</span> : language === "vi" ? "💅 Dịch Vụ Salon" : "💅 Salon Services"}
                   </span>
                   <span className="flex items-center justify-center gap-1.5 text-xs font-bold text-[#E84F93]">
-                    <AlarmClock size={12} /> {language === "vi" ? "Tổng thời gian:" : "Total duration:"} {selectedServiceRow.duration || "--"}
+                    <AlarmClock size={12} /> {language === "vi" ? "Tổng thời gian:" : "Total duration:"} {selectedServiceRow.duration}
                   </span>
                 </div>
                 <h3 className="mt-2 text-base font-bold text-[#2B182B]">
@@ -1705,7 +1778,7 @@ export function ReceptionistBookingDetailPage() {
                 <div className="flex flex-wrap items-center gap-3 shrink-0">
                   <div className="flex items-center gap-1.5 rounded-xl border border-[#F3E2EC] bg-white/80 px-3 py-1.5 text-xs font-bold text-[#2B182B] shadow-2xs">
                     <Clock size={14} className="text-[#E84F93]" />
-                    <span>{language === "vi" ? "Thời gian:" : "Duration:"} {selectedProcedureRow.duration || "--"}</span>
+                    <span>{language === "vi" ? "Thời gian:" : "Duration:"} {selectedProcedureRow.duration}</span>
                   </div>
                   <div className="flex items-center gap-1.5 rounded-xl border border-[#F3E2EC] bg-white/80 px-3 py-1.5 text-xs font-bold text-[#2B182B] shadow-2xs">
                     <Sparkles size={14} className="text-[#8B5CF6]" />
@@ -1791,7 +1864,7 @@ export function ReceptionistBookingDetailPage() {
                           {/* Time badge (Estimated Time) */}
                           <div className="flex items-center gap-2 text-xs shrink-0">
                             <span className="flex items-center gap-1 font-bold text-[#E84F93]">
-                              <Clock size={12} /> {isVi ? "Dự kiến" : "Estimated"}: {String(procedure.estimatedStartTime || "--").slice(0, 5)} - {String(procedure.estimatedEndTime || "--").slice(0, 5)}
+                              <Clock size={12} /> {isVi ? "Dự kiến" : "Estimated"}: {String(procedure.estimatedStartTime).slice(0, 5)} - {String(procedure.estimatedEndTime).slice(0, 5)}
                             </span>
                             <span className="rounded-full bg-[#FFF0F6] px-2.5 py-0.5 text-[11px] font-bold text-[#E84F93] border border-[#F3D6E5]">
                               {formatDurationMinutes(procedure.duration || 0)}
@@ -1957,7 +2030,7 @@ export function ReceptionistBookingDetailPage() {
             <div className="rounded-2xl border border-[#F3D6E5] bg-gradient-to-r from-[#FFF0F6] to-[#F5F3FF] p-4">
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#E84F93]">{language === "vi" ? "Bước Đang Chọn Phân Công" : "Procedure Selected"}</p>
               <h3 className="mt-1 text-base font-bold text-[#2B182B]">
-                {artistPickerProcedure.procedureName || "--"}
+                {artistPickerProcedure.procedureName}
               </h3>
               <p className="mt-1 text-xs font-bold text-[#8B5CF6]">
                 {language === "vi" ? "Thợ hiện tại:" : "Current Artist:"} {artistPickerProcedure.assignedArtistName || (language === "vi" ? "Chưa phân công thợ nào" : "No artist assigned")}
@@ -1998,7 +2071,7 @@ export function ReceptionistBookingDetailPage() {
                         </div>
 
                         <h4 className="mt-3 text-sm font-bold text-[#2B182B] truncate w-full">
-                          {artist.name || "--"}
+                          {artist.name}
                         </h4>
 
                         {/* Status Badges */}

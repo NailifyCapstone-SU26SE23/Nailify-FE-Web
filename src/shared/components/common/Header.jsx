@@ -24,7 +24,7 @@ export function Header({
   const actualBackButtonLabel = backButtonLabel || t("back");
 
   return (
-    <header className="relative z-[60] bg-white px-5 py-4 shadow-[0_18px_40px_rgba(94,76,62,0.08)]">
+    <header className="relative z-30 bg-white px-5 py-4 shadow-[0_18px_40px_rgba(94,76,62,0.08)]">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <div className="mb-3 flex items-center justify-between md:hidden">

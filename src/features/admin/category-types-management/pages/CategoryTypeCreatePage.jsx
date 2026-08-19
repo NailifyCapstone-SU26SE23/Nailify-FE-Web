@@ -24,7 +24,7 @@ export function CategoryTypeCreatePage() {
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const summaryItems = useMemo(() => [[t("adminCategoryTypes.categoryTypeName"), formValues.name || "--"]], [formValues.name]);
+  const summaryItems = useMemo(() => [[t("adminCategoryTypes.categoryTypeName"), formValues.name]], [formValues.name]);
 
   const handleSubmitRequest = () => {
     const validationError = validateForm(formValues, t);

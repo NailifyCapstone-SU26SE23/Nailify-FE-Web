@@ -535,7 +535,7 @@ export function ManagerWaitlistPage() {
                     {dayjs(nextGuest.requestedDate).format("DD MMM")} - {formatTimeSpan(nextGuest.requestedStartTime)}
                   </p>
                   <p className="mt-0.5 truncate text-[10px] font-semibold text-[#a77f98]">
-                    {language === "vi" ? "Yêu cầu" : "Requested"}: {nextGuest.preferredNailArtistName || (language === "vi" ? "Bất kỳ thợ nào" : "Any Artist")} · {nextGuest.estimatedDuration || "--"}m
+                    {language === "vi" ? "Yêu cầu" : "Requested"}: {nextGuest.preferredNailArtistName || (language === "vi" ? "Bất kỳ thợ nào" : "Any Artist")} · {nextGuest.estimatedDuration}m
                   </p>
                 </div>
               </div>
@@ -796,7 +796,7 @@ export function ManagerWaitlistPage() {
               <h5 className="text-xs font-bold uppercase tracking-wider text-[#a88a9f]">{language === "vi" ? "Nhân Viên & Chi Nhánh" : "Staff & Branch"}</h5>
               <div className="rounded-xl border border-[#fbe7ef] bg-[#fffcfd] p-4 space-y-3">
                 <div className="flex justify-between text-xs">
-                  <span className="font-semibold text-[#8b7382]">{language === "vi" ? "Thợ yêu cầu:" : "Preferred Nail Artist:"}</span>
+                  <span className="font-semibold text-[#8b7382]">{language === "vi" ? "Thợ yêu cầu:" : "Preferred Staff Artist:"}</span>
                   <span className="font-bold text-[#402542]">{selectedEntry.preferredNailArtistName || (language === "vi" ? "Không chỉ định" : "Unassigned")}</span>
                 </div>
                 <div className="flex justify-between text-xs">

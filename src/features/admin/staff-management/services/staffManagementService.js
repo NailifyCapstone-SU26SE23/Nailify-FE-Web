@@ -233,7 +233,7 @@ export async function updateUser(userId, userData) {
   }
 }
 
-// Assign skills to nail artist
+// Assign skills to Staff Artist
 // NOTE QUAN TRỌNG: KHÔNG được gộp skill cũ (đã gán) và skill mới vào chung
 // một mảng rồi POST hết một lượt. Endpoint POST /nail-artists/{id}/skills
 // là endpoint "assign mới" (insert) — nếu gửi kèm skill đã được gán trước
@@ -294,7 +294,7 @@ export async function assignNailArtistSkills(artistId, skills) {
         newSkills,
         { headers: getAuthHeaders() }
       );
-      unwrapResponse(response, "Failed to assign new skills to nail artist.");
+      unwrapResponse(response, "Failed to assign new skills to Staff Artist.");
     } catch (err) {
       console.warn("Failed to assign new skills:", {
         message: err.message,
@@ -326,7 +326,7 @@ export async function assignNailArtistSkills(artistId, skills) {
   return { success: true };
 }
 
-// Lấy lịch làm việc của 1 thợ làm móng (nail artist) trong 1 khoảng thời gian
+// Lấy lịch làm việc của 1 thợ làm móng (Staff Artist) trong 1 khoảng thời gian
 // GET /api/Schedules/artist/{artistId}
 //
 // LƯU Ý: Swagger chỉ show rõ path param bắt buộc "artistId". Mô tả endpoint

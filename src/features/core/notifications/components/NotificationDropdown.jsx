@@ -9,8 +9,11 @@ import {
   WifiOff
 } from "lucide-react";
 import { useNotifications } from "../context/NotificationContext";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 export function NotificationDropdown({ isOpen, onClose }) {
+  const { language } = useLanguage();
+  const isVi = language === "vi";
   const {
     notifications,
     unreadCount,
@@ -31,10 +34,10 @@ export function NotificationDropdown({ isOpen, onClose }) {
     const now = dayjs();
 
     if (now.diff(date, "minute") < 1) {
-      return "Vừa xong";
+      return isVi ? "Vừa xong" : "Just now";
     }
     if (now.diff(date, "hour") < 1) {
-      return `${now.diff(date, "minute")} phút trước`;
+      return isVi ? `${now.diff(date, "minute")} phút trước` : `${now.diff(date, "minute")} minutes ago`;
     }
     if (now.isSame(date, "day")) {
       return date.format("HH:mm");
@@ -48,12 +51,12 @@ export function NotificationDropdown({ isOpen, onClose }) {
   const getStatusText = () => {
     switch (connectionStatus) {
       case "connected":
-        return { text: "Kết nối trực tuyến", color: "text-emerald-500", icon: Wifi };
+        return { text: isVi ? "Kết nối trực tuyến" : "Connected", color: "text-emerald-500", icon: Wifi };
       case "connecting":
-        return { text: "Đang kết nối...", color: "text-amber-500 animate-pulse", icon: WifiOff };
+        return { text: isVi ? "Đang kết nối..." : "Connecting...", color: "text-amber-500 animate-pulse", icon: WifiOff };
       case "disconnected":
       default:
-        return { text: "Ngoại tuyến", color: "text-rose-500", icon: WifiOff };
+        return { text: isVi ? "Ngoại tuyến" : "Disconnected", color: "text-rose-500", icon: WifiOff };
     }
   };
 
@@ -79,7 +82,7 @@ export function NotificationDropdown({ isOpen, onClose }) {
         <div className="border-b border-[#f7dfeb] px-5 py-4 bg-[#fff9fc] flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="font-bold text-[#3f2b3f] text-base">Thông báo</h3>
+              <h3 className="font-bold text-[#3f2b3f] text-base">{isVi ? "Thông báo" : "Notifications"}</h3>
               {unreadCount > 0 && (
                 <span className="inline-flex items-center justify-center bg-[#ea4f93] text-white text-[10px] font-bold h-5 min-w-5 px-1.5 rounded-full shadow-[0_4px_10px_rgba(234,79,147,0.3)]">
                   {unreadCount}
@@ -100,14 +103,14 @@ export function NotificationDropdown({ isOpen, onClose }) {
                 <button
                   onClick={markAllAsRead}
                   className="inline-flex h-8 w-8 items-center justify-center rounded-xl text-[#ea4f93] hover:bg-[#fff0f5] transition"
-                  title="Đánh dấu đã đọc tất cả"
+                  title={isVi ? "Đánh dấu đã đọc tất cả" : "Mark all as read"}
                 >
                   <CheckCheck size={16} />
                 </button>
                 <button
                   onClick={clearAll}
                   className="inline-flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
-                  title="Xóa tất cả thông báo"
+                  title={isVi ? "Xóa tất cả thông báo" : "Delete all notifications"}
                 >
                   <Trash2 size={15} />
                 </button>
@@ -116,11 +119,11 @@ export function NotificationDropdown({ isOpen, onClose }) {
 
             {/* Quick action helper to test/mock notifications */}
             <button
-              onClick={() => receiveMockNotification("Thông báo thử nghiệm", "Đây là tin nhắn thông báo demo thời gian thực!")}
+              onClick={() => receiveMockNotification(isVi ? "Thông báo thử nghiệm" : "Test notification", isVi ? "Đây là tin nhắn thông báo demo thời gian thực!" : "This is a real-time demo notification message!")}
               className="text-[9px] border border-dashed border-[#ea4f93] text-[#ea4f93] px-2 py-0.5 rounded-lg hover:bg-[#fff0f5] transition"
-              title="Test notification receipt"
+              title={isVi ? "Test notification receipt" : "Test notification receipt"}
             >
-              Demo
+              {isVi ? "Thử nghiệm" : "Test"}
             </button>
           </div>
         </div>
@@ -132,9 +135,9 @@ export function NotificationDropdown({ isOpen, onClose }) {
               <div className="h-12 w-12 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center mb-3">
                 <BellOff size={22} />
               </div>
-              <p className="text-sm font-bold text-slate-700">Hộp thư trống</p>
+              <p className="text-sm font-bold text-slate-700">{isVi ? "Hộp thư trống" : "Empty inbox"}</p>
               <p className="text-xs text-slate-400 mt-1 max-w-[200px]">
-                Bạn sẽ nhận được thông báo thời gian thực khi có sự kiện mới.
+                {isVi ? "Bạn sẽ nhận được thông báo thời gian thực khi có sự kiện mới." : "You will receive real-time notifications when new events occur."}
               </p>
             </div>
           ) : (
@@ -170,7 +173,7 @@ export function NotificationDropdown({ isOpen, onClose }) {
                       onClick={onClose} // Close dropdown when navigating
                       className="inline-block mt-2 px-3 py-1 bg-gradient-to-r from-[#ea4f93] to-[#f387b0] text-white text-[10px] font-bold rounded-xl hover:shadow-[0_4px_12px_rgba(234,79,147,0.4)] transition duration-300"
                     >
-                      Xem chi tiết đơn hàng
+                      {isVi ? "Xem chi tiết đơn hàng" : "View order details"}
                     </Link>
                   )}
                 </div>
@@ -182,7 +185,7 @@ export function NotificationDropdown({ isOpen, onClose }) {
                     deleteNotification(item.id);
                   }}
                   className="h-6 w-6 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 flex items-center justify-center shrink-0 opacity-0 group-hover:opacity-100 transition"
-                  title="Xóa thông báo"
+                  title={isVi ? "Xóa thông báo" : "Delete notification"}
                 >
                   <X size={12} />
                 </button>

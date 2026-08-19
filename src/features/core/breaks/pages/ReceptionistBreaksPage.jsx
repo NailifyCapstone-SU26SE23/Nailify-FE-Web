@@ -105,7 +105,7 @@ export function ReceptionistBreaksPage() {
 
   const getArtistName = (artistId) => {
     const artist = artists.find(a => String(a.id) === String(artistId));
-    return artist ? artist.name : (language === "vi" ? "Thợ Nail" : "Nail Artist");
+    return artist ? artist.name : (language === "vi" ? "Thợ Nail" : "Staff Artist");
   };
 
   const getStatusBadge = (status) => {
@@ -145,7 +145,7 @@ export function ReceptionistBreaksPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-[#3f2b3f]">{language === "vi" ? "Danh Sách Xin Nghỉ Phép" : "Staff Break Requests"}</h1>
         <p className="mt-1 text-sm text-[#a88a9d]">
-          {language === "vi" ? "Xem danh sách lịch xin nghỉ phép giữa ca của thợ nail và thực hiện hủy yêu cầu nếu cần." : "View break schedule requests of nail artists and cancel request if needed."}
+          {language === "vi" ? "Xem danh sách lịch xin nghỉ phép giữa ca của thợ nail và thực hiện hủy yêu cầu nếu cần." : "View break schedule requests of Staff Artists and cancel request if needed."}
         </p>
       </div>
 
@@ -157,7 +157,7 @@ export function ReceptionistBreaksPage() {
             <span className="text-sm font-semibold text-[#69708a]">{language === "vi" ? "Thợ nail:" : "Artist:"}</span>
             <Select
               allowClear
-              placeholder={language === "vi" ? "Tất cả thợ nail" : "All nail artists"}
+              placeholder={language === "vi" ? "Tất cả thợ nail" : "All Staff Artists"}
               loading={isArtistsLoading}
               value={filterArtistId}
               onChange={(value) => {
@@ -231,7 +231,7 @@ export function ReceptionistBreaksPage() {
               <table className="min-w-full divide-y divide-[#f4e4d7]">
                 <thead className="bg-[#fff8f2]">
                   <tr className="text-left text-xs uppercase tracking-[0.16em] text-[#b38769]">
-                    <th className="px-5 py-4 font-semibold">{language === "vi" ? "Thợ nail" : "Nail Artist"}</th>
+                    <th className="px-5 py-4 font-semibold">{language === "vi" ? "Thợ nail" : "Staff Artist"}</th>
                     <th className="px-5 py-4 font-semibold">{language === "vi" ? "Ngày nghỉ" : "Break Date"}</th>
                     <th className="px-5 py-4 font-semibold">{language === "vi" ? "Thời gian" : "Time Window"}</th>
                     <th className="px-5 py-4 font-semibold">{language === "vi" ? "Lý do" : "Reason"}</th>
@@ -324,7 +324,7 @@ export function ReceptionistBreaksPage() {
                     <p className="text-xs text-rose-500 italic"><span className="font-semibold">{language === "vi" ? "Từ chối:" : "Rejected:"}</span> {item.rejectReason}</p>
                   )}
                 </div>
-                 <div className="pt-2 border-t border-[#f7ebdf] flex gap-2">
+                <div className="pt-2 border-t border-[#f7ebdf] flex gap-2">
                   <button
                     onClick={() => {
                       setSelectedBreak(item);
@@ -376,7 +376,7 @@ export function ReceptionistBreaksPage() {
         loading={isActionLoading}
         details={[
           {
-            label: language === "vi" ? "Thợ nail" : "Nail artist",
+            label: language === "vi" ? "Thợ nail" : "Staff Artist",
             value: selectedBreak ? getArtistName(selectedBreak.nailArtistId) : ""
           },
           {
@@ -417,10 +417,10 @@ export function ReceptionistBreaksPage() {
                   <span className="text-sm font-semibold text-[#69708a]">{language === "vi" ? "Trạng thái:" : "Status:"}</span>
                   {getStatusBadge(selectedBreak.status)}
                 </div>
-                
+
                 <div className="space-y-3 text-sm text-[#3f2b3f]">
                   <div className="flex justify-between border-b border-[#f7dfeb] pb-2">
-                    <span className="text-[#a88a9d] font-medium">{language === "vi" ? "Thợ nail:" : "Nail Artist:"}</span>
+                    <span className="text-[#a88a9d] font-medium">{language === "vi" ? "Thợ nail:" : "Staff Artist:"}</span>
                     <span className="font-semibold">{getArtistName(selectedBreak.nailArtistId)}</span>
                   </div>
 
@@ -428,12 +428,12 @@ export function ReceptionistBreaksPage() {
                     <span className="text-[#a88a9d] font-medium">{language === "vi" ? "Ngày nghỉ:" : "Break Date:"}</span>
                     <span className="font-semibold">{dayjs(selectedBreak.breakDate).format("DD/MM/YYYY")}</span>
                   </div>
-                  
+
                   <div className="flex justify-between border-b border-[#f7dfeb] pb-2">
                     <span className="text-[#a88a9d] font-medium">{language === "vi" ? "Thời gian:" : "Time:"}</span>
                     <span className="font-semibold">{selectedBreak.startTime?.substring(0, 5)} - {selectedBreak.endTime?.substring(0, 5)}</span>
                   </div>
-                  
+
                   <div className="flex flex-col gap-1 border-b border-[#f7dfeb] pb-2">
                     <span className="text-[#a88a9d] font-medium">{language === "vi" ? "Lý do:" : "Reason:"}</span>
                     <p className="font-semibold whitespace-pre-wrap">{selectedBreak.reason || "-"}</p>

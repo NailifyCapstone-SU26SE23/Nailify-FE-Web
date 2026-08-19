@@ -7,8 +7,8 @@ function getAuthHeaders() {
 
   return token
     ? {
-        Authorization: `Bearer ${token}`,
-      }
+      Authorization: `Bearer ${token}`,
+    }
     : {};
 }
 
@@ -125,16 +125,16 @@ export async function fetchNailArtists() {
       params: { role: "Staff_Artist" },
     });
 
-    const data = unwrapResponse(response, "Failed to load nail artists.");
+    const data = unwrapResponse(response, "Failed to load Staff Artists.");
     const items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
-    
+
     return items.map((staff) => ({
       id: staff?.staffId || staff?.userId || staff?.id || "",
-      name: staff?.fullName || 
-            (staff?.firstName && staff?.lastName ? `${staff.firstName} ${staff.lastName}`.trim() : "Unnamed Artist"),
+      name: staff?.fullName ||
+        (staff?.firstName && staff?.lastName ? `${staff.firstName} ${staff.lastName}`.trim() : "Unnamed Artist"),
     }));
   } catch (error) {
-    console.warn("Failed to load nail artists. Using empty fallback list.", error);
+    console.warn("Failed to load Staff Artists. Using empty fallback list.", error);
     return [];
   }
 }

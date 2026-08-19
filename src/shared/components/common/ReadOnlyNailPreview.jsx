@@ -1,12 +1,9 @@
-import { Canvas, FabricImage, Rect } from "fabric";
 import { Sparkles } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { PropTypes } from "../../utils/propTypes";
 
 const NAIL_LABELS = ["Thumb", "Index", "Middle", "Ring", "Pinky"];
 const DEFAULT_SHAPE_RATIO = 0.42;
-const COMPACT_FINGER_HEIGHTS = [78, 78, 78, 78, 78];
-const FABRIC_CROSS_ORIGIN_OPTIONS = { crossOrigin: "anonymous" };
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
@@ -207,8 +204,9 @@ function buildComponentPlacements(nailComponents = []) {
       ),
       label: String(item?.component?.name || item?.name || "Component").trim(),
       imageUrl: String(item?.component?.imageUrl || item?.imageUrl || "").trim(),
-      posX: Number(item?.posX ?? 50),
-      posY: Number(item?.posY ?? 52),
+      posX: Number(item?.posX ?? 0),
+      posY: Number(item?.posY ?? 0),
+      componentType: String(item?.component?.componentType || item?.componentType || "").trim(),
       ...parsePlacementConfig(item?.configJson),
     };
     const fingerIndex = normalizeFingerIndex(item?.fingerIndex);
@@ -253,57 +251,18 @@ function getColorStyle(colorConfig) {
   };
 }
 
-function getNailMetrics(index, aspectRatio) {
-  const nailHeight = COMPACT_FINGER_HEIGHTS[index] ?? COMPACT_FINGER_HEIGHTS[2];
-  const nailWidth = Math.round(nailHeight * aspectRatio);
-  const frameWidth = clamp(nailWidth + 52, 94, 146);
-  const frameHeight = clamp(nailHeight + 72, 136, 196);
 
-  return {
-    nailHeight,
-    nailWidth,
-    frameWidth,
-    frameHeight,
-  };
-}
 
-function getPlacementRenderScale(scale, nailHeight) {
-  const normalizedScale = Number(scale) || 0.8;
-  const referenceHeight = 168;
-  return normalizedScale * (nailHeight / referenceHeight);
-}
 
-function getShapeInsets(width, shapeImageUrl) {
-  if (!shapeImageUrl) {
-    return { innerInset: 0 };
-  }
+function ReadOnlyNailCard({ components, index, colorStyle, shapeImageUrl, compact = false }) {
+  const label = NAIL_LABELS[index];
 
-  return width > 88 ? { innerInset: 9 } : { innerInset: 7 };
-}
-
-function getContentMetrics(width, height, shapeImageUrl) {
-  const { innerInset } = getShapeInsets(width, shapeImageUrl);
-
-  return {
-    innerInset,
-    contentLeft: innerInset,
-    contentTop: innerInset,
-    contentWidth: Math.max(width - (innerInset * 2), 1),
-    contentHeight: Math.max(height - (innerInset * 2), 1),
-  };
-}
-
-function NailShell({ colorStyle, index, shapeImageUrl, children }) {
-  const aspectRatio = useShapeAspectRatio(shapeImageUrl);
-  const metrics = getNailMetrics(index, aspectRatio);
-  const { frameWidth, frameHeight } = metrics;
-  const { innerInset } = getShapeInsets(frameWidth, shapeImageUrl);
-  const maskStyle = shapeImageUrl
+  const shapeMaskStyle = shapeImageUrl
     ? {
       maskImage: `url(${shapeImageUrl})`,
       WebkitMaskImage: `url(${shapeImageUrl})`,
-      maskSize: "100% 100%",
-      WebkitMaskSize: "100% 100%",
+      maskSize: "cover",
+      WebkitMaskSize: "cover",
       maskRepeat: "no-repeat",
       WebkitMaskRepeat: "no-repeat",
       maskPosition: "center",
@@ -311,178 +270,131 @@ function NailShell({ colorStyle, index, shapeImageUrl, children }) {
     }
     : {};
 
+  const getFingerAlignmentClass = (label) => {
+    if (compact) {
+      switch (label) {
+        case "Thumb":
+          return "translate-y-5 -rotate-12";
+        case "Index":
+          return "translate-y-1 -rotate-3";
+        case "Middle":
+          return "translate-y-0 rotate-0";
+        case "Ring":
+          return "translate-y-0.5 rotate-3";
+        case "Pinky":
+          return "translate-y-4 rotate-8";
+        default:
+          return "";
+      }
+    }
+    switch (label) {
+      case "Thumb":
+        return "translate-y-8 -rotate-12";
+      case "Index":
+        return "translate-y-2 -rotate-3";
+      case "Middle":
+        return "translate-y-0 rotate-0";
+      case "Ring":
+        return "translate-y-1 rotate-3";
+      case "Pinky":
+        return "translate-y-6 rotate-8";
+      default:
+        return "";
+    }
+  };
+
+  const isClippedType = (type) => {
+    const t = String(type || "").toLowerCase().trim();
+    return t === "sticker" || t === "art" || t === "1" || t === "3";
+  };
+
   return (
-    <div className="flex min-w-0 flex-col items-center gap-2">
-      <div
-        className="relative flex items-center justify-center overflow-visible drop-shadow-[0_14px_22px_rgba(236,72,153,0.10)]"
-        style={{ width: frameWidth, height: frameHeight }}
-      >
-        {shapeImageUrl ? (
-          <>
-            <div
-              className="absolute bg-[linear-gradient(180deg,#ffd5e6_0%,#f6a8c9_100%)]"
-              style={{
-                inset: Math.max(2, innerInset - 3),
-                ...maskStyle,
-              }}
-            />
-            <div
-              className="absolute bg-[linear-gradient(180deg,#fff7fb_0%,#fff1f8_100%)]"
-              style={{
-                inset: innerInset,
-                ...maskStyle,
-              }}
-            />
-          </>
-        ) : null}
+    <div className={`flex flex-col items-center transition-all duration-500 ease-out ${compact ? "gap-2" : "gap-3.5"} ${getFingerAlignmentClass(label)}`}>
+      <div className="relative group">
+        <div className="absolute -inset-1 rounded-t-[36px] rounded-b-[18px] bg-gradient-to-t from-[#ea4f93]/15 to-[#ffb8d9]/5 opacity-30 blur-md transition duration-500 group-hover:opacity-60 group-hover:blur-lg" />
 
-        <div
-          className={shapeImageUrl
-            ? "absolute"
-            : "relative overflow-hidden rounded-t-[1.9rem] rounded-b-[0.9rem] border-2 border-[#f7cadd] bg-[linear-gradient(180deg,#fff7fb_0%,#fff1f8_100%)]"}
-          style={shapeImageUrl ? { inset: innerInset, ...maskStyle } : { width: frameWidth, height: frameHeight }}
-        >
-          <div className="absolute inset-0" style={colorStyle} />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_18%,rgba(255,255,255,0.4),transparent_42%)]" />
-          {shapeImageUrl ? (
-            <img
-              src={shapeImageUrl}
-              alt={`${NAIL_LABELS[index]} nail shape`}
-              className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-70 mix-blend-multiply"
-              loading="lazy"
-              referrerPolicy="no-referrer"
-            />
-          ) : null}
+        {/* Nail card — scaled based on compact mode */}
+        <div className={`relative overflow-visible border-2 border-[#fcd5e6] bg-gradient-to-b from-[#fff6f9] to-[#ffeef5] shadow-[0_12px_28px_rgba(236,72,153,0.06)] transition-all duration-300 group-hover:scale-105 group-hover:border-[#ea4f93] ${compact ? "h-28 w-14 rounded-t-[20px] rounded-b-[10px]" : "h-48 w-24 rounded-t-[32px] rounded-b-[14px]"
+          }`}>
+
+          {/* Masked section for background and Art type components */}
+          <div className="absolute inset-0 h-full w-full overflow-hidden" style={shapeMaskStyle}>
+            <div className="absolute inset-0 h-full w-full" style={colorStyle} />
+
+            {shapeImageUrl ? (
+              <img
+                crossOrigin="anonymous"
+                src={shapeImageUrl}
+                alt="shape mask overlay"
+                className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-80 mix-blend-multiply"
+                referrerPolicy="no-referrer"
+              />
+            ) : null}
+
+            {components.map((componentItem, idx) => {
+              if (!componentItem.imageUrl || !isClippedType(componentItem.componentType || componentItem.type)) return null;
+
+              const displaySizePercent = (Number(componentItem.scale) || 0.8) * 2.5 * 100;
+              const rotation = Number(componentItem.rotation) || 0;
+
+              return (
+                <img
+                  key={`${componentItem.key}-${idx}`}
+                  crossOrigin="anonymous"
+                  src={componentItem.imageUrl}
+                  alt={componentItem.label}
+                  className="pointer-events-none absolute object-contain drop-shadow-[0_6px_10px_rgba(234,79,147,0.18)]"
+                  referrerPolicy="no-referrer"
+                  style={{
+                    left: `${50 + Number(componentItem.posX || 0) * 100}%`,
+                    top: `${50 + Number(componentItem.posY || 0) * 100}%`,
+                    width: `${displaySizePercent}%`,
+                    height: `${displaySizePercent}%`,
+                    transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+                  }}
+                />
+              );
+            })}
+          </div>
+
+          {/* Unmasked section for Gen type components */}
+          <div className="absolute inset-0 h-full w-full pointer-events-none overflow-visible">
+            {components.map((componentItem, idx) => {
+              if (!componentItem.imageUrl || isClippedType(componentItem.componentType || componentItem.type)) return null;
+
+              const displaySizePercent = (Number(componentItem.scale) || 0.8) * 2.5 * 100;
+              const rotation = Number(componentItem.rotation) || 0;
+
+              return (
+                <img
+                  key={`${componentItem.key}-${idx}`}
+                  crossOrigin="anonymous"
+                  src={componentItem.imageUrl}
+                  alt={componentItem.label}
+                  className="pointer-events-none absolute object-contain drop-shadow-[0_6px_10px_rgba(234,79,147,0.18)]"
+                  referrerPolicy="no-referrer"
+                  style={{
+                    left: `${50 + Number(componentItem.posX || 0) * 100}%`,
+                    top: `${50 + Number(componentItem.posY || 0) * 100}%`,
+                    width: `${displaySizePercent}%`,
+                    height: `${displaySizePercent}%`,
+                    transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+                  }}
+                />
+              );
+            })}
+          </div>
         </div>
-
-        <div className="absolute inset-0 z-10">{children}</div>
       </div>
-
-      <span className="rounded-full border border-[#fce6f3] bg-white/90 px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)]">
-        {NAIL_LABELS[index]}
+      <span className={`rounded-full border border-[#fce6f3] bg-white/90 font-extrabold uppercase tracking-[0.14em] text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)] ${compact ? "text-[8px] px-2 py-0.5" : "text-[10px] px-3 py-1"
+        }`}>
+        {label}
       </span>
     </div>
   );
 }
 
-NailShell.propTypes = {
-  children: PropTypes.node,
-  colorStyle: PropTypes.shape({}).isRequired,
-  index: PropTypes.number.isRequired,
-  shapeImageUrl: PropTypes.string,
-};
-
-function ReadOnlyFabricNailCanvas({ components, index, colorStyle, shapeImageUrl }) {
-  const canvasRef = useRef(null);
-  const fabricCanvasRef = useRef(null);
-  const aspectRatio = useShapeAspectRatio(shapeImageUrl);
-  const metrics = useMemo(() => getNailMetrics(index, aspectRatio), [aspectRatio, index]);
-  const contentMetrics = useMemo(
-    () => getContentMetrics(metrics.frameWidth, metrics.frameHeight, shapeImageUrl),
-    [metrics.frameHeight, metrics.frameWidth, shapeImageUrl],
-  );
-
-  useEffect(() => {
-    if (!canvasRef.current) return undefined;
-
-    const canvas = new Canvas(canvasRef.current, {
-      width: metrics.frameWidth,
-      height: metrics.frameHeight,
-      preserveObjectStacking: true,
-      selection: false,
-      backgroundColor: "transparent",
-    });
-
-    fabricCanvasRef.current = canvas;
-
-    const rect = new Rect({
-      left: 0,
-      top: 0,
-      width: metrics.frameWidth,
-      height: metrics.frameHeight,
-      fill: "transparent",
-      selectable: false,
-      evented: false,
-    });
-    canvas.add(rect);
-    canvas.sendObjectToBack(rect);
-
-    return () => {
-      fabricCanvasRef.current = null;
-      canvas.dispose();
-    };
-  }, [metrics.frameHeight, metrics.frameWidth]);
-
-  useEffect(() => {
-    let isCancelled = false;
-
-    const renderObjects = async () => {
-      const canvas = fabricCanvasRef.current;
-      if (!canvas) return;
-
-      canvas.getObjects().forEach((object) => {
-        if (object.type !== "rect") {
-          canvas.remove(object);
-        }
-      });
-
-      const sortedComponents = [...components].sort(
-        (left, right) => Number(left.zIndex || 0) - Number(right.zIndex || 0),
-      );
-
-      for (const component of sortedComponents) {
-        if (!component.imageUrl) continue;
-
-        try {
-          const image = await FabricImage.fromURL(component.imageUrl, FABRIC_CROSS_ORIGIN_OPTIONS);
-          if (isCancelled) return;
-
-          image.set({
-            left: contentMetrics.contentLeft + ((Number(component.posX || 50) / 100) * contentMetrics.contentWidth),
-            top: contentMetrics.contentTop + ((Number(component.posY || 52) / 100) * contentMetrics.contentHeight),
-            originX: "center",
-            originY: "center",
-            angle: Number(component.rotation) || 0,
-            scaleX: getPlacementRenderScale(component.scale, metrics.nailHeight),
-            scaleY: getPlacementRenderScale(component.scale, metrics.nailHeight),
-            selectable: false,
-            evented: false,
-          });
-
-          const widthLimit = metrics.nailWidth * 1.42;
-          if ((image.getScaledWidth() || 0) > widthLimit) {
-            const ratio = widthLimit / image.getScaledWidth();
-            image.scale((image.scaleX || 1) * ratio);
-          }
-
-          canvas.add(image);
-        } catch (error) {
-          console.error("Unable to load nail component image:", error);
-        }
-      }
-
-      canvas.renderAll();
-    };
-
-    void renderObjects();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [components, contentMetrics, metrics.nailHeight, metrics.nailWidth]);
-
-  return (
-    <NailShell
-      index={index}
-      colorStyle={colorStyle}
-      shapeImageUrl={shapeImageUrl}
-    >
-      <canvas ref={canvasRef} className="h-full w-full" />
-    </NailShell>
-  );
-}
-
-ReadOnlyFabricNailCanvas.propTypes = {
+ReadOnlyNailCard.propTypes = {
   colorStyle: PropTypes.shape({}).isRequired,
   components: PropTypes.arrayOf(
     PropTypes.shape({
@@ -508,11 +420,12 @@ export function ReadOnlyNailPreview({
   showInstruction = true,
   showSurfaceMode = true,
   variantDetail,
+  compact = false,
 }) {
   const fingerColorConfigs = buildFingerColorConfigs(variantDetail?.colorJson);
   const componentPlacements = buildComponentPlacements(variantDetail?.nailComponents);
   const shapeImageUrl = String(variantDetail?.nailShape?.imageUrl || "").trim();
-  const finishLabel = String(variantDetail?.nailSurface?.name || "--").trim() || "--";
+  const finishLabel = String(variantDetail?.nailSurface?.name).trim();
 
   return (
     <article className={`flex w-full max-w-full flex-col rounded-[24px] border border-[#f6dbe8] bg-[#fff7fb] shadow-[0_14px_30px_rgba(236,72,153,0.05)] ${className}`}>
@@ -539,14 +452,15 @@ export function ReadOnlyNailPreview({
           </div>
         ) : null}
 
-        <div className={`${showInstruction || showSurfaceMode ? "mt-3" : ""} inline-flex max-w-full items-end gap-[2px] overflow-visible px-0`}>
+        <div className={`${showInstruction || showSurfaceMode ? "mt-3" : ""} inline-flex max-w-full items-end ${compact ? "gap-2 py-4 px-2" : "gap-[18px] py-8 px-4"} overflow-visible justify-center w-full`}>
           {Array.from({ length: 5 }).map((_, index) => (
-            <div key={NAIL_LABELS[index]} className="flex min-w-0 justify-center overflow-visible py-1">
-              <ReadOnlyFabricNailCanvas
+            <div key={NAIL_LABELS[index]} className="flex min-w-0 justify-center overflow-visible">
+              <ReadOnlyNailCard
                 index={index}
                 colorStyle={getColorStyle(fingerColorConfigs[index])}
                 components={componentPlacements.filter((item) => item.fingerIndex === index)}
                 shapeImageUrl={shapeImageUrl}
+                compact={compact}
               />
             </div>
           ))}
@@ -563,6 +477,7 @@ ReadOnlyNailPreview.propTypes = {
   showInstruction: PropTypes.bool,
   showSurfaceMode: PropTypes.bool,
   title: PropTypes.string,
+  compact: PropTypes.bool,
   variantDetail: PropTypes.shape({
     colorJson: PropTypes.string,
     nailComponents: PropTypes.arrayOf(

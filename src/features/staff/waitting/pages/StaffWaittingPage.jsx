@@ -174,11 +174,10 @@ function FilterButton({ active, label, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex items-center justify-center rounded-full border px-4 py-2 text-xs font-bold transition ${
-        active
+      className={`inline-flex items-center justify-center rounded-full border px-4 py-2 text-xs font-bold transition ${active
           ? "border-[#ea4f93] bg-[#fff1f7] text-[#d94f92] shadow-[0_10px_20px_rgba(236,72,153,0.12)]"
           : "border-[#f3d5e2] bg-white text-[#8f7184] hover:bg-[#fff7fb]"
-      }`}
+        }`}
     >
       {label}
     </button>
@@ -216,7 +215,7 @@ function NotificationCard({ item, onClear, language }) {
           <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <InfoPill label="Trigger" value={item.triggeredBy} />
             <InfoPill label="Sent At" value={item.createdAt} />
-            <InfoPill label="Payload" value={item.waitlistId || item.bookingId || "--"} />
+            <InfoPill label="Payload" value={item.waitlistId || item.bookingId} />
             <InfoPill label="Channel" value={item.channel} />
           </div>
         </div>
@@ -224,21 +223,21 @@ function NotificationCard({ item, onClear, language }) {
         <div className="w-full shrink-0 lg:w-[280px]">
           <div className="rounded-[20px] border border-white/90 bg-white/80 p-4">
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c08aa4]">{language === "vi" ? "Trạng thái vận hành" : "Operational Status"}</p>
-              <p className="mt-2 text-sm font-extrabold text-[#402542]">{formatRelativeStatus(item, language)}</p>
-              {item.deadlineAt ? (
-                <div className="mt-4 flex items-center gap-2 text-xs font-semibold text-[#d6851d]">
-                  <Clock3 size={14} />
-                  {language === "vi" ? "Giữ chỗ trong 15 phút" : "Reserved for 15 minutes"}
-                </div>
-              ) : null}
-              <button
-                type="button"
-                onClick={() => onClear(item.id)}
-                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-[#f2bfd4] bg-white px-4 py-3 text-sm font-bold text-[#d94f92] transition hover:bg-[#fff5f8]"
-              >
-                <Trash2 size={15} />
-                {language === "vi" ? "Xóa mục này" : "Clear Item"}
-              </button>
+            <p className="mt-2 text-sm font-extrabold text-[#402542]">{formatRelativeStatus(item, language)}</p>
+            {item.deadlineAt ? (
+              <div className="mt-4 flex items-center gap-2 text-xs font-semibold text-[#d6851d]">
+                <Clock3 size={14} />
+                {language === "vi" ? "Giữ chỗ trong 15 phút" : "Reserved for 15 minutes"}
+              </div>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => onClear(item.id)}
+              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-[#f2bfd4] bg-white px-4 py-3 text-sm font-bold text-[#d94f92] transition hover:bg-[#fff5f8]"
+            >
+              <Trash2 size={15} />
+              {language === "vi" ? "Xóa mục này" : "Clear Item"}
+            </button>
           </div>
         </div>
       </div>
@@ -323,15 +322,15 @@ export function StaffWaittingPage() {
       current.map((item) =>
         item.id === id
           ? {
-              ...item,
-              messageType: "Cleared",
-              status: "Cleared",
-              clearedAt: new Date().toLocaleTimeString("en-GB", {
-                hour: "2-digit",
-                minute: "2-digit",
-              }),
-              note: "Manually cleared from the staff waitlist board.",
-            }
+            ...item,
+            messageType: "Cleared",
+            status: "Cleared",
+            clearedAt: new Date().toLocaleTimeString("en-GB", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            note: "Manually cleared from the staff waitlist board.",
+          }
           : item,
       ),
     );

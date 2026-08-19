@@ -212,6 +212,30 @@ export async function fetchSalonStaff(salonId, options = {}) {
   }
 }
 
+export async function fetchAvailableArtistsForBooking(bookingId) {
+  const normalizedBookingId = String(bookingId || "").trim();
+
+  if (!normalizedBookingId) {
+    throw new Error("Booking ID is required.");
+  }
+
+  console.log("Fetching available artists for booking:", normalizedBookingId);
+  try {
+    const response = await axiosClient.get(
+      `/Bookings/${normalizedBookingId}/available-artists-for-receptionist`,
+      {
+        headers: getAuthHeaders(),
+      },
+    );
+
+    return unwrapResponse(response, "Failed to load available artists.");
+  } catch (error) {
+    const errorMessage = error?.response?.data?.message || error?.message || "Failed to load available artists.";
+    console.error("Error fetching available artists:", error?.response?.data || error);
+    throw new Error(errorMessage, { cause: error });
+  }
+}
+
 export async function updateBooking(bookingId, updateData) {
   const normalizedBookingId = String(bookingId || "").trim();
 

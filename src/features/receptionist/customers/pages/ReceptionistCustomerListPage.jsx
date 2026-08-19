@@ -394,6 +394,23 @@ export function ReceptionistCustomerListPage() {
   const [selectedArtistIdToAssign, setSelectedArtistIdToAssign] = useState(null);
   const [isSubmittingAssign, setIsSubmittingAssign] = useState(false);
   const [autoSeatAfterAssign, setAutoSeatAfterAssign] = useState(false);
+  const [allSalonArtists, setAllSalonArtists] = useState([]);
+
+  useEffect(() => {
+    const fetchAllArtists = async () => {
+      try {
+        const salonId = getReceptionistSalonId();
+        const res = await receptionistWalkInBookingService.getAvailableArtists(salonId);
+        const artists = Array.isArray(res)
+          ? res
+          : res?.data?.items || res?.items || res?.data || [];
+        setAllSalonArtists(artists);
+      } catch (err) {
+        console.warn("Could not prefetch salon artists for lookup:", err);
+      }
+    };
+    fetchAllArtists();
+  }, []);
 
   const loadAvailableArtists = useCallback(async () => {
     setIsLoadingArtists(true);
@@ -448,7 +465,7 @@ export function ReceptionistCustomerListPage() {
   const handleConfirmAssignArtist = async () => {
     if (!selectedQueueGuest) return;
     if (!selectedArtistIdToAssign) {
-      toast.error(language === "vi" ? "Vui lòng chọn thợ làm móng." : "Please select a nail artist.");
+      toast.error(language === "vi" ? "Vui lòng chọn thợ làm móng." : "Please select a Staff Artist.");
       return;
     }
 
@@ -580,6 +597,20 @@ export function ReceptionistCustomerListPage() {
 
         const displayCode = item.queuePosition ? `W-0${item.queuePosition}` : `W-0${index + 1}`;
 
+        const artistId = item.assignedNailArtistId;
+        let artistName = item.assignedNailArtistName;
+        if (!artistName && artistId && allSalonArtists.length > 0) {
+          const foundArtist = allSalonArtists.find(a => (a.nailArtistId || a.id || a.userId) === artistId);
+          if (foundArtist) {
+            artistName = foundArtist.account
+              ? `${foundArtist.account.firstName || ""} ${foundArtist.account.lastName || ""}`.trim()
+              : `${foundArtist.firstName || ""} ${foundArtist.lastName || ""}`.trim();
+          }
+        }
+        if (!artistName) {
+          artistName = language === "vi" ? "Chưa phân công" : "Unassigned";
+        }
+
         return {
           id: item.queueId || item.id,
           queueId: item.queueId || item.id,
@@ -590,8 +621,10 @@ export function ReceptionistCustomerListPage() {
           lateMinutes: isLate ? 15 : null,
           nailDesign: item.requestNote || "Dịch vụ đã chọn tại quầy",
           serviceName: item.requestNote || "Dịch vụ làm móng",
-          assignedArtist: item.assignedNailArtistName || "Chưa phân công",
-          assignedNailArtistId: item.assignedNailArtistId,
+          assignedArtist: artistName,
+          assignedNailArtistId: artistId,
+          chairId: item.chairId,
+          chairName: item.chairName,
           duration: item.estimatedWait ? `${item.estimatedWait} phút` : "20 phút",
           status: statusKey,
           checkInTime: item.arrivalTime ? new Date(item.arrivalTime).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : "Vừa xong",
@@ -602,7 +635,7 @@ export function ReceptionistCustomerListPage() {
     } catch (err) {
       console.warn("Could not load walk-in queue from API:", err);
     }
-  }, []);
+  }, [allSalonArtists, language]);
 
   const handleQuickAddWalkInGuest = async () => {
     let finalCustomerName = "";
@@ -712,7 +745,10 @@ export function ReceptionistCustomerListPage() {
         const res = await receptionistWalkInBookingService.createWalkInQueue(payload);
         createdQueueId = res?.data?.queueId || res?.queueId || res?.id;
       } catch (apiErr) {
-        console.warn("Backend API WalkInQueue failed, using fallback UI state:", apiErr);
+        console.error("Backend API WalkInQueue failed:", apiErr);
+        const errorMsg = apiErr.response?.data?.message || apiErr.message || (language === "vi" ? "Đăng ký sảnh chờ thất bại." : "Failed to register walk-in lobby.");
+        toast.error(errorMsg);
+        return;
       }
 
       const assignedArtistObj = suggestedArtists.find(a => (a.nailArtistId || a.id || a.userId) === selectedArtistIdForWalkIn);
@@ -806,8 +842,16 @@ export function ReceptionistCustomerListPage() {
     if (!assignChairGuest) return;
     const actualQueueId = assignChairGuest.queueId || assignChairGuest.id;
     try {
+      // 1. Assign chair to the queue
+      await receptionistWalkInBookingService.assignChairToQueue(actualQueueId, selectedChair.chairId || selectedChair.id);
+      
+      // 2. Convert queue entry to booking to start service
       await receptionistWalkInBookingService.convertQueueToBooking(actualQueueId);
-      toast.success(language === "vi" ? `Đã tạo đơn Booking & chuyển khách vào ghế ${selectedChair?.chairName || ""}!` : `Created booking and assigned guest to chair ${selectedChair?.chairName || ""}!`);
+      
+      toast.success(language === "vi" 
+        ? `Đã phân ghế ${selectedChair?.chairName || ""} và chuyển khách vào làm dịch vụ thành công!` 
+        : `Assigned chair ${selectedChair?.chairName || ""} and started service successfully!`
+      );
 
       setWalkInGuests((prev) =>
         prev.map((g) => (g.id === assignChairGuest.id || g.queueId === assignChairGuest.id ? { ...g, status: "in_service" } : g))
@@ -906,7 +950,7 @@ export function ReceptionistCustomerListPage() {
         title: "Email",
         dataIndex: "email",
         key: "email",
-        render: (val) => <span className="text-gray-600 text-xs font-medium">{val || "--"}</span>,
+        render: (val) => <span className="text-gray-600 text-xs font-medium">{val}</span>,
       },
       {
         title: t("receptionist.common.status") || "Trạng Thái",
@@ -1275,40 +1319,50 @@ export function ReceptionistCustomerListPage() {
                           </p>
                         </div>
 
-                        <div className="flex items-center gap-2 pt-2 border-t border-gray-100 w-full">
+                        <div className="grid grid-cols-2 gap-2 pt-2.5 border-t border-gray-100 w-full">
                           <button
                             type="button"
                             onClick={() => handleOpenGuestProfile(g)}
-                            className="flex-1 h-9 flex items-center justify-center gap-1 rounded-xl border border-gray-200 bg-white text-[#2B182B] hover:bg-gray-50 transition cursor-pointer text-[10px] font-bold"
+                            className="h-10 flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100/80 transition duration-200 cursor-pointer text-xs font-semibold"
                           >
-                            <Eye size={13} /> {language === "vi" ? "Xem" : "View"}
+                            <Eye size={14} /> {language === "vi" ? "Xem" : "View"}
                           </button>
-
-                          {(g.assignedArtist === "Chưa phân công" || g.assignedArtist === "Unassigned" || !g.assignedNailArtistId) && (
-                            <button
-                              type="button"
-                              onClick={() => handleOpenAssignModal(g, false)}
-                              className="flex-1 h-9 flex items-center justify-center gap-1 rounded-xl bg-[#C97A9E] text-white hover:bg-[#B86B8E] transition cursor-pointer text-[10px] font-bold"
-                            >
-                              <UserCheck size={13} /> {language === "vi" ? "Phân Thợ" : "Assign"}
-                            </button>
-                          )}
 
                           <button
                             type="button"
                             onClick={() => handleMoveGuestStatus(g.id, "called")}
-                            className="flex-1 h-9 flex items-center justify-center gap-1 rounded-xl bg-[#fff2f8] text-[#ea4f93] border border-[#f3cadc] hover:bg-[#fff9fc] transition cursor-pointer text-[10px] font-bold"
+                            className="h-10 flex items-center justify-center gap-1.5 rounded-xl bg-rose-50 text-rose-600 border border-rose-200/60 hover:bg-rose-100/80 transition duration-200 cursor-pointer text-xs font-semibold"
                           >
-                            <Volume2 size={13} /> {language === "vi" ? "Gọi Loa" : "Call"}
+                            <Volume2 size={14} /> {language === "vi" ? "Gọi Loa" : "Call"}
                           </button>
 
-                          <button
-                            type="button"
-                            onClick={() => handleMoveGuestStatus(g.id, "in_service")}
-                            className="flex-1 h-9 flex items-center justify-center gap-1 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition cursor-pointer text-[10px] font-bold shadow-xs"
-                          >
-                            <Armchair size={13} /> {language === "vi" ? "Vào Ghế" : "Seat"}
-                          </button>
+                          {(g.assignedArtist === "Chưa phân công" || g.assignedArtist === "Unassigned" || !g.assignedNailArtistId) ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenAssignModal(g, false)}
+                                className="h-10 flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#C97A9E] to-[#B86B8E] hover:from-[#B86B8E] hover:to-[#A75C7E] text-white transition duration-200 cursor-pointer text-xs font-semibold shadow-sm shadow-[#C97A9E]/10"
+                              >
+                                <UserCheck size={14} /> {language === "vi" ? "Phân Thợ" : "Assign"}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleMoveGuestStatus(g.id, "in_service")}
+                                className="h-10 flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white transition duration-200 cursor-pointer text-xs font-semibold shadow-sm shadow-emerald-500/10"
+                              >
+                                <Armchair size={14} /> {language === "vi" ? "Vào Ghế" : "Seat"}
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleMoveGuestStatus(g.id, "in_service")}
+                              className="col-span-2 h-10 flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white transition duration-200 cursor-pointer text-xs font-semibold shadow-sm shadow-emerald-500/10"
+                            >
+                              <Armchair size={14} /> {language === "vi" ? "Vào Ghế" : "Seat"}
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))
@@ -1363,32 +1417,52 @@ export function ReceptionistCustomerListPage() {
                           </p>
                         </div>
 
-                        <div className="flex items-center gap-2 pt-2 border-t border-gray-100 w-full">
-                          <button
-                            type="button"
-                            onClick={() => handleOpenGuestProfile(g)}
-                            className="flex-1 h-9 flex items-center justify-center gap-1 rounded-xl border border-gray-200 bg-white text-[#2B182B] hover:bg-gray-50 transition cursor-pointer text-[10px] font-bold"
-                          >
-                            <Eye size={13} /> {language === "vi" ? "Xem" : "View"}
-                          </button>
+                        <div className="grid grid-cols-2 gap-2 pt-2.5 border-t border-gray-100 w-full">
+                          {(g.assignedArtist === "Chưa phân công" || g.assignedArtist === "Unassigned" || !g.assignedNailArtistId) ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenGuestProfile(g)}
+                                className="h-10 flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100/80 transition duration-200 cursor-pointer text-xs font-semibold"
+                              >
+                                <Eye size={14} /> {language === "vi" ? "Xem" : "View"}
+                              </button>
 
-                          {(g.assignedArtist === "Chưa phân công" || g.assignedArtist === "Unassigned" || !g.assignedNailArtistId) && (
-                            <button
-                              type="button"
-                              onClick={() => handleOpenAssignModal(g, false)}
-                              className="flex-1 h-9 flex items-center justify-center gap-1 rounded-xl bg-[#C97A9E] text-white hover:bg-[#B86B8E] transition cursor-pointer text-[10px] font-bold"
-                            >
-                              <UserCheck size={13} /> {language === "vi" ? "Phân Thợ" : "Assign"}
-                            </button>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenAssignModal(g, false)}
+                                className="h-10 flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#C97A9E] to-[#B86B8E] hover:from-[#B86B8E] hover:to-[#A75C7E] text-white transition duration-200 cursor-pointer text-xs font-semibold shadow-sm shadow-[#C97A9E]/10"
+                              >
+                                <UserCheck size={14} /> {language === "vi" ? "Phân Thợ" : "Assign"}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleMoveGuestStatus(g.id, "in_service")}
+                                className="col-span-2 h-10 flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white transition duration-200 cursor-pointer text-xs font-semibold shadow-sm shadow-emerald-500/10"
+                              >
+                                <Armchair size={14} /> {language === "vi" ? "Vào Ghế" : "Seat"}
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenGuestProfile(g)}
+                                className="h-10 flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100/80 transition duration-200 cursor-pointer text-xs font-semibold"
+                              >
+                                <Eye size={14} /> {language === "vi" ? "Xem" : "View"}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleMoveGuestStatus(g.id, "in_service")}
+                                className="h-10 flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white transition duration-200 cursor-pointer text-xs font-semibold shadow-sm shadow-emerald-500/10"
+                              >
+                                <Armchair size={14} /> {language === "vi" ? "Vào Ghế" : "Seat"}
+                              </button>
+                            </>
                           )}
-
-                          <button
-                            type="button"
-                            onClick={() => handleMoveGuestStatus(g.id, "in_service")}
-                            className="flex-1 h-9 flex items-center justify-center gap-1 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition cursor-pointer text-[10px] font-bold shadow-xs"
-                          >
-                            <Armchair size={13} /> {language === "vi" ? "Vào Ghế" : "Seat"}
-                          </button>
                         </div>
                       </div>
                     ))
@@ -1428,13 +1502,13 @@ export function ReceptionistCustomerListPage() {
                         </div>
                         <p className="text-xs text-gray-500 font-medium">{g.nailDesign}</p>
                         <p className="text-[11px] text-gray-400">{language === "vi" ? "Thợ làm: " : "Artist: "}{g.assignedArtist}</p>
-                        <div className="pt-2 border-t border-gray-100 w-full">
+                        <div className="pt-2.5 border-t border-gray-100 w-full">
                           <button
                             type="button"
                             onClick={() => handleOpenGuestProfile(g)}
-                            className="w-full h-9 flex items-center justify-center gap-1 rounded-xl border border-gray-200 bg-white text-[#2B182B] hover:bg-gray-50 transition cursor-pointer text-[11px] font-bold"
+                            className="w-full h-10 flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100/80 transition duration-200 cursor-pointer text-xs font-semibold"
                           >
-                            {language === "vi" ? "Xem hồ sơ" : "View Profile"}
+                            <Eye size={14} /> {language === "vi" ? "Xem hồ sơ" : "View Profile"}
                           </button>
                         </div>
                       </div>
@@ -1471,7 +1545,7 @@ export function ReceptionistCustomerListPage() {
                   {language === "vi" ? "Check-In Tiếp Đón Khách Vào Sảnh" : "Walk-in Queue Check-In"}
                 </h3>
                 <p className="text-xs text-gray-500 font-medium mt-0.5">
-                  {language === "vi" ? "Tự động khởi tạo hồ sơ & gợi ý thợ nail đủ kỹ năng (Skill Match)" : "Auto-create profiles & suggest nail artists (Skill Match)"}
+                  {language === "vi" ? "Tự động khởi tạo hồ sơ & gợi ý thợ nail đủ kỹ năng (Skill Match)" : "Auto-create profiles & suggest Staff Artists (Skill Match)"}
                 </p>
               </div>
             </div>
@@ -2031,7 +2105,7 @@ export function ReceptionistCustomerListPage() {
               </span>
               <div>
                 <h3 className="text-base font-bold text-[#221F26] tracking-tight">
-                  {language === "vi" ? "Phân Công Thợ Nail Điều Phối Sảnh" : "Assign Nail Artist for Queue"}
+                  {language === "vi" ? "Phân Công Thợ Nail Điều Phối Sảnh" : "Assign Staff Artist for Queue"}
                 </h3>
                 <p className="text-xs text-gray-500 font-medium mt-0.5">
                   {language === "vi" ? "Chọn thợ phù hợp để đảm bảo thời gian phục vụ tốt nhất" : "Select suitable artist to ensure best service timing"}
@@ -2064,7 +2138,7 @@ export function ReceptionistCustomerListPage() {
           <div className="px-6 py-4">
             <div className="flex items-center justify-between mb-2.5">
               <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
-                <UserCheck size={14} className="text-[#C97A9E]" /> {language === "vi" ? "Chọn Thợ Làm Móng (Salon Artist)" : "Select Nail Artist (Salon Artist)"}
+                <UserCheck size={14} className="text-[#C97A9E]" /> {language === "vi" ? "Chọn Thợ Làm Móng (Salon Artist)" : "Select Staff Artist (Salon Artist)"}
               </label>
               <span className="text-[11px] font-bold text-[#C97A9E] bg-[#FAF0F5] px-2 py-0.5 rounded-md border border-[#F2D6E3]">
                 {language === "vi" ? `${availableArtists.length} thợ sẵn sàng` : `${availableArtists.length} artists ready`}
@@ -2074,11 +2148,11 @@ export function ReceptionistCustomerListPage() {
             {isLoadingArtists ? (
               <div className="py-10 text-center space-y-2">
                 <Spin size="large" />
-                <p className="text-xs font-medium text-gray-500">{language === "vi" ? "Đang tải danh sách thợ làm móng sảnh..." : "Loading lobby nail artists..."}</p>
+                <p className="text-xs font-medium text-gray-500">{language === "vi" ? "Đang tải danh sách thợ làm móng sảnh..." : "Loading lobby Staff Artists..."}</p>
               </div>
             ) : availableArtists.length === 0 ? (
               <div className="py-8 text-center text-xs font-medium text-gray-400 border border-dashed border-gray-200 rounded-2xl">
-                {language === "vi" ? "Hiện chưa có thợ làm móng nào hoạt động tại chi nhánh." : "There are currently no active nail artists at this salon branch."}
+                {language === "vi" ? "Hiện chưa có thợ làm móng nào hoạt động tại chi nhánh." : "There are currently no active Staff Artists at this salon branch."}
               </div>
             ) : (
               <div className="space-y-2.5 max-h-[260px] overflow-y-auto pr-1">

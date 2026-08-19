@@ -73,7 +73,7 @@ export function normalizeLoyaltyTier(tier) {
     return {
         id: String(tier?.loyaltyTierId ?? tier?.id ?? ""),
         loyaltyTierId: Number(tier?.loyaltyTierId ?? tier?.id ?? 0),
-        name: String(tier?.name || "--"),
+        name: String(tier?.name),
         description: String(tier?.description || ""),
         minLifetimePoints: Number(tier?.minLifetimePoints ?? 0),
         maxLifetimePoints: Number(tier?.maxLifetimePoints ?? 0),

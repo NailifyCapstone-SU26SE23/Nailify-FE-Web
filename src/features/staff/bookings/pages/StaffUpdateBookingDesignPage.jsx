@@ -83,8 +83,8 @@ function ConfirmationRow({ item, checked, onToggle }) {
       type="button"
       onClick={onToggle}
       className={`flex w-full items-start gap-3 rounded-[16px] border px-4 py-4 text-left transition ${checked
-          ? "border-[#bfe8ca] bg-[#effcf3]"
-          : "border-[#f4dbe7] bg-[#fffafb] hover:bg-[#fff6fa]"
+        ? "border-[#bfe8ca] bg-[#effcf3]"
+        : "border-[#f4dbe7] bg-[#fffafb] hover:bg-[#fff6fa]"
         }`}
     >
       <span
@@ -193,8 +193,8 @@ function StaffArtistModal({ onClose, onSelect, selectedStaff, staffOptions, isVi
                 type="button"
                 onClick={() => onSelect(staff.name)}
                 className={`flex w-full items-center justify-between gap-3 rounded-[18px] border px-4 py-4 text-left transition ${isSelected
-                    ? "border-[#f2bfd4] bg-[#fff2f8] shadow-[0_10px_20px_rgba(236,72,153,0.08)]"
-                    : "border-[#f4dbe7] bg-white hover:bg-[#fff8fc]"
+                  ? "border-[#f2bfd4] bg-[#fff2f8] shadow-[0_10px_20px_rgba(236,72,153,0.08)]"
+                  : "border-[#f4dbe7] bg-white hover:bg-[#fff8fc]"
                   }`}
               >
                 <div className="flex items-center gap-3">
@@ -210,8 +210,8 @@ function StaffArtistModal({ onClose, onSelect, selectedStaff, staffOptions, isVi
                 </div>
                 <span
                   className={`rounded-full px-3 py-1 text-[10px] font-bold ${isSelected
-                      ? "bg-[#ea4f93] text-white"
-                      : "border border-[#d4efdc] bg-[#effcf3] text-[#22a865]"
+                    ? "bg-[#ea4f93] text-white"
+                    : "border border-[#d4efdc] bg-[#effcf3] text-[#22a865]"
                     }`}
                 >
                   {isSelected ? (isVi ? "Hiện tại" : "Current") : (isVi ? "Sẵn sàng" : "Available")}
@@ -260,7 +260,7 @@ export function StaffUpdateBookingDesignPage() {
       statusLabel: "Updating Design",
       summaryStatus: "Updating Design",
       customer: booking.customerName || "Minh Thornton",
-      customerPhone: booking.customerPhone || "--",
+      customerPhone: booking.customerPhone,
       customerAvatar:
         "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=140&q=80",
       staffArtist: "Sophie Lee",
@@ -363,17 +363,17 @@ export function StaffUpdateBookingDesignPage() {
           title: isReviewed
             ? (isVi ? "Khách hàng đã xem thiết kế mới" : "Customer reviewed new design")
             : isPrice
-            ? (isVi ? "Khách hàng đồng ý với giá mới" : "Customer accepted updated price")
-            : isDuration
-            ? (isVi ? "Khách hàng đồng ý với thời gian làm mới" : "Customer accepted updated duration")
-            : item.title,
+              ? (isVi ? "Khách hàng đồng ý với giá mới" : "Customer accepted updated price")
+              : isDuration
+                ? (isVi ? "Khách hàng đồng ý với thời gian làm mới" : "Customer accepted updated duration")
+                : item.title,
           note: isReviewed
             ? (isVi ? "Khách đã xem và đồng ý với bản xem trước thiết kế móng mới" : "Customer has seen and approved the new design preview")
             : isPrice
-            ? (isVi ? `Khách đồng ý trả tổng cộng ${data.pricing.newPrice} (phát sinh ${data.pricing.additionalCost})` : `Customer agrees to pay ${data.pricing.newPrice} total (${data.pricing.additionalCost} additional charge)`)
-            : isDuration
-            ? (isVi ? `Khách xác nhận quá trình làm sẽ tốn khoảng ${formatDurationLabel(data.pricing.updatedDuration)}` : `Customer acknowledges service will take approximately ${formatDurationLabel(data.pricing.updatedDuration)}`)
-            : item.note,
+              ? (isVi ? `Khách đồng ý trả tổng cộng ${data.pricing.newPrice} (phát sinh ${data.pricing.additionalCost})` : `Customer agrees to pay ${data.pricing.newPrice} total (${data.pricing.additionalCost} additional charge)`)
+              : isDuration
+                ? (isVi ? `Khách xác nhận quá trình làm sẽ tốn khoảng ${formatDurationLabel(data.pricing.updatedDuration)}` : `Customer acknowledges service will take approximately ${formatDurationLabel(data.pricing.updatedDuration)}`)
+                : item.note,
         };
       }),
     [confirmations, isVi, data.pricing.newPrice, data.pricing.additionalCost, data.pricing.updatedDuration],
@@ -391,7 +391,7 @@ export function StaffUpdateBookingDesignPage() {
   const staffOptions = [
     {
       name: data.staffArtist,
-      initials: data.staffArtist
+      initials: (data.staffArtist || "")
         .split(" ")
         .map((word) => word[0])
         .slice(0, 2)
@@ -416,17 +416,17 @@ export function StaffUpdateBookingDesignPage() {
           title: isSpa
             ? (isVi ? "Chăm sóc tay / Spa" : "Hand Spa")
             : isChrome
-            ? (isVi ? "Tráng gương cao cấp" : "Chrome Upgrade")
-            : isRepair
-            ? (isVi ? "Phục hồi móng hỏng" : "Nail Repair")
-            : item.title,
+              ? (isVi ? "Tráng gương cao cấp" : "Chrome Upgrade")
+              : isRepair
+                ? (isVi ? "Phục hồi móng hỏng" : "Nail Repair")
+                : item.title,
           note: isSpa
             ? (isVi ? "Liệu trình dưỡng ẩm tay" : "Moisturizing treatment")
             : isChrome
-            ? (isVi ? "Tráng gương bột ngọc trai" : "Mirror chrome powder")
-            : isRepair
-            ? (isVi ? "Sửa móng bị nứt/gãy" : "Fix broken nails")
-            : item.note,
+              ? (isVi ? "Tráng gương bột ngọc trai" : "Mirror chrome powder")
+              : isRepair
+                ? (isVi ? "Sửa móng bị nứt/gãy" : "Fix broken nails")
+                : item.note,
         };
       }),
     [data.addOns, isVi],
@@ -657,8 +657,8 @@ export function StaffUpdateBookingDesignPage() {
                   disabled={!allConfirmed}
                   onClick={handleConfirmBooking}
                   className={`rounded-[12px] px-4 py-3 text-xs font-bold transition ${allConfirmed
-                      ? "bg-[image:var(--gradient-accent)] text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
-                      : "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
+                    ? "bg-[image:var(--gradient-accent)] text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
+                    : "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
                     }`}
                 >
                   {isVi ? "Xác nhận cập nhật" : "Confirm Updated Booking"}
@@ -746,8 +746,8 @@ export function StaffUpdateBookingDesignPage() {
                         }
                       >
                         {value === "Confirmed" ? (isVi ? "Đã xác nhận" : "Confirmed")
-                         : value === "Pending" ? (isVi ? "Đang chờ" : "Pending")
-                         : value}
+                          : value === "Pending" ? (isVi ? "Đang chờ" : "Pending")
+                            : value}
                       </Tag>
                     </div>
                   );
@@ -787,8 +787,8 @@ export function StaffUpdateBookingDesignPage() {
                   disabled={!allConfirmed}
                   onClick={handleConfirmBooking}
                   className={`w-full rounded-[12px] px-4 py-3 text-xs font-bold ${allConfirmed
-                      ? "bg-[image:var(--gradient-accent)] text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
-                      : "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
+                    ? "bg-[image:var(--gradient-accent)] text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
+                    : "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
                     }`}
                 >
                   {isVi ? "Xác nhận lịch hẹn" : "Confirm Booking"}

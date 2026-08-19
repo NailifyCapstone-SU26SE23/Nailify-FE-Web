@@ -29,9 +29,11 @@ import {
   fetchCurrentProfile,
   fetchProfileSalonDetail,
   updateCurrentProfile,
+  changeProfilePassword,
 } from "../services/profileService";
 import { authService } from "../services/authService";
 import { useAuth } from "../hooks/useAuth";
+import toast from "react-hot-toast";
 
 function Card({ className = "", children }) {
   return (
@@ -54,7 +56,7 @@ function Field({ label, value, icon: Icon }) {
         </div>
         <div className="min-w-0 pt-1">
           <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#c08aa4]">{label}</p>
-          <p className="mt-1 break-words text-[15px] font-extrabold text-[#3f2240]">{value || "--"}</p>
+          <p className="mt-1 break-words text-[15px] font-extrabold text-[#3f2240]">{value}</p>
         </div>
       </div>
     </div>
@@ -67,7 +69,7 @@ function InfoTile({ title, value, note }) {
       <div className="absolute -bottom-6 -right-6 h-28 w-28 rounded-full bg-gradient-to-br from-[#ea4f93]/10 to-transparent blur-2xl transition-all duration-500 group-hover:scale-150 group-hover:from-[#ea4f93]/20" />
       <div className="relative">
         <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#c08aa4]">{title}</p>
-        <p className="mt-2 text-2xl font-black tracking-tight text-[#402542] group-hover:text-[#ea4f93] transition-colors">{value || "--"}</p>
+        <p className="mt-2 text-2xl font-black tracking-tight text-[#402542] group-hover:text-[#ea4f93] transition-colors">{value}</p>
         <p className="mt-1.5 text-[11px] font-medium text-[#a07c90]">{note}</p>
       </div>
     </div>
@@ -86,7 +88,7 @@ function formatRoleLabel(role, t) {
     case "staff":
       return t("nailArtist") || "Staff Artist";
     default:
-      return role || "--";
+      return role;
   }
 }
 
@@ -140,12 +142,14 @@ export function ProfilePage() {
 
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
+    oldPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [passwordError, setPasswordError] = useState("");
   const [passwordSuccess, setPasswordSuccess] = useState("");
+  const [isOldPasswordVisible, setIsOldPasswordVisible] = useState(false);
   const [isNewPasswordVisible, setIsNewPasswordVisible] = useState(false);
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
 
@@ -376,9 +380,9 @@ export function ProfilePage() {
                     {profile?.fullName || user?.fullName || "Nailify User"}
                   </h2>
                   <p className="mt-2 text-base font-medium text-[#8f6b80] flex items-center justify-center sm:justify-start gap-2">
-                    <Mail size={14} /> {profile?.email || "--"}
+                    <Mail size={14} /> {profile?.email}
                     <span className="mx-2 opacity-30">•</span>
-                    <Shield size={14} /> {profile?.status || "--"}
+                    <Shield size={14} /> {profile?.status}
                   </p>
                 </div>
               </div>
@@ -636,7 +640,7 @@ export function ProfilePage() {
               type="button"
               onClick={() => {
                 setIsChangePasswordOpen(false);
-                setPasswordForm({ newPassword: "", confirmPassword: "" });
+                setPasswordForm({ oldPassword: "", newPassword: "", confirmPassword: "" });
                 setPasswordError("");
                 setPasswordSuccess("");
               }}
@@ -652,8 +656,8 @@ export function ProfilePage() {
               </h3>
               <p className="text-xs font-medium text-[#8f6b80] leading-relaxed">
                 {language === "vi"
-                  ? "Nhập mật khẩu mới và xác nhận để cập nhật mật khẩu của bạn."
-                  : "Enter your new password and confirm to update."}
+                  ? "Nhập mật khẩu cũ, mật khẩu mới và xác nhận để cập nhật mật khẩu của bạn."
+                  : "Enter your old password, new password and confirm to update."}
               </p>
             </div>
 
@@ -670,6 +674,29 @@ export function ProfilePage() {
             ) : null}
 
             <div className="space-y-4">
+              {/* Old Password Input */}
+              <label className="block group">
+                <span className="mb-2 block text-[11px] font-extrabold uppercase tracking-wider text-[#c08aa4]">
+                  {language === "vi" ? "Mật khẩu cũ" : "Old Password"}
+                </span>
+                <div className="relative">
+                  <input
+                    type={isOldPasswordVisible ? "text" : "password"}
+                    value={passwordForm.oldPassword}
+                    onChange={(e) => setPasswordForm(c => ({ ...c, oldPassword: e.target.value }))}
+                    className="h-12 w-full rounded-[16px] border-2 border-[#f3d5e2]/60 bg-white/50 pl-4 pr-10 text-sm font-bold text-[#2b182b] outline-none transition focus:border-[#ea4f93] focus:bg-white"
+                    placeholder={language === "vi" ? "Nhập mật khẩu cũ" : "Enter old password"}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setIsOldPasswordVisible(!isOldPasswordVisible)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    {isOldPasswordVisible ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </label>
+
               {/* New Password Input */}
               <label className="block group">
                 <span className="mb-2 block text-[11px] font-extrabold uppercase tracking-wider text-[#c08aa4]">
@@ -723,7 +750,7 @@ export function ProfilePage() {
                 type="button"
                 onClick={() => {
                   setIsChangePasswordOpen(false);
-                  setPasswordForm({ newPassword: "", confirmPassword: "" });
+                  setPasswordForm({ oldPassword: "", newPassword: "", confirmPassword: "" });
                   setPasswordError("");
                   setPasswordSuccess("");
                 }}
@@ -734,6 +761,10 @@ export function ProfilePage() {
               <button
                 type="button"
                 onClick={async () => {
+                  if (!passwordForm.oldPassword) {
+                    setPasswordError(language === "vi" ? "Vui lòng nhập mật khẩu cũ." : "Please enter your old password.");
+                    return;
+                  }
                   if (passwordForm.newPassword.length < 6) {
                     setPasswordError(language === "vi" ? "Mật khẩu mới phải từ 6 ký tự trở lên." : "New password must be at least 6 characters.");
                     return;
@@ -747,25 +778,28 @@ export function ProfilePage() {
                     setIsResettingPassword(true);
                     setPasswordError("");
                     setPasswordSuccess("");
-                    const response = await authService.resetPassword({
-                      token: accessToken,
+                    await changeProfilePassword({
+                      oldPassword: passwordForm.oldPassword,
                       newPassword: passwordForm.newPassword,
                       confirmPassword: passwordForm.confirmPassword,
                     });
-                    
-                    if (response?.isSucceeded) {
-                      toast.success(
-                        language === "vi"
-                          ? "Cập nhật mật khẩu mới thành công!"
-                          : "Password updated successfully!"
-                      );
-                      setIsChangePasswordOpen(false);
-                      setPasswordForm({ newPassword: "", confirmPassword: "" });
-                    } else {
-                      setPasswordError(response?.message || "Reset failed.");
-                    }
+
+                    toast.success(
+                      language === "vi"
+                        ? "Cập nhật mật khẩu mới thành công!"
+                        : "Password updated successfully!"
+                    );
+                    setIsChangePasswordOpen(false);
+                    setPasswordForm({ oldPassword: "", newPassword: "", confirmPassword: "" });
                   } catch (err) {
-                    setPasswordError(err.message || "Failed to reset password.");
+                    const errorMessage =
+                      err.message ||
+                      (language === "vi"
+                        ? "Đổi mật khẩu thất bại."
+                        : "Failed to change password.");
+
+                    setPasswordError(errorMessage);
+                    toast.error(errorMessage);
                   } finally {
                     setIsResettingPassword(false);
                   }

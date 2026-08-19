@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Modal, Spin } from "antd";
-import { BriefcaseBusiness, Check, Clock, Mail, Phone, UserRound } from "lucide-react";
+import { BriefcaseBusiness, Check, Clock, Mail, Phone, UserRound, Star, BrushCleaning } from "lucide-react";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
 import { PropTypes } from "../../../../shared/utils/propTypes";
-import { assignArtistToBooking, assignArtistToBookingOld, fetchSalonStaff, fetchArtistBusySlots } from "../services/bookingsService";
+import { assignArtistToBooking, assignArtistToBookingOld, fetchAvailableArtistsForBooking, fetchArtistBusySlots } from "../services/bookingsService";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
@@ -16,7 +16,7 @@ function getStaffDisplayName(staff) {
 }
 
 function getStaffKey(staff) {
-  return staff?.staffId || staff?.staffArtistId || staff?.userId || staff?.id || "";
+  return staff?.nailArtistId || staff?.staffId || staff?.staffArtistId || staff?.userId || staff?.id || "";
 }
 
 function getStaffInitials(staff) {
@@ -52,8 +52,8 @@ export function AssignArtistModal({
   useEffect(() => {
     if (!open) return;
 
-    const normalizedSalonId = String(salonId || "").trim();
-    if (!normalizedSalonId) return;
+    const normalizedBookingId = String(bookingId || "").trim();
+    if (!normalizedBookingId) return;
 
     let isCancelled = false;
 
@@ -61,18 +61,12 @@ export function AssignArtistModal({
       try {
         setIsLoadingStaff(true);
         setSelectedStaff(null);
-        const staff = await fetchSalonStaff(normalizedSalonId);
+        const data = await fetchAvailableArtistsForBooking(normalizedBookingId);
         if (isCancelled) return;
-        const artists = (staff || []).filter(
-          (member) =>
-            member.role === "Staff_Artist" ||
-            member.role === "StaffArtist" ||
-            (member.role && member.role.toLowerCase().includes("artist"))
-        );
-        setStaffList(artists);
+        setStaffList(Array.isArray(data) ? data : []);
       } catch (err) {
-        console.error("Failed to load salon staff:", err);
-        toast.error(language === "vi" ? "Lỗi khi tải danh sách nhân viên" : "Failed to load salon staff.");
+        console.error("Failed to load available staff artists:", err);
+        toast.error(language === "vi" ? "Lỗi khi tải danh sách nhân viên khả dụng" : "Failed to load available staff artists.");
         if (!isCancelled) setStaffList([]);
       } finally {
         if (!isCancelled) setIsLoadingStaff(false);
@@ -82,7 +76,7 @@ export function AssignArtistModal({
     return () => {
       isCancelled = true;
     };
-  }, [open, salonId]);
+  }, [open, bookingId]);
 
   const normalizedBookingId = useMemo(() => String(bookingId || "").trim(), [bookingId]);
   const selectedStaffName = selectedStaff ? getStaffDisplayName(selectedStaff) : "";
@@ -144,7 +138,7 @@ export function AssignArtistModal({
         }
       } catch (err) {
         console.error("Error in fetchSlots:", err);
-        toast.error(language === "vi" ? "Nhân viên chưa có lịch hẹn vào ngày này" : "The nail artist has no scheduled appointments for this day.");
+        toast.error(language === "vi" ? "Nhân viên chưa có lịch hẹn vào ngày này" : "The Staff Artist has no scheduled appointments for this day.");
         setAvailableSlots([]);
         setBusySlots([]);
       } finally {
@@ -312,33 +306,70 @@ export function AssignArtistModal({
                           <div className="flex items-start gap-4">
                             <motion.div
                               whileHover={{ scale: 1.08 }}
-                              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#d6c1ff] to-[#8b5cf6] text-base font-extrabold text-white shadow-[0_4px_12px_rgba(139,92,246,0.2)]"
+                              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#d6c1ff] to-[#8b5cf6] text-base font-extrabold text-white shadow-[0_4px_12px_rgba(139,92,246,0.2)] overflow-hidden"
                             >
-                              {getStaffInitials(staff)}
+                              {staff?.avatarUrl ? (
+                                <img
+                                  crossOrigin="anonymous"
+                                  src={staff.avatarUrl}
+                                  alt={name}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                getStaffInitials(staff)
+                              )}
                             </motion.div>
                             <div className="min-w-0 flex-1">
-                              <div className="flex flex-wrap items-center gap-2">
+                              <div className="flex items-center justify-between gap-2">
                                 <p className="text-base font-extrabold text-[#3d1f3f] truncate">{name}</p>
-                                {staff?.role ? (
-                                  <span className="inline-flex items-center rounded-full bg-[#fde7f3] px-3 py-1 text-[10px] font-extrabold text-[#e1447f]">
-                                    {staff.role}
+                                {staff.status && (
+                                  <span className="rounded-full bg-[#ECFDF5] border border-[#A7F3D0] px-2.5 py-0.5 text-[10px] font-bold text-[#047857] shrink-0">
+                                    {staff.status}
                                   </span>
-                                ) : null}
+                                )}
                               </div>
-                              <div className="mt-4 space-y-2">
-                                <div className="flex items-center gap-2 text-xs text-[#7f6478]">
-                                  <Mail size={14} className="text-[#b88ca8]" />
-                                  <span className="truncate">{staff.email || "No email provided"}</span>
+                              {/* Contact info if available, otherwise skills */}
+                              {(staff.email || staff.phone || staff.phoneNumber || staff.specialty || staff.role) ? (
+                                <div className="mt-4 space-y-2">
+                                  {staff.email && (
+                                    <div className="flex items-center gap-2 text-xs text-[#7f6478]">
+                                      <Mail size={14} className="text-[#b88ca8]" />
+                                      <span className="truncate">{staff.email}</span>
+                                    </div>
+                                  )}
+                                  {(staff.phone || staff.phoneNumber) && (
+                                    <div className="flex items-center gap-2 text-xs text-[#7f6478]">
+                                      <Phone size={14} className="text-[#b88ca8]" />
+                                      <span className="truncate">{staff.phone || staff.phoneNumber}</span>
+                                    </div>
+                                  )}
+                                  {(staff.specialty || staff.role) && (
+                                    <div className="flex items-center gap-2 text-xs text-[#7f6478]">
+                                      <BriefcaseBusiness size={14} className="text-[#b88ca8]" />
+                                      <span className="truncate">{staff.specialty || staff.role}</span>
+                                    </div>
+                                  )}
                                 </div>
-                                <div className="flex items-center gap-2 text-xs text-[#7f6478]">
-                                  <Phone size={14} className="text-[#b88ca8]" />
-                                  <span className="truncate">{staff.phone || staff.phoneNumber || "No phone number"}</span>
+                              ) : (
+                                <div className="mt-2.5 flex flex-wrap gap-1.5">
+                                  {(staff.skills ?? []).length ? (
+                                    staff.skills.map((skill, index) => (
+                                      <span
+                                        key={`${skill?.skillTypeName || "skill"}-${index}`}
+                                        className="inline-flex items-center gap-1 rounded-full bg-[#FEF3C7] border border-[#FDE68A] px-2 py-0.5 text-[10px] font-bold text-[#B45309]"
+                                      >
+                                        <Star size={9} className="fill-current" />
+                                        {skill?.skillTypeName || "Skill"} Lv.{skill?.level ?? 0}
+                                      </span>
+                                    ))
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-[#F5F3FF] border border-[#DDD6FE] px-2 py-0.5 text-[10px] font-bold text-[#6D28D9]">
+                                      <BrushCleaning size={9} />
+                                      Nail Staff
+                                    </span>
+                                  )}
                                 </div>
-                                <div className="flex items-center gap-2 text-xs text-[#7f6478]">
-                                  <BriefcaseBusiness size={14} className="text-[#b88ca8]" />
-                                  <span className="truncate">{staff.specialty || staff.role || "Nail Artist"}</span>
-                                </div>
-                              </div>
+                              )}
                             </div>
                           </div>
                         </motion.div>
