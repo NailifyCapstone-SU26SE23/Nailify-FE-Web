@@ -101,7 +101,7 @@ export function CategoryTypeDetailPage() {
 
     return [
       [t("adminCategoryTypes.categoryTypeIdLabel"), String(categoryType.categoryTypeId)],
-      [t("adminCategoryTypes.status"), draft.status || "--"],
+      [t("adminCategoryTypes.status"), draft.status],
       [t("adminCategoryTypes.categoriesCountLabel"), String(categoryType.categoriesCount)],
       [t("adminCategoryTypes.categoriesLabel"), categoryType.categoriesLabel],
     ];
@@ -412,7 +412,7 @@ export function CategoryTypeDetailPage() {
         onConfirm={handleSave}
         onCancel={() => !isSaving && setShowSaveConfirm(false)}
         highlights={[draft?.name || categoryType?.name || "Category type"]}
-        details={[{ label: "Status", value: draft?.status || "--" }]}
+        details={[{ label: "Status", value: draft?.status }]}
       />
 
       <ActionConfirmModal

@@ -88,6 +88,7 @@ export function normalizeCustomerNail(item, rawNailsList = []) {
       nailShape: nail.nailShape || matchedRawNail.nailShape,
       nailSurface: nail.nailSurface || matchedRawNail.nailSurface,
       customerNailComponents: nail.customerNailComponents || matchedRawNail.customerNailComponents || [],
+      nailProcedures: nail.nailProcedures || matchedRawNail.nailProcedures || [],
 
       _isRequest: true
     };
@@ -436,14 +437,30 @@ export async function fetchCustomerNailRequestById(id) {
   return fetchCustomerNailById(id);
 }
 
-export async function staffSubmitArtistQuote(customerNailId, quotedPrice, quotedDuration) {
+export async function fetchProcedures(params = {}) {
+  try {
+    const response = await axiosClient.get("/Procedures", {
+      headers: getAuthHeaders(),
+      params,
+    });
+    const data = unwrapResponse(response, "Failed to fetch procedures.");
+    return Array.isArray(data) ? data : data?.items || data?.data || [];
+  } catch (error) {
+    console.warn("Failed fetching procedures from /Procedures, fallbacking to []...", error);
+    return [];
+  }
+}
+
+export async function staffSubmitArtistQuote(customerNailId, quotedPrice, quotedDuration, artistNotes = "", procedures = []) {
   const normalizedId = String(customerNailId || "").trim();
   if (!normalizedId) {
     throw new Error("Customer Nail ID is required.");
   }
   const payload = {
     quotedPrice: Number(quotedPrice),
-    quotedDuration: Number(quotedDuration)
+    quotedDuration: Number(quotedDuration),
+    artistNotes: artistNotes || "",
+    procedures: Array.isArray(procedures) ? procedures : [],
   };
 
   try {

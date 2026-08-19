@@ -9,9 +9,13 @@ import {
   Tag,
   Upload,
   WandSparkles,
+  Filter,
+  ArrowUpDown,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Dropdown } from "antd";
+import toast from "react-hot-toast";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   ROUTES,
@@ -19,7 +23,7 @@ import {
   getAdminNailDesignDetailRoute,
 } from "../../../../shared/constants/routes";
 import { PropTypes } from "../../../../shared/utils/propTypes";
-import { fetchAdminNailDesigns } from "../services/nailDesignManagementService";
+import { fetchAdminNailDesigns, fetchAdminCategories } from "../services/nailDesignManagementService";
 
 const DESIGN_CARD_PRESETS = [
   {
@@ -222,12 +226,43 @@ export function NailDesignManagementPage() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [flashMessage] = useState(location.state?.flashMessage ?? "");
+
+  const [categoriesList, setCategoriesList] = useState([]);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
+  const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
+  const [sortBy, setSortBy] = useState("name-asc");
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadCategories = async () => {
+      try {
+        const response = await fetchAdminCategories({ pageNumber: 1, pageSize: 100 });
+        if (isMounted && response?.items) {
+          setCategoriesList(response.items);
+        }
+      } catch (err) {
+        console.error("Failed to load categories:", err);
+      }
+    };
+    void loadCategories();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleFilterOpenChange = (nextOpen, info) => {
+    if (info && info.source === "menu") {
+      return;
+    }
+    setFilterDropdownOpen(nextOpen);
+  };
 
   useEffect(() => {
     if (!location.state?.flashMessage) {
       return;
     }
+
+    toast.success(location.state.flashMessage);
 
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
@@ -253,6 +288,7 @@ export function NailDesignManagementPage() {
           pageNumber: metaData.currentPage,
           pageSize: metaData.pageSize,
           name: debouncedQuery,
+          categoryIds: selectedCategoryIds,
         });
 
         if (!isMounted) {
@@ -280,12 +316,28 @@ export function NailDesignManagementPage() {
     return () => {
       isMounted = false;
     };
-  }, [debouncedQuery, metaData.currentPage, metaData.pageSize]);
+  }, [debouncedQuery, metaData.currentPage, metaData.pageSize, selectedCategoryIds]);
 
   const normalizedDesigns = useMemo(
     () => designs.map((design, index) => normalizeDesign(design, index, t)),
     [designs, t],
   );
+
+  const sortedDesigns = useMemo(() => {
+    let result = [...normalizedDesigns];
+
+    if (sortBy === "name-asc") {
+      result.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    } else if (sortBy === "name-desc") {
+      result.sort((a, b) => (b.name || "").localeCompare(a.name || ""));
+    } else if (sortBy === "price-asc") {
+      result.sort((a, b) => (a.maxPrice || a.minPrice || 0) - (b.maxPrice || b.minPrice || 0));
+    } else if (sortBy === "price-desc") {
+      result.sort((a, b) => (b.maxPrice || b.minPrice || 0) - (a.maxPrice || a.minPrice || 0));
+    }
+
+    return result;
+  }, [normalizedDesigns, sortBy]);
 
   const summaryCards = useMemo(
     () => [
@@ -312,7 +364,7 @@ export function NailDesignManagementPage() {
       },
       {
         label: t("adminNailsDesignManagement.mostPopularStyle"),
-        value: normalizedDesigns[0]?.uiTitle || "--",
+        value: normalizedDesigns[0]?.uiTitle,
         note: t("adminNailsDesignManagement.currentPageHighlight"),
         icon: Star,
         iconClassName: "bg-[#fff4df] text-[#f5a623]",
@@ -348,6 +400,66 @@ export function NailDesignManagementPage() {
     return result;
   }, [metaData.currentPage, metaData.totalPages]);
 
+  const filterItems = useMemo(() => {
+    const allItem = {
+      key: "all",
+      label: language === "vi" ? "Tất cả danh mục" : "All Categories",
+    };
+    const catItems = categoriesList.map((cat) => ({
+      key: String(cat.categoryId),
+      label: cat.name,
+    }));
+    return [allItem, ...catItems];
+  }, [categoriesList, language]);
+
+  const filterMenu = {
+    items: filterItems,
+    selectable: true,
+    multiple: true,
+    selectedKeys: selectedCategoryIds.length > 0 ? selectedCategoryIds.map(String) : ["all"],
+    onClick: ({ key }) => {
+      if (key === "all") {
+        setSelectedCategoryIds([]);
+      } else {
+        const id = Number(key);
+        setSelectedCategoryIds((prev) =>
+          prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+        );
+      }
+      setMetaData((current) => ({ ...current, currentPage: 1 }));
+    },
+    style: {
+      maxHeight: "250px",
+      overflowY: "auto",
+    },
+  };
+
+  const sortItems = [
+    {
+      key: "name-asc",
+      label: language === "vi" ? "Tên (A - Z)" : "Name (A - Z)",
+    },
+    {
+      key: "name-desc",
+      label: language === "vi" ? "Tên (Z - A)" : "Name (Z - A)",
+    },
+    {
+      key: "price-asc",
+      label: language === "vi" ? "Giá (Thấp đến Cao)" : "Price (Low to High)",
+    },
+    {
+      key: "price-desc",
+      label: language === "vi" ? "Giá (Cao đến Thấp)" : "Price (High to Low)",
+    },
+  ];
+
+  const sortMenu = {
+    items: sortItems,
+    selectable: true,
+    selectedKeys: [sortBy],
+    onClick: ({ key }) => setSortBy(key),
+  };
+
   const toolbarButtonClassName =
     "inline-flex items-center justify-center rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]";
   const primaryToolbarButtonClassName =
@@ -356,36 +468,7 @@ export function NailDesignManagementPage() {
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)]">
       <div className="flex flex-col gap-3 rounded-[18px] bg-white/70 p-1 sm:flex-row sm:items-center sm:justify-end">
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            className={toolbarButtonClassName}
-          >
-            <Tag size={13} className="mr-1.5 shrink-0" />
-            {t("adminNailsDesignManagement.manageTags")}
-          </button>
-          <Link
-            to={getAdminNailDesignCategoriesRoute()}
-            className={toolbarButtonClassName}
-          >
-            <Plus size={13} className="mr-1.5 shrink-0" />
-            {t("adminNailsDesignManagement.addCategory")}
-          </Link>
-          <button
-            type="button"
-            className={toolbarButtonClassName}
-          >
-            <Upload size={13} className="mr-1.5 shrink-0" />
-            {t("adminNailsDesignManagement.uploadTryonAsset")}
-          </button>
-          <Link
-            to={ROUTES.adminNailDesignsCreate}
-            className={primaryToolbarButtonClassName}
-          >
-            <Plus size={13} className="mr-1.5 shrink-0" />
-            {t("adminNailsDesignManagement.addDesign")}
-          </Link>
-        </div>
+
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -409,26 +492,73 @@ export function NailDesignManagementPage() {
               </p>
             </div>
             <div className="flex gap-2">
-              <button
-                type="button"
-                className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93]"
+              <Dropdown
+                menu={filterMenu}
+                trigger={["click"]}
+                open={filterDropdownOpen}
+                onOpenChange={handleFilterOpenChange}
               >
-                {t("adminNailsDesignManagement.filter")}
-              </button>
-              <button
-                type="button"
-                className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93]"
-              >
-                {t("adminNailsDesignManagement.sort")}
-              </button>
+                <button
+                  type="button"
+                  className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93] cursor-pointer hover:bg-[#ffeef5] transition"
+                >
+                  {selectedCategoryIds.length > 0
+                    ? `${t("adminNailsDesignManagement.filter")}: ${
+                        selectedCategoryIds.length === 1
+                          ? (categoriesList.find((c) => c.categoryId === selectedCategoryIds[0])?.name || "")
+                          : language === "vi"
+                            ? `${selectedCategoryIds.length} danh mục`
+                            : `${selectedCategoryIds.length} categories`
+                      }`
+                    : t("adminNailsDesignManagement.filter")
+                  }
+                </button>
+              </Dropdown>
+              <Dropdown menu={sortMenu} trigger={["click"]}>
+                <button
+                  type="button"
+                  className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93] cursor-pointer hover:bg-[#ffeef5] transition"
+                >
+                  {sortBy
+                    ? `${t("adminNailsDesignManagement.sort")}: ${sortItems.find((s) => s.key === sortBy)?.label || ""}`
+                    : t("adminNailsDesignManagement.sort")
+                  }
+                </button>
+              </Dropdown>
+              <div className="flex flex-wrap gap-2">
+                {/* <button
+            type="button"
+            className={toolbarButtonClassName}
+          >
+            <Tag size={13} className="mr-1.5 shrink-0" />
+            {t("adminNailsDesignManagement.manageTags")}
+          </button> */}
+                {/* <Link
+            to={getAdminNailDesignCategoriesRoute()}
+            className={toolbarButtonClassName}
+          >
+            <Plus size={13} className="mr-1.5 shrink-0" />
+            {t("adminNailsDesignManagement.addCategory")}
+          </Link> */}
+                {/* <button
+            type="button"
+            className={toolbarButtonClassName}
+          >
+            <Upload size={13} className="mr-1.5 shrink-0" />
+            {t("adminNailsDesignManagement.uploadTryonAsset")}
+          </button> */}
+                <Link
+                  to={ROUTES.adminNailDesignsCreate}
+                  className={primaryToolbarButtonClassName}
+                >
+                  <Plus size={13} className="mr-1.5 shrink-0" />
+                  {t("adminNailsDesignManagement.addDesign")}
+                </Link>
+              </div>
             </div>
           </div>
 
-          {flashMessage ? (
-            <div className="mb-4 rounded-[16px] bg-[#edfdf4] px-4 py-3 text-sm font-medium text-[#16975f]">
-              {flashMessage}
-            </div>
-          ) : null}
+
 
           {error ? (
             <div className="mb-4 rounded-[16px] bg-[#fff1f5] px-4 py-3 text-sm font-medium text-[#d14c84]">
@@ -458,7 +588,7 @@ export function NailDesignManagementPage() {
                 </div>
               </div>
             ) : (
-              normalizedDesigns.map((design) => (
+              sortedDesigns.map((design) => (
                 <Link
                   to={getAdminNailDesignDetailRoute(design.id)}>
                   <article

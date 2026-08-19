@@ -7,8 +7,8 @@ function getAuthHeaders() {
 
   return token
     ? {
-        Authorization: `Bearer ${token}`,
-      }
+      Authorization: `Bearer ${token}`,
+    }
     : {};
 }
 
@@ -40,10 +40,10 @@ export const CATEGORY_TYPE_STATUS_OPTIONS = ["Active", "InActive", "Inactive"];
 function normalizeCategory(category) {
   return {
     categoryId: Number(category?.categoryId || 0),
-    name: String(category?.name || "").trim() || "--",
+    name: String(category?.name || "").trim(),
     categoryTypeId: Number(category?.categoryTypeId || 0),
-    categoryTypeName: String(category?.categoryTypeName || "").trim() || "--",
-    status: String(category?.status || "").trim() || "--",
+    categoryTypeName: String(category?.categoryTypeName || "").trim(),
+    status: String(category?.status || "").trim(),
   };
 }
 
@@ -55,15 +55,15 @@ export function normalizeAdminCategoryType(categoryType) {
   return {
     id: Number(categoryType?.categoryTypeId || 0),
     categoryTypeId: Number(categoryType?.categoryTypeId || 0),
-    name: String(categoryType?.name || "").trim() || "--",
-    status: String(categoryType?.status || "").trim() || "--",
+    name: String(categoryType?.name || "").trim(),
+    status: String(categoryType?.status || "").trim(),
     categories,
     categoriesCount: categories.length,
     categoriesLabel: categories.length
       ? categories
-          .slice(0, 3)
-          .map((item) => item.name)
-          .join(", ")
+        .slice(0, 3)
+        .map((item) => item.name)
+        .join(", ")
       : "No categories",
     initials: String(categoryType?.name || "")
       .trim()

@@ -7,8 +7,8 @@ function getAuthHeaders() {
 
   return token
     ? {
-        Authorization: `Bearer ${token}`,
-      }
+      Authorization: `Bearer ${token}`,
+    }
     : {};
 }
 
@@ -35,7 +35,7 @@ function normalizeStatus(status) {
     case "pending":
       return "Pending";
     default:
-      return status || "--";
+      return status;
   }
 }
 
@@ -54,7 +54,7 @@ function normalizeRole(role) {
     case "customer":
       return "Customer";
     default:
-      return role || "--";
+      return role;
   }
 }
 
@@ -104,7 +104,7 @@ export function normalizeAdminUser(user) {
   const role = normalizeRole(user?.role);
   const firstName = String(user?.firstName || "").trim();
   const lastName = String(user?.lastName || "").trim();
-  const fullName = [firstName, lastName].filter(Boolean).join(" ").trim() || user?.email || "--";
+  const fullName = [firstName, lastName].filter(Boolean).join(" ").trim() || user?.email;
   const statusLabel = normalizeStatus(user?.status);
 
   return {
@@ -113,10 +113,10 @@ export function normalizeAdminUser(user) {
     name: fullName,
     firstName,
     lastName,
-    email: user?.email || "--",
-    phone: String(user?.phone || "--").trim() || "--",
+    email: user?.email,
+    phone: String(user?.phone).trim(),
     role,
-    rawRole: String(user?.role || "").trim() || "--",
+    rawRole: String(user?.role || "").trim(),
     displayRole: getDisplayRole(role),
     salonId: user?.salonId || "",
     salon: user?.salonId ? "Assigned salon" : "No salon",
@@ -145,7 +145,7 @@ export async function fetchAdminUsers({
       pageNumber,
       pageSize,
       searchTerm: searchTerm || undefined,
-      role: role || undefined,
+      role: mapRoleToApi(role) || undefined,
       salonId: salonId || undefined,
     },
   });
@@ -209,18 +209,35 @@ function mapRoleToApi(role) {
   }
 }
 
+const isSalonRole = (role) => {
+  const normalized = String(role || "").trim().toLowerCase();
+  return ["staff", "staff_artist", "receptionist", "manager"].includes(normalized);
+};
+
 export async function createAdminUser(formValues) {
+  const formData = new FormData();
+  formData.append("Email", String(formValues?.email || "").trim());
+  formData.append("Password", String(formValues?.password || ""));
+  formData.append("FirstName", String(formValues?.firstName || "").trim());
+  formData.append("LastName", String(formValues?.lastName || "").trim());
+  formData.append("Phone", String(formValues?.phone || "").trim());
+  formData.append("AvatarUrl", String(formValues?.avatarUrl || "").trim());
+  formData.append("Role", mapRoleToApi(formValues?.role));
+
+  if (isSalonRole(formValues?.role)) {
+    const sId = String(formValues?.salonId || "").trim();
+    if (sId) {
+      formData.append("SalonId", sId);
+    }
+  }
+
+  if (formValues?.imageFile) {
+    formData.append("image", formValues.imageFile);
+  }
+
   const response = await axiosClient.post(
     "/Users",
-    {
-      email: String(formValues?.email || "").trim(),
-      password: String(formValues?.password || ""),
-      firstName: String(formValues?.firstName || "").trim(),
-      lastName: String(formValues?.lastName || "").trim(),
-      phone: String(formValues?.phone || "").trim(),
-      avatarUrl: String(formValues?.avatarUrl || "").trim(),
-      role: mapRoleToApi(formValues?.role),
-    },
+    formData,
     {
       headers: getAuthHeaders(),
     },
@@ -245,7 +262,13 @@ export async function updateAdminUser(userId, formValues) {
   if (formValues?.lastName !== undefined) payload.lastName = String(formValues.lastName || "").trim();
   if (formValues?.phone !== undefined) payload.phone = String(formValues.phone || "").trim();
   if (formValues?.status !== undefined) payload.status = String(formValues.status || "").trim();
-  if (formValues?.salonId !== undefined) payload.salonId = formValues.salonId;
+
+  if (isSalonRole(formValues?.role)) {
+    const sId = String(formValues?.salonId || "").trim();
+    payload.salonId = sId ? sId : null;
+  } else {
+    payload.salonId = null;
+  }
 
   console.log("updateAdminUser - userId:", normalizedUserId);
   console.log("updateAdminUser - payload:", payload);

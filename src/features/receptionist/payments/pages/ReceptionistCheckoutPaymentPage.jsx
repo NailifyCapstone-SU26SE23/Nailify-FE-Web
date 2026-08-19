@@ -76,11 +76,13 @@ function getCustomerDisplayName(customerProfile, booking) {
     .join(" ")
     .trim();
 
-  return fullName || booking?.customerName || "--";
+  return fullName || booking?.customerName || "";
 }
 
 function getCustomerInitials(customerProfile, booking) {
-  return getCustomerDisplayName(customerProfile, booking)
+  const displayName = getCustomerDisplayName(customerProfile, booking);
+  if (!displayName) return "NA";
+  return displayName
     .split(" ")
     .filter(Boolean)
     .slice(0, 2)
@@ -262,10 +264,11 @@ export function ReceptionistCheckoutPaymentPage() {
   const customerInitials = getCustomerInitials(customerProfile, booking);
   const billItems = useMemo(() => getBillItems(booking), [booking]);
   const subtotalValue = billItems.reduce((sum, item) => sum + item.total, 0);
-  const totalValue = Number(booking?.totalPrice || subtotalValue || 0);
-  const discountValue = Math.max(0, subtotalValue - totalValue);
-  const depositValue = 0;
-  const remainingValue = Math.max(0, totalValue - depositValue);
+  // const totalValue = Number(booking?.totalPrice || subtotalValue || 0);
+  const totalValue = Number(booking?.totalPrice);
+  const discountValue = Number(booking?.discount);
+  const depositValue = Number(booking?.amountPaid);
+  const remainingValue = Number(booking?.amountDue);
   const qrImageSrc = useMemo(
     () => {
       if (paymentInfo?.qrCode) {
@@ -416,10 +419,10 @@ export function ReceptionistCheckoutPaymentPage() {
               {paymentStage === "paid"
                 ? (t("receptionist.dashboard.statusDone") || "Paid")
                 : paymentStage === "processing"
-                ? (language === "vi" ? "Đang xử lý" : "Processing")
-                : paymentStage === "cancelled"
-                ? (language === "vi" ? "Đã hủy" : "Cancelled")
-                : (language === "vi" ? "Đang chờ thanh toán" : "Awaiting Payment")}
+                  ? (language === "vi" ? "Đang xử lý" : "Processing")
+                  : paymentStage === "cancelled"
+                    ? (language === "vi" ? "Đã hủy" : "Cancelled")
+                    : (language === "vi" ? "Đang chờ thanh toán" : "Awaiting Payment")}
             </span>
           </div>
         </div>
@@ -444,7 +447,7 @@ export function ReceptionistCheckoutPaymentPage() {
 
                 <div>
                   <p className="text-xl font-bold text-[#4a3741]">{customerDisplayName}</p>
-                  <p className="mt-1 text-xs text-[#a48796]">{customerProfile?.phone || booking.customerName || "--"}</p>
+                  <p className="mt-1 text-xs text-[#a48796]">{customerProfile?.phone || booking.customerName}</p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <span className="rounded-full bg-[#fff0c8] px-3 py-1 text-[10px] font-bold text-[#b18211]">
                       {language === "vi" ? "Thành viên Vàng" : "Gold Member"}
@@ -459,11 +462,11 @@ export function ReceptionistCheckoutPaymentPage() {
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">{t("receptionist.bookings.artist") || "Staff Artist"}</p>
-                  <p className="mt-1 text-xs font-bold text-[#4a3741]">{booking.artistName || "--"}</p>
+                  <p className="mt-1 text-xs font-bold text-[#4a3741]">{booking.artistName}</p>
                 </div>
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">{t("receptionist.bookings.assignChairTitle") || "Chair"}</p>
-                  <p className="mt-1 text-xs font-bold text-[#4a3741]">Chair 03</p>
+                  <p className="mt-1 text-xs font-bold text-[#4a3741]">{booking.chairName || (language === "vi" ? "Chưa có ghế" : "No chair")}</p>
                 </div>
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">{t("receptionist.dashboard.statusDone") || "Completed"}</p>
@@ -491,7 +494,7 @@ export function ReceptionistCheckoutPaymentPage() {
                     ),
                   },
                   {
-                    title: <span className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#c38ea8]">{t("receptionist.bookings.duration") || "Duration"}</span>,
+                    title: <span className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#c38ea8]">{language === "vi" ? "Thời gian" : "Duration"}</span>,
                     dataIndex: 'duration',
                     key: 'duration',
                     render: (text) => <span className="text-sm text-[#8f7b88]">{text}</span>,
@@ -518,7 +521,7 @@ export function ReceptionistCheckoutPaymentPage() {
             <div className="mt-4 space-y-3 text-sm">
               {[
                 [t("receptionist.payments.subtotal") || "Subtotal", formatCurrency(subtotalValue)],
-                [t("receptionist.payments.promotion") || "Discount / Voucher", discountValue ? `-${formatCurrency(discountValue)}` : formatCurrency(0)],
+                [t("receptionist.payments.promotion") || "Discount / Voucher", discountValue ? `${formatCurrency(discountValue)}` : formatCurrency(0)],
                 [t("receptionist.payments.deposit") || "Deposit Paid", depositValue ? `-${formatCurrency(depositValue)}` : formatCurrency(0)],
               ].map(([label, value]) => (
                 <div key={label} className="flex items-center justify-between gap-3">
@@ -537,10 +540,10 @@ export function ReceptionistCheckoutPaymentPage() {
               </div>
             </div>
 
-            <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#f5d7e4] pt-4">
+            {/* <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#f5d7e4] pt-4">
               <span className="text-lg font-extrabold text-[#412643]">{t("receptionist.bookings.price") || "Total Amount"}</span>
               <span className="text-2xl font-bold text-green-700">{formatCurrency(totalValue)}</span>
-            </div>
+            </div> */}
           </SummaryCard>
 
           <SummaryCard title={t("receptionist.payments.payMethod") || "Payment Method"}>
@@ -669,7 +672,7 @@ export function ReceptionistCheckoutPaymentPage() {
             )}
           </SummaryCard>
 
-          <SummaryCard title={t("receptionist.payments.invoiceTitle") || "Receipt Preview"}>
+          <SummaryCard title={language === "vi" ? "Xem trước hóa đơn" : "Receipt Preview"}>
             <div className="bg-[#faf8f5] border border-[#e6decb] p-5 rounded-[1.75rem] shadow-[0_8px_24px_rgba(97,76,60,0.03)] relative overflow-hidden text-[#4a3f35] border-t-4 border-t-[#ea4f93]">
               {/* Dashed edge header */}
               <div className="text-center pb-3.5 border-b border-dashed border-[#e6decb] space-y-1">
@@ -749,7 +752,7 @@ export function ReceptionistCheckoutPaymentPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-[linear-gradient(90deg,#cf3d82_0%,#ef5b92_100%)] px-4 py-3 text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(235,91,146,0.22)]"
               >
                 <Printer size={14} />
-                {t("receptionist.payments.printReceipt") || "Print Bill"}
+                {language === "vi" ? "In Hóa đơn" : "Print Bill"}
               </button>
               <button
                 type="button"
@@ -790,7 +793,7 @@ export function ReceptionistCheckoutPaymentPage() {
                 [t("receptionist.bookings.title") || "Booking", t("receptionist.dashboard.statusDone") || "Completed", "bg-[#e8f8ef] text-[#1f9d61]"],
                 [t("receptionist.payments.payMethod") || "Payment", paymentStage === "paid" ? (t("receptionist.dashboard.statusDone") || "Paid") : paymentBadge, paymentBadgeClassName],
                 [language === "vi" ? "Hóa đơn" : "Receipt", paymentStage === "paid" ? (language === "vi" ? "Sẵn sàng" : "Ready") : (language === "vi" ? "Chưa in" : "Not Printed"), paymentStage === "paid" ? "bg-[#e8f8ef] text-[#1f9d61]" : "bg-[#fff1f6] text-[#d54186]"],
-                [t("receptionist.bookings.artist") || "Staff Artist", booking.artistName || "--", ""],
+                [t("receptionist.bookings.artist") || "Staff Artist", booking.artistName, ""],
               ].map(([label, value, className]) => (
                 <div key={label} className="flex items-center justify-between gap-3">
                   <span className="text-[#8f7b88]">{label}</span>
@@ -802,7 +805,7 @@ export function ReceptionistCheckoutPaymentPage() {
             </div>
           </SummaryCard>
 
-          <SummaryCard title={language === "vi" ? "Điểm tích lũy" : "Customer Loyalty"}>
+          {/* <SummaryCard title={language === "vi" ? "Điểm tích lũy" : "Customer Loyalty"}>
             <div className="rounded-[18px] bg-[linear-gradient(180deg,#fff8e5_0%,#fff3c7_100%)] px-4 py-4 text-center">
               <p className="text-xs font-bold text-[#b18211]">{language === "vi" ? "Thành viên Vàng" : "Gold Member"}</p>
               <p className="mt-3 text-3xl font-bold text-[#d54186]">+63 pts</p>
@@ -811,12 +814,12 @@ export function ReceptionistCheckoutPaymentPage() {
             <div className="mt-3 rounded-[16px] border border-[#f3d7e2] bg-[#fffafb] px-4 py-3 text-center text-xs text-[#8f7b88]">
               {language === "vi" ? "Voucher khả dụng: Giảm 50.000đ cho lần đến tiếp theo" : "Available voucher: 50,000 off next visit"}
             </div>
-          </SummaryCard>
+          </SummaryCard> */}
 
           <SummaryCard title={language === "vi" ? "Hành động tiếp theo" : "Next Actions"}>
             <div className="space-y-3">
               {[
-                [t("receptionist.payments.printReceipt") || "Print Bill", Printer],
+                [language === "vi" ? "In Hóa đơn" : "Print Receipt", Printer],
                 [language === "vi" ? "Yêu cầu đánh giá" : "Request Review", Sparkles],
                 [language === "vi" ? "Đặt lịch hẹn tiếp theo" : "Book Next Appointment", Clock3],
                 [language === "vi" ? "Xem lịch sử khách hàng" : "View Customer History", Phone],

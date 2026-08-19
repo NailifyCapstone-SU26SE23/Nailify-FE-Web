@@ -2,12 +2,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { z } from "zod";
 import { useAuth } from "../hooks/useAuth";
 import { AUTH_STATUS } from "../constants/authConstants";
 import { getDashboardRouteByRole } from "../utils/getDashboardRouteByRole";
+import { ROUTES } from "../../../../shared/constants/routes";
 
 const loginSchema = z.object({
   email: z
@@ -37,7 +38,7 @@ const DECORATIVE_DOTS = Array.from({ length: 12 }, (_, index) => `dot-${index + 
 export function LoginPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { login, isAuthenticated, status, error, role } = useAuth();
+  const { login, loginGoogle, isAuthenticated, status, error, role } = useAuth();
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const {
     register,
@@ -64,6 +65,42 @@ export function LoginPage() {
       setSearchParams(new URLSearchParams());
     }
   }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    document.body.appendChild(script);
+
+    script.onload = () => {
+      if (window.google) {
+        window.google.accounts.id.initialize({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || "1025550275815-53gqspk618fbeevsk5c6spk5e44c4c4c.apps.googleusercontent.com",
+          callback: async (response) => {
+            try {
+              const result = await loginGoogle(response.credential);
+              if (result.meta.requestStatus === "fulfilled") {
+                navigate(getDashboardRouteByRole(result.payload.user.role), {
+                  replace: true,
+                });
+              }
+            } catch (err) {
+              console.error("Google sign-in error:", err);
+            }
+          },
+        });
+        window.google.accounts.id.renderButton(
+          document.getElementById("google-signin-btn"),
+          { theme: "outline", size: "large", width: "380", shape: "pill" }
+        );
+      }
+    };
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, [loginGoogle, navigate]);
 
   const onSubmit = async (values) => {
     const result = await login(values);
@@ -110,7 +147,7 @@ export function LoginPage() {
                 operations workspace.
               </p>
             </div>
-            <div className="rounded-[28px] h-full p-5 backdrop-blur" />
+            <div className="rounded-[28px] h-full p-5" />
             {/* <div className="rounded-[28px] border border-white/25 bg-white/14 p-5 backdrop-blur">
                <div className="mb-4 flex items-center justify-between gap-4">
                 <p className="text-sm font-semibold uppercase tracking-[0.18em] text-white/95">
@@ -206,9 +243,9 @@ export function LoginPage() {
                   />
                   <span>Remember me</span>
                 </label>
-                <span className="font-medium text-[#d85a9b]">
-                  Contact admin for password reset
-                </span>
+                <Link to={ROUTES.forgotPassword} className="font-semibold text-[#d85a9b] hover:underline">
+                  Forgot password?
+                </Link>
               </div>
 
               {error ? (
@@ -224,6 +261,19 @@ export function LoginPage() {
               >
                 {status === AUTH_STATUS.loading ? "Signing in..." : "Sign In"}
               </button>
+
+              {/* <div className="relative my-2.5 flex items-center justify-center">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-[#f1d7c0]/60"></div>
+                </div>
+                <span className="relative px-3 text-[10px] font-bold uppercase tracking-wider text-[#b3a298]">
+                  Or sign in with
+                </span>
+              </div>
+
+              <div className="flex w-full justify-center">
+                <div id="google-signin-btn" className="w-full flex justify-center [&>div]:w-full" />
+              </div> */}
 
               <div className="rounded-[24px] bg-[#fff7ef] px-5 py-3.5 text-sm leading-6 text-[var(--color-muted)]">
                 <span className="font-semibold text-[var(--color-ink)]">

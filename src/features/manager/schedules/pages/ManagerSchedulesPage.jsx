@@ -29,6 +29,7 @@ import {
   Eye,
   EyeOff,
   ShieldAlert,
+  AlarmClock,
 } from "lucide-react";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Spin, Alert, Modal, DatePicker, Select, TimePicker, Input, Tooltip, Progress } from "antd";
@@ -250,7 +251,7 @@ export function ManagerSchedulesPage() {
       const mappedArtists = rawArtists.map((a, idx) => {
         const fullName =
           a.account?.fullName ||
-          (a.firstName && a.lastName ? `${a.firstName} ${a.lastName}` : a.fullName || a.name || "Nail Artist");
+          (a.firstName && a.lastName ? `${a.firstName} ${a.lastName}` : a.fullName || a.name || "Staff Artist");
         const theme = AVATAR_GRADIENTS[idx % AVATAR_GRADIENTS.length];
         return {
           id: a.nailArtistId || a.id || a.staffId || a.userId,
@@ -339,7 +340,7 @@ export function ManagerSchedulesPage() {
     setActivePreset(type);
     setFormStartTimeStr(startStr);
     setFormEndTimeStr(endStr);
-    toast.success(`Applied shift preset: ${startStr} - ${endStr}`, { icon: "⏱️" });
+    toast.success(`Applied shift preset: ${startStr} - ${endStr}`, { icon: <AlarmClock size={12} /> });
   };
 
   const handleOpenEditModal = (schedule) => {
@@ -478,7 +479,7 @@ export function ManagerSchedulesPage() {
               <p className="mt-2 text-2xl font-bold text-[#2B182B]">{staffList.length}</p>
               <div className="flex items-center gap-1.5 mt-1">
                 <span className="h-2 w-2 rounded-full bg-[#10B981] animate-pulse" />
-                <span className="text-[10px] text-[#8C6682] font-semibold">{language === "vi" ? "Nhân viên làm việc" : "Active Nail Artists"}</span>
+                <span className="text-[10px] text-[#8C6682] font-semibold">{language === "vi" ? "Nhân viên làm việc" : "Active Staff Artists"}</span>
               </div>
             </div>
 
@@ -858,7 +859,7 @@ export function ManagerSchedulesPage() {
               </div>
               <div>
                 <h3 className="text-lg font-bold text-[#2B182B]  tracking-tight">{language === 'vi' ? "Thêm ca làm việc" : "Add Staff Work Shift"}</h3>
-                <p className="text-xs text-[#9E8497] font-semibold">{language === 'vi' ? "Lịch làm việc" : "Add shift schedule to salon nail artist"}</p>
+                <p className="text-xs text-[#9E8497] font-semibold">{language === 'vi' ? "Lịch làm việc" : "Add shift schedule to salon Staff Artist"}</p>
               </div>
             </div>
             <button
@@ -931,7 +932,7 @@ export function ManagerSchedulesPage() {
                     }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold flex items-center gap-1">⚡ {language === 'vi' ? "Ngắn" : "Short"}</span>
+                    <span className="text-[11px] font-bold flex items-center gap-1"><Zap size={12} /> {language === 'vi' ? "Ngắn" : "Short"}</span>
                     {activePreset === "SHORT" && <Check size={13} className="text-[#8B5CF6]" />}
                   </div>
                   <span className="text-[9px] font-bold mt-1 opacity-80">08:00 AM - 09:00 AM</span>
@@ -1120,7 +1121,7 @@ export function ManagerSchedulesPage() {
                     }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold flex items-center gap-1">⚡ Short</span>
+                    <span className="text-[11px] font-bold flex items-center gap-1"><Zap size={12} /> Short</span>
                     {activePreset === "SHORT" && <Check size={13} className="text-[#8B5CF6]" />}
                   </div>
                   <span className="text-[9px] font-bold mt-1 opacity-80">08:00 AM - 09:00 AM</span>

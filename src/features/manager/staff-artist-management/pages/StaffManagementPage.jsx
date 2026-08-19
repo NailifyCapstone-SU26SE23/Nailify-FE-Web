@@ -1263,7 +1263,7 @@ export function StaffManagementPage() {
       apiArtist.account?.fullName ||
       (apiArtist.firstName && apiArtist.lastName
         ? `${apiArtist.firstName} ${apiArtist.lastName}`
-        : apiArtist.fullName || apiArtist.name || "Nail Artist");
+        : apiArtist.fullName || apiArtist.name || "Staff Artist");
 
     const artistId = apiArtist.nailArtistId || apiArtist.id || apiArtist.staffId || apiArtist.userId;
     const accountId = apiArtist.accountId || apiArtist.account?.id || apiArtist.userId;
@@ -1334,7 +1334,7 @@ export function StaffManagementPage() {
         const mappedData = await Promise.all(mappedDataPromises);
         setStaffArtists(mappedData);
       } catch (err) {
-        console.error("Failed to load nail artists:", err);
+        console.error("Failed to load Staff Artists:", err);
         setError(err.message || "Failed to load staff artists");
       } finally {
         setLoading(false);
@@ -1549,7 +1549,7 @@ export function StaffManagementPage() {
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                   <SectionHeading
                     title={language === "vi" ? "Nhân viên" : "Staff Artists"}
-                    subtitle={language === "vi" ? "Xem và quản lý nhân viên của bạn" : "View and manage your nail artists"}
+                    subtitle={language === "vi" ? "Xem và quản lý nhân viên của bạn" : "View and manage your Staff Artists"}
                   />
                   <div className="flex flex-wrap gap-2">
                     {STAFF_FILTER_TABS.map((filter) => {

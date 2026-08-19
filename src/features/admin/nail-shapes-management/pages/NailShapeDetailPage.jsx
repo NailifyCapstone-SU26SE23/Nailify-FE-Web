@@ -1,15 +1,13 @@
 import {
   ArrowLeft,
-  Clock3,
   Image as ImageIcon,
   Pencil,
   Save,
   Shapes,
   Trash2,
   Upload,
-  Wallet,
   X,
-  Plus,
+  Plus, Clock3
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
@@ -20,7 +18,6 @@ import { ROUTES } from "../../../../shared/constants/routes";
 import {
   deleteAdminNailShape,
   fetchAdminNailShapeDetail,
-  formatNailShapeCurrency,
   formatNailShapeDuration,
   updateAdminNailShape,
 } from "../services/nailShapesManagementService";
@@ -36,14 +33,6 @@ function validateForm(formValues, language) {
   const isVi = language === "vi";
   if (!String(formValues.name || "").trim()) {
     return isVi ? "Tên dáng móng là bắt buộc." : "Nail shape name is required.";
-  }
-
-  if (Number(formValues.price) < 0 || Number.isNaN(Number(formValues.price))) {
-    return isVi ? "Giá phải là một số hợp lệ." : "Price must be a valid number.";
-  }
-
-  if (Number(formValues.duration) <= 0 || Number.isNaN(Number(formValues.duration))) {
-    return isVi ? "Thời lượng phải lớn hơn 0." : "Duration must be greater than 0.";
   }
 
   return "";
@@ -159,8 +148,6 @@ export function NailShapeDetailPage() {
         setShape(response);
         setDraft({
           name: response.name,
-          price: String(response.price),
-          duration: String(response.duration),
           image: null,
         });
         setImagePreview(response.imageUrl || "");
@@ -200,11 +187,9 @@ export function NailShapeDetailPage() {
 
     return [
       [t("adminNailShapesManagement.shapeId"), String(shape.nailShapeId)],
-      [t("adminNailShapesManagement.shapeName"), draft.name || "--"],
-      [t("adminNailShapesManagement.price"), draft.price ? formatNailShapeCurrency(draft.price) : "--"],
-      [t("adminNailShapesManagement.duration"), draft.duration ? formatNailShapeDuration(draft.duration) : "--"],
+      [t("adminNailShapesManagement.shapeName"), draft.name],
     ];
-  }, [draft, shape]);
+  }, [draft, shape, t]);
 
   const handleFieldChange = (field, value) => {
     setDraft((current) => ({
@@ -238,8 +223,6 @@ export function NailShapeDetailPage() {
 
     setDraft({
       name: shape.name,
-      price: String(shape.price),
-      duration: String(shape.duration),
       image: null,
     });
     setImagePreview(shape.imageUrl || "");
@@ -254,8 +237,6 @@ export function NailShapeDetailPage() {
 
     setDraft({
       name: shape.name,
-      price: String(shape.price),
-      duration: String(shape.duration),
       image: null,
     });
     setImagePreview(shape.imageUrl || "");
@@ -284,15 +265,11 @@ export function NailShapeDetailPage() {
     try {
       const updatedShape = await updateAdminNailShape(shape.nailShapeId, {
         ...draft,
-        price: Number(draft.price),
-        duration: Number(draft.duration),
       });
 
       setShape(updatedShape);
       setDraft({
         name: updatedShape.name,
-        price: String(updatedShape.price),
-        duration: String(updatedShape.duration),
         image: null,
       });
       setImagePreview(updatedShape.imageUrl || imagePreview);
@@ -436,38 +413,6 @@ export function NailShapeDetailPage() {
                 </div>
               </label>
 
-              <label className="space-y-2.5">
-                <span className="text-[13px] font-semibold text-slate-600">{t("adminNailShapesManagement.price")}</span>
-                <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
-                  <Wallet size={14} className="shrink-0 text-rose-300" />
-                  <input
-                    type="number"
-                    min="0"
-                    step="1000"
-                    value={draft?.price || ""}
-                    onChange={(event) => handleFieldChange("price", event.target.value)}
-                    disabled={!isEditing}
-                    className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
-                  />
-                </div>
-              </label>
-
-              <label className="space-y-2.5 md:col-span-2">
-                <span className="text-[13px] font-semibold text-slate-600">{t("adminNailShapesManagement.duration")}</span>
-                <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
-                  <Clock3 size={14} className="shrink-0 text-rose-300" />
-                  <input
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={draft?.duration || ""}
-                    onChange={(event) => handleFieldChange("duration", event.target.value)}
-                    disabled={!isEditing}
-                    className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
-                  />
-                </div>
-              </label>
-
               <label className="space-y-2.5 md:col-span-2">
                 <span className="text-[13px] font-semibold text-slate-600">{t("adminNailShapesManagement.previewImage")}</span>
                 <label
@@ -538,7 +483,7 @@ export function NailShapeDetailPage() {
                   title: t("adminNailShapesManagement.price"),
                   dataIndex: 'price',
                   key: 'price',
-                  render: (val) => <span className="text-emerald-600 font-medium">{formatNailShapeCurrency(val)}</span>
+                  render: (val) => <span className="text-emerald-600 font-medium">{`${new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(Number(val || 0))} VND`}</span>
                 },
                 {
                   title: t("adminNailShapesManagement.duration"),
@@ -603,7 +548,6 @@ export function NailShapeDetailPage() {
         onCancel={() => !isSaving && setShowSaveConfirm(false)}
         highlights={[draft?.name || shape?.name || (t("adminNailShapesManagement.nailShape"))]}
         details={[
-          { label: t("adminNailShapesManagement.price"), value: draft?.price ? formatNailShapeCurrency(draft.price) : "--" },
           { label: t("adminNailShapesManagement.duration"), value: draft?.duration ? formatNailShapeDuration(draft.duration) : "--" },
         ]}
       />
@@ -625,7 +569,7 @@ export function NailShapeDetailPage() {
             ? {
               image: shape.imageUrl || undefined,
               title: shape.name,
-              meta: `${shape.priceLabel} • ${shape.durationLabel}`,
+              meta: shape.durationLabel,
               note: (t("adminNailShapesManagement.shapeId1")) + shape.nailShapeId,
             }
             : null

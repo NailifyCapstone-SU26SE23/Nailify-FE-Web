@@ -105,11 +105,11 @@ export async function fetchNailArtistProfiles(salonId) {
       params: { salonId: id, pageSize: 100 },
     });
 
-    const data = unwrapResponse(response, "Failed to load nail artist profiles.");
+    const data = unwrapResponse(response, "Failed to load Staff Artist profiles.");
     const items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
     return items.map(normalizeStaffMember);
   } catch (error) {
-    console.warn("Failed to fetch nail artist profiles from /NailArtists:", error);
+    console.warn("Failed to fetch Staff Artist profiles from /NailArtists:", error);
     return [];
   }
 }
@@ -126,11 +126,11 @@ export async function fetchNailArtists(salonId) {
       params: { role: "Staff_Artist" },
     });
 
-    const data = unwrapResponse(response, "Failed to load nail artists.");
+    const data = unwrapResponse(response, "Failed to load Staff Artists.");
     const items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
     return items.map(normalizeStaffMember);
   } catch (error) {
-    console.warn("Failed to load nail artists with current salon.", error);
+    console.warn("Failed to load Staff Artists with current salon.", error);
     return [];
   }
 }
@@ -150,14 +150,14 @@ export async function fetchNailArtistById(artistId) {
   const normalizedId = String(artistId || "").trim();
 
   if (!normalizedId) {
-    throw new Error("Nail artist ID is required.");
+    throw new Error("Staff Artist ID is required.");
   }
 
   const response = await axiosClient.get(`/NailArtists/${normalizedId}`, {
     headers: getAuthHeaders(),
   });
 
-  return unwrapResponse(response, "Failed to load nail artist detail.");
+  return unwrapResponse(response, "Failed to load Staff Artist detail.");
 }
 
 export async function createUser(userData) {
@@ -268,16 +268,16 @@ export async function createNailArtist(data) {
       headers: getAuthHeaders(),
     });
 
-    return unwrapResponse(response, "Failed to create nail artist.");
+    return unwrapResponse(response, "Failed to create Staff Artist.");
   } catch (error) {
     if (error.response?.data?.errors?.request) {
       const response = await axiosClient.post("/NailArtists", data, {
         headers: getAuthHeaders(),
       });
-      return unwrapResponse(response, "Failed to create nail artist.");
+      return unwrapResponse(response, "Failed to create Staff Artist.");
     }
 
-    let errorMessage = error.response?.data?.message || error.message || "Failed to create nail artist.";
+    let errorMessage = error.response?.data?.message || error.message || "Failed to create Staff Artist.";
     if (error.response?.data?.errors) {
       const validationErrors = Object.entries(error.response.data.errors)
         .map(([field, messages]) => `${field}: ${messages.join(", ")}`)
@@ -292,28 +292,28 @@ export async function updateNailArtist(artistId, data) {
   const normalizedId = String(artistId || "").trim();
 
   if (!normalizedId) {
-    throw new Error("Nail artist ID is required.");
+    throw new Error("Staff Artist ID is required.");
   }
 
   const response = await axiosClient.put(`/NailArtists/${normalizedId}`, data, {
     headers: getAuthHeaders(),
   });
 
-  return unwrapResponse(response, "Failed to update nail artist.");
+  return unwrapResponse(response, "Failed to update Staff Artist.");
 }
 
 export async function deleteNailArtist(artistId) {
   const normalizedId = String(artistId || "").trim();
 
   if (!normalizedId) {
-    throw new Error("Nail artist ID is required.");
+    throw new Error("Staff Artist ID is required.");
   }
 
   const response = await axiosClient.delete(`/NailArtists/${normalizedId}`, {
     headers: getAuthHeaders(),
   });
 
-  return unwrapResponse(response, "Failed to delete nail artist.");
+  return unwrapResponse(response, "Failed to delete Staff Artist.");
 }
 
 export async function fetchSkillTypes({
@@ -343,14 +343,14 @@ export async function fetchNailArtistSkills(artistId) {
   const normalizedId = String(artistId || "").trim();
 
   if (!normalizedId) {
-    throw new Error("Nail artist ID is required.");
+    throw new Error("Staff Artist ID is required.");
   }
 
   const response = await axiosClient.get(`/nail-artists/${normalizedId}/skills`, {
     headers: getAuthHeaders(),
   });
 
-  const data = unwrapResponse(response, "Failed to load nail artist skills.");
+  const data = unwrapResponse(response, "Failed to load Staff Artist skills.");
   return Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
 }
 
@@ -358,7 +358,7 @@ export async function assignNailArtistSkills(artistId, skills) {
   const normalizedId = String(artistId || "").trim();
 
   if (!normalizedId) {
-    throw new Error("Nail artist ID is required.");
+    throw new Error("Staff Artist ID is required.");
   }
 
   let currentSkills = [];
@@ -403,7 +403,7 @@ export async function assignNailArtistSkills(artistId, skills) {
       const response = await axiosClient.post(`/nail-artists/${normalizedId}/skills`, newSkills, {
         headers: getAuthHeaders(),
       });
-      unwrapResponse(response, "Failed to assign new skills to nail artist.");
+      unwrapResponse(response, "Failed to assign new skills to Staff Artist.");
     } catch (error) {
       console.warn("Failed to assign new skills.", error);
       errors.push(`Khong the assign ${newSkills.length} skill moi`);
@@ -434,7 +434,7 @@ export async function fetchArtistSchedules(artistId, options = {}) {
   const normalizedId = String(artistId || "").trim();
 
   if (!normalizedId) {
-    throw new Error("Nail artist ID is required.");
+    throw new Error("Staff Artist ID is required.");
   }
 
   const { startDate, endDate, fromDate, toDate } = options;

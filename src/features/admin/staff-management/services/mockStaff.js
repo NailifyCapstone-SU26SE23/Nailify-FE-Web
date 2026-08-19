@@ -59,7 +59,7 @@ const STAFF_MEMBER_DEFINITIONS = [
   {
     id: "NF-001",
     name: "Sophia Lee",
-    role: "Senior Nail Artist",
+    role: "Senior Staff Artist",
     type: "artist",
     status: "available",
     salon: "Nailify Central",
@@ -79,7 +79,7 @@ const STAFF_MEMBER_DEFINITIONS = [
   {
     id: "NF-002",
     name: "Mia Chen",
-    role: "Nail Artist",
+    role: "Staff Artist",
     type: "artist",
     status: "available",
     salon: "Nailify Uptown",
@@ -117,7 +117,7 @@ const STAFF_MEMBER_DEFINITIONS = [
   {
     id: "NF-004",
     name: "Rachel Park",
-    role: "Nail Artist",
+    role: "Staff Artist",
     type: "artist",
     status: "available",
     salon: "Nailify Westgate",
@@ -175,7 +175,7 @@ const STAFF_MEMBER_DEFINITIONS = [
   {
     id: "NF-007",
     name: "Karen Sato",
-    role: "Nail Artist",
+    role: "Staff Artist",
     type: "artist",
     status: "inactive",
     salon: "Nailify Riverside",
@@ -194,7 +194,7 @@ const STAFF_MEMBER_DEFINITIONS = [
   {
     id: "NF-008",
     name: "Priya Mehta",
-    role: "Nail Artist",
+    role: "Staff Artist",
     type: "artist",
     status: "leave",
     salon: "Nailify Central",
@@ -303,7 +303,7 @@ export const STAFF_FORM_MODAL_STYLES = {
 };
 
 export const STAFF_ROLE_OPTIONS = [
-  { value: "NAIL_ARTIST", label: "Nail Artist", color: "bg-rose-100 text-rose-600" },
+  { value: "NAIL_ARTIST", label: "Staff Artist", color: "bg-rose-100 text-rose-600" },
   { value: "SALON_MANAGER", label: "Salon Manager", color: "bg-sky-100 text-sky-600" },
   { value: "RECEPTIONIST", label: "Receptionist", color: "bg-amber-100 text-amber-600" },
 ];
@@ -456,7 +456,7 @@ const SPECIALTY_TONES = {
 
 const ROLE_PROFILE_MAP = {
   NAIL_ARTIST: {
-    role: "Nail Artist",
+    role: "Staff Artist",
     type: "artist",
     accent: "Performance",
     accentTone: "bg-violet-100 text-violet-600",
@@ -560,8 +560,8 @@ const STAFF_FORM_SEED = {
 };
 
 const ROLE_LABEL_TO_VALUE = {
-  "Nail Artist": "NAIL_ARTIST",
-  "Senior Nail Artist": "SENIOR_ARTIST",
+  "Staff Artist": "NAIL_ARTIST",
+  "Senior Staff Artist": "SENIOR_ARTIST",
   "Senior Artist": "SENIOR_ARTIST",
   "Salon Manager": "SALON_MANAGER",
   Receptionist: "RECEPTIONIST",

@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
+import toast from "react-hot-toast";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import {
@@ -705,7 +706,7 @@ export function NailDesignManagementDetailPage() {
   const skillsRef = useRef(null);
   const quickSummaryRef = useRef(null);
   const customerPreviewRef = useRef(null);
-  const [flashMessage, setFlashMessage] = useState("");
+  const [editingId, setEditingId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [initialDesign, setInitialDesign] = useState(null);
   const [formValues, setFormValues] = useState(null);
@@ -888,13 +889,11 @@ export function NailDesignManagementDetailPage() {
   };
 
   const handleStartEdit = () => {
-    setFlashMessage("");
     setIsEditing(true);
   };
 
   const scrollToSection = (sectionRef, options = {}) => {
-    if (options.startEdit && !isEditing) {
-      setFlashMessage("");
+    if (options.startEdit && field === "name") {
       setIsEditing(true);
     }
 
@@ -916,7 +915,7 @@ export function NailDesignManagementDetailPage() {
     setShowCancelConfirm(false);
     setFormValues(initialDesign);
     setPendingDeleteVariant(null);
-    setFlashMessage("");
+    setDraftBasic(null);
     setIsEditing(false);
   };
 
@@ -948,7 +947,8 @@ export function NailDesignManagementDetailPage() {
     });
 
     if (!designNameChanged && !designDescriptionChanged && !variantsToUpdate.length) {
-      setFlashMessage("No API-backed changes detected. Other edits on this screen remain local only.");
+      toast.error("No API-backed changes detected. Other edits on this screen remain local only.");
+      resetAllDrafts();
       setIsEditing(false);
       return;
     }
@@ -957,13 +957,18 @@ export function NailDesignManagementDetailPage() {
 
     try {
       if (designNameChanged || designDescriptionChanged) {
-        await updateAdminNailDesign(designId, {
+        const designDetail = await updateAdminNailDesign(designId, {
           name: formValues?.heroTitle,
           description: formValues?.heroSubtitle,
           categoryIds: formValues?.categoryIds,
           nailVariantIds: currentVariants.map((variant) => variant.nailVariantId),
           existingImageUrls: formValues?.imageUrl ? [formValues.imageUrl] : [],
         });
+        toast.success(
+          language === "vi"
+            ? `Lưu các thay đổi cơ bản thành công. Vẫn giữ lại #${designDetail.id}.`
+            : `Saved basic changes successfully. Kept #${designDetail.id}.`
+        );
       }
 
       await Promise.all(
@@ -982,23 +987,7 @@ export function NailDesignManagementDetailPage() {
       const refreshedDetail = await fetchAdminNailDesignDetail(designId);
       setInitialDesign(refreshedDetail);
       setFormValues(refreshedDetail);
-      const successMessages = [];
 
-      if (designNameChanged || designDescriptionChanged) {
-        successMessages.push("nail design updated");
-      }
-
-      if (variantsToUpdate.length === 1) {
-        successMessages.push("1 variant updated");
-      } else if (variantsToUpdate.length > 1) {
-        successMessages.push(`${variantsToUpdate.length} variants updated`);
-      }
-
-      setFlashMessage(
-        successMessages.length
-          ? `${successMessages.join(" and ")} successfully.`
-          : "Changes saved successfully.",
-      );
       setIsEditing(false);
     } catch (saveError) {
       setError(
@@ -1023,7 +1012,7 @@ export function NailDesignManagementDetailPage() {
       const refreshedDetail = await fetchAdminNailDesignDetail(designId);
       setInitialDesign(refreshedDetail);
       setFormValues(refreshedDetail);
-      setFlashMessage(`Deleted variant "${pendingDeleteVariant.name}".`);
+      toast.success(`Deleted variant "${pendingDeleteVariant.name}".`);
       setPendingDeleteVariant(null);
     } catch (deleteError) {
       setError(
@@ -1097,7 +1086,7 @@ export function NailDesignManagementDetailPage() {
 
       const refreshedProcedures = await fetchProceduresByVariant(selectedVariantDetail.nailVariantId);
       setVariantProcedureDraft(refreshedProcedures);
-      setFlashMessage(`Updated procedure steps for "${selectedVariantDetail.name}".`);
+      toast.success(`Updated procedure steps for "${selectedVariantDetail.name}".`);
     } catch (saveError) {
       setError(
         saveError instanceof Error
@@ -1202,7 +1191,7 @@ export function NailDesignManagementDetailPage() {
                 <button
                   type="button"
                   onClick={() =>
-                    setFlashMessage(t("adminNailsDesignManagement.mockDuplicateCompletedAClonedD"))
+                    toast.success(t("adminNailsDesignManagement.mockDuplicateCompletedAClonedD"))
                   }
                   className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.2)]"
                 >
@@ -1215,11 +1204,7 @@ export function NailDesignManagementDetailPage() {
         </div>
       </div>
 
-      {flashMessage ? (
-        <div className="rounded-[16px] bg-[#edfdf4] px-4 py-3 text-sm font-medium text-[#16975f]">
-          {flashMessage}
-        </div>
-      ) : null}
+
 
       {error ? (
         <div className="rounded-[16px] bg-[#fff1f5] px-4 py-3 text-sm font-medium text-[#d14c84]">
@@ -2164,15 +2149,15 @@ export function NailDesignManagementDetailPage() {
                         <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
                           <div>
                             <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.name")}</p>
-                            <p className="mt-1 font-semibold text-[#432744]">{item.name || "--"}</p>
+                            <p className="mt-1 font-semibold text-[#432744]">{item.name}</p>
                           </div>
                           <div>
                             <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.duration")}</p>
-                            <p className="mt-1 font-semibold text-[#432744]">{item.durationLabel || "--"}</p>
+                            <p className="mt-1 font-semibold text-[#432744]">{item.durationLabel}</p>
                           </div>
                           <div>
                             <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.status")}</p>
-                            <p className="mt-1 font-semibold text-[#432744]">{item.status || "--"}</p>
+                            <p className="mt-1 font-semibold text-[#432744]">{item.status}</p>
                           </div>
                           <div>
                             <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.required")}</p>

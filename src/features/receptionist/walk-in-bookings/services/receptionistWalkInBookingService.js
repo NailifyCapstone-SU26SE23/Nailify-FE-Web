@@ -135,6 +135,16 @@ export const receptionistWalkInBookingService = {
     }
   },
 
+  assignChairToQueue: async (queueId, chairId) => {
+    try {
+      const response = await axiosClient.post(`/WalkInQueues/${queueId}/assign-chair`, { chairId });
+      return response.data;
+    } catch (error) {
+      console.error("Error assigning chair to queue:", error);
+      throw error;
+    }
+  },
+
   convertQueueToBooking: async (queueId, payload = {}) => {
     try {
       const response = await axiosClient.post(`/WalkInQueues/${queueId}/convert-to-booking`, payload);
@@ -200,6 +210,26 @@ export const receptionistWalkInBookingService = {
     } catch (error) {
       console.error("Error fetching artist slots:", error);
       return error.response?.data || { isSucceeded: false, message: "Unknown error" };
+    }
+  },
+
+  getLateCancelledBookings: async (salonId) => {
+    try {
+      const response = await axiosClient.get(`/Bookings/salon/${salonId}/late-cancelled`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching late cancelled bookings:", error);
+      throw error;
+    }
+  },
+
+  lateCheckInBooking: async (bookingId) => {
+    try {
+      const response = await axiosClient.post(`/Bookings/${bookingId}/late-checkin`);
+      return response.data;
+    } catch (error) {
+      console.error("Error performing late check-in:", error);
+      throw error;
     }
   }
 };

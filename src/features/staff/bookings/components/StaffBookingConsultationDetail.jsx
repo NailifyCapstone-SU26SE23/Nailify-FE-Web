@@ -113,7 +113,7 @@ function ServiceInfoCard({ services = [], onOpenServiceProcedures = null }) {
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
                     {service.detailLabel || `Service ${index + 1}`}
                   </p>
-                  <p className="mt-2 break-words text-sm font-extrabold text-[#ea4f93]">{service.name || "--"}</p>
+                  <p className="mt-2 break-words text-sm font-extrabold text-[#ea4f93]">{service.name}</p>
                   {service.nailServiceName ? (
                     <p className="mt-1 text-xs font-semibold text-[#7a6275]">
                       Nail service: {service.nailServiceName}
@@ -131,14 +131,14 @@ function ServiceInfoCard({ services = [], onOpenServiceProcedures = null }) {
                 <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Price</p>
                   <span className="inline-flex rounded-full border border-[#d8f0df] bg-[#f1fcf4] px-3 py-1 text-[11px] font-bold text-[#16975f]">
-                    {service.price || "--"}
+                    {service.price}
                   </span>
                 </div>
 
                 <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Duration</p>
                   <span className="inline-flex rounded-full bg-[#f4efff] px-4 py-2 text-sm font-extrabold text-[#8c63ef]">
-                    {service.duration || "--"}
+                    {service.duration}
                   </span>
                 </div>
 
@@ -218,7 +218,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2f1322]/45 p-4 backdrop-blur-[2px]">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#2f1322]/45 p-4 backdrop-blur-[2px]">
       <div className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-[28px] border border-[#f1cade] bg-white shadow-[0_30px_80px_rgba(63,43,63,0.24)]">
         <div className="flex items-start justify-between gap-4 border-b border-[#f7dfeb] px-6 py-5">
           <div>
@@ -246,6 +246,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                 showHeader={false}
                 showInstruction={false}
                 showSurfaceMode={false}
+                compact={true}
               />
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
                 <InfoCard label="Price" value={formatVariantCurrency(variantDetail.price)} note="" tone="success" />
@@ -270,7 +271,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                     />
                     <div className="min-w-0">
                       <p className="text-base font-extrabold capitalize text-[#3f2b3f]">
-                        {variantDetail.nailShape?.name || "--"}
+                        {variantDetail.nailShape?.name}
                       </p>
                     </div>
                   </div>
@@ -280,7 +281,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Nail Surface</p>
                   <div className="mt-3">
                     <p className="text-base font-extrabold text-[#3f2b3f]">
-                      {variantDetail.nailSurface?.name || "--"}
+                      {variantDetail.nailSurface?.name}
                     </p>
                   </div>
                 </article>
@@ -313,17 +314,19 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                             />
                             <div>
                               <p className="text-sm font-extrabold text-[#3f2b3f]">
-                                {item.component?.name || "--"}
+                                {item.component?.name}
                               </p>
                               <p className="mt-1 text-xs text-[#a88a9d]">
-                                Type: {item.component?.componentType || "--"}
+                                Type: {item.component?.componentType}
                               </p>
                             </div>
                           </div>
 
-                          <span className="rounded-full border border-[#f2bfd4] bg-[#fff5f9] px-3 py-1 text-[10px] font-bold text-[#ea4f93]">
-                            Finger #{item.fingerIndex ?? "--"}
-                          </span>
+                          {item.fingerIndex !== undefined && item.fingerIndex !== null && item.fingerIndex !== -1 && (
+                            <span className="rounded-full border border-[#f2bfd4] bg-[#fff5f9] px-3 py-1 text-[10px] font-bold text-[#ea4f93]">
+                              Finger #{item.fingerIndex}
+                            </span>
+                          )}
                         </div>
                       </div>
                     ))
@@ -754,6 +757,7 @@ export function StaffBookingConsultationDetail({
                             className="w-full"
                             showHeader={false}
                             showInstruction={false}
+                            compact={true}
                           />
                         ) : (
                           <img

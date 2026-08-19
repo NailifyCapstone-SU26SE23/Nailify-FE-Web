@@ -4,24 +4,23 @@ import toast from "react-hot-toast";
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
-import { ActionConfirmModal } from "../../components/ui/ActionConfirmModal";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { BookingFormFields } from "../components/BookingFormFields";
 import { BookingHeroCard } from "../components/BookingHeroCard";
 import { BookingSnapshotCard } from "../components/BookingSnapshotCard";
-import { StaffBookingConsultationDetail } from "../../../features/staff/bookings/components/StaffBookingConsultationDetail";
-import { ExtraServiceModal } from "../../../features/staff/bookings/components/ExtraServiceModal";
-import { ServiceProceduresViewerModal } from "../../components/common/ServiceProceduresViewerModal";
+import { StaffBookingConsultationDetail } from "../components/StaffBookingConsultationDetail";
+import { ExtraServiceModal } from "../components/ExtraServiceModal";
+import { ServiceProceduresViewerModal } from "../../../../shared/components/common/ServiceProceduresViewerModal";
 import {
   BOOKING_ROLE_CONFIG,
   getMockBookingById,
-} from "../services/mockBookings";
-import { getBookingRoleFromPath } from "../utils/bookingMapper";
-import { ROLES } from "../../constants/roles";
+} from "../../../../shared/bookings/services/mockBookings";
+import { ROLES } from "../../../../shared/constants/roles";
 import {
   getStaffBookingDesignStudioRoute,
   getStaffBookingServiceSessionRoute,
-} from "../../constants/routes";
-import { confirmCurrentDesign, confirmCustomerNail, setActiveBooking } from "../../../store/bookingSlice";
+} from "../../../../shared/constants/routes";
+import { confirmCurrentDesign, confirmCustomerNail, setActiveBooking } from "../../../../store/bookingSlice";
 import {
   buildStaffBookingItemsForUpdate,
   buildStaffServiceSessionPayload,
@@ -38,9 +37,9 @@ import {
   formatTimeValue,
   toNullableBookingUuid,
   updateStaffBooking,
-} from "../../../features/staff/bookings/services/staffBookingService";
-import { formatDurationMinutes } from "../../utils/formatDuration";
-import { useLanguage } from "../../../shared/hooks/useLanguage";
+} from "../services/staffBookingService";
+import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 const DEFAULT_AVATAR =
   "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=140&q=80";
@@ -123,22 +122,6 @@ function formatSignedCurrency(value) {
   return `${sign}${formatCurrency(Math.abs(amount))}`;
 }
 
-function getProcedureStatusTone(status) {
-  switch (String(status || "").trim().toLowerCase()) {
-    case "completed":
-      return "bg-[#e7f8ee] text-[#309e63]";
-    case "inprogress":
-    case "in progress":
-      return "bg-[#efeafd] text-[#7c63d8]";
-    case "pending":
-      return "bg-[#fff4e3] text-[#e09a27]";
-    case "skipped":
-      return "bg-[#f2f2f2] text-[#656565]";
-    default:
-      return "bg-[#fff1f6] text-[#eb5b92]";
-  }
-}
-
 function getUniqueBookingLabels(values) {
   return [...new Set(values.map(normalizeBookingText).filter(Boolean))];
 }
@@ -168,7 +151,6 @@ function buildDefaultStaffNotes(booking, language) {
   ).join(", ");
   const isVi = language === "vi";
 
-  // Note: We keep the label keys in English if the component relies on them
   return [
     {
       label: "Customer Requests",
@@ -255,8 +237,7 @@ function buildStaffExperienceFromBooking(
       rows.push({
         id: `${bookingItemId || `service-${index}`}-service`,
         bookingItemId,
-        name: resolvedServiceName || "--",
-        // CRITICAL FIX: Keep "Service" as key so StaffBookingConsultationDetail can filter it properly
+        name: resolvedServiceName,
         detailLabel: "Service",
         quantity,
         price: formatCurrency(resolvedService?.price ?? item?.price ?? item?.finalPrice ?? 0),
@@ -275,8 +256,7 @@ function buildStaffExperienceFromBooking(
       rows.push({
         id: `${bookingItemId || `service-${index}`}-nail`,
         bookingItemId,
-        name: resolvedNailName || "--",
-        // CRITICAL FIX: Keep "Customer Nail" and "Nail Variant" as keys
+        name: resolvedNailName,
         detailLabel: resolvedCustomerNail ? (language === "vi" ? "Móng của khách hàng" : "Customer Nail") : (language === "vi" ? "Biến thể móng" : "Nail Variant"),
         quantity,
         price: formatCurrency(resolvedNailDetail?.price ?? 0),
@@ -342,7 +322,7 @@ function buildStaffExperienceFromBooking(
     variantNames[0] ||
     (isVi ? "Chưa chọn mẫu thiết kế" : "Selected design not specified");
   const resolvedVariantName =
-    resolvedDesignDetail?.name || customerDesignNames[0] || variantNames[0] || "--";
+    resolvedDesignDetail?.name || customerDesignNames[0] || variantNames[0];
   const resolvedDesignImage = resolvedDesignDetail?.imageUrl || designImage;
   const hasCustomerNailSelected = Boolean(
     normalizedItems.some((item) => Number(item?.customerNailId || 0) > 0),
@@ -357,13 +337,11 @@ function buildStaffExperienceFromBooking(
     customerDetail?.fullName ||
     booking?.customerName ||
     "--";
-  const customerPhone = customerDetail?.phone || "--";
+  const customerPhone = customerDetail?.phone;
   const customerAvatar = customerDetail?.avatarUrl || DEFAULT_AVATAR;
   const customerMemberTier = customerDetail?.role || "Customer";
-  const customerStatus = customerDetail?.status || booking?.status || "--";
+  const customerStatus = customerDetail?.status || booking?.status;
 
-  // CRITICAL FIX: Keeping all `label` values exactly as English string constants 
-  // so the child component can find and render the layout correctly.
   return {
     bookingCode,
     statusLabel: booking?.status || "Pending",
@@ -383,12 +361,12 @@ function buildStaffExperienceFromBooking(
       id: booking?.customerId,
       userId: booking?.customerId,
       facts: [
-        { label: language === "vi" ? "Tiệm nails" : "Salon", value: booking?.salonName || "--" },
+        { label: language === "vi" ? "Tiệm nails" : "Salon", value: booking?.salonName },
         { label: language === "vi" ? "Số lượng dịch vụ" : "Total Services", value: String(items.length || 0) },
         { label: language === "vi" ? "Trạng thái" : "Status", value: customerStatus },
       ],
-      allergyNote: customerDetail?.email || "--",
-      preferences: requestedDesign || "--",
+      allergyNote: customerDetail?.email,
+      preferences: requestedDesign,
     },
     bookingInfo: [
       {
@@ -423,12 +401,18 @@ function buildStaffExperienceFromBooking(
         : []),
       {
         label: language === "vi" ? "Tiệm nails" : "Salon",
-        value: booking?.salonName || "--",
+        value: booking?.salonName,
       },
       {
         label: language === "vi" ? "Nghệ sĩ" : "Staff Artist",
-        value: booking?.artistName || "--",
+        value: booking?.artistName,
       },
+      ...(booking?.chairName
+        ? [{
+          label: language === "vi" ? "Ghế làm việc" : "Working Chair",
+          value: booking.chairName,
+        }]
+        : []),
     ],
     design: {
       name: resolvedDesignDetail?.name || requestedDesign,
@@ -436,9 +420,9 @@ function buildStaffExperienceFromBooking(
       details: [
         { label: "Service", value: serviceSummary },
         { label: "Variant", value: resolvedVariantName },
-        { label: language === "vi" ? "Kiểu dáng" : "Shape", value: resolvedShape?.name || "--" },
-        { label: language === "vi" ? "Bề mặt" : "Surface", value: resolvedSurface?.name || "--" },
-        { label: "Customer Design", value: customerDesignNames[0] || "--" },
+        { label: language === "vi" ? "Kiểu dáng" : "Shape", value: resolvedShape?.name },
+        { label: language === "vi" ? "Bề mặt" : "Surface", value: resolvedSurface?.name },
+        { label: "Customer Design", value: customerDesignNames[0] },
         { label: language === "vi" ? "Thời lượng" : "Duration", value: timeRange },
         { label: language === "vi" ? "Giá" : "Price", value: bookingItemsBasePrice > 0 ? formatCurrency(bookingItemsBasePrice) : formatCurrency(booking?.price) },
         { label: language === "vi" ? "Thành phần" : "Components", value: componentSummary },
@@ -473,9 +457,9 @@ function buildStaffExperienceFromBooking(
         : null,
     },
     sessionStatus: [
-      { label: "Status", value: booking?.status || "--" },
-      { label: "Staff Artist", value: booking?.artistName || "--" },
-      { label: "Salon", value: booking?.salonName || "--" },
+      { label: "Status", value: booking?.status },
+      { label: "Staff Artist", value: booking?.artistName },
+      { label: "Salon", value: booking?.salonName },
       { label: "Time Slot", value: timeRange },
     ],
     customerHistory: {
@@ -489,7 +473,7 @@ function buildStaffExperienceFromBooking(
           ][index % 3],
         }))
         : [{ label: "--", className: "border-[#f0d8e3] bg-white text-[#6f5c6b]" }],
-      previousShapes: variantNames[0] || "--",
+      previousShapes: variantNames[0],
       lastUpload: {
         title: primaryDesignItem?.customerNailName || primaryDesignItem?.nailVariantName || (isVi ? "Không có hình ảnh" : "Reference unavailable"),
         date: formatStaffDate(booking?.bookingDate),
@@ -504,8 +488,8 @@ function buildStaffExperienceFromBooking(
       : [{ serviceName: "--", nailVariantName: "--", customerNailImageUrl: DEFAULT_DESIGN_IMAGE }])
       .slice(0, 3)
       .map((item) => ({
-        name: item.customerNailName || item.nailVariantName || item.serviceName || "--",
-        meta: `${item.serviceName || "--"} | ${item.duration ? formatDurationMinutes(item.duration) : "--"}`,
+        name: item.customerNailName || item.nailVariantName || item.serviceName,
+        meta: `${item.serviceName} | ${item.duration ? formatDurationMinutes(item.duration) : "--"}`,
         image: item.nailVariantImageUrl || item.customerNailImageUrl || DEFAULT_DESIGN_IMAGE,
       })),
     staffNotes: staffNotesDraft,
@@ -528,7 +512,7 @@ function normalizeStaffBookingStatus(value) {
 }
 
 /* STREAMING_CHUNK: Booking Detail Component Setup */
-export function BookingDetailPage() {
+export function StaffBookingDetailPage() {
   const dispatch = useDispatch();
   const location = useLocation();
   const navigate = useNavigate();
@@ -536,14 +520,11 @@ export function BookingDetailPage() {
   const { language } = useLanguage();
   const isVi = language === "vi";
 
-  const role = useMemo(
-    () => getBookingRoleFromPath(location.pathname),
-    [location.pathname],
-  );
+  const role = ROLES.staff;
   const roleConfig = BOOKING_ROLE_CONFIG[role];
-  const isStaffRole = role === ROLES.staff;
+  const isStaffRole = true;
   const normalizedBookingId = String(bookingId || "").trim();
-  const initialBooking = isStaffRole ? null : getMockBookingById(bookingId);
+  const initialBooking = null;
   const [formValues, setFormValues] = useState(initialBooking);
   const [flashMessage, setFlashMessage] = useState("");
   const [isEditing, setIsEditing] = useState(false);
@@ -554,7 +535,7 @@ export function BookingDetailPage() {
   const [staffServiceDetailMap, setStaffServiceDetailMap] = useState({});
   const [staffBookingNailVariantDetailMap, setStaffBookingNailVariantDetailMap] = useState({});
   const [staffBookingCustomerNailDetailMap, setStaffBookingCustomerNailDetailMap] = useState({});
-  const [isStaffLoading, setIsStaffLoading] = useState(isStaffRole);
+  const [isStaffLoading, setIsStaffLoading] = useState(true);
   const [staffLoadError, setStaffLoadError] = useState("");
   const [staffNotesDraft, setStaffNotesDraft] = useState([]);
   const [showUpdateBookingModal, setShowUpdateBookingModal] = useState(false);
@@ -582,9 +563,8 @@ export function BookingDetailPage() {
   const [claimingProcedureId, setClaimingProcedureId] = useState("");
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(
-    role !== ROLES.staff && Boolean(location.state?.requestDelete),
-  );
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   const isCurrentDesignConfirmed = useSelector((state) => (
     Boolean(state.booking.designConfirmations?.[normalizedBookingId])
   ));
@@ -594,7 +574,7 @@ export function BookingDetailPage() {
 
   const staffActionMessage = useMemo(() => {
     const action = location.state?.staffAction;
-    if (!isStaffRole || !action) return "";
+    if (!action) return "";
 
     return {
       complete: isVi ? "Kiểm tra danh sách trước khi hoàn thành dịch vụ." : "Review the checklist before marking this service done.",
@@ -602,9 +582,8 @@ export function BookingDetailPage() {
       notes: isVi ? "Ghi chú của thợ đã sẵn sàng." : "Staff notes are ready for review.",
       start: isVi ? "Xác nhận thiết kế và tiến hành làm dịch vụ." : "Confirm the design and proceed to service when ready.",
     }[action] ?? "";
-  }, [isStaffRole, location.state, isVi]);
+  }, [location.state, isVi]);
 
-  const deleteRequested = role !== ROLES.staff && Boolean(location.state?.requestDelete);
   const normalizedStaffBookingStatus = normalizeStaffBookingStatus(staffBookingDetail?.status);
   const isCheckinBooking = ["checkedin", "checkin"].includes(normalizedStaffBookingStatus);
   const isPendingBooking = ["pending", "approved"].includes(normalizedStaffBookingStatus);
@@ -621,17 +600,17 @@ export function BookingDetailPage() {
 
   /* STREAMING_CHUNK: Component Effects */
   useEffect(() => {
-    if (!staffActionMessage && !deleteRequested) return;
+    if (!staffActionMessage) return;
     navigate(location.pathname, { replace: true, state: null });
-  }, [deleteRequested, location.pathname, navigate, staffActionMessage]);
+  }, [location.pathname, navigate, staffActionMessage]);
 
   useEffect(() => {
-    if (!isStaffRole || !normalizedBookingId) return;
+    if (!normalizedBookingId) return;
     dispatch(setActiveBooking(normalizedBookingId));
-  }, [dispatch, isStaffRole, normalizedBookingId]);
+  }, [dispatch, normalizedBookingId]);
 
   useEffect(() => {
-    if (!isStaffRole || !bookingId) return;
+    if (!bookingId) return;
     let isMounted = true;
 
     const loadBooking = async () => {
@@ -655,10 +634,9 @@ export function BookingDetailPage() {
 
     void loadBooking();
     return () => { isMounted = false; };
-  }, [bookingId, isStaffRole, language]);
+  }, [bookingId, language, isVi]);
 
   useEffect(() => {
-    if (!isStaffRole) return;
     const customerId = String(staffBookingDetail?.customerId || "").trim();
     let isMounted = true;
 
@@ -676,10 +654,9 @@ export function BookingDetailPage() {
     };
     void loadCustomerDetail();
     return () => { isMounted = false; };
-  }, [isStaffRole, staffBookingDetail?.customerId]);
+  }, [staffBookingDetail?.customerId]);
 
   useEffect(() => {
-    if (!isStaffRole) return;
     const customerNailId = getPrimaryCustomerNailId(staffBookingDetail?.bookingItems);
     let isMounted = true;
 
@@ -697,10 +674,9 @@ export function BookingDetailPage() {
     };
     void loadCustomerNailDetail();
     return () => { isMounted = false; };
-  }, [isStaffRole, staffBookingDetail?.bookingItems]);
+  }, [staffBookingDetail?.bookingItems]);
 
   useEffect(() => {
-    if (!isStaffRole) return;
     const bookingItems = Array.isArray(staffBookingDetail?.bookingItems) ? staffBookingDetail.bookingItems : [];
     const serviceIds = [...new Set(bookingItems.map((item) => String(item?.serviceId || "").trim()).filter(Boolean))];
     const nailVariantIds = [...new Set(bookingItems.map((item) => Number(item?.nailVariantId || 0)).filter((value) => Number.isInteger(value) && value > 0))];
@@ -747,10 +723,9 @@ export function BookingDetailPage() {
     };
     void loadBookingItemDetails();
     return () => { isMounted = false; };
-  }, [isStaffRole, staffBookingDetail?.bookingItems]);
+  }, [staffBookingDetail?.bookingItems]);
 
   useEffect(() => {
-    if (!isStaffRole) return;
     const variantId = getPrimaryNailVariantId(staffBookingDetail?.bookingItems);
     let isMounted = true;
 
@@ -768,7 +743,9 @@ export function BookingDetailPage() {
     };
     void loadNailVariantDetail();
     return () => { isMounted = false; };
-  }, [isStaffRole, staffBookingDetail?.bookingItems]);
+  }, [staffBookingDetail?.bookingItems]);
+
+
 
   useEffect(() => {
     if (!showUpdateBookingModal) return undefined;
@@ -807,10 +784,6 @@ export function BookingDetailPage() {
   }, [serviceCatalogPage, serviceSearchKeyword, showUpdateBookingModal, isVi]);
 
   /* STREAMING_CHUNK: Event Handlers */
-  if (!isStaffRole && !initialBooking) {
-    return <Navigate to={roleConfig.listRoute} replace />;
-  }
-
   const handleChange = (field) => (event) => {
     setFormValues((current) => ({
       ...current,
@@ -822,9 +795,7 @@ export function BookingDetailPage() {
     setShowSaveConfirm(false);
     setIsEditing(false);
     setFlashMessage(
-      isStaffRole
-        ? (isVi ? "Cập nhật thông tin lịch hẹn đã được lưu tạm trên giao diện." : "Booking detail updates are stored in the current UI session.")
-        : (isVi ? "Cập nhật giả lập thành công." : "Mock update completed. Changes are local to this booking detail screen."),
+      isVi ? "Cập nhật thông tin lịch hẹn đã được lưu tạm trên giao diện." : "Booking detail updates are stored in the current UI session."
     );
   };
 
@@ -844,9 +815,7 @@ export function BookingDetailPage() {
     setShowDeleteConfirm(false);
     navigate(roleConfig.listRoute, {
       state: {
-        flashMessage: isStaffRole
-          ? (isVi ? `Đã đưa lịch hẹn của khách ${staffBookingDetail?.customerName || ""} trở lại hàng chờ.` : `Returned ${staffBookingDetail?.customerName || "this booking"} to the queue.`)
-          : (isVi ? `Xóa giả lập thành công lịch hẹn ${formValues.customerName || formValues.id}.` : `Mock delete completed for ${formValues.customerName || formValues.id}.`),
+        flashMessage: isVi ? `Đã đưa lịch hẹn của khách ${staffBookingDetail?.customerName || ""} trở lại hàng chờ.` : `Returned ${staffBookingDetail?.customerName || "this booking"} to the queue.`,
       },
     });
   };
@@ -995,373 +964,237 @@ export function BookingDetailPage() {
   };
 
   /* STREAMING_CHUNK: Rendering UI */
-  if (isStaffRole) {
-    if (isStaffLoading) {
-      return (
-        <section className="flex min-h-[50vh] items-center justify-center rounded-[24px] bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
-          <div className="flex items-center gap-3 text-sm font-medium text-[#b38a9f]">
-            <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
-            {isVi ? "Đang tải thông tin lịch hẹn..." : "Loading booking detail..."}
-          </div>
-        </section>
-      );
-    }
-
-    if (staffLoadError || !staffBookingDetail) {
-      return (
-        <section className="rounded-[24px] border border-[#f6d8e5] bg-white p-6 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
-          <p className="text-lg font-extrabold text-[#412643]">{isVi ? "Lịch hẹn không khả dụng" : "Booking detail unavailable"}</p>
-          <p className="mt-2 text-sm text-[#b38a9f]">{staffLoadError || (isVi ? "Không thể lấy dữ liệu lịch hẹn." : "This booking could not be loaded.")}</p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => window.location.reload()}
-              className="inline-flex items-center gap-2 rounded-full border border-[#f3cade] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
-            >
-              <RefreshCcw size={14} />
-              {isVi ? "Thử lại" : "Retry"}
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate(roleConfig.listRoute)}
-              className="inline-flex items-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white"
-            >
-              {isVi ? "Quay lại danh sách" : "Back to bookings"}
-            </button>
-          </div>
-        </section>
-      );
-    }
-
-    const isCancelledBooking = ["cancelled", "canceled"].includes(String(staffBookingDetail?.status || "").trim().toLowerCase());
-
-    const baseStaffExperience = buildStaffExperienceFromBooking(
-      staffBookingDetail,
-      staffNotesDraft,
-      staffNailVariantDetail,
-      staffCustomerNailDetail,
-      staffCustomerDetail,
-      staffServiceDetailMap,
-      staffBookingNailVariantDetailMap,
-      staffBookingCustomerNailDetailMap,
-      language
-    );
-
-    const staffExperience = !requiresCustomerNailConfirmation && isCurrentDesignConfirmed
-      ? {
-        ...baseStaffExperience,
-        design: {
-          ...baseStaffExperience.design,
-          tags: [
-            ...baseStaffExperience.design.tags,
-            { label: isVi ? "Đã xác nhận" : "Confirmed", className: "border-[#cdeedb] bg-[#eefcf4] text-[#16975f]" },
-          ],
-        },
-        // We keep the "Current nail design confirmed" exact English string here 
-        // to match the original key so the child component renders correctly
-        checklist: baseStaffExperience.checklist.map((item) => (
-          item.label === "Current nail design confirmed" ? { ...item, checked: true } : item
-        )),
-      }
-      : baseStaffExperience;
-
-    const staffExperienceWithCustomerNail = requiresCustomerNailConfirmation
-      ? {
-        ...staffExperience,
-        // Match the original English string for customer nail confirmed
-        checklist: staffExperience.checklist.map((item) => (
-          item.label === "Customer nail confirmed"
-            ? { ...item, checked: isCustomerNailConfirmed || hasServiceStarted }
-            : item
-        )),
-      }
-      : staffExperience;
-
-    const resolvedStaffExperience = effectiveDesignConfirmed
-      ? {
-        ...staffExperienceWithCustomerNail,
-        design: {
-          ...staffExperienceWithCustomerNail.design,
-          tags: [
-            ...staffExperienceWithCustomerNail.design.tags.filter((tag) => tag.label !== "Confirmed" && tag.label !== "Completed" && tag.label !== "Đã xác nhận" && tag.label !== "Hoàn thành"),
-            {
-              label: isServiceCompleted ? (isVi ? "Hoàn thành" : "Completed") : (isVi ? "Đã xác nhận" : "Confirmed"),
-              className: isServiceCompleted ? "border-[#cde8f8] bg-[#eef7ff] text-[#327adf]" : "border-[#cdeedb] bg-[#eefcf4] text-[#16975f]",
-            },
-          ],
-        },
-      }
-      : staffExperienceWithCustomerNail;
-
-    const handleOpenDesignStudio = () => {
-      navigate(getStaffBookingDesignStudioRoute(bookingId), {
-        state: {
-          designStudio: {
-            booking: staffBookingDetail || { id: bookingId },
-            bookingDetail: staffBookingDetail || null,
-            bookingCode: staffBookingDetail ? formatBookingCode(staffBookingDetail.bookingId) : "",
-            customerName: staffBookingDetail?.customerName || formValues?.customerName || "--",
-            staffName: staffBookingDetail?.artistName || "--",
-            statusLabel: staffBookingDetail?.status || "Pending",
-            selectedDesignName:
-              staffBookingDetail?.bookingItems?.[0]?.customerNailName ||
-              staffBookingDetail?.bookingItems?.[0]?.nailVariantName ||
-              staffBookingDetail?.bookingItems?.[0]?.serviceName ||
-              "--",
-            selectedDesignImage:
-              staffBookingDetail?.bookingItems?.[0]?.customerNailImageUrl ||
-              staffBookingDetail?.checkInImageUrl ||
-              staffBookingDetail?.checkOutImagesUrl ||
-              DEFAULT_DESIGN_IMAGE,
-            totalDuration: staffBookingDetail?.totalDuration || 0,
-            currentDesignDetail: resolvedStaffExperience?.design?.variantDetail || null,
-          },
-        },
-      });
-    };
-
-    const handleChooseAnotherDesign = () => {
-      handleOpenDesignStudio();
-    };
-
-    const handleOpenServiceSession = () => {
-      if (!isBookingReadyForService && !hasServiceStarted) {
-        toast.error(
-          hasCustomerNailSelection
-            ? (isVi ? "Vui lòng xác nhận móng khách trước khi bắt đầu dịch vụ." : "Confirm current nail before starting the service session.")
-            : (isVi ? "Vui lòng xác nhận thiết kế trước khi bắt đầu dịch vụ." : "Confirm Current Design before starting the service session."),
-        );
-        return;
-      }
-
-      navigate(getStaffBookingServiceSessionRoute(bookingId), {
-        state: {
-          serviceSession: {
-            ...buildStaffServiceSessionPayload(staffBookingDetail, {
-              backRoute: location.pathname,
-              designUpdateRoute: getStaffBookingDesignStudioRoute(bookingId),
-            }),
-            started: hasServiceStarted,
-            completed: isServiceCompleted,
-          },
-        },
-      });
-    };
-
+  if (isStaffLoading) {
     return (
-      <>
-        {flashMessage || staffActionMessage ? (
-          <div className="rounded-[22px] bg-[#edfdf4] px-5 py-4 text-sm font-medium text-[#16975f] shadow-[0_14px_30px_rgba(94,76,62,0.06)]">
-            {staffActionMessage || flashMessage}
-          </div>
-        ) : null}
-        <StaffBookingConsultationDetail
-          data={resolvedStaffExperience}
-          isCancelledBooking={isCancelledBooking}
-          isCurrentDesignConfirmed={
-            requiresCustomerNailConfirmation ? false : isCurrentDesignConfirmed || hasServiceStarted
-          }
-          isCustomerNailConfirmed={isCustomerNailConfirmed || hasServiceStarted}
-          requiresCustomerNailConfirmation={requiresCustomerNailConfirmation}
-          isPendingBooking={isPendingBooking}
-          isServiceInProgress={isServiceInProgress}
-          isServiceCompleted={isServiceCompleted}
-          onChooseAnotherDesign={handleChooseAnotherDesign}
-          onConfirmCurrentDesign={handleConfirmCurrentDesign}
-          onConfirmCustomerNail={handleConfirmCustomerNail}
-          onDelete={handleDelete}
-          onOpenDesignStudio={handleOpenDesignStudio}
-          onOpenServiceProcedures={handleOpenServiceProcedures}
-          onOpenUpdateBooking={handleOpenUpdateBooking}
-          onStaffNoteChange={handleStaffNoteChange}
-          onStartServiceSession={() => void handleOpenServiceSession()}
-        />
-        <ExtraServiceModal
-          open={showUpdateBookingModal}
-          services={serviceCatalog}
-          selectedServiceQuantities={selectedExtraServiceQuantities}
-          searchValue={serviceSearchInput}
-          isLoading={isLoadingServiceCatalog}
-          isSaving={isSavingExtraService}
-          meta={serviceCatalogMeta}
-          onClose={handleCloseUpdateBooking}
-          onSearchChange={(event) => setServiceSearchInput(event.target.value)}
-          onSearchSubmit={handleSearchExtraServices}
-          onDecreaseQuantity={(serviceId) =>
-            setSelectedExtraServiceQuantities((current) => {
-              const nextQuantity = Math.max(0, Number(current?.[serviceId] || 0) - 1);
-              if (nextQuantity <= 0) {
-                const nextState = { ...current };
-                delete nextState[serviceId];
-                return nextState;
-              }
-              return { ...current, [serviceId]: nextQuantity };
-            })
-          }
-          onIncreaseQuantity={(serviceId) =>
-            setSelectedExtraServiceQuantities((current) => ({
-              ...current,
-              [serviceId]: Number(current?.[serviceId] || 0) + 1,
-            }))
-          }
-          onPageChange={(page) => {
-            if (page < 1 || page > (serviceCatalogMeta?.totalPages ?? 1)) return;
-            setSelectedExtraServiceQuantities({});
-            setServiceCatalogPage(page);
-          }}
-          onConfirm={handleAddExtraService}
-          title={isVi ? "Cập nhật dịch vụ cho lịch hẹn" : "Update Booking Services"}
-          description={isVi ? "Chọn các dịch vụ làm thêm vào lịch hẹn trước khi bắt đầu phiên dịch vụ." : "Select extra services to add into the current booking before starting the service session."}
-        />
-        <ServiceProceduresViewerModal
-          isOpen={Boolean(selectedProcedureService)}
-          onClose={handleCloseServiceProcedures}
-          service={selectedProcedureService ? {
-            name: selectedProcedureService.name,
-            quantity: selectedProcedureService.quantity,
-            durationLabel: selectedProcedureService.duration,
-          } : null}
-          procedures={serviceProcedureList}
-          isLoading={isServiceProcedureModalLoading}
-          error={serviceProcedureModalError}
-          onClaimProcedure={(procedure) => void handleClaimProcedure(procedure)}
-          claimingProcedureId={claimingProcedureId}
-        />
-      </>
+      <section className="flex min-h-[50vh] items-center justify-center rounded-[24px] bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
+        <div className="flex items-center gap-3 text-sm font-medium text-[#b38a9f]">
+          <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
+          {isVi ? "Đang tải thông tin lịch hẹn..." : "Loading booking detail..."}
+        </div>
+      </section>
     );
   }
 
-  return (
-    <section className="flex min-h-full flex-col gap-4">
-      <BookingHeroCard
-        backLabel={isVi ? "Quay lại danh sách" : "Back to booking list"}
-        backTo={roleConfig.listRoute}
-        badge={roleConfig.detailBadge}
-        title={formValues.customerName}
-        description={roleConfig.detailDescription}
-        panelIcon={<CalendarClock size={18} className="text-[#d45b9f]" />}
-        panelTitle={isEditing ? (isVi ? "Chế độ sửa" : "Edit mode") : (isVi ? "Chế độ xem" : "View mode")}
-        panelDescription={isVi ? "Các thao tác tại đây chỉ thay đổi trên UI, không lưu trữ thực tế bên ngoài tính năng này." : "All actions here are UI-only and do not persist outside this feature."}
-      />
+  if (staffLoadError || !staffBookingDetail) {
+    return (
+      <section className="rounded-[24px] border border-[#f6d8e5] bg-white p-6 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
+        <p className="text-lg font-extrabold text-[#412643]">{isVi ? "Lịch hẹn không khả dụng" : "Booking detail unavailable"}</p>
+        <p className="mt-2 text-sm text-[#b38a9f]">{staffLoadError || (isVi ? "Không thể lấy dữ liệu lịch hẹn." : "This booking could not be loaded.")}</p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="inline-flex items-center gap-2 rounded-full border border-[#f3cade] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
+          >
+            <RefreshCcw size={14} />
+            {isVi ? "Thử lại" : "Retry"}
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate(roleConfig.listRoute)}
+            className="inline-flex items-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white"
+          >
+            {isVi ? "Quay lại danh sách" : "Back to bookings"}
+          </button>
+        </div>
+      </section>
+    );
+  }
 
+  const isCancelledBooking = ["cancelled", "canceled"].includes(String(staffBookingDetail?.status || "").trim().toLowerCase());
+
+  const baseStaffExperience = buildStaffExperienceFromBooking(
+    staffBookingDetail,
+    staffNotesDraft,
+    staffNailVariantDetail,
+    staffCustomerNailDetail,
+    staffCustomerDetail,
+    staffServiceDetailMap,
+    staffBookingNailVariantDetailMap,
+    staffBookingCustomerNailDetailMap,
+    language
+  );
+
+  const staffExperience = !requiresCustomerNailConfirmation && isCurrentDesignConfirmed
+    ? {
+      ...baseStaffExperience,
+      design: {
+        ...baseStaffExperience.design,
+        tags: [
+          ...baseStaffExperience.design.tags,
+          { label: isVi ? "Đã xác nhận" : "Confirmed", className: "border-[#cdeedb] bg-[#eefcf4] text-[#16975f]" },
+        ],
+      },
+      checklist: baseStaffExperience.checklist.map((item) => (
+        item.label === "Current nail design confirmed" ? { ...item, checked: true } : item
+      )),
+    }
+    : baseStaffExperience;
+
+  const staffExperienceWithCustomerNail = requiresCustomerNailConfirmation
+    ? {
+      ...staffExperience,
+      checklist: staffExperience.checklist.map((item) => (
+        item.label === "Customer nail confirmed"
+          ? { ...item, checked: isCustomerNailConfirmed || hasServiceStarted }
+          : item
+      )),
+    }
+    : staffExperience;
+
+  const resolvedStaffExperience = effectiveDesignConfirmed
+    ? {
+      ...staffExperienceWithCustomerNail,
+      design: {
+        ...staffExperienceWithCustomerNail.design,
+        tags: [
+          ...staffExperienceWithCustomerNail.design.tags.filter((tag) => tag.label !== "Confirmed" && tag.label !== "Completed" && tag.label !== "Đã xác nhận" && tag.label !== "Hoàn thành"),
+          {
+            label: isServiceCompleted ? (isVi ? "Hoàn thành" : "Completed") : (isVi ? "Đã xác nhận" : "Confirmed"),
+            className: isServiceCompleted ? "border-[#cde8f8] bg-[#eef7ff] text-[#327adf]" : "border-[#cdeedb] bg-[#eefcf4] text-[#16975f]",
+          },
+        ],
+      },
+    }
+    : staffExperienceWithCustomerNail;
+
+
+
+  const handleOpenDesignStudio = () => {
+    navigate(getStaffBookingDesignStudioRoute(bookingId), {
+      state: {
+        designStudio: {
+          booking: staffBookingDetail || { id: bookingId },
+          bookingDetail: staffBookingDetail || null,
+          bookingCode: staffBookingDetail ? formatBookingCode(staffBookingDetail.bookingId) : "",
+          customerName: staffBookingDetail?.customerName || formValues?.customerName,
+          staffName: staffBookingDetail?.artistName,
+          statusLabel: staffBookingDetail?.status || "Pending",
+          selectedDesignName:
+            staffBookingDetail?.bookingItems?.[0]?.customerNailName ||
+            staffBookingDetail?.bookingItems?.[0]?.nailVariantName ||
+            staffBookingDetail?.bookingItems?.[0]?.serviceName ||
+            "--",
+          selectedDesignImage:
+            staffBookingDetail?.bookingItems?.[0]?.customerNailImageUrl ||
+            staffBookingDetail?.checkInImageUrl ||
+            staffBookingDetail?.checkOutImagesUrl ||
+            DEFAULT_DESIGN_IMAGE,
+          totalDuration: staffBookingDetail?.totalDuration || 0,
+          currentDesignDetail: resolvedStaffExperience?.design?.variantDetail || null,
+        },
+      },
+    });
+  };
+
+  const handleChooseAnotherDesign = () => {
+    handleOpenDesignStudio();
+  };
+
+  const handleOpenServiceSession = () => {
+    if (!isBookingReadyForService && !hasServiceStarted) {
+      toast.error(
+        hasCustomerNailSelection
+          ? (isVi ? "Vui lòng xác nhận móng khách trước khi bắt đầu dịch vụ." : "Confirm current nail before starting the service session.")
+          : (isVi ? "Vui lòng xác nhận thiết kế trước khi bắt đầu dịch vụ." : "Confirm Current Design before starting the service session."),
+      );
+      return;
+    }
+
+    navigate(getStaffBookingServiceSessionRoute(bookingId), {
+      state: {
+        serviceSession: {
+          ...buildStaffServiceSessionPayload(staffBookingDetail, {
+            backRoute: location.pathname,
+            designUpdateRoute: getStaffBookingDesignStudioRoute(bookingId),
+          }),
+          started: hasServiceStarted,
+          completed: isServiceCompleted,
+        },
+      },
+    });
+  };
+
+  return (
+    <>
       {flashMessage || staffActionMessage ? (
         <div className="rounded-[22px] bg-[#edfdf4] px-5 py-4 text-sm font-medium text-[#16975f] shadow-[0_14px_30px_rgba(94,76,62,0.06)]">
           {staffActionMessage || flashMessage}
         </div>
       ) : null}
-
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <article className="rounded-[24px] bg-white p-4 shadow-[0_16px_34px_rgba(94,76,62,0.06)] sm:p-5 md:p-6">
-          <div className="grid gap-5 md:grid-cols-2">
-            <BookingFormFields
-              formValues={formValues}
-              onFieldChange={handleChange}
-              disabled={!isEditing}
-            />
-          </div>
-
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            {isEditing ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setShowSaveConfirm(true)}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_26px_rgba(239,93,180,0.24)] transition hover:scale-[1.01] sm:w-auto"
-                >
-                  <Save size={16} />
-                  <span>{isVi ? "Lưu thay đổi" : "Save changes"}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowCancelConfirm(true)}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#fff5ef] px-5 py-3 text-sm font-semibold text-[var(--color-ink)] transition hover:bg-[#ffe9d7] sm:w-auto"
-                >
-                  <span>{isVi ? "Hủy" : "Cancel"}</span>
-                </button>
-              </>
-            ) : (
-              <button
-                type="button"
-                onClick={handleStartEdit}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_26px_rgba(239,93,180,0.24)] transition hover:scale-[1.01] sm:w-auto"
-              >
-                <PencilLine size={16} />
-                <span>{isVi ? "Chỉnh sửa lịch hẹn" : "Edit booking"}</span>
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={() => setShowDeleteConfirm(true)}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#fff0f5] px-5 py-3 text-sm font-semibold text-[#d14c84] transition hover:bg-[#ffe1ec] sm:w-auto"
-            >
-              <Trash2 size={16} />
-              <span>{isVi ? "Xóa lịch hẹn" : "Delete booking"}</span>
-            </button>
-          </div>
-        </article>
-
-        <BookingSnapshotCard
-          formValues={formValues}
-          notice={isVi ? "Đây chỉ là giả lập CRUD. Các thao tác Lưu và Xóa chỉ cập nhật trên UI, không lưu dữ liệu thực tế." : "This is mock CRUD only. Save and delete actions update the UI flow, but they do not persist data outside this screen."}
-        />
-      </div>
-
-      <ActionConfirmModal
-        open={showSaveConfirm}
-        intent="success"
-        title={isVi ? "Lưu thông tin cập nhật" : "Save Booking Changes"}
-        subtitle={isVi ? "Thao tác này sẽ cập nhật lịch hẹn trong luồng giả lập." : "This will update the appointment in the current mock booking flow."}
-        description={isVi ? "Xác nhận để áp dụng các chỉnh sửa mới nhất." : "Confirm to apply the latest edits to this booking."}
-        confirmText={isVi ? "Lưu thay đổi" : "Save Changes"}
-        cancelText={isVi ? "Xem lại" : "Review Again"}
-        confirmIcon={Save}
-        onConfirm={handleSave}
-        onCancel={() => setShowSaveConfirm(false)}
-        highlights={[formValues.customerName || (isVi ? "Chi tiết lịch hẹn" : "Booking detail"), formValues.service || (isVi ? "Dịch vụ chờ duyệt" : "Service pending"), formValues.branch || (isVi ? "Chi nhánh chờ duyệt" : "Branch pending")]}
-        details={[
-          { label: isVi ? "Ngày hẹn" : "Appointment Date", value: formValues.date || (isVi ? "Chưa chọn ngày" : "No date selected") },
-          { label: isVi ? "Giờ hẹn" : "Appointment Time", value: formValues.time || (isVi ? "Chưa chọn giờ" : "No time selected") },
-        ]}
-        warnings={[isVi ? "Cập nhật này chỉ là giả lập thay đổi dòng chạy UI, không ảnh hưởng dữ liệu ngoài màn hình này." : "This mock update changes the UI flow only and does not persist outside this screen."]}
+      <StaffBookingConsultationDetail
+        data={resolvedStaffExperience}
+        isCancelledBooking={isCancelledBooking}
+        isCurrentDesignConfirmed={
+          requiresCustomerNailConfirmation ? false : isCurrentDesignConfirmed || hasServiceStarted
+        }
+        isCustomerNailConfirmed={isCustomerNailConfirmed || hasServiceStarted}
+        requiresCustomerNailConfirmation={requiresCustomerNailConfirmation}
+        isPendingBooking={isPendingBooking}
+        isServiceInProgress={isServiceInProgress}
+        isServiceCompleted={isServiceCompleted}
+        onChooseAnotherDesign={handleChooseAnotherDesign}
+        onConfirmCurrentDesign={handleConfirmCurrentDesign}
+        onConfirmCustomerNail={handleConfirmCustomerNail}
+        onDelete={handleDelete}
+        onOpenDesignStudio={handleOpenDesignStudio}
+        onOpenServiceProcedures={handleOpenServiceProcedures}
+        onOpenUpdateBooking={handleOpenUpdateBooking}
+        onStaffNoteChange={handleStaffNoteChange}
+        onStartServiceSession={() => void handleOpenServiceSession()}
       />
-
-      <ActionConfirmModal
-        open={showCancelConfirm}
-        intent="warning"
-        title={isVi ? "Hủy bỏ các thay đổi" : "Discard Booking Edits"}
-        subtitle={isVi ? "Bạn đang rời khỏi chế độ sửa mà không lưu." : "You are about to leave edit mode without saving."}
-        description={isVi ? "Các thay đổi chưa lưu sẽ bị hủy bỏ." : "Unsaved updates to this booking will be discarded."}
-        confirmText={isVi ? "Hủy các thay đổi" : "Discard Changes"}
-        cancelText={isVi ? "Tiếp tục sửa" : "Keep Editing"}
-        confirmIcon={X}
-        onConfirm={handleCancelEdit}
-        onCancel={() => setShowCancelConfirm(false)}
-        details={[
-          { label: isVi ? "Chế độ sửa" : "Editing Mode", value: isVi ? "Chi tiết lịch hẹn" : "Booking detail" },
-          { label: isVi ? "Kết quả" : "Result", value: isVi ? "Phục hồi giá trị gốc" : "Revert to last loaded values" },
-        ]}
-        warnings={[isVi ? "Mọi thông tin chưa lưu về khách hàng, dịch vụ và lịch trình sẽ bị mất." : "Any unsaved changes to customer, service, and schedule details will be lost."]}
-      />
-
-      <ActionConfirmModal
-        open={showDeleteConfirm}
-        intent="danger"
-        title={isVi ? "Xóa lịch hẹn" : "Delete Booking"}
-        subtitle={isVi ? "Thao tác này sẽ xóa lịch hẹn trong luồng giả lập." : "This will remove the booking from the current mock booking flow."}
-        description={isVi ? `Bạn sắp xóa lịch hẹn của ${formValues.customerName || "khách hàng này"}. Thao tác không thể hoàn tác.` : `You are about to delete ${formValues.customerName || "this booking"}. This action cannot be undone.`}
-        confirmText={isVi ? "Xóa lịch hẹn" : "Delete Booking"}
-        cancelText={isVi ? "Giữ lại" : "Keep Booking"}
-        confirmIcon={Trash2}
-        onConfirm={handleDelete}
-        onCancel={() => setShowDeleteConfirm(false)}
-        item={{
-          title: formValues.customerName || (isVi ? "Bản ghi lịch hẹn" : "Booking record"),
-          meta: `${formValues.service || (isVi ? "Dịch vụ đang chờ" : "Service pending")} • ${formValues.branch || (isVi ? "Chi nhánh đang chờ" : "Branch pending")}`,
-          note: `${formValues.date || (isVi ? "Chưa chọn ngày" : "No date")} • ${formValues.time || (isVi ? "Chưa chọn giờ" : "No time")}`,
+      <ExtraServiceModal
+        open={showUpdateBookingModal}
+        services={serviceCatalog}
+        selectedServiceQuantities={selectedExtraServiceQuantities}
+        searchValue={serviceSearchInput}
+        isLoading={isLoadingServiceCatalog}
+        isSaving={isSavingExtraService}
+        meta={serviceCatalogMeta}
+        onClose={handleCloseUpdateBooking}
+        onSearchChange={(event) => setServiceSearchInput(event.target.value)}
+        onSearchSubmit={handleSearchExtraServices}
+        onDecreaseQuantity={(serviceId) =>
+          setSelectedExtraServiceQuantities((current) => {
+            const nextQuantity = Math.max(0, Number(current?.[serviceId] || 0) - 1);
+            if (nextQuantity <= 0) {
+              const nextState = { ...current };
+              delete nextState[serviceId];
+              return nextState;
+            }
+            return { ...current, [serviceId]: nextQuantity };
+          })
+        }
+        onIncreaseQuantity={(serviceId) =>
+          setSelectedExtraServiceQuantities((current) => ({
+            ...current,
+            [serviceId]: Number(current?.[serviceId] || 0) + 1,
+          }))
+        }
+        onPageChange={(page) => {
+          if (page < 1 || page > (serviceCatalogMeta?.totalPages ?? 1)) return;
+          setSelectedExtraServiceQuantities({});
+          setServiceCatalogPage(page);
         }}
-        warnings={[isVi ? "Thao tác xóa giả lập này chỉ đổi hướng UI mà không tác động dữ liệu bên ngoài." : "This mock delete updates the navigation flow only and does not persist outside this feature."]}
+        onConfirm={handleAddExtraService}
+        title={isVi ? "Cập nhật dịch vụ cho lịch hẹn" : "Add Extra Services"}
+        description={isVi ? "Chọn các dịch vụ làm thêm vào lịch hẹn trước khi bắt đầu phiên dịch vụ." : "Select extra services to add into the current booking before starting the service session."}
       />
-    </section>
+      <ServiceProceduresViewerModal
+        isOpen={Boolean(selectedProcedureService)}
+        onClose={handleCloseServiceProcedures}
+        service={selectedProcedureService ? {
+          name: selectedProcedureService.name,
+          quantity: selectedProcedureService.quantity,
+          durationLabel: selectedProcedureService.duration,
+        } : null}
+        procedures={serviceProcedureList}
+        isLoading={isServiceProcedureModalLoading}
+        error={serviceProcedureModalError}
+        onClaimProcedure={(procedure) => void handleClaimProcedure(procedure)}
+        claimingProcedureId={claimingProcedureId}
+        showActions={staffBookingDetail?.status === "InProgress"}
+      />
+    </>
   );
 }

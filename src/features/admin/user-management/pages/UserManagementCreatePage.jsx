@@ -44,6 +44,17 @@ export function UserManagementCreatePage() {
       return;
     }
 
+    const isSalonRole = ["staff", "staff_artist", "receptionist", "manager"].includes(
+      String(formValues.role || "").trim().toLowerCase()
+    );
+
+    if (isSalonRole && !formValues.salonId) {
+      const errMsg = language === "vi" ? "Vui lòng chọn chi nhánh Salon." : "Please select a salon branch.";
+      setSubmitError(errMsg);
+      toast.error(errMsg);
+      return;
+    }
+
     setIsSubmitting(true);
     setSubmitError("");
 

@@ -3,6 +3,8 @@ export const ROUTES = {
   // Public routes
   root: "/",
   login: "/login",
+  forgotPassword: "/forgot-password",
+  resetPassword: "/reset-password",
   paymentStatus: "/payment-status",
   paymentSuccess: "/payment/success",
   paymentCancel: "/payment/cancel",
@@ -42,7 +44,6 @@ export const ROUTES = {
   managerProfile: "/manager/profile",
   managerBookings: "/manager/bookings",
   managerReschedule: "/manager/reschedule",
-  managerBookingsCreate: "/manager/bookings/create",
   managerBookingDetail: "/manager/bookings/:bookingId",
   managerStaffArtists: "/manager/staff-artists",
   managerStaffArtistsCreate: "/manager/staff-artists/create",

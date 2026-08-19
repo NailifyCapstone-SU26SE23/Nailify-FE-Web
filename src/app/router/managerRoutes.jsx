@@ -2,7 +2,6 @@ import { Navigate } from "react-router-dom";
 import { ManagerLayout } from "../layouts/ManagerLayout";
 import { ProfilePage } from "../../features/core/auth/pages/profilePage";
 import { ManagerDashboardPage } from "../../features/core/dashboard/pages/ManagerDashboardPage";
-import { BookingCreatePage } from "../../shared/bookings/pages/BookingCreatePage";
 import { ManagerBookingDetailPage } from "../../features/manager/bookings/pages/ManagerBookingDetailPage";
 import { ManagerBookingListPage } from "../../features/manager/bookings/pages/ManagerBookingListPage";
 import { RescheduleBooking } from "../../features/manager/bookings/pages/RescheduleBooking";
@@ -83,10 +82,6 @@ export const managerRoutes = [
       {
         path: ROUTES.managerStaffArtistUpdate,
         element: <StaffUpdatePage />,
-      },
-      {
-        path: ROUTES.managerBookingsCreate,
-        element: <BookingCreatePage />,
       },
       {
         path: ROUTES.managerBookingDetail,
