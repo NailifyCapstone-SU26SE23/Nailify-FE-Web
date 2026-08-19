@@ -374,7 +374,7 @@ export function AdminSalonBookingRatingPage() {
 
         {/* Page Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/60 pb-6">
-          <div className="space-y-1.5">
+          {/* <div className="space-y-1.5">
             <div className="flex items-center gap-2">
               <span className="p-2 rounded-xl bg-[#ea4f93]/10 text-[#ea4f93]">
                 <Store size={18} className="stroke-[2]" />
@@ -392,7 +392,7 @@ export function AdminSalonBookingRatingPage() {
                 : (isVi ? "Chọn một chi nhánh salon bên dưới để kiểm toán lịch sử đánh giá của khách hàng và điểm chất lượng dịch vụ." : "Select a salon branch below to audit customer review history and service quality scores.")
               }
             </p>
-          </div>
+          </div> */}
 
           {selectedSalon && (
             <button

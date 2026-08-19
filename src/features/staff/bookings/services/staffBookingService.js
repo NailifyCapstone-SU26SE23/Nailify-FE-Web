@@ -1096,6 +1096,8 @@ function buildServiceSessionBreakdown(items = [], options = {}) {
         resolvedService?.duration ?? item?.serviceDuration ?? item?.duration ?? item?.estimatedDuration ?? 0,
       );
 
+      const price = resolvedService?.price ?? item?.price ?? item?.finalPrice ?? 0;
+
       rows.push({
         id: `${bookingItemId || `service-${index}`}-service`,
         bookingItemId,
@@ -1104,13 +1106,15 @@ function buildServiceSessionBreakdown(items = [], options = {}) {
         quantity,
         duration,
         durationLabel: formatDurationMinutes(duration),
-        priceLabel: formatCurrency(resolvedService?.price ?? item?.price ?? item?.finalPrice ?? 0),
+        priceLabel: formatCurrency(price),
+        rawPrice: price,
         canViewProcedures: Boolean(bookingItemId) && !hasNailDetail,
       });
     }
 
     if (resolvedNailName || customerNailId > 0 || nailVariantId > 0) {
       const duration = parseDurationMinutes(resolvedNailDetail?.duration);
+      const price = item?.price ?? item?.finalPrice ?? resolvedNailDetail?.price ?? 0;
 
       rows.push({
         id: `${bookingItemId || `service-${index}`}-nail`,
@@ -1120,7 +1124,8 @@ function buildServiceSessionBreakdown(items = [], options = {}) {
         quantity,
         duration,
         durationLabel: formatDurationMinutes(duration),
-        priceLabel: formatCurrency(resolvedNailDetail?.price ?? 0),
+        priceLabel: formatCurrency(price),
+        rawPrice: price,
         canViewProcedures: Boolean(bookingItemId),
       });
     }
@@ -1135,10 +1140,13 @@ function buildServiceSessionBreakdown(items = [], options = {}) {
     const key = `${row.detailLabel}_${row.name}_${row.priceLabel}_${row.durationLabel}`;
     if (!map.has(key)) {
       const copy = { ...row };
+      copy.subtotalLabel = formatCurrency((copy.rawPrice || 0) * copy.quantity);
       map.set(key, copy);
       groupedRows.push(copy);
     } else {
-      map.get(key).quantity += row.quantity;
+      const existing = map.get(key);
+      existing.quantity += row.quantity;
+      existing.subtotalLabel = formatCurrency((existing.rawPrice || 0) * existing.quantity);
     }
   });
 
@@ -1193,43 +1201,73 @@ function buildPriceSummaryRows(items = [], discounts = []) {
   const normalizedItems = Array.isArray(items) ? items : [];
   const normalizedDiscounts = Array.isArray(discounts) ? discounts : [];
 
+  const serviceMap = new Map();
+  normalizedItems.forEach((item, index) => {
+    const name = String(item?.serviceName || "").trim();
+    if (!name) return;
+
+    const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
+    const unitPrice = item?.price || item?.finalPrice || 0;
+    const key = `${name}_${unitPrice}`;
+
+    if (serviceMap.has(key)) {
+      serviceMap.get(key).quantity += quantity;
+    } else {
+      serviceMap.set(key, {
+        id: `service-${item?.bookingItemId || item?.id || index}`,
+        category: "Service",
+        label: name,
+        quantity,
+        unitPrice,
+      });
+    }
+  });
+
+  const serviceRows = Array.from(serviceMap.values()).map((row) => ({
+    id: row.id,
+    category: row.category,
+    label: row.label,
+    meta: `Qty: ${row.quantity}`,
+    unitPriceLabel: formatCurrency(row.unitPrice),
+    subtotalLabel: formatCurrency(row.unitPrice * row.quantity),
+    amount: formatCurrency(row.unitPrice),
+  }));
+
+  const nailMap = new Map();
+  normalizedItems.forEach((item, index) => {
+    const name = String(item?.nailVariantName || item?.customerNailName || "").trim();
+    if (!name) return;
+
+    const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
+    const unitPrice = item?.price || item?.finalPrice || 0;
+    const key = `${name}_${unitPrice}`;
+
+    if (nailMap.has(key)) {
+      nailMap.get(key).quantity += quantity;
+    } else {
+      nailMap.set(key, {
+        id: `nail-${item?.bookingItemId || item?.id || index}`,
+        category: "Nail Service",
+        label: name,
+        quantity,
+        unitPrice,
+      });
+    }
+  });
+
+  const nailRows = Array.from(nailMap.values()).map((row) => ({
+    id: row.id,
+    category: row.category,
+    label: row.label,
+    meta: `Qty: ${row.quantity}`,
+    unitPriceLabel: formatCurrency(row.unitPrice),
+    subtotalLabel: formatCurrency(row.unitPrice * row.quantity),
+    amount: formatCurrency(row.unitPrice),
+  }));
+
   return {
-    serviceRows: normalizedItems
-      .map((item, index) => {
-        const name = String(item?.serviceName || "").trim();
-
-        if (!name) {
-          return null;
-        }
-
-        const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
-
-        return {
-          id: `service-${item?.bookingItemId || item?.id || index}`,
-          category: "Service",
-          label: name,
-          amount: formatCurrency(item?.price || item?.finalPrice || 0),
-        };
-      })
-      .filter(Boolean),
-    nailRows: normalizedItems
-      .map((item, index) => {
-        const name = String(item?.nailVariantName || item?.customerNailName || "").trim();
-
-        if (!name) {
-          return null;
-        }
-
-        const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
-
-        return {
-          id: `nail-${item?.bookingItemId || item?.id || index}`,
-          category: "Nail Service",
-          label: name,
-          amount: formatCurrency(item?.price || item?.finalPrice || 0),
-        };
-      })
-      .filter(Boolean),
+    serviceRows,
+    nailRows,
     discountRows: normalizedDiscounts
       .map((item, index) => ({
         id: `discount-${index}`,
@@ -1278,6 +1316,13 @@ export function buildStaffServiceSessionPayload(booking, options = {}) {
     booking?.totalPriceLabel ||
     booking?.total ||
     formatCurrency(booking?.totalPrice);
+    
+  const originalServicePriceVal = Number(booking?.price || booking?.totalPrice || 0);
+  const discountAmountVal = Math.abs(Number(booking?.discount || 0));
+  const discountLabel = Array.isArray(booking?.discounts) && booking.discounts.length > 0 
+    ? booking.discounts.map(d => d.name || d.type).join(", ") 
+    : "Discount";
+  const discountValue = discountAmountVal > 0 ? `-${formatCurrency(discountAmountVal)}` : "0 VND";
 
   return {
     bookingCode: formatBookingCode(booking?.bookingId),
@@ -1313,11 +1358,13 @@ export function buildStaffServiceSessionPayload(booking, options = {}) {
     completedAt: "--",
     designName: variantNames[0],
     totalPrice: totalPriceLabel,
+    amountDue: booking?.amountDue != null ? formatCurrency(booking.amountDue) : null,
+    amountPaid: booking?.amountPaid != null ? formatCurrency(booking.amountPaid) : null,
     totalAmount: totalPriceLabel,
-    originalServicePrice: totalPriceLabel,
+    originalServicePrice: formatCurrency(originalServicePriceVal),
     extraServiceFee: "0 VND",
-    discountLabel: "Discount",
-    discountValue: "0 VND",
+    discountLabel: discountLabel,
+    discountValue: discountValue,
     remainingBalance: totalPriceLabel,
     beforePhotoTimestamp: "--",
     currentProcess: currentProcessLabel,

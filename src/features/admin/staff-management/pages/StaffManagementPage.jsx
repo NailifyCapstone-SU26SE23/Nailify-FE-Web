@@ -499,7 +499,7 @@ export function StaffManagementPage() {
         />
       )}
 
-      <Card className="overflow-hidden border-none bg-gradient-to-br from-[#fff3f8] via-[#fffafb] to-[#fff5fb] p-0 shadow-lg">
+      {/* <Card className="overflow-hidden border-none bg-gradient-to-br from-[#fff3f8] via-[#fffafb] to-[#fff5fb] p-0 shadow-lg">
         <div className="flex flex-col gap-6 p-7 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl">
             <div className="flex items-center gap-4">
@@ -536,7 +536,7 @@ export function StaffManagementPage() {
             </Link>
           </div>
         </div>
-      </Card>
+      </Card> */}
 
       {!loadingSalons && (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -588,6 +588,22 @@ export function StaffManagementPage() {
                   className="h-10 w-full rounded-full border border-[#f0d9e8] bg-white pl-9 pr-4 text-xs text-[#5c4158] outline-none transition placeholder:text-[#d198b0] focus:border-[#ea4f93] focus:ring-2 focus:ring-[#ea4f93]/20"
                 />
               </label>
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-2 rounded-2xl border border-[#f0d9e8] bg-white px-4 py-2.5 text-xs font-semibold text-[#ea4f93] shadow-md hover:shadow-lg hover:border-[#ea4f93] transition duration-200"
+                >
+                  <Download size={16} />
+                  {t("adminStaffManagement.export")}
+                </button>
+                <Link
+                  to={ROUTES.adminStaffCreate}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#ea4f93] to-[#ff8ebb] px-4 py-2.5 text-xs font-semibold text-white shadow-lg hover:shadow-xl transition duration-200"
+                >
+                  <Plus size={16} />
+                  {t("adminStaffManagement.addStaff")}
+                </Link>
+              </div>
             </div>
           </div>
 
