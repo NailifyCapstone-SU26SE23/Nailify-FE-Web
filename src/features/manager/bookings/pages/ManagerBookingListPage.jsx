@@ -30,6 +30,8 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { setFilter, setAllFilters, updateBookingLocally, removeBookingLocally, fetchManagerBookingsThunk, fetchManagerSalonStaffThunk } from "../../../../store/managerBookingsSlice";
 import { Spin, Alert, DatePicker, Drawer, Modal, Tooltip } from "antd";
 import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
@@ -515,8 +517,7 @@ function getCalendarCardStyle(status) {
 }
 
 
-function getBookingStatusLabel(status, t) {
-  const { language } = useLanguage();
+function getBookingStatusLabel(status, language) {
   switch (status) {
     case "Checked In":
     case "CheckedIn":
@@ -556,9 +557,31 @@ export function ManagerBookingListPage() {
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
   const tableContainerRef = useRef(null);
 
-  // View Mode: 'table' | 'day' | 'week' | 'month'
-  const [viewMode, setViewMode] = useState("table");
+  const dispatch = useDispatch();
 
+  // Core state from Redux
+  const { bookings: rawBookings, salonStaffList, isLoading, error, filters, hasLoadedOnce } = useSelector((state) => state.managerBookings);
+  const { query, activeFilter, dateFrom: dateFromISO, dateTo: dateToISO, viewMode, currentPage } = filters;
+
+  const dateFrom = useMemo(() => dayjs(dateFromISO), [dateFromISO]);
+  const dateTo = useMemo(() => dayjs(dateToISO), [dateToISO]);
+
+  // Compute UI bookings from raw Redux bookings
+  const bookings = useMemo(() => {
+    return rawBookings.map((b, idx) => mapApiBookingToUiFormat(b, idx));
+  }, [rawBookings]);
+
+  // Set viewMode via Redux
+  const setViewMode = (mode) => dispatch(setFilter({ key: "viewMode", value: mode }));
+  const setQuery = (val) => dispatch(setFilter({ key: "query", value: val }));
+  const setActiveFilter = (val) => dispatch(setFilter({ key: "activeFilter", value: val }));
+  const setDateFrom = (val) => dispatch(setFilter({ key: "dateFrom", value: val ? val.toISOString() : null }));
+  const setDateTo = (val) => dispatch(setFilter({ key: "dateTo", value: val ? val.toISOString() : null }));
+  const setCurrentPage = (val) => dispatch(setFilter({ key: "currentPage", value: val }));
+
+  // Keep some local UI state
+  const [anchorDate, setAnchorDate] = useState(() => dayjs());
+  
   // Drag & Drop State
   const [draggedBooking, setDraggedBooking] = useState(null);
   const [dragOverTarget, setDragOverTarget] = useState(null);
@@ -580,18 +603,6 @@ export function ManagerBookingListPage() {
     { label: "3 PM - 8 PM", value: "afternoon", startHour: 15, endHour: 20 }
   ];
 
-  // Core state
-  const [query, setQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState("All");
-  const [dateFrom, setDateFrom] = useState(() => dayjs());
-  const [dateTo, setDateTo] = useState(() => dayjs());
-  const [anchorDate, setAnchorDate] = useState(() => dayjs());
-  const [bookings, setBookings] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
-
   // Modal states
   const [isAssignArtistModalOpen, setIsAssignArtistModalOpen] = useState(false);
   const [selectedBookingForAssign, setSelectedBookingForAssign] = useState(null);
@@ -610,28 +621,10 @@ export function ManagerBookingListPage() {
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
 
-  const [salonStaffList, setSalonStaffList] = useState([]);
-
   // Fetch salon staff once on mount or when salonId changes
   useEffect(() => {
-    let active = true;
-    const loadStaff = async () => {
-      const salonId = (await getSalonIdAsync()) || getSalonId();
-      if (!salonId) return;
-      try {
-        const staffMembers = await fetchSalonStaff(salonId);
-        if (active) {
-          setSalonStaffList(Array.isArray(staffMembers) ? staffMembers : staffMembers?.items || []);
-        }
-      } catch (staffErr) {
-        console.warn("Failed to fetch salon staff:", staffErr);
-      }
-    };
-    loadStaff();
-    return () => {
-      active = false;
-    };
-  }, []);
+    dispatch(fetchManagerSalonStaffThunk());
+  }, [dispatch]);
 
   const dayViewStaffList = useMemo(() => {
     if (!salonStaffList || salonStaffList.length === 0) {
@@ -659,38 +652,10 @@ export function ManagerBookingListPage() {
   }, [salonStaffList]);
 
   const loadBookings = useCallback(async () => {
-    setIsLoading(true);
-    setError("");
-    try {
-      const salonId = (await getSalonIdAsync()) || getSalonId();
-      if (!salonId) {
-        setError("No salon ID found in session. Please log in as a salon manager.");
-        setIsLoading(false);
-        return;
-      }
-
-      const startParam = dateFrom ? dateFrom.format("YYYY-MM-DD") : undefined;
-      const endParam = dateTo ? dateTo.format("YYYY-MM-DD") : undefined;
-      const result = await fetchBookingsBySalonId(salonId, {
-        pageNumber: 1,
-        pageSize: 1000,
-        startDate: startParam,
-        endDate: endParam
-      });
-      let apiBookings = [];
-      if (result?.items) apiBookings = result.items;
-      else if (Array.isArray(result)) apiBookings = result;
-      let uiBookings = apiBookings.map((b, idx) => mapApiBookingToUiFormat(b, idx));
-
-      setBookings(uiBookings);
-      setHasLoadedOnce(true);
-    } catch (err) {
-      console.error("Failed to load bookings:", err);
-      setError(err.message || "Failed to load bookings. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [dateFrom, dateTo]);
+    const startParam = dateFrom ? dateFrom.format("YYYY-MM-DD") : undefined;
+    const endParam = dateTo ? dateTo.format("YYYY-MM-DD") : undefined;
+    dispatch(fetchManagerBookingsThunk({ startDate: startParam, endDate: endParam }));
+  }, [dateFrom, dateTo, dispatch]);
 
   useEffect(() => {
     loadBookings();
@@ -729,22 +694,16 @@ export function ManagerBookingListPage() {
     const isUnassigned = typeof artistItem === "object" ? artistItem.isUnassigned : (artistItem === "Unassigned");
 
     // Optimistically update UI
-    setBookings((prevBookings) =>
-      prevBookings.map((b) => {
-        if (b.id === draggedBooking.id) {
-          return {
-            ...b,
-            startTime: formattedTime,
-            time: formattedRange,
-            artist: targetArtistName || b.artist,
-            nailArtistName: targetArtistName || b.nailArtistName,
-            artistId: staffArtistId || b.artistId,
-            nailArtistId: staffArtistId || b.nailArtistId,
-          };
-        }
-        return b;
-      })
-    );
+    dispatch(updateBookingLocally({
+      id: bookingIdToAssign,
+      updates: {
+        startTime: formattedTime,
+        artist: targetArtistName,
+        nailArtistName: targetArtistName,
+        artistId: staffArtistId,
+        nailArtistId: staffArtistId,
+      }
+    }));
 
     const activeDragged = draggedBooking;
     setDraggedBooking(null);
@@ -1328,7 +1287,8 @@ export function ManagerBookingListPage() {
                                 onClick={() => handleOpenDrawer(row.id)}
                               >
                                 <td className="px-4 py-3.5 align-middle">
-                                  <p className="text-xs font-bold text-[#2B182B] truncate" title={row.time}>{row.time}</p>
+                                  <p className="text-xs font-bold text-[#2B182B] truncate" title={row.date}>{row.date}</p>
+                                  <p className="text-[11px] font-medium text-[#9E8497] truncate" title={row.time}>{row.time}</p>
                                   <div className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-[#9E8497]">
                                     <Clock3 size={11} className="text-[#E84F93]" />
                                     <span>{row.duration}</span>
@@ -1393,7 +1353,14 @@ export function ManagerBookingListPage() {
                                 </td>
 
                                 <td className="px-3 py-3.5 align-middle">
-                                  <StatusPill status={row.status} />
+                                  <div className="flex flex-col items-start gap-1">
+                                    <StatusPill status={row.status} />
+                                    {(row.status === "Rejected" || row.status === "Cancelled" || row.status === "Canceled") && row.amountPaid > 0 && !row.isRefunded && (
+                                      <span className="inline-flex items-center gap-1 rounded-full border border-[#FECDD3] bg-[#FEF2F2] px-2 py-0.5 text-[9px] font-extrabold text-[#E11D48] shadow-2xs whitespace-nowrap">
+                                        {language === "vi" ? "CHƯA HOÀN TIỀN" : "NOT REFUNDED"}
+                                      </span>
+                                    )}
+                                  </div>
                                 </td>
 
                                 <td className="px-3 py-3.5 align-middle text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
@@ -1539,7 +1506,7 @@ export function ManagerBookingListPage() {
                                               className={`group relative rounded-xl border p-2.5 cursor-grab active:cursor-grabbing shadow-2xs hover:shadow-md transition-all w-full overflow-hidden ${getCalendarCardStyle(b.status)}`}
                                             >
                                               <div className="flex items-center justify-between mb-1 min-w-0">
-                                                <span className="font-bold text-xs truncate" title={b.customer}>{b.customer}</span>
+                                                <span className="font-semibold">{getBookingStatusLabel(b.status, language)}</span><span className="font-bold text-xs truncate" title={b.customer}>{b.customer}</span>
                                                 <GripVertical size={14} className="opacity-40 group-hover:opacity-100 transition shrink-0 ml-1" />
                                               </div>
                                               <p className="text-[10px] opacity-80 truncate mb-1" title={b.service}>{b.service}</p>
@@ -1769,7 +1736,7 @@ export function ManagerBookingListPage() {
                   {capacityData.map((period, i) => (
                     <div key={i}>
                       <div className="flex items-center justify-between text-xs text-[#9E8497]">
-                        <span className="font-bold text-[#2B182B]">{period.label}</span>
+                        <span className="font-semibold">{period.label}</span>
                         <span className="font-bold text-[#E84F93]">{period.value}%</span>
                       </div>
                       <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-[#FAF0F5]">
@@ -1806,7 +1773,7 @@ export function ManagerBookingListPage() {
 
                 <div className="mt-4 space-y-3">
                   <div className="flex items-center justify-between text-xs text-[#9E8497] border-b border-[#F3E2EC] pb-2">
-                    <span className="font-bold">{language === "vi" ? "Ngày" : "Date"}</span>
+                    <span className="font-semibold">{language === "vi" ? "Ngày" : "Date"}</span>
                     <span className="font-bold text-[#2B182B]">{scheduleDate.format("MMM D, YYYY")}</span>
                   </div>
 
