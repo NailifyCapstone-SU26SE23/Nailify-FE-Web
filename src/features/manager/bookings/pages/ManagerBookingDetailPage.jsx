@@ -21,8 +21,9 @@ import {
   Crown,
   FileText,
   Check,
+  Banknote,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ROUTES } from "../../../../shared/constants/routes";
@@ -36,7 +37,8 @@ import {
   managerApproveReschedule,
   managerRejectReschedule,
 } from "../services/bookingsService";
-import { Spin, Alert, Modal, Input, Image } from "antd";
+import { fetchTransactionsByBookingId, fetchTransactionById, processRefund, checkPaymentStatus } from "../../transaction-management/services/transactionService";
+import { Spin, Alert, Modal, Input, Image, Select, Table } from "antd";
 import toast from "react-hot-toast";
 import { ConfirmBookingModal } from "../components/ConfirmBookingModal";
 import { RejectBookingModal } from "../components/RejectBookingModal";
@@ -49,6 +51,32 @@ import { getSalonId } from "../../staff-artist-management/services/nailArtistsSe
 
 
 const roleConfig = BOOKING_ROLE_CONFIG[ROLES.manager];
+const SCHEDULE_SCROLL_SENSITIVITY = 0.5;
+
+const VIETNAM_BANKS = [
+  { code: "VCB", name: "Vietcombank" },
+  { code: "TCB", name: "Techcombank" },
+  { code: "BIDV", name: "BIDV" },
+  { code: "CTG", name: "VietinBank" },
+  { code: "MB", name: "MBBank" },
+  { code: "VPB", name: "VPBank" },
+  { code: "ACB", name: "ACB" },
+  { code: "TPB", name: "TPBank" },
+  { code: "VIB", name: "VIB" },
+  { code: "HDB", name: "HDBank" },
+  { code: "STB", name: "Sacombank" },
+  { code: "SHB", name: "SHB" },
+  { code: "EIB", name: "Eximbank" },
+  { code: "MSB", name: "MSB" },
+  { code: "OCB", name: "OCB" },
+  { code: "LPB", name: "LienVietPostBank" },
+  { code: "BAB", name: "Bac A Bank" },
+  { code: "ABB", name: "ABBank" },
+  { code: "VAB", name: "VietABank" },
+  { code: "NAB", name: "Nam A Bank" },
+  { code: "KLB", name: "Kienlongbank" },
+  { code: "AGRIBANK", name: "Agribank" }
+];
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 16 },
@@ -139,8 +167,7 @@ InfoTile.propTypes = {
   className: PropTypes.string,
 };
 
-function formatStatusDisplay(status) {
-  const { t, language } = useLanguage();
+function formatStatusDisplay(status, language) {
   switch (status) {
     case "Checked In":
     case "CheckedIn":
@@ -202,8 +229,15 @@ function getStatusTone(status) {
 
 function formatDate(dateString) {
   if (!dateString) return "N/A";
-  const normalized = String(dateString).trim();
-  const datePart = normalized.includes("T") ? normalized.split("T")[0] : normalized;
+  const str = String(dateString).trim();
+  if (str.includes("T")) {
+    return new Date(str).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  }
+  const datePart = str.split("T")[0];
   const [year, month, day] = datePart.split("-").map(Number);
   if (!year || !month || !day) return "N/A";
   return new Date(year, month - 1, day).toLocaleDateString("en-US", {
@@ -214,8 +248,16 @@ function formatDate(dateString) {
 }
 
 function formatTime(startTime, fallbackDateTime) {
-  const normalizedTime = String(startTime || "").trim();
-  const rawTime = normalizedTime
+  const str = String(startTime || "").trim();
+  if (str.includes("T")) {
+    return new Date(str).toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  }
+
+  const rawTime = str
     || String(fallbackDateTime || "")
       .trim()
       .split("T")[1]
@@ -297,6 +339,10 @@ function getQrCodeSrc(qrCode) {
   return trimmed;
 }
 
+// Module-level set to track which booking IDs have already shown the warning.
+// Using module-level variable so it survives React StrictMode's double-mount in dev.
+const _shownRefundWarningForBookings = new Set();
+
 export function ManagerBookingDetailPage() {
   const { t, language } = useLanguage();
   const { bookingId } = useParams();
@@ -305,7 +351,52 @@ export function ManagerBookingDetailPage() {
   const [customer, setCustomer] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(null);
+
+  const [isRefundWarningOpen, setIsRefundWarningOpen] = useState(false);
+  const [transactions, setTransactions] = useState([]);
+
+  // Transaction Details Modal State
+  const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
+  const [selectedTransactionDetail, setSelectedTransactionDetail] = useState(null);
+  const [isFetchingTransaction, setIsFetchingTransaction] = useState(false);
+
+  // Refund Modal State
+  const [isRefundBankModalOpen, setIsRefundBankModalOpen] = useState(false);
+  const [isRefunding, setIsRefunding] = useState(false);
+  const [refundForm, setRefundForm] = useState({ bankCode: "", accountNumber: "", accountName: "" });
+
+  const handleRefundSubmit = async () => {
+    if (!refundForm.bankCode || !refundForm.accountNumber || !refundForm.accountName) {
+      toast.error(language === "vi" ? "Vui lòng nhập đầy đủ thông tin ngân hàng" : "Please fill in all bank details");
+      return;
+    }
+
+    setIsRefunding(true);
+    try {
+      const refundPayload = {
+        bankCode: refundForm.bankCode,
+        accountNumber: refundForm.accountNumber,
+        accountName: refundForm.accountName
+      };
+
+      await processRefund(normalizedBookingId, refundPayload);
+
+      // Check Status
+      const depositTx = transactions && transactions.length > 0 ? transactions[0] : null;
+      if (depositTx && depositTx.orderCode) {
+        await checkPaymentStatus(depositTx.orderCode);
+      }
+
+      toast.success(language === "vi" ? "Đã gửi yêu cầu hoàn tiền thành công!" : "Refund processed successfully!");
+      setIsRefundBankModalOpen(false);
+      loadBooking({ silent: true });
+    } catch (err) {
+      toast.error(err.message || (language === "vi" ? "Lỗi khi xử lý hoàn tiền" : "Failed to process refund"));
+    } finally {
+      setIsRefunding(false);
+    }
+  };
 
   // Modals state
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
@@ -366,6 +457,8 @@ export function ManagerBookingDetailPage() {
       depositAmount: rawBooking.depositAmount,
       depositTone: rawBooking.depositAmount ? "text-[#059669] font-bold" : "text-[#D97706] font-bold",
       status: rawBooking.status || "Pending",
+      amountPaid: rawBooking.amountPaid ?? rawBooking.depositAmount ?? 0,
+      isRefunded: rawBooking.isRefunded || false,
       totalPrice: basePrice,
       discounts: rawBooking?.discounts,
       discountAmount: totalDiscount,
@@ -410,6 +503,14 @@ export function ManagerBookingDetailPage() {
           console.warn("Failed to load customer details:", err);
         }
       }
+
+      // Fetch transactions for this booking
+      try {
+        const txs = await fetchTransactionsByBookingId(bookingId);
+        setTransactions(txs);
+      } catch (err) {
+        console.warn("Failed to load transactions:", err);
+      }
     } catch (err) {
       console.error("Failed to load booking:", err);
       setError(err.message || "Failed to load booking details.");
@@ -428,10 +529,43 @@ export function ManagerBookingDetailPage() {
     }
   }, [bookingId, loadBooking]);
 
+  useEffect(() => {
+    if (booking?.id) {
+      const isCancelled = booking.status === "Rejected" || booking.status === "Cancelled" || booking.status === "Canceled";
+      if (isCancelled && booking.amountPaid > 0 && !booking.isRefunded) {
+        if (!_shownRefundWarningForBookings.has(booking.id)) {
+          _shownRefundWarningForBookings.add(booking.id);
+          setIsRefundWarningOpen(true);
+        }
+      }
+    }
+    return () => {
+      // Clean up when leaving the page so warning shows again if user comes back later
+      if (booking?.id) {
+        _shownRefundWarningForBookings.delete(booking.id);
+      }
+    };
+  }, [booking?.id, booking?.status, booking?.amountPaid, booking?.isRefunded]);
+
   const handleSaveNotes = () => {
     setBooking((prev) => (prev ? { ...prev, notes: bookingNotesText } : prev));
     toast.success("Booking notes updated successfully!", { icon: "📝" });
     setIsEditNotesModalOpen(false);
+  };
+
+  const handleTransactionClick = async (txId) => {
+    setIsTransactionModalOpen(true);
+    setIsFetchingTransaction(true);
+    setSelectedTransactionDetail(null);
+    try {
+      const details = await fetchTransactionById(txId);
+      setSelectedTransactionDetail(details);
+    } catch (err) {
+      toast.error(language === "vi" ? "Lỗi tải chi tiết giao dịch" : "Failed to load transaction details");
+      setIsTransactionModalOpen(false);
+    } finally {
+      setIsFetchingTransaction(false);
+    }
   };
 
   const handleApproveCustomerReschedule = async () => {
@@ -523,8 +657,15 @@ export function ManagerBookingDetailPage() {
                 </span>
                 <span className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1 text-xs font-extrabold shadow-2xs ${getStatusTone(booking?.status)}`}>
                   <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                  {formatStatusDisplay(booking?.status)}
+                  {formatStatusDisplay(booking?.status, language)}
                 </span>
+
+                {/* Warning for unrefunded cancelled bookings */}
+                {(booking?.status === "Rejected" || booking?.status === "Cancelled" || booking?.status === "Canceled") && booking?.amountPaid > 0 && !booking?.isRefunded && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[#FECDD3] bg-[#FEF2F2] px-3.5 py-1 text-xs font-extrabold text-[#E11D48] shadow-2xs">
+                    {language === "vi" ? "CHƯA HOÀN TIỀN" : "NOT REFUNDED"}
+                  </span>
+                )}
               </div>
               <p className="mt-1.5 text-xs text-[#9E8497] font-medium max-w-xl">
                 {t("manager.bookings.desc")}
@@ -543,6 +684,20 @@ export function ManagerBookingDetailPage() {
                 <Edit3 size={15} className="text-[#E84F93]" />
                 <span>{t("manager.common.edit")}</span>
               </motion.button>
+
+              {/* Refund Button */}
+              {(booking?.status === "Rejected" || booking?.status === "Cancelled" || booking?.status === "Canceled") && booking?.amountPaid > 0 && !booking?.isRefunded && (
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  type="button"
+                  onClick={() => setIsRefundBankModalOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-full border border-[#FECDD3] bg-[#E11D48] px-5 py-2.5 text-xs font-extrabold text-white shadow-md hover:bg-[#BE123C] hover:shadow-lg transition-all"
+                >
+                  <Banknote size={15} />
+                  <span>{language === "vi" ? "Nhập TK Hoàn tiền" : "Refund Bank Info"}</span>
+                </motion.button>
+              )}
 
               {/* Propose Reschedule Button */}
               {!isFinalStatus && (
@@ -822,66 +977,80 @@ export function ManagerBookingDetailPage() {
 
           {/* Card 3: Service & Design Items List */}
           {booking?.bookingItems && booking.bookingItems.length > 0 && (
-            <Card>
+            <Card className="overflow-hidden">
               <SectionTitle subtitle={language === "vi" ? "Thông tin dịch vụ" : "Service & Appointment Info"} icon={Tag}>
                 {language === "vi" ? "Thông tin dịch vụ" : "Service & Appointment Info"} ({booking.bookingItems.length})
               </SectionTitle>
-              <div className="space-y-4">
-                {booking.bookingItems.map((item, idx) => (
-                  <motion.div
-                    key={idx}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.05 }}
-                    className="rounded-2xl border border-[#F3E2EC] bg-gradient-to-br from-white to-[#FFF9FB] p-5 shadow-2xs hover:border-[#E8C5D8] transition-all"
-                  >
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                      <div className="flex-1 min-w-[280px]">
-                        <h4 className="text-base font-extrabold text-[#2B182B]">{item.serviceName || "Nail Service"}</h4>
-                        {item.nailVariantName && (
-                          <p className="mt-1 text-xs font-bold text-[#E84F93] flex items-center gap-1">
-                            <Sparkles size={12} /> Nail Variant: {item.nailVariantName}
-                          </p>
-                        )}
-                        {item.customerNailName && (
-                          <p className="text-xs text-[#9E8497] mt-0.5">Customer Nail Set: {item.customerNailName}</p>
-                        )}
-
-                        {/* Nail Variant Image Preview */}
-                        {(item.nailVariantImageUrl || item.customerNailImageUrl) && (
-                          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {item.nailVariantImageUrl && (
-                              <div
-                                className="group relative rounded-2xl border border-[#F3D6E5] overflow-hidden bg-white cursor-pointer hover:border-[#E84F93] transition shadow-2xs"
-                                onClick={() => setActiveImageModalUrl(item.nailVariantImageUrl.replace(/`/g, ''))}
-                              >
-                                <img
-                                  src={item.nailVariantImageUrl.replace(/`/g, '')}
-                                  alt={item.nailVariantName || "Nail design"}
-                                  className="w-full h-36 object-cover group-hover:scale-105 transition duration-300"
-                                  onError={(e) => { e.target.style.display = 'none'; }}
-                                />
-                                <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold gap-1">
-                                  <Maximize2 size={16} /> View Design
-                                </div>
+              <div className="mt-4 rounded-xl border border-[#F3E2EC] overflow-hidden bg-white shadow-2xs">
+                <Table
+                  columns={[
+                    {
+                      title: language === "vi" ? "Dịch vụ" : "Service",
+                      dataIndex: 'serviceName',
+                      key: 'serviceName',
+                      render: (text, item) => (
+                        <div className="flex items-start gap-4">
+                          {(item.nailVariantImageUrl || item.customerNailImageUrl) && (
+                            <div 
+                              className="group relative w-[72px] h-[72px] rounded-xl border border-[#F3D6E5] overflow-hidden cursor-pointer hover:border-[#E84F93] transition-colors shrink-0 shadow-sm"
+                              onClick={() => setActiveImageModalUrl((item.nailVariantImageUrl || item.customerNailImageUrl).replace(/`/g, ''))}
+                            >
+                              <img
+                                src={(item.nailVariantImageUrl || item.customerNailImageUrl).replace(/`/g, '')}
+                                alt="Design"
+                                className="w-full h-full object-cover group-hover:scale-110 transition duration-300"
+                                onError={(e) => { e.target.style.display = 'none'; }}
+                              />
+                              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                                <Maximize2 size={16} />
                               </div>
+                            </div>
+                          )}
+                          <div className="py-1">
+                            <h4 className="text-[15px] font-extrabold text-[#2B182B] mb-1">{text || "Nail Service"}</h4>
+                            {item.nailVariantName && (
+                              <p className="text-xs font-bold text-[#E84F93] flex items-center gap-1.5 mb-0.5">
+                                <Sparkles size={13} /> {item.nailVariantName}
+                              </p>
+                            )}
+                            {item.customerNailName && (
+                              <p className="text-xs font-medium text-[#9E8497] flex items-center gap-1.5">
+                                <Edit3 size={12} /> Custom: {item.customerNailName}
+                              </p>
                             )}
                           </div>
-                        )}
-                      </div>
-
-                      <div className="grid min-w-[240px] lg:w-[320px] shrink-0 gap-3 sm:grid-cols-3 bg-[#FAF0F5]/80 border border-[#F3D6E5]/60 p-3.5 rounded-2xl">
-                        <InfoItem label={language === "vi" ? "Số lượng" : "Quantity"}>{item.quantity !== undefined ? item.quantity : "1"}</InfoItem>
-                        <InfoItem label={language === "vi" ? "Thời lượng" : "Duration"}>{item.duration !== undefined ? formatDuration(item.duration) : "-"}</InfoItem>
-                        <InfoItem label={language === "vi" ? "Giá tiền" : "Price"}>
-                          <span className="font-extrabold text-[#E84F93]">
-                            {item.price !== undefined ? formatVND(item.price) : "-"}
-                          </span>
-                        </InfoItem>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
+                        </div>
+                      ),
+                    },
+                    {
+                      title: language === "vi" ? "Số lượng" : "QTY",
+                      dataIndex: 'quantity',
+                      key: 'quantity',
+                      align: 'center',
+                      width: 100,
+                      render: (qty) => <span className="font-bold text-[#4B5563] text-sm">{qty !== undefined ? qty : "1"}</span>,
+                    },
+                    {
+                      title: language === "vi" ? "Thời lượng" : "Duration",
+                      dataIndex: 'duration',
+                      key: 'duration',
+                      align: 'center',
+                      width: 120,
+                      render: (dur) => <span className="font-bold text-[#4B5563] text-sm">{dur !== undefined ? formatDuration(dur) : "-"}</span>,
+                    },
+                    {
+                      title: language === "vi" ? "Giá tiền" : "Price",
+                      dataIndex: 'price',
+                      key: 'price',
+                      align: 'right',
+                      width: 140,
+                      render: (price) => <span className="font-extrabold text-[#E84F93] text-[15px]">{price !== undefined ? formatVND(price) : "-"}</span>,
+                    },
+                  ]}
+                  dataSource={booking.bookingItems.map((item, index) => ({ ...item, key: item.id || index }))}
+                  pagination={false}
+                  rowClassName="hover:bg-[#FFF9FB]/50 transition-colors"
+                />
               </div>
             </Card>
           )}
@@ -922,31 +1091,117 @@ export function ManagerBookingDetailPage() {
             </SectionTitle>
 
             <div className="space-y-5">
-              <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFF9FB] p-4 space-y-3">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-[#9E8497]">{language === "vi" ? "Tiền cọc" : "Deposit"}:</span>
-                  <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-extrabold ${booking?.depositTone}`}>{booking?.deposit}</span>
-                </div>
+              {(() => {
+                const depositTx = transactions && transactions.length > 0 ? transactions[0] : null;
+                const actualDeposit = depositTx?.amount || booking?.depositAmount || 0;
+                const isPaid = depositTx?.status === "Paid" || (booking?.amountPaid > 0 && booking?.amountPaid >= actualDeposit);
 
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-[#9E8497]">{language === "vi" ? "Tổng tiền" : "Subtotal"}:</span>
-                  <span className="font-bold text-[#2B182B]">{formatVND(booking?.totalPrice)}</span>
-                </div>
+                let depositText = "Pending";
+                let depositTone = "text-[#D97706] font-bold";
 
-                {booking?.discountAmount > 0 && (
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-[#9E8497]">{language === "vi" ? "Giảm giá" : "Discount"}:</span>
-                    <span className="font-bold text-[#059669]">-{formatVND(booking?.discountAmount)}</span>
+                if (actualDeposit > 0) {
+                  depositText = formatVND(actualDeposit);
+                  depositTone = isPaid ? "text-[#059669] font-bold" : "text-[#D97706] font-bold";
+                }
+
+                return (
+                  <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFF9FB] p-4 space-y-3">
+                    {/* <div className="flex items-center justify-between text-xs">
+                      <span className="font-semibold text-[#9E8497]">{language === "vi" ? "Tiền cọc" : "Deposit"}:</span>
+                      <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-extrabold ${depositTone}`}>{depositText}</span>
+                    </div> */}
+
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-semibold text-[#9E8497]">{language === "vi" ? "Tổng tiền" : "Subtotal"}:</span>
+                      <span className="font-bold text-[#2B182B]">{formatVND(booking?.totalPrice)}</span>
+                    </div>
+
+                    {booking?.discountAmount > 0 && (
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-semibold text-[#9E8497]">{language === "vi" ? "Giảm giá" : "Discount"}:</span>
+                        <span className="font-bold text-[#059669]">-{formatVND(booking?.discountAmount)}</span>
+                      </div>
+                    )}
+
+                    <div className="border-t border-[#F3E2EC] pt-3 flex items-center justify-between">
+                      <span className="text-xs font-bold text-[#2B182B]">{language === "vi" ? "Tổng cộng" : "Total Amount"}:</span>
+                      <span className="text-xl font-bold text-[#E84F93]">
+                        {formatVND(booking?.discountAmount > 0 ? booking.finalPrice : booking.totalPrice)}
+                      </span>
+                    </div>
                   </div>
-                )}
+                );
+              })()}
 
-                <div className="border-t border-[#F3E2EC] pt-3 flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#2B182B]">{language === "vi" ? "Tổng cộng" : "Total Amount"}:</span>
-                  <span className="text-xl font-bold text-[#E84F93]">
-                    {formatVND(booking?.discountAmount > 0 ? booking.finalPrice : booking.totalPrice)}
-                  </span>
+              {/* Transactions List */}
+              {transactions && transactions.length > 0 && (
+                <div className="pt-2">
+                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#9E8497] mb-3">
+                    {language === "vi" ? "Lịch sử giao dịch" : "Transaction History"}
+                  </h4>
+                  <div className="space-y-3">
+                    {[...transactions].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)).map((tx, idx) => {
+                      const isDeposit = idx === 0 || tx.amount === booking?.depositAmount;
+                      const txLabel = isDeposit ? (language === "vi" ? "Tiền cọc" : "Deposit") : (language === "vi" ? "Tiền trả còn lại" : "Remaining Balance");
+
+                      const actualTotal = booking?.discountAmount > 0 ? booking.finalPrice : booking.totalPrice;
+                      const percentage = actualTotal > 0 ? Math.round((tx.amount / actualTotal) * 100) : 0;
+
+                      return (
+                        <div
+                          key={tx.transactionId}
+                          onClick={() => handleTransactionClick(tx.transactionId)}
+                          className="rounded-xl border border-[#F3E2EC] bg-white p-3 shadow-2xs hover:border-[#E84F93] transition-colors cursor-pointer group flex flex-col gap-2"
+                        >
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <div className="flex items-center gap-1.5">
+                                <p className="text-[11px] font-bold text-[#2B182B]">{txLabel}</p>
+                                {percentage > 0 && (
+                                  <span className="px-1.5 py-0.5 rounded-md bg-[#FFF0F5] text-[#E84F93] text-[9px] font-extrabold tracking-wider border border-[#F3D6E5]/60">
+                                    {percentage}%
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[10px] text-[#9E8497] mt-0.5 font-mono">#{tx.orderCode}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-[13px] font-extrabold text-[#E84F93]">{formatVND(tx.amount)}</p>
+                              <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold ${String(tx.status).toLowerCase() === 'paid' ? 'bg-[#ECFDF5] text-[#059669]' :
+                                String(tx.status).toLowerCase() === 'pending' ? 'bg-[#FFFBEB] text-[#D97706]' :
+                                  'bg-[#F3F4F6] text-[#6B7280]'
+                                }`}>
+                                {tx.status}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="mt-1 pt-2 border-t border-[#F3E2EC] border-dashed space-y-1">
+                            {tx.createdAt && (
+                              <div className="flex justify-between items-center text-[10px]">
+                                <span className="text-[#9E8497] font-medium">{language === "vi" ? "Tạo lúc" : "Created At"}</span>
+                                <span className="font-medium text-[#2B182B]">{formatDate(tx.createdAt)} {formatTime(tx.createdAt)}</span>
+                              </div>
+                            )}
+                            {tx.paidAt && (
+                              <div className="flex justify-between items-center text-[10px]">
+                                <span className="text-[#9E8497] font-medium">{language === "vi" ? "Thanh toán lúc" : "Paid At"}</span>
+                                <span className="font-medium text-[#059669]">{formatDate(tx.paidAt)} {formatTime(tx.paidAt)}</span>
+                              </div>
+                            )}
+                            {!tx.paidAt && tx.expiresAt && (
+                              <div className="flex justify-between items-center text-[10px]">
+                                <span className="text-[#9E8497] font-medium">{language === "vi" ? "Hết hạn lúc" : "Expires At"}</span>
+                                <span className="font-medium text-[#E11D48]">{formatDate(tx.expiresAt)} {formatTime(tx.expiresAt)}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* QR & QT Confirmation Code */}
               {(booking?.qrCode || booking?.qtCode) && (
@@ -1144,6 +1399,219 @@ export function ManagerBookingDetailPage() {
           onSuccess={() => loadBooking({ silent: true })}
         />
       )}
+
+      {/* Refund Warning Modal */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2 text-[#E11D48]">
+            <AlertTriangle size={20} />
+            <span>{language === "vi" ? "Cần hoàn tiền" : "Refund Required"}</span>
+          </div>
+        }
+        open={isRefundWarningOpen}
+        onCancel={() => setIsRefundWarningOpen(false)}
+        footer={
+          <button
+            type="button"
+            onClick={() => setIsRefundWarningOpen(false)}
+            className="px-4 py-2 bg-[#E84F93] hover:bg-[#D43F7D] text-white rounded-xl font-bold transition-colors"
+          >
+            {language === "vi" ? "Đã hiểu" : "Got it"}
+          </button>
+        }
+        centered
+      >
+        <p className="text-[#4B5563]">
+          {language === "vi"
+            ? "Đơn đặt lịch này đã bị hủy nhưng chưa hoàn tiền cho khách. Vui lòng tiến hành hoàn tiền!"
+            : "This booking was cancelled but the customer hasn't been refunded yet. Please process the refund!"}
+        </p>
+      </Modal>
+
+      {/* Transaction Details Modal */}
+      <Modal
+        open={isTransactionModalOpen}
+        onCancel={() => setIsTransactionModalOpen(false)}
+        footer={null}
+        closable={false}
+        centered
+        width={400}
+        styles={{ content: { padding: 0, borderRadius: 24, overflow: "hidden" } }}
+      >
+        <div className="bg-[#FAF6F8] font-sans max-h-[85vh] overflow-y-auto">
+          <div className="flex items-center justify-between p-5 border-b border-[#F3E2EC] bg-white sticky top-0 z-10">
+            <h3 className="text-base font-extrabold text-[#2B182B] flex items-center gap-2">
+              <CreditCard size={18} className="text-[#E84F93]" /> {language === "vi" ? "Chi tiết giao dịch" : "Transaction Details"}
+            </h3>
+            <button type="button" onClick={() => setIsTransactionModalOpen(false)} className="text-[#9E8497] hover:text-[#E84F93]">
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="p-5">
+            {isFetchingTransaction ? (
+              <div className="flex flex-col items-center justify-center py-12 text-[#9E8497]">
+                <Spin size="large" />
+                <p className="mt-3 text-xs font-medium">{language === "vi" ? "Đang tải..." : "Loading..."}</p>
+              </div>
+            ) : selectedTransactionDetail ? (
+              <div className="space-y-4">
+                <div className="text-center pb-4 border-b border-[#F3E2EC]">
+                  <p className="text-[10px] uppercase font-bold text-[#9E8497] mb-1">{language === "vi" ? "Số tiền" : "Amount"}</p>
+                  <p className="text-3xl font-extrabold text-[#E84F93] mb-2">{formatVND(selectedTransactionDetail.amount)}</p>
+                  <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold ${String(selectedTransactionDetail.status).toLowerCase() === 'paid' ? 'bg-[#ECFDF5] text-[#059669]' :
+                    String(selectedTransactionDetail.status).toLowerCase() === 'pending' ? 'bg-[#FFFBEB] text-[#D97706]' :
+                      'bg-[#F3F4F6] text-[#6B7280]'
+                    }`}>
+                    {selectedTransactionDetail.status}
+                  </span>
+                </div>
+
+                <div className="space-y-3 bg-white p-4 rounded-xl border border-[#F3E2EC] shadow-2xs">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-[#9E8497] font-medium">{language === "vi" ? "Mã đơn hàng" : "Order Code"}</span>
+                    <span className="font-mono font-bold text-[#2B182B]">#{selectedTransactionDetail.orderCode}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-[#9E8497] font-medium">{language === "vi" ? "Thời gian tạo" : "Created At"}</span>
+                    <span className="font-medium text-[#2B182B]">{formatDate(selectedTransactionDetail.createdAt)} {formatTime(selectedTransactionDetail.createdAt)}</span>
+                  </div>
+
+                  {selectedTransactionDetail.paidAt && (
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-[#9E8497] font-medium">{language === "vi" ? "Thời gian trả" : "Paid At"}</span>
+                      <span className="font-medium text-[#059669]">{formatDate(selectedTransactionDetail.paidAt)} {formatTime(selectedTransactionDetail.paidAt)}</span>
+                    </div>
+                  )}
+
+                  {!selectedTransactionDetail.paidAt && selectedTransactionDetail.expiresAt && (
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-[#9E8497] font-medium">{language === "vi" ? "Thời gian hết hạn" : "Expires At"}</span>
+                      <span className="font-medium text-[#E11D48]">{formatDate(selectedTransactionDetail.expiresAt)} {formatTime(selectedTransactionDetail.expiresAt)}</span>
+                    </div>
+                  )}
+
+                  {selectedTransactionDetail.customerName && (
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-[#9E8497] font-medium">{language === "vi" ? "Khách hàng" : "Customer"}</span>
+                      <span className="font-bold text-[#2B182B]">{selectedTransactionDetail.customerName}</span>
+                    </div>
+                  )}
+
+                  {selectedTransactionDetail.salonName && (
+                    <div className="flex justify-between items-center text-xs mt-2 pt-2 border-t border-[#F3E2EC] border-dashed">
+                      <span className="text-[#9E8497] font-medium">Salon</span>
+                      <span className="font-medium text-[#E84F93]">{selectedTransactionDetail.salonName}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-[#9E8497] text-xs">
+                {language === "vi" ? "Không tìm thấy dữ liệu" : "No data found"}
+              </div>
+            )}
+          </div>
+        </div>
+      </Modal>
+
+      {/* Refund Bank Info Modal */}
+      <Modal
+        open={isRefundBankModalOpen}
+        onCancel={() => setIsRefundBankModalOpen(false)}
+        footer={null}
+        closable={false}
+        centered
+        width={400}
+        styles={{ content: { padding: 0, borderRadius: 24, overflow: "hidden" } }}
+      >
+        <div className="bg-white p-6 font-sans">
+          <div className="flex items-center justify-between mb-4 border-b border-[#F3E2EC] pb-3">
+            <h3 className="text-base font-extrabold text-[#E11D48] flex items-center gap-2">
+              <Banknote size={18} /> {language === "vi" ? "Thông tin TK Hoàn tiền" : "Refund Bank Details"}
+            </h3>
+            <button type="button" onClick={() => setIsRefundBankModalOpen(false)} className="text-[#9E8497] hover:text-[#E84F93]">
+              <X size={18} />
+            </button>
+          </div>
+          <div className="space-y-4">
+            <p className="text-xs text-[#9E8497] leading-relaxed">
+              {language === "vi" ? "Khách hàng đã thanh toán cọc nhưng lịch hẹn đã bị hủy. Vui lòng nhập tài khoản ngân hàng của khách để tiến hành hoàn tiền." : "Customer has paid a deposit but the booking was cancelled. Please enter their bank account details to process the refund."}
+            </p>
+
+            <div>
+              <label className="block text-xs font-bold text-[#2B182B] mb-1.5">{language === "vi" ? "Ngân hàng" : "Bank"}</label>
+              <Select
+                showSearch
+                value={refundForm.bankCode || undefined}
+                placeholder={language === "vi" ? "Chọn ngân hàng..." : "Select bank..."}
+                optionFilterProp="children"
+                onChange={(value) => setRefundForm({ ...refundForm, bankCode: value })}
+                options={VIETNAM_BANKS.map(bank => ({
+                  value: bank.code,
+                  label: (
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-10 h-6 flex items-center justify-center bg-white rounded border border-[#F3E2EC] p-0.5 overflow-hidden">
+                        <img
+                          src={`https://api.vietqr.io/img/${bank.code}.png`}
+                          alt={bank.code}
+                          className="max-w-full max-h-full object-contain"
+                          onError={(e) => { e.target.style.display = 'none'; }}
+                        />
+                      </div>
+                      <span className="text-xs font-semibold text-[#2B182B]">{bank.code} - {bank.name}</span>
+                    </div>
+                  ),
+                  searchtext: `${bank.code} ${bank.name}`.toLowerCase()
+                }))}
+                filterOption={(input, option) => option?.searchtext?.includes(input.toLowerCase())}
+                className="w-full h-10"
+                style={{ borderRadius: 12 }}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-[#2B182B] mb-1.5">{language === "vi" ? "Số tài khoản" : "Account Number"}</label>
+              <Input
+                value={refundForm.accountNumber}
+                onChange={(e) => setRefundForm({ ...refundForm, accountNumber: e.target.value })}
+                placeholder="Nhập số tài khoản..."
+                className="rounded-xl border-[#F3D7E4] focus:border-[#E84F93]"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-[#2B182B] mb-1.5">{language === "vi" ? "Tên chủ tài khoản" : "Account Holder Name"}</label>
+              <Input
+                value={refundForm.accountName}
+                onChange={(e) => setRefundForm({ ...refundForm, accountName: e.target.value.toUpperCase() })}
+                placeholder="VD: NGUYEN VAN A"
+                className="rounded-xl border-[#F3D7E4] focus:border-[#E84F93]"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsRefundBankModalOpen(false)}
+                className="rounded-xl border border-[#F3D7E4] px-4 py-2 text-xs font-bold text-[#2B182B] hover:bg-[#FAF0F5]"
+              >
+                {language === "vi" ? "Hủy" : "Cancel"}
+              </button>
+              <button
+                type="button"
+                onClick={handleRefundSubmit}
+                disabled={isRefunding}
+                className="rounded-xl bg-gradient-to-r from-[#E11D48] to-[#BE123C] px-4 py-2 text-xs font-extrabold text-white shadow-md hover:shadow-lg flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {isRefunding ? <Spin size="small" className="text-white" /> : <Check size={14} />}
+                {language === "vi" ? "Xác nhận & Hoàn tiền" : "Submit Refund"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Modal>
+
     </motion.section>
   );
 }
+
