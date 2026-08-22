@@ -335,9 +335,8 @@ function ServiceDetailModal({ service, onClose }) {
               {language === "vi" ? "Trạng thái" : "Status"}
             </p>
             <span
-              className={`mt-1.5 inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
-                service.status === "Active" ? "bg-[#e7fbf4] text-[#23b68b]" : "bg-[#fff0f5] text-[#eb5a99]"
-              }`}
+              className={`mt-1.5 inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold ${service.status === "Active" ? "bg-[#e7fbf4] text-[#23b68b]" : "bg-[#fff0f5] text-[#eb5a99]"
+                }`}
             >
               {service.status}
             </span>
@@ -771,7 +770,7 @@ export function ServicePricingManagementPage() {
           </div>
         ) : null}
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {summaryCards.map((item) => (
             <MetricCard key={item.label} item={item} />
           ))}

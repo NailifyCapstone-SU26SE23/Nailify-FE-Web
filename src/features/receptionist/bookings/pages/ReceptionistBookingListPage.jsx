@@ -4,6 +4,7 @@ import { Table, Modal } from "antd";
 import toast from "react-hot-toast";
 import jsQR from "jsqr";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import { usePagination } from "../../../../shared/hooks/usePagination";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
@@ -15,12 +16,15 @@ import {
 import { AssignReceptionistArtistModal } from "../components/AssignReceptionistArtistModal";
 import {
   checkoutReceptionistBooking,
-  fetchReceptionistBookings,
-  fetchReceptionistSalonDetail,
-  getReceptionistSalonId,
   manualCheckInReceptionistBooking,
   verifyReceptionistQrToken,
 } from "../services/receptionistBookingService";
+import {
+  fetchReceptionistBookingsThunk,
+  fetchReceptionistSalonDetailThunk,
+  updateBookingLocally,
+  setAllFilters,
+} from "../../../../store/receptionistBookingsSlice";
 
 function formatCurrency(value) {
   return `${new Intl.NumberFormat("vi-VN", {
@@ -86,21 +90,7 @@ function getStatusTone(status) {
   }
 }
 
-function normalizeBooking(booking) {
-  return {
-    bookingId: booking.bookingId,
-    customerName: booking.customerName || "Unknown customer",
-    artistName: booking.artistName || "Unassigned",
-    salonName: booking.salonName,
-    bookingDate: booking.bookingDate,
-    bookingDateValue: toDateInputValue(booking.bookingDate),
-    startTime: booking.startTime,
-    totalPrice: booking.totalPrice,
-    status: booking.status || "Pending",
-    totalDuration: booking.totalDuration,
-    services: booking.bookingItems?.map((item) => item.serviceName).filter(Boolean) ?? [],
-  };
-}
+
 
 function canManualCheckIn(status) {
   const normalizedStatus = String(status || "").trim().toLowerCase();
@@ -154,25 +144,34 @@ export function ReceptionistBookingListPage() {
   };
   const location = useLocation();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const {
+    bookings,
+    isLoading,
+    error,
+    filters,
+    salonName,
+    salonMeta,
+  } = useSelector((state) => state.receptionistBookings);
+
   const todayDate = useMemo(() => getTodayDateParam(), []);
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
-  const [draftQuery, setDraftQuery] = useState("");
-  const [appliedQuery, setAppliedQuery] = useState("");
-  const [dateFrom, setDateFrom] = useState(todayDate);
-  const [dateTo, setDateTo] = useState(todayDate);
-  const [appliedDateFrom, setAppliedDateFrom] = useState(todayDate);
-  const [appliedDateTo, setAppliedDateTo] = useState(todayDate);
-  const [salonFilter, setSalonFilter] = useState("All salons");
-  const [appliedSalonFilter, setAppliedSalonFilter] = useState("All salons");
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [appliedStatusFilter, setAppliedStatusFilter] = useState("All");
-  const [staffFilter, setStaffFilter] = useState("All staff");
-  const [appliedStaffFilter, setAppliedStaffFilter] = useState("All staff");
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [bookings, setBookings] = useState([]);
-  const [salonName, setSalonName] = useState("Receptionist Booking Management");
-  const [salonMeta, setSalonMeta] = useState("Bookings are loaded from salon API.");
+  
+  const [draftQuery, setDraftQuery] = useState(filters.query);
+  const [dateFrom, setDateFrom] = useState(filters.dateFrom);
+  const [dateTo, setDateTo] = useState(filters.dateTo);
+  const [salonFilter, setSalonFilter] = useState(filters.salonFilter);
+  const [statusFilter, setStatusFilter] = useState(filters.statusFilter);
+  const [staffFilter, setStaffFilter] = useState(filters.staffFilter);
+
+  const appliedQuery = filters.query;
+  const appliedDateFrom = filters.dateFrom;
+  const appliedDateTo = filters.dateTo;
+  const appliedSalonFilter = filters.salonFilter;
+  const appliedStatusFilter = filters.statusFilter;
+  const appliedStaffFilter = filters.staffFilter;
+
   const [assignArtistBooking, setAssignArtistBooking] = useState(null);
 
   const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -194,53 +193,10 @@ export function ReceptionistBookingListPage() {
   const scannerSupportMessage = hasCameraSupport
     ? ""
     : "Camera access requires a secure browser context with webcam support.";
-  const loadBookings = useCallback(async () => {
-    setIsLoading(true);
-    setError("");
 
-    try {
-      const firstPageResult = await fetchReceptionistBookings({
-        startDate: appliedDateFrom,
-        endDate: appliedDateTo,
-        pageNumber: 1,
-        pageSize: RECEPTIONIST_BOOKING_FETCH_SIZE,
-        includePagination: true,
-      });
-      let allBookings = Array.isArray(firstPageResult?.items) ? [...firstPageResult.items] : [];
-      const totalPages = Math.max(1, Number(firstPageResult?.pagination?.totalPages || 1));
-
-      if (totalPages > 1) {
-        const remainingPageRequests = [];
-
-        for (let pageNumber = 2; pageNumber <= totalPages; pageNumber += 1) {
-          remainingPageRequests.push(
-            fetchReceptionistBookings({
-              startDate: appliedDateFrom,
-              endDate: appliedDateTo,
-              pageNumber,
-              pageSize: RECEPTIONIST_BOOKING_FETCH_SIZE,
-              includePagination: true,
-            }),
-          );
-        }
-
-        const remainingResults = await Promise.all(remainingPageRequests);
-        remainingResults.forEach((pageResult) => {
-          if (Array.isArray(pageResult?.items)) {
-            allBookings = allBookings.concat(pageResult.items);
-          }
-        });
-      }
-
-      setBookings(allBookings.map(normalizeBooking));
-    } catch (loadError) {
-      const message = loadError instanceof Error ? loadError.message : "Failed to load bookings.";
-      setError(message);
-      toast.error(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [appliedDateFrom, appliedDateTo]);
+  const loadBookings = useCallback(() => {
+    dispatch(fetchReceptionistBookingsThunk({ startDate: appliedDateFrom, endDate: appliedDateTo }));
+  }, [appliedDateFrom, appliedDateTo, dispatch]);
 
   useEffect(() => {
     const timerId = window.setTimeout(() => {
@@ -259,26 +215,8 @@ export function ReceptionistBookingListPage() {
   }, [location.pathname, location.state, navigate]);
 
   useEffect(() => {
-    const timerId = window.setTimeout(() => {
-      void (async () => {
-        try {
-          const salonId = getReceptionistSalonId();
-          const salon = await fetchReceptionistSalonDetail(salonId);
-          setSalonName(salon?.name || "Receptionist Booking Management");
-          setSalonMeta(
-            [salon?.address, salon?.phone].filter(Boolean).join(" | ") || "Bookings are loaded from salon API.",
-          );
-        } catch (salonError) {
-          const message =
-            salonError instanceof Error ? salonError.message : "Failed to load salon detail.";
-          setSalonName("Receptionist Booking Management");
-          setSalonMeta(message);
-        }
-      })();
-    }, 0);
-
-    return () => window.clearTimeout(timerId);
-  }, []);
+    dispatch(fetchReceptionistSalonDetailThunk());
+  }, [dispatch]);
 
   const salonOptions = useMemo(
     () => ["All salons", ...new Set(bookings.map((booking) => booking.salonName).filter(Boolean))],
@@ -356,12 +294,7 @@ export function ReceptionistBookingListPage() {
     if (!updatedBooking?.bookingId) {
       return;
     }
-
-    setBookings((currentBookings) =>
-      currentBookings.map((booking) =>
-        booking.bookingId === updatedBooking.bookingId ? normalizeBooking(updatedBooking) : booking,
-      ),
-    );
+    dispatch(updateBookingLocally({ id: updatedBooking.bookingId, updates: updatedBooking }));
   }
 
   const handleManualCheckIn = useCallback(async (bookingId) => {
@@ -806,12 +739,14 @@ export function ReceptionistBookingListPage() {
               <button
                 type="button"
                 onClick={() => {
-                  setAppliedDateFrom(dateFrom);
-                  setAppliedDateTo(dateTo);
-                  setAppliedSalonFilter(salonFilter);
-                  setAppliedStatusFilter(statusFilter);
-                  setAppliedStaffFilter(staffFilter);
-                  setAppliedQuery(draftQuery);
+                  dispatch(setAllFilters({
+                    dateFrom,
+                    dateTo,
+                    salonFilter,
+                    statusFilter,
+                    staffFilter,
+                    query: draftQuery,
+                  }));
                   setCurrentPage(1);
                 }}
                 className="rounded-full bg-[image:var(--gradient-accent)] px-5 py-3 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
@@ -828,12 +763,15 @@ export function ReceptionistBookingListPage() {
                   setStatusFilter("All");
                   setStaffFilter("All staff");
                   setDraftQuery("");
-                  setAppliedDateFrom(todayDate);
-                  setAppliedDateTo(todayDate);
-                  setAppliedSalonFilter("All salons");
-                  setAppliedStatusFilter("All");
-                  setAppliedStaffFilter("All staff");
-                  setAppliedQuery("");
+                  
+                  dispatch(setAllFilters({
+                    dateFrom: todayDate,
+                    dateTo: todayDate,
+                    salonFilter: "All salons",
+                    statusFilter: "All",
+                    staffFilter: "All staff",
+                    query: "",
+                  }));
                   setCurrentPage(1);
                 }}
                 className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-5 py-3 text-sm font-bold text-[#ea4f93]"

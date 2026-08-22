@@ -63,9 +63,8 @@ function PremiumCard({
           : {}
       }
       onClick={onClick}
-      className={`relative overflow-hidden rounded-[28px] border border-[#f1e7ed] bg-white shadow-[0_20px_40px_-15px_rgba(0,0,0,0.04)] transition-all duration-500 ease-out ${
-        padded ? "p-6" : ""
-      } ${hoverable ? "cursor-pointer" : ""} ${className}`}
+      className={`relative overflow-hidden rounded-[28px] border border-[#f1e7ed] bg-white shadow-[0_20px_40px_-15px_rgba(0,0,0,0.04)] transition-all duration-500 ease-out ${padded ? "p-6" : ""
+        } ${hoverable ? "cursor-pointer" : ""} ${className}`}
       {...rest}
     >
       {children}
@@ -142,9 +141,8 @@ function StatCard({ title, value, icon: Icon, trend, trendValue, color = "pink" 
             </p>
             {trend && (
               <div
-                className={`mt-3 flex items-center gap-1 text-[12px] font-bold ${
-                  trend === "up" ? "text-emerald-600" : "text-orange-500"
-                }`}
+                className={`mt-3 flex items-center gap-1 text-[12px] font-bold ${trend === "up" ? "text-emerald-600" : "text-orange-500"
+                  }`}
               >
                 {trend === "up" ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
                 <span>{trendValue}</span>
@@ -353,7 +351,7 @@ export function AdminSalonBookingsPage() {
   return (
     <div className="mx-auto w-full min-w-0 max-w-[1600px] px-4 py-8">
       <motion.div key="salons-list" initial="hidden" animate="visible" variants={fadeInUp}>
-        <Breadcrumb
+        {/* <Breadcrumb
           items={[
             { label: t("menus.admin-dashboard") || "Dashboard", link: ROUTES.adminDashboard, icon: Home },
             { label: t("menus.admin-bookings") || "Salon Bookings" },
@@ -367,7 +365,7 @@ export function AdminSalonBookingsPage() {
           <p className="mt-2 text-[14px] text-[#9a5f7f]">
             {isVi ? "Chọn chi nhánh để xem và quản lý lịch sử đặt lịch" : "Select a salon to view and manage its booking history"}
           </p>
-        </div>
+        </div> */}
 
         {isLoadingSalons ? (
           <div className="flex flex-col items-center justify-center py-24">
