@@ -13,6 +13,7 @@ import {
   Upload,
   X,
   ChevronDown,
+  Percent,
 } from "lucide-react";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
@@ -148,6 +149,7 @@ export function SalonDetailPage() {
       reviews: salonRow?.reviews || "0",
       operatingHours: salonForm?.operatingHours || {},
       description: salonForm?.description || "",
+      depositConfig: salonForm?.depositConfig || salonRow?.depositConfig || "",
     };
   }, [salonForm, salonRow, managers, salonId]);
 
@@ -180,6 +182,7 @@ export function SalonDetailPage() {
           staffAmount: normalizedSalon.staff,
           status: normalizedSalon.status,
           operatingHours: normalizedSalon.operatingHours,
+          depositConfig: normalizedSalon.depositConfig || apiSalon.depositConfig,
         });
         setSalonRow(normalizedSalon);
       } catch (err) {
@@ -211,6 +214,7 @@ export function SalonDetailPage() {
       { icon: MapPin, label: isVi ? "Địa chỉ" : "Address", value: salonDetail.address },
       { icon: UserRound, label: isVi ? "Quản lý" : "Manager", value: salonDetail.manager === "Unassigned" ? (isVi ? "Chưa phân bổ" : "Unassigned") : salonDetail.manager || (isVi ? "Chưa phân bổ" : "Unassigned") },
       { icon: Phone, label: isVi ? "Điện thoại" : "Phone", value: salonDetail.phone === "Not set" ? (isVi ? "Chưa thiết lập" : "Not set") : salonDetail.phone || (isVi ? "Chưa thiết lập" : "Not set") },
+      { icon: Percent, label: isVi ? "Phần trăm cọc" : "Deposit Config", value: salonDetail.depositConfig ? `${salonDetail.depositConfig}%` : (isVi ? "Chưa thiết lập" : "Not set") },
       { icon: Clock3, label: isVi ? "Giờ mở cửa" : "Operating Hours", value: salonDetail.hours === "Operating hours unavailable" ? (isVi ? "Không khả dụng" : "Operating hours unavailable") : salonDetail.hours },
       { icon: Wrench, label: isVi ? "Số lượng nhân viên" : "Staff Amount", value: salonDetail.staff },
       {

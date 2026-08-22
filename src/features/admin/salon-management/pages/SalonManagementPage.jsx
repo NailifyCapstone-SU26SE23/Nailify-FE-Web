@@ -790,11 +790,12 @@ export function SalonManagementPage() {
       )}
 
       {!isLoading ? (
-        <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_260px]">
-          {/* Left Column */}
-          <div className="space-y-6">
-            {/* Branch Overview */}
-            <PremiumCard className="p-6">
+        <>
+          <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_260px]">
+            {/* Left Column */}
+            <div className="space-y-6">
+              {/* Branch Overview */}
+              <PremiumCard className="p-6">
               <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <SectionHeading
                   title={t("adminSalonManagement.branchOverview")}
@@ -880,9 +881,51 @@ export function SalonManagementPage() {
                 </div>
               )}
             </PremiumCard>
+          </div>
+          {/* End Left Column */}
 
-            {/* Branch Controls */}
-            <PremiumCard className="p-6">
+          {/* Right Column Aside */}
+          <aside className="space-y-6">
+            {salons.length > 0 && (
+              <>
+                <RightMetricCard
+                  title="Top Performing Salon"
+                  branch={salons[0].name}
+                  city={salons[0].address}
+                  concern={{ text: "Great performance!", color: "text-emerald-600" }}
+                  values={{
+                    image: salons[0].image,
+                    occupancy: "92%",
+                    revenue: "88%",
+                    utilization: "95%"
+                  }}
+                  buttonLabel="View Details"
+                  index={0}
+                />
+                {salons.length > 1 && (
+                  <RightMetricCard
+                    title="Low Occupancy Salon"
+                    branch={salons[salons.length - 1].name}
+                    city={salons[salons.length - 1].address}
+                    concern={{ text: "Needs attention", color: "text-amber-600" }}
+                    values={{
+                      image: salons[salons.length - 1].image,
+                      occupancy: "35%",
+                      revenue: "42%",
+                      utilization: "38%"
+                    }}
+                    buttonLabel="View Details"
+                    index={1}
+                  />
+                )}
+              </>
+            )}
+          </aside>
+        </motion.div>
+
+        <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="mt-6">
+          {/* Branch Controls */}
+          <PremiumCard className="p-6">
               <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <SectionHeading
@@ -1109,47 +1152,8 @@ export function SalonManagementPage() {
                 )}
               </div>
             </PremiumCard>
-          </div>
-          {/* End Left Column */}
-
-          {/* Right Column Aside */}
-          <aside className="space-y-6">
-            {salons.length > 0 && (
-              <>
-                <RightMetricCard
-                  title="Top Performing Salon"
-                  branch={salons[0].name}
-                  city={salons[0].address}
-                  concern={{ text: "Great performance!", color: "text-emerald-600" }}
-                  values={{
-                    image: salons[0].image,
-                    occupancy: "92%",
-                    revenue: "88%",
-                    utilization: "95%"
-                  }}
-                  buttonLabel="View Details"
-                  index={0}
-                />
-                {salons.length > 1 && (
-                  <RightMetricCard
-                    title="Low Occupancy Salon"
-                    branch={salons[salons.length - 1].name}
-                    city={salons[salons.length - 1].address}
-                    concern={{ text: "Needs attention", color: "text-amber-600" }}
-                    values={{
-                      image: salons[salons.length - 1].image,
-                      occupancy: "35%",
-                      revenue: "42%",
-                      utilization: "38%"
-                    }}
-                    buttonLabel="View Details"
-                    index={1}
-                  />
-                )}
-              </>
-            )}
-          </aside>
-        </motion.div>
+          </motion.div>
+        </>
       ) : null}
 
       <ActionConfirmModal

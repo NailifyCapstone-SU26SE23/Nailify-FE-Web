@@ -67,6 +67,7 @@ export async function createSalon(formData, imageFile) {
     form.append("phone", formData.phone);
     form.append("latitude", "0");
     form.append("longitude", "0");
+    form.append("DepositConfig", formData.depositConfig ? Number(formData.depositConfig) / 100 : 0);
     if (imageFile) {
       form.append("image", imageFile);
     }
@@ -99,6 +100,7 @@ export async function updateSalon(salonId, formData, imageFile) {
     form.append("phone", formData.phone);
     form.append("latitude", "0");
     form.append("longitude", "0");
+    form.append("DepositConfig", formData.depositConfig ? Number(formData.depositConfig) / 100 : 0);
     if (imageFile) {
       form.append("image", imageFile);
     }

@@ -70,6 +70,7 @@ export function SalonCreatePage() {
     salonName: "",
     address: "",
     phone: "",
+    depositConfig: "",
   });
   const [formError, setFormError] = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
@@ -136,6 +137,7 @@ export function SalonCreatePage() {
         status: "ACTIVE",
         operatingHours: {},
         salonId: "",
+        depositConfig: formData.depositConfig,
       }, selectedImage);
 
       setSaveResult({
@@ -279,6 +281,25 @@ export function SalonCreatePage() {
                 </div>
               </motion.label>
 
+              <motion.label variants={fadeInUp} className="space-y-2.5">
+                <span className="text-[13px] font-semibold text-[#2d1b35]">
+                  {language === "vi" ? "Phần trăm cọc" : "Deposit Config"} <span className="text-[#ea4f93]">*</span>
+                </span>
+                <div className={inputWrapperClassName}>
+                  <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#fecdd3] text-[10px] font-bold text-[#ea4f93]">%</div>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={formData.depositConfig}
+                    onChange={(event) => handleInputChange("depositConfig", event.target.value)}
+                    placeholder="e.g. 20"
+                    className={inputClassName}
+                    required
+                  />
+                </div>
+              </motion.label>
+
               <motion.label variants={fadeInUp} className="space-y-2.5 md:col-span-2">
                 <span className="text-[13px] font-semibold text-[#2d1b35]">
                   {t("adminSalonManagement.address")} <span className="text-[#ea4f93]">*</span>
@@ -385,6 +406,10 @@ export function SalonCreatePage() {
                   <div className="flex justify-between gap-3">
                     <span className="font-semibold text-[#2d1b35]">{t("adminSalonManagement.phone")}</span>
                     <span className="text-right font-medium text-[#2d1b35]">{formData.phone || (t("adminSalonManagement.notSet"))}</span>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <span className="font-semibold text-[#2d1b35]">{language === "vi" ? "Phần trăm cọc" : "Deposit Config"}</span>
+                    <span className="text-right font-medium text-[#2d1b35]">{formData.depositConfig ? `${formData.depositConfig}%` : (t("adminSalonManagement.notSet"))}</span>
                   </div>
                 </div>
               </div>

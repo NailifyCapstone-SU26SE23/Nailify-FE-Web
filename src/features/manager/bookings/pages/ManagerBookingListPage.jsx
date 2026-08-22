@@ -162,6 +162,7 @@ function StatusPill({ status, compact = false }) {
       case "Approved":
         return "bg-[#ECFDF5] text-[#047857] border-[#6EE7B7] shadow-2xs";
       case "Completed":
+        return "bg-[#ECFDF5] text-[#065F46] border-[#34D399] shadow-2xs";
       case "ServiceCompleted":
         return "bg-[#ECFDF5] text-[#065F46] border-[#34D399] shadow-2xs";
       case "Rejected":
@@ -196,8 +197,9 @@ function StatusPill({ status, compact = false }) {
       case "Approved":
         return language === "vi" ? "Đã xác nhận" : "Confirmed";
       case "Completed":
-      case "ServiceCompleted":
         return language === "vi" ? "Đã hoàn thành" : "Completed";
+      case "ServiceCompleted":
+        return language === "vi" ? "Đã hoàn thành dịch vụ" : "Service Completed";
       case "Rejected":
         return language === "vi" ? "Đã từ chối" : "Rejected";
       case "Cancelled":
@@ -215,14 +217,14 @@ function StatusPill({ status, compact = false }) {
   };
 
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full border ${compact ? "px-2 py-0.5 text-[9px]" : "px-3 py-1 text-xs"} font-bold transition-all max-w-full truncate ${getStyle()}`}>
+    <span className={`inline-flex items-center gap-1 rounded-full border ${compact ? "px-2 py-0.5 text-[9px]" : "px-3 py-1 text-xs"} font-bold transition-all whitespace-nowrap ${getStyle()}`}>
       {(status === "InProgress" || status === "In Progress") && (
         <span className="relative flex h-2 w-2 shrink-0">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#8B5CF6] opacity-75"></span>
           <span className="relative inline-flex rounded-full h-2 w-2 bg-[#7C3AED]"></span>
         </span>
       )}
-      <span className="truncate">{formatDisplay(status)}</span>
+      <span>{formatDisplay(status)}</span>
     </span>
   );
 }
@@ -529,10 +531,11 @@ function getBookingStatusLabel(status, language) {
       return language === "vi" ? "Đang chờ" : "Pending";
     case "Confirmed":
     case "Approved":
-      return language === "vi" ? "Đã xác nhận" : "Confirmed";
+      return language === "vi" ? "Đã xác nhận" : "Approved";
     case "Completed":
-    case "ServiceCompleted":
       return language === "vi" ? "Đã hoàn thành" : "Completed";
+    case "ServiceCompleted":
+      return language === "vi" ? "Đã hoàn thành dịch vụ" : "Service Completed";
     case "Rejected":
       return language === "vi" ? "Đã từ chối" : "Rejected";
     case "Cancelled":
@@ -581,7 +584,7 @@ export function ManagerBookingListPage() {
 
   // Keep some local UI state
   const [anchorDate, setAnchorDate] = useState(() => dayjs());
-  
+
   // Drag & Drop State
   const [draggedBooking, setDraggedBooking] = useState(null);
   const [dragOverTarget, setDragOverTarget] = useState(null);
@@ -778,6 +781,7 @@ export function ManagerBookingListPage() {
     const confirmed = bookings.filter(b => b.status === "Confirmed" || b.status === "Approved").length;
     const checkedIn = bookings.filter(b => b.status === "CheckedIn" || b.status === "Checked In").length;
     const completed = bookings.filter(b => b.status === "Completed" || b.status === "ServiceCompleted").length;
+
     return [
       {
         label: t("manager.dashboard.statusWaiting"),
@@ -1108,15 +1112,17 @@ export function ManagerBookingListPage() {
 
               {/* Booking Board Card */}
               <motion.div variants={fadeInUp}>
-                <PremiumCard className="p-0 overflow-hidden border-[#F3E2EC]">
+                <PremiumCard className="!p-0 overflow-hidden border-[#F3E2EC]">
                   {/* Header, View Switcher & Filter Controls */}
                   <div className="border-b border-[#F3E2EC] bg-gradient-to-b from-[#FFF7FA] to-white p-6">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                      {/* 
                       <SectionHeading
                         title={t("manager.bookings.title")}
                         subtitle={t("manager.bookings.desc")}
                         icon={Filter}
                       />
+                     */}
 
                     </div>
                     <div className="flex flex-nowrap items-center gap-3 overflow-x-auto pb-2 lg:pb-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
@@ -1257,13 +1263,13 @@ export function ManagerBookingListPage() {
                       </motion.div>
                     ) : viewMode === "table" ? (
                       /* --- 1. TABLE BOARD VIEW (WITH TRY-ON NAIL THUMBNAILS & TOOLTIPS) --- */
-                      <table className="w-full min-w-[700px] table-fixed text-left">
+                      <table className="w-full min-w-[720px] table-fixed text-left">
                         <colgroup>
                           <col className="w-[140px]" />
                           <col className="w-[170px]" />
                           <col className="w-[150px]" />
-                          <col className="w-[110px]" />
-                          <col className="w-[130px]" />
+                          <col className="w-[140px]" />
+                          <col className="w-[120px]" />
                         </colgroup>
                         <thead>
                           <tr className="border-b border-[#F3E2EC] bg-[#FFF5F8] text-[11px] font-bold uppercase tracking-wider text-[#9E8497]">
@@ -1313,32 +1319,6 @@ export function ManagerBookingListPage() {
                                 </td>
 
                                 {/* Service & Try-On Nail Design Thumbnail Preview */}
-                                {/* <td className="px-4 py-3.5 align-middle">
-                                  <div className="flex items-center gap-2.5 min-w-0">
-                                    {row.thumbnailUrl && (
-                                      <Tooltip title={t("manager.bookings.zoomThumbnail") || "Click to enlarge Nail Design"}>
-                                        <div
-                                          className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-[#F3D6E5] bg-[#FFF0F5] cursor-pointer hover:border-[#E84F93] transition group/img"
-                                          onClick={(e) => { e.stopPropagation(); setActiveImageModalUrl(row.thumbnailUrl); }}
-                                        >
-                                          <img src={row.thumbnailUrl} alt="Try-On Design" className="h-full w-full object-cover group-hover/img:scale-110 transition duration-200" />
-                                          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/img:opacity-100 flex items-center justify-center text-white transition">
-                                            <Maximize2 size={12} />
-                                          </div>
-                                        </div>
-                                      </Tooltip>
-                                    )}
-                                    <div className="min-w-0">
-                                      <p className="truncate text-xs font-bold text-[#2B182B]">{row.service}</p>
-                                      {row.totalPrice && (
-                                        <p className="mt-0.5 text-[11px] font-bold text-[#E84F93]">
-                                          {formatVND(row.totalPrice)}
-                                        </p>
-                                      )}
-                                    </div>
-                                  </div>
-                                </td> */}
-
                                 <td className="px-4 py-3.5 align-middle">
                                   <div className="flex min-w-0 items-center gap-2">
                                     <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-xl text-[9px] font-bold text-white shadow-xs ${row.artist === "Unassigned" ? "bg-[#D97706]" : "bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9]"}`}>
@@ -1376,7 +1356,7 @@ export function ManagerBookingListPage() {
                                       </motion.button>
                                     </Tooltip>
 
-                                    {!(
+                                    {/* {!(
                                       (row.nailArtistId || row.staffId || row.staffArtistId || row.artistId) &&
                                       (row.status === "CheckedIn" || row.status === "Checked In")
                                     ) && (!isFinalStatus(row.status) || row.status === "Approved") && (
@@ -1390,9 +1370,9 @@ export function ManagerBookingListPage() {
                                             <UserCheck size={14} />
                                           </motion.button>
                                         </Tooltip>
-                                      )}
+                                      )} */}
 
-                                    {!isFinalStatus(row.status) && !(row.status === "CheckedIn" || row.status === "Checked In" || row.status === "InProgress" || row.status === "In Progress") && (
+                                    {/* {!isFinalStatus(row.status) && !(row.status === "CheckedIn" || row.status === "Checked In" || row.status === "InProgress" || row.status === "In Progress") && (
                                       <>
                                         <Tooltip title={t("manager.bookings.confirmBooking") || "Confirm booking"}>
                                           <motion.button
@@ -1416,7 +1396,7 @@ export function ManagerBookingListPage() {
                                           </motion.button>
                                         </Tooltip>
                                       </>
-                                    )}
+                                    )} */}
                                   </div>
                                 </td>
                               </motion.tr>
