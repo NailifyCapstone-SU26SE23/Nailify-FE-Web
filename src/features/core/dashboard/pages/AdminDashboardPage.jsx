@@ -31,7 +31,7 @@ const GRID_COLOR = "#f1f5f9";
 function Card({ className = "", children }) {
   return (
     <article
-      className={`bg-white border border-slate-200 p-5 shadow-sm ${className}`}
+      className={`bg-white border border-slate-200 p-5 shadow-sm rounded-lg ${className}`}
     >
       {children}
     </article>
