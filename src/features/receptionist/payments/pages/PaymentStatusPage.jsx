@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, CalendarDays, CheckCircle2, LoaderCircle, XCircle } from "lucide-react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { ROUTES, getReceptionistBookingDetailRoute } from "../../../../shared/constants/routes";
 import { checkoutReceptionistBooking } from "../../bookings/services/receptionistBookingService";
-import { getBookingIdByOrderCode } from "../services/receptionistPaymentService";
+import { cancelPayment, getBookingIdByOrderCode } from "../services/receptionistPaymentService";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 export default function PaymentStatusPage() {
@@ -48,8 +48,22 @@ export function PaymentSuccessPage() {
 
 export function PaymentCancelPage() {
   const [searchParams] = useSearchParams();
+  const orderCode = searchParams.get("orderCode");
+  const hasSyncedCancelRef = useRef(false);
 
-  return <PaymentResultPage isSuccess={false} orderCode={searchParams.get("orderCode")} />;
+  useEffect(() => {
+    if (!orderCode || hasSyncedCancelRef.current) {
+      return;
+    }
+
+    hasSyncedCancelRef.current = true;
+
+    cancelPayment(orderCode).catch((err) => {
+      console.error("Failed to sync cancelled PayOS payment:", err);
+    });
+  }, [orderCode]);
+
+  return <PaymentResultPage isSuccess={false} orderCode={orderCode} />;
 }
 
 function PaymentResultPage({ isSuccess, orderCode }) {

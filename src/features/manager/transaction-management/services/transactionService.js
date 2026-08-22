@@ -272,7 +272,7 @@ const MOCK_TRANSACTIONS = [
 ];
 
 export async function fetchTransactions(options = {}) {
-  const { pageNumber = 1, pageSize = 10, salonId, status } = options;
+  const { pageNumber = 1, pageSize = 10, salonId, status, startDate, endDate } = options;
   const currentSalonId = salonId || getSalonId();
 
   const queryParams = {
@@ -286,6 +286,14 @@ export async function fetchTransactions(options = {}) {
 
   if (status && status !== "all") {
     queryParams.status = status;
+  }
+
+  if (startDate) {
+    queryParams.startDate = startDate;
+  }
+
+  if (endDate) {
+    queryParams.endDate = endDate;
   }
 
   console.log("Fetching transactions with params:", queryParams);
@@ -437,3 +445,88 @@ export async function fetchBookingById(bookingId) {
     };
   }
 }
+
+export async function fetchTransactionById(id) {
+  const normalizedId = String(id || "").trim();
+  if (!normalizedId) {
+    throw new Error("Transaction ID is required.");
+  }
+
+  console.log("Fetching transaction by ID:", normalizedId);
+  try {
+    const response = await axiosClient.get(`/Transactions/${normalizedId}`, {
+      headers: getAuthHeaders(),
+    });
+
+    const payload = response?.data;
+    if (!payload?.isSucceeded) {
+      throw new Error(payload?.message || "Failed to load transaction details.");
+    }
+
+    return payload.data;
+  } catch (error) {
+    console.warn("Failed to fetch transaction details from API.", error?.message);
+    
+    // Fallback to mock data if it matches ID
+    const fallback = MOCK_TRANSACTIONS.find(t => String(t.transactionId) === normalizedId);
+    if (fallback) return fallback;
+
+    throw error;
+  }
+}
+
+export async function fetchTransactionsByBookingId(bookingId) {
+  const normalizedId = String(bookingId || "").trim();
+  if (!normalizedId) {
+    throw new Error("Booking ID is required.");
+  }
+
+  console.log("Fetching transactions for booking:", normalizedId);
+  try {
+    const response = await axiosClient.get(`/Transactions/booking/${normalizedId}`, {
+      headers: getAuthHeaders(),
+    });
+
+    const payload = response?.data;
+    if (!payload?.isSucceeded) {
+      throw new Error(payload?.message || "Failed to load transactions.");
+    }
+
+    return payload.data || [];
+  } catch (error) {
+    console.warn("Failed to fetch transactions for booking from API.", error?.message);
+    
+    // Fallback to mock data filtering by bookingId
+    const fallback = MOCK_TRANSACTIONS.filter(t => String(t.bookingId) === normalizedId);
+    return fallback;
+  }
+}
+
+export async function processRefund(bookingId, refundData) {
+  if (!bookingId) throw new Error("Booking ID is required.");
+  try {
+    const response = await axiosClient.post(`/payments/refund/${bookingId}`, refundData, {
+      headers: getAuthHeaders(),
+    });
+    return response?.data;
+  } catch (error) {
+    console.error("Failed to process refund API:", error);
+    throw new Error(error?.response?.data?.message || error?.message || "Lỗi hệ thống khi xử lý hoàn tiền.");
+  }
+}
+
+export async function checkPaymentStatus(orderCode) {
+  if (!orderCode) throw new Error("Order Code is required.");
+  try {
+    const response = await axiosClient.get(`/payments/status/${orderCode}`, {
+      headers: getAuthHeaders(),
+    });
+    return response?.data;
+  } catch (error) {
+    console.error("Failed to check payment status API:", error);
+    throw new Error(error?.response?.data?.message || error?.message || "Lỗi kiểm tra trạng thái thanh toán.");
+  }
+}
+
+
+

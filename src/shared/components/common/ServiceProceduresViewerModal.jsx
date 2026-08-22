@@ -1,6 +1,6 @@
 import React from "react";
 import { Modal, Button } from "antd";
-import { Check, Clock, User, AlertCircle, AlarmClock, Zap, LockKeyhole, Hourglass, Sparkles } from "lucide-react";
+import { BriefcaseBusiness, Mail, Phone, Calendar, Clock, FileText, Palette, Star, DollarSign, BrushCleaning, X, Info, Check, Play, User, AlertCircle, AlarmClock, Zap, LockKeyhole, Hourglass, Sparkles } from "lucide-react";
 import { PropTypes } from "../../utils/propTypes";
 import { useLanguage } from "../../hooks/useLanguage";
 
@@ -233,16 +233,30 @@ export function ServiceProceduresViewerModal({
                                 )}
                                 <span>{isVi ? "Nhận Bước Này" : "Claim Step"}</span>
                               </button>
+                            ) : onCompleteProcedure && procedure.canStart ? (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onCompleteProcedure(procedure, "InProgress");
+                                }}
+                                disabled={procedureStatusUpdates && procedureStatusUpdates[procedure.bookingProcedureId]}
+                                className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#F59E0B] to-[#D97706] px-4 py-1.5 text-xs font-bold text-white shadow-2xs hover:scale-105 transition cursor-pointer disabled:opacity-50"
+                              >
+                                <Play size={12} strokeWidth={3} className="fill-current" />
+                                <span>{isVi ? "Bắt Đầu Bước" : "Start Step"}</span>
+                              </button>
                             ) : onCompleteProcedure && procedure.canComplete ? (
                               <button
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  onCompleteProcedure(procedure);
+                                  onCompleteProcedure(procedure, "Completed");
                                 }}
                                 disabled={procedureStatusUpdates && procedureStatusUpdates[procedure.bookingProcedureId]}
                                 className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#10B981] to-[#059669] px-4 py-1.5 text-xs font-bold text-white shadow-2xs hover:scale-105 transition cursor-pointer disabled:opacity-50"
                               >
+                                <Check size={14} strokeWidth={3} />
                                 <span>{isVi ? "Hoàn Thành Bước" : "Complete Step"}</span>
                               </button>
                             ) : procedure.isBlocked ? (

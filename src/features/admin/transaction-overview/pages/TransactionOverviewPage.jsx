@@ -20,7 +20,8 @@ import {
 import { formatCurrency } from "../../../../shared/utils/formatCurrency";
 import { Pagination } from "../../../../shared/components/common/Pagination";
 import { fetchAdminSalons } from "../../salon-management/services/salonManagementService";
-import { fetchTransactions, fetchBookingById } from "../../../manager/transaction-management/services/transactionService";
+import { fetchAdminTransactions, fetchAdminTransactionById } from "../services/transactionService";
+import { fetchBookingById } from "../../../manager/transaction-management/services/transactionService";
 import dayjs from "dayjs";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
@@ -92,6 +93,7 @@ export function TransactionOverviewPage() {
   const [modalVisible, setModalVisible] = useState(false);
   const [bookingDetails, setBookingDetails] = useState(null);
   const [loadingBooking, setLoadingBooking] = useState(false);
+  const [transactionDetails, setTransactionDetails] = useState(null);
 
   const loadSalonMetrics = async (salonsList) => {
     setLoadingMetrics(true);
@@ -100,7 +102,7 @@ export function TransactionOverviewPage() {
       await Promise.all(
         salonsList.map(async (salon) => {
           try {
-            const data = await fetchTransactions({ pageNumber: 1, pageSize: 100, salonId: salon.id });
+            const data = await fetchAdminTransactions({ pageNumber: 1, pageSize: 100, salonId: salon.id });
             const items = data.items || [];
             const paidItems = items.filter(t => t.status?.toLowerCase() === "paid");
             const totalRevenue = paidItems.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
@@ -152,7 +154,7 @@ export function TransactionOverviewPage() {
     setLoadingTransactions(true);
     setTransactionsError(null);
     try {
-      const data = await fetchTransactions({
+      const data = await fetchAdminTransactions({
         pageNumber: currentPage,
         pageSize,
         salonId: selectedSalon.id
@@ -189,24 +191,36 @@ export function TransactionOverviewPage() {
     }
   }, [selectedSalon, currentPage, pageSize]);
 
-  // Load booking details when selected transaction changes
+  // Load booking details and transaction detail when selected transaction changes
   useEffect(() => {
-    if (selectedTransaction?.bookingId) {
-      setLoadingBooking(true);
-      setBookingDetails(null);
-      fetchBookingById(selectedTransaction.bookingId)
-        .then((data) => {
-          setBookingDetails(data);
-        })
-        .catch((err) => {
-          console.error("Error loading booking details:", err);
-        })
-        .finally(() => {
+    const loadDetails = async () => {
+      if (selectedTransaction?.transactionId) {
+        setLoadingBooking(true);
+        setBookingDetails(null);
+        setTransactionDetails(null);
+        try {
+          // Fetch transaction detail
+          const txDetail = await fetchAdminTransactionById(selectedTransaction.transactionId);
+          setTransactionDetails(txDetail);
+
+          // Fetch booking detail if bookingId exists
+          const bookingIdToUse = txDetail?.bookingId || selectedTransaction.bookingId;
+          if (bookingIdToUse) {
+            const data = await fetchBookingById(bookingIdToUse);
+            setBookingDetails(data);
+          }
+        } catch (err) {
+          console.error("Error loading details:", err);
+        } finally {
           setLoadingBooking(false);
-        });
-    } else {
-      setBookingDetails(null);
-    }
+        }
+      } else {
+        setBookingDetails(null);
+        setTransactionDetails(null);
+      }
+    };
+
+    loadDetails();
   }, [selectedTransaction]);
 
   // Client side filtering & sorting for salons search
@@ -361,8 +375,9 @@ export function TransactionOverviewPage() {
       <div className="max-w-[1400px] mx-auto space-y-8">
 
         {/* Page Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/60 pb-6">
-          <div className="space-y-1.5">
+        {selectedSalon && (
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/60 pb-6">
+            {/* <div className="space-y-1.5">
             <div className="flex items-center gap-2">
               <span className="p-2 rounded-xl bg-[#ea4f93]/10 text-[#ea4f93]">
                 <Wallet size={18} className="stroke-[2]" />
@@ -380,18 +395,18 @@ export function TransactionOverviewPage() {
                 : (t("adminTransactions.selectSalonToAudit"))
               }
             </p>
-          </div>
+          </div> */}
 
-          {selectedSalon && (
-            <button
-              onClick={handleBackToSalons}
-              className="flex self-start md:self-auto items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4.5 py-3 text-xs font-bold text-[#2d1b35] shadow-[0_4px_12px_rgba(0,0,0,0.03)] hover:border-[#ea4f93]/30 transition-all duration-300 active:scale-[0.98]"
-            >
-              <ArrowLeft size={13} />
-              {t("adminTransactions.backToSalons")}
-            </button>
-          )}
-        </div>
+            {selectedSalon && (
+              <button
+                onClick={handleBackToSalons}
+                className="flex self-start md:self-auto items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4.5 py-3 text-xs font-bold text-[#2d1b35] shadow-[0_4px_12px_rgba(0,0,0,0.03)] hover:border-[#ea4f93]/30 transition-all duration-300 active:scale-[0.98]"
+              >
+                <ArrowLeft size={13} />
+                {t("adminTransactions.backToSalons")}
+              </button>
+            )}
+          </div>)}
 
         {/* STATE 1: Salon Grid Selection */}
         {!selectedSalon ? (
@@ -495,12 +510,12 @@ export function TransactionOverviewPage() {
                       type="button"
                       onClick={() => setSalonStatusFilter(st)}
                       className={`px-3.5 py-1.5 rounded-xl text-xs font-bold capitalize transition-all duration-200 ${salonStatusFilter === st
-                          ? "bg-[#ea4f93] text-white shadow-xs"
-                          : "text-[#7f6478] hover:text-[#2d1b35] hover:bg-[#ea4f93]/5"
+                        ? "bg-[#ea4f93] text-white shadow-xs"
+                        : "text-[#7f6478] hover:text-[#2d1b35] hover:bg-[#ea4f93]/5"
                         }`}
                     >
-                      {language === "vi" 
-                        ? { all: "Tất cả", active: "Đang hoạt động", busy: "Bận", closed: "Đóng cửa" }[st] || st 
+                      {language === "vi"
+                        ? { all: "Tất cả", active: "Đang hoạt động", busy: "Bận", closed: "Đóng cửa" }[st] || st
                         : st
                       }
                     </button>
@@ -596,13 +611,13 @@ export function TransactionOverviewPage() {
                           )}
 
                           <span className={`absolute top-3 right-3 text-[10px] font-bold px-2.5 py-1 rounded-full border shadow-xs ${salon.status === "Active" || salon.status === "Open"
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                              : salon.status === "Busy"
-                                ? "bg-amber-50 text-amber-700 border-amber-200"
-                                : "bg-slate-50 text-slate-600 border-slate-200"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            : salon.status === "Busy"
+                              ? "bg-amber-50 text-amber-700 border-amber-200"
+                              : "bg-slate-50 text-slate-600 border-slate-200"
                             }`}>
-                            {language === "vi" 
-                              ? ({ Active: "Hoạt động", Open: "Mở cửa", Busy: "Bận", Closed: "Đóng cửa" }[salon.status] || salon.status || "Hoạt động") 
+                            {language === "vi"
+                              ? ({ Active: "Hoạt động", Open: "Mở cửa", Busy: "Bận", Closed: "Đóng cửa" }[salon.status] || salon.status || "Hoạt động")
                               : (salon.status || "Active")
                             }
                           </span>
@@ -736,8 +751,8 @@ export function TransactionOverviewPage() {
                     {metrics.successRate}%
                   </span>
                   <p className="mt-2 text-xs text-[#a88a9f]">
-                    {language === "vi" 
-                      ? `${metrics.paidCount} trên tổng số ${metrics.totalCount} bản ghi` 
+                    {language === "vi"
+                      ? `${metrics.paidCount} trên tổng số ${metrics.totalCount} bản ghi`
                       : `${metrics.paidCount} of ${metrics.totalCount} transaction logs`
                     }
                   </p>
@@ -989,7 +1004,7 @@ export function TransactionOverviewPage() {
                   {transactionsData.totalPages > 1 && (
                     <div className="flex justify-between items-center px-6 py-4.5 border-t border-slate-100 bg-slate-50/30">
                       <span className="text-xs text-[#a88a9f]">
-                        {language === "vi" 
+                        {language === "vi"
                           ? <span>Đang hiển thị <span className="font-bold text-[#2d1b35]">{processedTransactions.length}</span> mục</span>
                           : <span>Showing <span className="font-bold text-[#2d1b35]">{processedTransactions.length}</span> items</span>
                         }
@@ -1051,31 +1066,31 @@ export function TransactionOverviewPage() {
               {/* Status and Amount summary */}
               <div className="text-center space-y-2.5 pb-1">
                 <div className="flex justify-center items-center gap-2">
-                  {renderStatusBadge(selectedTransaction.status)}
+                  {renderStatusBadge((transactionDetails || selectedTransaction).status)}
                   {bookingDetails && (
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full border ${selectedTransaction.amount === bookingDetails.amountDue
-                        ? "bg-[#fff2f7] text-[#ea4f93] border-[#ea4f93]/20"
-                        : selectedTransaction.amount === bookingDetails.amountPaid
-                           ? "bg-indigo-50 text-indigo-700 border-indigo-500/20"
-                           : selectedTransaction.amount === bookingDetails.totalPrice
-                             ? "bg-emerald-50 text-emerald-700 border-emerald-500/20"
-                             : "bg-slate-50 text-slate-600 border-slate-200"
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full border ${(transactionDetails || selectedTransaction).amount === bookingDetails.amountDue
+                      ? "bg-[#fff2f7] text-[#ea4f93] border-[#ea4f93]/20"
+                      : (transactionDetails || selectedTransaction).amount === bookingDetails.amountPaid
+                        ? "bg-indigo-50 text-indigo-700 border-indigo-500/20"
+                        : (transactionDetails || selectedTransaction).amount === bookingDetails.totalPrice
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-500/20"
+                          : "bg-slate-50 text-slate-600 border-slate-200"
                       }`}>
-                      {selectedTransaction.amount === bookingDetails.amountDue
+                      {(transactionDetails || selectedTransaction).amount === bookingDetails.amountDue
                         ? (language === "vi" ? "Đặt cọc (Deposit)" : "Deposit")
-                        : selectedTransaction.amount === bookingDetails.amountPaid
+                        : (transactionDetails || selectedTransaction).amount === bookingDetails.amountPaid
                           ? (language === "vi" ? "Thanh toán còn lại" : "Remaining balance")
-                          : selectedTransaction.amount === bookingDetails.totalPrice
+                          : (transactionDetails || selectedTransaction).amount === bookingDetails.totalPrice
                             ? (language === "vi" ? "Thanh toán 100%" : "Full payment")
                             : (language === "vi" ? "Thanh toán" : "Payment")}
                     </span>
                   )}
                 </div>
                 <h2 className="text-4xl font-mono font-bold text-[#2d1b35] tracking-tight">
-                  {formatCurrency(selectedTransaction.amount)}
+                  {formatCurrency((transactionDetails || selectedTransaction).amount)}
                 </h2>
                 <p className="text-xs text-[#a88a9f]">
-                  {language === "vi" ? "Mã đơn hàng" : "Order code"} <span className="font-mono font-bold text-[#2d1b35]">#{selectedTransaction.orderCode}</span>
+                  {language === "vi" ? "Mã đơn hàng" : "Order code"} <span className="font-mono font-bold text-[#2d1b35]">#{(transactionDetails || selectedTransaction).orderCode}</span>
                 </p>
               </div>
 
@@ -1087,7 +1102,7 @@ export function TransactionOverviewPage() {
                     {language === "vi" ? "Hóa đơn Nailify" : "Nailify Receipt"}
                   </h3>
                   <div className="font-mono text-[9px] text-[#a88a9f]">
-                    {dayjs(selectedTransaction.createdAt).format("DD MMM YYYY, HH:mm")}
+                    {dayjs((transactionDetails || selectedTransaction).createdAt).format("DD MMM YYYY, HH:mm")}
                   </div>
                 </div>
 
@@ -1095,21 +1110,21 @@ export function TransactionOverviewPage() {
                 <div className="py-3.5 space-y-2 border-b border-dashed border-[#e6decb] text-xs">
                   <div className="flex justify-between gap-3">
                     <span className="text-[#a88a9f] shrink-0">{language === "vi" ? "Khách hàng" : "Customer"}</span>
-                    <span className="font-bold text-[#2d1b35] text-right truncate">{selectedTransaction.customerName}</span>
+                    <span className="font-bold text-[#2d1b35] text-right truncate">{(transactionDetails || selectedTransaction).customerName}</span>
                   </div>
                   <div className="flex justify-between gap-3">
                     <span className="text-[#a88a9f] shrink-0">{language === "vi" ? "Chi nhánh" : "Salon"}</span>
-                    <span className="font-bold text-[#ea4f93] text-right truncate">{selectedTransaction.salonName || "Nailify Salon"}</span>
+                    <span className="font-bold text-[#ea4f93] text-right truncate">{(transactionDetails || selectedTransaction).salonName || "Nailify Salon"}</span>
                   </div>
                   {bookingDetails && (
                     <div className="flex justify-between gap-3 border-t border-dashed border-[#e6decb]/40 pt-2 mt-1.5">
                       <span className="text-[#a88a9f] shrink-0">{language === "vi" ? "Loại thanh toán" : "Payment Type"}</span>
                       <span className="font-bold text-[#2d1b35] text-right">
-                        {selectedTransaction.amount === bookingDetails.amountDue
+                        {(transactionDetails || selectedTransaction).amount === bookingDetails.amountDue
                           ? (language === "vi" ? "Đặt cọc (Deposit)" : "Deposit")
-                          : selectedTransaction.amount === bookingDetails.amountPaid
+                          : (transactionDetails || selectedTransaction).amount === bookingDetails.amountPaid
                             ? (language === "vi" ? "Thanh toán còn lại" : "Remaining balance")
-                            : selectedTransaction.amount === bookingDetails.totalPrice
+                            : (transactionDetails || selectedTransaction).amount === bookingDetails.totalPrice
                               ? (language === "vi" ? "Thanh toán 100%" : "Full payment")
                               : (language === "vi" ? "Thanh toán đơn hàng" : "Order Payment")}
                       </span>
@@ -1177,8 +1192,8 @@ export function TransactionOverviewPage() {
                     </div>
                   ) : (
                     <p className="text-xs text-[#a88a9f] italic text-center py-2">
-                      {selectedTransaction.bookingId
-                        ? (language === "vi" ? `Không thể tải chi tiết cho lịch đặt #${selectedTransaction.bookingId.slice(0, 8)}` : `Could not load details for booking #${selectedTransaction.bookingId.slice(0, 8)}`)
+                      {(transactionDetails || selectedTransaction).bookingId
+                        ? (language === "vi" ? `Không thể tải chi tiết cho lịch đặt #${(transactionDetails || selectedTransaction).bookingId.slice(0, 8)}` : `Could not load details for booking #${(transactionDetails || selectedTransaction).bookingId.slice(0, 8)}`)
                         : (language === "vi" ? "Không có lịch đặt nào liên kết với giao dịch này." : "No linked booking for this transaction.")}
                     </p>
                   )}
@@ -1205,20 +1220,20 @@ export function TransactionOverviewPage() {
 
                 <div className="flex justify-between text-xs">
                   <span className="text-[#a88a9f]">{language === "vi" ? "Khởi tạo" : "Created"}</span>
-                  <span className="text-[#2d1b35] font-medium">{dayjs(selectedTransaction.createdAt).format("DD MMM YYYY, HH:mm:ss")}</span>
+                  <span className="text-[#2d1b35] font-medium">{dayjs((transactionDetails || selectedTransaction).createdAt).format("DD MMM YYYY, HH:mm:ss")}</span>
                 </div>
 
-                {selectedTransaction.paidAt && (
+                {(transactionDetails || selectedTransaction).paidAt && (
                   <div className="flex justify-between text-xs">
                     <span className="text-[#a88a9f]">{t("adminTransactions.paid")}</span>
-                    <span className="text-[#2fa25f] font-semibold">{dayjs(selectedTransaction.paidAt).format("DD MMM YYYY, HH:mm:ss")}</span>
+                    <span className="text-[#2fa25f] font-semibold">{dayjs((transactionDetails || selectedTransaction).paidAt).format("DD MMM YYYY, HH:mm:ss")}</span>
                   </div>
                 )}
 
-                {selectedTransaction.expiresAt && !selectedTransaction.paidAt && (
+                {(transactionDetails || selectedTransaction).expiresAt && !(transactionDetails || selectedTransaction).paidAt && (
                   <div className="flex justify-between text-xs">
                     <span className="text-[#a88a9f]">{language === "vi" ? "Hết hạn" : "Expires"}</span>
-                    <span className="text-[#db8520] font-semibold">{dayjs(selectedTransaction.expiresAt).format("DD MMM YYYY, HH:mm:ss")}</span>
+                    <span className="text-[#db8520] font-semibold">{dayjs((transactionDetails || selectedTransaction).expiresAt).format("DD MMM YYYY, HH:mm:ss")}</span>
                   </div>
                 )}
               </div>
@@ -1232,7 +1247,7 @@ export function TransactionOverviewPage() {
                   </span>
                 </div>
                 <p className="leading-relaxed text-[#7f6478]">
-                  {selectedTransaction.policy || (language === "vi" ? "Tất cả các khoản thanh toán được xử lý qua cổng PayOS/VietQR của bên thứ ba. Chính sách hoàn tiền đặt cọc tiêu chuẩn áp dụng theo hướng dẫn của chi nhánh Nailify." : "All payments processed via third-party PayOS/VietQR gateways. Standard booking reservation refund policies apply according to Nailify Branch guidelines.")}
+                  {(transactionDetails || selectedTransaction).policy || (language === "vi" ? "Tất cả các khoản thanh toán được xử lý qua cổng PayOS/VietQR của bên thứ ba. Chính sách hoàn tiền đặt cọc tiêu chuẩn áp dụng theo hướng dẫn của chi nhánh Nailify." : "All payments processed via third-party PayOS/VietQR gateways. Standard booking reservation refund policies apply according to Nailify Branch guidelines.")}
                 </p>
               </div>
 

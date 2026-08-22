@@ -13,6 +13,8 @@ import {
   sanitizeServiceSessionsForStorage,
 } from "./serviceSessionSlice";
 import { storage } from "../shared/utils/storage";
+import { managerBookingsReducer } from "./managerBookingsSlice";
+import { receptionistBookingsReducer } from "./receptionistBookingsSlice";
 
 export const store = configureStore({
   reducer: {
@@ -21,6 +23,8 @@ export const store = configureStore({
     layout: layoutReducer,
     nailDesign: nailDesignReducer,
     serviceSession: serviceSessionReducer,
+    managerBookings: managerBookingsReducer,
+    receptionistBookings: receptionistBookingsReducer,
   },
 });
 

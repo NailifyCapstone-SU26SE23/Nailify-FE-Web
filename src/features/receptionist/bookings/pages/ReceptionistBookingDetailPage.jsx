@@ -1,4 +1,4 @@
-import { Button, Modal, Table, Descriptions, Image, Divider, Timeline, Card, Tag, Badge, List, Avatar, Popover } from "antd";
+import { Button, Modal, Table, Descriptions, Image, Divider, Timeline, Card, Tag, Badge, List, Avatar, Popover, Spin } from "antd";
 import {
   AlarmClock,
   Armchair,
@@ -59,6 +59,7 @@ import {
 } from "../services/receptionistBookingService";
 import { fetchReceptionistCustomerDetail, fetchLoyaltyTiers } from "../../customers/services/receptionistCustomerService";
 import { createPayment } from "../../payments/services/receptionistPaymentService";
+import { fetchTransactionsByBookingId, fetchTransactionById } from "../../../manager/transaction-management/services/transactionService";
 import dayjs from "dayjs";
 import { useQuery } from "@tanstack/react-query";
 
@@ -490,6 +491,12 @@ export function ReceptionistBookingDetailPage() {
   );
   const [bookingHistories, setBookingHistories] = useState([]);
   const [isBookingHistoriesLoading, setIsBookingHistoriesLoading] = useState(true);
+  
+  const [transactions, setTransactions] = useState([]);
+  const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
+  const [selectedTransactionDetail, setSelectedTransactionDetail] = useState(null);
+  const [isFetchingTransaction, setIsFetchingTransaction] = useState(false);
+
   const isVi = language === "vi";
 
   const loadBookingHistories = useCallback(async () => {
@@ -554,6 +561,14 @@ export function ReceptionistBookingDetailPage() {
             }
           } else {
             setCustomerProfile(null);
+          }
+          
+          // Fetch transactions
+          try {
+            const txs = await fetchTransactionsByBookingId(bookingId);
+            setTransactions(txs);
+          } catch (err) {
+            console.warn("Failed to load transactions:", err);
           }
         } catch (loadError) {
           const message = loadError instanceof Error ? loadError.message : "Failed to load booking detail.";
@@ -724,6 +739,15 @@ export function ReceptionistBookingDetailPage() {
       } else {
         setCustomerProfile(null);
       }
+      
+      // Fetch transactions
+      try {
+        const txs = await fetchTransactionsByBookingId(bookingId);
+        setTransactions(txs);
+      } catch (err) {
+        console.warn("Failed to load transactions:", err);
+      }
+      
       toast.success(isVi ? "Làm mới chi tiết đơn hàng thành công" : "Booking detail refreshed.");
       await loadBookingHistories();
     } catch (loadError) {
@@ -896,6 +920,21 @@ export function ReceptionistBookingDetailPage() {
       ),
     },
   ]), [isVi, handleViewProcedures, handleViewService]);
+
+  const handleTransactionClick = async (txId) => {
+    setIsTransactionModalOpen(true);
+    setIsFetchingTransaction(true);
+    setSelectedTransactionDetail(null);
+    try {
+      const details = await fetchTransactionById(txId);
+      setSelectedTransactionDetail(details);
+    } catch (err) {
+      toast.error(isVi ? "Lỗi tải chi tiết giao dịch" : "Failed to load transaction details");
+      setIsTransactionModalOpen(false);
+    } finally {
+      setIsFetchingTransaction(false);
+    }
+  };
 
   const handleManualCheckIn = useCallback(async () => {
     if (!bookingId || !isManualCheckInAllowed || isManualCheckInSubmitting) {
@@ -1368,6 +1407,77 @@ export function ReceptionistBookingDetailPage() {
                 </div>
               </div>
             </div>
+          </DetailCard>
+
+          {/* TRANSACTIONS LIST */}
+          <DetailCard title={language === "vi" ? "Lịch sử giao dịch" : "Transaction History"}>
+            {transactions && transactions.length > 0 ? (
+              <div className="space-y-3 mt-2">
+                {[...transactions].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)).map((tx, idx) => {
+                  const isDeposit = idx === 0 || tx.amount === booking?.depositAmount;
+                  const txLabel = isDeposit ? (language === "vi" ? "Tiền cọc" : "Deposit") : (language === "vi" ? "Tiền trả còn lại" : "Remaining Balance");
+
+                  const actualTotal = booking?.discountAmount > 0 ? booking.finalPrice : booking.totalPrice;
+                  const percentage = actualTotal > 0 ? Math.round((tx.amount / actualTotal) * 100) : 0;
+
+                  return (
+                    <div
+                      key={tx.transactionId}
+                      onClick={() => handleTransactionClick(tx.transactionId)}
+                      className="rounded-xl border border-[#F3E2EC] bg-white p-3 shadow-2xs hover:border-[#E84F93] transition-colors cursor-pointer group flex flex-col gap-2"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-[11px] font-bold text-[#2B182B]">{txLabel}</p>
+                            {percentage > 0 && (
+                              <span className="px-1.5 py-0.5 rounded-md bg-[#FFF0F5] text-[#E84F93] text-[9px] font-extrabold tracking-wider border border-[#F3D6E5]/60">
+                                {percentage}%
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-[#9E8497] mt-0.5 font-mono">#{tx.orderCode}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[13px] font-extrabold text-[#E84F93]">{formatCurrency(tx.amount)}</p>
+                          <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold ${String(tx.status).toLowerCase() === 'paid' ? 'bg-[#ECFDF5] text-[#059669]' :
+                            String(tx.status).toLowerCase() === 'pending' ? 'bg-[#FFFBEB] text-[#D97706]' :
+                              'bg-[#F3F4F6] text-[#6B7280]'
+                            }`}>
+                            {tx.status}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="mt-1 pt-2 border-t border-[#F3E2EC] border-dashed space-y-1">
+                        {tx.createdAt && (
+                          <div className="flex justify-between items-center text-[10px]">
+                            <span className="text-[#9E8497] font-medium">{language === "vi" ? "Tạo lúc" : "Created At"}</span>
+                            <span className="font-medium text-[#2B182B]">{formatDate(tx.createdAt)} {formatTime(tx.createdAt)}</span>
+                          </div>
+                        )}
+                        {tx.paidAt && (
+                          <div className="flex justify-between items-center text-[10px]">
+                            <span className="text-[#9E8497] font-medium">{language === "vi" ? "Thanh toán lúc" : "Paid At"}</span>
+                            <span className="font-medium text-[#059669]">{formatDate(tx.paidAt)} {formatTime(tx.paidAt)}</span>
+                          </div>
+                        )}
+                        {!tx.paidAt && tx.expiresAt && (
+                          <div className="flex justify-between items-center text-[10px]">
+                            <span className="text-[#9E8497] font-medium">{language === "vi" ? "Hết hạn lúc" : "Expires At"}</span>
+                            <span className="font-medium text-[#E11D48]">{formatDate(tx.expiresAt)} {formatTime(tx.expiresAt)}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-[#F3E2EC] bg-[#FFFBFD] p-6 text-center text-xs text-[#9E8497] italic mt-2">
+                {language === "vi" ? "Chưa có giao dịch nào cho đơn đặt lịch này." : "No transactions found for this booking yet."}
+              </div>
+            )}
           </DetailCard>
 
           {/* CUSTOMER REVIEW WIDGET */}
@@ -2182,6 +2292,93 @@ export function ReceptionistBookingDetailPage() {
           setIsMoveScheduleOpen(false);
         }}
       />
+      <Modal
+        open={isTransactionModalOpen}
+        onCancel={() => setIsTransactionModalOpen(false)}
+        footer={null}
+        closable={false}
+        centered
+        width={400}
+        styles={{ content: { padding: 0, borderRadius: 24, overflow: "hidden" } }}
+      >
+        <div className="bg-[#FAF6F8] font-sans max-h-[85vh] overflow-y-auto">
+          <div className="flex items-center justify-between p-5 border-b border-[#F3E2EC] bg-white sticky top-0 z-10">
+            <h3 className="text-base font-extrabold text-[#2B182B] flex items-center gap-2">
+              <CreditCard size={18} className="text-[#E84F93]" /> {language === "vi" ? "Chi tiết giao dịch" : "Transaction Details"}
+            </h3>
+            <button type="button" onClick={() => setIsTransactionModalOpen(false)} className="text-[#9E8497] hover:text-[#E84F93]">
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="p-5">
+            {isFetchingTransaction ? (
+              <div className="flex flex-col items-center justify-center py-12 text-[#9E8497]">
+                <Spin size="large" />
+                <p className="mt-3 text-xs font-medium">{language === "vi" ? "Đang tải..." : "Loading..."}</p>
+              </div>
+            ) : selectedTransactionDetail ? (
+              <div className="space-y-4">
+                <div className="text-center pb-4 border-b border-[#F3E2EC]">
+                  <p className="text-[10px] uppercase font-bold text-[#9E8497] mb-1">{language === "vi" ? "Số tiền" : "Amount"}</p>
+                  <p className="text-3xl font-extrabold text-[#E84F93] mb-2">{formatCurrency(selectedTransactionDetail.amount)}</p>
+                  <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold ${String(selectedTransactionDetail.status).toLowerCase() === 'paid' ? 'bg-[#ECFDF5] text-[#059669]' :
+                    String(selectedTransactionDetail.status).toLowerCase() === 'pending' ? 'bg-[#FFFBEB] text-[#D97706]' :
+                      'bg-[#F3F4F6] text-[#6B7280]'
+                    }`}>
+                    {selectedTransactionDetail.status}
+                  </span>
+                </div>
+
+                <div className="space-y-3 bg-white p-4 rounded-xl border border-[#F3E2EC] shadow-2xs">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-[#9E8497] font-medium">{language === "vi" ? "Mã đơn hàng" : "Order Code"}</span>
+                    <span className="font-mono font-bold text-[#2B182B]">#{selectedTransactionDetail.orderCode}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-[#9E8497] font-medium">{language === "vi" ? "Thời gian tạo" : "Created At"}</span>
+                    <span className="font-medium text-[#2B182B]">{formatDate(selectedTransactionDetail.createdAt)} {formatTime(selectedTransactionDetail.createdAt)}</span>
+                  </div>
+
+                  {selectedTransactionDetail.paidAt && (
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-[#9E8497] font-medium">{language === "vi" ? "Thời gian trả" : "Paid At"}</span>
+                      <span className="font-medium text-[#059669]">{formatDate(selectedTransactionDetail.paidAt)} {formatTime(selectedTransactionDetail.paidAt)}</span>
+                    </div>
+                  )}
+
+                  {!selectedTransactionDetail.paidAt && selectedTransactionDetail.expiresAt && (
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-[#9E8497] font-medium">{language === "vi" ? "Thời gian hết hạn" : "Expires At"}</span>
+                      <span className="font-medium text-[#E11D48]">{formatDate(selectedTransactionDetail.expiresAt)} {formatTime(selectedTransactionDetail.expiresAt)}</span>
+                    </div>
+                  )}
+
+                  {selectedTransactionDetail.customerName && (
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-[#9E8497] font-medium">{language === "vi" ? "Khách hàng" : "Customer"}</span>
+                      <span className="font-bold text-[#2B182B]">{selectedTransactionDetail.customerName}</span>
+                    </div>
+                  )}
+
+                  {selectedTransactionDetail.salonName && (
+                    <div className="flex justify-between items-center text-xs mt-2 pt-2 border-t border-[#F3E2EC] border-dashed">
+                      <span className="text-[#9E8497] font-medium">Salon</span>
+                      <span className="font-medium text-[#E84F93]">{selectedTransactionDetail.salonName}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-[#9E8497] text-xs">
+                {language === "vi" ? "Không tìm thấy dữ liệu" : "No data found"}
+              </div>
+            )}
+          </div>
+        </div>
+      </Modal>
+
     </section>
   );
 }
