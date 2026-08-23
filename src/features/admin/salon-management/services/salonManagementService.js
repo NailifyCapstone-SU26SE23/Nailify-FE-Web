@@ -157,6 +157,7 @@ export function normalizeAdminSalon(salon) {
     latitude: Number(salon?.latitude || 0),
     longitude: Number(salon?.longitude || 0),
     operatingHours: Array.isArray(salon?.operatingHours) ? salon.operatingHours : [],
+    depositConfig: salon?.depositConfig != null ? Math.round(Number(salon.depositConfig) * 100) : "",
   };
 }
 
@@ -216,19 +217,24 @@ export async function fetchAdminSalons({
 }
 
 export async function fetchSalonStaffCount(salonId, role) {
-  const response = await axiosClient.get(
-    `/Users/salon/${salonId}/staff`,
-    {
-      headers: getAuthHeaders(),
-      params: {
-        role,
-        pageNumber: 1,
-        pageSize: 1,
-      },
-    }
-  );
+  try {
+    const response = await axiosClient.get(
+      `/Users/salon/${salonId}/staff`,
+      {
+        headers: getAuthHeaders(),
+        params: {
+          role,
+          pageNumber: 1,
+          pageSize: 1,
+        },
+      }
+    );
 
-  return response.data.data.metaData.totalItems;
+    return response?.data?.data?.metaData?.totalItems || 0;
+  } catch (error) {
+    console.warn(`Failed to fetch staff count for salon ${salonId} role ${role}:`, error?.message);
+    return 0;
+  }
 }
 
 export async function fetchAdminSalonDetail(salonId) {

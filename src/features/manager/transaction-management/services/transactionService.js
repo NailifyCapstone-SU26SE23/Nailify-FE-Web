@@ -341,13 +341,13 @@ export async function fetchTransactions(options = {}) {
     return data || { items: [], totalCount: 0, totalPages: 1 };
   } catch (error) {
     console.warn("API Request to /Transactions failed, using local mock fallback.", error?.message);
-    
+
     // In development or if API fails, return filtered mock data for seamless demo
     let filtered = MOCK_TRANSACTIONS.map((t, idx) => {
       // Distribute transactions across the 3 salons for admin testing, unless manager role
       let sId = "NY-001";
       let sName = "Nailify Downtown";
-      
+
       if (currentSalonId !== "484c3aef-3ae1-4ad6-8aba-6b0bc6df586d") {
         if (idx >= 5 && idx < 10) {
           sId = "NY-002";
@@ -357,19 +357,19 @@ export async function fetchTransactions(options = {}) {
           sName = "Nailify Brooklyn";
         }
       }
-      
+
       return {
         ...t,
         salonId: sId,
         salonName: sName
       };
     });
-    
+
     // Filter by salonId if applicable
     if (currentSalonId) {
       filtered = filtered.filter(
-        t => t.salonId === currentSalonId || 
-        (currentSalonId === "484c3aef-3ae1-4ad6-8aba-6b0bc6df586d" && t.salonId === "NY-001")
+        t => t.salonId === currentSalonId ||
+          (currentSalonId === "484c3aef-3ae1-4ad6-8aba-6b0bc6df586d" && t.salonId === "NY-001")
       );
     }
 
@@ -379,7 +379,7 @@ export async function fetchTransactions(options = {}) {
         t => t.status?.toLowerCase() === status.toLowerCase()
       );
     }
-    
+
     // Apply basic pagination
     const totalItems = filtered.length;
     const startIndex = (pageNumber - 1) * pageSize;
@@ -419,7 +419,7 @@ export async function fetchBookingById(bookingId) {
     return data?.booking || data;
   } catch (error) {
     console.warn("Failed to fetch booking details from API, using mock details.", error?.message);
-    
+
     // Fallback mock data with requested schema fields
     return {
       bookingId: normalizedId,
@@ -466,7 +466,7 @@ export async function fetchTransactionById(id) {
     return payload.data;
   } catch (error) {
     console.warn("Failed to fetch transaction details from API.", error?.message);
-    
+
     // Fallback to mock data if it matches ID
     const fallback = MOCK_TRANSACTIONS.find(t => String(t.transactionId) === normalizedId);
     if (fallback) return fallback;
@@ -495,7 +495,7 @@ export async function fetchTransactionsByBookingId(bookingId) {
     return payload.data || [];
   } catch (error) {
     console.warn("Failed to fetch transactions for booking from API.", error?.message);
-    
+
     // Fallback to mock data filtering by bookingId
     const fallback = MOCK_TRANSACTIONS.filter(t => String(t.bookingId) === normalizedId);
     return fallback;
@@ -505,7 +505,7 @@ export async function fetchTransactionsByBookingId(bookingId) {
 export async function processRefund(bookingId, refundData) {
   if (!bookingId) throw new Error("Booking ID is required.");
   try {
-    const response = await axiosClient.post(`/payments/refund/${bookingId}`, refundData, {
+    const response = await axiosClient.post(`/payments/refund/reject/${bookingId}`, refundData, {
       headers: getAuthHeaders(),
     });
     return response?.data;
