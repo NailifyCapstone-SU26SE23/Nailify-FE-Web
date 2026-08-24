@@ -140,7 +140,7 @@ export function SalonDetailPage() {
       address: salonForm?.address || salonRow?.address || "No address",
       manager: matchedManager ? matchedManager.name : "Unassigned",
       phone: salonForm?.phone || salonRow?.phone || "Not set",
-      staff: (salonForm?.staffAmount ?? salonRow?.staff),
+      staff: (salonForm?.staffAmount ?? salonRow?.staffCount),
       status: salonForm?.status || salonRow?.status || "Active",
       statusColor: salonRow?.statusColor || "bg-[#eaf9ee] text-[#238a55]",
       image: salonRow?.image || SALON_PLACEHOLDER_IMAGE,
@@ -162,12 +162,11 @@ export function SalonDetailPage() {
 
       try {
         // Fetch salon details and managers
-        const [apiSalon, managersData] = await Promise.all([
+        const [normalizedSalon, managersData] = await Promise.all([
           fetchAdminSalonDetail(salonId),
           fetchAdminUsers({ role: "Manager", pageSize: 1000 })
         ]);
 
-        const normalizedSalon = normalizeAdminSalon(apiSalon);
         setManagers(managersData.items);
 
         if (!isMounted) {
@@ -179,10 +178,10 @@ export function SalonDetailPage() {
           address: normalizedSalon.address,
           manager: normalizedSalon.manager,
           phone: normalizedSalon.phone,
-          staffAmount: normalizedSalon.staff,
+          staffAmount: normalizedSalon.staffCount,
           status: normalizedSalon.status,
           operatingHours: normalizedSalon.operatingHours,
-          depositConfig: normalizedSalon.depositConfig || apiSalon.depositConfig,
+          depositConfig: normalizedSalon.depositConfig,
         });
         setSalonRow(normalizedSalon);
       } catch (err) {
@@ -284,8 +283,7 @@ export function SalonDetailPage() {
       await uploadSalonImage(salonId, selectedImage);
 
       // Refresh salon details after upload
-      const apiSalon = await fetchAdminSalonDetail(salonId);
-      const normalizedSalon = normalizeAdminSalon(apiSalon);
+      const normalizedSalon = await fetchAdminSalonDetail(salonId);
       setSalonRow(normalizedSalon);
 
       setShowUpdateAvatarModal(false);
