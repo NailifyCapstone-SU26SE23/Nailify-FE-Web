@@ -98,6 +98,7 @@ export async function updateSalon(salonId, formData, imageFile) {
     form.append("name", formData.salonName);
     form.append("address", formData.address);
     form.append("phone", formData.phone);
+    form.append("status", formData.status);
     form.append("latitude", "0");
     form.append("longitude", "0");
     form.append("DepositConfig", formData.depositConfig ? Number(formData.depositConfig) / 100 : 0);

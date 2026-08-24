@@ -169,7 +169,7 @@ export async function fetchAdminSalons({
 } = {}) {
   const normalizedSearch = String(searchTerm || "").trim();
 
-  const response = await axiosClient.get("/Salons", {
+  const response = await axiosClient.get("/Salons/admin", {
     headers: getAuthHeaders(),
     params: {
       PageIndex: pageIndex,

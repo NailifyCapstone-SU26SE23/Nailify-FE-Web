@@ -134,7 +134,7 @@ export function SalonCreatePage() {
         address: formData.address,
         phone: formData.phone,
         staffAmount: "",
-        status: "ACTIVE",
+        status: "Open",
         operatingHours: {},
         salonId: "",
         depositConfig: formData.depositConfig,
