@@ -8,6 +8,7 @@ import { PropTypes } from "../../../../shared/utils/propTypes";
 import { ROUTES } from "../../../../shared/constants/routes";
 import { fetchCustomerNails, getManagerSalonId } from "../services/customerNailsService";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
 function Card({ className = "", children }) {
   return (
@@ -770,39 +771,39 @@ export function CustomerNailPage() {
 
     return [
       {
-        title: language === "vi" ? "Tổng yêu cầu thiết kế" : "Total Designs",
+        label: language === "vi" ? "Tổng yêu cầu thiết kế" : "Total Designs",
         value: activeNailsList.length,
         note: language === "vi" ? "Tất cả yêu cầu khách hàng" : "all customer requests",
         icon: Sparkles,
-        toneClassName: "bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93]",
+        color: "#ea4f93",
       },
       {
-        title: language === "vi" ? "Chờ đánh giá" : "Pending Review",
+        label: language === "vi" ? "Chờ đánh giá" : "Pending Review",
         value: pendingReviewCount,
         note: language === "vi" ? "Cần sự chú ý của quản lý" : "needs manager attention",
         icon: Clock3,
-        toneClassName: "bg-gradient-to-br from-[#f5b455] to-[#db8520]",
+        color: "#db8520",
       },
       {
-        title: language === "vi" ? "Đã đánh giá" : "Reviewed",
+        label: language === "vi" ? "Đã đánh giá" : "Reviewed",
         value: reviewedCount,
         note: language === "vi" ? "Chờ hành động cuối cùng" : "waiting for final action",
         icon: Calendar,
-        toneClassName: "bg-gradient-to-br from-[#7c8cff] to-[#4755b8]",
+        color: "#4755b8",
       },
       {
-        title: language === "vi" ? "Đã duyệt" : "Approved",
+        label: language === "vi" ? "Đã duyệt" : "Approved",
         value: approvedCount,
         note: language === "vi" ? "Xác nhận bởi quản lý" : "confirmed by manager",
         icon: CheckCircle2,
-        toneClassName: "bg-gradient-to-br from-[#5dd18d] to-[#2fa25f]",
+        color: "#2fa25f",
       },
       {
-        title: language === "vi" ? "Đã từ chối" : "Rejected",
+        label: language === "vi" ? "Đã từ chối" : "Rejected",
         value: rejectedCount,
         note: language === "vi" ? "Đã từ chối" : "sent back with feedback",
         icon: XCircle,
-        toneClassName: "bg-gradient-to-br from-[#f089ad] to-[#e1447f]",
+        color: "#e1447f",
       },
     ];
   }, [isPendingReviewStatus, allNails, nails, language]);
@@ -847,14 +848,7 @@ export function CustomerNailPage() {
       }}
     >
       <div className="flex min-h-full flex-col gap-5">
-        <Card className="overflow-hidden border-none bg-gradient-to-br from-[#fff2f9] via-[#fffbfd] to-[#fff6fb] p-0 shadow-[0_18px_45px_rgba(236,72,153,0.08)]">
-          {/* Empty top row removed */}
-          <div className="grid gap-4 bg-white/30 p-6 sm:grid-cols-2 xl:grid-cols-5">
-            {summaryStats.map((item) => (
-              <StatCard key={item.title} {...item} />
-            ))}
-          </div>
-        </Card>
+        <TopMetricsRow metrics={summaryStats} />
 
         <Card className="p-0">
           <div className="flex flex-col gap-4 border-b border-[#f6dce7] p-6 sm:flex-row sm:items-center sm:justify-between">

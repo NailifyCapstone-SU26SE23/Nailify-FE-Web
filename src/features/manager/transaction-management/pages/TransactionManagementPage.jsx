@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Drawer, Modal, message, Select, Spin, Alert } from "antd";
+import { Drawer, Modal, message, Select, Spin, Alert, Table } from "antd";
 import {
   Search,
   Eye,
@@ -69,7 +69,13 @@ export function TransactionManagementPage() {
   const { t, language } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [transactionsData, setTransactionsData] = useState({ items: [], totalCount: 0, totalPages: 1 });
+  const [transactionsData, setTransactionsData] = useState({
+    items: [],
+    totalCount: 0,
+    totalPages: 0,
+  });
+  
+  const [selectedSort, setSelectedSort] = useState("createdAt-desc");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(10);
   const [searchQuery, setSearchQuery] = useState("");
@@ -85,10 +91,10 @@ export function TransactionManagementPage() {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchTransactions({ 
-        pageNumber: currentPage, 
-        pageSize, 
-        status: statusFilter 
+      const data = await fetchTransactions({
+        pageNumber: currentPage,
+        pageSize,
+        status: statusFilter
       });
 
       if (data && data.items && data.items.length > 0) {
@@ -174,6 +180,49 @@ export function TransactionManagementPage() {
     return items;
   }, [transactionsData.items, searchQuery, statusFilter]);
 
+  const sortedTransactions = useMemo(() => {
+    const [sortKey, sortOrder] = selectedSort.split("-");
+    const multiplier = sortOrder === "desc" ? -1 : 1;
+    return [...processedTransactions].sort((a, b) => {
+      let valA, valB;
+      switch (sortKey) {
+        case "orderCode":
+          valA = (a.orderCode || "").toLowerCase();
+          valB = (b.orderCode || "").toLowerCase();
+          break;
+        case "customer":
+          valA = (a.customerName || "").toLowerCase();
+          valB = (b.customerName || "").toLowerCase();
+          break;
+        case "totalPrice":
+          valA = a.booking?.totalPrice ?? a.amount ?? 0;
+          valB = b.booking?.totalPrice ?? b.amount ?? 0;
+          break;
+        case "deposit":
+          valA = a.amountDue ?? a.booking?.amountDue ?? 0;
+          valB = b.amountDue ?? b.booking?.amountDue ?? 0;
+          break;
+        case "balance":
+          valA = a.amountPaid ?? a.booking?.amountPaid ?? 0;
+          valB = b.amountPaid ?? b.booking?.amountPaid ?? 0;
+          break;
+        case "createdAt":
+          valA = new Date(a.createdAt).getTime();
+          valB = new Date(b.createdAt).getTime();
+          break;
+        case "status":
+          valA = (a.status || "").toLowerCase();
+          valB = (b.status || "").toLowerCase();
+          break;
+        default:
+          return 0;
+      }
+      if (valA < valB) return -1 * multiplier;
+      if (valA > valB) return 1 * multiplier;
+      return 0;
+    });
+  }, [processedTransactions, selectedSort]);
+
   // Determine if server is returning paginated data or a flat array of all records
   const isServerPaginated = useMemo(() => {
     return transactionsData.totalPages > 1 && transactionsData.items.length < transactionsData.totalCount;
@@ -184,17 +233,17 @@ export function TransactionManagementPage() {
     if (isServerPaginated) {
       return transactionsData.totalPages;
     }
-    return Math.max(1, Math.ceil(processedTransactions.length / pageSize));
-  }, [isServerPaginated, transactionsData.totalPages, processedTransactions.length, pageSize]);
+    return Math.max(1, Math.ceil(sortedTransactions.length / pageSize));
+  }, [isServerPaginated, transactionsData.totalPages, sortedTransactions.length, pageSize]);
 
   // Paginated/Sliced transactions for display
   const displayedTransactions = useMemo(() => {
     if (isServerPaginated) {
-      return processedTransactions;
+      return sortedTransactions;
     }
     const startIndex = (currentPage - 1) * pageSize;
-    return processedTransactions.slice(startIndex, startIndex + pageSize);
-  }, [isServerPaginated, processedTransactions, currentPage, pageSize]);
+    return sortedTransactions.slice(startIndex, startIndex + pageSize);
+  }, [isServerPaginated, sortedTransactions, currentPage, pageSize]);
 
   // Recalculate metrics based on all current transactions
   const metrics = useMemo(() => {
@@ -472,82 +521,124 @@ export function TransactionManagementPage() {
               className="overflow-hidden bg-white rounded-[2rem] border border-slate-200/60 shadow-[0_12px_40px_rgba(0,0,0,0.02)]"
             >
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-100 bg-slate-50/75">
-                      <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[12%]">{language === "vi" ? "Mã đơn hàng" : "Order Code"}</th>
-                      <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[20%]">{language === "vi" ? "Khách hàng & Địa điểm" : "Customer & Location"}</th>
-                      <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[12%]">{language === "vi" ? "Tổng giá" : "Total Price"}</th>
-                      <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[14%]">{language === "vi" ? "Tiền đặt cọc" : "Deposit Paid"}</th>
-                      <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[14%]">{language === "vi" ? "Số dư còn lại" : "Remaining Balance"}</th>
-                      <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[15%]">{language === "vi" ? "Ngày tạo" : "Created At"}</th>
-                      <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[10%]">{language === "vi" ? "Trạng thái" : "Status"}</th>
-                      <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] text-right w-[3%]">{language === "vi" ? "Hành động" : "Actions"}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {displayedTransactions.map((tx) => (
-                      <motion.tr
-                        key={tx.transactionId}
-                        variants={fadeInUp}
-                        className="group border-l-4 border-l-transparent hover:border-l-[#ea4f93] hover:bg-[#fff9fc]/40 transition-all duration-300 cursor-pointer"
-                        onClick={() => {
-                          setSelectedTransaction(tx);
-                          setDrawerVisible(true);
-                        }}
-                      >
-                        {/* Order Code */}
-                        <td className="px-6 py-5.5 font-mono font-bold text-sm text-[#ea4f93]">
+                <Table
+                  rowKey="transactionId"
+                  dataSource={displayedTransactions}
+                  pagination={false}
+                  onChange={(pagination, filters, sorter) => {
+                    if (sorter && sorter.field) {
+                      if (sorter.order) {
+                        setSelectedSort(`${sorter.field}-${sorter.order === "ascend" ? "asc" : "desc"}`);
+                      } else {
+                        setSelectedSort("createdAt-desc");
+                      }
+                    }
+                  }}
+                  onRow={(record) => ({
+                    onClick: () => {
+                      setSelectedTransaction(record);
+                      setDrawerVisible(true);
+                    }
+                  })}
+                  className="custom-admin-table [&_.ant-table]:!bg-transparent [&_.ant-table-thead_th]:!bg-[#fff9fb] [&_.ant-table-thead_th]:!text-[10px] [&_.ant-table-thead_th]:!uppercase [&_.ant-table-thead_th]:!tracking-[0.14em] [&_.ant-table-thead_th]:!text-[#a88a9f] [&_.ant-table-thead_th]:!font-bold [&_.ant-table-thead_th]:!border-b [&_.ant-table-thead_th]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row>td]:!border-b [&_.ant-table-tbody_.ant-table-row>td]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row]:hover>td:!bg-[#fff9fb] [&_.ant-table-tbody_.ant-table-row>td]:!py-4 [&_.ant-table-tbody_.ant-table-row>td]:!text-[12px] [&_.ant-table-tbody_.ant-table-row>td]:!text-[#5b4256]"
+                  columns={[
+                    {
+                      title: language === "vi" ? "Mã đơn hàng" : "Order Code",
+                      dataIndex: "orderCode",
+                      key: "orderCode",
+                      sorter: true,
+                      sortOrder: selectedSort === "orderCode-asc" ? "ascend" : selectedSort === "orderCode-desc" ? "descend" : null,
+                      render: (_, tx) => (
+                        <span className="font-mono font-bold text-sm text-[#ea4f93]">
                           #{tx.orderCode || "N/A"}
-                        </td>
-
-                        {/* Customer */}
-                        <td className="px-6 py-5.5">
-                          <div className="flex items-center gap-3">
-                            <div className={`flex h-9 w-9 items-center justify-center rounded-full font-bold text-xs shrink-0 shadow-xs ${getAvatarColor(tx.customerName)}`}>
-                              {getInitials(tx.customerName)}
+                        </span>
+                      )
+                    },
+                    {
+                      title: language === "vi" ? "Khách hàng & Địa điểm" : "Customer & Location",
+                      dataIndex: "customer",
+                      key: "customer",
+                      sorter: true,
+                      sortOrder: selectedSort === "customer-asc" ? "ascend" : selectedSort === "customer-desc" ? "descend" : null,
+                      render: (_, tx) => (
+                        <div className="flex items-center gap-3">
+                          <div className={`flex h-9 w-9 items-center justify-center rounded-full font-bold text-xs shrink-0 shadow-xs ${getAvatarColor(tx.customerName)}`}>
+                            {getInitials(tx.customerName)}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="font-bold text-[#2d1b35] text-sm truncate">
+                              {tx.customerName || "Unnamed Customer"}
                             </div>
-                            <div className="min-w-0">
-                              <div className="font-bold text-[#2d1b35] text-sm truncate">
-                                {tx.customerName || "Unnamed Customer"}
-                              </div>
-                              <div className="text-[10px] text-[#a88a9f] font-medium truncate mt-0.5">
-                                {tx.salonName || "Nailify Salon"}
-                              </div>
+                            <div className="text-[10px] text-[#a88a9f] font-medium truncate mt-0.5">
+                              {tx.salonName || "Nailify Salon"}
                             </div>
                           </div>
-                        </td>
-
-                        {/* Total Price */}
-                        <td className="px-6 py-5.5 font-mono font-bold text-[#2d1b35] text-sm">
+                        </div>
+                      )
+                    },
+                    {
+                      title: language === "vi" ? "Tổng giá" : "Total Price",
+                      dataIndex: "totalPrice",
+                      key: "totalPrice",
+                      sorter: true,
+                      sortOrder: selectedSort === "totalPrice-asc" ? "ascend" : selectedSort === "totalPrice-desc" ? "descend" : null,
+                      render: (_, tx) => (
+                        <span className="font-mono font-bold text-[#2d1b35] text-sm">
                           {tx.booking?.totalPrice != null ? formatCurrency(tx.booking.totalPrice) : formatCurrency(tx.amount)}
-                        </td>
-
-                        {/* Deposit Paid */}
-                        <td className="px-6 py-5.5 font-mono font-bold text-[#ea4f93] text-sm">
+                        </span>
+                      )
+                    },
+                    {
+                      title: language === "vi" ? "Tiền đặt cọc" : "Deposit Paid",
+                      dataIndex: "deposit",
+                      key: "deposit",
+                      sorter: true,
+                      sortOrder: selectedSort === "deposit-asc" ? "ascend" : selectedSort === "deposit-desc" ? "descend" : null,
+                      render: (_, tx) => (
+                        <span className="font-mono font-bold text-[#ea4f93] text-sm">
                           {tx.amountDue != null ? formatCurrency(tx.amountDue) : (tx.booking?.amountDue != null ? formatCurrency(tx.booking.amountDue) : "-")}
-                        </td>
-
-                        {/* Remaining Balance */}
-                        <td className="px-6 py-5.5 font-mono font-bold text-[#2fa25f] text-sm">
+                        </span>
+                      )
+                    },
+                    {
+                      title: language === "vi" ? "Số dư còn lại" : "Remaining Balance",
+                      dataIndex: "balance",
+                      key: "balance",
+                      sorter: true,
+                      sortOrder: selectedSort === "balance-asc" ? "ascend" : selectedSort === "balance-desc" ? "descend" : null,
+                      render: (_, tx) => (
+                        <span className="font-mono font-bold text-[#2fa25f] text-sm">
                           {tx.amountPaid != null ? formatCurrency(tx.amountPaid) : (tx.booking?.amountPaid != null ? formatCurrency(tx.booking.amountPaid) : "-")}
-                        </td>
-
-                        {/* Created At */}
-                        <td className="px-6 py-5.5 text-xs text-[#7f6478]">
-                          <div className="flex items-center gap-1.5">
-                            <Calendar size={13} className="text-[#a88a9f]" />
-                            <span className="font-medium">{dayjs(tx.createdAt).format("DD MMM YYYY, HH:mm")}</span>
-                          </div>
-                        </td>
-
-                        {/* Status */}
-                        <td className="px-6 py-5.5">
-                          {renderStatusBadge(tx.status)}
-                        </td>
-
-                        {/* Actions */}
-                        <td className="px-6 py-5.5 text-right" onClick={(e) => e.stopPropagation()}>
+                        </span>
+                      )
+                    },
+                    {
+                      title: language === "vi" ? "Ngày tạo" : "Created At",
+                      dataIndex: "createdAt",
+                      key: "createdAt",
+                      sorter: true,
+                      sortOrder: selectedSort === "createdAt-asc" ? "ascend" : selectedSort === "createdAt-desc" ? "descend" : null,
+                      render: (_, tx) => (
+                        <div className="flex items-center gap-1.5 text-xs text-[#7f6478]">
+                          <Calendar size={13} className="text-[#a88a9f]" />
+                          <span className="font-medium">{dayjs(tx.createdAt).format("DD MMM YYYY, HH:mm")}</span>
+                        </div>
+                      )
+                    },
+                    {
+                      title: language === "vi" ? "Trạng thái" : "Status",
+                      dataIndex: "status",
+                      key: "status",
+                      sorter: true,
+                      sortOrder: selectedSort === "status-asc" ? "ascend" : selectedSort === "status-desc" ? "descend" : null,
+                      render: (_, tx) => renderStatusBadge(tx.status)
+                    },
+                    {
+                      title: language === "vi" ? "Hành động" : "Actions",
+                      key: "actions",
+                      align: "right",
+                      render: (_, tx) => (
+                        <div onClick={(e) => e.stopPropagation()} className="flex justify-end">
                           <button
                             onClick={() => {
                               setSelectedTransaction(tx);
@@ -558,11 +649,32 @@ export function TransactionManagementPage() {
                           >
                             <Eye size={13} className="stroke-[2]" />
                           </button>
-                        </td>
-                      </motion.tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+                      )
+                    }
+                  ]}
+                  components={{
+                    body: {
+                      wrapper: ({ children, ...props }) => (
+                        <tbody {...props}>
+                          <AnimatePresence>{children}</AnimatePresence>
+                        </tbody>
+                      ),
+                      row: ({ children, className, style, ...props }) => (
+                        <motion.tr
+                          initial={{ opacity: 0, y: 15 }}
+                          animate={{ opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } }}
+                          exit={{ opacity: 0 }}
+                          className={`group border-l-4 border-l-transparent hover:border-l-[#ea4f93] hover:bg-[#fff9fc]/40 transition-all duration-300 cursor-pointer ${className || ""}`}
+                          style={style}
+                          {...props}
+                        >
+                          {children}
+                        </motion.tr>
+                      )
+                    }
+                  }}
+                />
               </div>
 
               {/* Pagination footer */}
@@ -836,7 +948,7 @@ export function TransactionManagementPage() {
                   <span>{language === "vi" ? "Chính sách giao dịch Nailify" : "Nailify Transaction Policy"}</span>
                 </div>
                 <p className="leading-relaxed text-[#7f6478]">
-                  {selectedTransaction.policy || language === "vi" ? "Tất cả các khoản thanh toán được xử lý thông qua cổng PayOS/VietQR của bên thứ ba. Các chính sách hoàn tiền đặt trước đặt chỗ tiêu chuẩn được áp dụng theo hướng dẫn của Chi nhánh Nailify." : "All payments processed via third-party PayOS/VietQR gateways. Standard booking reservation refund policies apply according to Nailify Branch guidelines."}
+                  {language === "vi" ? "Tất cả các khoản thanh toán được xử lý thông qua cổng PayOS/VietQR của bên thứ ba. Các chính sách hoàn tiền đặt trước đặt chỗ tiêu chuẩn được áp dụng theo hướng dẫn của Chi nhánh Nailify." : "All payments processed via third-party PayOS/VietQR gateways. Standard booking reservation refund policies apply according to Nailify Branch guidelines."}
                 </p>
               </div>
 

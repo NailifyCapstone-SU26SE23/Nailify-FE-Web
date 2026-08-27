@@ -32,6 +32,7 @@ import {
     updateDiagnosticShape
 } from "../services/quizManagement";
 import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
 export function QuizManagement() {
     const navigate = useNavigate();
@@ -126,8 +127,8 @@ export function QuizManagement() {
             const updated = await updateQuizQuestionCore(id, { ...target, status: nextStatus });
             setQuestions(prev => prev.map(q => q.id === id ? updated : q).sort((a, b) => a.sortOrder - b.sortOrder));
             showNotification(
-                language === "vi" 
-                    ? `Trạng thái câu hỏi đã cập nhật thành ${nextStatus === "Active" ? "hoạt động" : "ngừng hoạt động"}` 
+                language === "vi"
+                    ? `Trạng thái câu hỏi đã cập nhật thành ${nextStatus === "Active" ? "hoạt động" : "ngừng hoạt động"}`
                     : `Question status updated to ${nextStatus.toLowerCase()}`
             );
         } catch (err) {
@@ -321,52 +322,41 @@ export function QuizManagement() {
 
     return (
         <div className="flex min-h-full flex-col gap-6 bg-[#fffbfc] text-[#4b3c46] pb-10">
-            {/* Monospace metrics row */}
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                {[
-                    { 
-                      label: t("adminQuizManagement.completedQuizzes"), 
-                      value: "4,924", 
-                      icon: FileText, 
-                      desc: t("adminQuizManagement.evaluationsCalculated") 
-                    },
-                    { 
-                      label: t("adminQuizManagement.diagnosticSteps"), 
-                      value: activeQuestionsCount, 
-                      icon: Sliders, 
-                      desc: t("adminQuizManagement.activeQuestionsInFlow") 
-                    },
-                    { 
-                      label: t("adminQuizManagement.registeredShapes"), 
-                      value: shapes.length, 
-                      icon: Layers, 
-                      desc: t("adminQuizManagement.targetRecommendationStyles") 
-                    },
-                    { 
-                      label: t("adminQuizManagement.completionRate"), 
-                      value: "96.4%", 
-                      icon: TrendingUp, 
-                      desc: t("adminQuizManagement.quizProgressionAccuracy") 
-                    }
-                ].map((item, idx) => {
-                    const Icon = item.icon;
-                    return (
-                        <div key={idx} className="group flex flex-col justify-between rounded-3xl border border-white/60 bg-white/60 p-5 shadow-[0_12px_32px_rgba(224,188,206,0.12)] backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-white hover:bg-white/90 hover:shadow-[0_16px_40px_rgba(234,79,147,0.15)]">
-                            <div className="flex items-start justify-between">
-                                <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#a6869a]">
-                                    {item.label}
-                                </span>
-                                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fff0f6] text-[#ea4f93]">
-                                    <Icon size={15} />
-                                </div>
-                            </div>
-                            <div className="mt-4">
-                                <span className="text-3xl font-bold font-mono tracking-tight text-[#3f2034]">{item.value}</span>
-                                <p className="mt-1 text-xs text-[#a3909e]">{item.desc}</p>
-                            </div>
-                        </div>
-                    );
-                })}
+            {/* TopMetricsRow */}
+            <div className="mb-2">
+                <TopMetricsRow
+                    metrics={[
+                        {
+                            label: t("adminQuizManagement.completedQuizzes"),
+                            value: "4,924",
+                            icon: FileText,
+                            note: t("adminQuizManagement.evaluationsCalculated"),
+                            color: "#ea4f93"
+                        },
+                        {
+                            label: t("adminQuizManagement.diagnosticSteps"),
+                            value: activeQuestionsCount,
+                            icon: Sliders,
+                            note: t("adminQuizManagement.activeQuestionsInFlow"),
+                            color: "#f59e0b"
+                        },
+                        {
+                            label: t("adminQuizManagement.registeredShapes"),
+                            value: shapes.length,
+                            icon: Layers,
+                            note: t("adminQuizManagement.targetRecommendationStyles"),
+                            color: "#10b981"
+                        },
+                        {
+                            label: t("adminQuizManagement.completionRate"),
+                            value: "96.4%",
+                            icon: TrendingUp,
+                            note: t("adminQuizManagement.quizProgressionAccuracy"),
+                            color: "#6366f1"
+                        }
+                    ]}
+                    className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+                />
             </div>
 
             {/* Filter and Command section */}
@@ -392,9 +382,9 @@ export function QuizManagement() {
                                     : "text-[#8c6b81] hover:bg-[#fff0f6]"
                                     }`}
                             >
-                                {language === "vi" 
-                                  ? { All: "Tất cả", Active: "Hoạt động", Inactive: "Ngừng hoạt động" }[opt] || opt 
-                                  : opt
+                                {language === "vi"
+                                    ? { All: "Tất cả", Active: "Hoạt động", Inactive: "Ngừng hoạt động" }[opt] || opt
+                                    : opt
                                 }
                             </button>
                         ))}
@@ -403,7 +393,7 @@ export function QuizManagement() {
 
                 <Link
                     to={ROUTES.adminQuizCreate}
-                    className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-[#ea4f93] to-[#ff7eb3] px-6 text-sm font-extrabold text-white shadow-[0_8px_20px_rgba(234,79,147,0.3)] transition-all duration-300 hover:scale-105 hover:shadow-[0_12px_28px_rgba(234,79,147,0.4)] active:scale-95"
+                    className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-[#ea4f93] to-[#ff7eb3] px-6 text-sm font-bold text-white shadow-[0_8px_20px_rgba(234,79,147,0.3)] transition-all duration-300 hover:scale-105 hover:shadow-[0_12px_28px_rgba(234,79,147,0.4)] active:scale-95"
                 >
                     <Plus size={15} className="mr-2" />
                     {t("adminQuizManagement.createQuestion")}
@@ -419,7 +409,7 @@ export function QuizManagement() {
                             Q
                         </span>
                         <h3 className="text-sm font-bold uppercase tracking-wider text-[#3f2034]">
-                          {t("adminQuizManagement.assessmentFlowSteps")}
+                            {t("adminQuizManagement.assessmentFlowSteps")}
                         </h3>
                     </div>
 
@@ -466,17 +456,17 @@ export function QuizManagement() {
                                                     <button
                                                         onClick={() => handleToggleStatus(q.id)}
                                                         title={language === "vi" ? `Đổi trạng thái thành ${q.status === "Active" ? "Ngừng hoạt động" : "Hoạt động"}` : `Set status to ${q.status === "Active" ? "Inactive" : "Active"}`}
-                                                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9px] font-extrabold transition-all active:scale-[0.98] ${q.status === "Active"
+                                                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9px] font-bold transition-all active:scale-[0.98] ${q.status === "Active"
                                                             ? "bg-[#e8fdf2] text-[#16975f] hover:bg-[#d0fbe4]"
                                                             : "bg-[#fff0f3] text-[#d14c84] hover:bg-[#ffd9e1]"
                                                             }`}
                                                     >
                                                         <Power size={8} />
                                                         <span>
-                                                          {language === "vi" 
-                                                            ? (q.status === "Active" ? "Hoạt động" : "Ngừng hoạt động") 
-                                                            : q.status
-                                                          }
+                                                            {language === "vi"
+                                                                ? (q.status === "Active" ? "Hoạt động" : "Ngừng hoạt động")
+                                                                : q.status
+                                                            }
                                                         </span>
                                                     </button>
                                                     <button
@@ -498,8 +488,8 @@ export function QuizManagement() {
 
                                             {/* Choice Option cards */}
                                             <div className="mt-4 border-t border-[#fcecf4] pt-4">
-                                                <p className="text-[10px] font-extrabold uppercase tracking-widest text-[#a6869a] mb-2">
-                                                  {t("adminQuizManagement.configuredOptions")}
+                                                <p className="text-[10px] font-bold uppercase tracking-widest text-[#a6869a] mb-2">
+                                                    {t("adminQuizManagement.configuredOptions")}
                                                 </p>
                                                 <div className="flex flex-col gap-2">
                                                     {q.choices.map((choice, cIdx) => (
@@ -542,11 +532,11 @@ export function QuizManagement() {
                                     <HelpCircle size={20} />
                                 </div>
                                 <h4 className="text-base font-bold text-[#3f2034]">
-                                  {t("adminQuizManagement.noQuizElementsFound")}
+                                    {t("adminQuizManagement.noQuizElementsFound")}
                                 </h4>
                                 <p className="mt-2 text-xs text-[#8c7484] max-w-xs">
-                                  {t("adminQuizManagement.tryRefiningYourSearchFilterRes")
-                                  }
+                                    {t("adminQuizManagement.tryRefiningYourSearchFilterRes")
+                                    }
                                 </p>
                             </motion.div>
                         )}
@@ -560,7 +550,7 @@ export function QuizManagement() {
                             S
                         </span>
                         <h3 className="text-sm font-bold uppercase tracking-wider text-[#3f2034]">
-                          {t("adminQuizManagement.nailShapesRecommendationModel")}
+                            {t("adminQuizManagement.nailShapesRecommendationModel")}
                         </h3>
                     </div>
 
@@ -576,7 +566,7 @@ export function QuizManagement() {
                                     }`}
                             >
                                 <div>
-                                    <h4 className="text-xs font-extrabold text-[#3f2034]">{shape.name}</h4>
+                                    <h4 className="text-xs font-bold text-[#3f2034]">{shape.name}</h4>
                                     <p className="mt-1 text-[11px] text-[#8c7484] max-w-[280px] truncate">{shape.description}</p>
                                 </div>
                                 <ChevronRight size={13} className={selectedShape?.id === shape.id ? "text-[#ea4f93]" : "text-[#c9a7be]"} />
@@ -590,20 +580,20 @@ export function QuizManagement() {
                             <div className="flex items-center justify-between border-b border-[#fcecf4] pb-3 mb-4">
                                 <div>
                                     <span className="text-[9px] font-bold uppercase tracking-widest text-[#a6869a] block">
-                                      {t("adminQuizManagement.targetDiagnosticStyle")}
+                                        {t("adminQuizManagement.targetDiagnosticStyle")}
                                     </span>
                                     <h4 className="text-base font-bold text-[#3f2034] mt-0.5">{selectedShape.name}</h4>
                                 </div>
                                 <button
                                     onClick={() => setIsEditingShape(!isEditingShape)}
-                                    className="inline-flex h-8 px-3 items-center justify-center gap-1.5 rounded-full border border-[#f3cade] bg-white text-xs font-extrabold text-[#c95b90] hover:bg-[#fff0f6] transition-all active:scale-[0.98]"
+                                    className="inline-flex h-8 px-3 items-center justify-center gap-1.5 rounded-full border border-[#f3cade] bg-white text-xs font-bold text-[#c95b90] hover:bg-[#fff0f6] transition-all active:scale-[0.98]"
                                 >
                                     <Sliders size={11} />
                                     <span>
-                                      {isEditingShape 
-                                        ? (t("adminQuizManagement.cancel")) 
-                                        : (t("adminQuizManagement.configureRules"))
-                                      }
+                                        {isEditingShape
+                                            ? (t("adminQuizManagement.cancel"))
+                                            : (t("adminQuizManagement.configureRules"))
+                                        }
                                     </span>
                                 </button>
                             </div>
@@ -612,7 +602,7 @@ export function QuizManagement() {
                                 <form onSubmit={handleSaveShape} className="space-y-4">
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a6473]">
-                                          {t("adminQuizManagement.shapeDescription")}
+                                            {t("adminQuizManagement.shapeDescription")}
                                         </label>
                                         <textarea
                                             value={shapeEditData.description}
@@ -626,7 +616,7 @@ export function QuizManagement() {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="flex flex-col gap-1.5">
                                             <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a6473]">
-                                              {t("adminQuizManagement.upkeepDifficulty")}
+                                                {t("adminQuizManagement.upkeepDifficulty")}
                                             </label>
                                             <select
                                                 value={shapeEditData.difficulty}
@@ -641,7 +631,7 @@ export function QuizManagement() {
 
                                         <div className="flex flex-col gap-1.5">
                                             <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a6473]">
-                                              {t("adminQuizManagement.nailStrengthRequired")}
+                                                {t("adminQuizManagement.nailStrengthRequired")}
                                             </label>
                                             <select
                                                 value={shapeEditData.strengthLevel}
@@ -658,7 +648,7 @@ export function QuizManagement() {
 
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a6473]">
-                                          {t("adminQuizManagement.diagnosticRulesConditionsTrigg")}
+                                            {t("adminQuizManagement.diagnosticRulesConditionsTrigg")}
                                         </label>
                                         <textarea
                                             value={shapeEditData.rulesSummary}
@@ -683,17 +673,17 @@ export function QuizManagement() {
                                     <div className="grid grid-cols-2 gap-4 border-t border-[#fcecf4] pt-4">
                                         <div>
                                             <span className="text-[9px] font-bold uppercase tracking-widest text-[#a6869a] block">
-                                              {t("adminQuizManagement.upkeepDifficulty")}
+                                                {t("adminQuizManagement.upkeepDifficulty")}
                                             </span>
-                                            <span className="inline-flex mt-1 rounded-md bg-[#fff0f6] px-2 py-0.5 text-[10px] font-extrabold text-[#c95b90]">
+                                            <span className="inline-flex mt-1 rounded-md bg-[#fff0f6] px-2 py-0.5 text-[10px] font-bold text-[#c95b90]">
                                                 {selectedShape.difficulty}
                                             </span>
                                         </div>
                                         <div>
                                             <span className="text-[9px] font-bold uppercase tracking-widest text-[#a6869a] block">
-                                              {t("adminQuizManagement.nailStrength")}
+                                                {t("adminQuizManagement.nailStrength")}
                                             </span>
-                                            <span className="inline-flex mt-1 rounded-md bg-[#fff0f6] px-2 py-0.5 text-[10px] font-extrabold text-[#c95b90]">
+                                            <span className="inline-flex mt-1 rounded-md bg-[#fff0f6] px-2 py-0.5 text-[10px] font-bold text-[#c95b90]">
                                                 {selectedShape.strengthLevel}
                                             </span>
                                         </div>
@@ -737,13 +727,13 @@ export function QuizManagement() {
                                 <div className="flex items-center justify-between border-b border-[#fcecf4] pb-4">
                                     <div>
                                         <h3 className="text-base font-bold text-[#3f2034]">
-                                            {activeQuestionId 
-                                              ? (t("adminQuizManagement.modifyDiagnosticQuestion")) 
-                                              : (t("adminQuizManagement.createDiagnosticQuestion"))
+                                            {activeQuestionId
+                                                ? (t("adminQuizManagement.modifyDiagnosticQuestion"))
+                                                : (t("adminQuizManagement.createDiagnosticQuestion"))
                                             }
                                         </h3>
                                         <p className="text-xs text-[#8c7484]">
-                                          {t("adminQuizManagement.addOptionsAndRecommendationsMa")}
+                                            {t("adminQuizManagement.addOptionsAndRecommendationsMa")}
                                         </p>
                                     </div>
                                     <button
@@ -831,7 +821,7 @@ export function QuizManagement() {
                                             <button
                                                 type="button"
                                                 onClick={handleAddChoice}
-                                                className="inline-flex h-7 px-2.5 items-center justify-center gap-1.5 rounded-full border border-[#f3cade] bg-white text-[10px] font-extrabold text-[#c95b90] hover:bg-[#fff0f6] transition-all"
+                                                className="inline-flex h-7 px-2.5 items-center justify-center gap-1.5 rounded-full border border-[#f3cade] bg-white text-[10px] font-bold text-[#c95b90] hover:bg-[#fff0f6] transition-all"
                                             >
                                                 <Plus size={10} /> {t("adminQuizManagement.addOption")}
                                             </button>
@@ -849,7 +839,7 @@ export function QuizManagement() {
                                                     <div className="flex flex-col gap-2.5 pr-6">
                                                         <div className="flex items-center gap-2">
                                                             <span className="text-[10px] font-bold font-mono text-[#c9a7be] shrink-0">
-                                                              {language === "vi" ? `Tùy chọn ${choiceIdx + 1}` : `Option ${choiceIdx + 1}`}
+                                                                {language === "vi" ? `Tùy chọn ${choiceIdx + 1}` : `Option ${choiceIdx + 1}`}
                                                             </span>
                                                             <input
                                                                 type="text"
@@ -892,8 +882,8 @@ export function QuizManagement() {
 
                                                     {/* Recommended Shapes checkboxes grid */}
                                                     <div>
-                                                        <p className="text-[9px] font-extrabold uppercase tracking-widest text-[#a6869a] mb-1.5">
-                                                          {t("adminQuizManagement.recommendsShapes")}
+                                                        <p className="text-[9px] font-bold uppercase tracking-widest text-[#a6869a] mb-1.5">
+                                                            {t("adminQuizManagement.recommendsShapes")}
                                                         </p>
                                                         <div className="grid grid-cols-3 gap-2">
                                                             {shapes.map((shape) => {
@@ -955,55 +945,55 @@ export function QuizManagement() {
                         </div>
 
                         <div className="flex-1 space-y-0.5 pr-2">
-                                <div className="absolute top-0 bottom-0 left-0 w-1 rounded-l-2xl bg-gradient-to-b from-[#ea4f93] to-[#d14c84]" />
-        
-                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#fff0f6] text-[#ea4f93] shadow-sm">
-                                    {notification.type === "error" ? (
-                                        <AlertCircle size={16} strokeWidth={2.5} />
-                                    ) : (
-                                        <Check size={16} strokeWidth={2.5} />
-                                    )}
-                                </div>
-        
-                                <div className="flex-1 space-y-0.5 pr-2">
-                                    <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#3f2034]">
-                                        {notification.type === "error" 
-                                          ? (t("adminQuizManagement.systemError")) 
-                                          : (t("adminQuizManagement.success"))
-                                        }
-                                    </h4>
-                                    <p className="text-[11.5px] leading-normal text-[#695463]">
-                                        {notification.message}
-                                    </p>
-                                </div>
+                            <div className="absolute top-0 bottom-0 left-0 w-1 rounded-l-2xl bg-gradient-to-b from-[#ea4f93] to-[#d14c84]" />
+
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#fff0f6] text-[#ea4f93] shadow-sm">
+                                {notification.type === "error" ? (
+                                    <AlertCircle size={16} strokeWidth={2.5} />
+                                ) : (
+                                    <Check size={16} strokeWidth={2.5} />
+                                )}
                             </div>
-    
-                            {/* Progress Bar timer */}
-                            <motion.div
-                                initial={{ width: "100%" }}
-                                animate={{ width: "0%" }}
-                                transition={{ duration: 3, ease: "linear" }}
-                                className="absolute bottom-0 left-0 h-0.5 bg-[#ea4f93]"
-                            />
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-    
-                {/* Delete Confirmation Modal */}
-                <DeleteConfirmModal
-                    isOpen={!!deleteTarget}
-                    isDeleting={isDeleting}
-                    title={t("adminQuizManagement.deleteQuizQuestion")}
-                    description={
-                        deleteTarget
-                            ? (language === "vi" 
-                                ? `Bạn có chắc chắn muốn xóa "${deleteTarget.questionText}"? Hành động này không thể hoàn tác và tất cả các lựa chọn trả lời sẽ bị loại bỏ vĩnh viễn.` 
-                                : `Are you sure you want to delete "${deleteTarget.questionText}"? This action cannot be undone and all answer choices will be permanently removed.`)
-                            : ""
-                    }
-                    onConfirm={handleConfirmDelete}
-                    onCancel={handleCancelDelete}
-                />
+
+                            <div className="flex-1 space-y-0.5 pr-2">
+                                <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#3f2034]">
+                                    {notification.type === "error"
+                                        ? (t("adminQuizManagement.systemError"))
+                                        : (t("adminQuizManagement.success"))
+                                    }
+                                </h4>
+                                <p className="text-[11.5px] leading-normal text-[#695463]">
+                                    {notification.message}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Progress Bar timer */}
+                        <motion.div
+                            initial={{ width: "100%" }}
+                            animate={{ width: "0%" }}
+                            transition={{ duration: 3, ease: "linear" }}
+                            className="absolute bottom-0 left-0 h-0.5 bg-[#ea4f93]"
+                        />
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Delete Confirmation Modal */}
+            <DeleteConfirmModal
+                isOpen={!!deleteTarget}
+                isDeleting={isDeleting}
+                title={t("adminQuizManagement.deleteQuizQuestion")}
+                description={
+                    deleteTarget
+                        ? (language === "vi"
+                            ? `Bạn có chắc chắn muốn xóa "${deleteTarget.questionText}"? Hành động này không thể hoàn tác và tất cả các lựa chọn trả lời sẽ bị loại bỏ vĩnh viễn.`
+                            : `Are you sure you want to delete "${deleteTarget.questionText}"? This action cannot be undone and all answer choices will be permanently removed.`)
+                        : ""
+                }
+                onConfirm={handleConfirmDelete}
+                onCancel={handleCancelDelete}
+            />
         </div>
     );
 }

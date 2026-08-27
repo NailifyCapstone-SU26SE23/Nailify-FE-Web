@@ -121,7 +121,7 @@ export function SalonUpdatePage() {
           manager: "",
           phone: salon.phone || "",
           staffAmount: "",
-          status: salon.status || "ACTIVE",
+          status: salon.status || "Open",
           operatingHours: mapSalonOperatingHours(salon.operatingHours),
           depositConfig: salon.depositConfig || "",
         });
@@ -445,7 +445,7 @@ export function SalonUpdatePage() {
                     </span>
                     <div className="grid grid-cols-2 gap-2.5">
                       {SALON_STATUS_OPTIONS.map((option) => {
-                        const labelMap = { ACTIVE: "Hoạt động", INACTIVE: "Ngừng hoạt động" };
+                        const labelMap = { Open: "Hoạt động", Closed: "Ngừng hoạt động" };
                         return (
                           <motion.button
                             key={option.value}
@@ -570,7 +570,7 @@ export function SalonUpdatePage() {
                       <span
                         className={`shrink-0 rounded-full px-3.5 py-1.5 text-[11px] font-bold ${getSalonStatusStyle(formData.status)}`}
                       >
-                        {language === "vi" && formData.status === "ACTIVE" ? "Hoạt động" : formData.status}
+                        {language === "vi" && formData.status === "Open" ? "Hoạt động" : formData.status}
                       </span>
                     </div>
 
@@ -646,7 +646,7 @@ export function SalonUpdatePage() {
         loading={isSaving}
         onConfirm={handleConfirmSave}
         onCancel={() => !isSaving && setShowSaveModal(false)}
-        highlights={[formData.salonName || (t("adminSalonManagement.salonRecord")), language === "vi" && formData.status === "ACTIVE" ? "Hoạt động" : formData.status]}
+        highlights={[formData.salonName || (t("adminSalonManagement.salonRecord")), language === "vi" && formData.status === "Open" ? "Hoạt động" : formData.status]}
         details={[
           { label: t("adminSalonManagement.address"), value: formData.address || (t("adminSalonManagement.noAddressEntered")) },
         ]}

@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
+import { Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, ShieldQuestionMark } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -148,26 +148,6 @@ export function LoginPage() {
               </p>
             </div>
             <div className="rounded-[28px] h-full p-5" />
-            {/* <div className="rounded-[28px] border border-white/25 bg-white/14 p-5 backdrop-blur">
-               <div className="mb-4 flex items-center justify-between gap-4">
-                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-white/95">
-                  Internal Demo Roles
-                </p>
-                <span className="rounded-full bg-white/18 px-3 py-1 text-xs font-semibold text-white">
-                  API Login
-                </span>
-              </div> */}
-            {/* <ul className="space-y-3 text-sm">
-                {demoAccounts.map((account) => (
-                  <li
-                    key={account}
-                    className="rounded-2xl border border-white/15 bg-white/12 px-4 py-3 text-white/95"
-                  >
-                    {account}
-                  </li>
-                ))}
-              </ul> 
-            </div>*/}
           </div>
         </section>
 
@@ -262,22 +242,9 @@ export function LoginPage() {
                 {status === AUTH_STATUS.loading ? "Signing in..." : "Sign In"}
               </button>
 
-              {/* <div className="relative my-2.5 flex items-center justify-center">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-[#f1d7c0]/60"></div>
-                </div>
-                <span className="relative px-3 text-[10px] font-bold uppercase tracking-wider text-[#b3a298]">
-                  Or sign in with
-                </span>
-              </div>
-
-              <div className="flex w-full justify-center">
-                <div id="google-signin-btn" className="w-full flex justify-center [&>div]:w-full" />
-              </div> */}
-
               <div className="rounded-[24px] bg-[#fff7ef] px-5 py-3.5 text-sm leading-6 text-[var(--color-muted)]">
-                <span className="font-semibold text-[var(--color-ink)]">
-                  Access policy:
+                <span className="flex items-center gap-2 font-semibold text-[var(--color-ink)]">
+                  <ShieldQuestionMark size={20} /> Access policy:
                 </span>{" "}
                 only existing Staff, Manager, and Admin accounts can sign in on
                 this page.

@@ -25,7 +25,7 @@ import {
 import AssignManagerModal from "../components/AssignManagerModal";
 import HolidayClosureModal from "../components/HolidayClosureModal";
 import SetOperatingHoursModal from "../components/SetOperatingHoursModal";
-import { Modal, Spin, Alert, Form, Select, DatePicker, TimePicker, Input, Tooltip } from "antd";
+import { Modal, Spin, Alert, Form, Select, DatePicker, TimePicker, Input, Tooltip, Table } from "antd";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -45,19 +45,13 @@ import {
 import { fetchSalons, deleteSalon } from "../services/salonsService";
 import { fetchAdminSalons, normalizeAdminSalon, fetchSalonStaffCount } from "../services/salonManagementService";
 import { fetchAdminUsers, updateAdminUser, fetchRawAdminUserDetail } from "../../user-management/services/userManagementService";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
 const SALON_PLACEHOLDER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"><rect width="400" height="200" rx="28" fill="#fde7ef"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#8f365c" font-family="Arial, sans-serif" font-size="30" font-weight="700">Salon</text></svg>',
 )}`;
 
 const PINK_BUTTON_STYLE = { backgroundColor: "#ea4f93", borderColor: "#ea4f93" };
-
-const SUMMARY_ICON_MAP = {
-  briefcase: BriefcaseBusiness,
-  check: Check,
-  sparkles: Sparkles,
-  trendingUp: TrendingUp,
-};
 
 function PremiumCard({ className = "", children, noHover = false }) {
   return (
@@ -89,40 +83,7 @@ SectionHeading.propTypes = {
   subtitle: PropTypes.string,
 };
 
-function StatCard({ item, index }) {
-  const Icon = SUMMARY_ICON_MAP[item.icon] ?? BriefcaseBusiness;
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1, type: "spring", stiffness: 300, damping: 20 }}
-      whileHover={{ y: -4, scale: 1.02 }}
-      className={`relative overflow-hidden rounded-[28px] border border-[#f5cbdc]/50 bg-gradient-to-br ${item.accent} p-6 shadow-[0_20px_40px_-15px_rgba(226,93,143,0.04)]`}
-    >
-      <div className="absolute right-[-12px] top-[-12px] h-12 w-12 rounded-full bg-white/45" />
-      <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-xl ${item.iconBg} text-[#ea4f93]`}>
-        <Icon size={20} strokeWidth={2.2} />
-      </div>
-      <p className="text-[36px] font-semibold leading-none text-[#3f2034]">{item.title}</p>
-      <p className="mt-2 text-[10px] font-extrabold uppercase tracking-wider text-[#a6869a]">{item.label}</p>
-      <p className={`mt-1.5 text-[11px] font-bold ${item.noteColor}`}>{item.note}</p>
-    </motion.div>
-  );
-}
-
-StatCard.propTypes = {
-  item: PropTypes.shape({
-    accent: PropTypes.string.isRequired,
-    icon: PropTypes.string.isRequired,
-    iconBg: PropTypes.string.isRequired,
-    label: PropTypes.string.isRequired,
-    note: PropTypes.string.isRequired,
-    noteColor: PropTypes.string.isRequired,
-    title: PropTypes.string.isRequired,
-  }).isRequired,
-  index: PropTypes.number,
-};
 
 function ProgressRow({ label, value, tone = "bg-[#ea4f93]" }) {
   return (
@@ -322,7 +283,7 @@ function mapApiSalonToUiFormat(apiSalon) {
   // Map API status values to our internal statuses
   const apiStatus = (apiSalon.status || "Open").toLowerCase();
 
-  let internalStatus = "ACTIVE"; // Default to Open/Active
+  let internalStatus = "Open"; // Default to Open
   let statusColor = "bg-[#e6fdf0] text-[#16975f]";
   let statusTone = "bg-[#e6fdf0] text-[#16975f]";
 
@@ -335,7 +296,7 @@ function mapApiSalonToUiFormat(apiSalon) {
     statusColor = "bg-[#fffbeb] text-[#d69e2e]";
     statusTone = "bg-[#fffbeb] text-[#d69e2e]";
   } else if (apiStatus === "open") {
-    internalStatus = "ACTIVE";
+    internalStatus = "Open";
   }
 
   return {
@@ -703,40 +664,36 @@ export function SalonManagementPage() {
     const isVi = language === "vi";
     return [
       {
-        accent: "from-[#fff5fb] to-[#fff]",
-        icon: "briefcase",
-        iconBg: "bg-[#fde7ef]",
         label: t("adminDashboard.widgets.totalBranches") || "Total Branches",
+        value: salons.length.toString(),
+        unit: "",
         note: isVi ? "+2 quý này" : "+2 this quarter",
-        noteColor: "text-emerald-500",
-        title: salons.length.toString(),
+        icon: BriefcaseBusiness,
+        color: "#ea4f93",
       },
       {
-        accent: "from-[#fff9f2] to-[#fff]",
-        icon: "check",
-        iconBg: "bg-[#ffedd5]",
-        label: isVi ? "Chi nhánh hoạt động" : "Active Salons",
+        label: isVi ? "Chi nhánh hoạt động" : "Open Salons",
+        value: salons.filter((s) => s.status === "Open").length.toString(),
+        unit: "",
         note: "98% uptime",
-        noteColor: "text-emerald-500",
-        title: salons.filter((s) => s.status === "Active").length.toString(),
+        icon: Check,
+        color: "#f59e0b",
       },
       {
-        accent: "from-[#f2fdf6] to-[#fff]",
-        icon: "sparkles",
-        iconBg: "bg-[#e6fdf0]",
         label: isVi ? "Đánh giá trung bình" : "Avg. Rating",
+        value: "4.8",
+        unit: "/ 5.0",
         note: isVi ? "+0.2 so với tháng trước" : "+0.2 vs last month",
-        noteColor: "text-emerald-500",
-        title: "4.8",
+        icon: Sparkles,
+        color: "#10b981",
       },
       {
-        accent: "from-[#f5f2fd] to-[#fff]",
-        icon: "trendingUp",
-        iconBg: "bg-[#e0e7ff]",
         label: isVi ? "Tổng số nhân viên" : "Total Staff",
+        value: salons.reduce((sum, s) => sum + (parseInt(s.staff) || 0), 0).toString(),
+        unit: "",
         note: isVi ? "+12 tuyển mới" : "+12 new hires",
-        noteColor: "text-emerald-500",
-        title: salons.reduce((sum, s) => sum + (parseInt(s.staff) || 0), 0).toString(),
+        icon: TrendingUp,
+        color: "#6366f1",
       },
     ];
   }, [salons, t, language]);
@@ -758,7 +715,7 @@ export function SalonManagementPage() {
   };
 
   return (
-    <section className="mx-auto max-w-[1400px] px-4 py-8 text-slate-700">
+    <section className="w-full text-slate-700">
       {/*  */}
       {flashMessage ? (
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 rounded-[20px] bg-[#edfdf4] px-6 py-4 text-sm font-medium text-[#16975f]">
@@ -782,11 +739,9 @@ export function SalonManagementPage() {
           <Spin size="large" />
         </div>
       ) : (
-        <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="mb-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {salonSummary.map((item, index) => (
-            <StatCard key={item.label} item={item} index={index} />
-          ))}
-        </motion.div>
+        <div className="mb-8">
+          <TopMetricsRow metrics={salonSummary} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" />
+        </div>
       )}
 
       {!isLoading ? (
@@ -796,142 +751,142 @@ export function SalonManagementPage() {
             <div className="space-y-6">
               {/* Branch Overview */}
               <PremiumCard className="p-6">
-              <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <SectionHeading
-                  title={t("adminSalonManagement.branchOverview")}
-                  subtitle={t("adminSalonManagement.snapshotCardsForTheBranchesMat")}
-                />
-                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em]">
-                  {SALON_STATUS_FILTERS.map((tab) => (
-                    <motion.button
-                      key={tab}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      type="button"
-                      onClick={() => setStatusFilter(tab)}
-                      className={`rounded-full px-4 py-2 text-[12px] font-semibold transition-all duration-300 ${statusFilter === tab
-                        ? "bg-[#ea4f93] text-white shadow-[0_10px_20px_rgba(226,93,143,0.22)]"
-                        : "bg-[#fff5fb] text-[#a88a9f] hover:bg-[#fde7ef] hover:text-[#ea4f93]"
-                        }`}
-                    >
-                      {tab === "All" ? (t("adminSalonManagement.all")) : tab === "Active" ? (t("adminSalonManagement.active")) : tab === "Inactive" ? (t("adminSalonManagement.inactive")) : (t("adminSalonManagement.busy"))}
-                    </motion.button>
-                  ))}
-                </div>
-              </div>
-              {filteredSalons.length > 0 ? (
-                <div className="flex items-center gap-3">
-                  {(filteredSalons.length > SALONS_PER_PAGE) && (
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      type="button"
-                      onClick={handlePrev}
-                      disabled={!canGoToPreviousBranchSet}
-                      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] shadow-[0_10px_20px_rgba(0,0,0,0.06)] transition-all duration-300 hover:bg-[#fff5fb] disabled:cursor-not-allowed disabled:opacity-40"
-                      aria-label="Previous salons"
-                    >
-                      <ChevronLeft size={18} />
-                    </motion.button>
-                  )}
-                  <div className="min-w-0 flex-1 overflow-hidden flex justify-center">
-                    <AnimatePresence mode="wait">
-                      <motion.div
-                        key={branchOverviewStart}
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                        className="flex gap-6"
+                <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <SectionHeading
+                    title={t("adminSalonManagement.branchOverview")}
+                    subtitle={t("adminSalonManagement.snapshotCardsForTheBranchesMat")}
+                  />
+                  <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em]">
+                    {SALON_STATUS_FILTERS.map((tab) => (
+                      <motion.button
+                        key={tab}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        type="button"
+                        onClick={() => setStatusFilter(tab)}
+                        className={`rounded-full px-4 py-2 text-[12px] font-semibold transition-all duration-300 ${statusFilter === tab
+                          ? "bg-[#ea4f93] text-white shadow-[0_10px_20px_rgba(226,93,143,0.22)]"
+                          : "bg-[#fff5fb] text-[#a88a9f] hover:bg-[#fde7ef] hover:text-[#ea4f93]"
+                          }`}
                       >
-                        {visibleBranchSalons.map((branch) => (
-                          <div
-                            key={branch.id}
-                            className="w-[340px] shrink-0"
-                          >
-                            <BranchCard
-                              branch={branch}
-                              onClick={() => handleViewSalon(branch)}
-                            />
-                          </div>
-                        ))}
-                      </motion.div>
-                    </AnimatePresence>
+                        {tab === "All" ? (t("adminSalonManagement.all")) : tab === "Open" ? (t("adminSalonManagement.active")) : tab === "Closed" ? (t("adminSalonManagement.inactive")) : (t("adminSalonManagement.busy"))}
+                      </motion.button>
+                    ))}
                   </div>
-                  {(filteredSalons.length > SALONS_PER_PAGE) && (
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      type="button"
-                      onClick={handleNext}
-                      disabled={!canGoToNextBranchSet}
-                      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] shadow-[0_10px_20px_rgba(0,0,0,0.06)] transition-all duration-300 hover:bg-[#fff5fb] disabled:cursor-not-allowed disabled:opacity-40"
-                      aria-label="Next salons"
-                    >
-                      <ChevronRight size={18} />
-                    </motion.button>
-                  )}
                 </div>
-              ) : (
-                <div className="rounded-[28px] border border-dashed border-[#f0b7cf] bg-white px-8 py-12 text-center">
-                  <p className="text-[16px] font-bold text-[#2d1b35]">{t("adminSalonManagement.noBranchesMatchedYourFilters")}</p>
-                  <p className="mt-2 text-[13px] font-medium text-[#a88a9f]">
-                    {t("adminSalonManagement.tryADifferentKeywordOrSwitchTh")}
-                  </p>
-                </div>
-              )}
-            </PremiumCard>
-          </div>
-          {/* End Left Column */}
+                {filteredSalons.length > 0 ? (
+                  <div className="flex items-center gap-3">
+                    {(filteredSalons.length > SALONS_PER_PAGE) && (
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        type="button"
+                        onClick={handlePrev}
+                        disabled={!canGoToPreviousBranchSet}
+                        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] shadow-[0_10px_20px_rgba(0,0,0,0.06)] transition-all duration-300 hover:bg-[#fff5fb] disabled:cursor-not-allowed disabled:opacity-40"
+                        aria-label="Previous salons"
+                      >
+                        <ChevronLeft size={18} />
+                      </motion.button>
+                    )}
+                    <div className="min-w-0 flex-1 overflow-hidden flex justify-center">
+                      <AnimatePresence mode="wait">
+                        <motion.div
+                          key={branchOverviewStart}
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -20 }}
+                          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                          className="flex gap-6"
+                        >
+                          {visibleBranchSalons.map((branch) => (
+                            <div
+                              key={branch.id}
+                              className="w-[340px] shrink-0"
+                            >
+                              <BranchCard
+                                branch={branch}
+                                onClick={() => handleViewSalon(branch)}
+                              />
+                            </div>
+                          ))}
+                        </motion.div>
+                      </AnimatePresence>
+                    </div>
+                    {(filteredSalons.length > SALONS_PER_PAGE) && (
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        type="button"
+                        onClick={handleNext}
+                        disabled={!canGoToNextBranchSet}
+                        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] shadow-[0_10px_20px_rgba(0,0,0,0.06)] transition-all duration-300 hover:bg-[#fff5fb] disabled:cursor-not-allowed disabled:opacity-40"
+                        aria-label="Next salons"
+                      >
+                        <ChevronRight size={18} />
+                      </motion.button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="rounded-[28px] border border-dashed border-[#f0b7cf] bg-white px-8 py-12 text-center">
+                    <p className="text-[16px] font-bold text-[#2d1b35]">{t("adminSalonManagement.noBranchesMatchedYourFilters")}</p>
+                    <p className="mt-2 text-[13px] font-medium text-[#a88a9f]">
+                      {t("adminSalonManagement.tryADifferentKeywordOrSwitchTh")}
+                    </p>
+                  </div>
+                )}
+              </PremiumCard>
+            </div>
+            {/* End Left Column */}
 
-          {/* Right Column Aside */}
-          <aside className="space-y-6">
-            {salons.length > 0 && (
-              <>
-                <RightMetricCard
-                  title="Top Performing Salon"
-                  branch={salons[0].name}
-                  city={salons[0].address}
-                  concern={{ text: "Great performance!", color: "text-emerald-600" }}
-                  values={{
-                    image: salons[0].image,
-                    occupancy: "92%",
-                    revenue: "88%",
-                    utilization: "95%"
-                  }}
-                  buttonLabel="View Details"
-                  index={0}
-                />
-                {salons.length > 1 && (
+            {/* Right Column Aside */}
+            <aside className="space-y-6">
+              {salons.length > 0 && (
+                <>
                   <RightMetricCard
-                    title="Low Occupancy Salon"
-                    branch={salons[salons.length - 1].name}
-                    city={salons[salons.length - 1].address}
-                    concern={{ text: "Needs attention", color: "text-amber-600" }}
+                    title="Top Performing Salon"
+                    branch={salons[0].name}
+                    city={salons[0].address}
+                    concern={{ text: "Great performance!", color: "text-emerald-600" }}
                     values={{
-                      image: salons[salons.length - 1].image,
-                      occupancy: "35%",
-                      revenue: "42%",
-                      utilization: "38%"
+                      image: salons[0].image,
+                      occupancy: "92%",
+                      revenue: "88%",
+                      utilization: "95%"
                     }}
                     buttonLabel="View Details"
-                    index={1}
+                    index={0}
                   />
-                )}
-              </>
-            )}
-          </aside>
-        </motion.div>
+                  {salons.length > 1 && (
+                    <RightMetricCard
+                      title="Low Occupancy Salon"
+                      branch={salons[salons.length - 1].name}
+                      city={salons[salons.length - 1].address}
+                      concern={{ text: "Needs attention", color: "text-amber-600" }}
+                      values={{
+                        image: salons[salons.length - 1].image,
+                        occupancy: "35%",
+                        revenue: "42%",
+                        utilization: "38%"
+                      }}
+                      buttonLabel="View Details"
+                      index={1}
+                    />
+                  )}
+                </>
+              )}
+            </aside>
+          </motion.div>
 
-        <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="mt-6">
-          {/* Branch Controls */}
-          <PremiumCard className="p-6">
+          <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="mt-6">
+            {/* Branch Controls */}
+            <PremiumCard className="p-6">
               <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <SectionHeading
                     title={t("adminSalonManagement.branchControls")}
                     subtitle={language === "vi"
-                      ? `Hiển thị ${filteredSalons.length} trên ${salons.length} chi nhánh${searchTerm ? ` • Tìm kiếm: "${searchTerm}"` : ""}${statusFilter !== "All" ? ` • Trạng thái: ${statusFilter === "Active" ? "Đang hoạt động" : statusFilter === "Inactive" ? "Ngừng hoạt động" : "Bận"}` : ""}`
+                      ? `Hiển thị ${filteredSalons.length} trên ${salons.length} chi nhánh${searchTerm ? ` • Tìm kiếm: "${searchTerm}"` : ""}${statusFilter !== "All" ? ` • Trạng thái: ${statusFilter === "Open" ? "Đang hoạt động" : statusFilter === "Closed" ? "Ngừng hoạt động" : "Bận"}` : ""}`
                       : `Showing ${filteredSalons.length} of ${salons.length} salons${searchTerm ? ` • Search: "${searchTerm}"` : ""}${statusFilter !== "All" ? ` • Status: ${statusFilter}` : ""}`}
                   />
                 </div>
@@ -991,165 +946,129 @@ export function SalonManagementPage() {
                 </div>
               </div>
               <div className="overflow-hidden rounded-[28px] border border-[#f5e2ec]">
-                <div className="bg-white">
-                  <table className="w-full text-left">
-                    <thead className="bg-[#fff9fb]">
-                      <tr className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#a88a9f]">
-                        <th className="px-4 py-4 w-16">{t("adminSalonManagement.avatar")}</th>
-                        <th className="px-4 py-4">{t("adminSalonManagement.salon")}</th>
-                        <th className="px-4 py-4">{t("adminSalonManagement.address")}</th>
-                        <th className="px-4 py-4">{t("adminSalonManagement.manager")}</th>
-                        <th className="px-4 py-4">{t("adminSalonManagement.staff")}</th>
-                        <th className="px-4 py-4">{t("adminSalonManagement.hours1")}</th>
-                        <th className="px-4 py-4">{t("adminSalonManagement.status")}</th>
-                        <th className="px-4 py-4 text-right">{t("adminSalonManagement.actions")}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <AnimatePresence>
-                        {visibleBranchControlsSalons.map((salon, index) => (
-                          console.log("salons", salon),
-                          <motion.tr
-                            key={`${salon.name}-${salon.id}`}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: index * 0.05, type: "spring", stiffness: 300, damping: 20 }}
-                            className="border-t border-[#f5e2ec] text-[12px] text-[#5b4256] hover:bg-[#fff9fb] transition-colors"
-                          >
-                            <td className="px-4 py-4">
-                              <img
-                                crossOrigin="anonymous"
-                                src={salon.image}
-                                alt={salon.name}
-                                className="h-10 w-10 rounded-[14px] object-cover shadow-sm"
-                                referrerPolicy="no-referrer"
-                              />
-                            </td>
-                            <td className="px-4 py-4">
-                              <div className="min-w-0">
-                                <p className="font-bold text-[#2d1b35] truncate">{salon.name}</p>
-                                <p className="text-[11px] text-[#a88a9f] truncate">{salon.phone}</p>
-                              </div>
-                            </td>
-                            <td className="px-4 py-4">
-                              <p className="truncate max-w-[150px]">{salon.address}</p>
-                            </td>
-                            <td className="px-4 py-4">
-                              <div className="flex items-center gap-2">
-                                <div className="h-7 w-7 rounded-full bg-[#fde7ef] flex items-center justify-center text-[#ea4f93]">
-                                  <UserRound size={12} />
-                                </div>
-                                <span className="truncate max-w-[100px]">{salon.manager}</span>
-                              </div>
-                            </td>
-                            <td className="px-4 py-4">
-                              <div className="inline-flex items-center gap-1.5 rounded-full bg-[#fff9fb] px-2.5 py-1 text-[11px] font-semibold">
-                                <UserRound size={12} className="text-[#ea4f93]" />
-                                {salon.staffCount}
-                              </div>
-                            </td>
-                            <td className="px-4 py-4">
-                              <p className="truncate max-w-[140px]">{salon.hours}</p>
-                            </td>
-                            <td className="px-4 py-4">
-                              <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold ${salon.statusColor}`}>
-                                {salon.status}
-                              </span>
-                            </td>
-                            <td className="px-4 py-4">
-                              <div className="flex items-center justify-end gap-1.5">
-                                <Tooltip title={t("adminSalonManagement.viewSalon")}>
-                                  <motion.button
-                                    whileHover={{ scale: 1.08 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    type="button"
-                                    onClick={() => handleViewSalon(salon)}
-                                    aria-label="View Salon"
-                                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
-                                  >
-                                    <Eye size={14} />
-                                  </motion.button>
-                                </Tooltip>
-                                <Tooltip title={t("adminSalonManagement.editSalon")}>
-                                  <motion.button
-                                    whileHover={{ scale: 1.08 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    type="button"
-                                    onClick={() => handleUpdateSalon(salon)}
-                                    aria-label="Edit Salon"
-                                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
-                                  >
-                                    <Pencil size={14} />
-                                  </motion.button>
-                                </Tooltip>
-                                <Tooltip title={t("adminSalonManagement.deleteSalon")}>
-                                  <motion.button
-                                    whileHover={{ scale: 1.08 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    type="button"
-                                    onClick={() => handleDeleteSalon(salon)}
-                                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#f0b7cf] bg-[#fff0f0] border border-[#fecdd3] text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
-                                  >
-                                    <Trash2 size={14} />
-                                  </motion.button>
-                                </Tooltip>
-                              </div>
-                            </td>
-                          </motion.tr>
-                        ))}
-                      </AnimatePresence>
-                    </tbody>
-                  </table>
+                <div className="bg-white overflow-x-auto">
+                  <Table
+                    rowKey="id"
+                    dataSource={filteredSalons}
+                    pagination={{ pageSize: 5, className: "!mr-6 !mb-6" }}
+                    columns={[
+                      {
+                        title: t("adminSalonManagement.avatar"),
+                        dataIndex: "image",
+                        key: "image",
+                        width: 64,
+                        render: (image, salon) => (
+                          <img
+                            crossOrigin="anonymous"
+                            src={image || SALON_PLACEHOLDER_IMAGE}
+                            alt={salon.name}
+                            className="h-10 w-10 rounded-[14px] object-cover shadow-sm"
+                            referrerPolicy="no-referrer"
+                          />
+                        )
+                      },
+                      {
+                        title: t("adminSalonManagement.salon"),
+                        key: "salon",
+                        sorter: (a, b) => (a.name || "").localeCompare(b.name || ""),
+                        render: (_, salon) => (
+                          <div className="min-w-0">
+                            <p className="font-bold text-[#2d1b35] truncate">{salon.name}</p>
+                            <p className="text-[11px] text-[#a88a9f] truncate">{salon.phone}</p>
+                          </div>
+                        )
+                      },
+                      {
+                        title: t("adminSalonManagement.address"),
+                        dataIndex: "address",
+                        key: "address",
+                        sorter: (a, b) => (a.address || "").localeCompare(b.address || ""),
+                        render: (address) => <p className="truncate max-w-[150px]">{address}</p>
+                      },
+                      {
+                        title: t("adminSalonManagement.manager"),
+                        dataIndex: "manager",
+                        key: "manager",
+                        sorter: (a, b) => (a.manager || "").localeCompare(b.manager || ""),
+                        render: (manager) => (
+                          <div className="flex items-center gap-2">
+                            <div className="h-7 w-7 rounded-full bg-[#fde7ef] flex items-center justify-center text-[#ea4f93]">
+                              <UserRound size={12} />
+                            </div>
+                            <span className="truncate max-w-[100px]">{manager}</span>
+                          </div>
+                        )
+                      },
+                      {
+                        title: t("adminSalonManagement.staff"),
+                        dataIndex: "staffCount",
+                        key: "staffCount",
+                        sorter: (a, b) => (a.staffCount || 0) - (b.staffCount || 0),
+                        render: (staffCount) => (
+                          <div className="inline-flex items-center gap-1.5 rounded-full bg-[#fff9fb] px-2.5 py-1 text-[11px] font-semibold">
+                            <UserRound size={12} className="text-[#ea4f93]" />
+                            {staffCount}
+                          </div>
+                        )
+                      },
+                      {
+                        title: t("adminSalonManagement.hours1"),
+                        dataIndex: "hours",
+                        key: "hours",
+                        render: (hours) => <p className="truncate max-w-[140px]">{hours}</p>
+                      },
+                      {
+                        title: t("adminSalonManagement.status"),
+                        key: "status",
+                        sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
+                        render: (_, salon) => (
+                          <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold ${salon.statusColor}`}>
+                            {salon.status}
+                          </span>
+                        )
+                      },
+                      {
+                        title: t("adminSalonManagement.actions"),
+                        key: "actions",
+                        align: "right",
+                        render: (_, salon) => (
+                          <div className="flex items-center justify-end gap-1.5">
+                            <Tooltip title={t("adminSalonManagement.viewSalon")}>
+                              <button
+                                type="button"
+                                onClick={() => handleViewSalon(salon)}
+                                aria-label="View Salon"
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
+                              >
+                                <Eye size={14} />
+                              </button>
+                            </Tooltip>
+                            <Tooltip title={t("adminSalonManagement.editSalon")}>
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateSalon(salon)}
+                                aria-label="Edit Salon"
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
+                              >
+                                <Pencil size={14} />
+                              </button>
+                            </Tooltip>
+                            <Tooltip title={t("adminSalonManagement.deleteSalon")}>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteSalon(salon)}
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#f0b7cf] bg-[#fff0f0] border-rose-200 text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </Tooltip>
+                          </div>
+                        )
+                      }
+                    ]}
+                    className="custom-admin-table [&_.ant-table]:!bg-transparent [&_.ant-table-thead_th]:!bg-[#fff9fb] [&_.ant-table-thead_th]:!text-[10px] [&_.ant-table-thead_th]:!uppercase [&_.ant-table-thead_th]:!tracking-[0.14em] [&_.ant-table-thead_th]:!text-[#a88a9f] [&_.ant-table-thead_th]:!font-bold [&_.ant-table-thead_th]:!border-b [&_.ant-table-thead_th]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row>td]:!border-b [&_.ant-table-tbody_.ant-table-row>td]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row]:hover>td:!bg-[#fff9fb] [&_.ant-table-tbody_.ant-table-row>td]:!py-4 [&_.ant-table-tbody_.ant-table-row>td]:!text-[12px] [&_.ant-table-tbody_.ant-table-row>td]:!text-[#5b4256]"
+                  />
                 </div>
-                {/* Pagination Controls */}
-                {totalBranchControlsPages > 1 && (
-                  <div className="flex items-center justify-between px-6 py-4 border-t border-[#f5e2ec] bg-[#fff9fb]">
-                    <div className="text-[12px] font-semibold text-[#a88a9f]">
-                      {language === "vi" ? `Trang ${branchControlsPage} trên ${totalBranchControlsPages}` : `Page ${branchControlsPage} of ${totalBranchControlsPages}`}
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        type="button"
-                        onClick={handleBranchControlsPrev}
-                        disabled={!canGoToPreviousBranchControls}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb] disabled:cursor-not-allowed disabled:opacity-40"
-                        aria-label="Previous page"
-                      >
-                        <ChevronLeft size={16} />
-                      </motion.button>
-                      <div className="flex items-center gap-1">
-                        {Array.from({ length: totalBranchControlsPages }, (_, i) => i + 1).map((page) => (
-                          <motion.button
-                            key={page}
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
-                            type="button"
-                            onClick={() => setBranchControlsPage(page)}
-                            className={`inline-flex h-9 w-9 items-center justify-center rounded-full text-[12px] font-bold transition-all duration-300 ${branchControlsPage === page
-                              ? "bg-[#ea4f93] text-white shadow-[0_8px_16px_rgba(234,79,147,0.25)]"
-                              : "bg-white text-[#ea4f93] hover:bg-[#fff5fb]"
-                              }`}
-                          >
-                            {page}
-                          </motion.button>
-                        ))}
-                      </div>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        type="button"
-                        onClick={handleBranchControlsNext}
-                        disabled={!canGoToNextBranchControls}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb] disabled:cursor-not-allowed disabled:opacity-40"
-                        aria-label="Next page"
-                      >
-                        <ChevronRight size={16} />
-                      </motion.button>
-                    </div>
-                  </div>
-                )}
               </div>
             </PremiumCard>
           </motion.div>

@@ -19,6 +19,7 @@ import { TransactionManagementPage } from "../../features/manager/transaction-ma
 import { ManagerSchedulesPage } from "../../features/manager/schedules/pages/ManagerSchedulesPage";
 import { ManagerArtistBreakPage } from "../../features/manager/breaks/pages/ManagerArtistBreakPage";
 import { ChairsPage } from "../../features/core/chairs/pages/ChairsPage";
+import { ManagerSalonPage } from "../../features/manager/salon-management/pages/ManagerSalonPage";
 
 export const managerRoutes = [
   {
@@ -94,6 +95,10 @@ export const managerRoutes = [
       {
         path: ROUTES.managerChairs,
         element: <ChairsPage />,
+      },
+      {
+        path: ROUTES.managerSalon,
+        element: <ManagerSalonPage />,
       },
     ],
   },
