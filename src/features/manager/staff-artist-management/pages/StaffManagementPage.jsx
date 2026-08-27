@@ -42,17 +42,20 @@ import { formatCurrency } from "../../../../shared/utils/formatCurrency";
 import {
   fetchNailArtists,
   fetchNailArtistById,
-  fetchSchedules,
   fetchNailArtistSkills,
-  fetchArtistSchedules,
-  fetchSchedulesBySalonId,
-  createSchedule,
   getSalonId,
   getSalonIdAsync,
 } from "../services/nailArtistsService";
+import {
+  fetchSchedules,
+  fetchArtistSchedules,
+  fetchSchedulesBySalonId,
+  createSchedule,
+} from "../../schedules/services/scheduleService";
 import { Pagination } from "../../../../shared/components/common/Pagination.jsx";
 import { TimePicker } from "../../../../shared/components/ui/TimePicker.jsx";
 import { StaffAvatar } from "../../../../shared/components/common/StaffAvatar.jsx";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow.jsx";
 import dayjs from "dayjs";
 
 // Import separated modals
@@ -1417,13 +1420,15 @@ export function StaffManagementPage() {
       label: language === "vi" ? "Tổng Nhân viên" : "Total Staff",
       value: staffArtistsWithStats.length,
       icon: Users,
-      tone: "bg-[#ffe8f2] text-[#ea4f93]",
+      color: "#ea4f93",
+      note: language === "vi" ? "Tổng Nhân viên" : "Total Staff",
     },
     {
       label: language === "vi" ? "Hoạt động hôm nay" : "Active Today",
       value: staffArtistsWithStats.filter((s) => s.status === "Active").length,
       icon: CheckCircle2,
-      tone: "bg-[#eaf9ee] text-[#2fa25f]",
+      color: "#2fa25f",
+      note: language === "vi" ? "Hoạt động hôm nay" : "Active Today",
     },
     {
       label: language === "vi" ? "Đánh giá trung bình" : "Average Rating",
@@ -1431,15 +1436,17 @@ export function StaffManagementPage() {
         ? (staffArtistsWithStats.reduce((acc, s) => acc + s.rating, 0) / staffArtistsWithStats.length).toFixed(1)
         : "0",
       icon: Star,
-      tone: "bg-[#fff0dd] text-[#db8520]",
+      color: "#db8520",
+      note: language === "vi" ? "Đánh giá trung bình" : "Average Rating",
     },
     {
       label: language === "vi" ? "Dịch vụ đã hoàn thành" : "Completed Services",
       value: performanceInsights.completedServices,
       icon: CalendarDays,
-      tone: "bg-[#e7ecff] text-[#4755b8]",
+      color: "#4755b8",
+      note: language === "vi" ? "Dịch vụ đã hoàn thành" : "Completed Services",
     },
-  ], [staffArtistsWithStats, performanceInsights.completedServices]);
+  ], [staffArtistsWithStats, performanceInsights.completedServices, language]);
 
   const handlePageChange = (newPage) => setCurrentPage(newPage);
 
@@ -1526,19 +1533,8 @@ export function StaffManagementPage() {
                 </div>
               </div>
 
-              {/* 4 Clean 4-Column KPI Cards */}
-              <div className="grid gap-4 pt-6 mt-6 border-t border-slate-200/60 grid-cols-2 lg:grid-cols-4">
-                {summaryStats.map((stat) => (
-                  <div key={stat.label} className="rounded-2xl border border-slate-200/80 bg-white p-4.5 shadow-2xs hover:border-[#E84F93]/40 transition group">
-                    <div className="flex items-center justify-between">
-                      <p className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">{stat.label}</p>
-                      <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${stat.tone} group-hover:scale-105 transition`}>
-                        <stat.icon size={16} />
-                      </div>
-                    </div>
-                    <p className="mt-2.5 text-2xl font-bold text-slate-900 tracking-tight">{stat.value}</p>
-                  </div>
-                ))}
+              <div className="pt-6 mt-6 border-t border-slate-200/60">
+                <TopMetricsRow metrics={summaryStats} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" />
               </div>
             </div>
           </motion.div>

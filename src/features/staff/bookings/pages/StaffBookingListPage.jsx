@@ -14,6 +14,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { Table, ConfigProvider } from "antd";
 import toast from "react-hot-toast";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ROLES } from "../../../../shared/constants/roles";
@@ -24,6 +25,7 @@ import {
 } from "../../../../shared/constants/routes";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import { PropTypes } from "../../../../shared/utils/propTypes";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import { StaffBookingNotesModal } from "../components/StaffBookingNotesModal";
 import {
   BOOKING_ROLE_CONFIG,
@@ -460,11 +462,11 @@ export function StaffBookingListPage() {
     const revenue = activeBookings.reduce((sum, booking) => sum + booking.totalPriceValue, 0);
 
     const baseItems = [
-      { label: isSalonScopeForStaff ? "Salon Bookings" : "Assigned Today", value: String(activeBookings.length), note: isSalonScopeForStaff ? "Loaded from salon booking API" : "Loaded from artist schedule", icon: CalendarDays, iconClassName: "bg-[#ffe8f2] text-[#ea4f93]" },
-      { label: "Pending", value: String(pendingCount), note: "Awaiting service progress", icon: Clock3, iconClassName: "bg-[#fff4e8] text-[#f59e0b]" },
-      { label: "Completed", value: String(completedCount), note: "Finished today", icon: DollarSign, iconClassName: "bg-[#eaf9ee] text-[#2fa25f]" },
-      { label: "Cancelled", value: String(cancelledCount), note: "Today", icon: XCircle, iconClassName: "bg-[#fff0f5] text-[#e1447f]" },
-      { label: "Revenue", value: revenue > 0 ? `${new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(revenue)} VND` : "0 VND", note: "Total loaded from API", icon: AlertTriangle, iconClassName: "bg-[#f5ecff] text-[#8b5cf6]" },
+      { label: isSalonScopeForStaff ? "Salon Bookings" : "Assigned Today", value: String(activeBookings.length), note: isSalonScopeForStaff ? "Loaded from salon booking API" : "Loaded from artist schedule", icon: CalendarDays, color: "#ea4f93" },
+      { label: "Pending", value: String(pendingCount), note: "Awaiting service progress", icon: Clock3, color: "#f59e0b" },
+      { label: "Completed", value: String(completedCount), note: "Finished today", icon: DollarSign, color: "#2fa25f" },
+      { label: "Cancelled", value: String(cancelledCount), note: "Today", icon: XCircle, color: "#e1447f" },
+      { label: "Revenue", value: revenue, note: "Total loaded from API", icon: AlertTriangle, color: "#8b5cf6", unit: "VND" },
     ];
 
     return baseItems.map(item => ({
@@ -543,15 +545,71 @@ export function StaffBookingListPage() {
     toast.success(language === "vi" ? "Đã xuất CSV thành công." : "CSV exported successfully.");
   };
 
+  const columns = [
+    {
+      title: <span className="uppercase tracking-[0.16em] font-bold text-[10px] text-[#c696ad]">{language === "vi" ? "Khách hàng" : "Customer"}</span>,
+      key: "customer",
+      sorter: (a, b) => (a.customerName || "").localeCompare(b.customerName || ""),
+      render: (_, booking) => (
+        <div className="flex items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-[10px] font-extrabold text-white">
+            {booking.avatar}
+          </div>
+          <div className="min-w-0">
+            <p className="font-bold text-[#432744]">{booking.customerName}</p>
+          </div>
+        </div>
+      )
+    },
+    {
+      title: <span className="uppercase tracking-[0.16em] font-bold text-[10px] text-[#c696ad]">{language === "vi" ? "Chi nhánh" : "Salon"}</span>,
+      key: "salon",
+      sorter: (a, b) => (a.uiBranch || "").localeCompare(b.uiBranch || ""),
+      render: (_, booking) => <span className="text-[#6b5668] text-sm">{booking.uiBranch}</span>
+    },
+    {
+      title: <span className="uppercase tracking-[0.16em] font-bold text-[10px] text-[#c696ad]">{language === "vi" ? "Thợ làm nail" : "Staff Artist"}</span>,
+      key: "staff",
+      sorter: (a, b) => (a.staffName || "").localeCompare(b.staffName || ""),
+      render: (_, booking) => <span className="text-[#8a7082] text-sm">{booking.staffName}</span>
+    },
+    {
+      title: <span className="uppercase tracking-[0.16em] font-bold text-[10px] text-[#c696ad]">{language === "vi" ? "Thời gian" : "Time"}</span>,
+      key: "time",
+      sorter: (a, b) => getBookingDateTimeValue(a) - getBookingDateTimeValue(b),
+      render: (_, booking) => (
+        <div>
+          <p className="text-sm font-semibold text-[#432744]">
+            {formatDateLabel(booking.bookingDate)}
+          </p>
+          <p className="mt-1 text-[11px] text-[#c694ad]">{booking.bookingTime}</p>
+        </div>
+      )
+    },
+    {
+      title: <span className="uppercase tracking-[0.16em] font-bold text-[10px] text-[#c696ad]">{language === "vi" ? "Trạng thái" : "Status"}</span>,
+      key: "status",
+      sorter: (a, b) => (a.uiStatus || "").localeCompare(b.uiStatus || ""),
+      render: (_, booking) => (
+        <SmallTag className={getStatusTone(booking.uiStatus)}>
+          {formatDisplay(booking.uiStatus)}
+        </SmallTag>
+      )
+    },
+    {
+      title: <span className="uppercase tracking-[0.16em] font-bold text-[10px] text-[#c696ad]">{language === "vi" ? "Thao tác" : "Action"}</span>,
+      key: "action",
+      render: (_, booking) => (
+        <ActionDropdown items={getActionItems(booking)} />
+      )
+    }
+  ];
+
   /* STREAMING_CHUNK: Render Application UI */
   return (
     <>
       <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)]">
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          {summaryItems.map((item) => (
-            <MetricCard key={item.label} item={item} />
-          ))}
-        </div>
+        <TopMetricsRow metrics={summaryItems} className="grid gap-4 md:grid-cols-2 xl:grid-cols-5" />
 
         <div className="">
           <div className="space-y-4">
@@ -700,67 +758,26 @@ export function StaffBookingListPage() {
                   </div>
                 ) : (
                   <>
-                    <div className="hidden overflow-x-auto lg:block">
-                      <table className="min-w-full">
-                        <thead className="border-b border-[#f8e1eb] bg-[#fffdfd]">
-                          <tr className="text-left text-[10px] font-bold uppercase tracking-[0.16em] text-[#c696ad]">
-                            <th className="px-4 py-3">{language === "vi" ? "Khách hàng" : "Customer"}</th>
-                            <th className="px-4 py-3">{language === "vi" ? "Chi nhánh" : "Salon"}</th>
-                            <th className="px-4 py-3">{language === "vi" ? "Thợ làm nail" : "Staff Artist"}</th>
-                            <th className="px-4 py-3">
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setStaffTimeSortDirection((currentDirection) =>
-                                    currentDirection === "asc" ? "desc" : "asc",
-                                  )
-                                }
-                                className="inline-flex items-center gap-1 text-left text-[10px] font-bold uppercase tracking-[0.16em] text-[#c696ad]"
-                              >
-                                {language === "vi" ? "Thời gian" : "Time"}
-                                <ArrowUpDown size={12} className="text-[#df7baa]" />
-                                <span className="text-[9px] normal-case tracking-normal text-[#df7baa]">
-                                  {staffTimeSortDirection === "asc" ? (language === "vi" ? "Sớm nhất" : "Earliest") : (language === "vi" ? "Muộn nhất" : "Latest")}
-                                </span>
-                              </button>
-                            </th>
-                            <th className="px-4 py-3">{language === "vi" ? "Trạng thái" : "Status"}</th>
-                            <th className="px-4 py-3">{language === "vi" ? "Thao tác" : "Action"}</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[#fae6ef] bg-white">
-                          {paginatedBookings.map((booking) => (
-                            <tr key={booking.id} className="align-top">
-                              <td className="px-4 py-3.5">
-                                <div className="flex items-start gap-3">
-                                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-[10px] font-extrabold text-white">
-                                    {booking.avatar}
-                                  </div>
-                                  <div className="min-w-0">
-                                    <p className="font-bold text-[#432744]">{booking.customerName}</p>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="px-4 py-3.5 text-sm text-[#6b5668]">{booking.uiBranch}</td>
-                              <td className="px-4 py-3.5 text-sm text-[#8a7082]">{booking.staffName}</td>
-                              <td className="px-4 py-3.5">
-                                <p className="text-sm font-semibold text-[#432744]">
-                                  {formatDateLabel(booking.bookingDate)}
-                                </p>
-                                <p className="mt-1 text-[11px] text-[#c694ad]">{booking.bookingTime}</p>
-                              </td>
-                              <td className="px-4 py-3.5">
-                                <SmallTag className={getStatusTone(booking.uiStatus)}>
-                                  {formatDisplay(booking.uiStatus)}
-                                </SmallTag>
-                              </td>
-                              <td className="px-4 py-3.5">
-                                <ActionDropdown items={getActionItems(booking)} />
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                    <div className="hidden lg:block">
+                      <ConfigProvider
+                        theme={{
+                          components: {
+                            Table: {
+                              headerBg: "#fffdfd",
+                              headerColor: "#c696ad",
+                            },
+                          },
+                        }}
+                      >
+                        <Table
+                          dataSource={paginatedBookings}
+                          columns={columns}
+                          rowKey="id"
+                          pagination={false}
+                          className="min-w-full"
+                          rowClassName="align-top"
+                        />
+                      </ConfigProvider>
                     </div>
 
                     <div className="space-y-3 p-4 lg:hidden">

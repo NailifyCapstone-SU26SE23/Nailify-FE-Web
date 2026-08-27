@@ -29,7 +29,7 @@ import {
 import { loadAuthSession } from "../../auth/model/authStorage";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import ReactECharts from "echarts-for-react";
-
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 // Admin/Tech Light Theme Palette
 const THEME_COLORS = ["#0ea5e9", "#f59e0b", "#10b981", "#6366f1", "#8b5cf6", "#ec4899", "#14b8a6"];
 const TEXT_PRIMARY = "#1e293b";
@@ -287,29 +287,27 @@ export function ManagerDashboardPage() {
   const topMetrics = [
     {
       label: t("receptionist.dashboard.todayRevenue"),
-      value: data?.todaysRevenue
-        ? `${data.todaysRevenue.toLocaleString("vi-VN")} ₫`
-        : "0 ₫",
+      value: `${(data?.todaysRevenue || 0).toLocaleString("vi-VN")}`,
+      unit: "VND",
       color: "#0ea5e9",
       icon: CircleDollarSign,
     },
     {
       label: t("receptionist.payments.tierDiscount"),
-      value: data?.averageTicketValue
-        ? `${data.averageTicketValue.toLocaleString("vi-VN")} ₫`
-        : "0 ₫",
+      value: `${(data?.averageTicketValue || 0).toLocaleString("vi-VN")}`,
+      unit: "VND",
       color: "#10b981",
       icon: Wallet,
     },
     {
       label: t("receptionist.dashboard.statusDone"),
-      value: completed,
+      value: `${completed}`,
       color: "#f59e0b",
       icon: CalendarCheck2,
     },
     {
       label: t("receptionist.dashboard.statusWaiting"),
-      value: pending,
+      value: `${pending}`,
       color: "#8b5cf6",
       icon: Clock3,
     },
@@ -637,66 +635,7 @@ export function ManagerDashboardPage() {
                       bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.55),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.35),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.45),transparent_35%),linear-gradient(to_right,#f3c7db_1px,transparent_1px),linear-gradient(to_bottom,#f3c7db_1px,transparent_1px)]
                     ">
         {/* Top Metrics Row */}
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
-          {topMetrics.map((metric, i) => {
-            const Icon = metric.icon;
-
-            return (
-              <div
-                key={i}
-                className="
-                          group relative overflow-hidden
-                          rounded-2xl border border-slate-200
-                          bg-white
-                          p-5
-                          shadow-sm
-                          transition-all duration-300
-                          hover:-translate-y-1
-                          hover:shadow-xl
-                        "
-              >
-                {/* Gradient Background */}
-                <div
-                  className="absolute inset-0 opacity-[0.06]"
-                  style={{
-                    background: `linear-gradient(135deg, ${metric.color}, transparent 75%)`,
-                  }}
-                />
-
-                <div className="relative flex items-start justify-between">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                      {metric.label}
-                    </p>
-
-                    <h2 className="mt-3 text-[30px] font-bold tracking-tight text-slate-800">
-                      {metric.value}
-                    </h2>
-                  </div>
-
-                  <div
-                    className="flex h-12 w-12 items-center justify-center
-                              rounded-2xl
-                              shadow-sm"
-                    style={{
-                      backgroundColor: `${metric.color}18`,
-                      color: metric.color,
-                    }}
-                  >
-                    <Icon size={24} strokeWidth={2.4} />
-                  </div>
-                </div>
-
-                <div
-                  className="mt-6 h-1.5 rounded-full"
-                  style={{
-                    background: `linear-gradient(to right, ${metric.color}, transparent)`,
-                  }}
-                />
-              </div>
-            );
-          })}
-        </div>
+        <TopMetricsRow metrics={topMetrics} />
 
         {/* Pinned Widgets Section */}
         {pinnedWidgets.length > 0 && (
