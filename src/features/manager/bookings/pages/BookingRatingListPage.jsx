@@ -786,13 +786,19 @@ export function BookingRatingListPage() {
               </div>
 
               {/* Performance insight quote */}
-              <div className="bg-gradient-to-br from-[#2d1b35] to-[#1a0e22] rounded-[2.25rem] p-6 text-white shadow-lg space-y-4">
-                <div className="p-2 rounded-xl bg-white/10 text-[#ea4f93] w-fit">
-                  <TrendingUp size={16} />
-                </div>
+              <div className="bg-[#fff9fb]
+                      bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.55),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.35),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.45),transparent_35%),linear-gradient(to_right,#f3c7db_1px,transparent_1px),linear-gradient(to_bottom,#f3c7db_1px,transparent_1px)]
+                       rounded-[2.25rem] p-6 text-white shadow-lg space-y-4 border border-[#ea4f93]">
+
                 <div className="space-y-1">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">{language === "vi" ? "Thông tin quản lý" : "Manager Insights"}</h4>
-                  <p className="text-xs text-slate-200 leading-relaxed font-medium">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-xl bg-white border border-[#ea4f93] text-[#ea4f93] w-fit">
+                      <TrendingUp size={16} />
+                    </div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">{language === "vi" ? "Thông tin quản lý" : "Manager Insights"}</h4>
+                  </div>
+
+                  <p className="text-xs text-slate-800 leading-relaxed font-medium">
                     {stats.average >= 4.5
                       ? language === "vi" ? "Hiệu suất xuất sắc! Salon của bạn đang mang lại các tiêu chuẩn hài lòng vượt trội — hãy tiếp tục phát huy." : "Outstanding performance! Your salon is delivering exceptional satisfaction benchmarks — keep it up."
                       : stats.average >= 3.5

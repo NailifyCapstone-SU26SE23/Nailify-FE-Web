@@ -477,24 +477,28 @@ export function NailShapeDetailPage() {
                   title: t("adminNailShapesManagement.name"),
                   dataIndex: 'name',
                   key: 'name',
+                  sorter: (a, b) => (a.name || "").localeCompare(b.name || ""),
                   render: (text) => <span className="font-semibold text-slate-700">{text}</span>
                 },
                 {
                   title: t("adminNailShapesManagement.price"),
                   dataIndex: 'price',
                   key: 'price',
+                  sorter: (a, b) => Number(a.price || 0) - Number(b.price || 0),
                   render: (val) => <span className="text-emerald-600 font-medium">{`${new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(Number(val || 0))} VND`}</span>
                 },
                 {
                   title: t("adminNailShapesManagement.duration"),
                   dataIndex: 'duration',
                   key: 'duration',
+                  sorter: (a, b) => Number(a.duration || 0) - Number(b.duration || 0),
                   render: (val) => <span className="text-blue-600 font-medium">{formatNailShapeDuration(val)}</span>
                 },
                 {
                   title: t("adminNailShapesManagement.status"),
                   dataIndex: 'status',
                   key: 'status',
+                  sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
                   render: (val) => (
                     <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${val === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
                       {val}
@@ -527,7 +531,7 @@ export function NailShapeDetailPage() {
                   )
                 }
               ]}
-              className="border border-slate-100 rounded-xl overflow-hidden"
+              className="custom-admin-table [&_.ant-table]:!bg-transparent [&_.ant-table-thead_th]:!bg-[#fff9fb] [&_.ant-table-thead_th]:!text-[10px] [&_.ant-table-thead_th]:!uppercase [&_.ant-table-thead_th]:!tracking-[0.14em] [&_.ant-table-thead_th]:!text-[#a88a9f] [&_.ant-table-thead_th]:!font-bold [&_.ant-table-thead_th]:!border-b [&_.ant-table-thead_th]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row>td]:!border-b [&_.ant-table-tbody_.ant-table-row>td]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row]:hover>td:!bg-[#fff9fb] [&_.ant-table-tbody_.ant-table-row>td]:!py-4 [&_.ant-table-tbody_.ant-table-row>td]:!text-[12px] [&_.ant-table-tbody_.ant-table-row>td]:!text-[#5b4256]"
             />
           </section>
 

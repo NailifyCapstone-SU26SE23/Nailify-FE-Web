@@ -171,28 +171,28 @@ export const buildServicePricingSummary = (services, addOns) => {
       value: String(services.length),
       note: `${Math.max(services.length - BASE_SERVICE_ROWS.length, 0)} newly added`,
       icon: Layers3,
-      iconClassName: "bg-[#ffe7ef] text-[#ea4f93]",
+      color: "#ea4f93",
     },
     {
       label: "Active Services",
       value: String(activeServices.length),
       note: `${activeRate}% active rate`,
       icon: Sparkles,
-      iconClassName: "bg-[#e7fbf4] text-[#1ead77]",
+      color: "#1ead77",
     },
     {
       label: "Add-ons Available",
       value: String(addOns.length),
       note: `${addOns.filter((item) => item.status === "Active").length} active`,
       icon: CircleDollarSign,
-      iconClassName: "bg-[#f3ebff] text-[#8b5cf6]",
+      color: "#8b5cf6",
     },
     {
       label: "Avg. Service Price",
       value: formatVndCurrency(avgPrice),
       note: `${services.filter((item) => item.price >= avgPrice).length} above avg.`,
       icon: Wallet,
-      iconClassName: "bg-[#ffe6e7] text-[#ef4f67]",
+      color: "#ef4f67",
     },
   ];
 };

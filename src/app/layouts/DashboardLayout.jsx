@@ -160,7 +160,7 @@ export function DashboardLayout() {
     ...item,
     label: t(`menus.${item.key}`) || item.label,
   }));
-  
+
   const menuGroups = groupMenusBySection(translatedMenus);
   const profileName = user?.fullName ?? "Nailify User";
   const profileRole = getRoleLabel(user?.role, t);

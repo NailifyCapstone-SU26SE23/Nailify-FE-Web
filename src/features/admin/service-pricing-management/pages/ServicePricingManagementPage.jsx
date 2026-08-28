@@ -33,31 +33,9 @@ import {
 } from "../services/mockServicePricing";
 import { fetchAdminServices } from "../services/servicePricingService";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
-function MetricCard({ item }) {
-  const Icon = item.icon;
 
-  return (
-    <article className="rounded-[18px] border border-[#f8dce8] bg-white px-5 py-4 shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
-      <div className={`inline-flex h-11 w-11 items-center justify-center rounded-[14px] ${item.iconClassName}`}>
-        <Icon size={18} />
-      </div>
-      <p className="mt-4 text-[1.9rem] font-extrabold leading-none text-[#432744]">{item.value}</p>
-      <p className="mt-1 text-xs font-medium text-[#a98097]">{item.label}</p>
-      <p className="mt-2 text-[11px] font-bold text-[#20ab77]">{item.note}</p>
-    </article>
-  );
-}
-
-MetricCard.propTypes = {
-  item: PropTypes.shape({
-    icon: PropTypes.func.isRequired,
-    iconClassName: PropTypes.string.isRequired,
-    label: PropTypes.string.isRequired,
-    note: PropTypes.string.isRequired,
-    value: PropTypes.string.isRequired,
-  }).isRequired,
-};
 
 function Pill({ children, active = false, className = "" }) {
   return (
@@ -417,54 +395,6 @@ function getAlertTone(tone) {
   }
 }
 
-function SortableHeader({ label, sortKey, selectedSort, onToggle }) {
-  const isActive = selectedSort.startsWith(`${sortKey}-`);
-  const isDesc = selectedSort === `${sortKey}-desc`;
-
-  return (
-    <button
-      type="button"
-      onClick={() => onToggle(sortKey)}
-      className={`inline-flex items-center gap-1.5 font-semibold transition ${isActive ? "text-[#ea4f93]" : "text-[#5f4a5c] hover:text-[#ea4f93]"}`}
-    >
-      <span>{label}</span>
-      <ArrowUpDown size={13} className={isActive ? "text-[#ea4f93]" : "text-[#d39bb5]"} />
-      {isActive ? <span className="text-[10px] font-bold">{isDesc ? "DESC" : "ASC"}</span> : null}
-    </button>
-  );
-}
-
-function sortServices(items, sortValue) {
-  const [sortKey = "service", sortDirection = "asc"] = String(sortValue || "service-asc").split("-");
-  const directionMultiplier = sortDirection === "desc" ? -1 : 1;
-
-  return [...items].sort((left, right) => {
-    const getSortValue = (item) => {
-      switch (sortKey) {
-        case "category":
-          return item.category || "";
-        case "price":
-          return Number(item.price || 0);
-        case "duration":
-          return Number(item.duration || 0);
-        case "status":
-          return item.status || "";
-        case "service":
-        default:
-          return item.name || "";
-      }
-    };
-
-    const leftValue = getSortValue(left);
-    const rightValue = getSortValue(right);
-
-    if (typeof leftValue === "number" && typeof rightValue === "number") {
-      return (leftValue - rightValue) * directionMultiplier;
-    }
-
-    return String(leftValue).localeCompare(String(rightValue)) * directionMultiplier;
-  });
-}
 
 export function ServicePricingManagementPage() {
   const { t, language } = useLanguage();
@@ -472,7 +402,6 @@ export function ServicePricingManagementPage() {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
-  const [selectedSort, setSelectedSort] = useState("service-asc");
   const [flashMessage, setFlashMessage] = useState("");
   const [serviceModal, setServiceModal] = useState({ open: false, mode: "create", recordId: null });
   const [deleteState, setDeleteState] = useState(null);
@@ -555,11 +484,6 @@ export function ServicePricingManagementPage() {
       return matchesCategory;
     });
   }, [activeCategory, services]);
-
-  const sortedServices = useMemo(
-    () => sortServices(filteredServices, selectedSort),
-    [filteredServices, selectedSort],
-  );
 
   const summaryCards = useMemo(
     () => {
@@ -666,28 +590,12 @@ export function ServicePricingManagementPage() {
     setServiceError("Service create/update API is not connected yet.");
   };
 
-  const handleSortToggle = (sortKey) => {
-    setSelectedSort((current) => {
-      if (current.startsWith(`${sortKey}-`)) {
-        return current.endsWith("-asc") ? `${sortKey}-desc` : `${sortKey}-asc`;
-      }
-
-      return `${sortKey}-asc`;
-    });
-  };
-
   const serviceColumns = useMemo(() => ([
     {
-      title: (
-        <SortableHeader
-          label={t("servicePricing.table.service")}
-          sortKey="service"
-          selectedSort={selectedSort}
-          onToggle={handleSortToggle}
-        />
-      ),
+      title: t("servicePricing.table.service"),
       dataIndex: "name",
       key: "name",
+      sorter: (a, b) => (a.name || "").localeCompare(b.name || ""),
       render: (value) => (
         <Tooltip title={value} placement="topLeft">
           <div className="max-w-[200px] truncate text-sm font-bold text-[#432744]">
@@ -697,16 +605,10 @@ export function ServicePricingManagementPage() {
       ),
     },
     {
-      title: (
-        <SortableHeader
-          label={t("servicePricing.table.category")}
-          sortKey="category"
-          selectedSort={selectedSort}
-          onToggle={handleSortToggle}
-        />
-      ),
+      title: t("servicePricing.table.category"),
       dataIndex: "category",
       key: "category",
+      sorter: (a, b) => (a.category || "").localeCompare(b.category || ""),
       render: (value) => (
         <Pill
           className={SERVICE_CATEGORY_TONES[value] ?? "border border-[#f4d5e3] bg-white text-[#8a7082]"}
@@ -716,42 +618,24 @@ export function ServicePricingManagementPage() {
       ),
     },
     {
-      title: (
-        <SortableHeader
-          label={t("servicePricing.table.price")}
-          sortKey="price"
-          selectedSort={selectedSort}
-          onToggle={handleSortToggle}
-        />
-      ),
+      title: t("servicePricing.table.price"),
       dataIndex: "price",
       key: "price",
+      sorter: (a, b) => Number(a.price || 0) - Number(b.price || 0),
       render: (value) => <span className="text-sm text-[#5f4b5d]">{formatVndCurrency(value)}</span>,
     },
     {
-      title: (
-        <SortableHeader
-          label={t("servicePricing.table.duration")}
-          sortKey="duration"
-          selectedSort={selectedSort}
-          onToggle={handleSortToggle}
-        />
-      ),
+      title: t("servicePricing.table.duration"),
       dataIndex: "duration",
       key: "duration",
+      sorter: (a, b) => Number(a.duration || 0) - Number(b.duration || 0),
       render: (value) => <span className="text-sm text-[#5f4b5d]">{formatDurationMinutes(value)}</span>,
     },
     {
-      title: (
-        <SortableHeader
-          label={t("servicePricing.table.status")}
-          sortKey="status"
-          selectedSort={selectedSort}
-          onToggle={handleSortToggle}
-        />
-      ),
+      title: t("servicePricing.table.status"),
       dataIndex: "status",
       key: "status",
+      sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
       render: (value) => <StatusBadge status={value} />,
     },
     {
@@ -759,7 +643,7 @@ export function ServicePricingManagementPage() {
       key: "actions",
       render: (_, service) => <ActionDropdown items={getServiceActionItems(service)} />,
     },
-  ]), [getServiceActionItems, selectedSort, t]);
+  ]), [getServiceActionItems, t]);
 
   return (
     <>
@@ -770,10 +654,8 @@ export function ServicePricingManagementPage() {
           </div>
         ) : null}
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {summaryCards.map((item) => (
-            <MetricCard key={item.label} item={item} />
-          ))}
+        <div className="mb-4">
+          <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" />
         </div>
 
         <div className="flex flex-col gap-3 rounded-[20px] border border-[#f8deea] bg-white/70 p-4 shadow-[0_12px_26px_rgba(236,72,153,0.05)] xl:flex-row xl:items-center xl:justify-between">
@@ -832,7 +714,7 @@ export function ServicePricingManagementPage() {
           </div>
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_310px]">
+        <div className="grid gap-4">
           <div className="space-y-4">
             <section className="overflow-hidden rounded-[20px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
               <div className="border-b border-[#f6dbe7] px-5 py-4">
@@ -848,11 +730,12 @@ export function ServicePricingManagementPage() {
               <Table
                 rowKey="id"
                 columns={serviceColumns}
-                dataSource={sortedServices}
+                dataSource={filteredServices}
                 loading={isLoadingServices}
                 pagination={false}
                 scroll={{ x: 800 }}
                 locale={{ emptyText: serviceLoadError || "No services found." }}
+                className="custom-admin-table [&_.ant-table]:!bg-transparent [&_.ant-table-thead_th]:!bg-[#fff9fb] [&_.ant-table-thead_th]:!text-[10px] [&_.ant-table-thead_th]:!uppercase [&_.ant-table-thead_th]:!tracking-[0.14em] [&_.ant-table-thead_th]:!text-[#a88a9f] [&_.ant-table-thead_th]:!font-bold [&_.ant-table-thead_th]:!border-b [&_.ant-table-thead_th]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row>td]:!border-b [&_.ant-table-tbody_.ant-table-row>td]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row]:hover>td:!bg-[#fff9fb] [&_.ant-table-tbody_.ant-table-row>td]:!py-4 [&_.ant-table-tbody_.ant-table-row>td]:!text-[12px] [&_.ant-table-tbody_.ant-table-row>td]:!text-[#5b4256]"
               />
 
               <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -912,7 +795,7 @@ export function ServicePricingManagementPage() {
             </section>
           </div>
 
-          <aside className="space-y-4">
+          {/* <aside className="space-y-4">
             <SidePanel title="Insights">
               <div className="space-y-4">
                 <div className="rounded-[16px] border border-[#f8dce8] bg-[#fff8fb] p-4">
@@ -995,7 +878,7 @@ export function ServicePricingManagementPage() {
                 </div>
               </div>
             </SidePanel>
-          </aside>
+          </aside> */}
         </div>
       </section>
 

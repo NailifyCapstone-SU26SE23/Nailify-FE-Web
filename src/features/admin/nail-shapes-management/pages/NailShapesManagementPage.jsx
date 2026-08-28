@@ -16,7 +16,7 @@ import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
-import { Table } from "antd";
+import { Table, Tooltip } from "antd";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import {
@@ -27,23 +27,11 @@ import {
   fetchAdminNailShapes,
   deleteAdminNailShape,
 } from "../services/nailShapesManagementService";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
-function MetricCard({ item }) {
-  const Icon = item.icon;
 
-  return (
-    <article className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
-      <div className={`inline-flex h-10 w-10 items-center justify-center rounded-[14px] ${item.iconClassName}`}>
-        <Icon size={18} />
-      </div>
-      <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-[#cd98b1]">{item.label}</p>
-      <p className="mt-1 text-[1.9rem] font-extrabold leading-none text-[#432744]">{item.value}</p>
-      <p className="mt-2 text-xs font-medium text-[#b58a9f]">{item.note}</p>
-    </article>
-  );
-}
 
-function NailShapePreview({ shape }) {
+function NailShapePreview({ shape, className }) {
   if (shape.imageUrl) {
     return (
       <img
@@ -52,59 +40,16 @@ function NailShapePreview({ shape }) {
         alt={shape.name}
         loading="lazy"
         referrerPolicy="no-referrer"
-        className="h-11 w-11 rounded-xl border border-[#f4dbe7] object-cover"
+        className={className || "h-11 w-11 rounded-xl border border-[#f4dbe7] object-cover"}
       />
     );
   }
 
   return (
-    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#ffe4ef_0%,#ffd977_100%)] text-xs font-extrabold text-[#9c2f63]">
-      {shape.initials || "NS"}
+    <div className={className || "flex h-11 w-11 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#ffe4ef_0%,#ffd977_100%)] text-xs font-extrabold text-[#9c2f63]"}>
+      {shape.name?.substring(0, 2).toUpperCase() || "NS"}
     </div>
   );
-}
-
-function SortableHeader({ label, sortKey, selectedSort, onToggle }) {
-  const isActive = selectedSort.startsWith(`${sortKey}-`);
-  const isDesc = selectedSort === `${sortKey}-desc`;
-
-  return (
-    <button
-      type="button"
-      onClick={() => onToggle(sortKey)}
-      className={`inline-flex items-center gap-1.5 font-semibold transition ${isActive ? "text-[#ea4f93]" : "text-[#5f4a5c] hover:text-[#ea4f93]"}`}
-    >
-      <span>{label}</span>
-      <ArrowUpDown size={13} className={isActive ? "text-[#ea4f93]" : "text-[#d39bb5]"} />
-      {isActive ? <span className="text-[10px] font-bold">{isDesc ? "DESC" : "ASC"}</span> : null}
-    </button>
-  );
-}
-
-function sortShapes(items, sortValue) {
-  const [sortKey = "shape", sortDirection = "asc"] = String(sortValue || "shape-asc").split("-");
-  const directionMultiplier = sortDirection === "desc" ? -1 : 1;
-
-  return [...items].sort((left, right) => {
-    const getSortValue = (item) => {
-      switch (sortKey) {
-        case "duration":
-          return Number(item.duration || 0);
-        case "shape":
-        default:
-          return item.name || "";
-      }
-    };
-
-    const leftValue = getSortValue(left);
-    const rightValue = getSortValue(right);
-
-    if (typeof leftValue === "number" && typeof rightValue === "number") {
-      return (leftValue - rightValue) * directionMultiplier;
-    }
-
-    return String(leftValue).localeCompare(String(rightValue)) * directionMultiplier;
-  });
 }
 
 export function NailShapesManagementPage() {
@@ -113,7 +58,6 @@ export function NailShapesManagementPage() {
   const { t, language } = useLanguage();
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [selectedSort, setSelectedSort] = useState("shape-asc");
   const [shapes, setShapes] = useState([]);
   const [metaData, setMetaData] = useState({
     currentPage: 1,
@@ -201,21 +145,21 @@ export function NailShapesManagementPage() {
         value: metaData.totalItems.toLocaleString(),
         note: language === "vi" ? `${metaData.totalPages} trang` : `${metaData.totalPages} pages`,
         icon: Shapes,
-        iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
+        color: "#ea4f93",
       },
       {
         label: t("adminNailShapesManagement.visibleItems"),
         value: shapes.length.toLocaleString(),
         note: t("adminNailShapesManagement.currentPage"),
         icon: Sparkles,
-        iconClassName: "bg-[#fff4df] text-[#d9871c]",
+        color: "#d9871c",
       },
       {
         label: language === "vi" ? "Có thời lượng" : "With Duration",
         value: shapesWithDuration.toLocaleString(),
         note: language === "vi" ? `Trên ${shapes.length} dáng móng hiện tại` : `Out of ${shapes.length} visible shapes`,
         icon: TimerReset,
-        iconClassName: "bg-[#e7fbf4] text-[#20ab77]",
+        color: "#20ab77",
       },
     ];
   }, [metaData.totalItems, metaData.totalPages, shapes, language, t]);
@@ -247,83 +191,7 @@ export function NailShapesManagementPage() {
     return result;
   }, [metaData.currentPage, metaData.totalPages]);
 
-  const sortedShapes = useMemo(() => sortShapes(shapes, selectedSort), [shapes, selectedSort]);
 
-  const handleSortToggle = (sortKey) => {
-    setSelectedSort((current) => {
-      if (current.startsWith(`${sortKey}-`)) {
-        return current.endsWith("-asc") ? `${sortKey}-desc` : `${sortKey}-asc`;
-      }
-
-      return `${sortKey}-asc`;
-    });
-  };
-
-  const columns = useMemo(
-    () => [
-      {
-        title: (
-          <SortableHeader
-            label={t("adminNailShapesManagement.shape")}
-            sortKey="shape"
-            selectedSort={selectedSort}
-            onToggle={handleSortToggle}
-          />
-        ),
-        key: "shape",
-        render: (_, shape) => (
-          <div className="flex items-center gap-3">
-            <NailShapePreview shape={shape} />
-            <div>
-              <p className="text-sm font-bold text-[#432744]">{shape.name}</p>
-            </div>
-          </div>
-        ),
-      },
-      // {
-      //   title: (
-      //     <SortableHeader
-      //       label={t("adminNailShapesManagement.duration")}
-      //       sortKey="duration"
-      //       selectedSort={selectedSort}
-      //       onToggle={handleSortToggle}
-      //     />
-      //   ),
-      //   dataIndex: "durationLabel",
-      //   key: "durationLabel",
-      //   render: (value) => <span className="text-sm text-[#6b5668]">{value}</span>,
-      // },
-      {
-        title: t("adminNailShapesManagement.actions"),
-        key: "actions",
-        render: (_, shape) => (
-          <ActionDropdown
-            items={[
-              {
-                key: "view",
-                label: t("adminNailShapesManagement.viewDetail"),
-                icon: Eye,
-                onSelect: () => navigate(getAdminNailShapeDetailRoute(shape.nailShapeId)),
-              },
-              {
-                key: "edit",
-                label: t("adminNailShapesManagement.editShape"),
-                icon: Pencil,
-                onSelect: () => navigate(getAdminNailShapeDetailRoute(shape.nailShapeId), { state: { startInEdit: true } }),
-              },
-              {
-                key: "delete",
-                label: t("adminNailShapesManagement.deleteShape"),
-                icon: Trash2,
-                className: "text-[#d14c84]",
-                onSelect: () => setDeleteTarget(shape),
-              },
-            ]}
-          />
-        ),
-      },
-    ], [navigate, selectedSort, t],
-  );
 
   const handleDeleteShape = async () => {
     if (!deleteTarget || isDeleting) {
@@ -372,10 +240,8 @@ export function NailShapesManagementPage() {
           </div>
         ) : null}
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {summaryCards.map((item) => (
-            <MetricCard key={item.label} item={item} />
-          ))}
+        <div className="mb-4">
+          <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" />
         </div>
 
         <div className="flex flex-col gap-3 rounded-[20px] border border-[#f8deea] bg-white/70 p-4 shadow-[0_12px_26px_rgba(236,72,153,0.05)] xl:flex-row xl:items-center xl:justify-between">
@@ -430,18 +296,61 @@ export function NailShapesManagementPage() {
             </p>
           </div>
 
-          <Table
-            rowKey="id"
-            columns={columns}
-            dataSource={sortedShapes}
-            loading={{
-              spinning: isLoading,
-              indicator: <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />,
-            }}
-            pagination={false}
-            scroll={{ x: 920 }}
-            locale={{ emptyText: error || (t("adminNailShapesManagement.noNailShapesFound")) }}
-          />
+          <div className="bg-[#fff9fc] p-6">
+            {isLoading ? (
+              <div className="flex justify-center items-center py-20">
+                <LoaderCircle size={32} className="animate-spin text-[#ea4f93]" />
+              </div>
+            ) : shapes.length === 0 ? (
+              <div className="flex justify-center items-center py-20 text-sm text-[#b9849f]">
+                {error || t("adminNailShapesManagement.noNailShapesFound")}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                {shapes.map((shape) => (
+                  <div key={shape.nailShapeId} className="group relative flex flex-col overflow-hidden rounded-[20px] border border-[#f8dce8] bg-white shadow-sm transition-all duration-300 hover:shadow-[0_12px_28px_rgba(236,72,153,0.12)] hover:-translate-y-1">
+                    <div className="relative aspect-square w-full overflow-hidden bg-[#fffafc]">
+                      <NailShapePreview shape={shape} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+
+                    </div>
+
+                    <div className="flex flex-1 flex-col items-center justify-center border-t border-[#f6dbe7] p-3 text-center gap-2">
+                      <h3 className="text-xs font-bold text-[#432744] line-clamp-2">{shape.name}</h3>
+                      <div className="flex items-center justify-center gap-1.5 ">
+                        <Tooltip title={t("adminNailShapesManagement.viewDetail")}>
+                          <button
+                            type="button"
+                            onClick={() => navigate(getAdminNailShapeDetailRoute(shape.nailShapeId))}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
+                          >
+                            <Eye size={12} />
+                          </button>
+                        </Tooltip>
+                        <Tooltip title={t("adminNailShapesManagement.editShape")}>
+                          <button
+                            type="button"
+                            onClick={() => navigate(getAdminNailShapeDetailRoute(shape.nailShapeId), { state: { startInEdit: true } })}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
+                          >
+                            <Pencil size={12} />
+                          </button>
+                        </Tooltip>
+                        <Tooltip title={t("adminNailShapesManagement.deleteShape")}>
+                          <button
+                            type="button"
+                            onClick={() => setDeleteTarget(shape)}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 bg-[#fff0f0] text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </Tooltip>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-[11px] text-[#c694ad]">

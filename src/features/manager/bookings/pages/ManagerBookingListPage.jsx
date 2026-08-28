@@ -27,12 +27,13 @@ import {
   Plus,
   Image as ImageIcon,
   Edit3,
+  ArrowUpDown,
 } from "lucide-react";
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { setFilter, setAllFilters, updateBookingLocally, removeBookingLocally, fetchManagerBookingsThunk, fetchManagerSalonStaffThunk } from "../../../../store/managerBookingsSlice";
-import { Spin, Alert, DatePicker, Drawer, Modal, Tooltip } from "antd";
+import { Spin, Alert, DatePicker, Drawer, Modal, Tooltip, Table } from "antd";
 import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
@@ -50,6 +51,7 @@ import { RejectBookingModal } from "../components/RejectBookingModal";
 import { CancelBookingModal } from "../components/CancelBookingModal";
 import { Pagination } from "../../../../shared/components/common/Pagination";
 import { getSalonId, getSalonIdAsync } from "../../staff-artist-management/services/nailArtistsService";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
 import { loadAuthSession } from "../../../core/auth/model/authStorage";
 
@@ -130,6 +132,38 @@ SectionHeading.propTypes = {
   icon: PropTypes.elementType,
   actionButton: PropTypes.node,
 };
+
+
+
+function sortAppointments(items, sortValue) {
+  const [sortKey = "time", sortDirection = "asc"] = String(sortValue || "time-asc").split("-");
+  const directionMultiplier = sortDirection === "desc" ? -1 : 1;
+
+  return [...items].sort((left, right) => {
+    const getSortValue = (item) => {
+      switch (sortKey) {
+        case "customer":
+          return item.customer || "";
+        case "artist":
+          return item.artist || "";
+        case "status":
+          return item.status || "";
+        case "time":
+        default:
+          return new Date(`${item.parsedDateStr || "1970-01-01"}T${item.startTime || "00:00:00"}`).getTime();
+      }
+    };
+
+    const leftValue = getSortValue(left);
+    const rightValue = getSortValue(right);
+
+    if (typeof leftValue === "number" && typeof rightValue === "number") {
+      return (leftValue - rightValue) * directionMultiplier;
+    }
+
+    return String(leftValue).localeCompare(String(rightValue)) * directionMultiplier;
+  });
+}
 
 function InfoItem({ label, children }) {
   return (
@@ -584,6 +618,7 @@ export function ManagerBookingListPage() {
 
   // Keep some local UI state
   const [anchorDate, setAnchorDate] = useState(() => dayjs());
+  const [selectedSort, setSelectedSort] = useState("time-asc");
 
   // Drag & Drop State
   const [draggedBooking, setDraggedBooking] = useState(null);
@@ -786,38 +821,30 @@ export function ManagerBookingListPage() {
       {
         label: t("manager.dashboard.statusWaiting"),
         value: pending,
-        subtext: t("manager.bookings.awaitingConfirm") || "Awaiting confirmation",
+        note: t("manager.bookings.awaitingConfirm") || "Awaiting confirmation",
         icon: Clock3,
-        accentBg: "bg-gradient-to-br from-[#FFFBEB] to-[#FEF3C7]",
-        accentText: "text-[#D97706]",
-        badgeBorder: "border-[#FCD34D]",
+        color: "#D97706",
       },
       {
         label: t("manager.bookings.ready") || "Confirmed",
         value: confirmed,
-        subtext: t("manager.bookings.lockedReady") || "Locked & ready",
+        note: t("manager.bookings.lockedReady") || "Locked & ready",
         icon: CheckCircle2,
-        accentBg: "bg-gradient-to-br from-[#ECFDF5] to-[#D1FAE5]",
-        accentText: "text-[#059669]",
-        badgeBorder: "border-[#6EE7B7]",
+        color: "#059669",
       },
       {
         label: t("manager.dashboard.statusCalled") || "Checked In",
         value: checkedIn,
-        subtext: t("manager.bookings.inSalon") || "In salon",
+        note: t("manager.bookings.inSalon") || "In salon",
         icon: UserCheck,
-        accentBg: "bg-gradient-to-br from-[#EEF2FF] to-[#E0E7FF]",
-        accentText: "text-[#4F46E5]",
-        badgeBorder: "border-[#A5B4FC]",
+        color: "#4F46E5",
       },
       {
         label: t("manager.dashboard.statusDone") || "Completed",
         value: completed,
-        subtext: t("manager.bookings.finishedToday") || "Finished today",
+        note: t("manager.bookings.finishedToday") || "Finished today",
         icon: Sparkles,
-        accentBg: "bg-gradient-to-br from-[#FFF0F5] to-[#FFE4EE]",
-        accentText: "text-[#E84F93]",
-        badgeBorder: "border-[#FBCFE8]",
+        color: "#E84F93",
       },
     ];
   }, [bookings, t]);
@@ -847,10 +874,15 @@ export function ManagerBookingListPage() {
     });
   }, [activeFilter, query, bookings, dateFrom, dateTo]);
 
+  const sortedAppointments = useMemo(
+    () => sortAppointments(filteredAppointments, selectedSort),
+    [filteredAppointments, selectedSort]
+  );
+
   const paginatedAppointments = useMemo(() => {
     const startIndex = (currentPage - 1) * BOOKING_PAGE_SIZE;
-    return filteredAppointments.slice(startIndex, startIndex + BOOKING_PAGE_SIZE);
-  }, [filteredAppointments, currentPage]);
+    return sortedAppointments.slice(startIndex, startIndex + BOOKING_PAGE_SIZE);
+  }, [sortedAppointments, currentPage]);
 
   const filteredTotalPages = useMemo(() => {
     return Math.max(1, Math.ceil(filteredAppointments.length / BOOKING_PAGE_SIZE));
@@ -912,7 +944,109 @@ export function ManagerBookingListPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [query, activeFilter, dateFrom, dateTo]);
+  }, [query, activeFilter, dateFrom, dateTo, selectedSort]);
+
+  const handleTableChange = (pagination, filters, sorter) => {
+    if (sorter && sorter.field) {
+      if (sorter.order) {
+        setSelectedSort(`${sorter.field}-${sorter.order === "ascend" ? "asc" : "desc"}`);
+      } else {
+        setSelectedSort("time-asc");
+      }
+    }
+  };
+
+  const columns = useMemo(() => [
+    {
+      title: t("manager.bookings.time"),
+      dataIndex: "time",
+      key: "time",
+      sorter: true,
+      sortOrder: selectedSort === "time-asc" ? "ascend" : selectedSort === "time-desc" ? "descend" : null,
+      render: (_, row) => (
+        <div>
+          <p className="text-xs font-bold text-[#2B182B] truncate" title={row.date}>{row.date}</p>
+          <p className="text-[11px] font-medium text-[#9E8497] truncate" title={row.time}>{row.time}</p>
+          <div className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-[#9E8497]">
+            <Clock3 size={11} className="text-[#E84F93]" />
+            <span>{row.duration}</span>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: t("manager.bookings.customer"),
+      dataIndex: "customer",
+      key: "customer",
+      sorter: true,
+      sortOrder: selectedSort === "customer-asc" ? "ascend" : selectedSort === "customer-desc" ? "descend" : null,
+      render: (_, row) => (
+        <div className="flex min-w-0 items-center gap-2.5">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#FF9EBF] to-[#E84F93] text-xs font-bold text-white shadow-sm border border-white">
+            {row.initials}
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-xs font-bold text-[#2B182B] group-hover:text-[#E84F93] transition-colors">
+              {row.customer}
+            </p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: t("manager.bookings.artist"),
+      dataIndex: "artist",
+      key: "artist",
+      sorter: true,
+      sortOrder: selectedSort === "artist-asc" ? "ascend" : selectedSort === "artist-desc" ? "descend" : null,
+      render: (_, row) => (
+        <div className="flex min-w-0 items-center gap-2">
+          <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-xl text-[9px] font-bold text-white shadow-xs ${row.artist === "Unassigned" ? "bg-[#D97706]" : "bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9]"}`}>
+            {row.artist === "Unassigned" ? "!" : (row.artist || "").split(" ").map(p => p[0]).join("")}
+          </div>
+          <div className="min-w-0">
+            <p className={`truncate text-xs font-semibold ${row.artist === "Unassigned" ? "text-[#D97706] italic" : "text-[#2B182B]"}`}>
+              {row.artist === "Unassigned" ? t("manager.bookings.unassigned") : row.artist}
+            </p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: t("manager.common.status"),
+      dataIndex: "status",
+      key: "status",
+      sorter: true,
+      sortOrder: selectedSort === "status-asc" ? "ascend" : selectedSort === "status-desc" ? "descend" : null,
+      render: (_, row) => (
+        <div className="flex flex-col items-start gap-1">
+          <StatusPill status={row.status} />
+          {(row.status === "Rejected" || row.status === "Cancelled" || row.status === "Canceled") && row.amountPaid > 0 && !row.isRefunded && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-[#FECDD3] bg-[#FEF2F2] px-2 py-0.5 text-[9px] font-extrabold text-[#E11D48] shadow-2xs whitespace-nowrap">
+              {language === "vi" ? "CHƯA HOÀN TIỀN" : "NOT REFUNDED"}
+            </span>
+          )}
+        </div>
+      ),
+    },
+    {
+      title: t("manager.common.actions"),
+      key: "actions",
+      align: "center",
+      render: (_, row) => (
+        <div className="flex items-center justify-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+          <Tooltip title={t("manager.common.view")}>
+            <button
+              onClick={() => handleViewBooking(row.id)}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#FFF0F8] text-[#E84F93] hover:bg-[#E84F93] hover:text-white transition-all shadow-2xs"
+            >
+              <Eye size={14} />
+            </button>
+          </Tooltip>
+        </div>
+      ),
+    },
+  ], [language, selectedSort, t]);
 
   // --- Handlers ---
   const handleViewModeChange = (mode) => {
@@ -1085,29 +1219,8 @@ export function ManagerBookingListPage() {
             {/* Main Content Area */}
             <div className="space-y-6">
               {/* KPI Summary Stats Grid */}
-              <motion.div variants={fadeInUp} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                {summaryStats.map((stat) => (
-                  <motion.div
-                    key={stat.label}
-                    whileHover={{ y: -3 }}
-                    transition={{ type: "spring", stiffness: 350, damping: 15 }}
-                  >
-                    <div className="relative overflow-hidden rounded-[22px] border border-[#F3E2EC] bg-white p-4 shadow-[0_10px_28px_-6px_rgba(219,70,117,0.06)] hover:border-[#E8C5D8] transition-all">
-                      <div className="flex items-center justify-between">
-                        <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${stat.accentBg} ${stat.accentText} border ${stat.badgeBorder} shadow-xs`}>
-                          <stat.icon size={20} />
-                        </div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497] px-2 py-0.5 rounded-full bg-[#FAF0F5]">
-                          {stat.subtext}
-                        </span>
-                      </div>
-                      <div className="mt-3">
-                        <p className="text-2xl font-bold text-[#2B182B] tracking-tight">{stat.value}</p>
-                        <p className="text-xs font-semibold text-[#9E8497] mt-0.5">{stat.label}</p>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
+              <motion.div variants={fadeInUp} className="mb-4">
+                <TopMetricsRow metrics={summaryStats} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" />
               </motion.div>
 
               {/* Booking Board Card */}
@@ -1116,13 +1229,6 @@ export function ManagerBookingListPage() {
                   {/* Header, View Switcher & Filter Controls */}
                   <div className="border-b border-[#F3E2EC] bg-gradient-to-b from-[#FFF7FA] to-white p-6">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                      {/* 
-                      <SectionHeading
-                        title={t("manager.bookings.title")}
-                        subtitle={t("manager.bookings.desc")}
-                        icon={Filter}
-                      />
-                     */}
 
                     </div>
                     <div className="flex flex-nowrap items-center gap-3 overflow-x-auto pb-2 lg:pb-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
@@ -1263,147 +1369,39 @@ export function ManagerBookingListPage() {
                       </motion.div>
                     ) : viewMode === "table" ? (
                       /* --- 1. TABLE BOARD VIEW (WITH TRY-ON NAIL THUMBNAILS & TOOLTIPS) --- */
-                      <table className="w-full min-w-[720px] table-fixed text-left">
-                        <colgroup>
-                          <col className="w-[140px]" />
-                          <col className="w-[170px]" />
-                          <col className="w-[150px]" />
-                          <col className="w-[140px]" />
-                          <col className="w-[120px]" />
-                        </colgroup>
-                        <thead>
-                          <tr className="border-b border-[#F3E2EC] bg-[#FFF5F8] text-[11px] font-bold uppercase tracking-wider text-[#9E8497]">
-                            <th className="px-3.5 py-3.5 text-left">{t("manager.bookings.time")}</th>
-                            <th className="px-3.5 py-3.5 text-left">{t("manager.bookings.customer")}</th>
-                            {/* <th className="px-3.5 py-3.5 text-left">{t("manager.bookings.serviceDesign") || "Service & Nail Design"}</th> */}
-                            <th className="px-3.5 py-3.5 text-left">{t("manager.bookings.artist")}</th>
-                            <th className="px-3.5 py-3.5 text-left">{t("manager.common.status")}</th>
-                            <th className="px-3.5 py-3.5 text-center">{t("manager.common.actions")}</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <AnimatePresence>
-                            {paginatedAppointments.map((row) => (
+                      <Table
+                        rowKey="id"
+                        columns={columns}
+                        dataSource={paginatedAppointments}
+                        pagination={false}
+                        onChange={handleTableChange}
+                        components={{
+                          body: {
+                            wrapper: ({ children, ...props }) => (
+                              <tbody {...props}>
+                                <AnimatePresence>{children}</AnimatePresence>
+                              </tbody>
+                            ),
+                            row: ({ children, className, style, ...props }) => (
                               <motion.tr
-                                key={row.id}
                                 initial={{ opacity: 0, y: 4 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -4 }}
-                                className="group relative cursor-pointer border-b border-[#F7E7EE] transition-colors duration-200 hover:bg-[#FFF9FB] last:border-b-0"
-                                onClick={() => handleOpenDrawer(row.id)}
+                                className={`group relative cursor-pointer border-b border-[#F7E7EE] transition-colors duration-200 hover:bg-[#FFF9FB] last:border-b-0 ${className || ""}`}
+                                style={style}
+                                {...props}
                               >
-                                <td className="px-4 py-3.5 align-middle">
-                                  <p className="text-xs font-bold text-[#2B182B] truncate" title={row.date}>{row.date}</p>
-                                  <p className="text-[11px] font-medium text-[#9E8497] truncate" title={row.time}>{row.time}</p>
-                                  <div className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-[#9E8497]">
-                                    <Clock3 size={11} className="text-[#E84F93]" />
-                                    <span>{row.duration}</span>
-                                  </div>
-                                </td>
-
-                                <td className="px-4 py-3.5 align-middle">
-                                  <div className="flex min-w-0 items-center gap-2.5">
-                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#FF9EBF] to-[#E84F93] text-xs font-bold text-white shadow-sm border border-white">
-                                      {row.initials}
-                                    </div>
-                                    <div className="min-w-0">
-                                      <p className="truncate text-xs font-bold text-[#2B182B] group-hover:text-[#E84F93] transition-colors">
-                                        {row.customer}
-                                      </p>
-                                      {/* <p className="mt-0.5 truncate text-[11px] text-[#9E8497] font-medium flex items-center gap-1">
-                                        <Phone size={10} className="shrink-0 text-[#C8B0BF]" />
-                                        {row.phone || "No phone"}
-                                      </p> */}
-                                    </div>
-                                  </div>
-                                </td>
-
-                                {/* Service & Try-On Nail Design Thumbnail Preview */}
-                                <td className="px-4 py-3.5 align-middle">
-                                  <div className="flex min-w-0 items-center gap-2">
-                                    <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-xl text-[9px] font-bold text-white shadow-xs ${row.artist === "Unassigned" ? "bg-[#D97706]" : "bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9]"}`}>
-                                      {row.artist === "Unassigned" ? "!" : (row.artist || "").split(" ").map(p => p[0]).join("")}
-                                    </div>
-                                    <div className="min-w-0">
-                                      <p className={`truncate text-xs font-semibold ${row.artist === "Unassigned" ? "text-[#D97706] italic" : "text-[#2B182B]"}`}>
-                                        {row.artist === "Unassigned" ? t("manager.bookings.unassigned") : row.artist}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </td>
-
-                                <td className="px-3 py-3.5 align-middle">
-                                  <div className="flex flex-col items-start gap-1">
-                                    <StatusPill status={row.status} />
-                                    {(row.status === "Rejected" || row.status === "Cancelled" || row.status === "Canceled") && row.amountPaid > 0 && !row.isRefunded && (
-                                      <span className="inline-flex items-center gap-1 rounded-full border border-[#FECDD3] bg-[#FEF2F2] px-2 py-0.5 text-[9px] font-extrabold text-[#E11D48] shadow-2xs whitespace-nowrap">
-                                        {language === "vi" ? "CHƯA HOÀN TIỀN" : "NOT REFUNDED"}
-                                      </span>
-                                    )}
-                                  </div>
-                                </td>
-
-                                <td className="px-3 py-3.5 align-middle text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                                  <div className="flex items-center justify-center gap-1.5">
-                                    <Tooltip title={t("manager.common.view")}>
-                                      <motion.button
-                                        whileHover={{ scale: 1.1 }}
-                                        whileTap={{ scale: 0.9 }}
-                                        onClick={() => handleViewBooking(row.id)}
-                                        className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#FFF0F8] text-[#E84F93] hover:bg-[#E84F93] hover:text-white transition-all shadow-2xs"
-                                      >
-                                        <Eye size={14} />
-                                      </motion.button>
-                                    </Tooltip>
-
-                                    {/* {!(
-                                      (row.nailArtistId || row.staffId || row.staffArtistId || row.artistId) &&
-                                      (row.status === "CheckedIn" || row.status === "Checked In")
-                                    ) && (!isFinalStatus(row.status) || row.status === "Approved") && (
-                                        <Tooltip title={t("manager.bookings.assignArtistTitle") || "Assign staff artist"}>
-                                          <motion.button
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.9 }}
-                                            onClick={() => { setSelectedBookingForAssign(row); setIsAssignArtistModalOpen(true); }}
-                                            className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#EEF2FF] text-[#4F46E5] hover:bg-[#4F46E5] hover:text-white transition-all shadow-2xs"
-                                          >
-                                            <UserCheck size={14} />
-                                          </motion.button>
-                                        </Tooltip>
-                                      )} */}
-
-                                    {/* {!isFinalStatus(row.status) && !(row.status === "CheckedIn" || row.status === "Checked In" || row.status === "InProgress" || row.status === "In Progress") && (
-                                      <>
-                                        <Tooltip title={t("manager.bookings.confirmBooking") || "Confirm booking"}>
-                                          <motion.button
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.9 }}
-                                            onClick={() => { setSelectedBookingForAction(row); setIsConfirmModalOpen(true); }}
-                                            className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#ECFDF5] text-[#059669] hover:bg-[#059669] hover:text-white transition-all shadow-2xs"
-                                          >
-                                            <CheckCircle2 size={14} />
-                                          </motion.button>
-                                        </Tooltip>
-
-                                        <Tooltip title={t("manager.bookings.cancelBooking") || "Cancel booking"}>
-                                          <motion.button
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.9 }}
-                                            onClick={() => { setSelectedBookingForAction(row); setIsCancelModalOpen(true); }}
-                                            className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#FEF2F2] text-[#E11D48] hover:bg-[#E11D48] hover:text-white transition-all shadow-2xs"
-                                          >
-                                            <XCircle size={14} />
-                                          </motion.button>
-                                        </Tooltip>
-                                      </>
-                                    )} */}
-                                  </div>
-                                </td>
+                                {children}
                               </motion.tr>
-                            ))}
-                          </AnimatePresence>
-                        </tbody>
-                      </table>
+                            )
+                          }
+                        }}
+                        onRow={(record) => ({
+                          onClick: () => handleOpenDrawer(record.id)
+                        })}
+                        scroll={{ x: 720 }}
+                        className="custom-admin-table [&_.ant-table]:!bg-transparent [&_.ant-table-thead_th]:!bg-[#fff9fb] [&_.ant-table-thead_th]:!text-[10px] [&_.ant-table-thead_th]:!uppercase [&_.ant-table-thead_th]:!tracking-[0.14em] [&_.ant-table-thead_th]:!text-[#a88a9f] [&_.ant-table-thead_th]:!font-bold [&_.ant-table-thead_th]:!border-b [&_.ant-table-thead_th]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row>td]:!border-b [&_.ant-table-tbody_.ant-table-row>td]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row]:hover>td:!bg-[#fff9fb] [&_.ant-table-tbody_.ant-table-row>td]:!py-4 [&_.ant-table-tbody_.ant-table-row>td]:!text-[12px] [&_.ant-table-tbody_.ant-table-row>td]:!text-[#5b4256]"
+                      />
                     ) : viewMode === "day" ? (
                       /* --- 2. DAY VIEW SCHEDULER (ARTISTS x HOURS MATRIX WITH DRAG & DROP) --- */
                       <div className="p-4 space-y-4">

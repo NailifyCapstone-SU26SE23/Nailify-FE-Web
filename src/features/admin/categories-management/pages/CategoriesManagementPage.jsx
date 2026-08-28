@@ -16,7 +16,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Table } from "antd";
+import { Table, Tooltip } from "antd";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import {
@@ -28,21 +28,9 @@ import {
   fetchAdminCategories,
   fetchAdminCategoryTypeOptions,
 } from "../services/categoriesManagementService";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
-function MetricCard({ item }) {
-  const Icon = item.icon;
 
-  return (
-    <article className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
-      <div className={`inline-flex h-10 w-10 items-center justify-center rounded-[14px] ${item.iconClassName}`}>
-        <Icon size={18} />
-      </div>
-      <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-[#cd98b1]">{item.label}</p>
-      <p className="mt-1 text-[1.9rem] font-extrabold leading-none text-[#432744]">{item.value}</p>
-      <p className="mt-2 text-xs font-medium text-[#b58a9f]">{item.note}</p>
-    </article>
-  );
-}
 
 function CategoryStatusBadge({ status }) {
   const { t, language } = useLanguage();
@@ -57,44 +45,6 @@ function CategoryStatusBadge({ status }) {
   return <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${className}`}>{displayLabel}</span>;
 }
 
-function SortableHeader({ label, sortKey, selectedSort, onToggle }) {
-  const isActive = selectedSort.startsWith(`${sortKey}-`);
-  const isDesc = selectedSort === `${sortKey}-desc`;
-
-  return (
-    <button
-      type="button"
-      onClick={() => onToggle(sortKey)}
-      className={`inline-flex items-center gap-1.5 font-semibold transition ${isActive ? "text-[#ea4f93]" : "text-[#5f4a5c] hover:text-[#ea4f93]"}`}
-    >
-      <span>{label}</span>
-      <ArrowUpDown size={13} className={isActive ? "text-[#ea4f93]" : "text-[#d39bb5]"} />
-      {isActive ? <span className="text-[10px] font-bold">{isDesc ? "DESC" : "ASC"}</span> : null}
-    </button>
-  );
-}
-
-function sortCategories(items, sortValue) {
-  const [sortKey = "category", sortDirection = "asc"] = String(sortValue || "category-asc").split("-");
-  const directionMultiplier = sortDirection === "desc" ? -1 : 1;
-
-  return [...items].sort((left, right) => {
-    const getSortValue = (item) => {
-      switch (sortKey) {
-        case "categoryType":
-          return item.categoryTypeName || "";
-        case "status":
-          return item.status || "";
-        case "category":
-        default:
-          return item.name || "";
-      }
-    };
-
-    return String(getSortValue(left)).localeCompare(String(getSortValue(right))) * directionMultiplier;
-  });
-}
-
 export function CategoriesManagementPage() {
   const { t, language } = useLanguage();
   const location = useLocation();
@@ -102,7 +52,6 @@ export function CategoriesManagementPage() {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [categoryTypeFilter, setCategoryTypeFilter] = useState("");
-  const [selectedSort, setSelectedSort] = useState("category-asc");
   const [categoryTypes, setCategoryTypes] = useState([]);
   const [categories, setCategories] = useState([]);
   const [metaData, setMetaData] = useState({
@@ -228,28 +177,28 @@ export function CategoriesManagementPage() {
         value: metaData.totalItems.toLocaleString(),
         note: `${metaData.totalPages} pages`,
         icon: FolderTree,
-        iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
+        color: "#ea4f93",
       },
       {
         label: t("adminCategories.activeItems"),
         value: activeCount.toLocaleString(),
         note: "Current page",
         icon: Sparkles,
-        iconClassName: "bg-[#e7fbf4] text-[#20ab77]",
+        color: "#20ab77",
       },
       {
         label: t("adminCategories.visibleTypes"),
         value: visibleTypes.toLocaleString(),
         note: categoryTypeFilter ? "Filtered type" : "Current page",
         icon: Layers3,
-        iconClassName: "bg-[#fff4df] text-[#d9871c]",
+        color: "#d9871c",
       },
       {
         label: t("adminCategories.pageItems"),
         value: categories.length.toLocaleString(),
         note: debouncedQuery || "Current page",
         icon: FolderTree,
-        iconClassName: "bg-[#f3ebff] text-[#8b5cf6]",
+        color: "#8b5cf6",
       },
     ];
   }, [categories, categoryTypeFilter, debouncedQuery, metaData.totalItems, metaData.totalPages]);
@@ -281,33 +230,12 @@ export function CategoriesManagementPage() {
     return result;
   }, [metaData.currentPage, metaData.totalPages]);
 
-  const sortedCategories = useMemo(
-    () => sortCategories(categories, selectedSort),
-    [categories, selectedSort],
-  );
-
-  const handleSortToggle = (sortKey) => {
-    setSelectedSort((current) => {
-      if (current.startsWith(`${sortKey}-`)) {
-        return current.endsWith("-asc") ? `${sortKey}-desc` : `${sortKey}-asc`;
-      }
-
-      return `${sortKey}-asc`;
-    });
-  };
-
   const columns = useMemo(
     () => [
       {
-        title: (
-          <SortableHeader
-            label={t("adminCategories.category")}
-            sortKey="category"
-            selectedSort={selectedSort}
-            onToggle={handleSortToggle}
-          />
-        ),
+        title: t("adminCategories.category"),
         key: "category",
+        sorter: (a, b) => (a.name || "").localeCompare(b.name || ""),
         render: (_, category) => (
           <div className="flex items-center gap-3">
 
@@ -319,64 +247,56 @@ export function CategoriesManagementPage() {
         ),
       },
       {
-        title: (
-          <SortableHeader
-            label={t("adminCategories.categoryType")}
-            sortKey="categoryType"
-            selectedSort={selectedSort}
-            onToggle={handleSortToggle}
-          />
-        ),
+        title: t("adminCategories.categoryType"),
         dataIndex: "categoryTypeName",
         key: "categoryTypeName",
+        sorter: (a, b) => (a.categoryTypeName || "").localeCompare(b.categoryTypeName || ""),
         render: (value) => <span className="text-sm font-semibold text-[#432744]">{value}</span>,
       },
       {
-        title: (
-          <SortableHeader
-            label={t("adminCategories.status")}
-            sortKey="status"
-            selectedSort={selectedSort}
-            onToggle={handleSortToggle}
-          />
-        ),
+        title: t("adminCategories.status"),
         dataIndex: "status",
         key: "status",
+        sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
         render: (value) => <CategoryStatusBadge status={value} />,
       },
       {
         title: t("adminCategories.actions"),
         key: "actions",
+        align: "right",
         render: (_, category) => (
-          <ActionDropdown
-            items={[
-              {
-                key: "view",
-                label: t("adminCategories.viewDetail"),
-                icon: Eye,
-                onSelect: () => navigate(getAdminCategoryDetailRoute(category.categoryId)),
-              },
-              {
-                key: "edit",
-                label: t("adminCategories.editCategory"),
-                icon: Pencil,
-                onSelect: () =>
-                  navigate(getAdminCategoryDetailRoute(category.categoryId), {
-                    state: { startInEdit: true },
-                  }),
-              },
-              {
-                key: "delete",
-                label: t("adminCategories.deleteCategory"),
-                icon: Trash2,
-                className: "text-[#d14c84]",
-                onSelect: () => setDeleteTarget(category),
-              },
-            ]}
-          />
+          <div className="flex items-center justify-end gap-1.5">
+            <Tooltip title={t("adminCategories.viewDetail")}>
+              <button
+                type="button"
+                onClick={() => navigate(getAdminCategoryDetailRoute(category.categoryId))}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
+              >
+                <Eye size={12} />
+              </button>
+            </Tooltip>
+            <Tooltip title={t("adminCategories.editCategory")}>
+              <button
+                type="button"
+                onClick={() => navigate(getAdminCategoryDetailRoute(category.categoryId), { state: { startInEdit: true } })}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
+              >
+                <Pencil size={12} />
+              </button>
+            </Tooltip>
+            <Tooltip title={t("adminCategories.deleteCategory")}>
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(category)}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 bg-[#fff0f0] text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
+              >
+                <Trash2 size={12} />
+              </button>
+            </Tooltip>
+          </div>
         ),
       },
-    ], [navigate, selectedSort, t],
+    ], [navigate, t],
   );
 
   const handleDeleteCategory = async () => {
@@ -422,10 +342,8 @@ export function CategoriesManagementPage() {
           <div className="rounded-[16px] bg-[#fff1f5] px-4 py-3 text-sm font-medium text-[#d14c84]">{error}</div>
         ) : null}
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {summaryCards.map((item) => (
-            <MetricCard key={item.label} item={item} />
-          ))}
+        <div className="mb-4">
+          <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" />
         </div>
 
         <div className="flex flex-col gap-3 rounded-[20px] border border-[#f8deea] bg-white/70 p-4 shadow-[0_12px_26px_rgba(236,72,153,0.05)] xl:flex-row xl:items-center xl:justify-between">
@@ -497,7 +415,7 @@ export function CategoriesManagementPage() {
           <Table
             rowKey="categoryId"
             columns={columns}
-            dataSource={sortedCategories}
+            dataSource={categories}
             loading={{
               spinning: isLoading,
               indicator: <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />,
@@ -505,6 +423,7 @@ export function CategoriesManagementPage() {
             pagination={false}
             scroll={{ x: 980 }}
             locale={{ emptyText: error || t("adminCategories.noCategoriesFound") }}
+            className="custom-admin-table [&_.ant-table]:!bg-transparent [&_.ant-table-thead_th]:!bg-[#fff9fb] [&_.ant-table-thead_th]:!text-[10px] [&_.ant-table-thead_th]:!uppercase [&_.ant-table-thead_th]:!tracking-[0.14em] [&_.ant-table-thead_th]:!text-[#a88a9f] [&_.ant-table-thead_th]:!font-bold [&_.ant-table-thead_th]:!border-b [&_.ant-table-thead_th]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row>td]:!border-b [&_.ant-table-tbody_.ant-table-row>td]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row]:hover>td:!bg-[#fff9fb] [&_.ant-table-tbody_.ant-table-row>td]:!py-4 [&_.ant-table-tbody_.ant-table-row>td]:!text-[12px] [&_.ant-table-tbody_.ant-table-row>td]:!text-[#5b4256]"
           />
 
           <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">

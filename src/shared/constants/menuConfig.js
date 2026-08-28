@@ -229,6 +229,12 @@ export const MENU_CONFIG = {
       icon: "armchair",
     },
     {
+      key: "manager-salon",
+      label: "Salon Management",
+      to: ROUTES.managerSalon,
+      icon: "building",
+    },
+    {
       key: "manager-reschedule",
       label: "Reschedule",
       to: ROUTES.managerReschedule,

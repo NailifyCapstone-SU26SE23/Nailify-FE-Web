@@ -20,6 +20,7 @@ import { useAdminDashboard, useSalonDetails, useManagersList, useSalonsList, use
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import ReactECharts from "echarts-for-react";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
 // Technical Light Theme Palette
 const TECH_COLORS = ["#0ea5e9", "#f59e0b", "#10b981", "#6366f1", "#8b5cf6", "#ec4899", "#14b8a6", "#84cc16"];
@@ -261,6 +262,7 @@ export function AdminDashboardPage() {
     {
       title: t("adminDashboard.table.salon").toUpperCase(),
       key: "name",
+      sorter: (a, b) => (a.name || "").localeCompare(b.name || ""),
       render: (_, salon) => (
         <div>
           <p className="font-bold text-slate-800 text-sm">{salon.name}</p>
@@ -271,12 +273,14 @@ export function AdminDashboardPage() {
       title: t("adminDashboard.table.manager").toUpperCase(),
       dataIndex: "manager",
       key: "manager",
+      sorter: (a, b) => (a.manager || "").localeCompare(b.manager || ""),
       render: (value) => <span className="text-sm font-bold text-slate-800">{value}</span>,
     },
     {
       title: t("adminDashboard.table.revenue").toUpperCase(),
       dataIndex: "revenue",
       key: "revenue",
+      sorter: (a, b) => (a.revenue || 0) - (b.revenue || 0),
       render: (value) => <span className="text-sm font-mono text-emerald-600">{value ? value.toLocaleString("vi-VN") + " ₫" : "0 ₫"}</span>,
     },
     {
@@ -606,51 +610,7 @@ export function AdminDashboardPage() {
   "
       >
         {/* Top Metrics Row */}
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
-          {metricCards.map((metric, i) => {
-            const Icon = metric.icon || Activity;
-            const color = metric.color || '#10b981';
-
-            return (
-              <div
-                key={i}
-                className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
-              >
-                <div
-                  className="absolute inset-0 opacity-[0.06]"
-                  style={{
-                    background: `linear-gradient(135deg, ${color}, transparent 75%)`,
-                  }}
-                />
-                <div className="relative flex items-start justify-between">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                      {metric.label}
-                    </p>
-                    <h2 className="mt-3 text-[24px] font-bold tracking-tight text-slate-800 leading-none break-all">
-                      {metric.value} <span className="text-[14px] text-slate-400 font-semibold">{metric.unit !== "VND" ? "" : "₫"}</span>
-                    </h2>
-                  </div>
-                  <div
-                    className="flex h-12 w-12 items-center justify-center rounded-2xl shadow-sm shrink-0 ml-2"
-                    style={{
-                      backgroundColor: `${color}18`,
-                      color: color,
-                    }}
-                  >
-                    <Icon size={24} strokeWidth={2.4} />
-                  </div>
-                </div>
-                <div
-                  className="mt-6 h-1.5 rounded-full"
-                  style={{
-                    background: `linear-gradient(to right, ${color}, transparent)`,
-                  }}
-                />
-              </div>
-            );
-          })}
-        </div>
+        <TopMetricsRow metrics={metricCards} />
 
         {/* Pinned Widgets Section */}
         {pinnedWidgets.length > 0 && (

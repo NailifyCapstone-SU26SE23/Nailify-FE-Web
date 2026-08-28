@@ -94,21 +94,21 @@ function normalizeSalonStatus(status) {
   switch (normalizedStatus) {
     case "active":
     case "open":
-      return "Active";
+      return "Open";
     case "busy":
       return "Busy";
-    case "closed":
     case "inactive":
+    case "closed":
       return "Closed";
     default:
-      return status ? `${status}` : "Active";
+      return status ? `${status}` : "Open";
   }
 }
 
 function getSalonStatusColor(status) {
   switch (status) {
-    case "Active":
-      return "bg-emerald-100 text-emerald-600";
+    case "Open":
+      return "bg-[#eaf9ee] text-[#238a55]";
     case "Busy":
       return "bg-amber-100 text-amber-600";
     case "Closed":

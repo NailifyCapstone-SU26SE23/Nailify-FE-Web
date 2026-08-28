@@ -10,7 +10,7 @@ export const SALON_SUMMARY = [
   },
   {
     title: "9",
-    label: "Active Salons",
+    label: "Open Salons",
     note: "75% operational",
     accent: "from-emerald-100 to-slate-50",
     iconBg: "bg-emerald-100 text-emerald-500",
@@ -84,13 +84,13 @@ export const SALON_BRANCHES = [
 
 const SALON_TABLE_DEFINITIONS = [
   ["Nailify Downtown", "123 Main St, New York", "Sophie Chen", "14", "Mon-Sat 9AM-8PM", "Open", "bg-emerald-100 text-emerald-600"],
-  ["Nailify Midtown", "456 5th Ave, New York", "Lily Park", "18", "Mon-Sun 8AM-9PM", "Open", "bg-emerald-100 text-emerald-600"],
-  ["Nailify Brooklyn", "789 Bedford Ave, Brooklyn", "Mia Torres", "10", "Temporarily Closed", "Closed", "bg-rose-100 text-rose-600"],
+  ["Nailify Midtown", "456 5th Ave, New York", "Lily Park", "18", "Mon-Sun 8AM-9PM", "BUSY", "bg-amber-100 text-amber-600"],
+  ["Nailify Brooklyn", "789 Bedford Ave, Brooklyn", "Mia Torres", "10", "Temporarily Closed", "CLOSED", "bg-rose-100 text-rose-600"],
   ["Nailify Upper East", "826 E 86th St, New York", "Grace Kim", "12", "Tue-Sun 10AM-7PM", "Open", "bg-emerald-100 text-emerald-600"],
   ["Nailify SoHo", "55 Spring St, New York", "Nina Russo", "16", "Mon-Sun 8AM-8PM", "Open", "bg-emerald-100 text-emerald-600"],
   ["Nailify Downtown", "123 Main St, New York", "Sophie Chen", "14", "Mon-Sat 9AM-8PM", "Open", "bg-emerald-100 text-emerald-600"],
-  ["Nailify Midtown", "456 5th Ave, New York", "Lily Park", "18", "Mon-Sun 8AM-9PM", "Open", "bg-emerald-100 text-emerald-600"],
-  ["Nailify Brooklyn", "789 Bedford Ave, Brooklyn", "Mia Torres", "10", "Temporarily Closed", "Closed", "bg-rose-100 text-rose-600"],
+  ["Nailify Midtown", "456 5th Ave, New York", "Lily Park", "18", "Mon-Sun 8AM-9PM", "BUSY", "bg-amber-100 text-amber-600"],
+  ["Nailify Brooklyn", "789 Bedford Ave, Brooklyn", "Mia Torres", "10", "Temporarily Closed", "CLOSED", "bg-rose-100 text-rose-600"],
   ["Nailify Upper East", "826 E 86th St, New York", "Grace Kim", "12", "Tue-Sun 10AM-7PM", "Open", "bg-emerald-100 text-emerald-600"],
   ["Nailify SoHo", "55 Spring St, New York", "Nina Russo", "16", "Mon-Sun 8AM-8PM", "Open", "bg-emerald-100 text-emerald-600"],
 ];
@@ -181,9 +181,32 @@ export const createInitialSalons = () =>
     createSalonRow(definition, index),
   );
 
+export const matchesSalonStatusFilter = (salonStatus, statusFilter) => {
+  const normalizedSalonStatus = (salonStatus || "").toLowerCase();
+  const normalizedFilter = (statusFilter || "").toLowerCase();
+  
+  if (normalizedFilter === "all") {
+    return true;
+  }
+  if (normalizedFilter === "open") {
+    return normalizedSalonStatus === "open" || normalizedSalonStatus === "busy";
+  }
+  if (normalizedFilter === "closed") {
+    return normalizedSalonStatus === "closed";
+  }
+
+  return false;
+};
+
 export const SALON_STATUS_OPTIONS = [
   { value: "Open", label: "Open", color: "bg-emerald-100 text-emerald-600" },
-  { value: "Closed", label: "Closed", color: "bg-rose-100 text-rose-600" },
+  { value: "BUSY", label: "Busy", color: "bg-amber-100 text-amber-600" },
+  { value: "CLOSED", label: "Closed", color: "bg-rose-100 text-rose-600" },
+  {
+    value: "MAINTENANCE",
+    label: "Under Maintenance",
+    color: "bg-blue-100 text-blue-600",
+  },
 ];
 
 export const SALON_DAYS_OF_WEEK = [

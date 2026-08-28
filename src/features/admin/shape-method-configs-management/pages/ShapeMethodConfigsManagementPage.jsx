@@ -16,7 +16,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Table, Select } from "antd";
+import { Table, Select, Tooltip } from "antd";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import { ROUTES } from "../../../../shared/constants/routes";
@@ -25,66 +25,9 @@ import {
   deleteAdminShapeMethodConfig,
 } from "../services/shapeMethodConfigsManagementService";
 import { fetchAdminNailShapes } from "../../nail-shapes-management/services/nailShapesManagementService";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
-function MetricCard({ item }) {
-  const Icon = item.icon;
 
-  return (
-    <article className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
-      <div className={`inline-flex h-10 w-10 items-center justify-center rounded-[14px] ${item.iconClassName}`}>
-        <Icon size={18} />
-      </div>
-      <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-[#cd98b1]">{item.label}</p>
-      <p className="mt-1 text-[1.9rem] font-extrabold leading-none text-[#432744]">{item.value}</p>
-      <p className="mt-2 text-xs font-medium text-[#b58a9f]">{item.note}</p>
-    </article>
-  );
-}
-
-function SortableHeader({ label, sortKey, selectedSort, onToggle }) {
-  const isActive = selectedSort.startsWith(`${sortKey}-`);
-  const isDesc = selectedSort === `${sortKey}-desc`;
-
-  return (
-    <button
-      type="button"
-      onClick={() => onToggle(sortKey)}
-      className={`inline-flex items-center gap-1.5 font-semibold transition ${isActive ? "text-[#ea4f93]" : "text-[#5f4a5c] hover:text-[#ea4f93]"}`}
-    >
-      <span>{label}</span>
-      <ArrowUpDown size={13} className={isActive ? "text-[#ea4f93]" : "text-[#d39bb5]"} />
-      {isActive ? <span className="text-[10px] font-bold">{isDesc ? "DESC" : "ASC"}</span> : null}
-    </button>
-  );
-}
-
-function sortConfigs(items, sortValue) {
-  const [sortKey = "name", sortDirection = "asc"] = String(sortValue || "name-asc").split("-");
-  const directionMultiplier = sortDirection === "desc" ? -1 : 1;
-
-  return [...items].sort((left, right) => {
-    const getSortValue = (item) => {
-      switch (sortKey) {
-        case "price":
-          return Number(item.price || 0);
-        case "duration":
-          return Number(item.duration || 0);
-        case "name":
-        default:
-          return item.name || "";
-      }
-    };
-
-    const leftValue = getSortValue(left);
-    const rightValue = getSortValue(right);
-
-    if (typeof leftValue === "number" && typeof rightValue === "number") {
-      return (leftValue - rightValue) * directionMultiplier;
-    }
-
-    return String(leftValue).localeCompare(String(rightValue)) * directionMultiplier;
-  });
-}
 
 const formatCurrency = (value, t) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value).replace("₫", t("adminShapeMethodConfigs.currencySymbol"));
 const formatDuration = (value, t) => `${value} ${t("adminShapeMethodConfigs.mins")}`;
@@ -97,7 +40,6 @@ export function ShapeMethodConfigsManagementPage() {
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [nailShapeId, setNailShapeId] = useState(null);
   const [nailShapes, setNailShapes] = useState([]);
-  const [selectedSort, setSelectedSort] = useState("name-asc");
   const [configs, setConfigs] = useState([]);
   const [metaData, setMetaData] = useState({
     currentPage: 1,
@@ -196,21 +138,21 @@ export function ShapeMethodConfigsManagementPage() {
         value: metaData.totalItems.toLocaleString(),
         note: `${metaData.totalPages} pages`,
         icon: Sliders,
-        iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
+        color: "#ea4f93",
       },
       {
         label: t("adminShapeMethodConfigs.avgPrice"),
         value: formatCurrency(averagePrice, t),
         note: "Current page",
         icon: Wallet,
-        iconClassName: "bg-[#f3ebff] text-[#8b5cf6]",
+        color: "#8b5cf6",
       },
       {
         label: t("adminShapeMethodConfigs.avgDuration"),
         value: formatDuration(averageDuration, t),
         note: "Current page",
         icon: TimerReset,
-        iconClassName: "bg-[#e7fbf4] text-[#20ab77]",
+        color: "#20ab77",
       },
     ];
   }, [metaData.totalItems, metaData.totalPages, configs]);
@@ -243,16 +185,6 @@ export function ShapeMethodConfigsManagementPage() {
 
     return result;
   }, [metaData.currentPage, metaData.totalPages]);
-
-  const handleSortToggle = (key) => {
-    setSelectedSort((current) => {
-      if (current === `${key}-asc`) {
-        return `${key}-desc`;
-      }
-
-      return `${key}-asc`;
-    });
-  };
 
   const handlePageChange = (page) => {
     if (page === metaData.currentPage || page < 1 || page > metaData.totalPages) {
@@ -295,40 +227,43 @@ export function ShapeMethodConfigsManagementPage() {
     return "bg-gray-100 text-gray-700";
   };
 
-  const sortedConfigs = useMemo(() => sortConfigs(configs, selectedSort), [configs, selectedSort]);
-
   const columns = [
     {
-      title: <SortableHeader label={t("adminShapeMethodConfigs.name")} sortKey="name" selectedSort={selectedSort} onToggle={handleSortToggle} />,
+      title: t("adminShapeMethodConfigs.name"),
       dataIndex: "name",
       key: "name",
+      sorter: (a, b) => (a.name || "").localeCompare(b.name || ""),
       render: (text) => <span className="font-bold text-[#432744]">{text}</span>,
     },
     {
       title: t("adminShapeMethodConfigs.shape"),
       dataIndex: "nailShapeId",
       key: "nailShapeId",
+      sorter: (a, b) => (nailShapes.find(s => s.nailShapeId === a.nailShapeId)?.name || "").localeCompare(nailShapes.find(s => s.nailShapeId === b.nailShapeId)?.name || ""),
       render: (shapeId) => {
         const shape = nailShapes.find(s => s.nailShapeId === shapeId);
         return shape ? shape.name : `--`;
       },
     },
     {
-      title: <SortableHeader label={t("adminShapeMethodConfigs.price")} sortKey="price" selectedSort={selectedSort} onToggle={handleSortToggle} />,
+      title: t("adminShapeMethodConfigs.price"),
       dataIndex: "price",
       key: "price",
+      sorter: (a, b) => Number(a.price || 0) - Number(b.price || 0),
       render: (price) => <span className="font-semibold text-[#8b5cf6]">{formatCurrency(price, t)}</span>,
     },
     {
-      title: <SortableHeader label={t("adminShapeMethodConfigs.duration")} sortKey="duration" selectedSort={selectedSort} onToggle={handleSortToggle} />,
+      title: t("adminShapeMethodConfigs.duration"),
       dataIndex: "duration",
       key: "duration",
+      sorter: (a, b) => Number(a.duration || 0) - Number(b.duration || 0),
       render: (duration) => <span className="font-semibold text-[#20ab77]">{formatDuration(duration, t)}</span>,
     },
     {
       title: t("adminShapeMethodConfigs.status"),
       dataIndex: "status",
       key: "status",
+      sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
       render: (status) => (
         <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getStatusClasses(status)}`}>
           {status}
@@ -340,29 +275,35 @@ export function ShapeMethodConfigsManagementPage() {
       key: "actions",
       align: "right",
       render: (_, record) => (
-        <ActionDropdown
-          items={[
-            {
-              key: "view",
-              label: t("adminShapeMethodConfigs.viewDetails"),
-              icon: Eye,
-              onSelect: () => navigate(ROUTES.adminShapeMethodConfigDetail.replace(":configId", record.shapeMethodConfigId)),
-            },
-            {
-              key: "edit",
-              label: t("adminShapeMethodConfigs.edit"),
-              icon: Pencil,
-              onSelect: () => navigate(ROUTES.adminShapeMethodConfigDetail.replace(":configId", record.shapeMethodConfigId)),
-            },
-            {
-              key: "delete",
-              label: t("adminShapeMethodConfigs.delete"),
-              icon: Trash2,
-              danger: true,
-              onSelect: () => setDeleteTarget(record),
-            },
-          ]}
-        />
+        <div className="flex items-center justify-end gap-1.5">
+          <Tooltip title={t("adminShapeMethodConfigs.viewDetails")}>
+            <button
+              type="button"
+              onClick={() => navigate(ROUTES.adminShapeMethodConfigDetail.replace(":configId", record.shapeMethodConfigId))}
+              className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
+            >
+              <Eye size={12} />
+            </button>
+          </Tooltip>
+          <Tooltip title={t("adminShapeMethodConfigs.edit")}>
+            <button
+              type="button"
+              onClick={() => navigate(ROUTES.adminShapeMethodConfigDetail.replace(":configId", record.shapeMethodConfigId))}
+              className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
+            >
+              <Pencil size={12} />
+            </button>
+          </Tooltip>
+          <Tooltip title={t("adminShapeMethodConfigs.delete")}>
+            <button
+              type="button"
+              onClick={() => setDeleteTarget(record)}
+              className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 bg-[#fff0f0] text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
+            >
+              <Trash2 size={12} />
+            </button>
+          </Tooltip>
+        </div>
       ),
     },
   ];
@@ -390,11 +331,9 @@ export function ShapeMethodConfigsManagementPage() {
         </Link>
       </header>
 
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {summaryCards.map((card) => (
-          <MetricCard key={card.label} item={card} />
-        ))}
-      </section>
+      <div className="mb-4">
+        <TopMetricsRow metrics={summaryCards} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" />
+      </div>
 
       <div className="flex flex-col gap-4 md:flex-row">
         <div className="relative flex-1">
@@ -423,11 +362,11 @@ export function ShapeMethodConfigsManagementPage() {
         <div className="overflow-x-auto">
           <Table
             columns={columns}
-            dataSource={sortedConfigs}
+            dataSource={configs}
             rowKey="shapeMethodConfigId"
             pagination={false}
             loading={isLoading}
-            className="w-full text-sm [&_.ant-table-thead_th]:!bg-[#fffafc] [&_.ant-table-thead_th]:!text-[#cd98b1] [&_.ant-table-thead_th]:!font-bold [&_.ant-table-thead_th]:!uppercase [&_.ant-table-thead_th]:!tracking-wider"
+            className="custom-admin-table [&_.ant-table]:!bg-transparent [&_.ant-table-thead_th]:!bg-[#fff9fb] [&_.ant-table-thead_th]:!text-[10px] [&_.ant-table-thead_th]:!uppercase [&_.ant-table-thead_th]:!tracking-[0.14em] [&_.ant-table-thead_th]:!text-[#a88a9f] [&_.ant-table-thead_th]:!font-bold [&_.ant-table-thead_th]:!border-b [&_.ant-table-thead_th]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row>td]:!border-b [&_.ant-table-tbody_.ant-table-row>td]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row]:hover>td:!bg-[#fff9fb] [&_.ant-table-tbody_.ant-table-row>td]:!py-4 [&_.ant-table-tbody_.ant-table-row>td]:!text-[12px] [&_.ant-table-tbody_.ant-table-row>td]:!text-[#5b4256]"
           />
         </div>
 

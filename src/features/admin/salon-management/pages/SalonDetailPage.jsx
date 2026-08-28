@@ -141,7 +141,7 @@ export function SalonDetailPage() {
       manager: matchedManager ? matchedManager.name : "Unassigned",
       phone: salonForm?.phone || salonRow?.phone || "Not set",
       staff: (salonForm?.staffAmount ?? salonRow?.staffCount),
-      status: salonForm?.status || salonRow?.status || "Active",
+      status: salonForm?.status || salonRow?.status || "Open",
       statusColor: salonRow?.statusColor || "bg-[#eaf9ee] text-[#238a55]",
       image: salonRow?.image || SALON_PLACEHOLDER_IMAGE,
       hours: salonRow?.hours || "Operating hours unavailable",
@@ -449,7 +449,7 @@ export function SalonDetailPage() {
                     className={`inline-flex shrink-0 items-center gap-2 rounded-full px-6 py-2.5 text-[12px] font-bold ${salonDetail.statusColor}`}
                   >
                     <span className="h-2 w-2 rounded-full bg-current" />
-                    {language === "vi" && salonDetail.status === "Active" ? "Đang hoạt động" : salonDetail.status}
+                    {language === "vi" && salonDetail.status === "Open" ? "Đang hoạt động" : salonDetail.status}
                   </span>
                 </div>
               </div>
@@ -471,13 +471,13 @@ export function SalonDetailPage() {
             <PremiumCard noHover>
               <div className="mb-4 flex items-center gap-2">
                 <CalendarDays size={18} className="text-[#ea4f93]" />
-                <h3 className="text-[14px] font-bold text-[#2d1b35]">Weekly Schedule</h3>
+                <h3 className="text-[14px] font-bold text-[#2d1b35]">{language === "vi" ? "Lịch làm việc" : "Weekly Schedule"}</h3>
               </div>
               <div className="space-y-2">
                 {SALON_DAYS_OF_WEEK.map((day, i) => {
                   const dayInfo = operatingHoursMap[day.key];
                   const isClosed = dayInfo?.closed;
-                  const daysMap = { Monday: "Thứ hai", Tuesday: "Thứ ba", Wednesday: "Thứ tư", Thursday: "Thứ năm", Friday: "Thứ sáu", Saturday: "Thứ bảy", Sunday: "Chủ nhật" };
+                  const daysMap = { monday: "Thứ hai", tuesday: "Thứ ba", wednesday: "Thứ tư", thursday: "Thứ năm", friday: "Thứ sáu", saturday: "Thứ bảy", sunday: "Chủ nhật" };
 
                   return (
                     <motion.div
@@ -523,7 +523,7 @@ export function SalonDetailPage() {
                 </motion.div>
                 <motion.div variants={fadeInUp} className="flex items-center justify-between gap-3 rounded-[16px] bg-[#fff8fb] px-4 py-3">
                   <span className="text-[12px] font-semibold text-[#a88a9f]">{t("adminSalonManagement.status")}</span>
-                  <span className="text-right text-[13px] font-medium text-[#2d1b35]">{language === "vi" && salonDetail.status === "Active" ? "Đang hoạt động" : salonDetail.status}</span>
+                  <span className="text-right text-[13px] font-medium text-[#2d1b35]">{language === "vi" && salonDetail.status === "Open" ? "Đang hoạt động" : salonDetail.status}</span>
                 </motion.div>
               </div>
             </PremiumCard>

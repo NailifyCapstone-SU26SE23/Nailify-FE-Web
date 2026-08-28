@@ -30,6 +30,7 @@ import {
 } from "../services/mockUsers";
 import { fetchAdminUsers } from "../services/userManagementService";
 import { fetchAdminSalons } from "../../salon-management/services/salonManagementService";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
 const ALL_FILTER_VALUE = "__all__";
 
@@ -79,64 +80,8 @@ const getStatusLabel = (status, t) => {
   }
 };
 
-function sortUsers(items, sortValue) {
-  const [sortKey = "user", sortDirection = "asc"] = String(sortValue || "user-asc").split("-");
-  const sortedItems = [...items];
-  const directionMultiplier = sortDirection === "desc" ? -1 : 1;
 
-  const getSortValue = (user) => {
-    switch (sortKey) {
-      case "role":
-        return user.displayRole || "";
-      case "email":
-        return user.email || "";
-      case "phone":
-        return user.phone || "";
-      case "salon":
-        return user.salon || "";
-      case "status":
-        return user.statusLabel || "";
-      case "lastActive":
-        return user.lastActive || "";
-      case "user":
-      default:
-        return user.name || "";
-    }
-  };
 
-  return sortedItems.sort((left, right) =>
-    getSortValue(left).localeCompare(getSortValue(right)) * directionMultiplier,
-  );
-}
-
-function MetricCard({ item }) {
-  const Icon = item.icon;
-
-  return (
-    <article className="rounded-[18px] border border-[#f8d7e5] bg-white p-4 shadow-[0_10px_24px_rgba(236,72,153,0.06)]">
-      <div className={`inline-flex h-9 w-9 items-center justify-center rounded-xl ${item.iconClassName}`}>
-        <Icon size={16} />
-      </div>
-      <p className="mt-4 text-xs font-bold uppercase tracking-[0.16em] text-[#cd98b1]">
-        {item.label}
-      </p>
-      <p className="mt-1 text-[1.9rem] font-extrabold leading-none text-[#3f2741]">
-        {item.value}
-      </p>
-      <p className="mt-2 text-xs font-medium text-[#86c18d]">{item.note}</p>
-    </article>
-  );
-}
-
-MetricCard.propTypes = {
-  item: PropTypes.shape({
-    icon: PropTypes.func.isRequired,
-    iconClassName: PropTypes.string.isRequired,
-    label: PropTypes.string.isRequired,
-    note: PropTypes.string.isRequired,
-    value: PropTypes.string.isRequired,
-  }).isRequired,
-};
 
 function SmallTag({ children, className = "" }) {
   return (
@@ -155,29 +100,6 @@ function ChevronDownIcon() {
   return <ChevronRight size={14} className="rotate-90 text-current" />;
 }
 
-function SortableHeader({ label, sortKey, selectedSort, onToggle }) {
-  const isActive = selectedSort.startsWith(`${sortKey}-`);
-  const isDesc = selectedSort === `${sortKey}-desc`;
-
-  return (
-    <button
-      type="button"
-      onClick={() => onToggle(sortKey)}
-      className={`inline-flex items-center gap-1.5 font-semibold transition ${isActive ? "text-[#ea4f93]" : "text-[#5f4a5c] hover:text-[#ea4f93]"}`}
-    >
-      <span>{label}</span>
-      <ArrowUpDown size={13} className={isActive ? "text-[#ea4f93]" : "text-[#d39bb5]"} />
-      {isActive ? <span className="text-[10px] font-bold">{isDesc ? "DESC" : "ASC"}</span> : null}
-    </button>
-  );
-}
-
-SortableHeader.propTypes = {
-  label: PropTypes.string.isRequired,
-  onToggle: PropTypes.func.isRequired,
-  selectedSort: PropTypes.string.isRequired,
-  sortKey: PropTypes.string.isRequired,
-};
 
 function FilterSelect({
   icon: Icon,
@@ -233,7 +155,6 @@ export function UserManagementPage() {
   const [salons, setSalons] = useState([]);
   const [selectedRole, setSelectedRole] = useState(ALL_FILTER_VALUE);
   const [selectedSalonId, setSelectedSalonId] = useState(ALL_FILTER_VALUE);
-  const [selectedSort, setSelectedSort] = useState("user-asc");
   const [metaData, setMetaData] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -357,13 +278,11 @@ export function UserManagementPage() {
   );
 
   const displayedUsers = useMemo(() => {
-    const mappedUsers = users.map((user) => ({
+    return users.map((user) => ({
       ...user,
       salon: user.salonId ? salonNameById[user.salonId] || "Assigned salon" : "No salon",
     }));
-
-    return sortUsers(mappedUsers, selectedSort);
-  }, [salonNameById, selectedSort, users]);
+  }, [salonNameById, users]);
 
   const roleFilterOptions = useMemo(() => [
     { value: ALL_FILTER_VALUE, label: t("userManagement.filter.allRoles") },
@@ -376,7 +295,7 @@ export function UserManagementPage() {
 
   const summaryCards = useMemo(() => {
     const customers = displayedUsers.filter((user) => user.role === "Customer").length;
-    const staffArtists = displayedUsers.filter((user) => user.role === "Staff").length;
+    const staffArtists = displayedUsers.filter((user) => user.role === "Staff" || user.role === "Staff_Artist").length;
     const managers = displayedUsers.filter((user) => user.role === "Manager").length;
     const suspendedUsers = displayedUsers.filter((user) => user.statusLabel === "Suspended").length;
 
@@ -388,35 +307,35 @@ export function UserManagementPage() {
         value: String(metaData.totalItems),
         note: `${metaData.totalPages} ${isVi ? "trang" : "pages"}`,
         icon: Users,
-        iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
+        color: "#ea4f93",
       },
       {
         label: t("userManagement.metric.clientAccounts"),
         value: String(customers),
         note: isVi ? "Trên trang hiện tại" : "On current page",
         icon: Users,
-        iconClassName: "bg-[#fff0f7] text-[#ea4f93]",
+        color: "#ea4f93",
       },
       {
         label: t("userManagement.metric.nailArtists"),
         value: String(staffArtists),
         note: isVi ? "Trên trang hiện tại" : "On current page",
         icon: UserCog,
-        iconClassName: "bg-[#fff0f7] text-[#ea4f93]",
+        color: "#ea4f93",
       },
       {
         label: t("userManagement.metric.branchManagers"),
         value: String(managers),
         note: isVi ? "Trên trang hiện tại" : "On current page",
         icon: Shield,
-        iconClassName: "bg-[#eef4ff] text-[#7c5cff]",
+        color: "#7c5cff",
       },
       {
         label: t("userManagement.table.status") + " (Suspended)",
         value: String(suspendedUsers),
         note: isVi ? "Trên trang hiện tại" : "On current page",
         icon: AlertTriangle,
-        iconClassName: "bg-[#fff4ef] text-[#ff7a59]",
+        color: "#ff7a59",
       },
     ];
   }, [displayedUsers, metaData.totalItems, metaData.totalPages, t]);
@@ -473,16 +392,11 @@ export function UserManagementPage() {
     ];
   }, [navigate, t]);
 
-  const handleHeaderSort = (sortKey) => {
-    setSelectedSort((current) =>
-      current === `${sortKey}-asc` ? `${sortKey}-desc` : `${sortKey}-asc`,
-    );
-  };
-
   const userColumns = useMemo(() => ([
     {
-      title: <SortableHeader label={t("userManagement.table.user")} sortKey="user" selectedSort={selectedSort} onToggle={handleHeaderSort} />,
+      title: t("userManagement.table.user"),
       key: "user",
+      sorter: (a, b) => (a.name || "").localeCompare(b.name || ""),
       render: (_, user) => (
         <div className="flex items-start gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-xs font-extrabold text-white">
@@ -493,14 +407,16 @@ export function UserManagementPage() {
       ),
     },
     {
-      title: <SortableHeader label={t("userManagement.table.assignedRole")} sortKey="role" selectedSort={selectedSort} onToggle={handleHeaderSort} />,
+      title: t("userManagement.table.assignedRole"),
       dataIndex: "displayRole",
       key: "displayRole",
+      sorter: (a, b) => (a.displayRole || "").localeCompare(b.displayRole || ""),
       render: (value, user) => <SmallTag className={getRoleTone(user.role)}>{getRoleLabel(user.role || value, t)}</SmallTag>,
     },
     {
-      title: <SortableHeader label={t("userManagement.detail.email")} sortKey="email" selectedSort={selectedSort} onToggle={handleHeaderSort} />,
-      key: "contact",
+      title: t("userManagement.detail.email"),
+      key: "contact1",
+      sorter: (a, b) => (a.email || "").localeCompare(b.email || ""),
       render: (_, user) => (
         <div>
           <p className="text-sm text-[#6b5668]">{user.email}</p>
@@ -508,8 +424,9 @@ export function UserManagementPage() {
       ),
     },
     {
-      title: <SortableHeader label={t("userManagement.detail.phoneLabel")} sortKey="phone" selectedSort={selectedSort} onToggle={handleHeaderSort} />,
-      key: "contact",
+      title: t("userManagement.detail.phoneLabel"),
+      key: "contact2",
+      sorter: (a, b) => (a.phone || "").localeCompare(b.phone || ""),
       render: (_, user) => (
         <div>
           <p className="text-sm text-[#6b5668]">{user.phone}</p>
@@ -517,15 +434,17 @@ export function UserManagementPage() {
       ),
     },
     {
-      title: <SortableHeader label={t("userManagement.table.salonBranch")} sortKey="salon" selectedSort={selectedSort} onToggle={handleHeaderSort} />,
+      title: t("userManagement.table.salonBranch"),
       dataIndex: "salon",
       key: "salon",
+      sorter: (a, b) => (a.salon || "").localeCompare(b.salon || ""),
       render: (value) => <span className="text-sm text-[#8a7082]">{value}</span>,
     },
     {
-      title: <SortableHeader label={t("userManagement.table.status")} sortKey="status" selectedSort={selectedSort} onToggle={handleHeaderSort} />,
+      title: t("userManagement.table.status"),
       dataIndex: "statusLabel",
       key: "statusLabel",
+      sorter: (a, b) => (a.statusLabel || "").localeCompare(b.statusLabel || ""),
       render: (value, user) => (
         <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold ${USER_STATUS_STYLES[value] ?? "bg-[#f5f0f4] text-[#8a7082]"}`}>
           {getStatusLabel(user.status || value, t)}
@@ -533,9 +452,10 @@ export function UserManagementPage() {
       ),
     },
     {
-      title: <SortableHeader label={t("userManagement.table.lastActive")} sortKey="lastActive" selectedSort={selectedSort} onToggle={handleHeaderSort} />,
+      title: t("userManagement.table.lastActive"),
       dataIndex: "lastActive",
       key: "lastActive",
+      sorter: (a, b) => (a.lastActive || "").localeCompare(b.lastActive || ""),
       render: (value) => <span className="text-sm text-[#8a7082]">{value}</span>,
     },
     {
@@ -543,15 +463,11 @@ export function UserManagementPage() {
       key: "action",
       render: (_, user) => <ActionDropdown items={getActionItems(user)} />,
     },
-  ]), [getActionItems, selectedSort, t]);
+  ]), [getActionItems, t]);
 
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)]">
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        {summaryCards.map((item) => (
-          <MetricCard key={item.label} item={item} />
-        ))}
-      </div>
+      <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-3 xl:grid-cols-5" />
 
       {/* <div className="grid gap-4 xl:grid-cols-[minmax(0,1.65fr)_290px]"> */}
       <div>
@@ -660,6 +576,7 @@ export function UserManagementPage() {
                 pagination={false}
                 scroll={{ x: 1100 }}
                 locale={{ emptyText: t("userManagement.table.emptyText") }}
+                className="custom-admin-table [&_.ant-table]:!bg-transparent [&_.ant-table-thead_th]:!bg-[#fff9fb] [&_.ant-table-thead_th]:!text-[10px] [&_.ant-table-thead_th]:!uppercase [&_.ant-table-thead_th]:!tracking-[0.14em] [&_.ant-table-thead_th]:!text-[#a88a9f] [&_.ant-table-thead_th]:!font-bold [&_.ant-table-thead_th]:!border-b [&_.ant-table-thead_th]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row>td]:!border-b [&_.ant-table-tbody_.ant-table-row>td]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row]:hover>td:!bg-[#fff9fb] [&_.ant-table-tbody_.ant-table-row>td]:!py-4 [&_.ant-table-tbody_.ant-table-row>td]:!text-[12px] [&_.ant-table-tbody_.ant-table-row>td]:!text-[#5b4256]"
               />
             </div>
 
