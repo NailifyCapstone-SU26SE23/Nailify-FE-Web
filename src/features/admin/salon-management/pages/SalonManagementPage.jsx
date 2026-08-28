@@ -750,23 +750,6 @@ export function SalonManagementPage() {
                     title={t("adminSalonManagement.branchOverview")}
                     subtitle={t("adminSalonManagement.snapshotCardsForTheBranchesMat")}
                   />
-                  <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em]">
-                    {SALON_STATUS_FILTERS.map((tab) => (
-                      <motion.button
-                        key={tab}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        type="button"
-                        onClick={() => setStatusFilter(tab)}
-                        className={`rounded-full px-4 py-2 text-[12px] font-semibold transition-all duration-300 ${statusFilter === tab
-                          ? "bg-[#ea4f93] text-white shadow-[0_10px_20px_rgba(226,93,143,0.22)]"
-                          : "bg-[#fff5fb] text-[#a88a9f] hover:bg-[#fde7ef] hover:text-[#ea4f93]"
-                          }`}
-                      >
-                        {tab === "All" ? (t("adminSalonManagement.all")) : tab === "Open" ? (t("adminSalonManagement.active")) : tab === "Closed" ? (t("adminSalonManagement.inactive")) : (t("adminSalonManagement.busy"))}
-                      </motion.button>
-                    ))}
-                  </div>
                 </div>
                 {filteredSalons.length > 0 ? (
                   <div className="flex items-center gap-3">
