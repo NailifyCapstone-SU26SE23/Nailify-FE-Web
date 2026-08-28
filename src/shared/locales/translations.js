@@ -4696,7 +4696,7 @@ export const translations = {
         subtotal: "Tạm tính",
         promotion: "Khuyến mãi / Giảm giá",
         tierDiscount: "Ưu đãi hạng thành viên",
-        deposit: "Đã đặt cọc",
+        deposit: "Đã trả",
         totalAmount: "Tổng cần thu",
         payMethod: "Phương thức thanh toán",
         payCash: "Tiền mặt",

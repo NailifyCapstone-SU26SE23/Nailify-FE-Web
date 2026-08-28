@@ -1206,7 +1206,7 @@ export function TransactionOverviewPage() {
 
                       <div className="flex justify-between">
                         <span className="text-[#a88a9f]">
-                          {language === "vi" ? "Đã đặt cọc" : "Deposit paid"}
+                          {language === "vi" ? "Đã trả" : "Amount paid"}
                         </span>
                         <span className="font-mono text-[#ea4f93] font-bold">{formatCurrency(bookingDetails.amountDue)}</span>
                       </div>

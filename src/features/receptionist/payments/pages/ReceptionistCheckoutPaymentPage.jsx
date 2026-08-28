@@ -629,19 +629,15 @@ export function ReceptionistCheckoutPaymentPage() {
             {paymentMethod === 'cod' && (
               <div className="flex flex-col items-center justify-center p-6 border border-[#f3cade] rounded-[20px] bg-[#fffafb] mt-4">
                 <CircleDollarSign size={48} className="text-[#ea4f93] mb-4" />
-                <p className="text-lg font-bold text-[#412643]">{language === "vi" ? "Thanh toán bằng Tiền mặt" : "Pay with Cash"}</p>
-                <p className="text-sm text-[#b38a9f] text-center mb-6 max-w-sm">
-                  {language === "vi"
-                    ? `Vui lòng thu đúng số tiền ${formatCurrency(totalValue)} từ khách hàng trước khi hoàn thành thanh toán.`
-                    : `Please collect ${formatCurrency(totalValue)} from the customer before completing the checkout.`}
-                </p>
+                <p className="text-lg font-bold text-[#412643] mb-4">{language === "vi" ? "Thanh toán bằng Tiền mặt" : "Pay with Cash"}</p>
+
                 <button
                   type="button"
                   onClick={async () => {
                     try {
                       await checkoutReceptionistBooking(bookingId);
                       toast.success(t("receptionist.bookings.checkoutSuccess") || "Booking checked out successfully.");
-                      navigate(`${ROUTES.paymentSuccess}?orderCode=COD-${bookingId}`);
+                      navigate(getReceptionistBookingDetailRoute(bookingId));
                     } catch (checkoutErr) {
                       toast.error(checkoutErr instanceof Error ? checkoutErr.message : (language === "vi" ? "Thanh toán thất bại." : "Failed to check out booking."));
                     }
