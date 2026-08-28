@@ -1,6 +1,19 @@
 import { CalendarDays, ChevronLeft, ChevronRight, Eye, LoaderCircle, RefreshCcw, Search, SquareCheckBig, UserCheck, UserPlus, UserRound } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
-import { Table, Modal } from "antd";
+import {
+  Table,
+  Modal,
+  DatePicker,
+  Select,
+  Input,
+  Button,
+  Pagination,
+  Tag,
+  Spin,
+  ConfigProvider,
+} from "antd";
+
+import dayjs from "dayjs";
 import toast from "react-hot-toast";
 import jsQR from "jsqr";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -8,6 +21,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import { usePagination } from "../../../../shared/hooks/usePagination";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import {
   ROUTES,
   getReceptionistBookingDetailRoute,
@@ -157,7 +171,7 @@ export function ReceptionistBookingListPage() {
 
   const todayDate = useMemo(() => getTodayDateParam(), []);
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
-  
+
   const [draftQuery, setDraftQuery] = useState(filters.query);
   const [dateFrom, setDateFrom] = useState(filters.dateFrom);
   const [dateTo, setDateTo] = useState(filters.dateTo);
@@ -584,412 +598,438 @@ export function ReceptionistBookingListPage() {
   }, [isScannerOpen, navigate, scannerSupportMessage]);
 
   return (
-    <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {[
-          { label: t("receptionist.dashboard.todayBookings") || "Today Bookings", value: summary.total, note: t("receptionist.dashboard.bookingQueueNote") || "Salon booking queue", iconTone: "bg-[#ffe8f1] text-[#ea4f93]" },
-          { label: t("receptionist.dashboard.statusWaiting") || "Waiting", value: summary.waiting, note: t("receptionist.dashboard.frontDeskActionNote") || "Need front desk action", iconTone: "bg-[#fff4e5] text-[#d98b1d]" },
-          { label: t("receptionist.dashboard.statusCheckedIn") || "Checked In", value: summary.checkedIn, note: t("receptionist.dashboard.arrivedNote") || "Arrived customers", iconTone: "bg-[#e8f8ed] text-[#1f9d61]" },
-          { label: t("receptionist.dashboard.todayRevenue") || "Revenue", value: formatCurrency(summary.revenue), note: t("receptionist.dashboard.revenueNote") || "Total loaded from API", iconTone: "bg-[#f1ecff] text-[#7c63d8]" },
-        ].map((item) => (
-          <article key={item.label} className="rounded-[20px] border border-[#f6d8e5] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.06)]">
-            <span className={`flex h-10 w-10 items-center justify-center rounded-2xl ${item.iconTone}`}>
-              <CalendarDays size={18} />
-            </span>
-            <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">{item.label}</p>
-            <p className="mt-2 text-[1.8rem] font-extrabold text-[#412643]">{item.value}</p>
-            <p className="mt-2 text-xs text-[#b38a9f]">{item.note}</p>
-          </article>
-        ))}
-      </div>
-
-      <article className="rounded-[24px] border border-[#f6d8e5] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] md:p-5">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-lg font-extrabold text-[#412643]">
-              {salonName === "Receptionist Booking Management" ? t("receptionist.bookings.title") : salonName}
-            </p>
-            <p className="mt-1 text-sm text-[#b38a9f]">
-              {salonMeta === "Bookings are loaded from salon API." ? t("receptionist.bookings.desc") : salonMeta}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => loadBookings()}
-              className="inline-flex h-9 items-center gap-2 rounded-full border border-[#f3cade] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
-            >
-              <RefreshCcw size={14} />
-              {t("receptionist.common.refresh") || "Refresh"}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setIsScannerOpen(true)}
-              className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-[#e7dcff] bg-white hover:bg-[#7a57d9] hover:text-white px-4 text-sm font-bold text-[#7a57d9] shadow-[0_10px_24px_rgba(122,87,217,0.1)] whitespace-nowrap"
-            >
-              <UserCheck size={15} />
-              {t("receptionist.bookings.scanCheckInBtn") || "Scan Check-in"}
-            </button>
-
-            <Link
-              // to={ROUTES.receptionistBookingsCreate}
-              to={ROUTES.receptionistCustomers}
-              className="inline-flex h-9 items-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)] hover:bg-[image:var(--gradient-accent-hover)] hover:text-pink-600"
-            >
-              <UserPlus size={14} />
-              {t("receptionist.walkIn.createBtn") || "Create Walk-in"}
-            </Link>
-          </div>
-        </div>
-
-        <div className="mt-4 rounded-[20px] border border-[#f7d8e6] bg-white p-4">
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <label className="space-y-2">
-              <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
-                {t("receptionist.bookings.dateFrom") || "Date From"}
-              </span>
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={(event) => setDateFrom(event.target.value)}
-                className="h-12 w-full rounded-2xl border border-[#f5d7e4] bg-[#fff9fc] px-4 text-sm text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
-              />
-            </label>
-            <label className="space-y-2">
-              <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
-                {t("receptionist.bookings.dateTo") || "Date To"}
-              </span>
-              <input
-                type="date"
-                value={dateTo}
-                onChange={(event) => setDateTo(event.target.value)}
-                className="h-12 w-full rounded-2xl border border-[#f5d7e4] bg-[#fff9fc] px-4 text-sm text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
-              />
-            </label>
-            <label className="space-y-2">
-              <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
-                {t("receptionist.bookings.salon") || "Salon"}
-              </span>
-              <select
-                value={salonFilter}
-                onChange={(event) => setSalonFilter(event.target.value)}
-                className="h-12 w-full rounded-2xl border border-[#f5d7e4] bg-[#fff9fc] px-4 text-sm text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
-              >
-                {salonOptions.map((item) => (
-                  <option key={item} value={item}>
-                    {item === "All salons" ? t("receptionist.bookings.allSalons") || "All salons" : item}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="space-y-2">
-              <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
-                {t("receptionist.common.status") || "Booking Status"}
-              </span>
-              <select
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value)}
-                className="h-12 w-full rounded-2xl border border-[#f5d7e4] bg-[#fff9fc] px-4 text-sm text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
-              >
-                {STATUS_OPTIONS.map((item) => (
-                  <option key={item} value={item}>
-                    {formatDisplay(item)}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-end">
-            <label className="space-y-2 md:w-64">
-              <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
-                {t("receptionist.bookings.artist") || "Staff Artist"}
-              </span>
-              <select
-                value={staffFilter}
-                onChange={(event) => setStaffFilter(event.target.value)}
-                className="h-12 w-full rounded-2xl border border-[#f5d7e4] bg-[#fff9fc] px-4 text-sm text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
-              >
-                {staffOptions.map((item) => (
-                  <option key={item} value={item}>
-                    {item === "All staff" ? t("receptionist.bookings.allStaff") || "All staff" : item}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="relative block flex-1">
-              <span className="mb-2 block text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
-                {t("receptionist.common.search") || "Search"}
-              </span>
-              <Search
-                size={16}
-                className="pointer-events-none absolute left-4 top-[2.6rem] -translate-y-1/2 text-[#d47aa8]"
-              />
-              <input
-                value={draftQuery}
-                onChange={(event) => setDraftQuery(event.target.value)}
-                placeholder={t("receptionist.bookings.searchPlaceholder") || "Search booking ID, customer, artist, service..."}
-                className="h-12 w-full rounded-2xl border border-[#f5d7e4] bg-[#fff9fc] pl-11 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
-              />
-            </label>
-
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  dispatch(setAllFilters({
-                    dateFrom,
-                    dateTo,
-                    salonFilter,
-                    statusFilter,
-                    staffFilter,
-                    query: draftQuery,
-                  }));
-                  setCurrentPage(1);
-                }}
-                className="rounded-full bg-[image:var(--gradient-accent)] px-5 py-3 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
-              >
-                {t("receptionist.common.apply") || "Apply"}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setDateFrom(todayDate);
-                  setDateTo(todayDate);
-                  setSalonFilter("All salons");
-                  setStatusFilter("All");
-                  setStaffFilter("All staff");
-                  setDraftQuery("");
-                  
-                  dispatch(setAllFilters({
-                    dateFrom: todayDate,
-                    dateTo: todayDate,
-                    salonFilter: "All salons",
-                    statusFilter: "All",
-                    staffFilter: "All staff",
-                    query: "",
-                  }));
-                  setCurrentPage(1);
-                }}
-                className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-5 py-3 text-sm font-bold text-[#ea4f93]"
-              >
-                {t("receptionist.common.reset") || "Reset"}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {error ? (
-          <div className="mt-4 rounded-[16px] border border-[#f7d4df] bg-[#fff3f7] px-4 py-3 text-sm font-medium text-[#d14c84]">
-            {error}
-          </div>
-        ) : null}
-
-        {flashMessage ? (
-          <div className="mt-4 rounded-[16px] border border-[#d8f0e0] bg-[#edfdf4] px-4 py-3 text-sm font-medium text-[#16975f]">
-            {flashMessage}
-          </div>
-        ) : null}
-
-        {isLoading ? (
-          <div className="mt-6 flex min-h-56 items-center justify-center rounded-[20px] border border-[#f7dce8] bg-[#fffafd]">
-            <div className="flex items-center gap-3 text-sm font-medium text-[#b38a9f]">
-              <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
-              {t("receptionist.common.loading") || "Loading bookings..."}
-            </div>
-          </div>
-        ) : (
-          <div className="mt-6 overflow-hidden rounded-[20px] border border-[#f7dce8]">
-            <div className="hidden lg:block">
-              <Table
-                rowKey="bookingId"
-                columns={bookingColumns}
-                dataSource={paginatedBookings}
-                pagination={false}
-                scroll={{ x: 1100 }}
-                locale={{ emptyText: t("receptionist.bookings.noBookings") || "No bookings matched the current search." }}
-              />
-            </div>
-
-            <div className="space-y-3 p-4 lg:hidden">
-              {paginatedBookings.map((booking) => (
-                <article key={booking.bookingId} className="rounded-[18px] border border-[#f8dce8] bg-[#fffafb] p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-bold text-[#412643]">{booking.customerName}</p>
-                      <p className="mt-1 text-[11px] text-[#b38a9f]">{booking.artistName}</p>
-                    </div>
-                    <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-extrabold ${getStatusTone(booking.status)}`}>
-                      {formatDisplay(booking.status)}
-                    </span>
-                  </div>
-                  <p className="mt-3 text-sm text-[#6b5668]">{booking.services[0]}</p>
-                  <p className="mt-1 text-[11px] text-[#b38a9f]">{booking.salonName}</p>
-                  <div className="mt-4 flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-[#412643]">{formatDate(booking.bookingDate)}</p>
-                      <p className="mt-1 text-[11px] text-[#b38a9f]">{formatTime(booking.startTime)}</p>
-                    </div>
-                    <ActionDropdown
-                      items={[
-                        {
-                          key: "view",
-                          label: language === "vi" ? "Xem chi tiết" : "View Booking",
-                          icon: Eye,
-                          onSelect: () => navigate(getReceptionistBookingDetailRoute(booking.bookingId)),
-                        },
-                        ...(canManualCheckIn(booking.status)
-                          ? [
-                            {
-                              key: "assign-artist",
-                              label: booking.artistName && booking.artistName !== "Unassigned"
-                                ? t("receptionist.bookings.changeArtist") || "Change Staff Artist"
-                                : t("receptionist.bookings.assignArtistTitle") || "Assign Staff Artist",
-                              icon: UserRound,
-                              className: "text-[#7c63d8]",
-                              onSelect: () => setAssignArtistBooking(booking),
-                            },
-                            {
-                              key: "check-in",
-                              label: t("receptionist.dashboard.checkinBtn") || "Check In",
-                              icon: SquareCheckBig,
-                              className: "text-[#4c71d9]",
-                              onSelect: () => void handleManualCheckIn(booking.bookingId),
-                            },
-                          ]
-                          : []),
-                        ...(isReadyForCheckout(booking.status)
-                          ? [
-                            {
-                              key: "checkout",
-                              label: t("receptionist.dashboard.checkoutBtn") || "Checkout",
-                              icon: SquareCheckBig,
-                              className: "text-[#4c71d9]",
-                              onSelect: () => void handleCheckout(booking.bookingId),
-                            },
-                          ]
-                          : []),
-                        // {
-                        //   key: "reject",
-                        //   label: "Reject Booking",
-                        //   icon: XCircle,
-                        //   className: "text-[#df4e86]",
-                        //   onSelect: () => void handleRejectBooking(booking.bookingId),
-                        // },
-                      ]}
-                    />
-                  </div>
-                </article>
-              ))}
-            </div>
-
-            {filteredBookings.length ? (
-              <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-[11px] text-[#c694ad]">{paginationLabel}</p>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage <= 1}
-                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92] disabled:opacity-50"
-                  >
-                    <ChevronLeft size={12} />
-                  </button>
-                  <button
-                    type="button"
-                    className="inline-flex h-7 min-w-7 items-center justify-center rounded-md bg-[#ea4f93] px-2 text-[11px] font-bold text-white"
-                  >
-                    {currentPage}
-                  </button>
-                  <span className="px-2 text-[11px] font-medium text-[#b9849f]">/ {totalPages}</span>
-                  <button
-                    type="button"
-                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage >= totalPages}
-                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92] disabled:opacity-50"
-                  >
-                    <ChevronRight size={12} />
-                  </button>
-                </div>
-              </div>
-            ) : null}
-
-            {!filteredBookings.length ? (
-              <div className="border-t border-[#f7dce8] bg-[#fffafd] px-5 py-10 text-center text-sm text-[#8a7082]">
-                {language === "vi" ? "Không có lịch hẹn nào khớp với tìm kiếm hiện tại." : "No bookings matched the current search."}
-              </div>
-            ) : null}
-          </div>
-        )}
-      </article>
-
-      <AssignReceptionistArtistModal
-        open={Boolean(assignArtistBooking)}
-        bookingId={assignArtistBooking?.bookingId || ""}
-        currentArtistName={assignArtistBooking?.artistName || ""}
-        onClose={() => setAssignArtistBooking(null)}
-        onAssigned={(updatedBooking) => {
-          updateBookingRow(updatedBooking);
-          setAssignArtistBooking(null);
-        }}
-      />
-
-      <Modal
-        open={isScannerOpen}
-        onCancel={() => setIsScannerOpen(false)}
-        footer={null}
-        centered
-        width="min(92vw, 560px)"
-        styles={{
-          body: {
-            padding: 16,
+    <ConfigProvider
+      theme={{
+        token: {
+          colorPrimary: "#EA4F93",
+          borderRadius: 14,
+          colorText: "#412643",
+          colorBorder: "#F3D7E4",
+          colorBgContainer: "#FFFFFF",
+          fontFamily: "Inter, sans-serif",
+        },
+        components: {
+          Button: {
+            borderRadius: 999,
+            controlHeight: 42,
           },
-        }}
-        title={<span className="text-base font-extrabold text-[#432744]">{language === "vi" ? "Quét mã QR khách hàng để làm thủ tục" : "Customer QR Check-in"}</span>}
-      >
-        <div className="space-y-4 overflow-hidden">
-          <p className="text-sm text-[#8f7484]">
-            {language === "vi" ? "Đặt camera vào mã QR của khách hàng. Token đã quét sẽ được gửi đến backend `verify-qr` trước khi mở lịch hẹn." : "Point the webcam at the customer QR code. The scanned token will be sent to backend `verify-qr` before opening the booking."}
-          </p>
+          Input: {
+            borderRadius: 14,
+          },
+          Select: {
+            borderRadius: 14,
+          },
+          DatePicker: {
+            borderRadius: 14,
+          },
+          Table: {
+            headerBg: "#FFF7FB",
+            headerColor: "#8F7484",
+          },
+        },
+      }}
+    >
+      <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
+        <TopMetricsRow 
+          metrics={[
+            { label: t("receptionist.dashboard.todayBookings") || "Today Bookings", value: summary.total, note: t("receptionist.dashboard.bookingQueueNote") || "Salon booking queue", color: "#ea4f93", icon: CalendarDays },
+            { label: t("receptionist.dashboard.statusWaiting") || "Waiting", value: summary.waiting, note: t("receptionist.dashboard.frontDeskActionNote") || "Need front desk action", color: "#d98b1d", icon: CalendarDays },
+            { label: t("receptionist.dashboard.statusCheckedIn") || "Checked In", value: summary.checkedIn, note: t("receptionist.dashboard.arrivedNote") || "Arrived customers", color: "#1f9d61", icon: CalendarDays },
+            { label: t("receptionist.dashboard.todayRevenue") || "Revenue", value: summary.revenue, note: t("receptionist.dashboard.revenueNote") || "Total loaded from API", color: "#7c63d8", icon: CalendarDays, unit: "VND" },
+          ]}
+          className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
+        />
 
-          <div className="overflow-hidden rounded-[20px] border border-[#f2d8e4] bg-[#fff7fb]">
-            <div className="relative aspect-[4/3] bg-[#2a1d2b]">
-              <video ref={scannerVideoRef} className="h-full w-full object-cover" muted />
-              <canvas ref={scannerCanvasRef} className="hidden" />
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-4 sm:p-6">
-                <div className="h-full w-full rounded-[24px] border-2 border-dashed border-white/70 shadow-[0_0_0_9999px_rgba(42,29,43,0.18)]" />
+        <article className="rounded-[24px] border border-[#f6d8e5] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] md:p-5">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-lg font-extrabold text-[#412643]">
+                {salonName === "Receptionist Booking Management" ? t("receptionist.bookings.title") : salonName}
+              </p>
+              <p className="mt-1 text-sm text-[#b38a9f]">
+                {salonMeta === "Bookings are loaded from salon API." ? t("receptionist.bookings.desc") : salonMeta}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => loadBookings()}
+                className="inline-flex h-9 items-center gap-2 rounded-full border border-[#f3cade] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
+              >
+                <RefreshCcw size={14} />
+                {t("receptionist.common.refresh") || "Refresh"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsScannerOpen(true)}
+                className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-[#e7dcff] bg-white hover:bg-[#7a57d9] hover:text-white px-4 text-sm font-bold text-[#7a57d9] shadow-[0_10px_24px_rgba(122,87,217,0.1)] whitespace-nowrap"
+              >
+                <UserCheck size={15} />
+                {t("receptionist.bookings.scanCheckInBtn") || "Scan Check-in"}
+              </button>
+
+              <Link
+                // to={ROUTES.receptionistBookingsCreate}
+                to={ROUTES.receptionistCustomers}
+                className="inline-flex h-9 items-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)] hover:bg-[image:var(--gradient-accent-hover)] hover:text-pink-600"
+              >
+                <UserPlus size={14} />
+                {t("receptionist.walkIn.createBtn") || "Create Walk-in"}
+              </Link>
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-[20px] border border-[#F7D8E6] bg-white p-4">
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+
+              <div>
+                <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-[#C896AF]">
+                  {t("receptionist.bookings.dateFrom")}
+                </p>
+
+                <DatePicker
+                  value={dateFrom ? dayjs(dateFrom) : null}
+                  onChange={(date) =>
+                    setDateFrom(date ? date.format("YYYY-MM-DD") : "")
+                  }
+                  format="DD/MM/YYYY"
+                  className="w-full"
+                  size="large"
+                />
               </div>
-              {isScannerStarting || isVerifyingQr ? (
-                <div className="absolute inset-0 flex items-center justify-center bg-[#2a1d2b]/55 px-4 text-center text-sm font-semibold text-white">
-                  {isScannerStarting ? "Starting camera..." : "Verifying QR check-in..."}
+
+              <div>
+                <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-[#C896AF]">
+                  {t("receptionist.bookings.dateTo")}
+                </p>
+
+                <DatePicker
+                  value={dateTo ? dayjs(dateTo) : null}
+                  onChange={(date) =>
+                    setDateTo(date ? date.format("YYYY-MM-DD") : "")
+                  }
+                  format="DD/MM/YYYY"
+                  className="w-full"
+                  size="large"
+                />
+              </div>
+
+              <div>
+                <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-[#C896AF]">
+                  Salon
+                </p>
+
+                <Select
+                  value={salonFilter}
+                  onChange={setSalonFilter}
+                  size="large"
+                  className="w-full"
+                  options={salonOptions.map((item) => ({
+                    value: item,
+                    label:
+                      item === "All salons"
+                        ? t("receptionist.bookings.allSalons")
+                        : item,
+                  }))}
+                />
+              </div>
+
+              <div>
+                <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-[#C896AF]">
+                  {language === "vi" ? "Trạng thái" : "Status"}
+                </p>
+
+                <Select
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                  size="large"
+                  className="w-full"
+                  options={STATUS_OPTIONS.map((item) => ({
+                    value: item,
+                    label: formatDisplay(item),
+                  }))}
+                />
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-[220px_1fr_auto]">
+
+              <Select
+                value={staffFilter}
+                onChange={setStaffFilter}
+                size="large"
+                options={staffOptions.map((item) => ({
+                  value: item,
+                  label:
+                    item === "All staff"
+                      ? t("receptionist.bookings.allStaff")
+                      : item,
+                }))}
+              />
+
+              <Input
+                size="large"
+                prefix={<Search size={17} color="#D47AA8" />}
+                placeholder="Search booking ID, customer, artist..."
+                value={draftQuery}
+                onChange={(e) => setDraftQuery(e.target.value)}
+                allowClear
+              />
+
+              <div className="flex gap-2">
+                <Button
+                  type="primary"
+                  size="large"
+                  onClick={() => {
+                    dispatch(
+                      setAllFilters({
+                        dateFrom,
+                        dateTo,
+                        salonFilter,
+                        statusFilter,
+                        staffFilter,
+                        query: draftQuery,
+                      })
+                    );
+                    setCurrentPage(1);
+                  }}
+                >
+                  {t("receptionist.common.apply")}
+                </Button>
+
+                <Button
+                  size="large"
+                  onClick={() => {
+                    setDateFrom(todayDate);
+                    setDateTo(todayDate);
+                    setSalonFilter("All salons");
+                    setStatusFilter("All");
+                    setStaffFilter("All staff");
+                    setDraftQuery("");
+
+                    dispatch(
+                      setAllFilters({
+                        dateFrom: todayDate,
+                        dateTo: todayDate,
+                        salonFilter: "All salons",
+                        statusFilter: "All",
+                        staffFilter: "All staff",
+                        query: "",
+                      })
+                    );
+
+                    setCurrentPage(1);
+                  }}
+                >
+                  {t("receptionist.common.reset") || "Reset"}
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {error ? (
+            <div className="mt-4 rounded-[16px] border border-[#f7d4df] bg-[#fff3f7] px-4 py-3 text-sm font-medium text-[#d14c84]">
+              {error}
+            </div>
+          ) : null}
+
+          {flashMessage ? (
+            <div className="mt-4 rounded-[16px] border border-[#d8f0e0] bg-[#edfdf4] px-4 py-3 text-sm font-medium text-[#16975f]">
+              {flashMessage}
+            </div>
+          ) : null}
+
+          {isLoading ? (
+            <div className="mt-6 flex min-h-56 items-center justify-center rounded-[20px] border border-[#f7dce8] bg-[#fffafd]">
+              <div className="flex items-center gap-3 text-sm font-medium text-[#b38a9f]">
+                <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
+                {t("receptionist.common.loading") || "Loading bookings..."}
+              </div>
+            </div>
+          ) : (
+            <div className="mt-6 overflow-hidden rounded-[20px] border border-[#f7dce8]">
+              <div className="hidden lg:block">
+                <Table
+                  rowKey="bookingId"
+                  columns={bookingColumns}
+                  dataSource={paginatedBookings}
+                  pagination={false}
+                  scroll={{ x: 1100 }}
+                  locale={{ emptyText: t("receptionist.bookings.noBookings") || "No bookings matched the current search." }}
+                />
+              </div>
+
+              <div className="space-y-3 p-4 lg:hidden">
+                {paginatedBookings.map((booking) => (
+                  <article key={booking.bookingId} className="rounded-[18px] border border-[#f8dce8] bg-[#fffafb] p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-bold text-[#412643]">{booking.customerName}</p>
+                        <p className="mt-1 text-[11px] text-[#b38a9f]">{booking.artistName}</p>
+                      </div>
+                      <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-extrabold ${getStatusTone(booking.status)}`}>
+                        {formatDisplay(booking.status)}
+                      </span>
+                    </div>
+                    <p className="mt-3 text-sm text-[#6b5668]">{booking.services[0]}</p>
+                    <p className="mt-1 text-[11px] text-[#b38a9f]">{booking.salonName}</p>
+                    <div className="mt-4 flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-[#412643]">{formatDate(booking.bookingDate)}</p>
+                        <p className="mt-1 text-[11px] text-[#b38a9f]">{formatTime(booking.startTime)}</p>
+                      </div>
+                      <ActionDropdown
+                        items={[
+                          {
+                            key: "view",
+                            label: language === "vi" ? "Xem chi tiết" : "View Booking",
+                            icon: Eye,
+                            onSelect: () => navigate(getReceptionistBookingDetailRoute(booking.bookingId)),
+                          },
+                          ...(canManualCheckIn(booking.status)
+                            ? [
+                              {
+                                key: "assign-artist",
+                                label: booking.artistName && booking.artistName !== "Unassigned"
+                                  ? t("receptionist.bookings.changeArtist") || "Change Staff Artist"
+                                  : t("receptionist.bookings.assignArtistTitle") || "Assign Staff Artist",
+                                icon: UserRound,
+                                className: "text-[#7c63d8]",
+                                onSelect: () => setAssignArtistBooking(booking),
+                              },
+                              {
+                                key: "check-in",
+                                label: t("receptionist.dashboard.checkinBtn") || "Check In",
+                                icon: SquareCheckBig,
+                                className: "text-[#4c71d9]",
+                                onSelect: () => void handleManualCheckIn(booking.bookingId),
+                              },
+                            ]
+                            : []),
+                          ...(isReadyForCheckout(booking.status)
+                            ? [
+                              {
+                                key: "checkout",
+                                label: t("receptionist.dashboard.checkoutBtn") || "Checkout",
+                                icon: SquareCheckBig,
+                                className: "text-[#4c71d9]",
+                                onSelect: () => void handleCheckout(booking.bookingId),
+                              },
+                            ]
+                            : []),
+                        ]}
+                      />
+                    </div>
+                  </article>
+                ))}
+              </div>
+
+              {filteredBookings.length ? (
+                <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-[11px] text-[#c694ad]">{paginationLabel}</p>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage <= 1}
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92] disabled:opacity-50"
+                    >
+                      <ChevronLeft size={12} />
+                    </button>
+                    <button
+                      type="button"
+                      className="inline-flex h-7 min-w-7 items-center justify-center rounded-md bg-[#ea4f93] px-2 text-[11px] font-bold text-white"
+                    >
+                      {currentPage}
+                    </button>
+                    <span className="px-2 text-[11px] font-medium text-[#b9849f]">/ {totalPages}</span>
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage >= totalPages}
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92] disabled:opacity-50"
+                    >
+                      <ChevronRight size={12} />
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              {!filteredBookings.length ? (
+                <div className="border-t border-[#f7dce8] bg-[#fffafd] px-5 py-10 text-center text-sm text-[#8a7082]">
+                  {language === "vi" ? "Không có lịch hẹn nào khớp với tìm kiếm hiện tại." : "No bookings matched the current search."}
                 </div>
               ) : null}
             </div>
-          </div>
-
-          {scannerError || scannerSupportMessage ? (
-            <div className="rounded-[18px] border border-[#f5d5df] bg-[#fff1f5] px-4 py-3 text-sm text-[#c44779]">
-              {scannerError || scannerSupportMessage}
-            </div>
-          ) : (
-            <div className="rounded-[18px] border border-[#efe3f8] bg-[#faf6ff] px-4 py-3 text-sm text-[#7a57d9]">
-              {isVerifyingQr ? "Checking token with backend..." : "Waiting for QR code..."}
-            </div>
           )}
+        </article>
 
-          {lastScannedCode ? (
-            <div className="rounded-[18px] border border-[#f1dde8] bg-white px-4 py-3">
-              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#c49aaf]">
-                {language === "vi" ? "Mã QR khách hàng đã quét cuối cùng" : "Last scanned payload"}
-              </p>
-              <p className="mt-2 break-all text-sm text-[#5c4557]">{lastScannedCode}</p>
+        <AssignReceptionistArtistModal
+          open={Boolean(assignArtistBooking)}
+          bookingId={assignArtistBooking?.bookingId || ""}
+          currentArtistName={assignArtistBooking?.artistName || ""}
+          onClose={() => setAssignArtistBooking(null)}
+          onAssigned={(updatedBooking) => {
+            updateBookingRow(updatedBooking);
+            setAssignArtistBooking(null);
+          }}
+        />
+
+        <Modal
+          open={isScannerOpen}
+          onCancel={() => setIsScannerOpen(false)}
+          footer={null}
+          centered
+          width="min(92vw, 560px)"
+          styles={{
+            body: {
+              padding: 16,
+            },
+          }}
+          title={<span className="text-base font-extrabold text-[#432744]">{language === "vi" ? "Quét mã QR khách hàng để làm thủ tục" : "Customer QR Check-in"}</span>}
+        >
+          <div className="space-y-4 overflow-hidden">
+            <p className="text-sm text-[#8f7484]">
+              {language === "vi" ? "Đặt camera vào mã QR của khách hàng. Token đã quét sẽ được gửi đến backend `verify-qr` trước khi mở lịch hẹn." : "Point the webcam at the customer QR code. The scanned token will be sent to backend `verify-qr` before opening the booking."}
+            </p>
+
+            <div className="overflow-hidden rounded-[20px] border border-[#f2d8e4] bg-[#fff7fb]">
+              <div className="relative aspect-[4/3] bg-[#2a1d2b]">
+                <video ref={scannerVideoRef} className="h-full w-full object-cover" muted />
+                <canvas ref={scannerCanvasRef} className="hidden" />
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-4 sm:p-6">
+                  <div className="h-full w-full rounded-[24px] border-2 border-dashed border-white/70 shadow-[0_0_0_9999px_rgba(42,29,43,0.18)]" />
+                </div>
+                {isScannerStarting || isVerifyingQr ? (
+                  <div className="absolute inset-0 flex items-center justify-center bg-[#2a1d2b]/55 px-4 text-center text-sm font-semibold text-white">
+                    {isScannerStarting ? "Starting camera..." : "Verifying QR check-in..."}
+                  </div>
+                ) : null}
+              </div>
             </div>
-          ) : null}
-        </div>
-      </Modal>
-    </section>
+
+            {scannerError || scannerSupportMessage ? (
+              <div className="rounded-[18px] border border-[#f5d5df] bg-[#fff1f5] px-4 py-3 text-sm text-[#c44779]">
+                {scannerError || scannerSupportMessage}
+              </div>
+            ) : (
+              <div className="rounded-[18px] border border-[#efe3f8] bg-[#faf6ff] px-4 py-3 text-sm text-[#7a57d9]">
+                {isVerifyingQr ? "Checking token with backend..." : "Waiting for QR code..."}
+              </div>
+            )}
+
+            {lastScannedCode ? (
+              <div className="rounded-[18px] border border-[#f1dde8] bg-white px-4 py-3">
+                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#c49aaf]">
+                  {language === "vi" ? "Mã QR khách hàng đã quét cuối cùng" : "Last scanned payload"}
+                </p>
+                <p className="mt-2 break-all text-sm text-[#5c4557]">{lastScannedCode}</p>
+              </div>
+            ) : null}
+          </div>
+        </Modal>
+      </section>
+    </ConfigProvider>
   );
 }

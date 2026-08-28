@@ -16,7 +16,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Table } from "antd";
+import { Table, Tooltip } from "antd";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import {
@@ -28,21 +28,9 @@ import {
   fetchAdminProcedures,
   formatProcedureDuration,
 } from "../services/proceduresManagementService";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
-function MetricCard({ item }) {
-  const Icon = item.icon;
 
-  return (
-    <article className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
-      <div className={`inline-flex h-10 w-10 items-center justify-center rounded-[14px] ${item.iconClassName}`}>
-        <Icon size={18} />
-      </div>
-      <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-[#cd98b1]">{item.label}</p>
-      <p className="mt-1 text-[1.9rem] font-extrabold leading-none text-[#432744]">{item.value}</p>
-      <p className="mt-2 text-xs font-medium text-[#b58a9f]">{item.note}</p>
-    </article>
-  );
-}
 
 function ProcedureStatusBadge({ status }) {
   const { t, language } = useLanguage();
@@ -73,55 +61,6 @@ function ProcedureRequiredBadge({ isRequired }) {
   );
 }
 
-function SortableHeader({ label, sortKey, selectedSort, onToggle }) {
-  const isActive = selectedSort.startsWith(`${sortKey}-`);
-  const isDesc = selectedSort === `${sortKey}-desc`;
-
-  return (
-    <button
-      type="button"
-      onClick={() => onToggle(sortKey)}
-      className={`inline-flex items-center gap-1.5 font-semibold transition ${isActive ? "text-[#ea4f93]" : "text-[#5f4a5c] hover:text-[#ea4f93]"}`}
-    >
-      <span>{label}</span>
-      <ArrowUpDown size={13} className={isActive ? "text-[#ea4f93]" : "text-[#d39bb5]"} />
-      {isActive ? <span className="text-[10px] font-bold">{isDesc ? "DESC" : "ASC"}</span> : null}
-    </button>
-  );
-}
-
-function sortProcedures(items, sortValue) {
-  const [sortKey = "procedure", sortDirection = "asc"] = String(sortValue || "procedure-asc").split("-");
-  const directionMultiplier = sortDirection === "desc" ? -1 : 1;
-
-  return [...items].sort((left, right) => {
-    const getSortValue = (item) => {
-      switch (sortKey) {
-        case "duration":
-          return Number(item.duration || 0);
-        case "required":
-          return item.isRequired ? 1 : 0;
-        case "status":
-          return item.status || "";
-        case "created":
-          return new Date(item.createAt || 0).getTime();
-        case "procedure":
-        default:
-          return item.name || "";
-      }
-    };
-
-    const leftValue = getSortValue(left);
-    const rightValue = getSortValue(right);
-
-    if (typeof leftValue === "number" && typeof rightValue === "number") {
-      return (leftValue - rightValue) * directionMultiplier;
-    }
-
-    return String(leftValue).localeCompare(String(rightValue)) * directionMultiplier;
-  });
-}
-
 export function ProceduresManagementPage() {
   const { t, language } = useLanguage();
   const location = useLocation();
@@ -141,7 +80,6 @@ export function ProceduresManagementPage() {
   });
   const [selectedStatus, setSelectedStatus] = useState("");
   const [selectedRequired, setSelectedRequired] = useState("");
-  const [selectedSort, setSelectedSort] = useState("created-desc");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -221,28 +159,28 @@ export function ProceduresManagementPage() {
         value: metaData.totalItems.toLocaleString(),
         note: `${metaData.totalPages} pages`,
         icon: ClipboardList,
-        iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
+        color: "#ea4f93",
       },
       {
         label: t("adminProcedures.activeItems"),
         value: activeCount.toLocaleString(),
         note: "Current page",
         icon: Sparkles,
-        iconClassName: "bg-[#e7fbf4] text-[#20ab77]",
+        color: "#20ab77",
       },
       {
         label: t("adminProcedures.requiredSteps"),
         value: requiredCount.toLocaleString(),
         note: "Current page",
         icon: TimerReset,
-        iconClassName: "bg-[#fff4df] text-[#d9871c]",
+        color: "#d9871c",
       },
       {
         label: t("adminProcedures.avgDuration"),
         value: formatProcedureDuration(averageDuration),
         note: "Current page",
         icon: TimerReset,
-        iconClassName: "bg-[#f3ebff] text-[#8b5cf6]",
+        color: "#8b5cf6",
       },
     ];
   }, [metaData.totalItems, metaData.totalPages, procedures]);
@@ -290,33 +228,12 @@ export function ProceduresManagementPage() {
     });
   }, [debouncedQuery, procedures, selectedRequired, selectedStatus]);
 
-  const sortedProcedures = useMemo(
-    () => sortProcedures(filteredProcedures, selectedSort),
-    [filteredProcedures, selectedSort],
-  );
-
-  const handleSortToggle = (sortKey) => {
-    setSelectedSort((current) => {
-      if (current.startsWith(`${sortKey}-`)) {
-        return current.endsWith("-asc") ? `${sortKey}-desc` : `${sortKey}-asc`;
-      }
-
-      return `${sortKey}-asc`;
-    });
-  };
-
   const columns = useMemo(
     () => [
       {
-        title: (
-          <SortableHeader
-            label={t("adminProcedures.procedure")}
-            sortKey="procedure"
-            selectedSort={selectedSort}
-            onToggle={handleSortToggle}
-          />
-        ),
+        title: t("adminProcedures.procedure"),
         key: "procedure",
+        sorter: (a, b) => (a.name || "").localeCompare(b.name || ""),
         render: (_, procedure) => (
           <div className="flex items-center gap-3">
 
@@ -328,90 +245,70 @@ export function ProceduresManagementPage() {
         ),
       },
       {
-        title: (
-          <SortableHeader
-            label={t("adminProcedures.duration")}
-            sortKey="duration"
-            selectedSort={selectedSort}
-            onToggle={handleSortToggle}
-          />
-        ),
+        title: t("adminProcedures.duration"),
         dataIndex: "durationLabel",
         key: "durationLabel",
+        sorter: (a, b) => Number(a.duration || 0) - Number(b.duration || 0),
         render: (value) => <span className="text-sm text-[#6b5668]">{value}</span>,
       },
       {
-        title: (
-          <SortableHeader
-            label={t("adminProcedures.required")}
-            sortKey="required"
-            selectedSort={selectedSort}
-            onToggle={handleSortToggle}
-          />
-        ),
+        title: t("adminProcedures.required"),
         dataIndex: "isRequired",
         key: "isRequired",
+        sorter: (a, b) => (a.isRequired === b.isRequired ? 0 : a.isRequired ? -1 : 1),
         render: (value) => <ProcedureRequiredBadge isRequired={value} />,
       },
       {
-        title: (
-          <SortableHeader
-            label={t("adminProcedures.status")}
-            sortKey="status"
-            selectedSort={selectedSort}
-            onToggle={handleSortToggle}
-          />
-        ),
+        title: t("adminProcedures.status"),
         dataIndex: "status",
         key: "status",
+        sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
         render: (value) => <ProcedureStatusBadge status={value} />,
       },
       {
-        title: (
-          <SortableHeader
-            label={t("adminProcedures.created")}
-            sortKey="created"
-            selectedSort={selectedSort}
-            onToggle={handleSortToggle}
-          />
-        ),
+        title: t("adminProcedures.created"),
         dataIndex: "createAtLabel",
         key: "createAtLabel",
+        sorter: (a, b) => new Date(a.createAt || 0).getTime() - new Date(b.createAt || 0).getTime(),
         render: (value) => <span className="text-sm text-[#6b5668]">{value}</span>,
       },
       {
         title: t("adminProcedures.actions"),
         key: "actions",
+        align: "right",
         render: (_, procedure) => (
-          <ActionDropdown
-            items={[
-              {
-                key: "view",
-                label: t("adminProcedures.viewDetail"),
-                icon: Eye,
-                onSelect: () => navigate(getAdminProcedureDetailRoute(procedure.procedureId)),
-              },
-              {
-                key: "edit",
-                label: t("adminProcedures.editProcedure"),
-                icon: Pencil,
-                onSelect: () =>
-                  navigate(getAdminProcedureDetailRoute(procedure.procedureId), {
-                    state: { startInEdit: true },
-                  }),
-              },
-              {
-                key: "delete",
-                label: t("adminProcedures.deleteProcedure"),
-                icon: Trash2,
-                className: "text-[#d14c84]",
-                onSelect: () => setDeleteTarget(procedure),
-              },
-            ]}
-          />
+          <div className="flex items-center justify-end gap-1.5">
+            <Tooltip title={t("adminProcedures.viewDetail")}>
+              <button
+                type="button"
+                onClick={() => navigate(getAdminProcedureDetailRoute(procedure.procedureId))}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
+              >
+                <Eye size={12} />
+              </button>
+            </Tooltip>
+            <Tooltip title={t("adminProcedures.editProcedure")}>
+              <button
+                type="button"
+                onClick={() => navigate(getAdminProcedureDetailRoute(procedure.procedureId), { state: { startInEdit: true } })}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
+              >
+                <Pencil size={12} />
+              </button>
+            </Tooltip>
+            <Tooltip title={t("adminProcedures.deleteProcedure")}>
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(procedure)}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 bg-[#fff0f0] text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
+              >
+                <Trash2 size={12} />
+              </button>
+            </Tooltip>
+          </div>
         ),
       },
-    ], [navigate, selectedSort, t],
+    ], [navigate, t],
   );
 
   const handleDeleteProcedure = async () => {
@@ -457,10 +354,8 @@ export function ProceduresManagementPage() {
           </div>
         ) : null}
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {summaryCards.map((item) => (
-            <MetricCard key={item.label} item={item} />
-          ))}
+        <div className="mb-4">
+          <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" />
         </div>
 
         <div className="flex flex-col gap-3 rounded-[20px] border border-[#f8deea] bg-white/70 p-4 shadow-[0_12px_26px_rgba(236,72,153,0.05)] xl:flex-row xl:items-center xl:justify-between">
@@ -533,7 +428,7 @@ export function ProceduresManagementPage() {
           <Table
             rowKey="procedureId"
             columns={columns}
-            dataSource={sortedProcedures}
+            dataSource={filteredProcedures}
             loading={{
               spinning: isLoading,
               indicator: <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />,
@@ -541,6 +436,7 @@ export function ProceduresManagementPage() {
             pagination={false}
             scroll={{ x: 1100 }}
             locale={{ emptyText: error || t("adminProcedures.noProceduresFound") }}
+            className="custom-admin-table [&_.ant-table]:!bg-transparent [&_.ant-table-thead_th]:!bg-[#fff9fb] [&_.ant-table-thead_th]:!text-[10px] [&_.ant-table-thead_th]:!uppercase [&_.ant-table-thead_th]:!tracking-[0.14em] [&_.ant-table-thead_th]:!text-[#a88a9f] [&_.ant-table-thead_th]:!font-bold [&_.ant-table-thead_th]:!border-b [&_.ant-table-thead_th]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row>td]:!border-b [&_.ant-table-tbody_.ant-table-row>td]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row]:hover>td:!bg-[#fff9fb] [&_.ant-table-tbody_.ant-table-row>td]:!py-4 [&_.ant-table-tbody_.ant-table-row>td]:!text-[12px] [&_.ant-table-tbody_.ant-table-row>td]:!text-[#5b4256]"
           />
 
           <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">

@@ -23,6 +23,7 @@ import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
 import { EmptyState } from "../../../../shared/components/common/EmptyState";
 import { ROUTES, getStaffBookingDetailRoute } from "../../../../shared/constants/routes";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import { formatDate } from "../../../../shared/utils/formatDate";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 import { getErrorMessage } from "../../../../shared/utils/getErrorMessage";
@@ -1131,35 +1132,35 @@ export function StaffTasksPage() {
     return [
       {
         key: "assigned",
-        title: language === "vi" ? "Được phân công" : "Assigned",
+        label: language === "vi" ? "Được phân công" : "Assigned",
         value: myTasks.length,
         note: language === "vi" ? "Nhiệm vụ hiện đang được giao cho bạn" : "Tasks currently assigned to you",
         icon: UserRoundCheck,
-        toneClassName: "bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93]",
+        color: "#ea4f93",
       },
       {
         key: "claimable",
-        title: language === "vi" ? "Có thể nhận" : "Claimable",
+        label: language === "vi" ? "Có thể nhận" : "Claimable",
         value: salonTasks.length,
         note: language === "vi" ? "Các bước hiện thị trong hàng đợi salon" : "Visible steps in the salon queue",
         icon: Sparkles,
-        toneClassName: "bg-gradient-to-br from-[#8b5cf6] to-[#7c3aed]",
+        color: "#8b5cf6",
       },
       {
         key: "required",
-        title: language === "vi" ? "Bắt buộc" : "Required",
+        label: language === "vi" ? "Bắt buộc" : "Required",
         value: requiredMyTasks,
         note: language === "vi" ? "Bước bắt buộc trong hàng đợi của bạn" : "Required steps in your queue",
         icon: CheckCircle2,
-        toneClassName: "bg-gradient-to-br from-[#34d399] to-[#059669]",
+        color: "#10b981",
       },
       {
         key: "overlap",
-        title: language === "vi" ? "Sẵn sàng song song" : "Overlap Ready",
+        label: language === "vi" ? "Sẵn sàng song song" : "Overlap Ready",
         value: overlapReadyTasks,
         note: language === "vi" ? "Nhiệm vụ có thể làm đồng thời" : "Claimable tasks that can overlap",
         icon: Layers3,
-        toneClassName: "bg-gradient-to-br from-[#f59e0b] to-[#d97706]",
+        color: "#f59e0b",
       },
     ];
   }, [myTasks, salonTasks, language]);
@@ -1175,18 +1176,7 @@ export function StaffTasksPage() {
         />
       ) : null}
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        {stats.map((stat) => (
-          <StatCard
-            key={stat.key}
-            title={stat.title}
-            value={stat.value}
-            note={stat.note}
-            icon={stat.icon}
-            toneClassName={stat.toneClassName}
-          />
-        ))}
-      </div>
+      <TopMetricsRow metrics={stats} className="grid gap-3 md:grid-cols-2 xl:grid-cols-4" />
 
       <Card className="overflow-hidden">
         <div className="border-b border-[#f6dce7] bg-[linear-gradient(180deg,#fff8fb_0%,#fff3f8_100%)] px-5 py-4 sm:px-6">

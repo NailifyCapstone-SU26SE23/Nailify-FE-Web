@@ -16,7 +16,7 @@ import {
   UserRound,
   ChevronRight,
 } from "lucide-react";
-import { Spin, Input, Empty, Tag } from "antd";
+import { Spin, Input, Empty, Tag, Table, DatePicker, Button } from "antd";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import dayjs from "dayjs";
@@ -24,6 +24,7 @@ import dayjs from "dayjs";
 import { fetchBookingsBySalonId } from "../../../manager/bookings/services/bookingsService";
 import { fetchAdminSalonDetail } from "../../salon-management/services/salonManagementService";
 import { ROUTES } from "../../../../shared/constants/routes";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
 const SALON_PLACEHOLDER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"><rect width="400" height="200" rx="28" fill="#fde7ef"><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#8f365c" font-family="Arial, sans-serif" font-size="30" font-weight="700">Salon</text></rect></svg>'
@@ -52,33 +53,7 @@ function SectionHeading({ title, subtitle }) {
   );
 }
 
-const SUMMARY_ICON_MAP = {
-  dollar: DollarSign,
-  calendar: Calendar,
-  creditCard: CreditCard,
-  sparkles: Sparkles,
-};
 
-function StatCard({ item, index }) {
-  const Icon = SUMMARY_ICON_MAP[item.icon] || Sparkles;
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1, type: "spring", stiffness: 300, damping: 20 }}
-      whileHover={{ y: -4, scale: 1.02 }}
-      className={`relative overflow-hidden rounded-[28px] border border-white/70 bg-gradient-to-br ${item.accent} p-6 shadow-[0_20px_40px_-15px_rgba(226,93,143,0.06)]`}
-    >
-      <div className="absolute right-[-12px] top-[-12px] h-12 w-12 rounded-full bg-white/45" />
-      <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-xl ${item.iconBg}`}>
-        <Icon size={20} strokeWidth={2.2} />
-      </div>
-      <p className="text-[32px] font-bold leading-none text-slate-800">{item.title}</p>
-      <p className="mt-2 text-[13px] font-semibold text-slate-500">{item.label}</p>
-      <p className={`mt-1 text-[12px] font-semibold ${item.noteColor}`}>{item.note}</p>
-    </motion.div>
-  );
-}
 
 function BookingCard({ booking, index }) {
   return (
@@ -231,6 +206,7 @@ const staggerContainer = {
 
 export function AdminSalonBookingDetailPage() {
   const { t, language } = useLanguage();
+  const isVi = language === "vi";
   const { salonId } = useParams();
   const navigate = useNavigate();
   const [salon, setSalon] = useState(null);
@@ -239,89 +215,218 @@ export function AdminSalonBookingDetailPage() {
   const [isLoadingBookings, setIsLoadingBookings] = useState(true);
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [dateRange, setDateRange] = useState(null);
 
   const completedBookings = useMemo(() => {
     if (!bookings) return [];
     return bookings.filter((booking) => booking?.status?.toLowerCase() === "completed");
   }, [bookings]);
 
+  const statsBookings = useMemo(() => {
+    if (!dateRange || dateRange.length !== 2) return completedBookings;
+    return completedBookings.filter((booking) => {
+      const recordDate = dayjs(booking.bookingDate).valueOf();
+      return recordDate >= dateRange[0] && recordDate <= dateRange[1];
+    });
+  }, [completedBookings, dateRange]);
+
   const filteredBookings = useMemo(() => {
-    if (!searchQuery.trim()) return completedBookings;
+    if (!searchQuery.trim()) return statsBookings;
     const query = searchQuery.toLowerCase();
-    return completedBookings.filter(
+    return statsBookings.filter(
       (booking) =>
         (booking?.customerName && booking.customerName.toLowerCase().includes(query)) ||
         (booking?.customerEmail && booking.customerEmail.toLowerCase().includes(query)) ||
         (booking?.customerPhone && booking.customerPhone.toLowerCase().includes(query))
     );
-  }, [completedBookings, searchQuery]);
+  }, [statsBookings, searchQuery]);
 
   const stats = useMemo(() => {
-    const totalRevenue = completedBookings.reduce(
-      (sum, booking) => sum + Number(booking?.totalAmount || 0),
+    const totalRevenue = statsBookings.reduce(
+      (sum, booking) => sum + Number(booking?.totalPrice || booking?.totalAmount || 0),
       0
     );
-    const avgBookingValue = completedBookings.length > 0
-      ? totalRevenue / completedBookings.length
+    const avgBookingValue = statsBookings.length > 0
+      ? totalRevenue / statsBookings.length
       : 0;
 
-    const revenueByDate = completedBookings.reduce((acc, booking) => {
+    const revenueByDate = statsBookings.reduce((acc, booking) => {
       const date = dayjs(booking?.bookingDate).format("MMM D");
-      acc[date] = (acc[date] || 0) + Number(booking?.totalAmount || 0);
+      acc[date] = (acc[date] || 0) + Number(booking?.totalPrice || booking?.totalAmount || 0);
       return acc;
     }, {});
 
-    const chartData = Object.entries(revenueByDate)
+    let chartData = Object.entries(revenueByDate)
       .map(([date, revenue]) => ({ date, revenue }))
       .slice(-14)
       .reverse();
 
+    if (chartData.length === 0) {
+      if (dateRange && dateRange.length === 2) {
+        chartData = [
+          { date: dayjs(dateRange[0]).format("MMM D"), revenue: 0 },
+          { date: dayjs(dateRange[1]).format("MMM D"), revenue: 0 },
+        ];
+      } else {
+        chartData = [
+          { date: dayjs().subtract(1, 'day').format("MMM D"), revenue: 0 },
+          { date: dayjs().format("MMM D"), revenue: 0 },
+        ];
+      }
+    }
+
     return {
       totalRevenue,
-      totalBookings: completedBookings.length,
+      totalBookings: statsBookings.length,
       avgBookingValue,
       chartData,
     };
-  }, [completedBookings]);
+  }, [statsBookings, dateRange]);
+
+  const bookingColumns = useMemo(() => {
+    return [
+      {
+        title: isVi ? "Khách hàng" : "Customer",
+        key: "customerName",
+        sorter: (a, b) => (a.customerName || "").localeCompare(b.customerName || ""),
+        render: (_, booking) => (
+          <div>
+            <p className="text-sm font-bold text-[#412643]">{booking.customerName}</p>
+            {booking.customerEmail && <p className="text-[11px] text-[#a88a9f]">{booking.customerEmail}</p>}
+          </div>
+        ),
+      },
+      // {
+      //   title: isVi ? "Số điện thoại" : "Phone",
+      //   dataIndex: "customerPhone",
+      //   key: "customerPhone",
+      //   sorter: (a, b) => (a.customerPhone || "").localeCompare(b.customerPhone || ""),
+      //   render: (value) => <span className="text-sm text-[#5b4256]">{value}</span>,
+      // },
+      {
+        title: isVi ? "Ngày" : "Date",
+        dataIndex: "bookingDate",
+        key: "bookingDate",
+        sorter: (a, b) => new Date(a.bookingDate || 0) - new Date(b.bookingDate || 0),
+        filteredValue: dateRange ? [dateRange] : null,
+        filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+          <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
+            <DatePicker.RangePicker
+              value={selectedKeys[0] ? [dayjs(selectedKeys[0][0]), dayjs(selectedKeys[0][1])] : null}
+              onChange={(dates) => {
+                setSelectedKeys(dates ? [[dates[0].startOf('day').valueOf(), dates[1].endOf('day').valueOf()]] : []);
+              }}
+              style={{ marginBottom: 8, display: 'flex' }}
+            />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Button
+                type="primary"
+                onClick={() => {
+                  setDateRange(selectedKeys[0] || null);
+                  confirm();
+                }}
+                size="small"
+                className="bg-[#ea4f93] flex-1"
+              >
+                {isVi ? "Lọc" : "Filter"}
+              </Button>
+              <Button
+                onClick={() => {
+                  clearFilters();
+                  setSelectedKeys([]);
+                  setDateRange(null);
+                  confirm();
+                }}
+                size="small"
+                className="flex-1"
+              >
+                {isVi ? "Xoá" : "Reset"}
+              </Button>
+            </div>
+          </div>
+        ),
+        onFilter: () => true, // Already filtered in statsBookings
+        render: (value) => <span className="text-sm font-medium text-[#2d1b35]">{value ? dayjs(value).format("MMM D, YYYY") : "--"}</span>,
+      },
+      {
+        title: isVi ? "Tổng tiền" : "Total",
+        key: "totalAmount",
+        sorter: (a, b) => (a.totalAmount || a.totalPrice || 0) - (b.totalAmount || b.totalPrice || 0),
+        render: (_, booking) => {
+          const amount = booking.totalAmount || booking.totalPrice || 0;
+          const formattedAmount = `${amount.toLocaleString("vi-VN")} ₫`;
+          return <span className="text-[14px] font-bold text-[#2d1b35]">{formattedAmount}</span>;
+        },
+      },
+      // {
+      //   title: t("adminSalonBookings.services") || "Services",
+      //   key: "services",
+      //   filters: uniqueServices,
+      //   onFilter: (value, record) => {
+      //     const services = record?.services || record?.bookingItems?.map(item => item.nailVariantName || item.serviceName) || [];
+      //     return services.map(s => s?.name || s).includes(value);
+      //   },
+      //   render: (_, booking) => {
+      //     const services = booking?.services || booking?.bookingItems?.map(item => item.nailVariantName || item.serviceName) || [];
+      //     return (
+      //       <div className="flex flex-wrap gap-1">
+      //         {services.map((service, idx) => (
+      //           <Tag key={idx} color="pink" className="!bg-[#fff5fb] !text-[#ea4f93] !border-[#f0b7cf] !text-[10px]">
+      //             {service?.name || service}
+      //           </Tag>
+      //         ))}
+      //       </div>
+      //     );
+      //   },
+      // },
+      {
+        title: isVi ? "Trạng thái" : "Status",
+        dataIndex: "status",
+        key: "status",
+        sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
+        render: (status) => (
+          <span className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold text-emerald-700 border border-emerald-200">
+            {status || "Completed"}
+          </span>
+        ),
+      },
+    ];
+  }, [t, completedBookings, isVi]);
 
   const salonSummary = useMemo(() => {
     const isVi = language === "vi";
     return [
       {
-        accent: "from-[#fff5fb] to-[#fff]",
-        icon: "dollar",
-        iconBg: "bg-[#fde7ef]",
         label: t("adminDashboard.table.revenue") || "Total Revenue",
+        value: stats.totalRevenue.toLocaleString("vi-VN"),
+        unit: "VND",
         note: isVi ? "+12.5% quý này" : "+12.5% this quarter",
-        noteColor: "text-emerald-500",
-        title: `$${stats.totalRevenue.toLocaleString()}`,
+        icon: DollarSign,
+        color: "#ea4f93",
       },
       {
-        accent: "from-[#fff9f2] to-[#fff]",
-        icon: "calendar",
-        iconBg: "bg-[#ffedd5]",
         label: isVi ? "Lịch hẹn đã hoàn thành" : "Completed Bookings",
+        value: stats.totalBookings.toString(),
+        unit: "",
         note: isVi ? "+8 tuần này" : "+8 this week",
-        noteColor: "text-emerald-500",
-        title: stats.totalBookings.toString(),
+        icon: Calendar,
+        color: "#f59e0b",
       },
       {
-        accent: "from-[#f2fdf6] to-[#fff]",
-        icon: "creditCard",
-        iconBg: "bg-[#e6fdf0]",
         label: isVi ? "Giá trị lịch hẹn TB" : "Avg. Booking Value",
+        value: Math.round(stats.avgBookingValue).toLocaleString("vi-VN"),
+        unit: "VND",
         note: isVi ? "+5.2% so với tháng trước" : "+5.2% vs last month",
-        noteColor: "text-emerald-500",
-        title: `$${stats.avgBookingValue.toFixed(0).toLocaleString()}`,
+        icon: CreditCard,
+        color: "#10b981",
       },
       {
-        accent: "from-[#f5f2fd] to-[#fff]",
-        icon: "sparkles",
-        iconBg: "bg-[#e0e7ff]",
         label: t("userManagement.table.status") || "Status",
+        value: isLoadingSalon ? "..." : (isVi && salon?.status === "Active" ? "Đang hoạt động" : salon?.status || "Active"),
+        unit: "",
         note: isVi ? "Hoạt động bình thường" : "Operating normally",
-        noteColor: "text-emerald-500",
-        title: isLoadingSalon ? "..." : (isVi && salon?.status === "Active" ? "Đang hoạt động" : salon?.status || "Active"),
+        icon: Sparkles,
+        color: "#0ea5e9",
       },
     ];
   }, [stats, salon, isLoadingSalon, t, language]);
@@ -416,16 +521,7 @@ export function AdminSalonBookingDetailPage() {
       </header>
 
       {!isLoadingSalon && (
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={staggerContainer}
-          className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
-        >
-          {salonSummary.map((item, index) => (
-            <StatCard key={item.label} item={item} index={index} />
-          ))}
-        </motion.div>
+        <TopMetricsRow metrics={salonSummary} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" />
       )}
 
       <motion.div initial="hidden" animate="visible" variants={fadeInUp}>
@@ -460,7 +556,7 @@ export function AdminSalonBookingDetailPage() {
                       fontSize={11}
                       tickLine={false}
                       axisLine={false}
-                      tickFormatter={(value) => `$${value}`}
+                      tickFormatter={(value) => `${value.toLocaleString("vi-VN")} ₫`}
                     />
                     <Tooltip
                       contentStyle={{
@@ -542,7 +638,7 @@ export function AdminSalonBookingDetailPage() {
             }
           />
           <div className="flex-1 max-w-md">
-            <div className="flex w-full items-center gap-3 rounded-full border border-[#f0b7cf] bg-white px-5 py-3 shadow-inner shadow-[#fff0f8]">
+            <div className="flex w-full items-center gap-3 rounded-full border border-[#f0b7cf] bg-white px-4 shadow-inner shadow-[#fff0f8]">
               <Search size={18} className="text-[#ea4f93]" />
               <Input
                 placeholder={t("adminSalonBookings.searchCustomerNameEmailOrPhone")}
@@ -567,39 +663,42 @@ export function AdminSalonBookingDetailPage() {
               <SkeletonCard key={i} />
             ))}
           </div>
-        ) : filteredBookings.length === 0 ? (
-          <div className="py-12">
-            <Empty
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description={
-                <div>
-                  <p className="text-[#5b4256] text-sm font-medium">
-                    {t("adminSalonBookings.noCompletedBookingsFound")}
-                  </p>
-                  {searchQuery && (
-                    <p className="text-[#a88a9f] text-xs mt-1">
-                      {t("adminSalonBookings.tryADifferentSearchTerm")}
-                    </p>
-                  )}
-                </div>
-              }
+        ) : (
+          <div className="overflow-auto -mx-6 px-6">
+            <Table
+              rowKey={(record) => record?.id || record?.bookingId}
+              columns={bookingColumns}
+              dataSource={filteredBookings}
+              pagination={{
+                pageSize: 10,
+                showSizeChanger: false,
+                className: "!mt-4",
+              }}
+              locale={{
+                emptyText: (
+                  <div className="py-12">
+                    <Empty
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      description={
+                        <div>
+                          <p className="text-[#5b4256] text-sm font-medium">
+                            {t("adminSalonBookings.noCompletedBookingsFound") || "No completed bookings found"}
+                          </p>
+                          {(searchQuery || dateRange) && (
+                            <p className="text-[#a88a9f] text-xs mt-1">
+                              {t("adminSalonBookings.tryADifferentSearchTerm") || "Try a different search term or date range"}
+                            </p>
+                          )}
+                        </div>
+                      }
+                    />
+                  </div>
+                ),
+              }}
+              size="middle"
+              className="custom-admin-table [&_.ant-table]:!bg-transparent [&_.ant-table-thead_th]:!bg-[#fff7fb] [&_.ant-table-thead_th]:!border-b [&_.ant-table-thead_th]:!border-[#f5e2ec] [&_.ant-table-thead_th]:!text-[#8f7484] [&_.ant-table-thead_th]:!font-bold [&_.ant-table-thead_th]:!text-[12px] [&_.ant-table-tbody_tr>td]:!border-b [&_.ant-table-tbody_tr>td]:!border-[#f5e2ec] [&_.ant-table-tbody_tr:hover>td]:!bg-[#fff5fb] transition-colors"
             />
           </div>
-        ) : (
-          <motion.div
-            variants={staggerContainer}
-            initial="hidden"
-            animate="visible"
-            className="space-y-4"
-          >
-            {filteredBookings.map((booking, index) => (
-              <BookingCard
-                key={booking?.id || index}
-                booking={booking}
-                index={index}
-              />
-            ))}
-          </motion.div>
         )}
       </PremiumCard>
     </section>

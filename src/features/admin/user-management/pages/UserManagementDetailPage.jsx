@@ -16,10 +16,10 @@ import {
   updateAdminUser,
 } from "../services/userManagementService";
 import {
-  fetchArtistSchedules,
   fetchNailArtistById,
   fetchNailArtistSkills,
 } from "../../../manager/staff-artist-management/services/nailArtistsService";
+import { fetchArtistSchedules } from "../../../manager/schedules/services/scheduleService";
 
 function formatWorkDate(value) {
   if (!value) {

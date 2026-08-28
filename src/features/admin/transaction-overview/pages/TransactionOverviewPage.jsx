@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Modal, message, Select, Spin, Alert } from "antd";
+import { Modal, message, Select, Spin, Alert, Table } from "antd";
 import {
   Search,
   Eye,
@@ -365,6 +365,125 @@ export function TransactionOverviewPage() {
         );
     }
   };
+
+  const transactionColumns = useMemo(() => {
+    return [
+      {
+        title: t("adminTransactions.orderCode"),
+        dataIndex: "orderCode",
+        key: "orderCode",
+        width: "12%",
+        sorter: (a, b) => (a.orderCode || "").localeCompare(b.orderCode || ""),
+        render: (value) => <span className="font-mono font-bold text-sm text-[#ea4f93]">#{value || "N/A"}</span>
+      },
+      {
+        title: t("adminTransactions.customerLocation"),
+        key: "customer",
+        width: "20%",
+        sorter: (a, b) => (a.customerName || "").localeCompare(b.customerName || ""),
+        render: (_, tx) => (
+          <div className="flex items-center gap-3">
+            <div className={`flex h-9 w-9 items-center justify-center rounded-full font-bold text-xs shrink-0 shadow-xs ${getAvatarColor(tx.customerName)}`}>
+              {getInitials(tx.customerName)}
+            </div>
+            <div className="min-w-0">
+              <div className="font-bold text-[#2d1b35] text-sm truncate">
+                {tx.customerName || "Unnamed Customer"}
+              </div>
+              <div className="text-[10px] text-[#a88a9f] font-medium truncate mt-0.5">
+                {tx.salonName || "Nailify Salon"}
+              </div>
+            </div>
+          </div>
+        )
+      },
+      {
+        title: t("adminTransactions.totalPrice"),
+        key: "totalPrice",
+        width: "12%",
+        sorter: (a, b) => {
+          const valA = a.booking?.totalPrice != null ? a.booking.totalPrice : a.amount;
+          const valB = b.booking?.totalPrice != null ? b.booking.totalPrice : b.amount;
+          return (Number(valA) || 0) - (Number(valB) || 0);
+        },
+        render: (_, tx) => (
+          <span className="font-mono font-bold text-[#2d1b35] text-sm">
+            {tx.booking?.totalPrice != null ? formatCurrency(tx.booking.totalPrice) : formatCurrency(tx.amount)}
+          </span>
+        )
+      },
+      {
+        title: t("adminTransactions.depositPaid"),
+        key: "depositPaid",
+        width: "14%",
+        sorter: (a, b) => {
+          const valA = a.amountDue != null ? a.amountDue : a.booking?.amountDue;
+          const valB = b.amountDue != null ? b.amountDue : b.booking?.amountDue;
+          return (Number(valA) || 0) - (Number(valB) || 0);
+        },
+        render: (_, tx) => (
+          <span className="font-mono font-bold text-[#ea4f93] text-sm">
+            {tx.amountDue != null ? formatCurrency(tx.amountDue) : (tx.booking?.amountDue != null ? formatCurrency(tx.booking.amountDue) : "-")}
+          </span>
+        )
+      },
+      {
+        title: language === "vi" ? "Còn lại phải trả" : "Remaining Balance",
+        key: "remainingBalance",
+        width: "14%",
+        sorter: (a, b) => {
+          const valA = a.amountPaid != null ? a.amountPaid : a.booking?.amountPaid;
+          const valB = b.amountPaid != null ? b.amountPaid : b.booking?.amountPaid;
+          return (Number(valA) || 0) - (Number(valB) || 0);
+        },
+        render: (_, tx) => (
+          <span className="font-mono font-bold text-[#2fa25f] text-sm">
+            {tx.amountPaid != null ? formatCurrency(tx.amountPaid) : (tx.booking?.amountPaid != null ? formatCurrency(tx.booking.amountPaid) : "-")}
+          </span>
+        )
+      },
+      {
+        title: language === "vi" ? "Ngày tạo" : "Created At",
+        dataIndex: "createdAt",
+        key: "createdAt",
+        width: "15%",
+        sorter: (a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0),
+        render: (value) => (
+          <div className="flex items-center gap-1.5 text-xs text-[#7f6478]">
+            <Calendar size={13} className="text-[#a88a9f]" />
+            <span className="font-medium">{dayjs(value).format("DD MMM YYYY, HH:mm")}</span>
+          </div>
+        )
+      },
+      {
+        title: t("adminTransactions.status"),
+        dataIndex: "status",
+        key: "status",
+        width: "10%",
+        sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
+        render: (status) => renderStatusBadge(status)
+      },
+      {
+        title: language === "vi" ? "Hành động" : "Actions",
+        key: "actions",
+        width: "3%",
+        align: "right",
+        render: (_, tx) => (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedTransaction(tx);
+              setModalVisible(true);
+            }}
+            title={language === "vi" ? "Xem chi tiết biên lai giao dịch" : "View transaction receipt details"}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-[#7f6478] hover:text-white hover:bg-[#ea4f93] hover:border-[#ea4f93] shadow-xs transition-all duration-300 active:scale-95"
+          >
+            <Eye size={13} className="stroke-[2]" />
+          </button>
+        )
+      }
+    ];
+  }, [language, t]);
 
   return (
     <div className="min-h-[100dvh] bg-[#fafaf9] p-6 lg:p-8 font-sans relative overflow-hidden">
@@ -891,113 +1010,22 @@ export function TransactionOverviewPage() {
                   className="overflow-hidden bg-white rounded-[2rem] border border-slate-200/60 shadow-[0_12px_40px_rgba(0,0,0,0.02)]"
                 >
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="border-b border-slate-100 bg-slate-50/75">
-                          <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[12%]">
-                            {t("adminTransactions.orderCode")}
-                          </th>
-                          <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[20%]">
-                            {t("adminTransactions.customerLocation")}
-                          </th>
-                          <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[12%]">
-                            {t("adminTransactions.totalPrice")}
-                          </th>
-                          <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[14%]">
-                            {t("adminTransactions.depositPaid")}
-                          </th>
-                          <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[14%]">
-                            {language === "vi" ? "Còn lại phải trả" : "Remaining Balance"}
-                          </th>
-                          <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[15%]">
-                            {language === "vi" ? "Ngày tạo" : "Created At"}
-                          </th>
-                          <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] w-[10%]">
-                            {t("adminTransactions.status")}
-                          </th>
-                          <th className="px-6 py-4.5 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] text-right w-[3%]">
-                            {language === "vi" ? "Hành động" : "Actions"}
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {processedTransactions.map((tx) => (
-                          <motion.tr
-                            key={tx.transactionId}
-                            variants={fadeInUp}
-                            className="group border-l-4 border-l-transparent hover:border-l-[#ea4f93] hover:bg-[#fff9fc]/40 transition-all duration-300 cursor-pointer"
-                            onClick={() => {
-                              setSelectedTransaction(tx);
-                              setModalVisible(true);
-                            }}
-                          >
-                            {/* Order Code */}
-                            <td className="px-6 py-5.5 font-mono font-bold text-sm text-[#ea4f93]">
-                              #{tx.orderCode || "N/A"}
-                            </td>
-
-                            {/* Customer */}
-                            <td className="px-6 py-5.5">
-                              <div className="flex items-center gap-3">
-                                <div className={`flex h-9 w-9 items-center justify-center rounded-full font-bold text-xs shrink-0 shadow-xs ${getAvatarColor(tx.customerName)}`}>
-                                  {getInitials(tx.customerName)}
-                                </div>
-                                <div className="min-w-0">
-                                  <div className="font-bold text-[#2d1b35] text-sm truncate">
-                                    {tx.customerName || "Unnamed Customer"}
-                                  </div>
-                                  <div className="text-[10px] text-[#a88a9f] font-medium truncate mt-0.5">
-                                    {tx.salonName || "Nailify Salon"}
-                                  </div>
-                                </div>
-                              </div>
-                            </td>
-
-                            {/* Total Price */}
-                            <td className="px-6 py-5.5 font-mono font-bold text-[#2d1b35] text-sm">
-                              {tx.booking?.totalPrice != null ? formatCurrency(tx.booking.totalPrice) : formatCurrency(tx.amount)}
-                            </td>
-
-                            {/* Deposit Paid */}
-                            <td className="px-6 py-5.5 font-mono font-bold text-[#ea4f93] text-sm">
-                              {tx.amountDue != null ? formatCurrency(tx.amountDue) : (tx.booking?.amountDue != null ? formatCurrency(tx.booking.amountDue) : "-")}
-                            </td>
-
-                            {/* Remaining Balance */}
-                            <td className="px-6 py-5.5 font-mono font-bold text-[#2fa25f] text-sm">
-                              {tx.amountPaid != null ? formatCurrency(tx.amountPaid) : (tx.booking?.amountPaid != null ? formatCurrency(tx.booking.amountPaid) : "-")}
-                            </td>
-
-                            {/* Created At */}
-                            <td className="px-6 py-5.5 text-xs text-[#7f6478]">
-                              <div className="flex items-center gap-1.5">
-                                <Calendar size={13} className="text-[#a88a9f]" />
-                                <span className="font-medium">{dayjs(tx.createdAt).format("DD MMM YYYY, HH:mm")}</span>
-                              </div>
-                            </td>
-
-                            {/* Status */}
-                            <td className="px-6 py-5.5">
-                              {renderStatusBadge(tx.status)}
-                            </td>
-
-                            {/* Actions */}
-                            <td className="px-6 py-5.5 text-right" onClick={(e) => e.stopPropagation()}>
-                              <button
-                                onClick={() => {
-                                  setSelectedTransaction(tx);
-                                  setModalVisible(true);
-                                }}
-                                title={language === "vi" ? "Xem chi tiết biên lai giao dịch" : "View transaction receipt details"}
-                                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-[#7f6478] hover:text-white hover:bg-[#ea4f93] hover:border-[#ea4f93] shadow-xs transition-all duration-300 active:scale-95"
-                              >
-                                <Eye size={13} className="stroke-[2]" />
-                              </button>
-                            </td>
-                          </motion.tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <Table
+                      rowKey="transactionId"
+                      columns={transactionColumns}
+                      dataSource={processedTransactions}
+                      pagination={false}
+                      onRow={(record) => ({
+                        onClick: () => {
+                          setSelectedTransaction(record);
+                          setModalVisible(true);
+                        },
+                        className: "cursor-pointer"
+                      })}
+                      size="middle"
+                      rowClassName="group hover:bg-[#fff9fc]/40 transition-all duration-300 cursor-pointer"
+                      className="custom-admin-table [&_.ant-table]:!bg-transparent [&_.ant-table-thead_th]:!bg-[#fff7fb] [&_.ant-table-thead_th]:!border-b [&_.ant-table-thead_th]:!border-[#f5e2ec] [&_.ant-table-thead_th]:!text-[#8f7484] [&_.ant-table-thead_th]:!font-bold [&_.ant-table-thead_th]:!text-[12px] [&_.ant-table-tbody_.ant-table-row>td]:!border-b [&_.ant-table-tbody_.ant-table-row>td]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row:hover>td]:!bg-[#fff5fb] transition-colors"
+                    />
                   </div>
 
                   {/* Pagination footer */}

@@ -27,6 +27,7 @@ import { fetchAdminSalons } from "../../salon-management/services/salonManagemen
 import { fetchSalonStaff, fetchArtistSchedule, fetchTodaySchedules } from "../services/staffManagementService";
 import { fetchUserById } from "../../../manager/bookings/services/bookingsService";
 import { fetchNailArtistSkills } from "../../../manager/staff-artist-management/services/nailArtistsService";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
 const ALL_ROLES_VALUE = "__all__";
 
@@ -59,33 +60,7 @@ SectionHeading.propTypes = {
   subtitle: PropTypes.string,
 };
 
-function MetricCard({ item }) {
-  const Icon = item.icon || Users;
 
-  return (
-    <Card className="p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div className={`inline-flex h-12 w-12 items-center justify-center rounded-xl ${item.iconClassName} shadow-lg`}>
-          <Icon size={24} />
-        </div>
-      </div>
-      <p className="mt-4 text-2xl font-bold leading-none text-[#2d1b35]">{item.value}</p>
-      <p className="mt-2 text-sm font-medium text-[#8b7382]">{item.label}</p>
-      <p className={`mt-2 text-xs font-medium ${item.noteClassName}`}>{item.note}</p>
-    </Card>
-  );
-}
-
-MetricCard.propTypes = {
-  item: PropTypes.shape({
-    icon: PropTypes.elementType,
-    iconClassName: PropTypes.string.isRequired,
-    label: PropTypes.string.isRequired,
-    note: PropTypes.string.isRequired,
-    noteClassName: PropTypes.string.isRequired,
-    value: PropTypes.string.isRequired,
-  }).isRequired,
-};
 
 function InfoItem({ label, children }) {
   return (
@@ -438,36 +413,32 @@ export function StaffManagementPage() {
         label: isVi ? "Tổng số nhân viên" : "Total Staff",
         value: staffList.length.toString(),
         icon: Users,
-        iconClassName: "bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-white",
+        color: "#ea4f93",
         note: selectedSalon?.name || (isVi ? "Tất cả chi nhánh" : "All Salons"),
-        noteClassName: "text-[#c08aa4]",
       },
       {
         label: isVi ? "Sẵn sàng hôm nay" : "Available Today",
         value: availableTodayCount,
         icon: CheckCircle2,
-        iconClassName: "bg-[#eaf9ee] text-[#2fa25f]",
+        color: "#10b981",
         note: isVi ? "Trạng thái hiện tại" : "Current status",
-        noteClassName: "text-[#c08aa4]",
       },
       {
         label: isVi ? "Đánh giá trung bình" : "Average Rating",
         value: selectedSalon?.avgRating?.toFixed(2) || 0,
         icon: Star,
-        iconClassName: "bg-[#fff8e1] text-[#f59e0b]",
+        color: "#f59e0b",
         note: isVi ? "Sự hài lòng khách hàng" : "Customer satisfaction",
-        noteClassName: "text-[#2fa25f]",
       },
       {
         label: isVi ? "Đang nghỉ phép" : "On Leave",
         value: selectedSalon?.onLeaveStaffCount || 0,
         icon: Clock3,
-        iconClassName: "bg-[#fff0f8] text-[#ea4f93]",
+        color: "#6366f1",
         note: isVi ? "Nhân viên nghỉ phép" : "Staff on leave",
-        noteClassName: "text-[#c08aa4]",
       },
     ];
-  }, [salons, selectedSalonId, staffList, language]);
+  }, [salons, selectedSalonId, staffList, availableTodayCount, language]);
 
   const loadTodaySchedules = useCallback(async () => {
     try {
@@ -539,11 +510,7 @@ export function StaffManagementPage() {
       </Card> */}
 
       {!loadingSalons && (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {stats.map((item, index) => (
-            <MetricCard key={index} item={item} />
-          ))}
-        </div>
+        <TopMetricsRow metrics={stats} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" />
       )}
 
       <div className="grid gap-4">

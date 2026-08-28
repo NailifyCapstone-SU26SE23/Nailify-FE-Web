@@ -24,6 +24,7 @@ import {
 } from "../../../../shared/constants/routes";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { fetchAdminNailDesigns, fetchAdminCategories } from "../services/nailDesignManagementService";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
 const DESIGN_CARD_PRESETS = [
   {
@@ -132,34 +133,7 @@ function normalizeDesign(design, index, t) {
   };
 }
 
-function MetricCard({ item }) {
-  const Icon = item.icon;
 
-  return (
-    <article className="rounded-[18px] border border-[#f8d7e5] bg-white p-4 shadow-[0_10px_24px_rgba(236,72,153,0.06)]">
-      <div className={`inline-flex h-9 w-9 items-center justify-center rounded-xl ${item.iconClassName}`}>
-        <Icon size={16} />
-      </div>
-      <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-[#cd98b1]">
-        {item.label}
-      </p>
-      <p className="mt-1 text-[1.9rem] font-extrabold leading-none text-[#3f2741]">
-        {item.value}
-      </p>
-      <p className="mt-2 text-xs font-medium text-[#21b07b]">{item.note}</p>
-    </article>
-  );
-}
-
-MetricCard.propTypes = {
-  item: PropTypes.shape({
-    icon: PropTypes.func.isRequired,
-    iconClassName: PropTypes.string.isRequired,
-    label: PropTypes.string.isRequired,
-    note: PropTypes.string.isRequired,
-    value: PropTypes.string.isRequired,
-  }).isRequired,
-};
 
 function SmallTag({ children, className = "" }) {
   return (
@@ -346,31 +320,31 @@ export function NailDesignManagementPage() {
         value: metaData.totalItems.toLocaleString(),
         note: `${metaData.totalPages} ${t("adminNailsDesignManagement.pages")}`,
         icon: Tag,
-        iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
+        color: "#ea4f93",
       },
       {
         label: t("adminNailsDesignManagement.activeDesigns"),
         value: normalizedDesigns.filter((design) => design.status === "Active").length.toLocaleString(),
         note: t("adminNailsDesignManagement.onCurrentPage"),
         icon: WandSparkles,
-        iconClassName: "bg-[#f3ebff] text-[#8b5cf6]",
+        color: "#8b5cf6",
       },
       {
         label: t("adminNailsDesignManagement.tryonReady"),
         value: normalizedDesigns.filter((design) => design.previewImage).length.toLocaleString(),
         note: t("adminNailsDesignManagement.hasPreviewImage"),
         icon: Sparkles,
-        iconClassName: "bg-[#e7fbf4] text-[#23b68b]",
+        color: "#23b68b",
       },
       {
         label: t("adminNailsDesignManagement.mostPopularStyle"),
-        value: normalizedDesigns[0]?.uiTitle,
+        value: normalizedDesigns[0]?.uiTitle || "N/A",
         note: t("adminNailsDesignManagement.currentPageHighlight"),
         icon: Star,
-        iconClassName: "bg-[#fff4df] text-[#f5a623]",
+        color: "#f5a623",
       },
     ],
-    [metaData.totalItems, metaData.totalPages, normalizedDesigns, language],
+    [metaData.totalItems, metaData.totalPages, normalizedDesigns, language, t],
   );
 
   const paginationItems = useMemo(() => {
@@ -471,10 +445,8 @@ export function NailDesignManagementPage() {
 
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {summaryCards.map((item) => (
-          <MetricCard key={item.label} item={item} />
-        ))}
+      <div className="mb-4">
+        <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.72fr)_290px]">

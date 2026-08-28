@@ -16,7 +16,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Table } from "antd";
+import { Table, Tooltip } from "antd";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
@@ -31,21 +31,9 @@ import {
   PROMOTION_SCOPE_OPTIONS,
   PROMOTION_TYPE_OPTIONS,
 } from "../services/promotionManagementService";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
-function MetricCard({ item }) {
-  const Icon = item.icon;
 
-  return (
-    <article className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
-      <div className={`inline-flex h-10 w-10 items-center justify-center rounded-[14px] ${item.iconClassName}`}>
-        <Icon size={18} />
-      </div>
-      <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-[#cd98b1]">{item.label}</p>
-      <p className="mt-1 text-[1.9rem] font-extrabold leading-none text-[#432744]">{item.value}</p>
-      <p className="mt-2 text-xs font-medium text-[#b58a9f]">{item.note}</p>
-    </article>
-  );
-}
 
 function formatDateTime(value) {
   if (!value) {
@@ -89,53 +77,6 @@ function PromotionStatusBadge({ promotion }) {
   );
 }
 
-function SortableHeader({ label, sortKey, selectedSort, onToggle }) {
-  const isActive = selectedSort.startsWith(`${sortKey}-`);
-  const isDesc = selectedSort === `${sortKey}-desc`;
-
-  return (
-    <button
-      type="button"
-      onClick={() => onToggle(sortKey)}
-      className={`inline-flex items-center gap-1.5 font-semibold transition ${isActive ? "text-[#ea4f93]" : "text-[#5f4a5c] hover:text-[#ea4f93]"}`}
-    >
-      <span>{label}</span>
-      <ArrowUpDown size={13} className={isActive ? "text-[#ea4f93]" : "text-[#d39bb5]"} />
-      {isActive ? <span className="text-[10px] font-bold">{isDesc ? "DESC" : "ASC"}</span> : null}
-    </button>
-  );
-}
-
-function sortPromotions(items, sortValue) {
-  const [sortKey = "name", sortDirection = "asc"] = String(sortValue || "name-asc").split("-");
-  const directionMultiplier = sortDirection === "desc" ? -1 : 1;
-
-  return [...items].sort((left, right) => {
-    const getSortValue = (item) => {
-      switch (sortKey) {
-        case "type":
-          return item.type || "";
-        case "scope":
-          return item.scope || "";
-        case "discount":
-          return Number(item.discountValue || 0);
-        case "name":
-        default:
-          return item.name || "";
-      }
-    };
-
-    const leftValue = getSortValue(left);
-    const rightValue = getSortValue(right);
-
-    if (typeof leftValue === "number" && typeof rightValue === "number") {
-      return (leftValue - rightValue) * directionMultiplier;
-    }
-
-    return String(leftValue).localeCompare(String(rightValue)) * directionMultiplier;
-  });
-}
-
 export function PromotionsManagementPage() {
   const { t, language } = useLanguage();
   const location = useLocation();
@@ -145,7 +86,6 @@ export function PromotionsManagementPage() {
   const [typeFilter, setTypeFilter] = useState("");
   const [scopeFilter, setScopeFilter] = useState("");
   const [discountTypeFilter, setDiscountTypeFilter] = useState("");
-  const [selectedSort, setSelectedSort] = useState("name-asc");
   const [promotions, setPromotions] = useState([]);
   const [metaData, setMetaData] = useState({
     currentPage: 1,
@@ -237,28 +177,28 @@ export function PromotionsManagementPage() {
         value: metaData.totalItems.toLocaleString(),
         note: `${metaData.totalPages} ${isVi ? "trang" : "pages"}`,
         icon: BadgePercent,
-        iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
+        color: "#ea4f93",
       },
       {
         label: t("promotionDetail.active"),
         value: activeCount.toLocaleString(),
         note: isVi ? "Trang hiện tại" : "Current page",
         icon: Sparkles,
-        iconClassName: "bg-[#e7fbf4] text-[#20ab77]",
+        color: "#20ab77",
       },
       {
         label: t("promotions.table.scope") + " (" + (t("promotionDetail.categoryId") || "Category") + ")",
         value: categoryScopedCount.toLocaleString(),
         note: isVi ? "Trang hiện tại" : "Current page",
         icon: Tag,
-        iconClassName: "bg-[#fff4df] text-[#d9871c]",
+        color: "#d9871c",
       },
       {
         label: t("promotions.table.value") + " (%)",
         value: percentDiscountCount.toLocaleString(),
         note: isVi ? "Trang hiện tại" : "Current page",
         icon: CalendarRange,
-        iconClassName: "bg-[#f3ebff] text-[#8b5cf6]",
+        color: "#8b5cf6",
       },
     ];
   }, [metaData.totalItems, metaData.totalPages, promotions, t]);
@@ -303,33 +243,12 @@ export function PromotionsManagementPage() {
     );
   }, [debouncedQuery, promotions]);
 
-  const sortedPromotions = useMemo(
-    () => sortPromotions(filteredPromotions, selectedSort),
-    [filteredPromotions, selectedSort],
-  );
-
-  const handleSortToggle = (sortKey) => {
-    setSelectedSort((current) => {
-      if (current.startsWith(`${sortKey}-`)) {
-        return current.endsWith("-asc") ? `${sortKey}-desc` : `${sortKey}-asc`;
-      }
-
-      return `${sortKey}-asc`;
-    });
-  };
-
   const columns = useMemo(
     () => [
       {
-        title: (
-          <SortableHeader
-            label={t("promotions.table.promotion")}
-            sortKey="name"
-            selectedSort={selectedSort}
-            onToggle={handleSortToggle}
-          />
-        ),
+        title: t("promotions.table.promotion"),
         key: "name",
+        sorter: (a, b) => (a.name || "").localeCompare(b.name || ""),
         render: (_, promotion) => (
           <div className="flex items-center gap-3">
             {promotion.imageUrl ? (
@@ -351,14 +270,9 @@ export function PromotionsManagementPage() {
         ),
       },
       {
-        title: (
-          <SortableHeader
-            label={t("promotions.table.type")}
-            sortKey="type"
-            selectedSort={selectedSort}
-            onToggle={handleSortToggle}
-          />
-        ),
+        title: t("promotions.table.type"),
+        key: "type",
+        sorter: (a, b) => (a.type || "").localeCompare(b.type || ""),
         render: (_, promotion) => (
           <div className="space-y-1">
             <p className="text-sm font-semibold text-[#5f4a5c]">{promotion.type}</p>
@@ -367,14 +281,9 @@ export function PromotionsManagementPage() {
         ),
       },
       {
-        title: (
-          <SortableHeader
-            label={t("promotions.table.value")}
-            sortKey="discount"
-            selectedSort={selectedSort}
-            onToggle={handleSortToggle}
-          />
-        ),
+        title: t("promotions.table.value"),
+        key: "discount",
+        sorter: (a, b) => Number(a.discountValue || 0) - Number(b.discountValue || 0),
         render: (_, promotion) => (
           <div className="space-y-1">
             <p className="text-sm font-semibold text-[#5f4a5c]">{formatDiscount(promotion)}</p>
@@ -383,14 +292,8 @@ export function PromotionsManagementPage() {
         ),
       },
       {
-        title: (
-          <SortableHeader
-            label={t("promotions.table.startDate")}
-            sortKey="scope"
-            selectedSort={selectedSort}
-            onToggle={handleSortToggle}
-          />
-        ),
+        title: t("promotions.table.startDate"),
+        key: "scope",
         render: (_, promotion) => (
           <div className="space-y-1 text-sm text-[#5f4a5c]">
             <p>{formatDateTime(promotion.startDate)}</p>
@@ -404,42 +307,51 @@ export function PromotionsManagementPage() {
       {
         title: t("promotions.table.status"),
         key: "status",
+        sorter: (a, b) => {
+          const statusA = a.status || (a.isActive ? "Active" : "Inactive");
+          const statusB = b.status || (b.isActive ? "Active" : "Inactive");
+          return statusA.localeCompare(statusB);
+        },
         render: (_, promotion) => <PromotionStatusBadge promotion={promotion} />,
       },
       {
         title: t("userManagement.table.actions"),
         key: "actions",
+        align: "right",
         render: (_, promotion) => (
-          <ActionDropdown
-            items={[
-              {
-                key: "view",
-                label: t("view") || "View Detail",
-                icon: Eye,
-                onSelect: () => navigate(getAdminPromotionDetailRoute(promotion.promotionId)),
-              },
-              {
-                key: "edit",
-                label: t("promotionDetail.editTitle"),
-                icon: Pencil,
-                onSelect: () =>
-                  navigate(getAdminPromotionDetailRoute(promotion.promotionId), {
-                    state: { startInEdit: true },
-                  }),
-              },
-              {
-                key: "delete",
-                label: t("promotionDetail.deleteBtn"),
-                icon: Trash2,
-                className: "text-[#d14c84]",
-                onSelect: () => setDeleteTarget(promotion),
-              },
-            ]}
-          />
+          <div className="flex items-center justify-end gap-1.5">
+            <Tooltip title={t("view") || "View Detail"}>
+              <button
+                type="button"
+                onClick={() => navigate(getAdminPromotionDetailRoute(promotion.promotionId))}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
+              >
+                <Eye size={12} />
+              </button>
+            </Tooltip>
+            <Tooltip title={t("promotionDetail.editTitle")}>
+              <button
+                type="button"
+                onClick={() => navigate(getAdminPromotionDetailRoute(promotion.promotionId), { state: { startInEdit: true } })}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
+              >
+                <Pencil size={12} />
+              </button>
+            </Tooltip>
+            <Tooltip title={t("promotionDetail.deleteBtn")}>
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(promotion)}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 bg-[#fff0f0] text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
+              >
+                <Trash2 size={12} />
+              </button>
+            </Tooltip>
+          </div>
         ),
       },
     ],
-    [navigate, selectedSort, t],
+    [navigate, t],
   );
 
   const handleDeletePromotion = async () => {
@@ -486,10 +398,8 @@ export function PromotionsManagementPage() {
           <div className="rounded-[16px] bg-[#fff1f5] px-4 py-3 text-sm font-medium text-[#d14c84]">{error}</div>
         ) : null}
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {summaryCards.map((item) => (
-            <MetricCard key={item.label} item={item} />
-          ))}
+        <div className="mb-4">
+          <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" />
         </div>
 
         <div className="flex flex-col gap-3 rounded-[20px] border border-[#f8deea] bg-white/70 p-4 shadow-[0_12px_26px_rgba(236,72,153,0.05)] xl:flex-row xl:items-center xl:justify-between">
@@ -561,7 +471,7 @@ export function PromotionsManagementPage() {
           <Table
             rowKey="promotionId"
             columns={columns}
-            dataSource={sortedPromotions}
+            dataSource={filteredPromotions}
             loading={{
               spinning: isLoading,
               indicator: <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />,
@@ -569,6 +479,7 @@ export function PromotionsManagementPage() {
             pagination={false}
             scroll={{ x: 1180 }}
             locale={{ emptyText: error || (t("userManagement.table.actions") === "Thao tác" ? "Không tìm thấy khuyến mãi." : "No promotions found.") }}
+            className="custom-admin-table [&_.ant-table]:!bg-transparent [&_.ant-table-thead_th]:!bg-[#fff9fb] [&_.ant-table-thead_th]:!text-[10px] [&_.ant-table-thead_th]:!uppercase [&_.ant-table-thead_th]:!tracking-[0.14em] [&_.ant-table-thead_th]:!text-[#a88a9f] [&_.ant-table-thead_th]:!font-bold [&_.ant-table-thead_th]:!border-b [&_.ant-table-thead_th]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row>td]:!border-b [&_.ant-table-tbody_.ant-table-row>td]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row]:hover>td:!bg-[#fff9fb] [&_.ant-table-tbody_.ant-table-row>td]:!py-4 [&_.ant-table-tbody_.ant-table-row>td]:!text-[12px] [&_.ant-table-tbody_.ant-table-row>td]:!text-[#5b4256]"
           />
 
           <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
