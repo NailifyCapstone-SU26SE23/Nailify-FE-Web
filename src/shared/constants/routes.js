@@ -67,7 +67,7 @@ export const ROUTES = {
   adminProfile: "/admin/profile",
   adminBookings: "/admin/bookings",
   adminBookingsCreate: "/admin/bookings/create",
-  adminBookingDetail: "/admin/bookings/:bookingId",
+  adminBookingDetail: "/admin/bookings/detail/:bookingId",
   adminSalons: "/admin/salons",
   adminChairs: "/admin/chairs",
   adminSalonsCreate: "/admin/salons/create",
@@ -144,7 +144,7 @@ export const getManagerStaffUpdateRoute = (staffId) =>
   `/manager/staff-artists/${staffId}`;
 
 export const getAdminBookingDetailRoute = (bookingId) =>
-  `/admin/bookings/${bookingId}`;
+  `/admin/bookings/detail/${bookingId}`;
 export const getAdminSalonDetailRoute = (salonId) =>
   `/admin/salons/${salonId}`;
 export const getAdminSalonUpdateRoute = (salonId) =>

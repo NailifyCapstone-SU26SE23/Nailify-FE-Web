@@ -15,6 +15,7 @@ import {
   TrendingUp,
   UserRound,
   ChevronRight,
+  Eye,
 } from "lucide-react";
 import { Spin, Input, Empty, Tag, Table, DatePicker, Button } from "antd";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -23,7 +24,7 @@ import dayjs from "dayjs";
 
 import { fetchBookingsBySalonId } from "../../../manager/bookings/services/bookingsService";
 import { fetchAdminSalonDetail } from "../../salon-management/services/salonManagementService";
-import { ROUTES } from "../../../../shared/constants/routes";
+import { getAdminBookingDetailRoute, ROUTES } from "../../../../shared/constants/routes";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
 const SALON_PLACEHOLDER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
@@ -390,8 +391,32 @@ export function AdminSalonBookingDetailPage() {
           </span>
         ),
       },
+      {
+        title: isVi ? "Thao tác" : "Actions",
+        key: "actions",
+        align: "right",
+        render: (_, booking) => {
+          const bookingId = booking?.bookingId || booking?.id;
+
+          return (
+            <button
+              type="button"
+              disabled={!bookingId}
+              aria-label={isVi ? "Xem chi tiết lịch hẹn" : "View booking details"}
+              onClick={() =>
+                navigate(getAdminBookingDetailRoute(bookingId), {
+                  state: { from: `/admin/bookings/${salonId}` },
+                })
+              }
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Eye size={16} />
+            </button>
+          );
+        },
+      },
     ];
-  }, [t, completedBookings, isVi]);
+  }, [dateRange, isVi, navigate, salonId]);
 
   const salonSummary = useMemo(() => {
     const isVi = language === "vi";
