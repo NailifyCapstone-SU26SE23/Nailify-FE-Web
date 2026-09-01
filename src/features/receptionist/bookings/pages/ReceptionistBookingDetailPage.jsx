@@ -1415,11 +1415,6 @@ export function ReceptionistBookingDetailPage() {
               <div className="space-y-3 mt-2">
                 {[...transactions].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)).map((tx, idx) => {
                   const isDeposit = idx === 0 || tx.amount === booking?.depositAmount;
-                  const txLabel = isDeposit ? (language === "vi" ? "Tiền cọc" : "Deposit") : (language === "vi" ? "Tiền trả còn lại" : "Remaining Balance");
-
-                  const actualTotal = booking?.discountAmount > 0 ? booking.finalPrice : booking.totalPrice;
-                  const percentage = actualTotal > 0 ? Math.round((tx.amount / actualTotal) * 100) : 0;
-
                   return (
                     <div
                       key={tx.transactionId}
@@ -1428,24 +1423,11 @@ export function ReceptionistBookingDetailPage() {
                     >
                       <div className="flex items-start justify-between">
                         <div>
-                          <div className="flex items-center gap-1.5">
-                            <p className="text-[11px] font-bold text-[#2B182B]">{txLabel}</p>
-                            {percentage > 0 && (
-                              <span className="px-1.5 py-0.5 rounded-md bg-[#FFF0F5] text-[#E84F93] text-[9px] font-extrabold tracking-wider border border-[#F3D6E5]/60">
-                                {percentage}%
-                              </span>
-                            )}
-                          </div>
                           <p className="text-[10px] text-[#9E8497] mt-0.5 font-mono">#{tx.orderCode}</p>
                         </div>
                         <div className="text-right">
                           <p className="text-[13px] font-extrabold text-[#E84F93]">{formatCurrency(tx.amount)}</p>
-                          <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold ${String(tx.status).toLowerCase() === 'paid' ? 'bg-[#ECFDF5] text-[#059669]' :
-                            String(tx.status).toLowerCase() === 'pending' ? 'bg-[#FFFBEB] text-[#D97706]' :
-                              'bg-[#F3F4F6] text-[#6B7280]'
-                            }`}>
-                            {tx.status}
-                          </span>
+                       
                         </div>
                       </div>
 

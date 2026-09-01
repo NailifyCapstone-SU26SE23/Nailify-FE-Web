@@ -24,7 +24,7 @@ import {
   Banknote,
 } from "lucide-react";
 import { useCallback, useEffect, useState, useRef } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useLocation, useParams, useNavigate } from "react-router-dom";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ROUTES } from "../../../../shared/constants/routes";
 import { PropTypes } from "../../../../shared/utils/propTypes";
@@ -346,7 +346,9 @@ const _shownRefundWarningForBookings = new Set();
 export function ManagerBookingDetailPage() {
   const { t, language } = useLanguage();
   const { bookingId } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
+  const backRoute = location.state?.from || (location.pathname.startsWith("/admin/") ? ROUTES.adminBookings : ROUTES.managerBookings);
   const [booking, setBooking] = useState(null);
   const [customer, setCustomer] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -599,7 +601,7 @@ export function ManagerBookingDetailPage() {
   if (!isLoading && error) {
     return (
       <section className="flex min-h-full flex-col gap-4 p-6 font-sans">
-        <Link to="/manager/bookings" className="inline-flex items-center gap-2 text-xs font-bold text-[#E84F93]">
+        <Link to={backRoute} className="inline-flex items-center gap-2 text-xs font-bold text-[#E84F93]">
           <ArrowLeft size={16} /> {t("manager.common.back")}
         </Link>
         <Alert message={t("manager.common.error")} description={error} type="error" showIcon className="rounded-2xl" />
@@ -641,7 +643,7 @@ export function ManagerBookingDetailPage() {
             <div>
               <button
                 type="button"
-                onClick={() => navigate("/manager/bookings")}
+                onClick={() => navigate(backRoute)}
                 className="inline-flex items-center gap-2 rounded-full border border-[#F3D6E5] bg-white px-3.5 py-1.5 text-xs font-bold text-[#E84F93] hover:bg-[#FFF0F5] hover:border-[#E84F93] transition shadow-xs mb-3 group"
               >
                 <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />

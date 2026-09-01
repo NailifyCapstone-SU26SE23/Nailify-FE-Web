@@ -63,8 +63,8 @@ export const SALON_BRANCHES = [
     schedule: "Mon-Sun 8:00 AM - 9:00 PM",
     rating: "4.7",
     reviews: "285",
-    status: "BUSY",
-    statusTone: "bg-amber-100 text-amber-600",
+    status: "Open",
+    statusTone: "bg-emerald-100 text-emerald-600",
   },
   {
     id: "BK-001",
@@ -77,7 +77,7 @@ export const SALON_BRANCHES = [
     schedule: "Closed - Under Renovation",
     rating: "4.5",
     reviews: "198",
-    status: "CLOSED",
+    status: "Closed",
     statusTone: "bg-rose-100 text-rose-600",
   },
 ];
@@ -122,8 +122,6 @@ export const SALON_ALERTS = [
     color: "text-amber-500",
   },
 ];
-
-export const SALON_STATUS_FILTERS = ["All", "Open", "Closed"];
 
 export const TOP_PERFORMING_SALON = {
   title: "Top Performing Salon",
@@ -202,13 +200,7 @@ export const matchesSalonStatusFilter = (salonStatus, statusFilter) => {
 
 export const SALON_STATUS_OPTIONS = [
   { value: "Open", label: "Open", color: "bg-emerald-100 text-emerald-600" },
-  { value: "BUSY", label: "Busy", color: "bg-amber-100 text-amber-600" },
-  { value: "CLOSED", label: "Closed", color: "bg-rose-100 text-rose-600" },
-  {
-    value: "MAINTENANCE",
-    label: "Under Maintenance",
-    color: "bg-blue-100 text-blue-600",
-  },
+  { value: "Closed", label: "Closed", color: "bg-rose-100 text-rose-600" },
 ];
 
 export const SALON_DAYS_OF_WEEK = [
