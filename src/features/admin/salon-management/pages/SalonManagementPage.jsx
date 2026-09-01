@@ -38,10 +38,6 @@ import {
 } from "../../../../shared/constants/routes";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
-import {
-  SALON_STATUS_FILTERS,
-  matchesSalonStatusFilter,
-} from "../services/mockSalon";
 import { fetchSalons, deleteSalon } from "../services/salonsService";
 import { fetchAdminSalons, normalizeAdminSalon, fetchSalonStaffCount } from "../services/salonManagementService";
 import { fetchAdminUsers, updateAdminUser, fetchRawAdminUserDetail } from "../../user-management/services/userManagementService";
@@ -283,20 +279,22 @@ function mapApiSalonToUiFormat(apiSalon) {
   // Map API status values to our internal statuses
   const apiStatus = (apiSalon.status || "Open").toLowerCase();
 
-  let internalStatus = "Open"; // Default to Open
+  let internalStatus = "Open";
   let statusColor = "bg-[#e6fdf0] text-[#16975f]";
   let statusTone = "bg-[#e6fdf0] text-[#16975f]";
 
   if (apiStatus === "closed") {
-    internalStatus = "CLOSED";
+    internalStatus = "Closed";
     statusColor = "bg-[#fff0f0] text-[#e53e3e]";
     statusTone = "bg-[#fff0f0] text-[#e53e3e]";
   } else if (apiStatus === "busy") {
-    internalStatus = "BUSY";
-    statusColor = "bg-[#fffbeb] text-[#d69e2e]";
-    statusTone = "bg-[#fffbeb] text-[#d69e2e]";
+    internalStatus = "Open";
   } else if (apiStatus === "open") {
     internalStatus = "Open";
+  } else {
+    internalStatus = "Closed";
+    statusColor = "bg-[#fff0f0] text-[#e53e3e]";
+    statusTone = "bg-[#fff0f0] text-[#e53e3e]";
   }
 
   return {
@@ -358,7 +356,6 @@ export function SalonManagementPage() {
   const [showSetHoursModal, setShowSetHoursModal] = useState(false);
   const [selectedSalon, setSelectedSalon] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
   const [branchOverviewStart, setBranchOverviewStart] = useState(0);
   const [branchControlsPage, setBranchControlsPage] = useState(1);
   const { t, language } = useLanguage();
@@ -520,11 +517,9 @@ export function SalonManagementPage() {
           .join(" ")
           .toLowerCase()
           .includes(normalizedSearch);
-      const matchesStatus = matchesSalonStatusFilter(salon.status, statusFilter);
-
-      return matchesSearch && matchesStatus;
+      return matchesSearch;
     });
-  }, [salons, searchTerm, statusFilter]);
+  }, [salons, searchTerm]);
 
   const visibleBranchSalons = useMemo(
     () => filteredSalons.slice(branchOverviewStart, branchOverviewStart + SALONS_PER_PAGE),
@@ -577,7 +572,7 @@ export function SalonManagementPage() {
   useEffect(() => {
     setBranchOverviewStart(0);
     setBranchControlsPage(1);
-  }, [searchTerm, statusFilter]);
+  }, [searchTerm]);
 
   const handleViewSalon = (salon) => {
     navigate(getAdminSalonDetailRoute(salon.id));
@@ -624,7 +619,6 @@ export function SalonManagementPage() {
 
   const clearFilters = () => {
     setSearchTerm("");
-    setStatusFilter("All");
     setBranchOverviewStart(0);
   };
 
@@ -756,23 +750,6 @@ export function SalonManagementPage() {
                     title={t("adminSalonManagement.branchOverview")}
                     subtitle={t("adminSalonManagement.snapshotCardsForTheBranchesMat")}
                   />
-                  <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em]">
-                    {SALON_STATUS_FILTERS.map((tab) => (
-                      <motion.button
-                        key={tab}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        type="button"
-                        onClick={() => setStatusFilter(tab)}
-                        className={`rounded-full px-4 py-2 text-[12px] font-semibold transition-all duration-300 ${statusFilter === tab
-                          ? "bg-[#ea4f93] text-white shadow-[0_10px_20px_rgba(226,93,143,0.22)]"
-                          : "bg-[#fff5fb] text-[#a88a9f] hover:bg-[#fde7ef] hover:text-[#ea4f93]"
-                          }`}
-                      >
-                        {tab === "All" ? (t("adminSalonManagement.all")) : tab === "Open" ? (t("adminSalonManagement.active")) : tab === "Closed" ? (t("adminSalonManagement.inactive")) : (t("adminSalonManagement.busy"))}
-                      </motion.button>
-                    ))}
-                  </div>
                 </div>
                 {filteredSalons.length > 0 ? (
                   <div className="flex items-center gap-3">
@@ -878,16 +855,16 @@ export function SalonManagementPage() {
             </aside>
           </motion.div>
 
-          <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="mt-6">
-            {/* Branch Controls */}
-            <PremiumCard className="p-6">
+            <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="mt-6">
+              {/* Branch Controls */}
+              <PremiumCard className="p-6">
               <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <SectionHeading
                     title={t("adminSalonManagement.branchControls")}
                     subtitle={language === "vi"
-                      ? `Hiển thị ${filteredSalons.length} trên ${salons.length} chi nhánh${searchTerm ? ` • Tìm kiếm: "${searchTerm}"` : ""}${statusFilter !== "All" ? ` • Trạng thái: ${statusFilter === "Open" ? "Đang hoạt động" : statusFilter === "Closed" ? "Ngừng hoạt động" : "Bận"}` : ""}`
-                      : `Showing ${filteredSalons.length} of ${salons.length} salons${searchTerm ? ` • Search: "${searchTerm}"` : ""}${statusFilter !== "All" ? ` • Status: ${statusFilter}` : ""}`}
+                      ? `Hiển thị ${filteredSalons.length} trên ${salons.length} chi nhánh${searchTerm ? ` • Tìm kiếm: "${searchTerm}"` : ""}`
+                      : `Showing ${filteredSalons.length} of ${salons.length} salons${searchTerm ? ` • Search: "${searchTerm}"` : ""}`}
                   />
                 </div>
                 <div className="flex flex-col gap-4 xl:ml-auto xl:min-w-[640px] xl:items-end">
@@ -901,7 +878,7 @@ export function SalonManagementPage() {
                         onChange={(event) => setSearchTerm(event.target.value)}
                         className="w-full bg-transparent text-[13px] text-[#2d1b35] outline-none placeholder:text-[#c8b0bf]"
                       />
-                      {searchTerm || statusFilter !== "All" ? (
+                      {searchTerm ? (
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
