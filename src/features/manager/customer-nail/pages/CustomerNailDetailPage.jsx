@@ -319,6 +319,39 @@ function formatDuration(duration, status) {
   return `${duration} mins`;
 }
 
+function formatOptionalVND(amount, emptyLabel = "N/A") {
+  if (amount === null || amount === undefined || amount === "") {
+    return emptyLabel;
+  }
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(amount);
+}
+
+function formatOptionalDuration(duration, emptyLabel = "N/A") {
+  if (duration === null || duration === undefined || duration === "") {
+    return emptyLabel;
+  }
+  return `${duration} mins`;
+}
+
+function getSystemPrice(nail) {
+  return nail?.systemPrice ?? nail?.customerNail?.price ?? nail?.price;
+}
+
+function getSystemDuration(nail) {
+  return nail?.systemDuration ?? nail?.customerNail?.duration ?? nail?.duration;
+}
+
+function getRequestPrice(nail) {
+  return nail?._isRequest ? (nail?.requestPrice ?? nail?.price) : null;
+}
+
+function getRequestDuration(nail) {
+  return nail?._isRequest ? (nail?.requestDuration ?? nail?.duration) : null;
+}
+
 function getStaffDisplayName(staff) {
   const fullName = [staff?.firstName, staff?.lastName].filter(Boolean).join(" ").trim();
   return fullName || staff?.fullName || staff?.name || "Unknown Staff";
@@ -749,13 +782,9 @@ export function CustomerNailDetailPage() {
   };
 
   const handleManagerApproveQuote = async () => {
-    if (!finalPrice) {
-      toast.error("Please enter a final price.");
-      return;
-    }
     try {
       setIsSubmitting(true);
-      await managerApproveQuote(nail?.customerNailRequestId || customerNailId, parseFloat(finalPrice), parseFloat(finalDuration) || 0);
+      await managerApproveQuote(nail?.customerNailRequestId || customerNailId, finalPrice, finalDuration);
       toast.success("Quote approved successfully!");
       setIsApproveModalOpen(false);
       setFinalPrice("");
@@ -1067,9 +1096,9 @@ export function CustomerNailDetailPage() {
           <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-gradient-radial from-[#ffd4e4]/30 to-transparent blur-3xl pointer-events-none" />
           <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-gradient-radial from-[#f3e8ff]/30 to-transparent blur-3xl pointer-events-none" />
 
-          <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between z-10">
+          <div className="relative grid gap-6 xl:grid-cols-[minmax(320px,430px)_1fr] xl:items-center z-10">
             {/* Left side: Info & Image */}
-            <div className="flex flex-col sm:flex-row items-center gap-6">
+            <div className="flex flex-col sm:flex-row items-center gap-5 xl:min-w-0">
               {nail?.imageUrl ? (
                 <div className="relative group">
                   <img
@@ -1085,9 +1114,9 @@ export function CustomerNailDetailPage() {
                 </div>
               )}
 
-              <div className="text-center sm:text-left">
+              <div className="text-center sm:text-left xl:min-w-0">
                 <div className="flex flex-wrap justify-center sm:justify-start items-center gap-3">
-                  <h2 className="text-3xl font-bold tracking-tight text-[#3f2240]">
+                  <h2 className="text-3xl font-bold tracking-tight text-[#3f2240] xl:max-w-[260px] xl:truncate">
                     {nail?.name || "Untitled Design"}
                   </h2>
                   <span
@@ -1147,29 +1176,47 @@ export function CustomerNailDetailPage() {
             </div>
 
             {/* Right side: Stats Cards & Actions */}
-            <div className="flex flex-col gap-3 lg:w-auto lg:min-w-[420px]">
+            <div className="flex min-w-0 flex-col gap-3 xl:w-full">
               {/* Stats Grid */}
-              <div className="grid gap-3 grid-cols-3">
-                {/* Price card */}
-                <div className="rounded-2xl border border-amber-100 bg-[#fffdfa] p-4 shadow-[0_10px_25px_rgba(217,119,6,0.03)] flex flex-col justify-between">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+                {/* System Price card */}
+                <div className="rounded-2xl border border-amber-100 bg-[#fffdfa] p-3 shadow-[0_10px_25px_rgba(217,119,6,0.03)] flex min-h-[86px] flex-col justify-between">
                   <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#d97706]">
-                    Price
+                    {language === "vi" ? "Giá hệ thống" : "System Price"}
                   </span>
                   <span className="mt-2 text-base font-bold text-[#d97706] truncate">
-                    {formatVND(nail?.price, nail?.status)}
+                    {formatVND(getSystemPrice(nail), nail?.status)}
                   </span>
                 </div>
-                {/* Duration card */}
-                <div className="rounded-2xl border border-purple-100 bg-[#fbfaff] p-4 shadow-[0_10px_25px_rgba(139,92,246,0.03)] flex flex-col justify-between">
+                {/* System Duration card */}
+                <div className="rounded-2xl border border-purple-100 bg-[#fbfaff] p-3 shadow-[0_10px_25px_rgba(139,92,246,0.03)] flex min-h-[86px] flex-col justify-between">
                   <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#7c3aed]">
-                    Duration
+                    {language === "vi" ? "Thời gian hệ thống" : "System Duration"}
                   </span>
                   <span className="mt-2 text-base font-bold text-[#7c3aed] truncate">
-                    {formatDuration(nail?.duration, nail?.status)}
+                    {formatDuration(getSystemDuration(nail), nail?.status)}
+                  </span>
+                </div>
+                {/* Additional Price card */}
+                <div className="rounded-2xl border border-emerald-100 bg-[#f8fffa] p-3 shadow-[0_10px_25px_rgba(47,162,95,0.03)] flex min-h-[86px] flex-col justify-between">
+                  <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#2fa25f]">
+                    {language === "vi" ? "Chi phí gia công thêm" : "Extra Labor Cost"}
+                  </span>
+                  <span className="mt-2 text-base font-bold text-[#2fa25f] truncate">
+                    {formatOptionalVND(getRequestPrice(nail), language === "vi" ? "Chưa có" : "N/A")}
+                  </span>
+                </div>
+                {/* Additional Duration card */}
+                <div className="rounded-2xl border border-sky-100 bg-[#f7fcff] p-3 shadow-[0_10px_25px_rgba(14,165,233,0.03)] flex min-h-[86px] flex-col justify-between">
+                  <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#0369a1]">
+                    {language === "vi" ? "Thời gian đề xuất thêm" : "Extra Proposed Time"}
+                  </span>
+                  <span className="mt-2 text-base font-bold text-[#0369a1] truncate">
+                    {formatOptionalDuration(getRequestDuration(nail), language === "vi" ? "Chưa có" : "N/A")}
                   </span>
                 </div>
                 {/* Created Date card */}
-                <div className="rounded-2xl border border-pink-100 bg-[#fffafc] p-4 shadow-[0_10px_25px_rgba(236,72,153,0.03)] flex flex-col justify-between">
+                <div className="rounded-2xl border border-pink-100 bg-[#fffafc] p-3 shadow-[0_10px_25px_rgba(236,72,153,0.03)] flex min-h-[86px] flex-col justify-between">
                   <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#db2777]">
                     {language === "vi" ? "Ngày tạo" : "Created"}
                   </span>
@@ -1207,8 +1254,8 @@ export function CustomerNailDetailPage() {
                     <>
                       <ActionButton
                         onClick={() => {
-                          setFinalPrice(nail?.price || "");
-                          setFinalDuration(nail?.duration || "");
+                          setFinalPrice(getRequestPrice(nail) ?? "");
+                          setFinalDuration(getRequestDuration(nail) ?? "");
                           setIsApproveModalOpen(true);
                         }}
                         disabled={isSubmitting}
@@ -1313,25 +1360,47 @@ export function CustomerNailDetailPage() {
                 </div>
               </div>
 
-              {/* Price Tile */}
+              {/* System Price Tile */}
               <div className="rounded-2xl border border-[#f6d4e3] bg-gradient-to-br from-white to-[#fff9fb] p-5 shadow-[0_10px_24px_rgba(236,72,153,0.04)] flex items-center gap-4">
                 <div className="h-16 w-16 rounded-xl bg-[#fef3c7] flex items-center justify-center text-[#d97706] font-bold text-lg shrink-0">
                   VND
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">{language === "vi" ? "Tổng tiền" : "Total Amount"}</p>
-                  <p className="mt-1 text-sm font-extrabold text-green-700">{formatVND(nail?.price, nail?.status)}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">{language === "vi" ? "Giá hệ thống" : "System Price"}</p>
+                  <p className="mt-1 text-sm font-extrabold text-green-700">{formatVND(getSystemPrice(nail), nail?.status)}</p>
                 </div>
               </div>
 
-              {/* Duration Tile */}
+              {/* System Duration Tile */}
               <div className="rounded-2xl border border-[#f6d4e3] bg-gradient-to-br from-white to-[#fff9fb] p-5 shadow-[0_10px_24px_rgba(236,72,153,0.04)] flex items-center gap-4">
                 <div className="h-16 w-16 rounded-xl bg-[#e0f2fe] flex items-center justify-center text-[#0369a1] font-bold text-lg shrink-0">
                   ⏱
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">{language === "vi" ? "Tổng thời gian" : "Total Duration"}</p>
-                  <p className="mt-1 text-sm font-extrabold text-[#3f2240]">{formatDuration(nail?.duration, nail?.status)}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">{language === "vi" ? "Thời gian hệ thống" : "System Duration"}</p>
+                  <p className="mt-1 text-sm font-extrabold text-[#3f2240]">{formatDuration(getSystemDuration(nail), nail?.status)}</p>
+                </div>
+              </div>
+
+              {/* Additional Price Tile */}
+              <div className="rounded-2xl border border-[#d8efdf] bg-gradient-to-br from-white to-[#f8fffa] p-5 shadow-[0_10px_24px_rgba(47,162,95,0.04)] flex items-center gap-4">
+                <div className="h-16 w-16 rounded-xl bg-[#dcfce7] flex items-center justify-center text-[#15803d] font-bold text-lg shrink-0">
+                  +
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#7aa98a]">{language === "vi" ? "Chi phí gia công thêm" : "Extra Labor Cost"}</p>
+                  <p className="mt-1 text-sm font-extrabold text-[#15803d]">{formatOptionalVND(getRequestPrice(nail), language === "vi" ? "Chưa có" : "N/A")}</p>
+                </div>
+              </div>
+
+              {/* Additional Duration Tile */}
+              <div className="rounded-2xl border border-[#cfe8f6] bg-gradient-to-br from-white to-[#f7fcff] p-5 shadow-[0_10px_24px_rgba(14,165,233,0.04)] flex items-center gap-4">
+                <div className="h-16 w-16 rounded-xl bg-[#e0f2fe] flex items-center justify-center text-[#0369a1] font-bold text-lg shrink-0">
+                  +
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#6b9db8]">{language === "vi" ? "Thời gian đề xuất thêm" : "Extra Proposed Time"}</p>
+                  <p className="mt-1 text-sm font-extrabold text-[#0369a1]">{formatOptionalDuration(getRequestDuration(nail), language === "vi" ? "Chưa có" : "N/A")}</p>
                 </div>
               </div>
             </div>
@@ -1838,31 +1907,45 @@ export function CustomerNailDetailPage() {
           </div>
         </div>
         <div className="-mt-6 space-y-4 rounded-[28px] bg-white px-6 pb-6 pt-6">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl border border-amber-100 bg-[#fffdfa] p-3">
+              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#d97706]">
+                {language === "vi" ? "Giá hệ thống" : "System Price"}
+              </p>
+              <p className="mt-1 text-sm font-extrabold text-[#d97706]">{formatVND(getSystemPrice(nail), nail?.status)}</p>
+            </div>
+            <div className="rounded-2xl border border-purple-100 bg-[#fbfaff] p-3">
+              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#7c3aed]">
+                {language === "vi" ? "Thời gian hệ thống" : "System Duration"}
+              </p>
+              <p className="mt-1 text-sm font-extrabold text-[#7c3aed]">{formatDuration(getSystemDuration(nail), nail?.status)}</p>
+            </div>
+          </div>
           <div className="rounded-2xl border border-[#d8efdf] bg-[#f8fffa] p-4">
             <p className="text-sm text-[#496455]">
-              {language === "vi" ? "Cung cấp giá cuối cùng và thời lượng dự kiến mà khách hàng sẽ thấy." : "Provide the final price and expected duration that the customer will see."}
+              {language === "vi" ? "Cung cấp chi phí gia công thêm và thời gian đề xuất thêm mà khách hàng sẽ thấy." : "Provide the extra labor cost and extra proposed time that the customer will see."}
             </p>
           </div>
           <div>
             <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.1em] text-[#c08aa4]">
-              {language === "vi" ? "Giá cuối cùng" : "Final Price"}
+              {language === "vi" ? "Chi phí gia công thêm (VNĐ)" : "Extra Labor Cost (VND)"}
             </p>
             <Input
               type="number"
               value={finalPrice}
               onChange={(e) => setFinalPrice(e.target.value)}
-              placeholder={language === "vi" ? "Nhập giá cuối cùng" : "Enter final price"}
+              placeholder={language === "vi" ? "Nhập chi phí gia công thêm" : "Enter extra labor cost"}
             />
           </div>
           <div>
             <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.1em] text-[#c08aa4]">
-              {language === "vi" ? "Thời lượng cuối cùng (phút)" : "Final Duration (minutes)"}
+              {language === "vi" ? "Thời gian đề xuất thêm (phút)" : "Extra Proposed Time (minutes)"}
             </p>
             <Input
               type="number"
               value={finalDuration}
               onChange={(e) => setFinalDuration(e.target.value)}
-              placeholder={language === "vi" ? "Nhập thời lượng" : "Enter final duration"}
+              placeholder={language === "vi" ? "Nhập thời gian đề xuất thêm" : "Enter extra proposed time"}
             />
           </div>
         </div>

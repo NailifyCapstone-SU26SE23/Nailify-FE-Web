@@ -56,9 +56,6 @@ import { PromotionDetailPage } from "../../features/admin/promotion-management/p
 import { AdminSalonBookingsPage } from "../../features/admin/salon-bookings/pages/AdminSalonBookingsPage";
 import { AdminSalonBookingDetailPage } from "../../features/admin/salon-bookings/pages/AdminSalonBookingDetailPage";
 import { ManagerBookingDetailPage } from "../../features/manager/bookings/pages/ManagerBookingDetailPage";
-import { ShapeMethodConfigsManagementPage } from "../../features/admin/shape-method-configs-management/pages/ShapeMethodConfigsManagementPage";
-import { ShapeMethodConfigCreatePage } from "../../features/admin/shape-method-configs-management/pages/ShapeMethodConfigCreatePage";
-import { ShapeMethodConfigDetailPage } from "../../features/admin/shape-method-configs-management/pages/ShapeMethodConfigDetailPage";
 import { AdminSalonBookingRatingPage } from "../../features/admin/salon-bookings/pages/AdminSalonBookingRatingPage";
 import { TransactionOverviewPage } from "../../features/admin/transaction-overview/pages/TransactionOverviewPage";
 
@@ -160,18 +157,6 @@ export const adminRoutes = [
       {
         path: ROUTES.adminNailShapeDetail,
         element: <NailShapeDetailPage />,
-      },
-      {
-        path: ROUTES.adminShapeMethodConfigs,
-        element: <ShapeMethodConfigsManagementPage />,
-      },
-      {
-        path: ROUTES.adminShapeMethodConfigsCreate,
-        element: <ShapeMethodConfigCreatePage />,
-      },
-      {
-        path: ROUTES.adminShapeMethodConfigDetail,
-        element: <ShapeMethodConfigDetailPage />,
       },
       {
         path: ROUTES.adminNailSurfaces,

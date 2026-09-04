@@ -66,10 +66,8 @@ function normalizePromotionList(data) {
 }
 
 export const PROMOTION_TYPE_OPTIONS = [
-  "Automatic",
+  "Discount",
   "Voucher",
-  "Seasonal",
-  "FlashSale",
 ];
 
 export const PROMOTION_SCOPE_OPTIONS = [
@@ -77,12 +75,43 @@ export const PROMOTION_SCOPE_OPTIONS = [
   "Category",
   "CategoryType",
   "NailDesign",
+  "FirstTimeUser",
 ];
 
 export const PROMOTION_DISCOUNT_TYPE_OPTIONS = [
   "Percentage",
   "FixedAmount",
 ];
+
+export function getPromotionTypeLabel(type, t) {
+  if (!PROMOTION_TYPE_OPTIONS.includes(type)) {
+    return normalizeString(type, "--");
+  }
+
+  const key = `promotionDetail.promotionTypeOptions.${type}`;
+  const label = t(key);
+  return label === key ? type : label;
+}
+
+export function getPromotionScopeLabel(scope, t) {
+  if (!PROMOTION_SCOPE_OPTIONS.includes(scope)) {
+    return normalizeString(scope, "--");
+  }
+
+  const key = `promotionDetail.promotionScopeOptions.${scope}`;
+  const label = t(key);
+  return label === key ? scope : label;
+}
+
+export function getPromotionDiscountTypeLabel(discountType, t) {
+  if (!PROMOTION_DISCOUNT_TYPE_OPTIONS.includes(discountType)) {
+    return normalizeString(discountType, "--");
+  }
+
+  const key = `promotionDetail.promotionDiscountTypeOptions.${discountType}`;
+  const label = t(key);
+  return label === key ? discountType : label;
+}
 
 export function normalizePromotion(promotion) {
   return {

@@ -27,6 +27,9 @@ import {
 import {
   deleteAdminPromotion,
   fetchAdminPromotions,
+  getPromotionDiscountTypeLabel,
+  getPromotionScopeLabel,
+  getPromotionTypeLabel,
   PROMOTION_DISCOUNT_TYPE_OPTIONS,
   PROMOTION_SCOPE_OPTIONS,
   PROMOTION_TYPE_OPTIONS,
@@ -275,8 +278,8 @@ export function PromotionsManagementPage() {
         sorter: (a, b) => (a.type || "").localeCompare(b.type || ""),
         render: (_, promotion) => (
           <div className="space-y-1">
-            <p className="text-sm font-semibold text-[#5f4a5c]">{promotion.type}</p>
-            <p className="text-[11px] text-[#c694ad]">{promotion.scope}</p>
+            <p className="text-sm font-semibold text-[#5f4a5c]">{getPromotionTypeLabel(promotion.type, t)}</p>
+            <p className="text-[11px] text-[#c694ad]">{getPromotionScopeLabel(promotion.scope, t)}</p>
           </div>
         ),
       },
@@ -287,7 +290,7 @@ export function PromotionsManagementPage() {
         render: (_, promotion) => (
           <div className="space-y-1">
             <p className="text-sm font-semibold text-[#5f4a5c]">{formatDiscount(promotion)}</p>
-            <p className="text-[11px] text-[#c694ad]">{promotion.discountType}</p>
+            <p className="text-[11px] text-[#c694ad]">{getPromotionDiscountTypeLabel(promotion.discountType, t)}</p>
           </div>
         ),
       },
@@ -421,7 +424,7 @@ export function PromotionsManagementPage() {
             >
               <option value="">{t("userManagement.table.actions") === "Thao tác" ? "Tất cả các loại" : "All types"}</option>
               {PROMOTION_TYPE_OPTIONS.map((option) => (
-                <option key={option} value={option}>{option}</option>
+                <option key={option} value={option}>{getPromotionTypeLabel(option, t)}</option>
               ))}
             </select>
 
@@ -432,7 +435,7 @@ export function PromotionsManagementPage() {
             >
               <option value="">{t("userManagement.table.actions") === "Thao tác" ? "Tất cả phạm vi" : "All scopes"}</option>
               {PROMOTION_SCOPE_OPTIONS.map((option) => (
-                <option key={option} value={option}>{option}</option>
+                <option key={option} value={option}>{getPromotionScopeLabel(option, t)}</option>
               ))}
             </select>
 
@@ -443,7 +446,7 @@ export function PromotionsManagementPage() {
             >
               <option value="">{t("userManagement.table.actions") === "Thao tác" ? "Tất cả giảm giá" : "All discounts"}</option>
               {PROMOTION_DISCOUNT_TYPE_OPTIONS.map((option) => (
-                <option key={option} value={option}>{option}</option>
+                <option key={option} value={option}>{getPromotionDiscountTypeLabel(option, t)}</option>
               ))}
             </select>
           </div>
