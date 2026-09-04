@@ -37,18 +37,75 @@ function unwrapResponse(response, fallbackMessage) {
   return payload.data;
 }
 
-// A helper to fetch all raw customer nails (from /CustomerNails)
-async function fetchAllRawCustomerNails() {
-  try {
-    const response = await axiosClient.get(`/CustomerNails`, {
-      params: { pageSize: 1000 },
-      headers: getAuthHeaders(),
-    });
-    return unwrapResponse(response, "Failed to load raw nails.");
-  } catch (e) {
-    console.warn("Failed to load raw nails:", e);
-    return [];
+function unwrapResponseData(response, fallbackMessage) {
+  const payload = response?.data;
+
+  if (!payload?.isSucceeded) {
+    throw new Error(payload?.message || fallbackMessage);
   }
+
+  return payload.data;
+}
+
+function extractItems(data) {
+  if (Array.isArray(data)) {
+    return data;
+  }
+
+  if (Array.isArray(data?.items)) {
+    return data.items;
+  }
+
+  if (Array.isArray(data?.data)) {
+    return data.data;
+  }
+
+  return [];
+}
+
+function normalizeMetaData(metaData, defaults = {}) {
+  const pageSize = Number(metaData?.pageSize ?? defaults.pageSize ?? 10) || 10;
+  const totalItems = Number(metaData?.totalItems ?? metaData?.totalCount ?? 0) || 0;
+  const currentPage = Number(metaData?.currentPage ?? defaults.pageNumber ?? 1) || 1;
+  const inferredTotalPages = pageSize > 0 ? Math.max(1, Math.ceil(totalItems / pageSize)) : 1;
+  const totalPages = Number(metaData?.totalPages ?? inferredTotalPages) || inferredTotalPages;
+
+  return {
+    currentPage,
+    totalPages: Math.max(1, totalPages),
+    pageSize,
+    totalItems,
+    hasPrevious: Boolean(metaData?.hasPrevious ?? currentPage > 1),
+    hasNext: Boolean(metaData?.hasNext ?? currentPage < Math.max(1, totalPages)),
+    firstRowOnPage: Number(metaData?.firstRowOnPage ?? (totalItems > 0 ? (currentPage - 1) * pageSize + 1 : 0)) || 0,
+    lastRowOnPage: Number(metaData?.lastRowOnPage ?? Math.min(totalItems, currentPage * pageSize)) || 0,
+  };
+}
+
+function buildCustomerNailRequestParams(params) {
+  const normalizedParams = {};
+
+  if (params.pageNumber !== undefined) {
+    normalizedParams.pageNumber = params.pageNumber;
+  }
+
+  if (params.pageSize !== undefined) {
+    normalizedParams.pageSize = params.pageSize;
+  }
+
+  if (params.salonId) {
+    normalizedParams.salonId = params.salonId;
+  }
+
+  if (params.approvedArtistId) {
+    normalizedParams.approvedArtistId = params.approvedArtistId;
+  }
+
+  if (params.status) {
+    normalizedParams.status = params.status;
+  }
+
+  return normalizedParams;
 }
 
 export function normalizeCustomerNail(item, rawNailsList = []) {
@@ -60,8 +117,10 @@ export function normalizeCustomerNail(item, rawNailsList = []) {
 
     // Find matching raw nail from the list to get shape/surface/components details
     const matchedRawNail = rawNailsList.find(rn => rn.customerNailId === item.customerNailId) || {};
-
-    const isPendingOrAssigned = item.status === "PendingReview" || item.status === "Assigned" || item.status === "Pending";
+    const requestPrice = item.price ?? null;
+    const requestDuration = item.duration ?? null;
+    const systemPrice = nail.price ?? matchedRawNail.price ?? 0;
+    const systemDuration = nail.duration ?? matchedRawNail.duration ?? 0;
 
     return {
       customerNailRequestId: item.customerNailRequestId || item.id,
@@ -70,11 +129,16 @@ export function normalizeCustomerNail(item, rawNailsList = []) {
       status: item.status, // request status (PendingReview, Approved, etc.)
       rejectReason: item.rejectReason,
       approvedArtistId: item.approvedArtistId,
-      price: isPendingOrAssigned ? 0 : (item.price !== null && item.price !== undefined ? item.price : (nail.price || matchedRawNail.price || 0)),
-      duration: isPendingOrAssigned ? 0 : (item.duration !== null && item.duration !== undefined ? item.duration : (nail.duration || matchedRawNail.duration || 0)),
+      price: requestPrice,
+      duration: requestDuration,
+      requestPrice,
+      requestDuration,
+      systemPrice,
+      systemDuration,
       createdAt: item.createdAt || nail.createdAt || matchedRawNail.createdAt,
       updatedAt: item.updatedAt,
       artistFullName: item.artistFullName,
+      customerNail: Object.keys(nail).length > 0 ? nail : matchedRawNail,
 
       customerNailId: nail.customerNailId || item.customerNailId,
       userId: nail.userId || matchedRawNail.userId,
@@ -100,6 +164,10 @@ export function normalizeCustomerNail(item, rawNailsList = []) {
     customerNailId: item.customerNailId || item.id,
     price: item.price || 0,
     duration: item.duration || 0,
+    requestPrice: null,
+    requestDuration: null,
+    systemPrice: item.price || 0,
+    systemDuration: item.duration || 0,
     customerNailComponents: item.customerNailComponents || [],
     _isRequest: false
   };
@@ -107,57 +175,27 @@ export function normalizeCustomerNail(item, rawNailsList = []) {
 
 export async function fetchCustomerNails(params = {}) {
   const finalParams = { pageSize: 1000, ...params };
-  if (!finalParams.salonId) {
-    try {
-      const salonId = getManagerSalonId();
-      if (salonId) {
-        finalParams.salonId = salonId;
-      }
-    } catch (e) {
-      // ignore
-    }
+  if (!finalParams.salonId && !finalParams.approvedArtistId) {
+    finalParams.salonId = getManagerSalonId();
   }
+  const requestParams = buildCustomerNailRequestParams(finalParams);
 
-  // 1. Fetch raw nails first to have detail references
-  let rawNailsList = [];
   try {
-    rawNailsList = await fetchAllRawCustomerNails();
-  } catch (e) {
-    console.warn("Failed to pre-fetch raw customer nails:", e);
-  }
-
-  // 2. Fetch requests
-  try {
-    console.log("Fetching customer nails (primary: /CustomerNailRequests)...");
+    console.log("Fetching customer nail requests from /CustomerNailRequests...");
     const response = await axiosClient.get(`/CustomerNailRequests`, {
-      params: finalParams,
+      params: requestParams,
       headers: getAuthHeaders(),
     });
-    const items = unwrapResponse(response, "Failed to load customer nails.");
-    return items.map(item => normalizeCustomerNail(item, rawNailsList));
+    const data = unwrapResponseData(response, "Failed to load customer nail requests.");
+    const items = extractItems(data).map(item => normalizeCustomerNail(item)).filter(Boolean);
+
+    return {
+      items,
+      metaData: normalizeMetaData(data?.metaData ?? data?.pagination, requestParams),
+    };
   } catch (error) {
-    console.warn("Failed /CustomerNailRequests, trying /CustomerNails/requests...", error.response?.data || error);
-    try {
-      const response2 = await axiosClient.get(`/CustomerNails/requests`, {
-        params: finalParams,
-        headers: getAuthHeaders(),
-      });
-      const items = unwrapResponse(response2, "Failed to load customer nails.");
-      return items.map(item => normalizeCustomerNail(item, rawNailsList));
-    } catch (err2) {
-      console.warn("Failed /CustomerNails/requests, trying /CustomerNails...", err2.response?.data || err2);
-      try {
-        const response3 = await axiosClient.get(`/CustomerNails`, {
-          params: finalParams,
-          headers: getAuthHeaders(),
-        });
-        const items = unwrapResponse(response3, "Failed to load customer nails.");
-        return items.map(item => normalizeCustomerNail(item, rawNailsList));
-      } catch (err3) {
-        console.error("Error fetching customer nails:", err3.response?.data || err3);
-        throw new Error(err3.response?.data?.message || err3.message || "Failed to load customer nails.", { cause: err3 });
-      }
-    }
+    console.error("Error fetching customer nail requests:", error.response?.data || error);
+    throw new Error(error.response?.data?.message || error.message || "Failed to load customer nail requests.", { cause: error });
   }
 }
 
@@ -347,7 +385,10 @@ export async function managerApproveQuote(customerNailId, finalPrice, finalDurat
     throw new Error("Customer Nail ID is required.");
   }
 
-  const payload = { finalPrice, finalDuration };
+  const payload = {
+    finalPrice: finalPrice === null || finalPrice === undefined || finalPrice === "" ? null : Number(finalPrice),
+    finalDuration: finalDuration === null || finalDuration === undefined || finalDuration === "" ? null : Number(finalDuration),
+  };
   console.log("Approving quote for customer nail:", normalizedId);
 
   try {
@@ -427,10 +468,11 @@ export async function fetchStaffCustomerNailRequests(staffArtistId, params = {})
   if (!normalizedArtistId) {
     throw new Error("Staff Artist ID is required.");
   }
-  return fetchCustomerNails({
+  const response = await fetchCustomerNails({
     approvedArtistId: normalizedArtistId,
     ...params
   });
+  return response?.items || [];
 }
 
 export async function fetchCustomerNailRequestById(id) {
@@ -457,8 +499,8 @@ export async function staffSubmitArtistQuote(customerNailId, quotedPrice, quoted
     throw new Error("Customer Nail ID is required.");
   }
   const payload = {
-    quotedPrice: Number(quotedPrice),
-    quotedDuration: Number(quotedDuration),
+    quotedPrice: quotedPrice === null || quotedPrice === undefined || quotedPrice === "" ? null : Number(quotedPrice),
+    quotedDuration: quotedDuration === null || quotedDuration === undefined || quotedDuration === "" ? null : Number(quotedDuration),
     artistNotes: artistNotes || "",
     procedures: Array.isArray(procedures) ? procedures : [],
   };

@@ -683,26 +683,10 @@ export function StaffCustomerNailReviewPage() {
       const data = await fetchCustomerNailRequestById(customerNailId);
       setRequest(data);
 
-      // Pre-fill form values with suggested base totals if not already set
       if (data) {
         const nail = data.customerNail || data;
-
-        // Calculate recommended totals
-        const shapePrice = nail.nailShape?.price || 0;
-        const surfacePrice = nail.nailSurface?.price || 0;
-        const componentsPrice = (nail.customerNailComponents || nail.nailComponents || [])
-          .reduce((sum, item) => sum + (item.component?.price || 0), 0);
-        const baseCalculatedPrice = shapePrice + surfacePrice + componentsPrice;
-
-        const shapeDuration = nail.nailShape?.duration || 0;
-        const surfaceDuration = nail.nailSurface?.duration || 0;
-        const componentsDuration = (nail.customerNailComponents || nail.nailComponents || [])
-          .reduce((sum, item) => sum + (item.component?.duration || 0), 0);
-        const baseCalculatedDuration = shapeDuration + surfaceDuration + componentsDuration;
-
-        // Use already existing values if request has them, otherwise use calculations
-        setQuotedPrice(data.price || baseCalculatedPrice || "");
-        setQuotedDuration(data.duration || baseCalculatedDuration || "");
+        setQuotedPrice(data.price ?? "");
+        setQuotedDuration(data.duration ?? "");
 
         const componentsList = nail.customerNailComponents || nail.nailComponents || [];
         const isExternalFound = componentsList.some(comp => comp.customerComponent != null || comp.isExternal === true);
@@ -785,13 +769,25 @@ export function StaffCustomerNailReviewPage() {
     };
   }, [skillReqs]);
 
+  const addQuotedPrice = (amount) => {
+    setQuotedPrice((current) => String((Number(current) || 0) + amount));
+  };
+
+  const addQuotedDuration = (minutes) => {
+    setQuotedDuration((current) => String((Number(current) || 0) + minutes));
+  };
+
   const handleSubmitQuote = async () => {
-    if (!quotedPrice || Number(quotedPrice) <= 0) {
-      toast.error("Please enter a valid price estimate.");
+    const normalizedQuotedPrice = String(quotedPrice ?? "").trim();
+    const normalizedQuotedDuration = String(quotedDuration ?? "").trim();
+
+    if (normalizedQuotedPrice && (!Number.isFinite(Number(quotedPrice)) || Number(quotedPrice) < 0)) {
+      toast.error(language === "vi" ? "Chi phí gia công thêm không được âm." : "Additional labor cost cannot be negative.");
       return;
     }
-    if (!quotedDuration || Number(quotedDuration) <= 0) {
-      toast.error("Please enter a valid duration estimate.");
+
+    if (normalizedQuotedDuration && (!Number.isFinite(Number(quotedDuration)) || Number(quotedDuration) < 0)) {
+      toast.error(language === "vi" ? "Thời gian xử lý không được âm." : "Processing duration cannot be negative.");
       return;
     }
 
@@ -799,8 +795,8 @@ export function StaffCustomerNailReviewPage() {
       setIsSubmitting(true);
       await staffSubmitArtistQuote(
         customerNailId,
-        Number(quotedPrice),
-        Number(quotedDuration),
+        normalizedQuotedPrice ? Number(quotedPrice) : null,
+        normalizedQuotedDuration ? Number(quotedDuration) : null,
         artistNotes,
         procedures
       );
@@ -909,14 +905,13 @@ export function StaffCustomerNailReviewPage() {
                 </div>
               </div>
 
-              {/* Eye-Catching Recommended Estimates Badges */}
               <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[320px]">
                 <div className="relative overflow-hidden rounded-2xl border border-[#fbcfe8] bg-gradient-to-br from-[#fff0f6] to-[#fffafc] p-4 shadow-[0_12px_28px_rgba(236,72,153,0.1)]">
                   <div className="flex items-center gap-2">
                     <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#ea4f93] text-white">
                       <DollarSign size={13} />
                     </span>
-                    <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c08aa4]">{language === "vi" ? "Giá đề xuất" : "Recommended Price"}</p>
+                    <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c08aa4]">{language === "vi" ? "Giá hệ thống" : "System Price"}</p>
                   </div>
                   <p className="mt-2 text-xl font-black text-[#ea4f93]">{formatVND(recommendedStats.price)}</p>
                 </div>
@@ -925,7 +920,7 @@ export function StaffCustomerNailReviewPage() {
                     <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#402542] text-white">
                       <Clock size={13} />
                     </span>
-                    <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c08aa4]">{language === "vi" ? "Thời gian đề xuất" : "Recommended Time"}</p>
+                    <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c08aa4]">{language === "vi" ? "Thời gian hệ thống" : "System Duration"}</p>
                   </div>
                   <p className="mt-2 text-xl font-black text-[#402542]">{formatDuration(recommendedStats.duration)}</p>
                 </div>
@@ -947,7 +942,7 @@ export function StaffCustomerNailReviewPage() {
                 readOnly={!isEditable}
                 onApplyToQuote={({ totalDuration, totalPrice }) => {
                   setQuotedDuration(totalDuration);
-                  setQuotedPrice(totalPrice > 0 ? totalPrice : recommendedStats.price);
+                  setQuotedPrice(totalPrice > 0 ? totalPrice : "");
                   toast.success("Đã đồng bộ tổng thời gian & chi phí quy trình vào Báo Giá!");
                 }}
               />
@@ -998,15 +993,13 @@ export function StaffCustomerNailReviewPage() {
                       <h3 className="text-lg font-serif font-extrabold text-[#3f2240]">{language === "vi" ? "Định giá & Giá cả" : "Valuation & Price"}</h3>
                     </div>
                     <p className="mt-1 text-xs text-[#a988a0]">
-                      {language === "vi" ? "Đề xuất định giá tự động thông minh được tính toán cho yêu cầu này." : "Smart auto-pricing recommendation calculated for this request."}
+                      {language === "vi" ? "Giá và thời gian được hệ thống tính toán cho yêu cầu này." : "System-calculated price and duration for this request."}
                     </p>
                   </div>
                   {isEditable ? (
                     <Button
                       type="primary"
                       onClick={() => {
-                        setQuotedPrice(quotedPrice || recommendedStats.price);
-                        setQuotedDuration(quotedDuration || recommendedStats.duration);
                         setIsQuoteModalVisible(true);
                       }}
                       className="h-11 w-full rounded-full font-bold bg-gradient-to-r from-[#ea4f93] to-[#df4588] shadow-md border-none hover:opacity-90 transition-all flex items-center justify-center gap-1.5 mt-2"
@@ -1071,9 +1064,8 @@ export function StaffCustomerNailReviewPage() {
                   </div>
                 </div>
 
-                {/* Calculated Total Highlight Banner */}
-                <div className="rounded-2xl bg-gradient-to-r from-[#ea4f93] via-[#df4588] to-[#c63d79] p-4 text-white shadow-lg text-center space-y-1">
-                  <span className="block text-[10px] font-extrabold uppercase tracking-widest text-pink-100">{language === "vi" ? "Tổng đề xuất" : "Suggested Total"}</span>
+                  <div className="rounded-2xl bg-gradient-to-r from-[#ea4f93] via-[#df4588] to-[#c63d79] p-4 text-white shadow-lg text-center space-y-1">
+                  <span className="block text-[10px] font-extrabold uppercase tracking-widest text-pink-100">{language === "vi" ? "Giá hệ thống" : "System Price"}</span>
                   <div className="flex items-center justify-center gap-2">
                     <span className="text-2xl font-black">{formatVND(recommendedStats.price)}</span>
                     <span className="text-xs font-semibold text-pink-100">• {formatDuration(recommendedStats.duration)}</span>
@@ -1088,13 +1080,13 @@ export function StaffCustomerNailReviewPage() {
 
       <Modal
         title={
-          <div className="flex items-center gap-3 pb-4 border-b border-[#fce7f0]">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ea4f93] to-[#ff8ebb] text-white shadow-[0_8px_16px_rgba(234,79,147,0.25)]">
-              <ClipboardList size={22} strokeWidth={2.5} />
+          <div className="flex items-center gap-3 pb-3 border-b border-[#fce7f0]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ea4f93] to-[#ff8ebb] text-white shadow-[0_8px_16px_rgba(234,79,147,0.25)]">
+              <ClipboardList size={20} strokeWidth={2.5} />
             </div>
             <div>
-              <span className="block font-black text-lg text-[#3f2240] leading-tight tracking-tight">{language === "vi" ? "Chốt báo giá" : "Finalize Quote"}</span>
-              <span className="block text-[11px] font-bold text-[#c08aa4] uppercase tracking-wider mt-0.5">{language === "vi" ? "Thiết lập giá & thời lượng" : "Set pricing & duration"}</span>
+              <span className="block font-black text-base text-[#3f2240] leading-tight tracking-tight">{language === "vi" ? "Chi phí gia công thêm" : "Additional Labor Cost"}</span>
+              <span className="block text-[11px] font-bold text-[#c08aa4] uppercase tracking-wider mt-0.5">{language === "vi" ? "Giá & thời gian hệ thống" : "System price & duration"}</span>
             </div>
           </div>
         }
@@ -1115,89 +1107,96 @@ export function StaffCustomerNailReviewPage() {
             backgroundColor: 'rgba(64, 37, 66, 0.4)',
           },
           content: {
-            borderRadius: '28px',
-            padding: '24px 28px',
+            borderRadius: '22px',
+            padding: '18px 22px',
             boxShadow: '0 25px 50px -12px rgba(234, 79, 147, 0.25)',
             border: '1px solid #fce7f0',
             background: 'linear-gradient(to bottom, #ffffff, #fffdfd)'
           }
         }}
       >
-        <div className="space-y-6 pt-5">
+        <div className="space-y-4 pt-3">
           {hasExternalItems && (
-            <div className="relative overflow-hidden rounded-2xl border border-[#fde68a] bg-gradient-to-br from-[#fffbeb] to-[#fef3c7] p-4 shadow-sm">
-              <div className="mb-2 flex items-center gap-2">
+            <div className="relative overflow-hidden rounded-2xl border border-[#fde68a] bg-gradient-to-br from-[#fffbeb] to-[#fef3c7] p-3 shadow-sm">
+              <div className="mb-1.5 flex items-center gap-2">
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#d97706] text-white shadow-sm font-bold text-xs">
                   !
                 </span>
-                <h4 className="font-extrabold text-[#b45309] text-sm">Khách mang phụ kiện tới</h4>
+                <h4 className="font-extrabold text-[#b45309] text-sm">
+                  {language === "vi" ? "Khách mang phụ kiện tới" : "Customer-provided accessories"}
+                </h4>
               </div>
-              <p className="mb-3 text-xs text-[#92400e] leading-relaxed">
-                Mẫu này có phụ kiện do khách hàng mang đến. Vui lòng tính thêm <strong>Chi phí công đính/gia công</strong> vào báo giá bên dưới.
+              <p className="text-xs text-[#92400e] leading-relaxed">
+                {language === "vi" ? (
+                  <>
+                    Mẫu này có phụ kiện do khách hàng mang đến. Vui lòng tính thêm <strong>Chi phí công đính/gia công</strong> vào báo giá bên dưới.
+                  </>
+                ) : (
+                  <>
+                    This design includes accessories provided by the customer. Please add the <strong>attachment/processing labor cost</strong> to the quote below.
+                  </>
+                )}
               </p>
-              <div className="rounded-xl bg-white/60 p-3 text-xs flex justify-between items-center backdrop-blur-sm border border-white/50">
-                <span className="text-[#b45309] font-bold">Gợi ý vật tư (Phom + Mặt móng): </span>
-                <span className="font-black text-[#d97706] text-sm">{formatVND((nail.nailShape?.price || 0) + (nail.nailSurface?.price || 0))}</span>
-              </div>
             </div>
           )}
 
           <div>
             <label className="block text-[10px] font-extrabold uppercase tracking-widest text-[#c08aa4] mb-2">
-              {language === "vi" ? "Giá báo giá (VNĐ)" : "Quoted Price (VND)"}
+              {language === "vi" ? "Chi phí gia công thêm (VNĐ)" : "Additional Labor Cost (VND)"}
             </label>
             <Input
               type="number"
               prefix={<DollarSign size={18} className="text-[#ea4f93] mr-1.5" />}
               value={quotedPrice}
               onChange={(e) => setQuotedPrice(e.target.value)}
-              placeholder={language === "vi" ? "Giá đề xuất" : "Suggested Price"}
-              className="h-12 rounded-2xl border-[#f5cee1] bg-[#fffafc] px-4 font-black text-[#3f2240] text-base hover:border-[#ea4f93] focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all"
+              placeholder={language === "vi" ? "Nhập chi phí gia công thêm" : "Enter additional labor cost"}
+              className="h-10 rounded-xl border-[#f5cee1] bg-[#fffafc] px-3 font-black text-[#3f2240] text-sm hover:border-[#ea4f93] focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all"
             />
-            <div className="mt-2.5 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => setQuotedPrice(recommendedStats.price)}
-                className="flex-1 rounded-xl bg-gradient-to-br from-[#fff0f6] to-[#fffafc] px-3 py-2.5 text-[11px] font-bold text-[#ea4f93] border border-[#fbcfe8] hover:border-[#ea4f93] hover:shadow-[0_4px_12px_rgba(234,79,147,0.15)] transition-all"
-              >
-                {language === "vi" ? "Khuyến nghị" : "Recommended"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setQuotedPrice(Math.round(recommendedStats.price * 1.1))}
-                className="flex-1 rounded-xl bg-gradient-to-br from-[#fff0f6] to-[#fffafc] px-3 py-2.5 text-[11px] font-bold text-[#ea4f93] border border-[#fbcfe8] hover:border-[#ea4f93] hover:shadow-[0_4px_12px_rgba(234,79,147,0.15)] transition-all"
-              >
-                {language === "vi" ? "+10% Phí" : "+10% Fee"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setQuotedPrice(Math.round(recommendedStats.price * 1.2))}
-                className="flex-1 rounded-xl bg-gradient-to-br from-[#fff0f6] to-[#fffafc] px-3 py-2.5 text-[11px] font-bold text-[#ea4f93] border border-[#fbcfe8] hover:border-[#ea4f93] hover:shadow-[0_4px_12px_rgba(234,79,147,0.15)] transition-all"
-              >
-                {language === "vi" ? "+20% Chi tiết" : "+20% Detail"}
-              </button>
+            <div className="mt-2 grid grid-cols-3 gap-2">
+              {[10000, 30000, 50000].map((amount) => (
+                <button
+                  key={amount}
+                  type="button"
+                  onClick={() => addQuotedPrice(amount)}
+                  className="h-8 rounded-lg border border-[#fbcfe8] bg-[#fff0f6] text-[11px] font-black text-[#ea4f93] transition hover:border-[#ea4f93] hover:bg-white"
+                >
+                  +{amount.toLocaleString("vi-VN")}
+                </button>
+              ))}
             </div>
-            <span className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-[#a988a0]">
+            <span className="mt-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-[#a988a0]">
               <span className="h-1.5 w-1.5 rounded-full bg-[#ea4f93]"></span>
-              {language === "vi" ? "Tiêu chuẩn đề xuất: " : "Suggested standard: "} <span className="font-bold text-[#ea4f93]">{formatVND(recommendedStats.price)}</span>
+              {language === "vi" ? "Giá hệ thống: " : "System price: "} <span className="font-bold text-[#ea4f93]">{formatVND(recommendedStats.price)}</span>
             </span>
           </div>
 
           <div>
             <label className="block text-[10px] font-extrabold uppercase tracking-widest text-[#c08aa4] mb-2">
-              {language === "vi" ? "Thời lượng ước tính (phút)" : "Estimated Duration (minutes)"}
+              {language === "vi" ? "Thời gian gia công thêm (phút)" : "Additional Labor Duration (minutes)"}
             </label>
             <Input
               type="number"
               prefix={<Clock size={18} className="text-[#ea4f93] mr-1.5" />}
               value={quotedDuration}
               onChange={(e) => setQuotedDuration(e.target.value)}
-              placeholder={language === "vi" ? "Thời lượng đề xuất" : "Suggested Duration"}
-              className="h-12 rounded-2xl border-[#f5cee1] bg-[#fffafc] px-4 font-black text-[#3f2240] text-base hover:border-[#ea4f93] focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all"
+              placeholder={language === "vi" ? "Nhập thời gian xử lý" : "Enter processing duration"}
+              className="h-10 rounded-xl border-[#f5cee1] bg-[#fffafc] px-3 font-black text-[#3f2240] text-sm hover:border-[#ea4f93] focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all"
             />
-            <span className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-[#a988a0]">
+            <div className="mt-2 grid grid-cols-3 gap-2">
+              {[10, 30, 50].map((minutes) => (
+                <button
+                  key={minutes}
+                  type="button"
+                  onClick={() => addQuotedDuration(minutes)}
+                  className="h-8 rounded-lg border border-[#fbcfe8] bg-[#fff0f6] text-[11px] font-black text-[#ea4f93] transition hover:border-[#ea4f93] hover:bg-white"
+                >
+                  +{minutes}
+                </button>
+              ))}
+            </div>
+            <span className="mt-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-[#a988a0]">
               <span className="h-1.5 w-1.5 rounded-full bg-[#402542]"></span>
-              {language === "vi" ? "Tiêu chuẩn đề xuất: " : "Suggested standard: "} <span className="font-bold text-[#402542]">{formatDuration(recommendedStats.duration)}</span>
+              {language === "vi" ? "Thời gian hệ thống: " : "System duration: "} <span className="font-bold text-[#402542]">{formatDuration(recommendedStats.duration)}</span>
             </span>
           </div>
 
@@ -1209,17 +1208,17 @@ export function StaffCustomerNailReviewPage() {
               value={artistNotes}
               onChange={(e) => setArtistNotes(e.target.value)}
               placeholder={language === "vi" ? "Ví dụ: thiết kế yêu cầu chi tiết nghệ thuật móng phức tạp..." : "E.g., design requires complex nail art details..."}
-              rows={3}
-              className="rounded-2xl border-[#f5cee1] bg-[#fffafc] p-4 text-sm font-semibold text-[#3f2240] hover:border-[#ea4f93] focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all"
+              rows={2}
+              className="rounded-xl border-[#f5cee1] bg-[#fffafc] p-3 text-sm font-semibold text-[#3f2240] hover:border-[#ea4f93] focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all"
             />
           </div>
 
-          <div className="pt-4">
+          <div className="pt-2">
             <Button
               type="primary"
               onClick={handleSubmitQuote}
               loading={isSubmitting}
-              className="w-full h-12 rounded-2xl font-black text-base shadow-[0_8px_20px_rgba(234,79,147,0.3)] bg-gradient-to-r from-[#ea4f93] via-[#df4588] to-[#c63d79] hover:shadow-[0_12px_24px_rgba(234,79,147,0.4)] border-none transition-all hover:-translate-y-0.5"
+              className="w-full h-10 rounded-xl font-black text-sm shadow-[0_8px_20px_rgba(234,79,147,0.3)] bg-gradient-to-r from-[#ea4f93] via-[#df4588] to-[#c63d79] hover:shadow-[0_12px_24px_rgba(234,79,147,0.4)] border-none transition-all hover:-translate-y-0.5"
             >
               {language === "vi" ? "Xác nhận & Gửi báo giá" : "Confirm & Submit Quote"}
             </Button>

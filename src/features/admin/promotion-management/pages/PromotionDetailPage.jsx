@@ -23,6 +23,9 @@ import {
   fetchPromotionsByCategory,
   fetchPromotionsByCategoryType,
   fetchPromotionsByNailDesign,
+  getPromotionDiscountTypeLabel,
+  getPromotionScopeLabel,
+  getPromotionTypeLabel,
   PROMOTION_DISCOUNT_TYPE_OPTIONS,
   PROMOTION_SCOPE_OPTIONS,
   PROMOTION_TYPE_OPTIONS,
@@ -546,7 +549,7 @@ export function PromotionDetailPage() {
                   >
                     <option value="">{t("promotionDetail.selectType")}</option>
                     {PROMOTION_TYPE_OPTIONS.map((option) => (
-                      <option key={option} value={option}>{option}</option>
+                      <option key={option} value={option}>{getPromotionTypeLabel(option, t)}</option>
                     ))}
                   </select>
                 </FormField>
@@ -560,7 +563,7 @@ export function PromotionDetailPage() {
                   >
                     <option value="">{t("promotionDetail.selectScope")}</option>
                     {PROMOTION_SCOPE_OPTIONS.map((option) => (
-                      <option key={option} value={option}>{option}</option>
+                      <option key={option} value={option}>{getPromotionScopeLabel(option, t)}</option>
                     ))}
                   </select>
                 </FormField>
@@ -574,7 +577,7 @@ export function PromotionDetailPage() {
                   >
                     <option value="">{t("promotionDetail.selectDiscountType")}</option>
                     {PROMOTION_DISCOUNT_TYPE_OPTIONS.map((option) => (
-                      <option key={option} value={option}>{option}</option>
+                      <option key={option} value={option}>{getPromotionDiscountTypeLabel(option, t)}</option>
                     ))}
                   </select>
                 </FormField>
@@ -726,7 +729,7 @@ export function PromotionDetailPage() {
               )}
             </PanelCard>
 
-            {promotion?.scope && promotion.scope !== "All" ? (
+            {["Category", "CategoryType", "NailDesign"].includes(promotion?.scope) ? (
               <PanelCard title={t("promotionDetail.relatedPromotions")} icon={Tag}>
                 {isLoadingRelatedPromotions ? (
                   <p className="text-sm font-medium text-slate-500">{t("promotionDetail.loadingRelated")}</p>
@@ -739,7 +742,9 @@ export function PromotionDetailPage() {
                         className="rounded-2xl border border-rose-100 bg-[#fff8fb] p-4 transition hover:border-[#cf3d74] hover:bg-white"
                       >
                         <p className="text-sm font-bold text-slate-800">{item.name}</p>
-                        <p className="mt-1 text-xs text-slate-500">{item.type} · {item.scope}</p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {getPromotionTypeLabel(item.type, t)} · {getPromotionScopeLabel(item.scope, t)}
+                        </p>
                         <p className="mt-2 text-[11px] font-semibold text-rose-500">{item.status || (item.isActive ? "Active" : "Inactive")}</p>
                       </Link>
                     ))}
@@ -767,9 +772,14 @@ export function PromotionDetailPage() {
         onCancel={() => !isSaving && setShowSaveConfirm(false)}
         highlights={[draft?.name || promotion?.name || "Promotion"]}
         details={[
-          { label: "Scope", value: draft?.scope },
-          { label: "Type", value: draft?.type },
-          { label: "Discount", value: draft?.discountValue },
+          { label: t("promotionDetail.scope"), value: getPromotionScopeLabel(draft?.scope, t) },
+          { label: t("promotionDetail.promotionType"), value: getPromotionTypeLabel(draft?.type, t) },
+          {
+            label: t("promotionDetail.discountValue"),
+            value: draft?.discountValue
+              ? `${draft.discountValue} (${getPromotionDiscountTypeLabel(draft.discountType, t)})`
+              : "--",
+          },
         ]}
       />
 
@@ -789,7 +799,7 @@ export function PromotionDetailPage() {
           promotion
             ? {
               title: promotion.name,
-              meta: `${promotion.type} · ${promotion.scope}`,
+              meta: `${getPromotionTypeLabel(promotion.type, t)} · ${getPromotionScopeLabel(promotion.scope, t)}`,
               note: `Promotion ID: ${promotion.promotionId}`,
             }
             : null

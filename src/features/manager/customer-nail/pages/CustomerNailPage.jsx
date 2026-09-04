@@ -612,7 +612,7 @@ export function CustomerNailPage() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [metaData, setMetaData] = useState(null);
-  const itemsPerPage = 12; // Masonry grid layout
+  const itemsPerPage = 10;
 
   const seenPendingReviewIdsRef = useRef(new Set());
   const hasInitializedPendingReviewRef = useRef(false);

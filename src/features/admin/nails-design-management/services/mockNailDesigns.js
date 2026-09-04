@@ -253,6 +253,10 @@ const DEFAULT_DESIGN_DETAIL = {
   popularityScore: "8.8/10",
   bookingRate: "74%",
   customerRating: "4.6★",
+  favorites: "427",
+  totalBookings: "312",
+  avgRating: "4.7★",
+  repeatRate: "68%",
   customerProfile: {
     "Skin Tone": ["Fair", "Light Medium", "Medium"],
     "Skin Undertone": ["Cool", "Neutral"],

@@ -4,17 +4,21 @@ import {
   Eye,
   Image,
   LoaderCircle,
+  PencilLine,
   Plus,
   Save,
   Sparkles,
+  Upload,
   ZoomIn,
   ZoomOut,
   RotateCcw,
   Sliders,
+  X,
 } from "lucide-react";
 import manHandImg from "../../../../shared/assets/images/manHand.png";
 import womanHandImg from "../../../../shared/assets/images/womanHand.png";
 import toast from "react-hot-toast";
+import { Modal } from "antd";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
@@ -256,17 +260,6 @@ function buildFingerColorStyle(colorConfig, fingerIndex) {
   return { backgroundColor: "#f9c2d8" };
 }
 
-/**
- * Replicates the exact canvas layout used by Set Up Try-On (BuilderView.jsx canvas: 320×420).
- * This is the single source of truth for converting saved dec.x/dec.y/dec.scale
- * (which are all relative to the canvas layout) to CSS % positions in any container.
- *
- * Canvas context is translated to (centerX, centerY + h*0.16) before drawing.
- * destRect is { x: -nailWidth/2, y: nailBottom - totalHeight, w: nailWidth, h: totalHeight }
- * in translated space.
- *
- * Returns absolute canvas pixel coordinates of the dest area origin and dimensions.
- */
 function getBuilderCanvasLayout(canvasW = 320, canvasH = 420, length = 1.0) {
   const fingerLength = Math.min(canvasW * 0.36, canvasH * 0.32);
   const nailWidth = fingerLength * 2.0;
@@ -286,17 +279,6 @@ function getBuilderCanvasLayout(canvasW = 320, canvasH = 420, length = 1.0) {
   };
 }
 
-/**
- * Converts saved (posX, posY, scale, rotation) from DB into CSS % values
- * that exactly replicate what NailDecorationOverlay shows in Set Up Try-On.
- *
- * posX = dec.x  (offset from destH center, in units of destW)
- * posY = dec.y  (offset from destH center, in units of destH)
- * scale = dec.scale (fraction of destW)
- *
- * The returned left/top are % of canvas, which maps 1:1 to % of the nail card
- * when the card uses the same 320×420 aspect ratio as the canvas.
- */
 function componentStyleFromDecoration(posX, posY, scale, rotation) {
   const layout = getBuilderCanvasLayout();
   const { destX, destY, destW, destH, canvasW, canvasH } = layout;
@@ -837,6 +819,10 @@ export function NailVariantDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingProcedures, setIsSavingProcedures] = useState(false);
   const [isSavingTryOn, setIsSavingTryOn] = useState(false);
+  const [isSavingVariant, setIsSavingVariant] = useState(false);
+  const [showEditVariantModal, setShowEditVariantModal] = useState(false);
+  const [variantDraft, setVariantDraft] = useState({ name: "", image: null });
+  const [variantDraftImagePreviewUrl, setVariantDraftImagePreviewUrl] = useState("");
   const [error, setError] = useState("");
   const [isNotFound, setIsNotFound] = useState(false);
   const colors = extractVariantColors(variant?.colorJson);
@@ -860,6 +846,10 @@ export function NailVariantDetailPage() {
 
         if (isMounted) {
           setVariant(detail);
+          setVariantDraft({
+            name: detail.name || "",
+            image: null,
+          });
           setProcedures(loadedProcedures);
           setAvailableProcedures(availableProcsResp?.items || []);
           setError("");
@@ -886,6 +876,18 @@ export function NailVariantDetailPage() {
       isMounted = false;
     };
   }, [variantId]);
+
+  useEffect(() => {
+    if (!variantDraft.image) {
+      setVariantDraftImagePreviewUrl("");
+      return undefined;
+    }
+
+    const nextPreviewUrl = URL.createObjectURL(variantDraft.image);
+    setVariantDraftImagePreviewUrl(nextPreviewUrl);
+
+    return () => URL.revokeObjectURL(nextPreviewUrl);
+  }, [variantDraft.image]);
 
   const updateProcedureDraft = (index, field, value) => {
     setProcedures((current) =>
@@ -959,6 +961,70 @@ export function NailVariantDetailPage() {
     });
   };
 
+  const openEditVariantModal = () => {
+    setVariantDraft({
+      name: variant?.name || "",
+      image: null,
+    });
+    setShowEditVariantModal(true);
+  };
+
+  const closeEditVariantModal = () => {
+    if (isSavingVariant) return;
+    setShowEditVariantModal(false);
+    setVariantDraft({ name: variant?.name || "", image: null });
+  };
+
+  const updateVariantDraft = (field) => (event) => {
+    const value = field === "image" ? event.target.files?.[0] ?? null : event.target.value;
+    setVariantDraft((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  };
+
+  const saveVariantDetails = async () => {
+    const normalizedName = String(variantDraft.name || "").trim();
+
+    if (!normalizedName) {
+      setError(language === "vi" ? "Ten bien the la bat buoc." : "Variant name is required.");
+      return;
+    }
+
+    setIsSavingVariant(true);
+    setError("");
+
+    try {
+      await updateAdminNailVariant(variantId, {
+        name: normalizedName,
+        nailShapeId: variant.nailShapeId,
+        nailSurfaceId: variant.nailSurfaceId,
+        nailDesignId: variant.nailDesignId || Number(designId || 0),
+        imageUrl: variant.imageUrl,
+        image: variantDraft.image,
+        colorJson: variant.colorJson,
+      });
+
+      const [detail, loadedProcedures] = await Promise.all([
+        fetchAdminNailVariantDetail(variantId),
+        fetchProceduresByVariant(variantId),
+      ]);
+
+      setVariant(detail);
+      setVariantDraft({
+        name: detail.name || "",
+        image: null,
+      });
+      setProcedures(loadedProcedures);
+      setShowEditVariantModal(false);
+      toast.success(language === "vi" ? "Da cap nhat bien the." : "Updated variant details.");
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Failed to update nail variant.");
+    } finally {
+      setIsSavingVariant(false);
+    }
+  };
+
   const handleSaveTryOn = async () => {
     if (!pendingTryOnConfig) return;
     setIsSavingTryOn(true);
@@ -1030,14 +1096,38 @@ export function NailVariantDetailPage() {
     <section className="flex min-h-full flex-col gap-4 bg-[#fff7fb]">
       <div className="rounded-[18px] border border-[#f8d8e6] bg-white px-5 py-4 shadow-[0_12px_28px_rgba(236,72,153,0.06)]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-xs text-[#c694ad]">
-              {t("adminNailsDesignManagement.nailDesigns")}<span className="text-[#ea4f93]">{t("adminNailsDesignManagement.variantDetail")}</span>
-            </p>
-            <h1 className="mt-2 text-2xl font-bold text-[#432744]">{variant.name}</h1>
-            <p className="mt-1 max-w-3xl text-sm text-[#8c7085]">{variant.description}</p>
+          <div className="flex items-start gap-4">
+            <div className="h-16 w-16 shrink-0 overflow-hidden rounded-[16px] border border-[#f7d7e5] bg-[#fff0f7]">
+              {variant.imageUrl ? (
+                <img
+                  crossOrigin="anonymous"
+                  src={variant.imageUrl}
+                  alt={variant.name}
+                  className="h-full w-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-[#ea4f93]">
+                  <Image size={22} />
+                </div>
+              )}
+            </div>
+            <div>
+              <p className="text-xs text-[#c694ad]">
+                {t("adminNailsDesignManagement.nailDesigns")}<span className="text-[#ea4f93]">{t("adminNailsDesignManagement.variantDetail")}</span>
+              </p>
+              <h1 className="mt-2 text-2xl font-bold text-[#432744]">{variant.name}</h1>
+            </div>
           </div>
           <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={openEditVariantModal}
+              className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
+            >
+              <PencilLine size={14} className="mr-1.5 inline" />
+              {t("adminNailsDesignManagement.editNailVariant")}
+            </button>
             <button
               type="button"
               onClick={() => navigate(getAdminNailDesignDetailRoute(designId))}
@@ -1046,34 +1136,61 @@ export function NailVariantDetailPage() {
               <ArrowLeft size={14} className="mr-1.5 inline" />
               {t("adminNailsDesignManagement.backToDesign")}
             </button>
-            <button
-              type="button"
-              onClick={() => openTryOn(undefined)}
-              className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
-            >
-              <Sparkles size={14} className="mr-1.5 inline" />
-              {t("adminNailsDesignManagement.setUpTryOn")}
-            </button>
-            <button
-              type="button"
-              onClick={() => openTryOn("image")}
-              className="rounded-full bg-[#4a72d8] px-4 py-2 text-xs font-bold text-white"
-            >
-              <Image size={14} className="mr-1.5 inline" />
-              {t("adminNailsDesignManagement.photoTryOn")}
-            </button>
-            <button
-              type="button"
-              onClick={() => openTryOn("live")}
-              className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white"
-            >
-              <Camera size={14} className="mr-1.5 inline" />
-              {t("adminNailsDesignManagement.liveTryOn")}
-            </button>
+
           </div>
         </div>
       </div>
 
+      <DetailCard title={t("adminNailsDesignManagement.tryon")}>
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            [t("adminNailsDesignManagement.setUpTryOn"), t("adminNailsDesignManagement.tuneNailShapeColorFinishAndLay"), undefined, Eye],
+            [t("adminNailsDesignManagement.photoTryOn"), t("adminNailsDesignManagement.applyThisVariantOnAnUploadedHa"), "image", Image],
+            [t("adminNailsDesignManagement.liveTryOn"), t("adminNailsDesignManagement.applyThisVariantUsingTheCamera"), "live", Camera],
+          ].map(([label, note, mode, Icon]) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => openTryOn(mode)}
+              className="flex w-full items-center gap-3 rounded-[16px] border border-[#f4c6da] bg-[#fffafb] p-4 text-left transition hover:border-[#ea4f93]"
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#fff0f7] text-[#ea4f93]">
+                <Icon size={18} />
+              </span>
+              <span>
+                <span className="block text-sm font-extrabold text-[#432744]">{label}</span>
+                <span className="mt-1 block text-xs text-[#8c7085]">{note}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+      </DetailCard>
+
+      <DetailCard title={t("adminNailsDesignManagement.colorPreview")}>
+        {colors.length > 0 ? (
+          <div className="flex flex-wrap gap-3">
+            {colors.length > 1 ? (
+              <div className="w-full rounded-[18px] border border-[#f4d4e2] bg-[#fffafb] p-3">
+                <div
+                  className="h-16 rounded-[14px] border border-white shadow-inner"
+                  style={{ backgroundImage: `linear-gradient(135deg, ${colors.join(", ")})` }}
+                />
+                <p className="mt-3 text-center text-[11px] font-bold text-[#6d5669]">{t("adminNailsDesignManagement.gradientMix")}</p>
+              </div>
+            ) : null}
+            {colors.map((color) => (
+              <div key={color} className="w-[110px] rounded-[18px] border border-[#f4d4e2] bg-[#fffafb] p-3">
+                <div className="h-16 rounded-[14px] border border-white shadow-inner" style={{ backgroundColor: color }} />
+                <p className="mt-3 text-center text-[11px] font-bold text-[#6d5669]">{color}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <pre className="overflow-x-auto rounded-[16px] bg-[#fffafb] p-4 text-xs leading-6 text-[#6d5669]">
+            {variant.colorJson}
+          </pre>
+        )}
+      </DetailCard>
       {error ? (
         <div className="rounded-[18px] border border-[#f4bfd2] bg-[#fff1f6] px-5 py-3 text-sm font-semibold text-[#d14c84]">
           {error}
@@ -1104,212 +1221,248 @@ export function NailVariantDetailPage() {
         </div>
       ) : null}
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="space-y-4">
-          <DetailCard title={t("adminNailsDesignManagement.variantOverview")}>
-            <div className="space-y-5">
-              <NailVariantHandPreview variantDetail={variant} />
+      <div className="space-y-4">
+        <DetailCard title={t("adminNailsDesignManagement.variantOverview")}>
+          <div className="space-y-5">
+            <NailVariantHandPreview variantDetail={variant} />
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                {[
-                  [t("adminNailsDesignManagement.price"), variant.priceLabel],
-                  [t("adminNailsDesignManagement.duration"), variant.durationLabel],
-                ].map(([label, value]) => (
-                  <div key={label} className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">{label}</p>
-                    <p className="mt-2 text-sm font-bold text-[#432744]">{value}</p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="grid gap-4 lg:grid-cols-2">
-                <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-5">
-                  <h3 className="text-sm font-extrabold uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.nailShape")}</h3>
-                  <div className="mt-4 space-y-3">
-                    {[
-                      [t("adminNailsDesignManagement.name"), variant.nailShape?.name],
-                      [t("adminNailsDesignManagement.price"), variant.nailShape?.priceLabel],
-                      [t("adminNailsDesignManagement.duration"), variant.nailShape?.durationLabel],
-                    ].map(([label, value]) => (
-                      <div key={label} className="rounded-[16px] border border-[#f3dce7] bg-white px-4 py-3">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">{label}</p>
-                        <p className="mt-1 text-sm font-bold text-[#432744]">{value}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-5">
-                  <h3 className="text-sm font-extrabold uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.nailSurface")}</h3>
-                  <div className="mt-4 space-y-3">
-                    {[
-                      [t("adminNailsDesignManagement.name"), variant.nailSurface?.name],
-                      [t("adminNailsDesignManagement.price"), variant.nailSurface?.priceLabel],
-                      [t("adminNailsDesignManagement.duration"), variant.nailSurface?.durationLabel],
-                    ].map(([label, value]) => (
-                      <div key={label} className="rounded-[16px] border border-[#f3dce7] bg-white px-4 py-3">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">{label}</p>
-                        <p className="mt-1 text-sm font-bold text-[#432744]">{value}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </DetailCard>
-
-          {/* <DetailCard title="Accessories / Components">
-            {variant.nailComponents?.length ? (
-              <div className="space-y-3">
-                {variant.nailComponents.map((item) => (
-                  <div key={item.id} className="rounded-[18px] border border-[#f1d7e3] bg-[#fffafb] p-4">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Pill tone="pink">{item.component?.name }</Pill>
-                      <Pill tone="blue">{item.component?.componentType }</Pill>
-                      <Pill tone="yellow">{item.component?.priceLabel }</Pill>
-                    </div>
-                    <div className="mt-3 grid gap-2 text-sm md:grid-cols-4">
-                      <span>Finger: <b>{item.fingerIndex}</b></span>
-                      <span>Pos X: <b>{item.posX}</b></span>
-                      <span>Pos Y: <b>{item.posY}</b></span>
-                      <span className="break-all">Config: <b>{item.configJson }</b></span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-[#8c7085]">This variant has no accessory components.</p>
-            )}
-          </DetailCard> */}
-
-          <DetailCard title={t("adminNailsDesignManagement.procedureSteps")}>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-[#8c7085]">{t("adminNailsDesignManagement.stepOrderIsInitializedFromTheC")}</p>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={addProcedureDraft}
-                  disabled={isSavingProcedures}
-                  className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#ea4f93]"
-                >
-                  <Plus size={13} className="mr-1.5 inline" />
-                  {t("adminNailsDesignManagement.addStep")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void saveProcedureSteps()}
-                  disabled={isSavingProcedures}
-                  className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white"
-                >
-                  <Save size={13} className="mr-1.5 inline" />
-                  {isSavingProcedures ? (t("adminNailsDesignManagement.saving")) : (t("adminNailsDesignManagement.saveSteps"))}
-                </button>
-              </div>
-            </div>
-
-            {procedures.length ? (
-              <div className="mt-4 space-y-3">
-                {procedures.map((item, index) => (
-                  <div key={`${item.procedureId || "draft"}-${index}`} className="rounded-[18px] border border-[#f1d7e3] bg-[#fffafb] p-4">
-                    <div className="grid gap-3 md:grid-cols-[110px_minmax(0,1fr)]">
-                      <label className="space-y-2">
-                        <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
-                          {t("adminNailsDesignManagement.stepOrder")}
-                        </span>
-                        <input
-                          value={String(item.stepOrder || index + 1)}
-                          onChange={(event) => updateProcedureDraft(index, "stepOrder", event.target.value)}
-                          className="w-full rounded-2xl border border-[#f4d4e2] bg-white px-4 py-3 text-sm font-semibold text-[#432744] outline-none focus:border-[#ea4f93]"
-                        />
-                      </label>
-                      <div className="flex flex-col gap-2">
-                        <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
-                          {t("adminNailsDesignManagement.procedure")}
-                        </span>
-                        <select
-                          value={item.procedureId || ""}
-                          onChange={(e) => updateProcedureDraft(index, "procedureId", e.target.value)}
-                          className="w-full rounded-2xl border border-[#f4d4e2] bg-white px-4 py-3 text-sm font-semibold text-[#432744] outline-none focus:border-[#ea4f93]"
-                        >
-                          <option value="">{t("adminNailsDesignManagement.selectAProcedure")}</option>
-                          {availableProcedures.map((proc) => (
-                            <option key={proc.id || proc.procedureId} value={proc.id || proc.procedureId}>
-                              {proc.name}
-                            </option>
-                          ))}
-                        </select>
-                        <div className="mt-2 grid gap-2 text-sm md:grid-cols-3">
-                          <span>{t("adminNailsDesignManagement.duration")}: <b>{item.durationLabel || item.duration}</b></span>
-                          <span>{t("adminNailsDesignManagement.status")}: <b>{item.status}</b></span>
-                          <span>{t("adminNailsDesignManagement.required")}: <b>{item.isRequired ? (t("adminNailsDesignManagement.yes")) : (t("adminNailsDesignManagement.no"))}</b></span>
-                        </div>
-                      </div>
-                    </div>
-                    {item.description ? <p className="mt-3 text-sm leading-6 text-[#6d5669]">{item.description}</p> : null}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="mt-4 rounded-[16px] border border-dashed border-[#f3c9dd] bg-[#fffafb] px-4 py-4 text-sm text-[#8c7085]">
-                {t("adminNailsDesignManagement.noProceduresConfiguredForThisV1")}
-              </div>
-            )}
-          </DetailCard>
-        </div>
-
-        <aside className="space-y-4">
-          <DetailCard title={t("adminNailsDesignManagement.tryon")}>
-            <div className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
               {[
-                [t("adminNailsDesignManagement.setUpTryOn"), t("adminNailsDesignManagement.tuneNailShapeColorFinishAndLay"), undefined, Eye],
-                [t("adminNailsDesignManagement.photoTryOn"), t("adminNailsDesignManagement.applyThisVariantOnAnUploadedHa"), "image", Image],
-                [t("adminNailsDesignManagement.liveTryOn"), t("adminNailsDesignManagement.applyThisVariantUsingTheCamera"), "live", Camera],
-              ].map(([label, note, mode, Icon]) => (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={() => openTryOn(mode)}
-                  className="flex w-full items-center gap-3 rounded-[16px] border border-[#f4c6da] bg-[#fffafb] p-4 text-left transition hover:border-[#ea4f93]"
-                >
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#fff0f7] text-[#ea4f93]">
-                    <Icon size={18} />
-                  </span>
-                  <span>
-                    <span className="block text-sm font-extrabold text-[#432744]">{label}</span>
-                    <span className="mt-1 block text-xs text-[#8c7085]">{note}</span>
-                  </span>
-                </button>
+                [t("adminNailsDesignManagement.price"), variant.priceLabel],
+                [t("adminNailsDesignManagement.duration"), variant.durationLabel],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">{label}</p>
+                  <p className="mt-2 text-sm font-bold text-[#432744]">{value}</p>
+                </div>
               ))}
             </div>
-          </DetailCard>
 
-          <DetailCard title={t("adminNailsDesignManagement.colorPreview")}>
-            {colors.length > 0 ? (
-              <div className="flex flex-wrap gap-3">
-                {colors.length > 1 ? (
-                  <div className="w-full rounded-[18px] border border-[#f4d4e2] bg-[#fffafb] p-3">
-                    <div
-                      className="h-16 rounded-[14px] border border-white shadow-inner"
-                      style={{ backgroundImage: `linear-gradient(135deg, ${colors.join(", ")})` }}
-                    />
-                    <p className="mt-3 text-center text-[11px] font-bold text-[#6d5669]">{t("adminNailsDesignManagement.gradientMix")}</p>
-                  </div>
-                ) : null}
-                {colors.map((color) => (
-                  <div key={color} className="w-[110px] rounded-[18px] border border-[#f4d4e2] bg-[#fffafb] p-3">
-                    <div className="h-16 rounded-[14px] border border-white shadow-inner" style={{ backgroundColor: color }} />
-                    <p className="mt-3 text-center text-[11px] font-bold text-[#6d5669]">{color}</p>
-                  </div>
-                ))}
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-5">
+                <h3 className="text-sm font-extrabold uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.nailShape")}</h3>
+                <div className="mt-4 space-y-3">
+                  {[
+                    [t("adminNailsDesignManagement.name"), variant.nailShape?.name],
+                    [t("adminNailsDesignManagement.price"), variant.nailShape?.priceLabel],
+                    [t("adminNailsDesignManagement.duration"), variant.nailShape?.durationLabel],
+                  ].map(([label, value]) => (
+                    <div key={label} className="rounded-[16px] border border-[#f3dce7] bg-white px-4 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">{label}</p>
+                      <p className="mt-1 text-sm font-bold text-[#432744]">{value}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ) : (
-              <pre className="overflow-x-auto rounded-[16px] bg-[#fffafb] p-4 text-xs leading-6 text-[#6d5669]">
-                {variant.colorJson}
-              </pre>
-            )}
-          </DetailCard>
-        </aside>
+
+              <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-5">
+                <h3 className="text-sm font-extrabold uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.nailSurface")}</h3>
+                <div className="mt-4 space-y-3">
+                  {[
+                    [t("adminNailsDesignManagement.name"), variant.nailSurface?.name],
+                    [t("adminNailsDesignManagement.price"), variant.nailSurface?.priceLabel],
+                    [t("adminNailsDesignManagement.duration"), variant.nailSurface?.durationLabel],
+                  ].map(([label, value]) => (
+                    <div key={label} className="rounded-[16px] border border-[#f3dce7] bg-white px-4 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">{label}</p>
+                      <p className="mt-1 text-sm font-bold text-[#432744]">{value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </DetailCard>
+
+        <DetailCard title={t("adminNailsDesignManagement.procedureSteps")}>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-[#8c7085]">{t("adminNailsDesignManagement.stepOrderIsInitializedFromTheC")}</p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={addProcedureDraft}
+                disabled={isSavingProcedures}
+                className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#ea4f93]"
+              >
+                <Plus size={13} className="mr-1.5 inline" />
+                {t("adminNailsDesignManagement.addStep")}
+              </button>
+              <button
+                type="button"
+                onClick={() => void saveProcedureSteps()}
+                disabled={isSavingProcedures}
+                className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white"
+              >
+                <Save size={13} className="mr-1.5 inline" />
+                {isSavingProcedures ? (t("adminNailsDesignManagement.saving")) : (t("adminNailsDesignManagement.saveSteps"))}
+              </button>
+            </div>
+          </div>
+
+          {procedures.length ? (
+            <div className="mt-4 space-y-3">
+              {procedures.map((item, index) => (
+                <div key={`${item.procedureId || "draft"}-${index}`} className="rounded-[18px] border border-[#f1d7e3] bg-[#fffafb] p-4">
+                  <div className="grid gap-3 md:grid-cols-[110px_minmax(0,1fr)]">
+                    <label className="space-y-2">
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
+                        {t("adminNailsDesignManagement.stepOrder")}
+                      </span>
+                      <input
+                        value={String(item.stepOrder || index + 1)}
+                        onChange={(event) => updateProcedureDraft(index, "stepOrder", event.target.value)}
+                        className="w-full rounded-2xl border border-[#f4d4e2] bg-white px-4 py-3 text-sm font-semibold text-[#432744] outline-none focus:border-[#ea4f93]"
+                      />
+                    </label>
+                    <div className="flex flex-col gap-2">
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
+                        {t("adminNailsDesignManagement.procedure")}
+                      </span>
+                      <select
+                        value={item.procedureId || ""}
+                        onChange={(e) => updateProcedureDraft(index, "procedureId", e.target.value)}
+                        className="w-full rounded-2xl border border-[#f4d4e2] bg-white px-4 py-3 text-sm font-semibold text-[#432744] outline-none focus:border-[#ea4f93]"
+                      >
+                        <option value="">{t("adminNailsDesignManagement.selectAProcedure")}</option>
+                        {availableProcedures.map((proc) => (
+                          <option key={proc.id || proc.procedureId} value={proc.id || proc.procedureId}>
+                            {proc.name}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="mt-2 grid gap-2 text-sm md:grid-cols-3">
+                        <span>{t("adminNailsDesignManagement.duration")}: <b>{item.durationLabel || item.duration}</b></span>
+                        <span>{t("adminNailsDesignManagement.status")}: <b>{item.status}</b></span>
+                        <span>{t("adminNailsDesignManagement.required")}: <b>{item.isRequired ? (t("adminNailsDesignManagement.yes")) : (t("adminNailsDesignManagement.no"))}</b></span>
+                      </div>
+                    </div>
+                  </div>
+                  {item.description ? <p className="mt-3 text-sm leading-6 text-[#6d5669]">{item.description}</p> : null}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-4 rounded-[16px] border border-dashed border-[#f3c9dd] bg-[#fffafb] px-4 py-4 text-sm text-[#8c7085]">
+              {t("adminNailsDesignManagement.noProceduresConfiguredForThisV1")}
+            </div>
+          )}
+        </DetailCard>
       </div>
+
+      <Modal
+        open={showEditVariantModal}
+        onCancel={closeEditVariantModal}
+        footer={null}
+        centered
+        width={560}
+        styles={{
+          body: { padding: 0 },
+          content: { borderRadius: '32px', overflow: 'hidden' },
+        }}
+        maskClosable={!isSavingVariant}
+        keyboard={!isSavingVariant}
+        closable={false}
+      >
+        <div className="bg-[linear-gradient(135deg,#fff0f6_0%,#fff8e9_100%)] px-6 py-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#b25784]">
+                {t("adminNailsDesignManagement.variantDetail")}
+              </p>
+              <h2 className="mt-2 text-lg font-bold text-[#432744]">
+                {language === "vi" ? "Chỉnh sửa biến thể" : "Edit Variant"}
+              </h2>
+            </div>
+            <button
+              type="button"
+              onClick={closeEditVariantModal}
+              disabled={isSavingVariant}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#f3c9dd] bg-white/80 text-[#a35d84] transition disabled:cursor-not-allowed disabled:opacity-60"
+              aria-label="Close edit variant modal"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-4 px-6 py-5">
+          <label className="space-y-2">
+            <span className="text-sm font-semibold text-[#5c4559]">
+              {t("adminNailsDesignManagement.variantName")} <span className="text-[#ea4f93]">*</span>
+            </span>
+            <input
+              value={variantDraft.name}
+              onChange={updateVariantDraft("name")}
+              disabled={isSavingVariant}
+              className="h-11 w-full rounded-2xl border border-[#f4d4e2] bg-[#fffdfd] px-4 text-sm text-[#432744] outline-none transition focus:border-[#ef6bb4] disabled:cursor-not-allowed disabled:bg-[#f9f1f5]"
+            />
+          </label>
+
+          <div className="rounded-[18px] border border-dashed border-[#f4bfd6] bg-[#fffafb] px-4 py-4 mt-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-14 w-14 shrink-0 overflow-hidden rounded-[14px] border border-[#f7d7e5] bg-white">
+                  {variantDraftImagePreviewUrl || variant.imageUrl ? (
+                    <img
+                      crossOrigin="anonymous"
+                      src={variantDraftImagePreviewUrl || variant.imageUrl}
+                      alt={variant.name}
+                      className="h-full w-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-[#ea4f93]">
+                      <Image size={18} />
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-[#432744]">{t("adminNailsDesignManagement.variantImage")}</p>
+                  <p className="mt-1 text-xs text-[#b2879f]">
+                    {variantDraft.image ? variantDraft.image.name : t("adminNailsDesignManagement.noVariantImageSelected")}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => document.getElementById("variant-detail-image-input")?.click()}
+                disabled={isSavingVariant}
+                className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#ea4f93] whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Upload size={13} className="mr-1.5 inline" />
+                {t("adminNailsDesignManagement.uploadVariantImage")}
+              </button>
+              <input
+                id="variant-detail-image-input"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={updateVariantDraft("image")}
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={closeEditVariantModal}
+              disabled={isSavingVariant}
+              className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#7e6075] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {t("adminNailsDesignManagement.cancel")}
+            </button>
+            <button
+              type="button"
+              onClick={() => void saveVariantDetails()}
+              disabled={isSavingVariant}
+              className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.2)] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Save size={13} className="mr-1.5 inline" />
+              {isSavingVariant ? t("adminNailsDesignManagement.saving") : t("adminNailsDesignManagement.saveChanges")}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </section>
   );
 }

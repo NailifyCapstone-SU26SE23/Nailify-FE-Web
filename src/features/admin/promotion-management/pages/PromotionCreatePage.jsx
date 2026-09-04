@@ -10,6 +10,9 @@ import {
   fetchPromotionCategoryOptions,
   fetchPromotionCategoryTypeOptions,
   fetchPromotionNailDesignOptions,
+  getPromotionDiscountTypeLabel,
+  getPromotionScopeLabel,
+  getPromotionTypeLabel,
   PROMOTION_DISCOUNT_TYPE_OPTIONS,
   PROMOTION_SCOPE_OPTIONS,
   PROMOTION_TYPE_OPTIONS,
@@ -193,10 +196,13 @@ export function PromotionCreatePage() {
     () => [
       [t("promotionDetail.promotionName"), formValues.name],
       [t("promotionDetail.scope"), formValues.scope],
-      [t("promotionDetail.discountValue"), formValues.discountValue ? `${formValues.discountValue} (${formValues.discountType})` : "--"],
+      [
+        t("promotionDetail.discountValue"),
+        formValues.discountValue ? `${formValues.discountValue} (${getPromotionDiscountTypeLabel(formValues.discountType, t)})` : "--",
+      ],
       [t("promotionDetail.startDate"), formValues.startDate && formValues.endDate ? `${formValues.startDate} → ${formValues.endDate}` : "--"],
     ],
-    [formValues.discountType, formValues.discountValue, formValues.endDate, formValues.name, formValues.scope, formValues.startDate],
+    [formValues.discountType, formValues.discountValue, formValues.endDate, formValues.name, formValues.scope, formValues.startDate, t],
   );
 
   const handleFieldChange = (field, value) => {
@@ -343,7 +349,7 @@ export function PromotionCreatePage() {
                 >
                   <option value="">{t("promotionDetail.selectType")}</option>
                   {PROMOTION_TYPE_OPTIONS.map((option) => (
-                    <option key={option} value={option}>{option}</option>
+                    <option key={option} value={option}>{getPromotionTypeLabel(option, t)}</option>
                   ))}
                 </select>
               </FormField>
@@ -356,7 +362,7 @@ export function PromotionCreatePage() {
                 >
                   <option value="">{t("promotionDetail.selectScope")}</option>
                   {PROMOTION_SCOPE_OPTIONS.map((option) => (
-                    <option key={option} value={option}>{option}</option>
+                    <option key={option} value={option}>{getPromotionScopeLabel(option, t)}</option>
                   ))}
                 </select>
               </FormField>
@@ -369,7 +375,7 @@ export function PromotionCreatePage() {
                 >
                   <option value="">{t("promotionDetail.selectDiscountType")}</option>
                   {PROMOTION_DISCOUNT_TYPE_OPTIONS.map((option) => (
-                    <option key={option} value={option}>{option}</option>
+                    <option key={option} value={option}>{getPromotionDiscountTypeLabel(option, t)}</option>
                   ))}
                 </select>
               </FormField>
@@ -539,8 +545,8 @@ export function PromotionCreatePage() {
         onCancel={() => !isSaving && setShowSaveConfirm(false)}
         highlights={[formValues.name || "New promotion"]}
         details={[
-          { label: "Scope", value: formValues.scope },
-          { label: "Type", value: formValues.type },
+          { label: t("promotionDetail.scope"), value: getPromotionScopeLabel(formValues.scope, t) },
+          { label: t("promotionDetail.promotionType"), value: getPromotionTypeLabel(formValues.type, t) },
           { label: "Discount", value: formValues.discountValue },
           { label: "Period", value: formValues.startDate && formValues.endDate ? `${toInputDateTime(formValues.startDate)} → ${toInputDateTime(formValues.endDate)}` : "--" },
         ]}
